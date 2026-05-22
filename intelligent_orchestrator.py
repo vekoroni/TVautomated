@@ -297,6 +297,7 @@ logger = setup_logger()
 _sector_bias_map: dict  = {}
 _macro_conviction: float = 0.60
 _macro_quant_packet: dict = {}
+_macro_regime_state: str = ""
 
 
 # ============================================================ CONFIG =========
@@ -343,6 +344,8 @@ class OrchestratorConfig:
 
     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
+    PHANTOM_RUNNER      = SCRIPTS_DIR / "run_phantom.py"
+    PHANTOM_DB_PATH     = BASE_DIR / "data" / "phantom" / "phantom_history.db"
 
     # scripts\ subfolder — CORE INTEL Exporter (Phase 8c)
     CORE_INTEL_EXPORTER = SCRIPTS_DIR / "core_intel_exporter.py"
@@ -372,6 +375,9 @@ class OrchestratorConfig:
     ACTUARIAL_CACHE_BUILDER = VANGUARD_DIR / "actuarial_cache_builder.py"
     ACTUARIAL_CACHE_PATH    = VANGUARD_DIR / "data" / "actuarial_cache.parquet"
     ACTUARIAL_DB_PATH       = VANGUARD_DIR / "data" / "actuarial_database_v6.parquet"  # Sprint 3
+    ACTUARIAL_TRANSITION_MATRIX_BUILDER = SCRIPTS_DIR / "build_phase_transition_matrix.py"
+    ACTUARIAL_TRANSITION_MATRIX_DIR     = VANGUARD_DIR / "data" / "transition_matrix"
+    ACTUARIAL_TRANSITION_MATRIX_LATEST  = ACTUARIAL_TRANSITION_MATRIX_DIR / "actuarial_phase_transition_matrix_latest.csv"
 
     # Phase 8.5 — Actuarial Enrichment Pass (in scripts\ — part of AVSHUNTER-Intelligence)
     # Runs AFTER run_vanguard_from_packages.py, BEFORE options_intelligence.
@@ -1020,8 +1026,9 @@ def _run(label: str, cmd: List[str], critical: bool = True) -> bool:
         # v1.1: propagate sector_bias_map as JSON env var so all subprocesses
         # can read it without re-parsing the macro JSON
         if _sector_bias_map:
-            _child_env["AVSHUNTER_SECTOR_BIAS_MAP"]  = json.dumps(_sector_bias_map)
-            _child_env["AVSHUNTER_MACRO_CONVICTION"]  = str(_macro_conviction)
+            _child_env["AVSHUNTER_SECTOR_BIAS_MAP"]    = json.dumps(_sector_bias_map)
+            _child_env["AVSHUNTER_MACRO_CONVICTION"]   = str(_macro_conviction)
+            _child_env["AVSHUNTER_MACRO_REGIME_STATE"] = _macro_regime_state
         if _macro_quant_packet:
             _child_env["AVSHUNTER_MACRO_QUANT_PACKET"] = json.dumps(_macro_quant_packet, default=str)
             _child_env["AVSHUNTER_MACRO_FRESHNESS_STATUS"] = str(
@@ -2039,6 +2046,43 @@ def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
 
 # ============================================================ PHASE 8c: CORE INTEL EXPORTER
 
+
+# ============================================================ PHASE 8c-P: PHANTOM EDGE MODEL
+
+def run_phantom_layer(run_id: str) -> bool:
+    """PHANTOM production edge model (non-critical fail-open)."""
+    logger.info("=" * 80)
+    logger.info("PHASE 8c-P: PHANTOM EDGE MODEL")
+    logger.info("=" * 80)
+
+    if not cfg.PHANTOM_RUNNER.exists():
+        logger.warning("PHANTOM skipped - script not deployed: %s", cfg.PHANTOM_RUNNER)
+        return True
+
+    input_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+    output_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_phantom_{run_id}.csv"
+    if not input_csv.exists():
+        logger.warning("PHANTOM skipped - options CSV not found: %s", input_csv)
+        return True
+
+    cmd = [
+        sys.executable,
+        str(cfg.PHANTOM_RUNNER),
+        "--run-id", run_id,
+        "--repo-root", str(cfg.BASE_DIR),
+        "--input-csv", str(input_csv),
+        "--output-csv", str(output_csv),
+        "--db-path", str(cfg.PHANTOM_DB_PATH),
+    ]
+    ok = _run("PHANTOM Edge Model", cmd, critical=False)
+    if not ok:
+        logger.warning("PHANTOM failed open - downstream will use original Options Intelligence output.")
+        return True
+    if output_csv.exists():
+        logger.info("PHANTOM output ready for downstream handoff: %s", output_csv.name)
+    return True
+
+
 def run_core_intel_exporter(run_id: str, strict: bool = False) -> bool:
     """CORE INTEL Exporter (non-critical)."""
     logger.info("=" * 80)
@@ -2058,9 +2102,11 @@ def run_core_intel_exporter(run_id: str, strict: bool = False) -> bool:
     options_csv: Optional[Path] = None
     if options_dir.exists():
         candidates = sorted(
-            options_dir.glob(f"options_intelligence_{run_id}.csv"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
+            list(options_dir.glob(f"options_intelligence_phantom_{run_id}.csv")) +
+            list(options_dir.glob(f"options_intelligence_{run_id}.csv")),
+            # PHANTOM-CORE-EXPORTER-HOTFIX 2026-05-22:
+            # Path.stat().st_mtime is already a float timestamp on Windows/Python.
+            key=lambda p: (0 if "phantom" in p.name else 1, -float(p.stat().st_mtime)),
         )
         if candidates:
             options_csv = candidates[0]
@@ -2219,7 +2265,11 @@ def run_superbrain_passthrough(run_id: str) -> bool:
     logger.info("PHASE 8d: SUPERBRAIN PASSTHROUGH")
     logger.info("=" * 80)
 
-    oi_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+    oi_csv_original = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+    oi_csv_phantom  = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_phantom_{run_id}.csv"
+    oi_csv = oi_csv_phantom if oi_csv_phantom.exists() else oi_csv_original
+    if oi_csv == oi_csv_phantom:
+        logger.info("PHANTOM handoff active: using %s", oi_csv.name)
     sb_dir = cfg.RUNS_DIR / run_id / "superbrain"
     sb_csv = sb_dir / f"superbrain_enriched_{run_id}.csv"
 
@@ -3184,10 +3234,11 @@ def evening_workflow(
     # v1.1: load sector_rotation block from macro JSON into memory so all
     # modules (superbrain, options intelligence, EIL, FDE, monetisation policy)
     # can call classify_sector_alignment() without re-reading the macro file.
-    global _sector_bias_map, _macro_conviction, _macro_quant_packet
+    global _sector_bias_map, _macro_conviction, _macro_quant_packet, _macro_regime_state
     _sector_bias_map   = {}
     _macro_conviction  = 0.60
     _macro_quant_packet = {}
+    _macro_regime_state = ""
     try:
         with open(macro_path, "r", encoding="utf-8") as _mf:
             _macro_raw = json.load(_mf)
@@ -3205,8 +3256,9 @@ def evening_workflow(
             _sa_spec = _ilu.spec_from_file_location("sector_alignment", str(_sa_path))
             _sa_mod  = _ilu.module_from_spec(_sa_spec)
             _sa_spec.loader.exec_module(_sa_mod)
-            _sector_bias_map  = _sa_mod.load_sector_bias_map(_macro_raw)
-            _macro_conviction = _sa_mod.load_macro_conviction(_macro_raw)
+            _sector_bias_map   = _sa_mod.load_sector_bias_map(_macro_raw)
+            _macro_conviction  = _sa_mod.load_macro_conviction(_macro_raw)
+            _macro_regime_state = str(_macro_raw.get("regime_state", "") or "")
             logger.info(
                 "✅ Sector bias map loaded: %d sectors | macro_conviction=%.2f | "
                 "rotation_signal=%s",
@@ -3294,10 +3346,69 @@ def evening_workflow(
             _macro_quant_packet = missing_macro_quant_packet(macro_path)
         logger.warning("⚠️  Macro quant packet refresh failed: %s", _mq_err)
 
+    # ── BOND MACRO SIDECAR: Merge bond_macro_state.json ─────────────────────
+    # Written by bond_macro_intelligence.py to dropbox/macro/ before the
+    # evening run. Non-critical — pipeline continues if file is absent.
+    _bond_macro_path = cfg.MACRO_DIR / "bond_macro_state.json"
+    if _bond_macro_path.exists():
+        try:
+            with open(_bond_macro_path, "r", encoding="utf-8") as _bf:
+                _bond_state = json.load(_bf)
+            with open(macro_path, "r", encoding="utf-8") as _mf:
+                _macro_live = json.load(_mf)
+            # Inject bond macro fields into extras — augment only, never replace
+            _extras = _macro_live.setdefault("extras", {})
+            _extras["bond_macro"] = {
+                "curve_state":            _bond_state.get("yield_curve", {}).get("curve_state", "UNKNOWN"),
+                "yield_2y":               _bond_state.get("yield_curve", {}).get("yield_2y"),
+                "yield_10y":              _bond_state.get("yield_curve", {}).get("yield_10y"),
+                "spread_bps":             _bond_state.get("yield_curve", {}).get("spread_bps"),
+                "russell_tailwind":       _bond_state.get("yield_curve", {}).get("russell_tailwind", False),
+                "zn_direction":           _bond_state.get("zn_direction", {}).get("rate_regime_signal", "UNKNOWN"),
+                "credit_stress_flag":     _bond_state.get("credit_stress", {}).get("stress_flag", "UNKNOWN"),
+                "credit_z_score":         _bond_state.get("credit_stress", {}).get("z_score"),
+                "auction_spread_risk":    _bond_state.get("auction_calendar", {}).get("auction_today", False),
+                "bond_macro_flag":        _bond_state.get("composite", {}).get("flag", "UNKNOWN"),
+                "bond_macro_score":       _bond_state.get("composite", {}).get("score"),
+                "breakeven_adjustment_pct": _bond_state.get("composite", {}).get("breakeven_adjustment_pct", 0),
+                "trade_go":               _bond_state.get("composite", {}).get("trade_go", True),
+                "summary":                _bond_state.get("composite", {}).get("summary", ""),
+                "as_of_date":             _bond_state.get("as_of_date", ""),
+                "data_source":            _bond_state.get("yield_curve", {}).get("data_source", "UNKNOWN"),
+            }
+            write_json(macro_path, _macro_live)
+            logger.info(
+                "✅ Bond macro sidecar merged: flag=%s score=%s curve=%s breakeven_adj=+%s%%",
+                _extras["bond_macro"]["bond_macro_flag"],
+                _extras["bond_macro"]["bond_macro_score"],
+                _extras["bond_macro"]["curve_state"],
+                _extras["bond_macro"]["breakeven_adjustment_pct"],
+            )
+        except Exception as _bm_err:
+            logger.warning("⚠️  Bond macro sidecar merge failed: %s — continuing without bond context", _bm_err)
+    else:
+        logger.info("ℹ️  bond_macro_state.json not found — run bond_macro_intelligence.py before evening run for bond context")
+    # ─────────────────────────────────────────────────────────────────────────
+
     # ── PHASE 4.6: Actuarial Cache Build ─────────────────────────────────────
-    if not merge_macro_enrichment_into_macro_latest(macro_path):
-        logger.error("EVENING WORKFLOW ABORTED - macro enrichment delta is invalid\n")
-        return False
+    # MACRO REDESIGN: enrichment delta is context-only narrative overlay.
+    # Its failure must never abort the pipeline — degrade gracefully with base macro.
+    _enrichment_merge_degraded = False
+    try:
+        _enrichment_ok = merge_macro_enrichment_into_macro_latest(macro_path)
+        if not _enrichment_ok:
+            logger.warning(
+                "[MACRO] Enrichment merge returned False. "
+                "Continuing with base macro. Pipeline will not abort."
+            )
+            _enrichment_merge_degraded = True
+    except Exception as _e_enrich:
+        logger.warning(
+            "[MACRO] Enrichment delta merge failed: %s. "
+            "Continuing with base macro only. _enrichment_merge_degraded=True.",
+            _e_enrich,
+        )
+        _enrichment_merge_degraded = True
 
     # Must run AFTER macro normalisation (macro_regime labels are now clean)
     # and BEFORE build_packages_from_discovery.py (which injects pkg["actuarial"]
@@ -3350,6 +3461,40 @@ def evening_workflow(
             cfg.ACTUARIAL_CACHE_BUILDER,
         )
     # ─────────────────────────────────────────────────────────────────────────
+
+
+    # PHASE 4.7: Actuarial Transition Matrix
+    # Derived artifact only. Non-critical: if this fails, the EOD pipeline continues.
+    # Reads the latest actuarial DB and writes phase-to-phase transition probabilities
+    # for research/Lab/interpreter consumption.
+    if cfg.ACTUARIAL_TRANSITION_MATRIX_BUILDER.exists():
+        _tm_cmd = [
+            sys.executable,
+            str(cfg.ACTUARIAL_TRANSITION_MATRIX_BUILDER),
+            "--actuarial-db",
+            str(cfg.ACTUARIAL_DB_PATH),
+            "--output-dir",
+            str(cfg.ACTUARIAL_TRANSITION_MATRIX_DIR),
+            "--phase-column",
+            "phase_v2",
+        ]
+        _tm_ok = _run("Phase 4.7 Actuarial Transition Matrix", _tm_cmd, critical=False)
+        if _tm_ok and cfg.ACTUARIAL_TRANSITION_MATRIX_LATEST.exists():
+            logger.info(
+                "   Transition matrix ready: %s (%.1f KB)",
+                cfg.ACTUARIAL_TRANSITION_MATRIX_LATEST,
+                cfg.ACTUARIAL_TRANSITION_MATRIX_LATEST.stat().st_size / 1024,
+            )
+        elif _tm_ok:
+            logger.warning(
+                "Phase 4.7 transition matrix reported success but latest file not found: %s",
+                cfg.ACTUARIAL_TRANSITION_MATRIX_LATEST,
+            )
+    else:
+        logger.warning(
+            "Phase 4.7 transition matrix skipped â€” builder not found at: %s",
+            cfg.ACTUARIAL_TRANSITION_MATRIX_BUILDER,
+        )
 
     # DISC-02: Write stable scanner_context_latest.json BEFORE discovery runs
     # so discovery can inject VMS scores into composite scoring.
@@ -3579,7 +3724,15 @@ def evening_workflow(
         )
     # ─────────────────────────────────────────────────────────────────────────
 
-    run_core_intel_exporter(canonical_run_id)      # non-critical | Phase 8c
+    try:
+        run_phantom_layer(canonical_run_id)            # non-critical | Phase 8c-P PHANTOM
+    except Exception as _phantom_err:
+        logger.warning("PHANTOM Edge Model exception -- pipeline continues. Error: %s", _phantom_err)
+
+    try:
+        run_core_intel_exporter(canonical_run_id)      # non-critical | Phase 8c
+    except Exception as _core_export_err:
+        logger.warning("Core Intel Exporter exception -- pipeline continues. Error: %s", _core_export_err)
     # ── Phase 8.6: Trigger Layer ─────────────────────────────────────────────
     # Injects trigger analysis into every package JSON before EDE runs.
     # Answers: "Is the move starting NOW?" for each signal.
@@ -4405,8 +4558,34 @@ def evening_workflow(
                     "McMillan handoff join failed -- manifest unchanged: %s",
                     _mcm_join_err,
                 )
+            # MACRO REDESIGN: Stamp macro_exposure_role and macro_exposure_reason
+            # DISPLAY ONLY — these columns must NEVER be read by scoring or execution code
+            try:
+                import pandas as _pd_exp
+                import importlib.util as _exp_ilu
+                _exp_script = cfg.SCRIPTS_DIR / "macro_exposure_resolver.py"
+                if _exp_script.exists() and _morning_csv_path.exists():
+                    _exp_spec = _exp_ilu.spec_from_file_location("macro_exposure_resolver", str(_exp_script))
+                    _exp_mod  = _exp_ilu.module_from_spec(_exp_spec)
+                    _exp_spec.loader.exec_module(_exp_mod)
+                    _exp_df = _pd_exp.read_csv(_morning_csv_path, low_memory=False)
+                    _exp_df = _exp_mod.enrich_dataframe(
+                        _exp_df,
+                        macro_path=macro_path,
+                        enrichment_path=cfg.MACRO_DIR / "avshunter_macro_enrichment_delta.json",
+                    )
+                    _exp_df.to_csv(_morning_csv_path, index=False)
+                    _ben = (_exp_df.get("macro_exposure_role") == "BENEFICIARY").sum() if "macro_exposure_role" in _exp_df.columns else 0
+                    _vul = (_exp_df.get("macro_exposure_role") == "VULNERABLE").sum() if "macro_exposure_role" in _exp_df.columns else 0
+                    logger.info(
+                        "MACRO EXPOSURE: stamped role/reason into morning manifest | BENEFICIARY=%d VULNERABLE=%d",
+                        _ben, _vul,
+                    )
+            except Exception as _exp_err:
+                logger.warning("MACRO EXPOSURE: resolver failed (non-critical): %s", _exp_err)
+
             logger.info(
-                "✅ Phase 10: EOD candidate manifest written → morning_candidates_%s.csv",
+                "✅ Phase 10: EOD candidate manifest written -> morning_candidates_%s.csv",
                 canonical_run_id,
             )
         else:
@@ -4536,6 +4715,7 @@ def evening_workflow(
             "execution_ready_count":        _exec_ready,
             "manifest_permission":          _manifest_permission,
             "macro_normalised_ok":          _macro_normalised_ok,
+            "enrichment_merge_degraded":    _enrichment_merge_degraded,
             "final_pipeline_state":         _final_state,
             # EDE equivalent is ACTIVE inside EIL runner v4.1 via PSE chain.
             # V5 Colab decommissioned — all decision logic is now internal.
@@ -4618,7 +4798,7 @@ def evening_workflow(
         logger.warning("UAT audit report failed (non-critical): %s", _uat_report_err)
 
     try:
-        from contracts.lab_control import write_final_run_manifest
+        from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book
         _manifest = write_final_run_manifest(canonical_run_id, cfg.RUNS_DIR, pipeline_mode="EOD")
         logger.info(
             "Final run manifest: health=%s next_action=%s tradeable=%s",
@@ -4626,6 +4806,21 @@ def evening_workflow(
             _manifest.get("next_action"),
             _manifest.get("run_tradeable"),
         )
+        try:
+            import pandas as _pd_lab_sync
+            _mv_dir = cfg.RUNS_DIR / canonical_run_id / "morning_validation"
+            _lab_source = _mv_dir / f"morning_candidates_{canonical_run_id}.csv"
+            if not _lab_source.exists():
+                _lab_source = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"eil_enriched_{canonical_run_id}.csv"
+            if _lab_source.exists():
+                _lab_rows = _pd_lab_sync.read_csv(_lab_source, low_memory=False).to_dict("records")
+                _lab_book = write_final_opportunity_book(canonical_run_id, _lab_rows, _manifest, cfg.RUNS_DIR)
+                logger.info(
+                    "Lab/Interpreter shared triage view written -> %s",
+                    _lab_book.get("triage_csv_path"),
+                )
+        except Exception as _lab_sync_err:
+            logger.warning("Lab/Interpreter shared triage view failed (non-critical): %s", _lab_sync_err)
     except Exception as _manifest_err:
         logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
 
@@ -4748,6 +4943,12 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
         return False
 
     _mv_dir.mkdir(parents=True, exist_ok=True)
+
+    # FIX 7: Run catalyst truth patch on morning_candidates BEFORE validation.
+    # Root cause: catalyst_truth ran before morning_candidates was written (evening),
+    # so morning_candidates never received catalyst enrichment. Correct order:
+    # write_morning_candidates → run_catalyst_truth → run_morning_validator.
+    run_catalyst_truth_layer(_run_id, stage="pre_morning_validation")
 
     try:
         from morning_thesis_validator import run_morning_validation

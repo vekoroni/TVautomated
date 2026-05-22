@@ -433,18 +433,18 @@ def interpret_macro_decision_context(
     macro_confidence = _float_field(
         macro_context.get("macro_conviction", macro_quant.get("macro_confidence", 0.0))
     )
-    fung_hsieh_accuracy = _find_fung_hsieh_accuracy(macro_context)
+    # MACRO REDESIGN: FH accuracy re-scrape removed. Canonical signal is macro_filter.
+    fung_hsieh_accuracy = None  # retained in output for schema compatibility only
     macro_filter = str(macro_context.get("macro_filter", "") or "").upper()
     trigger_required = bool(macro_context.get("trigger_required"))
     put_gate = macro_context.get("put_gate") if isinstance(macro_context.get("put_gate"), Mapping) else {}
     put_permission = str(put_gate.get("current_permission", "") or "").upper()
     sector_bias = _sector_bias_for(macro_context, gics_sector)
 
-    low_confidence = macro_confidence < 0.50
     no_go = "NO_GO" in macro_filter
-    fung_sub_coin = fung_hsieh_accuracy is not None and fung_hsieh_accuracy < 0.50
-    if no_go or low_confidence or fung_sub_coin:
-        direction_authority = "DISABLED"
+    if no_go:
+        direction_authority = "ABSTAIN"
+        direction_vote = "ABSTAIN"
     elif macro_confidence < 0.70:
         direction_authority = "LIMITED"
     else:
@@ -472,10 +472,12 @@ def interpret_macro_decision_context(
         raw_vote = "ABSTAIN"
         applicability = "CONTEXT_ONLY"
 
-    direction_vote = raw_vote if direction_authority != "DISABLED" else "ABSTAIN"
+    if direction_authority not in {"ABSTAIN"}:
+        direction_vote = raw_vote if direction_authority != "DISABLED" else "ABSTAIN"
     confirmation_required: List[str] = []
     if direction_authority == "DISABLED":
         confirmation_required.append("STRUCTURE_FIRST_REQUIRED_MACRO_DIRECTION_DISABLED")
+    # ABSTAIN = macro withholds direction vote; no confirmation required from trader
     elif direction_authority == "LIMITED":
         confirmation_required.append("LOCAL_CONFIRMATION_REQUIRED_LOW_MACRO_CONFIDENCE")
     if trigger_required:
@@ -516,12 +518,11 @@ def interpret_macro_decision_context(
     )
 
     reasons = []
-    if fung_sub_coin:
-        reasons.append(f"Fung-Hsieh accuracy {fung_hsieh_accuracy:.3f} is below 0.50; macro direction authority disabled.")
     if no_go:
-        reasons.append("Macro filter is NO_GO; macro cannot supply sovereign direction.")
-    if low_confidence:
-        reasons.append(f"Macro conviction {macro_confidence:.2f} is below 0.50; structure-first required.")
+        reasons.append(
+            "Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only — "
+            "direction ABSTAINS. Ticker verdict unaffected."
+        )
     if applicability == "NOT_APPLICABLE":
         reasons.append("Macro has no ticker/sector opinion; no direction vote is emitted.")
     if not reasons:
@@ -537,7 +538,7 @@ def interpret_macro_decision_context(
         "macro_raw_direction_hint": raw_vote,
         "macro_can_enhance_existing_direction": True,
         "macro_can_invert_direction": False,
-        "structure_first_required": direction_authority == "DISABLED" or applicability == "NOT_APPLICABLE",
+        "structure_first_required": direction_authority in {"DISABLED", "ABSTAIN"} or applicability == "NOT_APPLICABLE",
         "trade_type_classification": trade_type,
         "macro_confidence": macro_confidence,
         "fung_hsieh_accuracy": fung_hsieh_accuracy,

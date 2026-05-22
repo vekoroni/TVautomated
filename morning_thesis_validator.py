@@ -118,6 +118,16 @@ LIVE_FIELDS = [
     "live_delta",
     "live_gamma",
     "live_theta",
+    "live_vega",
+    "live_data_timestamp_utc",
+    "live_data_age_minutes",
+    "live_data_freshness_override",
+    "live_equity_data_source",
+    "live_options_data_source",
+    "live_options_data_freshness",
+    "live_options_quote_timestamp_utc",
+    "live_options_delay_minutes",
+    "live_options_provider_status",
 ]
 
 EVENING_FIELDS = [
@@ -347,6 +357,8 @@ MORNING_CONTEXT_FIELDS = [
     "morning_iv_rank_confidence",
     "morning_iv_rank_score_cap",
     "morning_context_warnings",
+    "macro_size_modifier",
+    "morning_macro_fh_note",
 ]
 
 OUTPUT_FIELDS = EVENING_FIELDS + LIVE_FIELDS + VALIDATION_FIELDS + EOD_RECEIPT_FIELDS + CATALYST_RECEIPT_FIELDS + TRIGGER_RECEIPT_FIELDS + BEHAVIOUR_RECEIPT_FIELDS + MORNING_CONTEXT_FIELDS + [
@@ -588,6 +600,38 @@ def _iv_rank_gate(row: Dict[str, Any]) -> Dict[str, Any]:
     confidence = first(row, "iv_rank_confidence", "options_iv_rank_confidence", "opt__iv_rank_confidence", default="")
 
     if iv_rank is None:
+        live_iv = _f(first(row, "live_iv", "contract_iv", "implied_vol", "opt__iv", default=None), None)
+        if live_iv is not None:
+            iv_pct = live_iv * 100.0 if 0 <= live_iv <= 3 else live_iv
+            if iv_pct >= 85:
+                state = "EXPENSIVE"
+                action = "CAP_TO_PROBE_OR_ARMED"
+                reason = f"IV rank missing; MarketData live IV proxy is expensive ({iv_pct:.1f}%)"
+                cap = 72
+            elif iv_pct >= 65:
+                state = "ELEVATED"
+                action = "CAP_GO_TO_LIMIT"
+                reason = f"IV rank missing; MarketData live IV proxy is elevated ({iv_pct:.1f}%)"
+                cap = 82
+            elif iv_pct <= 30:
+                state = "CHEAP"
+                action = "ALLOW"
+                reason = f"IV rank missing; MarketData live IV proxy is cheap/fair ({iv_pct:.1f}%)"
+                cap = ""
+            else:
+                state = "NEUTRAL"
+                action = "NO_GATE"
+                reason = f"IV rank missing; MarketData live IV proxy is neutral ({iv_pct:.1f}%)"
+                cap = ""
+            return {
+                "morning_iv_rank": "",
+                "morning_iv_rank_state": state,
+                "morning_iv_rank_action": action,
+                "morning_iv_rank_reason": reason,
+                "morning_iv_rank_source": source or "MARKETDATA_LIVE_IV_PROXY",
+                "morning_iv_rank_confidence": confidence or "PROXY",
+                "morning_iv_rank_score_cap": cap,
+            }
         return {
             "morning_iv_rank": "",
             "morning_iv_rank_state": "UNKNOWN",
@@ -770,6 +814,16 @@ def _load_morning_context(
     except Exception as exc:
         warnings.append(f"morning_macro_regime_normalise_failed:{type(exc).__name__}:{exc}")
 
+    # Prefer clean split file (MACRO_SESSION_GUARD rows removed) when available
+    if resolved_catalyst is not None:
+        import logging as _cat_log
+        _cat_logger = _cat_log.getLogger("avshunter.morning_validator")
+        _clean_candidate = Path(str(resolved_catalyst)).parent / "catalyst_calendar_clean_latest.csv"
+        if _clean_candidate.exists():
+            _cat_logger.info("[CATALYST] Using clean split file: %s", _clean_candidate)
+            resolved_catalyst = _clean_candidate
+        else:
+            _cat_logger.info("[CATALYST] Clean split not found — using original: %s", resolved_catalyst)
     catalyst_index, catalyst_warnings = _load_catalyst_index(resolved_catalyst)
     warnings.extend(catalyst_warnings)
     return {
@@ -886,6 +940,22 @@ def _apply_morning_context(row: Dict[str, Any], context: Dict[str, Any]) -> Dict
     bond_auction_spread_risk = _u(first(macro, "auction_spread_risk", default="")) in {"1", "TRUE", "YES", "Y"}
     bond_credit_warning = _u(first(macro, "credit_warning", default="")) in {"1", "TRUE", "YES", "Y"}
 
+    # MACRO REDESIGN: Fung-Hsieh is a size modifier only.
+    # macro_filter = NO_GO reduces size and abstains direction. Does NOT block.
+    _fh_sub_threshold = (macro_filter == "NO_GO")
+    if _fh_sub_threshold:
+        _macro_size_modifier = round(_f(macro.get("size_multiplier"), 0.5) * 0.7, 4)
+        _morning_macro_direction_authority = "ABSTAIN"
+        _morning_macro_fh_note = (
+            "Fung-Hsieh sub-0.50: size reduced to "
+            f"{_macro_size_modifier}x. Direction abstains. "
+            "Ticker verdict unaffected."
+        )
+    else:
+        _macro_size_modifier = _f(macro.get("size_multiplier"), 1.0)
+        _morning_macro_direction_authority = authority or "ENABLED"
+        _morning_macro_fh_note = ""
+
     hard_reasons: List[str] = []
     requires_confirmation = False
     if "NO_NEW_POSITIONS" in horizon_action or horizon_action in {"BLOCK", "NO_GO"}:
@@ -894,7 +964,7 @@ def _apply_morning_context(row: Dict[str, Any], context: Dict[str, Any]) -> Dict
         hard_reasons.append("Fresh macro put gate blocks PUT thesis")
     if authority == "ENABLED" and alignment in {"MACRO_CONFLICTS_PUT", "MACRO_CONFLICTS_CALL"}:
         hard_reasons.append(f"Fresh macro direction conflicts with {side} thesis")
-    if confirmations or trigger_required or macro_filter == "NO_GO":
+    if confirmations or trigger_required:
         requires_confirmation = True
     if freshness == "STALE":
         requires_confirmation = True
@@ -933,7 +1003,7 @@ def _apply_morning_context(row: Dict[str, Any], context: Dict[str, Any]) -> Dict
             "morning_macro_horizon_bias": horizon.get("bias", "") if isinstance(horizon, dict) else "",
             "morning_macro_horizon_size_multiplier": horizon.get("size_multiplier", "") if isinstance(horizon, dict) else "",
             "morning_macro_alignment_state": decision.get("macro_alignment_state", ""),
-            "morning_macro_direction_authority": decision.get("macro_direction_authority", ""),
+            "morning_macro_direction_authority": _morning_macro_direction_authority,
             "morning_macro_direction_vote": decision.get("macro_direction_vote", ""),
             "morning_macro_confirmation_required": _json_list_cell(confirmations),
             "morning_macro_interpretation_reason": decision.get("macro_interpretation_reason", ""),
@@ -950,6 +1020,8 @@ def _apply_morning_context(row: Dict[str, Any], context: Dict[str, Any]) -> Dict
             "morning_bond_breakeven_adjustment_pct": bond_adj,
             "morning_bond_summary": first(macro, "bond_macro_summary", default=""),
             "morning_bond_generated_at": first(macro, "bond_macro_generated_at", default=""),
+            "macro_size_modifier": _macro_size_modifier,
+            "morning_macro_fh_note": _morning_macro_fh_note,
         }
     )
 
@@ -1346,11 +1418,23 @@ def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
                     "live_contract_ask": opt.get("ask"),
                     "live_contract_mid": opt.get("mid"),
                     "live_contract_volume": opt.get("volume"),
+                    "live_contract_open_interest": opt.get("open_interest") or opt.get("openInterest"),
                     "live_iv": opt.get("iv"),
                     "live_delta": opt.get("delta"),
                     "live_gamma": opt.get("gamma"),
+                    "live_theta": opt.get("theta"),
+                    "live_vega": opt.get("vega"),
+                    "live_options_data_source": opt.get("source") or "MARKETDATA_OPTIONS_QUOTE",
+                    "live_options_data_freshness": opt.get("freshness") or "LIVE_OR_CACHED",
+                    "live_options_quote_timestamp_utc": opt.get("updated") or _utc_now(),
+                    "live_options_provider_status": opt.get("http_status") or "",
                 }
             )
+        live.setdefault("live_equity_data_source", "MARKETDATA_STOCK_QUOTE_PLUS_POLYGON_EQUITY_BARS")
+        if occ:
+            live.setdefault("live_options_data_source", "MARKETDATA_OPTIONS_QUOTE_MISSING")
+            live.setdefault("live_options_data_freshness", "MISSING")
+        live.setdefault("live_data_timestamp_utc", _utc_now())
     except Exception as e:
         log.warning("_fetch_live_snapshot: live quote fetch failed for %s - %s", ticker, e)
         return live
@@ -1448,6 +1532,21 @@ def validate_candidate(
     validation_ts = _utc_now()
     row = normalise_evening_candidate(candidate, _s(candidate.get("run_id")) or "manual")
     row["validation_timestamp_utc"] = validation_ts
+
+    # FIX 9: Explicitly preserve crowd_arrival and WBS fields from candidate row.
+    # normalise_evening_candidate() starts from dict(candidate) so these fields
+    # are already present; this block guards against any future reconstruct-from-scratch.
+    PRESERVE_FIELDS = [
+        "crowd_arrival_components",
+        "crowd_arrival_state",
+        "crowd_arrival_narrative",
+        "wbs_score",
+        "wbs_grade",
+        "wall_break_score",
+    ]
+    for _pf in PRESERVE_FIELDS:
+        if _pf in candidate and candidate[_pf]:
+            row.setdefault(_pf, candidate[_pf])
 
     live = _merge_live_fields(row, live_data)
     for key in LIVE_FIELDS:
@@ -1635,9 +1734,25 @@ def validate_candidate(
 
     ts = _parse_ts(first(live, "live_data_timestamp_utc", "quote_timestamp_utc", "timestamp"))
     fresh = True
+    age_min: Optional[float] = None
+    marketdata_quote_seen = "MARKETDATA" in _u(first(live, "live_options_data_source", "live_equity_data_source", default=""))
     if ts is not None:
         age_min = (datetime.now(timezone.utc) - ts).total_seconds() / 60.0
+        row["live_data_age_minutes"] = round(age_min, 2)
         fresh = age_min <= quote_stale_minutes
+        if not fresh and marketdata_quote_seen:
+            grace_min = _f(os.getenv("AVS_MV_MARKETDATA_STALE_GRACE_MINUTES", "120"), 120.0) or 120.0
+            if age_min <= grace_min:
+                fresh = True
+                row["live_data_freshness_override"] = "MARKETDATA_DELAYED_ACCEPTED"
+                notes.append(
+                    "MarketData delayed/cached quote accepted for validation; confirm final bid/ask in broker before entry"
+                )
+    else:
+        row["live_data_age_minutes"] = ""
+        if price is not None and price > 0:
+            row["live_data_freshness_override"] = "NO_PROVIDER_TIMESTAMP_ACCEPTED"
+            fresh = True
     if fresh:
         score += 5
     else:
@@ -1882,6 +1997,46 @@ def validate_candidate(
     if state in {"STALE", "NO_LIVE_DATA"}:
         confidence = min(confidence, 35)
 
+    # ── TRF: Transition Risk Factor adjustment ────────────────────────────────
+    # Applies the Markov phase transition risk factor to the validation score.
+    # score_trf = score x (1 - trf)
+    # trf=0.0 no change; trf near 1.0 score significantly reduced.
+    # Fails silently (trf=0.0) if matrix file is absent.
+    _trf_phase_risk = 0.0
+    _trf_source     = "NEUTRAL_FALLBACK"
+    _trf_sparse     = False
+    try:
+        from transition_matrix_consumer import get_consumer as _get_tmc
+        _tmc = _get_tmc()
+        _phase_val  = str(
+            first(row, "phase_v2", "wyckoff_phase_bucket", "crabel_state", default="")
+        ).strip().upper()
+        _regime_val = str(
+            first(row, "macro_regime", "morning_macro_regime_state", "regime_state", default="ALL")
+        ).strip().upper()
+        _tier_val   = str(
+            first(row, "future_momentum_bucket", "tier", default="ALL")
+        ).strip().upper()
+        if _phase_val:
+            _trf_result     = _tmc.adjust_validation_score(
+                score=score,
+                phase=_phase_val,
+                regime=_regime_val,
+                tier=_tier_val,
+            )
+            score           = _trf_result["score_adjusted"]
+            confidence      = max(0, min(100, score))
+            _trf_phase_risk = _trf_result["trf"]
+            _trf_source     = _trf_result["trf_source"]
+            _trf_sparse     = _trf_result["sparse"]
+            if state in {"STALE", "NO_LIVE_DATA"}:
+                confidence = min(confidence, 35)
+    except Exception as _trf_exc:
+        import logging as _trf_log
+        _trf_log.getLogger("avshunter.morning_validator").debug(
+            "TRF adjustment failed neutral fallback: %s", _trf_exc
+        )
+
     rejection_reason = "; ".join(hard_veto) if hard_veto else ("; ".join(wait_reasons) if state == "REJECTED" else "")
     wait_reason = "; ".join(wait_reasons) if permission in {"ARMED", "WAIT", "CONTRACT_REPAIR", "PROBE", "GO_LIMIT"} else ""
     upgrade_downgrade = f"Evening {evening_verdict or 'UNKNOWN'} -> {permission} via live validation"
@@ -1933,6 +2088,9 @@ def validate_candidate(
             "live_data_fresh": _bool_text(fresh),
             "validation_confidence": round(confidence, 2),
             "validation_score": round(max(0, min(100, score)), 2),
+            "trf_phase_risk": round(_trf_phase_risk, 6),
+            "trf_source": _trf_source,
+            "trf_sparse": _trf_sparse,
             "morning_execution_lane": lane_meta["morning_execution_lane"],
             "morning_entry_action": lane_meta["morning_entry_action"],
             "morning_unlock_condition": lane_meta["morning_unlock_condition"],
@@ -1957,6 +2115,94 @@ def validate_candidate(
             "automated_execution_eligible": "FALSE",
         }
     )
+
+    # FIX 6: Horizon-aware thesis fields — required by pipeline interpreter.
+    # Derives from validation state; replaces binary BLOCKED/CONTRACT_REPAIR output.
+    _hb = _horizon_bucket(row)
+    _perm = _u(row.get("execution_permission") or row.get("morning_execution_permission"))
+    _macro_regime_changed = _boolish(row.get("macro_state_changed"))
+    _new_macro = _u(row.get("morning_regime_state") or "")
+    _macro_is_crisis = _new_macro in {"RISK_OFF", "CRISIS", "BEAR"} and _macro_regime_changed
+
+    # compute_morning_verdict: horizon-specific logic
+    if _macro_is_crisis:
+        _morning_verdict = "DEAD"
+    elif _perm in {"GO", "GO_LIMIT"}:
+        _morning_verdict = "EXECUTE"
+    elif _perm in {"ARMED"}:
+        _morning_verdict = "ARMED"
+    elif _perm in {"PROBE"}:
+        _morning_verdict = "PROBE"
+    elif _perm in {"WAIT", "CONTRACT_REPAIR"}:
+        _morning_verdict = "WATCH" if _hb in ("6_10d", "11_20d") else "WAIT"
+    elif _perm in {"BLOCKED"}:
+        _morning_verdict = "DEAD"
+    else:
+        _morning_verdict = "WAIT"
+
+    _thesis_still_valid = (
+        _morning_verdict not in {"DEAD"}
+        and not hard_veto
+        and state not in {"REJECTED", "BLOCKED"}
+    )
+    _tradeable_today = _perm in {"GO", "GO_LIMIT", "PROBE"} and not _macro_is_crisis
+    _feeds_interpreter = _thesis_still_valid and _morning_verdict not in {"DEAD", "WAIT", "HOLD"}
+
+    _macro_score = 0.5  # neutral default; scoring requires full macro context
+    if _new_macro in {"TRENDING_BULL", "RISK_ON", "BULL"}:
+        _macro_score = 0.85 if _hb == "1_5d" else 0.75
+    elif _new_macro in {"TRENDING_BEAR", "RISK_OFF", "BEAR"}:
+        _macro_score = 0.15 if _hb == "1_5d" else 0.25
+
+    row.update({
+        # FIX 6 required fields
+        "morning_verdict":    _morning_verdict,
+        "thesis_still_valid": _thesis_still_valid,
+        "thesis_delta":       f"Macro: {_u(row.get('evening_regime_state'))} -> {_new_macro}" if _macro_regime_changed else "",
+        "horizon":            _hb,
+        "tradeable_today":    _tradeable_today,
+        "tradeable_reason":   (
+            "Live trigger confirmed" if _morning_verdict == "EXECUTE"
+            else "Regime flip armed" if _morning_verdict == "ARMED"
+            else "Pending confirmation" if _morning_verdict in ("WATCH", "PROBE")
+            else "Thesis invalidated" if _morning_verdict == "DEAD"
+            else "Awaiting trigger"
+        ),
+        "feeds_interpreter":  _feeds_interpreter,
+        "macro_score":        round(_macro_score, 2),
+    })
+
+    # FIX 10: options_hard_vetoes — read structured veto list and inform trader
+    _hard_vetoes_raw = _s(first(row, "options_hard_vetoes", "hard_vetoes"))
+    _earnings_veto = False
+    if _hard_vetoes_raw and _hard_vetoes_raw not in {"", "[]", "None"}:
+        try:
+            import json as _json10mv
+            _veto_list = _json10mv.loads(_hard_vetoes_raw) if _hard_vetoes_raw.startswith("[") else []
+            _earnings_veto = any(v.get("veto_type") == "EARNINGS_WITHIN_DTE" for v in _veto_list if isinstance(v, dict))
+            if _earnings_veto:
+                _ev_note = "EARNINGS WITHIN DTE WINDOW -- defined-risk structures only"
+                row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ev_note])).strip("; ")
+        except Exception:
+            pass
+    row["EARNINGS_WITHIN_DTE"] = _earnings_veto
+
+    # FIX 7: EVENT_CONVEXITY_WATCH with cheap_convexity → ARMED verdict
+    if _u(row.get("catalyst_trade_class")) == "EVENT_CONVEXITY_WATCH" and _boolish(row.get("cheap_convexity")):
+        if permission not in {"GO", "GO_LIMIT"}:
+            permission = "ARMED"
+            row["execution_permission"] = permission
+            row["morning_execution_permission"] = permission
+        _ecw_note = "EVENT_CONVEXITY_WATCH with cheap_convexity -- priority review"
+        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ecw_note])).strip("; ")
+
+    # FIX 1: direction_conflict_flag — downgrade to PROBE and note for trader review
+    if _boolish(row.get("direction_conflict_flag")):
+        row["execution_permission"] = "PROBE"
+        row["morning_execution_permission"] = "PROBE"
+        _conflict_note = _s(row.get("direction_conflict_note")) or "Direction conflict — verify at open"
+        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _conflict_note])).strip("; ")
+        row["upgrade_downgrade_reason"] = "Direction conflict flag: " + _conflict_note
     return row
 
 
@@ -1970,7 +2216,14 @@ def build_summary(run_id: str, rows: List[Dict[str, Any]], input_count: int) -> 
     rejections = Counter(_s(r.get("rejection_reason")) for r in rows if _s(r.get("rejection_reason")))
     waits = Counter(_s(r.get("wait_reason")) for r in rows if _s(r.get("wait_reason")))
     eod_statuses = Counter(_u(r.get("eod_candidate_status") or r.get("eod_status")) for r in rows)
-    repaired = sum(1 for r in rows if _u(r.get("morning_execution_permission")) in {"CONTRACT_REPAIR"} or "REPAIR" in _u(r.get("morning_execution_route")))
+    repaired = sum(
+        1
+        for r in rows
+        if _u(r.get("morning_execution_permission")) in {"CONTRACT_REPAIR"}
+        or "REPAIR" in _u(r.get("morning_execution_route"))
+        or "REPAIR" in _u(r.get("contract_repair_status"))
+        or _boolish(r.get("contract_repair_required"))
+    )
     broken_thesis = sum(1 for r in rows if _u(r.get("thesis_validity_state")) == "BROKEN")
     pending_live = states.get("PENDING_LIVE_DATA", 0) + states.get("NO_LIVE_DATA", 0)
     macro_blocks = sum(1 for r in rows if _boolish(r.get("morning_macro_hard_block")))
@@ -2015,6 +2268,66 @@ def build_summary(run_id: str, rows: List[Dict[str, Any]], input_count: int) -> 
         "ready_for_lab": bool(rows) and not paper_mode,
     }
 
+
+
+def _write_morning_live_data_snapshot(
+    run_id: str,
+    runs_root: Path,
+    prepared: List[Tuple[Dict[str, Any], Dict[str, Any]]],
+    live_payloads: List[Dict[str, Any]],
+) -> Optional[Path]:
+    """Write the morning live-data sidecar from already-fetched payloads.
+
+    This deliberately does not call pipeline_interpreter.live_market_reader.
+    Polygon remains available for equity tape in _fetch_live_snapshot, but all
+    option contract fields in this sidecar come from MarketData quote payloads.
+    """
+    if not prepared:
+        return None
+    out_path = runs_root / run_id / "morning_validation" / f"morning_live_data_{run_id}.json"
+    payload: Dict[str, Any] = {
+        "run_id": run_id,
+        "created_at_utc": _utc_now(),
+        "provider_policy": "POLYGON_STOCKS_MARKETDATA_OPTIONS",
+        "ticker_count": 0,
+        "tickers": {},
+    }
+    for (_, cand), live in zip(prepared, live_payloads):
+        ticker = _u(cand.get("ticker"))
+        if not ticker:
+            continue
+        live = dict(live or {})
+        payload["tickers"][ticker] = {
+            "ticker": ticker,
+            "fetched_at_utc": live.get("live_data_timestamp_utc") or _utc_now(),
+            "equity_source": live.get("live_equity_data_source") or "MARKETDATA_STOCK_QUOTE_PLUS_POLYGON_EQUITY_BARS",
+            "options_source": live.get("live_options_data_source") or "MARKETDATA_OPTIONS_QUOTE",
+            "options_freshness": live.get("live_options_data_freshness") or "",
+            "live_price": live.get("live_price") or live.get("live_mid"),
+            "live_vwap": live.get("live_vwap"),
+            "selected_contract": first(cand, "evening_contract_symbol", "contract_occ_symbol", "recommended_contract", "preferred_contract", "contract_symbol"),
+            "live_contract_bid": live.get("live_contract_bid"),
+            "live_contract_ask": live.get("live_contract_ask"),
+            "live_contract_mid": live.get("live_contract_mid"),
+            "live_contract_volume": live.get("live_contract_volume"),
+            "live_contract_open_interest": live.get("live_contract_open_interest"),
+            "live_iv": live.get("live_iv"),
+            "live_delta": live.get("live_delta"),
+            "live_gamma": live.get("live_gamma"),
+            "live_theta": live.get("live_theta"),
+            "note": "Morning validator sidecar generated from MarketData option quotes; no Polygon options calls.",
+        }
+    payload["ticker_count"] = len(payload["tickers"])
+    _write_json(out_path, payload)
+    try:
+        import sys as _ma_sys
+        _ma_sys.path.insert(0, str(ROOT / "pipeline_interpreter"))
+        from ma_inputs_sync import sync_file as _ma_sync_file
+        _ma_sync_file(out_path, verbose=True, force=True)
+    except Exception as _sync_exc:
+        log.warning("Morning live-data sidecar sync skipped for %s: %s", out_path, _sync_exc)
+    print(f"[MV] MarketData options live sidecar written for {payload['ticker_count']} ticker(s) -> {out_path.name}", flush=True)
+    return out_path
 
 def run_morning_validation(
     candidates_path: Optional[str | Path] = None,
@@ -2072,6 +2385,62 @@ def run_morning_validation(
             flush=True,
         )
 
+    # FIX 2: Read regime_watch CSV and add to morning output.
+    # WATCH_FOR_REGIME_FLIP rows route here — checked daily for flip confirmation.
+    _regime_watch_path = runs_root / rid / "morning_validation" / f"regime_watch_{rid}.csv"
+    _regime_watch_rows: List[Dict[str, Any]] = []
+    if _regime_watch_path.exists():
+        _regime_watch_rows = _read_csv(_regime_watch_path)
+        for _rw_row in _regime_watch_rows:
+            # Daily flip check: compare current macro state to watch_condition
+            _current_regime = morning_context.get("macro", {}).get("regime_state", "") if morning_context else ""
+            _watch_cond = str(_rw_row.get("watch_condition") or _rw_row.get("shadow_opportunity_reason") or "")
+            _rw_row["eod_status"] = "REGIME_WATCH"
+            if _current_regime and _watch_cond and _current_regime.upper() != _watch_cond.upper():
+                _rw_row["morning_verdict"] = "ARMED"
+                _rw_row["morning_execution_permission"] = "ARMED"
+                _rw_row["morning_execution_route"] = "REGIME_WATCH_ARMED"
+                _rw_row["execution_permission"] = "ARMED"
+                _rw_row["morning_note"] = "Regime flip confirmed -- thesis activated"
+                _rw_row["tradeable_today"] = True
+            else:
+                _rw_row["morning_verdict"] = "WATCH"
+                _rw_row["morning_execution_permission"] = "WAIT"
+                _rw_row["morning_execution_route"] = "REGIME_WATCH"
+                _rw_row["execution_permission"] = "WAIT"
+                _rw_row["morning_note"] = "Regime flip not yet confirmed -- carry forward"
+                _rw_row["tradeable_today"] = False
+            _rw_row["live_data_mode"] = "REGIME_WATCH_NO_LIVE_FETCH"
+            _rw_row["live_data_fresh"] = "UNKNOWN"
+            _rw_row["thesis_validity_state"] = "PENDING"
+        print(f"[MV] Regime watch: {len(_regime_watch_rows)} WATCH_FOR_REGIME_FLIP rows loaded", flush=True)
+
+    # FIX 8: Load evening macro snapshot for state-change detection.
+    # Morning validator reads BOTH: macro_snapshot.json (what the evening used)
+    # AND macro_intelligence_latest.json (current state). Outputs labelled delta.
+    _evening_snapshot_path = runs_root / rid / "macro_snapshot.json"
+    _evening_macro: Dict[str, Any] = {}
+    if _evening_snapshot_path.exists():
+        try:
+            import json as _json8
+            with open(_evening_snapshot_path, "r", encoding="utf-8") as _f8:
+                _evening_macro = _json8.load(_f8)
+        except Exception:
+            pass
+    _morning_macro = morning_context.get("macro", {}) if morning_context else {}
+    _evening_regime_state = str(_evening_macro.get("regime_state", "")).strip()
+    _morning_regime_state = str(_morning_macro.get("regime_state", "")).strip()
+    _macro_state_changed = bool(
+        _evening_regime_state and _morning_regime_state
+        and _evening_regime_state != _morning_regime_state
+    )
+    print(
+        f"[MV] Macro delta: evening={_evening_regime_state or 'UNKNOWN'} "
+        f"morning={_morning_regime_state or 'UNKNOWN'} "
+        f"changed={_macro_state_changed}",
+        flush=True,
+    )
+
     live_overrides: Dict[str, Dict[str, Any]] = {}
     if live_data_path and Path(live_data_path).exists():
         for live_row in _read_csv(Path(live_data_path)):
@@ -2127,13 +2496,46 @@ def run_morning_validation(
         for idx, (_, cand) in enumerate(prepared):
             live_payloads[idx] = _resolve_live_payload(cand)
 
+    # Write a live-data sidecar from the MarketData option quote payloads already fetched above.
+    # The previous live_market_reader call used Polygon options snapshots and could stale/block
+    # the morning slate. Polygon is now equity-tape only in this path.
+    if live_mode and not paper_mode and selected:
+        _write_morning_live_data_snapshot(rid, runs_root, prepared, live_payloads)
+
+    rows: List[Dict[str, Any]] = []
+
     rows: List[Dict[str, Any]] = []
     for (raw, cand), live_data in zip(prepared, live_payloads):
         validated = validate_candidate(cand, live_data, pipeline_mode=pipeline_mode)
         validated["source_input_path"] = str(source_path)
         validated["source_input_mode"] = source_mode
         validated["source_payload_json"] = json.dumps(raw, ensure_ascii=True, default=str)
+        # FIX 8: Stamp macro state delta onto every output row.
+        validated["evening_regime_state"] = _evening_regime_state
+        validated["morning_regime_state"] = _morning_regime_state
+        validated["macro_state_changed"] = _macro_state_changed
+        validated["macro_snapshot_path"] = str(_evening_snapshot_path) if _evening_snapshot_path.exists() else ""
         rows.append(validated)
+
+    # FIX 2: Append regime_watch rows to morning output
+    rows.extend(_regime_watch_rows)
+
+    # Ensure every row has an explicit morning permission/route before Lab and
+    # Interpreter consume it. Regime-watch and other appended rows previously
+    # carried morning_verdict without execution_permission, which split the UI.
+    for _row in rows:
+        _perm = _u(_row.get("morning_execution_permission") or _row.get("execution_permission"))
+        if not _perm:
+            _verdict = _u(_row.get("morning_verdict") or _row.get("live_validation_state"))
+            if _verdict in EXECUTION_PERMISSIONS:
+                _perm = _verdict
+            elif _verdict in {"WATCH", "HOLD", "REASSESS"}:
+                _perm = "WAIT"
+            else:
+                _perm = "WAIT"
+            _row["morning_execution_permission"] = _perm
+            _row["execution_permission"] = _perm
+        _row.setdefault("morning_execution_route", _row.get("morning_execution_lane") or _row.get("morning_execution_permission") or "WAIT")
 
     _write_csv(output, rows)
     packet = {
@@ -2155,6 +2557,18 @@ def run_morning_validation(
         "rows": rows,
     }
     _write_json(packet_path, packet)
+    if not output_path:
+        try:
+            from contracts.lab_control import write_final_opportunity_book, write_final_run_manifest
+            _manifest = write_final_run_manifest(rid, runs_root, pipeline_mode="MORNING_VALIDATION")
+            _lab_payload = write_final_opportunity_book(rid, rows, _manifest, runs_root)
+            print(
+                f"[MV] Lab/Interpreter triage regenerated from morning validation -> "
+                f"{Path(_lab_payload.get('triage_csv_path', '')).name}",
+                flush=True,
+            )
+        except Exception as _lab_exc:
+            log.warning("Morning Lab/Interpreter handoff regeneration failed: %s", _lab_exc)
     if not output_path:
         try:
             from dropoff_audit import build_dropoff_audit
