@@ -4453,7 +4453,9 @@ def evening_workflow(
                             _source = _morning_b1[_oi_col]
                             _target_missing = (
                                 _target.isna()
-                                | _target.astype(str).str.strip().isin({"", "nan", "NaN", "None", "NONE", "<NA>"})
+                                | _target.astype(str).str.strip().isin(
+                                    {"", "nan", "NaN", "None", "NONE", "<NA>", "0", "0.0"}
+                                )
                             )
                             _source_present = ~(
                                 _source.isna()
@@ -4467,10 +4469,14 @@ def evening_workflow(
                         _morning_b1.to_csv(_morning_csv_path, index=False)
                         _visible_counts = {
                             _col: int(
-                                ~(
-                                    _morning_b1[_col].isna()
-                                    | _morning_b1[_col].astype(str).str.strip().isin({"", "nan", "NaN", "None", "NONE", "<NA>"})
-                                )
+                                (
+                                    ~(
+                                        _morning_b1[_col].isna()
+                                        | _morning_b1[_col].astype(str).str.strip().isin(
+                                            {"", "nan", "NaN", "None", "NONE", "<NA>"}
+                                        )
+                                    )
+                                ).sum()
                             )
                             for _col in _contract_cols if _col in _morning_b1.columns
                         }
