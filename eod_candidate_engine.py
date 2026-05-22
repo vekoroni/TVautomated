@@ -362,6 +362,40 @@ def _options_research_route(row: dict) -> str:
 def _options_hard_vetoes(row: dict) -> str:
     return _flag_text(row, "hard_vetoes", "options_hard_vetoes")
 
+# E2E-OPTIONS-LAB-SYNC 2026-05-22: only genuine no-market/binary-event
+# conditions block the handoff. Soft contract economics become repair flags.
+def _options_genuine_hard_block(row: dict) -> bool:
+    blob = " ".join([
+        _str(row, "hard_vetoes"),
+        _str(row, "options_hard_vetoes"),
+        _str(row, "block_code"),
+        _str(row, "block_detail"),
+        _str(row, "stand_down_reason"),
+    ]).upper()
+    hard_tokens = {
+        "NO_OPTIONS_CHAIN",
+        "NO_CHAIN_DATA",
+        "NO_CHAIN",
+        "NO_OPTIONS_MARKET",
+        "NO_CONTRACT_MARKET",
+        "HALT_RISK",
+        "NON_TRADEABLE",
+        "EARNINGS_WITHIN_DTE",
+        "FDA_BINARY_EVENT",
+        "DTE_NON_POSITIVE",
+    }
+    soft_tokens = {
+        "NO_CONTRACT_PASSED_QUALITY_GATES",
+        "ESTIMATED_R_LT_1",
+        "ESTIMATED_R_MISSING",
+        "SPREAD_GT_25PCT",
+        "CONTRACT_DATA_INCOMPLETE",
+        "MID_NON_POSITIVE",
+    }
+    if any(tok in blob for tok in soft_tokens):
+        return False
+    return any(tok in blob for tok in hard_tokens)
+
 def _options_research_block_reason(row: dict) -> str:
     route = _options_research_route(row)
     vetoes = _options_hard_vetoes(row)
@@ -382,8 +416,8 @@ def _options_blocked_for_morning_candidate(row: dict) -> bool:
     """
     route = _options_research_route(row)
     severity = _str(row, "block_severity").upper()
-    vetoes = _options_hard_vetoes(row)
-    return bool(route in OPTIONS_BLOCKED_ROUTES or severity == "HARD" or vetoes)
+    genuine_hard = _options_genuine_hard_block(row)
+    return bool(genuine_hard and (route in OPTIONS_BLOCKED_ROUTES or severity == "HARD"))
 
 def _reason_blob(row: dict, *extra: str) -> str:
     parts = [str(x or "") for x in extra if str(x or "").strip()]
@@ -458,7 +492,8 @@ def _morning_tasks_for_status(row: dict, eod_status: str, reason: str = "") -> s
     return "; ".join(dict.fromkeys(tasks))
 
 def _candidate_permission_fields(row: dict, eod_status: str) -> dict:
-    live_permission = _str(row, "capital_permission", "NO").upper()
+    # FIX 5: PSE retired — default is MANUAL (not NO) so rows are not killed by legacy gate
+    live_permission = _str(row, "capital_permission", "MANUAL").upper()
     status = str(eod_status or "").upper()
     if status in EOD_STRUCTURAL_BLOCK_STATUSES:
         candidate_permission = "STRUCTURAL_REVIEW_ONLY"
@@ -861,7 +896,8 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     if direction_conflict_status == "UNRESOLVED":
         return "EOD_DATA_INSUFFICIENT_REVIEW", _str(row, "direction_conflict_reason") or "DIRECTION_CONFLICT_UNRESOLVED"
     if direction_conflict_status == "MITIGATED_REQUIRES_CONFIRMATION":
-        return "EOD_DIRECTION_CONFLICT_REVIEW", _str(row, "direction_conflict_reason") or "DIRECTION_CONFLICT_MITIGATED_REQUIRES_CONFIRMATION"
+        # FIX 1: Promote to passable — direction conflict is a trader note, not a kill.
+        return "EOD_TRIGGER_READY", _str(row, "direction_conflict_reason") or "DIRECTION_CONFLICT_MITIGATED_REQUIRES_CONFIRMATION"
 
     if repair_required:
         return "EOD_THESIS_READY_REPAIR_AT_OPEN", _str(row, "contract_repair_reason") or "CONTRACT_REPAIR_REQUIRED"
@@ -1811,7 +1847,7 @@ def build_candidate_manifest(
     # candidates show RR=0.00 in the manifest and Tier A/B gates never fire.
     van_map: dict[str, dict] = {}
     VAN_MERGE_COLS = [
-        "rr_underlying", "rr_confidence", "rr_source", "rr",
+        "rr_underlying", "rr_confidence", "rr_source", "rr", "rr_flag",
         "rr_options", "atr_pct", "vol_regime", "structure_quality",
         "macro_regime", "layer2__vol_regime", "layer2__structure_quality",
         "layer2__trend_maturity",
@@ -1911,6 +1947,11 @@ def build_candidate_manifest(
         wall_dist      = _flt(row, "wbs_wall_dist_pct") or _flt(row, "runway_to_wall_pct")
         exit_plan      = _exit_intelligence_plan(row, direction, invalidation, wall_price, _flt(row, "target_price"))
         eod_status, eod_reason = _eod_candidate_status(row, tier)
+        # FIX 1: detect direction-conflict rows that were promoted to EOD_TRIGGER_READY
+        _direction_conflict_flag = (
+            eod_status == "EOD_TRIGGER_READY"
+            and "DIRECTION_CONFLICT" in (eod_reason or "").upper()
+        )
         monetisation = _monetisation_fit(row, tier, contract_profile, direction_info)
         eod_dropoff_reason = _eod_dropoff_reason(row, tier, eod_status, contract_profile)
         permission_fields = _candidate_permission_fields(row, eod_status)
@@ -1949,6 +1990,14 @@ def build_candidate_manifest(
             "actuarial_match_type":  _str(row, "actuarial_match_type"),
             "actuarial_ev_weight":   _first_flt(row, "actuarial_ev_weight"),
             "catalyst_overlay":      _str(row, "catalyst_overlay"),
+            # FIX 7: CATALYST_FIELDS carry-forward — must propagate through every stage
+            "catalyst_truth_score":  _str(row, "catalyst_truth_score"),
+            "event_convexity_score": _str(row, "event_convexity_score"),
+            "catalyst_trade_class":  _str(row, "catalyst_trade_class"),
+            "catalyst_date":         _str(row, "catalyst_date"),
+            "catalyst_type":         _str(row, "catalyst_type"),
+            "cheap_convexity":       _str(row, "cheap_convexity"),
+            "catalyst_reason_codes": _str(row, "catalyst_reason_codes"),
 
             # ── EOD Classification ────────────────────────────────────────────
             "structural_tier":      tier,
@@ -1997,6 +2046,12 @@ def build_candidate_manifest(
                 ] if x
             ),
             "notes":                eod_reason,
+            # FIX 1: direction-conflict flag — trader must verify at open
+            "direction_conflict_flag": _direction_conflict_flag,
+            "direction_conflict_note": (
+                f"Direction conflict detected: {eod_reason}. Trader to verify at open."
+                if _direction_conflict_flag else ""
+            ),
             "eod_live_capital_permission": permission_fields["eod_live_capital_permission"],
             "live_capital_permission": permission_fields["live_capital_permission"],
             "eod_candidate_permission": permission_fields["eod_candidate_permission"],
@@ -2118,6 +2173,7 @@ def build_candidate_manifest(
             # falls back to rr for backward compatibility with rows pre-dating FIX-01.
             "rr":                   _flt(row, "rr_underlying") or _flt(row, "rr"),
             "rr_underlying":        _flt(row, "rr_underlying"),
+            "rr_flag":              _str(row, "rr_flag") or "RR_OK",
             "rr_confidence":        _str(row, "rr_confidence"),
             # Options-specific R:R fields (written by OI after OI-01 fix)
             "rr_premium_expected":  _flt(row, "rr_premium_expected"),
@@ -2307,7 +2363,7 @@ def build_candidate_manifest(
         & ~options_blocked_mask
         & (
             trigger_go_series
-            | status_series_all.isin({"EOD_THESIS_READY", "EOD_TRIGGER_READY", "EOD_PROBE_CANDIDATE"})
+            | status_series_all.isin(EOD_CARRY_FORWARD_STATUSES)
         )
     )
     full_out_df["phase10_manifest_include"] = manifest_mask.map(lambda x: "TRUE" if bool(x) else "FALSE")
@@ -2448,6 +2504,27 @@ def build_candidate_manifest(
             int(shadow_mask.sum()),
         )
 
+    # FIX 2: Write regime_watch CSV for WATCH_FOR_REGIME_FLIP rows.
+    # These rows route to a rolling watch lane that morning validator reads daily.
+    try:
+        if "shadow_opportunity_label" in full_out_df.columns:
+            _regime_flip_mask = full_out_df["shadow_opportunity_label"].fillna("").astype(str) == "WATCH_FOR_REGIME_FLIP"
+            if _regime_flip_mask.any():
+                _regime_watch_df = full_out_df.loc[_regime_flip_mask].copy()
+                _regime_watch_df["eod_status"] = "REGIME_WATCH"
+                _regime_watch_df["watch_since"] = pd.Timestamp.now().strftime("%Y-%m-%d")
+                _regime_watch_df["horizon"] = _regime_watch_df.get("horizon_bucket", "6_10d") if "horizon_bucket" in _regime_watch_df.columns else "6_10d"
+                _regime_watch_df["watch_condition"] = _regime_watch_df.get("shadow_opportunity_reason", "") if "shadow_opportunity_reason" in _regime_watch_df.columns else ""
+                _regime_watch_path = Path(output_path).parent / f"regime_watch_{run_id}.csv"
+                _regime_watch_df.to_csv(_regime_watch_path, index=False)
+                log.info(
+                    "  Regime watch lane written -> %s | rows=%d",
+                    _regime_watch_path.name,
+                    int(_regime_flip_mask.sum()),
+                )
+    except Exception as _rw_err:
+        log.warning("  Regime watch write failed (non-critical): %s", _rw_err)
+
     execute_statuses = set(EOD_CARRY_FORWARD_STATUSES)
     execute_like_count = int(full_out_df["eod_candidate_status"].isin(execute_statuses).sum()) if "eod_candidate_status" in full_out_df.columns else 0
     if "eod_candidate_status" in full_out_df.columns:
@@ -2511,15 +2588,27 @@ def build_candidate_manifest(
             )
         out_df = out_df[~_blocked_mask].copy()
     out_df = ensure_physics_fields(out_df)
-    out_df = enrich_dataframe_with_truth_packets(
-        out_df,
-        source="EOD_CANDIDATE",
-        priority=PRIORITY_DOWNSTREAM_VALIDATION,
-        run_id=run_id,
-        run_mode="EVENING",
-    )
+    if not out_df.empty:
+        out_df = enrich_dataframe_with_truth_packets(
+            out_df,
+            source="EOD_CANDIDATE",
+            priority=PRIORITY_DOWNSTREAM_VALIDATION,
+            run_id=run_id,
+            run_mode="EVENING",
+        )
+    else:
+        # Preserve the schema so diagnostics and final manifest can see that the
+        # candidate manifest was intentionally empty instead of crashing with a
+        # misleading KeyError.
+        for _schema_col in full_out_df.columns:
+            if _schema_col not in out_df.columns:
+                out_df[_schema_col] = pd.Series(dtype=full_out_df[_schema_col].dtype)
 
     # ── Summary ───────────────────────────────────────────────────────────────
+    for _required_summary_col in ("structural_tier", "candidate_status", "eod_candidate_status"):
+        if _required_summary_col not in out_df.columns:
+            out_df[_required_summary_col] = ""
+
     tier_counts = out_df["structural_tier"].value_counts()
     status_counts = out_df["eod_candidate_status"].value_counts() if "eod_candidate_status" in out_df.columns else {}
     log.info("=== CANDIDATE MANIFEST SUMMARY ===")
