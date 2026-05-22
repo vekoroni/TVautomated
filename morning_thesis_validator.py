@@ -2392,24 +2392,21 @@ def run_morning_validation(
     if _regime_watch_path.exists():
         _regime_watch_rows = _read_csv(_regime_watch_path)
         for _rw_row in _regime_watch_rows:
-            # Daily flip check: compare current macro state to watch_condition
-            _current_regime = morning_context.get("macro", {}).get("regime_state", "") if morning_context else ""
-            _watch_cond = str(_rw_row.get("watch_condition") or _rw_row.get("shadow_opportunity_reason") or "")
             _rw_row["eod_status"] = "REGIME_WATCH"
-            if _current_regime and _watch_cond and _current_regime.upper() != _watch_cond.upper():
-                _rw_row["morning_verdict"] = "ARMED"
-                _rw_row["morning_execution_permission"] = "ARMED"
-                _rw_row["morning_execution_route"] = "REGIME_WATCH_ARMED"
-                _rw_row["execution_permission"] = "ARMED"
-                _rw_row["morning_note"] = "Regime flip confirmed -- thesis activated"
-                _rw_row["tradeable_today"] = True
-            else:
-                _rw_row["morning_verdict"] = "WATCH"
-                _rw_row["morning_execution_permission"] = "WAIT"
-                _rw_row["morning_execution_route"] = "REGIME_WATCH"
-                _rw_row["execution_permission"] = "WAIT"
-                _rw_row["morning_note"] = "Regime flip not yet confirmed -- carry forward"
-                _rw_row["tradeable_today"] = False
+            # REGIME_WATCH rows are never live-validated.
+            # watch_condition is a monitoring label, not a regime state —
+            # the previous inequality comparison always fired True, incorrectly
+            # setting execution_permission=ARMED on rows that were never validated.
+            _rw_row["morning_verdict"] = "WAIT"
+            _rw_row["morning_execution_permission"] = "WAIT"
+            _rw_row["morning_execution_route"] = "REGIME_WATCH"
+            _rw_row["execution_permission"] = "WAIT"
+            _rw_row["morning_note"] = (
+                "REGIME_WATCH: live validation not performed. "
+                "Ticker is a regime flip monitor only. "
+                "Not actionable without live validation."
+            )
+            _rw_row["tradeable_today"] = False
             _rw_row["live_data_mode"] = "REGIME_WATCH_NO_LIVE_FETCH"
             _rw_row["live_data_fresh"] = "UNKNOWN"
             _rw_row["thesis_validity_state"] = "PENDING"
