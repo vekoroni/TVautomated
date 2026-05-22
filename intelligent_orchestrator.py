@@ -4519,10 +4519,21 @@ def evening_workflow(
             try:
                 import pandas as _pd_mcm
                 from mcmillan_advisory_layer import MCMILLAN_FIELDS as _MCMILLAN_FIELDS
+                # MCMILLAN_FIELDS covers 11 core fields. The gamma_island detail fields
+                # (label, level, distance_pct, source, note) are written by the enricher
+                # but absent from MCMILLAN_FIELDS. Include them here so the rescue join
+                # covers all 16 McMillan handoff fields without touching the layer module.
+                _ALL_MCM_FIELDS = list(_MCMILLAN_FIELDS) + [
+                    f for f in [
+                        "gamma_island_label", "gamma_island_level",
+                        "gamma_island_distance_pct", "gamma_island_source",
+                        "gamma_island_note",
+                    ] if f not in _MCMILLAN_FIELDS
+                ]
 
                 if _eil_csv.exists() and _morning_csv_path.exists():
                     _eil_mcm = _pd_mcm.read_csv(_eil_csv, low_memory=False)
-                    _mcm_present = [c for c in _MCMILLAN_FIELDS if c in _eil_mcm.columns]
+                    _mcm_present = [c for c in _ALL_MCM_FIELDS if c in _eil_mcm.columns]
                     if _mcm_present and "ticker" in _eil_mcm.columns:
                         _morning_mcm = _pd_mcm.read_csv(_morning_csv_path, low_memory=False)
                         for _col in _mcm_present:
