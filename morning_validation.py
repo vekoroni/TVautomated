@@ -276,9 +276,14 @@ def _polygon_snapshot(ticker: str) -> Optional[dict[str, Any]]:
         closes  = data["c"]
         volumes = data.get("v", [])
         return {
-            "prev_close": float(closes[-1])  if closes  else None,
-            "prev_vol":   int(volumes[-1])   if volumes else None,
-            "prev_vwap":  None,
+            "prev_close":   float(closes[-1])  if closes  else None,
+            "prev_vol":     int(volumes[-1])   if volumes else None,
+            "prev_vwap":    None,
+            # Raw daily arrays for B2 SOT + gap computation
+            "daily_opens":  [float(v) for v in data.get("o", []) if v is not None],
+            "daily_highs":  [float(v) for v in data.get("h", []) if v is not None],
+            "daily_lows":   [float(v) for v in data.get("l", []) if v is not None],
+            "daily_closes": [float(v) for v in closes if v is not None],
         }
     except Exception as e:
         log.debug(f"MarketData prev candle failed for {ticker}: {e}")
