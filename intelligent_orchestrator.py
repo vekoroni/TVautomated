@@ -3724,10 +3724,59 @@ def evening_workflow(
         )
     # ─────────────────────────────────────────────────────────────────────────
 
+    # ═══════════════════════════════════════════════
+    # PHASE 7.5: PHANTOM SCORING ENGINE
+    # ═══════════════════════════════════════════════
+    logger.info("=" * 72)
+    logger.info("PHASE 7.5: PHANTOM SCORING ENGINE")
+    logger.info("=" * 72)
+
+    _phantom_input  = cfg.RUNS_DIR / canonical_run_id / "options" / f"options_intelligence_{canonical_run_id}.csv"
+    _phantom_output = cfg.RUNS_DIR / canonical_run_id / "options" / f"options_intelligence_phantom_{canonical_run_id}.csv"
+    _phantom_db     = cfg.PHANTOM_DB_PATH
+
     try:
-        run_phantom_layer(canonical_run_id)            # non-critical | Phase 8c-P PHANTOM
-    except Exception as _phantom_err:
-        logger.warning("PHANTOM Edge Model exception -- pipeline continues. Error: %s", _phantom_err)
+        if _phantom_input.exists():
+            import subprocess as _subprocess
+            _phantom_cmd = [
+                sys.executable,
+                str(cfg.SCRIPTS_DIR / "phantom_engine.py"),
+                "--run-id", canonical_run_id,
+                "--input-csv", str(_phantom_input),
+                "--output-csv", str(_phantom_output),
+                "--db-path", str(_phantom_db),
+                "--repo-root", str(cfg.BASE_DIR),
+            ]
+            logger.info(f"  Phantom CMD: {' '.join(_phantom_cmd)}")
+            _phantom_result = _subprocess.run(
+                _phantom_cmd,
+                capture_output=True, text=True, timeout=300
+            )
+            if _phantom_result.returncode == 0:
+                logger.info("✅ Phantom scoring engine — DONE")
+                if _phantom_output.exists():
+                    logger.info(
+                        "  Downstream phases will use phantom-enriched OI CSV: %s",
+                        _phantom_output.name,
+                    )
+            else:
+                logger.warning(
+                    "[PHANTOM] Scoring returned non-zero exit. "
+                    "Stderr: %s. Continuing with original OI CSV.",
+                    _phantom_result.stderr[:500],
+                )
+        else:
+            logger.warning(
+                "[PHANTOM] Input CSV not found: %s. "
+                "Phantom skipped — pipeline continues.",
+                _phantom_input,
+            )
+    except Exception as _e_phantom:
+        logger.warning(
+            "[PHANTOM] Phase 7.5 failed: %s. "
+            "Continuing with original OI CSV.",
+            _e_phantom,
+        )
 
     try:
         run_core_intel_exporter(canonical_run_id)      # non-critical | Phase 8c
