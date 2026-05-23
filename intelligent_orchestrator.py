@@ -4601,6 +4601,23 @@ def evening_workflow(
             except Exception as _exp_err:
                 logger.warning("MACRO EXPOSURE: resolver failed (non-critical): %s", _exp_err)
 
+            # B3 — Exit Rules Engine
+            try:
+                import pandas as _pd_exit
+                import importlib.util as _exit_ilu
+                _exit_script = cfg.SCRIPTS_DIR / "exit_rules_engine.py"
+                if _exit_script.exists() and _morning_csv_path.exists():
+                    _exit_spec = _exit_ilu.spec_from_file_location("exit_rules_engine", str(_exit_script))
+                    _exit_mod  = _exit_ilu.module_from_spec(_exit_spec)
+                    _exit_spec.loader.exec_module(_exit_mod)
+                    _exit_df = _pd_exit.read_csv(_morning_csv_path, low_memory=False)
+                    _exit_df = _exit_mod.enrich_dataframe(_exit_df)
+                    _exit_df.to_csv(_morning_csv_path, index=False)
+                    _exit_count = int(_exit_df["exit_rule_summary"].notna().sum())
+                    logger.info("[EXIT_RULES] %d tickers enriched with exit rules", _exit_count)
+            except Exception as _e_exit:
+                logger.warning("[EXIT_RULES] enrichment skipped: %s", _e_exit)
+
             logger.info(
                 "✅ Phase 10: EOD candidate manifest written -> morning_candidates_%s.csv",
                 canonical_run_id,

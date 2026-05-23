@@ -359,6 +359,22 @@ MORNING_CONTEXT_FIELDS = [
     "morning_context_warnings",
     "macro_size_modifier",
     "morning_macro_fh_note",
+    # B1 — Intraday activation layer (computed from 5-min bars)
+    "orb_high",
+    "orb_low",
+    "orb_range_pct",
+    "price_vs_orb",
+    "live_vwap_computed",
+    "price_vs_vwap",
+    "vwap_distance_pct",
+    "current_bar_character",
+    "intraday_thesis_aligned",
+    # B2 — Daily SOT and gap detection (computed from daily candles)
+    "sot_5d",
+    "sot_aligned_with_thesis",
+    "daily_gap_pct",
+    "daily_gap_direction",
+    "daily_gap_filled",
 ]
 
 OUTPUT_FIELDS = EVENING_FIELDS + LIVE_FIELDS + VALIDATION_FIELDS + EOD_RECEIPT_FIELDS + CATALYST_RECEIPT_FIELDS + TRIGGER_RECEIPT_FIELDS + BEHAVIOUR_RECEIPT_FIELDS + MORNING_CONTEXT_FIELDS + [
@@ -1303,6 +1319,175 @@ def _paper_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _empty_activation() -> Dict[str, Any]:
+    return {
+        "orb_high": None, "orb_low": None,
+        "orb_range_pct": None, "price_vs_orb": "UNKNOWN",
+        "live_vwap_computed": None, "price_vs_vwap": "UNKNOWN",
+        "vwap_distance_pct": None,
+        "current_bar_character": "UNAVAILABLE",
+        "intraday_thesis_aligned": None,
+    }
+
+
+def _compute_intraday_activation(
+    bars: Dict[str, Any], live_price: float, direction: str
+) -> Dict[str, Any]:
+    try:
+        highs  = [x for x in bars.get("high",  []) if x is not None]
+        lows   = [x for x in bars.get("low",   []) if x is not None]
+        closes = [x for x in bars.get("close", []) if x is not None]
+        opens  = [x for x in bars.get("open",  []) if x is not None]
+        vols   = [x for x in bars.get("volume",[]) if x is not None]
+
+        if len(highs) < 3:
+            return _empty_activation()
+
+        orb_high = max(highs[:3])
+        orb_low  = min(lows[:3]) if len(lows) >= 3 else min(lows)
+        orb_range_pct = round(
+            (orb_high - orb_low) / orb_low * 100, 3
+        ) if orb_low > 0 else 0.0
+
+        if live_price > orb_high:
+            price_vs_orb = "ABOVE"
+        elif live_price < orb_low:
+            price_vs_orb = "BELOW"
+        else:
+            price_vs_orb = "INSIDE"
+
+        n = min(len(closes), len(highs), len(lows), len(vols))
+        vwap_num = sum(
+            ((highs[i] + lows[i] + closes[i]) / 3) * vols[i]
+            for i in range(n) if vols[i] > 0
+        )
+        vwap_den = sum(v for v in vols[:n] if v > 0)
+        live_vwap = round(vwap_num / vwap_den, 4) if vwap_den > 0 else None
+
+        vwap_distance_pct = round(
+            (live_price - live_vwap) / live_vwap * 100, 3
+        ) if live_vwap and live_vwap > 0 else None
+
+        if live_vwap is None:
+            price_vs_vwap = "UNKNOWN"
+        elif live_price > live_vwap * 1.002:
+            price_vs_vwap = "ABOVE"
+        elif live_price < live_vwap * 0.998:
+            price_vs_vwap = "BELOW"
+        else:
+            price_vs_vwap = "AT"
+
+        bar_char = "INSUFFICIENT_BARS"
+        if len(closes) >= 2 and len(opens) >= 2:
+            bi = len(closes) - 2
+            if bi < len(highs) and bi < len(lows):
+                br = highs[bi] - lows[bi]
+                if br > 0:
+                    cp = (closes[bi] - opens[bi]) / br
+                    uw = (highs[bi] - max(opens[bi], closes[bi])) / br
+                    lw = (min(opens[bi], closes[bi]) - lows[bi]) / br
+                    if cp > 0.6:       bar_char = "BULLISH_STRONG"
+                    elif cp > 0.2:     bar_char = "BULLISH_WEAK"
+                    elif cp < -0.6:    bar_char = "BEARISH_STRONG"
+                    elif cp < -0.2:    bar_char = "BEARISH_WEAK"
+                    elif uw > 0.4 and lw > 0.4: bar_char = "SPINNING_TOP"
+                    elif uw > 0.4:     bar_char = "UPPER_WICK_REJECTION"
+                    elif lw > 0.4:     bar_char = "LOWER_WICK_SUPPORT"
+                    else:              bar_char = "DOJI"
+                else:
+                    bar_char = "DOJI"
+
+        aligned = (
+            (direction == "CALL" and price_vs_orb == "ABOVE"
+             and price_vs_vwap in ("ABOVE", "AT"))
+            or
+            (direction == "PUT" and price_vs_orb == "BELOW"
+             and price_vs_vwap in ("BELOW", "AT"))
+        )
+
+        return {
+            "orb_high":              round(orb_high, 4),
+            "orb_low":               round(orb_low, 4),
+            "orb_range_pct":         orb_range_pct,
+            "price_vs_orb":          price_vs_orb,
+            "live_vwap_computed":    live_vwap,
+            "price_vs_vwap":         price_vs_vwap,
+            "vwap_distance_pct":     vwap_distance_pct,
+            "current_bar_character": bar_char,
+            "intraday_thesis_aligned": bool(aligned),
+        }
+    except Exception as _e:
+        log.debug("[B1] intraday activation error: %s", _e)
+        return _empty_activation()
+
+
+def _empty_sot() -> Dict[str, Any]:
+    return {
+        "sot_5d": "UNKNOWN",
+        "sot_aligned_with_thesis": None,
+        "daily_gap_pct": None,
+        "daily_gap_direction": "UNKNOWN",
+        "daily_gap_filled": None,
+    }
+
+
+def _compute_daily_sot(
+    daily: Dict[str, Any], live_price: float,
+    direction: str, prev_close: Optional[float]
+) -> Dict[str, Any]:
+    try:
+        highs  = [x for x in daily.get("high",  []) if x is not None]
+        lows   = [x for x in daily.get("low",   []) if x is not None]
+        closes = [x for x in daily.get("close", []) if x is not None]
+        opens  = [x for x in daily.get("open",  []) if x is not None]
+
+        if len(closes) < 3:
+            return _empty_sot()
+
+        hh = all(highs[i] >= highs[i-1] for i in range(1, len(highs)))
+        hl = all(lows[i]  >= lows[i-1]  for i in range(1, len(lows)))
+        lh = all(highs[i] <= highs[i-1] for i in range(1, len(highs)))
+        ll = all(lows[i]  <= lows[i-1]  for i in range(1, len(lows)))
+
+        if hh and hl:    sot = "STRONG_UP"
+        elif hh or hl:   sot = "WEAK_UP"
+        elif lh and ll:  sot = "STRONG_DOWN"
+        elif lh or ll:   sot = "WEAK_DOWN"
+        else:            sot = "RANGE"
+
+        sot_aligned = (
+            (direction == "CALL" and sot in ("STRONG_UP", "WEAK_UP"))
+            or
+            (direction == "PUT"  and sot in ("STRONG_DOWN", "WEAK_DOWN"))
+        )
+
+        today_open = opens[-1] if opens else None
+        gap_pct = None
+        gap_direction = "NONE"
+        gap_filled = None
+
+        if today_open is not None and prev_close and prev_close > 0:
+            gap_pct = round((today_open - prev_close) / prev_close * 100, 3)
+            if gap_pct > 0.3:    gap_direction = "GAP_UP"
+            elif gap_pct < -0.3: gap_direction = "GAP_DOWN"
+            else:                gap_direction = "NONE"
+            if gap_direction == "GAP_UP":
+                gap_filled = live_price <= prev_close
+            elif gap_direction == "GAP_DOWN":
+                gap_filled = live_price >= prev_close
+
+        return {
+            "sot_5d":                   sot,
+            "sot_aligned_with_thesis":  bool(sot_aligned),
+            "daily_gap_pct":            gap_pct,
+            "daily_gap_direction":      gap_direction,
+            "daily_gap_filled":         gap_filled,
+        }
+    except Exception as _e:
+        log.debug("[B2] daily SOT error: %s", _e)
+        return _empty_sot()
+
+
 def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
     """Best-effort live adapter around the existing morning validation helpers."""
     ticker = _u(candidate.get("ticker"))
@@ -1401,6 +1586,27 @@ def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
                     "live_orb_low": orb_low,
                 }
             )
+        # B1 — Intraday activation layer
+        try:
+            _b1_dir = _u(
+                candidate.get("canonical_direction")
+                or candidate.get("primary_direction")
+                or candidate.get("direction")
+            )
+            if bars and price:
+                _bars_dict = {
+                    "open":   [b.get("open")   for b in bars],
+                    "high":   [b.get("high")   for b in bars],
+                    "low":    [b.get("low")    for b in bars],
+                    "close":  [b.get("close")  for b in bars],
+                    "volume": [b.get("volume") for b in bars],
+                }
+                live.update(_compute_intraday_activation(_bars_dict, price, _b1_dir))
+            else:
+                live.update(_empty_activation())
+        except Exception as _b1_err:
+            log.debug("[B1] intraday activation skipped: %s", _b1_err)
+            live.update(_empty_activation())
         live.update(
             {
                 "live_price": price,
@@ -1411,6 +1617,28 @@ def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
                 "live_data_timestamp_utc": _utc_now(),
             }
         )
+        # B2 — Daily SOT and gap detection
+        try:
+            _b2_dir = _u(
+                candidate.get("canonical_direction")
+                or candidate.get("primary_direction")
+                or candidate.get("direction")
+            )
+            _daily_dict = {
+                "open":  prev.get("daily_opens",  []),
+                "high":  prev.get("daily_highs",  []),
+                "low":   prev.get("daily_lows",   []),
+                "close": prev.get("daily_closes", []),
+            }
+            if price and _daily_dict.get("close"):
+                live.update(_compute_daily_sot(
+                    _daily_dict, price, _b2_dir, prev.get("prev_close")
+                ))
+            else:
+                live.update(_empty_sot())
+        except Exception as _b2_err:
+            log.debug("[B2] daily SOT skipped: %s", _b2_err)
+            live.update(_empty_sot())
         if opt:
             live.update(
                 {
