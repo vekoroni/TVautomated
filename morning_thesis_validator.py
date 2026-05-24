@@ -381,6 +381,13 @@ OUTPUT_FIELDS = EVENING_FIELDS + LIVE_FIELDS + VALIDATION_FIELDS + EOD_RECEIPT_F
     "source_input_path",
     "source_input_mode",
     "source_payload_json",
+    # Annotation columns — never gate execution_permission
+    "transition_risk_annotation",
+    "transition_risk_score",
+    "event_convexity_flag",
+    "direction_conflict_flag",
+    "regime_watch_context",
+    "regime_flip_checked",
 ]
 
 
@@ -2225,14 +2232,16 @@ def validate_candidate(
     if state in {"STALE", "NO_LIVE_DATA"}:
         confidence = min(confidence, 35)
 
-    # ── TRF: Transition Risk Factor adjustment ────────────────────────────────
-    # Applies the Markov phase transition risk factor to the validation score.
-    # score_trf = score x (1 - trf)
-    # trf=0.0 no change; trf near 1.0 score significantly reduced.
-    # Fails silently (trf=0.0) if matrix file is absent.
-    _trf_phase_risk = 0.0
-    _trf_source     = "NEUTRAL_FALLBACK"
-    _trf_sparse     = False
+    # ── TRF: Transition Risk Factor — annotation only ─────────────────────────
+    # TRF is trader-visible context. It must NOT modify score, confidence, or
+    # execution_permission. The core permission verdict is determined above by
+    # the live-data scoring logic and must not be overwritten by regime/phase
+    # transition risk. Annotate only; gate decisions remain with the EOD thesis.
+    _trf_phase_risk             = 0.0
+    _trf_source                 = "NEUTRAL_FALLBACK"
+    _trf_sparse                 = False
+    _transition_risk_annotation = "TRF_NOT_APPLIED"
+    _transition_risk_score      = round(score, 4)
     try:
         from transition_matrix_consumer import get_consumer as _get_tmc
         _tmc = _get_tmc()
@@ -2246,23 +2255,26 @@ def validate_candidate(
             first(row, "future_momentum_bucket", "tier", default="ALL")
         ).strip().upper()
         if _phase_val:
-            _trf_result     = _tmc.adjust_validation_score(
+            _trf_result = _tmc.adjust_validation_score(
                 score=score,
                 phase=_phase_val,
                 regime=_regime_val,
                 tier=_tier_val,
             )
-            score           = _trf_result["score_adjusted"]
-            confidence      = max(0, min(100, score))
-            _trf_phase_risk = _trf_result["trf"]
-            _trf_source     = _trf_result["trf_source"]
-            _trf_sparse     = _trf_result["sparse"]
-            if state in {"STALE", "NO_LIVE_DATA"}:
-                confidence = min(confidence, 35)
+            # TRF is annotation only — score and execution_permission are NOT modified.
+            _trf_phase_risk             = _trf_result["trf"]
+            _trf_source                 = _trf_result["trf_source"]
+            _trf_sparse                 = _trf_result["sparse"]
+            _transition_risk_score      = round(float(_trf_result.get("score_adjusted", score)), 4)
+            _transition_risk_annotation = (
+                f"TRF={_trf_phase_risk:.4f} "
+                f"SOURCE={_trf_source} "
+                f"SPARSE={_trf_sparse}"
+            )
     except Exception as _trf_exc:
         import logging as _trf_log
         _trf_log.getLogger("avshunter.morning_validator").debug(
-            "TRF adjustment failed neutral fallback: %s", _trf_exc
+            "TRF annotation failed neutral fallback: %s", _trf_exc
         )
 
     rejection_reason = "; ".join(hard_veto) if hard_veto else ("; ".join(wait_reasons) if state == "REJECTED" else "")
@@ -2319,6 +2331,8 @@ def validate_candidate(
             "trf_phase_risk": round(_trf_phase_risk, 6),
             "trf_source": _trf_source,
             "trf_sparse": _trf_sparse,
+            "transition_risk_annotation": _transition_risk_annotation,
+            "transition_risk_score":      _transition_risk_score,
             "morning_execution_lane": lane_meta["morning_execution_lane"],
             "morning_entry_action": lane_meta["morning_entry_action"],
             "morning_unlock_condition": lane_meta["morning_unlock_condition"],
@@ -2344,8 +2358,48 @@ def validate_candidate(
         }
     )
 
+    # FIX 10: options_hard_vetoes — read structured veto list and inform trader
+    _hard_vetoes_raw = _s(first(row, "options_hard_vetoes", "hard_vetoes"))
+    _earnings_veto = False
+    if _hard_vetoes_raw and _hard_vetoes_raw not in {"", "[]", "None"}:
+        try:
+            import json as _json10mv
+            _veto_list = _json10mv.loads(_hard_vetoes_raw) if _hard_vetoes_raw.startswith("[") else []
+            _earnings_veto = any(v.get("veto_type") == "EARNINGS_WITHIN_DTE" for v in _veto_list if isinstance(v, dict))
+            if _earnings_veto:
+                _ev_note = "EARNINGS WITHIN DTE WINDOW -- defined-risk structures only"
+                row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ev_note])).strip("; ")
+        except Exception:
+            pass
+    row["EARNINGS_WITHIN_DTE"] = _earnings_veto
+
+    # ANNOTATION: event_convexity_flag — trader-visible bool, no permission impact.
+    # execution_permission is finalised above and must not be overwritten here.
+    _event_convexity_flag = (
+        _u(row.get("catalyst_trade_class")) == "EVENT_CONVEXITY_WATCH"
+        and _boolish(row.get("cheap_convexity"))
+    )
+    row["event_convexity_flag"] = _event_convexity_flag
+    if _event_convexity_flag:
+        _ecw_note = "EVENT_CONVEXITY_WATCH with cheap_convexity -- priority review"
+        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ecw_note])).strip("; ")
+
+    # ANNOTATION: direction_conflict_flag — preserve EOD boolean, no permission change.
+    # Sector/regime direction conflict is trader context, not a morning gate.
+    _direction_conflict_flag = _boolish(row.get("direction_conflict_flag"))
+    row["direction_conflict_flag"] = _direction_conflict_flag
+    if _direction_conflict_flag:
+        _conflict_note = _s(row.get("direction_conflict_note")) or "Direction conflict — verify at open"
+        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _conflict_note])).strip("; ")
+
+    # ANNOTATION defaults for regime_watch columns (non-REGIME_WATCH rows).
+    # run_morning_validation populates real values for REGIME_WATCH rows after validation.
+    row.setdefault("regime_watch_context", "")
+    row.setdefault("regime_flip_checked", False)
+
     # FIX 6: Horizon-aware thesis fields — required by pipeline interpreter.
-    # Derives from validation state; replaces binary BLOCKED/CONTRACT_REPAIR output.
+    # Derived AFTER execution_permission is finalised and all annotations are written,
+    # ensuring morning_verdict is coherent with the final permission on every row.
     _hb = _horizon_bucket(row)
     _perm = _u(row.get("execution_permission") or row.get("morning_execution_permission"))
     _macro_regime_changed = _boolish(row.get("macro_state_changed"))
@@ -2399,38 +2453,6 @@ def validate_candidate(
         "feeds_interpreter":  _feeds_interpreter,
         "macro_score":        round(_macro_score, 2),
     })
-
-    # FIX 10: options_hard_vetoes — read structured veto list and inform trader
-    _hard_vetoes_raw = _s(first(row, "options_hard_vetoes", "hard_vetoes"))
-    _earnings_veto = False
-    if _hard_vetoes_raw and _hard_vetoes_raw not in {"", "[]", "None"}:
-        try:
-            import json as _json10mv
-            _veto_list = _json10mv.loads(_hard_vetoes_raw) if _hard_vetoes_raw.startswith("[") else []
-            _earnings_veto = any(v.get("veto_type") == "EARNINGS_WITHIN_DTE" for v in _veto_list if isinstance(v, dict))
-            if _earnings_veto:
-                _ev_note = "EARNINGS WITHIN DTE WINDOW -- defined-risk structures only"
-                row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ev_note])).strip("; ")
-        except Exception:
-            pass
-    row["EARNINGS_WITHIN_DTE"] = _earnings_veto
-
-    # FIX 7: EVENT_CONVEXITY_WATCH with cheap_convexity → ARMED verdict
-    if _u(row.get("catalyst_trade_class")) == "EVENT_CONVEXITY_WATCH" and _boolish(row.get("cheap_convexity")):
-        if permission not in {"GO", "GO_LIMIT"}:
-            permission = "ARMED"
-            row["execution_permission"] = permission
-            row["morning_execution_permission"] = permission
-        _ecw_note = "EVENT_CONVEXITY_WATCH with cheap_convexity -- priority review"
-        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _ecw_note])).strip("; ")
-
-    # FIX 1: direction_conflict_flag — downgrade to PROBE and note for trader review
-    if _boolish(row.get("direction_conflict_flag")):
-        row["execution_permission"] = "PROBE"
-        row["morning_execution_permission"] = "PROBE"
-        _conflict_note = _s(row.get("direction_conflict_note")) or "Direction conflict — verify at open"
-        row["morning_notes"] = ("; ".join([row.get("morning_notes", ""), _conflict_note])).strip("; ")
-        row["upgrade_downgrade_reason"] = "Direction conflict flag: " + _conflict_note
     return row
 
 
@@ -2621,23 +2643,25 @@ def run_morning_validation(
         _regime_watch_rows = _read_csv(_regime_watch_path)
         for _rw_row in _regime_watch_rows:
             _rw_row["eod_status"] = "REGIME_WATCH"
-            # REGIME_WATCH rows are never live-validated.
-            # watch_condition is a monitoring label, not a regime state —
-            # the previous inequality comparison always fired True, incorrectly
-            # setting execution_permission=ARMED on rows that were never validated.
-            _rw_row["morning_verdict"] = "WAIT"
-            _rw_row["morning_execution_permission"] = "WAIT"
-            _rw_row["morning_execution_route"] = "REGIME_WATCH"
-            _rw_row["execution_permission"] = "WAIT"
-            _rw_row["morning_note"] = (
-                "REGIME_WATCH: live validation not performed. "
-                "Ticker is a regime flip monitor only. "
-                "Not actionable without live validation."
-            )
-            _rw_row["tradeable_today"] = False
+            # EOD execution_permission is preserved intact — do NOT override.
+            # Sector and regime context is trader annotation, not a morning gate.
+            # Populate regime_watch_context from the source row's regime label.
+            _rw_row["regime_watch_context"] = str(
+                _rw_row.get("regime_state")
+                or _rw_row.get("macro_regime_label")
+                or _rw_row.get("morning_macro_regime_state")
+                or ""
+            ).strip()
+            # regime_flip_checked=False until a live flip-check routine is wired in.
+            _rw_row["regime_flip_checked"] = False
             _rw_row["live_data_mode"] = "REGIME_WATCH_NO_LIVE_FETCH"
             _rw_row["live_data_fresh"] = "UNKNOWN"
             _rw_row["thesis_validity_state"] = "PENDING"
+            _rw_row["morning_note"] = (
+                "REGIME_WATCH: live validation not performed. "
+                "EOD execution_permission preserved intact. "
+                "regime_flip_checked=False until live flip-check is implemented."
+            )
         print(f"[MV] Regime watch: {len(_regime_watch_rows)} WATCH_FOR_REGIME_FLIP rows loaded", flush=True)
 
     # FIX 8: Load evening macro snapshot for state-change detection.
