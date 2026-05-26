@@ -109,7 +109,7 @@ Change (2026-04-23 v2.4):
 
 Change (2026-04-23):
 - Phase 11 added: Execution Gate (execution_gate.py)
-  Runs inside premarket_workflow() after morning_validation_engine.
+  Runs inside premarket_workflow() after morning_gate.
   Non-critical — morning workflow continues unaffected if gate errors.
   Applies live-market discipline: spread, delta range, IV ceiling,
   runway feasibility, gamma flip state, breakeven vs runway check.
@@ -396,7 +396,7 @@ class OrchestratorConfig:
 
     # Root-level — Two-Phase Intelligence System (Phase 10 + Morning Validation)
     EOD_CANDIDATE_ENGINE           = BASE_DIR / "eod_candidate_engine.py"
-    MORNING_VALIDATION_ENGINE      = BASE_DIR / "morning_validation_engine.py"
+    MORNING_VALIDATION_ENGINE      = BASE_DIR / "morning_gate.py"
     MORNING_VALIDATION_MAX_CANDIDATES = 0    # 0 = no cap on EOD manifest size
     MORNING_VALIDATION_TIERS       = "A,B,C,WATCH" # tiers processed at market open
     MORNING_VALIDATION_MAX_SIGNALS = 0       # 0 = live-score the full EOD slate
@@ -4703,7 +4703,7 @@ def evening_workflow(
     # ── Write latest.json ─────────────────────────────────────────────────────
     run_market_context_read_only_diagnostics(canonical_run_id, data_mode=_data_mode)
 
-    # Must run after Phase 10 so morning_validation.py auto-resolves to today's
+    # Must run after Phase 10 so morning_gate.py auto-resolves to today's
     # run without needing --run_id passed manually. Uses no-BOM UTF-8 write so
     # both Python utf-8-sig and standard utf-8 readers can parse it cleanly.
     try:
@@ -4831,7 +4831,7 @@ def evening_workflow(
             "pse_active":                   True,    # PSE inside EIL runner is the EDE replacement
             "v5_colab_decommissioned":      True,    # All scoring now internal — no external Colab dependency
             "eil_eod_mode":                 _eil_mode,       # PATCH 6: from actual eil_data_mode column
-            "morning_validation_command":   "python morning_thesis_validator.py --tiers A,B,C,WATCH --max-signals 0 --live",
+            "morning_validation_command":   "python morning_gate.py",
             "action_items": {
                 "sideways_ranging_gap":         "ACTION — run backfill_actuarial_db to add SIDEWAYS_RANGING as valid actuarial state.",
                 "enhancement_layer_9b":         "CONFIRM — check if enhancement_integration.py exists on disk before re-enabling Phase 9B.",
@@ -4984,7 +4984,7 @@ def evening_workflow(
     logger.info("✅ EVENING WORKFLOW COMPLETE")
     logger.info("=" * 80)
     logger.info("Next: Run morning validation at 09:45 ET after market open")
-    logger.info("      python morning_thesis_validator.py --tiers A,B,C,WATCH --max-signals 0 --live\n")
+    logger.info("Next: python morning_gate.py --run-id %s\n", canonical_run_id)
     return True
 
 
@@ -5041,11 +5041,7 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
         return False
 
     if not cfg.MORNING_VALIDATION_ENGINE.exists():
-        logger.warning(
-            "⏭️  Morning validation engine not found: %s\n"
-            "   Deploy morning_validation_engine.py to root directory.",
-            cfg.MORNING_VALIDATION_ENGINE,
-        )
+        logger.warning("morning_gate.py not found at %s — deploy it before running morning validation", cfg.MORNING_VALIDATION_ENGINE)
         return False
 
     _mv_dir.mkdir(parents=True, exist_ok=True)
@@ -5057,24 +5053,17 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
     run_catalyst_truth_layer(_run_id, stage="pre_morning_validation")
 
     try:
-        from morning_thesis_validator import run_morning_validation
-        results = run_morning_validation(
-            candidates_path = _candidates_path,
-            output_path     = _output_path,
-            run_id          = _run_id,
-            max_signals     = cfg.MORNING_VALIDATION_MAX_SIGNALS,
-            tier_filter     = cfg.MORNING_VALIDATION_TIERS,
-            live_mode       = True,
-            runs_dir        = cfg.RUNS_DIR,
-            pipeline_mode   = "MORNING_VALIDATION",
+        from morning_gate import run_morning_gate
+        results = run_morning_gate(
+            run_id=_run_id,
+            spread_threshold=25.0,
         )
-        go_count      = sum(1 for r in results if r.get("execution_permission") == "GO")
-        armed_count   = sum(1 for r in results if r.get("execution_permission") == "ARMED")
-        wait_count    = sum(1 for r in results if r.get("execution_permission") == "WAIT")
-        blocked_count = sum(1 for r in results if r.get("execution_permission") == "BLOCKED")
+        go_count    = sum(1 for r in results if r.get("verdict") == "GO")
+        flag_count  = sum(1 for r in results if r.get("verdict") == "FLAG")
+        block_count = sum(1 for r in results if r.get("verdict") == "BLOCK")
         logger.info(
-            "✅ Morning validation complete — %d GO | %d ARMED | %d WAIT | %d BLOCKED | output: %s",
-            go_count, armed_count, wait_count, blocked_count, _output_path.name,
+            "✅ Morning gate complete — %d GO | %d FLAG | %d BLOCK | output: %s",
+            go_count, flag_count, block_count, _output_path.name,
         )
         # ── PHASE 11: Execution Gate ──────────────────────────────────────────
         # Apply live-market feasibility checks to morning-validated signals.
