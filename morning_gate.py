@@ -589,6 +589,27 @@ def run_morning_gate(
     print("=" * 60 + "\n")
 
     print(json.dumps(summary, indent=2))
+
+    # Score integrity check — runs automatically after every gate run
+    try:
+        import sys
+        _interp_dir = ROOT.parent / "pipeline_interpreter"
+        if str(_interp_dir) not in sys.path:
+            sys.path.insert(0, str(_interp_dir))
+        from score_integrity_check import check_score_integrity
+        integrity = check_score_integrity(run_id)
+        log.info(
+            "Score integrity: compared=%d mismatches=%d rate=%.1f%% pass=%s",
+            integrity.get("compared", 0),
+            integrity.get("mismatches", 0),
+            integrity.get("mismatch_rate", 0) * 100,
+            integrity.get("integrity_pass", "UNKNOWN"),
+        )
+        if integrity.get("decommission_flag"):
+            log.warning("TRIAGE DECOMMISSION FLAG SET — see data/output/TRIAGE_DECOMMISSION_NOTICE.json")
+    except Exception as exc:
+        log.warning("Score integrity check failed (non-fatal): %s", exc)
+
     return results
 
 
