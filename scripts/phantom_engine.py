@@ -236,20 +236,28 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
     db = PhantomDatabase(db_path=db_path, repo_root=repo_root)
     db.initialise()
     df = pd.read_csv(input_csv, low_memory=False)
+    records = df.to_dict(orient="records")
+
+    unique_tickers = list({str(r.get("ticker") or "").upper() for r in records if r.get("ticker")})
+    db.preload_tickers(unique_tickers)
+
     rows_out: List[Dict[str, Any]] = []
     promoted = 0
     hard_vetoes = 0
     scores: List[float] = []
+    score_payloads: List[tuple] = []
 
-    for record in df.to_dict(orient="records"):
+    for record in records:
         payload = score_row(record, db, run_id)
-        db.write_phantom_score(run_id, str(record.get("ticker") or ""), payload)
+        score_payloads.append((str(record.get("ticker") or ""), payload))
         if payload.get("phantom_promoted_verdict") in {"EXECUTE", "ARMED"} and not payload.get("phantom_hard_veto_respected"):
             promoted += 1
         if payload.get("phantom_hard_veto_respected"):
             hard_vetoes += 1
         scores.append(float(payload.get("phantom_score") or 0.0))
         rows_out.append(apply_payload(record, payload))
+
+    db.batch_write_phantom_scores(run_id, score_payloads)
 
     out_df = pd.DataFrame(rows_out)
     output_csv.parent.mkdir(parents=True, exist_ok=True)

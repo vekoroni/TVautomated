@@ -3750,7 +3750,7 @@ def evening_workflow(
             logger.info(f"  Phantom CMD: {' '.join(_phantom_cmd)}")
             _phantom_result = _subprocess.run(
                 _phantom_cmd,
-                capture_output=True, text=True, timeout=300
+                capture_output=True, text=True, timeout=1200
             )
             if _phantom_result.returncode == 0:
                 logger.info("✅ Phantom scoring engine — DONE")
@@ -3772,11 +3772,34 @@ def evening_workflow(
                 _phantom_input,
             )
     except Exception as _e_phantom:
-        logger.warning(
-            "[PHANTOM] Phase 7.5 failed: %s. "
-            "Continuing with original OI CSV.",
-            _e_phantom,
-        )
+        if type(_e_phantom).__name__ == "TimeoutExpired":
+            logger.warning(
+                "[PHANTOM_BYPASSED] Phase 7.5 timed out after 1200s — "
+                "original OI CSV used downstream. "
+                "Increase DB coverage or check phantom_engine batch load."
+            )
+            try:
+                _bypass_path = (
+                    cfg.RUNS_DIR / canonical_run_id / "options"
+                    / f"phantom_bypass_{canonical_run_id}.json"
+                )
+                _bypass_path.parent.mkdir(parents=True, exist_ok=True)
+                _bypass_path.write_text(
+                    json.dumps(
+                        {"status": "PHANTOM_BYPASSED", "reason": "timeout_1200s",
+                         "run_id": canonical_run_id},
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
+        else:
+            logger.warning(
+                "[PHANTOM] Phase 7.5 failed: %s. "
+                "Continuing with original OI CSV.",
+                _e_phantom,
+            )
 
     try:
         run_core_intel_exporter(canonical_run_id)      # non-critical | Phase 8c
