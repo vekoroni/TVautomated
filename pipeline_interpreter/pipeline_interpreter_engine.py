@@ -24,8 +24,7 @@ except ImportError:
     def fetch_live_contract_spread(*a, **kw): return {}
     def fetch_peer_quotes(*a, **kw): return {}
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY",
-    "REDACTED_ANTHROPIC_API_KEY")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # Model selection — v1.1 update
 # Triage (/triage): Sonnet 4.6 — fast, cost-efficient, handles 65+ row ranking well
