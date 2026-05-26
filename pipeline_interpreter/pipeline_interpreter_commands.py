@@ -363,6 +363,26 @@ def cmd_triage(file_path:str=None):
     """
     global _loaded_pipeline
 
+    # Run score integrity check before triage display
+    try:
+        from score_integrity_check import check_score_integrity
+        integrity = check_score_integrity()
+        if not integrity.get("integrity_pass", True):
+            print(
+                f"\n  [INTEGRITY WARNING] scs_score mismatch rate: "
+                f"{integrity.get('mismatch_rate', 0)*100:.1f}% "
+                f"({integrity.get('mismatches', 0)} of "
+                f"{integrity.get('compared', 0)} tickers)\n"
+            )
+        if integrity.get("decommission_flag"):
+            print(
+                "\n  [DECOMMISSION FLAG] Triage routing has exceeded mismatch "
+                "threshold across 10 consecutive runs.\n"
+                "  See: data/output/TRIAGE_DECOMMISSION_NOTICE.json\n"
+            )
+    except Exception:
+        pass  # integrity check is informational — never blocks triage
+
     print("\n  Running triage priority scan...")
 
     # Load pipeline data
@@ -592,6 +612,27 @@ def cmd_triage(file_path:str=None):
 
     print(f"  Next step: run /ticker for each DEEP_DIVE_NOW ticker")
     print(f"  {EXECUTION_PERMISSION}")
+
+    # One-line brief per ticker in triage
+    if rows:
+        print()
+        print(f"  {'ACTION':<8}  {'DIR':<4}  CONTRACT")
+        print(f"  {'─'*8}  {'─'*4}  {'─'*25}")
+        for row in rows[:30]:
+            try:
+                from trade_brief_builder import build_trade_brief
+                brief = build_trade_brief(row)
+                action_tag = {
+                    "TRADE_NOW":          "[GO]  ",
+                    "TRADE_ON_CONDITION": "[COND]",
+                    "NO_EDGE":            "[SKIP]",
+                }.get(brief.get("action", ""), "[?]   ")
+                direction = brief.get("direction", "?")
+                contract  = brief.get("contract", "—")
+                _tkr      = str(row.get("ticker", "?")).upper()
+                print(f"  {action_tag}  {_tkr:<6}  {direction:<4}  {contract}")
+            except Exception:
+                pass
 
     # QA check after triage
     if _QA_AVAILABLE:
@@ -864,6 +905,17 @@ def cmd_ticker(ticker:str, file_path:str=None):
 
     print(f"\n  Deep dive complete ({int(time.time()-t0)}s)")
     _print_results(results, response)
+
+    # ── Trade brief — always the final output ──────────────────────
+    try:
+        from trade_brief_builder import build_trade_brief, format_trade_brief
+        brief = build_trade_brief(row)
+        print(format_trade_brief(brief))
+        if hasattr(ctx, "last_brief"):
+            ctx.last_brief = brief
+    except Exception as exc:
+        print(f"\n  [TRADE BRIEF ERROR] {exc}\n")
+
     return response
 
 
