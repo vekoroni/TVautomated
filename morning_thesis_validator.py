@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import csv
 import json
 import math
@@ -114,6 +115,13 @@ LIVE_FIELDS = [
     "live_contract_spread_pct",
     "live_contract_volume",
     "live_contract_open_interest",
+    "live_selected_contract_symbol",
+    "live_contract_symbol_source",
+    "live_contract_strike",
+    "live_contract_expiry",
+    "live_contract_side",
+    "contract_repair_alternative_used",
+    "contract_repair_live_action",
     "live_iv",
     "live_delta",
     "live_gamma",
@@ -178,6 +186,9 @@ VALIDATION_FIELDS = [
     "thesis_validity_state",
     "entry_timing_state",
     "contract_tradability_state",
+    "morning_selected_contract_symbol",
+    "contract_repair_live_action",
+    "contract_repair_alternative_used",
     "direction_alignment_status",
     "footprint_continuity_state",
     "footprint_continuity_reason",
@@ -233,6 +244,8 @@ EOD_RECEIPT_FIELDS = [
     "theta_decay_expected",
     "runway_to_wall_pct",
     "horizon_bucket",
+    "iv_regime",
+    "crabel_state",
     "hold_window",
     "hold_label",
     "exit_mode",
@@ -246,6 +259,17 @@ EOD_RECEIPT_FIELDS = [
     "contract_repair_status",
     "contract_repair_required",
     "contract_repair_reason",
+    "contract_repair_action",
+    "alternative_contract_attempts",
+    "alternative_contract_1",
+    "alternative_contract_2",
+    "alternative_contract_3",
+    "alternative_contract_1_score",
+    "alternative_contract_2_score",
+    "alternative_contract_3_score",
+    "alternative_contract_1_reason",
+    "alternative_contract_2_reason",
+    "alternative_contract_3_reason",
     "contract_spread_pct_eod",
     "contract_oi",
     "contract_volume",
@@ -1326,6 +1350,80 @@ def _paper_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+
+# CONTRACT-REPAIR-ALT-001
+def _clean_contract_candidate_symbol(value: Any) -> str:
+    if value is None:
+        return ""
+    symbol = str(value).strip().upper()
+    if symbol in {"", "NAN", "NONE", "NULL", "<NA>"}:
+        return ""
+    return re.split(r"[\s|;,]+", symbol, maxsplit=1)[0].strip().upper()
+
+
+def _parse_occ_contract_metadata(symbol: Any) -> Dict[str, Any]:
+    occ = _clean_contract_candidate_symbol(symbol)
+    m = re.match(r"^([A-Z0-9.]+?)(\d{6})([CP])(\d{8})$", occ)
+    if not m:
+        return {}
+    yy, mm, dd = m.group(2)[:2], m.group(2)[2:4], m.group(2)[4:6]
+    try:
+        strike = int(m.group(4)) / 1000.0
+    except Exception:
+        strike = ""
+    return {
+        "symbol": occ,
+        "expiry": f"20{yy}-{mm}-{dd}",
+        "side": "CALL" if m.group(3) == "C" else "PUT",
+        "strike": strike,
+    }
+
+
+def _option_quote_tradeable(opt: Dict[str, Any]) -> bool:
+    if not opt:
+        return False
+    mid = _f(opt.get("mid") or opt.get("mark") or opt.get("last"), None)
+    if mid is None or mid <= 0:
+        return False
+    bid = _f(opt.get("bid"), None)
+    ask = _f(opt.get("ask"), None)
+    if bid is not None and ask is not None and ask > 0 and mid > 0:
+        return ((ask - bid) / mid) <= 0.30
+    return True
+
+
+def _candidate_contract_symbols(candidate: Dict[str, Any]) -> List[str]:
+    primary = [
+        candidate.get("evening_contract_symbol"),
+        candidate.get("contract_occ_symbol"),
+        candidate.get("recommended_contract"),
+        candidate.get("preferred_contract"),
+        candidate.get("contract_symbol"),
+    ]
+    alternatives = [
+        candidate.get("morning_selected_contract_symbol"),
+        candidate.get("live_selected_contract_symbol"),
+        candidate.get("alternative_contract_1"),
+        candidate.get("alternative_contract_2"),
+        candidate.get("alternative_contract_3"),
+        candidate.get("alt_contract_symbol"),
+    ]
+    repair_required = (
+        _u(candidate.get("contract_repair_required")) in {"TRUE", "1", "YES"}
+        or "REPAIR" in _u(candidate.get("contract_repair_status"))
+        or "REPAIR" in _u(candidate.get("eod_candidate_status"))
+    )
+    ordered = (alternatives + primary) if repair_required else (primary + alternatives)
+    out: List[str] = []
+    seen = set()
+    for item in ordered:
+        symbol = _clean_contract_candidate_symbol(item)
+        if symbol and symbol not in seen:
+            out.append(symbol)
+            seen.add(symbol)
+    return out
+
+
 def _empty_activation() -> Dict[str, Any]:
     return {
         "orb_high": None, "orb_low": None,
@@ -1527,14 +1625,19 @@ def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
             "expiry": candidate.get("evening_expiry") or candidate.get("expiry"),
             "strike": candidate.get("evening_strike") or candidate.get("strike"),
         }
-        occ = (
+        contract_symbols = _candidate_contract_symbols(candidate)
+        fallback_occ = _clean_contract_candidate_symbol(_build_occ_symbol(occ_row))
+        if fallback_occ and fallback_occ not in contract_symbols:
+            contract_symbols.append(fallback_occ)
+        original_occ = _clean_contract_candidate_symbol(
             candidate.get("evening_contract_symbol")
             or candidate.get("contract_occ_symbol")
             or candidate.get("recommended_contract")
             or candidate.get("preferred_contract")
             or candidate.get("contract_symbol")
-            or _build_occ_symbol(occ_row)
+            or fallback_occ
         )
+        occ = contract_symbols[0] if contract_symbols else fallback_occ
         results: Dict[str, Any] = {}
 
         # Fetch equity context first, then price the option contract separately.
@@ -1554,19 +1657,49 @@ def _fetch_live_snapshot(candidate: Dict[str, Any]) -> Dict[str, Any]:
                 except Exception:
                     results[key] = [] if key == "bars" else {}
 
-        if occ:
+        selected_occ = ""
+        if contract_symbols:
             opt_result = None
-            try:
-                opt_result = _marketdata_quote(occ)
-            except Exception:
-                opt_result = None
-            if not opt_result:
-                time.sleep(1.0)
+            for candidate_occ in contract_symbols:
+                candidate_result = None
                 try:
-                    opt_result = _marketdata_quote(occ)
+                    candidate_result = _marketdata_quote(candidate_occ)
                 except Exception:
-                    opt_result = None
+                    candidate_result = None
+                if not candidate_result:
+                    time.sleep(0.4)
+                    try:
+                        candidate_result = _marketdata_quote(candidate_occ)
+                    except Exception:
+                        candidate_result = None
+                if candidate_result and not opt_result:
+                    opt_result = candidate_result
+                    selected_occ = candidate_occ
+                if _option_quote_tradeable(candidate_result or {}):
+                    opt_result = candidate_result
+                    selected_occ = candidate_occ
+                    break
             results["option"] = opt_result or {}
+            if selected_occ:
+                selected_meta = _parse_occ_contract_metadata(selected_occ)
+                live.update({
+                    "live_selected_contract_symbol": selected_occ,
+                    "live_contract_symbol_source": (
+                        "REPAIR_ALTERNATIVE"
+                        if original_occ and selected_occ != original_occ
+                        else "PRIMARY_EOD_CONTRACT"
+                    ),
+                    "contract_repair_alternative_used": str(bool(original_occ and selected_occ != original_occ)).upper(),
+                    "contract_repair_live_action": (
+                        "LIVE_ALTERNATIVE_SELECTED"
+                        if original_occ and selected_occ != original_occ
+                        else "PRIMARY_CONTRACT_VALIDATED"
+                    ),
+                    "live_contract_strike": selected_meta.get("strike", ""),
+                    "live_contract_expiry": selected_meta.get("expiry", ""),
+                    "live_contract_side": selected_meta.get("side", ""),
+                })
+                occ = selected_occ
 
         stock = results.get("stock") or {}
         prev = results.get("prev") or {}
@@ -1786,6 +1919,25 @@ def validate_candidate(
     live = _merge_live_fields(row, live_data)
     for key in LIVE_FIELDS:
         row[key] = live.get(key, "")
+
+    selected_live_contract = _clean_contract_candidate_symbol(live.get("live_selected_contract_symbol"))
+    if selected_live_contract:
+        row["morning_selected_contract_symbol"] = selected_live_contract
+        row["contract_repair_live_action"] = live.get("contract_repair_live_action", "")
+        row["contract_repair_alternative_used"] = live.get("contract_repair_alternative_used", "")
+        if str(live.get("contract_repair_alternative_used", "")).upper() == "TRUE":
+            row["contract_symbol"] = selected_live_contract
+            row["recommended_contract"] = selected_live_contract
+        if not _is_missing(live.get("live_contract_strike")):
+            row["evening_strike"] = live.get("live_contract_strike")
+            row["strike"] = live.get("live_contract_strike")
+            row["contract_strike"] = live.get("live_contract_strike")
+        if not _is_missing(live.get("live_contract_expiry")):
+            row["evening_expiry"] = live.get("live_contract_expiry")
+            row["expiry"] = live.get("live_contract_expiry")
+            row["contract_expiry"] = live.get("live_contract_expiry")
+        if not _is_missing(live.get("live_contract_side")):
+            row["selected_contract_side"] = live.get("live_contract_side")
 
     side = _side(row)
     horizon_bucket = _horizon_bucket(row)
