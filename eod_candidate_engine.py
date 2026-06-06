@@ -938,6 +938,10 @@ def _footprint_direction(row: dict) -> str:
     contract side, macro hints, and morning tape can require repair or
     confirmation, but they must not silently invert this side.
     """
+    explicit_footprint = _side_from_text(_str(row, "footprint_direction"))
+    if explicit_footprint in {"CALL", "PUT"}:
+        return explicit_footprint
+
     call_score = 0.0
     put_score = 0.0
 
@@ -1002,18 +1006,14 @@ def _footprint_direction(row: dict) -> str:
 
 
 def _major_catalyst_can_break_footprint(row: dict, catalyst_side: str, footprint_side: str) -> bool:
-    if not catalyst_side or not footprint_side or catalyst_side == footprint_side:
-        return False
-    catalyst_class = _str(row, "catalyst_trade_class").upper()
-    catalyst_quality = _str(row, "catalyst_data_quality").upper()
-    inside_dte = _str(row, "catalyst_inside_dte").upper() in {"TRUE", "1", "YES"}
-    event_convexity = _str(row, "event_convexity").upper() in {"TRUE", "1", "YES"}
-    return (
-        catalyst_class in {"DATED_CATALYST_CONFIRMED", "EVENT_CONVEXITY_WATCH"}
-        or catalyst_quality in {"CONFIRMED", "DATED_REVIEW"}
-        or inside_dte
-        or event_convexity
-    )
+    """Compatibility shim: catalysts trigger review, not silent thesis rewrites.
+
+    The EOD thesis side is anchored by the Wyckoff/compression footprint. A
+    confirmed catalyst can invalidate the setup or require live confirmation,
+    but it must not overwrite direction/canonical_direction/resolved_direction
+    in the handoff CSV. Morning validation handles the confirmation gate.
+    """
+    return False
 
 def _candidate_direction(row: dict) -> str:
     """Resolve the executable CALL/PUT side for the morning handoff."""
@@ -1163,11 +1163,15 @@ def _direction_evidence(row: dict) -> dict:
         chosen = voted
         reroute = "STRANGLE_TO_DIRECTIONAL"
     elif catalyst_side and catalyst_side != chosen and margin >= 1.0:
-        if _major_catalyst_can_break_footprint(row, catalyst_side, footprint):
-            chosen = catalyst_side
-            reroute = "MAJOR_CATALYST_DIRECTION_OVERRIDE"
+        # Catalysts are powerful confirmation/invalidation inputs, but they are
+        # not allowed to silently rewrite the recorded thesis side. Preserve the
+        # footprint/current thesis and route the conflict to live confirmation.
+        if footprint and chosen == footprint:
+            reroute = "CATALYST_CONFLICT_THESIS_PRESERVED"
+            reasons.append(f"REVIEW:catalyst_{catalyst_side}_conflicts_with_locked_thesis_{chosen}")
         else:
-            reroute = "CATALYST_CONFLICT_FOOTPRINT_LOCKED"
+            reroute = "CATALYST_CONFLICT_REQUIRES_CONFIRMATION"
+            reasons.append(f"REVIEW:catalyst_{catalyst_side}_conflicts_with_current_thesis_{chosen or 'UNKNOWN'}")
     elif voted and chosen and voted != chosen and expression_poor and margin >= 2.0:
         if footprint and chosen == footprint:
             reroute = "FOOTPRINT_LOCKED_EXPRESSION_REPAIR"
@@ -1178,13 +1182,18 @@ def _direction_evidence(row: dict) -> dict:
     if not chosen:
         chosen = contract_side or voted or ""
 
+    if footprint in {"CALL", "PUT"} and chosen in {"CALL", "PUT"} and chosen != footprint:
+        reasons.append(f"GUARD:restored_locked_footprint_{footprint}_from_{chosen}")
+        chosen = footprint
+        reroute = "THESIS_LOCK_GUARD_RESTORED_FOOTPRINT"
+
     return {
         "primary_direction": primary,
         "resolved_direction": chosen,
         "canonical_direction": chosen,
         "footprint_direction": footprint,
-        "footprint_lock_status": "LOCKED_UNTIL_INVALIDATION_OR_MAJOR_CATALYST" if footprint else "UNLOCKED_NO_CLEAR_FOOTPRINT",
-        "footprint_lock_reason": "Wyckoff/compression footprint anchors thesis during expected hold window" if footprint else "",
+        "footprint_lock_status": "LOCKED_UNTIL_LIVE_INVALIDATION" if footprint else "UNLOCKED_NO_CLEAR_FOOTPRINT",
+        "footprint_lock_reason": "Wyckoff/compression footprint anchors thesis during expected hold window; catalyst conflicts require live confirmation and must not rewrite thesis direction" if footprint else "",
         "direction_reroute_status": reroute,
         "direction_decision_reason": "; ".join(reasons[:12]),
         "direction_call_score": round(call_score, 2),
@@ -2033,6 +2042,14 @@ def build_candidate_manifest(
             "alternative_contract_1": _first_str(row, "alternative_contract_1", "alt_contract_1"),
             "alternative_contract_2": _first_str(row, "alternative_contract_2", "alt_contract_2"),
             "alternative_contract_3": _first_str(row, "alternative_contract_3", "alt_contract_3"),
+            "alternative_contract_attempts": _first_str(row, "alternative_contract_attempts", "alt_contract_attempts"),
+            "contract_repair_action": _first_str(row, "contract_repair_action"),
+            "alternative_contract_1_score": _first_str(row, "alternative_contract_1_score"),
+            "alternative_contract_2_score": _first_str(row, "alternative_contract_2_score"),
+            "alternative_contract_3_score": _first_str(row, "alternative_contract_3_score"),
+            "alternative_contract_1_reason": _first_str(row, "alternative_contract_1_reason"),
+            "alternative_contract_2_reason": _first_str(row, "alternative_contract_2_reason"),
+            "alternative_contract_3_reason": _first_str(row, "alternative_contract_3_reason"),
             "contract_expression_score": contract_profile["contract_quality_score"],
             "contract_repair_required_at_open": str(eod_status == "EOD_THESIS_READY_REPAIR_AT_OPEN" or bool(contract_profile["contract_repair_required"])).upper(),
             "morning_validation_tasks": morning_tasks,
@@ -2254,6 +2271,7 @@ def build_candidate_manifest(
             "atr_14":               _flt(row, "ATR_14"),
             "crabel_compression":   _flt(row, "crabel_compression"),
             "crabel_pattern":       _str(row, "crabel_pattern"),
+            "crabel_state":         _str(row, "crabel_state"),
 
             # ── Horizon context (v4.1) ────────────────────────────────────────
             # Stamped here as thesis timing. Morning validation checks whether
@@ -2262,6 +2280,7 @@ def build_candidate_manifest(
             "horizon_bucket":       _cand_hb,
             "horizon_action":       _cand_ha,
             "horizon_size_multiplier": _cand_hsm,
+            "iv_regime":            (_str(row, "actuarial_iv_regime") or _str(row, "iv_regime")),
 
             # ── V2 Signal Intelligence (Sprint 3) ─────────────────────────────
             # Carried from pse_* fields in eil_enriched.csv.
@@ -2415,6 +2434,9 @@ def build_candidate_manifest(
             "actuarial_ev_weight", "catalyst_overlay",
             "runway_to_target", "runway_to_wall", "preferred_contract",
             "alternative_contract_1", "alternative_contract_2", "alternative_contract_3",
+            "alternative_contract_attempts", "contract_repair_action",
+            "alternative_contract_1_score", "alternative_contract_2_score", "alternative_contract_3_score",
+            "alternative_contract_1_reason", "alternative_contract_2_reason", "alternative_contract_3_reason",
             "contract_expression_score", "contract_repair_required_at_open",
             "morning_validation_tasks", "live_validation_required", "confidence_score",
             "data_quality_flags", "notes",
@@ -2675,3 +2697,5 @@ if __name__ == "__main__":
         run_id          = args.run_id,
         max_candidates  = args.max_candidates,
     )
+
+# CONTRACT-REPAIR-ALT-001: EOD candidate manifest carries repair alternatives.

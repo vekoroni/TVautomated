@@ -1,0 +1,35 @@
+{
+  "schema_version": "actuarial_v6",
+  "strict_env": "AVSHUNTER_STRICT_ACTUARIAL_V6",
+  "canonical_database": {
+    "path": "C:\\Users\\ACKVerissimo\\vanguard\\data\\actuarial_database_v6.parquet",
+    "expected_schema_fingerprint": "9c6d73c20e57e17a88697adcd05cf2812220011ff478417021c4fe72ca8725fd",
+    "fingerprint_algorithm": "sha256:parquet_schema_arrow_v1"
+  },
+  "canonical_cache": {
+    "path": "C:\\Users\\ACKVerissimo\\vanguard\\data\\actuarial_cache.parquet"
+  },
+  "pipeline_status": {
+    "path": "C:\\Users\\ACKVerissimo\\vanguard\\data\\pipeline_status.json"
+  },
+  "forbidden_production_databases": [
+    "actuarial_database.parquet",
+    "actuarial_database_v3.parquet",
+    "actuarial_database_v4.parquet",
+    "actuarial_database_v5.parquet"
+  ],
+  "forbidden_suffixes": [
+    "_backup.parquet",
+    "_copy.parquet",
+    "_temp.parquet"
+  ],
+  "field_register": "config\\actuarial_field_register_v6.json",
+  "field_migration_map": "config\\field_migration_map_v6.json",
+  "schema_dimensions": 9,
+  "column_count": 55,
+  "approved_date": "2026-06-05",
+  "approved_by": "ACK — controlled registry update post v6 schema expansion",
+  "new_columns_v6": ["iv_regime", "horizon_bucket", "crabel_state"],
+  "prior_fingerprint_v5": "efa9c674a9feba89c9f0e84e4e0cba09d5513b85dea291d980b7280ce0fb3969",
+  "notes": "v6 adds iv_regime (vol regime classifier), horizon_bucket (1_5d/6_10d/11_20d), crabel_state (mean reversion). Fingerprint validated against Wednesday run. Registry was stale since 20 May 2026."
+}

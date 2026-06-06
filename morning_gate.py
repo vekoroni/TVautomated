@@ -1,5 +1,5 @@
 """
-AVSHUNTER Morning Gate v1.0
+AVSHUNTER Morning Gate v1.1
 ============================
 Three checks only. Replaces morning_thesis_validator.py entirely.
 
@@ -20,7 +20,8 @@ Columns: ticker, direction, verdict, block_reason, flag_reason,
          live_price, invalidation_price, contract_symbol,
          live_bid, live_ask, live_spread_pct, macro_regime_eod,
          macro_regime_now, regime_changed, size_modifier,
-         [all EOD fields preserved]
+         [all EOD fields preserved, including v6 actuarial fields:
+          iv_regime, horizon_bucket, crabel_state — display only, never gates]
 
 Usage:
     python morning_gate.py
@@ -60,6 +61,15 @@ DEFAULT_SPREAD_THRESHOLD = 25.0  # percent — above this flags contract repair
 LIVE_FETCH_WORKERS       = 4
 LIVE_FETCH_TIMEOUT       = 10.0  # seconds per ticker
 
+# ---------------------------------------------------------------------------
+# v6 actuarial schema display fields — pass-through only, never gate logic
+# ---------------------------------------------------------------------------
+V6_ACTUARIAL_DISPLAY_FIELDS = [
+    "iv_regime",       # Volatility regime from v6 actuarial schema
+    "horizon_bucket",  # Forward horizon segment: 1_5d / 6_10d / 11_20d
+    "crabel_state",    # Short-horizon mean reversion state
+]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -86,6 +96,99 @@ def _s(value: Any) -> str:
 
 def _u(value: Any) -> str:
     return _s(value).upper()
+
+
+def _side(value: Any) -> str:
+    text = _u(value)
+    if text in {"CALL", "PUT"}:
+        return text
+    if "LONG_CALL" in text or " CALL" in text or text.endswith("CALL"):
+        return "CALL"
+    if "LONG_PUT" in text or " PUT" in text or text.endswith("PUT"):
+        return "PUT"
+    return ""
+
+
+def _contract_side_from_row(row: Dict[str, Any]) -> str:
+    selected = _side(row.get("selected_contract_side"))
+    if selected:
+        return selected
+    for key in ("contract_symbol", "recommended_contract", "preferred_contract", "contract_occ_symbol"):
+        text = _u(row.get(key))
+        if "P0" in text:
+            return "PUT"
+        if "C0" in text:
+            return "CALL"
+    delta = _f(row.get("live_contract_delta") or row.get("contract_delta"))
+    if delta is not None and delta < 0:
+        return "PUT"
+    if delta is not None and delta > 0:
+        return "CALL"
+    return ""
+
+
+def _append_reason(existing: Any, addition: str) -> str:
+    current = _s(existing)
+    if not current:
+        return addition
+    if addition in current:
+        return current
+    return current + "; " + addition
+
+
+def _apply_thesis_direction_guard(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Preserve locked footprint direction before active Morning Gate checks."""
+    out = dict(row)
+    footprint = _side(out.get("footprint_direction"))
+    if footprint not in {"CALL", "PUT"}:
+        return out
+
+    current = _side(
+        out.get("evening_direction")
+        or out.get("canonical_direction")
+        or out.get("resolved_direction")
+        or out.get("direction")
+    )
+    lock_status = _u(out.get("footprint_lock_status"))
+    reroute = _u(out.get("direction_reroute_status"))
+    locked = lock_status.startswith("LOCKED") or reroute == "MAJOR_CATALYST_DIRECTION_OVERRIDE"
+    if not locked:
+        return out
+
+    if current and current != footprint:
+        for key in ("direction", "canonical_direction", "resolved_direction", "primary_direction", "evening_direction"):
+            if key in out:
+                out[key] = footprint
+        catalyst = _side(out.get("catalyst_direction_bias") or out.get("catalyst_trade_bias"))
+        reason = (
+            f"Catalyst side {catalyst or 'UNKNOWN'} conflicts with thesis side {footprint}; "
+            "thesis preserved, require live confirmation"
+        )
+        out["direction_reroute_status"] = "CATALYST_CONFLICT_THESIS_PRESERVED"
+        out["footprint_lock_status"] = "LOCKED_UNTIL_LIVE_INVALIDATION"
+        out["catalyst_direction_conflict_status"] = "CATALYST_CONFLICT_REQUIRES_CONFIRMATION"
+        out["catalyst_direction_conflict_reason"] = reason
+        out["direction_conflict_status"] = "MITIGATED_REQUIRES_CONFIRMATION"
+        out["direction_conflict_gate"] = "VWAP_CONFIRMATION_REQUIRED"
+        out["direction_conflict_reason"] = _append_reason(out.get("direction_conflict_reason"), reason)
+        out["direction_decision_reason"] = _append_reason(
+            out.get("direction_decision_reason"),
+            f"GUARD:morning_gate_restored_locked_footprint_{footprint}_from_{current}",
+        )
+        summary = _s(out.get("thesis_summary"))
+        pieces = summary.split(" ", 1)
+        if len(pieces) == 2 and pieces[0].upper() in {"CALL", "PUT"}:
+            out["thesis_summary"] = footprint + " " + pieces[1]
+
+    contract_side = _contract_side_from_row(out)
+    if contract_side and contract_side != footprint:
+        out["morning_direction_guard_contract_side_conflict"] = "TRUE"
+        out["contract_repair_required"] = "TRUE"
+        out["contract_repair_reason"] = _append_reason(out.get("contract_repair_reason"), "SIDE_REPAIR_NEEDED")
+    else:
+        out["morning_direction_guard_contract_side_conflict"] = "FALSE"
+
+    return out
 
 
 def _read_csv(path: Path) -> List[Dict[str, Any]]:
@@ -200,8 +303,54 @@ def _fetch_live_contract(occ_symbol: str) -> Dict[str, Any]:
         return {"live_options_source": "MARKETDATA_FAILED", "live_options_error": str(exc)}
 
 
-def _fetch_all_live(candidates: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """Fetch live equity and options data for all candidates concurrently."""
+def _iter_repair_alternatives(row: Dict[str, Any], primary_contract: str = "") -> List[str]:
+    """Return ordered EOD repair alternatives, de-duped against the primary contract."""
+    seen = {_u(primary_contract)}
+    out: List[str] = []
+    for key in ("alternative_contract_1", "alternative_contract_2", "alternative_contract_3"):
+        symbol = _s(row.get(key))
+        if not symbol:
+            continue
+        symbol_key = _u(symbol)
+        if symbol_key in seen:
+            continue
+        seen.add(symbol_key)
+        out.append(symbol)
+    return out
+
+
+def _try_live_repair_alternatives(
+    row: Dict[str, Any],
+    primary_contract: str,
+    spread_threshold: float,
+) -> Dict[str, Any]:
+    """
+    Test EOD-generated repair alternatives against live MarketData quotes.
+    The first alternative that passes the same contract gate becomes the executable contract.
+    """
+    attempts: List[str] = []
+    for alt_symbol in _iter_repair_alternatives(row, primary_contract):
+        alt_live = _fetch_live_contract(alt_symbol)
+        alt_pass, alt_reason = _check_contract(alt_live, spread_threshold, row)
+        attempts.append(f"{alt_symbol}:{'PASS' if alt_pass else 'FAIL'}:{alt_reason}")
+        if alt_pass:
+            alt_live.update({
+                "live_contract_symbol": alt_symbol,
+                "morning_contract_repair_used": "TRUE",
+                "morning_repaired_from_contract": primary_contract,
+                "morning_repair_contract_symbol": alt_symbol,
+                "morning_repair_reason": alt_reason,
+                "morning_repair_attempts": " | ".join(attempts),
+            })
+            return alt_live
+    return {"morning_repair_attempts": " | ".join(attempts)} if attempts else {}
+
+
+def _fetch_all_live(
+    candidates: List[Dict[str, Any]],
+    spread_threshold: float = DEFAULT_SPREAD_THRESHOLD,
+) -> Dict[str, Dict[str, Any]]:
+    """Fetch live equity/options data and try EOD repair alternatives when the primary contract fails."""
     results: Dict[str, Dict[str, Any]] = {}
 
     def fetch_one(row: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
@@ -212,10 +361,22 @@ def _fetch_all_live(candidates: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any
             row.get("evening_contract_symbol")
             or row.get("contract_symbol")
             or row.get("recommended_contract")
+            or row.get("preferred_contract")
         )
         if occ:
             contract_live = _fetch_live_contract(occ)
+            contract_live["live_contract_symbol"] = occ
+            primary_pass, primary_reason = _check_contract(contract_live, spread_threshold, row)
+            contract_live["primary_contract_symbol"] = occ
+            contract_live["primary_contract_pass"] = "TRUE" if primary_pass else "FALSE"
+            contract_live["primary_contract_reason"] = primary_reason
             live.update(contract_live)
+            if not primary_pass:
+                repair_live = _try_live_repair_alternatives(row, occ, spread_threshold)
+                if _s(repair_live.get("morning_contract_repair_used")).upper() == "TRUE":
+                    live.update(repair_live)
+                elif repair_live.get("morning_repair_attempts"):
+                    live["morning_repair_attempts"] = repair_live.get("morning_repair_attempts")
         return ticker, live
 
     with ThreadPoolExecutor(max_workers=LIVE_FETCH_WORKERS) as ex:
@@ -349,6 +510,9 @@ def _check_contract(
     Returns (passed, reason).
     passed=True means contract has a live quote with acceptable spread.
     """
+    if row is not None and _u(row.get("morning_direction_guard_contract_side_conflict")) == "TRUE":
+        return False, "Contract side conflicts with preserved thesis direction - repair contract before entry"
+
     bid = _f(live_data.get("live_contract_bid"))
     ask = _f(live_data.get("live_contract_ask"))
     spread_pct = _f(live_data.get("live_contract_spread_pct"))
@@ -410,10 +574,26 @@ def run_gate(
     for k, v in live_data.items():
         out[k] = v
 
+    repaired_contract = _s(live_data.get("morning_repair_contract_symbol"))
+    if repaired_contract:
+        out["contract_symbol_original"] = _s(
+            row.get("contract_symbol")
+            or row.get("recommended_contract")
+            or row.get("preferred_contract")
+        )
+        out["contract_symbol"] = repaired_contract
+        out["recommended_contract"] = repaired_contract
+        out["morning_selected_contract_symbol"] = repaired_contract
+        out["contract_repair_resolved_at_open"] = "TRUE"
+    else:
+        out["contract_repair_resolved_at_open"] = "FALSE"
+
+    out = _apply_thesis_direction_guard(out)
+
     # Run checks
-    inv_pass,  inv_reason  = _check_invalidation(row, live_price)
-    macro_pass, macro_reason = _check_macro(row, current_regime)
-    contract_pass, contract_reason = _check_contract(live_data, spread_threshold, row)
+    inv_pass,  inv_reason  = _check_invalidation(out, live_price)
+    macro_pass, macro_reason = _check_macro(out, current_regime)
+    contract_pass, contract_reason = _check_contract(live_data, spread_threshold, out)
 
     # Regime display fields
     eod_regime = _u(
@@ -451,9 +631,9 @@ def run_gate(
         else ""
     )
 
-    # Verdict
+    # Verdict and lab-compatible execution permission
     block_reasons = []
-    flag_reasons  = []
+    flag_reasons = []
 
     if not inv_pass:
         block_reasons.append(inv_reason)
@@ -464,19 +644,62 @@ def run_gate(
 
     if block_reasons:
         verdict = "BLOCK"
-    elif flag_reasons:
+        permission = "BLOCKED"
+        route = "STAND_DOWN"
+        lane = "THESIS_INVALIDATED"
+        entry_action = "NO_TRADE"
+        unlock_condition = "Thesis invalidated by morning price action"
+    elif not contract_pass:
         verdict = "FLAG"
+        permission = "CONTRACT_REPAIR"
+        route = "REPAIR_CONTRACT"
+        lane = "CONTRACT_REPAIR"
+        entry_action = "SELECT_LIQUID_CONTRACT"
+        unlock_condition = contract_reason
+    elif not macro_pass:
+        verdict = "FLAG"
+        permission = "ARMED"
+        route = "MACRO_REVIEW"
+        lane = "REVIEW_BEFORE_ENTRY"
+        entry_action = "MANUAL_REVIEW"
+        unlock_condition = macro_reason
     else:
         verdict = "GO"
+        permission = "GO"
+        route = "READY_EXECUTE"
+        lane = "LIVE_VALIDATED"
+        entry_action = "MANUAL_ENTRY_ALLOWED"
+        unlock_condition = "All morning gate checks passed"
 
-    out["verdict"]      = verdict
+    out["verdict"] = verdict
     out["block_reason"] = "; ".join(block_reasons)
-    out["flag_reason"]  = "; ".join(flag_reasons)
+    out["flag_reason"] = "; ".join(flag_reasons)
 
-    # Lab compatibility aliases — field names the Intelligence Lab reads
-    out["execution_permission"]         = verdict
-    out["morning_execution_permission"] = verdict
-    out["live_validation_state"]        = "CONFIRMED" if verdict == "GO" else verdict
+    # Lab compatibility aliases - field names the Intelligence Lab reads.
+    out["morning_gate_verdict"] = verdict
+    out["execution_permission"] = permission
+    out["morning_execution_permission"] = permission
+    out["morning_execution_route"] = route
+    out["morning_execution_lane"] = lane
+    out["morning_entry_action"] = entry_action
+    out["morning_unlock_condition"] = unlock_condition
+    out["live_validation_state"] = "CONFIRMED" if permission == "GO" else permission
+
+    live_mid = _f(out.get("live_contract_mid"))
+    live_spread = _f(out.get("live_contract_spread_pct"))
+    if live_mid is not None and live_mid > 0:
+        out["premium_mid"] = live_mid
+        out["contract_mid"] = live_mid
+    if live_spread is not None:
+        out["spread_pct"] = live_spread / 100.0 if live_spread > 1 else live_spread
+        out["contract_spread_pct"] = out["spread_pct"]
+
+    # v6 actuarial display fields — pass-through from EOD manifest
+    # These are informational context for the trader and Intelligence Lab.
+    # They NEVER gate the verdict.
+    for _v6_field in V6_ACTUARIAL_DISPLAY_FIELDS:
+        if _v6_field in row and _v6_field not in out:
+            out[_v6_field] = row[_v6_field]
 
     return out
 
@@ -509,7 +732,7 @@ def run_morning_gate(
 
     # Fetch all live data
     log.info("Fetching live data for %d tickers...", len(candidates))
-    live_map = _fetch_all_live(candidates)
+    live_map = _fetch_all_live(candidates, spread_threshold=spread_threshold)
 
     # Run gate
     results: List[Dict[str, Any]] = []
@@ -528,6 +751,11 @@ def run_morning_gate(
     flag_list  = [r for r in results if r["verdict"] == "FLAG"]
     block_list = [r for r in results if r["verdict"] == "BLOCK"]
 
+    repair_resolved_count = sum(
+        1 for r in results
+        if _s(r.get("contract_repair_resolved_at_open")).upper() == "TRUE"
+    )
+
     summary = {
         "run_id":           run_id,
         "validated_at_utc": _utc_now(),
@@ -535,10 +763,20 @@ def run_morning_gate(
         "go_count":         len(go_list),
         "flag_count":       len(flag_list),
         "block_count":      len(block_list),
+        "contract_repair_resolved_count": repair_resolved_count,
         "current_regime":   current_regime,
         "go_tickers":       [r.get("ticker") for r in go_list],
         "flag_tickers":     [r.get("ticker") for r in flag_list],
         "block_tickers":    [r.get("ticker") for r in block_list],
+        # v6 field coverage — confirms pass-through is working
+        "v6_field_coverage": {
+            field: {
+                "present_in_go":    sum(1 for r in go_list    if _s(r.get(field))),
+                "present_in_flag":  sum(1 for r in flag_list  if _s(r.get(field))),
+                "present_in_block": sum(1 for r in block_list if _s(r.get(field))),
+            }
+            for field in V6_ACTUARIAL_DISPLAY_FIELDS
+        },
         "output_path":      str(output_path),
     }
     _write_json(summary_path, summary)
@@ -553,6 +791,7 @@ def run_morning_gate(
     print(f"  GO      : {len(go_list)}")
     print(f"  FLAG    : {len(flag_list)}  (trader reviews before entry)")
     print(f"  BLOCK   : {len(block_list)}  (thesis broken — no trade)")
+    print(f"  REPAIRED: {repair_resolved_count}  (EOD alternatives passed live contract gate)")
     print()
 
     if go_list:
@@ -564,6 +803,8 @@ def run_morning_gate(
                 or r.get("sector_name")
                 or r.get("sector")
                 or r.get("gics_sector_name")
+                or r.get("sector_etf")
+                or r.get("scanner_sector")
                 or "UNKNOWN"
             ).upper() or "UNKNOWN"
             sector_map.setdefault(sector, []).append(r)
@@ -593,7 +834,7 @@ def run_morning_gate(
     # Score integrity check — runs automatically after every gate run
     try:
         import sys
-        _interp_dir = ROOT.parent / "pipeline_interpreter"
+        _interp_dir = ROOT / "pipeline_interpreter"
         if str(_interp_dir) not in sys.path:
             sys.path.insert(0, str(_interp_dir))
         from score_integrity_check import check_score_integrity
