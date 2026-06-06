@@ -1,15 +1,17 @@
 """
-AVSHUNTER Morning Gate v1.1
+AVSHUNTER Morning Gate v1.2
 ============================
-Three checks only. Replaces morning_thesis_validator.py entirely.
+Four checks. Replaces morning_thesis_validator.py entirely.
 
 CHECK 1: Invalidation intact     — price has not opened through EOD invalidation level
 CHECK 2: Macro regime unchanged  — no overnight regime flip
 CHECK 3: Contract liquid         — live bid/ask present, spread under threshold
+CHECK 4: Bond macro clear        — trade_go=False in bond_macro_state.json
 
 If CHECK 1 fails  → BLOCK. Thesis broken. No trade.
 If CHECK 2 fails  → FLAG. Trader reviews macro context before entry.
 If CHECK 3 fails  → FLAG. Contract repair required before entry.
+If CHECK 4 fails  → FLAG. Trader reviews bond macro context before entry.
 
 All other context (VWAP, ORB, delta, IV rank, crowd arrival, horizon,
 Fung-Hsieh, direction arbitration) is written as display fields only.
@@ -53,6 +55,8 @@ ROOT         = Path(__file__).resolve().parent
 RUNS_DIR     = ROOT / "data" / "output" / "runs"
 MACRO_DIR    = ROOT / "dropbox" / "macro"
 MACRO_PATH   = MACRO_DIR / "macro_intelligence_latest.json"
+BOND_MACRO_PATH      = MACRO_DIR / "bond_macro_state.json"
+BOND_MACRO_MAX_AGE_H = 26  # hours — covers overnight gap to 09:45 ET
 
 POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "rM5gfljE3Dls1RSYpTFZjhLcG8ekTGL0").strip()
 MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "eVRtV3kxVWQyY1VmTDhFekMwMVBJbTBhTjhEWndoUExXNTFtRURjMHRBND0").strip()
@@ -414,6 +418,85 @@ def _load_macro_regime() -> str:
         return "UNKNOWN"
 
 
+def _load_bond_macro() -> Dict[str, Any]:
+    """
+    Load bond macro state from bond_macro_state.json sidecar.
+    Returns empty dict if file missing, unreadable, or stale.
+    Never raises — always degrades gracefully.
+
+    Staleness threshold: BOND_MACRO_MAX_AGE_H hours.
+    trade_go is returned as a Python bool (not string).
+    """
+    if not BOND_MACRO_PATH.exists():
+        log.warning("bond_macro_state.json not found — bond macro check skipped")
+        return {}
+    try:
+        data = json.loads(BOND_MACRO_PATH.read_text(encoding="utf-8-sig"))
+    except Exception as exc:
+        log.warning("bond_macro_state.json unreadable (%s) — bond macro check skipped", exc)
+        return {}
+
+    # Staleness check
+    generated_at = _s(data.get("generated_at"))
+    if generated_at:
+        try:
+            from datetime import datetime
+            gen_dt = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+            if gen_dt.tzinfo is None:
+                from datetime import timezone
+                gen_dt = gen_dt.replace(tzinfo=timezone.utc)
+            age_h = (datetime.now(timezone.utc) - gen_dt).total_seconds() / 3600
+            if age_h > BOND_MACRO_MAX_AGE_H:
+                log.warning(
+                    "bond_macro_state.json is %.1fh old (threshold %dh) — bond macro check skipped",
+                    age_h, BOND_MACRO_MAX_AGE_H,
+                )
+                return {}
+        except Exception:
+            pass  # If we can't parse the timestamp, proceed with the data
+
+    composite   = data.get("composite", {})
+    yield_curve = data.get("yield_curve", {})
+    credit      = data.get("credit_stress", {})
+    zn          = data.get("zn_futures", {})
+    auction     = data.get("auction", {})
+
+    # Normalise trade_go to Python bool
+    raw_trade_go = composite.get("trade_go", True)
+    if isinstance(raw_trade_go, str):
+        trade_go = raw_trade_go.strip().upper() not in {"FALSE", "0", "NO", ""}
+    else:
+        trade_go = bool(raw_trade_go)
+
+    return {
+        # Gate field
+        "bond_trade_go":            trade_go,
+        # Composite display fields
+        "bond_macro_score":         composite.get("macro_bond_score"),
+        "bond_macro_flag":          _s(composite.get("morning_manifest_flag")),
+        "bond_primary_warning":     _s(composite.get("primary_warning")),
+        "bond_all_warnings":        "; ".join(composite.get("all_warnings", [])),
+        "bond_breakeven_adj_pct":   composite.get("breakeven_adjustment_pct"),
+        # Yield curve display fields
+        "bond_curve_state":         _s(yield_curve.get("curve_state")),
+        "bond_spread_bps":          yield_curve.get("spread_bps"),
+        "bond_curve_regime":        _s(yield_curve.get("regime_implication")),
+        "bond_data_source":         _s(yield_curve.get("data_source")),
+        # Credit display fields
+        "bond_credit_stress":       _s(credit.get("stress_level")),
+        "bond_credit_warning":      credit.get("credit_warning", False),
+        # ZN futures display fields
+        "bond_zn_direction":        _s(zn.get("zn_direction")),
+        "bond_rate_regime_signal":  _s(zn.get("rate_regime_signal")),
+        # Auction display fields
+        "bond_auction_today":       auction.get("auction_today", False),
+        "bond_spread_risk_flag":    auction.get("spread_risk_flag", False),
+        # Meta
+        "bond_macro_generated_at":  generated_at,
+        "bond_macro_loaded":        "TRUE",
+    }
+
+
 def _regime_flipped(eod_regime: str, current_regime: str) -> bool:
     """
     True only on a material directional flip.
@@ -435,6 +518,30 @@ def _regime_flipped(eod_regime: str, current_regime: str) -> bool:
         return r
 
     return _base(eod_regime) != _base(current_regime)
+
+
+def _check_bond_macro(bond_state: Dict[str, Any]) -> tuple[bool, str]:
+    """
+    CHECK 4: Bond macro clear.
+    Returns (passed, reason).
+    passed=True  → bond macro clean, display fields only
+    passed=False → trade_go=False, FLAG the trade (never BLOCK)
+
+    If bond_state is empty (file missing/stale), returns (True, reason)
+    so the gate proceeds normally — bond check is advisory infrastructure.
+    """
+    if not bond_state:
+        return True, "Bond macro state unavailable — check skipped"
+
+    if not bond_state.get("bond_trade_go", True):
+        warning = _s(bond_state.get("bond_primary_warning")) or "Bond macro headwind active"
+        score   = bond_state.get("bond_macro_score", "N/A")
+        flag    = _s(bond_state.get("bond_macro_flag")) or "BOND_MACRO_WARN"
+        return False, f"Bond macro FLAG — {flag} score={score}: {warning}"
+
+    score = bond_state.get("bond_macro_score", "N/A")
+    flag  = _s(bond_state.get("bond_macro_flag")) or "BOND_MACRO_OK"
+    return True, f"Bond macro clear — {flag} score={score}"
 
 
 # ---------------------------------------------------------------------------
@@ -560,12 +667,13 @@ def run_gate(
     live_data: Dict[str, Any],
     current_regime: str,
     spread_threshold: float,
+    bond_state: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Run three checks. Write verdict. Return enriched row.
     BLOCK   = check 1 failed — thesis broken, no trade
-    FLAG    = check 2 or 3 failed — trader must review before entry
-    GO      = all three passed — trade eligible, trader decides
+    FLAG    = check 2, 3, or 4 failed — trader must review before entry
+    GO      = all checks passed — trade eligible, trader decides
     """
     out = dict(row)
     live_price = _f(live_data.get("live_price"))
@@ -594,6 +702,7 @@ def run_gate(
     inv_pass,  inv_reason  = _check_invalidation(out, live_price)
     macro_pass, macro_reason = _check_macro(out, current_regime)
     contract_pass, contract_reason = _check_contract(live_data, spread_threshold, out)
+    bond_pass, bond_reason = _check_bond_macro(bond_state or {})
 
     # Regime display fields
     eod_regime = _u(
@@ -631,6 +740,14 @@ def run_gate(
         else ""
     )
 
+    # Bond macro display fields — stamped regardless of trade_go verdict
+    if bond_state:
+        for _bond_field, _bond_val in bond_state.items():
+            if _bond_field != "bond_trade_go":  # gate field — not exposed in output
+                out[_bond_field] = _bond_val
+    out["check_bond_macro_pass"]   = "TRUE" if bond_pass else "FALSE"
+    out["check_bond_macro_reason"] = bond_reason
+
     # Verdict and lab-compatible execution permission
     block_reasons = []
     flag_reasons = []
@@ -641,6 +758,8 @@ def run_gate(
         flag_reasons.append(macro_reason)
     if not contract_pass:
         flag_reasons.append(contract_reason)
+    if not bond_pass:
+        flag_reasons.append(bond_reason)
 
     if block_reasons:
         verdict = "BLOCK"
@@ -730,6 +849,17 @@ def run_morning_gate(
     current_regime = _load_macro_regime()
     log.info("Current macro regime: %s", current_regime)
 
+    bond_state = _load_bond_macro()
+    if bond_state:
+        log.info(
+            "Bond macro loaded — trade_go=%s score=%s flag=%s",
+            bond_state.get("bond_trade_go"),
+            bond_state.get("bond_macro_score"),
+            bond_state.get("bond_macro_flag"),
+        )
+    else:
+        log.info("Bond macro state not available — Check 4 will be skipped")
+
     # Fetch all live data
     log.info("Fetching live data for %d tickers...", len(candidates))
     live_map = _fetch_all_live(candidates, spread_threshold=spread_threshold)
@@ -739,7 +869,7 @@ def run_morning_gate(
     for row in candidates:
         ticker    = _u(row.get("ticker", ""))
         live_data = live_map.get(ticker, {})
-        result    = run_gate(row, live_data, current_regime, spread_threshold)
+        result    = run_gate(row, live_data, current_regime, spread_threshold, bond_state)
         results.append(result)
 
     # Write output
@@ -765,6 +895,12 @@ def run_morning_gate(
         "block_count":      len(block_list),
         "contract_repair_resolved_count": repair_resolved_count,
         "current_regime":   current_regime,
+        "bond_macro_trade_go":   bond_state.get("bond_trade_go", "UNAVAILABLE"),
+        "bond_macro_score":      bond_state.get("bond_macro_score", "UNAVAILABLE"),
+        "bond_macro_flag":       bond_state.get("bond_macro_flag", "UNAVAILABLE"),
+        "bond_macro_curve":      bond_state.get("bond_curve_state", "UNAVAILABLE"),
+        "bond_macro_credit":     bond_state.get("bond_credit_stress", "UNAVAILABLE"),
+        "bond_macro_loaded":     bond_state.get("bond_macro_loaded", "FALSE"),
         "go_tickers":       [r.get("ticker") for r in go_list],
         "flag_tickers":     [r.get("ticker") for r in flag_list],
         "block_tickers":    [r.get("ticker") for r in block_list],
@@ -787,6 +923,10 @@ def run_morning_gate(
     print("=" * 60)
     print(f"  Run ID  : {run_id}")
     print(f"  Regime  : {current_regime}")
+    bond_flag  = bond_state.get("bond_macro_flag",  "UNAVAILABLE") if bond_state else "UNAVAILABLE"
+    bond_score = bond_state.get("bond_macro_score", "N/A")         if bond_state else "N/A"
+    bond_go    = bond_state.get("bond_trade_go",    "N/A")         if bond_state else "N/A"
+    print(f"  Bond    : {bond_flag}  score={bond_score}  trade_go={bond_go}")
     print(f"  Total   : {len(candidates)}")
     print(f"  GO      : {len(go_list)}")
     print(f"  FLAG    : {len(flag_list)}  (trader reviews before entry)")
