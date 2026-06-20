@@ -1925,6 +1925,26 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
         )
         return False
 
+    # ── Phase 5.5 — Trap-to-Launch Engine enrichment ─────────────────────────
+    # Standalone enrichment: reads packages, writes tle_ fields, never blocks pipeline.
+    try:
+        import importlib.util as _tle_ilu
+        _tle_path = cfg.BASE_DIR / "avshunter_trap_engine.py"
+        if _tle_path.exists():
+            _tle_spec = _tle_ilu.spec_from_file_location("avshunter_trap_engine", str(_tle_path))
+            _tle_mod = _tle_ilu.module_from_spec(_tle_spec)
+            _tle_spec.loader.exec_module(_tle_mod)
+            _tle_ok = _tle_mod.run_trap_layer(run_id=run_id, runs_dir=cfg.RUNS_DIR)
+            if _tle_ok:
+                logger.info("✅ Phase 5.5 — Trap-to-Launch Engine complete")
+            else:
+                logger.warning("⚠️  Phase 5.5 — Trap-to-Launch Engine returned non-OK (pipeline continues)")
+        else:
+            logger.warning("⚠️  Phase 5.5 — avshunter_trap_engine.py not found, skipping")
+    except Exception as _tle_err:
+        logger.warning("⚠️  Phase 5.5 — Trap-to-Launch Engine skipped (non-critical): %s", _tle_err)
+    # ─────────────────────────────────────────────────────────────────────────
+
     # Defence-in-depth
     index_path = cfg.RUNS_DIR / run_id / "packages" / "index.json"
     if not index_path.exists():
@@ -4504,6 +4524,10 @@ def evening_workflow(
                         "contract_delta", "contract_gamma", "contract_theta", "contract_iv",
                         "contract_bid", "contract_ask", "contract_mid", "contract_spread_pct",
                         "contract_oi", "contract_volume",
+                        "contract_repair_action", "alternative_contract_attempts",
+                        "alternative_contract_1", "alternative_contract_2", "alternative_contract_3",
+                        "alternative_contract_1_score", "alternative_contract_2_score", "alternative_contract_3_score",
+                        "alternative_contract_1_reason", "alternative_contract_2_reason", "alternative_contract_3_reason",
                     ]
                     _oi_b1 = _pd_b1.read_csv(_oi_b1_path, low_memory=False)
                     _contract_present = [c for c in _contract_cols if c in _oi_b1.columns]
@@ -5099,6 +5123,32 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
             )
         # ─────────────────────────────────────────────────────────────────────
 
+        # Refresh the Lab / Pipeline Interpreter handoff from morning results.
+        # This keeps preservation-first morning decisions visible instead of
+        # leaving the EOD "morning validation required" view in place.
+        try:
+            from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book
+            _morning_manifest = write_final_run_manifest(_run_id, cfg.RUNS_DIR, pipeline_mode="MORNING_VALIDATION")
+            _lab_rows = gated_signals if "gated_signals" in locals() and gated_signals else results
+            _lab_book = write_final_opportunity_book(_run_id, _lab_rows, _morning_manifest, cfg.RUNS_DIR)
+            logger.info(
+                "Morning Lab/Interpreter handoff refreshed -> %s",
+                _lab_book.get("triage_csv_path"),
+            )
+            try:
+                from pipeline_interpreter.ma_inputs_sync import sync_file
+                for _sync_path in (
+                    _output_path,
+                    Path(_lab_book.get("triage_csv_path") or ""),
+                    Path(_lab_book.get("final_csv_path") or ""),
+                ):
+                    if _sync_path and _sync_path.exists():
+                        sync_file(_sync_path, verbose=True, force=True)
+            except Exception as _sync_err:
+                logger.warning("Morning MA_Inputs sync failed (non-critical): %s", _sync_err)
+        except Exception as _lab_err:
+            logger.warning("Morning Lab/Interpreter handoff refresh failed (non-critical): %s", _lab_err)
+
         return True
 
     except Exception as _mv_err:
@@ -5409,3 +5459,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# CONTRACT-REPAIR-ALT-001: Morning manifest coalesces repair alternatives from options intelligence.

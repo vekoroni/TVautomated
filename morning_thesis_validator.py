@@ -2939,6 +2939,18 @@ def run_morning_validation(
         _row.setdefault("morning_execution_route", _row.get("morning_execution_lane") or _row.get("morning_execution_permission") or "WAIT")
 
     _write_csv(output, rows)
+
+    # Sprint 1 — Exit Discipline Engine post-processing
+    try:
+        import sys as _ee_sys
+        if str(ROOT) not in _ee_sys.path:
+            _ee_sys.path.insert(0, str(ROOT))
+        from avshunter_exit_engine import run_exit_engine as _run_exit_engine
+        from avshunter_trade_journal import DEFAULT_DB_PATH as _journal_db
+        _run_exit_engine(run_id=rid, runs_dir=runs_root, db_path=_journal_db)
+    except Exception as _ee_exc:
+        log.warning("Exit engine skipped: %s", _ee_exc)
+
     packet = {
         "summary": build_summary(rid, rows, len(selected)),
         "input_source": {

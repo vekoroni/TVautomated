@@ -1,4 +1,4 @@
-﻿"""
+"""
 AVSHUNTER Pipeline Interpreter v1.0 â€” Core Engine
 Reads pipeline CSV outputs and produces Dr. Magnus Vale trade narratives
 """
@@ -164,20 +164,139 @@ def load_system_prompt() -> str:
     raise FileNotFoundError(f"Not found: {SYSTEM_PROMPT}")
 
 # â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def _read_image_dimensions_without_pillow(path: Path) -> tuple:
+    """Best-effort PNG/JPEG/GIF/WebP dimension read for fallback safety."""
+    try:
+        with open(path, "rb") as f:
+            header = f.read(64)
+            if header.startswith(b"\x89PNG\r\n\x1a\n") and len(header) >= 24:
+                return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
+            if header.startswith((b"GIF87a", b"GIF89a")) and len(header) >= 10:
+                return int.from_bytes(header[6:8], "little"), int.from_bytes(header[8:10], "little")
+            if header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+                f.seek(0)
+                data = f.read(64)
+                if data[12:16] == b"VP8 " and len(data) >= 30:
+                    return int.from_bytes(data[26:28], "little") & 0x3fff, int.from_bytes(data[28:30], "little") & 0x3fff
+                if data[12:16] == b"VP8L" and len(data) >= 25:
+                    b0, b1, b2, b3 = data[21], data[22], data[23], data[24]
+                    width = 1 + (((b1 & 0x3F) << 8) | b0)
+                    height = 1 + (((b3 & 0xF) << 10) | (b2 << 2) | ((b1 & 0xC0) >> 6))
+                    return width, height
+                if data[12:16] == b"VP8X" and len(data) >= 30:
+                    width = 1 + int.from_bytes(data[24:27], "little")
+                    height = 1 + int.from_bytes(data[27:30], "little")
+                    return width, height
+            if header.startswith(b"\xff\xd8"):
+                f.seek(2)
+                while True:
+                    marker_prefix = f.read(1)
+                    if not marker_prefix:
+                        break
+                    if marker_prefix != b"\xff":
+                        continue
+                    marker = f.read(1)
+                    while marker == b"\xff":
+                        marker = f.read(1)
+                    if marker in (b"\xd8", b"\xd9"):
+                        continue
+                    size_bytes = f.read(2)
+                    if len(size_bytes) != 2:
+                        break
+                    size = int.from_bytes(size_bytes, "big")
+                    if size < 2:
+                        break
+                    if marker in [bytes([m]) for m in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF)]:
+                        segment = f.read(size - 2)
+                        if len(segment) >= 5:
+                            return int.from_bytes(segment[3:5], "big"), int.from_bytes(segment[1:3], "big")
+                        break
+                    f.seek(size - 2, 1)
+    except Exception:
+        return (0, 0)
+    return (0, 0)
+
 def load_image(path:str) -> dict:
-    """Load image file and return Anthropic image content block."""
+    """Load image file and return an Anthropic image content block.
+
+    Anthropic many-image requests reject any image with a dimension above
+    2000 px. The Pipeline Interpreter can now include chart and option
+    screenshots together, so normalize images here before encoding.
+    """
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Image not found: {path}")
+
     mime, _ = mimetypes.guess_type(str(p))
     if not mime or not mime.startswith("image/"):
-        # Try by extension
         ext = p.suffix.lower()
         mime = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg",
                 "gif":"image/gif","webp":"image/webp"}.get(ext.lstrip("."), "image/png")
-    with open(p, "rb") as f:
-        data = base64.standard_b64encode(f.read()).decode("utf-8")
-    return {"type":"image","source":{"type":"base64","media_type":mime,"data":data}}
+
+    # Hard cap at Anthropic's many-image limit even if the environment is
+    # accidentally configured higher.
+    max_dim = min(int(os.environ.get("PI_MAX_IMAGE_DIMENSION", "2000")), 2000)
+    target_dim = min(int(os.environ.get("PI_IMAGE_RESIZE_DIMENSION", "1800")), 1800)
+    if target_dim > max_dim:
+        target_dim = max_dim
+
+    try:
+        from PIL import Image, ImageOps
+    except Exception as exc:
+        width, height = _read_image_dimensions_without_pillow(p)
+        if max(width, height) > max_dim:
+            raise RuntimeError(
+                f"Image {p.name} is {width}x{height}; Pillow is required to resize it before API send ({exc})"
+            )
+        if not width or not height:
+            raise RuntimeError(
+                f"Cannot verify image dimensions for {p.name}; Pillow is required before API send ({exc})"
+            )
+        with open(p, "rb") as f:
+            data = base64.standard_b64encode(f.read()).decode("utf-8")
+        return {"type":"image","source":{"type":"base64","media_type":mime,"data":data}}
+
+    with Image.open(p) as img:
+        img = ImageOps.exif_transpose(img)
+        original_size = img.size
+        if getattr(img, "is_animated", False):
+            img.seek(0)
+
+        if img.mode not in ("RGB", "RGBA", "L"):
+            img = img.convert("RGB")
+
+        if max(original_size) > max_dim:
+            img.thumbnail((target_dim, target_dim), Image.LANCZOS)
+            print(f"  [IMG] resized {p.name}: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+
+        out = io.BytesIO()
+        ext = p.suffix.lower()
+        if mime == "image/jpeg" or ext in (".jpg", ".jpeg"):
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(out, format="JPEG", quality=88, optimize=True)
+            out_mime = "image/jpeg"
+        elif mime == "image/webp" or ext == ".webp":
+            img.save(out, format="WEBP", quality=88, method=6)
+            out_mime = "image/webp"
+        else:
+            img.save(out, format="PNG", optimize=True)
+            out_mime = "image/png"
+
+    # Final guard: never emit a payload that can violate the many-image limit.
+    try:
+        with Image.open(io.BytesIO(out.getvalue())) as verify_img:
+            vw, vh = verify_img.size
+        if max(vw, vh) > max_dim:
+            raise RuntimeError(f"Encoded image still exceeds {max_dim}px: {vw}x{vh}")
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError(f"Could not verify encoded image dimensions for {p.name}: {exc}")
+
+    data = base64.standard_b64encode(out.getvalue()).decode("utf-8")
+    return {"type":"image","source":{"type":"base64","media_type":out_mime,"data":data}}
+
 
 def call_api(user_prompt:str, images:list=None, use_web_search:bool=False,
              model:str=None, max_tokens:int=None) -> str:
@@ -471,6 +590,7 @@ capital_permission=CAPITAL_DENIED_PENDING_LIVE_CONFIRMATION"""
 def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
                                 options_data:dict=None, context:str=None,
                                 ticker_note:str="",
+                                context_block:str="",
                                 lab_context_block:str="",
                                 lab_conflict_block:str="",
                                 pre_trade_prob_block:str="") -> str:
@@ -484,9 +604,9 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
 
     ctx_str=f"\nAdditional context: {context}" if context else ""
 
-    # Trader narrative block
-    _trader_note_block = ""
-    if ticker_note and ticker_note.strip():
+    # Trader narrative block: sector + ticker context supplied by command layer.
+    _trader_note_block = context_block or ""
+    if not _trader_note_block and ticker_note and ticker_note.strip():
         _trader_note_block = f"TICKER_NARRATIVE: {ticker}\n{ticker_note.strip()}\nEND_TICKER_NARRATIVE\n\n"
 
     # Load macro and news terminal context
@@ -754,16 +874,17 @@ End with: EXECUTION PERMISSION: NONE_PIPELINE_INTERPRETER_ONLY
 
 def build_chart_prompt(ticker:str, chart_descriptions:list,
                        pipeline_row:dict=None, options_data:dict=None,
-                       chart_types:list=None, ticker_note:str="") -> str:
+                       chart_types:list=None, ticker_note:str="",
+                       context_block:str="") -> str:
     """Build prompt for chart image analysis â€” feeds into Dr. Magnus Vale + Soul of the Chart."""
     date_str = _date()
     chart_type_str = ""
     if chart_types:
         chart_type_str = "\nChart types provided: " + ", ".join(chart_types)
 
-    # Trader narrative block
-    _trader_note_block = ""
-    if ticker_note and ticker_note.strip():
+    # Trader narrative block: sector + ticker context supplied by command layer.
+    _trader_note_block = context_block or ""
+    if not _trader_note_block and ticker_note and ticker_note.strip():
         _trader_note_block = f"TICKER_NARRATIVE: {ticker}\n{ticker_note.strip()}\nEND_TICKER_NARRATIVE\n\n"
 
     row_text = ""
@@ -888,19 +1009,42 @@ def extract_section(response:str, tag:str) -> str:
     return m.group(1).strip() if m else ""
 
 def extract_verdict(response:str, ticker:str) -> str:
-    verdicts=["GO","ARMED","PROBE","WAIT","BLOCKED","MISDIAGNOSED"]
+    # Pipeline verdicts (machine layer) — checked first, used for session tracking
+    pipeline_verdicts = ["GO","ARMED","PROBE","WAIT","BLOCKED","MISDIAGNOSED"]
+    # Interpreter verdicts (human layer) — v2 additions
+    interpreter_verdicts = ["PROBE_NOW","PROBE_WATCH","MONITOR","CROWD_TRADE","PASS_THESIS_INVALID"]
+    all_verdicts = pipeline_verdicts  # session tracking uses pipeline verdicts only
+
     # Look near the ticker mention
     idx=response.find(ticker)
     if idx>0:
         window=response[idx:idx+3000]
-        for v in verdicts:
-            if f"FINAL VERDICT" in window and v in window:
+        for v in all_verdicts:
+            if "FINAL VERDICT" in window and f"PIPELINE VERDICT" in window and v in window:
+                return v
+        for v in all_verdicts:
+            if "FINAL VERDICT" in window and v in window:
                 return v
     # Fallback: scan full response
-    for v in verdicts:
-        if f"FINAL VERDICT" in response and v in response:
+    for v in all_verdicts:
+        if "FINAL VERDICT" in response and v in response:
             return v
     return "WAIT"
+
+
+def extract_interpreter_verdict(response:str, ticker:str) -> str:
+    """Extract the interpreter-layer verdict (v2 addition) for display purposes."""
+    interpreter_verdicts = ["PROBE_NOW","PROBE_WATCH","MONITOR","CROWD_TRADE","PASS_THESIS_INVALID"]
+    idx=response.find(ticker)
+    if idx>0:
+        window=response[idx:idx+3000]
+        for v in interpreter_verdicts:
+            if "INTERPRETER VERDICT" in window and v in window:
+                return v
+    for v in interpreter_verdicts:
+        if "INTERPRETER VERDICT" in response and v in response:
+            return v
+    return ""
 
 def parse_brief_csv(text:str) -> list:
     if not text.strip(): return []
@@ -940,12 +1084,16 @@ def scan_ma_inputs_for_ticker(ticker:str) -> dict:
                 if ticker_upper in f.name.upper():
                     result["charts"].append(str(f))
 
-    # Options data folder
+    # Options data folder. CSV/JSON are text context; option screenshots
+    # are visual context and should travel with chart images.
     if MA_OPTIONS.exists():
         for f in sorted(MA_OPTIONS.iterdir()):
+            if ticker_upper not in f.name.upper():
+                continue
             if f.suffix.lower() in CSV_EXTS:
-                if ticker_upper in f.name.upper():
-                    result["options"].append(str(f))
+                result["options"].append(str(f))
+            elif f.suffix.lower() in IMAGE_EXTS:
+                result["screenshots"].append(str(f))
 
     # Screenshots folder
     if MA_SCREENSHOTS.exists():
@@ -1354,6 +1502,28 @@ def build_story_prompt(
             f"--- END PREVIOUS STORY ---\n"
         )
 
+    # Chart image instruction — injected when images are attached so the LLM
+    # knows to read them visually rather than fall back to numerical data.
+    _chart_instruction = ""
+    if chart_images:
+        _chart_names = ", ".join(Path(p).name for p in chart_images)
+        _chart_instruction = (
+            f"\nCHART IMAGES ATTACHED: {len(chart_images)} image(s) are included in this message.\n"
+            f"Files: {_chart_names}\n"
+            f"MANDATORY: Section 5 (Chart) MUST be written from direct visual observation of these\n"
+            f"images. Read each chart as a behavioural auction map. Cite specific visual evidence:\n"
+            f"candle patterns, volume bars, EMA positions, VWAP level, key support/resistance visible.\n"
+            f"ABSOLUTE PROHIBITION — do NOT produce any of these phrases or any paraphrase of them:\n"
+            f"  - 'No chart image has been provided'\n"
+            f"  - 'no visual chart image was provided'\n"
+            f"  - 'since no chart image'\n"
+            f"  - 'we must reconstruct the chart story'\n"
+            f"  - 'reconstruct the chart story from the pipeline'\n"
+            f"  - 'reconstructing from pipeline data'\n"
+            f"  - 'no chart was provided'\n"
+            f"The chart images ARE present. You can see them attached to this message. Read them.\n"
+        )
+
     return (
         f"OUTPUT FORMAT: Produce ONLY a [JUNIOR_BRIEFING_{ticker.upper()}] block.\n"
         f"Do NOT produce [TRADE_NARRATIVE_{ticker.upper()}]. No preamble. No conclusion.\n"
@@ -1361,7 +1531,8 @@ def build_story_prompt(
         f"Run Pipeline Interpreter — STORY OF THE TRADE: {ticker}\n"
         f"update_type: {update_type}\n"
         f"{_trader_note_block}"
-        f"Date: {date_str}\n\n"
+        f"Date: {date_str}\n"
+        f"{_chart_instruction}\n"
         f"PIPELINE ROW (EOD thesis — primary data source for all 8 sections):\n"
         f"{row_text}\n"
         f"{live_price_section}"
@@ -1382,6 +1553,7 @@ def build_story_prompt(
         f"Section 3 must label every level: KILL_ZONE / RESISTANCE / VWAP_BATTLEGROUND /\n"
         f"  ENTRY_TRIGGER / GAMMA_FLIP / SWING_EXTREME / WALL_TARGET\n"
         f"Section 5 must contain a checkpoint table: Checkpoint | Required for thesis | Status\n"
+        f"{'Section 5 must read from the attached chart images. ' if chart_images else ''}"
         f"Section 8 must contain WHAT_MAKES_US_ENTER and WHAT_MAKES_US_ABANDON sub-boxes.\n\n"
         f"execution_permission=NONE_PIPELINE_INTERPRETER_ONLY"
     )
@@ -1499,3 +1671,7 @@ MA_LAB.mkdir(parents=True, exist_ok=True)
 
 # Register lab export pattern in file-keyword lookup so scan functions detect it
 PIPELINE_FILE_KEYWORDS["lab_export"] = ["avshunter_signals"]
+
+# PI-ENHANCEMENTS-20260527: Deep dive prompt builders accept sector/ticker context blocks.
+
+# PI-ANY-TICKER-20260527

@@ -1,4 +1,4 @@
-﻿
+
 def cmd_inputs():
     from pathlib import Path
     base = Path(__file__).parent / "MA_Inputs"
@@ -70,6 +70,7 @@ MENU = """
 # Loaded data store
 _loaded_pipeline = {}   # name -> rows
 _loaded_options  = {}   # name -> content
+_sector_notes = {}      # SECTOR_UPPER -> session-only sector note
 
 def _safe_name(v):
     from pathlib import Path
@@ -722,14 +723,21 @@ def cmd_morning(file_path:str):
     _print_results(results,response)
     return response
 
-def cmd_ticker(ticker:str, file_path:str=None):
+def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
     print(f"\n  Running deep dive: {ticker}...")
+    explicit_file = bool(file_path)
     if not file_path:
         file_path = SESSION.get("last_pipeline_csv")
-        if not file_path:
-            print("  [ERROR] No CSV loaded. Run /triage first or: /ticker TICKER FILE")
-            return
-        print(f"  [AUTO] {Path(file_path).name}")
+
+    resolved_file = _resolve_pipeline_csv_for_ticker(ticker, file_path or "")
+    if resolved_file and (not file_path or Path(resolved_file).resolve() != Path(file_path).resolve()):
+        print(f"  [AUTO-REFRESH] ticker source: {Path(resolved_file).name}")
+    file_path = resolved_file or file_path
+
+    if not file_path:
+        print("  [ERROR] No CSV loaded. Run /triage first, use /quick TICKER, or: /ticker TICKER FILE")
+        return
+    print(f"  [{'QUICK' if skip_triage_check else ('EXPLICIT' if explicit_file else 'AUTO')}] {Path(file_path).name}")
     rows = read_pipeline_csv(file_path)
     row  = next((r for r in rows if r.get("ticker","").upper()==ticker.upper()), None)
     if not row:
@@ -748,7 +756,11 @@ def cmd_ticker(ticker:str, file_path:str=None):
         opt_name = Path(opt_path).stem
         if opt_name not in ticker_options:
             ticker_options[opt_name] = read_options_file(opt_path)
-            print(f"  âœ… Auto-loaded: {Path(opt_path).name}")
+            print(f"  [OK] Auto-loaded: {Path(opt_path).name}")
+    for opt_name, opt_text in _load_option_context_for_ticker(ticker, file_path).items():
+        if opt_name not in ticker_options:
+            ticker_options[opt_name] = opt_text
+            print(f"  [OK] Auto-loaded options context: {opt_name}")
     ticker_charts = ma_files["charts"] + ma_files["screenshots"]
     if ticker_charts:
         print(f"  âœ… Found {len(ticker_charts)} chart(s) in MA_Inputs for {ticker}")
@@ -766,6 +778,10 @@ def cmd_ticker(ticker:str, file_path:str=None):
     if _ticker_note:
         _preview = _ticker_note[:60] + ("..." if len(_ticker_note)>60 else "")
         print(f"  âœ… Trader note loaded for {ticker}: '{_preview}'")
+    _sector_key = _sector_key_for_row(row)
+    _context_block = build_context_block(ticker, _ticker_note, _sector_key)
+    if _sector_key and _sector_key in _sector_notes:
+        print(f"  [SECTOR] Sector note loaded for {_sector_key}")
     # â”€â”€ Component 9: Lab context injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     from lab_reconciliation import (
         get_lab_row, validate_lab_field_alignment,
@@ -833,12 +849,14 @@ def cmd_ticker(ticker:str, file_path:str=None):
         prompt   = build_chart_prompt(ticker=ticker, chart_descriptions=[],
                                        pipeline_row=row,
                                        options_data=ticker_options if ticker_options else None,
-                                       ticker_note=_ticker_note)
+                                       ticker_note=_ticker_note,
+                                       context_block=_context_block)
         response = call_api(prompt, images=ticker_charts, use_web_search=_use_web_search)
     else:
         prompt   = build_single_ticker_prompt(ticker, row,
                                                ticker_options if ticker_options else None,
                                                ticker_note=_ticker_note,
+                                               context_block=_context_block,
                                                lab_context_block=lab_context_block,
                                                lab_conflict_block=lab_conflict_block,
                                                pre_trade_prob_block=_ete_block_t)
@@ -855,9 +873,15 @@ def cmd_ticker(ticker:str, file_path:str=None):
             ticker=ticker,
             pipeline_row=row,
             options_data=ticker_options if ticker_options else None,
+            chart_images=ticker_charts if ticker_charts else None,
             update_type="FULL",
         )
-        _story_response = call_api(_story_prompt, model=MODEL_DEEP_DIVE, max_tokens=12000)
+        _story_response = call_api(
+            _story_prompt,
+            images=ticker_charts if ticker_charts else None,
+            model=MODEL_DEEP_DIVE,
+            max_tokens=12000,
+        )
         results = write_all_outputs_with_junior(
             main_response=response,
             story_response=_story_response,
@@ -911,13 +935,181 @@ def cmd_ticker(ticker:str, file_path:str=None):
         from trade_brief_builder import build_trade_brief, format_trade_brief
         brief = build_trade_brief(row)
         print(format_trade_brief(brief))
-        if hasattr(ctx, "last_brief"):
-            ctx.last_brief = brief
+        session.last_brief = brief
     except Exception as exc:
         print(f"\n  [TRADE BRIEF ERROR] {exc}\n")
 
     return response
 
+
+
+def cmd_chart(ticker: str, image_paths: list, chart_types: list = None):
+    """Analyse chart image(s) for a ticker through Dr. Magnus Vale + Soul of the Chart."""
+    global _loaded_pipeline, _loaded_options
+
+    ticker = str(ticker or "").strip().upper()
+    image_paths = image_paths or []
+    if not ticker:
+        print("  Usage: /chart TICKER IMG [IMG2...]")
+        return
+
+    print(f"\n  Running chart analysis: {ticker}")
+    if image_paths:
+        print(f"  Images: {[Path(p).name for p in image_paths]}")
+    else:
+        print("  Images: auto-scan MA_Inputs/charts and screenshots")
+
+    ma_files = scan_ma_inputs_for_ticker(ticker)
+    ma_charts = ma_files.get("charts", []) + ma_files.get("screenshots", [])
+
+    valid_images = []
+    seen = set()
+    for p in image_paths:
+        path = Path(str(p).strip('"').strip("'"))
+        if path.exists():
+            key = str(path.resolve()).lower()
+            if key not in seen:
+                valid_images.append(str(path))
+                seen.add(key)
+        else:
+            print(f"  [WARN] Image not found: {p}")
+
+    for p in ma_charts:
+        path = Path(p)
+        key = str(path.resolve()).lower() if path.exists() else str(path).lower()
+        if key not in seen:
+            valid_images.append(str(path))
+            seen.add(key)
+            print(f"  [OK] Auto-loaded from MA_Inputs: {path.name}")
+
+    if not valid_images:
+        print("  [WARN] No chart images found.")
+        print(f"  Drop chart screenshots into: {MA_CHARTS}")
+        print(f"  Or use: /chart {ticker} C:\\path\\to\\chart.png")
+        return
+
+    for opt_path in ma_files.get("options", []):
+        opt_name = Path(opt_path).stem
+        if opt_name not in _loaded_options:
+            _loaded_options[opt_name] = read_options_file(opt_path)
+            print(f"  [OK] Auto-loaded options: {Path(opt_path).name}")
+
+    ticker_options = dict(_loaded_options)
+    for opt_name, opt_text in _load_option_context_for_ticker(ticker).items():
+        if opt_name not in ticker_options:
+            ticker_options[opt_name] = opt_text
+            print(f"  [OK] Auto-loaded options context: {opt_name}")
+
+    pipeline_row = None
+    source_name = ""
+    for name, rows in _loaded_pipeline.items():
+        row = next(
+            (
+                r for r in rows
+                if str(r.get("ticker", "")).upper() == ticker
+                or str(r.get("underlying", "")).upper() == ticker
+            ),
+            None,
+        )
+        if row:
+            pipeline_row = row
+            source_name = name
+            break
+
+    if not pipeline_row:
+        csv_path = _resolve_quick_pipeline_csv()
+        if csv_path:
+            rows = read_pipeline_csv(csv_path)
+            name = Path(csv_path).stem
+            _loaded_pipeline[name] = rows
+            row = next(
+                (
+                    r for r in rows
+                    if str(r.get("ticker", "")).upper() == ticker
+                    or str(r.get("underlying", "")).upper() == ticker
+                ),
+                None,
+            )
+            if row:
+                pipeline_row = row
+                source_name = name
+
+    if pipeline_row:
+        print(f"  [OK] Pipeline row found in {source_name}")
+    else:
+        print(f"  [INFO] No pipeline row loaded for {ticker}; chart read will use image + context only.")
+
+    if not chart_types:
+        chart_types = []
+        for p in valid_images:
+            name = Path(p).stem.lower()
+            if "daily" in name:
+                chart_types.append("daily")
+            elif "weekly" in name:
+                chart_types.append("weekly")
+            elif "intraday" in name or "1h" in name or "30m" in name or "15m" in name:
+                chart_types.append("intraday")
+            elif "chain" in name:
+                chart_types.append("options_chain")
+            elif "gex" in name:
+                chart_types.append("GEX")
+            elif "oi" in name:
+                chart_types.append("open_interest")
+            else:
+                chart_types.append(Path(p).stem)
+
+    ticker_note = ""
+    notes = _load_ticker_notes()
+    entry = notes.get(ticker, {}) if isinstance(notes, dict) else {}
+    if isinstance(entry, dict):
+        ticker_note = entry.get("note", "")
+    elif entry:
+        ticker_note = str(entry)
+    if ticker_note:
+        preview = ticker_note[:60] + ("..." if len(ticker_note) > 60 else "")
+        print(f"  [OK] Trader note loaded for {ticker}: '{preview}'")
+
+    sector_key = _sector_key_for_row(pipeline_row or {})
+    context_block = build_context_block(ticker, ticker_note, sector_key)
+    if sector_key and sector_key in _sector_notes:
+        print(f"  [SECTOR] Sector note loaded for {sector_key}")
+
+    t0 = time.time()
+    prompt = build_chart_prompt(
+        ticker=ticker,
+        chart_descriptions=[],
+        pipeline_row=pipeline_row,
+        options_data=ticker_options if ticker_options else None,
+        chart_types=chart_types,
+        ticker_note=ticker_note,
+        context_block=context_block,
+    )
+
+    response = call_api(prompt, images=valid_images, use_web_search=True)
+    run_dir, ts = get_run_dir()
+    results = write_all_outputs(
+        response,
+        session,
+        run_dir,
+        ts,
+        tickers=[ticker],
+        prefix=f"chart_{ticker.lower()}",
+    )
+
+    print(f"\n  Chart analysis complete ({int(time.time() - t0)}s)")
+    _print_results(results, response)
+
+    for section in [
+        "SOUL OF THE CHART",
+        "EXECUTION PRESCRIPTION",
+        "KILL SWITCH",
+        "FINAL VERDICT",
+    ]:
+        content = _extract_section(response, section)
+        if content:
+            print(f"\n  {section}:\n  {content[:400]}")
+
+    return response
 
 
 def cmd_live(args: str = ""):
@@ -1238,6 +1430,296 @@ def cmd_reset():
     print("  Session cleared. Prepared MA_Inputs files are unchanged.")
 
 
+
+# PI-ENHANCEMENTS-20260527
+def _load_ticker_notes() -> dict:
+    import json as _json
+    notes_path = MA_INPUTS / "news_terminal" / "trader_notes.json"
+    if not notes_path.exists():
+        return {}
+    try:
+        raw = _json.loads(notes_path.read_text(encoding="utf-8"))
+        return raw if isinstance(raw, dict) else {}
+    except Exception:
+        return {}
+
+
+def _sector_key_for_row(row: dict) -> str:
+    if not row:
+        return ""
+    for key in ("gics_sector", "sector", "sector_short", "sector_name", "gics_sector_name"):
+        value = row.get(key)
+        if value:
+            sector = str(value).strip().upper()
+            if sector and sector not in {"NAN", "NONE", "NULL", "<NA>"}:
+                return sector
+    return ""
+
+
+def build_context_block(ticker: str, ticker_note: str = "", sector: str = "") -> str:
+    """Build sector + ticker context for deep dive prompts."""
+    blocks = []
+    sector_key = str(sector or "").strip().upper()
+    if sector_key and sector_key in _sector_notes:
+        blocks.append(
+            f"SECTOR_CONTEXT: {sector_key}\n"
+            f"{_sector_notes[sector_key]}\n"
+            f"END_SECTOR_CONTEXT"
+        )
+    if ticker_note and ticker_note.strip():
+        blocks.append(
+            f"TICKER_NARRATIVE: {str(ticker).strip().upper()}\n"
+            f"{ticker_note.strip()}\n"
+            f"END_TICKER_NARRATIVE"
+        )
+    return ("\n\n".join(blocks) + "\n\n") if blocks else ""
+
+
+def cmd_sector_note(args: str = ""):
+    """/sector_note SECTOR -- add or clear a session-only sector note."""
+    global _sector_notes
+    sector = str(args or "").strip().upper()
+    if not sector:
+        print("\n  Usage: /sector_note SECTOR_NAME\n")
+        return
+    print(f"\n  SECTOR NOTE - {sector}")
+    print(f"  Will inject into /ticker deep dives for {sector} tickers.")
+    print("  End with END on its own line.\n")
+    lines = []
+    try:
+        while True:
+            line = input("  > ")
+            if line.strip().upper() == "END":
+                break
+            lines.append(line)
+    except (EOFError, KeyboardInterrupt):
+        pass
+    note = "\n".join(lines).strip()
+    if note:
+        _sector_notes[sector] = note
+        print(f"\n  Sector note saved for {sector} ({len(note)} chars).\n")
+    else:
+        _sector_notes.pop(sector, None)
+        print(f"\n  Sector note for {sector} cleared.\n")
+
+
+def cmd_notes_status():
+    """/notes -- show active sector notes and saved ticker notes."""
+    print("\n  -- Active session notes ------------------------------")
+    if _sector_notes:
+        for sector, note in sorted(_sector_notes.items()):
+            preview = note[:80].replace("\n", " ")
+            suffix = "..." if len(note) > 80 else ""
+            print(f"  SECTOR/{sector:<14}: {preview}{suffix}")
+    else:
+        print("  SECTOR              : (none)")
+
+    ticker_notes = _load_ticker_notes()
+    shown = 0
+    for ticker, entry in sorted(ticker_notes.items()):
+        note = entry.get("note", "") if isinstance(entry, dict) else str(entry)
+        if not note:
+            continue
+        preview = note[:80].replace("\n", " ")
+        suffix = "..." if len(note) > 80 else ""
+        print(f"  TICKER/{str(ticker).upper():<14}: {preview}{suffix}")
+        shown += 1
+    if shown == 0:
+        print("  TICKER              : use /note TICKER to add ticker-level notes")
+    print("  ------------------------------------------------------\n")
+
+
+def _resolve_quick_pipeline_csv() -> str:
+    """Find a useful prepared pipeline CSV without requiring /triage."""
+    candidates = _candidate_pipeline_csv_paths()
+    return candidates[0] if candidates else ""
+
+
+def _repo_root_from_ma_inputs() -> Path:
+    return MA_INPUTS.parent.parent
+
+
+def _candidate_pipeline_csv_paths() -> list[str]:
+    """Return last-3-run + MA_Inputs CSVs in preference order.
+
+    Last-3-run rule: a trade can remain analytically valid even if it dropped
+    out of the newest morning/EOD manifest, so /quick and /ticker search the
+    current run plus the prior two run folders. MA_Inputs is then added as
+    trader-supplied context, not treated as inferior data: uploaded CSVs,
+    screenshots, and option sheets are part of the evidence pack.
+    """
+    candidates = []
+
+    def add(path):
+        if not path:
+            return
+        p = Path(path)
+        try:
+            if p.exists() and p.is_file() and p.suffix.lower() == ".csv" and p.stat().st_size > 100:
+                key = str(p.resolve()).lower()
+                if key not in seen:
+                    candidates.append(str(p))
+                    seen.add(key)
+        except Exception:
+            pass
+
+    seen = set()
+    repo_root = _repo_root_from_ma_inputs()
+    runs_root = repo_root / "data" / "output" / "runs"
+    patterns = [
+        "morning_validation/morning_validated_trades_*.csv",
+        "morning_validation/morning_candidates_*.csv",
+        "options/vanguard_signals_enriched_*.csv",
+        "options/options_intelligence_*.csv",
+        "options/options_candidates_ranked.csv",
+        "execution/execution_v3_5_*.csv",
+        "superbrain/eil_enriched_*.csv",
+        "superbrain/superbrain_enriched_*.csv",
+        "intelligence_lab/lab_triage_view_*.csv",
+        "vanguard/vanguard_signals.csv",
+        "discovery/discovery_candidates_ultimate_*.csv",
+    ]
+    if runs_root.exists():
+        run_dirs = sorted(
+            [p for p in runs_root.iterdir() if p.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )[:3]
+        for run_dir in run_dirs:
+            for pattern in patterns:
+                for path in sorted(run_dir.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True):
+                    add(path)
+
+    for folder in (MA_PIPELINE, MA_OPTIONS):
+        if folder.exists():
+            for path in sorted(folder.rglob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True):
+                add(path)
+
+    return candidates
+
+
+def _row_matches_ticker(row: dict, ticker: str) -> bool:
+    needle = str(ticker or "").strip().upper()
+    if not needle:
+        return False
+    for key in ("ticker", "underlying", "symbol", "root", "underlying_symbol"):
+        value = str(row.get(key, "") or "").strip().upper()
+        if value == needle:
+            return True
+    return False
+
+
+def _csv_has_ticker(path: str, ticker: str) -> bool:
+    import csv as _csv
+    try:
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = _csv.DictReader(f)
+            for row in reader:
+                if _row_matches_ticker(row, ticker):
+                    return True
+    except Exception:
+        return False
+    return False
+
+
+def _resolve_pipeline_csv_for_ticker(ticker: str, preferred_path: str = "") -> str:
+    """Find the best CSV that actually contains ticker."""
+    if preferred_path and _csv_has_ticker(preferred_path, ticker):
+        return preferred_path
+    for path in _candidate_pipeline_csv_paths():
+        if path == preferred_path:
+            continue
+        if _csv_has_ticker(path, ticker):
+            return path
+    return preferred_path or ""
+
+
+def _csv_rows_for_ticker_text(path: str, ticker: str, max_rows: int = 3) -> tuple[str, int]:
+    import csv as _csv
+    import io as _io
+    rows = []
+    try:
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = _csv.DictReader(f)
+            fieldnames = reader.fieldnames or []
+            for row in reader:
+                if _row_matches_ticker(row, ticker):
+                    rows.append(row)
+                    if len(rows) >= max_rows:
+                        break
+        if not rows:
+            return "", 0
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+        return buf.getvalue(), len(rows)
+    except Exception as exc:
+        return f"[Could not extract {ticker} from {path}: {exc}]", 0
+
+
+def _option_context_candidate_paths(preferred_path: str = "") -> list[str]:
+    paths = []
+    seen = set()
+
+    def add(path):
+        if not path:
+            return
+        p = Path(path)
+        name = p.name.lower()
+        if not any(token in name for token in (
+            "options_intelligence",
+            "vanguard_signals_enriched",
+            "options_candidates_ranked",
+            "options_intelligence_latest",
+        )):
+            return
+        try:
+            if p.exists() and p.is_file() and p.suffix.lower() == ".csv":
+                key = str(p.resolve()).lower()
+                if key not in seen:
+                    paths.append(str(p))
+                    seen.add(key)
+        except Exception:
+            pass
+
+    add(preferred_path)
+    for path in _candidate_pipeline_csv_paths():
+        add(path)
+    return paths
+
+
+def _load_option_context_for_ticker(ticker: str, preferred_path: str = "", max_files: int = 6) -> dict:
+    """Extract ticker-specific rows from broad options CSVs for prompt context.
+
+    This is additive context for the deep dive. It intentionally combines the
+    selected pipeline row, last-3-run options outputs, and MA_Inputs option CSVs
+    where the ticker appears. The cap prevents runaway prompt bloat while still
+    allowing current run + uploaded interpreter evidence to travel together.
+    """
+    loaded = {}
+    for path in _option_context_candidate_paths(preferred_path):
+        text, count = _csv_rows_for_ticker_text(path, ticker)
+        if not text or count <= 0:
+            continue
+        key = f"{Path(path).stem}_{str(ticker).upper()}"
+        loaded[key] = text
+        if len(loaded) >= max_files:
+            break
+    return loaded
+
+
+
+def cmd_quick(args: str = ""):
+    """/quick TICKER -- run deep dive directly from prepared MA_Inputs files."""
+    ticker = str(args or "").strip().upper()
+    if not ticker:
+        print("\n  Usage: /quick TICKER\n")
+        return
+    print(f"\n  Skipping triage - loading {ticker} directly...\n")
+    return cmd_ticker(ticker, skip_triage_check=True)
+
+
 def cmd_brief(text:str=""):
     """Paste newsroom brief. /brief then paste, type END to finish."""
     if text.strip():
@@ -1328,6 +1810,9 @@ MENU = """
 Ã¢â€¢â€˜  /load FILE                   Load a pipeline CSV into session   Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /options FILE                Add options data file              Ã¢â€¢â€˜
 â•‘  /brief                        Paste newsroom brief into session         â•‘
+â•‘  /sector_note SECTOR            Add sector context for deep dives           â•‘
+â•‘  /notes                        Show active sector/ticker notes             â•‘
+â•‘  /quick TICKER                  Deep dive directly, no triage prerequisite  â•‘
 â•‘  /note TICKER [obs]             Add trader narrative for deep dive          â•‘
 Ã¢â€¢â€˜  /sync                        Sync AVSHUNTER outputs to MA_Inputs     Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /macro FILE                  Load macro intelligence JSON/file       Ã¢â€¢â€˜
@@ -1363,6 +1848,8 @@ def route_command(raw:str):
     elif cmd=="/morning":
         if arg: return cmd_morning(arg.strip('"').strip("'"))
         else: print('  Usage: /morning PATH/TO/top_trades.csv')
+    elif cmd=="/quick":
+        return cmd_quick(arg.strip() if arg else "")
     elif cmd=="/ticker":
         import shlex as _shlex
         try:
@@ -1408,6 +1895,10 @@ def route_command(raw:str):
         else: print('  Usage: /news PATH/TO/news_terminal.csv [TICKER]')
     elif cmd=="/brief":
         cmd_brief(arg.strip() if arg else "")
+    elif cmd=="/sector_note":
+        cmd_sector_note(arg.strip() if arg else "")
+    elif cmd=="/notes":
+        cmd_notes_status()
     elif cmd=="/note":
         cmd_note(arg.strip() if arg else "")
     elif cmd=="/sync":
@@ -1785,3 +2276,9 @@ def cmd_lab(args: str = ""):
     if reconciliation.get("interp_only"):
         print(f"  LAB_NOT_CONFIRMED: {', '.join(reconciliation['interp_only'])}")
 
+
+# PI-ENHANCEMENTS-20260527: Sector notes, /notes, /quick, and context injection enabled.
+
+# PI-CHART-RESTORE-20260527
+
+# PI-ANY-TICKER-20260527
