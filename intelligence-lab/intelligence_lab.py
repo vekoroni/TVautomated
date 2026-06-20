@@ -1277,6 +1277,20 @@ def _load_run(run_id, force_reload=False):
             return "CONTRACT_SIDE_CONFLICT", flags
         return "CONFLICT_REPAIRED", flags
 
+    def _instrument_for_direction(direction, current=""):
+        side = _side_from_value(direction)
+        current_text = str(current or "").upper().replace("-", "_").replace(" ", "_")
+        if side not in ("CALL", "PUT"):
+            return str(current or "")
+        opposite = "PUT" if side == "CALL" else "CALL"
+        if "DEBIT_SPREAD" in current_text:
+            return current_text.replace(opposite, side)
+        if "CREDIT_SPREAD" in current_text:
+            return current_text.replace(opposite, side)
+        if "VERTICAL" in current_text:
+            return current_text.replace(opposite, side)
+        return f"LONG_{side}"
+
     def _display_execution_mode_for(verdict, sig):
         entry_action = str(_first_nonempty(sig.get("morning_entry_action"), sig.get("mv__morning_entry_action")) or "").upper()
         if entry_action and entry_action not in _EMPTY_SIGNAL_VALUES:
@@ -1317,7 +1331,21 @@ def _load_run(run_id, force_reload=False):
             sig.setdefault("primary_direction", canonical)
             sig.setdefault("options_direction", canonical)
             # Do not fabricate selected_contract_side; it is contract expression, not thesis authority.
-            sig["lab_coherence_status"] = status
+            expected_instrument = _instrument_for_direction(
+                canonical,
+                _first_nonempty(sig.get("sb_instrument_now"), sig.get("instrument"), sig.get("options_strategy")),
+            )
+            existing_instrument = str(_first_nonempty(sig.get("sb_instrument_now"), sig.get("instrument"), sig.get("options_strategy")) or "")
+            if expected_instrument:
+                if existing_instrument and _side_from_value(existing_instrument) not in ("", canonical):
+                    flags.append(f"instrument:{_side_from_value(existing_instrument)}->{canonical}")
+                    sig.setdefault("instrument_original", existing_instrument)
+                    sig.setdefault("options_strategy_original", sig.get("options_strategy", ""))
+                    sig.setdefault("sb_instrument_now_original", sig.get("sb_instrument_now", ""))
+                sig["instrument"] = expected_instrument
+                sig["options_strategy"] = expected_instrument
+                sig["sb_instrument_now"] = expected_instrument
+            sig["lab_coherence_status"] = status if not any(f.startswith("instrument:") for f in flags) else "INSTRUMENT_DISPLAY_REPAIRED"
             sig["lab_coherence_flags"] = "|".join(flags)
             if flags:
                 existing = str(sig.get("direction_conflict_reason", "") or "")
@@ -1449,6 +1477,7 @@ def _load_run(run_id, force_reload=False):
         sig.setdefault("sb_conv_score",    sig.get("options_score",""))
         sig.setdefault("sb_risk_label",    sig.get("direction_confidence","MEDIUM"))
         sig.setdefault("sb_instrument_now",sig.get("options_strategy",""))
+        _sync_lab_display_fields(sig)
         sig.setdefault("sb_verdict_reason",sig.get("reason",""))
 
         # Sizing from v5 if available, else derive from eil_composite
@@ -1628,6 +1657,7 @@ def _load_run(run_id, force_reload=False):
             sig["direction"] = display_direction
             sig.setdefault("primary_direction", display_direction)
             sig.setdefault("options_direction", display_direction)
+        _sync_lab_display_fields(sig)
 
         # CONVEXITY CHECKS (pipeline-native)
         conv = _compute_conv_checks(sig)

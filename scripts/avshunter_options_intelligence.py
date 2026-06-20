@@ -79,7 +79,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-import sys, os, time, json, math, cmath, warnings, random
+import sys, os, time, json, math, cmath, warnings, random, re
 
 # ── Windows CP1252 fix: force UTF-8 on stdout/stderr so emoji chars don't crash ──
 if hasattr(sys.stdout, "buffer"):
@@ -392,6 +392,33 @@ def load_package_macro_contexts(run_id: str, output_dir: str) -> Dict[str, Dict[
                 extras = payload.get("extras") if isinstance(payload.get("extras"), dict) else {}
                 if extras.get("macro_enrichment_delta") or extras.get("macro_exposure_index"):
                     contexts[ticker] = payload
+        except Exception:
+            continue
+    return contexts
+
+
+def load_package_tle_contexts(run_id: str, output_dir: str) -> Dict[str, Dict[str, Any]]:
+    """
+    Sprint 3 — Trap-to-Launch Engine context loader.
+    Reads tle_ fields written by avshunter_trap_engine.py (Phase 5.5) from package JSONs.
+    Returns {ticker: tle_dict} for all packages that have a tle block.
+    """
+    contexts: Dict[str, Dict[str, Any]] = {}
+    run_dir = os.path.abspath(os.path.join(os.path.abspath(output_dir), os.pardir))
+    packages_dir = os.path.join(run_dir, "packages")
+    if not os.path.isdir(packages_dir):
+        return contexts
+    for name in os.listdir(packages_dir):
+        if not name.endswith(".package.json"):
+            continue
+        path = os.path.join(packages_dir, name)
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                pkg = json.load(fh)
+            ticker = str(pkg.get("ticker") or name.split(".")[0]).strip().upper()
+            tle_block = pkg.get("tle")
+            if ticker and isinstance(tle_block, dict) and tle_block.get("tle_verdict"):
+                contexts[ticker] = tle_block
         except Exception:
             continue
     return contexts
@@ -3922,6 +3949,203 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
 # SECTION 8 — TRADE ECONOMICS CALCULATOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
+# CONTRACT-REPAIR-ALT-001
+# Batch contract-repair alternatives for EOD and morning handoff.
+def _repair_alt_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+    try:
+        if value is None:
+            return default
+        if pd.isna(value):
+            return default
+        cleaned = str(value).replace("$", "").replace("%", "").replace(",", "").strip()
+        if cleaned == "":
+            return default
+        out = float(cleaned)
+        return None if out != out else out
+    except Exception:
+        return default
+
+
+def _repair_alt_symbol(value: Any) -> str:
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except Exception:
+        pass
+    symbol = str(value).strip().upper()
+    if symbol in {"", "NAN", "NONE", "NULL", "<NA>"}:
+        return ""
+    return re.split(r"[\s|;,]+", symbol, maxsplit=1)[0].strip().upper()
+
+
+def _repair_alt_row_symbol(row: Any) -> str:
+    for key in ("symbol", "optionSymbol", "option_symbol", "md_occ_symbol", "contract_symbol"):
+        try:
+            symbol = _repair_alt_symbol(row.get(key))
+        except Exception:
+            symbol = ""
+        if symbol:
+            return symbol
+    return ""
+
+
+def select_repair_alternative_contracts(
+    df: pd.DataFrame,
+    ctx: Dict,
+    selected_contract: Optional[Dict] = None,
+    limit: int = 3,
+) -> List[Dict[str, Any]]:
+    """Return thesis-aligned alternative contracts for repair-at-open handoff."""
+    try:
+        if df is None or df.empty:
+            return []
+    except Exception:
+        return []
+
+    direction = str(ctx.get("direction") or ctx.get("primary_direction") or "").upper()
+    if direction in {"LONG_CALL", "BULLISH", "BUY", "BUY_SETUP"}:
+        direction = "CALL"
+    elif direction in {"LONG_PUT", "BEARISH", "SELL", "SELL_SETUP"}:
+        direction = "PUT"
+    if direction == "CALL":
+        wanted_rights = {"C"}
+    elif direction == "PUT":
+        wanted_rights = {"P"}
+    elif direction == "STRANGLE":
+        wanted_rights = {"C", "P"}
+    else:
+        return []
+
+    try:
+        dte_min, dte_target, dte_max = ctx.get("dte_window") or (7, 30, 60)
+    except Exception:
+        dte_min, dte_target, dte_max = (7, 30, 60)
+    dte_cfg = ctx.get("dte_config") or {}
+    delta_min = _repair_alt_float(dte_cfg.get("delta_min"), 0.15) or 0.15
+    delta_max = _repair_alt_float(dte_cfg.get("delta_max"), 0.35) or 0.35
+    target_delta = (delta_min + delta_max) / 2.0
+    spread_limit = _repair_alt_float(dte_cfg.get("spread_max"), MAX_SPREAD_PCT) or MAX_SPREAD_PCT
+    spot = _repair_alt_float(ctx.get("spot"))
+    structural_target = _repair_alt_float(ctx.get("structural_target"))
+
+    excluded = set()
+    if selected_contract:
+        excluded.add(_repair_alt_row_symbol(selected_contract))
+        excluded.add(_repair_alt_symbol(selected_contract.get("md_occ_symbol")))
+
+    candidates: List[Dict[str, Any]] = []
+    for _, row in df.copy().iterrows():
+        symbol = _repair_alt_row_symbol(row)
+        if not symbol or symbol in excluded:
+            continue
+        right = str(row.get("right") or row.get("side") or "").upper()[:1]
+        if right not in wanted_rights:
+            continue
+
+        strike = _repair_alt_float(row.get("strike"))
+        dte_val = _repair_alt_float(row.get("dte"), dte_target) or dte_target
+        mark = (
+            _repair_alt_float(row.get("mark"))
+            or _repair_alt_float(row.get("mid"))
+            or _repair_alt_float(row.get("last"))
+        )
+        if strike is None or mark is None or mark <= 0:
+            continue
+        if dte_val < max(1, float(dte_min) - 15) or dte_val > float(dte_max) + 20:
+            continue
+
+        if spot and spot > 0:
+            if right == "C" and strike < spot * 0.90:
+                continue
+            if right == "P" and strike > spot * 1.10:
+                continue
+
+        delta_abs = abs(_repair_alt_float(row.get("delta"), target_delta) or target_delta)
+        oi = _repair_alt_float(row.get("open_interest"), _repair_alt_float(row.get("oi"), 0.0)) or 0.0
+        volume = _repair_alt_float(row.get("volume"), 0.0) or 0.0
+        spread = _repair_alt_float(row.get("spread_pct"))
+        if spread is None:
+            bid = _repair_alt_float(row.get("bid"))
+            ask = _repair_alt_float(row.get("ask"))
+            if bid is not None and ask is not None and mark > 0:
+                spread = max(0.0, ask - bid) / mark
+        spread = spread if spread is not None else spread_limit
+
+        delta_score = max(0.0, 100.0 - abs(delta_abs - target_delta) * 300.0)
+        dte_score = max(0.0, 100.0 - abs(float(dte_val) - float(dte_target)) * 3.0)
+        liq_score = min(100.0, volume * 2.0 + oi / 20.0)
+        spread_score = max(0.0, 100.0 - max(0.0, spread - spread_limit) * 400.0)
+        reach_score = 60.0
+        if structural_target and spot:
+            if right == "C":
+                reach_score = 100.0 if strike <= structural_target else max(0.0, 60.0 - ((strike - structural_target) / spot) * 250.0)
+            else:
+                reach_score = 100.0 if strike >= structural_target else max(0.0, 60.0 - ((structural_target - strike) / spot) * 250.0)
+
+        score = (
+            0.30 * delta_score
+            + 0.20 * dte_score
+            + 0.20 * liq_score
+            + 0.20 * spread_score
+            + 0.10 * reach_score
+        )
+        candidates.append({
+            "symbol": symbol,
+            "score": round(score, 2),
+            "right": right,
+            "strike": strike,
+            "expiry": row.get("expiration_date") or row.get("expiry") or row.get("expiration"),
+            "dte": dte_val,
+            "mark": mark,
+            "delta": delta_abs,
+            "oi": oi,
+            "volume": volume,
+            "spread_pct": round(float(spread), 6) if spread is not None else "",
+            "reason": (
+                f"{right} thesis-aligned repair candidate; "
+                f"dte={float(dte_val):.0f}; delta={delta_abs:.2f}; "
+                f"oi={oi:.0f}; vol={volume:.0f}; spread={float(spread):.3f}"
+                if spread is not None
+                else f"{right} thesis-aligned repair candidate"
+            ),
+        })
+
+    candidates.sort(key=lambda item: item.get("score", 0.0), reverse=True)
+    return candidates[: max(1, int(limit or 3))]
+
+
+def _format_repair_alternative_fields(alternatives: List[Dict[str, Any]], reason: str = "") -> Dict[str, Any]:
+    out: Dict[str, Any] = {
+        "alternative_contract_1": "",
+        "alternative_contract_2": "",
+        "alternative_contract_3": "",
+        "alternative_contract_1_score": "",
+        "alternative_contract_2_score": "",
+        "alternative_contract_3_score": "",
+        "alternative_contract_1_reason": "",
+        "alternative_contract_2_reason": "",
+        "alternative_contract_3_reason": "",
+        "contract_repair_action": "NO_ALTERNATIVE_FOUND",
+        "alternative_contract_attempts": "",
+    }
+    for idx, alt in enumerate((alternatives or [])[:3], start=1):
+        out[f"alternative_contract_{idx}"] = alt.get("symbol", "")
+        out[f"alternative_contract_{idx}_score"] = alt.get("score", "")
+        out[f"alternative_contract_{idx}_reason"] = alt.get("reason", "")
+    if alternatives:
+        out["contract_repair_action"] = "ALTERNATIVES_AVAILABLE"
+        out["alternative_contract_attempts"] = (
+            f"GENERATED_{len(alternatives[:3])}_REPAIR_ALTERNATIVES"
+            + (f"; reason={reason}" if reason else "")
+        )
+    elif reason:
+        out["alternative_contract_attempts"] = f"NO_REPAIR_ALTERNATIVE_FOUND; reason={reason}"
+    return out
+
+
 def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     """
     Compute full trade economics using AVSHUNTER structural targets.
@@ -5028,7 +5252,7 @@ def _resolve_asof_date(signal_row) -> str:
     return ''
 
 
-def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]] = None) -> Dict:
+def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]] = None, tle_context: Optional[Dict[str, Any]] = None) -> Dict:
     """
     Full options intelligence pipeline for a single signal.
     Returns a flat dict of all output fields for the Intelligence Lab.
@@ -5226,6 +5450,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'iv_regime'      : iv_ctx.get('iv_regime'),
                 'skew_label'     : iv_ctx.get('skew_label')}
         if _chain_has_data:
+            _repair_alt_fields = _format_repair_alternative_fields(
+                select_repair_alternative_contracts(chain, ctx, None, limit=3),
+                'NO_CONTRACT_PASSED_QUALITY_GATES',
+            )
             _base_no_contract.update({
                 'execution_permission': OPTIONS_RESEARCH_PERMISSION,
                 'final_route': OPTIONS_PROBE_ROUTE,
@@ -5244,6 +5472,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'block_severity': 'SOFT',
                 'block_detail': 'No contract passed quality gates',
             })
+            _base_no_contract.update(_repair_alt_fields)
             return _base_no_contract
         _base_no_contract.update(_empty_options_research_contract('No options chain data available'))
         return _base_no_contract
@@ -5432,6 +5661,17 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         stand_down_reason=stand_down_reason,
         walls=walls,
     )
+    repair_alt_fields = {}
+    if bool(research_contract.get('contract_repair_required')):
+        repair_alt_fields = _format_repair_alternative_fields(
+            select_repair_alternative_contracts(
+                chain,
+                ctx,
+                selected_contract=contract,
+                limit=3,
+            ),
+            str(research_contract.get('contract_repair_reason') or ''),
+        )
     authoritative_route = str(research_contract.get('final_route', '') or '').upper()
     resolved_options_verdict = verdict
     resolved_stand_down_reason = stand_down_reason
@@ -5478,6 +5718,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'options_multiplier'      : round(max(0.20, min(1.00, ois/100.0)), 2),
         'stand_down_reason'       : resolved_stand_down_reason,
         **macro_adj,
+        **repair_alt_fields,
         # Block taxonomy — populated on all rows; NONE values when verdict is not STAND_DOWN
         # FIX 2026-04-28: EXECUTE signals get block_code=NONE — passing signal is not a block
         'block_code'              : ('NONE' if resolved_options_verdict == 'EXECUTE'
@@ -5744,7 +5985,227 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         # Includes earnings-within-DTE detection using catalyst fields already in the row.
         'options_hard_vetoes'     : _build_options_hard_vetoes(signal_row, contract, research_contract),
         'hard_vetoes'             : research_contract.get('hard_vetoes', ''),
+        # Sprint 2 — Convexity Strike Map
+        **build_convexity_strike_map(contract, ctx, iv_ctx, econ, walls, research_contract, signal_row, tle_context=tle_context),
     }
+
+def build_convexity_strike_map(
+    contract: Dict,
+    ctx: Dict,
+    iv_ctx: Dict,
+    econ: Dict,
+    walls: Dict,
+    research_contract: Dict,
+    signal_row: Any = None,
+    tle_context: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Sprint 2 — Convexity Strike Map.
+    Synthesises contract payoff geometry into a ranked recommendation.
+    All output fields are prefixed csm_ and appended to the OI output dict.
+    """
+    _INSUFFICIENT = "DATA_INSUFFICIENT"
+
+    # ── Pull raw values ────────────────────────────────────────────────────────
+    mark_synthetic = bool(contract.get("mark_synthetic", True))
+    mid = _oi_float(contract.get("mark") or contract.get("mid") or contract.get("mid_price"))
+    delta = _oi_float(contract.get("delta"))
+    dte = _oi_float(contract.get("dte"))
+    spot = _oi_float(ctx.get("spot"))
+    direction = str(ctx.get("direction") or "").upper()
+    structural_target = _oi_float(ctx.get("structural_target"))
+    breakeven_pct = _oi_float(econ.get("breakeven_pct"))
+    rr_options = _oi_float(econ.get("rr_options"))
+    expected_move_pct = _oi_float(research_contract.get("expected_move_pct"))
+    runway_to_wall_pct = _oi_float(research_contract.get("runway_to_wall_pct"))
+
+    # IV percentile: iv_ctx stores as 0-1; normalise to 0-100 for display/gating
+    _ivp_raw = _oi_float(iv_ctx.get("iv_percentile"))
+    if _ivp_raw is not None:
+        ivp = _ivp_raw * 100.0 if _ivp_raw <= 1.0 else _ivp_raw
+    else:
+        ivp = _oi_float(iv_ctx.get("iv_rank"))  # already 0-100 when present
+
+    # ── Guard: synthetic mark or missing critical data → DATA_INSUFFICIENT ─────
+    _missing = [k for k, v in {"mid": mid, "delta": delta, "dte": dte, "spot": spot}.items() if v is None]
+    if mark_synthetic or _missing:
+        _reason = "Mark_Synthetic=True" if mark_synthetic else f"missing: {', '.join(_missing)}"
+        return {
+            "csm_best_contract": str(contract.get("symbol") or ""),
+            "csm_delta_sweet_spot": delta,
+            "csm_delta_note": "",
+            "csm_dte_rank": _INSUFFICIENT,
+            "csm_premium_efficiency": None,
+            "csm_breakeven_pct": breakeven_pct,
+            "csm_gamma_runway": _INSUFFICIENT,
+            "csm_iv_crush_risk": _INSUFFICIENT,
+            "csm_r1_target": None,
+            "csm_r3_target": None,
+            "csm_r5_target": None,
+            "csm_r10_target": None,
+            "csm_verdict": _INSUFFICIENT,
+            "csm_verdict_reason": f"CSM skipped — {_reason}",
+        }
+
+    # ── csm_best_contract ─────────────────────────────────────────────────────
+    _sym = str(contract.get("symbol") or "")
+    if not _sym and spot and dte:
+        _strike = _oi_float(contract.get("strike"))
+        _expiry = str(contract.get("expiry") or contract.get("expiration_date") or "")[:10]
+        _side_ch = "C" if direction == "CALL" else "P"
+        _sym = f"{ctx.get('ticker','')} ${_strike:.0f}{_side_ch} {_expiry}" if _strike else ""
+    csm_best_contract = _sym
+
+    # ── csm_delta_sweet_spot + delta_note ────────────────────────────────────
+    _abs_delta = abs(delta)
+    csm_delta_sweet_spot = round(_abs_delta, 3)
+    csm_delta_note = "" if 0.35 <= _abs_delta <= 0.55 else "NEAREST_AVAILABLE"
+
+    # ── csm_dte_rank ──────────────────────────────────────────────────────────
+    if 5 <= dte <= 20:
+        csm_dte_rank = "OPTIMAL"
+    elif 3 <= dte < 5 or 20 < dte <= 30:
+        csm_dte_rank = "ACCEPTABLE"
+    else:
+        csm_dte_rank = "MARGINAL"
+
+    # ── csm_premium_efficiency ────────────────────────────────────────────────
+    # R:R multiple of this specific contract (gain per unit of premium at risk)
+    csm_premium_efficiency = round(rr_options, 3) if rr_options is not None else None
+
+    # ── csm_breakeven_pct ─────────────────────────────────────────────────────
+    csm_breakeven_pct = round(breakeven_pct, 3) if breakeven_pct is not None else None
+
+    # ── csm_gamma_runway ─────────────────────────────────────────────────────
+    if runway_to_wall_pct is None:
+        csm_gamma_runway = "UNKNOWN"
+    elif runway_to_wall_pct >= 3.0:
+        csm_gamma_runway = "CLEAR"
+    elif runway_to_wall_pct >= 1.0:
+        csm_gamma_runway = "PARTIAL"
+    else:
+        csm_gamma_runway = "BLOCKED"
+
+    # ── csm_iv_crush_risk ────────────────────────────────────────────────────
+    if ivp is None:
+        csm_iv_crush_risk = "UNKNOWN"
+    elif ivp >= 75:
+        csm_iv_crush_risk = "EXTREME"
+    elif ivp >= 60:
+        csm_iv_crush_risk = "HIGH"
+    elif ivp >= 40:
+        csm_iv_crush_risk = "MEDIUM"
+    else:
+        csm_iv_crush_risk = "LOW"
+
+    # ── R targets (all in premium terms per share) ────────────────────────────
+    # nR target = entry × (n + 1) since R = % gain on premium
+    csm_r1_target  = round(mid * 2.0,  4)   # 1R  = 100% gain
+    csm_r3_target  = round(mid * 4.0,  4)   # 3R  = 300% gain
+    csm_r5_target  = round(mid * 6.0,  4)   # 5R  = 500% gain
+    csm_r10_target = round(mid * 11.0, 4)   # 10R = 1000% gain
+
+    # ── TOO_LATE: underlying already moved > 60% toward structural target ─────
+    _too_late = False
+    _too_late_reason = ""
+    if structural_target and spot and spot > 0:
+        _sr = signal_row if signal_row is not None else {}
+        _stop = _oi_float(
+            _sr.get("stop_loss") or _sr.get("structural_support") or _sr.get("invalidation_price")
+            or walls.get("put_wall") if direction == "CALL" else walls.get("call_wall")
+        )
+        if _stop and structural_target != _stop:
+            if direction == "CALL" and structural_target > _stop:
+                _completed = (spot - _stop) / (structural_target - _stop)
+                _too_late = _completed > 0.60
+                _too_late_reason = f"Price {spot:.2f} is {_completed:.0%} toward target {structural_target:.2f}"
+            elif direction == "PUT" and structural_target < _stop:
+                _completed = (_stop - spot) / (_stop - structural_target)
+                _too_late = _completed > 0.60
+                _too_late_reason = f"Price {spot:.2f} is {_completed:.0%} toward target {structural_target:.2f}"
+
+    # ── Verdict logic (TRAP and TOO_LATE override BUYABLE/WAIT) ──────────────
+    if _abs_delta > 0.70:
+        csm_verdict = "TRAP"
+        csm_verdict_reason = f"Delta {_abs_delta:.2f} > 0.70 — deep ITM lottery ticket geometry"
+    elif ivp is not None and ivp > 75:
+        csm_verdict = "TRAP"
+        csm_verdict_reason = f"IVP {ivp:.0f} > 75 — buying at peak volatility"
+    elif _too_late:
+        csm_verdict = "TOO_LATE"
+        csm_verdict_reason = _too_late_reason + " — crowd has arrived"
+    elif ivp is not None and ivp > 50:
+        csm_verdict = "WAIT"
+        csm_verdict_reason = f"IVP {ivp:.0f} > 50 — IV elevated, wait for compression before entry"
+    else:
+        # Check BUYABLE conditions: delta 0.35–0.55, DTE 5–20, IVP < 50, runway CLEAR, breakeven <= expected move
+        _delta_ok = 0.35 <= _abs_delta <= 0.55
+        _dte_ok = csm_dte_rank == "OPTIMAL"
+        _runway_ok = csm_gamma_runway == "CLEAR"
+        _be_ok = (
+            expected_move_pct is not None
+            and breakeven_pct is not None
+            and expected_move_pct >= breakeven_pct
+        )
+        if _delta_ok and _dte_ok and _runway_ok and _be_ok:
+            csm_verdict = "BUYABLE"
+            csm_verdict_reason = (
+                f"delta={_abs_delta:.2f} in sweet spot, DTE={dte:.0f} optimal, "
+                f"IVP={ivp:.0f if ivp is not None else 'N/A'} cheap, runway CLEAR, "
+                f"expected move {expected_move_pct:.1f}% >= breakeven {breakeven_pct:.1f}%"
+            )
+        else:
+            _reasons = []
+            if not _delta_ok:
+                _reasons.append(f"delta={_abs_delta:.2f} outside 0.35-0.55 (nearest available)")
+            if not _dte_ok:
+                _reasons.append(f"DTE={dte:.0f} not in 5-20 range ({csm_dte_rank})")
+            if not _runway_ok:
+                _reasons.append(f"gamma runway {csm_gamma_runway}")
+            if not _be_ok:
+                _em = f"{expected_move_pct:.1f}%" if expected_move_pct is not None else "unavailable"
+                _be = f"{breakeven_pct:.1f}%" if breakeven_pct is not None else "unavailable"
+                _reasons.append(f"expected move {_em} < breakeven {_be}")
+            csm_verdict = "WAIT"
+            csm_verdict_reason = "Sub-optimal geometry: " + "; ".join(_reasons) if _reasons else "WAIT — conditions not fully met"
+
+    # Sprint 3 — TLE modifier: apply trap verdict on top of CSM verdict
+    if tle_context and isinstance(tle_context, dict):
+        _tle_verdict = str(tle_context.get("tle_verdict") or "").upper()
+        if _tle_verdict == "CHASE":
+            # Move already in progress — crowd has arrived — premium is expensive
+            csm_verdict_reason = (
+                f"[TLE:CHASE] Trap move in progress — premium expensive. "
+                f"Original CSM: {csm_verdict} — {csm_verdict_reason}"
+            )
+            csm_verdict = "TOO_LATE"
+        elif _tle_verdict == "EARLY_PROBE" and csm_premium_efficiency is not None:
+            # Trap forming but not confirmed — reduce efficiency score by 20% for early theta risk
+            _orig_eff = csm_premium_efficiency
+            csm_premium_efficiency = round(csm_premium_efficiency * 0.80, 3)
+            csm_verdict_reason += (
+                f" [TLE:EARLY_PROBE efficiency {_orig_eff:.3f}→{csm_premium_efficiency:.3f}]"
+            )
+        # CONFIRMATION_ENTRY → no modifier (optimal)
+        # NO_TRADE → no modifier to CSM (tle_ fields are null)
+
+    return {
+        "csm_best_contract":      csm_best_contract,
+        "csm_delta_sweet_spot":   csm_delta_sweet_spot,
+        "csm_delta_note":         csm_delta_note,
+        "csm_dte_rank":           csm_dte_rank,
+        "csm_premium_efficiency": csm_premium_efficiency,
+        "csm_breakeven_pct":      csm_breakeven_pct,
+        "csm_gamma_runway":       csm_gamma_runway,
+        "csm_iv_crush_risk":      csm_iv_crush_risk,
+        "csm_r1_target":          csm_r1_target,
+        "csm_r3_target":          csm_r3_target,
+        "csm_r5_target":          csm_r5_target,
+        "csm_r10_target":         csm_r10_target,
+        "csm_verdict":            csm_verdict,
+        "csm_verdict_reason":     csm_verdict_reason,
+    }
+
 
 def _build_options_hard_vetoes(signal_row: dict, contract: dict, research_contract: dict) -> str:
     """FIX 10: Build JSON-encoded structured hard veto list for handoff contract."""
@@ -6059,6 +6520,13 @@ def run_options_layer(
     else:
         print("[MACRO] No macro enrichment context found for Options bonus")
 
+    # Sprint 3 — load TLE contexts written by avshunter_trap_engine.py (Phase 5.5)
+    tle_contexts = load_package_tle_contexts(run_id, output_dir)
+    if tle_contexts:
+        print(f"[TLE] Trap-to-Launch Engine contexts loaded: {len(tle_contexts)}")
+    else:
+        print("[TLE] No TLE contexts found — CSM modifiers inactive")
+
     results = []
     t_start = time.time()
 
@@ -6071,7 +6539,7 @@ def run_options_layer(
         print(f"[{i}/{len(eligible)}] {ticker} T{tier} Ph{phase} {intent}")
 
         try:
-            result = process_ticker(row, macro_context=macro_contexts.get(ticker))
+            result = process_ticker(row, macro_context=macro_contexts.get(ticker), tle_context=tle_contexts.get(ticker))
             for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
                 result.setdefault(_baton_col, row.get(_baton_col))
             results.append(result)
@@ -6265,6 +6733,10 @@ def run_options_layer(
         'execution_permission','final_route','options_research_score',
         'confidence_score','hard_vetoes','missing_data',
         'contract_repair_status','contract_repair_required','contract_repair_reason',
+        'contract_repair_action','alternative_contract_attempts',
+        'alternative_contract_1','alternative_contract_2','alternative_contract_3',
+        'alternative_contract_1_score','alternative_contract_2_score','alternative_contract_3_score',
+        'alternative_contract_1_reason','alternative_contract_2_reason','alternative_contract_3_reason',
         'trigger_state','trigger_status_reason','expected_move_pct',
         'expected_move_price','breakeven_feasibility','estimated_R',
         'theta_decay_expected','runway_to_wall_pct','liquidity_score',
@@ -6311,6 +6783,12 @@ def run_options_layer(
         'stop_loss','entry_price','structural_target',
         'wyckoff_phase_bucket','wyckoff_score','composite_score',
         'win_probability','vms_score','vms_decision',
+        # Sprint 2 — Convexity Strike Map fields
+        'csm_best_contract','csm_delta_sweet_spot','csm_delta_note',
+        'csm_dte_rank','csm_premium_efficiency','csm_breakeven_pct',
+        'csm_gamma_runway','csm_iv_crush_risk',
+        'csm_r1_target','csm_r3_target','csm_r5_target','csm_r10_target',
+        'csm_verdict','csm_verdict_reason',
     ]
     avail_fields = list(dict.fromkeys(f for f in options_fields if f in out_df.columns))
     merged_enriched = pd.merge(

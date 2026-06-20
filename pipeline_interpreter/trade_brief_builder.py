@@ -70,8 +70,21 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         direction_source = "UNKNOWN"
 
     # ── Contract ──────────────────────────────────────────────────
-    # If misdiagnosed, use alternative contract from Sprint 2
-    if dcr_misdiag and _s(row.get("alt_contract_symbol")):
+    # If repair selected a better contract, show that before the stale EOD contract.
+    repair_contract = _s(
+        row.get("morning_selected_contract_symbol")
+        or row.get("live_selected_contract_symbol")
+        or row.get("alternative_contract_1")
+    )
+    if repair_contract:
+        contract        = repair_contract
+        contract_bid    = _f(row.get("live_contract_bid") or row.get("contract_bid"))
+        contract_ask    = _f(row.get("live_contract_ask") or row.get("contract_ask"))
+        contract_mid    = _f(row.get("live_contract_mid") or row.get("contract_mid"))
+        contract_delta  = _f(row.get("live_delta") or row.get("contract_delta"))
+        contract_iv     = _f(row.get("live_iv") or row.get("contract_iv"))
+        contract_source = "REPAIR_ALTERNATIVE"
+    elif dcr_misdiag and _s(row.get("alt_contract_symbol")):
         contract        = _s(row.get("alt_contract_symbol"))
         contract_bid    = _f(row.get("alt_bid"))
         contract_ask    = _f(row.get("alt_ask"))
@@ -88,8 +101,8 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         contract_bid    = _f(row.get("live_contract_bid"))
         contract_ask    = _f(row.get("live_contract_ask"))
         contract_mid    = _f(row.get("live_contract_mid"))
-        contract_delta  = _f(row.get("live_contract_delta"))
-        contract_iv     = _f(row.get("live_contract_iv"))
+        contract_delta  = _f(row.get("live_delta") or row.get("contract_delta"))
+        contract_iv     = _f(row.get("live_iv") or row.get("contract_iv"))
         contract_source = "PIPELINE"
 
     # ── Gate verdict ──────────────────────────────────────────────
@@ -259,3 +272,5 @@ def format_trade_brief(brief: Dict[str, Any]) -> str:
     lines.append("")
 
     return "\n".join(lines)
+
+# CONTRACT-REPAIR-ALT-001: Trade brief prefers morning/repair alternatives.

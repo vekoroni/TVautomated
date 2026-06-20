@@ -57,12 +57,19 @@ def _write_csv(rows:list, path:Path, fields:list) -> int:
 
 def _verdict_style(v:str) -> tuple:
     styles={
-        "GO":          ("#00ff88","#003300","#00ff8822"),
-        "ARMED":       ("#00d4aa","#002a22","#00d4aa22"),
-        "PROBE":       ("#f59e0b","#1a1200","#f59e0b22"),
-        "WAIT":        ("#64748b","#0f1520","#64748b22"),
-        "BLOCKED":     ("#ef4444","#1a0000","#ef444422"),
-        "MISDIAGNOSED":("#a855f7","#1a0a2a","#a855f722"),
+        # Pipeline verdicts (machine layer)
+        "GO":                  ("#00ff88","#003300","#00ff8822"),
+        "ARMED":               ("#00d4aa","#002a22","#00d4aa22"),
+        "PROBE":               ("#f59e0b","#1a1200","#f59e0b22"),
+        "WAIT":                ("#64748b","#0f1520","#64748b22"),
+        "BLOCKED":             ("#ef4444","#1a0000","#ef444422"),
+        "MISDIAGNOSED":        ("#a855f7","#1a0a2a","#a855f722"),
+        # Interpreter verdicts (human layer — v2)
+        "PROBE_NOW":           ("#00ff88","#003300","#00ff8822"),
+        "PROBE_WATCH":         ("#f59e0b","#1a1200","#f59e0b22"),
+        "MONITOR":             ("#38bdf8","#001a26","#38bdf822"),
+        "CROWD_TRADE":         ("#e879f9","#1a0026","#e879f922"),
+        "PASS_THESIS_INVALID": ("#ef4444","#1a0000","#ef444422"),
     }
     return styles.get(v,("#64748b","#0f1520","#64748b22"))
 
