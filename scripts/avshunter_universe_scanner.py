@@ -361,6 +361,18 @@ def run_test_scan(pipeline_universe: set, top_n: int = 10) -> tuple:
                 "n_contracts":         len(result["contracts"]),
                 "pipeline_tag":        tag,
                 "tier":                "TEST",
+                # L2-STEP7: LSS stubs for test mode (no real data)
+                "lss_score":           None,
+                "lss_decision":        "LEAD_BLOCK",
+                "lss_route":           "EXCLUDED",
+                "lss_reasons":         "TEST_MODE",
+                "sweep_flag":          "NO_DATA",
+                "options_vol_ratio":   None,
+                "sector_rs_flag":      "NO_MAP",
+                "short_interest_pct":  None,
+                "short_data_available": False,
+                "dark_pool_proxy_flag": "LOW_SIGNAL",
+                "dark_pool_proxy_score": 0,
             })
 
             for c in result["contracts"]:
@@ -471,6 +483,98 @@ def init_iv_cache() -> sqlite3.Connection:
     """)
     conn.commit()
     return conn
+
+
+def _compute_options_volume_anomaly(
+    options_df: pd.DataFrame,
+    ticker: str,
+    conn: sqlite3.Connection,
+) -> dict:
+    """
+    L2-STEP1: Compute options volume anomaly vs cached 20-day average.
+    Uses contract volume already fetched in options chain — zero new API calls.
+    Stores daily total options volume in options_vol_history SQLite table.
+    """
+    _EMPTY = {
+        "options_vol_today":   None,
+        "options_vol_20d_avg": None,
+        "options_vol_ratio":   None,
+        "options_vol_anomaly": False,
+        "call_vol_today":      None,
+        "put_vol_today":       None,
+        "call_put_vol_ratio":  None,
+        "sweep_flag":          "NO_DATA",
+    }
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS options_vol_history (
+                ticker      TEXT NOT NULL,
+                trade_date  TEXT NOT NULL,
+                total_vol   INTEGER,
+                call_vol    INTEGER,
+                put_vol     INTEGER,
+                PRIMARY KEY (ticker, trade_date)
+            )
+        """)
+        conn.commit()
+
+        today_str = date.today().isoformat()
+        vol_col   = "volume" if "volume" in options_df.columns else None
+        if vol_col is None or options_df[vol_col].isna().all():
+            return _EMPTY
+
+        call_mask = options_df["contract_type"].str.lower().str.startswith("call")
+        put_mask  = options_df["contract_type"].str.lower().str.startswith("put")
+
+        total_vol = int(options_df[vol_col].fillna(0).sum())
+        call_vol  = int(options_df.loc[call_mask, vol_col].fillna(0).sum())
+        put_vol   = int(options_df.loc[put_mask,  vol_col].fillna(0).sum())
+
+        conn.execute(
+            "INSERT OR REPLACE INTO options_vol_history "
+            "(ticker, trade_date, total_vol, call_vol, put_vol) VALUES (?,?,?,?,?)",
+            (ticker, today_str, total_vol, call_vol, put_vol)
+        )
+        conn.commit()
+
+        rows = conn.execute(
+            "SELECT total_vol FROM options_vol_history "
+            "WHERE ticker=? AND trade_date < ? ORDER BY trade_date DESC LIMIT 20",
+            (ticker, today_str)
+        ).fetchall()
+
+        avg_20d = ratio = None
+        anomaly = False
+        if rows and len(rows) >= 5:
+            avg_20d = sum(r[0] for r in rows if r[0]) / len(rows)
+            if avg_20d > 0:
+                ratio   = round(total_vol / avg_20d, 2)
+                anomaly = ratio >= 2.0
+
+        cp_ratio = sweep = None
+        if call_vol > 0 and put_vol > 0:
+            cp_ratio = round(call_vol / put_vol, 2)
+            sweep    = "CALL_SWEEP" if cp_ratio >= 2.0 else ("PUT_SWEEP" if cp_ratio <= 0.5 else "NEUTRAL")
+        elif call_vol > 0:
+            sweep = "CALL_SWEEP"
+        elif put_vol > 0:
+            sweep = "PUT_SWEEP"
+        else:
+            sweep = "NEUTRAL"
+
+        return {
+            "options_vol_today":   total_vol,
+            "options_vol_20d_avg": round(avg_20d, 0) if avg_20d else None,
+            "options_vol_ratio":   ratio,
+            "options_vol_anomaly": anomaly,
+            "call_vol_today":      call_vol,
+            "put_vol_today":       put_vol,
+            "call_put_vol_ratio":  cp_ratio,
+            "sweep_flag":          sweep,
+        }
+    except Exception as exc:
+        log.debug("  %s: options_vol_anomaly skipped: %s", ticker, exc)
+        return _EMPTY
 
 
 def get_cached_iv_series(conn: sqlite3.Connection, ticker: str) -> pd.Series:
@@ -701,6 +805,37 @@ def polygon_get(url: str, retries: int = 3) -> Optional[dict]:
     return None
 
 
+def fetch_short_borrow_data(ticker: str) -> dict:
+    """
+    L2-STEP3: Fetch short interest from Polygon.
+    Endpoint: /v2/finance/short_interest/{ticker}
+    Graceful: returns {"short_data_available": False} on any failure (403/404/plan).
+    """
+    url = (
+        f"https://api.polygon.io/v2/finance/short_interest/{ticker}"
+        f"?apiKey={POLYGON_API_KEY}"
+    )
+    try:
+        data = polygon_get(url)
+        if not data or "results" not in data or not data["results"]:
+            return {"short_data_available": False}
+        latest    = data["results"][-1]
+        short_vol = latest.get("shortVolume", 0) or 0
+        total_vol = latest.get("totalVolume", 1) or 1
+        short_pct = round(short_vol / total_vol * 100, 2) if total_vol > 0 else None
+        return {
+            "short_data_available": True,
+            "short_volume":         short_vol,
+            "short_interest_pct":   short_pct,
+            "short_data_date":      latest.get("date", ""),
+            "borrow_rate":          latest.get("borrowRate", None),
+            "utilization":          latest.get("utilization", None),
+        }
+    except Exception as exc:
+        log.debug("  %s: short/borrow fetch failed: %s", ticker, exc)
+        return {"short_data_available": False}
+
+
 def fetch_price_data(ticker: str) -> Optional[dict]:
     end_date   = datetime.today()
     start_date = end_date - timedelta(days=LOOKBACK_DAYS)
@@ -747,6 +882,22 @@ def fetch_price_data(ticker: str) -> Optional[dict]:
     rsi_series   = 100 - (100 / (1 + rs))
     rsi_14       = float(rsi_series.iloc[-1]) if not pd.isna(rsi_series.iloc[-1]) else 50.0
 
+    # ── L2-STEP2: Equity volume anomaly vs 20-day average ────────────────────
+    # Uses existing OHLCV 'v' column — zero extra API calls.
+    if "v" in df.columns:
+        _vol_s         = df["v"].fillna(0)
+        vol_today      = float(_vol_s.iloc[-1])
+        vol_20d_avg    = float(_vol_s.rolling(20).mean().iloc[-1])
+        equity_vol_ratio   = round(vol_today / vol_20d_avg, 2) if vol_20d_avg > 0 else None
+        equity_vol_anomaly = equity_vol_ratio is not None and equity_vol_ratio >= 2.0
+    else:
+        vol_today = vol_20d_avg = equity_vol_ratio = None
+        equity_vol_anomaly = False
+
+    # live_open / live_prev_close from existing OHLCV — used by dark pool proxy
+    live_open       = float(df["o"].iloc[-1])  if "o" in df.columns else spot
+    live_prev_close = float(df["c"].iloc[-2])  if len(df) >= 2 else spot
+
     return {
         "spot":         spot,
         "rv":           float(rv_val),
@@ -761,6 +912,14 @@ def fetch_price_data(ticker: str) -> Optional[dict]:
         "rsi_14":       round(rsi_14, 1),
         "ma20":         round(ma20, 4),
         "ma50":         round(ma50, 4),
+        # L2-STEP2: Equity volume anomaly
+        "equity_vol_today":    vol_today,
+        "equity_vol_20d_avg":  vol_20d_avg,
+        "equity_vol_ratio":    equity_vol_ratio,
+        "equity_vol_anomaly":  equity_vol_anomaly,
+        # L2-STEP5 dark pool proxy inputs
+        "live_open":           live_open,
+        "live_prev_close":     live_prev_close,
     }
 
 
@@ -1050,6 +1209,274 @@ def compute_vms(price_data: dict, options_df: pd.DataFrame,
         "rsi_14":              round(rsi_14, 1),
         "above_ma20":          above_ma20,
         "above_ma50":          above_ma50,
+    }
+
+
+# ============================================================
+# LAYER 1: LEAD SIGNAL SCORE ENGINE (L2-STEPS 4–6)
+# ============================================================
+
+SECTOR_ETF_MAP: dict = {
+    "NVDA": "XLK", "AMD": "XLK", "INTC": "XLK", "MSFT": "XLK", "AAPL": "XLK",
+    "QCOM": "XLK", "AVGO": "XLK", "MU": "XLK", "SMCI": "XLK", "AMAT": "XLK",
+    "LRCX": "XLK", "KLAC": "XLK", "MRVL": "XLK", "TXN": "XLK", "NXPI": "XLK",
+    "JPM": "XLF", "BAC": "XLF", "GS": "XLF", "MS": "XLF", "C": "XLF",
+    "WFC": "XLF", "BLK": "XLF", "AXP": "XLF", "SCHW": "XLF",
+    "UNH": "XLV", "JNJ": "XLV", "PFE": "XLV", "MRNA": "XLV", "LLY": "XLV",
+    "ABBV": "XLV", "TMO": "XLV", "DHR": "XLV", "BMY": "XLV",
+    "XOM": "XLE", "CVX": "XLE", "OXY": "XLE", "SLB": "XLE", "COP": "XLE",
+    "AMZN": "XLY", "TSLA": "XLY", "NKE": "XLY", "LULU": "XLY", "RIVN": "XLY",
+    "ETN": "XLI", "PWR": "XLI", "GE": "XLI", "HON": "XLI", "CAT": "XLI",
+    "FCX": "XLB", "NUE": "XLB", "CLF": "XLB", "CF": "XLB",
+    "SPY": "SPY", "QQQ": "QQQ", "IWM": "IWM", "DIA": "DIA",
+}
+
+_sector_etf_cache: dict = {}
+
+
+def fetch_sector_etf_momentum(etf: str) -> Optional[float]:
+    """
+    L2-STEP4: Fetch 20d momentum for sector ETF. Cached in-memory for run duration.
+    """
+    if etf in _sector_etf_cache:
+        return _sector_etf_cache[etf]
+    price_data = fetch_price_data(etf)
+    if price_data:
+        _sector_etf_cache[etf] = price_data.get("momentum_20d")
+        return _sector_etf_cache[etf]
+    return None
+
+
+def compute_sector_relative_strength(ticker: str, ticker_momentum: float) -> dict:
+    """
+    L2-STEP4: Compare ticker 20d momentum vs sector ETF 20d momentum.
+    Positive relative strength = ticker outperforming its sector.
+    """
+    etf = SECTOR_ETF_MAP.get(str(ticker).upper())
+    if not etf:
+        return {"sector_etf": "", "sector_rs": None, "sector_rs_flag": "NO_MAP"}
+    etf_momentum = fetch_sector_etf_momentum(etf)
+    if etf_momentum is None:
+        return {"sector_etf": etf, "sector_rs": None, "sector_rs_flag": "ETF_UNAVAILABLE"}
+    rs   = round(float(ticker_momentum) - float(etf_momentum), 4)
+    flag = (
+        "STRONG_OUTPERFORM"   if rs >  0.03 else
+        "MILD_OUTPERFORM"     if rs >  0.01 else
+        "INLINE"              if rs > -0.01 else
+        "MILD_UNDERPERFORM"   if rs > -0.03 else
+        "STRONG_UNDERPERFORM"
+    )
+    return {
+        "sector_etf":       etf,
+        "etf_momentum_20d": round(etf_momentum, 4),
+        "sector_rs":        rs,
+        "sector_rs_flag":   flag,
+    }
+
+
+def compute_dark_pool_proxy(options_df: pd.DataFrame, price_data: dict) -> dict:
+    """
+    L2-STEP5: Dark pool proxy using microstructure signals already fetched.
+    NOT confirmed dark pool data — proxy only (no premium provider required).
+
+    Signal 1: Large single contracts — volume * mid > $50k (institutional size)
+    Signal 2: Tight spread + high volume — spread_pct < 5% AND vol > 500 (>=3 contracts)
+    Signal 3: Open gap > 2% vs prev_close (block trade signal)
+    """
+    proxy_score = 0
+    flags: list = []
+
+    # Signal 1: Large premium contracts
+    try:
+        if "volume" in options_df.columns and "ask" in options_df.columns:
+            _df = options_df.copy()
+            _bid = _df.get("bid", _df["ask"]) if "bid" in _df.columns else _df["ask"]
+            _df["_mid"] = (_bid + _df["ask"]) / 2
+            _df["_premium"] = _df["volume"].fillna(0) * _df["_mid"].fillna(0) * 100
+            large = _df[_df["_premium"] > 50_000]
+            if not large.empty:
+                proxy_score += 40
+                flags.append(f"LARGE_PREMIUM_CONTRACTS:{len(large)}")
+    except Exception:
+        pass
+
+    # Signal 2: Tight spread + high volume
+    try:
+        if "bid" in options_df.columns and "ask" in options_df.columns and "volume" in options_df.columns:
+            _mid  = (options_df["bid"] + options_df["ask"]) / 2
+            _sprd = (options_df["ask"] - options_df["bid"]) / _mid.replace(0, np.nan)
+            tight_hi_vol = (_sprd < 0.05) & (options_df["volume"].fillna(0) > 500)
+            if tight_hi_vol.sum() >= 3:
+                proxy_score += 30
+                flags.append(f"TIGHT_SPREAD_HIGH_VOL:{int(tight_hi_vol.sum())}")
+    except Exception:
+        pass
+
+    # Signal 3: Open gap vs prev_close
+    try:
+        open_price  = price_data.get("live_open") or price_data.get("spot")
+        prev_close  = price_data.get("live_prev_close")
+        if open_price and prev_close and prev_close > 0:
+            gap_pct = abs((open_price - prev_close) / prev_close)
+            if gap_pct > 0.02:
+                proxy_score += 30
+                flags.append(f"OPEN_GAP:{gap_pct:.1%}")
+    except Exception:
+        pass
+
+    return {
+        "dark_pool_proxy_score": proxy_score,
+        "dark_pool_proxy_flag":  "DARK_POOL_PROXY" if proxy_score >= 40 else "LOW_SIGNAL",
+        "dark_pool_proxy_notes": " | ".join(flags) if flags else "",
+        "dark_pool_data_source": "PROXY_ONLY",
+    }
+
+
+def compute_lead_signal_score(
+    vms:         dict,
+    vol_anomaly: dict,
+    short_data:  dict,
+    sector_rs:   dict,
+    dark_pool:   dict,
+    price_data:  dict,
+) -> dict:
+    """
+    L2-STEP6: Lead Signal Score (LSS) — primary discovery gate.
+    Replaces news terminal routing. Microstructure only.
+
+    Formula: 30% opts vol anomaly | 20% IV/skew | 15% dark pool proxy
+             15% short/borrow | 10% price-vol structure | 10% sector RS
+
+    Score 0-100. LEAD_GO>=75 → FULL_PIPELINE, LEAD_PROBE>=60 → DISCOVERY_ONLY,
+                 LEAD_WATCH>=45 → WATCHLIST_ONLY, LEAD_BLOCK<45 → EXCLUDED
+    """
+    reasons: list = []
+
+    # ── Component 1: Options Volume Anomaly (30%) ─────────────────────────────
+    opts_ratio = vol_anomaly.get("options_vol_ratio")
+    sweep      = vol_anomaly.get("sweep_flag", "NEUTRAL")
+    comp1 = 0.0
+    if opts_ratio is not None:
+        if opts_ratio >= 5.0:
+            comp1 = 100; reasons.append(f"opts_vol={opts_ratio:.1f}x EXTREME")
+        elif opts_ratio >= 3.0:
+            comp1 = 80;  reasons.append(f"opts_vol={opts_ratio:.1f}x HIGH")
+        elif opts_ratio >= 2.0:
+            comp1 = 60;  reasons.append(f"opts_vol={opts_ratio:.1f}x ANOMALY")
+        elif opts_ratio >= 1.5:
+            comp1 = 35
+        else:
+            comp1 = 10
+    if sweep in ("CALL_SWEEP", "PUT_SWEEP"):
+        comp1 = min(100, comp1 + 15)
+        reasons.append(f"sweep={sweep}")
+
+    # ── Component 2: IV/Skew Distortion (20%) ────────────────────────────────
+    iv_rank    = float(vms.get("iv_rank", 0.5) or 0.5)
+    vol_spread = float(vms.get("vol_spread", 0.0) or 0.0)
+    skew       = float(vms.get("skew", 0.0) or 0.0)
+    comp2 = 0.0
+    if iv_rank < 0.20:
+        comp2 += 50; reasons.append(f"iv_rank={iv_rank:.2f} extreme")
+    elif iv_rank < 0.35:
+        comp2 += 30; reasons.append(f"iv_rank={iv_rank:.2f} cheap")
+    elif iv_rank > 0.70:
+        comp2 += 0
+    else:
+        comp2 += 15
+    if vol_spread > 0.05:
+        comp2 = min(100, comp2 + 40); reasons.append(f"vol_spread={vol_spread:+.3f}")
+    elif vol_spread > 0.02:
+        comp2 = min(100, comp2 + 20)
+    elif vol_spread < -0.05:
+        comp2 = max(0, comp2 - 20)
+    if abs(skew) > 0.08:
+        comp2 = min(100, comp2 + 10); reasons.append(f"skew={skew:.3f}")
+
+    # ── Component 3: Dark Pool Proxy (15%) ───────────────────────────────────
+    dp_score = float(dark_pool.get("dark_pool_proxy_score", 0) or 0)
+    comp3    = min(100.0, dp_score)
+    if dp_score >= 40:
+        reasons.append(dark_pool.get("dark_pool_proxy_flag", ""))
+
+    # ── Component 4: Short/Borrow Pressure (15%) ─────────────────────────────
+    comp4 = 0.0
+    if short_data.get("short_data_available"):
+        short_pct = float(short_data.get("short_interest_pct", 0) or 0)
+        borrow    = float(short_data.get("borrow_rate", 0) or 0)
+        util      = float(short_data.get("utilization", 0) or 0)
+        if short_pct >= 20 or borrow >= 20:
+            comp4 = 80; reasons.append(f"short={short_pct:.1f}% borrow={borrow:.1f}%")
+        elif short_pct >= 10 or borrow >= 5:
+            comp4 = 50; reasons.append(f"short={short_pct:.1f}%")
+        elif short_pct >= 5:
+            comp4 = 25
+        if util >= 80:
+            comp4 = min(100, comp4 + 20); reasons.append(f"util={util:.0f}%")
+    else:
+        comp4 = 25  # neutral — no data, do not penalise
+
+    # ── Component 5: Price-Volume Structure (10%) ─────────────────────────────
+    comp5           = 0.0
+    compression     = bool(vms.get("compression", False))
+    equity_vr       = price_data.get("equity_vol_ratio")
+    atr_pct         = float(price_data.get("atr_pct", 0.5) or 0.5)
+    if compression:
+        comp5 += 50; reasons.append("compression")
+    if equity_vr and equity_vr >= 2.0:
+        comp5 = min(100, comp5 + 40); reasons.append(f"equity_vol={equity_vr:.1f}x")
+    elif equity_vr and equity_vr >= 1.5:
+        comp5 = min(100, comp5 + 20)
+    if atr_pct < 0.15:
+        comp5 = min(100, comp5 + 10)
+
+    # ── Component 6: Sector-Relative Strength (10%) ───────────────────────────
+    comp6   = 0.0
+    rs_flag = sector_rs.get("sector_rs_flag", "")
+    rs_val  = float(sector_rs.get("sector_rs", 0) or 0)
+    if rs_flag == "STRONG_OUTPERFORM":
+        comp6 = 90; reasons.append(f"sector_rs={rs_val:+.1%} STRONG")
+    elif rs_flag == "MILD_OUTPERFORM":
+        comp6 = 60; reasons.append(f"sector_rs={rs_val:+.1%}")
+    elif rs_flag == "INLINE":
+        comp6 = 40
+    elif rs_flag == "MILD_UNDERPERFORM":
+        comp6 = 20
+    else:
+        comp6 = 0
+
+    # ── Weighted composite ────────────────────────────────────────────────────
+    lss = round(
+        comp1 * 0.30 + comp2 * 0.20 + comp3 * 0.15 +
+        comp4 * 0.15 + comp5 * 0.10 + comp6 * 0.10,
+        2,
+    )
+
+    if lss >= 75:   decision = "LEAD_GO"
+    elif lss >= 60: decision = "LEAD_PROBE"
+    elif lss >= 45: decision = "LEAD_WATCH"
+    else:           decision = "LEAD_BLOCK"
+
+    route_map = {
+        "LEAD_GO":    "FULL_PIPELINE",
+        "LEAD_PROBE": "DISCOVERY_ONLY",
+        "LEAD_WATCH": "WATCHLIST_ONLY",
+        "LEAD_BLOCK": "EXCLUDED",
+    }
+    return {
+        "lss_score":           lss,
+        "lss_decision":        decision,
+        "lss_route":           route_map[decision],
+        "lss_comp1_opts_vol":  round(comp1, 1),
+        "lss_comp2_iv_skew":   round(comp2, 1),
+        "lss_comp3_darkpool":  round(comp3, 1),
+        "lss_comp4_short":     round(comp4, 1),
+        "lss_comp5_pricevol":  round(comp5, 1),
+        "lss_comp6_sector":    round(comp6, 1),
+        "lss_reasons":         " | ".join(reasons[:8]),
+        "lss_signal_source":   "MICROSTRUCTURE",
+        "vms_score":           int(vms.get("score", 0) or 0),
+        "vms_decision":        str(vms.get("decision", "") or ""),
     }
 
 
@@ -1860,11 +2287,24 @@ def process_ticker(ticker: str, conn: sqlite3.Connection) -> Optional[dict]:
     # ── STEP 3: Score contracts using long-options intelligence layer
     contracts = score_long_contracts(ticker, options_df, price_data["spot"], vms)
 
+    # ── L2-STEP 7: Lead Signal Score — microstructure primary gate ────────────
+    vol_anomaly = _compute_options_volume_anomaly(options_df, ticker, conn)
+    short_data  = fetch_short_borrow_data(ticker)
+    sector_rs   = compute_sector_relative_strength(
+                      ticker, float(price_data.get("momentum_20d", 0.0) or 0.0))
+    dark_pool   = compute_dark_pool_proxy(options_df, price_data)
+    lss         = compute_lead_signal_score(vms, vol_anomaly, short_data, sector_rs, dark_pool, price_data)
+
     chain_source = chain[0].get("_source", "polygon") if chain else "none"
     return {
         "ticker":       ticker,
         "spot":         round(price_data["spot"], 2),
         "vms":          vms,
+        "lss":          lss,
+        "vol_anomaly":  vol_anomaly,
+        "short_data":   short_data,
+        "sector_rs":    sector_rs,
+        "dark_pool":    dark_pool,
         "contracts":    contracts,
         "chain_source": chain_source,
     }
@@ -1922,6 +2362,11 @@ def run_scan(universe: list, pipeline_universe: set,
                     else:
                         synthetic_iv_count += 1
 
+                    _lss = result.get("lss") or {}
+                    _va  = result.get("vol_anomaly") or {}
+                    _sd  = result.get("short_data") or {}
+                    _srs = result.get("sector_rs") or {}
+                    _dp  = result.get("dark_pool") or {}
                     vms_summary.append({
                         "ticker":              ticker,
                         "spot":                result["spot"],
@@ -1945,6 +2390,25 @@ def run_scan(universe: list, pipeline_universe: set,
                         "n_contracts":         len(result["contracts"]),
                         "pipeline_tag":        tag,
                         "tier":                tier_label,
+                        # L2-STEP7: LSS fields
+                        "lss_score":           _lss.get("lss_score"),
+                        "lss_decision":        _lss.get("lss_decision"),
+                        "lss_route":           _lss.get("lss_route"),
+                        "lss_reasons":         _lss.get("lss_reasons"),
+                        "lss_comp1_opts_vol":  _lss.get("lss_comp1_opts_vol"),
+                        "lss_comp2_iv_skew":   _lss.get("lss_comp2_iv_skew"),
+                        "lss_comp3_darkpool":  _lss.get("lss_comp3_darkpool"),
+                        "lss_comp4_short":     _lss.get("lss_comp4_short"),
+                        "lss_comp5_pricevol":  _lss.get("lss_comp5_pricevol"),
+                        "lss_comp6_sector":    _lss.get("lss_comp6_sector"),
+                        "sweep_flag":          _va.get("sweep_flag"),
+                        "options_vol_ratio":   _va.get("options_vol_ratio"),
+                        "options_vol_anomaly": _va.get("options_vol_anomaly"),
+                        "sector_rs_flag":      _srs.get("sector_rs_flag"),
+                        "short_interest_pct":  _sd.get("short_interest_pct"),
+                        "short_data_available": _sd.get("short_data_available"),
+                        "dark_pool_proxy_flag": _dp.get("dark_pool_proxy_flag"),
+                        "dark_pool_proxy_score": _dp.get("dark_pool_proxy_score"),
                     })
 
                     if result["contracts"]:
@@ -2075,10 +2539,10 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
         contracts_df.to_csv(OUTPUT_DIR / "contracts_latest.csv",      index=False)
 
     if not vms_df.empty:
-        # L1-CHANGE-3: Stamp scanner routing fields onto every VMS row before write.
+        # L2-STEP7: scanner_primary_route — prefer LSS route; fall back to VMS route.
         vms_df = vms_df.copy()
         vms_df["scanner_primary_route"] = vms_df.apply(
-            lambda r: _scanner_route(r.get("score", 0), r.get("decision", "BLOCK")), axis=1
+            lambda r: r.get("lss_route") or _scanner_route(r.get("score", 0), r.get("decision", "BLOCK")), axis=1
         )
         vms_df["route_source"]       = "SCANNER_VMS"
         vms_df["signal_source"]      = "MICROSTRUCTURE"
@@ -2126,12 +2590,18 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
             "contracts":      str(OUTPUT_DIR / "contracts_latest.csv"),
             "vms_scoreboard": str(OUTPUT_DIR / "vms_scoreboard_latest.csv"),
         },
-        # L1-CHANGE-3: Routing metadata — downstream reads these to confirm
-        # scanner is primary gate and news terminal is confirmation only.
-        "route_source":       "SCANNER_VMS",
+        # L1-CHANGE-3 / L2-STEP7: Routing metadata.
+        "route_source":       "SCANNER_LSS",
         "signal_source":      "MICROSTRUCTURE",
         "news_terminal_role": "CONFIRMATION_ONLY",
         "scanner_manifest_at": datetime.utcnow().isoformat() + "Z",
+        # L2-STEP7: LSS summary
+        "lss_gate_counts": {
+            "LEAD_GO":    int((vms_df["lss_decision"] == "LEAD_GO").sum())    if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+            "LEAD_PROBE": int((vms_df["lss_decision"] == "LEAD_PROBE").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+            "LEAD_WATCH": int((vms_df["lss_decision"] == "LEAD_WATCH").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+            "LEAD_BLOCK": int((vms_df["lss_decision"] == "LEAD_BLOCK").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+        },
     }
 
     with open(OUTPUT_DIR / "scanner_manifest.json", "w") as f:
