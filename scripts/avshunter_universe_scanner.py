@@ -361,7 +361,7 @@ def run_test_scan(pipeline_universe: set, top_n: int = 10) -> tuple:
                 "n_contracts":         len(result["contracts"]),
                 "pipeline_tag":        tag,
                 "tier":                "TEST",
-                # L2-STEP7: LSS stubs for test mode (no real data)
+                # L2-STEP7 / L3-SPRINT2: LSS stubs for test mode (no real data)
                 "lss_score":           None,
                 "lss_decision":        "LEAD_BLOCK",
                 "lss_route":           "EXCLUDED",
@@ -373,6 +373,11 @@ def run_test_scan(pipeline_universe: set, top_n: int = 10) -> tuple:
                 "short_data_available": False,
                 "dark_pool_proxy_flag": "LOW_SIGNAL",
                 "dark_pool_proxy_score": 0,
+                "short_trend":         "STABLE",
+                "squeeze_risk":        False,
+                "borrow_rate_spike":   False,
+                "form4_signal":        None,
+                "etf_flow_signal":     None,
             })
 
             for c in result["contracts"]:
@@ -807,33 +812,79 @@ def polygon_get(url: str, retries: int = 3) -> Optional[dict]:
 
 def fetch_short_borrow_data(ticker: str) -> dict:
     """
-    L2-STEP3: Fetch short interest from Polygon.
-    Endpoint: /v2/finance/short_interest/{ticker}
-    Graceful: returns {"short_data_available": False} on any failure (403/404/plan).
+    L3-E1: Enhanced short/borrow fetch — two Polygon endpoints.
+    Endpoint 1: /v2/finance/short_interest/{ticker}  — short volume + utilization
+    Endpoint 2: /v1/reference/stocks/borrow-rate/{ticker} — borrow rate (plan-gated)
+    Adds: short_trend (RISING/FALLING/STABLE vs prior period), squeeze_risk, borrow_rate_spike.
+    Graceful: returns {"short_data_available": False} on any failure.
     """
-    url = (
+    # ── Endpoint 1: Short interest ────────────────────────────────────────────
+    url1 = (
         f"https://api.polygon.io/v2/finance/short_interest/{ticker}"
         f"?apiKey={POLYGON_API_KEY}"
     )
     try:
-        data = polygon_get(url)
-        if not data or "results" not in data or not data["results"]:
+        data1   = polygon_get(url1)
+        results = data1.get("results", []) if data1 else []
+        if not results:
             return {"short_data_available": False}
-        latest    = data["results"][-1]
+        latest    = results[-1]
         short_vol = latest.get("shortVolume", 0) or 0
         total_vol = latest.get("totalVolume", 1) or 1
         short_pct = round(short_vol / total_vol * 100, 2) if total_vol > 0 else None
-        return {
-            "short_data_available": True,
-            "short_volume":         short_vol,
-            "short_interest_pct":   short_pct,
-            "short_data_date":      latest.get("date", ""),
-            "borrow_rate":          latest.get("borrowRate", None),
-            "utilization":          latest.get("utilization", None),
-        }
+        util      = latest.get("utilization", None)
+        borrow_r  = latest.get("borrowRate", None)
+
+        # Short trend: compare latest vs prior period (> 5pp change = RISING/FALLING)
+        short_trend = "STABLE"
+        if len(results) >= 2:
+            prior     = results[-2]
+            prior_vol = prior.get("shortVolume", 0) or 0
+            prior_tot = prior.get("totalVolume", 1) or 1
+            prior_pct = round(prior_vol / prior_tot * 100, 2) if prior_tot > 0 else 0.0
+            if short_pct is not None:
+                diff = short_pct - prior_pct
+                if diff > 5:
+                    short_trend = "RISING"
+                elif diff < -5:
+                    short_trend = "FALLING"
+
+        squeeze_risk      = bool(util is not None and float(util) > 80)
+        borrow_rate_spike = False
     except Exception as exc:
-        log.debug("  %s: short/borrow fetch failed: %s", ticker, exc)
+        log.debug("  %s: short interest fetch failed: %s", ticker, exc)
         return {"short_data_available": False}
+
+    # ── Endpoint 2: Borrow rate (best effort — may 403 on basic plan) ─────────
+    url2 = (
+        f"https://api.polygon.io/v1/reference/stocks/borrow-rate/{ticker}"
+        f"?apiKey={POLYGON_API_KEY}"
+    )
+    try:
+        data2 = polygon_get(url2)
+        if data2 and data2.get("results"):
+            br_raw   = data2["results"]
+            br_entry = br_raw[-1] if isinstance(br_raw, list) else br_raw
+            br_val   = br_entry.get("rate", None) or br_entry.get("borrowRate", None)
+            if br_val is not None:
+                borrow_r = float(br_val)
+    except Exception:
+        pass  # borrow rate endpoint optional — short interest already captured
+
+    if borrow_r is not None:
+        borrow_rate_spike = float(borrow_r) > 20
+
+    return {
+        "short_data_available": True,
+        "short_volume":         short_vol,
+        "short_interest_pct":   short_pct,
+        "short_data_date":      latest.get("date", ""),
+        "borrow_rate":          borrow_r,
+        "utilization":          util,
+        "short_trend":          short_trend,
+        "squeeze_risk":         squeeze_risk,
+        "borrow_rate_spike":    borrow_rate_spike,
+    }
 
 
 def fetch_price_data(ticker: str) -> Optional[dict]:
@@ -1232,6 +1283,8 @@ SECTOR_ETF_MAP: dict = {
 }
 
 _sector_etf_cache: dict = {}
+_sector_etf_volume_ratio_cache: dict = {}          # L3-E3: ETF opts vol ratio — populated during scan
+_SECTOR_ETF_VALUES = frozenset(SECTOR_ETF_MAP.values())  # {"XLK","XLF","XLV","XLE","XLY","XLI","XLB","SPY","QQQ","IWM","DIA"}
 
 
 def fetch_sector_etf_momentum(etf: str) -> Optional[float]:
@@ -1332,6 +1385,63 @@ def compute_dark_pool_proxy(options_df: pd.DataFrame, price_data: dict) -> dict:
     }
 
 
+def compute_etf_relative_flow(
+    ticker: str,
+    ticker_opts_vol_ratio: Optional[float],
+    sector_etf: str,
+) -> dict:
+    """
+    L3-E3: Compare ticker options volume ratio vs sector ETF options volume ratio.
+    TICKER_LEADING_SECTOR  = ticker ratio >1.5× ETF ratio → pre-crowd divergence signal.
+    SECTOR_LEADING_TICKER  = ETF ratio >1.5× ticker ratio → sector-wide move, ticker is follower.
+    Cache _sector_etf_volume_ratio_cache populated when ETF tickers are processed in same run.
+    """
+    if not sector_etf or ticker_opts_vol_ratio is None:
+        return {"etf_flow_signal": "NO_DATA"}
+
+    etf_vol_ratio = _sector_etf_volume_ratio_cache.get(sector_etf)
+    if etf_vol_ratio is None:
+        return {"etf_flow_signal": "ETF_NOT_SCANNED"}
+
+    if not etf_vol_ratio or etf_vol_ratio <= 0:
+        return {"etf_flow_signal": "ETF_NO_VOLUME"}
+
+    if ticker_opts_vol_ratio > etf_vol_ratio * 1.5:
+        signal = "TICKER_LEADING_SECTOR"
+    elif etf_vol_ratio > ticker_opts_vol_ratio * 1.5:
+        signal = "SECTOR_LEADING_TICKER"
+    else:
+        signal = "IN_LINE_WITH_SECTOR"
+
+    return {
+        "etf_flow_signal":       signal,
+        "ticker_opts_vol_ratio": ticker_opts_vol_ratio,
+        "etf_opts_vol_ratio":    etf_vol_ratio,
+        "sector_etf":            sector_etf,
+    }
+
+
+FORM4_SIGNAL_PATH = BASE_DIR / "dropbox" / "macro" / "sec_form4_signals.json"
+
+
+def _load_form4_signals() -> dict:
+    """
+    Load Form 4 insider signals written by sec_form4_monitor.py.
+    Returns {ticker: signal_dict}. Graceful: returns {} if file missing or corrupt.
+    """
+    try:
+        if FORM4_SIGNAL_PATH.exists():
+            data = json.loads(FORM4_SIGNAL_PATH.read_text(encoding="utf-8"))
+            return {
+                s["ticker"]: s
+                for s in data.get("signals", [])
+                if s.get("ticker")
+            }
+    except Exception as exc:
+        log.debug("Form 4 signal load failed: %s", exc)
+    return {}
+
+
 def compute_lead_signal_score(
     vms:         dict,
     vol_anomaly: dict,
@@ -1339,13 +1449,16 @@ def compute_lead_signal_score(
     sector_rs:   dict,
     dark_pool:   dict,
     price_data:  dict,
+    form4_data:  Optional[dict] = None,
+    etf_flow:    Optional[dict] = None,
 ) -> dict:
     """
-    L2-STEP6: Lead Signal Score (LSS) — primary discovery gate.
+    L3-STEP6 (enhanced): Lead Signal Score (LSS) — primary discovery gate.
     Replaces news terminal routing. Microstructure only.
 
     Formula: 30% opts vol anomaly | 20% IV/skew | 15% dark pool proxy
-             15% short/borrow | 10% price-vol structure | 10% sector RS
+             15% short/borrow (+Form4 modifier) | 10% price-vol structure
+             10% sector RS (+ETF flow modifier)
 
     Score 0-100. LEAD_GO>=75 → FULL_PIPELINE, LEAD_PROBE>=60 → DISCOVERY_ONLY,
                  LEAD_WATCH>=45 → WATCHLIST_ONLY, LEAD_BLOCK<45 → EXCLUDED
@@ -1413,8 +1526,21 @@ def compute_lead_signal_score(
             comp4 = 25
         if util >= 80:
             comp4 = min(100, comp4 + 20); reasons.append(f"util={util:.0f}%")
+        # L3-E1: short_trend modifier
+        if short_data.get("short_trend") == "RISING":
+            comp4 = min(100, comp4 + 10); reasons.append("short_trend=RISING")
     else:
         comp4 = 25  # neutral — no data, do not penalise
+
+    # L3-E2: Form 4 insider modifier (additive onto comp4)
+    if form4_data:
+        f4_signal = str(form4_data.get("form4_signal", ""))
+        if f4_signal == "CLUSTER_BUY":
+            comp4 = min(100, comp4 + 25); reasons.append("form4=CLUSTER_BUY")
+        elif f4_signal == "SINGLE_BUY":
+            comp4 = min(100, comp4 + 10); reasons.append("form4=SINGLE_BUY")
+        elif f4_signal == "CLUSTER_SALE":
+            comp4 = max(0,   comp4 - 15); reasons.append("form4=CLUSTER_SALE")
 
     # ── Component 5: Price-Volume Structure (10%) ─────────────────────────────
     comp5           = 0.0
@@ -1444,6 +1570,14 @@ def compute_lead_signal_score(
         comp6 = 20
     else:
         comp6 = 0
+
+    # L3-E3: ETF relative flow modifier
+    etf_flow_signal = ""
+    if etf_flow:
+        etf_flow_signal = str(etf_flow.get("etf_flow_signal", ""))
+        if etf_flow_signal == "TICKER_LEADING_SECTOR":
+            comp6 = min(100, comp6 + 20)
+            reasons.append("ticker leading sector ETF flow")
 
     # ── Weighted composite ────────────────────────────────────────────────────
     lss = round(
@@ -1477,6 +1611,8 @@ def compute_lead_signal_score(
         "lss_signal_source":   "MICROSTRUCTURE",
         "vms_score":           int(vms.get("score", 0) or 0),
         "vms_decision":        str(vms.get("decision", "") or ""),
+        "lss_form4_signal":    str(form4_data.get("form4_signal", "")) if form4_data else "",
+        "lss_etf_flow_signal": etf_flow_signal,
     }
 
 
@@ -2230,7 +2366,7 @@ def scan_contracts(ticker, options_df, spot, vms):
 # PER-TICKER PIPELINE
 # ============================================================
 
-def process_ticker(ticker: str, conn: sqlite3.Connection) -> Optional[dict]:
+def process_ticker(ticker: str, conn: sqlite3.Connection, form4_dict: Optional[dict] = None) -> Optional[dict]:
     """Full VMS pipeline for one ticker. Uses both Polygon and MarketData.app."""
     time.sleep(CALL_DELAY)
 
@@ -2287,13 +2423,31 @@ def process_ticker(ticker: str, conn: sqlite3.Connection) -> Optional[dict]:
     # ── STEP 3: Score contracts using long-options intelligence layer
     contracts = score_long_contracts(ticker, options_df, price_data["spot"], vms)
 
-    # ── L2-STEP 7: Lead Signal Score — microstructure primary gate ────────────
+    # ── L3-STEP 7: Lead Signal Score — microstructure primary gate ────────────
     vol_anomaly = _compute_options_volume_anomaly(options_df, ticker, conn)
+
+    # L3-E3: Cache options vol ratio for ETF relative flow detection
+    if ticker in _SECTOR_ETF_VALUES:
+        _sector_etf_volume_ratio_cache[ticker] = vol_anomaly.get("options_vol_ratio")
+
     short_data  = fetch_short_borrow_data(ticker)
     sector_rs   = compute_sector_relative_strength(
                       ticker, float(price_data.get("momentum_20d", 0.0) or 0.0))
     dark_pool   = compute_dark_pool_proxy(options_df, price_data)
-    lss         = compute_lead_signal_score(vms, vol_anomaly, short_data, sector_rs, dark_pool, price_data)
+
+    # L3-E3: ETF relative flow
+    etf_flow  = compute_etf_relative_flow(
+                    ticker,
+                    vol_anomaly.get("options_vol_ratio"),
+                    sector_rs.get("sector_etf", ""),
+                )
+    # L3-E2: Form 4 insider data (pre-loaded dict passed from run_scan)
+    form4_data = (form4_dict or {}).get(ticker.upper())
+
+    lss = compute_lead_signal_score(
+        vms, vol_anomaly, short_data, sector_rs,
+        dark_pool, price_data, form4_data, etf_flow,
+    )
 
     chain_source = chain[0].get("_source", "polygon") if chain else "none"
     return {
@@ -2305,6 +2459,7 @@ def process_ticker(ticker: str, conn: sqlite3.Connection) -> Optional[dict]:
         "short_data":   short_data,
         "sector_rs":    sector_rs,
         "dark_pool":    dark_pool,
+        "etf_flow":     etf_flow,
         "contracts":    contracts,
         "chain_source": chain_source,
     }
@@ -2344,8 +2499,13 @@ def run_scan(universe: list, pipeline_universe: set,
 
     log.info(f"{tier_label}: {len(universe)} tickers | {MAX_WORKERS} threads")
 
+    # L3-E2: Load Form 4 insider signals once per run (file read, not per-ticker)
+    form4_dict = _load_form4_signals()
+    if form4_dict:
+        log.info("Form 4 signals loaded: %d tickers with insider activity", len(form4_dict))
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(process_ticker, t, conn): t for t in universe}
+        futures = {executor.submit(process_ticker, t, conn, form4_dict): t for t in universe}
 
         for future in as_completed(futures):
             ticker = futures[future]
@@ -2367,6 +2527,7 @@ def run_scan(universe: list, pipeline_universe: set,
                     _sd  = result.get("short_data") or {}
                     _srs = result.get("sector_rs") or {}
                     _dp  = result.get("dark_pool") or {}
+                    _ef  = result.get("etf_flow") or {}
                     vms_summary.append({
                         "ticker":              ticker,
                         "spot":                result["spot"],
@@ -2409,6 +2570,12 @@ def run_scan(universe: list, pipeline_universe: set,
                         "short_data_available": _sd.get("short_data_available"),
                         "dark_pool_proxy_flag": _dp.get("dark_pool_proxy_flag"),
                         "dark_pool_proxy_score": _dp.get("dark_pool_proxy_score"),
+                        # L3-SPRINT2: new fields
+                        "short_trend":         _sd.get("short_trend"),
+                        "squeeze_risk":        _sd.get("squeeze_risk"),
+                        "borrow_rate_spike":   _sd.get("borrow_rate_spike"),
+                        "form4_signal":        _lss.get("lss_form4_signal"),
+                        "etf_flow_signal":     _ef.get("etf_flow_signal"),
                     })
 
                     if result["contracts"]:
@@ -2601,6 +2768,17 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
             "LEAD_PROBE": int((vms_df["lss_decision"] == "LEAD_PROBE").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
             "LEAD_WATCH": int((vms_df["lss_decision"] == "LEAD_WATCH").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
             "LEAD_BLOCK": int((vms_df["lss_decision"] == "LEAD_BLOCK").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+        },
+        # L3-SPRINT2: Form 4 + ETF flow summary
+        "form4_signal_counts": {
+            "CLUSTER_BUY":  int((vms_df["form4_signal"] == "CLUSTER_BUY").sum())  if not vms_df.empty and "form4_signal" in vms_df.columns else 0,
+            "SINGLE_BUY":   int((vms_df["form4_signal"] == "SINGLE_BUY").sum())   if not vms_df.empty and "form4_signal" in vms_df.columns else 0,
+            "CLUSTER_SALE": int((vms_df["form4_signal"] == "CLUSTER_SALE").sum()) if not vms_df.empty and "form4_signal" in vms_df.columns else 0,
+        },
+        "etf_flow_counts": {
+            "TICKER_LEADING_SECTOR":  int((vms_df["etf_flow_signal"] == "TICKER_LEADING_SECTOR").sum())  if not vms_df.empty and "etf_flow_signal" in vms_df.columns else 0,
+            "SECTOR_LEADING_TICKER":  int((vms_df["etf_flow_signal"] == "SECTOR_LEADING_TICKER").sum())  if not vms_df.empty and "etf_flow_signal" in vms_df.columns else 0,
+            "IN_LINE_WITH_SECTOR":    int((vms_df["etf_flow_signal"] == "IN_LINE_WITH_SECTOR").sum())    if not vms_df.empty and "etf_flow_signal" in vms_df.columns else 0,
         },
     }
 
