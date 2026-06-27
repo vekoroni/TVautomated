@@ -84,6 +84,9 @@ DB_DIR     = BASE_DIR / "data" / "cache"
 # IV history SQLite cache — lives alongside actuarial DB
 IV_CACHE_DB = DB_DIR / "iv_history_cache.db"
 
+# Signal timestamp history — tracks first-detection timestamps per ticker
+SIGNAL_HISTORY_PATH = DB_DIR / "signal_history.json"
+
 # Pipeline universe — for overlap tagging only, never scanned
 PIPELINE_UNIVERSE_FILE = BASE_DIR / "data" / "universe" / "polygon_liquid_universe.csv"
 
@@ -2781,6 +2784,58 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
             "IN_LINE_WITH_SECTOR":    int((vms_df["etf_flow_signal"] == "IN_LINE_WITH_SECTOR").sum())    if not vms_df.empty and "etf_flow_signal" in vms_df.columns else 0,
         },
     }
+
+    # L4-STEP1: Per-ticker signal timestamp dict — consumed by signal_grader.py and orchestrator.
+    # Only includes tickers that passed the LSS gate (not LEAD_BLOCK).
+    _detected_at = datetime.utcnow().isoformat() + "Z"
+    _ticker_rows: dict = {}
+    if not vms_df.empty and "lss_decision" in vms_df.columns:
+        _non_block = vms_df[vms_df["lss_decision"] != "LEAD_BLOCK"]
+        for _, _row in _non_block.iterrows():
+            _tk = str(_row.get("ticker", "")).strip().upper()
+            if _tk:
+                _ticker_rows[_tk] = {
+                    "signal_detected_at": _detected_at,
+                    "signal_run_id":      run_id,
+                    "lss_score":          float(_row.get("lss_score") or 0),
+                    "lss_decision":       str(_row.get("lss_decision") or ""),
+                    "signal_grade":       "",
+                    "signal_graded_at":   "",
+                }
+    manifest["tickers"] = _ticker_rows
+
+    # L4-STEP1: Persist signal_history.json — append new entries, prune >90 days.
+    try:
+        _history: dict = {}
+        if SIGNAL_HISTORY_PATH.exists():
+            try:
+                _history = json.loads(SIGNAL_HISTORY_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                _history = {}
+        _cutoff_str = (datetime.utcnow() - timedelta(days=90)).isoformat() + "Z"
+        for _tk, _entry_base in _ticker_rows.items():
+            if _tk not in _history:
+                _history[_tk] = []
+            # Append only if this run_id not already present (idempotent)
+            if not any(e.get("signal_run_id") == run_id for e in _history[_tk]):
+                _history[_tk].append({
+                    "signal_detected_at": _detected_at,
+                    "signal_run_id":      run_id,
+                    "lss_score":          _entry_base["lss_score"],
+                    "lss_decision":       _entry_base["lss_decision"],
+                    "news_confirmed_at":  "",
+                    "signal_grade":       "",
+                })
+            # Prune entries older than 90 days
+            _history[_tk] = [
+                e for e in _history[_tk]
+                if e.get("signal_detected_at", "") >= _cutoff_str
+            ]
+        SIGNAL_HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+        SIGNAL_HISTORY_PATH.write_text(json.dumps(_history, indent=2), encoding="utf-8")
+        log.debug("Signal history updated: %d LSS-active tickers", len(_ticker_rows))
+    except Exception as _he:
+        log.warning("Signal history write failed (non-critical): %s", _he)
 
     with open(OUTPUT_DIR / "scanner_manifest.json", "w") as f:
         json.dump(manifest, f, indent=2)

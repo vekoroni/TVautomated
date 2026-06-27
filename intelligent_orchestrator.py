@@ -519,6 +519,8 @@ def load_scanner_manifest() -> dict:
             "vms_df": vms_df, "run_id": manifest.get("run_id"),
             "timestamp_utc": manifest.get("timestamp"),
             "age_hrs": round(age_hrs, 1), "tiers_run": manifest.get("tiers_run", []),
+            # L4-STEP1: Per-ticker signal timestamp data from scanner manifest
+            "manifest_tickers": manifest.get("tickers", {}),
         }
     except Exception as e:
         logger.warning("Phase 0: Failed to load scanner manifest — %s", e)
@@ -668,8 +670,32 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
         ctx_dir.mkdir(parents=True, exist_ok=True)
         vms_df   = scanner["vms_df"]
         qualified = vms_df[vms_df["decision"].isin(["GO", "PROBE"])]
+
+        # L4-STEP3: Load signal grades if grader has already run for this scanner run.
+        # File: data/output/runs/{scanner_run_id}/signal_grades_{scanner_run_id}.json
+        # Only exists after `python signal_grader.py --run-id <scanner_run_id>` is called.
+        _scanner_run_id = scanner.get("run_id") or ""
+        _grade_file = cfg.RUNS_DIR / _scanner_run_id / f"signal_grades_{_scanner_run_id}.json"
+        _grade_data: dict = {}
+        if _grade_file.exists():
+            try:
+                _grade_data = json.load(open(_grade_file, encoding="utf-8")).get("grades", {})
+                logger.info("Phase 0: Signal grades loaded — %d graded tickers", len(_grade_data))
+            except Exception as _ge:
+                logger.debug("Phase 0: Grade file load failed (non-critical): %s", _ge)
+
+        # Grade route override table — applied when grades exist
+        _GRADE_ROUTE_OVERRIDE = {
+            "C":      "WATCHLIST_ONLY",   # same-session: cap at watchlist
+            "D":      "CONTEXT_ONLY",     # news beat us: demote
+            "REJECT": "EXCLUDED",         # confirmed crowd: hard exclude
+        }
+
+        # Per-ticker signal timestamp data from scanner manifest
+        _manifest_tickers: dict = scanner.get("manifest_tickers", {})
+
         context  = {
-            "scanner_run_id": scanner.get("run_id"),
+            "scanner_run_id": _scanner_run_id,
             "scanner_source": "UNIVERSE_SCANNER",
             "scanner_timestamp_utc": scanner.get("timestamp_utc"),
             "scanner_age_hrs": scanner.get("age_hrs"),
@@ -678,56 +704,86 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
         }
         for _, row in qualified.iterrows():
             ticker = str(row.get("ticker", "")).strip()
-            if ticker:
-                # FIX-04A (2026-05-02): Capture ALL VMS fields.
-                # Design principle: capture once in scanner, flow through pipeline.
-                # options_intelligence reads these from signal_row — no re-fetch.
-                def _fv(k, d=0.0):
-                    v = row.get(k, d)
-                    try: return float(v) if v is not None else d
-                    except: return d
-                context["tickers"][ticker] = {
-                    "scanner_source":      "UNIVERSE_SCANNER",
-                    "scanner_run_id":      scanner.get("run_id"),
-                    "scanner_timestamp_utc": scanner.get("timestamp_utc"),
-                    "scanner_age_hrs":     scanner.get("age_hrs"),
-                    "scanner_signal_type": str(row.get("decision", "UNKNOWN")),
-                    "scanner_decision":    str(row.get("decision", "UNKNOWN")),
-                    "scanner_direction":   str(row.get("direction", "")),
-                    "scanner_direction_reason": str(row.get("direction_reason", "")),
-                    "scanner_score":       int(row.get("score", 0)),
-                    "scanner_confidence":  round(max(0.0, min(1.0, _fv("score") / 100.0)), 4),
-                    "scanner_data_quality": "CONFIRMED",
-                    "scanner_reason_codes": str(row.get("reason_codes", "")),
-                    "scanner_pattern_tags": str(row.get("pattern_tags", "")),
-                    "scanner_sector":      str(row.get("sector", "")),
-                    "scanner_price":       _fv("price"),
-                    "scanner_volume":      _fv("volume"),
-                    "scanner_rvol":        _fv("rvol"),
-                    "scanner_watchlist_lane": str(row.get("pipeline_tag", "UNKNOWN")),
-                    "vms_score":          int(row.get("score", 0)),
-                    "vms_decision":       str(row.get("decision", "")),
-                    "vol_spread":         _fv("vol_spread"),
-                    "iv_rank":            _fv("iv_rank"),
-                    "iv_rank_source":     str(row.get("iv_rank_source", "UNKNOWN")),
-                    "iv_rank_confidence": _fv("iv_rank_confidence", 0.65),
-                    "iv_current":         _fv("iv"),        # ATM IV from scanner
-                    "rv":                 _fv("rv"),         # realised vol
-                    "hv_30d":             _fv("rv"),         # alias: rv = hv_30d
-                    "term_slope":         _fv("term_slope"), # front vs back IV slope
-                    "skew":               _fv("skew"),       # put - call IV
-                    "pipeline_tag":       str(row.get("pipeline_tag", "UNKNOWN")),
-                    # L1-CHANGE-2: Scanner routing fields — news terminal cannot override.
-                    "scanner_primary_route": _scanner_route(
-                        int(row.get("score", 0)), str(row.get("decision", "BLOCK"))
-                    ),
-                    "route_source":       "SCANNER_VMS",
-                    "signal_source":      "MICROSTRUCTURE",
-                    "news_terminal_role": "CONFIRMATION_ONLY",
-                }
+            if not ticker:
+                continue
+            # FIX-04A (2026-05-02): Capture ALL VMS fields.
+            # Design principle: capture once in scanner, flow through pipeline.
+            # options_intelligence reads these from signal_row — no re-fetch.
+            def _fv(k, d=0.0):
+                v = row.get(k, d)
+                try: return float(v) if v is not None else d
+                except: return d
+
+            # L4-STEP1: Signal timestamp fields from manifest tickers dict
+            _mdata  = _manifest_tickers.get(ticker.upper(), {})
+            _sig_at = _mdata.get("signal_detected_at", "")
+            _lss_sc = _mdata.get("lss_score")
+            _lss_dc = _mdata.get("lss_decision", "")
+
+            # L4-STEP3: Apply grade route override if grades exist
+            _base_route = _scanner_route(
+                int(row.get("score", 0)), str(row.get("decision", "BLOCK"))
+            )
+            # Prefer LSS route from vms_df if available
+            _lss_route = str(row.get("lss_route") or _base_route)
+            _grade_entry = _grade_data.get(ticker.upper(), {})
+            _grade        = _grade_entry.get("grade", "")
+            _final_route  = (
+                _GRADE_ROUTE_OVERRIDE.get(_grade, _grade_entry.get("final_route"))
+                or _lss_route
+            )
+
+            context["tickers"][ticker] = {
+                "scanner_source":      "UNIVERSE_SCANNER",
+                "scanner_run_id":      _scanner_run_id,
+                "scanner_timestamp_utc": scanner.get("timestamp_utc"),
+                "scanner_age_hrs":     scanner.get("age_hrs"),
+                "scanner_signal_type": str(row.get("decision", "UNKNOWN")),
+                "scanner_decision":    str(row.get("decision", "UNKNOWN")),
+                "scanner_direction":   str(row.get("direction", "")),
+                "scanner_direction_reason": str(row.get("direction_reason", "")),
+                "scanner_score":       int(row.get("score", 0)),
+                "scanner_confidence":  round(max(0.0, min(1.0, _fv("score") / 100.0)), 4),
+                "scanner_data_quality": "CONFIRMED",
+                "scanner_reason_codes": str(row.get("reason_codes", "")),
+                "scanner_pattern_tags": str(row.get("pattern_tags", "")),
+                "scanner_sector":      str(row.get("sector", "")),
+                "scanner_price":       _fv("price"),
+                "scanner_volume":      _fv("volume"),
+                "scanner_rvol":        _fv("rvol"),
+                "scanner_watchlist_lane": str(row.get("pipeline_tag", "UNKNOWN")),
+                "vms_score":          int(row.get("score", 0)),
+                "vms_decision":       str(row.get("decision", "")),
+                "vol_spread":         _fv("vol_spread"),
+                "iv_rank":            _fv("iv_rank"),
+                "iv_rank_source":     str(row.get("iv_rank_source", "UNKNOWN")),
+                "iv_rank_confidence": _fv("iv_rank_confidence", 0.65),
+                "iv_current":         _fv("iv"),        # ATM IV from scanner
+                "rv":                 _fv("rv"),         # realised vol
+                "hv_30d":             _fv("rv"),         # alias: rv = hv_30d
+                "term_slope":         _fv("term_slope"), # front vs back IV slope
+                "skew":               _fv("skew"),       # put - call IV
+                "pipeline_tag":       str(row.get("pipeline_tag", "UNKNOWN")),
+                # L1-CHANGE-2: Scanner routing — news terminal cannot override.
+                "scanner_primary_route": _lss_route,
+                "route_source":       "SCANNER_LSS",
+                "signal_source":      "MICROSTRUCTURE",
+                "news_terminal_role": "CONFIRMATION_ONLY",
+                # L4-STEP1/3: Signal timestamp + grade fields
+                "signal_detected_at": _sig_at,
+                "lss_score":          _lss_sc,
+                "lss_decision":       _lss_dc,
+                "signal_grade":       _grade,
+                "signal_grade_route": _final_route,
+                "signal_hours_lead":  _grade_entry.get("hours_lead"),
+            }
         with open(ctx_dir / f"scanner_context_{pipeline_run_id}.json", "w", encoding="utf-8") as f:
             json.dump(context, f, indent=2)
-        logger.info("Phase 0: Scanner context written — %d GO/PROBE tickers", len(context["tickers"]))
+        logger.info(
+            "Phase 0: Scanner context written — %d GO/PROBE tickers%s",
+            len(context["tickers"]),
+            f" | {len(_grade_data)} with grades" if _grade_data else "",
+        )
     except Exception as e:
         logger.warning("Phase 0: Could not write scanner context (non-critical): %s", e)
 

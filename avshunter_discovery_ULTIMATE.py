@@ -2013,11 +2013,19 @@ def scan_ticker_ultimate(
         'vol_spread': _vms_ticker_data.get('vol_spread', ''),
         'iv_rank': _vms_ticker_data.get('iv_rank', ''),
         # L1-CHANGE-2: final_discovery_route — scanner VMS wins; news terminal demoted.
+        # L4-STEP3: Grade route override takes precedence when signal_grade_route is set.
         'final_discovery_route': (
             'EXCLUDED'      if _vms_ticker_data.get('scanner_primary_route') == 'SCANNER_BLOCKED' else
+            _vms_ticker_data.get('signal_grade_route') if _vms_ticker_data.get('signal_grade_route') else
             _vms_ticker_data.get('scanner_primary_route') if _vms_ticker_data.get('scanner_primary_route')
             else 'WATCHLIST_ONLY'   # no scanner signal → watchlist minimum
         ),
+        # L4-STEP4: Signal timestamp + grade fields — pass-through to morning gate.
+        'signal_detected_at': _vms_ticker_data.get('signal_detected_at', ''),
+        'signal_grade':       _vms_ticker_data.get('signal_grade', ''),
+        'signal_hours_lead':  _vms_ticker_data.get('signal_hours_lead', ''),
+        'lss_score':          _vms_ticker_data.get('lss_score', ''),
+        'lss_decision':       _vms_ticker_data.get('lss_decision', ''),
 
         # Sector context — from enriched universe file when available (Step 3)
         'sector':        _sector,
