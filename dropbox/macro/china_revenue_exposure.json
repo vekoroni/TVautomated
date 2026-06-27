@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06",
+  "source": "Annual reports / 10-K filings (FY2023–FY2024). Verify against most recent 10-K before use.",
+  "tickers": {
+    "QCOM":  {"china_revenue_pct": 63, "china_sensitivity": "CRITICAL"},
+    "TXN":   {"china_revenue_pct": 51, "china_sensitivity": "CRITICAL"},
+    "KLAC":  {"china_revenue_pct": 44, "china_sensitivity": "CRITICAL"},
+    "YUM":   {"china_revenue_pct": 48, "china_sensitivity": "CRITICAL"},
+    "LRCX":  {"china_revenue_pct": 31, "china_sensitivity": "HIGH"},
+    "AMAT":  {"china_revenue_pct": 30, "china_sensitivity": "HIGH"},
+    "ASML":  {"china_revenue_pct": 29, "china_sensitivity": "HIGH"},
+    "INTC":  {"china_revenue_pct": 27, "china_sensitivity": "HIGH"},
+    "ADI":   {"china_revenue_pct": 22, "china_sensitivity": "HIGH"},
+    "ON":    {"china_revenue_pct": 21, "china_sensitivity": "HIGH"},
+    "AMD":   {"china_revenue_pct": 22, "china_sensitivity": "HIGH"},
+    "TSLA":  {"china_revenue_pct": 22, "china_sensitivity": "HIGH"},
+    "AAPL":  {"china_revenue_pct": 19, "china_sensitivity": "HIGH"},
+    "NVDA":  {"china_revenue_pct": 17, "china_sensitivity": "HIGH"},
+    "MU":    {"china_revenue_pct": 16, "china_sensitivity": "HIGH"},
+    "NKE":   {"china_revenue_pct": 14, "china_sensitivity": "MEDIUM"},
+    "AVGO":  {"china_revenue_pct": 35, "china_sensitivity": "HIGH"},
+    "SBUX":  {"china_revenue_pct": 10, "china_sensitivity": "MEDIUM"},
+    "BA":    {"china_revenue_pct": 10, "china_sensitivity": "MEDIUM"},
+    "MSFT":  {"china_revenue_pct":  5, "china_sensitivity": "LOW"},
+    "AMZN":  {"china_revenue_pct":  3, "china_sensitivity": "LOW"},
+    "GOOGL": {"china_revenue_pct":  2, "china_sensitivity": "LOW"},
+    "META":  {"china_revenue_pct":  0, "china_sensitivity": "NONE"},
+    "NFLX":  {"china_revenue_pct":  0, "china_sensitivity": "NONE"}
+  }
+}

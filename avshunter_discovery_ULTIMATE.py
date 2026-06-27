@@ -32,7 +32,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -69,6 +69,8 @@ except ImportError as _sf_err:
         "direction/intent from WyckoffEngine only, asymmetry geometry skipped"
     )
 
+
+ROOT = Path(__file__).resolve().parent
 
 # ============================= LOGGING =====================================
 
@@ -2125,6 +2127,72 @@ def assign_discovery_horizon(signal: dict) -> str:
     return None
 
 
+# ============================= ACTIVIST SIGNALS ================================
+
+def _load_activist_signals() -> Dict[str, Dict[str, Any]]:
+    """
+    Load SEC activist signals written by sec_activist_monitor.py.
+    Returns {ticker_upper: signal_dict} or {} if file missing or malformed.
+    ADVISORY ONLY — never gates any discovery verdict.
+    """
+    signal_path = ROOT / "dropbox" / "macro" / "sec_activist_signals.json"
+    if not signal_path.exists():
+        return {}
+    try:
+        data = json.loads(signal_path.read_text(encoding="utf-8-sig"))
+        if not data.get("advisory_only"):
+            return {}
+        return {
+            s["ticker"].upper(): s
+            for s in data.get("signals", [])
+            if s.get("ticker")
+        }
+    except Exception as exc:
+        logging.getLogger("AVSHUNTER_ULTIMATE").info(
+            "Activist signal load skipped: %s", exc
+        )
+        return {}
+
+
+def _enrich_with_activist_signals(
+    df: "pd.DataFrame",
+    activist_signals: Dict[str, Dict[str, Any]],
+    logger: logging.Logger,
+) -> "pd.DataFrame":
+    """
+    Append activist signal columns to a discovery candidates DataFrame.
+    All new columns are display-only — no existing column is modified.
+    """
+    def _get_field(ticker: str, field: str, default: str = "") -> str:
+        sig = activist_signals.get(str(ticker).upper(), {})
+        return sig.get(field, default)
+
+    if "ticker" not in df.columns:
+        return df
+
+    df["activist_signal"]       = df["ticker"].apply(lambda t: _get_field(t, "signal_label"))
+    df["activist_filing_date"]  = df["ticker"].apply(lambda t: _get_field(t, "filing_date"))
+    df["activist_filing_type"]  = df["ticker"].apply(lambda t: _get_field(t, "filing_type"))
+    df["activist_note"]         = df["ticker"].apply(lambda t: _get_field(t, "avshunter_note"))
+    df["activist_priority_boost"] = df["ticker"].apply(
+        lambda t: "TRUE" if _get_field(t, "signal_label") else ""
+    )
+
+    matched = df["activist_signal"].ne("").sum()
+    if matched > 0:
+        logger.info("Activist signals: %d universe matches enriched", matched)
+        for ticker in df.loc[df["activist_signal"].ne(""), "ticker"]:
+            sig = activist_signals.get(str(ticker).upper(), {})
+            logger.info(
+                "  ACTIVIST SIGNAL on %s: %s filed %s",
+                ticker, sig.get("signal_label", ""), sig.get("filing_date", ""),
+            )
+    return df
+
+
+# ==============================================================================
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--universe", default="config/tickers.csv")
@@ -2318,9 +2386,18 @@ def main() -> None:
     out_watchlist = out_dir / f"final_watchlist_ultimate_{ts}.csv"
     out_summary = out_dir / f"discovery_summary_ultimate_{ts}.json"
 
+    # AG-06: Load activist signals and enrich candidates (advisory display only)
+    activist_signals = _load_activist_signals()
+    if activist_signals:
+        logger.info("SEC activist signals loaded: %d universe matches", len(activist_signals))
+    else:
+        logger.info("SEC activist signals: no signal file or no matches (pipeline continues normally)")
+
     # Save all candidates
     if all_signals:
         df_all = pd.DataFrame(all_signals)
+        # Enrich with activist signal columns (display only — no verdict change)
+        df_all = _enrich_with_activist_signals(df_all, activist_signals, logger)
         # Enhancement 3: Sort by tier then lift_proxy_score (not raw composite)
         # This ensures within each tier, the highest-lift setups surface first.
         sort_col = 'lift_proxy_score' if 'lift_proxy_score' in df_all.columns else 'composite_score'
