@@ -2005,8 +2005,19 @@ def scan_ticker_ultimate(
         'scanner_rvol': _vms_ticker_data.get('scanner_rvol', ''),
         'scanner_watchlist_lane': _vms_ticker_data.get('scanner_watchlist_lane', ''),
         'scanner_age_hrs': _vms_ticker_data.get('scanner_age_hrs', ''),
+        # L1-CHANGE-2: Scanner routing fields — scanner takes precedence over news terminal.
+        'scanner_primary_route': _vms_ticker_data.get('scanner_primary_route', ''),
+        'route_source':   _vms_ticker_data.get('route_source', 'DEFAULT'),
+        'signal_source':  _vms_ticker_data.get('signal_source', ''),
+        'news_terminal_role': _vms_ticker_data.get('news_terminal_role', ''),
         'vol_spread': _vms_ticker_data.get('vol_spread', ''),
         'iv_rank': _vms_ticker_data.get('iv_rank', ''),
+        # L1-CHANGE-2: final_discovery_route — scanner VMS wins; news terminal demoted.
+        'final_discovery_route': (
+            'EXCLUDED'      if _vms_ticker_data.get('scanner_primary_route') == 'SCANNER_BLOCKED' else
+            _vms_ticker_data.get('scanner_primary_route') if _vms_ticker_data.get('scanner_primary_route')
+            else 'WATCHLIST_ONLY'   # no scanner signal → watchlist minimum
+        ),
 
         # Sector context — from enriched universe file when available (Step 3)
         'sector':        _sector,

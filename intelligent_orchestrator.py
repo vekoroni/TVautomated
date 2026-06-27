@@ -645,6 +645,20 @@ def build_augmented_universe(scanner: dict, pipeline_run_id: str) -> Optional[Pa
         return None
 
 
+def _scanner_route(vms_score: float, vms_decision: str) -> str:
+    """
+    L1-CHANGE-2: Primary routing gate from scanner VMS.
+    News terminal enrichment delta cannot override this.
+    Called from write_scanner_context() to stamp scanner_primary_route per ticker.
+    """
+    d = str(vms_decision).upper()
+    s = float(vms_score) if vms_score else 0.0
+    if d == "GO"    or s >= 75: return "FULL_PIPELINE"
+    if d == "PROBE" or s >= 60: return "DISCOVERY_ONLY"
+    if d == "WAIT"  or s >= 45: return "WATCHLIST_ONLY"
+    return "SCANNER_BLOCKED"
+
+
 def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
     """Phase 0 — Write scanner_context_{run_id}.json for downstream VMS field access."""
     if not scanner["available"] or scanner["vms_df"] is None:
@@ -703,6 +717,13 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
                     "term_slope":         _fv("term_slope"), # front vs back IV slope
                     "skew":               _fv("skew"),       # put - call IV
                     "pipeline_tag":       str(row.get("pipeline_tag", "UNKNOWN")),
+                    # L1-CHANGE-2: Scanner routing fields — news terminal cannot override.
+                    "scanner_primary_route": _scanner_route(
+                        int(row.get("score", 0)), str(row.get("decision", "BLOCK"))
+                    ),
+                    "route_source":       "SCANNER_VMS",
+                    "signal_source":      "MICROSTRUCTURE",
+                    "news_terminal_role": "CONFIRMATION_ONLY",
                 }
         with open(ctx_dir / f"scanner_context_{pipeline_run_id}.json", "w", encoding="utf-8") as f:
             json.dump(context, f, indent=2)
