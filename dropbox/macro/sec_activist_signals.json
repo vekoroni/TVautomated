@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-06-27T15:08:02.267387+00:00",
+  "schema_version": "1.0",
+  "signal_count": 6,
+  "advisory_only": true,
+  "execution_permission": "NONE \u2014 research context only",
+  "signals": [
+    {
+      "ticker": "FULC",
+      "filing_type": "SCHEDULE 13G",
+      "filing_date": "2026-06-25",
+      "entity_name": "Fulcrum Therapeutics, Inc.",
+      "display_names": [
+        "Fulcrum Therapeutics, Inc.  (FULC)  (CIK 0001680581)",
+        "EcoR1 Capital, LLC  (CIK 0001587114)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0000935836-26-000330",
+      "signal_label": "ACTIVIST_13G",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    },
+    {
+      "ticker": "FULC",
+      "filing_type": "SCHEDULE 13G",
+      "filing_date": "2026-06-25",
+      "entity_name": "Fulcrum Therapeutics, Inc.",
+      "display_names": [
+        "Fulcrum Therapeutics, Inc.  (FULC)  (CIK 0001680581)",
+        "EcoR1 Capital, LLC  (CIK 0001587114)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0000935836-26-000331",
+      "signal_label": "ACTIVIST_13G",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    },
+    {
+      "ticker": "ELVN",
+      "filing_type": "SCHEDULE 13G/A",
+      "filing_date": "2026-06-22",
+      "entity_name": "Enliven Therapeutics, Inc.",
+      "display_names": [
+        "Enliven Therapeutics, Inc.  (ELVN)  (CIK 0001672619)",
+        "Polar Capital Holdings Plc  (CIK 0001837309)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0001172661-26-002461",
+      "signal_label": "ACTIVIST_13G",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    },
+    {
+      "ticker": "ALLT",
+      "filing_type": "SCHEDULE 13D",
+      "filing_date": "2026-06-25",
+      "entity_name": "Allot Ltd.",
+      "display_names": [
+        "Allot Ltd.  (ALLT)  (CIK 0001365767)",
+        "Philotimo Fund, LP  (CIK 0001688522)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0000921895-26-001676",
+      "signal_label": "ACTIVIST_13D",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    },
+    {
+      "ticker": "CRWV",
+      "filing_type": "SCHEDULE 13G/A",
+      "filing_date": "2026-06-23",
+      "entity_name": "CoreWeave, Inc.",
+      "display_names": [
+        "CoreWeave, Inc.  (CRWV)  (CIK 0001769628)",
+        "CW Opportunity LLC  (CIK 0001977050)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0001104659-26-076939",
+      "signal_label": "ACTIVIST_13G",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    },
+    {
+      "ticker": "TLN",
+      "filing_type": "SCHEDULE 13G",
+      "filing_date": "2026-06-23",
+      "entity_name": "Talen Energy Corp",
+      "display_names": [
+        "Talen Energy Corp  (TLN)  (CIK 0001622536)",
+        "ECP ControlCo, LLC  (CIK 0001707921)"
+      ],
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&filenum=&type=SC+13D&dateb=&owner=include&count=5&search_text=&accession=0001493152-26-029806",
+      "signal_label": "ACTIVIST_13G",
+      "avshunter_note": "13D = controlling intent (>5% stake, change agenda). 13G = passive intent (>5% stake, no change agenda). Both warrant DISCOVERY_ONLY re-route."
+    }
+  ]
+}
