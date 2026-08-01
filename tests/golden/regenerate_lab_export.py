@@ -464,7 +464,7 @@ def build_columns():
         ("Trigger_Codes", lambda s: first_signal_value(s, ["trigger_codes", "eod__trigger_codes", "vg__trigger_codes", "opt__trigger_codes"])),
         ("Premium_Mid", lambda s: (lambda r: r if (_parse_float(r) or 0) > 0 else "")(get_opt(s, "premium_mid") or get_opt(s, "premium") or s.get("premium_mid") or s.get("premium"))),
         ("RR", lambda s: f"{(_parse_float(s.get('rr')) or 0):.4f}"),
-        ("EV", lambda s: f"{get_ev(s):.4f}"),
+        ("EV", lambda s: f"{get_ev(s):.8f}"),
         ("EV_Decision", lambda s: s.get("ev2_decision_hint") or ""),
         ("EV_Quality", lambda s: s.get("ev2_quality_score") or ""),
         ("Win_Rate_20d", lambda s: s.get("win_rate_20d") or ""),

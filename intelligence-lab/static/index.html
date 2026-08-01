@@ -2004,7 +2004,7 @@ function buildExportColumns() {
     ['Trigger_Codes',   s => firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])],
     ['Premium_Mid',     s => { const r=getOpt(s,'premium_mid')||getOpt(s,'premium')||s.premium_mid||s.premium; return parseFloat(r)>0?r:''; }],
     ['RR',              s => parseFloat(s.rr||0).toFixed(4)],
-    ['EV',              s => getEv(s).toFixed(4)],
+    ['EV',              s => getEv(s).toFixed(8)],
     ['EV_Decision',     s => s.ev2_decision_hint || ''],
     ['EV_Quality',      s => s.ev2_quality_score || ''],
     ['Win_Rate_20d',    s => s.win_rate_20d || ''],
