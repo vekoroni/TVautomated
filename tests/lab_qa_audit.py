@@ -91,6 +91,19 @@ def _is_call(row):
     return "CALL" in str(row.get("Instrument", "")).upper()
 
 
+def _present_ci(name, columns):
+    """Case-insensitive column presence check.
+
+    EXPECTED_MISSING is written against the underlying signal-dict field
+    names (snake_case), but every other check in this file assumes the
+    export's own TitleCase column convention (e.g. REQUIRED's
+    "Priority_Rank"). A column can genuinely be present as "Trade_Idea_Id"
+    without ever matching "trade_idea_id" on an exact-case comparison.
+    """
+    lname = name.lower()
+    return any(str(c).lower() == lname for c in columns)
+
+
 # ─────────────────────────────────────────────────────────────────── checks
 # Each returns None; each appends to the register.
 
@@ -103,11 +116,12 @@ def chk_schema(df, reg, raw):
                 consequence="Interpreter cannot construct a valid request.",
                 confidence=99)
 
-    absent = [c for c in EXPECTED_MISSING if c not in df.columns]
+    absent = [c for c in EXPECTED_MISSING if not _present_ci(c, df.columns)]
     if absent:
         reg.add("P0", "SCHEMA", "Eligibility fields not present in export",
                 "Documented trade eligibility requires live_data_mode=LIVE and "
-                "immutable identity requires trade_idea_id. Neither is exported.",
+                "immutable identity requires trade_idea_id. "
+                f"Still absent (case-insensitive): {', '.join(absent)}.",
                 {"absent": absent},
                 consequence="The documented eligibility condition cannot be "
                             "enforced from this file. Identity cannot be bound "
