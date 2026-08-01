@@ -140,12 +140,27 @@ def _morning_handoff_paths(run_dir, sb_dir, run_id):
         "eod_candidates": eod_path,
     }
 
+def _primary_signal_paths(run_dir, sb_dir, run_id):
+    """eil_enriched and options_intelligence are the primary/opt__ signal
+    sources _load_run reads (see PRIMARY SIGNAL SOURCE / OPTIONS INTELLIGENCE
+    sections below) but were previously absent from the cache signature, so a
+    rewrite of either file while a run_id was already cached went undetected.
+    FIX-CACHE: see BASELINE.md Phase 0.3."""
+    eil_path = _glob_first(sb_dir, f"eil_enriched_{run_id}.csv")
+    if not eil_path:
+        eil_path = _glob_first(sb_dir, "eil_enriched_*.csv")
+    opt_path = _glob_first(run_dir / "options", f"options_intelligence_{run_id}.csv")
+    if not opt_path:
+        opt_path = _glob_first(run_dir / "options", "options_intelligence_*.csv")
+    return {"eil_enriched": eil_path, "options_intelligence": opt_path}
+
 def _lab_cache_signature(run_id):
     run_dir = RUNS_DIR / run_id
     if not run_dir.exists():
         return {}
     sb_dir = _find_superbrain_dir(run_dir)
     paths = _morning_handoff_paths(run_dir, sb_dir, run_id)
+    paths.update(_primary_signal_paths(run_dir, sb_dir, run_id))
     return {name: _file_signature(path) for name, path in paths.items()}
 
 def _utc_iso():
