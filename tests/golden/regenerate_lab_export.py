@@ -429,6 +429,7 @@ def build_columns():
     """Port of the `cols` array in exportCSV() — static/index.html:1979-2044."""
     return [
         ("Ticker", lambda s: s.get("ticker")),
+        ("Trade_Idea_Id", lambda s: s.get("trade_idea_id") or ""),
         ("Verdict", final_lab_verdict),
         ("Lab_Verdict", final_lab_verdict),
         ("Exec_Category", get_execution_category),

@@ -1969,6 +1969,7 @@ function highlightSort(col) {
 function buildExportColumns() {
   return [
     ['Ticker',          s => s.ticker],
+    ['Trade_Idea_Id',   s => s.trade_idea_id || ''],
     ['Verdict',         s => finalLabVerdict(s)],
     ['Lab_Verdict',     s => finalLabVerdict(s)],
     ['Exec_Category',   s => getExecutionCategory(s)],
