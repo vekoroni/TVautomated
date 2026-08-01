@@ -22,6 +22,9 @@ env/
 *.pkl
 *.pickle
 
+# Exception: golden regression fixtures are small and must be tracked
+!tests/golden/*.csv
+
 # Logs and outputs
 *.log
 data/output/
