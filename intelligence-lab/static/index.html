@@ -1963,20 +1963,11 @@ function highlightSort(col) {
 }
 
 // â”€â”€â”€ CSV EXPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function exportCSV() {
-  const data = [...filteredData()].sort((a,b) => {
-    const av = sortKeys[sortCol](a), bv = sortKeys[sortCol](b);
-    if (typeof av === 'number') return (av - bv) * sortDir;
-    return String(av).localeCompare(String(bv)) * sortDir;
-  });
-
-  if (!data.length) {
-    alert('No signals match the current filters â€” nothing to export.');
-    return;
-  }
-
-  // Define the columns to export (label: field extractor)
-  const cols = [
+// Define the columns to export (label: field extractor).
+// Extracted from exportCSV() so it is independently testable — see
+// tests/js/test_fix1_numeric_blank_vs_zero.js.
+function buildExportColumns() {
+  return [
     ['Ticker',          s => s.ticker],
     ['Verdict',         s => finalLabVerdict(s)],
     ['Lab_Verdict',     s => finalLabVerdict(s)],
@@ -2018,7 +2009,7 @@ function exportCSV() {
     ['Win_Rate_20d',    s => s.win_rate_20d || ''],
     ['IVP',             s => getOpt(s,'iv_rank') || s.ivp || ''],
     ['IVP_Label',       s => getOpt(s,'ivp_label') || ''],
-    ['Priority_Rank',   s => s.priority_rank || ''],
+    ['Priority_Rank',   s => s.priority_rank ?? ''],
     ['Priority_Score',  s => parseFloat(s.priority_score||0).toFixed(1)],
     ['Phase',           s => s.phase || ''],
     ['Regime',          s => s.regime || ''],
@@ -2027,7 +2018,7 @@ function exportCSV() {
     ['Hold_Label',      s => getOpt(s,'hold_label') || ''],
     ['Position_Size_Pct', s => displaySize(s)],
     ['Vetoes',          s => s.sb_vetoes || ''],
-    ['Vetoes_Count',    s => s.sb_vetoes_count || ''],
+    ['Vetoes_Count',    s => s.sb_vetoes_count ?? ''],
     ['Exec_Mode',       s => displayExecutionMode(s) || ''],
     ['EV_Status',       s => s.ev_status || ''],
     ['Win_Rate_Source', s => s.win_rate_source || ''],
@@ -2042,6 +2033,21 @@ function exportCSV() {
     ['Verdict_Reason',  s => (s.sb_verdict_reason||'').replace(/,/g, ';')],
     ['Run_ID',          _ => RUN_DATA?.run_id || ''],
   ];
+}
+
+function exportCSV() {
+  const data = [...filteredData()].sort((a,b) => {
+    const av = sortKeys[sortCol](a), bv = sortKeys[sortCol](b);
+    if (typeof av === 'number') return (av - bv) * sortDir;
+    return String(av).localeCompare(String(bv)) * sortDir;
+  });
+
+  if (!data.length) {
+    alert('No signals match the current filters â€” nothing to export.');
+    return;
+  }
+
+  const cols = buildExportColumns();
 
   const esc = v => {
     const s = String(v ?? '');
