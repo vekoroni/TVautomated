@@ -624,13 +624,44 @@ def _find_superbrain_dir(run_dir):
 def _normalise_macro(m):
     if not isinstance(m, dict):
         return {}
+    macro_quant = m.get("macro_quant_packet") if isinstance(m.get("macro_quant_packet"), dict) else {}
+    sector_rotation = m.get("sector_rotation") if isinstance(m.get("sector_rotation"), dict) else {}
+    sector_bias = sector_rotation.get("sector_bias_map") if isinstance(sector_rotation.get("sector_bias_map"), dict) else {}
+    if not sector_bias:
+        sector_bias = {}
+        for sector in m.get("sector_lead") or m.get("leading_sectors") or []:
+            sector_bias[str(sector)] = "FAVOURED"
+        for sector in m.get("sector_avoid") or m.get("avoid_sectors") or []:
+            sector_bias[str(sector)] = "UNDERWEIGHT"
+    execution_bias = {
+        "macro_filter": m.get("macro_filter") or macro_quant.get("macro_execution_caution") or "",
+        "preferred_horizon": m.get("macro_preferred_horizon") or macro_quant.get("macro_preferred_horizon") or "",
+        "size_multiplier": m.get("size_multiplier") or "",
+        "trigger_required": m.get("trigger_required") or "",
+    }
     return {
         "regime_state": str(m.get("regime_state") or m.get("regime") or ""),
+        "dir_bias":     str(m.get("dir_bias") or m.get("directional_bias") or ""),
+        "trend_energy": str(m.get("trend_energy") or ""),
         "risk_switch":  str(m.get("risk_on_off_switch") or m.get("risk_switch") or ""),
         "vol_mode":     str(m.get("vol_mode") or ""),
         "sector_tilt":  str(m.get("sector_tilt") or ""),
         "conviction":   m.get("macro_conviction") or m.get("conviction") or "",
+        "conviction_score": (
+            macro_quant.get("macro_conviction_score")
+            or macro_quant.get("macro_confidence")
+            or m.get("macro_conviction")
+            or m.get("conviction")
+            or ""
+        ),
         "regime_drift": str(m.get("regime_drift_status") or m.get("regime_drift") or ""),
+        "liquidity_pulse": str(m.get("liquidity_pulse") or macro_quant.get("liquidity_pulse") or ""),
+        "rates_impulse": str(m.get("rates_impulse") or macro_quant.get("rates_impulse") or ""),
+        "vix_contango": macro_quant.get("vix_contango") if macro_quant.get("vix_contango") is not None else m.get("vix_contango"),
+        "sector_lead": m.get("sector_lead") or macro_quant.get("leading_sectors") or [],
+        "sector_avoid": m.get("sector_avoid") or macro_quant.get("avoid_sectors") or [],
+        "sector_bias": sector_bias,
+        "execution_bias": {k: v for k, v in execution_bias.items() if v not in ("", None, [])},
     }
 
 # â”€â”€â”€ PRIORITY SCORING (pipeline-native fields) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -769,7 +800,7 @@ def _is_lab_audit_only(sig):
     veto_token = _lab_token(veto_text)
 
     return (
-        verdict == "BLOCKED"
+        verdict in {"BLOCKED", "NEGATIVE_RR"}
         or permission == "BLOCKED"
         or route in {"STAND_DOWN", "BLOCKED"}
         or live_state in {"REJECTED", "BLOCKED"}
@@ -1306,6 +1337,7 @@ def _load_run(run_id, force_reload=False):
             "WAIT": "WAIT",
             "WATCHLIST": "WATCH_ONLY",
             "BLOCKED": "NO_TRADE",
+            "NEGATIVE_RR": "NO_TRADE",
         }.get(verdict, verdict or "WAIT")
 
     def _display_campaign_for(verdict, sig):
@@ -1320,6 +1352,7 @@ def _load_run(run_id, force_reload=False):
             "WAIT": "WATCHLIST",
             "WATCHLIST": "WATCHLIST",
             "BLOCKED": "BLOCKED",
+            "NEGATIVE_RR": "BLOCKED",
         }.get(verdict, str(_first_nonempty(sig.get("sb_campaign"), sig.get("campaign_verdict")) or "WATCHLIST").upper())
 
     def _sync_lab_display_fields(sig):

@@ -107,11 +107,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 
 /* SIGNAL TABLE */
 .sig-list-zone{padding:0 20px 20px;overflow-x:auto}
-.sig-list-head{display:grid;grid-template-columns:70px 82px 70px 64px 68px 92px 62px 82px 70px 70px 78px 70px 70px 70px 66px 78px 82px 70px 70px 70px 90px 1fr;min-width:1540px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
+.sig-list-head{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px;min-width:1510px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
 .slh{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:7px 9px;cursor:pointer;user-select:none;border-right:1px solid var(--border);white-space:nowrap}
 .slh:hover{color:var(--cyan)}.slh.sorted{color:var(--cyan)}.slh:last-child{border-right:none}
 .sig-list-body{border:1px solid var(--border);border-radius:0 0 4px 4px;overflow:hidden}
-.sig-row{display:grid;grid-template-columns:70px 82px 70px 64px 68px 92px 62px 82px 70px 70px 78px 70px 70px 70px 66px 78px 82px 70px 70px 70px 90px 1fr;min-width:1540px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
+.sig-row{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px;min-width:1510px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
 .sig-row:last-child{border-bottom:none}.sig-row:hover{background:rgba(255,255,255,.025)}.sig-row.exec-row{background:rgba(0,229,160,.015)}.sig-row.exec-row:hover{background:rgba(0,229,160,.04)}
 .sig-row.selected-row{background:rgba(0,200,255,.05)!important}.sig-row.selected-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan)}
 .sig-row.audit-row{opacity:.62;background:rgba(255,61,90,.018)}.sig-row.audit-row::after{content:'';position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,61,90,.45)}
@@ -336,8 +336,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <button class="fb" id="btn-pos-rr" onclick="toggleQuick('rr',this)" title="Show only positive R:R signals">R:R &gt; 0</button>
     <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals">EV &gt; 0</button>
     <button class="fb" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Show morning-blocked, rejected, and stand-down names for audit">Show blocked</button>
-    <button class="fb" onclick="sortBy(12);highlightSort(12)" title="Sort by R:R descending">â¬‡ R:R</button>
-    <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by EV descending">â¬‡ EV</button>
+    <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by R:R descending">â¬‡ R:R</button>
+    <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending">â¬‡ EV</button>
     <div class="f-sep"></div>
     <input class="search-inp" type="text" placeholder="Search tickerâ€¦" oninput="doSearch(this.value)">
     <div class="f-sep"></div>
@@ -358,16 +358,17 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(9)">Premium</div>
       <div class="slh" onclick="sortBy(10)">Horizon</div>
       <div class="slh" onclick="sortBy(11)">Trigger</div>
-      <div class="slh" onclick="sortBy(12)">R:R</div>
-      <div class="slh" onclick="sortBy(13)">EV</div>
-      <div class="slh" onclick="sortBy(14)">IVP</div>
-      <div class="slh" onclick="sortBy(15)">Vol State</div>
-      <div class="slh" onclick="sortBy(16)">Hold</div>
+      <div class="slh" onclick="sortBy(12)">Trig Evidence</div>
+      <div class="slh" onclick="sortBy(13)">R:R</div>
+      <div class="slh" onclick="sortBy(14)">EV</div>
+      <div class="slh" onclick="sortBy(15)">IVP</div>
+      <div class="slh" onclick="sortBy(16)">Vol State</div>
+      <div class="slh" onclick="sortBy(17)">Hold</div>
       <div class="slh">WBS</div>
       <div class="slh">MV</div>
       <div class="slh">Drift</div>
       <div class="slh" onclick="sortBy(21)">Sector</div>
-      <div class="slh">EIL</div>
+      <div class="slh" onclick="sortBy(22)">EIL</div>
     </div>
     <div class="sig-list-body" id="sig-body"></div>
   </div>
@@ -1083,6 +1084,25 @@ function execCardHTML(s) {
 // â•â•â• SIGNAL TABLE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function getOpt(s, k) { return s[`opt__${k}`] || s[k] || ''; }
 
+function cleanUiHtml(value) {
+  return String(value ?? '')
+    .replaceAll('Ã¢â‚¬â€', '-')
+    .replaceAll('Ã¢â‚¬â€œ', '-')
+    .replaceAll('â€”', '-')
+    .replaceAll('â€“', '-')
+    .replaceAll('â€', '-')
+    .replaceAll('Ãƒâ€”', 'x')
+    .replaceAll('Ã—', 'x')
+    .replaceAll('Ã‚Â·', ' · ')
+    .replaceAll('Â·', ' · ')
+    .replaceAll('Ã¢Å¡Â¡', '!')
+    .replaceAll('âš¡', '!')
+    .replaceAll('Ã¢Å“â€¢', 'x')
+    .replaceAll('âœ•', 'x')
+    .replaceAll('Ã¢â‚¬Â¦', '...')
+    .replaceAll('â€¦', '...');
+}
+
 // â”€â”€ EV authority fallback chain â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Server overwrites s.ev directly (intelligence_lab.py FIX-EV).
 // These helpers are belt-and-suspenders for legacy / uncached payloads.
@@ -1102,6 +1122,29 @@ function getEv(s) {
     if (Math.abs(n) > 0) return n;
   }
   return firstValid;
+}
+
+function getEvDecisionHint(s) {
+  return cleanCategory(firstSignalValue(s, [
+    'ev2_decision_hint',
+    'ev_decision_hint',
+    'eil__ev2_decision_hint',
+    'eil__ev_decision_hint',
+    'fd_ev_decision_hint'
+  ]));
+}
+
+function hasEvAvoid(s) {
+  const hint = getEvDecisionHint(s);
+  const status = cleanCategory(firstSignalValue(s, ['ev_status', 'ev2_status', 'eil__ev_status']));
+  return hint === 'AVOID' || status === 'AVOID' || status === 'FAIL' || status === 'NEGATIVE_EV';
+}
+
+function hasNegativeOptionRr(s) {
+  const raw = firstSignalValue(s, ['rr_options', 'opt__rr_options', 'option_rr', 'rr']);
+  if (raw === '' || raw === null || raw === undefined) return false;
+  const rr = parseFloat(raw);
+  return !Number.isNaN(rr) && rr < 0;
 }
 
 function formatEv(v) {
@@ -1145,7 +1188,10 @@ function cleanCategory(v) {
 }
 
 function finalLabVerdict(s) {
-  return cleanCategory(s.display_final_verdict || s.lab_status || s.lab_verdict || s.sb_final_verdict || 'WAIT');
+  const verdict = cleanCategory(s.display_final_verdict || s.lab_status || s.lab_verdict || s.sb_final_verdict || 'WAIT');
+  if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
+  if (['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict) && hasEvAvoid(s)) return 'EOD_CAUTION';
+  return verdict;
 }
 
 function displayCampaign(s) {
@@ -1390,15 +1436,74 @@ function displayCategory(cat) {
   return c ? c.replace(/_/g, ' ') : 'â€”';
 }
 
+function formatPriceLevel(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const n = parseFloat(raw.replace(/[$,]/g, ''));
+  if (Number.isNaN(n)) return raw.replace(/_/g, ' ').slice(0, 18);
+  return `$${n.toFixed(2)}`;
+}
+
+function getTriggerPriceRaw(s) {
+  return firstSignalValue(s, [
+    'trigger_price',
+    'eod__trigger_price',
+    'vg__trigger_price',
+    'opt__trigger_price',
+    'entry_trigger_price',
+    'trade_trigger_price',
+    'scenario_entry_trigger',
+    'eod__scenario_entry_trigger',
+    'vg__scenario_entry_trigger',
+    'wbs_phase_b_trigger',
+    'eod__wbs_phase_b_trigger',
+    'vg__wbs_phase_b_trigger',
+    'wbs_phase_c_trigger',
+    'eod__wbs_phase_c_trigger',
+    'vg__wbs_phase_c_trigger'
+  ]);
+}
+
 function getTriggerDisplay(s) {
+  const explicitTrigger = firstSignalValue(s, [
+    'trigger_price',
+    'eod__trigger_price',
+    'vg__trigger_price',
+    'opt__trigger_price',
+    'entry_trigger_price',
+    'trade_trigger_price',
+    'scenario_entry_trigger',
+    'eod__scenario_entry_trigger',
+    'vg__scenario_entry_trigger'
+  ]);
+  if (explicitTrigger) return formatPriceLevel(explicitTrigger);
+  const phaseB = firstSignalValue(s, ['wbs_phase_b_trigger', 'eod__wbs_phase_b_trigger', 'vg__wbs_phase_b_trigger']);
+  const phaseC = firstSignalValue(s, ['wbs_phase_c_trigger', 'eod__wbs_phase_c_trigger', 'vg__wbs_phase_c_trigger']);
+  if (phaseB || phaseC) {
+    const parts = [];
+    if (phaseB) parts.push(`B ${formatPriceLevel(phaseB)}`);
+    if (phaseC) parts.push(`C ${formatPriceLevel(phaseC)}`);
+    return parts.join(' / ');
+  }
+  const trgRaw = firstSignalValue(s, ['opt__days_to_trigger', 'days_to_trigger', 'opt__trigger_days', 'trigger_days']);
+  const trg = parseFloat(trgRaw);
+  return Number.isNaN(trg) ? '-' : `${Math.round(trg)}d`;
+}
+
+function getTriggerEvidenceDisplay(s) {
+  const evidence = firstSignalValue(s, ['trigger_evidence', 'eod__trigger_evidence', 'vg__trigger_evidence', 'opt__trigger_evidence']);
+  if (evidence) return String(evidence).replace(/_/g, ' ').slice(0, 18);
   const primary = firstSignalValue(s, ['trigger_primary', 'eod__trigger_primary', 'vg__trigger_primary', 'opt__trigger_primary']);
   const quality = firstSignalValue(s, ['trigger_quality', 'eod__trigger_quality', 'vg__trigger_quality', 'opt__trigger_quality']);
   const codes = firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']);
   const score = parseFloat(firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score']));
-  if (primary || quality || codes) {
+  const qualityLabel = cleanCategory(quality);
+  const hasQuality = Boolean(quality) && !['0', '0.0', '0.00', 'FALSE', 'NO'].includes(qualityLabel);
+  const hasScore = !Number.isNaN(score) && score > 0;
+  if (primary || hasQuality || codes || hasScore) {
     const shortPrimary = String(primary || codes || 'TRIGGER').replace(/_/g, ' ').slice(0, 14);
-    const shortQuality = quality ? ` ${String(quality).replace(/_/g, ' ').slice(0, 6)}` : '';
-    const scoreLabel = Number.isNaN(score) || score <= 0 ? '' : ` ${Math.round(score)}`;
+    const shortQuality = hasQuality ? ` ${String(quality).replace(/_/g, ' ').slice(0, 6)}` : '';
+    const scoreLabel = hasScore ? ` ${Math.round(score)}` : '';
     return `${shortPrimary}${shortQuality}${scoreLabel}`.trim();
   }
   const catalyst = firstSignalValue(s, ['catalyst_type', 'eod__catalyst_type', 'vg__catalyst_type']);
@@ -1409,16 +1514,70 @@ function getTriggerDisplay(s) {
     const sLabel = Number.isNaN(catalystScore) || catalystScore <= 0 ? '' : ` ${Math.round(catalystScore)}`;
     return `CAT ${cLabel}${sLabel}`.trim();
   }
-  const trgRaw = firstSignalValue(s, ['opt__days_to_trigger', 'days_to_trigger', 'opt__trigger_days', 'trigger_days']);
-  const trg = parseFloat(trgRaw);
-  return Number.isNaN(trg) ? 'â€”' : `${Math.round(trg)}d`;
+  return '';
 }
 
 function triggerSortValue(s) {
-  const score = parseFloat(firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score']));
-  if (!Number.isNaN(score)) return score;
+  const price = parseFloat(String(getTriggerPriceRaw(s)).replace(/[$,]/g, ''));
+  if (!Number.isNaN(price)) return price;
   const days = parseFloat(firstSignalValue(s, ['opt__days_to_trigger', 'days_to_trigger', 'opt__trigger_days', 'trigger_days']));
   return Number.isNaN(days) ? 0 : -days;
+}
+
+function triggerEvidenceSortValue(s) {
+  const score = parseFloat(firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score']));
+  if (!Number.isNaN(score)) return score;
+  return getTriggerEvidenceDisplay(s) ? 1 : 0;
+}
+
+function getSectorDisplay(s) {
+  const sec = firstSignalValue(s, [
+    'sector_etf',
+    'sector_proxy',
+    'sector_code',
+    'sector_short',
+    'gics_sector',
+    'sector_name',
+    'sector',
+    'gics_sector_norm',
+    'sector_tilt',
+    'macro_sector_bias',
+    'ticker_sector_alignment'
+  ]);
+  if (!sec) return '';
+  const abbr = {
+    'Information Technology':'Tech',
+    'Health Care':'Health',
+    'Consumer Discretionary':'Cons.Disc',
+    'Consumer Staples':'Cons.Stap',
+    'Communication Services':'Comms',
+    'Financials':'Fin',
+    'Industrials':'Indust',
+    'Energy':'Energy',
+    'Materials':'Matls',
+    'Real Estate':'RE',
+    'Utilities':'Utils'
+  };
+  return abbr[sec] || String(sec).slice(0, 12);
+}
+
+function getEilDisplay(s) {
+  if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
+  const display = firstSignalValue(s, [
+    'eil__raw_verdict',
+    'eil__eil_raw_verdict',
+    'eil__verdict',
+    'eil__eil_verdict',
+    'eil_signal_verdict',
+    'eil_v3_verdict',
+    'final_decision_advisory_verdict',
+    'fd_advisory_verdict',
+    'fd_verdict'
+  ]);
+  if (display && display !== 'ADVISORY_ONLY') return display;
+  const sc = parseFloat(firstSignalValue(s, ['eil__composite_score', 'eil__composite', 'eil_composite_eod']));
+  if (!Number.isNaN(sc)) return sc.toFixed(0);
+  return '';
 }
 
 function normaliseHorizonLabel(v) {
@@ -1594,16 +1753,17 @@ const sortKeys = [
   s => parseFloat(getOpt(s,'premium_mid') || getOpt(s,'premium') || s.premium_mid || s.premium || 0), // 9 Premium
   s => getTimeHorizon(s),                           // 10 Horizon
   s => triggerSortValue(s),                         // 11 Trigger
-  s => parseFloat(s.rr||0),                         // 12 R:R
-  s => getEv(s),                                    // 13 EV
-  s => parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||0),  // 14 IVP
-  s => parseFloat(s['garch__l3_iv_tailwind_score']||0), // 15 Vol State
-  s => getOpt(s,'hold_label'),                      // 16 Hold
-  s => s['wbs__wbs_grade']||'',                      // 17 WBS
-  s => s['mv__verdict']||'',                         // 18 MV
-  s => parseFloat(s['mv__drift_pct']||0),            // 19 Drift
-  s => s['eil__verdict']||s['eil__eil_verdict']||'', // 20 EIL
-  s => (s.gics_sector||s.sector_name||s.sector||s.sector_short||''), // 21 Sector
+  s => triggerEvidenceSortValue(s),                 // 12 Trigger Evidence
+  s => parseFloat(s.rr||0),                         // 13 R:R
+  s => getEv(s),                                    // 14 EV
+  s => parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||0),  // 15 IVP
+  s => parseFloat(s['garch__l3_iv_tailwind_score']||0), // 16 Vol State
+  s => getOpt(s,'hold_label'),                      // 17 Hold
+  s => s['wbs__wbs_grade']||'',                      // 18 WBS
+  s => s['mv__verdict']||'',                         // 19 MV
+  s => parseFloat(s['mv__drift_pct']||0),            // 20 Drift
+  s => getSectorDisplay(s),                         // 21 Sector
+  s => getEilDisplay(s),                            // 22 EIL
 ];
 
 function sortBy(col) {
@@ -1643,7 +1803,7 @@ function buildTable() {
     tableEl.parentElement.insertBefore(div, tableEl);
   }
 
-  tableEl.innerHTML = data.map(s => {
+  const tableHtml = data.map(s => {
     const rr = parseFloat(s.rr||0);
     const ev = getEv(s);
     const ivr = parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||s.ivp||0);
@@ -1677,6 +1837,7 @@ function buildTable() {
     const strike = getOpt(s,'contract_strike')||s.strike||'â€”';
     const premDisplay = getPremiumDisplay(s);
     const trgDisplay = getTriggerDisplay(s);
+    const trgEvidence = getTriggerEvidenceDisplay(s);
 
     const horizon = getTimeHorizon(s);
     const horizonMeta = getHorizonMeta(s);
@@ -1721,7 +1882,8 @@ function buildTable() {
       <div class="sc" style="color:var(--cyan)">$${strike}</div>
       <div class="sc" style="color:var(--text2)">${premDisplay}</div>
       <div class="sc" title="${attrSafe(horizonMeta)}" style="font-size:10px;color:var(--amber)">${horizon}</div>
-      <div class="sc" title="${attrSafe(firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']))}" style="color:var(--text2);font-size:10px">${trgDisplay}</div>
+      <div class="sc" title="${attrSafe(getTriggerPriceRaw(s))}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
+      <div class="sc" title="${attrSafe(firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']) || trgEvidence)}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
       <div class="sc ${rrC}">${rr.toFixed(3)}Ã—</div>
       <div class="sc ${evC}">${formatEv(ev)}</div>
       <div class="sc" ${ivpC}>${ivpLbl}</div>
@@ -1735,8 +1897,12 @@ function buildTable() {
         return `<span class="pill ${cls}">${g.slice(0,4)} ${sc}</span>`;
       })()}</div>
       <div class="sc">${(() => {
-        const mv = s['mv__verdict'] || '';
-        if (!mv) return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">â€”</span>';
+        const mv = firstSignalValue(s, ['mv__verdict', 'verdict', 'morning_gate_verdict']);
+        if (!mv) {
+          const align = firstSignalValue(s, ['morning_lab_alignment_status', 'display_morning_lab_alignment_status']);
+          if (align) return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--amber)">${shortExecutionCategory(align)}</span>`;
+          return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">-</span>`;
+        }
         const mc = mv==='TRIGGERED'?'p-exec':mv==='VALID'?'p-armed':mv==='DRIFTED'?'p-risk':'p-stand';
         return `<span class="pill ${mc}" style="font-size:8px">${mv}</span>`;
       })()}</div>
@@ -1746,28 +1912,24 @@ function buildTable() {
         const col = Math.abs(d) < 1 ? 'var(--green)' : Math.abs(d) < 2.5 ? 'var(--amber)' : 'var(--red)';
         return `<span style="color:${col}">${d >= 0 ? '+' : ''}${d.toFixed(2)}%</span>`;
       })()}</div>
-      <div class="sc" style="font-size:9px;font-family:'Share Tech Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)" title="${attrSafe(s.gics_sector||s.sector_name||s.sector||s.sector_short||'')}">${(()=>{
-        const sec = s.gics_sector||s.sector_name||s.sector||s.sector_short||'';
+      <div class="sc" style="font-size:9px;font-family:'Share Tech Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)" title="${attrSafe(getSectorDisplay(s))}">${(()=>{
+        const sec = getSectorDisplay(s);
         if (!sec) return '<span style="color:var(--text3)">&#x2014;</span>';
-        const abbr = {'Information Technology':'Tech','Health Care':'Health','Consumer Discretionary':'Cons.Disc','Consumer Staples':'Cons.Stap','Communication Services':'Comms','Financials':'Fin','Industrials':'Indust','Energy':'Energy','Materials':'Matls','Real Estate':'RE','Utilities':'Utils'};
-        return abbr[sec] || sec.slice(0,9);
+        return sec;
       })()}</div>
       <div class="sc">${(() => {
-        const ev = s['eil__verdict'] || s['eil__eil_verdict'] || '';
-        const rv = s['eil__raw_verdict'] || s['eil__eil_raw_verdict'] || ev;
-        if (!ev && !rv) return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">â€”</span>';
-        const display = rv && rv !== 'ADVISORY_ONLY' ? rv : ev;
-        if (!display || display === 'ADVISORY_ONLY') {
-          const sc = parseFloat(s['eil__composite_score'] || s['eil__composite'] || '');
-          if (!isNaN(sc)) return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">${sc.toFixed(0)}</span>`;
-          return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">ADV</span>';
+        const display = getEilDisplay(s);
+        if (!display) return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">-</span>`;
+        if (!Number.isNaN(parseFloat(display)) && String(display).match(/^\d+(\.\d+)?$/)) {
+          return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">${parseFloat(display).toFixed(0)}</span>`;
         }
-        const cls = display==='EXECUTE_NOW'?'p-exec':display==='EXECUTE_WITH_CAUTION'?'p-armed':display==='EXECUTE_DEFER'?'p-risk':'p-stand';
-        const lbl = display==='EXECUTE_NOW'?'NOW':display==='EXECUTE_WITH_CAUTION'?'CAUT':display==='EXECUTE_DEFER'?'DEFR':'STOP';
+        const cls = display==='EXECUTE_NOW'||display==='EXECUTE'?'p-exec':display==='EXECUTE_WITH_CAUTION'?'p-armed':display==='EXECUTE_DEFER'?'p-risk':'p-stand';
+        const lbl = display==='EXECUTE_NOW'?'NOW':display==='EXECUTE_WITH_CAUTION'?'CAUT':display==='EXECUTE_DEFER'?'DEFR':display==='EXECUTE'?'EXEC':'STOP';
         return `<span class="pill ${cls}" style="font-size:7px;padding:2px 5px">${lbl}</span>`;
       })()}</div>
     </div>`;
   }).join('') || '<div style="padding:16px 20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No signals match current filters.</div>';
+  tableEl.innerHTML = cleanUiHtml(tableHtml);
 }
 
 function setF(type, val, btn) {
@@ -1841,6 +2003,9 @@ function exportCSV() {
     ['Horizon_Action',  s => firstSignalValue(s, ['eod__horizon_action', 'horizon_action', 'exe__horizon_action', 'vg__horizon_action'])],
     ['Horizon_Pressure',s => firstSignalValue(s, ['eod__horizon_pressure', 'horizon_pressure', 'exe__horizon_pressure', 'vg__horizon_pressure', 'opt__horizon_pressure'])],
     ['Horizon_Source',  s => firstSignalValue(s, ['eod__horizon_source', 'horizon_source', 'exe__horizon_source', 'vg__horizon_source'])],
+    ['Trigger_Price',   s => getTriggerPriceRaw(s)],
+    ['Trigger_Display', s => getTriggerDisplay(s)],
+    ['Trigger_Evidence', s => getTriggerEvidenceDisplay(s)],
     ['Trigger_Primary', s => firstSignalValue(s, ['trigger_primary', 'eod__trigger_primary', 'vg__trigger_primary', 'opt__trigger_primary'])],
     ['Trigger_Quality', s => firstSignalValue(s, ['trigger_quality', 'eod__trigger_quality', 'vg__trigger_quality', 'opt__trigger_quality'])],
     ['Trigger_Score',   s => firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score'])],
@@ -2603,26 +2768,26 @@ function renderMacroPage(m) {
     ['VIX Contango', m.vix_contango!=null ? (parseFloat(m.vix_contango)*100).toFixed(2)+'%' : 'â€”'],
     ['Macro Conviction', m.conviction_score||m.conviction||'â€”'],
   ];
-  document.getElementById('macro-cards').innerHTML = fields.map(([k,v]) =>
+  document.getElementById('macro-cards').innerHTML = cleanUiHtml(fields.map(([k,v]) =>
     `<div class="mc"><div class="mc-k">${k}</div><div class="mc-v">${v}</div></div>`
-  ).join('');
+  ).join(''));
 
   // Sector bias
   const sb = m.sector_bias || {};
   const sectors = Object.entries(sb);
-  document.getElementById('sector-grid').innerHTML = sectors.length ?
+  document.getElementById('sector-grid').innerHTML = cleanUiHtml(sectors.length ?
     sectors.map(([sec,val]) => {
       const c = String(val).includes('FAVOUR')?'var(--green)':String(val).includes('UNDER')?'var(--red)':String(val).includes('SELECT')?'var(--cyan)':'var(--amber)';
       return `<div class="sg-cell"><div class="sg-k">${sec}</div><div class="sg-v" style="color:${c}">${val}</div></div>`;
     }).join('') :
-    '<div class="sg-cell" style="grid-column:1/-1"><div class="sg-k">No sector bias data this run</div></div>';
+    '<div class="sg-cell" style="grid-column:1/-1"><div class="sg-k">No sector bias data this run</div></div>');
 
   // Execution bias
   const eb = m.execution_bias || {};
   const rows = Object.entries(eb);
-  document.getElementById('exec-bias').innerHTML = rows.length ?
+  document.getElementById('exec-bias').innerHTML = cleanUiHtml(rows.length ?
     rows.map(([k,v]) => `<div class="eb-row"><span class="eb-k">${k.replace(/_/g,' ')}</span><span class="eb-v">${v}</span></div>`).join('') :
-    '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3)">No execution bias data this run.</div>';
+    '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3)">No execution bias data this run.</div>');
 }
 
 // â•â•â• PIPELINE PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2975,5 +3140,3 @@ window.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>
-
-
