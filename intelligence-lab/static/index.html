@@ -1561,6 +1561,11 @@ function getSectorDisplay(s) {
   return abbr[sec] || String(sec).slice(0, 12);
 }
 
+function getVolTailwindState(s) {
+  const g = parseFloat(s['garch__l3_iv_tailwind_score'] || '');
+  return isNaN(g) ? '' : (g < -0.03 ? 'CHEAP' : g > 0.05 ? 'EXP' : 'FAIR');
+}
+
 function getEilDisplay(s) {
   if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
   const display = firstSignalValue(s, [
@@ -2027,7 +2032,8 @@ function buildExportColumns() {
     ['Win_Rate_Source', s => s.win_rate_source || ''],
     ['WBS_Grade',       s => s['wbs__wbs_grade'] || s['wbs__grade'] || ''],
     ['WBS_Score',       s => s['wbs__wbs_score'] || s['wbs__score'] || ''],
-    ['Vol_State',       s => { const g=parseFloat(s['garch__l3_iv_tailwind_score']||''); return isNaN(g)?'':(g<-0.03?'CHEAP':g>0.05?'EXP':'FAIR'); }],
+    ['Vol_State',       s => getVolTailwindState(s)],
+    ['Vol_Tailwind_State', s => getVolTailwindState(s)],
     ['EIL_Verdict',     s => s['eil__verdict'] || s['eil__eil_verdict'] || ''],
     ['EIL_Raw_Verdict', s => s['eil_raw_verdict'] || ''],
     ['EIL_Composite',   s => s['eil_composite_score'] || s['composite'] || ''],

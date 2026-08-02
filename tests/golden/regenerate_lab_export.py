@@ -488,6 +488,7 @@ def build_columns():
         ("WBS_Grade", lambda s: s.get("wbs__wbs_grade") or s.get("wbs__grade") or ""),
         ("WBS_Score", lambda s: s.get("wbs__wbs_score") or s.get("wbs__score") or ""),
         ("Vol_State", lambda s: _vol_state(s)),
+        ("Vol_Tailwind_State", lambda s: _vol_state(s)),
         ("EIL_Verdict", lambda s: s.get("eil__verdict") or s.get("eil__eil_verdict") or ""),
         ("EIL_Raw_Verdict", lambda s: s.get("eil_raw_verdict") or ""),
         ("EIL_Composite", lambda s: s.get("eil_composite_score") or s.get("composite") or ""),
