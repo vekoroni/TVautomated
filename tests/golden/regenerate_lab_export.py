@@ -443,6 +443,8 @@ def build_columns():
         ("EOD_Candidate_Status", lambda s: s.get("eod_candidate_status") or ""),
         ("Campaign", display_campaign),
         ("Direction", lambda s: s.get("direction")),
+        ("Options_Direction", lambda s: s.get("options_direction") or s.get("opt__options_direction") or ""),
+        ("Lab_Coherence_Status", lambda s: (lambda v: "OK" if v == "CLEAN" else v)(s.get("lab_coherence_status")) or "OK"),
         ("Conv_Score", lambda s: s.get("sb_conv_score")),
         ("Execution_Mode", display_execution_mode),
         ("Instrument", lambda s: s.get("sb_instrument_now")),

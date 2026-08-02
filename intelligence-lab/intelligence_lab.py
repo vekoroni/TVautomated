@@ -51,6 +51,23 @@ RUNS_DIR = BASE_DIR / "data" / "output" / "runs"
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
+# Whether non-directional STRANGLE setups belong in the candidate set is a
+# trading-strategy decision, not an engineering one (see
+# CLAUDE_CODE_TASK_lab_fix_sprint.md Phase 2). Set via environment variable so
+# it can change without a code edit or redeploy:
+#   INCLUDE_LABELLED (default) - STRANGLE rows stay in the normal queue,
+#                                 correctly labelled (Options_Direction /
+#                                 Lab_Coherence_Status), Direction left blank.
+#   FLAG_ONLY        - STRANGLE rows are demoted to the audit-only bucket
+#                       (same mechanism as a BLOCKED row) - hidden from the
+#                       default queue but still present, recoverable via
+#                       "Show blocked".
+#   EXCLUDE          - STRANGLE rows are removed from the signal set entirely.
+_LAB_STRANGLE_POLICIES = ("INCLUDE_LABELLED", "FLAG_ONLY", "EXCLUDE")
+LAB_STRANGLE_POLICY = os.environ.get("LAB_STRANGLE_POLICY", "INCLUDE_LABELLED").strip().upper()
+if LAB_STRANGLE_POLICY not in _LAB_STRANGLE_POLICIES:
+    LAB_STRANGLE_POLICY = "INCLUDE_LABELLED"
+
 from contracts.lab_control import (
     LAB_REQUIRED_FIELDS,
     apply_lab_resolution,
@@ -814,6 +831,11 @@ def _is_lab_audit_only(sig):
     veto_text = _first_lab_value(sig, "veto_flags", "conflict_flags", "execution_lock_reason")
     veto_token = _lab_token(veto_text)
 
+    strangle_flagged = (
+        LAB_STRANGLE_POLICY == "FLAG_ONLY"
+        and sig.get("lab_coherence_status") == "STRANGLE_NONDIRECTIONAL"
+    )
+
     return (
         verdict in {"BLOCKED", "NEGATIVE_RR"}
         or permission == "BLOCKED"
@@ -821,6 +843,7 @@ def _is_lab_audit_only(sig):
         or live_state in {"REJECTED", "BLOCKED"}
         or thesis_state in {"BROKEN", "INVALIDATED", "THESIS_BROKEN"}
         or (conflict_state == "HARD_CONFLICT" and "MORNING_VALIDATION_BLOCKED" in veto_token)
+        or strangle_flagged
     )
 
 def _lab_priority_bucket(sig):
@@ -1274,7 +1297,31 @@ def _load_run(run_id, force_reload=False):
             return "CALL"
         return ""
 
+    _EXPLICIT_NONDIRECTIONAL_MARKERS = {"STRANGLE", "NEUTRAL"}
+
+    def _is_explicit_nondirectional(raw):
+        """True only when a value is genuinely PRESENT and says outright
+        that the setup has no single side (e.g. a strangle). Must not fire
+        on an absent/empty field -- that case has to keep falling through
+        the candidate chain exactly as before this fix."""
+        text = str(raw or "").strip().upper()
+        return bool(text) and text in _EXPLICIT_NONDIRECTIONAL_MARKERS
+
+    def _is_strangle_nondirectional(sig):
+        authoritative = _first_nonempty(sig.get("options_direction"), sig.get("opt__options_direction"))
+        return _is_explicit_nondirectional(authoritative)
+
     def _normalise_direction_value(sig):
+        # options_direction is the authoritative signal for whether this
+        # setup is single-sided at all. If it explicitly says otherwise
+        # (STRANGLE), stop here -- do not let a downstream candidate like
+        # options_strategy (a single leg Phase 7 chose for display/
+        # execution) force a CALL/PUT label onto a two-sided structure.
+        # An absent/empty options_direction is a different case and must
+        # still fall through to the full candidate chain below, unchanged.
+        if _is_strangle_nondirectional(sig):
+            return ""
+
         # Direction is thesis authority. Prefer canonical/resolved footprint
         # direction before legacy primary/options/contract expression fields.
         candidates = [
@@ -1399,6 +1446,13 @@ def _load_run(run_id, force_reload=False):
                 existing = str(sig.get("direction_conflict_reason", "") or "")
                 sig["direction_conflict_reason"] = " | ".join(x for x in (existing, "DISPLAY_SYNC:" + ",".join(flags)) if x)
                 sig.setdefault("direction_conflict_status", status)
+        elif _is_strangle_nondirectional(sig):
+            # Non-directional by design -- do not force a CALL/PUT label or
+            # touch instrument/options_strategy. Options_Direction (export)
+            # carries the real STRANGLE value untouched; this status is what
+            # both the export column and the strangle policy below key off.
+            sig["lab_coherence_status"] = "STRANGLE_NONDIRECTIONAL"
+            sig["lab_coherence_flags"] = ""
 
         verdict = str(sig.get("lab_verdict") or sig.get("lab_status") or "WAIT").upper().strip()
         if not verdict or verdict in _EMPTY_SIGNAL_VALUES:
@@ -1662,6 +1716,18 @@ def _load_run(run_id, force_reload=False):
             "horizon_action", "horizon_pressure", "horizon_source",
             "hold_label", "hold_urgency",
         ):
+            if bare_key in ("direction", "primary_direction") and sig.get("lab_coherence_status") == "STRANGLE_NONDIRECTIONAL":
+                # This row was already correctly resolved as non-directional
+                # (see _normalise_direction_value / FIX-5). eod_candidate_map
+                # is sourced from morning_candidates_*.csv, an upstream file
+                # this Lab does not produce -- it can carry its own
+                # independently-resolved single-leg "direction" for the same
+                # STRANGLE ticker (confirmed: AVGO's morning_candidates row
+                # has direction=CALL and options_direction=STRANGLE in the
+                # same row). overwrite_empty would otherwise happily copy
+                # that stale value in, since the Lab's own direction is
+                # correctly blank at this point. Do not trust it here.
+                continue
             val = eod.get(bare_key)
             _set_signal_value(sig, bare_key, val, overwrite_empty=True)
         sig["lab_execution_status"] = _extract_execution_category(sig)
@@ -1756,6 +1822,11 @@ def _load_run(run_id, force_reload=False):
             expiry = sig.get("expiry") or sig.get("contract_expiry") or sig.get("opt__contract_expiry") or "NA"
             direction = sig.get("canonical_direction") or sig.get("resolved_direction") or sig.get("footprint_direction") or sig.get("direction") or sig.get("primary_direction") or sig.get("options_direction") or "UNKNOWN"
             sig["trade_idea_id"] = f"{run_id}:{sig.get('ticker','UNKNOWN')}:{direction}:{strike}:{expiry}"
+    if LAB_STRANGLE_POLICY == "EXCLUDE":
+        result["signals"] = [
+            sig for sig in result["signals"]
+            if sig.get("lab_coherence_status") != "STRANGLE_NONDIRECTIONAL"
+        ]
     _finalise_lab_priority_ranking(result["signals"])
     result["final_run_manifest"] = run_manifest
     result["run_health"] = {

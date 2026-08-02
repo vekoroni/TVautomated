@@ -1983,6 +1983,8 @@ function buildExportColumns() {
     ['EOD_Candidate_Status', s => s.eod_candidate_status || ''],
     ['Campaign',        s => displayCampaign(s)],
     ['Direction',       s => s.direction],
+    ['Options_Direction', s => s.options_direction || s.opt__options_direction || ''],
+    ['Lab_Coherence_Status', s => (s.lab_coherence_status === 'CLEAN' ? 'OK' : s.lab_coherence_status) || 'OK'],
     ['Conv_Score',      s => s.sb_conv_score],
     ['Execution_Mode',  s => displayExecutionMode(s)],
     ['Instrument',      s => s.sb_instrument_now],
