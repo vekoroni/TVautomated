@@ -473,6 +473,7 @@ def build_columns():
         ("IVP", lambda s: get_opt(s, "iv_rank") or s.get("ivp") or ""),
         ("IVP_Label", lambda s: get_opt(s, "ivp_label") or ""),
         ("Priority_Rank", lambda s: s.get("priority_rank") if s.get("priority_rank") is not None else ""),
+        ("Lab_Action_Bucket_Label", lambda s: s.get("lab_action_bucket_label") or ""),
         ("Priority_Score", lambda s: f"{(_parse_float(s.get('priority_score')) or 0):.1f}"),
         ("Phase", lambda s: s.get("phase") or ""),
         ("Regime", lambda s: s.get("regime") or ""),

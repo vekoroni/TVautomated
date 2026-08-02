@@ -2018,6 +2018,7 @@ function buildExportColumns() {
     ['IVP',             s => getOpt(s,'iv_rank') || s.ivp || ''],
     ['IVP_Label',       s => getOpt(s,'ivp_label') || ''],
     ['Priority_Rank',   s => s.priority_rank ?? ''],
+    ['Lab_Action_Bucket_Label', s => s.lab_action_bucket_label || ''],
     ['Priority_Score',  s => parseFloat(s.priority_score||0).toFixed(1)],
     ['Phase',           s => s.phase || ''],
     ['Regime',          s => s.regime || ''],
