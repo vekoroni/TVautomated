@@ -319,6 +319,62 @@ class ActuarialOutcomes:
     avg_adx_delta: Optional[float] = None
     early_candidate_rate: Optional[float] = None
 
+    # === RETURN DISTRIBUTION PERCENTILES (Actuarial Distribution sprint) ===
+    # Full empirical return distribution of the matched historical sample,
+    # computed on the identical .dropna() series the win_rate/median_gain
+    # scalars above already use — see _calculate_outcomes(). Additive only:
+    # every scalar field above keeps its existing meaning and value.
+    # Absent/too-small horizon data -> None (null), never 0.0. Zero is a
+    # valid observed return; None means "no observation," a different thing.
+    ret_pctl_5d_p01: Optional[float] = None
+    ret_pctl_5d_p05: Optional[float] = None
+    ret_pctl_5d_p10: Optional[float] = None
+    ret_pctl_5d_p20: Optional[float] = None
+    ret_pctl_5d_p30: Optional[float] = None
+    ret_pctl_5d_p40: Optional[float] = None
+    ret_pctl_5d_p50: Optional[float] = None
+    ret_pctl_5d_p60: Optional[float] = None
+    ret_pctl_5d_p70: Optional[float] = None
+    ret_pctl_5d_p80: Optional[float] = None
+    ret_pctl_5d_p90: Optional[float] = None
+    ret_pctl_5d_p95: Optional[float] = None
+    ret_pctl_5d_p99: Optional[float] = None
+
+    ret_pctl_10d_p01: Optional[float] = None
+    ret_pctl_10d_p05: Optional[float] = None
+    ret_pctl_10d_p10: Optional[float] = None
+    ret_pctl_10d_p20: Optional[float] = None
+    ret_pctl_10d_p30: Optional[float] = None
+    ret_pctl_10d_p40: Optional[float] = None
+    ret_pctl_10d_p50: Optional[float] = None
+    ret_pctl_10d_p60: Optional[float] = None
+    ret_pctl_10d_p70: Optional[float] = None
+    ret_pctl_10d_p80: Optional[float] = None
+    ret_pctl_10d_p90: Optional[float] = None
+    ret_pctl_10d_p95: Optional[float] = None
+    ret_pctl_10d_p99: Optional[float] = None
+
+    ret_pctl_20d_p01: Optional[float] = None
+    ret_pctl_20d_p05: Optional[float] = None
+    ret_pctl_20d_p10: Optional[float] = None
+    ret_pctl_20d_p20: Optional[float] = None
+    ret_pctl_20d_p30: Optional[float] = None
+    ret_pctl_20d_p40: Optional[float] = None
+    ret_pctl_20d_p50: Optional[float] = None
+    ret_pctl_20d_p60: Optional[float] = None
+    ret_pctl_20d_p70: Optional[float] = None
+    ret_pctl_20d_p80: Optional[float] = None
+    ret_pctl_20d_p90: Optional[float] = None
+    ret_pctl_20d_p95: Optional[float] = None
+    ret_pctl_20d_p99: Optional[float] = None
+
+    # Non-null observation count backing the percentiles above, per horizon.
+    # Can differ across horizons and from n_observations/sample_size (which
+    # count the matched sample before any per-horizon dropna).
+    n_obs_5d: Optional[int] = None
+    n_obs_10d: Optional[int] = None
+    n_obs_20d: Optional[int] = None
+
     # ─── CONVENIENCE: horizon-aware accessors ────────────────────────────────
     def win_rate_for_hold(self, hold_days: int) -> float:
         """Return the most appropriate win rate for a given hold period."""

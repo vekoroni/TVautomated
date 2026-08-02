@@ -426,6 +426,17 @@ class ActuarialQueryEngine:
         # Carry v6 forward-bucket fields from base_outcomes → final_outcomes.
         # _adjust_for_intraday_context creates a new ActuarialOutcomes object that
         # does not copy these fields. Copy them here so they survive intraday adjustment.
+        # Return-distribution percentiles (Actuarial Distribution sprint) are
+        # computed once in _calculate_outcomes() and are not intraday-adjusted
+        # (there is no defined way to rescale a full distribution by the same
+        # scalar adjustment_factor used for win_rate/EV) — carry them through
+        # via the same established pattern as the v6 fields below.
+        _pctl_fields = [
+            f"ret_pctl_{h}_{p}"
+            for h in ("5d", "10d", "20d")
+            for p in ("p01","p05","p10","p20","p30","p40","p50","p60","p70","p80","p90","p95","p99")
+        ] + ["n_obs_5d", "n_obs_10d", "n_obs_20d"]
+
         for _v6_field in (
             "future_momentum_bucket",
             "future_momentum_bucket_distribution",
@@ -436,6 +447,7 @@ class ActuarialQueryEngine:
             "avg_atr_delta",
             "avg_adx_delta",
             "early_candidate_rate",
+            *_pctl_fields,
         ):
             _base_val = getattr(base_outcomes, _v6_field, None)
             if _base_val is not None and getattr(final_outcomes, _v6_field, None) is None:
@@ -1053,6 +1065,37 @@ class ActuarialQueryEngine:
             "early_candidate_rate":    _mean("early_candidate"),
         }
 
+    _RETURN_PERCENTILE_LEVELS = (
+        ("p01", 0.01), ("p05", 0.05), ("p10", 0.10), ("p20", 0.20),
+        ("p30", 0.30), ("p40", 0.40), ("p50", 0.50), ("p60", 0.60),
+        ("p70", 0.70), ("p80", 0.80), ("p90", 0.90), ("p95", 0.95),
+        ("p99", 0.99),
+    )
+
+    @classmethod
+    def _return_percentiles(cls, series: pd.Series, horizon_label: str) -> dict:
+        """
+        Retain the empirical return distribution instead of discarding it.
+
+        Computed on the caller-supplied series after an explicit .dropna() —
+        the same effective series the existing win_rate/median_gain/sharpe
+        scalars for this horizon already use (those rely on pandas' default
+        skipna behaviour on the same raw column). Absent or empty input
+        yields None for every point and n=0 — never 0.0 — since zero is a
+        valid observed return and None means "no observation."
+        """
+        clean = series.dropna() if series is not None else pd.Series(dtype=float)
+        n = int(len(clean))
+        out = {f"n_obs_{horizon_label}": n}
+        if n == 0:
+            for label, _ in cls._RETURN_PERCENTILE_LEVELS:
+                out[f"ret_pctl_{horizon_label}_{label}"] = None
+            return out
+        q = clean.quantile([lvl for _, lvl in cls._RETURN_PERCENTILE_LEVELS])
+        for label, lvl in cls._RETURN_PERCENTILE_LEVELS:
+            out[f"ret_pctl_{horizon_label}_{label}"] = round(float(q.loc[lvl]), 6)
+        return out
+
     def _calculate_outcomes(self, similar_states: pd.DataFrame) -> ActuarialOutcomes:
         """
         Calculate probabilistic outcomes from similar historical states.
@@ -1076,6 +1119,7 @@ class ActuarialQueryEngine:
         rets_20d     = similar_states['outcome_20d_return']
         win_rate_20d = (rets_20d > 0).mean()   # P(return > 0) -- directional win rate
         sharpe_20d   = (rets_20d.mean() / rets_20d.std()) if rets_20d.std() > 0 else 0.0
+        pctl_20d     = self._return_percentiles(rets_20d, "20d")
 
         # EV uses directional win rate -- median gain/loss of all winners/losers
         # NOT prob_up_10pct (target hit rate) --- that would understate EV for small winners
@@ -1095,6 +1139,7 @@ class ActuarialQueryEngine:
         # ------ 5-DAY OUTCOMES (available after database upgrade) ---------------------------------------------------
         wr_5d = ev_5d = prob_5pct_5d = 0.0
         med_gain_5d = med_loss_5d = med_dd_5d = sharpe_5d = 0.0
+        pctl_5d = self._return_percentiles(None, "5d")
 
         if self._has_5d_cols and 'outcome_5d_return' in similar_states.columns:
             rets_5d   = similar_states['outcome_5d_return'].dropna()
@@ -1106,6 +1151,7 @@ class ActuarialQueryEngine:
             med_loss_5d  = losses_5d.median() if len(losses_5d) > 0 else 0.0
             ev_5d        = (wr_5d * med_gain_5d) + ((1 - wr_5d) * med_loss_5d)
             sharpe_5d    = (rets_5d.mean() / rets_5d.std()) if rets_5d.std() > 0 else 0.0
+            pctl_5d      = self._return_percentiles(rets_5d, "5d")
 
             if 'outcome_hit_5pct_up_5d' in similar_states.columns:
                 prob_5pct_5d = similar_states['outcome_hit_5pct_up_5d'].mean()
@@ -1116,6 +1162,7 @@ class ActuarialQueryEngine:
         # ------ 10-DAY OUTCOMES (available after database upgrade) ------------------------------------------------
         wr_10d = ev_10d = prob_7pct_10d = 0.0
         med_gain_10d = med_loss_10d = med_dd_10d = sharpe_10d = 0.0
+        pctl_10d = self._return_percentiles(None, "10d")
 
         if self._has_10d_cols and 'outcome_10d_return' in similar_states.columns:
             rets_10d   = similar_states['outcome_10d_return'].dropna()
@@ -1127,6 +1174,7 @@ class ActuarialQueryEngine:
             med_loss_10d  = losses_10d.median() if len(losses_10d) > 0 else 0.0
             ev_10d        = (wr_10d * med_gain_10d) + ((1 - wr_10d) * med_loss_10d)
             sharpe_10d    = (rets_10d.mean() / rets_10d.std()) if rets_10d.std() > 0 else 0.0
+            pctl_10d      = self._return_percentiles(rets_10d, "10d")
 
             if 'outcome_hit_7pct_up_10d' in similar_states.columns:
                 prob_7pct_10d = similar_states['outcome_hit_7pct_up_10d'].mean()
@@ -1183,6 +1231,8 @@ class ActuarialQueryEngine:
             avg_atr_delta=_tds['avg_atr_delta'],
             avg_adx_delta=_tds['avg_adx_delta'],
             early_candidate_rate=_tds['early_candidate_rate'],
+            # -- return distribution percentiles (Actuarial Distribution sprint) --
+            **pctl_5d, **pctl_10d, **pctl_20d,
         )
 
     def _adjust_for_intraday_context(self, base_outcomes: ActuarialOutcomes, state: StateVector) -> ActuarialOutcomes:
