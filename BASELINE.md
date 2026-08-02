@@ -5,6 +5,65 @@ in this sprint is relative to what is recorded here.
 
 ---
 
+## CORRECTION (found during Phase 4.2 UAT, 2026-08-02) — the 0.3 diagnosis below is wrong
+
+Section 0.3 diagnoses the Horizon_Action/Trigger_* reproducibility gap as a
+cache-signature staleness bug and reports the fix at ~75% confidence. **That
+diagnosis is incorrect.** The real cause, found while diffing an actual
+browser-exported CSV against this script's output during UAT:
+
+`intelligence_lab.py`'s `/api/run/<run_id>` route never returns `_load_run()`'s
+raw output — it always passes it through `_slim_lab_payload()` →
+`_compact_lab_signal()` (`intelligence_lab.py:1996-2053`), which keeps only
+fields on an explicit whitelist (`_LAB_COMPACT_BASE_FIELDS`) or starting with
+an allowed prefix (`opt__`, `wbs__`, `garch__`, `mv__`, `doss__`, `display_`,
+`lab_`, `sb_`, `ev2_`, `mv_`, `tce_`, `qomega_`, `eil_`). Bare `horizon_action`,
+`trigger_score`, `trigger_primary`, `trigger_quality`, `trigger_codes`,
+`trigger_price`, `days_to_trigger`, `horizon_pressure`, `horizon_source` are on
+neither list, and `eod__` is conspicuously absent from the allowed-prefix list
+(every other phase's join prefix is there). The browser's `loadRun()`
+(`static/index.html:661`) calls `fetch(`${API}/run/${runId}`)` with no `?full=1`
+override, so it always gets the slimmed version. This is deterministic,
+consistent, by-design filtering — not staleness. Confirmed by running the
+regeneration script five times in a row with zero Lab server running: fully
+deterministic, matching neither the "stale" nor "fresh" story from 0.3, and
+by fetching `/api/run/20260731_083130` directly, which returns these fields
+as `None` (absent from the dict entirely, not merely empty) on a guaranteed-
+fresh server process.
+
+**What this means for the rest of this document:** the FIX-CACHE fix in
+Phase 1 (`_lab_cache_signature()` now fingerprints `eil_enriched`/
+`options_intelligence`) is still a real, valid fix for a genuine latent bug —
+if those files are rewritten while a Lab server session is already running,
+the old code really would serve stale data forever. It just was never the
+explanation for *this* symptom, and did not and could not fix it, because
+`_slim_lab_payload` filters on every request regardless of caching.
+
+**What this means for `tests/golden/regenerate_lab_export.py`:** the version
+used to freeze `lab_export_baseline_20260731_083130.csv` and used throughout
+Phases 1–3 called `_load_run()` directly, bypassing `_compact_lab_signal()`
+entirely — so it showed these 10 fields as populated when the real browser
+export always shows them blank. **This did not affect the validity of any of
+the 8 fixes** — none of them touch these fields or the slimming logic, and
+every fix was independently re-verified in Phase 4.2 against both a corrected
+regeneration and a real browser click, with zero discrepancy on any of the 8
+fixes' columns. The frozen baseline CSV itself is left unchanged (it is a
+tagged, referenced artifact; rewriting it now would falsify sprint history) —
+this note is the correction. The script has been fixed going forward: it now
+calls `intelligence_lab._compact_lab_signal()` on every signal, exactly as the
+real API route does, so it is byte-for-byte identical to a real browser
+export today.
+
+**New finding, correctly diagnosed, not fixed (out of scope — same shape as
+LAB_QA_REPORT.md F4/F9, "Lab holds it, drops it before export"):** the Lab
+computes full Horizon_Action/Trigger_* detail internally and then discards it
+at the API layer before it ever reaches the browser. Recommended for a future
+sprint: either add `eod__` to `_LAB_COMPACT_PREFIXES` and the missing bare
+names to `_LAB_COMPACT_BASE_FIELDS`, or confirm deliberately that these fields
+are intentionally internal-only and stop expecting them in the export.
+
+---
+
 ## 0.1 — Code state
 
 The working tree carried uncommitted changes in `intelligence-lab/intelligence_lab.py`

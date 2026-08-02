@@ -518,7 +518,15 @@ def _esc(v):
 def regenerate(run_id):
     import intelligence_lab as lab
     payload = lab._load_run(run_id, force_reload=True)
-    all_sigs = payload.get("signals", [])
+    # The browser never sees the raw _load_run() payload -- the /api/run/<id>
+    # route always passes it through _slim_lab_payload()/_compact_lab_signal(),
+    # which drops any field not on an explicit whitelist (found the hard way
+    # in Phase 4.2 UAT: this script originally called _load_run() directly,
+    # so it showed Horizon_Action/Trigger_* as populated when the real
+    # production path drops them -- that was never a cache-staleness bug,
+    # it's this whitelist). Reuse the real function so this script tracks it
+    # automatically if the whitelist ever changes, instead of duplicating it.
+    all_sigs = [lab._compact_lab_signal(s) for s in payload.get("signals", [])]
     rows = default_sort(filtered_data(all_sigs))
 
     cols = build_columns()
