@@ -431,7 +431,6 @@ def build_columns():
         ("Ticker", lambda s: s.get("ticker")),
         ("Trade_Idea_Id", lambda s: s.get("trade_idea_id") or ""),
         ("Verdict", final_lab_verdict),
-        ("Lab_Verdict", final_lab_verdict),
         ("Exec_Category", get_execution_category),
         ("EOD_Status", get_eod_candidate_status),
         ("Morning_Permission", get_morning_execution_permission),
