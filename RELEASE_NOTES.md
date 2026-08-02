@@ -1,7 +1,7 @@
 # Intelligence Lab v1.1.0
 
 **Tag:** `lab-v1.1.0`
-**Commit:** `11fddc24c8acccc8c52d0b677b4213a2f9d424b8`
+**Commit:** `c0c4204f2c2a797daff7dc99d97c4bc0c9bca614`
 **Baseline this release is measured against:** `lab-v1.0.0-baseline` (`1c547d706201dce7523a1f9c71f4df207f9586dc`)
 **Sprint:** `CLAUDE_CODE_TASK_lab_fix_sprint.md`, full detail in `LAB_FIX_SPRINT_REPORT.md`
 
