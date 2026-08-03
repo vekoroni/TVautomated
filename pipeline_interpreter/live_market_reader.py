@@ -31,14 +31,12 @@ from pathlib import Path
 from typing import Optional
 
 # ── API keys ──────────────────────────────────────────────────────────────────
-POLYGON_API_KEY    = os.environ.get(
-    "POLYGON_API_KEY",
-    "***REDACTED_POLYGON_API_KEY***"
-)
-MARKETDATA_API_KEY = os.environ.get(
-    "MARKETDATA_API_KEY",
-    "***REDACTED_MARKETDATA_API_KEY***="
-)
+# Both keys were hardcoded fallback defaults until 2026-08-03 (committed in
+# 79fcfb4, genuinely present in git history — see REGIME_TREND_FIX_REPORT.md
+# Stage D). No fallback now: a missing env var must fail loudly, not silently
+# resume operating on a value that was exposed in source.
+POLYGON_API_KEY    = os.environ.get("POLYGON_API_KEY", "")
+MARKETDATA_API_KEY = os.environ.get("MARKETDATA_API_KEY", "")
 
 # ── Output paths ──────────────────────────────────────────────────────────────
 _INTERP_DIR   = Path(__file__).resolve().parent
