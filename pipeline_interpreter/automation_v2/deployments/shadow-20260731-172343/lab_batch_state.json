@@ -1,0 +1,297 @@
+{
+  "candidates": [
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 1,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "A",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 2,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AA",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 3,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 4,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAOI",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 5,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAON",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 6,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAPL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 7,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABCL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 8,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABNB",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 9,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABSI",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 10,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABTC",
+      "veto_codes": []
+    }
+  ],
+  "go_no_go": "NO_GO_BATCH_INCOMPLETE",
+  "invocation_id": "shadow-20260731-172343",
+  "mode": "SHADOW",
+  "production_charts_touched": false,
+  "published": false,
+  "run_id": "20260731_083130",
+  "schema_version": "automation_v2.lab_batch.1",
+  "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\pipeline_outputs\\lab_triage_view_20260731_083130.csv",
+  "status": "incomplete",
+  "steps": {
+    "A": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\A\\shadow-20260731-172343-a\\workflow_state.json"
+    },
+    "AA": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\AA\\shadow-20260731-172343-aa\\workflow_state.json"
+    },
+    "AAL": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\AAL\\shadow-20260731-172343-aal\\workflow_state.json"
+    },
+    "AAOI": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\AAOI\\shadow-20260731-172343-aaoi\\workflow_state.json"
+    },
+    "AAON": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\AAON\\shadow-20260731-172343-aaon\\workflow_state.json"
+    },
+    "AAPL": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\AAPL\\shadow-20260731-172343-aapl\\workflow_state.json"
+    },
+    "ABCL": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\ABCL\\shadow-20260731-172343-abcl\\workflow_state.json"
+    },
+    "ABNB": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\ABNB\\shadow-20260731-172343-abnb\\workflow_state.json"
+    },
+    "ABSI": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\ABSI\\shadow-20260731-172343-absi\\workflow_state.json"
+    },
+    "ABTC": {
+      "effective_verdict": null,
+      "go_no_go": "NO_GO_INCOMPLETE_EVIDENCE",
+      "status": "incomplete",
+      "workflow_state": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\capture_staging\\ABTC\\shadow-20260731-172343-abtc\\workflow_state.json"
+    }
+  },
+  "stopped": [
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 939,
+      "lab_verdict": "BLOCKED",
+      "ticker": "ACN",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 940,
+      "lab_verdict": "BLOCKED",
+      "ticker": "ARES",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 941,
+      "lab_verdict": "BLOCKED",
+      "ticker": "BEN",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 942,
+      "lab_verdict": "BLOCKED",
+      "ticker": "CLMT",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 943,
+      "lab_verdict": "BLOCKED",
+      "ticker": "CRSR",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 944,
+      "lab_verdict": "BLOCKED",
+      "ticker": "GLOB",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 945,
+      "lab_verdict": "BLOCKED",
+      "ticker": "KHC",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 946,
+      "lab_verdict": "BLOCKED",
+      "ticker": "MTCH",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 947,
+      "lab_verdict": "BLOCKED",
+      "ticker": "PANW",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 948,
+      "lab_verdict": "BLOCKED",
+      "ticker": "PBR",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 949,
+      "lab_verdict": "BLOCKED",
+      "ticker": "SM",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 950,
+      "lab_verdict": "BLOCKED",
+      "ticker": "TEAM",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 951,
+      "lab_verdict": "BLOCKED",
+      "ticker": "W",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 952,
+      "lab_verdict": "BLOCKED",
+      "ticker": "WIX",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,500 @@
+{
+  "candidates": [
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 1,
+      "lab_verdict": "GO",
+      "ticker": "T",
+      "veto_codes": []
+    }
+  ],
+  "go_no_go": "NO_GO_BATCH_INCOMPLETE",
+  "invocation_id": "shadow-20260731-203257",
+  "mode": "SHADOW",
+  "production_charts_touched": false,
+  "published": false,
+  "run_id": "20260731_083130",
+  "schema_version": "automation_v2.lab_batch.1",
+  "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\lab_export\\avshunter_signals_20260731_083130_2026-07-31_1640.csv",
+  "status": "incomplete",
+  "steps": {
+    "T": {
+      "effective_verdict": "STOP",
+      "finding": "CURSOR_POSITION_FAILED_AFTER_SENDINPUT:physical_target=1953,39:logical_target=976,20:logical=(1524, 1486):physical=(1524, 1486):window=-13,-13,3253,2077",
+      "status": "stopped"
+    }
+  },
+  "stopped": [
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 2,
+      "lab_verdict": "ARMED",
+      "ticker": "VZ",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_ARMED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 8,
+      "lab_verdict": "ARMED",
+      "ticker": "FXI",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_ARMED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 9,
+      "lab_verdict": "ARMED",
+      "ticker": "IWM",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_ARMED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 12,
+      "lab_verdict": "GO",
+      "ticker": "PLNT",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 14,
+      "lab_verdict": "GO",
+      "ticker": "EMBJ",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 17,
+      "lab_verdict": "GO",
+      "ticker": "C",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 20,
+      "lab_verdict": "GO",
+      "ticker": "DAL",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 24,
+      "lab_verdict": "GO",
+      "ticker": "CCL",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 30,
+      "lab_verdict": "GO",
+      "ticker": "GE",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 36,
+      "lab_verdict": "GO",
+      "ticker": "F",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 38,
+      "lab_verdict": "GO",
+      "ticker": "Z",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 42,
+      "lab_verdict": "GO",
+      "ticker": "ZETA",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 50,
+      "lab_verdict": "ARMED",
+      "ticker": "FISV",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_ARMED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 52,
+      "lab_verdict": "GO",
+      "ticker": "UBER",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 56,
+      "lab_verdict": "GO",
+      "ticker": "XLE",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 57,
+      "lab_verdict": "ARMED",
+      "ticker": "XOM",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_ARMED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 62,
+      "lab_verdict": "GO",
+      "ticker": "SE",
+      "veto_codes": [
+        "NON_POSITIVE_EV"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 68,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "TRV",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 69,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "GM",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 70,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "VTI",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 71,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "NEE",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 72,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "BMNR",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 73,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "HAL",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 74,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "MRK",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 75,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "DG",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 76,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "ALHC",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 77,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "TGT",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 78,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "MSFT",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 79,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "OXY",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 80,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "CMCSA",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 81,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "BP",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 82,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "AA",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 83,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "KBH",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 84,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "NET",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 85,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "NCLH",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 86,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "PINS",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 87,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "WBD",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 88,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "PNC",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 89,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "DUK",
+      "veto_codes": [
+        "NON_POSITIVE_EV",
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 90,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "KDP",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 91,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "MKC",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 92,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "LWLG",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 93,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "CG",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 94,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "LCID",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 95,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "FOUR",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 96,
+      "lab_verdict": "CONTRACT_REPAIR",
+      "ticker": "CART",
+      "veto_codes": [
+        "UPSTREAM_CONTRACT_REPAIR"
+      ]
+    }
+  ]
+}

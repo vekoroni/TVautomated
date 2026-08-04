@@ -1,0 +1,53 @@
+{
+  "classification": "observed_legacy_not_intended_complete_contract",
+  "captured_at": "2026-07-25",
+  "runs": {
+    "F_20260528_1249": {
+      "files": {
+        "raw_response_20260528_1249.txt": "1455555897760BE76E56825F78FE1BC613A2F35D80E7120B931A1644D4C49BF4",
+        "raw_story_20260528_1249.txt": "0B144429EE24616FB314B3E2C79D74019477BF9477236B1B7772EDDEF57F6C11",
+        "ticker_f_interpreter_20260528_1249.html": "E1845D432D3EC7B773757BCA752EC62C9CD1B7B317F56BA458E765D466121859"
+      },
+      "known_missing": [
+        "ticker_f_trade_brief_20260528_1249.csv",
+        "[TRADE_BRIEF_CSV]"
+      ]
+    },
+    "NFLX_20260528_2052": {
+      "files": {
+        "raw_response_20260528_2052.txt": "AA29DBF4AFC85CEB4DD229DB2F8EA1CE9BAA6D8A2ABFE3B79E8534ACF983FA35",
+        "raw_story_20260528_2052.txt": "DC56B44AE2ABB522D666F832C39BC7B7B3970BC1857EAE3F33380D88C96A6107",
+        "ticker_nflx_interpreter_20260528_2052.html": "717A0802CBE729C115B89B81EB2B72DFC5B7656A3DB06BC15426B043958421BA"
+      },
+      "known_missing": [
+        "ticker_nflx_trade_brief_20260528_2052.csv",
+        "[TRADE_BRIEF_CSV]"
+      ]
+    }
+  },
+  "required_future_contract": {
+    "main_sections": [
+      "TRADE_NARRATIVE_<TICKER>",
+      "TRADE_BRIEF_CSV"
+    ],
+    "story_sections": [
+      "JUNIOR_BRIEFING_<TICKER>",
+      "SECTION_1_MACRO",
+      "SECTION_2_GAMMA",
+      "SECTION_3_LIQUIDITY",
+      "SECTION_4_THESIS",
+      "SECTION_5_CHART",
+      "SECTION_6_OPTIONS",
+      "SECTION_7_RISK",
+      "SECTION_8_VERDICT"
+    ],
+    "artifacts": [
+      "raw_response_<invocation>.txt",
+      "raw_story_<invocation>.txt",
+      "ticker_<ticker>_trade_brief_<invocation>.csv",
+      "ticker_<ticker>_interpreter_<invocation>.html",
+      "<run_id>_<ticker>_interpreter.json",
+      "artifact_manifest.json"
+    ]
+  }
+}

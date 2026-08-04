@@ -1,0 +1,215 @@
+{
+  "candidates": [
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 1,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 2,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAON",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 3,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "AAPL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 4,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABCL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 5,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABEO",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 6,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABNB",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 7,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABSI",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 8,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ABTC",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 9,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ACGL",
+      "veto_codes": []
+    },
+    {
+      "effective_verdict": "WAIT",
+      "eil_action": "STOP",
+      "lab_rank": 10,
+      "lab_verdict": "MORNING_VALIDATION_REQUIRED",
+      "ticker": "ACHC",
+      "veto_codes": []
+    }
+  ],
+  "invocation_id": "lab-full-plan-20260726-001",
+  "mode": "PLAN",
+  "production_charts_touched": false,
+  "published": false,
+  "run_id": "20260723_072618",
+  "schema_version": "automation_v2.lab_batch.1",
+  "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\pipeline_outputs\\lab_triage_view_20260723_072618.csv",
+  "status": "planned",
+  "steps": {},
+  "stopped": [
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1057,
+      "lab_verdict": "BLOCKED",
+      "ticker": "A",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1058,
+      "lab_verdict": "BLOCKED",
+      "ticker": "ALK",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1059,
+      "lab_verdict": "BLOCKED",
+      "ticker": "CAG",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1060,
+      "lab_verdict": "BLOCKED",
+      "ticker": "CE",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1061,
+      "lab_verdict": "BLOCKED",
+      "ticker": "CTAS",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1062,
+      "lab_verdict": "BLOCKED",
+      "ticker": "DT",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1063,
+      "lab_verdict": "BLOCKED",
+      "ticker": "ES",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1064,
+      "lab_verdict": "BLOCKED",
+      "ticker": "HUM",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1065,
+      "lab_verdict": "BLOCKED",
+      "ticker": "PEGA",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1066,
+      "lab_verdict": "BLOCKED",
+      "ticker": "RIO",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1067,
+      "lab_verdict": "BLOCKED",
+      "ticker": "TDOC",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    },
+    {
+      "effective_verdict": "STOP",
+      "eil_action": "STOP",
+      "lab_rank": 1068,
+      "lab_verdict": "BLOCKED",
+      "ticker": "WSC",
+      "veto_codes": [
+        "UPSTREAM_BLOCKED"
+      ]
+    }
+  ]
+}
