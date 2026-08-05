@@ -96,10 +96,10 @@ class VanguardEngine:
                 "Build the v6 database before running the pipeline."
             )
 
-        if db_path.name != "actuarial_database_v6.parquet":
+        if db_path.name != ACTUARIAL_DATABASE_FILENAME:
             raise RuntimeError(
                 f"Wrong actuarial database loaded: {db_path.name}. "
-                "Expected actuarial_database_v6.parquet. "
+                f"Expected {ACTUARIAL_DATABASE_FILENAME}. "
                 "Refusing to continue — v5 fallback breaks Stage 0 "
                 "future_momentum_bucket logic and will produce incorrect sizing."
             )
@@ -112,7 +112,7 @@ class VanguardEngine:
     def _validate_actuarial_database_contract(self, db_path: Path) -> None:
         """
         Fix 2 — validate parquet schema, not just filename.
-        A file can be named actuarial_database_v6.parquet and still be missing v6 columns.
+        A correctly named file can still be missing required canonical columns.
         Reads parquet metadata only (fast) to check column names without loading all rows.
         Raises RuntimeError listing any missing required columns.
         """
@@ -139,19 +139,19 @@ class VanguardEngine:
         missing_required = [col for col in REQUIRED_ACTUARIAL_V6_COLUMNS if col not in columns]
         if missing_required:
             raise RuntimeError(
-                f"Actuarial database at {db_path.name} is NOT a valid v6 database. "
+                f"Actuarial database at {db_path.name} does not satisfy the required database contract. "
                 f"Missing required columns: {missing_required}. "
-                "Rebuild the v6 parquet before running the pipeline."
+                "Rebuild the governed actuarial parquet before running the pipeline."
             )
 
         missing_optional = [col for col in OPTIONAL_ACTUARIAL_V6_COLUMNS if col not in columns]
 
         print(f"[DB] Actuarial database: {db_path.name}")
-        print(f"[DB] v6 contract: PASS ✅ ({len(REQUIRED_ACTUARIAL_V6_COLUMNS)} required columns present)")
+        print(f"[DB] required contract: PASS ({len(REQUIRED_ACTUARIAL_V6_COLUMNS)} required columns present)")
         if missing_optional:
             print(f"[DB] Optional v6 columns absent: {missing_optional} — early_candidate logic will be skipped")
         else:
-            print(f"[DB] early_candidate column: PRESENT ✅")
+            print(f"[DB] early_candidate column: PRESENT")
 
     def analyze(self, vanguard_input: VanguardInput) -> VanguardSignal:
         ticker = vanguard_input.ticker

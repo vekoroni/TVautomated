@@ -157,8 +157,8 @@ from scripts.behaviour_state_builder import (
 
 # Actuarial layer lives in the separate vanguard\ directory
 VANGUARD_DIR     = Path(r"C:\Users\ACKVerissimo\vanguard")
-ACTUARIAL_CACHE  = VANGUARD_DIR / "data" / "actuarial_cache.parquet"
-BEHAVIOUR_CACHE  = VANGUARD_DIR / "data" / "behaviour_cache.parquet"
+ACTUARIAL_CACHE  = VANGUARD_DIR / "data" / "actuarial_cache_v7.parquet"
+BEHAVIOUR_CACHE  = VANGUARD_DIR / "data" / "behaviour_cache_v7.parquet"
 ACTUARIAL_SCRIPT = VANGUARD_DIR / "actuarial_cache_builder.py"
 
 
@@ -309,7 +309,7 @@ def _load_actuarial() -> bool:
         # genuinely has no usable catalyst categories. Some cache builds store
         # STATE_COLS only inside state_key, not as physical columns, so inspect
         # both shapes before deciding.
-        _FORCE_CATALYST_NONE = True
+        _FORCE_CATALYST_NONE = "catalyst_proximity" in _STATE_COLS
         try:
             _cat_vals = []
             if "catalyst_proximity" in getattr(_CACHE_DF, "columns", []):
@@ -325,10 +325,15 @@ def _load_actuarial() -> bool:
                     for parts in _CACHE_DF["state_key"].dropna().astype(str).str.split("|")
                     if len(parts) > _cat_idx
                 })
-            _non_none = [v for v in _cat_vals if v not in ("", "NONE", "NAN", "NULL", "DATA_WEAK")]
-            _FORCE_CATALYST_NONE = len(_non_none) == 0
+            if "catalyst_proximity" in _STATE_COLS:
+                _non_none = [v for v in _cat_vals if v not in ("", "NONE", "NAN", "NULL", "DATA_WEAK")]
+                _FORCE_CATALYST_NONE = len(_non_none) == 0
+            else:
+                # Catalyst is not a historical match dimension in v7. Preserve
+                # the real live value as an overlay instead of rewriting it.
+                _FORCE_CATALYST_NONE = False
         except Exception:
-            _FORCE_CATALYST_NONE = True
+            _FORCE_CATALYST_NONE = "catalyst_proximity" in _STATE_COLS
 
         _BEHAVIOUR_CACHE_HASHES = set()
         _BEHAVIOUR_CACHE_ERROR = ""
@@ -358,7 +363,7 @@ def _load_actuarial() -> bool:
         if _STATE_COLS:
             log.info("Actuarial cache STATE_COLS: %s", " | ".join(_STATE_COLS))
         log.info(
-            "Actuarial v6 schema: version=%s fingerprint=%s",
+            "Actuarial schema: version=%s fingerprint=%s",
             _SCHEMA_VERSION,
             _SCHEMA_FINGERPRINT,
         )
@@ -366,7 +371,7 @@ def _load_actuarial() -> bool:
             "Catalyst proximity handling: %s",
             "FORCED_NONE (cache has no real catalyst buckets)"
             if _FORCE_CATALYST_NONE else
-            "USE_VANGUARD_VALUE (cache has real catalyst data)",
+            "USE_LIVE_OVERLAY (not fabricated historically)",
         )
         return True
 

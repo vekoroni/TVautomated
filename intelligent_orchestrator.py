@@ -77,10 +77,10 @@ Change (2026-04 v2.6 — Path Corrections + Phase 4.6):
   This is a separate directory from AVSHUNTER-Intelligence/ — it is the
   standalone actuarial/database layer and must NOT use BASE_DIR.
 - ACTUARIAL_CACHE_BUILDER = VANGUARD_DIR / "actuarial_cache_builder.py"
-- ACTUARIAL_CACHE_PATH    = VANGUARD_DIR / "data" / "actuarial_cache.parquet"
+- ACTUARIAL_CACHE_PATH    = VANGUARD_DIR / "data" / "actuarial_cache_v7.parquet"
 - EDE_ENGINE corrected from BASE_DIR to VANGUARD_DIR / "execution_decision_engine.py"
 - Phase 4.6 wired into evening_workflow: runs after macro normalisation,
-  before discovery. Uses incremental mode. NON-CRITICAL.
+  before discovery. Rebuilds the derived cache from the governed v7 snapshot. NON-CRITICAL.
 - Actuarial Cache Builder added to optional scripts preflight check.
 
 Change (2026-04 v2.5 — Execution Decision Engine):
@@ -369,12 +369,12 @@ class OrchestratorConfig:
 
     # Phase 4.6 — Actuarial Cache Builder
     # Runs in evening_workflow after macro normalisation, before packages are built.
-    # Reads:  VANGUARD_DIR/data/actuarial_database_v6.parquet  (Sprint 3 — v6 adds future_momentum_bucket)
-    # Writes: VANGUARD_DIR/data/actuarial_cache.parquet  (consumed by build_packages)
-    # IMPORTANT: actuarial_cache_builder.py must be told to read _v6 — check its DB_PATH constant.
+    # Reads:  VANGUARD_DIR/data/actuarial_database_v7.parquet (governed registry target)
+    # Writes: VANGUARD_DIR/data/actuarial_cache_v7.parquet (consumed by build_packages)
+    # IMPORTANT: the cache builder resolves both paths through the actuarial registry.
     ACTUARIAL_CACHE_BUILDER = VANGUARD_DIR / "actuarial_cache_builder.py"
-    ACTUARIAL_CACHE_PATH    = VANGUARD_DIR / "data" / "actuarial_cache.parquet"
-    ACTUARIAL_DB_PATH       = VANGUARD_DIR / "data" / "actuarial_database_v6.parquet"  # Sprint 3
+    ACTUARIAL_CACHE_PATH    = VANGUARD_DIR / "data" / "actuarial_cache_v7.parquet"
+    ACTUARIAL_DB_PATH       = VANGUARD_DIR / "data" / "actuarial_database_v7.parquet"
     ACTUARIAL_TRANSITION_MATRIX_BUILDER = SCRIPTS_DIR / "build_phase_transition_matrix.py"
     ACTUARIAL_TRANSITION_MATRIX_DIR     = VANGUARD_DIR / "data" / "transition_matrix"
     ACTUARIAL_TRANSITION_MATRIX_LATEST  = ACTUARIAL_TRANSITION_MATRIX_DIR / "actuarial_phase_transition_matrix_latest.csv"
@@ -3521,7 +3521,7 @@ def evening_workflow(
             )
             _act_mod = _ilu.module_from_spec(_act_spec)
             _act_spec.loader.exec_module(_act_mod)
-            _act_result = _act_mod.run_from_orchestrator(incremental=True)
+            _act_result = _act_mod.run_from_orchestrator(incremental=False)
             if _act_result.get("success"):
                 logger.info(
                     "✅ Phase 4.6 (Actuarial Cache) — %s states | %s valid | %s rows processed",
@@ -3792,10 +3792,10 @@ def evening_workflow(
                 if o.get("EXACT_MATCH", 0) + o.get("FALLBACK_MATCH", 0) == 0:
                     logger.warning(
                         "⚠️  Phase 8.5: 0 actuarial matches — check:\n"
-                        "   1. backfill_actuarial_db_acb01.py has been run (adds trend_maturity,\n"
-                        "      catalyst_proximity, atr_pct_bucket to actuarial_database_v6.parquet)\n"
-                        "   2. actuarial_cache_builder.py reads actuarial_database_v6.parquet (not v5)\n"
-                        "      (cache must have 9-dim keys — 871 states = old 6-dim cache)\n"
+                        "   1. actuarial_database_v7.parquet passed the governed schema contract\n"
+                        "      (historically unavailable dimensions remain absent, not fabricated)\n"
+                        "   2. actuarial_cache_builder.py resolves actuarial_database_v7.parquet\n"
+                        "      and actuarial_cache_v7.parquet through the registry\n"
                         "   3. actuarial_enrichment_pass.py is v1.5.0+ (9-field _VANGUARD_STATE_MAP)\n"
                         "   4. Sprint 3 V2 fields present in cache: phase_v2, momentum_bucket,\n"
                         "      location_bucket, future_momentum_bucket, signal_type, momentum_tier\n"

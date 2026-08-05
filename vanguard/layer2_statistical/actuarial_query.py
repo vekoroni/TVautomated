@@ -195,32 +195,22 @@ class ActuarialQueryEngine:
         _raw_path = database_path or ACTUARIAL_DATABASE_PATH
         _db_obj   = Path(str(_raw_path))
 
-        # -- D5 FIX: v6 auto-upgrade ------------------------------------------
-        # If the configured path points to v5 (or any non-v6 version) and a v6
-        # file exists in the same directory, automatically upgrade to v6.
-        # This ensures future_momentum_bucket tiers are available without
-        # requiring every caller to hardcode the v6 filename.
-        # Override order: explicit database_path arg > v6 auto-detect > config.
+        # Resolve legacy configured defaults to the governed v7 database.
+        # Explicit caller paths are honoured, but implicit v6 fallback is banned.
         if database_path is None:
-            _v6_candidate = _db_obj.parent / _db_obj.name.replace(
-                "actuarial_database", "actuarial_database_v6"
-            ).replace("_v5", "_v6").replace("_v4", "_v6")
-            # Only auto-upgrade if name changed (avoids infinite rename loop)
-            if _v6_candidate != _db_obj and _v6_candidate.exists():
+            # Resolve obsolete configured defaults to the governed version.
+            # Never silently reopen the retired v6 rollback if v7 is missing.
+            _v7_candidate = _db_obj.parent / "actuarial_database_v7.parquet"
+            if _v7_candidate != _db_obj and _v7_candidate.exists():
                 import warnings as _w
                 _w.warn(
                     f"ActuarialQueryEngine: auto-upgrading DB from "
-                    f"{_db_obj.name} → {_v6_candidate.name} "
-                    f"(v6 adds future_momentum_bucket). "
+                    f"{_db_obj.name} → {_v7_candidate.name} "
+                    f"(governed production version). "
                     f"Set database_path explicitly to suppress this.",
                     UserWarning, stacklevel=2
                 )
-                _db_obj = _v6_candidate
-            # Also check for plain _v6 suffix variant
-            elif not _db_obj.exists():
-                _v6_alt = _db_obj.parent / "actuarial_database_v6.parquet"
-                if _v6_alt.exists():
-                    _db_obj = _v6_alt
+                _db_obj = _v7_candidate
 
         self.database_path = str(_db_obj)
         self.df = None
@@ -234,17 +224,17 @@ class ActuarialQueryEngine:
             raise FileNotFoundError(
                 f"ActuarialQueryEngine: database not found at '{self.database_path}'. "
                 f"Check ACTUARIAL_DATABASE_PATH in config or pass database_path explicitly. "
-                f"Expected v6: actuarial_database_v6.parquet"
+                f"Expected governed database: actuarial_database_v7.parquet"
             )
         import os
         _db_filename = os.path.basename(self.database_path)
-        if 'v6' not in _db_filename and 'v6' not in self.database_path:
+        if 'actuarial_database_v7.parquet' not in self.database_path.lower():
             import warnings
             warnings.warn(
                 f"ActuarialQueryEngine loaded '{_db_filename}' — "
-                f"this does not appear to be the v6 database. "
-                f"Stage 0 future_momentum_bucket tiers will fall back to v5 behaviour. "
-                f"Update ACTUARIAL_DATABASE_PATH to actuarial_database_v6.parquet.",
+                f"this does not appear to be a governed versioned database. "
+                f"Stage 0 future_momentum_bucket tiers may use legacy behaviour. "
+                f"Update ACTUARIAL_DATABASE_PATH to actuarial_database_v7.parquet.",
                 UserWarning, stacklevel=2
             )
         self._load_database()
@@ -292,7 +282,7 @@ class ActuarialQueryEngine:
             # confirm v6 is loaded - one source of truth at load time
             import logging as _logging
             _aq_log = _logging.getLogger(__name__)
-            _v6_str = "v6 [OK] future_momentum_bucket" if self._has_v6_cols else "v5 [WARN] no future_momentum_bucket"
+            _v6_str = "forward diagnostics [OK] future_momentum_bucket" if self._has_v6_cols else "[WARN] no future_momentum_bucket"
             _aq_log.info(
                 "ActuarialDB loaded: %d rows | %d query columns | horizons=%s | %s | %s",
                 len(self.df), len(self.df.columns), ",".join(horizon_info),
@@ -1101,22 +1091,25 @@ class ActuarialQueryEngine:
         Calculate probabilistic outcomes from similar historical states.
         Computes all available horizons (5d, 10d, 20d).
         """
-        n_obs = len(similar_states)
+        # Each horizon has a different maturity boundary.  Pending labels must
+        # not enter probabilities, hit rates, drawdowns, confidence, or EV.
+        sample_20d = similar_states.dropna(subset=["outcome_20d_return"])
+        n_obs = len(sample_20d)
 
         # ------ 20-DAY OUTCOMES (always available) ------------------------------------------------------------------------------------------------
-        prob_up_10pct    = similar_states['outcome_hit_10pct_up'].mean()
-        prob_down_5pct   = similar_states['outcome_hit_5pct_down_before_10up'].mean()
-        prob_trend_cont  = (similar_states['outcome_20d_return'] > 0).mean()
+        prob_up_10pct    = sample_20d['outcome_hit_10pct_up'].dropna().mean()
+        prob_down_5pct   = sample_20d['outcome_hit_5pct_down_before_10up'].dropna().mean()
+        prob_trend_cont  = (sample_20d['outcome_20d_return'] > 0).mean()
 
-        wins_20d = similar_states[similar_states['outcome_20d_return'] > 0]
-        loss_20d = similar_states[similar_states['outcome_20d_return'] <= 0]
+        wins_20d = sample_20d[sample_20d['outcome_20d_return'] > 0]
+        loss_20d = sample_20d[sample_20d['outcome_20d_return'] <= 0]
 
         median_gain_20d     = wins_20d['outcome_20d_return'].median() if len(wins_20d) > 0 else 0.05
         median_loss_20d     = loss_20d['outcome_20d_return'].median() if len(loss_20d) > 0 else -0.03
-        median_drawdown_20d = similar_states['outcome_max_drawdown_20d'].median()
-        median_days         = similar_states['outcome_days_to_10pct'].median()
+        median_drawdown_20d = sample_20d['outcome_max_drawdown_20d'].median()
+        median_days         = sample_20d['outcome_days_to_10pct'].median()
 
-        rets_20d     = similar_states['outcome_20d_return']
+        rets_20d     = sample_20d['outcome_20d_return']
         win_rate_20d = (rets_20d > 0).mean()   # P(return > 0) -- directional win rate
         sharpe_20d   = (rets_20d.mean() / rets_20d.std()) if rets_20d.std() > 0 else 0.0
         pctl_20d     = self._return_percentiles(rets_20d, "20d")
@@ -1133,7 +1126,7 @@ class ActuarialQueryEngine:
         kelly = max(0.0, min(kelly, 0.25))
 
         recommended_hold = int(median_days) if prob_up_10pct > 0.5 else 20
-        outcome_dist     = similar_states['outcome_category'].value_counts(normalize=True).to_dict()
+        outcome_dist     = sample_20d['outcome_category'].value_counts(normalize=True).to_dict()
         confidence       = min(1.0, n_obs / 50)
 
         # ------ 5-DAY OUTCOMES (available after database upgrade) ---------------------------------------------------
@@ -1142,7 +1135,8 @@ class ActuarialQueryEngine:
         pctl_5d = self._return_percentiles(None, "5d")
 
         if self._has_5d_cols and 'outcome_5d_return' in similar_states.columns:
-            rets_5d   = similar_states['outcome_5d_return'].dropna()
+            sample_5d = similar_states.dropna(subset=['outcome_5d_return'])
+            rets_5d   = sample_5d['outcome_5d_return']
             wins_5d   = rets_5d[rets_5d > 0]
             losses_5d = rets_5d[rets_5d <= 0]
 
@@ -1154,10 +1148,10 @@ class ActuarialQueryEngine:
             pctl_5d      = self._return_percentiles(rets_5d, "5d")
 
             if 'outcome_hit_5pct_up_5d' in similar_states.columns:
-                prob_5pct_5d = similar_states['outcome_hit_5pct_up_5d'].mean()
+                prob_5pct_5d = sample_5d['outcome_hit_5pct_up_5d'].dropna().mean()
 
             if 'outcome_max_drawdown_5d' in similar_states.columns:
-                med_dd_5d = similar_states['outcome_max_drawdown_5d'].median()
+                med_dd_5d = sample_5d['outcome_max_drawdown_5d'].median()
 
         # ------ 10-DAY OUTCOMES (available after database upgrade) ------------------------------------------------
         wr_10d = ev_10d = prob_7pct_10d = 0.0
@@ -1165,7 +1159,8 @@ class ActuarialQueryEngine:
         pctl_10d = self._return_percentiles(None, "10d")
 
         if self._has_10d_cols and 'outcome_10d_return' in similar_states.columns:
-            rets_10d   = similar_states['outcome_10d_return'].dropna()
+            sample_10d = similar_states.dropna(subset=['outcome_10d_return'])
+            rets_10d   = sample_10d['outcome_10d_return']
             wins_10d   = rets_10d[rets_10d > 0]
             losses_10d = rets_10d[rets_10d <= 0]
 
@@ -1177,10 +1172,10 @@ class ActuarialQueryEngine:
             pctl_10d      = self._return_percentiles(rets_10d, "10d")
 
             if 'outcome_hit_7pct_up_10d' in similar_states.columns:
-                prob_7pct_10d = similar_states['outcome_hit_7pct_up_10d'].mean()
+                prob_7pct_10d = sample_10d['outcome_hit_7pct_up_10d'].dropna().mean()
 
             if 'outcome_max_drawdown_10d' in similar_states.columns:
-                med_dd_10d = similar_states['outcome_max_drawdown_10d'].median()
+                med_dd_10d = sample_10d['outcome_max_drawdown_10d'].median()
 
         # -- v6 future bucket stats -----------------------------------------
         _fbs = self._future_bucket_stats(similar_states)
