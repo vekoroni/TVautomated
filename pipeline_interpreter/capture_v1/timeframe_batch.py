@@ -84,6 +84,7 @@ def capture_timeframe_batch(
         if establish_chart_workspace:
             open_chart_workspace(window=window, driver=navigator)
         records, assets, hashes = [], [], set()
+        diagnostic = None
         for timeframe in TIMEFRAME_ORDER:
             selection_attempt = 0
             selected = False
@@ -98,8 +99,12 @@ def capture_timeframe_batch(
                 time.sleep(1.0)
                 navigator.capture_screen_region(window, diagnostic)
                 selected = _selected_indicator_visible(diagnostic, timeframe)
-                diagnostic.unlink(missing_ok=True)
                 if selected:
+                    # Only the winning attempt's diagnostic is disposable --
+                    # each retry overwrites the same path, so a failed attempt's
+                    # image survives (as evidence) until either the next retry
+                    # replaces it or the except block below retains it.
+                    diagnostic.unlink(missing_ok=True)
                     break
                 # Allow Webull one bounded render recovery before retrying the
                 # exact same allowlisted control.
@@ -142,5 +147,18 @@ def capture_timeframe_batch(
             tuple(final_dir / asset.name for asset in assets),
         )
     except Exception:
+        if diagnostic is not None and diagnostic.exists():
+            # The stage directory is about to be wiped unconditionally below --
+            # rescue the last verification screenshot first so a
+            # TIMEFRAME_SELECTION_NOT_VERIFIED failure leaves visual evidence
+            # behind instead of just an error string. Non-hidden, identifiable
+            # name: which ticker, which timeframe, which attempt.
+            failures_dir = final_dir.parent / "capture_failures"
+            failures_dir.mkdir(parents=True, exist_ok=True)
+            retained = (
+                failures_dir
+                / f"{ticker}_{timeframe}_verification_attempt{selection_attempt}.png"
+            )
+            shutil.move(str(diagnostic), str(retained))
         shutil.rmtree(stage, ignore_errors=True)
         raise
