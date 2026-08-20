@@ -1,0 +1,625 @@
+﻿AVSHUNTER
+Pipeline Interpreter
+Component 9
+Intelligence Lab Reconciliation Layer
+Build, Integration and Test Specification
+May 2026  |  Version 1.0  |  CONFIDENTIAL
+Purpose
+The Intelligence Lab (Flask, localhost:5002) and the Pipeline Interpreter consume
+different data sources, producing different ticker universes. Tickers appearing in
+the Interpreter but absent from the Lab export have no Lab-side validation and
+must be flagged for manual review before any capital decision.
+This component adds a reconciliation gate that runs BEFORE /triage, compares the
+two universes, surfaces mismatches, and injects Lab field data into /ticker and
+/story outputs so both systems are always in view simultaneously.
+1. Overview
+1.1 The Problem
+The Pipeline Interpreter consumes more files than the Intelligence Lab and therefore surfaces a broader ticker universe. When a ticker appears in the Interpreter but returns nil in the Lab, the trader has no way of knowing whether that ticker is genuinely valid or whether the Lab has filtered it out for a structural reason. Acting on an Interpreter verdict for a Lab-absent ticker is the risk this component eliminates.
+1.2 The Solution
+Manual Lab export saved to MA_Inputs/lab_export/, auto-detected by the Interpreter, reconciled before /triage fires. Three outputs:
+Confirmed — ticker in both. Full Lab field context injected into /ticker and /story.
+Lab only — ticker ranked by Lab but not surfaced by Interpreter. Shown as missed candidates.
+Interpreter only — ticker in Interpreter but NOT in Lab. Carries LAB_NOT_CONFIRMED warning on every verdict. Flagged for manual review.
+1.3 Isolation Guarantee
+This component cannot affect the AVSHUNTER pipeline
+lab_reconciliation.py has zero dependency on intelligent_orchestrator.py,
+morning_thesis_validator.py, or any pipeline run file.
+It reads one CSV from MA_Inputs/lab_export/ and compares it to in-memory
+pipeline rows already loaded by the Interpreter. Pure comparison logic only.
+2. File and Folder Specification
+2.1 New Folder
+MA_Inputs/lab_export/    ← create this folder
+The Interpreter creates this folder automatically on startup if it does not exist, alongside all other MA_Inputs subfolders.
+2.2 Lab Export File
+Item
+Value
+Filename pattern
+avshunter_signals_YYYYMMDD_HHMMSS_YYYY-MM-DD_HHMM.csv
+Example
+avshunter_signals_20260521_212948_2026-05-22_1213.csv
+Source
+Intelligence Lab frontend — click A→ CSV button, save to MA_Inputs/lab_export/
+Selection rule
+Most recent file by mtime — same pattern as all other file detection in the Interpreter
+Ticker column
+Ticker
+Run_ID column
+Run_ID
+Rows in sample file
+101 tickers confirmed from avshunter_signals_20260521_212948_2026-05-22_1213.csv
+2.3 New Files Created by This Build
+File
+Location
+Type
+lab_reconciliation.py
+pipeline_interpreter/
+CREATE — new module
+MA_Inputs/lab_export/
+MA_Inputs/
+CREATE — new folder
+2.4 Files Modified by This Build
+File
+Change
+pipeline_interpreter_engine.py
+Add MA_LAB path constant. Add "lab_export" to PIPELINE_FILE_KEYWORDS. Add MA_LAB to folder creation loop.
+pipeline_interpreter_commands.py
+Add lab reconciliation block inside cmd_triage() before API call. Add cmd_lab() function. Register /lab in route_command() and MENU.
+pipeline_interpreter_outputs.py
+Add LAB_ALIGNMENT section to triage HTML. Add LAB_NOT_CONFIRMED badge rendering. Add lab field conflict block rendering in ticker card.
+pipeline_interpreter_system_prompt.txt
+Append LAB_CONFLICT_RULES block instructing the model how to handle LAB_FIELD_CONFLICTS and LAB_NOT_CONFIRMED inputs.
+interpreter_qa.py
+Add check_lab_reconciliation_qa() function. Add lab export detection to check 7 in final verification checklist.
+prepare_interpreter_session.py
+Add MA_Inputs/lab_export/ to folder creation list in both --eod and --morning modes.
+3. lab_reconciliation.py — Full Specification
+Standalone module. No Anthropic API dependency. No imports from pipeline_interpreter_engine. Pure CSV comparison and formatting logic. Place in pipeline_interpreter/ directory alongside all other interpreter modules.
+3.1 Imports and Constants
+import csv
+import json
+from pathlib import Path
+from datetime import datetime
+# Field tolerance for numeric comparisons
+IVP_TOLERANCE      = 5.0   # ±5 IVP points before flagging
+PREMIUM_TOLERANCE  = 0.10  # ±10% premium before flagging
+# Lab CSV column → Pipeline CSV column mapping
+# Left: Lab column name. Right: pipeline row key.
+FIELD_MAP = {
+"Direction":    "direction",
+"Verdict":      "eil_v3_verdict",
+"IVP":          "ivp",
+"Strike":       "preferred_strike",
+"EV":           "ev_score",
+"WBS_Grade":    "wbs_grade",
+"Priority_Rank":"triage_rank",
+"Premium_Mid":  "premium",
+}
+# Severity rules per field
+# FLAG = surfaces in RISK ASSESSMENT + EVIDENCE QUALITY
+# WARN = surfaces in EVIDENCE QUALITY only
+FIELD_SEVERITY = {
+"Direction":    "FLAG",
+"Verdict":      "FLAG",
+"IVP":          "WARN",
+"Strike":       "FLAG",
+"EV":           "WARN",
+"WBS_Grade":    "WARN",
+"Priority_Rank":"WARN",
+"Premium_Mid":  "WARN",
+}
+3.2 load_lab_export()
+def load_lab_export(ma_lab_dir: Path) -> tuple[list[dict], str]:
+"""
+Find and load the most recent avshunter_signals_*.csv
+from MA_Inputs/lab_export/.
+Normalises Ticker column to uppercase on load.
+Returns (rows, filename). Returns ([], "") if none found.
+"""
+if not ma_lab_dir.exists():
+return [], ""
+candidates = sorted(
+ma_lab_dir.glob("avshunter_signals_*.csv"),
+key=lambda p: p.stat().st_mtime,
+reverse=True,
+)
+if not candidates:
+return [], ""
+path = candidates[0]
+rows = []
+with open(path, "r", encoding="utf-8-sig") as f:
+for r in csv.DictReader(f):
+r["Ticker"] = str(r.get("Ticker", "")).strip().upper()
+rows.append(r)
+return rows, path.name
+3.3 reconcile_universes()
+def reconcile_universes(
+lab_rows: list[dict],
+interpreter_tickers: list[str],
+) -> dict:
+"""
+Three-way comparison between Lab export and Interpreter universe.
+interpreter_tickers: list of uppercase ticker strings from pipeline rows.
+Returns dict with all three lists plus summary counts.
+"""
+lab_set   = {r["Ticker"] for r in lab_rows if r.get("Ticker")}
+interp_set = {t.upper().strip() for t in interpreter_tickers if t}
+confirmed   = sorted(lab_set & interp_set)
+lab_only    = sorted(lab_set - interp_set)
+interp_only = sorted(interp_set - lab_set)
+return {
+"confirmed":        confirmed,
+"lab_only":         lab_only,
+"interp_only":      interp_only,
+"confirmed_count":  len(confirmed),
+"lab_only_count":   len(lab_only),
+"interp_only_count":len(interp_only),
+}
+3.4 get_lab_row()
+def get_lab_row(lab_rows: list[dict], ticker: str) -> dict | None:
+"""
+Return the Lab row for a specific ticker, or None.
+Called by /ticker and /story to inject Lab context into prompts.
+"""
+ticker = ticker.upper().strip()
+for r in lab_rows:
+if r.get("Ticker") == ticker:
+return r
+return None
+3.5 check_run_id_alignment()
+def check_run_id_alignment(
+lab_rows: list[dict],
+pipeline_run_id: str,
+) -> dict:
+"""
+Verify the Lab export Run_ID matches the pipeline run being interpreted.
+Lab and pipeline must share the same Run_ID for reconciliation to be valid.
+Returns dict: { match: bool, lab_run_id: str, pipeline_run_id: str }
+"""
+if not lab_rows:
+return { "match": False, "lab_run_id": "UNKNOWN", "pipeline_run_id": pipeline_run_id }
+lab_run_id = str(lab_rows[0].get("Run_ID", "")).strip()
+match = lab_run_id == str(pipeline_run_id).strip()
+return { "match": match, "lab_run_id": lab_run_id, "pipeline_run_id": pipeline_run_id }
+3.6 validate_lab_field_alignment()
+def validate_lab_field_alignment(
+lab_row: dict,
+pipeline_row: dict,
+ticker: str,
+) -> list[dict]:
+"""
+Field-level comparison for a single ticker.
+Returns list of conflict dicts — empty list means fully aligned.
+Each conflict: { field, lab_value, pipeline_value, severity }
+"""
+conflicts = []
+for lab_field, pipe_field in FIELD_MAP.items():
+lab_val  = str(lab_row.get(lab_field, "")).strip()
+pipe_val = str(pipeline_row.get(pipe_field, "")).strip()
+if not lab_val or not pipe_val:
+continue  # skip if either side is empty
+# Numeric tolerance check for IVP and Premium
+if lab_field in ("IVP", "Premium_Mid"):
+try:
+lv, pv = float(lab_val), float(pipe_val)
+tol = IVP_TOLERANCE if lab_field == "IVP" else (pv * PREMIUM_TOLERANCE)
+if abs(lv - pv) <= tol:
+continue
+except ValueError:
+pass
+# Direction normalisation — PUT/LONG_PUT both mean same direction
+if lab_field == "Direction":
+lab_norm  = "PUT" if "PUT" in lab_val.upper()  else ("CALL" if "CALL" in lab_val.upper() else lab_val)
+pipe_norm = "PUT" if "PUT" in pipe_val.upper() else ("CALL" if "CALL" in pipe_val.upper() else pipe_val)
+if lab_norm == pipe_norm:
+continue
+if lab_val.upper() != pipe_val.upper():
+conflicts.append({
+"field":          lab_field,
+"lab_value":      lab_val,
+"pipeline_value": pipe_val,
+"severity":       FIELD_SEVERITY.get(lab_field, "WARN"),
+})
+return conflicts
+3.7 build_lab_alignment_block()
+def build_lab_alignment_block(
+reconciliation: dict,
+lab_filename: str,
+run_id_check: dict = None,
+) -> str:
+"""
+Build LAB_ALIGNMENT text block for injection into triage prompt.
+"""
+lines = [f"LAB_ALIGNMENT ({lab_filename}):"]
+if run_id_check:
+status = "MATCH" if run_id_check["match"] else "MISMATCH — STALE_LAB_DATA WARNING"
+lines.append(f"  run_id_check: {status}")
+lines.append(f"    lab_run_id:      {run_id_check['lab_run_id']}")
+lines.append(f"    pipeline_run_id: {run_id_check['pipeline_run_id']}")
+lines.append(f"  confirmed:    {reconciliation['confirmed_count']} tickers in both Lab and Interpreter")
+lines.append(f"  lab_only:     {reconciliation['lab_only_count']} tickers in Lab not surfaced by Interpreter")
+lines.append(f"  interp_only:  {reconciliation['interp_only_count']} tickers — REVIEW REQUIRED")
+if reconciliation["interp_only"]:
+lines.append(f"    {', '.join(reconciliation['interp_only'])}")
+return "\n".join(lines)
+3.8 build_lab_context_block()
+def build_lab_context_block(lab_row: dict, ticker: str) -> str:
+"""
+Build a LAB_CONTEXT block for injection into /ticker and /story prompts.
+Surfaces the key Lab fields alongside the pipeline row.
+"""
+if not lab_row:
+return f"LAB_CONTEXT_{ticker}: NOT_IN_LAB_EXPORT — LAB_NOT_CONFIRMED"
+fields = [
+"Verdict", "Lab_Verdict", "Direction", "Conv_Score",
+"Strike", "Premium_Mid", "RR", "EV", "IVP", "IVP_Label",
+"Priority_Rank", "Priority_Score", "WBS_Grade", "EIL_Verdict",
+"Exec_Category", "Vol_State", "Run_ID",
+]
+lines = [f"LAB_CONTEXT_{ticker}:"]
+for f in fields:
+v = lab_row.get(f, "")
+if str(v).strip() not in ("", "nan", "None"):
+lines.append(f"  {f}: {v}")
+return "\n".join(lines)
+3.9 build_field_conflict_block()
+def build_field_conflict_block(conflicts: list[dict], ticker: str) -> str:
+"""
+Format field-level conflicts for injection into /ticker and /story prompts.
+"""
+if not conflicts:
+return f"LAB_FIELD_CONFLICTS_{ticker}: NONE — fully aligned"
+lines = [f"LAB_FIELD_CONFLICTS_{ticker} ({len(conflicts)} conflicts):"]
+for c in conflicts:
+lines.append(
+f"  {c['field']:<16} | Lab: {c['lab_value']:<20} | Pipeline: {c['pipeline_value']:<20} | {c['severity']}"
+)
+flag_count = sum(1 for c in conflicts if c["severity"] == "FLAG")
+if flag_count:
+lines.append(f"  {flag_count} FLAG-level conflict(s) — surface in RISK ASSESSMENT")
+return "\n".join(lines)
+4. pipeline_interpreter_engine.py — Changes
+4.1 Add MA_LAB path constant
+Add alongside the existing MA_* path constants:
+MA_LAB = MA_INPUTS / "lab_export"
+4.2 Add lab_export to folder creation loop
+The existing loop creates all MA_Inputs subfolders on startup. Add MA_LAB:
+for _d in [OUTPUTS_DIR, MA_INPUTS, MA_CHARTS, MA_OPTIONS, MA_SCREENSHOTS,
+MA_PIPELINE, MA_MACRO, MA_NEWS, MA_LAB]:   # ← add MA_LAB
+_d.mkdir(parents=True, exist_ok=True)
+4.3 Add lab_export to PIPELINE_FILE_KEYWORDS
+"lab_export": ["avshunter_signals"],
+4.4 Export MA_LAB for use in commands
+Add MA_LAB to the imports list in pipeline_interpreter_commands.py:
+from pipeline_interpreter_engine import (
+...
+MA_LAB,   # ← add this
+)
+5. pipeline_interpreter_commands.py — Changes
+5.1 Lab reconciliation block in cmd_triage()
+Add this block at the start of cmd_triage(), BEFORE the API call is made. This is the pre-triage gate.
+from lab_reconciliation import (
+load_lab_export, reconcile_universes, check_run_id_alignment,
+build_lab_alignment_block,
+)
+# ── Lab reconciliation pre-triage gate ───────────────────────────────
+lab_rows, lab_filename = load_lab_export(MA_LAB)
+run_id_check = None
+if lab_rows:
+# Get pipeline run_id from first loaded pipeline row
+pipeline_run_id = ""
+if rows:
+pipeline_run_id = str(rows[0].get("run_id", rows[0].get("Run_ID", ""))).strip()
+run_id_check = check_run_id_alignment(lab_rows, pipeline_run_id)
+if not run_id_check["match"]:
+print(f"  ⚠  STALE_LAB_DATA: Lab Run_ID {run_id_check['lab_run_id']} "
+f"does not match pipeline Run_ID {run_id_check['pipeline_run_id']}")
+print(f"  Lab export may be from a different session — reconciliation will proceed with warning.")
+interpreter_tickers = [str(r.get("ticker","")).upper() for r in rows]
+reconciliation = reconcile_universes(lab_rows, interpreter_tickers)
+lab_block = build_lab_alignment_block(reconciliation, lab_filename, run_id_check)
+# Store in SESSION for downstream use by /ticker and /story
+SESSION["lab_rows"]          = lab_rows
+SESSION["lab_reconciliation"]= reconciliation
+SESSION["lab_filename"]      = lab_filename
+print(f"  ✅ Lab export: {lab_filename}")
+print(f"  Confirmed: {reconciliation['confirmed_count']} | "
+f"Lab only: {reconciliation['lab_only_count']} | "
+f"Interpreter only: {reconciliation['interp_only_count']} ← review required")
+if reconciliation["interp_only"]:
+print(f"  LAB_NOT_CONFIRMED tickers: {', '.join(reconciliation['interp_only'])}")
+else:
+lab_block = "LAB_ALIGNMENT: No lab export found in MA_Inputs/lab_export/"
+SESSION["lab_rows"] = []
+SESSION["lab_reconciliation"] = {}
+print("  ⚠  No lab export — place avshunter_signals_*.csv in MA_Inputs/lab_export/")
+# Inject lab_block into the triage prompt
+# Pass lab_block into build_triage_prompt() as a new parameter (see Section 6)
+5.2 Lab context injection in cmd_ticker()
+Add after the pipeline row is loaded, before the API call:
+from lab_reconciliation import get_lab_row, validate_lab_field_alignment,
+build_lab_context_block, build_field_conflict_block
+lab_rows = SESSION.get("lab_rows", [])
+lab_row  = get_lab_row(lab_rows, ticker)
+reconciliation = SESSION.get("lab_reconciliation", {})
+is_lab_confirmed = ticker in reconciliation.get("confirmed", [])
+lab_context_block   = build_lab_context_block(lab_row, ticker)
+conflicts           = validate_lab_field_alignment(lab_row or {}, pipeline_row, ticker) if lab_row else []
+lab_conflict_block  = build_field_conflict_block(conflicts, ticker)
+if not is_lab_confirmed:
+print(f"  ⚠  {ticker}: LAB_NOT_CONFIRMED — not present in Lab export")
+elif conflicts:
+flag_count = sum(1 for c in conflicts if c["severity"] == "FLAG")
+print(f"  ⚠  {ticker}: {len(conflicts)} field conflict(s) ({flag_count} FLAG-level)")
+else:
+print(f"  ✅ {ticker}: Lab aligned — no field conflicts")
+# Pass lab_context_block and lab_conflict_block into build_single_ticker_prompt()
+5.3 New cmd_lab() function
+def cmd_lab(args: str = ""):
+"""
+/lab [FILE]
+Manually load a Lab export CSV and show reconciliation summary.
+If FILE not specified, scans MA_Inputs/lab_export/ for most recent file.
+Does not run a full triage -- reconciliation summary only.
+"""
+from lab_reconciliation import (
+load_lab_export, reconcile_universes,
+check_run_id_alignment, build_lab_alignment_block,
+)
+path = args.strip().strip('"').strip("'") if args.strip() else None
+if path:
+from pathlib import Path as _P
+lab_rows, lab_filename = load_lab_export(_P(path).parent)
+else:
+lab_rows, lab_filename = load_lab_export(MA_LAB)
+if not lab_rows:
+print("  ⚠  No lab export found.")
+print(f"  Place avshunter_signals_*.csv in {MA_LAB}")
+return
+interpreter_tickers = []
+if SESSION.get("pipeline_csv"):
+from pipeline_interpreter_engine import read_pipeline_csv
+rows = read_pipeline_csv(SESSION["pipeline_csv"])
+interpreter_tickers = [str(r.get("ticker","")).upper() for r in rows]
+pipeline_run_id = SESSION.get("pipeline_run_id", "")
+run_id_check    = check_run_id_alignment(lab_rows, pipeline_run_id)
+reconciliation  = reconcile_universes(lab_rows, interpreter_tickers)
+lab_block       = build_lab_alignment_block(reconciliation, lab_filename, run_id_check)
+print(f"\n{lab_block}")
+SESSION["lab_rows"]           = lab_rows
+SESSION["lab_reconciliation"] = reconciliation
+SESSION["lab_filename"]       = lab_filename
+print(f"\n  Lab export loaded into session. Run /triage to use reconciliation.")
+5.4 Register in route_command() and MENU
+elif cmd == '/lab':
+cmd_lab(arg.strip() if arg else "")
+Add to MENU string:
+║  /lab [FILE]                    Load Lab export + reconcile universe     ║
+6. Prompt Builder Changes
+6.1 build_triage_prompt() — add lab_alignment_block parameter
+Add lab_alignment_block as a new parameter to build_triage_prompt() with a default of empty string. Inject it near the top of the prompt, after the macro context and before the pipeline rows:
+def build_triage_prompt(
+rows: list,
+macro_context: str = "",
+news_context: str = "",
+lab_alignment_block: str = "",   # ← ADD THIS
+) -> str:
+...
+# In the prompt string, add:
+lab_section = f"\n{lab_alignment_block}\n" if lab_alignment_block else ""
+# Insert lab_section after macro_context in the prompt template
+6.2 build_single_ticker_prompt() — add lab context parameters
+Add two new parameters:
+def build_single_ticker_prompt(
+ticker: str,
+pipeline_row: dict,
+...
+lab_context_block: str = "",      # ← ADD
+lab_conflict_block: str = "",     # ← ADD
+) -> str:
+...
+# Add to prompt after pipeline row and before macro context:
+_lab_section = ""
+if lab_context_block:
+_lab_section += f"\n{lab_context_block}\n"
+if lab_conflict_block:
+_lab_section += f"\n{lab_conflict_block}\n"
+Apply the same pattern to build_story_prompt() when it is built as part of Component 1-8.
+7. System Prompt Addition
+Append this block to pipeline_interpreter_system_prompt.txt after the JUNIOR TRADER LAYER block. Do not modify any existing content.
+═══════════════════════════════════════════════
+INTELLIGENCE LAB CONFLICT RULES
+═══════════════════════════════════════════════
+When a LAB_CONTEXT_{TICKER} block is present in the prompt:
+1. Read it before producing any analysis for that ticker.
+2. Surface the Lab verdict, Lab direction, and Lab priority rank
+in DR. MAGNUS VALE — EVIDENCE QUALITY as confirmed Lab-side data.
+3. Treat Lab data as human-curated signal — never dismiss it.
+When a LAB_FIELD_CONFLICTS_{TICKER} block is present:
+1. Surface every conflict in DR. MAGNUS VALE — EVIDENCE QUALITY.
+Format: "Lab shows [field] as [lab_value] vs pipeline [pipeline_value]"
+2. For FLAG-severity conflicts:
+- Direction conflict → apply existing CONFLICT RESOLUTION Rule 4
+- Verdict conflict   → note in FINAL VERDICT:
+"Lab verdict [X] differs from pipeline verdict [Y] — confirm with live tape"
+- Strike conflict    → note in EXECUTION PRESCRIPTION
+3. For WARN-severity conflicts: note in EVIDENCE QUALITY, do not escalate.
+4. Never block a verdict solely due to Lab conflicts — surface and note only.
+When LAB_NOT_CONFIRMED appears for a ticker:
+1. Add LAB_NOT_CONFIRMED to the RISK ASSESSMENT conflict list.
+2. In FINAL VERDICT add: "Note: ticker not present in Intelligence Lab export
+— confirm Lab-side before execution decision."
+3. Do not block the verdict — flag only.
+When LAB_ALIGNMENT block is present in a triage prompt:
+1. Include the reconciliation summary in SESSION_SUMMARY.
+2. Flag every interp_only ticker in the triage ranked table.
+3. If run_id_check shows MISMATCH: add STALE_LAB_DATA warning to
+SESSION_SUMMARY — "Lab export may be from a different session."
+8. Triage HTML Output Changes
+8.1 LAB_ALIGNMENT section
+Add a new LAB_ALIGNMENT card at the very top of the triage HTML, before the Priority Groups section. It contains three rows:
+Row
+Badge colour
+Content
+Confirmed
+Green
+N tickers validated in both Lab and Interpreter. No action required.
+Lab only
+Amber
+N tickers ranked by Lab but not surfaced by Interpreter. Listed for manual review as missed candidates.
+Interpreter only
+Red
+N tickers — LAB_NOT_CONFIRMED. Full ticker list shown. Each carries warning badge in triage table.
+If run_id mismatch detected, show an amber STALE_LAB_DATA banner above the three rows.
+8.2 LAB_NOT_CONFIRMED badge in triage table
+The triage ranked table gains one additional column: LAB STATUS. Values:
+CONFIRMED — green — ticker present in Lab export, direction aligned
+CONFIRMED_CONFLICTS — amber — present in Lab but field conflicts detected
+LAB_NOT_CONFIRMED — red — ticker not in Lab export
+LAB_NOT_LOADED — gray — no Lab export found this session
+9. interpreter_qa.py — Additions
+Add check_lab_reconciliation_qa() as a new standalone function. Do not modify check_ticker_qa() or REQUIRED_SECTIONS.
+def check_lab_reconciliation_qa(
+lab_rows: list,
+lab_filename: str,
+reconciliation: dict,
+run_id_check: dict,
+) -> dict:
+"""
+QA checks for the lab reconciliation layer.
+Called after lab export is loaded in cmd_triage().
+"""
+results = { "mode": "LAB_RECONCILIATION", "checks": {} }
+# 1. Lab file loaded
+results["checks"]["lab_file_loaded"] = {
+"status": "PASS" if lab_rows else "WARN",
+"filename": lab_filename or "NOT_FOUND",
+"rows": len(lab_rows),
+}
+# 2. Run_ID alignment
+if run_id_check:
+results["checks"]["run_id_alignment"] = {
+"status": "PASS" if run_id_check["match"] else "WARN",
+"lab_run_id": run_id_check["lab_run_id"],
+"pipeline_run_id": run_id_check["pipeline_run_id"],
+"note": "" if run_id_check["match"] else "STALE_LAB_DATA — different sessions",
+}
+# 3. Reconciliation completeness
+if reconciliation:
+interp_only_count = reconciliation.get("interp_only_count", 0)
+results["checks"]["reconciliation"] = {
+"status": "PASS" if interp_only_count == 0 else "WARN",
+"confirmed": reconciliation.get("confirmed_count", 0),
+"lab_only": reconciliation.get("lab_only_count", 0),
+"interp_only": interp_only_count,
+"note": f"{interp_only_count} tickers require manual review" if interp_only_count else "",
+}
+return results
+10. Build Sequence
+Build this component AFTER Components 1-8 from the main architecture document
+Component 9 depends on SESSION being available in pipeline_interpreter_commands.py
+and on build_triage_prompt() / build_single_ticker_prompt() existing in the engine.
+Build the Story of the Trade components first, then add this component on top.
+Step
+Action
+Verification
+Rollback
+1
+Create MA_Inputs/lab_export/ folder
+Confirm folder exists at pipeline_interpreter/MA_Inputs/lab_export/
+Delete folder
+2
+Create lab_reconciliation.py with all 9 functions
+python -c "from lab_reconciliation import reconcile_universes, load_lab_export; print('OK')"
+Delete file
+3
+Add MA_LAB to engine: path constant, folder loop, PIPELINE_FILE_KEYWORDS
+python -c "from pipeline_interpreter_engine import MA_LAB; print(MA_LAB)"
+Restore engine backup
+4
+Add lab parameters to build_triage_prompt() and build_single_ticker_prompt()
+Both functions accept new parameters without error. Existing calls still work (default empty string).
+Restore engine backup
+5
+Add lab reconciliation block to cmd_triage()
+Run /triage WITHOUT lab file — confirm WARN message printed and triage continues normally
+Remove added block
+6
+Add lab context injection to cmd_ticker()
+Run /ticker WFC without lab file — confirm LAB_NOT_CONFIRMED shown, ticker output unchanged
+Remove added block
+7
+Add cmd_lab() and register /lab in route_command() and MENU
+Start interpreter, type /menu — confirm /lab appears. Type /lab — confirm WARN message if no file.
+Remove function and registration
+8
+Add LAB_ALIGNMENT section and LAB STATUS column to triage HTML output
+Run /triage without lab file — triage HTML opens, LAB_NOT_LOADED shows in all LAB STATUS cells
+Remove HTML additions
+9
+Add LAB_CONFLICT_RULES block to system prompt
+Open system prompt file, confirm append present, existing content intact
+Remove appended block
+10
+Add check_lab_reconciliation_qa() to interpreter_qa.py
+python -c "from interpreter_qa import check_lab_reconciliation_qa; print('OK')"
+Remove function
+11. Testing Checklist
+11.1 Import Tests
+python -c "from lab_reconciliation import reconcile_universes; print('OK')"
+python -c "from lab_reconciliation import load_lab_export; print('OK')"
+python -c "from lab_reconciliation import validate_lab_field_alignment; print('OK')"
+python -c "from lab_reconciliation import build_lab_alignment_block; print('OK')"
+python -c "from pipeline_interpreter_engine import MA_LAB; print(MA_LAB)"
+python -c "from interpreter_qa import check_lab_reconciliation_qa; print('OK')"
+11.2 Reconciliation Logic Tests
+Use the provided sample file: avshunter_signals_20260521_212948_2026-05-22_1213.csv
+Place sample file in MA_Inputs/lab_export/
+Run /lab — confirm 101 Lab tickers loaded, reconciliation summary printed
+Run /triage — confirm LAB_ALIGNMENT section appears at top of triage HTML
+Confirm confirmed count + lab_only count + interp_only count = correct totals
+Confirm interp_only tickers listed and carry LAB_NOT_CONFIRMED badge in triage table
+Confirm Run_ID in sample file (20260521_212948) shown in alignment check
+11.3 Field Conflict Tests
+/ticker on a confirmed ticker — confirm Lab context block appears in prompt, field alignment check runs, conflicts or NONE reported in output
+/ticker on an interp_only ticker — confirm LAB_NOT_CONFIRMED warning in header, LAB_NOT_CONFIRMED in RISK ASSESSMENT section
+Manually edit one row in the sample CSV to have wrong Direction — confirm FLAG conflict surfaces in EVIDENCE QUALITY in /ticker output
+11.4 Regression Tests
+/triage WITHOUT lab file in folder — must complete normally with WARN message, no crash
+/ticker WITHOUT lab file loaded — must complete normally, LAB_NOT_LOADED shown
+/lab with no file present — must print helpful WARN message, not crash
+All existing /triage, /ticker, /chart, /intraday outputs unchanged in structure
+11.5 Updated Final Verification Checklist Item
+Add as check 8 in the final verification checklist sent to Claude Code at build completion:
+8. Intelligence Lab reconciliation validation:
+a. MA_Inputs/lab_export/ folder exists
+b. lab_reconciliation.py imports cleanly (all 9 functions)
+c. /lab command appears in MENU
+d. Place avshunter_signals_20260521_212948_2026-05-22_1213.csv
+in MA_Inputs/lab_export/ and run /triage
+e. Confirm LAB_ALIGNMENT section at top of triage HTML
+f. Confirm interp_only tickers carry LAB_NOT_CONFIRMED badge
+g. Confirm Run_ID match/mismatch detection working
+h. Confirm /ticker on confirmed ticker shows Lab context block
+i. Confirm /ticker on interp_only ticker shows LAB_NOT_CONFIRMED warning
+j. Confirm /triage works normally with NO lab file present (graceful degradation)
+12. Hard Constraints
+Non-negotiable. Any build that violates these must be corrected before completion.
+1. lab_reconciliation.py must have ZERO imports from pipeline_interpreter_engine,
+pipeline_interpreter_commands, or any other interpreter module.
+It uses only: csv, json, pathlib, datetime.
+2. Lab conflicts NEVER block a verdict. They surface warnings only.
+LAB_NOT_CONFIRMED is informational — not a hard blocker.
+3. /triage must complete normally if no lab file is present.
+Graceful degradation is mandatory — missing lab file = WARN, not crash.
+4. The lab export file is READ-ONLY. lab_reconciliation.py never writes
+to MA_Inputs/lab_export/.
+5. All new functions added at BOTTOM of existing files only.
+No existing functions modified or removed.
+6. The Ticker column normalisation (uppercase) happens in load_lab_export()
+only — never mutate the original row dict in any other function.
+7. Run_ID mismatch is a WARNING, not a blocker.
+Reconciliation proceeds regardless — STALE_LAB_DATA is surfaced in output.
+The machine discovers. The Lab curates. The Interpreter reconciles.
+The trader decides.
+AVSHUNTER Pipeline Interpreter — Component 9 — Intelligence Lab Reconciliation Layer
+CONFIDENTIAL — Internal Build Document — May 2026

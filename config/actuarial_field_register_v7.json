@@ -1,0 +1,35 @@
+{
+  "schema_version": "actuarial_v7",
+  "historical_equivalence_dimensions": [
+    "vol_regime", "trend_direction", "structure_quality", "adx_bucket",
+    "wyckoff_phase_bucket", "trend_maturity", "atr_pct_bucket"
+  ],
+  "live_only_dimensions": ["macro_regime", "catalyst_proximity"],
+  "fields": {
+    "state_v2": {"required": true, "physical": "state_v2", "category": "state"},
+    "state_hash": {"required": true, "physical": "state_hash", "category": "state"},
+    "phase_v2": {"required": true, "physical": "phase_v2", "category": "state"},
+    "momentum_bucket": {"required": true, "physical": "momentum_bucket", "category": "state"},
+    "location_bucket": {"required": true, "physical": "location_bucket", "category": "state"},
+    "future_momentum_bucket": {"required": true, "physical": "future_momentum_bucket", "category": "future"},
+    "wyckoff_phase_bucket": {"required": true, "physical": "wyckoff_phase_bucket", "category": "state"},
+    "trend_direction": {"required": true, "physical": "trend_direction", "category": "state"},
+    "structure_quality": {"required": true, "physical": "structure_quality", "category": "state"},
+    "vol_regime": {"required": true, "physical": "vol_regime", "category": "state"},
+    "atr_percentile": {"required": true, "physical": "atr_percentile", "category": "state"},
+    "dist_from_high": {"required": true, "physical": "dist_from_high", "category": "location"},
+    "dist_from_low": {"required": true, "physical": "dist_from_low", "category": "location"},
+    "return_5d": {"required": true, "physical": "outcome_5d_return", "category": "horizon"},
+    "return_10d": {"required": true, "physical": "outcome_10d_return", "category": "horizon"},
+    "return_20d": {"required": true, "physical": "outcome_20d_return", "category": "horizon"},
+    "max_drawdown_20d": {"required": true, "physical": "outcome_max_drawdown_20d", "category": "risk"},
+    "hit_10pct_20d": {"required": true, "physical": "outcome_hit_10pct_up", "category": "horizon"},
+    "bucket_schema_version": {"required": true, "physical": "bucket_schema_version", "category": "metadata"},
+    "calculation_version": {"required": true, "physical": "calculation_version", "category": "provenance"},
+    "source_dataset_fingerprint": {"required": true, "physical": "source_dataset_fingerprint", "category": "provenance"},
+    "source_adjustment_policy": {"required": true, "physical": "source_adjustment_policy", "category": "provenance"},
+    "mature_5d": {"required": true, "physical": "mature_5d", "category": "maturity"},
+    "mature_10d": {"required": true, "physical": "mature_10d", "category": "maturity"},
+    "mature_20d": {"required": true, "physical": "mature_20d", "category": "maturity"}
+  }
+}

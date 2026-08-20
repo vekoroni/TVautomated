@@ -1,0 +1,9 @@
+{
+  "current_universe": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\universe\\polygon_liquid_universe.csv",
+  "live_database": "C:\\Users\\ACKVerissimo\\vanguard\\data\\actuarial_database_v6.parquet",
+  "current_unique": 3320,
+  "live_v6_unique": 3616,
+  "union_unique": 3641,
+  "current_only": 25,
+  "historical_only": 321
+}

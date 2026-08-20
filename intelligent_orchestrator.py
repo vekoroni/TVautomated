@@ -195,6 +195,11 @@ except Exception:
         merge_macro_enrichment_delta,
     )
 
+try:
+    from contracts.bond_macro_contract import normalise_bond_macro_sidecar
+except Exception:
+    from bond_macro_contract import normalise_bond_macro_sidecar  # type: ignore
+
 
 def _strict_actuarial_v6_enabled() -> bool:
     return os.environ.get("AVSHUNTER_STRICT_ACTUARIAL_V6", "").strip() == "1"
@@ -346,6 +351,22 @@ class OrchestratorConfig:
     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
     PHANTOM_RUNNER      = SCRIPTS_DIR / "run_phantom.py"
     PHANTOM_DB_PATH     = BASE_DIR / "data" / "phantom" / "phantom_history.db"
+
+    # EV-1.5 — governed shadow only. This phase may report health but cannot
+    # change candidates, GO lists, morning validation, or execution authority.
+    EV3_SHADOW_RUNNER   = SCRIPTS_DIR / "run_ev3_shadow_phase.py"
+    EV3_BARRIER_CACHE   = Path(os.environ.get(
+        "AVSHUNTER_EV3_BARRIER_CACHE",
+        r"C:\Users\ACKVerissimo\vanguard\data\staging\ev3_barrier_outcome_cache.parquet",
+    ))
+    EV3_SHADOW_ENABLED  = os.environ.get("AVSHUNTER_EV3_SHADOW_ENABLED", "1").strip().lower() not in {
+        "0", "false", "no", "off",
+    }
+    # Optional deterministic clock for explicitly labelled functional replays.
+    # Empty in production: EV3 then enforces strict real-time freshness.
+    EV3_FUNCTIONAL_TEST_NOW_UTC = os.environ.get(
+        "AVSHUNTER_EV3_FUNCTIONAL_TEST_NOW_UTC", ""
+    ).strip()
 
     # scripts\ subfolder — CORE INTEL Exporter (Phase 8c)
     CORE_INTEL_EXPORTER = SCRIPTS_DIR / "core_intel_exporter.py"
@@ -2141,6 +2162,36 @@ def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
     return ok
 
 
+# ============================================================ PHASE EV-1.5: GOVERNED SHADOW
+
+def run_ev3_governed_shadow(run_id: str, data_mode: str = "EOD") -> bool:
+    """Run EV3 in a run-scoped, non-authoritative and non-critical shadow lane."""
+    if not cfg.EV3_SHADOW_ENABLED:
+        logger.info("EV-1.5 shadow disabled by AVSHUNTER_EV3_SHADOW_ENABLED")
+        return True
+    if not cfg.EV3_SHADOW_RUNNER.exists():
+        logger.warning("EV-1.5 shadow skipped — runner not found: %s", cfg.EV3_SHADOW_RUNNER)
+        return False
+    command = [
+        sys.executable,
+        str(cfg.EV3_SHADOW_RUNNER),
+        "--run-id", run_id,
+        "--runs-dir", str(cfg.RUNS_DIR),
+        "--barrier-cache", str(cfg.EV3_BARRIER_CACHE),
+        "--phase", "MORNING" if str(data_mode).upper() == "MORNING" else "EOD",
+    ]
+    if cfg.EV3_FUNCTIONAL_TEST_NOW_UTC:
+        command.extend(["--now-utc", cfg.EV3_FUNCTIONAL_TEST_NOW_UTC])
+        logger.warning(
+            "EV-1.5 uses FIXED_FUNCTIONAL_TEST clock=%s; shadow has no capital authority",
+            cfg.EV3_FUNCTIONAL_TEST_NOW_UTC,
+        )
+    ok = _run("Phase EV-1.5 Governed Shadow", command, critical=False)
+    if not ok:
+        logger.warning("EV-1.5 failed in isolation — production pipeline continues unchanged")
+    return ok
+
+
 # ============================================================ PHASE 8c: CORE INTEL EXPORTER
 
 
@@ -3453,26 +3504,10 @@ def evening_workflow(
                 _bond_state = json.load(_bf)
             with open(macro_path, "r", encoding="utf-8") as _mf:
                 _macro_live = json.load(_mf)
-            # Inject bond macro fields into extras — augment only, never replace
+            # Preserve every sidecar field and add stable pipeline aliases.
+            # Future additive JSON fields flow through automatically.
             _extras = _macro_live.setdefault("extras", {})
-            _extras["bond_macro"] = {
-                "curve_state":            _bond_state.get("yield_curve", {}).get("curve_state", "UNKNOWN"),
-                "yield_2y":               _bond_state.get("yield_curve", {}).get("yield_2y"),
-                "yield_10y":              _bond_state.get("yield_curve", {}).get("yield_10y"),
-                "spread_bps":             _bond_state.get("yield_curve", {}).get("spread_bps"),
-                "russell_tailwind":       _bond_state.get("yield_curve", {}).get("russell_tailwind", False),
-                "zn_direction":           _bond_state.get("zn_direction", {}).get("rate_regime_signal", "UNKNOWN"),
-                "credit_stress_flag":     _bond_state.get("credit_stress", {}).get("stress_flag", "UNKNOWN"),
-                "credit_z_score":         _bond_state.get("credit_stress", {}).get("z_score"),
-                "auction_spread_risk":    _bond_state.get("auction_calendar", {}).get("auction_today", False),
-                "bond_macro_flag":        _bond_state.get("composite", {}).get("flag", "UNKNOWN"),
-                "bond_macro_score":       _bond_state.get("composite", {}).get("score"),
-                "breakeven_adjustment_pct": _bond_state.get("composite", {}).get("breakeven_adjustment_pct", 0),
-                "trade_go":               _bond_state.get("composite", {}).get("trade_go", True),
-                "summary":                _bond_state.get("composite", {}).get("summary", ""),
-                "as_of_date":             _bond_state.get("as_of_date", ""),
-                "data_source":            _bond_state.get("yield_curve", {}).get("data_source", "UNKNOWN"),
-            }
+            _extras["bond_macro"] = normalise_bond_macro_sidecar(_bond_state)
             write_json(macro_path, _macro_live)
             logger.info(
                 "✅ Bond macro sidecar merged: flag=%s score=%s curve=%s breakeven_adj=+%s%%",
@@ -3731,6 +3766,7 @@ def evening_workflow(
 
     run_position_lock_check(canonical_run_id)
     run_options_intelligence(canonical_run_id)     # MUST precede Phase 8.5
+    run_ev3_governed_shadow(canonical_run_id, data_mode=_data_mode)
 
     # ── PHASE 1B: Macro Horizon Router ───────────────────────────────────────
     # NoneType.__dict__ crash (26-Apr) was caused by run_horizon_router()
@@ -4908,6 +4944,48 @@ def evening_workflow(
             _manifest_permission = "MORNING_VALIDATION_REQUIRED"
             _final_state         = "PREP_VALID_TIER_AB_PRESENT"
 
+        # EV-1.5 is visible in run truth but remains non-authoritative. Its
+        # health never changes manifest permission during shadow validation.
+        _ev3_status_path = (
+            cfg.RUNS_DIR / canonical_run_id / "ev3_shadow" /
+            f"ev3_shadow_phase_status_{canonical_run_id}.json"
+        )
+        _ev3_health = "NOT_RUN"
+        _ev3_evaluated = 0
+        _ev3_evaluation_coverage = 0.0
+        _ev3_technical_health = "NOT_RUN"
+        _ev3_expected_rejections = {}
+        _ev3_expected_contract_rejections = {}
+        _ev3_system_defects = {}
+        # PHASE_ABSENT: no EV3 status artefact exists for this run at all
+        # (the 20260818_040143 case). Distinct from the wrapper's own
+        # ZERO_COVERAGE/NO_INPUT states, which require the artefact to
+        # exist. This default is overwritten below only if the file exists
+        # and reads successfully -- same pattern as _ev3_health/"NOT_RUN".
+        _ev3_coverage_health = "PHASE_ABSENT"
+        _ev3_dominant_reason_code = None
+        _ev3_dominant_reason_count = None
+        _ev3_dominant_reason_share = None
+        if _ev3_status_path.exists():
+            try:
+                with open(_ev3_status_path, "r", encoding="utf-8") as _ev3_handle:
+                    _ev3_status = json.load(_ev3_handle)
+                _ev3_health = str(_ev3_status.get("health", "UNKNOWN"))
+                _ev3_evaluated = int(_ev3_status.get("rows_evaluated", 0) or 0)
+                _ev3_evaluation_coverage = float(_ev3_status.get("evaluation_coverage", 0.0) or 0.0)
+                _ev3_technical_health = str(_ev3_status.get("technical_health", "UNKNOWN"))
+                _ev3_expected_rejections = dict(_ev3_status.get("expected_market_rejections", {}) or {})
+                _ev3_expected_contract_rejections = dict(
+                    _ev3_status.get("expected_contract_rejections", {}) or {}
+                )
+                _ev3_system_defects = dict(_ev3_status.get("system_defects", {}) or {})
+                _ev3_coverage_health = str(_ev3_status.get("ev3_coverage_health", "UNKNOWN"))
+                _ev3_dominant_reason_code = _ev3_status.get("dominant_reason_code")
+                _ev3_dominant_reason_count = _ev3_status.get("dominant_reason_count")
+                _ev3_dominant_reason_share = _ev3_status.get("dominant_reason_share")
+            except Exception as _ev3_status_error:
+                _ev3_health = f"STATUS_READ_FAILED:{type(_ev3_status_error).__name__}"
+
         _integrity = {
             "run_id":                       canonical_run_id,
             "generated_utc":                datetime.now(timezone.utc).isoformat(),
@@ -4921,9 +4999,28 @@ def evening_workflow(
             "tier_c_count":                 _tier_c,
             "execution_ready_count":        _exec_ready,
             "manifest_permission":          _manifest_permission,
+            "pipeline_technical_health":    (
+                "FAILED" if _manifest_permission.startswith("BLOCKED")
+                else "DEGRADED" if _manifest_permission.startswith("REVIEW_ONLY")
+                else "PASS"
+            ),
+            "morning_capital_permission":   _manifest_permission,
             "macro_normalised_ok":          _macro_normalised_ok,
             "enrichment_merge_degraded":    _enrichment_merge_degraded,
             "final_pipeline_state":         _final_state,
+            "ev3_shadow_health":            _ev3_health,
+            "ev3_shadow_rows_evaluated":    _ev3_evaluated,
+            "ev3_shadow_evaluation_coverage": _ev3_evaluation_coverage,
+            "ev3_technical_health":         _ev3_technical_health,
+            "ev3_functional_health":        _ev3_health,
+            "ev3_expected_market_rejections": _ev3_expected_rejections,
+            "ev3_expected_contract_rejections": _ev3_expected_contract_rejections,
+            "ev3_system_defects":           _ev3_system_defects,
+            "ev3_coverage_health":          _ev3_coverage_health,
+            "ev3_dominant_reason_code":     _ev3_dominant_reason_code,
+            "ev3_dominant_reason_count":    _ev3_dominant_reason_count,
+            "ev3_dominant_reason_share":    _ev3_dominant_reason_share,
+            "ev3_production_authority":     False,
             # EDE equivalent is ACTIVE inside EIL runner v4.1 via PSE chain.
             # V5 Colab decommissioned — all decision logic is now internal.
             # Phase 9.5 (separate EDE script) was superseded by PSE in EIL runner.

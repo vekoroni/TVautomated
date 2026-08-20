@@ -160,7 +160,7 @@ def _compute_tle_inner(pkg: Dict) -> Dict[str, Any]:
         bull_signals.append("SPRING_RECLAIM")
 
     # T2: VWAP reclaim (price above VWAP — proxy for VWAP_RECLAIM trigger) (weight 2)
-    vwap_reclaim = vwap_bias == "ABOVE"
+    vwap_reclaim = "VWAP_RECLAIM" in trigger_primary or "VWAP_RECLAIM" in trigger_codes
     if vwap_reclaim:
         bull_score += 2
         bull_signals.append("VWAP_RECLAIM")
@@ -186,8 +186,8 @@ def _compute_tle_inner(pkg: Dict) -> Dict[str, Any]:
 
     # T5: Shorts trapped below value area (weight 2)
     shorts_trapped = (
-        control_state in ("SHIFTING_BULLISH", "BULLISH")
-        or precor_control in ("SHIFTING_BULLISH", "BULLISH")
+        control_state in ("BUYERS", "SHIFTING")
+        or precor_control in ("BUYERS", "SHIFTING")
     )
     if shorts_trapped:
         bull_score += 2
@@ -215,15 +215,19 @@ def _compute_tle_inner(pkg: Dict) -> Dict[str, Any]:
         bear_signals.append("UTAD_BREAKOUT_FAIL")
 
     # T2: VWAP loss confirmed (weight 2)
-    vwap_below = vwap_bias == "BELOW"
+    vwap_below = (
+        "VWAP_LOSS" in trigger_primary
+        or "VWAP_LOSS" in trigger_codes
+        or (("VWAP_RECLAIM" in trigger_primary or "VWAP_RECLAIM" in trigger_codes) and vwap_bias == "BELOW")
+    )
     if vwap_below:
         bear_score += 2
         bear_signals.append("VWAP_LOSS")
 
     # T3: Buyers trapped above value (weight 2)
     buyers_trapped = (
-        control_state in ("SHIFTING_BEARISH", "BEARISH", "ADVERSE")
-        or precor_control in ("SHIFTING_BEARISH", "BEARISH")
+        control_state in ("SELLERS", "SHIFTING")
+        or precor_control in ("SELLERS", "SHIFTING")
     )
     if buyers_trapped:
         bear_score += 2

@@ -1,0 +1,44 @@
+{
+  "account": {
+    "capital": 2000,
+    "max_positions": 3,
+    "risk_per_trade_pct": 7.5
+  },
+  "crabel_thresholds": {
+    "compression_max": 0.85,
+    "nr7_bonus": 15,
+    "low_volume_bonus": 15,
+    "extreme_compression": 0.6
+  },
+  "wyckoff_thresholds": {
+    "min_score": 40,
+    "prefer_phases": [
+      "Accumulation_Phase_C",
+      "Accumulation_Phase_D",
+      "Distribution_Phase_C",
+      "Distribution_Phase_D"
+    ]
+  },
+  "composite_scoring": {
+    "crabel_weight": 0.4,
+    "wyckoff_weight": 0.6,
+    "min_composite": 50
+  },
+  "fallback_mode": {
+    "enabled": true,
+    "wyckoff_only_min_score": 65,
+    "require_grade_a_or_b": true
+  },
+  "gate_filters": {
+    "min_price": 5.0,
+    "max_price": 500.0,
+    "min_avg_volume": 500000,
+    "min_atr_pct": 1.5,
+    "min_rel_volume": 1.2
+  },
+  "tier_scoring": {
+    "tier1_min_composite": 75,
+    "tier2_min_composite": 65,
+    "tier3_min_composite": 55
+  }
+}

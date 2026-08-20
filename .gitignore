@@ -54,6 +54,96 @@ config/secrets*
 # OS
 .DS_Store
 Thumbs.db
+*.lnk
 
 # Compiled
 *.pyc
+
+# ============================================================
+# Pre-remediation snapshot additions (2026-08-20)
+# ============================================================
+
+# Pipeline outputs — regenerable, never committed
+data/daily/
+data/audit/
+data/macro/
+data/cache/
+data/vanguard/
+data/vanguard_output/
+orchestrator/data/
+dropbox/
+reports/
+
+# Scratch / working directories — data/scratch/pipeline_map was moved to
+# docs/pipeline_map/ (tracked) before this rule was added; everything else
+# under data/scratch/ is disposable reconstruction/run scratch.
+data/scratch/
+
+# vanguard/data/ is a symlink into C:\Users\ACKVerissimo\vanguard\data\ — an
+# external, non-repo directory holding the live actuarial database (~725MB)
+# plus ~14GB of historical snapshots. git does not treat it as an opaque
+# symlink here; `git add -n vanguard/data` walks into it and would stage
+# hundreds of MB–GB of parquet/json. Exclude explicitly. See backup note.
+vanguard/data/
+
+# vanguard/trades/ — live trade/governance JSON records (real trading
+# history, not pipeline output in the disposable sense, but also not code
+# or documentation). Excluded from this code-and-docs snapshot; flagged
+# separately for the operator rather than committed by default.
+vanguard/trades/
+
+# Ephemeral test/shadow-run scratch (also the source of two
+# permission-denied warnings during `git status` on this machine)
+pytest-of-*/
+.pytest_cache/
+pipeline_interpreter/automation_v2_shadow_outputs/
+
+# Additional output/log/working-data directories found not to be covered
+# by the rules above or by extension-based rules (mostly JSON manifests,
+# screenshots, and timestamped run directories) — same "regenerable
+# pipeline output" rationale as dropbox/ and data/output/ above.
+logs/
+pipeline_interpreter/outputs/
+pipeline_interpreter/MA_Inputs/
+pipeline_interpreter/lab_reconciliationold2505/
+news_terminal/outputs/
+short_swing/output/
+zero_dte/output/
+ma_cockpit/outputs/
+
+# SQLite auxiliary files not matched by the bare *.db pattern
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Large data artefacts
+*.feather
+
+# Secrets
+*.pem
+*.key
+
+# Universe source of truth — read-only Discovery input (1,999 tickers,
+# hand-maintained), not pipeline output. Overrides the blanket *.csv rule
+# above.
+!data/universe/polygon_liquid_universe.csv
+
+# ============================================================
+# Hardcoded secrets found in Step 2 of the pre-remediation audit
+# (2026-08-20) — excluded pending manual remediation by the operator.
+# Do not remove these lines without first stripping the embedded key.
+# ============================================================
+avshunter_ticker_probe.py
+rapid_rotation_flag.py
+position_lifecycle_tracker.py
+md_api_diagnostic.py
+news_terminal/news_terminal_engine.py
+ma_cockpit/ma_cockpit_engine.py
+pipeline_interpreter/Archive/pipeline_interpreter_engine.py
+pipeline_interpreter/pipeline_interpreter_engine_backup_20260522.py
+pipeline_interpreter/pipeline_interpreter_engine2105old.py
+_cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engineolddnu2105.py
+_cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_enginepmolddnu1905.py
+_cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engineolddnu1905.py
+_cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engineold1905.py
+_cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engine1905dnuold.py

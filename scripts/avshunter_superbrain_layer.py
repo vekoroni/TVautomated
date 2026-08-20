@@ -1,3 +1,28 @@
+# ============================================================
+# STATUS: DEPRECATED / BYPASSED (Phase 8d passthrough only)
+# Superseded by: avshunter_options_intelligence.py — logic migrated
+#                2026-04-28, per intelligent_orchestrator.py:375
+# Evidence:      intelligent_orchestrator.py:375 comment: "Logic migrated
+#                to OI 2026-04-28. File retained: run_superbrain_passthrough()
+#                copies OI→superbrain_enriched. Do NOT remove." Phase 8d
+#                (intelligent_orchestrator.py:2281-2288) delegates to
+#                run_superbrain_passthrough() (intelligent_orchestrator.py:
+#                2402-2501), which copies the OI CSV, maps
+#                options_verdict → sb_final_verdict, and fills missing
+#                spread columns with NaN placeholders. It never calls
+#                run_superbrain(), process_signal(), or
+#                assemble_execution_plan() from this file (verified: zero
+#                call sites in intelligent_orchestrator.py, 2026-08-19).
+# Retired:       2026-04-28 (per intelligent_orchestrator.py:375)
+# Note:          Do NOT remove — EIL/GARCH/WBS/CT Gate require
+#                superbrain_enriched to exist, and the orchestrator's
+#                passthrough (not this file) produces it. This file still
+#                contains assemble_execution_plan() (~line 1303) with a
+#                fully-built ev_status == 'DATA_WEAK' risk-escalation gate
+#                (~lines 1345-1359) that reads as live logic but is
+#                bypassed entirely on the current orchestrator path.
+# Documented:    2026-08-19 (EV audit, Stage 0)
+# ============================================================
 """
 ╔══════════════════════════════════════════════════════════════════════════════════╗
 ║         AVSHUNTER - SUPER BRAIN LAYER  v1.2                                    ║

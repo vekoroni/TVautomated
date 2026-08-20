@@ -1,0 +1,41 @@
+{
+  "dte_presets": {
+    "short_term": {
+      "name": "Short-term Swing (8-20 days)",
+      "min_dte": 8,
+      "max_dte": 20
+    },
+    "medium_term": {
+      "name": "Medium-term (20-45 days)",
+      "min_dte": 20,
+      "max_dte": 45
+    },
+    "long_term": {
+      "name": "Long-term Hold (60-90 days)",
+      "min_dte": 60,
+      "max_dte": 90
+    }
+  },
+  "active_preset": "medium_term",
+  "liquidity_filters": {
+    "max_bid_ask_spread_pct": 40,
+    "min_option_volume": 20,
+    "min_open_interest": 50,
+    "min_bid_price": 0.2
+  },
+  "greeks_filters": {
+    "min_delta": 0.3,
+    "max_delta": 0.8,
+    "max_theta_pct_per_day": 6.0
+  },
+  "wyckoff_filters": {
+    "min_score": 80,
+    "require_volume_spike": true
+  },
+  "exit_strategy": {
+    "philosophy": "Exit to retail herd",
+    "target_gain": 50,
+    "trailing_stop": 30,
+    "max_hold_days": 10
+  }
+}

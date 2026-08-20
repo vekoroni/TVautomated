@@ -1,0 +1,12 @@
+{
+  "run_id": "20260421_211944",
+  "status": "FAILED_NO_DB",
+  "actuarial_db_found": false,
+  "superbrain_csv_found": false,
+  "tickers_checked": 0,
+  "tickers_with_matches": 0,
+  "tickers_zero_hitrate": 0,
+  "match_rate": 0.0,
+  "likely_cause": "Actuarial database not found at expected paths",
+  "recommendations": []
+}

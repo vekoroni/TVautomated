@@ -112,8 +112,103 @@ def _print_results(results:dict, response:str=""):
     print(f"\n  {EXECUTION_PERMISSION}")
 
 
+def get_trusted_interpreter_source(ticker: str = "", explicit_path: str = "") -> tuple[str, str]:
+    """Return the interpreter's trusted CSV source.
 
-def _build_battlefield_triage_response(rows: list, ma_summary: dict, source_name: str = "") -> str:
+    Intelligence Lab's resolved triage view is the master queue. Explicit user
+    files still win, but normal interpreter commands should not drift back to
+    stale session CSVs when a Lab view is available.
+    """
+    ticker = str(ticker or "").strip().upper()
+    if explicit_path:
+        if not ticker or _csv_has_ticker(explicit_path, ticker):
+            return explicit_path, "explicit"
+
+    found = scan_ma_pipeline_outputs()
+    trusted_order = [
+        ("lab_triage_view", "trusted_lab_view"),
+        ("morning_validated", "morning_validated"),
+        ("morning_candidates", "morning_candidates"),
+        ("execution", "execution"),
+        ("eil", "eil"),
+    ]
+    for key, label in trusted_order:
+        path = found.get(key) if found else None
+        if path and (not ticker or _csv_has_ticker(path, ticker)):
+            return path, label
+
+    for path in _candidate_pipeline_csv_paths():
+        if not ticker or _csv_has_ticker(path, ticker):
+            return path, "candidate_search"
+
+    session_path = SESSION.get("last_pipeline_csv") or SESSION.get("pipeline_csv") or ""
+    if session_path and (not ticker or _csv_has_ticker(session_path, ticker)):
+        return session_path, "session_fallback"
+
+    return explicit_path or session_path or "", "unresolved"
+
+
+
+_MORNING_ACTIONABLE = {"PROBE", "ARMED", "GO", "GO_LIMIT", "EXECUTE", "EXECUTE_WITH_CAUTION"}
+_LAB_ACTIONABLE = {"GO", "ARMED"}
+_MONETISABLE_EV_DECISIONS = {"STRONG", "MODERATE"}
+
+
+def _lab_monetisation_failure(row: dict) -> str:
+    """Return the fail-closed reason a Lab row cannot enter the GO lane."""
+    ev_decision = str(row.get("EV_Decision", "") or "").strip().upper()
+    if ev_decision not in _MONETISABLE_EV_DECISIONS:
+        return f"EV_{ev_decision or 'MISSING'}_NOT_MONETISABLE"
+
+    raw_rr = row.get("RR")
+    try:
+        rr = float(str(raw_rr).strip())
+    except (TypeError, ValueError):
+        return "RR_MISSING_OR_INVALID"
+    if rr <= 0:
+        return "RR_NON_POSITIVE"
+    return ""
+
+
+def _classify_battlefield_candidate(row: dict, ticker: str, lab_reconciliation: dict | None):
+    """Apply the production authority contract: morning gate AND Lab approval."""
+    state = str(row.get("live_validation_state", "") or "").strip().upper()
+    perm = str(row.get("morning_execution_permission", "") or "").strip().upper()
+    contract = str(row.get("contract_tradability_state", "") or "").strip().upper()
+
+    # Morning vetoes remain sovereign even when the Lab selected the ticker.
+    if state in {"REJECTED", "BLOCKED"} or perm == "BLOCKED":
+        return "SKIP_TODAY", "Morning validator rejected or blocked thesis", 4
+    if perm == "CONTRACT_REPAIR" or contract == "REPAIR_REQUIRED":
+        return "REVIEW_LATER", "Contract repair required before any entry", 2
+    if state == "WAIT_RETEST" or perm == "WAIT":
+        return "REVIEW_LATER", "Waiting for live confirmation; not execution-ready", 2
+
+    if state == "CONFIRMED" and perm in _MORNING_ACTIONABLE:
+        reconciliation = lab_reconciliation or {}
+        if reconciliation.get("run_id_match") is not True:
+            return "REVIEW_LATER", "LAB_AUTHORITY_INVALID: missing or mismatched Lab run", 2
+
+        confirmed = {str(t).strip().upper() for t in reconciliation.get("confirmed", [])}
+        actionable = {str(t).strip().upper() for t in reconciliation.get("actionable", [])}
+        ticker_upper = str(ticker or "").strip().upper()
+        if ticker_upper not in confirmed:
+            return "REVIEW_LATER", "LAB_NOT_REVIEWED: absent from current Intelligence Lab export", 2
+        if ticker_upper not in actionable:
+            failures = reconciliation.get("non_actionable_reasons", {}) or {}
+            failure = str(failures.get(ticker_upper, "LAB_RETAINED_REPAIR_OR_CAUTION"))
+            return "REVIEW_LATER", f"LAB_NOT_ACTIONABLE: {failure}", 2
+        return "DEEP_DIVE_NOW", "Morning validator and Intelligence Lab jointly approved action review", 0
+
+    return "WATCH_ONLY", "No live execution permission from morning validator", 3
+
+
+def _build_battlefield_triage_response(
+    rows: list,
+    ma_summary: dict,
+    source_name: str = "",
+    lab_reconciliation: dict | None = None,
+) -> str:
     """Build deterministic morning battlefield triage from prepared run outputs.
 
     Morning validator is the live gate. Other prepared outputs are consumed as
@@ -224,21 +319,8 @@ def _build_battlefield_triage_response(rows: list, ma_summary: dict, source_name
                 return "PUT"
         return "UNKNOWN"
 
-    actionable = {"PROBE", "ARMED", "GO", "GO_LIMIT", "EXECUTE", "EXECUTE_WITH_CAUTION"}
-
-    def classify(r):
-        state = upper(r.get("live_validation_state"))
-        perm = upper(r.get("morning_execution_permission"))
-        contract = upper(r.get("contract_tradability_state"))
-        if state in {"REJECTED", "BLOCKED"} or perm == "BLOCKED":
-            return "SKIP_TODAY", "Morning validator rejected or blocked thesis", 4
-        if perm == "CONTRACT_REPAIR" or contract == "REPAIR_REQUIRED":
-            return "REVIEW_LATER", "Contract repair required before any entry", 2
-        if state == "CONFIRMED" and perm in actionable:
-            return "DEEP_DIVE_NOW", "Morning validator confirmed thesis and granted action review", 0
-        if state == "WAIT_RETEST" or perm == "WAIT":
-            return "REVIEW_LATER", "Waiting for live confirmation; not execution-ready", 2
-        return "WATCH_ONLY", "No live execution permission from morning validator", 3
+    def classify(ticker, row):
+        return _classify_battlefield_candidate(row, ticker, lab_reconciliation)
 
     def score(ticker, r):
         mc = layer(ticker, "morning_candidates")
@@ -285,7 +367,7 @@ def _build_battlefield_triage_response(rows: list, ma_summary: dict, source_name
             keyed.append((t, r))
             seen.add(t)
 
-    keyed.sort(key=lambda item: (classify(item[1])[2], -score(item[0], item[1]), item[0]))
+    keyed.sort(key=lambda item: (classify(item[0], item[1])[2], -score(item[0], item[1]), item[0]))
 
     fields = [
         "rank", "ticker", "direction", "pipeline_score", "dte", "horizon",
@@ -298,7 +380,7 @@ def _build_battlefield_triage_response(rows: list, ma_summary: dict, source_name
     groups = {"DEEP_DIVE_NOW": [], "DEEP_DIVE_NEXT": [], "REVIEW_LATER": [], "WATCH_ONLY": [], "SKIP_TODAY": []}
 
     for rank, (ticker, r) in enumerate(keyed, 1):
-        verdict, base_reason, _ = classify(r)
+        verdict, base_reason, _ = classify(ticker, r)
         groups.setdefault(verdict, []).append(ticker)
         mc = layer(ticker, "morning_candidates")
         ma_ready = "YES" if ticker in chart_tickers and ticker in option_tickers else ("PARTIAL" if ticker in chart_tickers or ticker in option_tickers else "NO")
@@ -332,10 +414,10 @@ Battlefield triage consumed the prepared run outputs by ticker: {consumed}.
 
 This is the continuation layer: it ranks the battlefield using whole-run context, while the morning validator remains the live gate for direction, permission, and execution readiness. Chart and options files improve review completeness only; they cannot promote a repair, wait, blocked, or rejected ticker.
 
-Confirmed/action-review names: {len(groups.get('DEEP_DIVE_NOW', []))}. Repair/wait names stay in review. Rejected or blocked names are skipped today."""
+Jointly approved Lab + morning action-review names: {len(groups.get('DEEP_DIVE_NOW', []))}. Lab-unconfirmed, repair, and wait names stay in review. Rejected or blocked names are skipped today."""
 
     order_lines = [
-        f"/ticker {ticker} ??? confirmed by morning validator; use full battlefield context for final human review."
+        f"/ticker {ticker} — jointly approved by Intelligence Lab and morning validator; use full battlefield context for final human review."
         for ticker in groups.get("DEEP_DIVE_NOW", [])[:10]
     ]
     if not order_lines:
@@ -413,16 +495,24 @@ def cmd_triage(file_path:str=None):
     else:
         print("  Missing expected pipeline CSVs: none")
 
-    if file_path:
-        rows = read_pipeline_csv(file_path)
-        source_name = Path(file_path).name
-    elif _loaded_pipeline:
+    trusted_source, source_reason = get_trusted_interpreter_source(explicit_path=file_path or "")
+    best = trusted_source
+    found = scan_ma_pipeline_outputs()
+    if trusted_source:
+        rows = read_pipeline_csv(trusted_source)
+        source_name = Path(trusted_source).name
+        if source_reason == "trusted_lab_view":
+            print(f"  [SYNC: LAB] using trusted Intelligence Lab view: {source_name}")
+        else:
+            print(f"  [SYNC: {source_reason.upper()}] using source: {source_name}")
+
+    if not rows and _loaded_pipeline:
         # Use already-loaded pipeline data
         for name, r in _loaded_pipeline.items():
             rows.extend(r)
             source_name = name
             break
-    else:
+    elif not rows:
         import json as _json
         _active_run_id=None; _session_mode="EOD"
         _sm=MA_INPUTS/"session_state.json"
@@ -518,12 +608,37 @@ def cmd_triage(file_path:str=None):
         if rows:
             pipeline_run_id = str(rows[0].get("run_id", rows[0].get("Run_ID", ""))).strip()
         run_id_check = check_run_id_alignment(lab_rows, pipeline_run_id)
+        reconciliation = reconcile_universes(
+            lab_rows,
+            [str(r.get("ticker", "")).upper() for r in rows],
+        )
+        reconciliation["run_id_match"] = bool(run_id_check.get("match"))
+        actionable = set()
+        non_actionable_reasons = {}
+        for lab_row in lab_rows:
+            lab_ticker = str(lab_row.get("Ticker", "")).strip().upper()
+            if not lab_ticker:
+                continue
+            lab_category = str(
+                lab_row.get("Exec_Category")
+                or lab_row.get("Morning_Permission")
+                or lab_row.get("Verdict")
+                or ""
+            ).strip().upper()
+            if lab_category not in _LAB_ACTIONABLE:
+                non_actionable_reasons[lab_ticker] = f"LAB_CATEGORY_{lab_category or 'MISSING'}"
+                continue
+            economics_failure = _lab_monetisation_failure(lab_row)
+            if economics_failure:
+                non_actionable_reasons[lab_ticker] = economics_failure
+                continue
+            actionable.add(lab_ticker)
+        reconciliation["actionable"] = sorted(actionable)
+        reconciliation["non_actionable_reasons"] = non_actionable_reasons
         if not run_id_check["match"]:
             print(f"  [LAB] STALE_LAB_DATA: Lab Run_ID {run_id_check['lab_run_id']} "
                   f"does not match pipeline Run_ID {run_id_check['pipeline_run_id']}")
             print(f"  [LAB] Lab export may be from a different session â€” reconciliation will proceed with warning.")
-        interpreter_tickers = [str(r.get("ticker", "")).upper() for r in rows]
-        reconciliation = reconcile_universes(lab_rows, interpreter_tickers)
         lab_block = build_lab_alignment_block(reconciliation, lab_filename, run_id_check)
         SESSION["lab_rows"]           = lab_rows
         SESSION["lab_reconciliation"] = reconciliation
@@ -561,7 +676,12 @@ def cmd_triage(file_path:str=None):
     # -- End entry timing engine
 
     t0 = time.time()
-    response = _build_battlefield_triage_response(rows, ma_summary, source_name)
+    response = _build_battlefield_triage_response(
+        rows,
+        ma_summary,
+        source_name,
+        lab_reconciliation=SESSION.get("lab_reconciliation"),
+    )
     if response:
         print("  [BATTLEFIELD] Deterministic run-level triage built from prepared outputs")
     else:
@@ -614,12 +734,20 @@ def cmd_triage(file_path:str=None):
     print(f"  Next step: run /ticker for each DEEP_DIVE_NOW ticker")
     print(f"  {EXECUTION_PERMISSION}")
 
-    # One-line brief per ticker in triage
+    # One-line brief only for the jointly approved production universe. The
+    # former raw rows loop could print GO for LAB_NOT_CONFIRMED names.
     if rows:
+        _authority = SESSION.get("lab_reconciliation") or {}
+        _approved_rows = []
+        for _row in rows:
+            _ticker = str(_row.get("ticker", "") or "").strip().upper()
+            _verdict, _, _ = _classify_battlefield_candidate(_row, _ticker, _authority)
+            if _verdict == "DEEP_DIVE_NOW":
+                _approved_rows.append(_row)
         print()
         print(f"  {'ACTION':<8}  {'DIR':<4}  CONTRACT")
         print(f"  {'─'*8}  {'─'*4}  {'─'*25}")
-        for row in rows[:30]:
+        for row in _approved_rows[:30]:
             try:
                 from trade_brief_builder import build_trade_brief
                 brief = build_trade_brief(row)
@@ -639,7 +767,7 @@ def cmd_triage(file_path:str=None):
     if _QA_AVAILABLE:
         try:
             _qa = check_triage_qa(
-                pipeline_csv   = SESSION.get("pipeline_csv") or SESSION.get("last_pipeline_csv"),
+                pipeline_csv   = best or SESSION.get("pipeline_csv") or SESSION.get("last_pipeline_csv"),
                 macro_json     = SESSION.get("macro_json") or "",
                 candidates_csv = SESSION.get("catalyst_csv"),
             )
@@ -726,12 +854,13 @@ def cmd_morning(file_path:str):
 def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
     print(f"\n  Running deep dive: {ticker}...")
     explicit_file = bool(file_path)
-    if not file_path:
-        file_path = SESSION.get("last_pipeline_csv")
 
-    resolved_file = _resolve_pipeline_csv_for_ticker(ticker, file_path or "")
+    resolved_file, resolved_reason = get_trusted_interpreter_source(
+        ticker=ticker,
+        explicit_path=file_path if explicit_file else "",
+    )
     if resolved_file and (not file_path or Path(resolved_file).resolve() != Path(file_path).resolve()):
-        print(f"  [AUTO-REFRESH] ticker source: {Path(resolved_file).name}")
+        print(f"  [AUTO-REFRESH] ticker source: {Path(resolved_file).name} ({resolved_reason})")
     file_path = resolved_file or file_path
 
     if not file_path:
@@ -856,10 +985,11 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
         prompt   = build_single_ticker_prompt(ticker, row,
                                                ticker_options if ticker_options else None,
                                                ticker_note=_ticker_note,
-                                               context_block=_context_block,
-                                               lab_context_block=lab_context_block,
-                                               lab_conflict_block=lab_conflict_block,
-                                               pre_trade_prob_block=_ete_block_t)
+                                                context_block=_context_block,
+                                                lab_context_block=lab_context_block,
+                                                lab_conflict_block=lab_conflict_block,
+                                                pre_trade_prob_block=_ete_block_t,
+                                                chart_images_present=bool(ticker_charts))
         response = call_api(prompt, use_web_search=_use_web_search)
     run_dir, ts = get_run_dir()
     results = write_all_outputs(response, session, run_dir, ts,
@@ -1325,11 +1455,13 @@ def cmd_intraday(args: str = ""):
     if not chart_timeframes:
         chart_timeframes = ["intraday"]
 
-    # Get pipeline row from session CSV
-    file_path = SESSION.get("last_pipeline_csv")
+    # Get pipeline row from trusted Intelligence Lab source
+    file_path, source_reason = get_trusted_interpreter_source(ticker=ticker)
     if not file_path:
-        print("  [ERROR] No CSV in session. Run /triage first.")
+        print("  [ERROR] No trusted pipeline CSV found. Run /triage first.")
         return
+    if source_reason:
+        print(f"  [SYNC: {source_reason.upper()}] intraday source: {Path(file_path).name}")
 
     rows = read_pipeline_csv(file_path)
     row  = next((r for r in rows if r.get("ticker","").upper() == ticker), None)
@@ -1380,6 +1512,7 @@ def cmd_intraday(args: str = ""):
         options_data    = ticker_options if ticker_options else None,
         ticker_note     = _ticker_note,
         chart_timeframes= chart_timeframes,
+        chart_images_present=bool(all_images),
     )
 
     t0 = time.time()
@@ -1531,6 +1664,9 @@ def cmd_notes_status():
 
 def _resolve_quick_pipeline_csv() -> str:
     """Find a useful prepared pipeline CSV without requiring /triage."""
+    trusted_path, _ = get_trusted_interpreter_source()
+    if trusted_path:
+        return trusted_path
     candidates = _candidate_pipeline_csv_paths()
     return candidates[0] if candidates else ""
 
@@ -1567,6 +1703,7 @@ def _candidate_pipeline_csv_paths() -> list[str]:
     repo_root = _repo_root_from_ma_inputs()
     runs_root = repo_root / "data" / "output" / "runs"
     patterns = [
+        "intelligence_lab/lab_triage_view_*.csv",
         "morning_validation/morning_validated_trades_*.csv",
         "morning_validation/morning_candidates_*.csv",
         "options/vanguard_signals_enriched_*.csv",
@@ -1575,7 +1712,6 @@ def _candidate_pipeline_csv_paths() -> list[str]:
         "execution/execution_v3_5_*.csv",
         "superbrain/eil_enriched_*.csv",
         "superbrain/superbrain_enriched_*.csv",
-        "intelligence_lab/lab_triage_view_*.csv",
         "vanguard/vanguard_signals.csv",
         "discovery/discovery_candidates_ultimate_*.csv",
     ]
@@ -1922,7 +2058,7 @@ def route_command(raw:str):
         if not _tok:
             print("  Usage: /ete TICKER")
         else:
-            _file = SESSION.get("last_pipeline_csv")
+            _file, _source_reason = get_trusted_interpreter_source(ticker=_tok)
             _rows = read_pipeline_csv(_file) if _file else []
             _row  = next((r for r in _rows if r.get("ticker", "").upper() == _tok), {})
             _g    = load_garch_rows(MA_PIPELINE).get(_tok, {})
@@ -1956,11 +2092,12 @@ def cmd_story(args: str = ""):
     ticker   = tokens[0].upper()
     is_fresh = "--fresh" in tokens
 
-    # 2. Get pipeline row from session CSV
-    file_path = SESSION.get("last_pipeline_csv")
+    # 2. Get pipeline row from trusted Intelligence Lab source
+    file_path, source_reason = get_trusted_interpreter_source(ticker=ticker)
     if not file_path:
-        print("  [ERROR] No CSV loaded. Run /triage first or /load FILE")
+        print("  [ERROR] No trusted pipeline CSV found. Run /triage first or pass an explicit file.")
         return
+    print(f"  [SYNC: {source_reason.upper()}] story source: {Path(file_path).name}")
     rows = read_pipeline_csv(file_path)
     row  = next((r for r in rows if r.get("ticker", "").upper() == ticker), None)
     if not row:
@@ -2153,11 +2290,12 @@ def cmd_update(args: str = ""):
             print(f"  [ERROR] No previous story found for {ticker}. Run /story {ticker} first.")
             return
 
-    # 4. Get pipeline row from session
-    file_path = SESSION.get("last_pipeline_csv")
+    # 4. Get pipeline row from trusted Intelligence Lab source
+    file_path, source_reason = get_trusted_interpreter_source(ticker=ticker)
     if not file_path:
-        print("  [ERROR] No CSV loaded. Run /triage first or /load FILE")
+        print("  [ERROR] No trusted pipeline CSV found. Run /triage first or pass an explicit file.")
         return
+    print(f"  [SYNC: {source_reason.upper()}] update source: {Path(file_path).name}")
     rows = read_pipeline_csv(file_path)
     row  = next((r for r in rows if r.get("ticker", "").upper() == ticker), {})
 
@@ -2250,13 +2388,14 @@ def cmd_lab(args: str = ""):
         print(f"  Place avshunter_signals_*.csv in {MA_LAB}")
         return
 
-    # Build interpreter ticker list from session CSV if available
+    # Build interpreter ticker list from trusted Lab/interpreter source if available
     interpreter_tickers = []
-    _csv_path = SESSION.get("pipeline_csv") or SESSION.get("last_pipeline_csv")
+    _csv_path, _source_reason = get_trusted_interpreter_source()
     if _csv_path:
         try:
             rows = read_pipeline_csv(_csv_path)
             interpreter_tickers = [str(r.get("ticker", "")).upper() for r in rows]
+            print(f"  [SYNC: {_source_reason.upper()}] Lab reconciliation source: {Path(_csv_path).name}")
         except Exception:
             pass
 

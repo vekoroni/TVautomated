@@ -1,0 +1,484 @@
+import json
+import os
+import requests
+import time
+import csv
+from datetime import datetime, timedelta
+from pathlib import Path
+
+class OptionsIntelligence:
+    """Options Intelligence with FULL Options Liquidity Validation"""
+    
+    def __init__(self, config):
+        self.config = config
+        self.polygon_key = os.getenv('POLYGON_API_KEY')
+        self.base_url = "https://api.polygon.io"
+        self.csv_path = Path('config/tickers.csv')
+        
+        # Load options-specific config
+        self.options_config = self._load_options_config()
+        
+        # Get active DTE preset
+        preset_name = self.options_config.get('active_preset', 'medium_term')
+        preset = self.options_config['dte_presets'][preset_name]
+        
+        self.min_dte = preset['min_dte']
+        self.max_dte = preset['max_dte']
+        self.preset_name = preset['name']
+        
+        # Liquidity filters
+        liq = self.options_config['liquidity_filters']
+        self.max_spread_pct = liq['max_bid_ask_spread_pct']
+        self.min_option_volume = liq['min_option_volume']
+        self.min_open_interest = liq['min_open_interest']
+        self.min_bid_price = liq['min_bid_price']
+        
+        # Greeks filters
+        greeks = self.options_config['greeks_filters']
+        self.min_delta = greeks['min_delta']
+        self.max_delta = greeks['max_delta']
+        self.max_theta_pct = greeks['max_theta_pct_per_day']
+        
+    def _load_options_config(self):
+        """Load options configuration"""
+        config_path = Path('config/options_settings.json')
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        else:
+            return {
+                'active_preset': 'medium_term',
+                'dte_presets': {
+                    'medium_term': {'min_dte': 20, 'max_dte': 45, 'name': 'Medium-term'}
+                },
+                'liquidity_filters': {
+                    'max_bid_ask_spread_pct': 15,
+                    'min_option_volume': 100,
+                    'min_open_interest': 500,
+                    'min_bid_price': 0.50
+                },
+                'greeks_filters': {
+                    'min_delta': 0.45,
+                    'max_delta': 0.70,
+                    'max_theta_pct_per_day': 3.0
+                }
+            }
+    
+    def scan_options(self):
+        """Main scan with full options validation"""
+        print(f"  [Options] Starting scan - {self.preset_name}")
+        print(f"  [Options] DTE Range: {self.min_dte}-{self.max_dte} days")
+        print(f"  [Options] Max Spread: {self.max_spread_pct}%")
+        
+        if not self.polygon_key or self.polygon_key == 'your_polygon_key_here':
+            return {'status': 'error', 'message': 'POLYGON_API_KEY not configured', 'signals': []}
+        
+        # Get universe
+        tickers, source = self._get_universe()
+        print(f"  [Options] Scanning {len(tickers)} tickers ({source} universe)")
+        
+        signals = []
+        scanned = 0
+        patterns_found = 0
+        liquidity_passed = 0
+        liquidity_failed = 0
+        
+        for ticker in tickers:
+            try:
+                # Phase 1: Stock technical analysis
+                stock_signal = self._scan_ticker_stock(ticker)
+                if not stock_signal:
+                    scanned += 1
+                    continue
+                
+                patterns_found += 1
+                
+                # Phase 2: Options liquidity validation
+                tradable_option = self._find_tradable_option(ticker, stock_signal)
+                
+                if tradable_option:
+                    signal = {**stock_signal, **tradable_option}
+                    signals.append(signal)
+                    liquidity_passed += 1
+                    
+                    print(f"  [Options] ✓ {ticker} {signal['setup']} (Score {signal['score']})")
+                    print(f"            {signal['option_symbol']}: / "
+                          f"(Spread: {signal['spread_pct']:.1f}%, OI: {signal['open_interest']:,})")
+                else:
+                    liquidity_failed += 1
+                
+                scanned += 1
+                
+                if scanned % 100 == 0:
+                    print(f"  [Options] Progress: {scanned}/{len(tickers)} - "
+                          f"{liquidity_passed} tradable, {liquidity_failed} failed liquidity")
+                
+                time.sleep(0.12)
+                
+            except Exception as e:
+                scanned += 1
+                continue
+        
+        print(f"\n  [Options] SCAN COMPLETE:")
+        print(f"    Tickers scanned: {scanned}")
+        print(f"    Wyckoff patterns: {patterns_found}")
+        print(f"    Tradable signals: {liquidity_passed}")
+        print(f"    Failed liquidity: {liquidity_failed}")
+        if patterns_found > 0:
+            print(f"    Success rate: {(liquidity_passed/patterns_found*100):.1f}%")
+        
+        return {
+            'status': 'success',
+            'signal_count': liquidity_passed,
+            'signals': signals,
+            'stats': {
+                'tickers_scanned': scanned,
+                'patterns_found': patterns_found,
+                'liquidity_passed': liquidity_passed,
+                'liquidity_failed': liquidity_failed,
+                'dte_range': f"{self.min_dte}-{self.max_dte}",
+                'preset': self.preset_name
+            },
+            'universe_source': source,
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _scan_ticker_stock(self, ticker):
+        """Phase 1: Stock technical analysis (Wyckoff + scoring)"""
+        
+        price_data = self._get_price_history(ticker, days=30)
+        if not price_data or len(price_data) < 20:
+            return None
+        
+        wyckoff_signal = self._detect_wyckoff(price_data)
+        if not wyckoff_signal:
+            return None
+        
+        current_price = price_data[-1]['close']
+        score = self._calculate_score(wyckoff_signal, price_data)
+        
+        if score < 75:
+            return None
+        
+        return {
+            'ticker': ticker,
+            'setup': wyckoff_signal['signal'],
+            'direction': wyckoff_signal['direction'],
+            'score': score,
+            'stock_price': round(current_price, 2),
+            'support_resistance': round(wyckoff_signal.get('level', current_price), 2),
+        }
+    
+    def _find_tradable_option(self, ticker, stock_signal):
+        """Phase 2: Find tradable option with full validation"""
+        
+        try:
+            # Get options contracts list
+            contracts = self._get_options_contracts(ticker, stock_signal['direction'])
+            if not contracts:
+                return None
+            
+            # Filter by DTE
+            target_date_min = datetime.now() + timedelta(days=self.min_dte)
+            target_date_max = datetime.now() + timedelta(days=self.max_dte)
+            
+            valid_contracts = []
+            for contract in contracts:
+                exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
+                if target_date_min <= exp_date <= target_date_max:
+                    valid_contracts.append(contract)
+            
+            if not valid_contracts:
+                return None
+            
+            # Sort by expiration
+            valid_contracts.sort(key=lambda x: x['expiration_date'])
+            
+            # Try each contract
+            for contract in valid_contracts[:5]:  # Check first 5 expirations
+                option_ticker = contract['ticker']
+                
+                # Get quote
+                quote = self._get_option_quote(option_ticker)
+                if not quote:
+                    continue
+                
+                # Validate liquidity
+                if not self._validate_option_liquidity(quote):
+                    continue
+                
+                # Calculate DTE
+                exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
+                dte = (exp_date - datetime.now()).days
+                
+                # SUCCESS - Found tradable option
+                return {
+                    'option_symbol': option_ticker,
+                    'strike': contract['strike_price'],
+                    'expiry': contract['expiration_date'],
+                    'dte': dte,
+                    'option_bid': quote['bid'],
+                    'option_ask': quote['ask'],
+                    'option_mid': quote['mid'],
+                    'spread_pct': quote['spread_pct'],
+                    'delta': quote.get('delta', 0),
+                    'gamma': quote.get('gamma', 0),
+                    'theta': quote.get('theta', 0),
+                    'vega': quote.get('vega', 0),
+                    'iv': quote.get('iv', 0),
+                    'volume': quote.get('volume', 0),
+                    'open_interest': quote.get('open_interest', 0),
+                    'theta_pct_per_day': abs(quote.get('theta', 0) / quote['mid'] * 100) if quote['mid'] > 0 else 0,
+                }
+            
+            return None
+            
+        except Exception as e:
+            return None
+    
+    def _get_options_contracts(self, ticker, direction):
+        """Get list of option contracts for ticker"""
+        
+        contract_type = 'call' if direction == 'CALL' else 'put'
+        
+        url = f"{self.base_url}/v3/reference/options/contracts"
+        params = {
+            'underlying_ticker': ticker,
+            'contract_type': contract_type,
+            'limit': 250,
+            'apiKey': self.polygon_key
+        }
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'results' in data and data['results']:
+                return data['results']
+                
+        except:
+            pass
+        
+        return None
+    
+    def _get_option_quote(self, option_ticker):
+        """Get option quote with Greeks"""
+        
+        url = f"{self.base_url}/v3/snapshot/options/{option_ticker}"
+        params = {'apiKey': self.polygon_key}
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'results' not in data:
+                return None
+            
+            result = data['results']
+            quote = result.get('last_quote', {})
+            greeks = result.get('greeks', {})
+            details = result.get('details', {})
+            
+            bid = quote.get('bid', 0)
+            ask = quote.get('ask', 0)
+            
+            if bid <= 0 or ask <= 0:
+                return None
+            
+            mid = (bid + ask) / 2
+            spread_pct = ((ask - bid) / mid * 100) if mid > 0 else 999
+            
+            return {
+                'bid': bid,
+                'ask': ask,
+                'mid': mid,
+                'spread_pct': spread_pct,
+                'delta': greeks.get('delta', 0),
+                'gamma': greeks.get('gamma', 0),
+                'theta': greeks.get('theta', 0),
+                'vega': greeks.get('vega', 0),
+                'iv': result.get('implied_volatility', 0),
+                'volume': result.get('day', {}).get('volume', 0),
+                'open_interest': details.get('open_interest', 0)
+            }
+            
+        except:
+            return None
+    
+    def _validate_option_liquidity(self, quote):
+        """Validate if option meets liquidity requirements"""
+        
+        # Check bid price
+        if quote['bid'] < self.min_bid_price:
+            return False
+        
+        # Check spread
+        if quote['spread_pct'] > self.max_spread_pct:
+            return False
+        
+        # Check delta range
+        delta = abs(quote.get('delta', 0))
+        if delta > 0:  # Only check if delta available
+            if delta < self.min_delta or delta > self.max_delta:
+                return False
+        
+        # Check theta decay (if available)
+        theta = abs(quote.get('theta', 0))
+        if theta > 0 and quote['mid'] > 0:
+            theta_pct = theta / quote['mid'] * 100
+            if theta_pct > self.max_theta_pct:
+                return False
+        
+        # Check open interest
+        if quote.get('open_interest', 0) < self.min_open_interest:
+            return False
+        
+        return True
+    
+    def _get_universe(self):
+        """Get ticker universe"""
+        if self.csv_path.exists():
+            try:
+                tickers = self._load_csv()
+                if tickers:
+                    return tickers, 'CSV'
+            except:
+                pass
+        
+        try:
+            tickers = self._fetch_dynamic_universe()
+            if tickers and len(tickers) > 50:
+                return tickers, 'Dynamic'
+        except:
+            pass
+        
+        return self._get_static_universe(), 'Static'
+    
+    def _load_csv(self):
+        """Load tickers from CSV"""
+        tickers = []
+        with open(self.csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ticker = row.get('ticker', '').strip().upper()
+                if ticker and len(ticker) <= 5:
+                    tickers.append(ticker)
+        return tickers
+    
+    def _fetch_dynamic_universe(self):
+        """Fetch top 500 liquid tickers"""
+        url = f"{self.base_url}/v2/snapshot/locale/us/markets/stocks/tickers"
+        params = {'apiKey': self.polygon_key}
+        
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'tickers' not in data:
+            raise Exception("No tickers")
+        
+        candidates = []
+        for item in data['tickers']:
+            ticker = item.get('ticker', '')
+            day = item.get('day', {})
+            
+            if not day:
+                continue
+            
+            price = day.get('c', 0)
+            volume = day.get('v', 0)
+            
+            if (volume > 500000 and 10 <= price <= 2000 and '.' not in ticker and 
+                '-' not in ticker and len(ticker) <= 5 and ticker.isalpha()):
+                candidates.append({'ticker': ticker, 'volume': volume})
+        
+        candidates.sort(key=lambda x: x['volume'], reverse=True)
+        return [c['ticker'] for c in candidates[:500]]
+    
+    def _get_static_universe(self):
+        """Static fallback universe"""
+        return [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'NFLX', 'AMD', 'CRM',
+            'JPM', 'BAC', 'GS', 'V', 'MA', 'BLK', 'C', 'WFC', 'AXP', 'SCHW',
+            'SPY', 'QQQ', 'IWM', 'DIA', 'XLF', 'XLE', 'XLK', 'GLD', 'SLV', 'EEM',
+            'COIN', 'HOOD', 'PLTR', 'SNOW', 'RIVN', 'UBER', 'ABNB', 'DASH', 'SQ', 'MSTR',
+            'UNH', 'XOM', 'CVX', 'BA', 'CAT', 'LLY', 'JNJ', 'PFE', 'MRK', 'WMT'
+        ]
+    
+    def _get_price_history(self, ticker, days=30):
+        """Get price history from Polygon"""
+        end = datetime.now()
+        start = end - timedelta(days=days)
+        
+        url = f"{self.base_url}/v2/aggs/ticker/{ticker}/range/1/day/{start.strftime('%Y-%m-%d')}/{end.strftime('%Y-%m-%d')}"
+        params = {'apiKey': self.polygon_key}
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'results' in data and data['results']:
+                return [{'timestamp': b['t'], 'open': b['o'], 'high': b['h'], 
+                        'low': b['l'], 'close': b['c'], 'volume': b['v']} 
+                       for b in data['results']]
+        except:
+            pass
+        return None
+    
+    def _detect_wyckoff(self, price_data, lookback=20):
+        """Detect Wyckoff patterns"""
+        if len(price_data) < lookback:
+            return None
+        
+        recent = price_data[-lookback:]
+        current = price_data[-1]
+        avg_volume = sum(bar['volume'] for bar in recent) / len(recent)
+        volume_spike = current['volume'] > (avg_volume * 1.5)
+        
+        if not volume_spike:
+            return None
+        
+        # SPRING
+        recent_low = min(bar['low'] for bar in recent)
+        if current['low'] <= (recent_low * 1.02):
+            recovery = current['close'] > (current['low'] * 1.01)
+            bar_range = current['high'] - current['low']
+            close_pos = (current['close'] - current['low']) / bar_range if bar_range > 0 else 0
+            
+            if recovery and close_pos > 0.5:
+                return {'signal': 'SPRING', 'direction': 'CALL', 'level': recent_low, 'volume_spike': True}
+        
+        # UPTHRUST
+        recent_high = max(bar['high'] for bar in recent)
+        if current['high'] >= (recent_high * 0.98):
+            reversal = current['close'] < (current['high'] * 0.99)
+            bar_range = current['high'] - current['low']
+            close_pos = (current['close'] - current['low']) / bar_range if bar_range > 0 else 1
+            
+            if reversal and close_pos < 0.5:
+                return {'signal': 'UPTHRUST', 'direction': 'PUT', 'level': recent_high, 'volume_spike': True}
+        
+        return None
+    
+    def _calculate_score(self, wyckoff_signal, price_data):
+        """Calculate probability score"""
+        score = 30
+        current = price_data[-1]
+        recent = price_data[-20:]
+        
+        if len(price_data) >= 3:
+            change = abs((current['close'] - price_data[-3]['close']) / price_data[-3]['close'] * 100)
+            score += min(change * 5, 20)
+        
+        avg_volume = sum(b['volume'] for b in recent) / len(recent)
+        vol_ratio = current['volume'] / avg_volume
+        score += min(vol_ratio * 10, 20)
+        
+        range_pct = (current['high'] - current['low']) / current['close'] * 100
+        score += min(range_pct * 5, 15)
+        
+        score += 15
+        return min(int(score), 100)

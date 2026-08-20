@@ -1,0 +1,41 @@
+{
+  "contract_version": "1.0",
+  "generated_by": "manual",
+  "report_date": "YYYY-MM-DD",
+  "as_of_utc": "YYYY-MM-DDTHH:MM:SSZ",
+
+  "risk_on_switch": "ON",
+  "regime_state": "Risk-On",
+  "dir_bias": "Bullish",
+  "regime_drift_status": "Stable",
+
+  "conviction_score": 0.75,
+  "macro_conviction": "High",
+
+  "trend_energy": "STRONG",
+  "usd_state": "WEAK",
+  "rates_impulse": "EASING",
+  "liquidity_pulse": "EASING",
+
+  "liquidity_status": "FLOODED",
+  "volatility_mode": "Suppressed",
+  "vix_contango": 0.12,
+
+  "sector_bias": {
+    "TECH": "FAVOUR",
+    "FINANCIAL": "FAVOUR",
+    "DEFENSIVE": "NEUTRAL",
+    "COMMODITY": "NEUTRAL",
+    "CYCLICAL": "FAVOUR",
+    "BONDS": "AVOID",
+    "INDEX": "FAVOUR"
+  },
+
+  "macro_notes": "",
+  "execution_bias": {
+    "preferred_structure": "LONG_CALLS",
+    "avoid_structure": "SHORT_PREMIUM",
+    "volatility_posture": "BUY_PULLBACKS",
+    "risk_profile": "NORMAL"
+  }
+}

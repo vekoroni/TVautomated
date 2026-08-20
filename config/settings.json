@@ -1,0 +1,59 @@
+{
+  "orchestrator": {
+    "name": "AVSHUNTER Intelligence",
+    "version": "2.0.0",
+    "mode": "monitor",
+    "immediate_allow_incomplete": false,
+    "immediate_discovery_only": false,
+    "require_macro_valid": true,
+    "require_discovery_complete": true,
+    "block_on_stale_data": true
+  },
+
+  "governance": {
+    "max_stale_pct": 10,
+    "max_fail_pct": 5
+  },
+
+  "prompt_paths": {
+    "macro_module": "config/prompts/macro_module.txt",
+    "futures_bias": "config/prompts/futures_bias.txt"
+  },
+
+  "data_paths": {
+    "base_dir": "data/daily",
+    "csvs_folder": "csvs",
+    "charts_folder": "charts",
+    "screenshots_folder": "screenshots"
+  },
+
+  "expected_files": {
+    "screenshots_min": 8,
+    "screenshots_max": 15
+  },
+
+  "monitoring": {
+    "check_interval_seconds": 60,
+    "timeout_minutes": 30,
+    "require_all_files": true
+  },
+
+  "claude_api": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 16000,
+    "temperature": 0.0
+  },
+
+  "report": {
+    "format": "pdf",
+    "include_charts": true,
+    "include_confidence_scores": true
+  },
+
+  "email": {
+    "subject_template": "AVSHUNTER Intelligence - {date}",
+    "from_name": "AVSHUNTER Orchestrator",
+    "enabled": true
+  }
+}
+

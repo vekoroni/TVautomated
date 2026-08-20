@@ -1,3 +1,17 @@
+# ============================================================
+# STATUS: RETIRED / NOT ON ORCHESTRATOR PATH
+# Superseded by: morning_gate.py (its own docstring, line 4: "Replaces
+#                morning_thesis_validator.py entirely")
+# Evidence:      no call site of this module anywhere in
+#                intelligent_orchestrator.py (repo-wide search, confirmed
+#                2026-08-19); reachable only as a standalone CLI
+# Retired:       UNKNOWN (supersession is documented in morning_gate.py;
+#                no retirement date recorded anywhere in source)
+# Note:          kept on disk as the standalone CLI entry point referenced
+#                by CLAUDE.md's documented manual "morning run command" and
+#                by dropoff_audit.py's advisory error-message text
+# Documented:    2026-08-19 (EV audit, Stage 0)
+# ============================================================
 """Morning Validator upgrade: live thesis confirmation.
 
 This module is intentionally a validator, not a scanner. It consumes the

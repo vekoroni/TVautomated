@@ -443,6 +443,15 @@ def build_package(
             "breakeven":     _safe_float_pkg(discovery_row.get("breakeven")),
             "options_score": _safe_float_pkg(discovery_row.get("options_score")),
             "composite":     _safe_float_pkg(discovery_row.get("composite")),
+            # STATUS (2026-08-19, EV audit Stage 0): structurally unpopulated at
+            # package-build time. Confirmed by full census of 1,651 packages in
+            # run 20260818_041214 — ev_final and ev_status are always present as
+            # keys and always None. No module before this phase (Phase 5) writes
+            # either field onto the discovery CSV, and that CSV's header carries
+            # no ev_ column at all; EV Engine v2 (the only live producer of a
+            # field named ev_status) does not run until Phase 9. Any non-null
+            # value observed here in a future run indicates a new upstream
+            # writer and should be investigated, not assumed correct.
             "ev_final":      _safe_float_pkg(discovery_row.get("ev_final")),
             "ev_status":     discovery_row.get("ev_status") or None,
             "options_enriched": False,

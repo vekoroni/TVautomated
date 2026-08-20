@@ -26,7 +26,7 @@ You are a senior Python developer working on **AVSHUNTER**, a proprietary system
 Phase 0  → Preflight
 Phase 1  → Macro Normalisation
 Phase 2  → Actuarial Cache
-Phase 3  → Discovery (avshunter_discovery_signals.py)
+Phase 3  → Discovery (avshunter_discovery_ULTIMATE.py)
 Phase 4  → External Intel / Macro Enrichment
 Phase 5  → Package Build / Backfill
 Phase 6  → Vanguard
@@ -372,6 +372,11 @@ These are confirmed failure modes from the April 2026 zero-signal incident. Do n
 4. **Sparse field hard dependency** — Any new trigger or score that reads a field present in less than 80% of signals must have an explicit fallback. `pcr_signal` was only 34% populated — the TRAP trigger had no guard for its absence.
 
 5. **SuperBrain R:R gate conflict** — SuperBrain has its own internal R:R gate (previously at 0.5) that conflicted with the Options Intelligence A2 gate (1.5). If any new module introduces a gate, confirm it does not create a lower-floor bypass path through SuperBrain.
+
+6. **`ev_structural` name collision** — two unrelated fields share this exact name, confirmed 2026-08-19 (EV audit, Stage 0):
+   - **EV Engine v2's `EVResult.ev_structural`** (`ev_engine_v2.py`), written as `ev2_ev_structural` and remapped to the bare column name `ev_structural` at `eod_candidate_engine.py:2199-2201`. Confirmed non-gating on every live path traced to date.
+   - **A locally-computed field in `scripts/avshunter_options_intelligence.py:4770-4809`**, derived from `win_prob * option_gain - (1-win_prob) * mark` (`:4770`), with no import of `ev_engine_v2.py` anywhere in that file. This is a different computation from EV Engine v2's field of the same name — and this is the one that gates live: it flows into `ev_ratio` → `ev_adjusted` (`:4771,4789`), which is read inside `derive_verdict()` (defined `:5154`, consumed at `:5180`).
+   - Before reading or reasoning about any `ev_structural` value anywhere downstream, confirm which of the two producers wrote it — the name alone does not disambiguate.
 
 ---
 

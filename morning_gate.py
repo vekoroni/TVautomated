@@ -1,19 +1,19 @@
-"""
+﻿"""
 AVSHUNTER Morning Gate v1.2
 ============================
 Five checks. Replaces morning_thesis_validator.py entirely.
 
-CHECK 1: Invalidation intact     — price has not opened through EOD invalidation level
-CHECK 2: Macro regime unchanged  — no overnight regime flip
-CHECK 3: Contract liquid         — live bid/ask present, spread under threshold
-CHECK 4: Bond macro clear        — trade_go=False in bond_macro_state.json
-CHECK 5: Layer 3 model risk clean — no VOL_HARDCAP / LOW_CONF_HIGH_VOL / THIN_HISTORY / IV_TAILWIND_EXTREME
+CHECK 1: Invalidation intact     â€” price has not opened through EOD invalidation level
+CHECK 2: Macro regime unchanged  â€” no overnight regime flip
+CHECK 3: Contract liquid         â€” live bid/ask present, spread under threshold
+CHECK 4: Bond macro clear        â€” trade_go=False in bond_macro_state.json
+CHECK 5: Layer 3 model risk clean â€” no VOL_HARDCAP / LOW_CONF_HIGH_VOL / THIN_HISTORY / IV_TAILWIND_EXTREME
 
-If CHECK 1 fails  → BLOCK. Thesis broken. No trade.
-If CHECK 2 fails  → FLAG. Trader reviews macro context before entry.
-If CHECK 3 fails  → FLAG. Contract repair required before entry.
-If CHECK 4 fails  → FLAG. Trader reviews bond macro context before entry.
-If CHECK 5 fails  → FLAG. Trader reviews Layer 3 model risk before capital decision.
+If CHECK 1 fails  â†’ BLOCK. Thesis broken. No trade.
+If CHECK 2 fails  â†’ FLAG. Trader reviews macro context before entry.
+If CHECK 3 fails  â†’ FLAG. Contract repair required before entry.
+If CHECK 4 fails  â†’ FLAG. Trader reviews bond macro context before entry.
+If CHECK 5 fails  â†’ FLAG. Trader reviews Layer 3 model risk before capital decision.
 
 All other context (VWAP, ORB, delta, IV rank, crowd arrival, horizon,
 Fung-Hsieh, direction arbitration) is written as display fields only.
@@ -25,7 +25,7 @@ Columns: ticker, direction, verdict, block_reason, flag_reason,
          live_bid, live_ask, live_spread_pct, macro_regime_eod,
          macro_regime_now, regime_changed, size_modifier,
          [all EOD fields preserved, including v6 actuarial fields:
-          iv_regime, horizon_bucket, crabel_state — display only, never gates]
+          iv_regime, horizon_bucket, crabel_state â€” display only, never gates]
 
 Usage:
     python morning_gate.py
@@ -59,8 +59,8 @@ RUNS_DIR     = ROOT / "data" / "output" / "runs"
 MACRO_DIR    = ROOT / "dropbox" / "macro"
 MACRO_PATH   = MACRO_DIR / "macro_intelligence_latest.json"
 BOND_MACRO_PATH        = MACRO_DIR / "bond_macro_state.json"
-BOND_MACRO_MAX_AGE_H   = 26  # hours — covers overnight gap to 09:45 ET
-MACRO_MAX_AGE_H        = 14  # hours — macro JSON older than this is flagged STALE (display only)
+BOND_MACRO_MAX_AGE_H   = 26  # hours â€” covers overnight gap to 09:45 ET
+MACRO_MAX_AGE_H        = 14  # hours â€” macro JSON older than this is flagged STALE (display only)
 ENRICHMENT_DELTA_PATH  = MACRO_DIR / "avshunter_macro_enrichment_delta.json"
 CHINA_EXPOSURE_PATH    = MACRO_DIR / "china_revenue_exposure.json"
 
@@ -76,7 +76,7 @@ _SKEW_PUT_HIGH           = 0.90  # call_iv / put_iv below this = PUT_SKEW_HIGH
 POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "").strip()
 MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
 
-DEFAULT_SPREAD_THRESHOLD = 25.0  # percent — above this flags contract repair
+DEFAULT_SPREAD_THRESHOLD = 25.0  # percent â€” above this flags contract repair
 LIVE_FETCH_WORKERS       = 8     # increased for AG-03 skew fetch (2 extra calls per ticker)
 LIVE_FETCH_TIMEOUT       = 10.0  # seconds per ticker
 
@@ -89,7 +89,7 @@ MODEL_RISK_THIN_BARS       = 100
 MODEL_RISK_TAILWIND_CAP    = 1.50
 
 # ---------------------------------------------------------------------------
-# v6 actuarial schema display fields — pass-through only, never gate logic
+# v6 actuarial schema display fields â€” pass-through only, never gate logic
 # ---------------------------------------------------------------------------
 V6_ACTUARIAL_DISPLAY_FIELDS = [
     "iv_regime",       # Volatility regime from v6 actuarial schema
@@ -326,7 +326,7 @@ def _latest_run_id() -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Live data fetch — equity price only (Polygon)
+# Live data fetch â€” equity price only (Polygon)
 # ---------------------------------------------------------------------------
 
 def _fetch_live_price(ticker: str) -> Dict[str, Any]:
@@ -421,8 +421,10 @@ def _try_live_repair_alternatives(
     The first alternative that passes the same contract gate becomes the executable contract.
     """
     attempts: List[str] = []
+    last_live: Dict[str, Any] = {}
     for alt_symbol in _iter_repair_alternatives(row, primary_contract):
         alt_live = _fetch_live_contract(alt_symbol)
+        last_live = dict(alt_live)
         alt_pass, alt_reason = _check_contract(alt_live, spread_threshold, row)
         attempts.append(f"{alt_symbol}:{'PASS' if alt_pass else 'FAIL'}:{alt_reason}")
         if alt_pass:
@@ -435,7 +437,14 @@ def _try_live_repair_alternatives(
                 "morning_repair_attempts": " | ".join(attempts),
             })
             return alt_live
-    return {"morning_repair_attempts": " | ".join(attempts)} if attempts else {}
+    if attempts:
+        last_live.update({
+            "morning_contract_repair_used": "FALSE",
+            "morning_repaired_from_contract": primary_contract,
+            "morning_repair_attempts": " | ".join(attempts),
+        })
+        return last_live
+    return {}
 
 
 def _fetch_all_live(
@@ -468,7 +477,14 @@ def _fetch_all_live(
                 if _s(repair_live.get("morning_contract_repair_used")).upper() == "TRUE":
                     live.update(repair_live)
                 elif repair_live.get("morning_repair_attempts"):
-                    live["morning_repair_attempts"] = repair_live.get("morning_repair_attempts")
+                    live.update(repair_live)
+        else:
+            # EOD may provide repair alternatives without promoting one into
+            # contract_symbol. Try those alternatives before the row reaches the
+            # gate as a blank-contract CONTRACT_REPAIR.
+            repair_live = _try_live_repair_alternatives(row, "", spread_threshold)
+            if repair_live:
+                live.update(repair_live)
         # AG-03: Options skew fetch (call IV / put IV ratio)
         skew_data = _fetch_options_skew(ticker)
         live.update(skew_data)
@@ -497,7 +513,7 @@ def _load_macro_state() -> Dict[str, Any]:
     """Load full macro state from macro_intelligence_latest.json.
     Returns a dict with regime_state, vol_mode, macro_conviction, sector_lead,
     sector_avoid, macro_filter, macro_as_of_utc, vix_spot, macro_loaded.
-    Never raises — degrades to UNKNOWN on any error."""
+    Never raises â€” degrades to UNKNOWN on any error."""
     if not MACRO_PATH.exists():
         return {"regime_state": "UNKNOWN", "macro_loaded": False}
     try:
@@ -529,18 +545,18 @@ def _load_bond_macro() -> Dict[str, Any]:
     """
     Load bond macro state from bond_macro_state.json sidecar.
     Returns empty dict if file missing, unreadable, or stale.
-    Never raises — always degrades gracefully.
+    Never raises â€” always degrades gracefully.
 
     Staleness threshold: BOND_MACRO_MAX_AGE_H hours.
     trade_go is returned as a Python bool (not string).
     """
     if not BOND_MACRO_PATH.exists():
-        log.warning("bond_macro_state.json not found — bond macro check skipped")
+        log.warning("bond_macro_state.json not found â€” bond macro check skipped")
         return {}
     try:
         data = json.loads(BOND_MACRO_PATH.read_text(encoding="utf-8-sig"))
     except Exception as exc:
-        log.warning("bond_macro_state.json unreadable (%s) — bond macro check skipped", exc)
+        log.warning("bond_macro_state.json unreadable (%s) â€” bond macro check skipped", exc)
         return {}
 
     # Staleness check
@@ -555,7 +571,7 @@ def _load_bond_macro() -> Dict[str, Any]:
             age_h = (datetime.now(timezone.utc) - gen_dt).total_seconds() / 3600
             if age_h > BOND_MACRO_MAX_AGE_H:
                 log.warning(
-                    "bond_macro_state.json is %.1fh old (threshold %dh) — bond macro check skipped",
+                    "bond_macro_state.json is %.1fh old (threshold %dh) â€” bond macro check skipped",
                     age_h, BOND_MACRO_MAX_AGE_H,
                 )
                 return {}
@@ -726,37 +742,37 @@ def _check_bond_macro(bond_state: Dict[str, Any]) -> tuple[bool, str]:
     """
     CHECK 4: Bond macro clear.
     Returns (passed, reason).
-    passed=True  → bond macro clean, display fields only
-    passed=False → trade_go=False, FLAG the trade (never BLOCK)
+    passed=True  â†’ bond macro clean, display fields only
+    passed=False â†’ trade_go=False, FLAG the trade (never BLOCK)
 
     If bond_state is empty (file missing/stale), returns (True, reason)
-    so the gate proceeds normally — bond check is advisory infrastructure.
+    so the gate proceeds normally â€” bond check is advisory infrastructure.
     """
     if not bond_state:
-        return True, "Bond macro state unavailable — check skipped"
+        return True, "Bond macro state unavailable â€” check skipped"
 
     if not bond_state.get("bond_trade_go", True):
         warning = _s(bond_state.get("bond_primary_warning")) or "Bond macro headwind active"
         score   = bond_state.get("bond_macro_score", "N/A")
         flag    = _s(bond_state.get("bond_macro_flag")) or "BOND_MACRO_WARN"
-        return False, f"Bond macro FLAG — {flag} score={score}: {warning}"
+        return False, f"Bond macro FLAG â€” {flag} score={score}: {warning}"
 
     score = bond_state.get("bond_macro_score", "N/A")
     flag  = _s(bond_state.get("bond_macro_flag")) or "BOND_MACRO_OK"
-    return True, f"Bond macro clear — {flag} score={score}"
+    return True, f"Bond macro clear â€” {flag} score={score}"
 
 
 # ---------------------------------------------------------------------------
-# CHECK 1 — Invalidation intact
+# CHECK 1 â€” Invalidation intact
 # ---------------------------------------------------------------------------
 
 def _check_invalidation(row: Dict[str, Any], live_price: Optional[float]) -> tuple[bool, str]:
     """
     Returns (passed, reason).
-    passed=True means invalidation is intact — thesis still valid.
+    passed=True means invalidation is intact â€” thesis still valid.
     """
     if live_price is None:
-        return True, "No live price — cannot check invalidation, proceeding"
+        return False, "CANNOT_VERIFY - live price unavailable; invalidation check not confirmed"
 
     invalidation = _f(
         row.get("evening_invalidation_price")
@@ -764,7 +780,7 @@ def _check_invalidation(row: Dict[str, Any], live_price: Optional[float]) -> tup
         or row.get("invalidation_level")
     )
     if not invalidation or invalidation <= 0:
-        return True, "No invalidation level set — EOD structure assumed intact"
+        return True, "WARN - no invalidation level on record; structure cannot be verified"
 
     direction = _u(
         row.get("evening_direction")
@@ -774,15 +790,15 @@ def _check_invalidation(row: Dict[str, Any], live_price: Optional[float]) -> tup
     )
 
     if direction == "CALL" and live_price <= invalidation:
-        return False, f"CALL thesis broken — price {live_price:.2f} at or below invalidation {invalidation:.2f}"
+        return False, f"CALL thesis broken â€” price {live_price:.2f} at or below invalidation {invalidation:.2f}"
     if direction == "PUT" and live_price >= invalidation:
-        return False, f"PUT thesis broken — price {live_price:.2f} at or above invalidation {invalidation:.2f}"
+        return False, f"PUT thesis broken â€” price {live_price:.2f} at or above invalidation {invalidation:.2f}"
 
-    return True, f"Invalidation intact — price {live_price:.2f} vs level {invalidation:.2f}"
+    return True, f"Invalidation intact â€” price {live_price:.2f} vs level {invalidation:.2f}"
 
 
 # ---------------------------------------------------------------------------
-# CHECK 2 — Macro regime unchanged
+# CHECK 2 â€” Macro regime unchanged
 # ---------------------------------------------------------------------------
 
 def _check_macro(row: Dict[str, Any], current_regime: str) -> tuple[bool, str]:
@@ -798,16 +814,16 @@ def _check_macro(row: Dict[str, Any], current_regime: str) -> tuple[bool, str]:
     )
 
     if not eod_regime or eod_regime == "UNKNOWN":
-        return True, f"EOD regime not recorded — current regime is {current_regime}"
+        return True, f"EOD regime not recorded â€” current regime is {current_regime}"
 
     if _regime_flipped(eod_regime, current_regime):
-        return False, f"Regime flipped overnight: {eod_regime} → {current_regime}"
+        return False, f"Regime flipped overnight: {eod_regime} â†’ {current_regime}"
 
-    return True, f"Regime unchanged: {eod_regime} → {current_regime}"
+    return True, f"Regime unchanged: {eod_regime} â†’ {current_regime}"
 
 
 # ---------------------------------------------------------------------------
-# CHECK 3 — Contract liquid
+# CHECK 3 â€” Contract liquid
 # ---------------------------------------------------------------------------
 
 def _check_contract(
@@ -827,37 +843,37 @@ def _check_contract(
     spread_pct = _f(live_data.get("live_contract_spread_pct"))
 
     if bid is None or ask is None:
-        return False, "No live contract quote — repair contract before entry"
+        return False, "No live contract quote â€” repair contract before entry"
 
     if bid <= 0 or ask <= 0:
-        return False, f"Contract quote invalid — bid={bid} ask={ask}"
+        return False, f"Contract quote invalid â€” bid={bid} ask={ask}"
 
     if spread_pct is not None and spread_pct > spread_threshold:
-        return False, f"Spread too wide — {spread_pct:.1f}% exceeds {spread_threshold:.0f}% threshold"
+        return False, f"Spread too wide â€” {spread_pct:.1f}% exceeds {spread_threshold:.0f}% threshold"
 
-    # ── Greek sub-conditions (require row context) ──────────────────
+    # â”€â”€ Greek sub-conditions (require row context) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if row is not None:
         delta = _f(live_data.get("live_contract_delta"))
         if delta is not None:
             abs_delta = abs(delta)
             if abs_delta < 0.20:
-                return False, (f"Delta too low — abs(delta)={abs_delta:.3f} < 0.20 (contract too far OTM, no directional edge)")
+                return False, (f"Delta too low â€” abs(delta)={abs_delta:.3f} < 0.20 (contract too far OTM, no directional edge)")
             if abs_delta > 0.70:
-                return False, (f"Delta too high — abs(delta)={abs_delta:.3f} > 0.70 (contract deep ITM, not intended instrument profile)")
+                return False, (f"Delta too high â€” abs(delta)={abs_delta:.3f} > 0.70 (contract deep ITM, not intended instrument profile)")
         live_iv = _f(live_data.get("live_contract_iv"))
         if live_iv is not None:
             if live_iv <= 0:
-                return False, (f"IV invalid — live_iv={live_iv:.4f} (zero or negative IV indicates broken/stale quote)")
+                return False, (f"IV invalid â€” live_iv={live_iv:.4f} (zero or negative IV indicates broken/stale quote)")
             if live_iv > 2.50:
-                return False, (f"IV invalid — live_iv={live_iv:.1%} > 250% (extreme IV indicates broken quote)")
+                return False, (f"IV invalid â€” live_iv={live_iv:.1%} > 250% (extreme IV indicates broken quote)")
         if live_iv is not None:
             eod_iv = _f(row.get("implied_volatility_eod") or row.get("iv_eod") or row.get("contract_iv") or row.get("iv"))
             if eod_iv is not None and eod_iv > 0:
                 iv_compression_ratio = live_iv / eod_iv
                 if iv_compression_ratio < 0.70:
-                    return False, (f"IV compression — live_iv={live_iv:.1%} is {(1 - iv_compression_ratio):.1%} below EOD iv={eod_iv:.1%}. Premium actively deflating — FLAG for trader review.")
+                    return False, (f"IV compression â€” live_iv={live_iv:.1%} is {(1 - iv_compression_ratio):.1%} below EOD iv={eod_iv:.1%}. Premium actively deflating â€” FLAG for trader review.")
 
-    return True, f"Contract liquid — bid={bid:.2f} ask={ask:.2f} spread={spread_pct:.1f}%"
+    return True, f"Contract liquid â€” bid={bid:.2f} ask={ask:.2f} spread={spread_pct:.1f}%"
 
 
 # ---------------------------------------------------------------------------
@@ -879,9 +895,9 @@ def run_gate(
 ) -> Dict[str, Any]:
     """
     Run three checks. Write verdict. Return enriched row.
-    BLOCK   = check 1 failed — thesis broken, no trade
-    FLAG    = check 2, 3, or 4 failed — trader must review before entry
-    GO      = all checks passed — trade eligible, trader decides
+    BLOCK   = check 1 failed â€” thesis broken, no trade
+    FLAG    = check 2, 3, or 4 failed â€” trader must review before entry
+    GO      = all checks passed â€” trade eligible, trader decides
     """
     out = dict(row)
     live_price = _f(live_data.get("live_price"))
@@ -956,15 +972,15 @@ def run_gate(
         else ""
     )
 
-    # Bond macro display fields — stamped regardless of trade_go verdict
+    # Bond macro display fields â€” stamped regardless of trade_go verdict
     if bond_state:
         for _bond_field, _bond_val in bond_state.items():
-            if _bond_field != "bond_trade_go":  # gate field — not exposed in output
+            if _bond_field != "bond_trade_go":  # gate field â€” not exposed in output
                 out[_bond_field] = _bond_val
     out["check_bond_macro_pass"]   = "TRUE" if bond_pass else "FALSE"
     out["check_bond_macro_reason"] = bond_reason
 
-    # CF-01/02/03 + AG-07: Macro context display fields — non-blocking, display only
+    # CF-01/02/03 + AG-07: Macro context display fields â€” non-blocking, display only
     if macro_state:
         out["macro_vol_mode"]    = macro_state.get("vol_mode", "")
         out["macro_conviction"]  = macro_state.get("macro_conviction", "")
@@ -976,7 +992,7 @@ def run_gate(
         out["macro_sector_avoid"] = "; ".join(_sa) if isinstance(_sa, list) else _s(_sa)
         if macro_state.get("vix_spot") is not None:
             out["macro_vix_spot"] = macro_state["vix_spot"]
-        # AG-07: Freshness flag — purely informational, never blocks or flags verdict
+        # AG-07: Freshness flag â€” purely informational, never blocks or flags verdict
         _as_of = _s(macro_state.get("macro_as_of_utc"))
         if _as_of:
             try:
@@ -1002,7 +1018,7 @@ def run_gate(
         out["macro_age_hours_gate"] = ""
         out["macro_freshness_flag"] = "UNAVAILABLE"
 
-    # AG-02: Volume anomaly flag — uses scanner_rvol (relative vol, already in row)
+    # AG-02: Volume anomaly flag â€” uses scanner_rvol (relative vol, already in row)
     # avg_volume_20d does not exist in morning_candidates; scanner_rvol is the proxy
     _rvol = _f(live_data.get("scanner_rvol") or row.get("scanner_rvol"))
     if _rvol is not None:
@@ -1012,8 +1028,8 @@ def run_gate(
         out["volume_anomaly_ratio"] = ""
         out["volume_anomaly_flag"]  = "NO_DATA"
 
-    # AG-01: Earnings catalyst calendar — from Polygon snapshot earningsAnnouncement field
-    # No extra API call — extracted from existing live price fetch
+    # AG-01: Earnings catalyst calendar â€” from Polygon snapshot earningsAnnouncement field
+    # No extra API call â€” extracted from existing live price fetch
     try:
         from earnings_calendar_enricher import enrich_from_announcement_str
         _earnings_str = _s(live_data.get("live_earnings_announcement") or row.get("earnings_announcement") or "")
@@ -1024,7 +1040,7 @@ def run_gate(
             _days = _earnings_fields.get("earnings_days_to_event", "?")
             _timing = _earnings_fields.get("earnings_timing", "")
             out["pre_earnings_iv_note"] = (
-                f"{_timing}: earnings in {_days} day(s) — IV skew check required before entry"
+                f"{_timing}: earnings in {_days} day(s) â€” IV skew check required before entry"
             )
         else:
             out["pre_earnings_iv_note"] = ""
@@ -1034,7 +1050,7 @@ def run_gate(
         out["pre_earnings_iv_note"]   = ""
         log.debug("Earnings enricher error (non-fatal): %s", _ecal_exc)
 
-    # AG-04: GARCH vol regime transition discount — DISPLAY ONLY, never modifies verdict
+    # AG-04: GARCH vol regime transition discount â€” DISPLAY ONLY, never modifies verdict
     # Original l3_vol_forecast_conf is preserved; adjusted value is the display field
     _raw_conf = _f(out.get("l3_vol_forecast_conf"))
     if vix_regime_transition:
@@ -1050,7 +1066,7 @@ def run_gate(
         out["garch_transition_discount_pct"] = 0
         out["l3_vol_forecast_conf_adjusted"] = _raw_conf if _raw_conf is not None else ""
 
-    # AG-08: Enrichment delta bias — DISPLAY ONLY confidence modifier (+/- 5%)
+    # AG-08: Enrichment delta bias â€” DISPLAY ONLY confidence modifier (+/- 5%)
     _ENRICHMENT_BOOST = 5.0
     _ticker_upper = _u(row.get("ticker", ""))
     _enrichment_label = (enrichment_bias or {}).get(_ticker_upper, "")
@@ -1073,7 +1089,7 @@ def run_gate(
         out["enrichment_conf_adjusted"]   = ""
         out["enrichment_delta_note"]      = ""
 
-    # AG-03: Options skew direction alignment — skew fields already stamped via live_data
+    # AG-03: Options skew direction alignment â€” skew fields already stamped via live_data
     _skew_flag = _u(live_data.get("skew_flag", ""))
     _direction = _u(out.get("evening_direction") or out.get("direction") or "")
     if _skew_flag and _skew_flag not in ("SKEW_UNAVAILABLE", "SKEW_NEUTRAL", ""):
@@ -1090,7 +1106,7 @@ def run_gate(
         out["skew_direction_alignment"] = ""
         out["skew_alignment_note"]      = ""
 
-    # AG-05: China revenue exposure modifier — DISPLAY ONLY
+    # AG-05: China revenue exposure modifier â€” DISPLAY ONLY
     _CHINA_CRITICAL_THRESHOLD = 40
     _CHINA_HIGH_THRESHOLD     = 20
     _china_data    = (china_exposure or {}).get(_ticker_upper, {})
@@ -1127,9 +1143,13 @@ def run_gate(
     # Verdict and lab-compatible execution permission
     block_reasons = []
     flag_reasons = []
+    invalidation_unverified = live_price is None
 
     if not inv_pass:
-        block_reasons.append(inv_reason)
+        if invalidation_unverified:
+            flag_reasons.append(inv_reason)
+        else:
+            block_reasons.append(inv_reason)
     if not macro_pass:
         flag_reasons.append(macro_reason)
     if not contract_pass:
@@ -1139,7 +1159,14 @@ def run_gate(
     if not bond_pass:
         flag_reasons.append(bond_reason)
 
-    if block_reasons:
+    if invalidation_unverified:
+        verdict = "FLAG"
+        permission = "WAIT"
+        route = "WAIT_LIVE_PRICE"
+        lane = "LIVE_PRICE_UNAVAILABLE"
+        entry_action = "NO_TRADE"
+        unlock_condition = inv_reason
+    elif block_reasons:
         verdict = "BLOCK"
         permission = "BLOCKED"
         route = "STAND_DOWN"
@@ -1212,7 +1239,7 @@ def run_gate(
         out["spread_pct"] = live_spread / 100.0 if live_spread > 1 else live_spread
         out["contract_spread_pct"] = out["spread_pct"]
 
-    # v6 actuarial display fields — pass-through from EOD manifest
+    # v6 actuarial display fields â€” pass-through from EOD manifest
     # These are informational context for the trader and Intelligence Lab.
     # They NEVER gate the verdict.
     for _v6_field in V6_ACTUARIAL_DISPLAY_FIELDS:
@@ -1244,11 +1271,11 @@ def run_morning_gate(
     candidates = _read_csv(input_path)
     log.info("Loaded %d candidates from %s", len(candidates), input_path.name)
 
-    # Load current macro state (CF-01/02/03 — full dict replaces old string-only load)
+    # Load current macro state (CF-01/02/03 â€” full dict replaces old string-only load)
     macro_state    = _load_macro_state()
     current_regime = macro_state.get("regime_state", "UNKNOWN")
     log.info(
-        "Macro state loaded — regime=%s vol_mode=%s conviction=%s loaded=%s",
+        "Macro state loaded â€” regime=%s vol_mode=%s conviction=%s loaded=%s",
         current_regime,
         macro_state.get("vol_mode", ""),
         macro_state.get("macro_conviction", ""),
@@ -1258,13 +1285,13 @@ def run_morning_gate(
     bond_state = _load_bond_macro()
     if bond_state:
         log.info(
-            "Bond macro loaded — trade_go=%s score=%s flag=%s",
+            "Bond macro loaded â€” trade_go=%s score=%s flag=%s",
             bond_state.get("bond_trade_go"),
             bond_state.get("bond_macro_score"),
             bond_state.get("bond_macro_flag"),
         )
     else:
-        log.info("Bond macro state not available — Check 4 will be skipped")
+        log.info("Bond macro state not available â€” Check 4 will be skipped")
 
     # AG-08: Enrichment delta bias catalogue
     enrichment_bias = _load_enrichment_delta()
@@ -1275,7 +1302,7 @@ def run_morning_gate(
         sum(1 for v in enrichment_bias.values() if v == "BULLISH"),
     )
 
-    # AG-05: China risk flag — active when FXI or EWH is BEARISH in enrichment delta
+    # AG-05: China risk flag â€” active when FXI or EWH is BEARISH in enrichment delta
     china_risk_active = (
         enrichment_bias.get("FXI") == "BEARISH"
         or enrichment_bias.get("EWH") == "BEARISH"
@@ -1286,7 +1313,7 @@ def run_morning_gate(
         china_risk_active, len(china_exposure),
     )
 
-    # AG-04: VIX regime transition check — display modifier for GARCH confidence
+    # AG-04: VIX regime transition check â€” display modifier for GARCH confidence
     vix_regime_transition = False
     vix_move_pct: Optional[float] = None
     try:
@@ -1298,7 +1325,7 @@ def run_morning_gate(
             if vix_move_pct >= _VIX_REGIME_THRESHOLD_PCT:
                 vix_regime_transition = True
                 log.warning(
-                    "VIX REGIME TRANSITION: move=%.1f%% (spot=%.2f prev=%.2f) — "
+                    "VIX REGIME TRANSITION: move=%.1f%% (spot=%.2f prev=%.2f) â€” "
                     "GARCH confidence discount %.0f%% applied to display fields",
                     vix_move_pct, _vix_spot, _vix_prev,
                     (1 - _GARCH_TRANSITION_DISCOUNT) * 100,
@@ -1372,7 +1399,7 @@ def run_morning_gate(
         "go_tickers":       [r.get("ticker") for r in go_list],
         "flag_tickers":     [r.get("ticker") for r in flag_list],
         "block_tickers":    [r.get("ticker") for r in block_list],
-        # v6 field coverage — confirms pass-through is working
+        # v6 field coverage â€” confirms pass-through is working
         "v6_field_coverage": {
             field: {
                 "present_in_go":    sum(1 for r in go_list    if _s(r.get(field))),
@@ -1408,7 +1435,7 @@ def run_morning_gate(
     print(f"  Total   : {len(candidates)}")
     print(f"  GO      : {len(go_list)}")
     print(f"  FLAG    : {len(flag_list)}  (trader reviews before entry)")
-    print(f"  BLOCK   : {len(block_list)}  (thesis broken — no trade)")
+    print(f"  BLOCK   : {len(block_list)}  (thesis broken â€” no trade)")
     print(f"  REPAIRED: {repair_resolved_count}  (EOD alternatives passed live contract gate)")
     print()
 
@@ -1427,7 +1454,7 @@ def run_morning_gate(
             ).upper() or "UNKNOWN"
             sector_map.setdefault(sector, []).append(r)
 
-        print("  GO LIST — BY SECTOR:")
+        print("  GO LIST â€” BY SECTOR:")
         for sector in sorted(sector_map.keys()):
             tickers = sector_map[sector]
             print(f"\n  [{sector}]  ({len(tickers)} tickers)")
@@ -1449,7 +1476,7 @@ def run_morning_gate(
 
     print(json.dumps(summary, indent=2))
 
-    # Score integrity check — runs automatically after every gate run
+    # Score integrity check â€” runs automatically after every gate run
     try:
         import sys
         _interp_dir = ROOT / "pipeline_interpreter"
@@ -1465,7 +1492,7 @@ def run_morning_gate(
             integrity.get("integrity_pass", "UNKNOWN"),
         )
         if integrity.get("decommission_flag"):
-            log.warning("TRIAGE DECOMMISSION FLAG SET — see data/output/TRIAGE_DECOMMISSION_NOTICE.json")
+            log.warning("TRIAGE DECOMMISSION FLAG SET â€” see data/output/TRIAGE_DECOMMISSION_NOTICE.json")
     except Exception as exc:
         log.warning("Score integrity check failed (non-fatal): %s", exc)
 
@@ -1477,14 +1504,14 @@ def run_morning_gate(
 # ---------------------------------------------------------------------------
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="AVSHUNTER Morning Gate — three checks only")
+    parser = argparse.ArgumentParser(description="AVSHUNTER Morning Gate â€” three checks only")
     parser.add_argument("--run-id", default=None, help="Run ID. Auto-resolves from latest.json if omitted.")
     parser.add_argument("--spread-threshold", type=float, default=DEFAULT_SPREAD_THRESHOLD,
                         help=f"Contract spread %% threshold for FLAG (default {DEFAULT_SPREAD_THRESHOLD})")
     args = parser.parse_args()
 
     if not POLYGON_API_KEY or not MARKETDATA_API_KEY:
-        log.error("POLYGON_API_KEY and MARKETDATA_API_KEY must be set in .env — aborting")
+        log.error("POLYGON_API_KEY and MARKETDATA_API_KEY must be set in .env â€” aborting")
         return 1
 
     run_id = args.run_id or _latest_run_id()
@@ -1492,7 +1519,7 @@ def main() -> int:
         log.error("Cannot resolve run_id. Pass --run-id or run the evening pipeline first.")
         return 1
 
-    log.info("Morning Gate starting — run_id=%s", run_id)
+    log.info("Morning Gate starting â€” run_id=%s", run_id)
     run_morning_gate(run_id=run_id, spread_threshold=args.spread_threshold)
     return 0
 

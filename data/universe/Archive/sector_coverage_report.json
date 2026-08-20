@@ -1,0 +1,16 @@
+{
+  "asof_utc": "2026-02-14T15:48:38.379062Z",
+  "input_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260214_154838\\clean_universe.csv",
+  "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\universe\\clean_universe__with_sector.csv",
+  "mapping_csv_used": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\universe\\industry_to_sector_map.csv",
+  "counts": {
+    "total": 3541,
+    "sector_present": 3541,
+    "sector_filled_from_industry": 0,
+    "still_missing_sector": 0
+  },
+  "sector_coverage_pct": 100.0,
+  "coverage_gate_min_pct": 95.0,
+  "coverage_gate_pass": true,
+  "unmapped_samples": []
+}

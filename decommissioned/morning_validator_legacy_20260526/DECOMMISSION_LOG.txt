@@ -1,0 +1,24 @@
+AVSHUNTER Morning Validator Decommission Log
+============================================
+Date: 2026-05-26
+Reason: Morning validator accumulated 2943 lines and 380 output fields.
+        It re-ran EOD logic with partial live data producing WAIT verdicts
+        on setups the EOD had already correctly identified.
+        Fung-Hsieh contamination held zero GO verdicts for multiple weeks.
+
+Files archived:
+  - morning_thesis_validator.py
+  - morning_validation_engine.py
+  - morning_validation.py
+
+Replacement:
+  - morning_gate.py (three checks only)
+    CHECK 1: Invalidation intact
+    CHECK 2: Macro regime unchanged overnight
+    CHECK 3: Contract liquid
+
+Usage going forward:
+  python morning_gate.py
+  python morning_gate.py --run-id YYYYMMDD_HHMMSS
+
+All archived files are preserved in this folder. Nothing was deleted.

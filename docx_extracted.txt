@@ -1,0 +1,806 @@
+﻿AVSHUNTER
+Pipeline Interpreter Enhancement
+Story of the Trade — End-to-End Architecture
+Build Reference for Claude Code
+May 2026  |  Version 1.0  |  CONFIDENTIAL
+Build Mandate
+Enhance the AVSHUNTER Pipeline Interpreter with a "Story of the Trade" layer that:
+1. Presents pipeline output in plain English for junior traders
+2. Shows all interdependencies between macro, gamma, liquidity, thesis, chart, options, risk and verdict
+3. Persists thesis state across trading sessions (cross-session continuity)
+4. Updates live when new chart images or options data are provided
+5. Maintains a versioned audit chain from first thesis formation to execution or closure
+1. Context and Problem Statement
+1.1 What the Pipeline Interpreter Does Today
+The Pipeline Interpreter is a standalone CLI application that sits outside the AVSHUNTER pipeline. It reads pipeline output CSVs as read-only inputs and produces trade-execution narratives through the Dr. Magnus Vale and Soul of the Chart frameworks. It has no shared code, no shared state, and no runtime coupling with intelligent_orchestrator.py or morning_thesis_validator.py.
+The interpreter produces expert-level trade narratives. Every verdict, trigger level, kill switch, and execution prescription is written for an experienced trader who can translate "PROBE | ARMED_AWAITING_TRIGGER" directly into action.
+1.2 The Gap
+Two gaps exist in the current output:
+Junior traders cannot consume the output without significant interpretation. The plain-language layer is absent — every verdict requires cross-referencing multiple sections to understand what to do.
+The output is a snapshot, not a story. A trade that takes 2-3 sessions to form has no continuity mechanism. Each day's interpreter run is disconnected from the previous day's analysis.
+1.3 The Enhancement
+This document defines the architecture for adding two capabilities to the existing interpreter:
+Story of the Trade — an eight-section junior-readable output layer that explains every section in plain English and shows all interdependencies explicitly
+Thesis Lifecycle Management — a cross-session continuity system that tracks thesis state from first formation through execution or closure, including overnight delta detection
+2. Isolation Boundary — Safety Guarantee
+This is the most important section for anyone concerned about build risk.
+Item
+Verdict
+Does this build touch intelligent_orchestrator.py?
+No. That file is not in scope.
+Does this build touch morning_thesis_validator.py?
+No. That file is not in scope.
+Does this build touch any pipeline run output files?
+No. Interpreter is read-only on all pipeline outputs.
+Can a broken interpreter build affect tonight's pipeline run?
+No. Zero shared imports, zero shared state.
+Does the interpreter run automatically during a pipeline run?
+No. It is manually started only.
+Can this build be done while a pipeline run is in flight?
+Yes. Complete isolation guaranteed by architecture.
+One Precaution Recommended
+Before modifying pipeline_interpreter_engine.py, Claude Code should:
+1. Copy it to pipeline_interpreter_engine_backup_YYYYMMDD.py
+2. Add all new functions at the BOTTOM of the file only
+3. Never edit existing functions — additions only
+4. Run: python -c "from pipeline_interpreter_engine import build_story_prompt" to verify import
+This protects the working interpreter during active trading hours — not the pipeline itself.
+3. Architecture Overview
+3.1 Components — Eight Total
+#
+Component
+File
+Type
+1
+Junior Trader Layer
+pipeline_interpreter_system_prompt.txt
+EDIT — append only
+2
+Story Prompt Builder
+pipeline_interpreter_engine.py
+EDIT — new functions at bottom
+3
+/story and /update commands
+pipeline_interpreter_commands.py
+EDIT — new commands only
+4
+Story Output Writer
+pipeline_interpreter_outputs.py
+EDIT — new functions only
+5
+QA Extension
+interpreter_qa.py
+EDIT — additive only
+6
+Thesis Registry
+thesis_registry.py (NEW)
+CREATE
+7
+Overnight Delta Injector
+pipeline_interpreter_engine.py
+EDIT — new function
+8
+Session Prep Extension
+prepare_interpreter_session.py
+EDIT — additive
+3.2 Files With Zero Changes
+live_market_reader.py — already fetches all live data needed. Consumed as-is.
+news_macro_readers.py — already reads all three macro sources. Consumed as-is.
+ma_inputs_sync.py — session preparation logic unchanged.
+pipeline_interpreter.py — entry point and main loop unchanged.
+3.3 New Folder
+MA_Inputs/thesis_registry/      ← created by thesis_registry.py
+WFC_thesis_registry.json
+SPY_thesis_registry.json
+...
+4. End-to-End Data Flow
+4.1 Session Flow with New Commands
+prepare_interpreter_session.py --morning
+│  Checks thesis_registry for carry-forward theses
+│  Checks overnight gap vs kill_switch_level for each active thesis
+│  Writes carry_forward_tickers into session_state.json
+▼
+pipeline_interpreter.py  (start)
+▼
+/brief  →  saves newsroom_brief_latest.txt
+▼
+/triage  →  existing output + overnight delta blocks for carry-forward theses
+▼
+/ticker TICKER  →  existing deep dive (UNCHANGED)
+▼
+/story TICKER   ← NEW
+│  Reads: pipeline row (always latest), thesis_registry (carry-forward context)
+│  Reads: LIVE_DATA[TICKER] via format_live_data_for_prompt()
+│  Reads: MA_Inputs/macro/, MA_Inputs/news_terminal/
+│  Calls: build_story_prompt(update_type=FULL)
+│  Calls: Claude API with MODEL_DEEP_DIVE
+│  Writes: story_{TICKER}_{thesis_id}_{ts}.html
+│  Writes: story_brief_{TICKER}_{ts}.csv
+│  Updates: thesis_registry.json (state_chain += new node)
+│  Runs: check_story_qa()
+▼
+[Intraday — trader uploads new chart or options data]
+▼
+/update TICKER chart wfc_1030.png  ← NEW
+│  Reads: thesis_registry → latest_story_path (cross-session, Option B)
+│  Detects: update_type = CHART_UPDATE
+│  Calls: build_story_prompt(update_type=CHART_UPDATE, previous_story_html=...)
+│  Writes: story_{TICKER}_{thesis_id}_{new_ts}.html (versioned, not overwrite)
+│  Updates: thesis_registry.json
+▼
+[Next day — thesis still forming]
+▼
+prepare_interpreter_session.py --morning
+│  Reads thesis_registry → WFC active, same direction, kill switch untouched
+│  Builds overnight_delta_WFC block for triage injection
+▼
+/triage  →  WFC appears at top as carry-forward with overnight delta summary
+/story WFC  →  new chapter, state_chain extended, previous context preserved
+4.2 Update Type Decision Logic
+The build_story_prompt() function accepts an update_type parameter that controls which of the eight story sections are regenerated versus preserved from the previous story HTML.
+update_type
+Trigger
+Sections Regenerated
+Sections Preserved
+FULL
+/story TICKER first run, or --fresh flag
+All 8 sections
+None
+CHART_UPDATE
+/update TICKER chart [IMG]
+Section 5 (chart) + Section 8 (verdict)
+Sections 1, 2, 3, 4, 6, 7
+OPTIONS_UPDATE
+/update TICKER options [FILE]
+Section 6 (options) + Section 8 (verdict)
+Sections 1, 2, 3, 4, 5, 7
+MACRO_UPDATE
+/update TICKER macro (auto-detected)
+Section 1 (macro) + Section 8 (verdict)
+Sections 2, 3, 4, 5, 6, 7
+OVERNIGHT
+Auto — next session carry-forward
+Sections 1, 5, 8
+Sections 2, 3, 4, 6, 7
+5. The Eight Story Sections
+Every /story output must contain exactly these eight sections in this order. Each section has a plain-English layer for junior traders, a status badge (colour-coded), and an INTERDEP line connecting it to adjacent sections. The interdependency lines are mandatory — the QA check validates their presence.
+#
+Section Name
+Status Badge
+Primary Data Sources
+Regenerated On
+1
+Macro — the weather conditions
+HEADWIND / TAILWIND / NEUTRAL
+macro_intelligence_latest.json, enrichment_delta.json
+FULL, MACRO_UPDATE, OVERNIGHT
+2
+Market Makers & Gamma — the battlefield
+AMPLIFYING / DAMPENING / NEUTRAL
+options_intelligence CSV, gamma_flip, put_wall, call_wall from pipeline row
+FULL only
+3
+Liquidity Zones — the tripwires
+N ZONES IDENTIFIED
+pipeline row EMA levels, VWAP, OI concentration, trapped participant analysis
+FULL only
+4
+Thesis — the plan
+ARMED / WAIT / PROBE / GO
+pipeline row, SCENARIO block, EXECUTION PRESCRIPTION from /ticker output
+FULL only
+5
+Chart — live confirmation status
+CONFIRMED / FORMING / UNDER PRESSURE / REJECTED
+Chart image via vision API, live_price_block, LIVE_PRICES[ticker]
+FULL, CHART_UPDATE, OVERNIGHT
+6
+Options Flow — institutional vote
+CONFIRMS / NEUTRAL / CONFLICTS
+LIVE_DATA[ticker] from live_market_reader.py, options_intelligence CSV
+FULL, OPTIONS_UPDATE
+7
+Risk — the honest scorecard
+LOW / MODERATE / HIGH / EXTREME
+pipeline row risk fields, theta_daily, ivp, kill_switch proximity
+FULL only
+8
+Verdict — what to do right now
+DO NOT ENTER / WATCH / PROBE / ENTER / EXIT
+Synthesised from all sections above + current price vs trigger levels
+FULL + all UPDATE types
+5.1 Gamma Section — Mandatory Sub-Elements
+Section 2 (Market Makers & Gamma) must explain three specific concepts as a cascade, showing how each connects to the next. These are non-negotiable for the junior trader audience:
+Gamma flip zone — the price level where dealer hedging switches from dampening to amplifying. Below this level, moves accelerate. Must state the exact price from the pipeline row.
+Gamma island — the sparse OI zone between the gamma flip and the next major support. Must explain that price moves fast through this zone with no natural brake.
+Wall break structure — how the put wall acts as both target and gravitational pull. Must explain that dealers short the puts must sell stock as price approaches, creating a self-reinforcing move toward the wall.
+The interdependency line for Section 2 must state: how the gamma flip connects to the armed trigger in Section 4 (armed trigger sits just above the flip to capture the acceleration); and how the put wall connects to Target 2 in Section 4 (put wall is why Target 2 exists).
+5.2 Section 3 Liquidity Zone Classification
+Every liquidity zone in Section 3 must be labelled with one of these types and colour-coded accordingly in the HTML output:
+Zone Type
+Colour
+Meaning
+Action Label
+KILL ZONE
+Red
+Thesis invalidation area. Price here = exit immediately.
+Exit if reached
+RESISTANCE
+Amber
+Supply concentration. Trapped longs selling here.
+Watch for rejection
+VWAP / BATTLEGROUND
+Amber
+Intraday control level. Determines who is winning today.
+Watch only
+ENTRY TRIGGER
+Green
+Probe or armed entry level. Close below/above activates.
+Enter on close
+GAMMA FLIP
+Purple
+Regime change. Below this, dealer hedging amplifies moves.
+Acceleration zone
+SWING LOW / HIGH
+Blue
+Previous extreme. Break confirms continuation.
+Hold position
+PUT/CALL WALL
+Blue
+OI concentration. Acts as target and gravitational pull.
+Target exit zone
+6. Component Specifications
+6.1 Component 1 — System Prompt Addition
+File: pipeline_interpreter_system_prompt.txt
+Action: Append JUNIOR_TRADER_LAYER block at end of file
+Append the following block after the existing STYLE section. Do not modify any existing content.
+═══════════════════════════════════════════════
+JUNIOR TRADER LAYER
+═══════════════════════════════════════════════
+When producing a deep-dive narrative for any ticker, you must ALSO produce
+a [JUNIOR_BRIEFING_{TICKER}] block immediately after the [TRADE_NARRATIVE_{TICKER}] block.
+The junior briefing contains exactly eight sections in this order:
+[SECTION_1_MACRO]
+[SECTION_2_GAMMA]
+[SECTION_3_LIQUIDITY]
+[SECTION_4_THESIS]
+[SECTION_5_CHART]
+[SECTION_6_OPTIONS]
+[SECTION_7_RISK]
+[SECTION_8_VERDICT]
+Rules for every section:
+1. Write as if explaining to someone who has never traded before.
+Define every technical term on first use.
+2. Every section must end with an INTERDEP: line that states explicitly
+how this section connects to the sections before and after it.
+3. Section 2 must explain gamma flip, gamma island, and wall break structure
+as a cascade showing how each leads to the next.
+4. Section 3 must classify every level with a zone type label:
+KILL_ZONE / RESISTANCE / VWAP_BATTLEGROUND / ENTRY_TRIGGER /
+GAMMA_FLIP / SWING_EXTREME / WALL_TARGET
+5. Section 5 must contain a checkpoint table with columns:
+Checkpoint | Required for thesis | Status (PASS/WARN/FAIL)
+6. Section 8 must contain two sub-boxes:
+WHAT_MAKES_US_ENTER and WHAT_MAKES_US_ABANDON
+7. The macro section must state the specific impact of each macro factor
+on this trade's probability — not just the regime label.
+8. Never grant execution permission. Never say enter now, buy, or sell.
+If update_type is provided in the prompt context:
+FULL         → regenerate all 8 sections
+CHART_UPDATE → regenerate sections 5 and 8 only; carry forward 1,2,3,4,6,7
+OPTIONS_UPDATE → regenerate sections 6 and 8 only; carry forward 1,2,3,4,5,7
+MACRO_UPDATE → regenerate section 1 and 8 only; carry forward 2,3,4,5,6,7
+OVERNIGHT    → regenerate sections 1, 5, and 8; carry forward 2,3,4,6,7
+When carrying forward a section, output the tag and the text:
+[SECTION_N_NAME]
+[CARRIED_FORWARD_FROM: {previous_ts}]
+{previous section content verbatim}
+6.2 Component 2 — Story Prompt Builder
+File: pipeline_interpreter_engine.py
+Action: Add build_story_prompt() at bottom of file
+Function signature:
+def build_story_prompt(
+ticker: str,
+pipeline_row: dict,
+live_price_block: str = "",
+options_data: dict = None,
+chart_images: list = None,
+ticker_note: str = "",
+previous_story_html: str = "",
+update_type: str = "FULL",   # FULL|CHART_UPDATE|OPTIONS_UPDATE|MACRO_UPDATE|OVERNIGHT
+) -> str:
+The function must:
+Call read_all_news_macro_context(ticker=ticker, ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS) — identical to build_intraday_prompt()
+Call format_live_data_for_prompt(LIVE_DATA.get(ticker.upper(), {})) for live options/flow data
+Call format_live_price_block(ticker, LIVE_PRICES) for current price context
+Load trader note from MA_Inputs/news_terminal/trader_notes.json if present
+If previous_story_html is non-empty, include it under a PREVIOUS_STORY_CONTEXT heading in the prompt, prefixed with the update_type instruction
+End the prompt with execution_permission=NONE_PIPELINE_INTERPRETER_ONLY
+Also add build_overnight_delta() at the bottom of the file:
+def build_overnight_delta(
+ticker: str,
+pipeline_row: dict,
+previous_story_state: dict,  # from thesis_registry state_chain[-1]
+macro_context: str = "",
+news_context: str = "",
+) -> str:
+"""
+Produce a compact overnight delta block for triage injection.
+Checks overnight gap vs kill_switch_level and probe_trigger.
+Returns OVERNIGHT_DELTA_{ticker} block as a string.
+"""
+Also add get_latest_story_for_thesis():
+def get_latest_story_for_thesis(ticker: str, outputs_dir: Path = None) -> str:
+"""
+Scan outputs/ for most recent story_{ticker}_*.html by mtime.
+Returns file contents as string, or empty string if none found.
+Called by /update command — Option B cross-session retrieval.
+"""
+6.3 Component 3 — New Commands
+File: pipeline_interpreter_commands.py
+Action: Add cmd_story(), cmd_update(), register in route_command() and MENU
+/story command
+def cmd_story(args: str = ""):
+"""
+/story TICKER [--fresh]
+Generate the full Story of the Trade for a ticker.
+--fresh flag forces FULL update even if previous story exists.
+"""
+# 1. Parse ticker and --fresh flag from args
+# 2. Get pipeline row from session (scan_ma_inputs_for_ticker)
+# 3. Check thesis_registry for existing active thesis
+# 4. If active thesis and not --fresh:
+#      load latest story HTML via get_latest_story_for_thesis()
+#      set update_type = OVERNIGHT
+# 5. Else: update_type = FULL
+# 6. Call build_story_prompt() with all available context
+# 7. Call call_api(prompt, images=chart_images, model=MODEL_DEEP_DIVE)
+# 8. Call write_story_outputs(response, ticker, session, run_dir, ts)
+# 9. Call thesis_registry.update_thesis(ticker, ...)
+# 10. Run check_story_qa() if _QA_AVAILABLE
+# 11. Print story file path and verdict summary
+/update command
+def cmd_update(args: str = ""):
+"""
+/update TICKER [chart IMG1 IMG2...] [options FILE]
+Update an existing story with new chart or options data.
+"""
+# 1. Parse ticker, detect chart images and options files from args
+# 2. Determine update_type:
+#      chart images only    → CHART_UPDATE
+#      options file only    → OPTIONS_UPDATE
+#      both                 → FULL
+# 3. Load previous story via get_latest_story_for_thesis(ticker)
+#    If no previous story found: print error, suggest /story first
+# 4. Load chart images via load_image() if provided
+# 5. Call build_story_prompt(update_type=..., previous_story_html=...)
+# 6. Call call_api(prompt, images=images, model=MODEL_DEEP_DIVE)
+# 7. Call write_story_outputs() — versioned file, not overwrite
+# 8. Call thesis_registry.update_thesis(ticker, ...)
+# 9. Print updated file path and what changed
+Add to route_command():
+elif cmd == '/story':
+return cmd_story(arg.strip() if arg else "")
+elif cmd == '/update':
+return cmd_update(arg.strip() if arg else "")
+Add to MENU string:
+║  /story TICKER [--fresh]         Story of the Trade — junior briefing        ║
+║  /update TICKER [chart IMG...]   Update story with new chart or options       ║
+6.4 Component 4 — Story Output Writer
+File: pipeline_interpreter_outputs.py
+Action: Add write_story_outputs() and build_story_html()
+write_story_outputs() signature:
+def write_story_outputs(
+response: str,
+ticker: str,
+session,
+run_dir: Path,
+ts: str,
+thesis_id: str = "",
+update_type: str = "FULL",
+) -> dict:
+"""
+Parse [JUNIOR_BRIEFING_{TICKER}] from response.
+Write story HTML and story brief CSV.
+Returns dict with html and csv paths.
+"""
+HTML file naming convention:
+# Full story:  story_{TICKER}_{thesis_id}_{ts}.html
+# Update:      story_{TICKER}_{thesis_id}_{ts}_chart_update.html
+# The thesis_id links all versions of the same thesis.
+# Never overwrite — always write a new timestamped file.
+The story HTML template uses the same dark palette as the existing interpreter HTML (--bg, --green, --cyan, --amber CSS variables) but with an eight-section card layout. Each card must include:
+Colour-coded status badge from the section verdict
+Plain-language explanation paragraphs
+Data tables or checkpoint tables where specified
+The INTERDEP line rendered as a connector footer between sections
+For Section 2: the gamma map rendered as inline SVG with price zones
+State chain renderer — add render_state_chain() to build a horizontal timeline at the top of every story HTML showing all previous states for this thesis. Each node is clickable and links to the story file from that timestamp. Built from thesis_registry state_chain array.
+story_brief CSV fields:
+ticker, thesis_id, ts, update_type,
+section_1_status, section_2_status, section_3_status, section_4_status,
+section_5_status, section_6_status, section_7_status, section_8_verdict,
+kill_switch_level, probe_trigger, armed_trigger,
+kill_switch_proximity_pct, theta_daily, ivp,
+carry_forward_sections, execution_permission, capital_permission
+6.5 Component 5 — QA Extension
+File: interpreter_qa.py
+Action: Add REQUIRED_JUNIOR_SECTIONS list and check_story_qa() function
+Critical: Do NOT modify REQUIRED_SECTIONS
+The existing REQUIRED_SECTIONS list and check_ticker_qa() function must remain unchanged.
+Adding story sections to REQUIRED_SECTIONS would cause all previous /ticker HTML
+outputs to fail the section integrity check — those were built before the junior layer existed.
+Instead: add a separate REQUIRED_JUNIOR_SECTIONS list and a separate check_story_qa()
+function that is only called after /story and /update runs.
+Add to interpreter_qa.py:
+REQUIRED_JUNIOR_SECTIONS = [
+"SECTION_1_MACRO",
+"SECTION_2_GAMMA",
+"SECTION_3_LIQUIDITY",
+"SECTION_4_THESIS",
+"SECTION_5_CHART",
+"SECTION_6_OPTIONS",
+"SECTION_7_RISK",
+"SECTION_8_VERDICT",
+]
+def check_story_qa(ticker: str, html_output_path: str) -> dict:
+"""
+Check story HTML for:
+1. All 8 REQUIRED_JUNIOR_SECTIONS present
+2. Each section contains an INTERDEP: line
+3. Section 2 contains: gamma flip, gamma island, wall break structure
+4. Section 5 contains a checkpoint table
+5. Section 8 contains WHAT_MAKES_US_ENTER and WHAT_MAKES_US_ABANDON
+Returns: dict with check results, overall PASS/WARN/FAIL
+"""
+check_story_interdependencies() — lightweight check that every section in the story HTML contains the text "INTERDEP:" — logs WARN (not FAIL) if any section is missing it.
+6.6 Component 6 — Thesis Registry
+File: thesis_registry.py (CREATE NEW)
+Location: pipeline_interpreter/ directory (same level as other modules)
+This module manages the thesis lifecycle. It has no dependencies on the Anthropic API — it is pure file I/O.
+Registry file path per ticker:
+MA_Inputs/thesis_registry/{TICKER}_thesis_registry.json
+Registry schema per entry (one file per ticker, can hold multiple thesis records):
+{
+"theses": [
+{
+"thesis_id": "WFC_PUT_72_20260522",
+"ticker": "WFC",
+"direction": "LONG_PUT",
+"horizon": "11-20",
+"strike_zone": "72-73",
+"first_run_date": "2026-05-22",
+"first_run_ts": "20260522_0945",
+"latest_story_ts": "20260522_1430",
+"latest_story_path": "outputs/20260522_1430/story_WFC_..._1430.html",
+"state_chain": [
+{"ts": "20260522_0945", "verdict": "WAIT", "trade_state": "WATCH",
+"trigger_proximity": "far", "story_path": "outputs/...html"},
+{"ts": "20260522_1430", "verdict": "PROBE", "trade_state": "ARMED",
+"trigger_proximity": "forming", "story_path": "outputs/...html"}
+],
+"kill_switch_level": 77.50,
+"probe_trigger": 75.00,
+"armed_trigger": 74.00,
+"kill_switch_breached": false,
+"pipeline_run_id": "20260521_171946",
+"active": true
+}
+]
+}
+Required functions:
+def get_active_thesis(ticker: str) -> dict | None
+# Returns the active thesis dict for ticker, or None
+def create_thesis(ticker, direction, horizon, strike_zone, pipeline_run_id,
+kill_switch_level, probe_trigger, armed_trigger) -> str
+# Creates new thesis entry, returns thesis_id
+def update_thesis(ticker, thesis_id, ts, verdict, trade_state,
+trigger_proximity, story_path, latest_story_path) -> None
+# Appends to state_chain, updates latest_story_ts and latest_story_path
+def close_thesis(ticker, thesis_id, reason: str) -> None
+# Sets active=False, records closure reason and timestamp
+def get_latest_story_path(ticker: str) -> str | None
+# Returns latest_story_path from active thesis, or None
+# This is the Option B cross-session retrieval mechanism
+def get_carry_forward_tickers() -> list[str]
+# Returns list of tickers with active theses for session prep use
+def should_close_thesis(ticker, current_price: float) -> bool
+# Returns True if current_price has breached kill_switch_level
+6.7 Component 7 — Overnight Delta Injector
+File: pipeline_interpreter_engine.py
+Action: Add build_overnight_delta() function at bottom of file
+This function is called by prepare_interpreter_session.py during morning mode. For each carry-forward ticker, it produces a compact OVERNIGHT_DELTA block that is injected into the triage prompt the following morning.
+The overnight delta must assess:
+Gap: did the stock gap up or down overnight? By how much?
+Kill switch check: is the overnight gap price above the kill_switch_level? If yes → mark thesis as KILL_SWITCH_TRIGGERED in the delta block.
+Trigger check: did the overnight gap price pass through the probe_trigger or armed_trigger? If yes → note as TRIGGER_APPROACHED_OVERNIGHT.
+Macro shift: any overnight macro changes from the new enrichment delta vs previous session.
+News: any overnight news mentions for this ticker from the newsroom brief.
+Output format (injected into triage prompt):
+OVERNIGHT_DELTA_WFC:
+previous_verdict: WAIT
+previous_ts: 20260522_1430
+overnight_gap: +0.3% (opened at $76.14)
+kill_switch_status: SAFE ($77.50 not breached)
+trigger_status: AWAY (probe trigger $75.00 not tested)
+macro_shift: NO_SIGNIFICANT_CHANGE
+news_flags: NONE
+carry_forward_action: CONTINUE_MONITORING
+6.8 Component 8 — Session Prep Extension
+File: prepare_interpreter_session.py
+Action: Add thesis registry scan and overnight delta logic to morning mode
+Add to the existing --morning mode block, after all file syncs complete:
+if mode == "morning":
+from thesis_registry import get_carry_forward_tickers, should_close_thesis
+from pipeline_interpreter_engine import build_overnight_delta
+carry_fwd = get_carry_forward_tickers()
+if carry_fwd:
+print(f"  Carry-forward theses: {carry_fwd}")
+# Load morning pipeline rows to check overnight gap
+morning_rows = read_pipeline_csv(morning_validated_path)
+for ticker in carry_fwd:
+row = {r["ticker"]: r for r in morning_rows}.get(ticker, {})
+current_price = float(row.get("last_price", 0))
+if should_close_thesis(ticker, current_price):
+close_thesis(ticker, reason="kill_switch_breached_overnight")
+print(f"  ⚠  {ticker}: kill switch breached overnight — thesis closed")
+else:
+print(f"  ✅ {ticker}: thesis active, carry-forward confirmed")
+# Write carry-forward list to session_state.json
+session_state = {"session_mode": "MORNING",
+"carry_forward_tickers": carry_fwd}
+(MA_INPUTS / "session_state.json").write_text(
+json.dumps(session_state, indent=2), encoding="utf-8")
+7. Thesis Identity Rules
+These rules determine when a thesis persists across sessions versus when a new thesis is created. They are enforced in thesis_registry.py.
+7.1 Thesis Persists When
+Same direction (LONG_PUT stays LONG_PUT, LONG_CALL stays LONG_CALL)
+Kill switch level has not been breached at any point between sessions
+Same approximate strike zone (within ±$2.50)
+Active thesis flag is True
+Pipeline re-run produces same direction for this ticker
+7.2 New Thesis Created When
+Direction flips on the new pipeline run (PUT → CALL or vice versa)
+Kill switch was breached at any point — old thesis is closed with reason="kill_switch_breached"
+Trader runs /story TICKER --fresh explicitly
+Pipeline produces MISDIAGNOSED verdict for this ticker
+More than 5 calendar days have passed since the thesis was first formed without activation
+7.3 Thesis ID Construction
+# thesis_id = {TICKER}_{DIRECTION_SHORT}_{STRIKE_ZONE}_{FIRST_RUN_DATE}
+# Examples:
+WFC_PUT_72_20260522
+SPY_CALL_540_20260523
+AAPL_PUT_195_20260520
+8. Build Sequence
+Claude Code must build in this exact order. Each step must be verified before proceeding to the next. A failed step must be fixed in the same step — do not proceed with a broken component.
+Step
+Action
+Verification
+Rollback
+0
+Read actual folder structure at pipeline_interpreter/ before writing any file
+List all .py files and confirm they match the uploaded source files
+N/A
+1
+Backup pipeline_interpreter_engine.py → pipeline_interpreter_engine_backup_YYYYMMDD.py
+Confirm backup file exists and is readable
+Delete backup, done
+2
+Create thesis_registry.py with all required functions
+python -c "from thesis_registry import get_active_thesis; print('OK')"
+Delete file
+3
+Append JUNIOR_TRADER_LAYER block to system prompt
+Open file, confirm append is present and existing content intact
+Remove appended block
+4
+Add build_story_prompt(), build_overnight_delta(), get_latest_story_for_thesis() to engine
+python -c "from pipeline_interpreter_engine import build_story_prompt; print('OK')"
+Restore backup from Step 1
+5
+Add write_story_outputs(), build_story_html(), render_state_chain() to outputs
+python -c "from pipeline_interpreter_outputs import write_story_outputs; print('OK')"
+Remove added functions
+6
+Add cmd_story(), cmd_update() to commands; register in route_command() and MENU
+python pipeline_interpreter.py then type /menu — confirm /story and /update appear
+Remove added functions and registrations
+7
+Add REQUIRED_JUNIOR_SECTIONS and check_story_qa() to interpreter_qa.py
+python -c "from interpreter_qa import check_story_qa; print('OK')"
+Remove added content
+8
+Add thesis registry scan and overnight delta logic to prepare_interpreter_session.py
+python prepare_interpreter_session.py --morning (dry run, verify no errors)
+Remove added block
+9
+End-to-end test: /ticker WFC then /story WFC using session data
+Confirm story HTML opens, all 8 sections present, INTERDEP lines present
+Full restore from backups
+10
+End-to-end test: /update WFC chart [test_image.png]
+Confirm update HTML written, sections 5 and 8 regenerated, others carried forward
+Full restore from backups
+9. Existing Functions to Reuse
+The following functions already exist and must be called directly — do not rewrite them.
+Function
+File
+Used In Story Layer For
+read_all_news_macro_context()
+news_macro_readers.py
+Inject macro + enrichment delta + news brief into story prompt
+format_live_data_for_prompt()
+live_market_reader.py
+Inject live options volume, institutional flow, spread, peers into story prompt
+format_live_price_block()
+pipeline_interpreter_engine.py
+Inject current price, VWAP position, vol_ratio into story prompt
+fetch_all_live_data()
+live_market_reader.py
+Called before /story if LIVE_DATA[ticker] is empty — auto-fetches live data
+load_image()
+pipeline_interpreter_engine.py
+Load chart images for vision API calls in /update
+call_api()
+pipeline_interpreter_engine.py
+All API calls for story and update prompts — use MODEL_DEEP_DIVE
+scan_ma_inputs_for_ticker()
+pipeline_interpreter_engine.py
+Find all MA_Inputs files for a ticker to populate pipeline_row
+_extract_section()
+pipeline_interpreter_outputs.py
+Parse [JUNIOR_BRIEFING_{TICKER}] and each [SECTION_N_*] from API response
+_md_to_html()
+pipeline_interpreter_outputs.py
+Convert section markdown content to HTML for story card bodies
+_verdict_style()
+pipeline_interpreter_outputs.py
+Get colour tuple for story section status badges
+append_qa_log()
+interpreter_qa.py
+Write story QA results to daily CSV log
+save_pasted_brief()
+news_macro_readers.py
+Already handles /brief command — no change needed
+get_run_dir()
+pipeline_interpreter_engine.py
+Get timestamped output directory for story files
+10. Story HTML Output Specification
+10.1 File Structure
+outputs/
+{ts}/                                 ← existing timestamped run folder
+raw_response_{ts}.txt               ← existing
+trade_brief_{ts}.csv                ← existing
+interpreter_{ts}.html               ← existing deep-dive output
+story_{TICKER}_{thesis_id}_{ts}.html  ← NEW story output
+story_brief_{TICKER}_{ts}.csv         ← NEW story brief CSV
+10.2 HTML Layout Sections
+The story HTML document has this structure from top to bottom:
+Header bar — identical to existing interpreter header: AVSHUNTER branding, EXECUTION PERMISSION watermark, ticker name, verdict badge, timestamp
+State chain timeline — horizontal strip showing all previous verdicts for this thesis_id with timestamps and clickable links
+Update banner — only present on CHART_UPDATE/OPTIONS_UPDATE/MACRO_UPDATE files. Shows what changed, when, and which sections were regenerated
+Story progress bar — eight clickable pills (1 Macro, 2 Market makers, 3 Liquidity, 4 Thesis, 5 Chart, 6 Options, 7 Risk, 8 Verdict) that scroll to the relevant section
+Eight section cards — one per section, each with badge, content, and INTERDEP footer
+Footer — existing EXECUTION PERMISSION footer
+10.3 Colour Conventions for Section Badges
+Badge Text
+Background
+When Used
+HEADWIND
+Amber (#FAEEDA)
+Section 1: macro creates friction for the thesis direction
+TAILWIND
+Green (#EAF3DE)
+Section 1: macro supports the thesis direction
+AMPLIFYING
+Blue (#E6F1FB)
+Section 2: negative gamma regime — moves amplified
+DAMPENING
+Gray
+Section 2: positive gamma regime — moves dampened
+N ZONES IDENTIFIED
+Purple (#EEEDFE)
+Section 3: count of identified liquidity zones
+ARMED / WAIT / PROBE
+Green / Amber / Blue
+Section 4: current thesis state from pipeline verdict
+CONFIRMED / FORMING / UNDER PRESSURE / REJECTED
+Green / Amber / Amber / Red
+Section 5: chart confirmation status
+CONFIRMS / NEUTRAL / CONFLICTS
+Green / Gray / Red
+Section 6: options flow alignment with thesis
+LOW / MODERATE / HIGH / EXTREME
+Green / Amber / Red / Red
+Section 7: risk verdict from pipeline
+DO NOT ENTER / WATCH / PROBE / ENTER / EXIT
+Amber / Gray / Blue / Green / Red
+Section 8: final plain-English action instruction
+11. Testing Checklist
+Claude Code must verify all of the following before declaring the build complete.
+11.1 Import Tests
+python -c "from thesis_registry import get_active_thesis, create_thesis, update_thesis; print('OK')"
+python -c "from pipeline_interpreter_engine import build_story_prompt, build_overnight_delta; print('OK')"
+python -c "from pipeline_interpreter_outputs import write_story_outputs, build_story_html; print('OK')"
+python -c "from interpreter_qa import check_story_qa, REQUIRED_JUNIOR_SECTIONS; print('OK')"
+python -c "from pipeline_interpreter_commands import cmd_story, cmd_update; print('OK')"
+11.2 Regression Tests — Existing Commands Must Still Work
+/triage — must produce identical output to before the build
+/ticker TICKER — must produce identical output to before the build
+/chart TICKER IMG — must produce identical output to before the build
+/intraday TICKER IMG — must produce identical output to before the build
+/brief — must still accept and save newsroom brief correctly
+/note TICKER — must still save and inject trader notes correctly
+11.3 New Command Tests
+/story WFC — must produce story HTML with all 8 sections present, INTERDEP lines in each section, state chain timeline, story_brief CSV written
+/update WFC chart test.png — must produce versioned update HTML with sections 5 and 8 regenerated, CARRIED_FORWARD marker on sections 1-4 and 6-7
+/update WFC options test.csv — must produce versioned update HTML with section 6 and 8 regenerated
+/story WFC (second run same session) — must detect existing active thesis, use OVERNIGHT update_type, extend state chain
+/story WFC --fresh — must ignore existing thesis, run FULL update, create new thesis entry
+11.4 Cross-Session Test
+Run /story WFC, note the thesis_id and latest_story_path written to registry
+Close the interpreter completely
+Restart the interpreter
+Run /update WFC chart new_chart.png
+Confirm: previous story loaded from registry path (not from SESSION memory), update written as new versioned file, state chain extended
+11.5 QA Tests
+check_story_qa() must return PASS when all 8 sections and INTERDEP lines are present
+check_story_qa() must return WARN when any INTERDEP line is missing
+check_story_qa() must return FAIL when any of the 8 sections is missing entirely
+check_ticker_qa() must return identical results to before the build — the story sections must not affect existing ticker QA
+12. Hard Constraints
+These constraints are non-negotiable. Any build that violates them must be corrected before completion.
+1. NEVER modify intelligent_orchestrator.py or morning_thesis_validator.py
+2. NEVER modify any file in data/output/runs/ — pipeline outputs are read-only
+3. NEVER edit existing functions in any interpreter file — additions only
+4. NEVER overwrite a story HTML file — every write produces a new timestamped file
+5. NEVER grant execution permission in any output — NONE_PIPELINE_INTERPRETER_ONLY always
+6. NEVER modify REQUIRED_SECTIONS in interpreter_qa.py — add REQUIRED_JUNIOR_SECTIONS separately
+7. NEVER remove or rename existing commands in route_command() — only add new ones
+8. ALL new functions must be added at the BOTTOM of their respective files
+9. thesis_registry.py must have zero dependency on the Anthropic API
+10. The build must complete with the existing AVSHUNTER pipeline running normally in parallel
+13. Summary — Complete Change Inventory
+File
+Action
+New Functions / Content
+pipeline_interpreter_system_prompt.txt
+EDIT
+Append: JUNIOR_TRADER_LAYER block with [JUNIOR_BRIEFING_{TICKER}] output format instructions
+pipeline_interpreter_engine.py
+EDIT
+Add: build_story_prompt(), build_overnight_delta(), get_latest_story_for_thesis()
+pipeline_interpreter_commands.py
+EDIT
+Add: cmd_story(), cmd_update(), register both in route_command() and MENU string
+pipeline_interpreter_outputs.py
+EDIT
+Add: write_story_outputs(), build_story_html(), render_state_chain()
+interpreter_qa.py
+EDIT
+Add: REQUIRED_JUNIOR_SECTIONS list, check_story_qa(), check_story_interdependencies()
+prepare_interpreter_session.py
+EDIT
+Add: thesis registry scan, overnight gap check, carry-forward flag writing in --morning mode
+thesis_registry.py
+CREATE
+New module: get_active_thesis(), create_thesis(), update_thesis(), close_thesis(), get_latest_story_path(), get_carry_forward_tickers(), should_close_thesis()
+MA_Inputs/thesis_registry/
+CREATE
+New folder: one JSON file per ticker managed by thesis_registry.py
+live_market_reader.py
+NO CHANGE
+Consumed as-is via format_live_data_for_prompt()
+news_macro_readers.py
+NO CHANGE
+Consumed as-is via read_all_news_macro_context()
+ma_inputs_sync.py
+NO CHANGE
+Unchanged
+pipeline_interpreter.py
+NO CHANGE
+Entry point and main loop unchanged
+The machine discovers. The narrative diagnoses.
+The market permits. The trader executes.
+AVSHUNTER Pipeline Interpreter v1.0 — Story of the Trade Enhancement
+CONFIDENTIAL — Internal Architecture Document — May 2026

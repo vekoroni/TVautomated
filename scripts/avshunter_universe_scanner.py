@@ -5,18 +5,16 @@ AVSHUNTER UNIVERSE OPTIONS MISPRICING SCANNER v7.0
 Two-tier scanner operating INDEPENDENTLY of the main pipeline universe.
 Purpose: find cheap/mispriced options the pipeline would never see.
 
-DUAL API ARCHITECTURE
+MARKETDATA-ONLY ARCHITECTURE
 ─────────────────────
-Polygon.io    — price OHLC (RV calculation), live options chain (bid/ask/OI/Greeks),
-                Tier 1 dynamic universe discovery via active contracts endpoint.
-
-MarketData.app — real historical IV for true IV Rank computation.
+MarketData.app — stock OHLCV (RV calculation), live options chains
+                 (bid/ask/OI/Greeks), and historical IV for true IV Rank.
                  Trader plan: real-time options data, unlimited history,
                  100,000 credits/day (resets 9:30am ET).
                  Credit strategy: SQLite IV cache — cold start pulls 52 weeks
                  of weekly ATM IV per ticker (one-time cost), then only
-                 refreshes the trailing week on each subsequent run (~2 credits
-                 per ticker per day vs ~104 credits cold start).
+                 refreshes only missing dates on subsequent runs. Existing
+                 phantom-history records are imported before any API backfill.
 
 IV RANK ACCURACY
 ────────────────
@@ -24,10 +22,9 @@ v4.0 and earlier: synthetic proxy RV×1.2 — confidence ~65%
 v5.0:             real 52-week weekly ATM IV from MarketData.app — confidence ~95%
 Fallback:         if MarketData.app unavailable, reverts to RV×1.2 proxy with warning.
 
-TIER 1 — DYNAMIC (run daily, ~15-30 mins)
-  Source: Polygon /v3/reference/options/contracts — pulls ALL active option
-  contracts in 7-45 DTE window, extracts unique underlying tickers.
-  No predefined list. Purely market-driven. ~400-800 names.
+TIER 1 — FOCUSED (run daily)
+  Source: focused high-activity subset of the built-in liquid universe.
+  All market and options data is retrieved from MarketData.app.
 
 TIER 2 — BROAD SWEEP (run weekly or on-demand, ~2-3 hrs)
   Source: Built-in broad universe ~250 names covering sectors, ETFs,
@@ -55,21 +52,23 @@ TEST MODE (--test)
   Uses 5 hardcoded tickers with synthetic OHLCV, options chain, and IV history.
   Writes real output files and scanner_manifest.json so orchestrator Phase 0
   handshake can be tested immediately after with --validate.
-  Safe to run at any time. No Polygon or MarketData credits consumed.
+  Safe to run at any time. No MarketData credits consumed.
 """
 
 import os
 import sys
 import json
 import time
+import math
 import sqlite3
 import logging
 import argparse
 import requests
+import threading
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
@@ -83,17 +82,17 @@ DB_DIR     = BASE_DIR / "data" / "cache"
 
 # IV history SQLite cache — lives alongside actuarial DB
 IV_CACHE_DB = DB_DIR / "iv_history_cache.db"
+PHANTOM_HISTORY_DB = BASE_DIR / "data" / "phantom" / "phantom_history.db"
 
 # Signal timestamp history — tracks first-detection timestamps per ticker
 SIGNAL_HISTORY_PATH = DB_DIR / "signal_history.json"
 
 # Pipeline universe — for overlap tagging only, never scanned
-PIPELINE_UNIVERSE_FILE = BASE_DIR / "data" / "universe" / "polygon_liquid_universe.csv"
+PIPELINE_UNIVERSE_FILE = BASE_DIR / "data" / "universe" / "liquid_universe.csv"
 
 # ============================================================
 # CONFIG
 # ============================================================
-POLYGON_API_KEY     = os.environ.get("POLYGON_API_KEY",    "YOUR_POLYGON_API_KEY")
 MARKETDATA_API_KEY  = os.environ.get("MARKETDATA_API_KEY", "YOUR_MARKETDATA_API_KEY")
 
 LOOKBACK_DAYS       = 120
@@ -125,6 +124,15 @@ IV_RANK_WEEKS       = 52
 IV_RANK_SAMPLE_DAYS = 7        # weekly sampling interval
 # Cache considered fresh if updated within this many days
 IV_CACHE_MAX_AGE_DAYS = 7
+# Used only to invert historical option prices into implied volatility.
+# The small rate approximation has limited impact for the ~30-DTE ATM options
+# sampled by the IV-rank cache.
+IV_SOLVER_RISK_FREE_RATE = 0.04
+MIN_REAL_IV_POINTS = 10
+
+# Prevent five ticker workers from launching 52-request cold builds at once.
+_IV_BUILD_LOCK = threading.Lock()
+_MARKETDATA_REQUEST_SLOTS = threading.BoundedSemaphore(2)
 
 # Pipeline handshake
 MANIFEST_MAX_AGE_HOURS = 24
@@ -189,7 +197,7 @@ TEST_UNIVERSE = ["AAPL", "MSFT", "SPY", "QQQ", "NVDA"]
 def _synthetic_price_data(ticker: str) -> dict:
     """
     Generate realistic synthetic price + RV data for test mode.
-    No Polygon API call made. Covers range of RV/compression scenarios.
+    No external API call made. Covers range of RV/compression scenarios.
     """
     import numpy as np
     from datetime import datetime, timedelta
@@ -229,7 +237,7 @@ def _synthetic_price_data(ticker: str) -> dict:
 def _synthetic_options_chain(ticker: str, spot: float) -> pd.DataFrame:
     """
     Generate realistic synthetic options chain for test mode.
-    No Polygon API call made. Covers puts/calls across DTE buckets.
+    No external API call made. Covers puts/calls across DTE buckets.
     Designed so some tickers pass VMS gates (GO/PROBE) and some don't.
     """
     today = datetime.today()
@@ -464,7 +472,7 @@ log = logging.getLogger("AVS-SCANNER")
 # IV HISTORY CACHE — SQLite
 # Stores weekly ATM IV samples per ticker.
 # Cold start: 52 weeks × ticker (one-time credit cost).
-# Warm run: only fetches trailing week (~2 credits per ticker).
+# Warm run: only fetches the latest completed session when needed.
 # ============================================================
 
 def init_iv_cache() -> sqlite3.Connection:
@@ -598,8 +606,95 @@ def get_cached_iv_series(conn: sqlite3.Connection, ticker: str) -> pd.Series:
     return df.set_index("date")["iv"].dropna()
 
 
+def seed_iv_cache_from_phantom(conn: sqlite3.Connection, ticker: str) -> int:
+    """
+    Seed weekly ATM IV from the indexed historical Greeks database.
+
+    For each stored snapshot date, select the valid contract nearest 30 DTE
+    and nearest the historical underlying price, preferring calls on a tie.
+    The source database is opened immutable/read-only and is never modified.
+    """
+    if not PHANTOM_HISTORY_DB.exists():
+        return 0
+
+    cutoff = (date.today() - timedelta(days=400)).isoformat()
+    source = None
+    try:
+        uri = f"file:{PHANTOM_HISTORY_DB.as_posix()}?mode=ro&immutable=1"
+        source = sqlite3.connect(uri, uri=True, timeout=30)
+        rows = source.execute(
+            """
+            WITH ranked AS (
+                SELECT
+                    snapshot_date,
+                    iv,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY snapshot_date
+                        ORDER BY
+                            ABS(dte - 30.0),
+                            ABS(strike - underlying_price),
+                            CASE WHEN LOWER(side) = 'call' THEN 0 ELSE 1 END
+                    ) AS rn
+                FROM options_greeks_history
+                WHERE ticker = ?
+                  AND snapshot_date >= ?
+                  AND iv BETWEEN 0.01 AND 5.0
+                  AND dte BETWEEN ? AND ?
+                  AND underlying_price > 0
+                  AND strike > 0
+            )
+            SELECT snapshot_date, iv
+            FROM ranked
+            WHERE rn = 1
+            ORDER BY snapshot_date DESC
+            LIMIT ?
+            """,
+            (ticker, cutoff, MIN_DTE, MAX_DTE, IV_RANK_WEEKS),
+        ).fetchall()
+    except sqlite3.Error as exc:
+        log.warning("%s: historical DB seed failed: %s", ticker, exc)
+        return 0
+    finally:
+        if source is not None:
+            source.close()
+
+    if not rows:
+        return 0
+
+    conn.executemany(
+        """
+        INSERT OR REPLACE INTO iv_history
+            (ticker, sample_date, atm_iv, source)
+        VALUES (?, ?, ?, 'phantom_history')
+        """,
+        [(ticker, sample_date, float(iv)) for sample_date, iv in rows],
+    )
+    latest_date = max(sample_date for sample_date, _ in rows)
+    if len(rows) >= MIN_REAL_IV_POINTS:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO iv_cache_meta
+                (ticker, last_full_build, last_refresh)
+            VALUES (?, ?, ?)
+            """,
+            (ticker, date.today().isoformat(), latest_date),
+        )
+    conn.commit()
+    log.info(
+        "  %s: seeded %d IV observations from phantom_history.db",
+        ticker, len(rows),
+    )
+    return len(rows)
+
+
 def needs_cold_start(conn: sqlite3.Connection, ticker: str) -> bool:
-    """True if ticker has no cache or last full build was > IV_CACHE_MAX_AGE_DAYS ago."""
+    """True if coverage is insufficient or the last full build is stale."""
+    point_count = conn.execute(
+        "SELECT COUNT(*) FROM iv_history WHERE ticker=? AND atm_iv IS NOT NULL",
+        (ticker,),
+    ).fetchone()[0]
+    if point_count < MIN_REAL_IV_POINTS:
+        return True
     row = conn.execute(
         "SELECT last_full_build FROM iv_cache_meta WHERE ticker=?", (ticker,)
     ).fetchone()
@@ -652,12 +747,40 @@ def marketdata_get(url: str, params: dict = None, retries: int = 3) -> Optional[
     headers = {"Authorization": f"Bearer {MARKETDATA_API_KEY}"}
     for attempt in range(retries):
         try:
-            r = requests.get(url, headers=headers, params=params, timeout=15)
-            if r.status_code == 200:
+            with _MARKETDATA_REQUEST_SLOTS:
+                r = requests.get(url, headers=headers, params=params, timeout=15)
+            # MarketData may serve successful cached responses as HTTP 203.
+            # Its response body is identical to a 200 response.
+            if r.status_code in (200, 203):
                 return r.json()
+            elif r.status_code == 204:
+                return {"s": "cache_miss"}
             elif r.status_code == 429:
-                wait = 5 * (attempt + 1)
-                log.warning(f"MarketData rate limit — sleeping {wait}s")
+                try:
+                    payload = r.json()
+                    detail = payload.get("errmsg", payload.get("s", "rate limited"))
+                except Exception:
+                    detail = "rate limited"
+                remaining = r.headers.get("X-Api-Ratelimit-Remaining")
+                reset_raw = r.headers.get("X-Api-Ratelimit-Reset")
+                if remaining == "0":
+                    reset_text = reset_raw or "the provider reset time"
+                    if reset_raw and reset_raw.isdigit():
+                        reset_text = datetime.fromtimestamp(
+                            int(reset_raw), timezone.utc
+                        ).isoformat()
+                    log.error(
+                        "MarketData daily credits exhausted; reset=%s; request stopped",
+                        reset_text,
+                    )
+                    return None
+                retry_after = r.headers.get("Retry-After")
+                wait = float(retry_after) if retry_after else 5.0 * (attempt + 1)
+                wait = max(1.0, min(wait, 60.0))
+                log.warning(
+                    "MarketData throttled (%s; remaining=%s) — sleeping %.0fs",
+                    detail, remaining or "unknown", wait,
+                )
                 time.sleep(wait)
             elif r.status_code == 402:
                 log.warning("MarketData: credit limit reached for today")
@@ -665,7 +788,16 @@ def marketdata_get(url: str, params: dict = None, retries: int = 3) -> Optional[
             elif r.status_code == 404:
                 return None
             else:
-                log.debug(f"MarketData HTTP {r.status_code}: {url[:70]}")
+                try:
+                    error_detail = r.json().get("errmsg", r.json().get("s", "unknown"))
+                except Exception:
+                    error_detail = (r.text or "unknown")[:200]
+                log.warning(
+                    "MarketData HTTP %s from %s: %s",
+                    r.status_code,
+                    url.split("?", 1)[0],
+                    error_detail,
+                )
                 return None
         except requests.exceptions.Timeout:
             time.sleep(0.5)
@@ -673,6 +805,55 @@ def marketdata_get(url: str, params: dict = None, retries: int = 3) -> Optional[
             log.debug(f"MarketData error: {e}")
             return None
     return None
+
+
+def _normal_cdf(value: float) -> float:
+    return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
+
+
+def _call_price_black_scholes(spot: float, strike: float, years: float,
+                              rate: float, volatility: float) -> float:
+    if min(spot, strike, years, volatility) <= 0:
+        return 0.0
+    root_t = math.sqrt(years)
+    d1 = (
+        math.log(spot / strike)
+        + (rate + 0.5 * volatility * volatility) * years
+    ) / (volatility * root_t)
+    d2 = d1 - volatility * root_t
+    return (
+        spot * _normal_cdf(d1)
+        - strike * math.exp(-rate * years) * _normal_cdf(d2)
+    )
+
+
+def _implied_volatility_from_call(price: float, spot: float, strike: float,
+                                  dte: float) -> Optional[float]:
+    """Invert an approximately ATM call price using bounded bisection."""
+    if min(price, spot, strike, dte) <= 0:
+        return None
+    years = float(dte) / 365.0
+    intrinsic = max(0.0, spot - strike * math.exp(-IV_SOLVER_RISK_FREE_RATE * years))
+    if price <= intrinsic or price >= spot:
+        return None
+
+    low, high = 0.001, 5.0
+    if _call_price_black_scholes(
+        spot, strike, years, IV_SOLVER_RISK_FREE_RATE, high
+    ) < price:
+        return None
+
+    for _ in range(80):
+        mid = (low + high) / 2.0
+        model_price = _call_price_black_scholes(
+            spot, strike, years, IV_SOLVER_RISK_FREE_RATE, mid
+        )
+        if model_price > price:
+            high = mid
+        else:
+            low = mid
+    solved = (low + high) / 2.0
+    return solved if 0.01 <= solved <= 5.0 else None
 
 
 def fetch_atm_iv_marketdata(ticker: str, query_date: str, spot: float) -> Optional[float]:
@@ -685,39 +866,69 @@ def fetch_atm_iv_marketdata(ticker: str, query_date: str, spot: float) -> Option
     query_date: YYYY-MM-DD
     Returns: ATM IV float or None if unavailable.
     """
-    # Target expiry: ~30 DTE from query_date
-    q_date    = datetime.strptime(query_date, "%Y-%m-%d").date()
-    exp_from  = (q_date + timedelta(days=23)).isoformat()
-    exp_to    = (q_date + timedelta(days=37)).isoformat()
-
     url = f"https://api.marketdata.app/v1/options/chain/{ticker}/"
     params = {
-        "expiration":   exp_from,    # nearest expiry >= exp_from
+        # With a historical date, dte is evaluated relative to that date.
+        # Do not combine it with expiration/from/to filters.
         "dte":          30,
         "side":         "call",
-        "strikeLimit":  2,           # only 2 strikes nearest ATM = 2 credits
+        "strikeLimit":  2,           # only 2 strikes nearest ATM
         "date":         query_date,
-        "columns":      "optionSymbol,strike,iv",
+        # MarketData historical chains currently return IV/Greeks as null.
+        # Request historical prices and derive IV locally when needed.
+        "columns":      "optionSymbol,side,strike,expiration,dte,bid,ask,"
+                        "mid,last,underlyingPrice,iv",
     }
 
     data = marketdata_get(url, params)
-    if not data or data.get("s") != "ok":
+    # A columns projection may omit the top-level "s" status field.
+    # Reject only an explicit error/no-data status; the requested arrays
+    # below are the authoritative validation for projected responses.
+    if not data or (data.get("s") is not None and data.get("s") != "ok"):
         return None
 
-    iv_list     = data.get("iv", [])
     strike_list = data.get("strike", [])
-
-    if not iv_list or not strike_list:
+    if not strike_list:
         return None
 
-    # Find nearest-to-spot strike
+    iv_list         = data.get("iv", [])
+    dte_list        = data.get("dte", [])
+    bid_list        = data.get("bid", [])
+    ask_list        = data.get("ask", [])
+    mid_list        = data.get("mid", [])
+    last_list       = data.get("last", [])
+    underlying_list = data.get("underlyingPrice", [])
+
+    def at(values, index):
+        return values[index] if isinstance(values, list) and index < len(values) else None
+
+    # Find the nearest-to-ATM strike using the historical underlying price.
     best_iv     = None
     best_dist   = float("inf")
-    for strike, iv in zip(strike_list, iv_list):
-        if iv is None:
+    for index, strike_raw in enumerate(strike_list):
+        if strike_raw is None:
             continue
-        dist = abs(float(strike) - spot)
+        historical_spot = at(underlying_list, index)
+        historical_spot = float(historical_spot) if historical_spot else float(spot)
+        strike = float(strike_raw)
+        dist = abs(strike - historical_spot)
         if dist < best_dist:
+            iv = at(iv_list, index)
+            if iv is None:
+                option_mid = at(mid_list, index)
+                bid = at(bid_list, index)
+                ask = at(ask_list, index)
+                if option_mid is None and bid is not None and ask is not None:
+                    option_mid = (float(bid) + float(ask)) / 2.0
+                if option_mid is None:
+                    option_mid = at(last_list, index)
+                dte = at(dte_list, index)
+                if option_mid is not None and dte is not None:
+                    iv = _implied_volatility_from_call(
+                        float(option_mid), historical_spot, strike, float(dte)
+                    )
+            if iv is None:
+                continue
             best_dist = dist
             best_iv   = float(iv)
 
@@ -737,31 +948,60 @@ def build_iv_history_marketdata(ticker: str, spot: float,
     Returns full IV series (including cached history).
     """
     today      = date.today()
+    # The MarketData "date" parameter is historical-only. Start with the most
+    # recent completed weekday and use the same weekday for weekly samples.
+    latest_completed = today - timedelta(days=1)
+    while latest_completed.weekday() >= 5:
+        latest_completed -= timedelta(days=1)
     records    = []
     credit_cost = 0
 
     if cold_start:
         # Weekly samples back 52 weeks
-        sample_dates = [
-            (today - timedelta(weeks=w)).isoformat()
+        target_dates = [
+            (latest_completed - timedelta(weeks=w)).isoformat()
             for w in range(IV_RANK_WEEKS)
         ]
-        log.debug(f"  {ticker}: IV cold start — {len(sample_dates)} weekly samples")
+        cached_dates = {
+            row[0] for row in conn.execute(
+                "SELECT sample_date FROM iv_history WHERE ticker=?",
+                (ticker,),
+            ).fetchall()
+        }
+        sample_dates = [d for d in target_dates if d not in cached_dates]
+        log.info(
+            "  %s: IV cache coverage=%d/%d; API backfill needed=%d",
+            ticker,
+            len(target_dates) - len(sample_dates),
+            len(target_dates),
+            len(sample_dates),
+        )
     else:
-        # Only the trailing week
-        sample_dates = [today.isoformat()]
+        # Refresh from the latest completed trading weekday.
+        sample_dates = [latest_completed.isoformat()]
         log.debug(f"  {ticker}: IV warm refresh — 1 sample")
+
+    if not sample_dates:
+        return get_cached_iv_series(conn, ticker)
 
     for d_str in sample_dates:
         iv = fetch_atm_iv_marketdata(ticker, d_str, spot)
         if iv is not None:
             records.append((d_str, iv))
-            credit_cost += 2  # ~2 per call (2 strikes returned)
+            credit_cost += 1  # historical chain: typically one credit per call
         time.sleep(0.1)  # gentle pacing
 
     if records:
         upsert_iv_records(conn, ticker, records, is_cold_start=cold_start)
-        log.debug(f"  {ticker}: {len(records)} IV records cached (credits used: ~{credit_cost})")
+        log.info(
+            "  %s: cached %d/%d historical IV observations (API calls: %d)",
+            ticker, len(records), len(sample_dates), credit_cost,
+        )
+    else:
+        log.warning(
+            "%s: MarketData returned no usable IV values for %d historical samples",
+            ticker, len(sample_dates),
+        )
 
     return get_cached_iv_series(conn, ticker)
 
@@ -774,137 +1014,67 @@ def get_iv_series(ticker: str, spot: float, conn: sqlite3.Connection) -> pd.Seri
     if MARKETDATA_API_KEY == "YOUR_MARKETDATA_API_KEY":
         return pd.Series(dtype=float)  # no key — caller uses RV proxy fallback
 
-    cold = needs_cold_start(conn, ticker)
-    warm = needs_refresh(conn, ticker)
+    if needs_cold_start(conn, ticker):
+        # Only one worker may seed/backfill IV history at a time. Recheck after
+        # acquiring the lock because another worker/run may have filled it.
+        with _IV_BUILD_LOCK:
+            if needs_cold_start(conn, ticker):
+                seed_iv_cache_from_phantom(conn, ticker)
+            if needs_cold_start(conn, ticker):
+                return build_iv_history_marketdata(
+                    ticker, spot, conn, cold_start=True
+                )
 
-    if cold:
-        return build_iv_history_marketdata(ticker, spot, conn, cold_start=True)
-    elif warm:
-        return build_iv_history_marketdata(ticker, spot, conn, cold_start=False)
-    else:
-        return get_cached_iv_series(conn, ticker)
-
-
-# ============================================================
-# POLYGON API
-# ============================================================
-
-def polygon_get(url: str, retries: int = 3) -> Optional[dict]:
-    for attempt in range(retries):
-        try:
-            r = requests.get(url, timeout=12)
-            if r.status_code == 200:
-                return r.json()
-            elif r.status_code == 429:
-                wait = 3 * (attempt + 1)
-                log.warning(f"Polygon rate limit — sleeping {wait}s")
-                time.sleep(wait)
-            elif r.status_code == 403:
-                log.debug(f"Polygon 403: {url[:70]}")
-                return None
-            else:
-                log.debug(f"Polygon HTTP {r.status_code}: {url[:70]}")
-                return None
-        except requests.exceptions.Timeout:
-            time.sleep(0.5)
-        except Exception as e:
-            log.debug(f"Polygon error: {e}")
-            return None
-    return None
+    if needs_refresh(conn, ticker):
+        with _IV_BUILD_LOCK:
+            if needs_refresh(conn, ticker):
+                return build_iv_history_marketdata(
+                    ticker, spot, conn, cold_start=False
+                )
+    return get_cached_iv_series(conn, ticker)
 
 
 def fetch_short_borrow_data(ticker: str) -> dict:
     """
-    L3-E1: Enhanced short/borrow fetch — two Polygon endpoints.
-    Endpoint 1: /v2/finance/short_interest/{ticker}  — short volume + utilization
-    Endpoint 2: /v1/reference/stocks/borrow-rate/{ticker} — borrow rate (plan-gated)
-    Adds: short_trend (RISING/FALLING/STABLE vs prior period), squeeze_risk, borrow_rate_spike.
-    Graceful: returns {"short_data_available": False} on any failure.
+    MarketData.app does not provide short-interest or borrow-rate data.
+    Preserve the downstream schema without calling another provider.
     """
-    # ── Endpoint 1: Short interest ────────────────────────────────────────────
-    url1 = (
-        f"https://api.polygon.io/v2/finance/short_interest/{ticker}"
-        f"?apiKey={POLYGON_API_KEY}"
-    )
-    try:
-        data1   = polygon_get(url1)
-        results = data1.get("results", []) if data1 else []
-        if not results:
-            return {"short_data_available": False}
-        latest    = results[-1]
-        short_vol = latest.get("shortVolume", 0) or 0
-        total_vol = latest.get("totalVolume", 1) or 1
-        short_pct = round(short_vol / total_vol * 100, 2) if total_vol > 0 else None
-        util      = latest.get("utilization", None)
-        borrow_r  = latest.get("borrowRate", None)
-
-        # Short trend: compare latest vs prior period (> 5pp change = RISING/FALLING)
-        short_trend = "STABLE"
-        if len(results) >= 2:
-            prior     = results[-2]
-            prior_vol = prior.get("shortVolume", 0) or 0
-            prior_tot = prior.get("totalVolume", 1) or 1
-            prior_pct = round(prior_vol / prior_tot * 100, 2) if prior_tot > 0 else 0.0
-            if short_pct is not None:
-                diff = short_pct - prior_pct
-                if diff > 5:
-                    short_trend = "RISING"
-                elif diff < -5:
-                    short_trend = "FALLING"
-
-        squeeze_risk      = bool(util is not None and float(util) > 80)
-        borrow_rate_spike = False
-    except Exception as exc:
-        log.debug("  %s: short interest fetch failed: %s", ticker, exc)
-        return {"short_data_available": False}
-
-    # ── Endpoint 2: Borrow rate (best effort — may 403 on basic plan) ─────────
-    url2 = (
-        f"https://api.polygon.io/v1/reference/stocks/borrow-rate/{ticker}"
-        f"?apiKey={POLYGON_API_KEY}"
-    )
-    try:
-        data2 = polygon_get(url2)
-        if data2 and data2.get("results"):
-            br_raw   = data2["results"]
-            br_entry = br_raw[-1] if isinstance(br_raw, list) else br_raw
-            br_val   = br_entry.get("rate", None) or br_entry.get("borrowRate", None)
-            if br_val is not None:
-                borrow_r = float(br_val)
-    except Exception:
-        pass  # borrow rate endpoint optional — short interest already captured
-
-    if borrow_r is not None:
-        borrow_rate_spike = float(borrow_r) > 20
-
     return {
-        "short_data_available": True,
-        "short_volume":         short_vol,
-        "short_interest_pct":   short_pct,
-        "short_data_date":      latest.get("date", ""),
-        "borrow_rate":          borrow_r,
-        "utilization":          util,
-        "short_trend":          short_trend,
-        "squeeze_risk":         squeeze_risk,
-        "borrow_rate_spike":    borrow_rate_spike,
+        "short_data_available": False,
+        "short_volume": None,
+        "short_interest_pct": None,
+        "short_data_date": "",
+        "borrow_rate": None,
+        "utilization": None,
+        "short_trend": None,
+        "squeeze_risk": False,
+        "borrow_rate_spike": False,
     }
 
 
 def fetch_price_data(ticker: str) -> Optional[dict]:
-    end_date   = datetime.today()
-    start_date = end_date - timedelta(days=LOOKBACK_DAYS)
-
-    url = (
-        f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/"
-        f"{start_date.date()}/{end_date.date()}"
-        f"?adjusted=true&sort=asc&limit=200&apiKey={POLYGON_API_KEY}"
-    )
-    data = polygon_get(url)
-    if not data or "results" not in data or len(data["results"]) < RV_WINDOW + 5:
+    url = f"https://api.marketdata.app/v1/stocks/candles/D/{ticker}/"
+    data = marketdata_get(url, {
+        "to": "today",
+        "countback": LOOKBACK_DAYS,
+        "adjustsplits": "true",
+    })
+    if not data or data.get("s") != "ok":
         return None
 
-    df            = pd.DataFrame(data["results"])
-    df["date"]    = pd.to_datetime(df["t"], unit="ms")
+    candle_fields = {key: data.get(key, []) for key in ("t", "o", "h", "l", "c", "v")}
+    lengths = [len(values) for values in candle_fields.values() if isinstance(values, list)]
+    if len(lengths) != len(candle_fields) or not lengths:
+        return None
+    row_count = min(lengths)
+    if row_count < RV_WINDOW + 5:
+        return None
+
+    df            = pd.DataFrame({
+        key: values[-row_count:] for key, values in candle_fields.items()
+    })
+    df["date"]    = pd.to_datetime(df["t"], unit="s", utc=True)
+    df.sort_values("date", inplace=True)
     df.set_index("date", inplace=True)
     df["returns"] = np.log(df["c"] / df["c"].shift(1))
     df["rv"]      = df["returns"].rolling(RV_WINDOW).std() * np.sqrt(252)
@@ -984,9 +1154,18 @@ def fetch_options_chain_marketdata(ticker: str, direction_side: str = "all") -> 
     Returns records in the nested structure process_ticker() expects.
     """
     url    = f"https://api.marketdata.app/v1/options/chain/{ticker}/"
+    today = date.today()
     params = {
-        "dte":     f"{MIN_DTE}-{MAX_DTE}",
+        # MarketData's dte parameter accepts one integer, not a range.
+        # Use from/to for the scanner's 7-60 calendar-day expiry window.
+        "from":    (today + timedelta(days=MIN_DTE)).isoformat(),
+        "to":      (today + timedelta(days=MAX_DTE)).isoformat(),
         "side":    direction_side if direction_side != "all" else None,
+        # Trader plans support cached mode at a flat per-call cost. A bounded
+        # strike set is sufficient for ATM VMS and OLIS scoring.
+        "mode":    "cached",
+        "maxage":  "5min",
+        "strikeLimit": 20,
         "columns": "optionSymbol,side,strike,expiration,bid,ask,mid,"
                    "openInterest,volume,iv,delta,vega,dte",
     }
@@ -994,7 +1173,26 @@ def fetch_options_chain_marketdata(ticker: str, direction_side: str = "all") -> 
     params = {k: v for k, v in params.items() if v is not None}
 
     data = marketdata_get(url, params)
-    if not data or data.get("s") != "ok":
+    if data and data.get("s") == "cache_miss":
+        live_params = {
+            key: value for key, value in params.items()
+            if key not in ("mode", "maxage")
+        }
+        log.info("%s: MarketData cache miss — requesting bounded live chain", ticker)
+        data = marketdata_get(url, live_params)
+    if not data:
+        log.warning("%s: MarketData returned no option-chain response", ticker)
+        return None
+    # When "columns" is used, MarketData may omit the top-level "s" field.
+    # A missing status is therefore not an error; validate optionSymbol below.
+    status = data.get("s")
+    if status is not None and status != "ok":
+        log.warning(
+            "%s: MarketData option chain failed: status=%s error=%s",
+            ticker,
+            status,
+            data.get("errmsg", "unknown"),
+        )
         return None
 
     symbols     = data.get("optionSymbol", [])
@@ -1025,7 +1223,9 @@ def fetch_options_chain_marketdata(ticker: str, direction_side: str = "all") -> 
             exp_raw = expirations[i] if i < len(expirations) else None
             if isinstance(exp_raw, (int, float)):
                 import datetime as _dt
-                exp_str = _dt.datetime.utcfromtimestamp(exp_raw).strftime("%Y-%m-%d")
+                exp_str = _dt.datetime.fromtimestamp(
+                    exp_raw, _dt.timezone.utc
+                ).strftime("%Y-%m-%d")
             else:
                 exp_str = str(exp_raw) if exp_raw else None
             records.append({
@@ -1049,90 +1249,22 @@ def fetch_options_chain_marketdata(ticker: str, direction_side: str = "all") -> 
 
 
 def fetch_options_chain(ticker: str, direction_side: str = "all") -> Optional[list]:
-    """
-    PRIMARY:  MarketData.app — direction-aware, real bid/ask/mid.
-    FALLBACK: Polygon snapshot — used if MarketData returns no data.
-    """
-    if MARKETDATA_API_KEY and MARKETDATA_API_KEY != "YOUR_MARKETDATA_API_KEY":
-        result = fetch_options_chain_marketdata(ticker, direction_side)
-        if result:
-            return result
-        log.debug(f"  {ticker}: MarketData chain empty — falling back to Polygon snapshot")
-
-    # Polygon snapshot fallback
-    url = (
-        f"https://api.polygon.io/v3/snapshot/options/{ticker}"
-        f"?limit=250&apiKey={POLYGON_API_KEY}"
-    )
-    data = polygon_get(url)
-    if not data or "results" not in data:
-        return None
-
-    results = data["results"]
-    while "next_url" in data:
-        nxt = polygon_get(f"{data['next_url']}&apiKey={POLYGON_API_KEY}")
-        if not nxt or "results" not in nxt:
-            break
-        results.extend(nxt["results"])
-        data = nxt
-        time.sleep(CALL_DELAY)
-
-    for r in results:
-        r["_source"] = "polygon"
-    return results
+    """MarketData.app direction-aware option chain."""
+    return fetch_options_chain_marketdata(ticker, direction_side)
 
 
 # ============================================================
-# TIER 1 DYNAMIC UNIVERSE BUILDER
+# TIER 1 FOCUSED UNIVERSE BUILDER
 # ============================================================
 
 def build_tier1_universe() -> list:
     """
-    Pull all active Polygon option contracts in 7-45 DTE window.
-    Extract unique underlying tickers — purely market-driven.
+    Return the focused, high-activity portion of the built-in liquid universe.
+    MarketData.app does not expose a global active-underlyings enumeration API.
     """
-    log.info("Tier 1: Querying Polygon for all active options contracts...")
-
-    date_min = (datetime.today() + timedelta(days=MIN_DTE)).date()
-    date_max = (datetime.today() + timedelta(days=MAX_DTE)).date()
-
-    url = (
-        f"https://api.polygon.io/v3/reference/options/contracts"
-        f"?expiration_date.gte={date_min}"
-        f"&expiration_date.lte={date_max}"
-        f"&expired=false&limit=1000&apiKey={POLYGON_API_KEY}"
-    )
-
-    all_contracts = []
-    pages, max_pages = 0, 25
-
-    data = polygon_get(url)
-    if not data:
-        log.error("Tier 1: Polygon options contracts endpoint unreachable")
-        return []
-
-    while data and pages < max_pages:
-        all_contracts.extend(data.get("results", []))
-        pages += 1
-        if "next_url" not in data:
-            break
-        time.sleep(CALL_DELAY)
-        data = polygon_get(f"{data['next_url']}&apiKey={POLYGON_API_KEY}")
-
-    log.info(f"Tier 1: {len(all_contracts)} contracts across {pages} pages")
-
-    tickers = sorted({
-        c.get("underlying_ticker", "")
-        for c in all_contracts
-        if c.get("underlying_ticker", "")
-        and 1 <= len(c.get("underlying_ticker", "")) <= 5
-        and "." not in c.get("underlying_ticker", "")
-        and "/" not in c.get("underlying_ticker", "")
-        and c.get("underlying_ticker", "").isalpha()
-    })
-
-    log.info(f"Tier 1: Dynamic universe = {len(tickers)} unique optionable tickers")
-    return tickers
+    focused = TIER2_UNIVERSE[:75]
+    log.info("Tier 1: MarketData-focused universe = %d tickers", len(focused))
+    return focused
 
 
 # ============================================================
@@ -1155,7 +1287,7 @@ def compute_vms(price_data: dict, options_df: pd.DataFrame,
     rv_series   = price_data["rv_series"]
     compression = price_data["compression"]
 
-    # ATM IV from Polygon live chain
+    # ATM IV from the MarketData live chain
     options_df["dist"] = (options_df["strike_price"] - spot).abs()
     atm        = options_df.nsmallest(10, "dist")
     iv_current = atm["implied_volatility"].mean()
@@ -1164,7 +1296,7 @@ def compute_vms(price_data: dict, options_df: pd.DataFrame,
         return None
 
     # IV Rank — real vs synthetic
-    if len(iv_series) >= 10:
+    if len(iv_series) >= MIN_REAL_IV_POINTS:
         # Real IV rank from MarketData.app historical data
         iv_min   = iv_series.min()
         iv_max   = iv_series.max()
@@ -2370,7 +2502,7 @@ def scan_contracts(ticker, options_df, spot, vms):
 # ============================================================
 
 def process_ticker(ticker: str, conn: sqlite3.Connection, form4_dict: Optional[dict] = None) -> Optional[dict]:
-    """Full VMS pipeline for one ticker. Uses both Polygon and MarketData.app."""
+    """Full MarketData-only VMS pipeline for one ticker."""
     time.sleep(CALL_DELAY)
 
     price_data = fetch_price_data(ticker)
@@ -2452,7 +2584,7 @@ def process_ticker(ticker: str, conn: sqlite3.Connection, form4_dict: Optional[d
         dark_pool, price_data, form4_data, etf_flow,
     )
 
-    chain_source = chain[0].get("_source", "polygon") if chain else "none"
+    chain_source = chain[0].get("_source", "marketdata") if chain else "none"
     return {
         "ticker":       ticker,
         "spot":         round(price_data["spot"], 2),
@@ -2473,11 +2605,10 @@ def process_ticker(ticker: str, conn: sqlite3.Connection, form4_dict: Optional[d
 # ============================================================
 
 def load_pipeline_universe() -> set:
-    for candidate in [
-        PIPELINE_UNIVERSE_FILE,
-        Path(__file__).parent / "polygon_liquid_universe.csv",
-        BASE_DIR / "polygon_liquid_universe.csv",
-    ]:
+    universe_dir = BASE_DIR / "data" / "universe"
+    candidates = [PIPELINE_UNIVERSE_FILE]
+    candidates.extend(sorted(universe_dir.glob("*liquid_universe.csv")))
+    for candidate in dict.fromkeys(candidates):
         if candidate.exists():
             df = pd.read_csv(candidate)
             tickers = set(df.iloc[:, 0].dropna().str.strip().tolist())
@@ -2497,7 +2628,7 @@ def run_scan(universe: list, pipeline_universe: set,
     """Parallel VMS scan across universe. Returns (contracts_df, vms_df)."""
     all_contracts = []
     vms_summary   = []
-    processed = errors = 0
+    attempted = successful = no_data = errors = 0
     real_iv_count = synthetic_iv_count = 0
 
     log.info(f"{tier_label}: {len(universe)} tickers | {MAX_WORKERS} threads")
@@ -2514,9 +2645,10 @@ def run_scan(universe: list, pipeline_universe: set,
             ticker = futures[future]
             try:
                 result = future.result()
-                processed += 1
+                attempted += 1
 
                 if result:
+                    successful += 1
                     v   = result["vms"]
                     tag = "KNOWN" if ticker in pipeline_universe else "NEW"
 
@@ -2602,14 +2734,17 @@ def run_scan(universe: list, pipeline_universe: set,
                             f"contracts={len(result['contracts'])}{_warn_str}"
                         )
                 else:
+                    no_data += 1
                     log.debug(f"  {ticker:<6} | No data")
 
             except Exception as e:
+                attempted += 1
                 errors += 1
                 log.debug(f"  {ticker:<6} | Error: {e}")
 
     log.info(
-        f"{tier_label}: processed={processed} errors={errors} | "
+        f"{tier_label}: attempted={attempted} successful={successful} "
+        f"no_data={no_data} errors={errors} | "
         f"IV rank sources: REAL={real_iv_count} SYNTHETIC={synthetic_iv_count}"
     )
     if synthetic_iv_count > 0:
@@ -2640,13 +2775,11 @@ def rebuild_iv_cache(universe: list, conn: sqlite3.Connection) -> None:
     Pulls 52 weeks of weekly ATM IV for every ticker in universe.
     Run once, then warm refreshes handle daily updates automatically.
 
-    Credit cost estimate: len(universe) × 52 × 2 contracts = credits used.
-    For 600 tickers: ~62,400 credits (62% of daily Trader plan budget).
-    Run during off-hours or split across multiple days.
+    Seeds from phantom_history.db first, then requests only missing dates.
+    API usage therefore depends on local historical coverage.
     """
     log.info(f"IV Cache Rebuild: {len(universe)} tickers | 52 weekly samples each")
-    log.info(f"Estimated credit cost: ~{len(universe) * 52 * 2:,} MarketData credits")
-    log.info("Run during off-hours. Split across days if near credit limit.")
+    log.info("Local phantom history will be used before any MarketData backfill.")
 
     price_cache = {}
     built = skipped = errors = 0
@@ -2656,6 +2789,14 @@ def rebuild_iv_cache(universe: list, conn: sqlite3.Connection) -> None:
             if not needs_cold_start(conn, ticker):
                 log.info(f"  [{i}/{len(universe)}] {ticker}: cache fresh — skipping")
                 skipped += 1
+                continue
+
+            seed_iv_cache_from_phantom(conn, ticker)
+            if not needs_cold_start(conn, ticker):
+                log.info(
+                    f"  [{i}/{len(universe)}] {ticker}: seeded from local history — skipping API cold start"
+                )
+                built += 1
                 continue
 
             # Need spot price to find ATM strike
@@ -2717,7 +2858,7 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
         vms_df["route_source"]       = "SCANNER_VMS"
         vms_df["signal_source"]      = "MICROSTRUCTURE"
         vms_df["news_terminal_role"] = "CONFIRMATION_ONLY"
-        vms_df["scanner_manifest_at"] = datetime.utcnow().isoformat() + "Z"
+        vms_df["scanner_manifest_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         vms_df.to_csv(OUTPUT_DIR / f"vms_scoreboard_{run_id}.csv",   index=False)
         vms_df.to_csv(OUTPUT_DIR / "vms_scoreboard_latest.csv",       index=False)
 
@@ -2764,7 +2905,7 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
         "route_source":       "SCANNER_LSS",
         "signal_source":      "MICROSTRUCTURE",
         "news_terminal_role": "CONFIRMATION_ONLY",
-        "scanner_manifest_at": datetime.utcnow().isoformat() + "Z",
+        "scanner_manifest_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         # L2-STEP7: LSS summary
         "lss_gate_counts": {
             "LEAD_GO":    int((vms_df["lss_decision"] == "LEAD_GO").sum())    if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
@@ -2787,7 +2928,7 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
 
     # L4-STEP1: Per-ticker signal timestamp dict — consumed by signal_grader.py and orchestrator.
     # Only includes tickers that passed the LSS gate (not LEAD_BLOCK).
-    _detected_at = datetime.utcnow().isoformat() + "Z"
+    _detected_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     _ticker_rows: dict = {}
     if not vms_df.empty and "lss_decision" in vms_df.columns:
         _non_block = vms_df[vms_df["lss_decision"] != "LEAD_BLOCK"]
@@ -2812,7 +2953,9 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
                 _history = json.loads(SIGNAL_HISTORY_PATH.read_text(encoding="utf-8"))
             except Exception:
                 _history = {}
-        _cutoff_str = (datetime.utcnow() - timedelta(days=90)).isoformat() + "Z"
+        _cutoff_str = (
+            datetime.now(timezone.utc) - timedelta(days=90)
+        ).isoformat().replace("+00:00", "Z")
         for _tk, _entry_base in _ticker_rows.items():
             if _tk not in _history:
                 _history[_tk] = []
@@ -2857,7 +3000,7 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
 def print_summary(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
                   run_id: str, top_n: int) -> None:
     print(f"\n{'='*90}")
-    print(f"  AVSHUNTER UNIVERSE SCANNER v6.0 — {run_id}")
+    print(f"  AVSHUNTER UNIVERSE SCANNER v7.0 — {run_id}")
 
     if vms_df.empty:
         print("  No results.")
@@ -2932,7 +3075,7 @@ def main():
     parser.add_argument("--test",             action="store_true",
                         help="Test mode: synthetic data, zero API calls, ~30 seconds. Validates full pipeline logic and writes manifest for orchestrator --validate.")
     parser.add_argument("--tier1",            action="store_true",
-                        help="Tier 1: dynamic Polygon-driven universe (run daily)")
+                        help="Tier 1: focused MarketData universe (run daily)")
     parser.add_argument("--tier2",            action="store_true",
                         help="Tier 2: broad sweep universe (run weekly/on-demand)")
     parser.add_argument("--tickers",          default=None,
@@ -2941,9 +3084,7 @@ def main():
     parser.add_argument("--dry-run",          action="store_true",
                         help="Score and display without writing output files")
     parser.add_argument("--rebuild-iv-cache", action="store_true",
-                        help="Cold-start IV history cache for all tickers (uses ~62K MarketData credits)")
-    parser.add_argument("--polygon-key",      default=None,
-                        help="Polygon API key (overrides POLYGON_API_KEY env var)")
+                        help="Seed IV cache locally, then backfill only missing dates from MarketData")
     parser.add_argument("--marketdata-key",   default=None,
                         help="MarketData.app API key (overrides MARKETDATA_API_KEY env var)")
     args = parser.parse_args()
@@ -2951,21 +3092,13 @@ def main():
     if not args.tier1 and not args.tier2 and not args.tickers and not args.rebuild_iv_cache and not args.test:
         parser.error("Specify at least one of: --tier1  --tier2  --tickers  --test  --rebuild-iv-cache")
 
-    global POLYGON_API_KEY, MARKETDATA_API_KEY
-    if args.polygon_key:
-        POLYGON_API_KEY = args.polygon_key
+    global MARKETDATA_API_KEY
     if args.marketdata_key:
         MARKETDATA_API_KEY = args.marketdata_key
 
-    if POLYGON_API_KEY == "YOUR_POLYGON_API_KEY" and not args.test:
-        log.error("No Polygon API key. Use --polygon-key or set POLYGON_API_KEY env var")
+    if MARKETDATA_API_KEY == "YOUR_MARKETDATA_API_KEY" and not args.test:
+        log.error("No MarketData.app API key. Use --marketdata-key or set MARKETDATA_API_KEY")
         sys.exit(1)
-
-    if MARKETDATA_API_KEY == "YOUR_MARKETDATA_API_KEY":
-        log.warning(
-            "No MarketData.app API key set. IV Rank will use synthetic RV×1.2 proxy (~65% confidence).\n"
-            "Set MARKETDATA_API_KEY env var or use --marketdata-key for real IV rank (~95% confidence)."
-        )
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
 
@@ -2973,11 +3106,11 @@ def main():
     ╔════════════════════════════════════════════════════════════════╗
     ║   AVSHUNTER — UNIVERSE OPTIONS MISPRICING SCANNER v7.0        ║
     ║   OLIS — Options Long Intelligence Score (proprietary)        ║
-    ║   Polygon (chain/universe) + MarketData.app (real IV Rank)    ║
+    ║   MarketData.app — market, options chain, and real IV Rank    ║
     ╚════════════════════════════════════════════════════════════════╝
     run_id        : {run_id}
-    test_mode     : {args.test}  (synthetic data — zero API calls)
-    tier1         : {args.tier1}   (dynamic, Polygon-driven)
+    test_mode     : {args.test}  ({'synthetic data — zero API calls' if args.test else 'live API data'})
+    tier1         : {args.tier1}   (focused, MarketData-only)
     tier2         : {args.tier2}   (broad sweep, ~{len(TIER2_UNIVERSE)} tickers)
     custom        : {args.tickers or 'None'}
     rebuild_cache : {args.rebuild_iv_cache}

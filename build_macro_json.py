@@ -67,6 +67,7 @@ MSG2_TOKENS = 4000
 MSG3_TOKENS = 8000
 
 FRESH_HOURS = 6  # skip rebuild if JSON is less than N hours old
+USSLIND_MAX_AGE_DAYS = 180  # monthly leading index; older observations are unusable
 
 # ============================================================
 # LOGGING
@@ -142,6 +143,11 @@ FILE_SPECS = [
     ("vix_engine_csv",     "avshunter_vix_engine*.csv",          False),
     ("macro_master_csv",   "avsh_macro_master.csv",              False),
     ("fred_master_csv",    "avshunter_fred_master.csv",          False),
+    ("gex_proxy_csv",      "avshunter_gex_proxy.csv",            False),
+    # M-05 (P1): avshunter_gex_by_strike.csv is written ONLY on success, so it
+    # VANISHES on failure — the builder saw absence and imputed, while
+    # avshunter_gex_proxy.csv sat there stating Regime: MISSING explicitly.
+    # The proxy summary is the canonical feed and is always written.
     ("gex_proxy_csv",      "avshunter_gex_proxy.csv",            False),
     ("gex_by_strike_csv",  "avshunter_gex_by_strike.csv",        False),
     ("threshold_flags_csv","macro_series_threshold_flags.csv",   False),
@@ -620,6 +626,49 @@ def _safe_float(value, default=None):
         return default
 
 
+def _first_present(row: dict, *keys: str):
+    """Return the first non-empty value across current and legacy column names."""
+    for key in keys:
+        value = row.get(key)
+        if value is not None and str(value).strip() != "":
+            return value
+    return None
+
+
+def _parse_date(value):
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).date()
+    except ValueError:
+        try:
+            return datetime.strptime(text[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+
+def _usslind_freshness(fred_csv: str, as_of_value) -> dict:
+    """Locate the last real USSLIND observation and enforce a freshness quarantine."""
+    latest = None
+    for row in _csv_rows(fred_csv):
+        if _safe_float(row.get("USSLIND")) is not None:
+            latest = row
+    if latest is None:
+        return {"source_date": None, "age_days": None, "stale": False}
+
+    source_date = _parse_date(_first_present(
+        latest, "Date", "DATE", "observation_date", "date", ""
+    ))
+    as_of_date = _parse_date(as_of_value) or datetime.now(timezone.utc).date()
+    age_days = (as_of_date - source_date).days if source_date else None
+    return {
+        "source_date": source_date.isoformat() if source_date else None,
+        "age_days": age_days,
+        "stale": age_days is not None and age_days > USSLIND_MAX_AGE_DAYS,
+    }
+
+
 def _set_nested(target: dict, path: tuple[str, ...], value):
     node = target
     for key in path[:-1]:
@@ -683,15 +732,76 @@ def _clean_resolved_market_flags(macro_json: dict, overrides: dict):
         )
 
 
-def _vix_term_regime(vix9d, vix3m) -> str:
-    if vix9d is None or vix3m is None:
-        return "MISSING"
-    spread = vix3m - vix9d
-    if spread > 0.25:
-        return "CONTANGO"
-    if spread < -0.25:
-        return "BACKWARDATION"
-    return "FLAT"
+def resolve_conflict(a: dict, b: dict) -> dict:
+    """
+    M-07 (P1): v1 resolved source conflicts by fixed precedence ("CSV primary")
+    with no date comparison. On 2026-08-08 that discarded T10Y2Y 0.46 dated
+    08-07 in favour of a CSV-derived 0.44 dated 08-06 — and the deleted move
+    (0.44 -> 0.46 on a day both yields fell) WAS the bull steepening, the most
+    diagnostic curve signal of that week.
+
+    Recency first, source precedence only as the tie-break. Basis is recorded.
+    Each arg: {"value":..., "date": "YYYY-MM-DD", "src": "..."}
+    """
+    def _d(x):
+        try:
+            return pd.to_datetime(x.get("date")).date()
+        except Exception:
+            return None
+    da, db = _d(a), _d(b)
+    if da and db and da != db:
+        win, basis = (a, "RECENCY") if da > db else (b, "RECENCY")
+    else:
+        win, basis = a, "SOURCE_PRECEDENCE"
+    return {**win, "basis": basis,
+            "alternatives": [{"value": x.get("value"), "date": x.get("date"),
+                              "src": x.get("src")} for x in (a, b) if x is not win]}
+
+
+def _coverage_penalty(macro_json: dict, missing_key: str) -> None:
+    """
+    Record a missing input and scale conviction by the coverage ratio.
+
+    Scoring over available inputs alone silently re-weights the survivors, so a
+    packet with half its inputs reads as confidently as a complete one.
+    """
+    missing = macro_json.setdefault("coverage_missing", [])
+    if missing_key not in missing:
+        missing.append(missing_key)
+    expected = int(macro_json.get("coverage_expected_inputs", 8))
+    coverage = max(0.0, (expected - len(missing)) / expected)
+    macro_json["data_coverage_ratio"] = round(coverage, 3)
+    for key in ("macro_conviction", "regime_probability"):
+        val = macro_json.get(key)
+        if isinstance(val, (int, float)):
+            macro_json[f"{key}_uncapped"] = val
+            macro_json[key] = round(float(val) * coverage, 4)
+
+
+def _vix_term_regime(vix_spot, vix9d, vix3m) -> dict:
+    """
+    M-03 (P1): v1 computed `spread = vix3m - vix9d` and never took spot as a
+    parameter. An elevated VIX9D — which IS the event-risk signal —
+    mechanically SHRANK that spread and read as shallower contango, inverting
+    the signal. Classify on VIX3M / VIX_spot; flag the front-end hump; return
+    UNKNOWN when legs are unavailable. Unmeasurable is not benign.
+    """
+    out = {"regime": "UNKNOWN", "contango_ratio": None, "front_end_slope": None,
+           "front_end_inverted": None}
+    spot, v9, v3 = _safe_float(vix_spot), _safe_float(vix9d), _safe_float(vix3m)
+    if not spot or not v9 or not v3:
+        out["note"] = "VIX spot/9D/3M unavailable — term regime NOT inferred"
+        return out
+    out["contango_ratio"] = round(v3 / spot, 4)
+    out["front_end_slope"] = round(v9 - spot, 3)
+    out["front_end_inverted"] = v9 > spot
+    ratio = out["contango_ratio"]
+    regime = ("STEEP_CONTANGO" if ratio > 1.25 else "CONTANGO" if ratio > 1.10
+              else "FLAT" if ratio > 0.95 else "BACKWARDATION")
+    if out["front_end_inverted"]:
+        regime += "_FRONT_END_HUMP"
+    out["regime"] = regime
+    return out
 
 
 def _vol_mode_from_vix(vix, term_regime, vvix=None) -> str:
@@ -703,7 +813,10 @@ def _vol_mode_from_vix(vix, term_regime, vvix=None) -> str:
         return "HIGH_STRESS"
     if vix >= 20 or (vvix is not None and vvix >= 135):
         return "ELEVATED_CAUTION"
-    if term_regime == "CONTANGO":
+    if str(term_regime).startswith("CONTANGO") or str(term_regime).startswith("STEEP_CONTANGO"):
+        # A humped curve is event premium, not compressed calm carry.
+        if str(term_regime).endswith("_FRONT_END_HUMP"):
+            return "EVENT_PREMIUM_FRONT_END"
         return "COMPRESSED_CONTANGO_LOW_VOL"
     return "SHALLOW_CONTANGO"
 
@@ -746,11 +859,14 @@ def extract_market_data_overrides(payload: dict) -> dict:
     gex_primary = next((r for r in gex_rows if str(r.get("Ticker", "")).upper() == "SPY"), gex_rows[0] if gex_rows else {})
     sector_tickers = {str(r.get("ticker", "")).upper(): r for r in sectors_rows}
 
-    vix = _safe_float(vix_row.get("VIX"))
-    vix9d = _safe_float(vix_row.get("VIX9D"))
-    vix3m = _safe_float(vix_row.get("VIX3M"))
-    vvix = _safe_float(vix_row.get("VVIX"))
-    term_regime = _vix_term_regime(vix9d, vix3m)
+    # v4 publishes audited direct/proxy columns; retain legacy aliases for
+    # historical files. Prefer direct observations whenever both are present.
+    vix = _safe_float(_first_present(vix_row, "VIX", "VIX_Direct", "VIX_Proxy"))
+    vix9d = _safe_float(_first_present(vix_row, "VIX9D", "VIX9D_Direct", "VIX9D_Proxy"))
+    vix3m = _safe_float(_first_present(vix_row, "VIX3M", "VIX3M_Direct", "VIX3M_Proxy"))
+    vvix = _safe_float(_first_present(vix_row, "VVIX", "VVIX_Direct", "VVIX_Proxy"))
+    _term = _vix_term_regime(vix, vix9d, vix3m)
+    term_regime = _term["regime"]
     vix_spread = None if vix9d is None or vix3m is None else round(vix3m - vix9d, 4)
 
     dgs10 = _safe_float(macro_master.get("DGS10"))
@@ -765,18 +881,21 @@ def extract_market_data_overrides(payload: dict) -> dict:
     gex_regime = str(gex_primary.get("Regime", "") or "")
     gex_score = _gex_score(gex_regime, net_gex_bn)
 
-    usslind_quarantined = str(macro_master.get("USSLIND_Quarantined", "")).strip().upper() in {"TRUE", "1", "YES"}
+    as_of_date = vix_row.get("Date") or macro_master.get("Date") or ""
+    usslind_freshness = _usslind_freshness(data.get("fred_master_csv", ""), as_of_date)
+    producer_quarantine = str(macro_master.get("USSLIND_Quarantined", "")).strip().upper() in {"TRUE", "1", "YES"}
+    usslind_quarantined = producer_quarantine or usslind_freshness["stale"]
     xlc_30d = _safe_float(macro_master.get("XLC_30d"))
     xlc_present = "XLC" in sector_tickers or xlc_30d is not None
 
     return {
-        "as_of_date": vix_row.get("Date") or macro_master.get("Date") or "",
+        "as_of_date": as_of_date,
         "vix": vix,
         "vix9d": vix9d,
         "vix3m": vix3m,
         "vvix": vvix,
-        "vvix_stress": vix_row.get("VVIX_Stress", ""),
-        "vix_data_quality": vix_row.get("VIX_Data_Quality", ""),
+        "vvix_stress": _first_present(vix_row, "VVIX_Stress") or "",
+        "vix_data_quality": _first_present(vix_row, "VIX_Data_Quality", "VIX_Data_Flag") or "",
         "vix_term_regime": term_regime,
         "vix_spread": vix_spread,
         "vol_mode": _vol_mode_from_vix(vix, term_regime, vvix),
@@ -796,6 +915,9 @@ def extract_market_data_overrides(payload: dict) -> dict:
         "gex_contracts_used": _safe_float(gex_primary.get("Contracts_Used")),
         "usslind_status": macro_master.get("USSLIND_Status", ""),
         "usslind_quarantined": usslind_quarantined,
+        "usslind_source_date": usslind_freshness["source_date"],
+        "usslind_age_days": usslind_freshness["age_days"],
+        "usslind_stale": usslind_freshness["stale"],
         "xlc_present": xlc_present,
         "xlc_30d": xlc_30d,
         "report_vix9d_missing": report.get("vix_term_structure", {}).get("vix9d") is None,
@@ -808,6 +930,7 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
     """Apply confirmed Colab market_data fields after model synthesis."""
     overrides = extract_market_data_overrides(payload)
     extras = macro_json.setdefault("extras", {})
+    _clean_resolved_market_flags(macro_json, overrides)
 
     if overrides["vix"] is not None:
         macro_json["vix_spot"] = overrides["vix"]
@@ -815,7 +938,6 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
         extras.setdefault("vix_5d_avg", overrides["vix"])
 
     if overrides["vix9d"] is not None and overrides["vix3m"] is not None:
-        _clean_resolved_market_flags(macro_json, overrides)
         extras["vix_contango"] = overrides["vix_spread"]
         extras["vix_term_regime"] = overrides["vix_term_regime"]
         volatility = extras.setdefault("volatility", {})
@@ -884,6 +1006,7 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
 
     if overrides["gex_net_bn"] is not None:
         macro_json["gex_regime_score"] = overrides["gex_score"]
+        macro_json["gex_available"] = True
         extras["gex"] = {
             "regime": overrides["gex_regime"],
             "net_gex_bn": overrides["gex_net_bn"],
@@ -894,13 +1017,27 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
             "source": "avshunter_gex_proxy.csv",
         }
     else:
-        macro_json.setdefault("gex_regime_score", 0.5)
-        _append_unique_flag(macro_json, "ACTIVE: GEX missing; dealer gamma defaulted neutral")
+        # M-06 (P0): v1 imputed 0.5. That does not merely fail to warn — it
+        # MANUFACTURES a neutral reading, so a correct +4.67B and a total GEX
+        # failure produced the same composite. Absent data must reduce
+        # conviction, never contribute a median value.
+        macro_json["gex_regime_score"] = None
+        macro_json["gex_available"] = False
+        extras["gex"] = {"regime": None, "state": "MISSING",
+                         "source": "avshunter_gex_proxy.csv",
+                         "note": "no usable row — score is null, NOT imputed"}
+        _coverage_penalty(macro_json, "gex")
+        _append_unique_flag(macro_json,
+                            "DATA_COVERAGE_INCOMPLETE: [gex] — dealer gamma "
+                            "unavailable, score null (v1 imputed 0.5)")
 
     extras["lei_usslind"] = {
         "status": overrides["usslind_status"],
         "quarantined": overrides["usslind_quarantined"],
-        "source": "avsh_macro_master.csv",
+        "source_date": overrides["usslind_source_date"],
+        "age_days": overrides["usslind_age_days"],
+        "stale": overrides["usslind_stale"],
+        "source": "avshunter_fred_master.csv|avsh_macro_master.csv",
     }
     if overrides["usslind_quarantined"]:
         _append_unique_flag(macro_json, "ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations")
@@ -946,15 +1083,23 @@ def normalise_horizon_routing(macro_json: dict) -> dict:
             return default
 
     def _get_forward_bias_bucket(extras: dict, bucket: str) -> dict:
-        fb = extras.get("forward_bias", {})
-        if not isinstance(fb, dict):
-            return {}
-        mapping = {
-            "1_5d":   "short_1_5d",
-            "6_10d":  "medium_6_10d",
-            "11_20d": "long_11_20d",
-        }
-        return fb.get(mapping[bucket], {}) if isinstance(fb.get(mapping[bucket], {}), dict) else {}
+        """
+        M-04 (P1): v1 looked for fb[<key>] but the report structure is
+        forward_bias -> horizons -> short_1_5d, one level deeper. The lookup
+        missed every time and callers fell through to macro_json["dir_bias"] —
+        the LLM-written value. Latent while M-01 masked it; live the moment
+        M-01 is fixed, which is why both land in the same commit.
+        """
+        fb = extras.get("forward_bias") or {}
+        mapping = {"1_5d": "short_1_5d", "6_10d": "medium_6_10d",
+                   "11_20d": "long_11_20d"}
+        key = mapping.get(bucket, bucket)
+        for container in (fb.get("horizons"), fb, extras.get("horizons")):
+            if isinstance(container, dict):
+                val = container.get(key) or container.get(bucket)
+                if isinstance(val, dict) and val:
+                    return val
+        return {}
 
     def _default_bucket(bucket: str, extras: dict) -> dict:
         fb_bucket = _get_forward_bias_bucket(extras, bucket)
@@ -1016,6 +1161,51 @@ def normalise_horizon_routing(macro_json: dict) -> dict:
     for bucket in required_buckets:
         if bucket not in top_hr or not isinstance(top_hr.get(bucket), dict):
             top_hr[bucket] = _default_bucket(bucket, extras)
+
+    # ── M-01 (P0) + M-02 (P0): ENFORCEMENT PASS ────────────────────────────
+    # v1 only called _default_bucket for MISSING buckets, so when the LLM
+    # supplied horizon_routing the caps inside it never ran. The 2026-08-08
+    # packet shipped size_multiplier 0.7 on all three buckets against caps of
+    # 0.50 / 0.55 / 0.60 — proof the function never executed and the block was
+    # accepted verbatim. The same path let direction NEUTRAL x3 (in both
+    # forward_bias_*.csv and report_*.json) be published as MILDLY_BULLISH x3.
+    #
+    # Deterministic risk controls must survive regardless of who produced the
+    # block, so they run here on every bucket rather than inside the fallback.
+    CAPS = {"1_5d": 0.50, "6_10d": 0.55, "11_20d": 0.60}
+    enforcement_log = []
+    for bucket in required_buckets:
+        blk = top_hr[bucket]
+        cap = CAPS[bucket]
+
+        before = _safe_float(blk.get("size_multiplier"), cap)
+        after = min(before, cap)
+        if after != before:
+            enforcement_log.append(
+                f"{bucket}: size_multiplier {before} -> {after} (cap {cap})")
+        blk["size_multiplier"] = after
+        blk["size_multiplier_cap"] = cap
+
+        csv_dir = _get_forward_bias_bucket(extras, bucket).get("direction")
+        if csv_dir:
+            csv_dir = str(csv_dir).upper()
+            prior = blk.get("bias")
+            if prior and str(prior).upper() != csv_dir:
+                enforcement_log.append(
+                    f"{bucket}: bias {prior} -> {csv_dir} (computed value wins)")
+            blk["bias"] = csv_dir
+            blk["bias_source"] = "FORWARD_BIAS_COMPUTED"
+        else:
+            blk.setdefault("bias_source", "NARRATIVE_UNVERIFIED")
+
+        csv_prob = _get_forward_bias_bucket(extras, bucket).get("bullish_prob_pct")
+        if csv_prob is not None:
+            blk["bullish_prob_pct"] = _safe_float(csv_prob, blk.get("bullish_prob_pct"))
+
+    macro_json["horizon_routing_enforcement"] = enforcement_log
+    if enforcement_log:
+        for line in enforcement_log:
+            print(f"  ENFORCED  {line}")
 
     # extras.horizon_routing
     extras_hr = extras.get("horizon_routing")

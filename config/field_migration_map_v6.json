@@ -1,0 +1,24 @@
+{
+  "schema_version": "actuarial_v6",
+  "canonical_to_physical": {
+    "return_5d": "outcome_5d_return",
+    "return_10d": "outcome_10d_return",
+    "return_20d": "outcome_20d_return",
+    "max_drawdown_20d": "outcome_max_drawdown_20d",
+    "hit_10pct_20d": "outcome_hit_10pct_up",
+    "phase_v2": "phase_v2",
+    "future_path_label": "outcome_category"
+  },
+  "physical_to_canonical": {
+    "outcome_5d_return": "return_5d",
+    "outcome_10d_return": "return_10d",
+    "outcome_20d_return": "return_20d",
+    "outcome_max_drawdown_20d": "max_drawdown_20d",
+    "outcome_hit_10pct_up": "hit_10pct_20d",
+    "outcome_category": "future_path_label"
+  },
+  "notes": [
+    "The v6 parquet currently stores several canonical horizon fields under outcome_* names.",
+    "These mappings are explicit and are the only accepted aliases for Phase 1 schema validation."
+  ]
+}

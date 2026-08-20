@@ -100,9 +100,17 @@ from scipy.optimize import brentq, minimize
 from scipy.integrate import quad
 
 try:
-    from scripts.macro_quant_packet import MACRO_QUANT_CSV_FIELDS, macro_quant_columns_for_row
+    from scripts.macro_quant_packet import (
+        MACRO_QUANT_CSV_FIELDS,
+        macro_quant_columns_for_row,
+        resolve_macro_suffix_columns,
+    )
 except Exception:
-    from macro_quant_packet import MACRO_QUANT_CSV_FIELDS, macro_quant_columns_for_row  # type: ignore
+    from macro_quant_packet import (  # type: ignore
+        MACRO_QUANT_CSV_FIELDS,
+        macro_quant_columns_for_row,
+        resolve_macro_suffix_columns,
+    )
 
 try:
     from contracts.macro_enrichment_delta import candidate_macro_enrichment_audit, interpret_macro_decision_context
@@ -801,7 +809,12 @@ def compute_convexity_score_oi(
     spot      = (float(signal.get('stock_price') or signal.get('underlying_price') or 0))
     ivp       = _ivp_from_ctx(signal, dashboard)  # FIX-2026-04-30: was _ivp() (NameError — never defined in OI layer)
     be_pct    = (float(signal.get('breakeven_pct') or 0))
-    direction = (str(signal.get('options_direction') or signal.get('direction') or 'CALL').upper())
+    raw_direction = str(signal.get('options_direction') or signal.get('direction') or '').upper()
+    if raw_direction not in {'CALL', 'PUT'}:
+        return "AVOID", {
+            "direction": {"pass": False, "reason": "DATA_INSUFFICIENT - options direction unavailable"},
+        }, 0
+    direction = raw_direction
     iv_rank   = (_flt_conv(dashboard, 'iv_rank_252d') or _flt_conv(signal, 'iv_rank_252d') or
                  _flt_conv(signal, 'iv_rank') or _flt_conv(dashboard, 'iv_rank'))
     atr_pct   = _flt_conv(signal, 'atr_percentile', -1.0)
@@ -1038,6 +1051,19 @@ DTE_CONFIG = {
     "11_20d": {"dte_min": 35, "dte_max": 60, "spread_max": 0.35, "delta_min": 0.30, "delta_max": 0.50},
 }
 
+# EV-2 bounded long-single search. Two expiries x three delta-nearest strikes.
+# Vertical debit spreads are a separate EV-2B structure because their quotes,
+# multipliers, and two-leg exit valuation require a distinct input contract.
+EV3_LONG_SINGLE_CANDIDATE_LIMIT = 6
+EV3_STRIKES_PER_EXPIRY = 3
+EV3_EXPIRY_LIMIT = 2
+EV3_VERTICAL_CANDIDATE_LIMIT = 6
+EV3_TOTAL_CANDIDATE_LIMIT = 12
+EV3_MIN_OPEN_INTEREST = int(os.environ.get("AVSHUNTER_EV3_MIN_OPEN_INTEREST", "50"))
+EV3_MIN_VOLUME = int(os.environ.get("AVSHUNTER_EV3_MIN_VOLUME", "1"))
+EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.2.0"
+EV3_VERTICAL_POLICY_VERSION = "ev3-vertical-debit-candidates-v0.1.0"
+
 # Contract tiers for tiered review (replaces binary STAND_DOWN gate)
 # CLEAN: all thresholds met | REVIEW_SPREAD: spread too wide | REVIEW_COMPOUND: multiple marginal
 CONTRACT_TIER_CLEAN    = "CLEAN"
@@ -1060,6 +1086,7 @@ BACKOFF         = 1.2
 SESSION  = requests.Session()
 HEADERS  = {}
 AUTH_MODE = "header"
+_CONTRACT_MULTIPLIER_CACHE: Dict[str, Tuple[Optional[float], Optional[str]]] = {}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1098,6 +1125,97 @@ def _get(url: str, params: dict = None) -> Optional[dict]:
                 return None
             _backoff(attempt)
     return None
+
+
+def _polygon_contract_multiplier(symbol: Any) -> Tuple[Optional[float], Optional[str]]:
+    """Resolve the deliverable multiplier from Polygon contract reference data."""
+    raw_symbol = str(symbol or '').strip().upper()
+    if not raw_symbol:
+        return None, None
+    polygon_symbol = raw_symbol if raw_symbol.startswith('O:') else f'O:{raw_symbol}'
+    if polygon_symbol in _CONTRACT_MULTIPLIER_CACHE:
+        return _CONTRACT_MULTIPLIER_CACHE[polygon_symbol]
+    payload = _get(f'https://api.polygon.io/v3/reference/options/contracts/{polygon_symbol}')
+    result = payload.get('results') if isinstance(payload, dict) else None
+    multiplier = _repair_alt_float(result.get('shares_per_contract')) if isinstance(result, dict) else None
+    resolved = (
+        (multiplier, 'polygon.reference.shares_per_contract')
+        if multiplier is not None and multiplier > 0
+        else (None, None)
+    )
+    _CONTRACT_MULTIPLIER_CACHE[polygon_symbol] = resolved
+    return resolved
+
+
+def _enrich_ev3_contract_multipliers(
+    selected_contract: Optional[Dict[str, Any]],
+    alternatives: List[Dict[str, Any]],
+    underlying_ticker: Any = None,
+) -> None:
+    """Populate selected/alternative multipliers without assuming standard 100."""
+    top_level_records = ([selected_contract] if selected_contract else []) + list(alternatives or [])
+    vertical_records = [
+        record for record in top_level_records
+        if str(record.get('structure') or '').upper() in {'BULL_CALL_DEBIT', 'BEAR_PUT_DEBIT'}
+    ]
+    records: List[Dict[str, Any]] = []
+    for record in top_level_records:
+        if str(record.get('structure') or '').upper() in {'BULL_CALL_DEBIT', 'BEAR_PUT_DEBIT'}:
+            for leg_name in ('long_leg', 'short_leg'):
+                leg = record.get(leg_name)
+                if isinstance(leg, dict):
+                    records.append(leg)
+        else:
+            records.append(record)
+    unresolved = [
+        record for record in records
+        if _repair_alt_float(record.get('contract_multiplier')) is None
+        and _repair_alt_row_symbol(record)
+    ]
+    if not unresolved:
+        return
+    symbols = {_repair_alt_row_symbol(record) for record in unresolved}
+    resolved: Dict[str, Tuple[Optional[float], Optional[str]]] = {}
+    ticker = str(underlying_ticker or '').strip().upper()
+    if ticker:
+        expiries = sorted(
+            str(record.get('expiry') or record.get('expiration_date') or '')[:10]
+            for record in unresolved
+            if record.get('expiry') or record.get('expiration_date')
+        )
+        params: Dict[str, Any] = {'underlying_ticker': ticker, 'expired': 'false', 'limit': 1000}
+        if expiries:
+            params['expiration_date.gte'] = expiries[0]
+            params['expiration_date.lte'] = expiries[-1]
+        payload = _get('https://api.polygon.io/v3/reference/options/contracts', params)
+        for item in (payload.get('results') or []) if isinstance(payload, dict) else []:
+            symbol = _repair_alt_symbol(item.get('ticker')).removeprefix('O:')
+            multiplier = _repair_alt_float(item.get('shares_per_contract'))
+            if symbol in symbols and multiplier is not None and multiplier > 0:
+                resolved[symbol] = (multiplier, 'polygon.reference.shares_per_contract')
+
+    missing_symbols = symbols - set(resolved)
+    if missing_symbols:
+        with ThreadPoolExecutor(max_workers=min(4, len(missing_symbols))) as executor:
+            futures = {executor.submit(_polygon_contract_multiplier, symbol): symbol for symbol in missing_symbols}
+            for future, symbol in futures.items():
+                try:
+                    resolved[symbol] = future.result(timeout=SESSION_TIMEOUT + 5)
+                except Exception:
+                    resolved[symbol] = (None, None)
+    for record in unresolved:
+        multiplier, source = resolved.get(_repair_alt_row_symbol(record), (None, None))
+        if multiplier is not None:
+            record['contract_multiplier'] = multiplier
+            record['contract_multiplier_source'] = source
+    for vertical in vertical_records:
+        long_leg = vertical.get('long_leg') or {}
+        short_leg = vertical.get('short_leg') or {}
+        long_multiplier = _repair_alt_float(long_leg.get('contract_multiplier'))
+        short_multiplier = _repair_alt_float(short_leg.get('contract_multiplier'))
+        if long_multiplier is not None and long_multiplier == short_multiplier:
+            vertical['contract_multiplier'] = long_multiplier
+            vertical['contract_multiplier_source'] = 'MATCHED_LEG_MULTIPLIERS'
 
 def _paginate(base_url: str, params: dict = None, cap: int = None) -> List[dict]:
     data, url, lp, pages = [], base_url, dict(params or {}), 0
@@ -1310,6 +1428,8 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
         oi    = _md("openInterest")
         vol   = _md("volume")
         spot  = _md("underlyingPrice")
+        updated = _md("updated")
+        multiplier = _md("contractMultiplier") or _md("multiplier")
 
         enriched = dict(contract)   # shallow copy — don't mutate original
 
@@ -1332,6 +1452,13 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
         if oi    is not None: enriched['open_interest'] = int(oi)
         if vol   is not None: enriched['volume']      = int(vol)
         if spot  is not None: enriched['underlying_price'] = float(spot)
+        quote_timestamp_utc = _quote_timestamp_utc(updated)
+        if quote_timestamp_utc is not None:
+            enriched['quote_timestamp_utc'] = quote_timestamp_utc
+            enriched['quote_timestamp_source'] = 'marketdata.app.updated'
+        if multiplier is not None:
+            enriched['contract_multiplier'] = float(multiplier)
+            enriched['contract_multiplier_source'] = 'marketdata.app'
 
         # MD-IV-FIX: Extract ivRank and ivPercentile directly from MarketData response.
         # These are reliable fields returned by MD on options/chain/ and /quotes/ endpoints.
@@ -2020,6 +2147,30 @@ def _extract_quote(r: dict) -> Tuple[Optional[float], Optional[float]]:
                 return float(b), float(a)
     return None, None
 
+def _quote_timestamp_utc(value: Any) -> Optional[str]:
+    """Normalise an exchange/vendor quote timestamp without inventing one."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+    try:
+        if isinstance(value, (int, float)) or str(value).strip().isdigit():
+            numeric = float(value)
+            magnitude = abs(numeric)
+            unit = 'ns' if magnitude >= 1e17 else ('ms' if magnitude >= 1e11 else 's')
+            stamp = pd.to_datetime(numeric, unit=unit, utc=True)
+        else:
+            stamp = pd.Timestamp(value)
+            if stamp.tzinfo is None:
+                return None
+            stamp = stamp.tz_convert('UTC')
+        return stamp.isoformat()
+    except Exception:
+        return None
+
 def _dte(exp_str) -> Optional[float]:
     if not exp_str: return None
     try:
@@ -2205,6 +2356,8 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
         ois         = _arr("openInterest")
         vols        = _arr("volume")
         underlying_prices = _arr("underlyingPrice")
+        updateds     = _arr("updated")
+        multipliers  = _arr("contractMultiplier") or _arr("multiplier")
 
         if not symbols:
             return pd.DataFrame()
@@ -2240,6 +2393,12 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
             oi_val  = int(ois[i])     if i < len(ois)    and ois[i]   is not None else None
             vol_val = int(vols[i])    if i < len(vols)   and vols[i]  is not None else None
             spot    = float(underlying_prices[i]) if i < len(underlying_prices) and underlying_prices[i] is not None else None
+            quote_timestamp_utc = _quote_timestamp_utc(updateds[i]) if i < len(updateds) else None
+            contract_multiplier = (
+                float(multipliers[i])
+                if i < len(multipliers) and multipliers[i] is not None
+                else None
+            )
 
             # Mark = mid (real bid/ask midpoint from MD when bid/ask exist).
             # Some marketdata.app responses can contain a mark/mid without
@@ -2278,6 +2437,10 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
                 'quote_fields_complete': quote_fields_complete,
                 'md_quote_source'  : 'marketdata.app' if quote_fields_complete else 'marketdata.app_incomplete',
                 'md_freshness'     : _md_freshness,
+                'quote_timestamp_utc': quote_timestamp_utc,
+                'quote_timestamp_source': 'marketdata.app.updated' if quote_timestamp_utc else None,
+                'contract_multiplier': contract_multiplier,
+                'contract_multiplier_source': 'marketdata.app' if contract_multiplier is not None else None,
             })
 
         if not rows:
@@ -2326,6 +2489,12 @@ def _fetch_chain_polygon(ticker: str) -> pd.DataFrame:
         g     = _extract_greeks(r)
         iv    = _extract_iv(r)
         bid, ask = _extract_quote(r)
+        quote_timestamp_utc = _quote_timestamp_utc(
+            _safe(r, 'last_quote', 'sip_timestamp')
+            or _safe(r, 'last_quote', 'participant_timestamp')
+            or _safe(r, 'last_quote', 'last_updated')
+            or r.get('updated')
+        )
         mark  = (bid+ask)/2 if (bid and ask) else None
         sym   = r.get('ticker') or _safe(r,'details','ticker')
         right = None
@@ -2345,6 +2514,11 @@ def _fetch_chain_polygon(ticker: str) -> pd.DataFrame:
         spread_pct = None
         if bid and ask and mark and mark > 0:
             spread_pct = (ask-bid)/mark
+        contract_multiplier = (
+            _safe(d, 'shares_per_contract')
+            or _safe(d, 'contract_multiplier')
+            or r.get('contract_multiplier')
+        )
 
         rows.append({
             'underlying'     : ticker,
@@ -2365,6 +2539,10 @@ def _fetch_chain_polygon(ticker: str) -> pd.DataFrame:
             'mark'           : mark,
             'spread_pct'     : spread_pct,
             'underlying_price': spot,
+            'quote_timestamp_utc': quote_timestamp_utc,
+            'quote_timestamp_source': 'polygon.last_quote' if quote_timestamp_utc else None,
+            'contract_multiplier': contract_multiplier,
+            'contract_multiplier_source': 'polygon' if contract_multiplier is not None else None,
         })
 
     if not rows:
@@ -2422,6 +2600,23 @@ def fetch_chain(ticker: str) -> pd.DataFrame:
 
     # ── MD is primary — use it when available ─────────────────────────────────
     if not md_df.empty:
+        # MarketData supplies executable quotes and an authoritative `updated`
+        # timestamp but does not publish the deliverable multiplier. Polygon
+        # snapshot details do; join that metadata by OCC symbol rather than
+        # assuming every contract has the standard 100-share deliverable.
+        if not poly_df.empty and {'symbol', 'contract_multiplier'}.issubset(poly_df.columns):
+            multiplier_lookup = (
+                poly_df.dropna(subset=['symbol', 'contract_multiplier'])
+                .drop_duplicates('symbol')
+                .set_index('symbol')['contract_multiplier']
+            )
+            mapped = md_df['symbol'].map(multiplier_lookup)
+            if 'contract_multiplier' not in md_df.columns:
+                md_df['contract_multiplier'] = mapped
+            else:
+                md_df['contract_multiplier'] = md_df['contract_multiplier'].fillna(mapped)
+            filled = md_df['contract_multiplier'].notna()
+            md_df.loc[filled, 'contract_multiplier_source'] = 'polygon.details.shares_per_contract'
         print(f"  [{ticker}] MD chain (primary): {len(md_df)} contracts, mark_synthetic=False")
         return md_df
 
@@ -3442,7 +3637,12 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     regime      = str(regime_raw).upper().strip() or 'TRANSITIONAL'
     spot        = float(_f('stock_price', 0) or 0)
     entry       = float(_f('entry_price', spot) or spot)
-    stop        = float(_f('stop_loss', entry*0.97) or entry*0.97)
+    _raw_stop = _f('stop_loss')
+    try:
+        _stop_authoritative = _raw_stop is not None and float(_raw_stop) > 0
+    except (TypeError, ValueError):
+        _stop_authoritative = False
+    stop        = float(_raw_stop) if _stop_authoritative else entry*0.97
     composite   = float(_f('composite_score', 50) or 50)
     win_prob    = float(_f('win_probability', 50) or 50)
     crabel      = str(_f('crabel_pattern', '') or '')
@@ -3549,6 +3749,21 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
                 f'probability={l2_prob_verdict or "-"}, edge_quality={l2_edge_quality or "-"}, '
                 f'final_recommendation={final_rec or "-"}'
             )
+    elif (
+        direction == 'STRANGLE'
+        and vanguard_supported
+        and l2_edge_direction in {'CALL', 'PUT'}
+    ):
+        # A mixed-trend TRANSITION is non-directional structurally, but a
+        # governed strong Vanguard edge can resolve the options thesis.  Weak
+        # or absent probability opinions remain STRANGLE and therefore remain
+        # ineligible for the directional EV engine.
+        direction = l2_edge_direction
+        direction_override_reason = (
+            f'VANGUARD_TRANSITION_DIRECTION_REPAIR: direction={l2_edge_direction}, '
+            f'verdict={vanguard_verdict or "-"}, probability={l2_prob_verdict or "-"}, '
+            f'edge_quality={l2_edge_quality or "-"}'
+        )
 
     effective_control = control_state or precor_control   # prefer precor if control_state blank
 
@@ -3693,6 +3908,8 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'spot'               : spot,
         'entry'              : entry,
         'stop'               : stop,
+        'stop_authoritative' : _stop_authoritative,
+        'stop_source'        : 'stop_loss' if _stop_authoritative else 'LEGACY_DEFAULT_NOT_EV_ELIGIBLE',
         'stop_dist'          : stop_dist,
         'stop_pct'           : stop_pct,
         'target_2r'          : target_2r,
@@ -3745,7 +3962,157 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'horizon_block_reason': _f('horizon_block_reason', ''),
         'horizon_source'     : _f('horizon_source', ''),
         'router_version'     : _f('router_version', ''),
+        'layer2_matched_state_key': (
+            _f('layer2__matched_state_key', '')
+            or _f('layer2__outcomes__matched_state_key', '')
+        ),
+        'layer2_vol_regime'   : _f('layer2__vol_regime'),
+        'layer2_trend_direction': _f('layer2__trend_direction'),
+        'layer2_structure_quality': _f('layer2__structure_quality'),
+        'layer2_trend_maturity': _f('layer2__trend_maturity'),
+        'wyckoff_phase_bucket': _f('wyckoff_phase_bucket'),
+        'adx_14'             : _f('adx_14'),
+        'atr_percentile_rank': _f('atr_percentile_rank'),
     }
+
+
+def _ev3_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
+    """Build the explicit EV3 thesis contract with auditable derivations."""
+    entry = _repair_alt_float(ctx.get('entry'))
+    target = _repair_alt_float(ctx.get('structural_target'))
+    raw_stop = _repair_alt_float(ctx.get('stop'))
+    direction = str(ctx.get('direction') or '').upper()
+
+    invalidation = None
+    invalidation_source = 'MISSING_AUTHORITATIVE_STOP'
+    if entry and raw_stop and bool(ctx.get('stop_authoritative')):
+        if (direction == 'CALL' and raw_stop < entry) or (direction == 'PUT' and raw_stop > entry):
+            invalidation = raw_stop
+            invalidation_source = str(ctx.get('stop_source') or 'stop_loss')
+        elif direction in {'CALL', 'PUT'}:
+            risk_distance = abs(entry - raw_stop)
+            if risk_distance > 0:
+                invalidation = entry - risk_distance if direction == 'CALL' else entry + risk_distance
+                invalidation_source = 'DIRECTION_MIRROR_FROM_STOP_LOSS_V1'
+
+    horizon_text = str(ctx.get('horizon_bucket') or '').upper().replace('-', '_').replace(' ', '')
+    if '1_5' in horizon_text:
+        planned_hold_sessions = 5
+    elif '6_10' in horizon_text:
+        planned_hold_sessions = 10
+    elif '11_20' in horizon_text:
+        planned_hold_sessions = 20
+    else:
+        planned_hold_sessions = None
+
+    state_values: Dict[str, str] = {}
+    for component in str(ctx.get('layer2_matched_state_key') or '').split('|'):
+        if '=' in component:
+            name, value = component.split('=', 1)
+            state_values[name.strip()] = value.strip().upper()
+    adx = _repair_alt_float(ctx.get('adx_14'))
+    atr_rank = _repair_alt_float(ctx.get('atr_percentile_rank'))
+    adx_bucket = None
+    if adx is not None:
+        adx_bucket = 'WEAK' if adx < 20 else ('STRONG' if adx > 35 else 'MODERATE')
+    atr_bucket = None
+    if atr_rank is not None:
+        atr_bucket = 'LOW' if atr_rank < 33 else ('HIGH' if atr_rank > 66 else 'MID')
+    state_parts = (
+        state_values.get('vol_regime') or str(ctx.get('layer2_vol_regime') or '').upper() or None,
+        state_values.get('trend_direction') or str(ctx.get('layer2_trend_direction') or '').upper() or None,
+        state_values.get('structure_quality') or str(ctx.get('layer2_structure_quality') or '').upper() or None,
+        adx_bucket,
+        state_values.get('wyckoff_phase_bucket') or str(ctx.get('wyckoff_phase_bucket') or '').upper() or None,
+        state_values.get('trend_maturity') or str(ctx.get('layer2_trend_maturity') or '').upper() or None,
+        atr_bucket,
+    )
+    barrier_state_key = '|'.join(state_parts) if all(state_parts) else None
+
+    return {
+        'entry_spot': entry,
+        'target_spot': target,
+        'invalidation_spot': invalidation,
+        'invalidation_source': invalidation_source,
+        'invalidation_policy_version': 'EV3_DIRECTIONAL_STOP_V1',
+        'planned_hold_sessions': planned_hold_sessions,
+        'planned_hold_source': 'HORIZON_BUCKET_ENDPOINT_V1' if planned_hold_sessions else 'UNROUTED',
+        'ev3_handoff_schema_version': 'ev3-options-handoff-v1',
+        'ev3_barrier_state_key': barrier_state_key,
+        'ev3_barrier_state_key_source': (
+            'LAYER2_STATE_PLUS_DISCOVERY_BUCKETS_V1' if barrier_state_key else 'INCOMPLETE_STATE_INPUTS'
+        ),
+        'ev3_barrier_state_key_version': 'actuarial-v7-seven-dimension-v1',
+    }
+
+
+def _coalesce_ev3_merge_inputs(frame: pd.DataFrame) -> pd.DataFrame:
+    """Restore EV3 state dimensions hidden by the Discovery/Vanguard merge.
+
+    Both inputs carry ADX and ATR percentile values.  ``pd.merge`` therefore
+    suffixes them before ``parse_structural_context`` runs.  EV3 requires the
+    unsuffixed, Vanguard-authoritative values to build the exact seven-
+    dimension barrier key.  Keep the source columns for auditability and add
+    only the canonical aliases consumed by the handoff.
+    """
+    result = frame.copy()
+    for field in ('adx_14', 'atr_percentile_rank'):
+        if field in result.columns:
+            continue
+        vanguard_field = f'{field}_y'
+        discovery_field = f'{field}_x'
+        if vanguard_field in result.columns and discovery_field in result.columns:
+            result[field] = result[vanguard_field].combine_first(result[discovery_field])
+        elif vanguard_field in result.columns:
+            result[field] = result[vanguard_field]
+        elif discovery_field in result.columns:
+            result[field] = result[discovery_field]
+    return result
+
+
+def _ev3_direction_fields(
+    ctx: Dict[str, Any],
+    direction_arbitration: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Expose the governed direction contract consumed by EV3.
+
+    STRANGLE remains unresolved because EV3 currently prices directional long
+    calls/puts and vertical debit spreads.  Genuine structure/probability
+    conflicts remain rejected by carrying their arbitration state unchanged.
+    """
+    direction = str(ctx.get('direction') or '').strip().upper()
+    status = str(
+        direction_arbitration.get('direction_arbitration_status') or 'NOT_EVALUATED'
+    ).strip().upper()
+    return {
+        'canonical_direction': direction if direction in {'CALL', 'PUT'} else direction,
+        'direction_status': status,
+        'ev3_direction_source': 'OPTIONS_DIRECTION_AFTER_ARBITRATION',
+    }
+
+
+def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
+    """Return direction and macro/bond context for every output branch.
+
+    EV3 evaluates stand-down and no-contract rows as well as rows with a
+    selected contract.  Keeping this context only on the success branch made
+    otherwise valid alternatives appear to have an unresolved direction and
+    stripped the macro/bond audit trail from most of the universe.
+    """
+    direction_arbitration = _direction_arbitration_oi(ctx)
+    raw_row = ctx.get('_signal_row')
+    if isinstance(raw_row, pd.Series):
+        signal_row = raw_row.to_dict()
+    elif isinstance(raw_row, dict):
+        signal_row = dict(raw_row)
+    else:
+        signal_row = {}
+
+    fields: Dict[str, Any] = {}
+    fields.update(_ev3_direction_fields(ctx, direction_arbitration))
+    fields.update(direction_arbitration)
+    fields.update(macro_quant_columns_for_row(signal_row, signal_row))
+    return fields
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3925,6 +4292,12 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'best_available_suboptimal': bool(row.get('best_available_suboptimal', False)),
                 'otm_delta_target': target_delta,
                 'contract_score'  : round(composite, 2),
+                'quote_timestamp_utc': row.get('quote_timestamp_utc'),
+                'quote_timestamp_source': row.get('quote_timestamp_source'),
+                'contract_multiplier': row.get('contract_multiplier'),
+                'contract_multiplier_source': row.get('contract_multiplier_source'),
+                'md_quote_source' : row.get('md_quote_source'),
+                'md_occ_symbol'   : row.get('symbol'),
             })
 
         if not scores: return None
@@ -3996,9 +4369,9 @@ def select_repair_alternative_contracts(
     df: pd.DataFrame,
     ctx: Dict,
     selected_contract: Optional[Dict] = None,
-    limit: int = 3,
+    limit: int = EV3_LONG_SINGLE_CANDIDATE_LIMIT,
 ) -> List[Dict[str, Any]]:
-    """Return thesis-aligned alternative contracts for repair-at-open handoff."""
+    """Return a strict EV-2 long-single set from two expiries x three strikes."""
     try:
         if df is None or df.empty:
             return []
@@ -4030,6 +4403,8 @@ def select_repair_alternative_contracts(
     spread_limit = _repair_alt_float(dte_cfg.get("spread_max"), MAX_SPREAD_PCT) or MAX_SPREAD_PCT
     spot = _repair_alt_float(ctx.get("spot"))
     structural_target = _repair_alt_float(ctx.get("structural_target"))
+    hold_sessions = _repair_alt_float(_ev3_handoff_fields(ctx).get("planned_hold_sessions"))
+    minimum_dte = math.ceil(hold_sessions * 7 / 5) + 3 if hold_sessions else 1
 
     excluded = set()
     if selected_contract:
@@ -4046,15 +4421,31 @@ def select_repair_alternative_contracts(
             continue
 
         strike = _repair_alt_float(row.get("strike"))
-        dte_val = _repair_alt_float(row.get("dte"), dte_target) or dte_target
-        mark = (
-            _repair_alt_float(row.get("mark"))
-            or _repair_alt_float(row.get("mid"))
-            or _repair_alt_float(row.get("last"))
-        )
-        if strike is None or mark is None or mark <= 0:
+        dte_val = _repair_alt_float(row.get("dte"))
+        expiry_raw = row.get("expiration_date") or row.get("expiry") or row.get("expiration")
+        try:
+            expiry = pd.Timestamp(expiry_raw).date().isoformat()
+        except (TypeError, ValueError):
+            expiry = ""
+        bid = _repair_alt_float(row.get("bid"))
+        ask = _repair_alt_float(row.get("ask"))
+        signed_delta = _repair_alt_float(row.get("delta"))
+        gamma = _repair_alt_float(row.get("gamma"))
+        theta = _repair_alt_float(row.get("theta"))
+        vega = _repair_alt_float(row.get("vega"))
+        implied_volatility = _repair_alt_float(row.get("implied_vol"), _repair_alt_float(row.get("iv")))
+        quote_timestamp = _quote_timestamp_utc(row.get("quote_timestamp_utc"))
+        if (
+            strike is None or dte_val is None or not expiry
+            or bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask
+            or signed_delta is None or gamma is None or theta is None or vega is None
+            or implied_volatility is None or not quote_timestamp
+        ):
             continue
-        if dte_val < max(1, float(dte_min) - 15) or dte_val > float(dte_max) + 20:
+        if dte_val < float(dte_min) or dte_val > float(dte_max):
+            continue
+
+        if dte_val < minimum_dte:
             continue
 
         if spot and spot > 0:
@@ -4063,16 +4454,17 @@ def select_repair_alternative_contracts(
             if right == "P" and strike > spot * 1.10:
                 continue
 
-        delta_abs = abs(_repair_alt_float(row.get("delta"), target_delta) or target_delta)
+        if (right == "C" and signed_delta <= 0) or (right == "P" and signed_delta >= 0):
+            continue
+        delta_abs = abs(signed_delta)
         oi = _repair_alt_float(row.get("open_interest"), _repair_alt_float(row.get("oi"), 0.0)) or 0.0
         volume = _repair_alt_float(row.get("volume"), 0.0) or 0.0
-        spread = _repair_alt_float(row.get("spread_pct"))
-        if spread is None:
-            bid = _repair_alt_float(row.get("bid"))
-            ask = _repair_alt_float(row.get("ask"))
-            if bid is not None and ask is not None and mark > 0:
-                spread = max(0.0, ask - bid) / mark
-        spread = spread if spread is not None else spread_limit
+        if oi < EV3_MIN_OPEN_INTEREST or volume < EV3_MIN_VOLUME:
+            continue
+        mark = (bid + ask) / 2.0
+        spread = max(0.0, ask - bid) / mark if mark > 0 else math.inf
+        if not math.isfinite(spread) or spread > spread_limit:
+            continue
 
         delta_score = max(0.0, 100.0 - abs(delta_abs - target_delta) * 300.0)
         dte_score = max(0.0, 100.0 - abs(float(dte_val) - float(dte_target)) * 3.0)
@@ -4096,14 +4488,28 @@ def select_repair_alternative_contracts(
             "symbol": symbol,
             "score": round(score, 2),
             "right": right,
+            "structure": "LONG_SINGLE",
             "strike": strike,
-            "expiry": row.get("expiration_date") or row.get("expiry") or row.get("expiration"),
+            "expiry": str(expiry)[:10],
             "dte": dte_val,
             "mark": mark,
-            "delta": delta_abs,
+            "bid": bid,
+            "ask": ask,
+            "delta": signed_delta,
+            "gamma": gamma,
+            "theta": theta,
+            "vega": vega,
+            "iv": implied_volatility,
             "oi": oi,
             "volume": volume,
             "spread_pct": round(float(spread), 6) if spread is not None else "",
+            "quote_timestamp_utc": quote_timestamp,
+            "quote_timestamp_source": row.get("quote_timestamp_source"),
+            "contract_multiplier": _repair_alt_float(row.get("contract_multiplier")),
+            "contract_multiplier_source": row.get("contract_multiplier_source"),
+            "quote_source": row.get("md_quote_source") or row.get("quote_source"),
+            "candidate_policy_version": EV3_CANDIDATE_POLICY_VERSION,
+            "delta_distance": round(abs(delta_abs - target_delta), 8),
             "reason": (
                 f"{right} thesis-aligned repair candidate; "
                 f"dte={float(dte_val):.0f}; delta={delta_abs:.2f}; "
@@ -4113,11 +4519,140 @@ def select_repair_alternative_contracts(
             ),
         })
 
-    candidates.sort(key=lambda item: item.get("score", 0.0), reverse=True)
-    return candidates[: max(1, int(limit or 3))]
+    if not candidates:
+        return []
+
+    expiry_stats: Dict[str, float] = {}
+    for candidate in candidates:
+        expiry = str(candidate["expiry"])
+        expiry_stats.setdefault(expiry, float(candidate["dte"]))
+    selected_expiries = [
+        expiry for expiry, _ in sorted(
+            expiry_stats.items(),
+            key=lambda item: (abs(item[1] - float(dte_target)), item[1], item[0]),
+        )[:EV3_EXPIRY_LIMIT]
+    ]
+
+    bounded: List[Dict[str, Any]] = []
+    for expiry in selected_expiries:
+        expiry_candidates = [item for item in candidates if str(item["expiry"]) == expiry]
+        expiry_candidates.sort(key=lambda item: (
+            float(item["delta_distance"]),
+            float(item["spread_pct"]),
+            -float(item["oi"]),
+            -float(item["volume"]),
+            str(item["symbol"]),
+        ))
+        bounded.extend(expiry_candidates[:EV3_STRIKES_PER_EXPIRY])
+
+    bounded.sort(key=lambda item: (
+        abs(float(item["dte"]) - float(dte_target)),
+        str(item["expiry"]),
+        float(item["delta_distance"]),
+        str(item["symbol"]),
+    ))
+    cap = min(EV3_LONG_SINGLE_CANDIDATE_LIMIT, max(1, int(limit or EV3_LONG_SINGLE_CANDIDATE_LIMIT)))
+    bounded = bounded[:cap]
+    for rank, candidate in enumerate(bounded, start=1):
+        candidate["candidate_generation_rank"] = rank
+    return bounded
 
 
-def _format_repair_alternative_fields(alternatives: List[Dict[str, Any]], reason: str = "") -> Dict[str, Any]:
+def _ev3_vertical_leg(candidate: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "symbol": candidate.get("symbol"),
+        "strike": candidate.get("strike"),
+        "expiry": candidate.get("expiry"),
+        "dte": candidate.get("dte"),
+        "bid": candidate.get("bid"),
+        "ask": candidate.get("ask"),
+        "delta": candidate.get("delta"),
+        "gamma": candidate.get("gamma"),
+        "theta": candidate.get("theta"),
+        "vega": candidate.get("vega"),
+        "iv": candidate.get("iv"),
+        "oi": candidate.get("oi"),
+        "volume": candidate.get("volume"),
+        "quote_timestamp_utc": candidate.get("quote_timestamp_utc"),
+        "quote_timestamp_source": candidate.get("quote_timestamp_source"),
+        "contract_multiplier": candidate.get("contract_multiplier"),
+        "contract_multiplier_source": candidate.get("contract_multiplier_source"),
+        "quote_source": candidate.get("quote_source"),
+    }
+
+
+def select_ev3_vertical_debit_candidates(
+    df: pd.DataFrame,
+    ctx: Dict,
+    *,
+    limit: int = EV3_VERTICAL_CANDIDATE_LIMIT,
+) -> List[Dict[str, Any]]:
+    """Build same-expiry bull-call or bear-put debit spreads from strict legs."""
+    legs = select_repair_alternative_contracts(
+        df, ctx, selected_contract=None, limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT
+    )
+    direction = str(ctx.get("direction") or "").upper()
+    if direction not in {"CALL", "PUT"}:
+        return []
+    structure = "BULL_CALL_DEBIT" if direction == "CALL" else "BEAR_PUT_DEBIT"
+    spreads: List[Dict[str, Any]] = []
+    expiries = sorted({str(leg.get("expiry") or "") for leg in legs if leg.get("expiry")})
+    for expiry in expiries:
+        expiry_legs = [leg for leg in legs if str(leg.get("expiry")) == expiry]
+        expiry_legs.sort(key=lambda leg: float(leg["strike"]))
+        for first_index, first in enumerate(expiry_legs):
+            for second in expiry_legs[first_index + 1:]:
+                if direction == "CALL":
+                    long_leg, short_leg = first, second
+                else:
+                    long_leg, short_leg = second, first
+                width = abs(float(long_leg["strike"]) - float(short_leg["strike"]))
+                entry_debit_mid = float(long_leg["ask"]) - float(short_leg["bid"])
+                long_multiplier = _repair_alt_float(long_leg.get("contract_multiplier"))
+                short_multiplier = _repair_alt_float(short_leg.get("contract_multiplier"))
+                if width <= 0 or entry_debit_mid <= 0 or entry_debit_mid >= width:
+                    continue
+                if (
+                    long_multiplier is not None and short_multiplier is not None
+                    and long_multiplier != short_multiplier
+                ):
+                    continue
+                spreads.append({
+                    "symbol": f"{structure}:{long_leg['symbol']}/{short_leg['symbol']}",
+                    "structure": structure,
+                    "right": "C" if direction == "CALL" else "P",
+                    "expiry": expiry,
+                    "dte": long_leg["dte"],
+                    "strike": long_leg["strike"],
+                    "long_leg": _ev3_vertical_leg(long_leg),
+                    "short_leg": _ev3_vertical_leg(short_leg),
+                    "strike_width": width,
+                    "entry_debit_mid": entry_debit_mid,
+                    "contract_multiplier": long_multiplier if long_multiplier == short_multiplier else None,
+                    "candidate_policy_version": EV3_VERTICAL_POLICY_VERSION,
+                    "score": round((float(long_leg["score"]) + float(short_leg["score"])) / 2.0, 2),
+                    "reason": (
+                        f"{structure}; expiry={expiry}; long={long_leg['strike']}; "
+                        f"short={short_leg['strike']}; width={width:.2f}; debit_mid={entry_debit_mid:.2f}"
+                    ),
+                })
+    spreads.sort(key=lambda item: (
+        -float(item["score"]),
+        float(item["entry_debit_mid"]) / float(item["strike_width"]),
+        str(item["symbol"]),
+    ))
+    bounded = spreads[: min(EV3_VERTICAL_CANDIDATE_LIMIT, max(1, int(limit or EV3_VERTICAL_CANDIDATE_LIMIT)))]
+    for rank, candidate in enumerate(bounded, start=1):
+        candidate["candidate_generation_rank"] = rank
+    return bounded
+
+
+def _format_repair_alternative_fields(
+    alternatives: List[Dict[str, Any]],
+    reason: str = "",
+    *,
+    repair_required: bool = True,
+) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "alternative_contract_1": "",
         "alternative_contract_2": "",
@@ -4130,17 +4665,42 @@ def _format_repair_alternative_fields(alternatives: List[Dict[str, Any]], reason
         "alternative_contract_3_reason": "",
         "contract_repair_action": "NO_ALTERNATIVE_FOUND",
         "alternative_contract_attempts": "",
+        "alternative_contracts_json": "[]",
+        "alternative_contracts_schema_version": "ev3-contract-candidates-v3",
+        "alternative_contracts_count": 0,
     }
     for idx, alt in enumerate((alternatives or [])[:3], start=1):
         out[f"alternative_contract_{idx}"] = alt.get("symbol", "")
         out[f"alternative_contract_{idx}_score"] = alt.get("score", "")
         out[f"alternative_contract_{idx}_reason"] = alt.get("reason", "")
     if alternatives:
-        out["contract_repair_action"] = "ALTERNATIVES_AVAILABLE"
-        out["alternative_contract_attempts"] = (
-            f"GENERATED_{len(alternatives[:3])}_REPAIR_ALTERNATIVES"
-            + (f"; reason={reason}" if reason else "")
-        )
+        def _json_safe(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {str(key): _json_safe(item) for key, item in value.items()}
+            if isinstance(value, (list, tuple)):
+                return [_json_safe(item) for item in value]
+            if isinstance(value, np.generic):
+                return value.item()
+            try:
+                return None if pd.isna(value) else value
+            except Exception:
+                return value
+
+        safe_alternatives = [
+            _json_safe(candidate)
+            for candidate in alternatives[:EV3_TOTAL_CANDIDATE_LIMIT]
+        ]
+        out["alternative_contracts_json"] = json.dumps(safe_alternatives, sort_keys=True)
+        out["alternative_contracts_count"] = len(safe_alternatives)
+        if repair_required:
+            out["contract_repair_action"] = "ALTERNATIVES_AVAILABLE"
+            out["alternative_contract_attempts"] = (
+                f"GENERATED_{len(safe_alternatives)}_REPAIR_ALTERNATIVES"
+                + (f"; reason={reason}" if reason else "")
+            )
+        else:
+            out["contract_repair_action"] = "NOT_REQUIRED"
+            out["alternative_contract_attempts"] = f"EV3_BOUNDED_CANDIDATES_{len(safe_alternatives)}"
     elif reason:
         out["alternative_contract_attempts"] = f"NO_REPAIR_ALTERNATIVE_FOUND; reason={reason}"
     return out
@@ -5450,8 +6010,17 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'iv_regime'      : iv_ctx.get('iv_regime'),
                 'skew_label'     : iv_ctx.get('skew_label')}
         if _chain_has_data:
+            _no_contract_singles = select_repair_alternative_contracts(
+                chain, ctx, None, limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT
+            )
+            _no_contract_verticals = select_ev3_vertical_debit_candidates(chain, ctx)
+            _no_contract_alternatives = (
+                _no_contract_singles + _no_contract_verticals
+            )[:EV3_TOTAL_CANDIDATE_LIMIT]
+            if str(ctx.get('direction') or '').upper() in {'CALL', 'PUT'}:
+                _enrich_ev3_contract_multipliers(None, _no_contract_alternatives, ctx.get('ticker'))
             _repair_alt_fields = _format_repair_alternative_fields(
-                select_repair_alternative_contracts(chain, ctx, None, limit=3),
+                _no_contract_alternatives,
                 'NO_CONTRACT_PASSED_QUALITY_GATES',
             )
             _base_no_contract.update({
@@ -5661,17 +6230,28 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         stand_down_reason=stand_down_reason,
         walls=walls,
     )
-    repair_alt_fields = {}
-    if bool(research_contract.get('contract_repair_required')):
-        repair_alt_fields = _format_repair_alternative_fields(
-            select_repair_alternative_contracts(
-                chain,
-                ctx,
-                selected_contract=contract,
-                limit=3,
-            ),
-            str(research_contract.get('contract_repair_reason') or ''),
-        )
+    direction_arbitration = _direction_arbitration_oi(ctx)
+    ev3_direction_fields = _ev3_direction_fields(ctx, direction_arbitration)
+    repair_required = bool(research_contract.get('contract_repair_required'))
+    long_alternatives = select_repair_alternative_contracts(
+        chain,
+        ctx,
+        selected_contract=contract,
+        limit=max(1, EV3_LONG_SINGLE_CANDIDATE_LIMIT - 1),
+    )
+    vertical_alternatives = select_ev3_vertical_debit_candidates(chain, ctx)
+    alternatives = (long_alternatives + vertical_alternatives)[: max(1, EV3_TOTAL_CANDIDATE_LIMIT - 1)]
+    if (
+        str(direction_arbitration.get('direction_arbitration_status') or '').upper()
+        in {'AGREEMENT', 'NO_PROBABILITY_OPINION'}
+        and str(ctx.get('direction') or '').upper() in {'CALL', 'PUT'}
+    ):
+        _enrich_ev3_contract_multipliers(contract, alternatives, ctx.get('ticker'))
+    repair_alt_fields = _format_repair_alternative_fields(
+        alternatives,
+        str(research_contract.get('contract_repair_reason') or '') if repair_required else '',
+        repair_required=repair_required,
+    )
     authoritative_route = str(research_contract.get('final_route', '') or '').upper()
     resolved_options_verdict = verdict
     resolved_stand_down_reason = stand_down_reason
@@ -5684,7 +6264,6 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         )
     block_taxonomy = _classify_block(resolved_stand_down_reason or "")
     pcr_resolution = _direction_conflict_status_oi(ctx.get("direction"), pcr_signal, pcr_val)
-    direction_arbitration = _direction_arbitration_oi(ctx)
     multiplier_audit = _macro_multiplier_audit_oi(ctx, macro_adj)
     macro_confirmation = _macro_confirmation_overlay_oi(ctx, sector_data, macro_adj, resolved_options_verdict)
     verdict_tier = _options_verdict_tier_oi(
@@ -5708,6 +6287,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         # Resolved upstream (merge rename). Additionally guard against pandas NaN being truthy
         # in the or-chain by using a helper that treats NaN/None/empty as falsy.
         'asof_date'               : _resolve_asof_date(signal_row),
+        **_ev3_handoff_fields(ctx),
+        **ev3_direction_fields,
 
         # Verdict
         'legacy_options_verdict'  : verdict,
@@ -5787,6 +6368,11 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'contract_quote_source'   : contract.get('md_quote_source', 'polygon_bsm'),
         'contract_spread_source'  : contract.get('spread_source'),
         'contract_occ_symbol'     : contract.get('md_occ_symbol'),
+        'contract_quote_timestamp_utc': contract.get('quote_timestamp_utc'),
+        'contract_quote_timestamp_source': contract.get('quote_timestamp_source'),
+        'quote_timestamp_utc'     : contract.get('quote_timestamp_utc'),
+        'contract_multiplier'     : contract.get('contract_multiplier'),
+        'contract_multiplier_source': contract.get('contract_multiplier_source'),
 
         # IV environment — core
         'atm_iv'                  : iv_ctx.get('atm_iv'),
@@ -6149,9 +6735,10 @@ def build_convexity_strike_map(
         )
         if _delta_ok and _dte_ok and _runway_ok and _be_ok:
             csm_verdict = "BUYABLE"
+            _ivp_text = f"{ivp:.0f}" if ivp is not None else "N/A"
             csm_verdict_reason = (
                 f"delta={_abs_delta:.2f} in sweet spot, DTE={dte:.0f} optimal, "
-                f"IVP={ivp:.0f if ivp is not None else 'N/A'} cheap, runway CLEAR, "
+                f"IVP={_ivp_text} cheap, runway CLEAR, "
                 f"expected move {expected_move_pct:.1f}% >= breakeven {breakeven_pct:.1f}%"
             )
         else:
@@ -6362,6 +6949,8 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
         'options_verdict' : 'STAND_DOWN',
         'options_score'   : 0,
         'asof_date'       : _asof,
+        **_ev3_handoff_fields(ctx),
+        **_common_options_handoff_fields(ctx),
         'stand_down_reason': reason,
         # Block taxonomy — machine-auditable reject classification
         'block_code'      : taxonomy['block_code'],
@@ -6400,6 +6989,11 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
         'expiry'           : None,
         'strike'           : None,
         'premium'          : None,
+        'contract_quote_timestamp_utc': None,
+        'contract_quote_timestamp_source': None,
+        'quote_timestamp_utc': None,
+        'contract_multiplier': None,
+        'contract_multiplier_source': None,
         # Superbrain passthrough — populated even on STAND_DOWN so veto context is available
         'phase_best'       : ctx.get('phase', ''),
         'underlying_price' : ctx.get('spot', 0),
@@ -6465,6 +7059,8 @@ def run_options_layer(
         return pd.DataFrame()
 
     merged = pd.merge(disc, vanguard, on='ticker', how='inner')
+    merged = resolve_macro_suffix_columns(merged)
+    merged = _coalesce_ev3_merge_inputs(merged)
     # FIX (2026-03-07): Both discovery and vanguard CSVs have a 'timestamp' column.
     # pd.merge renames them timestamp_x (discovery) and timestamp_y (vanguard).
     # The vanguard timestamp (timestamp_y) is the correct signal date for SB time-stop anchoring.
@@ -6737,6 +7333,7 @@ def run_options_layer(
         'alternative_contract_1','alternative_contract_2','alternative_contract_3',
         'alternative_contract_1_score','alternative_contract_2_score','alternative_contract_3_score',
         'alternative_contract_1_reason','alternative_contract_2_reason','alternative_contract_3_reason',
+        'alternative_contracts_json','alternative_contracts_schema_version','alternative_contracts_count',
         'trigger_state','trigger_status_reason','expected_move_pct',
         'expected_move_price','breakeven_feasibility','estimated_R',
         'theta_decay_expected','runway_to_wall_pct','liquidity_score',
@@ -6745,7 +7342,14 @@ def run_options_layer(
         'trigger_score','research_route_reason',
         'direction_arbitration_status','direction_arbitration_reason',
         'direction_conflict_gate',
+        'canonical_direction','direction_status','ev3_direction_source',
         'horizon_bucket','horizon_action','horizon_size_multiplier',
+        'entry_spot','target_spot','invalidation_spot','invalidation_source',
+        'invalidation_policy_version','planned_hold_sessions','planned_hold_source',
+        'ev3_handoff_schema_version','contract_quote_timestamp_utc','quote_timestamp_utc',
+        'ev3_barrier_state_key','ev3_barrier_state_key_source','ev3_barrier_state_key_version',
+        'contract_quote_timestamp_source',
+        'contract_multiplier','contract_multiplier_source',
         'horizon_block_reason','horizon_source','router_version',
         'options_score_pre_macro','options_macro_alignment_label',
         'options_macro_alignment_bonus','options_macro_gate_preserved',
@@ -6898,6 +7502,3 @@ if __name__ == '__main__':
         print(f"\n✅ Options Intelligence complete — {len(results)} signals analysed")
     else:
         print("\n⚠️ No results produced — check authentication and input files")
-
-
-

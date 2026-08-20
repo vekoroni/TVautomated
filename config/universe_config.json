@@ -1,0 +1,58 @@
+{
+  "target_size": 2000,
+  "liquidity": {
+    "min_avg_volume": 500000,
+    "min_dollar_volume": 5000000,
+    "lookback_days": 20
+  },
+  "optionability": {
+    "require_options": true,
+    "min_open_interest": 100
+  },
+  "volatility": {
+    "min_atr_percent": 2.0,
+    "max_atr_percent": 15.0,
+    "lookback_days": 14
+  },
+  "price_range": {
+    "min_price": 5.0,
+    "max_price": 500.0
+  },
+  "sectors": {
+    "RISK_ON": [
+      "Technology",
+      "Consumer Discretionary",
+      "Communication Services",
+      "Industrials"
+    ],
+    "RISK_OFF": [
+      "Healthcare",
+      "Consumer Staples",
+      "Utilities",
+      "Real Estate"
+    ],
+    "NEUTRAL": [
+      "Financials",
+      "Energy",
+      "Materials",
+      "Technology"
+    ]
+  },
+  "macro_regime_weights": {
+    "GREEN": {
+      "primary": 0.6,
+      "secondary": 0.3,
+      "other": 0.1
+    },
+    "YELLOW": {
+      "primary": 0.4,
+      "secondary": 0.4,
+      "other": 0.2
+    },
+    "RED": {
+      "primary": 0.5,
+      "secondary": 0.4,
+      "other": 0.1
+    }
+  }
+}

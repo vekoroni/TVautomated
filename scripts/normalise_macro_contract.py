@@ -185,9 +185,9 @@ def derive_gex_regime_score(macro: dict) -> Optional[float]:
     if "AMPLIFYING" in gex_label or "NEGATIVE" in gex_label:
         return 0.30
 
-    # No GEX data — neutral placeholder
-    log.debug("GEX: no data found — using neutral placeholder 0.50")
-    return 0.50
+    # No GEX data: absence must not be manufactured into a neutral reading.
+    log.debug("GEX: no data found; score remains absent")
+    return None
 
 
 def derive_macro_momentum_score(macro: dict) -> Optional[float]:
@@ -247,11 +247,17 @@ def normalise(macro_path: Path) -> bool:
 
     any_failed = False
     for field, val in scores.items():
+        # Producer-supplied structured scores are authoritative. These
+        # derivations exist only to fill an absent or invalid legacy field.
+        existing = _safe_float(macro.get(field))
+        if existing is not None and 0.0 <= existing <= 1.0:
+            macro[field] = round(existing, 4)
+            log.info(f"  {field}: preserved authoritative value {macro[field]}")
+            continue
         if val is None:
             log.warning(f"  {field}: COULD NOT DERIVE — field will remain absent")
             any_failed = True
         else:
-            existing = macro.get(field)
             macro[field] = round(val, 4)
             log.info(f"  {field}: {existing} -> {macro[field]}")
 

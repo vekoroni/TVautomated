@@ -264,7 +264,7 @@ def _evaluate_triggers(
             )
 
         control_state = _u(morning_row.get("control_state") or morning_row.get("evening_hidden_state_label") or "")
-        if direction == "CALL" and "BEARISH" in control_state and "SHIFTING" in control_state:
+        if direction == "CALL" and control_state in ("SELLERS",):
             return (
                 TAKE_FULL,
                 "TRIGGER_3_CONTROL_ADVERSE",
@@ -272,7 +272,7 @@ def _evaluate_triggers(
                 f"Control state {control_state} is adverse to CALL thesis — exit",
                 "TODAY",
             )
-        if direction == "PUT" and "BULLISH" in control_state and "SHIFTING" in control_state:
+        if direction == "PUT" and control_state in ("BUYERS",):
             return (
                 TAKE_FULL,
                 "TRIGGER_3_CONTROL_ADVERSE",
@@ -314,8 +314,20 @@ def _evaluate_triggers(
     if morning_row is not None:
         live_price = _f(morning_row.get("live_price") or morning_row.get("live_mid"), None)
 
-    call_wall = _f(pos.get("call_wall"), None)
-    put_wall = _f(pos.get("put_wall"), None)
+    call_wall = _f(
+        (morning_row or {}).get("call_wall")
+        or (morning_row or {}).get("morning_call_wall")
+        or (morning_row or {}).get("live_call_wall")
+        or pos.get("call_wall"),
+        None,
+    )
+    put_wall = _f(
+        (morning_row or {}).get("put_wall")
+        or (morning_row or {}).get("morning_put_wall")
+        or (morning_row or {}).get("live_put_wall")
+        or pos.get("put_wall"),
+        None,
+    )
 
     if live_price is not None and live_price > 0:
         if direction == "CALL" and call_wall is not None and live_price > call_wall * 1.005:
@@ -395,8 +407,7 @@ def build_exit_signals(
         if morning_row is not None:
             current_premium = _f(
                 morning_row.get("live_contract_mid")
-                or morning_row.get("live_mid")
-                or morning_row.get("live_contract_ask"),
+                or morning_row.get("live_mid"),
                 None,
             )
 
@@ -439,6 +450,26 @@ def build_exit_signals(
             pos, morning_row, current_premium
         )
 
+        # T5 override: wall breach = EMERGENCY even if T1 already fired TAKE_PARTIAL
+        if verdict == TAKE_PARTIAL and morning_row is not None:
+            live_price = _f(morning_row.get("live_price") or morning_row.get("live_mid"), None)
+            direction = _u(pos.get("options_direction") or pos.get("direction") or "")
+            call_wall = _f(pos.get("call_wall"), None)
+            put_wall = _f(pos.get("put_wall"), None)
+            if live_price and live_price > 0:
+                if direction == "CALL" and call_wall is not None and live_price > call_wall * 1.005:
+                    verdict = EMERGENCY_EXIT
+                    trigger_name = "TRIGGER_5_CALL_WALL_BROKEN"
+                    exit_size_pct = 1.0
+                    reason = f"Price ${live_price:.2f} breached call wall ${call_wall:.2f} — EMERGENCY EXIT (overrides T1 partial)"
+                    urgency = "TODAY"
+                elif direction == "PUT" and put_wall is not None and live_price < put_wall * 0.995:
+                    verdict = EMERGENCY_EXIT
+                    trigger_name = "TRIGGER_5_PUT_WALL_BROKEN"
+                    exit_size_pct = 1.0
+                    reason = f"Price ${live_price:.2f} breached put wall ${put_wall:.2f} — EMERGENCY EXIT (overrides T1 partial)"
+                    urgency = "TODAY"
+
         signal = {
             "ticker": ticker,
             "trade_id": trade_id,
@@ -458,6 +489,7 @@ def build_exit_signals(
             "run_id": run_id,
             "evaluated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         }
+        signal["suggested_exit_command"] = _format_exit_command(signal)
         exit_signals.append(signal)
 
         log.info(
@@ -477,26 +509,36 @@ def build_exit_signals(
     return exit_signals
 
 
-def _print_exit_command(signal: Dict[str, Any]) -> None:
-    verdict = signal["exit_verdict"]
+def _format_exit_command(signal: Dict[str, Any]) -> str:
+    verdict = signal.get("exit_verdict", "")
+    if verdict in {HOLD, TRAIL, DATA_UNAVAILABLE}:
+        return ""
     trade_id = signal["trade_id"]
     current_premium = signal.get("current_premium") or 0.0
     trigger = signal["exit_trigger"]
+    reason_short = (signal.get("reason") or "")[:60]
+    return (
+        f"python avshunter_trade_journal.py log-exit "
+        f"--trade-id {trade_id} "
+        f"--exit-premium {current_premium:.2f} "
+        f'--exit-reason "{trigger} — {reason_short}"'
+    )
+
+
+def _print_exit_command(signal: Dict[str, Any]) -> None:
+    verdict = signal["exit_verdict"]
     ticker = signal["ticker"]
     gain_pct = (signal.get("gain_pct") or 0) * 100
+    cmd = _format_exit_command(signal)
 
     border = "═" * 70
     print(f"\n{border}")
     print(f"  EXIT SIGNAL — {ticker}  |  {verdict}  |  gain={gain_pct:+.1f}%")
     print(f"{border}")
     print(f"  {signal['reason']}")
-    print(f"\n  SUGGESTED EXIT COMMAND:")
-    print(
-        f"  python avshunter_trade_journal.py log-exit "
-        f"--trade-id {trade_id} "
-        f"--exit-premium {current_premium:.2f} "
-        f'--exit-reason "{trigger} — {signal["reason"][:60]}"'
-    )
+    if cmd:
+        print(f"\n  SUGGESTED EXIT COMMAND:")
+        print(f"  {cmd}")
     print(f"{border}\n")
 
 

@@ -71,6 +71,12 @@ MACRO_QUANT_CSV_FIELDS = [
     "macro_conflict_flags",
     "macro_active_conflict_flags",
     "macro_resolved_conflict_flags",
+    "bond_macro_flag",
+    "bond_trade_go",
+    "bond_macro_score",
+    "auction_spread_risk",
+    "credit_warning",
+    "breakeven_adjustment_pct",
 ]
 
 
@@ -492,6 +498,10 @@ def _is_resolved_conflict_flag(flag: str) -> bool:
     if any(token in text for token in active_tokens):
         return False
     resolved_tokens = (
+        "RESOLVED:",
+        "_RESOLVED:",
+        "CLEAR:",
+        "_CLEAR:",
         "CSV PRIMARY APPLIED",
         "CSV VALUE APPLIED",
         "CSV APPLIED",
@@ -500,6 +510,7 @@ def _is_resolved_conflict_flag(flag: str) -> bool:
         "OVERRIDDEN BY CSV",
         "IMMATERIAL",
         "BOTH APPLIED CONTEXTUALLY",
+        "CONSISTENT AT",
     )
     return any(token in text for token in resolved_tokens)
 
@@ -586,6 +597,21 @@ def build_macro_quant_packet(
     primary_bucket = _primary_bucket(clarity)
     drawer_active = _equity_drawer_active(rates, usd, credit, risk_score)
 
+    extras = macro.get("extras") if isinstance(macro, Mapping) else None
+    bond_macro = extras.get("bond_macro") if isinstance(extras, Mapping) else None
+    if not isinstance(bond_macro, Mapping):
+        bond_macro = {}
+    bond_macro_flag = str(bond_macro.get("bond_macro_flag") or "").strip().upper()
+    bond_trade_go = bool(bond_macro.get("trade_go", True))
+    bond_macro_score = _safe_float(
+        bond_macro.get("bond_macro_score", bond_macro.get("macro_bond_score")), None
+    )
+    auction_spread_risk = bool(bond_macro.get("auction_spread_risk", False))
+    bond_credit_warning = bool(bond_macro.get("credit_warning", False))
+    breakeven_adjustment_pct = _safe_float(
+        bond_macro.get("breakeven_adjustment_pct"), 0.0
+    ) or 0.0
+
     has_conflict = detect_core_conflict(macro)
     flags, active_flags, resolved_flags = _split_macro_conflict_flags(macro)
     partial = bool(active_flags)
@@ -648,6 +674,12 @@ def build_macro_quant_packet(
         "macro_conflict_flags": flags,
         "macro_active_conflict_flags": active_flags,
         "macro_resolved_conflict_flags": resolved_flags,
+        "bond_macro_flag": bond_macro_flag,
+        "bond_trade_go": bond_trade_go,
+        "bond_macro_score": bond_macro_score,
+        "auction_spread_risk": auction_spread_risk,
+        "credit_warning": bond_credit_warning,
+        "breakeven_adjustment_pct": breakeven_adjustment_pct,
     }
     return packet
 
@@ -710,6 +742,12 @@ def missing_macro_quant_packet(source_path: str | Path | None = None) -> Dict[st
         "macro_conflict_flags": [],
         "macro_active_conflict_flags": [],
         "macro_resolved_conflict_flags": [],
+        "bond_macro_flag": "",
+        "bond_trade_go": True,
+        "bond_macro_score": None,
+        "auction_spread_risk": False,
+        "credit_warning": False,
+        "breakeven_adjustment_pct": 0.0,
     }
 
 

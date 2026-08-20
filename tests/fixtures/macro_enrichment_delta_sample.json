@@ -1,0 +1,396 @@
+{
+  "contract_version": "macro_enrichment_delta_v1_0",
+  "target_macro_contract_version": "macro_contract_v1_0",
+  "packet_type": "MACRO_ENRICHMENT_DELTA",
+  "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+  "batch_id": "2026-05-09-AM-NEWS",
+  "source": "AVSHUNTER_NEWS_TERMINAL_GPT",
+  "as_of_utc": "2026-05-09T09:00:00Z",
+  "report_date": "2026-05-09",
+  "source_freshness": {
+    "status": "FRESH_INTRADAY",
+    "base_macro_template_reviewed": "macro_intelligence_latest.json",
+    "base_macro_freshness_status": "STALE",
+    "note": "Use as narrative/event enrichment only. Do not overwrite the quantitative macro contract."
+  },
+  "ticker_handoff_policy": {
+    "pipeline_ticker_file": "PLAIN_TICKERS_ONLY",
+    "allowed_candidate_columns": [
+      "ticker"
+    ],
+    "do_not_add_candidate_metadata_to_ticker_file": true,
+    "linkage_method": "Pipeline scoring may look up ticker exposure inside the enriched MacroContext, not from the ticker CSV."
+  },
+  "protected_macro_fields_do_not_override": [
+    "contract_version",
+    "regime_state",
+    "dir_bias",
+    "trend_energy",
+    "usd_state",
+    "rates_impulse",
+    "liquidity_pulse",
+    "regime_drift_status",
+    "macro_conviction",
+    "vol_mode",
+    "risk_on_off_switch",
+    "sector_tilt",
+    "net_liquidity_score",
+    "vix_regime_score",
+    "gex_regime_score",
+    "macro_momentum_score",
+    "regime_label",
+    "regime_probability",
+    "vix_spot",
+    "macro_filter",
+    "sector_lead",
+    "sector_avoid",
+    "size_multiplier",
+    "trigger_required",
+    "horizon_routing",
+    "sector_rotation",
+    "put_gate",
+    "macro_quant_packet"
+  ],
+  "merge_controls": {
+    "can_add_narrative_overlay": true,
+    "can_strengthen_existing_theme": true,
+    "can_add_event_guard": true,
+    "can_add_macro_exposure_index": true,
+    "can_add_scoring_hints": true,
+    "can_override_macro_filter": false,
+    "can_change_size_multiplier": false,
+    "can_change_trigger_required": false,
+    "can_change_horizon_routing": false,
+    "can_unblock_put_gate": false,
+    "can_override_sector_lead_or_sector_avoid": false
+  },
+  "narrative_overlay": {
+    "overlay_summary": "Momentum-led AI and earnings risk-on impulse has strengthened, but inflation fragility remains elevated through energy, gasoline, CPI and consumer stress.",
+    "relationship_to_base_macro": "INTRADAY_NARRATIVE_DELTA_ONLY",
+    "base_macro_alignment": [
+      "Supports existing selective risk-on/reduced-size posture.",
+      "Supports existing XLK/QQQ leadership permission.",
+      "Does not override NO_GO macro filter or trigger-required gate."
+    ],
+    "base_macro_conflicts": [
+      {
+        "conflict_id": "ENERGY_THEME_VS_BASE_XLE_AVOID",
+        "description": "News narrative identifies energy shock beneficiaries, while base macro template currently marks Energy/XLE as avoid/headwind.",
+        "required_resolution": "Require XLE/oil/options confirmation before energy tickers receive promotion pressure."
+      }
+    ]
+  },
+  "theme_deltas": [
+    {
+      "theme_id": "AI_CAPEX_SEMICONDUCTOR_MOMENTUM",
+      "theme_name": "AI capex / semiconductor leadership",
+      "delta_type": "STRENGTHENS_EXISTING_SECTOR_TILT",
+      "existing_template_gap": "Base macro template has technology leadership and XLK/QQQ preference but not structured AI capex narrative, earnings impulse, semicap exposure or affected single-name universe.",
+      "directional_pressure": "BULLISH_RISK_LEADERSHIP",
+      "source_scores": {
+        "anis": 88,
+        "fips": 81,
+        "verdict": "PIPELINE_NOW"
+      },
+      "sectors_exposed": [
+        "Information Technology",
+        "Semiconductors",
+        "Cloud Infrastructure",
+        "Cybersecurity",
+        "Data Centres"
+      ],
+      "etf_read_through": [
+        "QQQ",
+        "SMH",
+        "XLK"
+      ],
+      "beneficiary_universe": [
+        "INTC",
+        "AAPL",
+        "NVDA",
+        "AMD",
+        "MU",
+        "AMAT",
+        "CSCO",
+        "AKAM",
+        "DDOG"
+      ],
+      "vulnerable_universe": [],
+      "merge_effect": {
+        "macro_alignment_hint": "BOOST_IF_CANDIDATE_TICKER_MATCHES_BENEFICIARY_UNIVERSE",
+        "scoring_bias_hint": "AI_SEMI_BENEFICIARY_PLUS",
+        "do_not_override_no_go_gate": true,
+        "requires_options_confirmation": true,
+        "requires_price_confirmation": true
+      },
+      "confirmation_required": [
+        "SMH relative strength",
+        "QQQ continuation",
+        "options flow confirmation",
+        "volume expansion",
+        "earnings/guidance read-through"
+      ],
+      "invalidation_conditions": [
+        "hot core CPI",
+        "SMH breakdown",
+        "QQQ reversal",
+        "weak AI capex commentary"
+      ],
+      "event_guards": [
+        "US_CPI_2026_05_12"
+      ]
+    },
+    {
+      "theme_id": "ENERGY_SHOCK_GASOLINE_INFLATION",
+      "theme_name": "Energy shock / gasoline inflation transmission",
+      "delta_type": "CONFLICTS_WITH_BASE_SECTOR_AVOID_BUT_ADDS_EVENT_RISK",
+      "existing_template_gap": "Base macro template has XLE/Energy avoid but does not carry a structured Hormuz/gasoline inflation event-risk map or fuel-cost loser universe.",
+      "directional_pressure": "BULLISH_ENERGY_BEARISH_FUEL_HEAVY_CONSUMER",
+      "source_scores": {
+        "anis": 83,
+        "fips": 82,
+        "verdict": "PIPELINE_NOW"
+      },
+      "sectors_exposed": [
+        "Energy",
+        "Airlines",
+        "Cruise Lines",
+        "Logistics",
+        "Consumer Discretionary"
+      ],
+      "etf_read_through": [
+        "XLE",
+        "JETS"
+      ],
+      "beneficiary_universe": [
+        "XOM",
+        "CVX",
+        "COP",
+        "EOG",
+        "LNG",
+        "FRO",
+        "TNK"
+      ],
+      "vulnerable_universe": [
+        "DAL",
+        "UAL",
+        "AAL",
+        "CCL",
+        "NCLH",
+        "RCL",
+        "FDX",
+        "UPS"
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "ENERGY_NAMES_REQUIRE_SECTOR_CONFIRMATION_DUE_TO_BASE_XLE_AVOID",
+        "fuel_loser_hint": "PUT_WATCH_ONLY_IF_PUT_GATE_OR_NAME_SPECIFIC_OPTIONS_CONFIRMATION_ALLOWS",
+        "do_not_unblock_put_gate": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "oil remains elevated",
+        "gasoline pressure persists",
+        "JETS underperforms",
+        "XLE stabilises or outperforms"
+      ],
+      "invalidation_conditions": [
+        "oil reverses lower",
+        "Hormuz risk normalises",
+        "airlines recover relative strength"
+      ],
+      "event_guards": [
+        "IRAN_HORMUZ_FLOW_RISK",
+        "US_CPI_2026_05_12"
+      ]
+    },
+    {
+      "theme_id": "CONSUMER_STRESS_RETAIL_CONFIRMATION",
+      "theme_name": "Consumer stress / retail-sales confirmation",
+      "delta_type": "ADDS_CONFIRMATION_EVENT",
+      "existing_template_gap": "Base macro template has mixed growth and depressed sentiment in notes, but not a structured consumer-stress event guard tied to retail sales and fuel/tariff pressure.",
+      "directional_pressure": "DEFENSIVE_ROTATION_IF_CONFIRMED",
+      "source_scores": {
+        "anis": 71,
+        "fips": 74,
+        "verdict": "WATCHLIST_PRIORITY"
+      },
+      "sectors_exposed": [
+        "Consumer Staples",
+        "Discount Retail",
+        "Consumer Discretionary",
+        "Travel"
+      ],
+      "etf_read_through": [
+        "XLP",
+        "XLY",
+        "JETS"
+      ],
+      "beneficiary_universe": [
+        "WMT",
+        "COST",
+        "DG",
+        "DLTR"
+      ],
+      "vulnerable_universe": [
+        "DAL",
+        "UAL",
+        "AAL",
+        "CCL",
+        "NCLH",
+        "RCL"
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "CONDITIONAL_DEFENSIVE_BOOST_ONLY_AFTER_RETAIL_SALES_CONFIRMATION",
+        "requires_hard_data_confirmation": true
+      },
+      "confirmation_required": [
+        "retail sales disappointment",
+        "defensive retail relative strength",
+        "travel/leisure weakness"
+      ],
+      "invalidation_conditions": [
+        "retail sales holds firm",
+        "consumer discretionary outperforms",
+        "fuel pressure cools"
+      ],
+      "event_guards": [
+        "US_RETAIL_SALES_CONFIRMATION"
+      ]
+    },
+    {
+      "theme_id": "US_CHINA_RARE_EARTHS_TECH_CONTROLS",
+      "theme_name": "US-China / rare earths / technology controls",
+      "delta_type": "CONTEXT_ONLY_NEW_THEME",
+      "existing_template_gap": "Base macro template does not carry geopolitical technology-control outcome risk.",
+      "directional_pressure": "OUTCOME_DEPENDENT",
+      "source_scores": {
+        "anis": 63,
+        "fips": 58,
+        "verdict": "CONTEXT_ONLY"
+      },
+      "sectors_exposed": [
+        "Semiconductors",
+        "Technology Hardware",
+        "Materials"
+      ],
+      "etf_read_through": [
+        "SMH",
+        "XLK",
+        "XLB"
+      ],
+      "beneficiary_universe": [],
+      "vulnerable_universe": [],
+      "merge_effect": {
+        "macro_alignment_hint": "NO_SCORING_BOOST_UNTIL_CONFIRMED_OUTCOME",
+        "requires_event_outcome": true
+      },
+      "confirmation_required": [
+        "confirmed meeting outcome",
+        "verified rare earths/export-controls detail"
+      ],
+      "invalidation_conditions": [
+        "no actionable policy outcome",
+        "conflicting reports"
+      ],
+      "event_guards": [
+        "US_CHINA_MEETING_OUTCOME"
+      ]
+    }
+  ],
+  "event_guard_deltas": [
+    {
+      "event_id": "US_CPI_2026_05_12",
+      "event_name": "US CPI",
+      "event_date": "2026-05-12",
+      "event_time_et": "08:30",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "AI_CAPEX_SEMICONDUCTOR_MOMENTUM",
+        "ENERGY_SHOCK_GASOLINE_INFLATION"
+      ],
+      "pipeline_effect": "Restrict aggressive promotion of growth, semiconductor and long-duration candidates unless price, options and liquidity confirmation are present.",
+      "scenario_map": {
+        "benign_or_cool_core": "Allow AI/semiconductor momentum to keep positive macro alignment subject to trigger-required gate.",
+        "hot_core": "Apply macro penalty to long-duration growth; require demotion review for armed AI/growth names."
+      }
+    },
+    {
+      "event_id": "IRAN_HORMUZ_FLOW_RISK",
+      "event_name": "Iran/Hormuz shipping and oil-flow risk",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "ENERGY_SHOCK_GASOLINE_INFLATION"
+      ],
+      "pipeline_effect": "Maintain energy inflation watch; support fuel-cost loser monitoring; do not override base XLE avoid without confirmation.",
+      "scenario_map": {
+        "risk_escalates": "Energy beneficiaries may receive conditional macro boost; airlines/cruises/logistics receive vulnerability flag.",
+        "risk_normalises": "Remove event-risk support for energy beneficiaries and reduce fuel-cost loser pressure."
+      }
+    },
+    {
+      "event_id": "US_RETAIL_SALES_CONFIRMATION",
+      "event_name": "US retail sales confirmation",
+      "importance": "MEDIUM_HIGH",
+      "affected_theme_ids": [
+        "CONSUMER_STRESS_RETAIL_CONFIRMATION"
+      ],
+      "pipeline_effect": "Confirms or rejects consumer-stress thesis.",
+      "scenario_map": {
+        "weak_sales": "Defensive retail and staples receive conditional boost; discretionary/travel receive penalty.",
+        "firm_sales": "Treat consumer sentiment weakness as soft-data scare until further confirmation."
+      }
+    },
+    {
+      "event_id": "US_CHINA_MEETING_OUTCOME",
+      "event_name": "US-China meeting / rare earths / technology controls",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "US_CHINA_RARE_EARTHS_TECH_CONTROLS"
+      ],
+      "pipeline_effect": "Context only until confirmed policy detail exists.",
+      "scenario_map": {
+        "constructive_outcome": "Reduce supply-chain risk overlay.",
+        "restrictive_outcome": "Apply technology hardware/materials/semiconductor supply-chain risk review."
+      }
+    }
+  ],
+  "macro_exposure_index_build": {
+    "purpose": "Allow plain ticker pipeline candidates to be matched against enriched MacroContext without adding metadata to the ticker CSV.",
+    "index_key": "ticker",
+    "index_values": [
+      "theme_id",
+      "role",
+      "directional_pressure",
+      "event_guards",
+      "confirmation_required",
+      "invalidation_conditions"
+    ],
+    "roles": [
+      "BENEFICIARY",
+      "VULNERABLE",
+      "CONTEXT_ONLY"
+    ]
+  },
+  "validation_rules": [
+    "Reject enrichment if it attempts to overwrite any protected_macro_fields_do_not_override.",
+    "Reject ticker candidate files that require metadata beyond the existing ticker-only intake.",
+    "Store enrichment under a non-destructive namespace such as extras.macro_enrichment_delta or macro_enrichment_delta.",
+    "Append conflict flags; do not remove existing conflict_flags.",
+    "Do not relax macro_filter, trigger_required, size_multiplier, horizon_routing or put_gate from enrichment alone.",
+    "If an enrichment theme conflicts with base sector_avoid, mark conflict and require confirmation."
+  ],
+  "audit": {
+    "required_audit_keys": [
+      "batch_id",
+      "source",
+      "contract_version",
+      "theme_id",
+      "delta_type",
+      "event_guard_ids",
+      "merge_decision",
+      "protected_fields_preserved"
+    ],
+    "audit_message_template": "Merged {theme_id} as {delta_type}; protected fields preserved; scoring hints available through macro exposure index only."
+  }
+}

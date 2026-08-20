@@ -1,0 +1,21 @@
+[
+  {
+    "outcome": "WIN",
+    "notes": "T_PUT_closed_Apr16_entry_0.65_exit_1.90_192pct_wall_break_confirmed",
+    "timestamp": "2026-04-27T07:52:40.343670",
+    "signal": {
+      "ticker": "T",
+      "verdict": "EXECUTE",
+      "ev": 0.05,
+      "win_rate": 0.55,
+      "wyckoff_phase": "distribution",
+      "control_state": "SELLERS",
+      "compression_state": "COMPRESSED",
+      "macro_regime": "NEUTRAL",
+      "options_flow_score": 58.0,
+      "volume_ratio": 1.2,
+      "atr_pct": 0.35,
+      "ev_normalised": 0.25
+    }
+  }
+]

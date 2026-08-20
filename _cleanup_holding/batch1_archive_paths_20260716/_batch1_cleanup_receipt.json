@@ -1,0 +1,1076 @@
+{
+  "action": "batch1_archive_path_cleanup_move",
+  "timestamp_utc": "2026-07-16T11:38:34.042704+00:00",
+  "root": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+  "holding_folder": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716",
+  "requested_count": 152,
+  "moved_count": 152,
+  "error_count": 0,
+  "errors": [],
+  "moved": [
+    {
+      "relative_path": "decommissioned/morning_validator_legacy_20260526/morning_thesis_validator.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\decommissioned\\morning_validator_legacy_20260526\\morning_thesis_validator.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\decommissioned\\morning_validator_legacy_20260526\\morning_thesis_validator.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "decommissioned/morning_validator_legacy_20260526/morning_validation_engine.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\decommissioned\\morning_validator_legacy_20260526\\morning_validation_engine.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\decommissioned\\morning_validator_legacy_20260526\\morning_validation_engine.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/dnu0303old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\dnu0303old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\dnu0303old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab03032pmdnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab03032pmdnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab03032pmdnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab0804old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab0804old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab0804old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab1804olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab1804olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab1804olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab2304dmuoldddddd.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab2304dmuoldddddd.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab2304dmuoldddddd.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab2304old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab2304old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab2304old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab2703ol.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab2703ol.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab2703ol.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab2704old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab2704old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab2704old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab2704OLDDNU.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab2704OLDDNU.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab2704OLDDNU.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab_OLD.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab_OLD.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab_OLD.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab_old0105.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab_old0105.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab_old0105.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_lab_OLD0505.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_lab_OLD0505.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_lab_OLD0505.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labdnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labdnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labdnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labdnu0803.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labdnu0803.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labdnu0803.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labdnu2802.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labdnu2802.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labdnu2802.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labnot working2604.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labnot working2604.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labnot working2604.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labnuhiissss.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labnuhiissss.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labnuhiissss.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labold no use.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labold no use.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labold no use.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labold1703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labold1703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labold1703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labold2603.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labold2603.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labold2603.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_labolddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_labolddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_labolddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "intelligence-lab/Archive/intelligence_laboldie0503.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligence-lab\\Archive\\intelligence_laboldie0503.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\intelligence-lab\\Archive\\intelligence_laboldie0503.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/__init__dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\__init__dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\__init__dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/compounding_tracker1604olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\compounding_tracker1604olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\compounding_tracker1604olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/ml_confidence_enginednu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\ml_confidence_enginednu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\ml_confidence_enginednu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/ml_confidence_engineold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\ml_confidence_engineold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\ml_confidence_engineold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_output1604olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_output1604olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_output1604olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_output21021111dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_output21021111dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_output21021111dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_outputadnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputadnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputadnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_outputadnusrt.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputadnusrt.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputadnusrt.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_outputold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "ml_confidence_layer/Archive/run_ml_on_vanguard_outputoldcode.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputoldcode.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\ml_confidence_layer\\Archive\\run_ml_on_vanguard_outputoldcode.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "orchestrator/Archive/macro_loader2402dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\orchestrator\\Archive\\macro_loader2402dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\orchestrator\\Archive\\macro_loader2402dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "orchestrator/Archive/maindnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\orchestrator\\Archive\\maindnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\orchestrator\\Archive\\maindnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "orchestrator/Archive/options_intelligencednu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\orchestrator\\Archive\\options_intelligencednu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\orchestrator\\Archive\\options_intelligencednu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "orchestrator/Archive/options_intelligenceold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\orchestrator\\Archive\\options_intelligenceold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\orchestrator\\Archive\\options_intelligenceold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/interpreter_qa01905dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\interpreter_qa01905dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\interpreter_qa01905dnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/ma_inputs_syncold1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\ma_inputs_syncold1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\ma_inputs_syncold1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commands190526dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commands190526dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commands190526dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commands1905dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commands1905dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commands1905dnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commandsold1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsold1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsold1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commandsoldam1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsoldam1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsoldam1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commandsolddnu2105 (2).py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsolddnu2105 (2).py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsolddnu2105 (2).py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commandsolddnu2105.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsolddnu2105.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsolddnu2105.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_commandsoldndnu1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsoldndnu1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_commandsoldndnu1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_engine1905dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_engine1905dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_engine1905dnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_engineold1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineold1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineold1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_engineolddnu1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineolddnu1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineolddnu1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_engineolddnu2105.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineolddnu2105.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_engineolddnu2105.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/pipeline_interpreter_enginepmolddnu1905.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\pipeline_interpreter_enginepmolddnu1905.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\pipeline_interpreter_enginepmolddnu1905.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "pipeline_interpreter/Archive/prepare_interpreter_sessionolddnu2105.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\Archive\\prepare_interpreter_sessionolddnu2105.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\pipeline_interpreter\\Archive\\prepare_interpreter_sessionolddnu2105.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "scripts/Archive/build_phase_transition_matrixold2005.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\scripts\\Archive\\build_phase_transition_matrixold2005.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\scripts\\Archive\\build_phase_transition_matrixold2005.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/config0505maloolg.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\config0505maloolg.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\config0505maloolg.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/configold0505dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\configold0505dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\configold0505dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/ev_engine1204old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\ev_engine1204old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\ev_engine1204old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main0103olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main0103olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main0103olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main0505ma lo old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main0505ma lo old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main0505ma lo old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main0505olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main0505olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main0505olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main0605dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main0605dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main0605dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main0605old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main0605old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main0605old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main15014olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main15014olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main15014olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main1504old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main1504old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main1504old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/main2702dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\main2702dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\main2702dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/mainadnu2702.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\mainadnu2702.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\mainadnu2702.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/mainolddnu1304.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\mainolddnu1304.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\mainolddnu1304.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/Archive/mainoldnewdnu1404.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\Archive\\mainoldnewdnu1404.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\Archive\\mainoldnewdnu1404.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/gex_flipperold2703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\gex_flipperold2703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\gex_flipperold2703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/iv_distortion1104olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\iv_distortion1104olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\iv_distortion1104olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/iv_distortionold2703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\iv_distortionold2703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\iv_distortionold2703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/liquidity_gate1104olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\liquidity_gate1104olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\liquidity_gate1104olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/liquidity_gate2704olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\liquidity_gate2704olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\liquidity_gate2704olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/liquidity_gateold2703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\liquidity_gateold2703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\liquidity_gateold2703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/obi_predictor1104olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\obi_predictor1104olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\obi_predictor1104olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/old2703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\old2703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\old2703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/poc_timing1104olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\poc_timing1104olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\poc_timing1104olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/execution/strategies/Archive/poc_timingold2703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\execution\\strategies\\Archive\\poc_timingold2703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\execution\\strategies\\Archive\\poc_timingold2703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/auction_synthesizer whyandu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\auction_synthesizer whyandu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\auction_synthesizer whyandu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/auction_synthesizer0103old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\auction_synthesizer0103old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\auction_synthesizer0103old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/auction_synthesizerold0203.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\auction_synthesizerold0203.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\auction_synthesizerold0203.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/control_identifier0103old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\control_identifier0103old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\control_identifier0103old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/control_identifier0203.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\control_identifier0203.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\control_identifier0203.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/control_identifierwhyandu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\control_identifierwhyandu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\control_identifierwhyandu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/market_profile0103old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\market_profile0103old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\market_profile0103old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/market_profileold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\market_profileold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\market_profileold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/market_profilewhyandu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\market_profilewhyandu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\market_profilewhyandu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_acceptance_FIXED old0103.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_acceptance_FIXED old0103.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_acceptance_FIXED old0103.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_acceptanceold0103dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_acceptanceold0103dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_acceptanceold0103dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_acceptanceold0203.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_acceptanceold0203.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_acceptanceold0203.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_acceptancewhyandu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_acceptancewhyandu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_acceptancewhyandu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_migration0103old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_migration0103old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_migration0103old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_migrationold0203.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_migrationold0203.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_migrationold0203.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer1_auction/Archive/value_migrationwhyandu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer1_auction\\Archive\\value_migrationwhyandu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer1_auction\\Archive\\value_migrationwhyandu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_query0504olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_query0504olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_query0504olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_query0505dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_query0505dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_query0505dnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_query2702dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_query2702dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_query2702dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_querydnu2702.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_querydnu2702.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_querydnu2702.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryitireanodaold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryitireanodaold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryitireanodaold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryold dnu2702.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryold dnu2702.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryold dnu2702.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryolddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryolddnu0103am.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu0103am.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu0103am.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryolddnu0505.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu0505.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu0505.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/actuarial_queryolddnu27022222.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu27022222.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\actuarial_queryolddnu27022222.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detector malo.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detector malo.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detector malo.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detector0504olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detector0504olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detector0504olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detector1304olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detector1304olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detector1304olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detector1604oldnud.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detector1604oldnud.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detector1604oldnud.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectordnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectordnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectordnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectordnu0205old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectordnu0205old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectordnu0205old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectornduold1604.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectornduold1604.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectornduold1604.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectornewdnuold1404.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectornewdnuold1404.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectornewdnuold1404.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorold0505.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorold0505.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorold0505.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorold1502.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorold1502.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorold1502.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorolddnu0103.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu0103.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu0103.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorolddnu0505.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu0505.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu0505.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorolddnu1204.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu1204.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu1204.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/edge_detectorolddnu1604.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu1604.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\edge_detectorolddnu1604.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator0103archive.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator0103archive.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator0103archive.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator0505dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator0505dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator0505dnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator0505old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator0505old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator0505old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator0505olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator0505olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator0505olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator1004old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator1004old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator1004old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator1004olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator1004olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator1004olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculator1504olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculator1504olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculator1504olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatoranother ma looooooo.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatoranother ma looooooo.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatoranother ma looooooo.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorDNU.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorDNU.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorDNU.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatordnuddddddd.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatordnuddddddd.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatordnuddddddd.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatordnuold0703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatordnuold0703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatordnuold0703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatoredge_detectorolddnu0103.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatoredge_detectorolddnu0103.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatoredge_detectorolddnu0103.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatoritirednuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatoritirednuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatoritirednuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorold0703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorold0703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorold0703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorold0705.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorold0705.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorold0705.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorold1802.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorold1802.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorold1802.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatorolddnu0505.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatorolddnu0505.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatorolddnu0505.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/layer2_statistical/Archive/state_calculatoroldpmold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\layer2_statistical\\Archive\\state_calculatoroldpmold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\layer2_statistical\\Archive\\state_calculatoroldpmold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/execution_schemaold0803.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\execution_schemaold0803.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\execution_schemaold0803.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/execution_schemaolddnu1104.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\execution_schemaolddnu1104.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\execution_schemaolddnu1104.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/input_schemadnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\input_schemadnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\input_schemadnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/state_outcomes_schema0504olddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\state_outcomes_schema0504olddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\state_outcomes_schema0504olddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/state_outcomes_schemadnu0505old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\state_outcomes_schemadnu0505old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\state_outcomes_schemadnu0505old.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/state_outcomes_schemaold0703.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\state_outcomes_schemaold0703.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\state_outcomes_schemaold0703.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/state_outcomes_schemaolddnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\state_outcomes_schemaolddnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\state_outcomes_schemaolddnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/state_outcomes_schemaolddnu2502.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\state_outcomes_schemaolddnu2502.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\state_outcomes_schemaolddnu2502.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/trade_schema2702 dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\trade_schema2702 dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\trade_schema2702 dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/trade_schemaold0504dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\trade_schemaold0504dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\trade_schemaold0504dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/vanguard_contract1802dnu.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\vanguard_contract1802dnu.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\vanguard_contract1802dnu.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/vanguard_contractdnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\vanguard_contractdnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\vanguard_contractdnuold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    },
+    {
+      "relative_path": "vanguard/schemas/Archive/vanguard_contractold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\vanguard\\schemas\\Archive\\vanguard_contractold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch1_archive_paths_20260716\\vanguard\\schemas\\Archive\\vanguard_contractold.py",
+      "classification": "ARCHIVE_DIRECTORY_CANDIDATE",
+      "risk": "low"
+    }
+  ]
+}

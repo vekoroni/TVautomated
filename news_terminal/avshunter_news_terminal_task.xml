@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<!--
+  AVSHUNTER News Terminal — Windows Task Scheduler
+  Three daily runs: 06:30, 12:00, 17:30 ET
+
+  INSTALL INSTRUCTIONS:
+  1. Open Task Scheduler (taskschd.msc)
+  2. Action → Import Task → select this file
+  3. Update the <Command> path to your Python executable
+  4. Update the <WorkingDirectory> to your news_terminal folder
+  5. Set your Windows username in <UserId>
+
+  OR run install_scheduler.bat which does this automatically.
+-->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Date>2026-05-14T00:00:00</Date>
+    <Author>ACK</Author>
+    <Description>AVSHUNTER News Terminal — three daily intelligence runs</Description>
+    <URI>\AVSHUNTER\NewsTerminal</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <!-- Morning run 06:30 ET -->
+    <CalendarTrigger>
+      <StartBoundary>2026-05-14T06:30:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+    <!-- Midday run 12:00 ET -->
+    <CalendarTrigger>
+      <StartBoundary>2026-05-14T12:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+    <!-- Evening run 17:30 ET -->
+    <CalendarTrigger>
+      <StartBoundary>2026-05-14T17:30:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>python</Command>
+      <Arguments>news_terminal_scheduler.py</Arguments>
+      <WorkingDirectory>C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\news_terminal</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

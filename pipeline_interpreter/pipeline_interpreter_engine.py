@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Pipeline Interpreter v1.0 â€” Core Engine
 Reads pipeline CSV outputs and produces Dr. Magnus Vale trade narratives
 """
@@ -67,6 +67,88 @@ _DISPLAY_LABEL_MAP = {
 def _translate_display_labels(val: str) -> str:
     """Translate internal capital-lock codes to operator-facing review prompts."""
     return _DISPLAY_LABEL_MAP.get(str(val).strip(), val)
+
+def build_chart_evidence_block(ticker: str, pipeline_row: dict) -> str:
+    """
+    Build a text-only chart context block from AVSHUNTER fields.
+
+    This lets the interpreter run without manually captured chart screenshots.
+    Images remain useful when available, but they are no longer mandatory for
+    Section 5 / chart reasoning.
+    """
+    if not pipeline_row:
+        return (
+            f"CHART_EVIDENCE_FROM_PIPELINE: {ticker}\n"
+            "status: unavailable\n"
+            "reason: no pipeline row was supplied\n"
+            "END_CHART_EVIDENCE_FROM_PIPELINE"
+        )
+
+    field_groups = [
+        ("Direction and permission", [
+            "ticker", "direction", "trade_direction", "pipeline_direction",
+            "execution_permission", "capital_permission", "live_validation_state",
+            "thesis_validity_state", "validation_score",
+        ]),
+        ("Price, VWAP, and trend", [
+            "current_price", "last_price", "close", "price", "vwap", "VWAP",
+            "vwap_eod", "vwap_bias", "vwap_bias_eod", "vwap_acceptance_score",
+            "ema_20", "ema20", "ema_50", "ema50", "sma_50", "sma_200",
+            "trend", "trend_state", "relative_strength", "rs_score",
+        ]),
+        ("Structure and levels", [
+            "support", "resistance", "key_support", "key_resistance",
+            "entry", "entry_trigger", "stop", "stop_loss", "target",
+            "shelf_high", "shelf_low", "range_high", "range_low",
+            "kill_zone", "gamma_flip", "wall_target", "max_pain",
+        ]),
+        ("Wyckoff and chart state", [
+            "wyckoff_structure", "wyckoff_phase", "wyckoff_bias",
+            "wyckoff_event", "wyckoff_status", "phase_status",
+            "phase_correctness_score", "phase_maturity_score",
+            "transition_probability_5_bars", "transition_probability_10_bars",
+            "transition_probability_20_bars", "next_expected_event",
+            "structural_invalidation_level",
+        ]),
+        ("Volatility, volume, and liquidity", [
+            "atr", "atr14", "atr_pct", "volume", "avg_volume",
+            "avg_vol20", "volume_vs_20d_avg", "vol_ratio",
+            "ivp", "iv_rank", "open_interest", "contract_oi",
+            "contract_volume", "spread_pct", "liquidity_verdict",
+        ]),
+        ("Options and flow", [
+            "option_symbol", "contract_symbol", "expiry", "strike",
+            "option_type", "call_put", "gex", "gamma_exposure",
+            "options_flow_zscore", "flow_zscore", "put_call_ratio",
+            "pcr", "skew", "convexity",
+        ]),
+    ]
+
+    used = set()
+    lines = [
+        f"CHART_EVIDENCE_FROM_PIPELINE: {ticker}",
+        "source: structured AVSHUNTER row, not a manual screenshot",
+        "instruction: use this block for chart/auction reasoning when no chart image is attached",
+    ]
+    for title, keys in field_groups:
+        group_lines = []
+        for key in keys:
+            if key in used:
+                continue
+            value = pipeline_row.get(key)
+            if value is None or str(value).strip() == "":
+                continue
+            used.add(key)
+            group_lines.append(f"- {key}: {_translate_display_labels(str(value))}")
+        if group_lines:
+            lines.append(f"\n{title}:")
+            lines.extend(group_lines)
+
+    if len(lines) <= 3:
+        lines.append("status: no chart-specific fields were populated in this row")
+
+    lines.append("END_CHART_EVIDENCE_FROM_PIPELINE")
+    return "\n".join(lines)
 
 # Shared session state dict used by session check and command handlers
 SESSION: dict = {
@@ -412,6 +494,7 @@ def run_session_check():
             active_run_id = sm.get("run_id","").strip()
             session_mode  = sm.get("session_mode","UNKNOWN").upper()
         except Exception: pass
+    trusted_lab_pattern = "lab_triage_view_*.csv"
     if session_mode=="MORNING" and active_run_id:
         primary = f"morning_validated_trades_{active_run_id}.csv"
         fallback= f"morning_candidates_{active_run_id}.csv"; fb_label="EOD CANDIDATES"
@@ -427,14 +510,20 @@ def run_session_check():
     print("="*60)
     all_ok = True
     if MA_PIPELINE.exists():
-        files = sorted(MA_PIPELINE.glob(primary), key=lambda f:f.stat().st_mtime, reverse=True)
+        files = sorted(MA_PIPELINE.glob(trusted_lab_pattern), key=lambda f:f.stat().st_mtime, reverse=True)
+        trusted_lab = bool(files)
+        if not files: files = sorted(MA_PIPELINE.glob(primary), key=lambda f:f.stat().st_mtime, reverse=True)
         if not files: files = sorted(MA_PIPELINE.glob(fallback), key=lambda f:f.stat().st_mtime, reverse=True)
         if not files:
-            any_f = sorted(list(MA_PIPELINE.glob("morning_candidates_*.csv"))+list(MA_PIPELINE.glob("morning_validated_trades_*.csv")),key=lambda f:f.stat().st_mtime,reverse=True)
+            any_f = sorted(
+                list(MA_PIPELINE.glob("lab_triage_view_*.csv"))+
+                list(MA_PIPELINE.glob("morning_candidates_*.csv"))+
+                list(MA_PIPELINE.glob("morning_validated_trades_*.csv")),
+                key=lambda f:f.stat().st_mtime,reverse=True)
             files = any_f
         if files:
-            run_ok = active_run_id and active_run_id in files[0].name
-            status = "OK" if run_ok else "!! STALE"
+            run_ok = trusted_lab or (active_run_id and active_run_id in files[0].name)
+            status = "TRUSTED_LAB" if trusted_lab else ("OK" if run_ok else "!! STALE")
             if not run_ok: all_ok=False
             print(f"  Pipeline output        {status}  {files[0].name}")
             SESSION["pipeline_csv"] = str(files[0])
@@ -593,7 +682,8 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
                                 context_block:str="",
                                 lab_context_block:str="",
                                 lab_conflict_block:str="",
-                                pre_trade_prob_block:str="") -> str:
+                                pre_trade_prob_block:str="",
+                                chart_images_present: bool=False) -> str:
     date_str=_date()
     row_text="\n".join(f"{k}: {_translate_display_labels(str(v))}" for k,v in pipeline_row.items() if v)
     opt_text=""
@@ -621,6 +711,12 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
     if lab_context_block:  _lab += f"\n{lab_context_block}\n"
     if lab_conflict_block: _lab += f"\n{lab_conflict_block}\n"
     if pre_trade_prob_block: _lab += f"\n{pre_trade_prob_block}\n"
+    chart_evidence = build_chart_evidence_block(ticker, pipeline_row)
+    chart_instruction = (
+        "Chart images are attached. Use direct visual evidence first, then reconcile it with CHART_EVIDENCE_FROM_PIPELINE."
+        if chart_images_present
+        else "No manual chart screenshots are required. Use CHART_EVIDENCE_FROM_PIPELINE as the chart/auction source for Section 5."
+    )
 
     return f"""Run Pipeline Interpreter â single ticker deep dive: {ticker}
 {_trader_note_block}Date: {date_str}{ctx_str}
@@ -628,6 +724,10 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
 PIPELINE ROW:
 {row_text}
 {_live_price_section}
+CHART / AUCTION CONTEXT:
+{chart_instruction}
+{chart_evidence}
+
 OPTIONS DATA:
 {opt_text if opt_text else 'Not provided.'}
 {_lab}
@@ -1275,6 +1375,7 @@ def build_intraday_prompt(
     options_data: dict = None,
     ticker_note: str = "",
     chart_timeframes: list = None,
+    chart_images_present: bool = False,
 ) -> str:
     """
     Build the intraday chart + live price analysis prompt.
@@ -1320,6 +1421,15 @@ def build_intraday_prompt(
     _live_mkt = LIVE_DATA.get(ticker.upper(), {})
     _live_mkt_block = format_live_data_for_prompt(_live_mkt) if _live_mkt else ""
     live_market_section = f"\n{_live_mkt_block}\n" if _live_mkt_block else ""
+    chart_evidence = build_chart_evidence_block(ticker, pipeline_row)
+    chart_source_instruction = (
+        f"{chart_source_instruction}"
+        if chart_images_present
+        else (
+            "No manual chart screenshots are attached. Use CHART_EVIDENCE_FROM_PIPELINE "
+            "plus live price/VWAP data as the intraday confirmation map."
+        )
+    )
 
     return f"""Run Pipeline Interpreter — INTRADAY CHART ANALYSIS: {ticker}
 {_trader_note_block}Date: {date_str}
@@ -1328,6 +1438,9 @@ Chart timeframes provided: {tf_str}
 PIPELINE ROW (EOD thesis — treat as the prepared thesis context):
 {row_text}
 {live_price_section}{live_market_section}
+CHART / AUCTION CONTEXT:
+{chart_evidence}
+
 OPTIONS DATA:
 {opt_text if opt_text else 'Not provided.'}
 
@@ -1335,7 +1448,7 @@ MACRO + ENRICHMENT DELTA + NEWS:
 {combined_context}
 
 INTRADAY CHART READ INSTRUCTIONS:
-The chart image(s) above show {ticker} on {tf_str} timeframes.
+{chart_source_instruction}
 This is the LIVE CONFIRMATION layer — your job is to assess whether the
 prepared EOD thesis is being confirmed, rejected, or is still forming.
 
@@ -1523,6 +1636,12 @@ def build_story_prompt(
             f"  - 'no chart was provided'\n"
             f"The chart images ARE present. You can see them attached to this message. Read them.\n"
         )
+    else:
+        _chart_instruction = (
+            "\nNO CHART IMAGES ATTACHED: Do not ask for screenshots and do not say the chart section is impossible.\n"
+            "Use CHART_EVIDENCE_FROM_PIPELINE as the chart/auction source for Section 5.\n"
+        )
+    _chart_evidence = build_chart_evidence_block(ticker, pipeline_row)
 
     return (
         f"OUTPUT FORMAT: Produce ONLY a [JUNIOR_BRIEFING_{ticker.upper()}] block.\n"
@@ -1535,6 +1654,8 @@ def build_story_prompt(
         f"{_chart_instruction}\n"
         f"PIPELINE ROW (EOD thesis — primary data source for all 8 sections):\n"
         f"{row_text}\n"
+        f"\nCHART / AUCTION CONTEXT:\n"
+        f"{_chart_evidence}\n"
         f"{live_price_section}"
         f"{live_market_section}"
         f"\nOPTIONS DATA:\n"
@@ -1553,7 +1674,7 @@ def build_story_prompt(
         f"Section 3 must label every level: KILL_ZONE / RESISTANCE / VWAP_BATTLEGROUND /\n"
         f"  ENTRY_TRIGGER / GAMMA_FLIP / SWING_EXTREME / WALL_TARGET\n"
         f"Section 5 must contain a checkpoint table: Checkpoint | Required for thesis | Status\n"
-        f"{'Section 5 must read from the attached chart images. ' if chart_images else ''}"
+        f"{'Section 5 must read from the attached chart images. ' if chart_images else 'Section 5 must read from CHART_EVIDENCE_FROM_PIPELINE. '}"
         f"Section 8 must contain WHAT_MAKES_US_ENTER and WHAT_MAKES_US_ABANDON sub-boxes.\n\n"
         f"execution_permission=NONE_PIPELINE_INTERPRETER_ONLY"
     )
@@ -1675,3 +1796,5 @@ PIPELINE_FILE_KEYWORDS["lab_export"] = ["avshunter_signals"]
 # PI-ENHANCEMENTS-20260527: Deep dive prompt builders accept sector/ticker context blocks.
 
 # PI-ANY-TICKER-20260527
+
+

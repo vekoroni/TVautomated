@@ -1,0 +1,21 @@
+{
+  "active_preset": "medium_term",
+  "dte_presets": {
+    "medium_term": {
+      "min_dte": 1,
+      "max_dte": 45,
+      "name": "Medium-term (1-45 days)"
+    }
+  },
+  "liquidity_filters": {
+    "max_bid_ask_spread_pct": 60,
+    "min_option_volume": 50,
+    "min_open_interest": 200,
+    "min_bid_price": 0.25
+  },
+  "greeks_filters": {
+    "min_delta": 0.4,
+    "max_delta": 0.75,
+    "max_theta_pct_per_day": 4.0
+  }
+}

@@ -173,15 +173,16 @@ class WyckoffEngine_3101_v2:
         # Score events within phase context
         event_scores = self._score_events(df, features, current_phase, control)
         
-        # Force event selection
+        # Event selection. Empty evidence stays low-confidence; do not force a
+        # credible-looking TR event when no event actually scored.
         if event_scores:
             dominant_event = max(event_scores, key=event_scores.get)
             event_evidence_strength = event_scores[dominant_event]
             event_confidence = self._calculate_event_confidence(event_scores, dominant_event)
         else:
             dominant_event = "TR"  # Trading Range default
-            event_evidence_strength = 40
-            event_confidence = 70
+            event_evidence_strength = 0
+            event_confidence = 30
         
         # Transition analysis
         transition = self._analyze_transition(phase_scores, current_phase, features)
@@ -194,6 +195,8 @@ class WyckoffEngine_3101_v2:
             phase_scores, current_phase, phase_evidence_strength,
             event_evidence_strength, control, features
         )
+        if _momentum_override_note:
+            contradictions.append(_momentum_override_note)
 
         # truth_confidence: honest composite — penalised by contradictions
         truth_confidence = self._calculate_truth_confidence(
@@ -703,8 +706,11 @@ class WyckoffEngine_3101_v2:
                 scores['UTAD'] = 75
                 scores['UT'] = 60
             else:
-                scores['Spring'] = 55
-                scores['UTAD'] = 55
+                # EQUILIBRIUM/SHIFTING is structurally ambiguous in Phase C.
+                # Keep both candidates below actionable strength instead of
+                # creating a directional coin flip.
+                scores['Spring'] = 45
+                scores['UTAD'] = 45
         
         return scores
     

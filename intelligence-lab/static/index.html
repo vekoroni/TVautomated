@@ -1147,6 +1147,19 @@ function hasNegativeOptionRr(s) {
   return !Number.isNaN(rr) && rr < 0;
 }
 
+function getMonetisationFailure(s) {
+  const evDecision = getEvDecisionHint(s);
+  if (!['STRONG', 'MODERATE'].includes(evDecision)) {
+    return `EV_${evDecision || 'MISSING'}_NOT_MONETISABLE`;
+  }
+  const raw = firstSignalValue(s, ['rr_options', 'opt__rr_options', 'option_rr', 'rr']);
+  if (raw === '' || raw === null || raw === undefined) return 'RR_MISSING_OR_INVALID';
+  const rr = parseFloat(raw);
+  if (Number.isNaN(rr)) return 'RR_MISSING_OR_INVALID';
+  if (rr <= 0) return 'RR_NON_POSITIVE';
+  return '';
+}
+
 function formatEv(v) {
   const ev = parseFloat(v);
   if (Number.isNaN(ev)) return 'â€”';
@@ -1190,6 +1203,7 @@ function cleanCategory(v) {
 function finalLabVerdict(s) {
   const verdict = cleanCategory(s.display_final_verdict || s.lab_status || s.lab_verdict || s.sb_final_verdict || 'WAIT');
   if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
+  if (['GO','GO_LIMIT','PROBE','EOD_EXEC','ARMED'].includes(verdict) && getMonetisationFailure(s)) return 'NON_MONETISABLE';
   if (['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict) && hasEvAvoid(s)) return 'EOD_CAUTION';
   return verdict;
 }
@@ -1306,7 +1320,12 @@ function getExecutionCategory(s) {
   ];
   for (const v of candidates) {
     const c = cleanCategory(v);
-    if (c && !['NONE','N/A','NA','UNKNOWN','NULL','NAN'].includes(c)) return c;
+    if (c && !['NONE','N/A','NA','UNKNOWN','NULL','NAN'].includes(c)) {
+      if (['GO','GO_NOW','GO_LIMIT','PROBE','ARMED','EXECUTE','EXECUTE_WITH_CAUTION'].includes(c) && getMonetisationFailure(s)) {
+        return 'NON_MONETISABLE';
+      }
+      return c;
+    }
   }
   return 'UNCATEGORISED';
 }

@@ -1,0 +1,31 @@
+{
+  "schema_version": "automation_v2.request.1",
+  "ticker": "NEG",
+  "run_id": "fixture-run",
+  "invocation_id": "negative-rr",
+  "manifest": {
+    "ticker": "NEG",
+    "run_id": "fixture-run",
+    "invocation_id": "negative-rr",
+    "as_of": "2026-07-25T09:45:00Z",
+    "findings": [],
+    "items": []
+  },
+  "pipeline_row": {
+    "ticker": "NEG",
+    "direction": "PUT",
+    "rr": "-0.75"
+  },
+  "lab_context": {},
+  "option_context": [],
+  "chart_assets": [],
+  "macro_context": {},
+  "sector_context": {},
+  "trader_note": "",
+  "live_validation": {
+    "status": "LIVE_CONFIRMED"
+  },
+  "mode": "full",
+  "shadow": true,
+  "execution_enabled": false
+}

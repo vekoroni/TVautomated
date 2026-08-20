@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""
+scripts/build_packages_from_discovery.py
+
+AVSHUNTER → VANGUARD Package Builder (Permanent Missing Link)
+===========================================================
+
+Builds per-ticker JSON "packages" and packages/index.json for a given run_id
+so Vanguard can run end-to-end using scripts/run_vanguard_from_packages.py.
+
+Inputs (required):
+- data/output/latest.json  (or --run-id)
+- data/output/discovery_candidates_ultimate_<run_id>.csv
+
+Outputs:
+- data/output/runs/<run_id>/packages/<TICKER>.json
+- data/output/runs/<run_id>/packages/index.json
+
+Design principles:
+- Fail-soft per ticker: one bad row won't kill packaging
+- Deterministic output structure
+- No hallucinated fields: only what exists in the CSV (plus optional macro payload if found)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import pandas as pd
+
+
+def read_json(path: Path) -> Dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def write_json(path: Path, obj: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, indent=2, default=str), encoding="utf-8")
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def coerce_float(x: Any, default: float = 0.0) -> float:
+    try:
+        if x is None:
+            return default
+        if isinstance(x, (int, float)):
+            return float(x)
+        s = str(x).strip()
+        if s == "" or s.lower() == "nan":
+            return default
+        return float(s)
+    except Exception:
+        return default
+
+
+def coerce_int(x: Any, default: int = 0) -> int:
+    try:
+        if x is None:
+            return default
+        if isinstance(x, int):
+            return x
+        if isinstance(x, float):
+            return int(x)
+        s = str(x).strip()
+        if s == "" or s.lower() == "nan":
+            return default
+        return int(float(s))
+    except Exception:
+        return default
+
+
+def coerce_str(x: Any, default: str = "") -> str:
+    try:
+        if x is None:
+            return default
+        s = str(x).strip()
+        if s.lower() == "nan":
+            return default
+        return s
+    except Exception:
+        return default
+
+
+@dataclass
+class Paths:
+    root: Path
+    run_id: str
+    output_dir: Path
+    run_dir: Path
+    packages_dir: Path
+    index_path: Path
+    candidates_csv: Path
+
+
+def detect_latest_run_id(root: Path) -> str:
+    latest = read_json(root / "data" / "output" / "latest.json")
+    run_id = str(latest.get("run_id") or "").strip()
+    if not run_id:
+        raise RuntimeError("latest.json missing run_id")
+    return run_id
+
+
+def resolve_paths(root: Path, run_id: str) -> Paths:
+    output_dir = root / "data" / "output"
+    run_dir = output_dir / "runs" / run_id
+    packages_dir = run_dir / "packages"
+    index_path = packages_dir / "index.json"
+    candidates_csv = output_dir / f"discovery_candidates_ultimate_{run_id}.csv"
+    return Paths(
+        root=root,
+        run_id=run_id,
+        output_dir=output_dir,
+        run_dir=run_dir,
+        packages_dir=packages_dir,
+        index_path=index_path,
+        candidates_csv=candidates_csv,
+    )
+
+
+def find_optional_macro_payload(paths: Paths) -> Dict[str, Any]:
+    """
+    Optional macro detection:
+    - If you have a standard macro artefact path, add it here.
+    - For now: try the latest macro JSON inside data/output if present.
+    """
+    # Heuristic: any file like macro_snapshot_*.json or futures_bias_*.json (you can standardise later)
+    patterns = [
+        re.compile(r"macro.*\.json$", re.IGNORECASE),
+        re.compile(r"futures.*bias.*\.json$", re.IGNORECASE),
+    ]
+    candidates = []
+    for p in paths.output_dir.glob("*.json"):
+        name = p.name
+        if any(rx.search(name) for rx in patterns):
+            candidates.append(p)
+
+    if not candidates:
+        return {}
+
+    # choose newest
+    candidates.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    newest = candidates[0]
+    try:
+        payload = read_json(newest)
+        return {"source_file": str(newest), "payload": payload}
+    except Exception:
+        return {}
+
+
+def row_to_package(row: Dict[str, Any], macro_blob: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert one discovery row to a package JSON used by run_vanguard_from_packages.py.
+
+    run_vanguard_from_packages.py currently reads:
+      pkg["ticker"]
+      pkg["discovery"]["stock_price"/"entry_price"/...]
+      pkg["macro"]["payload"] (optional)
+    """
+    ticker = coerce_str(row.get("ticker") or row.get("symbol"))
+    discovery = {
+        # keep raw discovery fields (only if present)
+        "ticker": ticker,
+        "stock_price": coerce_float(row.get("stock_price") or row.get("entry_price")),
+        "entry_price": coerce_float(row.get("entry_price")),
+        "stop_loss": coerce_float(row.get("stop_loss")),
+        "ATR_14": coerce_float(row.get("ATR_14") or row.get("atr_14")),
+        "VWAP": coerce_float(row.get("VWAP") or row.get("vwap")),
+        "EMA9": coerce_float(row.get("EMA9") or row.get("ema9")),
+        "EMA21": coerce_float(row.get("EMA21") or row.get("ema21")),
+        "EMA50": coerce_float(row.get("EMA50") or row.get("ema50")),
+        "EMA200": coerce_float(row.get("EMA200") or row.get("ema200")),
+        "wyckoff_phase": coerce_str(row.get("wyckoff_phase") or row.get("current_phase")),
+        "dominant_event": coerce_str(row.get("dominant_event")),
+        "crabel_compression": coerce_str(row.get("crabel_compression")),
+        "crabel_pattern": coerce_str(row.get("crabel_pattern")),
+        "win_probability": coerce_float(row.get("win_probability")),
+        "composite_score": coerce_float(row.get("composite_score")),
+        "timestamp": coerce_str(row.get("timestamp")),
+        "signal_type": coerce_str(row.get("signal_type")),
+        "source_tier": coerce_str(row.get("tier") or row.get("source_tier")),
+        "sector": coerce_str(row.get("sector")),
+        "industry": coerce_str(row.get("industry")),
+    }
+
+    # Remove empty keys to avoid fake data
+    discovery = {k: v for k, v in discovery.items() if v not in ("", None) and not (isinstance(v, float) and v == 0.0 and k not in ("stock_price","entry_price"))}
+
+    pkg: Dict[str, Any] = {
+        "schema_version": "1.0",
+        "created_utc": utc_now_iso(),
+        "ticker": ticker,
+        "discovery": discovery,
+    }
+
+    if macro_blob:
+        pkg["macro"] = macro_blob
+
+    return pkg
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run-id", default=None, help="Run id (default: latest.json run_id)")
+    ap.add_argument("--limit", type=int, default=0, help="Limit number of packages (0 = no limit)")
+    ap.add_argument("--no-macro", action="store_true", help="Do not attach optional macro payload")
+    args = ap.parse_args()
+
+    root = Path(".").resolve()
+    run_id = args.run_id or detect_latest_run_id(root)
+    paths = resolve_paths(root, run_id)
+
+    if not paths.candidates_csv.exists():
+        raise SystemExit(f"ERROR: candidates CSV not found: {paths.candidates_csv}")
+
+    paths.packages_dir.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(paths.candidates_csv)
+    if "ticker" not in df.columns and "symbol" not in df.columns:
+        raise SystemExit("ERROR: candidates CSV must contain 'ticker' or 'symbol' column")
+
+    macro_blob = {} if args.no_macro else find_optional_macro_payload(paths)
+
+    packages_index: List[Dict[str, Any]] = []
+    built = 0
+    failed = 0
+    errors: List[Tuple[str, str]] = []
+
+    rows = df.to_dict(orient="records")
+    if args.limit and args.limit > 0:
+        rows = rows[: args.limit]
+
+    for r in rows:
+        ticker = coerce_str(r.get("ticker") or r.get("symbol"))
+        if not ticker:
+            failed += 1
+            errors.append(("<missing>", "Row missing ticker/symbol"))
+            continue
+
+        try:
+            pkg = row_to_package(r, macro_blob)
+            pkg_path = paths.packages_dir / f"{ticker}.json"
+            write_json(pkg_path, pkg)
+
+            packages_index.append(
+                {
+                    "ticker": ticker,
+                    "package_path": str(pkg_path),
+                    "created_utc": utc_now_iso(),
+                }
+            )
+            built += 1
+        except Exception as e:
+            failed += 1
+            errors.append((ticker, str(e)))
+
+    index_obj = {
+        "schema_version": "1.0",
+        "run_id": run_id,
+        "created_utc": utc_now_iso(),
+        "packages_total": built + failed,
+        "packages_built": built,
+        "packages_failed": failed,
+        "packages": packages_index,
+        "macro_attached": bool(macro_blob),
+        "macro_source": macro_blob.get("source_file") if isinstance(macro_blob, dict) else None,
+    }
+    write_json(paths.index_path, index_obj)
+
+    print("\nPACKAGE BUILD COMPLETE")
+    print("=" * 80)
+    print(f"Run: {run_id}")
+    print(f"Candidates: {len(rows)}")
+    print(f"Built: {built}")
+    print(f"Failed: {failed}")
+    print(f"Index: {paths.index_path}")
+    print(f"Packages dir: {paths.packages_dir}")
+    if errors:
+        print("\nFirst 10 errors:")
+        for t, msg in errors[:10]:
+            print(f" - {t}: {msg}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

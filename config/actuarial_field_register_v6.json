@@ -1,0 +1,28 @@
+{
+  "schema_version": "actuarial_v6",
+  "fields": {
+    "state_v2": {"required": true, "physical": "state_v2", "category": "state", "retention": "canonical"},
+    "state_hash": {"required": true, "physical": "state_hash", "category": "state", "retention": "canonical"},
+    "momentum_bucket": {"required": true, "physical": "momentum_bucket", "category": "state", "retention": "canonical"},
+    "location_bucket": {"required": true, "physical": "location_bucket", "category": "state", "retention": "canonical"},
+    "future_momentum_bucket": {"required": true, "physical": "future_momentum_bucket", "category": "future", "retention": "vital"},
+    "wyckoff_phase_bucket": {"required": true, "physical": "wyckoff_phase_bucket", "category": "state", "retention": "canonical"},
+    "phase_v2": {"required": true, "physical": "phase_v2", "category": "state", "retention": "canonical"},
+    "trend_direction": {"required": true, "physical": "trend_direction", "category": "state", "retention": "canonical"},
+    "structure_quality": {"required": true, "physical": "structure_quality", "category": "state", "retention": "canonical"},
+    "vol_regime": {"required": true, "physical": "vol_regime", "category": "state", "retention": "canonical"},
+    "atr_percentile": {"required": true, "physical": "atr_percentile", "category": "state", "retention": "canonical"},
+    "dist_from_high": {"required": true, "physical": "dist_from_high", "category": "location", "retention": "canonical"},
+    "dist_from_low": {"required": true, "physical": "dist_from_low", "category": "location", "retention": "canonical"},
+    "return_5d": {"required": true, "physical": "outcome_5d_return", "aliases": ["outcome_5d_return"], "category": "horizon", "retention": "vital"},
+    "return_10d": {"required": true, "physical": "outcome_10d_return", "aliases": ["outcome_10d_return"], "category": "horizon", "retention": "vital"},
+    "return_20d": {"required": true, "physical": "outcome_20d_return", "aliases": ["outcome_20d_return"], "category": "horizon", "retention": "vital"},
+    "max_drawdown_20d": {"required": true, "physical": "outcome_max_drawdown_20d", "aliases": ["outcome_max_drawdown_20d"], "category": "risk", "retention": "vital"},
+    "hit_10pct_20d": {"required": true, "physical": "outcome_hit_10pct_up", "aliases": ["outcome_hit_10pct_up"], "category": "horizon", "retention": "vital"},
+    "bucket_schema_version": {"required": true, "physical": "bucket_schema_version", "category": "metadata", "retention": "canonical"},
+    "preferred_horizon": {"required": false, "physical": "preferred_horizon", "category": "future", "retention": "vital"},
+    "horizon_bucket": {"required": false, "physical": "horizon_bucket", "category": "future", "retention": "vital"},
+    "future_path_label": {"required": false, "physical": "outcome_category", "aliases": ["outcome_category"], "category": "future", "retention": "vital"},
+    "time_to_target_bucket": {"required": false, "physical": "time_to_target_bucket", "category": "future", "retention": "vital"}
+  }
+}

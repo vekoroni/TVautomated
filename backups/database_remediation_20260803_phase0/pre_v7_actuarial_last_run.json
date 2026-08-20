@@ -1,0 +1,20 @@
+{
+  "completed_at": "2026-07-31T07:19:33.394681+00:00",
+  "rows_processed": 6033072,
+  "states_built": 871,
+  "valid_states": 759,
+  "invalid_states": 112,
+  "mode": "incremental",
+  "actuarial_db_path": "C:\\Users\\ACKVerissimo\\vanguard\\data\\actuarial_database_v6.parquet",
+  "schema_version": "actuarial_v6",
+  "schema_fingerprint": "9c6d73c20e57e17a88697adcd05cf2812220011ff478417021c4fe72ca8725fd",
+  "schema_fingerprint_algorithm": "sha256:parquet_schema_arrow_v1",
+  "schema_missing_fields": [],
+  "schema_warnings": [
+    "return_5d resolved via explicit v6 mapping to outcome_5d_return",
+    "return_10d resolved via explicit v6 mapping to outcome_10d_return",
+    "return_20d resolved via explicit v6 mapping to outcome_20d_return",
+    "max_drawdown_20d resolved via explicit v6 mapping to outcome_max_drawdown_20d",
+    "hit_10pct_20d resolved via explicit v6 mapping to outcome_hit_10pct_up"
+  ]
+}

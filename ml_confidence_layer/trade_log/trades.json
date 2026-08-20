@@ -1,0 +1,23 @@
+[
+  {
+    "trade_id": "T_CALL_20260214_20260214_000000",
+    "ticker": "T",
+    "direction": "CALL",
+    "entry_date": "2026-02-14T09:45:00",
+    "entry_price": 1.2,
+    "contracts": 1,
+    "max_risk_usd": 120.0,
+    "ml_score": 72.0,
+    "confidence_tier": "STANDARD",
+    "wyckoff_phase": "C",
+    "stop_loss": 21.5,
+    "target_1": 24.0,
+    "target_2": 26.0,
+    "status": "CLOSED",
+    "exit_date": "2026-04-10T16:00:00",
+    "exit_price": 3.6,
+    "pnl_usd": 240.0,
+    "outcome": "WIN",
+    "notes": "AT&T Phase C spring. Crabel compression. BUYERS control. 200% return confirmed. Template trade for ML training."
+  }
+]

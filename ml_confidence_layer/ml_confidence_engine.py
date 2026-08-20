@@ -61,7 +61,7 @@ MULTIPLIER_MAX = 1.50
 
 # Encoding maps
 PHASE_MAP    = {"accumulation": 3, "markup": 4, "distribution": 1, "markdown": 0, "unknown": 2}
-CONTROL_MAP  = {"BUYERS": 2, "NEUTRAL": 1, "SELLERS": 0}
+CONTROL_MAP  = {"BUYERS": 2, "EQUILIBRIUM": 1, "NEUTRAL": 1, "UNKNOWN": 1, "SHIFTING": 0.5, "SELLERS": 0}
 COMPRESS_MAP = {"COMPRESSED": 2, "NORMAL": 1, "EXPANDED": 0}
 REGIME_MAP   = {"RISK_ON": 2, "NEUTRAL": 1, "RISK_OFF": 0}
 
@@ -78,7 +78,7 @@ class VanguardSignal:
     ev:                 float  # VANGUARD Expected Value (raw, pre-ML)
     win_rate:           float  # 0.0 – 1.0 from actuarial engine
     wyckoff_phase:      str    # accumulation / markup / distribution / markdown
-    control_state:      str    # BUYERS / SELLERS / NEUTRAL
+    control_state:      str    # BUYERS / SELLERS / EQUILIBRIUM / SHIFTING / UNKNOWN
     compression_state:  str    # COMPRESSED / NORMAL / EXPANDED
     macro_regime:       str    # RISK_ON / RISK_OFF / NEUTRAL
     options_flow_score: float  # 0 – 100

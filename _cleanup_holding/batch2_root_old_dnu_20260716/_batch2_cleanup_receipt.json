@@ -1,0 +1,61 @@
+{
+  "action": "batch2_root_old_dnu_cleanup_move",
+  "timestamp_utc": "2026-07-16T11:41:42.716485+00:00",
+  "root": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+  "holding_folder": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716",
+  "requested_count": 7,
+  "moved_count": 7,
+  "error_count": 0,
+  "errors": [],
+  "moved": [
+    {
+      "relative_path": "intelligent_orchestrator2005dnuold.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\intelligent_orchestrator2005dnuold.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\intelligent_orchestrator2005dnuold.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "kelly_sizeranotherdnu2005.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\kelly_sizeranotherdnu2005.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\kelly_sizeranotherdnu2005.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "kelly_sizerdnu2009.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\kelly_sizerdnu2009.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\kelly_sizerdnu2009.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "morning_gate_old2605.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\morning_gate_old2605.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\morning_gate_old2605.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "morning_thesis_validator2005old.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\morning_thesis_validator2005old.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\morning_thesis_validator2005old.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "morning_thesis_validatoranotherdbu2005.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\morning_thesis_validatoranotherdbu2005.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\morning_thesis_validatoranotherdbu2005.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    },
+    {
+      "relative_path": "transition_matrix_consumeranotherdnu2005.py",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\transition_matrix_consumeranotherdnu2005.py",
+      "destination": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\_cleanup_holding\\batch2_root_old_dnu_20260716\\transition_matrix_consumeranotherdnu2005.py",
+      "classification": "ROOT_STALE_NAME_CANDIDATE",
+      "risk": "medium"
+    }
+  ]
+}

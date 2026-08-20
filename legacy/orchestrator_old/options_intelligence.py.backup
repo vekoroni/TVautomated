@@ -1,0 +1,227 @@
+﻿import json
+import os
+import requests
+import time
+import csv
+from datetime import datetime, timedelta
+from pathlib import Path
+
+class OptionsIntelligence:
+    def __init__(self, config):
+        self.config = config
+        self.polygon_key = os.getenv('POLYGON_API_KEY')
+        self.base_url = "https://api.polygon.io"
+        self.csv_path = Path('config/tickers.csv')
+        
+    def scan_options(self):
+        print("  [Options] Starting scan...")
+        
+        if not self.polygon_key or self.polygon_key == 'your_polygon_key_here':
+            return {'status': 'error', 'message': 'POLYGON_API_KEY not configured', 'signals': []}
+        
+        print("  [Options] Building ticker universe...")
+        tickers, source = self._get_universe()
+        print(f"  [Options] Using {source} universe: {len(tickers)} tickers")
+        
+        signals = []
+        scanned = 0
+        
+        for ticker in tickers:
+            try:
+                signal = self._scan_ticker(ticker)
+                if signal:
+                    signals.append(signal)
+                    print(f"  [Options] ✓ Signal: {ticker} - {signal['setup']} Score {signal['score']}")
+                
+                scanned += 1
+                if scanned % 50 == 0:
+                    print(f"  [Options] Progress: {scanned}/{len(tickers)} ({len(signals)} signals)")
+                    
+                time.sleep(0.12)
+            except:
+                continue
+        
+        print(f"  [Options] Scan complete: {len(signals)} signals from {scanned} tickers")
+        
+        return {
+            'status': 'success',
+            'signal_count': len(signals),
+            'signals': signals,
+            'tickers_scanned': scanned,
+            'universe_source': source,
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _get_universe(self):
+        # 1. CSV if exists
+        if self.csv_path.exists():
+            try:
+                print(f"  [Options] Found CSV at {self.csv_path}")
+                tickers = self._load_csv()
+                if tickers:
+                    return tickers, 'CSV'
+            except:
+                pass
+        
+        # 2. Dynamic from Polygon (500 tickers)
+        try:
+            print(f"  [Options] Fetching from Polygon API...")
+            tickers = self._fetch_dynamic_universe()
+            if tickers and len(tickers) > 50:
+                return tickers, 'Dynamic'
+        except:
+            pass
+        
+        # 3. Static fallback (50 tickers)
+        print(f"  [Options] Using static fallback...")
+        return self._get_static_universe(), 'Static'
+    
+    def _load_csv(self):
+        tickers = []
+        with open(self.csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ticker = row.get('ticker', '').strip().upper()
+                if ticker and len(ticker) <= 5:
+                    tickers.append(ticker)
+        print(f"  [Options] Loaded {len(tickers)} tickers from CSV")
+        return tickers
+    
+    def _fetch_dynamic_universe(self):
+        url = f"{self.base_url}/v2/snapshot/locale/us/markets/stocks/tickers"
+        params = {'apiKey': self.polygon_key}
+        
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'tickers' not in data:
+            raise Exception("No tickers in response")
+        
+        print(f"  [Options] Received {len(data['tickers'])} tickers from API")
+        
+        candidates = []
+        for item in data['tickers']:
+            ticker = item.get('ticker', '')
+            day = item.get('day', {})
+            
+            if not day:
+                continue
+            
+            price = day.get('c', 0)
+            volume = day.get('v', 0)
+            
+            if (volume > 500000 and 10 <= price <= 2000 and '.' not in ticker and 
+                '-' not in ticker and len(ticker) <= 5 and ticker.isalpha()):
+                candidates.append({'ticker': ticker, 'volume': volume})
+        
+        candidates.sort(key=lambda x: x['volume'], reverse=True)
+        top_500 = [c['ticker'] for c in candidates[:500]]
+        
+        print(f"  [Options] Filtered to {len(top_500)} liquid tickers")
+        return top_500
+    
+    def _get_static_universe(self):
+        return [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'NFLX', 'AMD', 'CRM',
+            'JPM', 'BAC', 'GS', 'V', 'MA', 'BLK', 'C', 'WFC', 'AXP', 'SCHW',
+            'SPY', 'QQQ', 'IWM', 'DIA', 'XLF', 'XLE', 'XLK', 'GLD', 'SLV', 'EEM',
+            'COIN', 'HOOD', 'PLTR', 'SNOW', 'RIVN', 'UBER', 'ABNB', 'DASH', 'SQ', 'MSTR',
+            'UNH', 'XOM', 'CVX', 'BA', 'CAT', 'LLY', 'JNJ', 'PFE', 'MRK', 'WMT'
+        ]
+    
+    def _scan_ticker(self, ticker):
+        price_data = self._get_price_history(ticker, days=30)
+        if not price_data or len(price_data) < 20:
+            return None
+        
+        wyckoff_signal = self._detect_wyckoff(price_data)
+        if not wyckoff_signal:
+            return None
+        
+        current_price = price_data[-1]['close']
+        score = self._calculate_score(wyckoff_signal, price_data)
+        
+        if score < 75:
+            return None
+        
+        return {
+            'ticker': ticker,
+            'setup': wyckoff_signal['signal'],
+            'direction': wyckoff_signal['direction'],
+            'score': score,
+            'entry_price': round(current_price, 2),
+            'support_resistance': round(wyckoff_signal.get('level', current_price), 2),
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _get_price_history(self, ticker, days=30):
+        end = datetime.now()
+        start = end - timedelta(days=days)
+        
+        url = f"{self.base_url}/v2/aggs/ticker/{ticker}/range/1/day/{start.strftime('%Y-%m-%d')}/{end.strftime('%Y-%m-%d')}"
+        params = {'apiKey': self.polygon_key}
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'results' in data and data['results']:
+                return [{'timestamp': b['t'], 'open': b['o'], 'high': b['h'], 
+                        'low': b['l'], 'close': b['c'], 'volume': b['v']} 
+                       for b in data['results']]
+        except:
+            pass
+        return None
+    
+    def _detect_wyckoff(self, price_data, lookback=20):
+        if len(price_data) < lookback:
+            return None
+        
+        recent = price_data[-lookback:]
+        current = price_data[-1]
+        avg_volume = sum(bar['volume'] for bar in recent) / len(recent)
+        volume_spike = current['volume'] > (avg_volume * 1.5)
+        
+        if not volume_spike:
+            return None
+        
+        recent_low = min(bar['low'] for bar in recent)
+        if current['low'] <= (recent_low * 1.02):
+            recovery = current['close'] > (current['low'] * 1.01)
+            bar_range = current['high'] - current['low']
+            close_pos = (current['close'] - current['low']) / bar_range if bar_range > 0 else 0
+            
+            if recovery and close_pos > 0.5:
+                return {'signal': 'SPRING', 'direction': 'CALL', 'level': recent_low, 'volume_spike': True}
+        
+        recent_high = max(bar['high'] for bar in recent)
+        if current['high'] >= (recent_high * 0.98):
+            reversal = current['close'] < (current['high'] * 0.99)
+            bar_range = current['high'] - current['low']
+            close_pos = (current['close'] - current['low']) / bar_range if bar_range > 0 else 1
+            
+            if reversal and close_pos < 0.5:
+                return {'signal': 'UPTHRUST', 'direction': 'PUT', 'level': recent_high, 'volume_spike': True}
+        
+        return None
+    
+    def _calculate_score(self, wyckoff_signal, price_data):
+        score = 30
+        current = price_data[-1]
+        recent = price_data[-20:]
+        
+        if len(price_data) >= 3:
+            change = abs((current['close'] - price_data[-3]['close']) / price_data[-3]['close'] * 100)
+            score += min(change * 5, 20)
+        
+        avg_volume = sum(b['volume'] for b in recent) / len(recent)
+        vol_ratio = current['volume'] / avg_volume
+        score += min(vol_ratio * 10, 20)
+        
+        range_pct = (current['high'] - current['low']) / current['close'] * 100
+        score += min(range_pct * 5, 15)
+        
+        score += 15
+        return min(int(score), 100)

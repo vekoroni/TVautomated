@@ -1,0 +1,164 @@
+"""
+AVSHUNTER UNIVERSE UPDATER (POLYGON)
+================================================================================
+Batch update all tickers in universe from Polygon.io
+Run daily at 4:05 PM (before discovery scan at 4:15 PM)
+
+API Key: ***REDACTED_POLYGON_API_KEY***
+
+Usage:
+    python update_universe.py
+    python update_universe.py --lookback 90  # 90 days of history
+    python update_universe.py --universe custom_tickers.csv
+    
+This ensures discovery scan always has fresh data without manual CSV management
+================================================================================
+"""
+
+import argparse
+import sys
+from pathlib import Path
+from datetime import datetime
+from polygon_data_fetcher import PolygonDataFetcher
+import pandas as pd
+
+
+def load_universe(universe_path: str):
+    """Load ticker universe from CSV"""
+    try:
+        df = pd.read_csv(universe_path)
+        
+        if 'ticker' not in df.columns:
+            print(f"❌ Universe CSV must have 'ticker' column")
+            print(f"   Found columns: {', '.join(df.columns)}")
+            sys.exit(1)
+        
+        tickers = df['ticker'].astype(str).str.upper().tolist()
+        return tickers
+        
+    except FileNotFoundError:
+        print(f"❌ Universe file not found: {universe_path}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error loading universe: {e}")
+        sys.exit(1)
+
+
+def progress_callback(current, total, ticker):
+    """Progress display"""
+    if current % 25 == 0:
+        pct = (current / total) * 100
+        print(f"   [{pct:5.1f}%] {current:4d}/{total:4d} | Current: {ticker:6s}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Update AVSHUNTER universe from Polygon.io',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Standard update (60 days)
+  python update_universe.py
+  
+  # Extended history (90 days)
+  python update_universe.py --lookback 90
+  
+  # Custom universe file
+  python update_universe.py --universe watchlist.csv
+  
+  # Custom output directory
+  python update_universe.py --output-dir data/historical
+        """
+    )
+    
+    parser.add_argument('--universe', default='config/tickers.csv',
+                       help='Path to universe CSV (default: config/tickers.csv)')
+    parser.add_argument('--output-dir', default='data/daily',
+                       help='Output directory for CSV files (default: data/daily)')
+    parser.add_argument('--lookback', type=int, default=60,
+                       help='Days of history to fetch (default: 60)')
+    parser.add_argument('--test', action='store_true',
+                       help='Test mode: only update first 5 tickers')
+    
+    args = parser.parse_args()
+    
+    # Banner
+    print("\n" + "=" * 80)
+    print("AVSHUNTER UNIVERSE UPDATER")
+    print("=" * 80)
+    print(f"Universe: {args.universe}")
+    print(f"Output: {args.output_dir}")
+    print(f"Lookback: {args.lookback} days")
+    print(f"Data Source: Polygon.io")
+    print(f"API Key: rM...TGL0 (last 4 chars)")
+    
+    if args.test:
+        print("\n⚠️  TEST MODE: Only first 5 tickers will be updated")
+    
+    print("=" * 80)
+    
+    # Load tickers
+    print("\n📂 Loading universe...")
+    tickers = load_universe(args.universe)
+    print(f"   Found {len(tickers)} tickers")
+    
+    if args.test:
+        tickers = tickers[:5]
+        print(f"   TEST MODE: Limiting to {len(tickers)} tickers")
+    
+    # Initialize Polygon
+    print("\n🔗 Initializing Polygon API...")
+    try:
+        fetcher = PolygonDataFetcher()
+        print("   ✅ Connected")
+    except Exception as e:
+        print(f"   ❌ Failed: {e}")
+        sys.exit(1)
+    
+    # Update universe
+    print(f"\n🚀 Starting update...")
+    print(f"   Estimated time: {(len(tickers) / 5):.1f} minutes (5 calls/min limit)")
+    print("")
+    
+    start_time = datetime.now()
+    
+    results = fetcher.update_universe_data(
+        tickers=tickers,
+        lookback_days=args.lookback,
+        output_dir=args.output_dir,
+        progress_callback=progress_callback
+    )
+    
+    elapsed = (datetime.now() - start_time).total_seconds()
+    
+    # Summary
+    print("\n" + "=" * 80)
+    print("UPDATE COMPLETE")
+    print("=" * 80)
+    print(f"Duration: {elapsed/60:.1f} minutes")
+    print(f"Success: {results['success']}/{len(tickers)} ({results['success']/len(tickers)*100:.1f}%)")
+    print(f"Failed: {results['failed']}")
+    print(f"Skipped: {results['skipped']}")
+    
+    if results['failed'] > 0:
+        print(f"\n❌ Failed tickers:")
+        for ticker in results['failed_tickers'][:20]:
+            print(f"   {ticker}")
+        if results['failed'] > 20:
+            print(f"   ... and {results['failed'] - 20} more")
+    
+    if results['skipped'] > 0:
+        print(f"\n⚠️  Skipped tickers (insufficient data):")
+        for ticker in results['skipped_tickers'][:20]:
+            print(f"   {ticker}")
+        if results['skipped'] > 20:
+            print(f"   ... and {results['skipped'] - 20} more")
+    
+    print("\n✅ Universe data is now up to date")
+    print(f"   CSV files saved in: {args.output_dir}/")
+    print(f"   Ready for discovery scan: python avshunter_discovery_signals_v14_polygon.py")
+    print("=" * 80)
+
+
+if __name__ == '__main__':
+    main()

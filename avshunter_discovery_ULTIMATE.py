@@ -40,6 +40,7 @@ import pandas as pd
 from WyckoffEngine_3101_v2 import WyckoffEngine_3101_v2 as WyckoffEngine
 from polygon_data_fetcher import PolygonDataFetcher
 from wyckoff_crabel_precor_logic_v2 import process_precore_signal
+from wyckoff_phase_validator import prefixed_validation_fields, validate_wyckoff_phase
 try:
     from scripts.macro_quant_packet import (
         build_macro_quant_packet,
@@ -313,12 +314,12 @@ def _reconcile_intent(
 
     # Rule 1 — SELL_SETUP with buyer control is a contradiction
     if intent == 'SELL_SETUP':
-        if 'BUYER' in precor_control.upper() or 'BUYER' in wyckoff_control.upper():
+        if precor_control.upper() == 'BUYERS' or wyckoff_control.upper() == 'BUYERS':
             return 'TRANSITION'
 
     # Rule 2 — BUY_SETUP with seller control in a downtrend is suspicious
     if intent == 'BUY_SETUP':
-        if ('SELLER' in precor_control.upper() or 'SELLER' in wyckoff_control.upper()):
+        if precor_control.upper() == 'SELLERS' or wyckoff_control.upper() == 'SELLERS':
             if dominant_trend == 'BEARISH':
                 return 'TRANSITION'
 
@@ -1421,6 +1422,13 @@ def scan_ticker_ultimate(
         _trans_score = 0.3  # neither pointing to actionable phase
 
     # Phase convergence — do both engines agree on the phase?
+    wyckoff_validation = validate_wyckoff_phase(
+        ticker=ticker,
+        bars=df,
+        wyckoff_data=wyckoff_data,
+        precor_data=precor_data,
+    )
+
     _wyk_phase_raw  = str(wyckoff_data.get('current_phase', '')).upper().strip()
     _pre_phase_raw  = str(precor_data.get('wyckoff_phase', '') if precor_data else '').upper().strip()
     _phase_adjacent = {
@@ -1909,6 +1917,7 @@ def scan_ticker_ultimate(
         'wyckoff_transition_to':  _wyk_trans_to,
         'wyckoff_transition_conf': round(_wyk_trans_conf, 1),
         'precor_transition_to':   _precor_trans_to,
+        **prefixed_validation_fields(wyckoff_validation),
 
         # DISC-01: swing_fusion outputs — direction + intent authority
         # 'direction' is the canonical field consumed by the horizon router and EIL.
