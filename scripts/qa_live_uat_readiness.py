@@ -64,7 +64,7 @@ def _run_files(run_id: str) -> Dict[str, str]:
         "intelligent_orchestrator": str(ROOT / "intelligent_orchestrator.py"),
         "intelligence_lab": str(ROOT / "intelligence-lab" / "intelligence_lab.py"),
         "index_html": str(ROOT / "intelligence-lab" / "static" / "index.html"),
-        "morning_validator": str(ROOT / "morning_thesis_validator.py"),
+        "morning_validator": str(ROOT / "morning_gate.py"),
         "handoff_contract": str(ROOT / "contracts" / "handoff_contract.py"),
         "lab_control": str(ROOT / "contracts" / "lab_control.py"),
         "physics_engine": str(ROOT / "vanguard" / "physics_state_engine.py"),

@@ -77,6 +77,14 @@ def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
     Fetch daily OHLCV from Polygon /v2/aggs/ticker/{ticker}/range/1/day.
     Returns DataFrame sorted oldest-first, or None on failure.
     """
+    try:
+        from canonical_data.history_bridge import read_canonical_history
+        canonical = read_canonical_history(ticker, bars=bars)
+        if canonical is not None and not canonical.empty:
+            return canonical
+    except Exception as error:
+        log.debug(f'[{ticker}] CDS-2 canonical read unavailable: {error}')
+
     if not POLYGON_API_KEY:
         log.warning(f'[{ticker}] POLYGON_API_KEY not set — cannot fetch price history')
         return None
@@ -105,7 +113,20 @@ def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
                                  'c': 'close', 'v': 'volume', 't': 'timestamp'})
         df['date'] = pd.to_datetime(df['timestamp'], unit='ms')
         df = df[['date', 'open', 'high', 'low', 'close', 'volume']].sort_values('date')
-        return df.tail(bars).reset_index(drop=True)
+        df = df.tail(bars).reset_index(drop=True)
+        from canonical_data.history_bridge import (
+            observe_shadow_history,
+            write_through_fetched_history,
+        )
+        write_through_fetched_history(
+            ticker,
+            df,
+            provider='POLYGON',
+            source_kind='GARCH_RUNNER',
+            source_run_id=os.getenv('AVSHUNTER_RUN_ID') or None,
+        )
+        observe_shadow_history(ticker, df, consumer='GARCH')
+        return df
     except Exception as e:
         log.debug(f'[{ticker}] fetch error: {e}')
         return None

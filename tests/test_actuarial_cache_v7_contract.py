@@ -10,9 +10,13 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VANGUARD_RUNTIME = Path(r"C:\Users\ACKVerissimo\vanguard")
-for entry in (str(REPO_ROOT), str(VANGUARD_RUNTIME)):
-    if entry not in sys.path:
-        sys.path.insert(0, entry)
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+# The external Vanguard runtime supplies actuarial_cache_builder, but must not
+# precede AVSHUNTER: both repositories contain a top-level ``scripts`` package
+# and poisoning that namespace makes collection order change test outcomes.
+if str(VANGUARD_RUNTIME) not in sys.path:
+    sys.path.append(str(VANGUARD_RUNTIME))
 
 import actuarial_cache_builder as cache_builder
 
@@ -77,6 +81,41 @@ class ActuarialCacheV7ContractTests(unittest.TestCase):
         result = cache_builder.lookup_state(live, cache)
         self.assertFalse(result.no_match)
         self.assertEqual(result.sample_size, 30)
+
+    def test_governed_similarity_handles_coupled_sideways_taxonomy_gap(self) -> None:
+        frame = synthetic_rows()
+        frame["trend_direction"] = "SIDEWAYS"
+        frame["structure_quality"] = "NEUTRAL"
+        frame["wyckoff_phase_bucket"] = "ACCUMULATION"
+        frame["trend_maturity"] = "SIDEWAYS_BUILDING"
+        cache_builder.configure_state_dimensions(frame.columns)
+        cache = cache_builder.aggregate_states(cache_builder.build_state_key(frame))
+
+        live = dict(frame.iloc[0])
+        live["wyckoff_phase_bucket"] = "MARKUP"
+        live["trend_maturity"] = "SIDEWAYS_RANGING"
+        result = cache_builder.lookup_state(live, cache)
+
+        self.assertFalse(result.no_match)
+        self.assertTrue(result.valid)
+        self.assertEqual(result.fallback_depth, 2)
+        self.assertEqual(
+            set(result.fallback_dims_dropped),
+            {"wyckoff_phase_bucket", "trend_maturity"},
+        )
+        self.assertLess(result.penalty_multiplier, 1.0)
+
+    def test_governed_similarity_never_crosses_direction(self) -> None:
+        frame = synthetic_rows()
+        cache_builder.configure_state_dimensions(frame.columns)
+        cache = cache_builder.aggregate_states(cache_builder.build_state_key(frame))
+
+        live = dict(frame.iloc[0])
+        live["trend_direction"] = "DOWN"
+        result = cache_builder.lookup_state(live, cache)
+
+        self.assertTrue(result.no_match)
+        self.assertEqual(result.matched_key, "")
 
     def test_incremental_request_is_coerced_to_full_rebuild(self) -> None:
         frame = synthetic_rows()

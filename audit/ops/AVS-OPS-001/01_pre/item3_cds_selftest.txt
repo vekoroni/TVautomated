@@ -1,0 +1,12 @@
+rc=0
+--stdout--
+[ENV] Loaded .env from C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\.env
+[ENV] âœ… POLYGON_API_KEY: set (32 chars)
+[ENV] âœ… MARKETDATA_API_KEY: set (60 chars)
+
+--stderr--
+2026-09-04 07:51:29,407 - INFO - CDS-2 orchestrator runtime: enabled=True write_through=True mode=ACTIVE
+2026-09-04 07:51:29,408 - INFO - CDS-2 canonical database: C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\data\canonical\historical_prices.sqlite
+2026-09-04 07:51:29,409 - INFO - CDS-3 stage gating: ENFORCED
+2026-09-04 07:51:33,331 - INFO - CDS-2 child-process inheritance self-test: PASS
+2026-09-04 07:51:33,332 - INFO - CDS-2 orchestrator startup self-test: PASS

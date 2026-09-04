@@ -1,0 +1,261 @@
+{
+  "release_id": "AVS-SD-002-REV1.1",
+  "gates": [
+    {
+      "gate_id": "G01_P0_BLOCKERS_CLOSED",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/AVS-TST-SD-002-001/REMEDIATION_CLAIM_SHEET_20260903.md",
+          "sha256": "3f45d9f2cfafe210e2c210181d34563b531e6a5d8626adad2ce4c5a720b34e9d"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/phase0_release_manifest.json",
+          "sha256": "dc058115888d96c034977c6e099578a7bdfc231ed14c712627caa84d9ae0d6e4"
+        }
+      ]
+    },
+    {
+      "gate_id": "G02_SINGLE_SESSION_CLOCK",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G03_SEPARATE_EVIDENCE_IDENTITIES",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G04_DETERMINISTIC_AUTO_PLAN",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G05_CURRENT_THESIS_REUSE",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G06_NO_PREMARKET_PROFILE_FABRICATION",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G07_RTH_MISSING_INTERVALS_ONLY",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G08_PROVIDER_CONFIRMED_FINALISATION",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G09_RESTART_AND_SCOPE_IDENTITY",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G10_MACRO_ADVISORY_AND_REFRESHABLE",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml",
+          "sha256": "af4a199e1de656b7a8efc6ce2a6eff7db4b33d1feaf2583bf1c63d0529769e39"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G11_FROZEN_DIRECTION_HORIZON_GEOMETRY",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml",
+          "sha256": "af4a199e1de656b7a8efc6ce2a6eff7db4b33d1feaf2583bf1c63d0529769e39"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G12_CURRENT_PRICE_TRANSITION_ONLY",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G13_QUOTE_REQUIRED_ONLY_FOR_EXECUTION",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml",
+          "sha256": "af4a199e1de656b7a8efc6ce2a6eff7db4b33d1feaf2583bf1c63d0529769e39"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G14_LAB_INTERPRETER_EVENT_PARITY",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/spread_lifecycle_owner.xml",
+          "sha256": "064fabe5d1ce3ef05452ef199f73b56cb79b1fd0d37f2fb6ced7848079d5624d"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G15_POPULATION_AND_REQUEST_RECONCILIATION",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml",
+          "sha256": "af4a199e1de656b7a8efc6ce2a6eff7db4b33d1feaf2583bf1c63d0529769e39"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G16_REPLAY_NO_FUTURE_DATA",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G17_NO_UNEXPLAINED_P0_P1_REGRESSIONS",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml",
+          "sha256": "af4a199e1de656b7a8efc6ce2a6eff7db4b33d1feaf2583bf1c63d0529769e39"
+        },
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml",
+          "sha256": "7786bf4330873ee503dc79a9e4675e1b897e0dc89e56b76753d692aa2cd5f8a1"
+        }
+      ]
+    },
+    {
+      "gate_id": "G18A_LIVE_COMPLETED_THESIS",
+      "status": "NOT_RUN",
+      "detail": "Requires controlled production-session evidence.",
+      "artifacts": []
+    },
+    {
+      "gate_id": "G18B_LIVE_PREMARKET_VALIDATION",
+      "status": "NOT_RUN",
+      "detail": "Requires controlled production-session evidence.",
+      "artifacts": []
+    },
+    {
+      "gate_id": "G18C_LIVE_RTH_VALIDATION",
+      "status": "NOT_RUN",
+      "detail": "Requires controlled production-session evidence.",
+      "artifacts": []
+    },
+    {
+      "gate_id": "G18D_LIVE_AFTER_HOURS_FINALISATION",
+      "status": "NOT_RUN",
+      "detail": "Requires controlled production-session evidence.",
+      "artifacts": []
+    },
+    {
+      "gate_id": "G19_RUNTIME_API_DISK_BUDGET",
+      "status": "NOT_RUN",
+      "detail": "Requires controlled production-session evidence.",
+      "artifacts": []
+    },
+    {
+      "gate_id": "G20_BACKUP_RESTORE_VERIFIED",
+      "status": "PASS",
+      "detail": "Verified by the 2026-09-03 remediation acceptance evidence.",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/phase0_release_manifest.json",
+          "sha256": "dc058115888d96c034977c6e099578a7bdfc231ed14c712627caa84d9ae0d6e4"
+        }
+      ]
+    }
+  ]
+}

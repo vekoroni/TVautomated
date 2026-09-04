@@ -1,0 +1,108 @@
+{
+  "high_oi_cannot_rescue_fatal_defects": {
+    "missing_delta": {
+      "oi": 500,
+      "candidate_count": 0,
+      "rejected": true
+    },
+    "missing_greeks": {
+      "oi": 500,
+      "candidate_count": 0,
+      "rejected": true
+    },
+    "missing_timestamp": {
+      "oi": 500,
+      "candidate_count": 0,
+      "rejected": true
+    },
+    "naive_timestamp_treated_as_missing": {
+      "oi": 500,
+      "candidate_count": 0,
+      "rejected": true
+    },
+    "invalid_crossed_bid_ask": {
+      "oi": 500,
+      "candidate_count": 0,
+      "rejected": true
+    }
+  },
+  "ordering_current_module": {
+    "order": [
+      {
+        "symbol": "ORD10",
+        "expiry": "2026-09-13",
+        "delta_distance": 0.0,
+        "spread_pct": 0.06,
+        "oi": 400.0,
+        "volume": 50.0,
+        "rank": 1
+      },
+      {
+        "symbol": "ORD11",
+        "expiry": "2026-09-13",
+        "delta_distance": 0.1,
+        "spread_pct": 0.04,
+        "oi": 900.0,
+        "volume": 300.0,
+        "rank": 2
+      },
+      {
+        "symbol": "ORD12",
+        "expiry": "2026-09-13",
+        "delta_distance": 0.1,
+        "spread_pct": 0.04,
+        "oi": 100.0,
+        "volume": 10.0,
+        "rank": 3
+      },
+      {
+        "symbol": "ORD00",
+        "expiry": "2026-09-08",
+        "delta_distance": 0.0,
+        "spread_pct": 0.06,
+        "oi": 400.0,
+        "volume": 50.0,
+        "rank": 4
+      },
+      {
+        "symbol": "ORD01",
+        "expiry": "2026-09-08",
+        "delta_distance": 0.1,
+        "spread_pct": 0.04,
+        "oi": 900.0,
+        "volume": 300.0,
+        "rank": 5
+      },
+      {
+        "symbol": "ORD02",
+        "expiry": "2026-09-08",
+        "delta_distance": 0.1,
+        "spread_pct": 0.04,
+        "oi": 100.0,
+        "volume": 10.0,
+        "rank": 6
+      }
+    ],
+    "count": 6
+  },
+  "reported_vs_missing_assumed_zero": {
+    "real_zero_oi_value": 0.0,
+    "real_zero_oi_status": "REPORTED",
+    "real_zero_volume_status": "REPORTED",
+    "missing_oi_value": 0.0,
+    "missing_oi_status": "MISSING_ASSUMED_ZERO",
+    "missing_volume_status": "MISSING_ASSUMED_ZERO",
+    "distinct_labels": true
+  },
+  "section_8_3_observability": {
+    "return_type_is_plain_list": true,
+    "return_signature": "(df: 'pd.DataFrame', ctx: 'Dict', selected_contract: 'Optional[Dict]' = None, limit: 'int' = 6, diagnostics: 'Optional[Dict[str, int]]' = None) -> 'List[Dict[str, Any]]'",
+    "six_required_diagnostic_keys_found_anywhere_in_file": true,
+    "retained_count_in_mixed_fixture": 2,
+    "retained_symbols": [
+      "RET_LOWOI",
+      "RET_ZEROVOL"
+    ],
+    "conclusion": "select_repair_alternative_contracts() returns only a bounded List[Dict] of surviving candidates. No aggregate telemetry object (retained-low-OI count, retained-zero-volume count, rejected-invalid-quote count, rejected-spread count, rejected-DTE/delta/geometry count, final-bounded-candidate count) is constructed inside the function, and no caller (_no_contract_singles / long_alternatives call sites, _format_repair_alternative_fields, _alternative_handoff_audit, options_intelligence_summary_*.json) assembles these six counts either. _alternative_handoff_audit only reports 'alternative_contracts_rejected_incomplete' (a downstream completeness check unrelated to the in-selector rejection categories required by design \u00a78.3)."
+  }
+}

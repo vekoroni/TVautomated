@@ -443,7 +443,9 @@ def interpret_macro_decision_context(
 
     no_go = "NO_GO" in macro_filter
     if no_go:
-        direction_authority = "ABSTAIN"
+        # Authority and vote are separate contracts: a failed macro model has
+        # no permission to direct trades, while its emitted vote abstains.
+        direction_authority = "DISABLED"
         direction_vote = "ABSTAIN"
     elif macro_confidence < 0.70:
         direction_authority = "LIMITED"
@@ -472,7 +474,7 @@ def interpret_macro_decision_context(
         raw_vote = "ABSTAIN"
         applicability = "CONTEXT_ONLY"
 
-    if direction_authority not in {"ABSTAIN"}:
+    if direction_authority not in {"ABSTAIN", "DISABLED"}:
         direction_vote = raw_vote if direction_authority != "DISABLED" else "ABSTAIN"
     confirmation_required: List[str] = []
     if direction_authority == "DISABLED":

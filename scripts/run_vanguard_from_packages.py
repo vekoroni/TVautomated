@@ -49,6 +49,12 @@ if str(_REPO_FOR_IMPORT) not in sys.path:
     sys.path.insert(0, str(_REPO_FOR_IMPORT))
 
 import pandas as pd
+
+from contracts.core_authority_policy import (
+    CORE_AUTHORITY_POLICY_VERSION,
+    MACRO_AUTHORITY,
+    neutral_vanguard_macro_payload,
+)
 import numpy as np
 
 from behaviour_state_builder import enrich_dataframe as enrich_behaviour_state_dataframe
@@ -723,26 +729,13 @@ def build_orchestrator_like_payload(pkg: Dict[str, Any]) -> Dict[str, Any]:
     # promoted to CONFIRMED without directional confirmation.
     # Rule: if dominant_trend is BEARISH and control is not BUYERS, demote tier.
     #
-    # EXCEPTION — ACCUMULATION × RISK_OFF:
-    # Actuarial DB shows this is the highest-edge combination (Hit10 = 33.8%,
-    # prior adjustment = +12 pts). In a RISK_OFF regime, a Wyckoff ACCUMULATION
-    # stock will naturally show BEARISH EMA trend (the whole market is down) while
-    # institutional absorption is building cause. Demoting it here would kill
-    # the exact setup we want to monetise in bad regimes.
-    # Guard: wyckoff_phase_bucket == ACCUMULATION AND macro_regime contains RISK_OFF.
     dominant_trend = disc.get("dominant_trend", "MIXED")
     control_state  = disc.get("control_state", "") or disc.get("precor_control", "")
     current_tier   = disc.get("tier", 99)
-    wyckoff_bucket = str(disc.get("wyckoff_phase_bucket", "")).upper()
-    active_regime  = str(disc.get("macro_regime") or disc.get("active_regime") or "").upper()
-    is_accumulation_risk_off = (
-        wyckoff_bucket == "ACCUMULATION" and "RISK_OFF" in active_regime
-    )
     if (
         str(dominant_trend).upper() == "BEARISH"
         and "BUYER" not in str(control_state).upper()
         and str(current_tier) in {"1", 1}
-        and not is_accumulation_risk_off   # protect highest-edge regime×phase combination
     ):
         # Demote from TIER_1 CONFIRMED to TIER_2 OBSERVE — requires directional trigger first
         disc = dict(disc)  # copy so we don't mutate the package
@@ -764,9 +757,18 @@ def build_orchestrator_like_payload(pkg: Dict[str, Any]) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
         "ticker": ticker,
         "current_price": current_price,
+        "market_profile_evidence": pkg.get("market_profile_evidence"),
+        "market_profile_contract_required": bool(pkg.get("market_profile_contract_required", False)),
         "options_data": {},           # placeholder for later
         "microstructure_data": {},    # placeholder for later
-        "macro_data": macro_payload,  # may be {}
+        # Legacy Vanguard schemas require MacroData, but external narrative
+        # macro has no core quant authority. Preserve the real snapshot in a
+        # separate advisory field and feed a deterministic neutral payload to
+        # the calculation engine.
+        "macro_data": neutral_vanguard_macro_payload(),
+        "macro_advisory": macro_payload,
+        "macro_authority": MACRO_AUTHORITY,
+        "core_authority_policy_version": CORE_AUTHORITY_POLICY_VERSION,
         "avshunter_signal": {
             # Wire Discovery fields into avshunter_signal so downstream
             # consumers (CIL, reporting) have full context without re-reading packages.

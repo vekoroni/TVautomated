@@ -1,0 +1,192 @@
+{
+  "TC-01": {
+    "day1_liquidity_state": "LIQUIDITY_PENDING",
+    "day1_moneyness_state": "OTM",
+    "day1_executable_now": false,
+    "day2_liquidity_state": "EXECUTABLE_NOW",
+    "day2_moneyness_state": "ATM",
+    "day2_executable_now": true,
+    "day2_morning_transition_would_be": "EXECUTABLE_NOW"
+  },
+  "TC-02": {
+    "day1_liquidity_state": "LIQUIDITY_PENDING",
+    "day1_moneyness_state": "OTM",
+    "day1_executable_now": false,
+    "day2_liquidity_state": "EXECUTABLE_NOW",
+    "day2_moneyness_state": "ATM",
+    "day2_executable_now": true,
+    "day2_morning_transition_would_be": "EXECUTABLE_NOW"
+  },
+  "TC-03": {
+    "classifier_signature_has_oi_param": false,
+    "low_oi_tight_fresh_result": "EXECUTABLE_NOW",
+    "executable_now": true
+  },
+  "TC-04": {
+    "classifier_signature_has_oi_param": false,
+    "high_oi_zero_bid_result": "ZERO_BID",
+    "executable_now": false
+  },
+  "TC-05": {
+    "olm_liquidity_state": "LIQUIDITY_PENDING",
+    "olm_executable_now": false,
+    "olm_spread_pct": 43.137255,
+    "execution_gate_final_action": "MANUAL_REVIEW",
+    "execution_gate_reason": "OLM_LIQUIDITY_STILL_PENDING",
+    "execution_gate_reads_olm_fields": false,
+    "lab_control_overrides_only_for": "CONTRACT_REPRICE_REQUIRED (per contracts/lab_control.py:2119)"
+  },
+  "TC-06": {
+    "remaining_runway_state": "MOVE_ALREADY_REALIZED",
+    "thesis_move_consumed_factor": 0.9,
+    "remaining_runway_factor": 0.1
+  },
+  "TC-07": {
+    "remaining_runway_state": "THESIS_INVALIDATED",
+    "maturation_eligibility": "NOT_ELIGIBLE_THESIS_OR_RUNWAY",
+    "maturation_score_1d": 0.0,
+    "execution_gate_final_action_despite_thesis_invalidated": "BLOCK",
+    "execution_gate_reason": "OLM_THESIS_INVALIDATED",
+    "execution_gate_reads_morning_transition_state": false
+  },
+  "TC-08": {
+    "EV3_MIN_OPEN_INTEREST": 50,
+    "EV3_MIN_VOLUME": 1,
+    "neighbour_low_oi5_vol2_tight_fresh_spread_selected": true,
+    "neighbour_oi_at_threshold_selected": true,
+    "neighbour_zero_oi_selected": true,
+    "finding": "select_repair_alternative_contracts() hard-gates on open_interest>=50 and volume>=1 -- a liquid/tight-fresh-quote neighbour with OI below 50 is DROPPED, contradicting the documented principle that OI/volume are ranking evidence, not acquisition gates (classify_current_executability has NO oi parameter at all, by contrast)."
+  },
+  "TC-09": {
+    "economics_recomputed_false_blocked_by": "replacement contract requires exact economics recomputation",
+    "selection_succeeded_with_recompute": true,
+    "original_symbol": "TC09260918C00106000",
+    "original_strike": 106.0,
+    "original_delta": 0.28,
+    "original_bid": 0.4,
+    "original_ask": 0.7,
+    "original_liquidity_state": "LIQUIDITY_PENDING",
+    "replacement_symbol": "TC09260918C00104000",
+    "replacement_strike": 104.0,
+    "replacement_delta": 0.44,
+    "replacement_bid": 1.85,
+    "replacement_ask": 1.95,
+    "replacement_liquidity_state": "EXECUTABLE_NOW",
+    "fields_distinct": true
+  },
+  "TC-10": {
+    "classifier_stale_quote_result": "QUOTE_STALE",
+    "classifier_executable_now": false,
+    "cds_should_fetch_next_morning": true,
+    "cds_should_fetch_reason": "CANONICAL_OBSERVATION_STALE",
+    "eod_close_still_returned_as_latest_observation_context": true,
+    "eod_close_liquidity_state_label": "EXECUTABLE_NOW"
+  },
+  "TC-11": {
+    "bid_used": 2.3,
+    "ask_used": 2.42,
+    "current_spot_used": true,
+    "liquidity_state": "EXECUTABLE_NOW",
+    "morning_transition_state": "WAIT_FOR_PULLBACK",
+    "eod_stale_bid_ask_ignored": true
+  },
+  "TC-12": {
+    "deep_itm_delta_086_treatment": "OUTSIDE_DEFAULT_CONVEXITY_MANDATE",
+    "deep_itm_delta_086_band": "DEEP_ITM_GT_075",
+    "review_band_delta_068_treatment": "REVIEW_ITM_STOCK_REPLACEMENT",
+    "review_band_delta_068_band": "ITM_060_075"
+  },
+  "TC-13": {
+    "phase_A": [
+      "CALL",
+      "LONG_CALL"
+    ],
+    "phase_B": [
+      "CALL",
+      "LONG_CALL"
+    ],
+    "phase_C": [
+      "CALL",
+      "LONG_CALL"
+    ],
+    "phase_D": [
+      "CALL",
+      "LONG_CALL"
+    ],
+    "phase_E": [
+      "CALL",
+      "LONG_CALL"
+    ],
+    "phase_A_put": [
+      "PUT",
+      "LONG_PUT"
+    ],
+    "never_a_spread_across_all_phases": true
+  },
+  "TC-14": {
+    "live_contract_fetch_calls_after_terminal": 0,
+    "should_fetch_after_terminal": false,
+    "should_fetch_reason": "THESIS_INVALIDATED",
+    "active_monitor_worklist_len": 0,
+    "morning_fetch_resolution": "CDS_FRESH_QUOTE_HIT"
+  },
+  "TC-15": {
+    "consumer_a_bid": 0.4,
+    "consumer_a_ask": 0.7,
+    "consumer_a_symbol": "TC15260918C00106000",
+    "consumer_a_hash": "7ebd83b7aaf666c5403a88e81feac678eb358b064905dc47afcd76c41dddeb52",
+    "consumer_b_bid": 0.4,
+    "consumer_b_ask": 0.7,
+    "consumer_b_symbol": "TC15260918C00106000",
+    "consumer_b_hash": "7ebd83b7aaf666c5403a88e81feac678eb358b064905dc47afcd76c41dddeb52",
+    "identical": true
+  },
+  "TC-16": {
+    "all_olm_fields_in_FINAL_BOOK_FIELDS": true,
+    "not_in_book": [],
+    "referenced_in_html_count": 15,
+    "referenced_in_js_count": 0,
+    "referenced_but_missing_from_book": [],
+    "html_fields_missing": [
+      "thesis_id",
+      "thesis_state",
+      "recovery_disposition",
+      "minimum_required_dte",
+      "dte_buffer_sessions",
+      "maturation_state_1d",
+      "maturation_state_2d",
+      "maturation_state_3d",
+      "maturation_score_is_probability",
+      "maturation_execution_authority",
+      "previous_contract_symbol"
+    ],
+    "js_fields_missing": [
+      "thesis_id",
+      "thesis_state",
+      "liquidity_state",
+      "morning_transition_state",
+      "recovery_disposition",
+      "executable_now",
+      "moneyness_state",
+      "delta_band",
+      "minimum_required_dte",
+      "dte_buffer_sessions",
+      "atm_distance_sigma",
+      "remaining_runway_pct",
+      "remaining_runway_state",
+      "maturation_state_1d",
+      "maturation_state_2d",
+      "maturation_state_3d",
+      "maturation_score_1d",
+      "maturation_score_2d",
+      "maturation_score_3d",
+      "maturation_score_is_probability",
+      "maturation_execution_authority",
+      "previous_contract_symbol",
+      "contract_changed",
+      "contract_selection_reason",
+      "quote_as_of",
+      "quote_freshness"
+    ]
+  }
+}

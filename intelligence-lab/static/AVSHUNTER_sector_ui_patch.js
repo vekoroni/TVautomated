@@ -275,7 +275,8 @@
       .then(data => { if (data.ok && data.alert_count > 0) renderRegimePanel(data); })
       .catch(() => {});
 
-    // Main lab boot owns /api/run loading. Avoid duplicate heavy run fetch here.\n  }
+    // Main lab boot owns /api/run loading. Avoid duplicate heavy run fetch here.
+  }
 
   // ── MUTATION OBSERVER — re-inject when table updates ────────────────────
   function startObserver() {

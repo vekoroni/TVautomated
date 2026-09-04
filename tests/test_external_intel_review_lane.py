@@ -82,7 +82,7 @@ def _enrichment() -> dict:
     }
 
 
-def test_external_intel_appends_missing_catalyst_and_macro_tickers() -> None:
+def test_external_intel_preserves_core_membership_and_writes_advisory_lane() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         discovery = root / "discovery.csv"
@@ -90,7 +90,13 @@ def test_external_intel_appends_missing_catalyst_and_macro_tickers() -> None:
         enrichment = root / "macro_enrichment_delta.json"
         catalyst = root / "catalyst_calendar_latest.csv"
 
-        _write_csv(discovery, [{"ticker": "AAPL", "precor_intent": "WAIT"}])
+        _write_csv(
+            discovery,
+            [
+                {"ticker": "AAPL", "precor_intent": "WAIT"},
+                {"ticker": "NVDA", "precor_intent": "CALL"},
+            ],
+        )
         macro.write_text(json.dumps(_macro()), encoding="utf-8")
         enrichment.write_text(json.dumps(_enrichment()), encoding="utf-8")
         _write_csv(
@@ -115,18 +121,26 @@ def test_external_intel_appends_missing_catalyst_and_macro_tickers() -> None:
         )
         rows = _read_csv(discovery)
         by_ticker = {row["ticker"]: row for row in rows}
+        review_rows = _read_csv(Path(result["review_output"]))
+        review_by_ticker = {row["ticker"]: row for row in review_rows}
 
     assert result["status"] == "PASS"
     assert "CBK.DE" in result["invalid_external_tickers"]
-    assert {"AAPL", "UPS", "NVDA", "QQQ", "DAL", "SPY"}.issubset(by_ticker)
-    assert by_ticker["UPS"]["external_intel_source"] == "CATALYST"
-    assert by_ticker["UPS"]["external_intel_direction_bias"] == "PUT"
+    assert set(by_ticker) == {"AAPL", "NVDA"}
+    assert result["input_rows"] == result["output_rows"] == 2
+    assert result["appended_forced_review_rows"] == 0
+    assert result["advisory_only_rows"] == 4
+    assert result["core_membership_changed"] is False
     assert by_ticker["NVDA"]["external_intel_source"] == "MACRO_ENRICHMENT"
     assert by_ticker["NVDA"]["external_intel_lane"] == "TRUE"
-    assert by_ticker["QQQ"]["external_intel_macro_roles"]
-    assert by_ticker["UPS"]["precor_intent"] == "WAIT"
+    assert {"UPS", "NVDA", "QQQ", "DAL", "SPY"}.issubset(review_by_ticker)
+    assert review_by_ticker["UPS"]["external_intel_source"] == "CATALYST"
+    assert review_by_ticker["UPS"]["external_intel_direction_bias"] == "PUT"
+    assert review_by_ticker["QQQ"]["external_intel_macro_roles"]
+    assert review_by_ticker["UPS"]["precor_intent"] == "WAIT"
+    assert review_by_ticker["UPS"]["external_intel_stage_status"] == "ADVISORY_ONLY_NOT_DISCOVERY"
 
 
 if __name__ == "__main__":
-    test_external_intel_appends_missing_catalyst_and_macro_tickers()
+    test_external_intel_preserves_core_membership_and_writes_advisory_lane()
     print("external_intel_review_lane tests passed")

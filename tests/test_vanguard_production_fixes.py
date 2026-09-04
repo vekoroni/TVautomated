@@ -13,6 +13,8 @@ from vanguard.layer2_statistical.actuarial_query import (
 from vanguard.layer2_statistical.edge_detector import EdgeDetector
 from vanguard.layer2_statistical.scenario_builder import MultiScenarioBuilder as Layer2ScenarioBuilder
 from vanguard.layer3_execution.scenario_builder import MultiScenarioBuilder as Layer3ScenarioBuilder
+from vanguard.integration.orchestrator_adapter import OrchestratorAdapter
+from vanguard.layer2_statistical.state_calculator import StateVectorCalculator
 
 
 def _state(**overrides):
@@ -177,3 +179,45 @@ def test_options_dte_uses_recommended_hold_days_not_20d_median_days():
     for builder_cls in (Layer2ScenarioBuilder, Layer3ScenarioBuilder):
         rec = builder_cls()._design_options_strategy("CALL", 100.0, state, outcomes, "AGGRESSIVE")
         assert rec["dte"] == 10
+
+
+def test_adapter_preserves_trend_indicators_used_by_state_calculator():
+    bars = [
+        {
+            "date": f"2026-06-{day:02d}",
+            "open": 100.0 + day / 10,
+            "high": 101.0 + day / 10,
+            "low": 99.0 + day / 10,
+            "close": 100.5 + day / 10,
+            "volume": 1_000_000,
+        }
+        for day in range(1, 29)
+    ]
+    payload = {
+        "ticker": "TREND",
+        "current_price": 103.3,
+        "technical_data": {
+            "ohlcv": bars,
+            "vwap_15m": 102.0,
+            "vwap_1h": 101.5,
+            "vwap_4h": 101.0,
+            "vwap_daily": 102.2,
+            "ema9": 102.8,
+            "ema21": 102.0,
+            "ema50": 100.0,
+            "ema200": 95.0,
+            "adx": 31.0,
+            "atr_current": 2.0,
+            "high_52w": 120.0,
+            "low_52w": 70.0,
+        },
+    }
+
+    adapted = OrchestratorAdapter().adapt(payload)
+    tech = adapted.technical
+    assert (tech.ema9, tech.ema21, tech.ema50, tech.ema200) == (102.8, 102.0, 100.0, 95.0)
+    assert (tech.vwap_15m, tech.vwap_1h, tech.vwap_4h, tech.vwap_daily) == (
+        102.0, 101.5, 101.0, 102.2,
+    )
+    trend = StateVectorCalculator()._calculate_trend_maturity(tech)
+    assert trend["direction"] == "UP"

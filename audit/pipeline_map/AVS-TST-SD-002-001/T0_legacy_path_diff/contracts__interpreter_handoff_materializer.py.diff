@@ -1,0 +1,234 @@
+--- a/contracts/interpreter_handoff_materializer.py
++++ b/contracts/interpreter_handoff_materializer.py
+@@ -152,11 +152,100 @@
+         "final_action": "MORNING_HANDOFF_QUOTE_GOVERNANCE",
+         "execution_quote_status": "MORNING_HANDOFF_QUOTE_GOVERNANCE",
+         "capital_permission": "MORNING_EXECUTION_GATE",
++        "validation_transition": "DYNAMIC_VALIDATION_GATE",
++        "validation_event_id": "DYNAMIC_VALIDATION_GATE",
++        "frozen_thesis": "COMPLETED_THESIS",
++        "current_validation": "DYNAMIC_VALIDATION_GATE",
+         "macro_quant_packet": "ADVISORY_ONLY",
+         "interpreter_assessment": "ADVISORY_ONLY",
+     }
+ 
+ 
++def _status_banner(validation: Mapping[str, Any] | None) -> str:
++    if not validation:
++        return "THESIS PREPARED — CURRENT VALIDATION NOT RUN"
++    transition = _upper(validation.get("transition"))
++    profile_state = _upper(validation.get("profile_evidence_state"))
++    gate = validation.get("execution_gate_result")
++    gate = dict(gate) if isinstance(gate, Mapping) else {}
++    action = _upper(gate.get("action") or gate.get("final_action"))
++    if transition == "THESIS_INVALIDATED":
++        return "THESIS INVALIDATED BY CURRENT PRICE"
++    if transition in {"TARGET_ALREADY_REACHED", "ENTRY_RUNWAY_EXHAUSTED"}:
++        return "THESIS VALID — ENTRY RUNWAY EXHAUSTED"
++    if transition == "DATA_DEFERRED":
++        return "DATA DEFERRED — CURRENT SESSION NOT YET OBSERVABLE"
++    if transition == "THESIS_CONFIRMED" and action in {"BUY_NOW", "BUY_SMALL", "ELIGIBLE"}:
++        return "THESIS CONFIRMED — EXECUTION VIABILITY PASSED"
++    if profile_state == "DEVELOPING_SESSION":
++        return "RTH DEVELOPING PROFILE — ADVISORY"
++    if profile_state == "PENDING_MARKET_OPEN":
++        return "PREMARKET VALIDATED — OPTION REQUOTE MAY BE REQUIRED"
++    return "THESIS VALIDATED — REVIEW EXECUTION GATE"
++
++
++def _frozen_axis(row: Mapping[str, Any], identity: Mapping[str, str]) -> dict[str, Any]:
++    return {
++        "thesis_id": identity["thesis_id"],
++        "completed_session": _first(
++            row, "evidence_session_date", "completed_session", "thesis_session_date"
++        ),
++        "direction": _upper(row.get("governed_direction") or row.get("direction")),
++        "horizon": _first(
++            row, "planned_hold_sessions", "expected_holding_window", "horizon_bucket"
++        ),
++        "completed_close": _first(
++            row, "completed_close", "eod_close", "signal_price", "underlying_price"
++        ),
++        "target": _first(row, "target_spot", "target_price", "structural_target"),
++        "invalidation": _first(
++            row, "invalidation_spot", "invalidation_price", "structural_invalidation"
++        ),
++        "selected_contract": identity["selected_contract_symbol"],
++        "completed_profile_evidence_id": _first(
++            row, "completed_profile_evidence_id", "market_profile_evidence_id"
++        ),
++    }
++
++
++def _normalise_validation_event(
++    event: Mapping[str, Any] | Any | None,
++    *,
++    identity: Mapping[str, str],
++) -> dict[str, Any] | None:
++    if event is None:
++        return None
++    if hasattr(event, "to_dict"):
++        event = event.to_dict()
++    if not isinstance(event, Mapping):
++        raise HandoffValidationError("VALIDATION_EVENT_INVALID")
++    value = dict(event)
++    checks = {
++        "ticker": identity["ticker"],
++        "thesis_id": identity["thesis_id"],
++        "direction": identity.get("governed_direction", ""),
++        "selected_contract": identity["selected_contract_symbol"],
++    }
++    for field, expected in checks.items():
++        actual = (
++            _upper(value.get(field)).replace("O:", "").replace(" ", "")
++            if field == "selected_contract"
++            else _upper(value.get(field))
++        )
++        comparison = (
++            _upper(expected).replace("O:", "").replace(" ", "")
++            if field == "selected_contract"
++            else _upper(expected)
++        )
++        if comparison and actual != comparison:
++            raise HandoffValidationError(
++                f"VALIDATION_EVENT_IDENTITY_MISMATCH:{field}"
++            )
++    if not _text(value.get("validation_event_id")):
++        raise HandoffValidationError("VALIDATION_EVENT_ID_MISSING")
++    return value
++
++
+ def _freshness_map(row: Mapping[str, Any]) -> dict[str, str]:
+     return derive_bundle_freshness(row)
+ 
+@@ -209,9 +298,32 @@
+     identity: Mapping[str, str],
+     macro_reference: Mapping[str, Any] | None,
+     session_date: str,
++    validation_event: Mapping[str, Any] | Any | None = None,
+ ) -> dict[str, Any]:
+     governed = _apply_execution_quote_governance(row, session_date=session_date)
+     governed.update(identity)
++    validation = _normalise_validation_event(
++        validation_event,
++        identity={
++            **identity,
++            "governed_direction": _upper(
++                row.get("governed_direction") or row.get("direction")
++            ),
++        },
++    )
++    frozen_axis = _frozen_axis(row, identity)
++    if validation:
++        governed.update({
++            "validation_event_id": validation.get("validation_event_id"),
++            "validation_transition": validation.get("transition"),
++            "validation_reason": validation.get("reason"),
++            "validation_evidence_cutoff_utc": validation.get("evidence_cutoff_utc"),
++            "validation_current_price": validation.get("current_price"),
++            "validation_gap_pct": validation.get("gap_pct"),
++            "validation_data_status": validation.get("data_status"),
++            "validation_profile_evidence_state": validation.get("profile_evidence_state"),
++        })
++    governed["lab_status_banner"] = _status_banner(validation)
+     morning_quote = quote_snapshot_from_row(governed, role="MORNING")
+     current_quote = quote_snapshot_from_row(governed, role="CURRENT")
+     quote_change = compare_exact_option_quotes(
+@@ -229,6 +341,9 @@
+             canonical_json(
+                 {
+                     **identity,
++                    "validation_event_id": _text(
++                        (validation or {}).get("validation_event_id")
++                    ),
+                     "authority_map_version": AUTHORITY_MAP_VERSION,
+                 }
+             ),
+@@ -249,6 +364,8 @@
+             for key, value in row.items()
+             if key.startswith("ms_") or key.startswith("market_structure_")
+         },
++        "frozen_thesis": frozen_axis,
++        "current_validation": validation or {},
+         "quote_change_evidence": quote_change,
+     }
+     if macro_reference:
+@@ -303,6 +420,8 @@
+     required_stage_status: Mapping[str, Any],
+     morning_gate_completed_utc: str,
+     macro_reference: Mapping[str, Any] | None = None,
++    validation_events: Mapping[str, Any] | Iterable[Any] | None = None,
++    require_validation_lineage: bool = False,
+     producer_version: str = MATERIALIZER_VERSION,
+ ) -> dict[str, Any]:
+     """Write, reconcile and atomically publish one accepted handoff.
+@@ -320,6 +439,30 @@
+     if not source_rows:
+         raise HandoffValidationError("MATERIALIZER_EMPTY_ROW_SET")
+     macro = _normalise_macro_reference(root, macro_reference)
++    validation_by_thesis: dict[str, Any] = {}
++    if isinstance(validation_events, Mapping):
++        validation_values = (
++            (validation_events,)
++            if "thesis_id" in validation_events
++            else validation_events.values()
++        )
++    else:
++        validation_values = validation_events or ()
++    for raw_event in validation_values:
++        value = raw_event.to_dict() if hasattr(raw_event, "to_dict") else raw_event
++        if not isinstance(value, Mapping):
++            raise HandoffValidationError("VALIDATION_EVENT_INVALID")
++        thesis_key = _text(value.get("thesis_id"))
++        if not thesis_key:
++            raise HandoffValidationError("VALIDATION_EVENT_THESIS_ID_MISSING")
++        prior = validation_by_thesis.get(thesis_key)
++        prior_value = (
++            prior.to_dict() if hasattr(prior, "to_dict") else prior
++        )
++        if prior is None or _text(value.get("evidence_cutoff_utc")) > _text(
++            (prior_value or {}).get("evidence_cutoff_utc")
++        ):
++            validation_by_thesis[thesis_key] = raw_event
+ 
+     book_rows: list[dict[str, Any]] = []
+     bundles: list[dict[str, Any]] = []
+@@ -330,11 +473,17 @@
+         if ticker in seen_tickers:
+             raise HandoffValidationError(f"MATERIALIZER_DUPLICATE_TICKER:{ticker}")
+         seen_tickers.add(ticker)
++        validation_event = validation_by_thesis.get(identity["thesis_id"])
++        if require_validation_lineage and validation_event is None:
++            raise HandoffValidationError(
++                f"MATERIALIZER_MISSING_VALIDATION_EVENT:{ticker}:{identity['thesis_id']}"
++            )
+         bundle = _bundle(
+             row,
+             identity=identity,
+             macro_reference=macro,
+             session_date=session_date,
++            validation_event=validation_event,
+         )
+         # The v3 book and bundle are two serialisations of the same governed
+         # record.  Computed quote evidence must never exist only in the bundle.
+@@ -364,6 +513,10 @@
+         "ticker_count": len(seen_tickers),
+         "book_sha256": sha256_file(book_path),
+         "authority_map_version": AUTHORITY_MAP_VERSION,
++        "validation_lineage_required": bool(require_validation_lineage),
++        "validation_event_count": sum(
++            1 for bundle in bundles if bundle.get("current_validation")
++        ),
+     }
+     _atomic_text(book_manifest_path, json.dumps(book_manifest, indent=2, sort_keys=True))
+     _atomic_text(
+@@ -382,6 +535,9 @@
+         "unique_tickers": len(seen_tickers),
+         "missing_bundles": 0,
+         "identity_mismatches": 0,
++        "validation_event_rows": sum(
++            1 for bundle in bundles if bundle.get("current_validation")
++        ),
+         "book_sha256": sha256_file(book_path),
+         "bundle_sha256": sha256_file(bundles_path),
+     }

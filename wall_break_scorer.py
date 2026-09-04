@@ -162,7 +162,14 @@ def score_wall_break(signal: dict, oi: dict) -> dict:
     gfg         = _f(oi, 'gamma_flip_gap_pct', default=0.0)
     iv_hv       = _f(oi, 'iv_vs_hv',           default=1.0)
     gv_label    = _s(oi, 'gamma_velocity_label')
-    pcr_vol     = _f(oi, 'pcr_vol',            default=1.0)
+    pcr_vol_raw = oi.get('pcr_vol')
+    pcr_status  = _s(oi, 'pcr_vol_status').upper()
+    pcr_missing = (
+        pcr_vol_raw is None
+        or str(pcr_vol_raw).strip() in ('', 'nan', 'None', 'NaN')
+        or any(marker in pcr_status for marker in ('OI_ONLY', 'NO_INTRADAY', 'UNAVAILABLE', 'MISSING'))
+    )
+    pcr_vol     = None if pcr_missing else _f(oi, 'pcr_vol', default=0.0)
     spot        = _f(oi, 'underlying_price') or _f(signal, 'underlying_price')
     put_wall    = _f(oi, 'put_wall')
     call_wall   = _f(oi, 'call_wall')
@@ -227,7 +234,9 @@ def score_wall_break(signal: dict, oi: dict) -> dict:
     # ── F5 — Momentum Alignment (0–20) ───────────────────────────────────────
     # Gamma velocity + PCR direction confirmation
     f5 = float(F5_GV_SCORES.get(gv_label, 5))
-    if direction == 'PUT' and pcr_vol > F5_PCR_PUT_MIN:
+    if pcr_vol is None:
+        notes.append(f'GV={gv_label}; intraday PCR unavailable — no PCR momentum bonus')
+    elif direction == 'PUT' and pcr_vol > F5_PCR_PUT_MIN:
         f5 = min(F5_MAX, f5 + F5_PCR_BONUS)
         notes.append(f'GV={gv_label} + PCR_vol={pcr_vol:.2f} confirms PUT pressure')
     elif direction == 'CALL' and pcr_vol < F5_PCR_CALL_MAX:
@@ -272,6 +281,7 @@ def score_wall_break(signal: dict, oi: dict) -> dict:
         'wbs_f3_flip_clear':    round(f3,    2),
         'wbs_f4_vol_loading':   round(f4,    2),
         'wbs_f5_momentum':      round(f5,    2),
+        'wbs_pcr_volume_state': 'UNAVAILABLE' if pcr_vol is None else 'AVAILABLE',
         'wbs_wall_price':       round(wall_price,       2) if wall_price else '',
         'wbs_wall_dist_pct':    round(wall_dist_pct,    2) if wall_dist_pct else '',
         'wbs_phase_b_trigger':  round(phase_b_trigger,  2) if phase_b_trigger else '',

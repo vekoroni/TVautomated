@@ -1,0 +1,25 @@
+--- a/tests/test_morning_gate_contract_repair.py
++++ b/tests/test_morning_gate_contract_repair.py
+@@ -77,9 +77,9 @@
+     assert gated["contract_ask"] == 1.1
+     assert gated["contract_mid"] == 1.05
+     assert gated["rr_premium_expected"] == ""
+-    assert gated["ev3_status"] == "NOT_EVALUATED_CONTRACT_CHANGED"
++    assert gated["ev3_status"] == "REJECTED"
+     assert gated["economics_comparable"] is False
+-    assert gated["economics_mismatch_reason"] == "DIRECTION_TARGET_OR_LONG_LEG_MISSING"
++    assert gated["economics_mismatch_reason"] == "REJECT_THESIS_PRICE"
+     assert gated["morning_execution_permission"] == "CONTRACT_REPAIR"
+     assert gated["morning_execution_route"] == "REPAIR_CONTRACT"
+ 
+@@ -317,8 +317,8 @@
+     )
+     assert gated["rr_recompute_status"] == "COMPLETE"
+     assert gated["rr_premium_expected"] == 2.333333
+-    assert gated["economics_comparable"] is False
+-    assert gated["economics_mismatch_reason"] == "PRODUCTION_REQUIRES_LONG_SINGLE"
++    assert gated["economics_comparable"] is True
++    assert gated["economics_mismatch_reason"] == ""
+     assert gated["verdict"] == "BLOCK"
+     assert gated["morning_execution_permission"] == "RESEARCH_ONLY"
+     assert gated["morning_execution_route"] == "OPTIONS_RESEARCH_ONLY"

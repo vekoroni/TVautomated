@@ -1,0 +1,152 @@
+{
+  "test_id": "AVS-TST-SD-002-001",
+  "tester": "independent (read-only on production code and run data)",
+  "date_utc": "2026-09-03",
+  "repository": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+  "git": {
+    "head": "5d886f07c1d290f25600e2e7e62ae77aad85476a",
+    "branch": "master",
+    "porcelain_entry_count": 299,
+    "note": "HEAD matches source_head in every claim sheet; none of the Rev 1.1 work is committed"
+  },
+  "declared_release_interpreter": {
+    "source": "backups/avs_sd_002_rev1_1_phase0_prechange_20260903_133546/environment.json and the Phase 0 closure",
+    "python_executable": "C:\\Python314\\python.exe",
+    "sys_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+    "pandas": "2.3.3",
+    "numpy": "2.3.4",
+    "pytest": "ABSENT",
+    "pytest_subtests": "ABSENT",
+    "finding": "DEF-011 - this interpreter cannot run any of the release's pytest suites"
+  },
+  "interpreter_used_for_unittest_hashing_and_static_analysis": {
+    "sys_executable": "C:\\Python314\\python.exe",
+    "sys_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+    "pandas": "2.3.3",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "interpreter_used_for_pytest": {
+    "sys_executable": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\venv\\Scripts\\python.exe",
+    "sys_version": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "pytest_subtests": "ABSENT",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "deviation_from_prompt": "The prompt directs use of C:\\Python314\\python.exe. That interpreter has no pytest, so it cannot have produced the acceptance XMLs under test. The repository venv is the only pytest present and is therefore the runtime the evidence actually came from. Recorded as DEF-011."
+  },
+  "isolation": "every pytest file ran in its own process with -p no:cacheprovider; no repository-wide single-process collection was attempted",
+  "pipeline_execution": "NONE. intelligent_orchestrator.py, morning_gate.py, run_*.bat, the Intelligence Lab server and every Interpreter command were never invoked. No AVSHUNTER_* feature flag was ever set.",
+  "writes_outside_output_root": "none; backups/ was read only",
+  "runs": [
+    {
+      "target": "tests/test_dynamic_session_phase0.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase0.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase0.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase0.xml",
+      "sha256": "e40e97cba9bcaba6cbc50d0df3ab282afae461087c4e4a5effad6737bf9dc4e3",
+      "result": "8 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase1.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase1.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase1.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase1.xml",
+      "sha256": "c472222ec617dc9778850404c51d1f456ad0b3e8ecf3cb3b975c8ff8abe940c8",
+      "result": "14 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase2.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase2.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase2.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase2.xml",
+      "sha256": "a6207c55c273cda249b476f07325bfc8fdf8dace181eaabfa345442c0255e8a8",
+      "result": "14 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase3.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase3.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase3.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase3.xml",
+      "sha256": "476c93233b3db3c6b8a0fcb3f8946d6c5d30857a916ae7c75db76e27e6ce73ef",
+      "result": "10 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase4.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase4.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase4.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase4.xml",
+      "sha256": "00e7b558e0cc73b198c964e270a9413c3dd3f32ba03925c7176ad7cf1ecc6dcd",
+      "result": "10 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase5.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase5.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase5.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase5.xml",
+      "sha256": "50cdccb522ace1c94a931048eec92ba9649c646da5531a9657777c340e000809",
+      "result": "13 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase6.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase6.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase6.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase6.xml",
+      "sha256": "98036686674c006fe5ae1e232ea555d23a0bd40c078cf0f1c96fcb39b06bdc11",
+      "result": "10 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase7.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase7.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase7.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase7.xml",
+      "sha256": "a563d0e99445ea75b566749046798c883617a7bd1c3b7ff2dac9e64ab3a1fc91",
+      "result": "7 passed, 0 failed"
+    },
+    {
+      "target": "tests/test_dynamic_session_phase8.py",
+      "command": "venv/Scripts/python.exe -m pytest tests/test_dynamic_session_phase8.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase8.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase8.xml",
+      "sha256": "e135d6945dd71943ece64c275529414abfbfd8d28d68b12c0a13bf1c5c2cdfcd",
+      "result": "14 passed, 0 failed"
+    },
+    {
+      "target": "T2 adversarial pack",
+      "command": "venv/Scripts/python.exe -m pytest audit/pipeline_map/AVS-TST-SD-002-001/T2_adversarial_tests/test_t2_retired_behaviour_readmission.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T2_adversarial_tests/T2_adversarial_results.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T2_adversarial_tests/T2_adversarial_results.xml",
+      "sha256": "3553f48ae15cff453f637d617694e74be12a889f7144ef7bc425559181f87f83",
+      "result": "24 passed, 2 failed (both failures ARE the findings)"
+    },
+    {
+      "target": "T3 authority pack",
+      "command": "venv/Scripts/python.exe -m pytest audit/pipeline_map/AVS-TST-SD-002-001/T3_authority_pack/test_t3_authority_invariants.py -q -p no:cacheprovider --junitxml=audit/pipeline_map/AVS-TST-SD-002-001/T3_authority_pack/T3_authority_results.xml",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T3_authority_pack/T3_authority_results.xml",
+      "sha256": "83a88c27513f32fde191b57cabd8baeb5f079062fe8f26f5000a0801a690dd6c",
+      "result": "38 passed, 6 failed (all failures ARE the findings)"
+    },
+    {
+      "target": "Macro Horizon Router embedded QA (38 checks)",
+      "command": "PYTHONIOENCODING=utf-8 venv/Scripts/python.exe macro_horizon_router.py > T1_xml/T1_router_embedded_qa.log",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_router_embedded_qa.log",
+      "result": "ALL QA CHECKS PASSED; 0 failures",
+      "sha256": "fea0fdef8fd16bcd391cf49adfd24f990902418ffdca185cc2423d2d59557db9"
+    },
+    {
+      "target": "Phase 8 release assessor in-process probes (5)",
+      "command": "PYTHONIOENCODING=utf-8 venv/Scripts/python.exe - (heredoc) > T1_xml/T1_phase8_release_assessor_probe.log",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase8_release_assessor_probe.log",
+      "result": "NOT_READY and the six failed gates reproduced exactly; tampered/missing/outside-repo artefacts rejected; all four promotion stages refused",
+      "sha256": "678101bae4806c23a0a8de12376ce8a478d10e0aa1a33e8b3206d5ce6aaf4185"
+    },
+    {
+      "target": "Phase 1 plan-hash reproduction probe",
+      "command": "PYTHONIOENCODING=utf-8 venv/Scripts/python.exe - (heredoc) > T1_xml/T1_phase1_plan_hash_probe.log",
+      "artifact": "audit/pipeline_map/AVS-TST-SD-002-001/T1_xml/T1_phase1_plan_hash_probe.log",
+      "result": "invocation_id reproduces exactly; plan_hash does NOT reproduce (DEF-012)",
+      "sha256": "887ee37b95b29bd509cad55fc5f7c4d6a18a5fcae8e86ebb41db7f2f80f32d70"
+    },
+    {
+      "target": "release_baseline.py --verify-only (F36)",
+      "command": "C:/Python314/python.exe scripts/release_baseline.py --backup-dir <output_root>/tmp/restore_drill --repo . --verify-only",
+      "artifact": "(exit code; tmp deleted on completion)",
+      "result": "EXIT=0, passed=true, 3 databases verified"
+    },
+    {
+      "target": "Independent restore drill (G20 / F01 database half)",
+      "command": "PYTHONIOENCODING=utf-8 C:/Python314/python.exe - (heredoc) > <output_root>/tmp/independent_restore_drill.json",
+      "artifact": "(tmp deleted on completion; transcribed into T0_evidence_integrity.md section T0.6)",
+      "result": "3/3 databases: sha256 match, PRAGMA integrity_check=ok, table counts match the manifest"
+    }
+  ]
+}

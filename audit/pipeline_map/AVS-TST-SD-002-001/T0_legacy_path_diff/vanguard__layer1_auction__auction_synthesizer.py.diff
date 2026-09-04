@@ -1,0 +1,130 @@
+--- a/vanguard/layer1_auction/auction_synthesizer.py
++++ b/vanguard/layer1_auction/auction_synthesizer.py
+@@ -10,7 +10,14 @@
+ 
+ from typing import Dict, List, Optional
+ import pandas as pd
+-from ..schemas.auction_schema import AuctionVerdict, MarketProfile
++from ..schemas.auction_schema import (
++    AcceptanceState,
++    AuctionVerdict,
++    ControlState,
++    MarketProfile,
++    MigrationState,
++)
++from contracts.market_profile_evidence import MarketProfileEvidence
+ from ..schemas.input_schema import VanguardInput
+ from .market_profile import MarketProfileCalculator
+ from .value_acceptance import ValueAcceptanceDetector
+@@ -45,6 +52,16 @@
+         
+         ticker = vanguard_input.ticker
+         current_price = vanguard_input.current_price
++
++        # Governed path: profile evidence is calculated once from canonical
++        # intraday bars before Vanguard. Vanguard consumes it; it must not
++        # reconstruct an "intraday" profile from daily OHLCV.
++        if getattr(vanguard_input, "market_profile_contract_required", False):
++            return self._governed_profile_verdict(
++                ticker=ticker,
++                current_price=current_price,
++                raw_evidence=getattr(vanguard_input, "market_profile_evidence", None),
++            )
+         
+         # === RUN ALL AUCTION MODULES ===
+         
+@@ -125,6 +142,89 @@
+             scenarios=scenarios,
+             reasoning=verdict_result['reasoning']
+         )
++
++    @staticmethod
++    def _governed_profile_verdict(*, ticker: str, current_price: float, raw_evidence) -> AuctionVerdict:
++        try:
++            evidence = MarketProfileEvidence.from_mapping(raw_evidence or {})
++        except Exception as error:
++            return AuctionStateSynthesizer._not_evaluated(
++                ticker, current_price, f"INVALID_GOVERNED_PROFILE:{type(error).__name__}"
++            )
++        if not evidence.usable:
++            return AuctionStateSynthesizer._not_evaluated(
++                ticker, current_price, evidence.reason_code or "UNUSABLE_GOVERNED_PROFILE"
++            )
++        profile = MarketProfile(
++            poc=evidence.poc,
++            value_area_high=evidence.value_area_high,
++            value_area_low=evidence.value_area_low,
++            profile_type=evidence.profile_type,
++            balance="NOT_EVALUATED",
++            tpo_distribution={},
++            timestamp=pd.Timestamp(evidence.observed_at_utc),
++            timeframe=f"{evidence.interval_minutes}min_{evidence.evidence_state}",
++        )
++        if current_price < float(evidence.value_area_low):
++            position = "BELOW_VALUE"
++        elif current_price > float(evidence.value_area_high):
++            position = "ABOVE_VALUE"
++        else:
++            position = "INSIDE_VALUE"
++        acceptance = AcceptanceState(
++            level=current_price, score=0.0, classification="PROFILE_CONTEXT_ONLY",
++            position_in_profile=position,
++        )
++        control = ControlState(
++            controller="NEUTRAL", confidence=0.0,
++            interpretation="No governed intraday order-flow/control evidence in completed profile",
++        )
++        migration = MigrationState(
++            direction="UNKNOWN", speed="UNKNOWN", consistency="UNKNOWN", magnitude=0.0,
++            interpretation="Single completed profile cannot establish value migration",
++        )
++        return AuctionVerdict(
++            ready_to_trade=False,
++            confidence=max(0.0, 1.0 - evidence.uncertainty_score),
++            auction_state="PROFILE_CONTEXT_ONLY",
++            profile=profile,
++            acceptance=acceptance,
++            control=control,
++            migration=migration,
++            scenarios={},
++            reasoning=(
++                f"Governed {evidence.evidence_state} Market Profile available for {ticker}; "
++                "advisory context only and cannot grant readiness or capital."
++            ),
++        )
++
++    @staticmethod
++    def _not_evaluated(ticker: str, current_price: float, reason: str) -> AuctionVerdict:
++        return AuctionVerdict(
++            ready_to_trade=False,
++            confidence=0.0,
++            auction_state="NOT_EVALUATED",
++            profile=MarketProfile(
++                poc=None, value_area_high=None, value_area_low=None,
++                profile_type="INSUFFICIENT_DATA", balance="UNKNOWN",
++                tpo_distribution={}, timestamp=pd.Timestamp.now(tz="UTC"),
++                timeframe="GOVERNED",
++            ),
++            acceptance=AcceptanceState(
++                level=current_price, score=0.0, classification="NOT_EVALUATED",
++                position_in_profile="UNKNOWN",
++            ),
++            control=ControlState(
++                controller="NEUTRAL", confidence=0.0,
++                interpretation="Market Profile unavailable",
++            ),
++            migration=MigrationState(
++                direction="UNKNOWN", speed="UNKNOWN", consistency="UNKNOWN", magnitude=0.0,
++                interpretation="Market Profile unavailable",
++            ),
++            scenarios={},
++            reasoning=f"{ticker} Market Profile NOT_EVALUATED: {reason}",
++        )
+         
+     def _generate_scenarios(self,
+                            current_price: float,
+@@ -439,4 +539,3 @@
+             'state': state,
+             'reasoning': reasoning
+         }
+-

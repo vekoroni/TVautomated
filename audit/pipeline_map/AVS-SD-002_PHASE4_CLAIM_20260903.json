@@ -1,0 +1,26 @@
+{
+  "claim_id": "AVS-SD-002-PHASE4-20260903",
+  "phase": 4,
+  "status": "CODE_COMPLETE_FLAG_OFF",
+  "design_documents": [
+    "audit/pipeline_map/AVS-SD-002_REV1_1_DYNAMIC_SESSION_ORCHESTRATION_20260903.md",
+    "audit/pipeline_map/AVS-SD-002_DATA_INTELLIGENCE_AND_MARKET_PROFILE_LIFECYCLE_20260903.md",
+    "audit/pipeline_map/AVS-AR-003_AS_IS_PIPELINE_SHIPPABILITY_REVIEW_20260903.md"
+  ],
+  "focused_tests": {"passed": 10, "failed": 0},
+  "combined_tests": {"collected": 190, "command_exit": 0},
+  "production_enabled": false,
+  "feature_flag": "AVSHUNTER_COMPLETED_PROFILE_ENABLED",
+  "backup": "backups/avs_sd_002_rev1_1_phase4_prechange_20260903_151506",
+  "authority_invariants": {
+    "profile_can_grant_capital": false,
+    "profile_can_reverse_direction": false,
+    "completed_thesis_authority_ceiling": "EOD_PREPARED"
+  },
+  "open_gates": [
+    "phase5_dynamic_validation",
+    "phase6_dispatcher",
+    "phase7_handoff_ledger",
+    "phase8_live_acceptance"
+  ]
+}

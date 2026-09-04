@@ -1,0 +1,50 @@
+{
+ "orchestrated_roots": [
+  "avshunter_discovery_ULTIMATE.py",
+  "avshunter_regime_screener.py",
+  "avshunter_trade_journal.py",
+  "avshunter_trap_engine.py",
+  "eod_candidate_engine.py",
+  "execution_decision_engine.py",
+  "execution_gate.py",
+  "execution_intelligence_runner.py",
+  "garch_runner.py",
+  "intelligent_orchestrator.py",
+  "macro_horizon_router.py",
+  "morning_gate.py",
+  "position_lifecycle_tracker.py",
+  "premarket_intelligence_ULTIMATE.py",
+  "scripts/actuarial_enrichment_pass.py",
+  "scripts/apply_ev3_authority.py",
+  "scripts/apply_external_intel_review_lane.py",
+  "scripts/apply_macro_enrichment_to_discovery.py",
+  "scripts/avshunter_monetisation_policy.py",
+  "scripts/avshunter_options_intelligence.py",
+  "scripts/avshunter_superbrain_layer.py",
+  "scripts/avshunter_universe_scanner.py",
+  "scripts/backfill_timeseries_into_packages.py",
+  "scripts/build_packages_from_discovery.py",
+  "scripts/build_phase_transition_matrix.py",
+  "scripts/core_intel_exporter.py",
+  "scripts/exit_rules_engine.py",
+  "scripts/inject_macro_into_packages.py",
+  "scripts/macro_exposure_resolver.py",
+  "scripts/normalise_macro_contract.py",
+  "scripts/phantom_engine.py",
+  "scripts/run_ev3_shadow_phase.py",
+  "scripts/run_phantom.py",
+  "scripts/run_vanguard_from_packages.py",
+  "scripts/sector_alignment.py",
+  "wall_break_scorer.py"
+ ],
+ "morning_roots": [
+  "execution_gate.py",
+  "morning_gate.py",
+  "morning_handoff_finalizer.py",
+  "pipeline_interpreter/ma_inputs_sync.py"
+ ],
+ "lab_roots": [
+  "intelligence-lab/intelligence_lab.py"
+ ],
+ "unresolved_script_literals": []
+}

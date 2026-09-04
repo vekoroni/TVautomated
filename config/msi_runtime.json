@@ -1,0 +1,14 @@
+{
+  "schema_version": "msi-runtime-config-v1",
+  "deployment_state": "CONTROLLED_PRODUCTION_CYCLE_1_READY",
+  "flags": {
+    "v2_capture": true,
+    "cds_resolver": true,
+    "minute_bars": true,
+    "structure": true,
+    "lab_v3_view": true,
+    "macro_advisory": true,
+    "interpreter_resolver": true,
+    "screen_adapter": false
+  }
+}

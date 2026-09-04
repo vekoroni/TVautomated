@@ -1,0 +1,92 @@
+--- a/execution_gate.py
++++ b/execution_gate.py
+@@ -10,13 +10,17 @@
+ from contracts.direction_governance import validate_direction_record
+ from contracts.options_liquidity_execution_guard import evaluate_olm_execution_guard
+ from contracts.selected_contract_economics import contract_symbols
++from contracts.long_option_policy import (
++    LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
++    quote_spread_fraction,
++)
+ 
+ log = logging.getLogger("avshunter.execution_gate")
+ GATE_VERSION = "1.4.0"
+ 
+ class ExecutionGateConfig:
+     SPREAD_FULL: float = 0.08
+-    SPREAD_MAX:  float = 0.15
++    SPREAD_MAX:  float = LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT / 100.0
+     DELTA_HARD_MIN: float = 0.20
+     DELTA_SOFT_MIN: float = 0.30
+     DELTA_SOFT_MAX: float = 0.60
+@@ -180,7 +184,7 @@
+         if olm_guard.disposition != "CONTINUE":
+             return _preserve(row, olm_guard.disposition, olm_guard.reason)
+         morning_perm = _morning_permission(row)
+-        monetisability_state = _s(row, "monetisability_state")
++        viability_state = _s(row, "execution_viability_state")
+         selected_symbols = contract_symbols(
+             _first_value(
+                 row,
+@@ -190,29 +194,20 @@
+                 "recommended_contract",
+             )
+         )
+-        monetisability_symbols = contract_symbols(row.get("monetisability_contract_symbol"))
+-        if monetisability_state in ("MONETISABLE", "LIMITED") and (
+-            not selected_symbols or selected_symbols != monetisability_symbols
++        viability_symbols = contract_symbols(row.get("execution_viability_contract_symbol"))
++        if viability_state == "EXECUTABLE_QUOTE" and (
++            not selected_symbols or selected_symbols != viability_symbols
++        ):
++            return _preserve(row, "CONTRACT_REPAIR", "EXECUTION_VIABILITY_CONTRACT_IDENTITY_MISMATCH")
++        if viability_state in (
++            "DATA_MISSING", "INVALID_QUOTE", "UNSUPPORTED_STRUCTURE",
++            "ZERO_BID_REVIEW", "BLOCKED_WIDE_SPREAD", "MANUAL_LIQUIDITY_REVIEW",
+         ):
+-            return _preserve(row, "CONTRACT_REPAIR", "MONETISABILITY_CONTRACT_IDENTITY_MISMATCH")
+-        if monetisability_state == "NOT_MONETISABLE":
+-            action = "CONTRACT_REPAIR" if _has_contract_alternative(row) else "BLOCK"
+-            reason = (
+-                "NOT_MONETISABLE_ALTERNATIVE_AVAILABLE"
+-                if action == "CONTRACT_REPAIR"
+-                else "NOT_MONETISABLE"
+-            )
+-            return _preserve(row, action, reason)
+-        if monetisability_state in ("DATA_MISSING", "CONTRACT_REPAIR"):
+             return _preserve(
+                 row,
+                 "CONTRACT_REPAIR",
+-                _s(row, "monetisability_reason", "MONETISABILITY_DATA_MISSING"),
++                _s(row, "execution_viability_reason", "EXECUTION_VIABILITY_FAILED"),
+             )
+-        if morning_perm in ("GO", "GO_LIMIT", "PROBE") and monetisability_state not in (
+-            "MONETISABLE", "LIMITED",
+-        ):
+-            return _preserve(row, "CONTRACT_REPAIR", "MONETISABILITY_STATE_MISSING")
+         if morning_perm in ("BLOCKED", "BLOCK", "REJECT", "REJECTED"):
+             return _preserve(row, "BLOCK", "UPSTREAM_BLOCK")
+         if morning_perm == "CONTRACT_REPAIR":
+@@ -244,7 +239,9 @@
+         if ask <= 0 or bid < 0:
+             return _preserve(row, "CONTRACT_REPAIR", "LIVE_CONTRACT_QUOTE_INVALID")
+         mid = (bid + ask) / 2.0
+-        spread_pct = (ask - bid) / max(ask, 0.001)
++        spread_pct = quote_spread_fraction(bid, ask)
++        if spread_pct is None:
++            return _preserve(row, "CONTRACT_REPAIR", "LIVE_CONTRACT_QUOTE_INVALID")
+         warnings = []
+         penalty = 1.0
+         conviction_override = _is_conviction_override(row)
+@@ -371,11 +368,6 @@
+             log.info("[%s] MANUAL_REVIEW campaign=%s execution=%s", ticker, campaign, execution)
+             final_action = "MANUAL_REVIEW"
+ 
+-        if monetisability_state == "LIMITED" and final_action == "BUY_NOW":
+-            final_action = cfg_gate.PROBE_SIZE_LABEL
+-            warnings.append("LIMITED_MONETISABILITY")
+-            penalty = min(penalty, 0.5)
+-
+         log.info(
+             "[%s] %-15s spread=%.1f%% d=%.2f iv=%.1f%%(r%.0f) run=%.2f%% tgt=%.2f%% g=%s pen=%.2f conv=%s warn=%s",
+             ticker,

@@ -204,6 +204,12 @@ class VanguardInput:
     # === OPTIONAL: AVSHUNTER OUTPUT (for comparison) ===
     avshunter_signal: Optional[Dict] = None
 
+    # Governed Market Profile packet. When the contract is required, Layer 1
+    # must never reconstruct a profile from daily OHLCV or treat absence as
+    # zero-valued evidence.
+    market_profile_evidence: Optional[Dict] = None
+    market_profile_contract_required: bool = False
+
     # === PASS-THROUGH: Discovery enrichment flags ===
     # main.py checks hasattr(vanguard_input, 'macro_regime'),
     # hasattr(vanguard_input, 'wyckoff_phase'), and

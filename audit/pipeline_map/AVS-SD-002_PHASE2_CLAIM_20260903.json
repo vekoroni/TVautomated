@@ -1,0 +1,28 @@
+{
+  "claim_id": "AVS-SD-002-REV1.1-PHASE2-20260903",
+  "phase": 2,
+  "status": "PASS_IMPLEMENTED_FLAGS_DISABLED",
+  "design": "audit/pipeline_map/AVS-SD-002_REV1_1_DYNAMIC_SESSION_ORCHESTRATION_20260903.md",
+  "as_is_review": "audit/pipeline_map/AVS-AR-003_AS_IS_PIPELINE_SHIPPABILITY_REVIEW_20260903.md",
+  "closure_report": "audit/pipeline_map/AVS-SD-002_PHASE2_CLOSURE_20260903.md",
+  "backup": "backups/avs_sd_002_rev1_1_phase2_prechange_20260903_145500",
+  "whole_release_rollback": "backups/avs_sd_002_rev1_1_phase0_prechange_20260903_133546",
+  "tests": {
+    "phase2_focused": {"passed": 14, "failed": 0},
+    "router_embedded_checks": {"passed": 38, "failed": 0},
+    "cross_stage_regression": {"passed": 86, "failed": 0},
+    "single_process_full_collection": "NOT_VALID_TEST_HARNESS_SYS_PATH_COLLISION"
+  },
+  "authority_invariants": {
+    "macro_core_authority": "NONE",
+    "macro_advisory_authority": "ADVISORY_ONLY",
+    "rr_capital_authority": "NONE",
+    "ev_capital_authority": "NONE",
+    "scenario_monetisability_authority": "ADVISORY_SCENARIO_ONLY",
+    "execution_viability_authority": "HARD_CURRENT_QUOTE_EVIDENCE",
+    "lab_without_governed_book": "FAIL_CLOSED",
+    "interpreter_production_source": "MANIFEST_AND_GOVERNED_EVIDENCE_ONLY"
+  },
+  "production_dispatch_enabled": false,
+  "production_outputs_promoted": false
+}

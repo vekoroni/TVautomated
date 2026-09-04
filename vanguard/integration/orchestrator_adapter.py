@@ -176,6 +176,8 @@ class OrchestratorAdapter:
             macro_regime        = tech.macro_regime,
             compression_ratio   = tech.compression_ratio,
             wyckoff_phase       = tech.wyckoff_phase,
+            market_profile_evidence = payload.get("market_profile_evidence"),
+            market_profile_contract_required = bool(payload.get("market_profile_contract_required", False)),
         )
 
     def _tech(self, payload: dict, ticker: str) -> "TechnicalData":
@@ -228,6 +230,14 @@ class OrchestratorAdapter:
 
         return TechnicalData(
             ohlcv             = df,
+            vwap_15m          = _f(tp.get("vwap_15m"),       0.0),
+            vwap_1h           = _f(tp.get("vwap_1h"),        0.0),
+            vwap_4h           = _f(tp.get("vwap_4h"),        0.0),
+            vwap_daily        = _f(tp.get("vwap_daily") or tp.get("vwap_15m"), 0.0),
+            ema9              = _f(tp.get("ema9"),           0.0),
+            ema21             = _f(tp.get("ema21"),          0.0),
+            ema50             = _f(tp.get("ema50"),          0.0),
+            ema200            = _f(tp.get("ema200"),         0.0),
             atr_current       = _f(tp.get("atr_current"),   0.0),
             atr_history       = atr_hist,
             adx               = _f(tp.get("adx"),            0.0),

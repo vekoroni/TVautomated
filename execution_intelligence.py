@@ -387,7 +387,6 @@ def evaluate(ctx: ExecutionContext) -> ExecutionVerdict:
     # Hard blocks: only genuine execution killers (no executable market)
     if hard_failures:
         final_verdict     = "BLOCKED"
-        raw_verdict       = "BLOCKED"
         defer_reason_text = " | ".join(hard_failures)
     else:
         final_verdict = raw_verdict

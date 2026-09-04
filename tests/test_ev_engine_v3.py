@@ -11,6 +11,7 @@ from vanguard.ev_engine_v3 import (
     evaluate_contract,
     select_contract,
 )
+from vanguard.ev3_stage0 import DEFAULT_STOP_GRID, DEFAULT_TARGET_GRID
 
 
 NOW = "2026-08-10T12:05:00Z"
@@ -106,7 +107,8 @@ def test_american_option_pricer_is_direction_correct() -> None:
 
 def test_three_outcomes_are_exhaustive_and_timeout_is_priced() -> None:
     result = evaluate_contract(_row(), _cache(), now_utc=NOW)
-    assert result["ev3_status"] == "EVALUATED_SHADOW"
+    assert result["ev3_status"] == "EVALUATED_PRODUCTION_EVIDENCE"
+    assert result["ev3_shadow_only"] is False
     assert math.isclose(result["ev3_p_target"] + result["ev3_p_stop"] + result["ev3_p_timeout"], 1.0)
     assert "ev3_return_timeout_base" in result
     assert result["ev3_exit_mid_timeout_stress"] <= result["ev3_exit_mid_timeout_base"]
@@ -146,7 +148,41 @@ def test_unsupported_hold_fails_closed_instead_of_nearest_mapping() -> None:
     row = _row()
     row["planned_hold_sessions"] = 8
     result = evaluate_contract(row, _cache(), now_utc=NOW)
-    assert result["ev3_reason_code"] == "REJECT_BARRIER_HORIZON_UNAVAILABLE"
+    assert result["ev3_reason_code"] == "REJECT_HORIZON"
+
+
+def test_unseen_state_uses_governed_core_aligned_five_of_seven_fallback() -> None:
+    row = _row()
+    row["state_key"] = "NORMAL|UP|STRONG|MODERATE|DISTRIBUTION|LATE|MID"
+    result = evaluate_contract(row, _cache(), now_utc=NOW)
+    assert result["ev3_status"] == "EVALUATED_PRODUCTION_EVIDENCE"
+    assert result["ev3_state_match_type"] == "FALLBACK_5_OF_7"
+    assert math.isclose(result["ev3_state_similarity"], 5 / 7)
+    assert result["ev3_state_fallback_uncertainty_return"] == 0.02
+
+
+def test_missing_exit_timing_is_conservatively_defaulted_and_penalised() -> None:
+    frame = _cache().frame
+    frame.loc[frame["direction"] == "CALL", "target_exit_session_mean"] = math.nan
+    result = evaluate_contract(_row(), EV3BarrierCache(frame), now_utc=NOW)
+    assert result["ev3_status"] == "EVALUATED_PRODUCTION_EVIDENCE"
+    assert "target_exit_session_mean" in result["ev3_exit_session_defaulted_fields_json"]
+    assert result["ev3_exit_session_default_uncertainty_return"] == 0.01
+
+
+def test_state_fallback_refuses_weak_or_cross_regime_matches() -> None:
+    weak = _row()
+    weak["state_key"] = "NORMAL|UP|WEAK|HIGH|DISTRIBUTION|LATE|HIGH"
+    assert evaluate_contract(weak, _cache(), now_utc=NOW)["ev3_reason_code"] == "REJECT_BARRIER_STATE_UNAVAILABLE"
+
+    cross_regime = _row()
+    cross_regime["state_key"] = "HIGH_VOL|UP|STRONG|MODERATE|MARKUP|EARLY|MID"
+    assert evaluate_contract(cross_regime, _cache(), now_utc=NOW)["ev3_reason_code"] == "REJECT_BARRIER_STATE_UNAVAILABLE"
+
+
+def test_barrier_policy_grid_covers_wider_valid_trade_geometry() -> None:
+    assert 0.40 in DEFAULT_TARGET_GRID
+    assert 0.20 in DEFAULT_STOP_GRID
 
 
 def test_wider_spread_cannot_improve_robust_ev() -> None:
@@ -179,6 +215,15 @@ def test_selected_contract_cannot_bypass_liquidity_policy() -> None:
     wide["contract_bid"] = 3.2
     wide["contract_ask"] = 4.8
     assert evaluate_contract(wide, _cache(), now_utc=NOW)["ev3_reason_code"] == "REJECT_LIQUIDITY_SPREAD"
+
+    extreme_but_valid = _row()
+    extreme_but_valid["contract_bid"] = 0.1
+    extreme_but_valid["contract_ask"] = 1.0
+    assert evaluate_contract(extreme_but_valid, _cache(), now_utc=NOW)["ev3_reason_code"] == "REJECT_LIQUIDITY_SPREAD"
+
+    zero_bid = _row()
+    zero_bid["contract_bid"] = 0.0
+    assert evaluate_contract(zero_bid, _cache(), now_utc=NOW)["ev3_reason_code"] == "REJECT_LIQUIDITY_ZERO_BID"
 
 
 def test_selector_uses_lower_bound_and_is_bounded() -> None:
@@ -217,6 +262,7 @@ def test_selector_reports_child_rejection_counts_when_no_contract_is_evaluable()
     assert selected["ev3_reason_code"] == "REJECT_NO_EVALUABLE_CONTRACT"
     assert "child_rejections=" in selected["ev3_reason_detail"]
     assert "REJECT_QUOTE_STALE:2" in selected["ev3_reason_detail"]
+    assert selected["ev3_child_rejection_counts_json"] == '{"REJECT_QUOTE_STALE": 2}'
     assert len(evaluations) == 2
 
 
@@ -233,7 +279,7 @@ def test_qualitative_conviction_cannot_multiply_ev() -> None:
 def test_vertical_debit_engine_prices_bull_call_and_bear_put() -> None:
     for direction in ("CALL", "PUT"):
         result = evaluate_contract(_vertical_row(direction), _cache(), now_utc=NOW)
-        assert result["ev3_status"] == "EVALUATED_SHADOW"
+        assert result["ev3_status"] == "EVALUATED_PRODUCTION_EVIDENCE"
         assert result["ev3_structure"] == (
             "BULL_CALL_DEBIT" if direction == "CALL" else "BEAR_PUT_DEBIT"
         )

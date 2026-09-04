@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from avshunter_trade_journal import get_open_positions, log_entry, log_exit
+from contracts.lab_control import write_final_opportunity_book
 
 
 def _route_signal(permission: str, route: str | None = None, ticker: str = "TST") -> dict:
@@ -221,6 +222,14 @@ def test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_
         lab.RUNS_DIR = tmp_path / "runs"
         lab._JOURNAL_DB = tmp_path / "trade_journal.db"
         lab._run_cache.clear()
+        # This regression exercises file-change detection, not run-health
+        # adjudication. Keep the production fail-closed manifest guard intact
+        # and supply a healthy manifest for the deliberately minimal fixture.
+        lab.write_final_run_manifest = lambda *args, **kwargs: {
+            "pipeline_mode": "MORNING_VALIDATION",
+            "fatal_flags": [],
+            "stale_flags": [],
+        }
 
         run_dir = lab.RUNS_DIR / run_id
         _write_csv(
@@ -256,11 +265,27 @@ def test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_
                 "live_validation_state": "WAIT_RETEST",
             },
         )
+        governed_signal = {
+            "ticker": "AAA", "direction": "CALL", "strike": "100",
+            "expiry": "2099-01-19", "premium_mid": "1.0",
+            "target_price": "110", "invalidation_price": "95",
+            "lab_verdict": "GO", "lab_tradeable": False,
+            "morning_execution_permission": "WAIT",
+            "morning_execution_route": "WAIT",
+            "live_validation_state": "WAIT_RETEST",
+        }
+        governed_manifest = {
+            "pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []
+        }
+        write_final_opportunity_book(
+            run_id, [governed_signal], governed_manifest, lab.RUNS_DIR,
+            sync_interpreter=False,
+        )
 
         first = lab._load_run(run_id, force_reload=True)
         first_sig = first["signals"][0]
         assert first_sig["morning_execution_permission"] == "WAIT"
-        assert first_sig["lab_verdict"] == "WAIT"
+        assert first_sig["lab_verdict"] == "MANUAL_REVIEW"
 
         time.sleep(0.02)
         _write_csv(
@@ -274,10 +299,20 @@ def test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_
                 "live_validation_state": "CONFIRMED",
             },
         )
+        governed_signal.update(
+            morning_execution_permission="GO_LIMIT",
+            morning_execution_route="GO_LIMIT",
+            live_validation_state="CONFIRMED",
+        )
+        write_final_opportunity_book(
+            run_id, [governed_signal], governed_manifest, lab.RUNS_DIR,
+            sync_interpreter=False,
+        )
 
         second = lab._load_run(run_id)
         second_sig = second["signals"][0]
         assert second is not first
         assert second_sig["morning_execution_permission"] == "GO_LIMIT"
-        assert second_sig["lab_verdict"] == "GO_LIMIT"
-        assert second_sig["morning_lab_alignment_status"] == "ALIGNED"
+        # This fixture has no governed direction lineage, so GO_LIMIT cannot
+        # independently upgrade the Lab row above manual review.
+        assert second_sig["lab_verdict"] == "MANUAL_REVIEW"

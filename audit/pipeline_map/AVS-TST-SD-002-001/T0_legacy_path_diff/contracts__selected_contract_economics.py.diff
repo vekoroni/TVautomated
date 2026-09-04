@@ -1,0 +1,21 @@
+--- a/contracts/selected_contract_economics.py
++++ b/contracts/selected_contract_economics.py
+@@ -17,7 +17,7 @@
+ 
+ 
+ RR_CALCULATION_VERSION = "selected-contract-rr-v1"
+-MONETISABILITY_CALCULATION_VERSION = "selected-contract-monetisability-v1"
++MONETISABILITY_CALCULATION_VERSION = "expiry-intrinsic-floor-v2-advisory"
+ MONETISABILITY_MIN_PROFIT_PCT = 20.0
+ HYDRATION_SCHEMA_VERSION = "selected-contract-hydration-v1"
+ 
+@@ -523,6 +523,9 @@
+         "monetisability_contract_symbol": hydrated.get("selected_contract_symbol", ""),
+         "monetisability_evaluation_id": hydrated.get("selected_structure_id", ""),
+         "monetisability_eligible": False,
++        "monetisability_authority": "ADVISORY_SCENARIO_ONLY",
++        "monetisability_valuation_basis": "EXPIRY_INTRINSIC_FLOOR",
++        "monetisability_hard_execution_authority": False,
+     }
+     if hydrated.get("selected_structure_hydration_status") != "COMPLETE":
+         return {

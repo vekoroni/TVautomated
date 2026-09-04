@@ -1,0 +1,32 @@
+--- a/intelligence-lab/static/index.html
++++ b/intelligence-lab/static/index.html
+@@ -2282,6 +2282,29 @@
+ 
+   // TAB 1: OVERVIEW
+   document.getElementById('mp-overview').innerHTML = `
++    <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(s.lab_status_banner||'THESIS PREPARED — CURRENT VALIDATION NOT RUN')}</div>
++    <div class="m-sec-hdr" style="margin-top:18px">Frozen Thesis — Completed Evidence</div>
++    <div class="m-grid">
++      <div class="m-field"><div class="mf-k">Completed Session</div><div class="mf-v c">${htmlSafe(s.evidence_session_date||s.completed_session||s.thesis_session_date||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Direction</div><div class="mf-v ${dirClass}">${htmlSafe(s.governed_direction||dir)}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Close</div><div class="mf-v">${htmlSafe(s.completed_close||s.eod_close||s.signal_price||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Horizon</div><div class="mf-v a">${htmlSafe(s.planned_hold_sessions||s.expected_holding_window||s.horizon_bucket||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Target</div><div class="mf-v g">${htmlSafe(s.target_spot||s.target_price||s.structural_target||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Invalidation</div><div class="mf-v r">${htmlSafe(s.invalidation_spot||s.invalidation_price||s.structural_invalidation||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Frozen Contract</div><div class="mf-v sm">${htmlSafe(s.selected_contract_symbol||s.contract_symbol||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Completed Profile ID</div><div class="mf-v sm">${htmlSafe(s.completed_profile_evidence_id||s.market_profile_evidence_id||'NOT EVALUATED')}</div></div>
++    </div>
++    <div class="m-sec-hdr">Current Validation — Point in Time</div>
++    <div class="m-grid">
++      <div class="m-field"><div class="mf-k">Validation Event</div><div class="mf-v sm">${htmlSafe(s.validation_event_id||'NOT RUN')}</div></div>
++      <div class="m-field"><div class="mf-k">Transition</div><div class="mf-v a">${htmlSafe(s.validation_transition||'NOT RUN')}</div></div>
++      <div class="m-field"><div class="mf-k">Evidence Cutoff</div><div class="mf-v sm">${htmlSafe(s.validation_evidence_cutoff_utc||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v c">${htmlSafe(s.validation_current_price||s['mv__current_price']||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Gap / Drift</div><div class="mf-v a">${htmlSafe(s.validation_gap_pct||s['mv__drift_pct']||'—')}%</div></div>
++      <div class="m-field"><div class="mf-k">Profile State</div><div class="mf-v a">${htmlSafe(s.validation_profile_evidence_state||s.ms_profile_evidence_state||'NOT EVALUATED')}</div></div>
++      <div class="m-field"><div class="mf-k">Data Status</div><div class="mf-v sm">${htmlSafe(s.validation_data_status||'—')}</div></div>
++      <div class="m-field"><div class="mf-k">Execution Permission</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${htmlSafe(s.final_action||'—')}</div></div>
++    </div>
+     <div class="m-sec-hdr" style="margin-top:0">Signal Classification</div>
+     <div class="m-grid">
+       <div class="m-field"><div class="mf-k">Final Verdict</div><div class="mf-v ${canOpenEntry(s)?'g':'c'}">${finalV||'—'}</div></div>

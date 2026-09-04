@@ -21,7 +21,7 @@ Set to False only after explicit operator sign-off.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Dict, Mapping, Optional
 from datetime import datetime
 
 
@@ -70,6 +70,69 @@ WEIGHT_IV         = 0.40
 WEIGHT_GEX        = 0.05
 WEIGHT_OBI        = 0.03
 WEIGHT_POC        = 0.02
+
+
+# ── GOVERNED TRIGGER HANDOFF (WS2) ──────────────────────────────────────────
+# Trigger classification is calculated before EIL and commuted unchanged
+# through execution_v3_5, the EOD opportunity book, Morning Gate and the Lab.
+# Numeric scores are telemetry; they must never stand in for a categorical
+# primary/quality value.
+TRIGGER_HANDOFF_SCHEMA_VERSION = "trigger_handoff_v1"
+TRIGGER_HANDOFF_FIELDS = (
+    "trigger_codes",
+    "trigger_count",
+    "trigger_primary",
+    "trigger_quality",
+    "trigger_score",
+    "trigger_go_eligible",
+    "trigger_stale",
+    "trigger_freshness_state",
+    "trigger_data_asof",
+)
+TRIGGER_QUALITY_STATES = frozenset({"STRONG", "SINGLE", "NONE"})
+TRIGGER_BOOLEAN_STATES = frozenset({"TRUE", "FALSE", "1", "0", "YES", "NO"})
+
+
+def _categorical_trigger_value(row: Mapping[str, object], field: str) -> str:
+    value = row.get(field)
+    if value is None or isinstance(value, bool):
+        raise ValueError(f"{field} must be a governed categorical string")
+    text = str(value).strip()
+    if not text or text.upper() in {"NAN", "NULL", "N/A"}:
+        raise ValueError(f"{field} must be populated")
+    try:
+        float(text)
+    except (TypeError, ValueError):
+        return text.upper()
+    raise ValueError(f"{field} must be categorical, not numeric: {text!r}")
+
+
+def validate_trigger_handoff_row(row: Mapping[str, object]) -> None:
+    """Fail closed when the WS2 trigger block is missing or type-corrupted."""
+    missing = [field for field in TRIGGER_HANDOFF_FIELDS if field not in row]
+    if missing:
+        raise ValueError(f"trigger handoff missing fields: {missing}")
+
+    primary = _categorical_trigger_value(row, "trigger_primary")
+    quality = _categorical_trigger_value(row, "trigger_quality")
+    _categorical_trigger_value(row, "trigger_codes")
+    if quality not in TRIGGER_QUALITY_STATES:
+        raise ValueError(f"trigger_quality is outside the governed domain: {quality!r}")
+    if primary == "NONE" and quality != "NONE":
+        raise ValueError("trigger_primary NONE requires trigger_quality NONE")
+
+    for field in ("trigger_count", "trigger_score"):
+        try:
+            number = float(row.get(field))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{field} must be numeric") from exc
+        if number != number:
+            raise ValueError(f"{field} must not be NaN")
+
+    for field in ("trigger_go_eligible", "trigger_stale"):
+        value = row.get(field)
+        if not isinstance(value, bool) and str(value).strip().upper() not in TRIGGER_BOOLEAN_STATES:
+            raise ValueError(f"{field} must be boolean")
 
 
 @dataclass

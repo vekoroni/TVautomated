@@ -1,0 +1,15 @@
+--- a/vanguard/schemas/auction_schema.py
++++ b/vanguard/schemas/auction_schema.py
+@@ -13,9 +13,9 @@
+     """
+     Market Profile output (TPO chart analysis)
+     """
+-    poc: float  # Point of Control (highest volume price)
+-    value_area_high: float  # Top of value area (70% volume)
+-    value_area_low: float  # Bottom of value area
++    poc: Optional[float]  # Point of Control (highest volume price)
++    value_area_high: Optional[float]  # Top of value area (70% volume)
++    value_area_low: Optional[float]  # Bottom of value area
+     
+     profile_type: str  # NORMAL, P_SHAPED, B_SHAPED, TREND
+     balance: str  # BALANCED, BUYER_DOMINATED, SELLER_DOMINATED

@@ -26,19 +26,22 @@ if str(REPO_ROOT) not in sys.path:
 from scripts.run_ev3_shadow import run_shadow  # noqa: E402
 
 
-EV3_SHADOW_PHASE_VERSION = "ev3-shadow-phase-v0.6.0"
+EV3_SHADOW_PHASE_VERSION = "ev3-shadow-phase-v0.8.0"
 DEFAULT_RUNS_DIR = REPO_ROOT / "data" / "output" / "runs"
 DEFAULT_BARRIER_CACHE = Path(
     os.environ.get(
         "AVSHUNTER_EV3_BARRIER_CACHE",
-        r"C:\Users\ACKVerissimo\vanguard\data\staging\ev3_barrier_outcome_cache.parquet",
+        r"C:\Users\ACKVerissimo\vanguard\data\ev3_barrier_outcome_cache.parquet",
     )
 )
 
 COVERAGE_ALIASES: dict[str, tuple[str, ...]] = {
     "ticker": ("ticker", "symbol"),
     "direction": ("canonical_direction", "resolved_direction", "options_direction", "direction"),
-    "direction_status": ("direction_status", "direction_arbitration_status", "direction_conflict_status"),
+    "direction_status": (
+        "direction_resolution_status", "direction_status",
+        "direction_arbitration_status", "direction_conflict_status",
+    ),
     "entry_spot": ("entry_spot", "signal_price", "underlying_price", "current_price"),
     "target_spot": ("target_spot", "target_price", "structural_target", "target_in_play"),
     "invalidation_spot": ("invalidation_spot", "invalidation_price", "invalidation_level"),
@@ -49,6 +52,12 @@ COVERAGE_ALIASES: dict[str, tuple[str, ...]] = {
     "quote_timestamp_utc": ("contract_quote_timestamp_utc", "quote_timestamp_utc"),
     "contract_multiplier": ("contract_multiplier", "multiplier"),
 }
+
+REQUIRED_SELECTED_HANDOFF_FIELDS: tuple[str, ...] = (
+    "ticker", "direction", "direction_status", "entry_spot", "target_spot",
+    "invalidation_spot", "planned_hold_sessions", "state_key",
+    "contract_symbol", "quote_timestamp_utc", "contract_multiplier",
+)
 
 
 def _present(series: pd.Series) -> pd.Series:
@@ -69,30 +78,40 @@ def build_coverage(frame: pd.DataFrame) -> dict[str, Any]:
     """Return stable selected-row handoff coverage without fabricating values."""
     total = int(len(frame))
     selected_mask = _coalesced_presence(frame, COVERAGE_ALIASES["contract_symbol"])
+    direction = pd.Series("", index=frame.index, dtype=object)
+    for alias in COVERAGE_ALIASES["direction"]:
+        if alias in frame.columns:
+            values = frame[alias].fillna("").astype(str).str.strip().str.upper()
+            direction = direction.mask(direction.eq(""), values)
+    directional_mask = direction.isin({"CALL", "PUT"})
+    directional_selected_mask = selected_mask & directional_mask
     selected_rows = int(selected_mask.sum()) if total else 0
+    directional_selected_rows = int(directional_selected_mask.sum()) if total else 0
     fields: dict[str, dict[str, Any]] = {}
     for field, aliases in COVERAGE_ALIASES.items():
         count = int(_coalesced_presence(frame, aliases).sum()) if total else 0
-        selected_count = int((_coalesced_presence(frame, aliases) & selected_mask).sum()) if total else 0
+        selected_count = int((_coalesced_presence(frame, aliases) & directional_selected_mask).sum()) if total else 0
         fields[field] = {
             "present": count,
             "missing": total - count,
             "coverage": round(count / total, 6) if total else 0.0,
             "selected_present": selected_count,
-            "selected_missing": selected_rows - selected_count,
-            "selected_coverage": round(selected_count / selected_rows, 6) if selected_rows else 0.0,
+            "selected_missing": directional_selected_rows - selected_count,
+            "selected_coverage": round(selected_count / directional_selected_rows, 6) if directional_selected_rows else 0.0,
             "aliases_checked": list(aliases),
         }
-    complete = selected_mask.copy()
-    for aliases in COVERAGE_ALIASES.values():
-        complete &= _coalesced_presence(frame, aliases)
+    complete = directional_selected_mask.copy()
+    for field in REQUIRED_SELECTED_HANDOFF_FIELDS:
+        complete &= _coalesced_presence(frame, COVERAGE_ALIASES[field])
     complete_count = int(complete.sum()) if total else 0
     return {
         "rows": total,
         "selected_contract_rows": selected_rows,
+        "directional_selected_contract_rows": directional_selected_rows,
+        "non_directional_selected_contract_rows": selected_rows - directional_selected_rows,
         "complete_selected_handoff_rows": complete_count,
         "complete_selected_handoff_coverage": (
-            round(complete_count / selected_rows, 6) if selected_rows else 0.0
+            round(complete_count / directional_selected_rows, 6) if directional_selected_rows else 0.0
         ),
         "fields": fields,
     }
@@ -122,13 +141,15 @@ def _base_status(run_id: str, input_path: Path, barrier_cache: Path) -> dict[str
         "schema_version": EV3_SHADOW_PHASE_VERSION,
         "run_id": run_id,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "mode": "SHADOW_ONLY",
+        "mode": "PRODUCTION_EVIDENCE",
+        "production_consumer_enabled": True,
+        "production_evidence": True,
         "production_authority": False,
         "capital_eligibility_enabled": False,
         "pipeline_blocking": False,
         "technical_health": "NOT_EVALUATED",
         "ev_functional_health": "NOT_RUN",
-        "morning_capital_permission": "NOT_EVALUATED_BY_SHADOW",
+        "morning_capital_permission": "NOT_EVALUATED_BY_EV3_EVIDENCE",
         "expected_market_rejections": {},
         "expected_contract_rejections": {},
         "unclassified_rejections": {},
@@ -205,23 +226,31 @@ def run_phase(
     )
     evaluated = int(audit.get("rows_evaluated", 0))
     received = int(audit.get("rows_received", 0))
+    rejected = int(audit.get("rows_rejected", 0))
+    not_applicable = int(audit.get("rows_not_applicable", 0))
+    applicable = evaluated + rejected
     if received == 0:
         health = "DEGRADED_EMPTY_INPUT"
+    elif not_applicable == received:
+        health = "PRODUCTION_EVIDENCE_COMPLETE_NO_APPLICABLE_ROWS"
     elif evaluated == 0:
         health = "DEGRADED_NO_EVALUATIONS"
     else:
-        health = "SHADOW_COMPLETE"
+        health = "PRODUCTION_EVIDENCE_COMPLETE"
     reason_counts = audit.get("reason_counts", {})
     expected_rejection_codes = {
         "REJECT_BARRIER_GRID_UNAVAILABLE",
         "REJECT_BARRIER_HORIZON_UNAVAILABLE",
         "REJECT_BARRIER_STATE_UNAVAILABLE",
+        "REJECT_BARRIER_STATE_SPARSE",
         "REJECT_DIRECTION_UNRESOLVED",
         "REJECT_DTE",
         "REJECT_DTE_FEASIBILITY",
         "REJECT_LIQUIDITY",
         "REJECT_LIQUIDITY_SPREAD",
+        "REJECT_LIQUIDITY_ZERO_BID",
         "REJECT_NO_EVALUABLE_CONTRACT",
+        "REJECT_QUOTE_INVALID_MARKET",
         "REJECT_QUOTE_STALE",
         "REJECT_RR_ZERO",
         "REJECT_STRUCTURE_UNSUPPORTED",
@@ -280,7 +309,8 @@ def run_phase(
     missing_selected = {
         field: int(metrics["selected_missing"])
         for field, metrics in coverage["fields"].items()
-        if int(metrics["selected_missing"]) > 0
+        if field in REQUIRED_SELECTED_HANDOFF_FIELDS
+        and int(metrics["selected_missing"]) > 0
     }
     if missing_selected:
         system_defects["missing_selected_handoff"] = missing_selected
@@ -306,6 +336,8 @@ def run_phase(
         ev3_coverage_health = "NO_INPUT"
     elif evaluated > 0:
         ev3_coverage_health = "EVALUATED"
+    elif not_applicable == received:
+        ev3_coverage_health = "NOT_APPLICABLE"
     else:
         ev3_coverage_health = "ZERO_COVERAGE"
 
@@ -315,7 +347,7 @@ def run_phase(
     if ev3_coverage_health in ("ZERO_COVERAGE", "EVALUATED"):
         # Same REJECT_ prefix guard as expected_contract_rejections /
         # unclassified_rejections above -- reason_counts also carries
-        # SHADOW_ONLY, the non-rejection success marker, and picking that
+        # PRODUCTION_EVIDENCE_ONLY, the non-rejection success marker, and picking that
         # as a "dominant reason" would be nonsense (Stage 3.1 Check 6).
         rejection_counts = {
             str(code): int(count)
@@ -327,16 +359,29 @@ def run_phase(
             dominant_reason_count = rejection_counts[dominant_reason_code]
             dominant_reason_share = round(dominant_reason_count / received, 6)
 
+    system_defect_rows = int(sum(row_validation_defects.values()))
+    unclassified_rows = int(sum(unclassified_rejections.values()))
+    adjudicated_rows = max(applicable - system_defect_rows - unclassified_rows, 0)
+
     status.update(
         health=health,
         technical_health="PASS",
         ev_functional_health=health,
-        morning_capital_permission="NOT_EVALUATED_BY_SHADOW",
-        detail="EV3 remains advisory; no downstream artifact was changed",
+        morning_capital_permission="NOT_EVALUATED_BY_EV3_EVIDENCE",
+        detail="EV3 production evidence attached downstream; capital authority remains disabled",
         rows_received=received,
         rows_evaluated=evaluated,
-        rows_rejected=int(audit.get("rows_rejected", 0)),
-        evaluation_coverage=round(evaluated / received, 6) if received else 0.0,
+        rows_rejected=rejected,
+        rows_not_applicable=not_applicable,
+        rows_applicable=applicable,
+        evaluation_coverage=round(evaluated / applicable, 6) if applicable else 0.0,
+        # Expected liquidity/market rejections are valid EV adjudications, not
+        # missing coverage. Authority readiness is based on classified
+        # decisions and fails only for system or unknown outcomes.
+        adjudicated_rows=adjudicated_rows,
+        adjudication_coverage=round(adjudicated_rows / applicable, 6) if applicable else 0.0,
+        system_defect_rows=system_defect_rows,
+        unclassified_rows=unclassified_rows,
         reason_counts=reason_counts,
         expected_market_rejections=expected_market_rejections,
         expected_contract_rejections=expected_contract_rejections,
@@ -349,6 +394,7 @@ def run_phase(
         contract_evaluation_reason_counts=contract_reason_counts,
         contract_evaluation_structure_counts=audit.get("contract_evaluation_structure_counts", {}),
         absolute_state_counts=audit.get("absolute_state_counts", {}),
+        state_match_counts=audit.get("state_match_counts", {}),
         engine_stage=audit.get("stage", "UNKNOWN"),
         shadow_audit_path=str((output_dir / "ev3_stage1_shadow_audit.json").resolve()),
     )

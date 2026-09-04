@@ -16,6 +16,7 @@ TIERS:
 
 OUTPUT:
 - discovery_candidates_ultimate_<TS>.csv (all signals)
+- discovery_lifecycle_<TS>.csv (one governed outcome per input ticker)
 - final_watchlist_ultimate_<TS>.csv (top ranked)
 - early_positions_ultimate_<TS>.csv (Tier 0 only)
 - discovery_summary_ultimate_<TS>.json
@@ -29,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,6 +43,7 @@ from WyckoffEngine_3101_v2 import WyckoffEngine_3101_v2 as WyckoffEngine
 from polygon_data_fetcher import PolygonDataFetcher
 from wyckoff_crabel_precor_logic_v2 import process_precore_signal
 from wyckoff_phase_validator import prefixed_validation_fields, validate_wyckoff_phase
+from contracts.direction_governance import resolve_discovery_thesis_direction
 try:
     from scripts.macro_quant_packet import (
         build_macro_quant_packet,
@@ -582,25 +585,8 @@ def detect_early_position(df: pd.DataFrame, wyckoff_data: dict, precor_data: dic
 # ============================= TIER ASSIGNMENT =============================
 
 def assign_tier(wyckoff_score: float, crabel_score: float, composite_score: float, cfg: UltimateConfig) -> int:
-    """Assign tier based on scores with regime-adaptive floors.
-
-    Regime composite floors (Enhancement 5):
-        RISK_OFF:     >= 72 for Tier 1 (high conviction only — edge is scarce)
-        TRANSITIONAL: >= 68 for Tier 1 (existing logic preserved)
-        RISK_ON:      >= 50 standard (broader opportunity set)
-
-    Markets do not distribute edge evenly across regimes. Enforcing scarcity
-    discipline in RISK_OFF prevents psychological noise from marginal setups.
-    """
-    active_regime = str(getattr(cfg, 'active_regime', 'UNKNOWN')).upper()
-    transitional_floor = 68.0
-    risk_off_floor = getattr(cfg, 'risk_off_composite_floor', 72.0)
-
+    """Assign a macro-agnostic tier from ticker evidence only."""
     if composite_score >= cfg.tier1_min:
-        if active_regime == 'RISK_OFF' and composite_score < risk_off_floor:
-            return 2  # Demote: below RISK_OFF conviction threshold
-        if active_regime == 'TRANSITIONAL' and composite_score < transitional_floor:
-            return 2  # Demote: below TRANSITIONAL conviction threshold
         return 1
     elif composite_score >= cfg.tier2_min:
         return 2
@@ -609,12 +595,8 @@ def assign_tier(wyckoff_score: float, crabel_score: float, composite_score: floa
     else:
         return 4  # Rejected
 
-# NOTE: Tier 3 (WATCH) — valid overflow bucket in RISK_OFF regimes.
-# In RISK_ON/TRANSITIONAL: structural dead zone — DISTRIBUTION stocks penalised below T4,
-#   non-DISTRIBUTION stocks boosted above T2. Nothing scores in the T3 band.
-# In RISK_OFF: ACCUMULATION/MARKUP stocks receive +10/+12 prior boosts. Stocks with raw
-#   scores ~39-41 land at ~51-53 adjusted — above T3 floor but below the elevated T2 floor (54).
-#   These are genuine early-stage setups in a fearful market. T3 is a valid watch bucket.
+# Tier 3 is the macro-agnostic watch bucket between the configured structural
+# evidence floors. External regime state cannot move a ticker between tiers.
 
 
 def calculate_composite_score(wyckoff_score: float, crabel_score: float) -> float:
@@ -642,38 +624,8 @@ def calculate_win_probability(wyckoff_score: float, crabel_score: float) -> floa
 
 # ============================= STATE PRIOR WEIGHTING =======================
 
-# Empirically derived from 3.7M cleaned actuarial observations.
-# Key: (wyckoff_phase_bucket, macro_regime) → score adjustment
-# Source: validate_enrichment.py output — Hit +10% / 20d rates by bucket × regime
-#
-# Baseline (mixed pool):       Hit10 = 28.8%
-# MARKUP       × RISK_ON  :   Hit10 = 25.7%  → slight penalty vs baseline (already late)
-# MARKUP       × RISK_OFF :   Hit10 = 30.2%  → boost (breakout against weak market = strong)
-# MARKUP       × TRANS    :   Hit10 = 26.0%  → neutral
-# ACCUMULATION × RISK_ON  :   Hit10 = 20.4%  → penalty (still building cause)
-# ACCUMULATION × RISK_OFF :   Hit10 = 33.8%  → strong boost (cause building in adversity)
-# ACCUMULATION × TRANS    :   Hit10 = 27.1%  → slight boost
-# DISTRIBUTION × RISK_ON  :   Hit10 = 18.9%  → strong penalty
-# DISTRIBUTION × RISK_OFF :   Hit10 = 22.0%  → penalty
-# DISTRIBUTION × TRANS    :   Hit10 = 17.6%  → strong penalty
-#
-# Score adjustments are bounded: max +15, min -20
-# Applied to composite_score BEFORE tier assignment so tier floors remain meaningful.
-
-_STATE_PRIOR_ADJUSTMENTS: dict = {
-    ('MARKUP',       'RISK_ON'):      +2.0,   # slight: already extended
-    ('MARKUP',       'RISK_OFF'):    +10.0,   # strong: breakout vs weak market
-    ('MARKUP',       'TRANSITIONAL'): +1.0,   # neutral
-    ('ACCUMULATION', 'RISK_ON'):      -5.0,   # penalty: still building cause
-    ('ACCUMULATION', 'RISK_OFF'):    +12.0,   # strongest signal in the DB
-    ('ACCUMULATION', 'TRANSITIONAL'): +3.0,   # slight boost
-    ('DISTRIBUTION', 'RISK_ON'):     -15.0,   # strong penalty: rolling over in bull
-    ('DISTRIBUTION', 'RISK_OFF'):    -12.0,   # penalty: rolling over in bear
-    ('DISTRIBUTION', 'TRANSITIONAL'):-12.0,  # strong penalty: only negative EV bucket
-}
-
-# Late trend maturity penalty — applied additionally when trend is LATE/EXHAUSTED
-# in non-RISK_OFF regime (RISK_OFF late trend can still spring)
+# External-macro state priors were retired from production authority. The only
+# remaining adjustment is derived from the ticker's own trend maturity.
 _LATE_TREND_PENALTY = -8.0
 
 
@@ -849,7 +801,7 @@ def apply_state_prior_adjustment(
     data_as_of: str = '',   # E1: YYYY-MM-DD — decay penalises stale signals
 ) -> tuple:
     """
-    Apply empirically-derived state prior adjustment to composite score.
+    Apply ticker-derived trend-maturity adjustment to composite score.
 
     Returns:
         (adjusted_composite: float, prior_adj: float, prior_label: str)
@@ -858,8 +810,8 @@ def apply_state_prior_adjustment(
         max boost: +15 points
         max penalty: -20 points
 
-    This injects known historical asymmetry into Discovery WITHOUT querying
-    the actuarial DB at runtime. The priors are pre-computed from 3.7M rows.
+    ``active_regime`` is accepted for schema compatibility and lineage only;
+    it cannot change the result.
     """
     bucket  = _wyckoff_phase_to_bucket(phase)
     regime  = str(active_regime).upper().strip()
@@ -872,12 +824,13 @@ def apply_state_prior_adjustment(
     else:
         regime = 'TRANSITIONAL'
 
-    key = (bucket, regime)
-    adj = _STATE_PRIOR_ADJUSTMENTS.get(key, 0.0)
-
-    # Additional late trend penalty in non-RISK_OFF regimes
+    # The former phase x external-macro adjustment changed candidate membership
+    # whenever a separately refreshed narrative snapshot changed.  Keep macro
+    # in output lineage, but remove it from the production score.  Technical
+    # trend maturity remains valid ticker evidence and is retained.
+    adj = 0.0
     maturity = str(trend_maturity).upper()
-    if maturity in ('LATE', 'EXHAUSTED') and regime != 'RISK_OFF':
+    if maturity in ('LATE', 'EXHAUSTED'):
         adj += _LATE_TREND_PENALTY
 
     # Bound the adjustment
@@ -888,11 +841,11 @@ def apply_state_prior_adjustment(
     # Human-readable label for output column — defined BEFORE decay block
     # so the decay suffix can safely append to it.
     if adj > 5:
-        label = f"BOOSTED({bucket}×{regime}:{adj:+.0f})"
+        label = f"CORE_TECHNICAL_BOOST({bucket}:{adj:+.0f})"
     elif adj < -5:
-        label = f"PENALISED({bucket}×{regime}:{adj:+.0f})"
+        label = f"CORE_TECHNICAL_PENALTY({bucket}:{adj:+.0f})"
     else:
-        label = f"NEUTRAL({bucket}×{regime}:{adj:+.0f})"
+        label = f"CORE_MACRO_AGNOSTIC({bucket}:{adj:+.0f})"
 
     # ── ENHANCEMENT 1: Signal decay (2026-04-16) ─────────────────────────────
     # Wyckoff phases have a half-life. A Phase C spring identified on Monday
@@ -941,6 +894,46 @@ def load_bars(
     This metadata flows into the signal dict so the orchestrator can report
     how many tickers used stale data on any given run.
     """
+    # CDS-2 active mode may short-circuit only when the canonical tail is fresh.
+    # Keep a stale frame solely to request/merge its missing boundary; never
+    # return it to Discovery as if it were current.
+    canonical = None
+    canonical_last_date = None
+    _read_canonical_history = None
+    _write_canonical_history = None
+    _observe_canonical_history = None
+    _canonical_is_fresh = None
+    _canonical_max_staleness_days = 5
+    try:
+        from canonical_data.history_bridge import (
+            DEFAULT_HISTORY_MAX_STALENESS_DAYS,
+            canonical_history_is_fresh,
+            observe_shadow_history,
+            read_canonical_history,
+            write_through_fetched_history,
+        )
+        _read_canonical_history = read_canonical_history
+        _write_canonical_history = write_through_fetched_history
+        _observe_canonical_history = observe_shadow_history
+        _canonical_is_fresh = canonical_history_is_fresh
+        _canonical_max_staleness_days = DEFAULT_HISTORY_MAX_STALENESS_DAYS
+        canonical = read_canonical_history(ticker, max_staleness_days=None)
+        if (
+            canonical is not None
+            and not canonical.empty
+            and not force_update
+            and canonical_history_is_fresh(canonical)
+        ):
+            return canonical
+        if canonical is not None and not canonical.empty and "date" in canonical.columns:
+            canonical_last_date = pd.to_datetime(
+                canonical["date"], errors="coerce"
+            ).max()
+    except Exception as error:
+        logging.getLogger("AVSHUNTER_ULTIMATE").debug(
+            f"[{ticker}] CDS-2 canonical read unavailable: {error}"
+        )
+
     csv_path = data_dir / f"{ticker}.csv"
 
     if not force_update and csv_path.exists():
@@ -956,10 +949,27 @@ def load_bars(
                 latest_date = df["date"].max()
                 if pd.notna(latest_date):
                     days_old = (datetime.now() - latest_date).days
-                    if days_old <= 7:
+                    if days_old <= _canonical_max_staleness_days:
                         df = df.sort_values("date")
                         df.attrs["data_source"] = "CACHE_OK"
                         df.attrs["data_as_of"] = str(latest_date.date())
+                        try:
+                            if _write_canonical_history is not None:
+                                _write_canonical_history(
+                                    ticker,
+                                    df,
+                                    provider="LOCAL_CACHE",
+                                    source_kind="DISCOVERY_CACHE_RECOVERY",
+                                    source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+                                )
+                            if _read_canonical_history is not None:
+                                refreshed = _read_canonical_history(ticker)
+                                if refreshed is not None and not refreshed.empty:
+                                    return refreshed
+                            if _observe_canonical_history is not None:
+                                _observe_canonical_history(ticker, df, consumer="DISCOVERY")
+                        except Exception:
+                            pass
                         return df
         except Exception as e:
             logging.getLogger("AVSHUNTER_ULTIMATE").debug(f"[{ticker}] CSV staleness check failed: {e}")
@@ -967,23 +977,69 @@ def load_bars(
     if polygon_fetcher:
         try:
             end_date = datetime.now().strftime('%Y-%m-%d')
-            start_date = (datetime.now() - timedelta(days=lookback_days)).strftime('%Y-%m-%d')
+            if not force_update and pd.notna(canonical_last_date):
+                start_date = (
+                    canonical_last_date.date() + timedelta(days=1)
+                ).isoformat()
+            else:
+                start_date = (
+                    datetime.now() - timedelta(days=lookback_days)
+                ).strftime('%Y-%m-%d')
 
             df = polygon_fetcher.fetch_daily_bars(ticker, start_date, end_date)
 
             if df is not None and not df.empty:
                 data_dir.mkdir(parents=True, exist_ok=True)
-                df.to_csv(csv_path, index=False)
-                # Tag as fresh Polygon data
-                last_date = "UNKNOWN"
+                # The production Polygon fetcher writes through itself. Repeat
+                # the governed commit here so alternative/test fetchers cannot
+                # bypass the canonical database; ingestion is idempotent.
                 try:
-                    if "date" in df.columns:
-                        last_date = str(pd.to_datetime(df["date"], errors="coerce").max().date())
+                    if _write_canonical_history is not None:
+                        _write_canonical_history(
+                            ticker,
+                            df,
+                            provider="POLYGON",
+                            source_kind="DISCOVERY_INCREMENTAL_REFRESH",
+                            source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+                        )
                 except Exception:
                     pass
-                df.attrs["data_source"] = "POLYGON_FRESH"
-                df.attrs["data_as_of"] = last_date
-                return df
+
+                resolved = None
+                try:
+                    if _read_canonical_history is not None:
+                        refreshed = _read_canonical_history(ticker)
+                        if refreshed is not None and not refreshed.empty:
+                            resolved = refreshed
+                except Exception:
+                    pass
+
+                if resolved is None:
+                    frames = [frame for frame in (canonical, df) if frame is not None and not frame.empty]
+                    resolved = pd.concat(frames, ignore_index=True) if len(frames) > 1 else df.copy()
+                    resolved["date"] = pd.to_datetime(resolved["date"], errors="coerce")
+                    resolved = (
+                        resolved.dropna(subset=["date"])
+                        .sort_values("date")
+                        .drop_duplicates(subset=["date"], keep="last")
+                        .reset_index(drop=True)
+                    )
+                    resolved.attrs["data_source"] = "POLYGON_FRESH_INCREMENTAL"
+
+                last_date = "UNKNOWN"
+                if "date" in resolved.columns and not resolved.empty:
+                    last_date = str(
+                        pd.to_datetime(resolved["date"], errors="coerce").max().date()
+                    )
+                resolved.attrs.setdefault("data_source", "POLYGON_FRESH")
+                resolved.attrs["data_as_of"] = last_date
+                resolved.to_csv(csv_path, index=False)
+                try:
+                    if _observe_canonical_history is not None:
+                        _observe_canonical_history(ticker, resolved, consumer="DISCOVERY")
+                except Exception:
+                    pass
+                return resolved
         except Exception as e:
             logging.getLogger("AVSHUNTER_ULTIMATE").debug(f"[{ticker}] Polygon fetch failed: {e}")
 
@@ -1005,6 +1061,11 @@ def load_bars(
                 logging.getLogger("AVSHUNTER_ULTIMATE").debug(
                     f"[{ticker}] Using STALE_CACHE fallback — last bar: {last_date}"
                 )
+                try:
+                    from canonical_data.history_bridge import observe_shadow_history
+                    observe_shadow_history(ticker, df, consumer="DISCOVERY")
+                except Exception:
+                    pass
                 return df
         except Exception as e:
             logging.getLogger("AVSHUNTER_ULTIMATE").debug(f"[{ticker}] Fallback CSV read failed: {e}")
@@ -1381,7 +1442,7 @@ def scan_ticker_ultimate(
     #   recency_score         15%  — how fresh is the event (move_age_bars)
     #   transition_alignment  10%  — is structure progressing toward actionable phase
     #
-    # Regime modulation: RISK_OFF +5pts, RISK_ON +2pts (conviction, not direction)
+    # External macro contributes zero points.
 
     # Event quality bonus — confirmed specific events vs generic trading range
     # D4 fix: use uppercase sets — _dom_event is now normalised uppercase
@@ -1458,31 +1519,36 @@ def scan_ticker_ultimate(
     # Normalise to 0-1
     _pa_normalised = min(1.0, _pa_raw / 100.0)
 
-    # Regime modulates conviction (not direction) — small boost for clean macro backdrop
-    _regime_boost = {'RISK_OFF': 0.05, 'RISK_ON': 0.02}.get(regime_norm, 0.0)
-    phase_align = round(min(1.0, _pa_normalised + _regime_boost), 3)
+    # External macro cannot alter core conviction.
+    _regime_boost = 0.0
+    phase_align = round(_pa_normalised, 3)
 
-    # Derive candidate direction — metadata only, NOT used in any scoring component.
+    # Direction governance Stage 0: Discovery freezes the structural thesis
+    # before any direction-dependent geometry or contract work is performed.
+    # All structural evidence already available in Discovery participates.
     _fuse_dir_raw = str(fusion_result.get('direction', 'NONE')).upper()
     _wyck_dir_raw = str(wyckoff_data.get('trade_direction', 'NONE')).upper()
-    if _fuse_dir_raw in ('LONG', 'BULLISH'):
-        _candidate_direction = 'CALL'
-    elif _fuse_dir_raw in ('SHORT', 'BEARISH'):
-        _candidate_direction = 'PUT'
-    elif _wyck_dir_raw == 'LONG':
-        _candidate_direction = 'CALL'
-    elif _wyck_dir_raw == 'SHORT':
-        _candidate_direction = 'PUT'
-    elif phase_bucket in ('DISTRIBUTION', 'MARKDOWN'):
-        _candidate_direction = 'PUT'
-    else:
-        _candidate_direction = 'CALL'
+    dominant_trend = _get_dominant_trend(df)
+    _precor_intent = _reconcile_intent(
+        raw_intent=precor_data.get('intent', '') if precor_data else '',
+        precor_control=precor_data.get('control_state', '') if precor_data else '',
+        wyckoff_control=wyckoff_data.get('control_state', ''),
+        df=df,
+    )
+    (
+        _candidate_direction,
+        _discovery_direction_status,
+        _discovery_direction_basis,
+    ) = resolve_discovery_thesis_direction(
+        _fuse_dir_raw,
+        _wyck_dir_raw,
+        _precor_intent,
+        dominant_trend,
+    )
 
-    # ── Component 3: Regime alignment — macro clarity score ──────────────────
-    # Not direction-biased. Measures how clear the macro backdrop is for any move.
-    # RISK_OFF = clearest directional moves historically. TRANSITIONAL = murky.
-    regime_scores = {'RISK_ON': 0.6, 'RISK_OFF': 0.75, 'TRANSITIONAL': 0.45}
-    regime_align  = regime_scores.get(regime_norm, 0.5)
+    # ── Component 3: neutral compatibility baseline ──────────────────────────
+    # Fixed across all macro payloads so external macro cannot alter the score.
+    regime_align = 0.5
 
     # ── Component 4: Trend maturity ────────────────────────────────────────────
     if trend_mat in ('EARLY', 'EMERGING'):
@@ -1500,13 +1566,7 @@ def scan_ticker_ultimate(
     # 0 = no compression, 100 = maximum compression (NR7 + ATR contracted + inside bars)
     vol_expansion_potential = min(1.0, _crabel_score_raw / 100.0)
 
-    # ENHANCEMENT 3: Macro sector tilt alignment (2026-04-16)
-    # The macro intelligence JSON scores each sector ETF (XLK, XLF, XLI, etc.)
-    # with a signal: LEAD_LONG (+1.0), LONG (+0.5), NEUTRAL (0), REDUCE (-0.5).
-    # Map the ticker's sector to its ETF and apply the regime score as a
-    # 6th lift component. This surfaces signals in macro-favoured sectors
-    # (currently XLK Tech, XLI Industrials, XLF Financials = LEAD_LONG)
-    # and suppresses those fighting the macro tide (XLE Energy = REDUCE).
+    # Macro sector tilt is retained for trader-facing advisory context only.
     # NOTE: _sector_etf_map is defined AFTER get_sector() below because
     # _sector must be assigned before it can be looked up here.
     # A placeholder is used so lift_proxy_score can be computed in one place.
@@ -1591,7 +1651,7 @@ def scan_ticker_ultimate(
             vwap_acceptance_score = 0.3   # gap up but below VWAP = fading — weak CALL
         else:
             vwap_acceptance_score = 0.6   # gap down but above VWAP = recovery — moderate CALL
-    else:  # PUT
+    elif _candidate_direction == 'PUT':
         if not _gap_dir_up and not _vwap_above:
             vwap_acceptance_score = 1.0   # gap down + below VWAP = strong PUT acceptance
         elif _gap_dir_up and _vwap_above:
@@ -1600,13 +1660,20 @@ def scan_ticker_ultimate(
             vwap_acceptance_score = 0.3   # gap down but above VWAP = recovering — weak PUT
         else:
             vwap_acceptance_score = 0.6   # gap up but below VWAP = exhaustion — moderate PUT
+    else:
+        # An unresolved preliminary hint has no directional VWAP interpretation.
+        vwap_acceptance_score = 0.5
 
     # repricing_direction: is the abnormal repricing aligned with the candidate direction?
     _gap_aligned = (
         (_candidate_direction == 'CALL' and _gap_dir_up) or
         (_candidate_direction == 'PUT'  and not _gap_dir_up)
     )
-    repricing_direction = _candidate_direction if _gap_aligned else f"COUNTER_{_candidate_direction}"
+    repricing_direction = (
+        _candidate_direction if _candidate_direction in {'CALL', 'PUT'} and _gap_aligned
+        else f"COUNTER_{_candidate_direction}" if _candidate_direction in {'CALL', 'PUT'}
+        else 'UNRESOLVED'
+    )
 
     # ── Sub-scores for repricing labels (0–1 each) ───────────────────────────
     _gap_score_raw    = min(abs(gap_pct) / 5.0, 1.0)          # 5% gap = full score
@@ -1617,8 +1684,6 @@ def scan_ticker_ultimate(
     # Abnormal repricing composite (0–100) — used for labels only.
     # Trend shift proxy: use _get_dominant_trend (BULLISH/BEARISH/MIXED).
     # Defect 1 fix: _get_ema_stack returns ALIGNED/MIXED only — BEARISH never fired.
-    dominant_trend = _get_dominant_trend(df)
-
     _ema_aligned = (
         (_candidate_direction == 'CALL' and dominant_trend == 'BULLISH') or
         (_candidate_direction == 'PUT'  and dominant_trend == 'BEARISH')
@@ -1709,6 +1774,30 @@ def scan_ticker_ultimate(
             structural_target = None
             _target_source    = 'PENDING_OI'
 
+    # The legacy structural stop is retained for compatibility, but the
+    # governed invalidation is side-aware and must never use the ATR fallback.
+    # A missing authoritative value stays missing; Options may not turn it into
+    # a conventional percentage stop.
+    _governed_invalidation_spot = None
+    _governed_invalidation_source = 'MISSING_AUTHORITATIVE_INVALIDATION'
+    _validation_invalidation = wyckoff_validation.get('structural_invalidation_level')
+    try:
+        _validation_invalidation = float(_validation_invalidation)
+    except (TypeError, ValueError):
+        _validation_invalidation = None
+    if _validation_invalidation is not None and (
+        (_candidate_direction == 'CALL' and _validation_invalidation < current_price)
+        or (_candidate_direction == 'PUT' and _validation_invalidation > current_price)
+    ):
+        _governed_invalidation_spot = round(_validation_invalidation, 4)
+        _governed_invalidation_source = 'WYCKOFF_VALIDATION'
+    elif _stop_source != 'ATR_FALLBACK' and structural_stop is not None and (
+        (_candidate_direction == 'CALL' and structural_stop < current_price)
+        or (_candidate_direction == 'PUT' and structural_stop > current_price)
+    ):
+        _governed_invalidation_spot = round(float(structural_stop), 4)
+        _governed_invalidation_source = str(_stop_source)
+
     # Sector / industry lookup — SIC code comes from universe CSV if present
     _sic = ""
     _base_dir = Path(__file__).resolve().parent
@@ -1750,13 +1839,15 @@ def scan_ticker_ultimate(
     _macro_sector_tilt = getattr(cfg, 'macro_sector_signals', {})
     _ticker_etf  = _sector_etf_map.get(_sector, '')
     _etf_signal  = _macro_sector_tilt.get(_ticker_etf, 'NEUTRAL')
-    _sector_lift = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
+    _macro_sector_advisory_score = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
+    _sector_lift = 0.0
 
     # If universe has explicit sector_etf, use it and recompute lift
     if _univ_sec.get("sector_etf"):
         _ticker_etf  = _univ_sec["sector_etf"]
         _etf_signal  = _macro_sector_tilt.get(_ticker_etf, "NEUTRAL")
-        _sector_lift = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
+        _macro_sector_advisory_score = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
+        _sector_lift = 0.0
     _macro_abstain = str(_univ_sec.get("macro_abstain", "False")).upper() == "TRUE"
 
     # Recompute lift_proxy_score with real sector lift (replaces placeholder above)
@@ -1768,7 +1859,7 @@ def scan_ticker_ultimate(
     # regime_align                   10     Macro backdrop clarity (not direction)
     # maturity_score                 12     Trend maturity (early = higher options edge)
     # vol_expansion_potential        10     Crabel score — NR7/ATR/inside-bar quality
-    # sector_lift                     6     Macro sector tilt
+    # sector baseline                 6     fixed; macro tilt is advisory only
     # volume_abnormality             10     Institutional activity (vol vs 20d avg)
     # range_expansion                 6     Range vs 20d average (momentum displacement)
     # vwap_acceptance                 4     Gap × VWAP alignment
@@ -1827,6 +1918,19 @@ def scan_ticker_ultimate(
     _move_age_bkt         = _bucket_move_age(_move_age_bars)
     _crabel_bkt           = _bucket_crabel(_crabel_score_raw, crabel_result.get('pattern', ''))
 
+    _governed_rr_underlying = None
+    if (
+        structural_target is not None
+        and _governed_invalidation_spot is not None
+        and current_price > 0
+    ):
+        _governed_risk = abs(current_price - _governed_invalidation_spot)
+        if _governed_risk > 0:
+            _governed_rr_underlying = round(
+                abs(structural_target - current_price) / _governed_risk,
+                2,
+            )
+
     signal = {
         'ticker': ticker,
         'tier': tier,
@@ -1851,6 +1955,11 @@ def scan_ticker_ultimate(
         'prior_adjustment': prior_adj,                         # Enhancement 1: delta applied
         'prior_label': prior_label,                            # Enhancement 1: human label
         'lift_proxy_score': lift_proxy_score,                  # Enhancement 3 + Sprint A v2: 9-component ranking score
+        'macro_core_effective_delta': 0.0,
+        'macro_candidate_authority': 'NONE',
+        'macro_direction_authority': 'NONE',
+        'macro_capital_authority': 'ADVISORY_ONLY',
+        'macro_sector_advisory_score': _macro_sector_advisory_score,
         # ── SPRINT A: Abnormal Repricing & Candidate Lane ─────────────────
         'gap_pct':                   gap_pct,
         'range_pct':                 range_pct,
@@ -1919,11 +2028,15 @@ def scan_ticker_ultimate(
         'precor_transition_to':   _precor_trans_to,
         **prefixed_validation_fields(wyckoff_validation),
 
-        # DISC-01: swing_fusion outputs — direction + intent authority
-        # 'direction' is the canonical field consumed by the horizon router and EIL.
-        # Derived from fusion_direction → Wyckoff trade_direction → phase inference.
-        # LONG/BULLISH → CALL, SHORT/BEARISH → PUT, DISTRIBUTION/MARKDOWN → PUT.
-        'direction':             _candidate_direction,          # CALL or PUT — canonical
+        # Direction governance Stage 0. The thesis direction is frozen here;
+        # downstream stages may challenge/invalidate it but not silently flip it.
+        'discovery_direction_preliminary': _candidate_direction,
+        'discovery_direction_status': _discovery_direction_status,
+        'discovery_direction_basis': _discovery_direction_basis,
+        'direction':             _candidate_direction,
+        'direction_authority':   'DISCOVERY_GOVERNED',
+        'governed_invalidation_spot': _governed_invalidation_spot,
+        'governed_invalidation_source': _governed_invalidation_source,
         'fusion_direction':      fusion_result.get('direction',       'NONE'),
         'fusion_intent':         fusion_result.get('intent',          'OBSERVE_ONLY'),
         'fusion_alignment_score':round(float(fusion_result.get('alignment_score', 0.0)), 1),
@@ -1939,39 +2052,22 @@ def scan_ticker_ultimate(
         'asymmetry_target1':     asymmetry_result.get('target1'),
         # rr_underlying — structural price R:R (best available source)
         # Computed here once; all downstream modules read this field.
-        'rr_underlying': round(
-            abs(structural_target - current_price) /
-            max(current_price - structural_stop, 0.01)
-            if structural_target is not None
-            else (asymmetry_result.get('R_to_T1') or round((atr_14 * 3.0) / max(current_price - structural_stop, 0.01), 2)),
-            2
-        ),
+        'rr_underlying': _governed_rr_underlying,
         'rr_confidence': (
             'HIGH'   if _stop_source in ('ASYMMETRY_GATE',) and _target_source == 'ASYMMETRY_GATE'
             else 'MEDIUM' if _stop_source == 'WYCKOFF'
             else 'LOW'
         ),
-        'rr_source':   f'DISCOVERY_{_stop_source}_{_target_source}',
-        'rr':          round(  # backward-compat alias → rr_underlying
-            abs(structural_target - current_price) /
-            max(current_price - structural_stop, 0.01)
-            if structural_target is not None
-            else (asymmetry_result.get('R_to_T1') or round((atr_14 * 3.0) / max(current_price - structural_stop, 0.01), 2)),
-            2
-        ),
+        'rr_source':   f'DISCOVERY_{_governed_invalidation_source}_{_target_source}',
+        'rr':          _governed_rr_underlying,  # backward-compat alias
         
         # Precor data — reconciled (see _reconcile_intent below)
         'precor_phase': precor_data.get('wyckoff_phase', '') if precor_data else '',
-        'precor_intent': _reconcile_intent(
-            raw_intent=precor_data.get('intent', '') if precor_data else '',
-            precor_control=precor_data.get('control_state', '') if precor_data else '',
-            wyckoff_control=wyckoff_data.get('control_state', ''),
-            df=df,
-        ),
+        'precor_intent': _precor_intent,
         'precor_intent_raw': precor_data.get('intent', '') if precor_data else '',  # audit field
         'precor_control': precor_data.get('control_state', '') if precor_data else '',
         # Trend maturity fields — surfaced for Intelligence Lab and tier gating
-        'dominant_trend': _get_dominant_trend(df),
+        'dominant_trend': dominant_trend,
         'ema_stack': _get_ema_stack(df),
         'days_above_ema50': _days_above_ema50(df),
         'pct_from_52w_low': _pct_from_52w_low(df),
@@ -1988,11 +2084,8 @@ def scan_ticker_ultimate(
         
         'timestamp': datetime.now().isoformat(),
         
-        # Regime context (permanent — set by regime_threshold_injector at scan start)
-        # Tells you which macro regime was active when this signal was scored.
-        # Used for: post-run analysis, signal filtering, ML training labels.
-        # NOTE: 'macro_regime' is the canonical field name read by Vanguard and Edge Detector.
-        #       'active_regime' is retained as an audit/ML label alias — both are written.
+        # External regime snapshot is retained for display and later analysis.
+        # It has zero membership, direction, score or capital authority.
         'macro_regime': getattr(cfg, 'active_regime', 'UNKNOWN'),
         'active_regime': getattr(cfg, 'active_regime', 'UNKNOWN'),
         # DISC-02: VMS scanner context — injected from scanner_context_{run_id}.json
@@ -2239,10 +2332,9 @@ def main() -> None:
 
     cfg = UltimateConfig()
 
-    # === REGIME THRESHOLD INJECTION (permanent) ===
-    # Reads macro_intelligence_latest.json and adjusts tier floors,
-    # compression thresholds, and volume minimums based on current regime.
-    # Fail-safe: if macro file is missing or unreadable, TRANSITIONAL defaults apply.
+    # === MACRO ADVISORY INGESTION ===
+    # Reads macro context for display/lineage. Production tier, compression and
+    # volume thresholds are invariant to the file's presence or contents.
     try:
         from regime_threshold_injector import apply_regime_to_config
         macro_path = Path(__file__).resolve().parent / "dropbox" / "macro" / "macro_intelligence_latest.json"
@@ -2309,17 +2401,12 @@ def main() -> None:
         except Exception as _ve:
             logger.warning(f"⚠️  VMS context load failed: {_ve}")
 
-    # Regime diagnostic — critical for understanding tier floor activation
+    # Advisory macro diagnostic; it does not activate a different tier floor.
     active_regime = getattr(cfg, 'active_regime', 'UNKNOWN')
     active_regime_label = getattr(cfg, 'active_regime_label', active_regime)
     risk_off_floor = getattr(cfg, 'risk_off_composite_floor', 72.0)
     logger.info(f"📊 Active Regime       : {active_regime} ({active_regime_label})")
-    if active_regime == 'RISK_OFF':
-        logger.info(f"   Tier 1 floor       : {risk_off_floor} (RISK_OFF — scarcity mode)")
-    elif active_regime == 'TRANSITIONAL':
-        logger.info(f"   Tier 1 floor       : 68.0 (TRANSITIONAL)")
-    else:
-        logger.info(f"   Tier 1 floor       : 50.0 (RISK_ON — standard)")
+    logger.info(f"   Core macro authority: ADVISORY_ONLY; tier floors unchanged")
     logger.info("")
 
     universe_path = Path(args.universe)
@@ -2364,6 +2451,7 @@ def main() -> None:
     logger.info("-" * 80)
 
     all_signals = []
+    discovery_outcomes = []
     tickers_with_data = 0
     
     tier_counts = {0: 0, 1: 0, 2: 0, 3: 0}
@@ -2371,6 +2459,15 @@ def main() -> None:
     for i, t in enumerate(tickers, 1):
         df = load_bars(data_dir, t, polygon_fetcher, args.force_update, args.lookback_days)
         if df is None or df.empty:
+            discovery_outcomes.append({
+                "ticker": str(t).strip().upper(),
+                "outcome": "DROP",
+                "lifecycle_state": "DROPPED_TERMINAL_DATA",
+                "reason_code": "NO_PRICE_DATA",
+                "next_stage": "",
+                "horizon_bucket": "",
+                "tier": "",
+            })
             continue
         
         tickers_with_data += 1
@@ -2383,6 +2480,15 @@ def main() -> None:
             if _horizon is None:
                 # Genuine no-signal at any horizon — only legitimate discard
                 logger.debug("NO_SIGNAL_AT_ANY_HORIZON: %s", t)
+                discovery_outcomes.append({
+                    "ticker": str(t).strip().upper(),
+                    "outcome": "DROP",
+                    "lifecycle_state": "DROPPED_STAGE",
+                    "reason_code": "NO_SIGNAL_AT_ANY_HORIZON",
+                    "next_stage": "",
+                    "horizon_bucket": "",
+                    "tier": signal.get("tier", ""),
+                })
             else:
                 signal["horizon_bucket"] = _horizon
                 signal["discovery_basis"] = (
@@ -2393,12 +2499,30 @@ def main() -> None:
                 if _horizon in ("6_10d", "11_20d"):
                     signal.setdefault("opportunity_label", "WATCH_FOR_REGIME_FLIP")
                 all_signals.append(signal)
+                discovery_outcomes.append({
+                    "ticker": str(t).strip().upper(),
+                    "outcome": "SURVIVE",
+                    "lifecycle_state": "ACTIVE_CORE",
+                    "reason_code": "DISCOVERY_SURVIVOR",
+                    "next_stage": "PACKAGES",
+                    "horizon_bucket": _horizon,
+                    "tier": signal.get("tier", ""),
+                })
             # tier is an integer (0, 1, 2, 3)
             tier = signal['tier']
             if tier in tier_counts:
                 tier_counts[tier] += 1
         else:
             logger.debug("NO_SIGNAL_AT_ANY_HORIZON: %s", t)
+            discovery_outcomes.append({
+                "ticker": str(t).strip().upper(),
+                "outcome": "DROP",
+                "lifecycle_state": "DROPPED_STAGE",
+                "reason_code": "NO_SIGNAL_AT_ANY_HORIZON",
+                "next_stage": "",
+                "horizon_bucket": "",
+                "tier": "",
+            })
 
         if args.progress_every and i % int(args.progress_every) == 0:
             logger.info(
@@ -2413,6 +2537,20 @@ def main() -> None:
     out_early = out_dir / f"early_positions_ultimate_{ts}.csv"
     out_watchlist = out_dir / f"final_watchlist_ultimate_{ts}.csv"
     out_summary = out_dir / f"discovery_summary_ultimate_{ts}.json"
+    out_lifecycle = out_dir / f"discovery_lifecycle_{ts}.csv"
+
+    # CDS-3: exact stage reconciliation.  This is additive output only; current
+    # signal selection remains unchanged until governed gating is promoted.
+    pd.DataFrame(discovery_outcomes).to_csv(out_lifecycle, index=False)
+    _outcome_counts = {
+        name: sum(1 for row in discovery_outcomes if row["outcome"] == name)
+        for name in ("SURVIVE", "DROP", "ERROR")
+    }
+    if len(discovery_outcomes) != len(tickers):
+        raise RuntimeError(
+            "CDS-3 Discovery reconciliation failed: "
+            f"input={len(tickers)} outcomes={len(discovery_outcomes)}"
+        )
 
     # AG-06: Load activist signals and enrich candidates (advisory display only)
     activist_signals = _load_activist_signals()
@@ -2460,6 +2598,10 @@ def main() -> None:
             "candidate_ratio": round(len(all_signals) / len(tickers) * 100, 1) if tickers else 0,
             "early_ratio": round(tier_counts[0] / len(tickers) * 100, 1) if tickers else 0,
             "stale_ticker_count": stale_ticker_count,  # tickers that used STALE_CACHE fallback
+            "lifecycle_reconciled": len(discovery_outcomes) == len(tickers),
+            "lifecycle_survivors": _outcome_counts["SURVIVE"],
+            "lifecycle_drops": _outcome_counts["DROP"],
+            "lifecycle_errors": _outcome_counts["ERROR"],
         }, indent=2),
         encoding="utf-8",
     )
@@ -2478,6 +2620,7 @@ def main() -> None:
             "early_csv": str(out_early.name) if out_early.exists() else None,
             "watchlist_csv": str(out_watchlist.name) if out_watchlist.exists() else None,
             "summary_json": str(out_summary.name) if out_summary.exists() else None,
+            "lifecycle_csv": str(out_lifecycle.name) if out_lifecycle.exists() else None,
         },
         "counts": {
             "universe_size": len(tickers),
@@ -2487,6 +2630,9 @@ def main() -> None:
             "tier_1": tier_counts[1],
             "tier_2": tier_counts[2],
             "tier_3": tier_counts[3],
+            "lifecycle_survivors": _outcome_counts["SURVIVE"],
+            "lifecycle_drops": _outcome_counts["DROP"],
+            "lifecycle_errors": _outcome_counts["ERROR"],
         },
     }
     try:
@@ -2505,6 +2651,7 @@ def main() -> None:
     logger.info("")
     logger.info("Output Files:")
     logger.info(f"  {out_candidates.name}")
+    logger.info(f"  {out_lifecycle.name}")
     logger.info(f"  {out_early.name}")
     logger.info(f"  {out_watchlist.name}")
     logger.info("")

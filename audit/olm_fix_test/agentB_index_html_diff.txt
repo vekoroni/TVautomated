@@ -1,0 +1,11 @@
+--- backups/olm_blocker_remediation_prechange_20260829_2035/intelligence-lab/static/index.html	2026-08-29 19:24:10.240864200 +0100
++++ intelligence-lab/static/index.html	2026-08-29 20:56:54.725606300 +0100
+@@ -2346,7 +2346,7 @@
+       <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v ${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${displayCategory(s.quote_freshness||'UNKNOWN')} ${s.quote_as_of?'· '+htmlSafe(s.quote_as_of):''}</div></div>
+       <div class="m-field"><div class="mf-k">Canonical Quote Lineage</div><div class="mf-v sm">${htmlSafe(s.option_chain_provider||'MARKETDATA')} · ${htmlSafe(s.option_chain_resolution||s.live_options_resolution||'DIRECT')}<br><span class="dim">chain ${htmlSafe(String(s.option_chain_dataset_id||'unavailable').slice(0,16))} · exact ${htmlSafe(String(s.selected_quote_dataset_id||'unavailable').slice(0,16))}</span></div></div>
+       <div class="m-field"><div class="mf-k">Contract Changed</div><div class="mf-v ${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'a':'g'}">${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'YES':'NO'}${s.contract_selection_reason?' · '+htmlSafe(s.contract_selection_reason):''}</div></div>
+-      <div class="m-field"><div class="mf-k">Maturation 1 / 2 / 3 Sessions</div><div class="mf-v sm">${s.maturation_score_1d??'—'} / ${s.maturation_score_2d??'—'} / ${s.maturation_score_3d??'—'} · monitoring score, not probability</div></div>
++      <div class="m-field"><div class="mf-k">Maturation 1 / 2 / 3 Sessions</div><div class="mf-v sm">${s.maturation_score_1d??'—'} / ${s.maturation_score_2d??'—'} / ${s.maturation_score_3d??'—'} · monitoring estimate only — not a probability and cannot authorize entry</div></div>
+       <div class="m-field"><div class="mf-k">Moneyness / Delta Band</div><div class="mf-v sm">${displayCategory(s.moneyness_state||'UNKNOWN')} · ${displayCategory(s.delta_band||'UNKNOWN')}</div></div>
+     </div>
+     <div class="m-sec-hdr">GEX Levels</div>

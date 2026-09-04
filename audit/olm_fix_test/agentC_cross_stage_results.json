@@ -1,0 +1,66 @@
+[
+  {
+    "id": "T1",
+    "name": "Morning THESIS_INVALIDATED -> Gate BLOCK -> Lab BLOCKED",
+    "design_ref": "SS11.4 bullet 1",
+    "verdict": "PASS",
+    "detail": "fixture morning_transition_state=THESIS_INVALIDATED; gate final_action=BLOCK olm_guard_disposition=BLOCK olm_guard_reason=OLM_THESIS_INVALIDATED; lab_verdict=BLOCKED lab_tradeable=False",
+    "evidence": ""
+  },
+  {
+    "id": "T2",
+    "name": "Morning MOVE_ALREADY_REALIZED -> Gate BLOCK -> Lab BLOCKED",
+    "design_ref": "SS11.4 bullet 2",
+    "verdict": "PASS",
+    "detail": "fixture morning_transition_state=MOVE_ALREADY_REALIZED; gate final_action=BLOCK olm_guard_reason=OLM_MOVE_ALREADY_REALIZED; lab_verdict=BLOCKED",
+    "evidence": ""
+  },
+  {
+    "id": "T3",
+    "name": "Morning LIQUIDITY_STILL_PENDING -> Gate MANUAL_REVIEW -> Lab non-tradeable, visible",
+    "design_ref": "SS11.4 bullet 3",
+    "verdict": "PASS",
+    "detail": "fixture morning_transition_state=LIQUIDITY_STILL_PENDING liquidity_state=LIQUIDITY_PENDING; gate final_action=MANUAL_REVIEW; lab_verdict=MANUAL_REVIEW lab_tradeable=False row_present_in_output=True",
+    "evidence": ""
+  },
+  {
+    "id": "T4",
+    "name": "Replacement OCC w/o recomputed economics -> Gate CONTRACT_REPAIR -> Lab repair state",
+    "design_ref": "SS11.4 bullet 4",
+    "verdict": "PASS",
+    "detail": "fixture morning_transition_state=CONTRACT_REPRICE_REQUIRED (contract_changed=True, economics_recompute_complete=False); gate final_action=CONTRACT_REPAIR; lab_verdict=CONTRACT_REPAIR lab_tradeable=False",
+    "evidence": ""
+  },
+  {
+    "id": "T5",
+    "name": "Fully repriced coherent replacement -> existing gates decide normally (positive control)",
+    "design_ref": "SS11.4 bullet 5",
+    "verdict": "PASS",
+    "detail": "fixture morning_transition_state=EXECUTABLE_NOW (repriced replacement, coherent); gate final_action=BUY_NOW olm_guard_disposition=CONTINUE; lab_verdict=GO lab_tradeable=True",
+    "evidence": ""
+  },
+  {
+    "id": "T6",
+    "name": "Malformed BUY_NOW + THESIS_INVALIDATED caught by Lab defence-in-depth (bypasses execution_gate)",
+    "design_ref": "SS11.4 bullet 6 (SS7.3/SS5.1)",
+    "verdict": "PASS",
+    "detail": "forged input: final_action=BUY_NOW lab_verdict=GO lab_tradeable=True with morning_transition_state=THESIS_INVALIDATED; standalone guard disposition=BLOCK reason=OLM_THESIS_INVALIDATED; AFTER Lab defence-in-depth: lab_verdict=BLOCKED lab_tradeable=False final_action=BLOCK execution_lock_reason=OLM_THESIS_INVALIDATED",
+    "evidence": ""
+  },
+  {
+    "id": "T7",
+    "name": "Final opportunity book retains exact contract and quote lineage",
+    "design_ref": "SS11.4 bullet 7",
+    "verdict": "PASS",
+    "detail": "gated contract=TESTC260918C00100000 bid=2.00 ask=2.05; lab row selected_contract_symbols/contract field=[\"TESTC260918C00100000\"] contract_bid=2.0 contract_ask=2.05 quote_as_of=2026-08-29T21:01:49Z",
+    "evidence": ""
+  },
+  {
+    "id": "T8",
+    "name": "Pipeline Interpreter handoff blocks on actionable lifecycle contradiction",
+    "design_ref": "SS11.4 bullet 8 (SS7.4)",
+    "verdict": "PASS",
+    "detail": "pre-corruption execution_gate final_action=BUY_NOW (positive control confirmed); finalize_morning_handoff raised MorningHandoffError=True; message=Execution Gate -> Intelligence Lab authority reconciliation failed: AGTC8:ACTION_BUY_NOW_EXPECTED_GO_GOT_BLOCKED; AGTC8:FINAL_ACTION_LOST:BUY_NOW->BLOCK",
+    "evidence": ""
+  }
+]

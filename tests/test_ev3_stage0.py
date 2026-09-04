@@ -62,14 +62,21 @@ def test_validator_rejects_unresolved_direction_before_economics() -> None:
 
 
 def test_validator_accepts_current_resolved_arbitration_vocabularies() -> None:
-    for status in ("AGREEMENT", "NO_PROBABILITY_OPINION"):
+    for status in ("AGREEMENT", "NO_PROBABILITY_OPINION", "CONFLICT_STRUCTURE_LEADS"):
         row = _valid_row()
         row["direction_status"] = status
-        assert validate_ev3_input(row, now_utc="2026-08-10T12:05:00Z").accepted is True
+        result = validate_ev3_input(row, now_utc="2026-08-10T12:05:00Z")
+        assert result.accepted is True
+        assert result.canonical["direction_resolution_status"] == "RESOLVED"
 
-    conflict = _valid_row()
-    conflict["direction_status"] = "CONFLICT_STRUCTURE_LEADS"
-    assert validate_ev3_input(conflict, now_utc="2026-08-10T12:05:00Z").reason_code == "REJECT_DIRECTION_UNRESOLVED"
+
+def test_validator_routes_non_directional_strategy_outside_directional_ev3() -> None:
+    row = _valid_row()
+    row["canonical_direction"] = "STRANGLE"
+    result = validate_ev3_input(row, now_utc="2026-08-10T12:05:00Z")
+    assert result.accepted is False
+    assert result.reason_code == "NOT_APPLICABLE_NON_DIRECTIONAL"
+    assert result.canonical["direction_resolution_status"] == "NON_DIRECTIONAL"
 
 
 def test_validator_rejects_bad_topology_and_unit_move() -> None:
@@ -91,6 +98,15 @@ def test_validator_does_not_derive_horizon_from_dte() -> None:
     assert result.canonical["planned_hold_sessions"] == 10
 
 
+def test_validator_requires_governed_horizon_endpoint() -> None:
+    row = _valid_row()
+    row["planned_hold_sessions"] = 8
+    result = validate_ev3_input(row, now_utc="2026-08-10T12:05:00Z")
+    assert not result.accepted
+    assert result.reason_code == "REJECT_HORIZON"
+    assert "requires endpoint=10" in result.detail
+
+
 def test_dataframe_diagnostics_are_stable_and_complete() -> None:
     invalid = _valid_row()
     invalid["direction_status"] = "NOT_EVALUATED"
@@ -109,7 +125,17 @@ def test_validator_enforces_freshness_spread_dte_and_multiplier() -> None:
     spread = _valid_row()
     spread["contract_bid"] = 0.1
     spread["contract_ask"] = 1.0
-    assert validate_ev3_input(spread, now_utc="2026-08-10T12:05:00Z").reason_code == "REJECT_UNIT_SPREAD"
+    assert validate_ev3_input(spread, now_utc="2026-08-10T12:05:00Z").accepted
+
+    zero_bid = _valid_row()
+    zero_bid["contract_bid"] = 0.0
+    assert validate_ev3_input(zero_bid, now_utc="2026-08-10T12:05:00Z").reason_code == "REJECT_LIQUIDITY_ZERO_BID"
+
+    invalid_market = _valid_row()
+    invalid_market["contract_ask"] = 0.0
+    assert validate_ev3_input(
+        invalid_market, now_utc="2026-08-10T12:05:00Z"
+    ).reason_code == "REJECT_QUOTE_INVALID_MARKET"
 
     dte = _valid_row()
     dte["contract_dte"] = 10

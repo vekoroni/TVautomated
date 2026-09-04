@@ -1,0 +1,12 @@
+{
+  "module": "backup",
+  "target_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\olm_blocker_remediation_prechange_20260829_2035\\scripts\\avshunter_options_intelligence.py",
+  "EV3_MIN_OPEN_INTEREST": 50,
+  "EV3_MIN_VOLUME": 1,
+  "oi5_vol2_candidate_count": 0,
+  "oi5_vol2_retained": false,
+  "oi_at_threshold_candidate_count": 1,
+  "oi0_vol0_candidate_count": 0,
+  "oi0_vol0_retained": false,
+  "oi5_vol2_record": null
+}

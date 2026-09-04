@@ -1,0 +1,58 @@
+--- a/canonical_data/registry.py
++++ b/canonical_data/registry.py
+@@ -25,7 +25,7 @@
+ from .errors import DatasetValidationError
+ 
+ 
+-SCHEMA_VERSION = "cds_control_plane_v1"
++SCHEMA_VERSION = "cds_control_plane_v2"
+ REQUIRED_TABLES = frozenset(
+     {
+         "schema_metadata",
+@@ -149,6 +149,11 @@
+                     reason TEXT NOT NULL DEFAULT '',
+                     started_at TEXT NOT NULL,
+                     completed_at TEXT,
++                    invocation_id TEXT NOT NULL DEFAULT '',
++                    evidence_cutoff_utc TEXT,
++                    exchange_calendar TEXT NOT NULL DEFAULT 'XNYS',
++                    evidence_state TEXT NOT NULL DEFAULT 'COMPLETED_SESSION',
++                    request_fingerprint TEXT NOT NULL DEFAULT '',
+                     FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                     FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
+                 );
+@@ -157,6 +162,34 @@
+                     ON api_request_ledger(run_id, stage, ticker);
+                 """
+             )
++            existing_columns = {
++                row[1]
++                for row in connection.execute("PRAGMA table_info(api_request_ledger)")
++            }
++            ledger_columns = {
++                "invocation_id": "TEXT NOT NULL DEFAULT ''",
++                "evidence_cutoff_utc": "TEXT",
++                "exchange_calendar": "TEXT NOT NULL DEFAULT 'XNYS'",
++                "evidence_state": "TEXT NOT NULL DEFAULT 'COMPLETED_SESSION'",
++                "request_fingerprint": "TEXT NOT NULL DEFAULT ''",
++            }
++            for column, definition in ledger_columns.items():
++                if column not in existing_columns:
++                    connection.execute(
++                        f"ALTER TABLE api_request_ledger ADD COLUMN {column} {definition}"
++                    )
++            connection.execute(
++                "UPDATE api_request_ledger SET invocation_id = run_id "
++                "WHERE invocation_id = ''"
++            )
++            connection.execute(
++                "UPDATE api_request_ledger SET request_fingerprint = "
++                "'LEGACY:' || request_id WHERE request_fingerprint = ''"
++            )
++            connection.execute(
++                "CREATE INDEX IF NOT EXISTS idx_request_ledger_invocation "
++                "ON api_request_ledger(invocation_id, stage, ticker)"
++            )
+             connection.execute(
+                 "INSERT OR IGNORE INTO schema_metadata(schema_version, installed_at) "
+                 "VALUES (?, ?)",

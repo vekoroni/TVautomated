@@ -1,6 +1,6 @@
 """
 Tests for four directional-bias fixes:
-  Task 1 — put_gate / do_not_unblock_put_gate enforcement
+  Task 1 — put_gate / do_not_unblock_put_gate advisory-only handling
   Task 2 — Wyckoff momentum override (C/D → B when ROC>30% and price>EMA50)
   Task 3 — Slate-level MITIGATED_REQUIRES_CONFIRMATION >50% haircut
   Task 4 — ATR-relative drift gate in morning_thesis_validator
@@ -46,7 +46,7 @@ def _write_json(path: Path, data: dict) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Task 1 — put_gate / do_not_unblock_put_gate enforcement
+# Task 1 — put_gate / do_not_unblock_put_gate advisory-only handling
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _build_macro_with_theme(do_not_unblock: bool) -> dict:
@@ -128,29 +128,42 @@ def _run_normalise(row: dict) -> dict:
     return mod._normalise_audit_handoff_fields(row)
 
 
-def test_put_gate_blocked_upgrades_conflict_status():
-    """PUT direction + BLOCKED put permission → MITIGATED_REQUIRES_CONFIRMATION."""
-    row = _make_row_for_normalise(macro_enrichment_put_gate_permission="BLOCKED")
+def test_no_pcr_conflict_literal_does_not_create_conflict():
+    """NO_PCR_CONFLICT must not match the positive CONFLICT classifier."""
+    result = _run_normalise(_make_row_for_normalise())
+    assert result["pcr_direction_conflict_status"] == "NO_PCR_CONFLICT"
+    assert result["direction_conflict_status"] == "NO_CONFLICT"
+
+
+def test_put_gate_blocked_is_advisory_only():
+    """Legacy BLOCKED macro PUT permission must not alter trade authority."""
+    row = _make_row_for_normalise(
+        macro_enrichment_put_gate_permission="BLOCKED",
+        pcr_direction_conflict_status="PCR_CONFIRMED",
+    )
     result = _run_normalise(row)
-    assert result["direction_conflict_status"] == "MITIGATED_REQUIRES_CONFIRMATION", \
+    assert result["direction_conflict_status"] == "NO_CONFLICT", \
         f"Got: {result['direction_conflict_status']}"
-    assert "PUT_GATE_BLOCKED" in result.get("direction_conflict_reason", ""), \
-        f"Expected PUT_GATE_BLOCKED in reason: {result.get('direction_conflict_reason')}"
-    print("PASS: BLOCKED put_gate upgrades PUT candidate to MITIGATED_REQUIRES_CONFIRMATION")
+    assert result.get("macro_directional_context") == "HEADWIND"
+    assert result.get("macro_directional_context_reason") == "PUT_MACRO_BLOCKED"
+    assert result.get("macro_capital_authority") == "ADVISORY_ONLY"
+    print("PASS: BLOCKED put_gate is retained as advisory macro headwind")
 
 
-def test_put_gate_delta_lock_in_enrichment_confs():
-    """PUT direction + PUT_GATE_DELTA_LOCK in enrichment confirmations → MITIGATED."""
+def test_put_gate_delta_lock_is_advisory_only():
+    """PUT_GATE_DELTA_LOCK is context and cannot create a direction conflict."""
     row = _make_row_for_normalise(
         macro_enrichment_put_gate_permission="",
         macro_enrichment_confirmation_required='["PUT_GATE_DELTA_LOCK","OTHER"]',
+        pcr_direction_conflict_status="PCR_CONFIRMED",
     )
     result = _run_normalise(row)
-    assert result["direction_conflict_status"] == "MITIGATED_REQUIRES_CONFIRMATION", \
+    assert result["direction_conflict_status"] == "NO_CONFLICT", \
         f"Got: {result['direction_conflict_status']}"
-    assert "PUT_GATE_DELTA_LOCK" in result.get("direction_conflict_reason", ""), \
-        f"Expected PUT_GATE_DELTA_LOCK in reason: {result.get('direction_conflict_reason')}"
-    print("PASS: PUT_GATE_DELTA_LOCK in enrichment confs upgrades conflict status")
+    assert result.get("macro_directional_context") == "HEADWIND"
+    assert result.get("macro_directional_context_reason") == "PUT_MACRO_DELTA_LOCK"
+    assert result.get("macro_capital_authority") == "ADVISORY_ONLY"
+    print("PASS: PUT_GATE_DELTA_LOCK is retained as advisory macro headwind")
 
 
 def test_call_direction_not_affected():
@@ -436,11 +449,11 @@ def test_atr_drift_gate_floor_low_atr():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    print("\n=== Task 1: put_gate / do_not_unblock_put_gate enforcement ===")
+    print("\n=== Task 1: put_gate / do_not_unblock_put_gate advisory context ===")
     test_put_gate_delta_lock_added_when_flag_true()
     test_put_gate_delta_lock_absent_when_flag_false()
-    test_put_gate_blocked_upgrades_conflict_status()
-    test_put_gate_delta_lock_in_enrichment_confs()
+    test_put_gate_blocked_is_advisory_only()
+    test_put_gate_delta_lock_is_advisory_only()
     test_call_direction_not_affected()
     test_unresolved_not_overridden()
 

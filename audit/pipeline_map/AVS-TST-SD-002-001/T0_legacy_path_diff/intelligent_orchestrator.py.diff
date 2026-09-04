@@ -1,0 +1,190 @@
+--- a/intelligent_orchestrator.py
++++ b/intelligent_orchestrator.py
+@@ -431,7 +431,11 @@
+     APPLY_MACRO_ENRICHMENT_DISCOVERY = SCRIPTS_DIR / "apply_macro_enrichment_to_discovery.py"
+     APPLY_EXTERNAL_INTEL_REVIEW_LANE = SCRIPTS_DIR / "apply_external_intel_review_lane.py"
+     BACKFILL_TIMESERIES = SCRIPTS_DIR / "backfill_timeseries_into_packages.py"
++    BUILD_COMPLETED_PROFILES = SCRIPTS_DIR / "build_completed_market_profiles.py"
+     RUN_VANGUARD        = SCRIPTS_DIR / "run_vanguard_from_packages.py"
++    COMPLETED_PROFILE_ENABLED = os.environ.get(
++        "AVSHUNTER_COMPLETED_PROFILE_ENABLED", "0"
++    ).strip().lower() in {"1", "true", "yes", "on"}
+ 
+     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
+     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
+@@ -962,6 +966,8 @@
+         "Backfill Timeseries": cfg.BACKFILL_TIMESERIES,
+         "Run VANGUARD":        cfg.RUN_VANGUARD,
+     }
++    if cfg.COMPLETED_PROFILE_ENABLED:
++        required["Completed Market Profile"] = cfg.BUILD_COMPLETED_PROFILES
+     optional = {
+         "Position Tracker":          cfg.POSITION_TRACKER,
+         "Premarket Intel":           cfg.PREMARKET_INTEL,
+@@ -2400,6 +2406,25 @@
+         )
+         return False
+ 
++    # AVS-SD-002 Phase 4: build a completed-session profile from canonical
++    # intraday bars before Vanguard. Disabled until controlled promotion; when
++    # enabled, every package is explicitly marked governed so Vanguard cannot
++    # fall back to daily-as-intraday profile fabrication.
++    if cfg.COMPLETED_PROFILE_ENABLED:
++        from canonical_data import session_snapshot as _profile_session_snapshot
++        _profile_session = _profile_session_snapshot(datetime.now(timezone.utc)).last_completed_session
++        _profile_cmd = [
++            sys.executable, str(cfg.BUILD_COMPLETED_PROFILES),
++            "--run-id", run_id,
++            "--session-date", _profile_session.isoformat(),
++            "--interval-minutes", "5",
++        ]
++        if not _run("Build Completed Market Profiles", _profile_cmd, critical=True):
++            logger.error("VANGUARD pipeline aborted: governed completed-profile stage failed")
++            return False
++    else:
++        logger.info("Phase 4 completed Market Profile integration is built but not yet promoted")
++
+     # ── Phase 5.5 — Trap-to-Launch Engine enrichment ─────────────────────────
+     # Standalone enrichment: reads packages, writes tle_ fields, never blocks pipeline.
+     try:
+@@ -6217,6 +6242,12 @@
+     parser.add_argument("--evening",   action="store_true", help="Run evening workflow (discovery → VANGUARD → EIL → Kelly → EOD candidate manifest)")
+     parser.add_argument("--morning",   action="store_true", help="Run morning validation at 09:45 ET (live data scoring against EOD candidates)")
+     parser.add_argument("--premarket", action="store_true", help="[DEPRECATED] Use --morning instead")
++    parser.add_argument("--auto", action="store_true", help="Resolve and execute the governed run-anytime action (feature-flagged)")
++    parser.add_argument("--finalise", action="store_true", help="Explicitly finalise provider-confirmed completed-session data (feature-flagged)")
++    parser.add_argument("--replay", action="store_true", help="Resolve an offline research replay plan; live execution is not permitted")
++    parser.add_argument("--plan-only", action="store_true", help="Print the dynamic RunPlan without provider calls or filesystem changes")
++    parser.add_argument("--as-of-utc", default=None, help="Timezone-aware ISO-8601 dispatcher clock; intended for deterministic replay/testing")
++    parser.add_argument("--provider-session-finalised", action="store_true", help="Confirm the provider has published the completed current session")
+     parser.add_argument("--force",     action="store_true", help="Bypass market hours guard -- allow --evening during market hours (CAUTION: intraday data produces corrupted EOD candidates)")
+     parser.add_argument(
+         "--data-mode",
+@@ -6256,8 +6287,15 @@
+ 
+     args = parser.parse_args()
+ 
+-    if args.evening or args.morning or args.premarket:
+-        cds_runtime = configure_cds_runtime_for_orchestrator()
++    dynamic_requested = args.auto or args.finalise or args.replay or args.plan_only
++    if args.evening or args.morning or args.premarket or args.auto or args.finalise:
++        if args.plan_only:
++            cds_runtime = None
++        else:
++            cds_runtime = configure_cds_runtime_for_orchestrator()
++    else:
++        cds_runtime = None
++    if cds_runtime is not None:
+         logger.info(
+             "CDS-2 orchestrator runtime: enabled=%s write_through=%s mode=%s",
+             cds_runtime["enabled"],
+@@ -6301,7 +6339,99 @@
+             logger.info("CDS-2 orchestrator startup self-test: PASS")
+             sys.exit(0)
+ 
+-    if args.evening:
++    if dynamic_requested or os.environ.get("AVSHUNTER_DYNAMIC_PLAN_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}:
++        from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
++        from orchestrator.dynamic_dispatcher import (
++            execute_dispatch_plan,
++            operator_summary,
++            persist_dispatch_plan,
++            requested_action_from_cli,
++            resolve_dispatch_plan,
++        )
++
++        try:
++            requested_action = requested_action_from_cli(
++                evening=args.evening,
++                morning=args.morning,
++                premarket=args.premarket,
++                auto=args.auto,
++                finalise=args.finalise,
++                replay=args.replay,
++            )
++            if args.as_of_utc:
++                raw_as_of = args.as_of_utc.strip().replace("Z", "+00:00")
++                as_of_utc = datetime.fromisoformat(raw_as_of)
++                if as_of_utc.tzinfo is None:
++                    raise ValueError("--as-of-utc must include a timezone")
++                as_of_utc = as_of_utc.astimezone(timezone.utc)
++            else:
++                as_of_utc = datetime.now(timezone.utc)
++            if requested_action.value == "AUTO" and args.data_mode != "EOD":
++                raise ValueError("AUTO production dispatch cannot use research-only LATEST data mode")
++            plan, selected_thesis = resolve_dispatch_plan(
++                output_dir=cfg.OUTPUT_DIR,
++                requested_action=requested_action,
++                as_of_utc=as_of_utc,
++                run_id=args.run_id,
++                provider_session_finalised=args.provider_session_finalised,
++            )
++            logger.info(operator_summary(plan, selected_thesis))
++            if args.plan_only:
++                print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))
++                success = True
++            else:
++                flags = DynamicSessionFeatureFlags.from_environment()
++                if not flags.plan_engine:
++                    raise RuntimeError("dynamic plan execution requires AVSHUNTER_DYNAMIC_PLAN_ENABLED=1")
++                if requested_action.value == "AUTO" and not flags.auto_dispatcher:
++                    raise RuntimeError("AUTO dispatch requires AVSHUNTER_DYNAMIC_AUTO_ENABLED=1")
++                if plan.resolved_action == "BUILD_THESIS" and not flags.completed_thesis_builder:
++                    raise RuntimeError("thesis build requires AVSHUNTER_DYNAMIC_THESIS_ENABLED=1")
++                if plan.resolved_action == "VALIDATE" and not flags.validation_gate:
++                    raise RuntimeError("validation requires AVSHUNTER_DYNAMIC_VALIDATION_ENABLED=1")
++                if plan.resolved_action == "FINALISE":
++                    if not args.provider_session_finalised:
++                        raise RuntimeError("FINALISE requires --provider-session-finalised")
++                    if not flags.completed_thesis_builder or not flags.profile_lifecycle:
++                        raise RuntimeError("FINALISE requires dynamic thesis and profile lifecycle flags")
++                if plan.resolved_action == "REPLAY":
++                    raise RuntimeError("REPLAY is research-only and must use the offline replay runner")
++                plan_path, inserted = persist_dispatch_plan(
++                    plan,
++                    output_dir=cfg.OUTPUT_DIR,
++                    plan_store_path=cfg.BASE_DIR / "data" / "canonical" / "run_plans.sqlite",
++                )
++                logger.info(
++                    "Dynamic plan persisted before execution: %s (%s)",
++                    plan_path,
++                    "new" if inserted else "idempotent reuse",
++                )
++
++                def _build(planned):
++                    return evening_workflow(
++                        run_id=planned.pipeline_run_id,
++                        min_universe=args.min_universe,
++                        target_universe=args.target_universe,
++                        universe_gate_mode=args.universe_gate_mode,
++                        force=args.force,
++                        universe_override=Path(args.universe).resolve() if args.universe else None,
++                        data_mode="EOD",
++                    )
++
++                callbacks = {
++                    "BUILD_THESIS": _build,
++                    "FINALISE": _build,
++                    "VALIDATE": lambda planned: premarket_workflow(
++                        run_id=planned.pipeline_run_id
++                    ),
++                }
++                dispatch = execute_dispatch_plan(plan, callbacks=callbacks)
++                logger.info("Dynamic dispatcher: %s", dispatch.message)
++                success = dispatch.success
++        except Exception as dynamic_error:
++            logger.error("Dynamic dispatcher failed closed: %s", dynamic_error)
++            success = False
++    elif args.evening:
+         success = evening_workflow(
+             run_id=args.run_id,
+             min_universe=args.min_universe,
+@@ -6316,7 +6446,7 @@
+             logger.warning("⚠️  --premarket is deprecated. Use --morning instead.")
+         success = premarket_workflow(run_id=args.run_id)
+     else:
+-        logger.error("Must specify --evening or --morning")
++        logger.error("Must specify --evening, --morning or --auto")
+         logger.error("  python intelligent_orchestrator.py --evening")
+         logger.error("  python intelligent_orchestrator.py --morning")
+         success = False

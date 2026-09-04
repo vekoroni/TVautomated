@@ -1,0 +1,19 @@
+{
+  "claim_id": "AVS-SD-002-PHASE5-20260903",
+  "phase": 5,
+  "status": "CODE_COMPLETE_FLAG_OFF",
+  "focused_tests": {"passed": 13, "failed": 0},
+  "compatibility_tests": {"passed": 58, "failed": 0, "skipped": 1, "subtests_passed": 3},
+  "production_enabled": false,
+  "feature_flag": "AVSHUNTER_DYNAMIC_VALIDATION_ENABLED",
+  "backup": "backups/avs_sd_002_rev1_1_phase5_prechange_20260903_163000",
+  "authority_invariants": {
+    "validation_can_reverse_direction": false,
+    "profile_can_grant_capital": false,
+    "final_capital_authority": "EXECUTION_GATE"
+  },
+  "known_preexisting_test_contract_drift": [
+    "test_blank_primary_contract_promotes_live_repair_alternative",
+    "test_composite_repair_is_hydrated_but_not_promoted_to_production"
+  ]
+}

@@ -533,7 +533,7 @@ class StateVectorCalculator:
         
         # POC positioning (from auction)
         poc = auction.profile.poc
-        pct_from_poc = (current_price - poc) / poc if poc > 0 else 0
+        pct_from_poc = (current_price - poc) / poc if poc is not None and poc > 0 else 0
         
         # Position in value area
         position = auction.acceptance.position_in_profile
@@ -727,49 +727,14 @@ class StateVectorCalculator:
         }
         
     def _calculate_macro_regime(self, macro: 'MacroData') -> Dict:
-        """
-        Overall market regime — ENHANCEMENT 2 (2026-04-16):
-        Sub-classify TRANSITIONAL into BULLISH / BEARISH / NEUTRAL variants
-        using VIX level, SPY trend, and macro JSON sub-fields where available.
-
-        This doubles actuarial pool precision. TRANSITIONAL was previously
-        applied to 100% of signals (run 20260415: all 1,475 candidates),
-        meaning regime conditioning provided zero discriminating information.
-
-        Sub-regime mapping:
-          RISK_ON                — VIX < 15 and SPY uptrend (unchanged)
-          RISK_OFF               — VIX > 25 or SPY downtrend (unchanged)
-          TRANSITIONAL_BULLISH   — TRANSITIONAL + SPY above 20d MA + VIX falling
-          TRANSITIONAL_BEARISH   — TRANSITIONAL + SPY below 20d MA or VIX rising
-          TRANSITIONAL_NEUTRAL   — TRANSITIONAL + mixed signals
-        """
-        vix_pct = self._percentile(macro.vix, macro.vix_history) if macro.vix_history else 50.0
-
-        # Primary regime (unchanged thresholds)
-        if macro.vix < 15 and macro.spy_trend == "UP":
-            regime = "RISK_ON"
-        elif macro.vix > 25 or macro.spy_trend == "DOWN":
-            regime = "RISK_OFF"
-        else:
-            # ENHANCEMENT 2: sub-classify TRANSITIONAL
-            # Use SPY trend and VIX direction as the two split dimensions.
-            # vix_history[-1] vs vix_history[-5] detects rising/falling.
-            _spy_bullish = (macro.spy_trend == "UP")
-
-            _vix_falling = False
-            if macro.vix_history and len(macro.vix_history) >= 5:
-                _vix_falling = float(macro.vix) < float(macro.vix_history[-5])
-
-            if _spy_bullish and _vix_falling:
-                regime = "TRANSITIONAL_BULLISH"   # tailwind for longs
-            elif not _spy_bullish or (macro.vix_history and not _vix_falling and macro.vix > 20):
-                regime = "TRANSITIONAL_BEARISH"   # headwind for longs
-            else:
-                regime = "TRANSITIONAL_NEUTRAL"   # indeterminate
-
+        """Return the macro-agnostic compatibility bucket for core scoring."""
+        # External macro is a separately refreshed advisory system.  The
+        # Vanguard core uses one deterministic neutral compatibility bucket;
+        # calibrated ticker/market features may be introduced later under a
+        # separately versioned model, but narrative macro cannot move floors.
         return {
-            'regime': regime,
-            'vix_percentile': vix_pct,
+            'regime': 'TRANSITIONAL',
+            'vix_percentile': 50.0,
         }
         
     def _percentile(self, value: float, history: list) -> float:
@@ -867,9 +832,8 @@ class StateVectorCalculator:
         wyckoff_phase_bucket separates ACCUMULATION (A/B/C) from MARKUP (D/E)
         from DISTRIBUTION — the single most impactful dimension for options buyers.
 
-        macro_regime separates RISK_ON from RISK_OFF historical pools.
-        Phase D setups in RISK_ON have materially different win rates than
-        Phase D setups in RISK_OFF — they must not be pooled.
+        macro_regime is retained as a compatibility dimension but is fixed to
+        TRANSITIONAL by the macro-agnostic production policy.
 
         BACKWARD COMPATIBILITY: DB rows without wyckoff_phase_bucket will not
         match Stage 1 filter — actuarial_query falls back to Stage 2 (4-dim).

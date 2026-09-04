@@ -1,0 +1,245 @@
+{
+  "release_id": "AVS-SD-002-REV1.1",
+  "assessed_at_utc": "2026-09-03T16:33:48.713710+00:00",
+  "status": "NOT_READY",
+  "gate_results": [
+    {
+      "gate_id": "G01_P0_BLOCKERS_CLOSED",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "P0-01 through P0-07 are re-certified closed offline. P0-08 remains open until the accepted completed-session, premarket, RTH and after-hours live cycle closes G18 and G19."
+    },
+    {
+      "gate_id": "G02_SINGLE_SESSION_CLOCK",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "All dynamic entry-point tests use canonical_data.session_clock."
+    },
+    {
+      "gate_id": "G03_SEPARATE_EVIDENCE_IDENTITIES",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Completed, developing and current evidence identities pass the integrated contract pack."
+    },
+    {
+      "gate_id": "G04_DETERMINISTIC_AUTO_PLAN",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Fixed-cutoff plan hashes are deterministic across closed, premarket, RTH, after-hours and weekend cases."
+    },
+    {
+      "gate_id": "G05_CURRENT_THESIS_REUSE",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "A current thesis resolves to validation/reuse without full-universe construction."
+    },
+    {
+      "gate_id": "G06_NO_PREMARKET_PROFILE_FABRICATION",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Premarket plans contain no DEVELOPING_MARKET_PROFILE stage."
+    },
+    {
+      "gate_id": "G07_RTH_MISSING_INTERVALS_ONLY",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Exact-cache and partial-cache tests prove zero requests and missing-range-only estimates."
+    },
+    {
+      "gate_id": "G08_PROVIDER_CONFIRMED_FINALISATION",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "After-hours AUTO remains validation until provider finalisation is true."
+    },
+    {
+      "gate_id": "G09_RESTART_AND_SCOPE_IDENTITY",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Idempotent retry and immutable plan/invocation identity tests pass."
+    },
+    {
+      "gate_id": "G10_MACRO_ADVISORY_AND_REFRESHABLE",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Authority tests preserve macro as advisory and outside capital authority."
+    },
+    {
+      "gate_id": "G11_FROZEN_DIRECTION_HORIZON_GEOMETRY",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Frozen thesis mutation and direction reversal tests pass."
+    },
+    {
+      "gate_id": "G12_CURRENT_PRICE_TRANSITION_ONLY",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Current price can confirm, defer or invalidate but cannot reverse direction."
+    },
+    {
+      "gate_id": "G13_QUOTE_REQUIRED_ONLY_FOR_EXECUTION",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Underlying validation survives missing quote while immediate execution remains quote-gated."
+    },
+    {
+      "gate_id": "G14_LAB_INTERPRETER_EVENT_PARITY",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Lab/Interpreter materialisation is bound to the same validation_event_id and fails on mismatch."
+    },
+    {
+      "gate_id": "G15_POPULATION_AND_REQUEST_RECONCILIATION",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "Population invariants, worklist restrictions and provider request accounting pass focused contracts."
+    },
+    {
+      "gate_id": "G16_REPLAY_NO_FUTURE_DATA",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_results_20260903.xml",
+          "sha256": "1bf91e6f6a508692515805093873b3a3330ba95f21030e9fcbe360d42114a251"
+        }
+      ],
+      "detail": "REPLAY resolves to research-only with no provider requirements or capital authority."
+    },
+    {
+      "gate_id": "G17_NO_UNEXPLAINED_P0_P1_REGRESSIONS",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_full_regression_20260903.xml",
+          "sha256": "b48960ed992c41f570976c5833fd4ae58f5dc031296189af8174555b97e9e328"
+        },
+        {
+          "path": "audit/pipeline_map/dynamic_phase8_qa_rca_regression_20260903.xml",
+          "sha256": "d955976215772ef4f9149a7108187c71ca8ae33b2f85ade69a9bfa9bbd3b72da"
+        }
+      ],
+      "detail": "Current-state production acceptance matrix after contract/fixture reconciliation: 900 passed, 1 skipped, 43 subtests passed, 0 failed (877 top-level plus 23 active QA/RCA). The recursive MSI audit characterization pack is preserved separately and excluded because it intentionally asserts obsolete or unimplemented behavior."
+    },
+    {
+      "gate_id": "G18A_LIVE_COMPLETED_THESIS",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "Fresh dynamic completed-thesis cycle required."
+    },
+    {
+      "gate_id": "G18B_LIVE_PREMARKET_VALIDATION",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "Fresh dynamic premarket validation required."
+    },
+    {
+      "gate_id": "G18C_LIVE_RTH_VALIDATION",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "Fresh dynamic regular-session validation and developing profile required."
+    },
+    {
+      "gate_id": "G18D_LIVE_AFTER_HOURS_FINALISATION",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "Fresh provider-confirmed after-hours finalisation required."
+    },
+    {
+      "gate_id": "G19_RUNTIME_API_DISK_BUDGET",
+      "status": "NOT_RUN",
+      "artifacts": [],
+      "detail": "Live cold/warm runtime, physical request and disk-growth budget requires the accepted live cycle."
+    },
+    {
+      "gate_id": "G20_BACKUP_RESTORE_VERIFIED",
+      "status": "PASS",
+      "artifacts": [
+        {
+          "path": "backups/avs_sd_002_rev1_1_phase0_prechange_20260903_133546/restore_verification.json",
+          "sha256": "f726abb29a14b823b542afac4b96ae8229a30dccbd1d0513bab71a591d278f6c"
+        }
+      ],
+      "detail": "Three SQLite baselines restored in isolation with identical hashes, integrity_check=ok and matching table populations."
+    }
+  ],
+  "missing_gates": [],
+  "failed_gates": [
+    "G01_P0_BLOCKERS_CLOSED",
+    "G18A_LIVE_COMPLETED_THESIS",
+    "G18B_LIVE_PREMARKET_VALIDATION",
+    "G18C_LIVE_RTH_VALIDATION",
+    "G18D_LIVE_AFTER_HOURS_FINALISATION",
+    "G19_RUNTIME_API_DISK_BUDGET"
+  ],
+  "invalid_artifacts": [],
+  "live_cycle_complete": false
+}

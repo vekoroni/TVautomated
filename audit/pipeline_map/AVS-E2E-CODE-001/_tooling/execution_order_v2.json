@@ -1,0 +1,720 @@
+{
+ "run_phase_9c": [
+  {
+   "line": 3659,
+   "kind": "INLINE_IMPORT",
+   "detail": "from trade_book_builder import build_and_write"
+  },
+  {
+   "line": 3677,
+   "kind": "REPO_MODULE_CALL",
+   "call": "build_and_write",
+   "resolves_to": "trade_book_builder.build_and_write",
+   "src": "result = build_and_write("
+  }
+ ],
+ "evening_workflow": [
+  {
+   "line": 3790,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "merge_scanner_inputs",
+   "resolves_to": "intelligent_orchestrator.merge_scanner_inputs",
+   "src": "_scanner = merge_scanner_inputs(load_scanner_manifest(), load_manual_ticker_upload())"
+  },
+  {
+   "line": 3790,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "load_scanner_manifest",
+   "resolves_to": "intelligent_orchestrator.load_scanner_manifest",
+   "src": "_scanner = merge_scanner_inputs(load_scanner_manifest(), load_manual_ticker_upload())"
+  },
+  {
+   "line": 3790,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "load_manual_ticker_upload",
+   "resolves_to": "intelligent_orchestrator.load_manual_ticker_upload",
+   "src": "_scanner = merge_scanner_inputs(load_scanner_manifest(), load_manual_ticker_upload())"
+  },
+  {
+   "line": 3791,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "build_augmented_universe",
+   "resolves_to": "intelligent_orchestrator.build_augmented_universe",
+   "src": "_augmented_universe_path = build_augmented_universe(_scanner, session_id)"
+  },
+  {
+   "line": 3796,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "write_scanner_context",
+   "resolves_to": "intelligent_orchestrator.write_scanner_context",
+   "src": "write_scanner_context(_scanner, session_id)"
+  },
+  {
+   "line": 3799,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_dropoff_audit_checkpoint",
+   "resolves_to": "intelligent_orchestrator.run_dropoff_audit_checkpoint",
+   "src": "run_dropoff_audit_checkpoint(session_id, \"phase0_intake\")"
+  },
+  {
+   "line": 3802,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_preflight_checks",
+   "resolves_to": "intelligent_orchestrator.run_preflight_checks",
+   "src": "preflight_ok, macro_path = run_preflight_checks("
+  },
+  {
+   "line": 3809,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "_ensure_runtime_macro_path",
+   "resolves_to": "intelligent_orchestrator._ensure_runtime_macro_path",
+   "src": "macro_path = _ensure_runtime_macro_path(session_id, macro_path)"
+  },
+  {
+   "line": 3834,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_sa_spec = _ilu.spec_from_file_location(\"sector_alignment\", str(_sa_path))"
+  },
+  {
+   "line": 3835,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_sa_mod  = _ilu.module_from_spec(_sa_spec)"
+  },
+  {
+   "line": 3883,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "_run",
+   "resolves_to": "intelligent_orchestrator._run",
+   "src": "_nm_ok = _run("
+  },
+  {
+   "line": 3959,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "merge_macro_enrichment_into_macro_latest",
+   "resolves_to": "intelligent_orchestrator.merge_macro_enrichment_into_macro_latest",
+   "src": "_enrichment_ok = merge_macro_enrichment_into_macro_latest(macro_path)"
+  },
+  {
+   "line": 3983,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_act_spec = _ilu.spec_from_file_location("
+  },
+  {
+   "line": 3986,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_act_mod = _ilu.module_from_spec(_act_spec)"
+  },
+  {
+   "line": 4042,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "_run",
+   "resolves_to": "intelligent_orchestrator._run",
+   "src": "_tm_ok = _run(\"Phase 4.7 Actuarial Transition Matrix\", _tm_cmd, critical=False)"
+  },
+  {
+   "line": 4070,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "write_scanner_context",
+   "resolves_to": "intelligent_orchestrator.write_scanner_context",
+   "src": "write_scanner_context(_scanner, \"latest\")"
+  },
+  {
+   "line": 4115,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_discovery",
+   "resolves_to": "intelligent_orchestrator.run_discovery",
+   "src": "success, summary, discovery_run_id = run_discovery("
+  },
+  {
+   "line": 4124,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "write_scanner_context",
+   "resolves_to": "intelligent_orchestrator.write_scanner_context",
+   "src": "write_scanner_context(_scanner, canonical_run_id)"
+  },
+  {
+   "line": 4125,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "apply_external_intel_review_lane",
+   "resolves_to": "intelligent_orchestrator.apply_external_intel_review_lane",
+   "src": "apply_external_intel_review_lane(canonical_run_id, macro_path)"
+  },
+  {
+   "line": 4126,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "apply_macro_enrichment_to_discovery",
+   "resolves_to": "intelligent_orchestrator.apply_macro_enrichment_to_discovery",
+   "src": "apply_macro_enrichment_to_discovery(canonical_run_id, macro_path)"
+  },
+  {
+   "line": 4128,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "validate_quality",
+   "resolves_to": "intelligent_orchestrator.validate_quality",
+   "src": "valid, _ = validate_quality(summary)"
+  },
+  {
+   "line": 4133,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "detect_regression",
+   "resolves_to": "intelligent_orchestrator.detect_regression",
+   "src": "detect_regression(summary)     # non-blocking"
+  },
+  {
+   "line": 4134,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_position_tracking",
+   "resolves_to": "intelligent_orchestrator.run_position_tracking",
+   "src": "run_position_tracking()        # non-blocking"
+  },
+  {
+   "line": 4166,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_rs_spec = _ilu.spec_from_file_location(\"avshunter_regime_screener\", str(_regime_script))"
+  },
+  {
+   "line": 4167,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_rs_mod  = _ilu.module_from_spec(_rs_spec)"
+  },
+  {
+   "line": 4183,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_vanguard_pipeline",
+   "resolves_to": "intelligent_orchestrator.run_vanguard_pipeline",
+   "src": "if not run_vanguard_pipeline(canonical_run_id, macro_path, data_mode=_data_mode):"
+  },
+  {
+   "line": 4194,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_catalyst_truth_layer",
+   "resolves_to": "intelligent_orchestrator.run_catalyst_truth_layer",
+   "src": "run_catalyst_truth_layer(canonical_run_id, stage=\"pre_options\")"
+  },
+  {
+   "line": 4196,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_position_lock_check",
+   "resolves_to": "intelligent_orchestrator.run_position_lock_check",
+   "src": "run_position_lock_check(canonical_run_id)"
+  },
+  {
+   "line": 4197,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_options_intelligence",
+   "resolves_to": "intelligent_orchestrator.run_options_intelligence",
+   "src": "if not run_options_intelligence(canonical_run_id):     # MUST precede Phase 8.5"
+  },
+  {
+   "line": 4208,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_horizon_router",
+   "resolves_to": "intelligent_orchestrator.run_horizon_router",
+   "src": "_hr_result = run_horizon_router(cfg.MACRO_FILE, canonical_run_id)"
+  },
+  {
+   "line": 4218,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "patch_horizon_fields_into_csv",
+   "resolves_to": "intelligent_orchestrator.patch_horizon_fields_into_csv",
+   "src": "_oi_horizon_patched = patch_horizon_fields_into_csv("
+  },
+  {
+   "line": 4233,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_ev3_governed_shadow",
+   "resolves_to": "intelligent_orchestrator.run_ev3_governed_shadow",
+   "src": "_ev3_shadow_ok = run_ev3_governed_shadow(canonical_run_id, data_mode=_data_mode)"
+  },
+  {
+   "line": 4234,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_ev3_authority_overlay",
+   "resolves_to": "intelligent_orchestrator.run_ev3_authority_overlay",
+   "src": "_ev3_overlay_ok = _ev3_shadow_ok and run_ev3_authority_overlay(canonical_run_id)"
+  },
+  {
+   "line": 4246,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "patch_horizon_fields_into_csv",
+   "resolves_to": "intelligent_orchestrator.patch_horizon_fields_into_csv",
+   "src": "patch_horizon_fields_into_csv("
+  },
+  {
+   "line": 4251,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_catalyst_truth_layer",
+   "resolves_to": "intelligent_orchestrator.run_catalyst_truth_layer",
+   "src": "run_catalyst_truth_layer(canonical_run_id, stage=\"post_options\")"
+  },
+  {
+   "line": 4268,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_aep_spec = _ilu.spec_from_file_location("
+  },
+  {
+   "line": 4271,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_aep_mod = _ilu.module_from_spec(_aep_spec)"
+  },
+  {
+   "line": 4398,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_core_intel_exporter",
+   "resolves_to": "intelligent_orchestrator.run_core_intel_exporter",
+   "src": "run_core_intel_exporter(canonical_run_id)      # non-critical | Phase 8c"
+  },
+  {
+   "line": 4416,
+   "kind": "INLINE_IMPORT",
+   "detail": "from trigger_layer import patch_run_packages as _tl_patch, enrich_csv as _tl_enrich_csv"
+  },
+  {
+   "line": 4421,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_tl_patch",
+   "resolves_to": "trigger_layer.patch_run_packages",
+   "src": "_tl_stats = _tl_patch("
+  },
+  {
+   "line": 4497,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_superbrain_passthrough",
+   "resolves_to": "intelligent_orchestrator.run_superbrain_passthrough",
+   "src": "run_superbrain_passthrough(canonical_run_id)           # Phase 8d  \u2014 creates superbrain_enriched"
+  },
+  {
+   "line": 4508,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "patch_horizon_fields_into_csv",
+   "resolves_to": "intelligent_orchestrator.patch_horizon_fields_into_csv",
+   "src": "_sb_horizon_patched = patch_horizon_fields_into_csv("
+  },
+  {
+   "line": 4519,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_catastrophe_gate",
+   "resolves_to": "intelligent_orchestrator.run_catastrophe_gate",
+   "src": "run_catastrophe_gate(canonical_run_id)                 # Phase 8b  \u2014 DEF-003 FIX: after 8d"
+  },
+  {
+   "line": 4520,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_wall_break_scorer",
+   "resolves_to": "intelligent_orchestrator.run_wall_break_scorer",
+   "src": "run_wall_break_scorer(canonical_run_id)        # non-critical | Layer 4b"
+  },
+  {
+   "line": 4547,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_glob_seq.glob",
+   "resolves_to": "glob",
+   "src": "for _pf_seq in _glob_seq.glob(str(_pkg_dir_seq / \"*.package.json\")):"
+  },
+  {
+   "line": 4559,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_seq.read_csv",
+   "resolves_to": "pandas",
+   "src": "_sb_df_seq = _pd_seq.read_csv(_sb_path_seq)"
+  },
+  {
+   "line": 4642,
+   "kind": "INLINE_IMPORT",
+   "detail": "from datetime import datetime as _dt_seq, timezone as _tz_seq"
+  },
+  {
+   "line": 4690,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_execution_intelligence_layer",
+   "resolves_to": "intelligent_orchestrator.run_execution_intelligence_layer",
+   "src": "_eil_ok = run_execution_intelligence_layer(canonical_run_id)  # Phase 9 EIL"
+  },
+  {
+   "line": 4694,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "inject_actuarial_into_eil_csv",
+   "resolves_to": "intelligent_orchestrator.inject_actuarial_into_eil_csv",
+   "src": "inject_actuarial_into_eil_csv(canonical_run_id)     # Safety net: stamp actuarial into eil_enriched too"
+  },
+  {
+   "line": 4700,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_garch_layer",
+   "resolves_to": "intelligent_orchestrator.run_garch_layer",
+   "src": "run_garch_layer(canonical_run_id)              # Phase 10a"
+  },
+  {
+   "line": 4701,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "merge_garch_into_enriched",
+   "resolves_to": "intelligent_orchestrator.merge_garch_into_enriched",
+   "src": "merge_garch_into_enriched(canonical_run_id)   # Phase 10b \u2014 now patches eil_enriched too"
+  },
+  {
+   "line": 4710,
+   "kind": "INLINE_IMPORT",
+   "detail": "from trigger_layer import enrich_csv as _tl_enrich_csv"
+  },
+  {
+   "line": 4745,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd86b.read_csv",
+   "resolves_to": "pandas",
+   "src": "_eil_df = _pd86b.read_csv(_eil_csv_path, low_memory=False)"
+  },
+  {
+   "line": 4746,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd86b.read_csv",
+   "resolves_to": "pandas",
+   "src": "_vg_df  = _pd86b.read_csv(_vg_enriched_path, low_memory=False)"
+  },
+  {
+   "line": 4770,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_tl_enrich_csv",
+   "resolves_to": "trigger_layer.enrich_csv",
+   "src": "_tl_csv_stats = _tl_enrich_csv(_eil_csv_path, inplace=True)"
+  },
+  {
+   "line": 4806,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "enforce_handoff_conflict_guard",
+   "resolves_to": "intelligent_orchestrator.enforce_handoff_conflict_guard",
+   "src": "if not enforce_handoff_conflict_guard(canonical_run_id):"
+  },
+  {
+   "line": 4984,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_catalyst_truth_layer",
+   "resolves_to": "intelligent_orchestrator.run_catalyst_truth_layer",
+   "src": "run_catalyst_truth_layer(canonical_run_id, stage=\"post_eil\")"
+  },
+  {
+   "line": 4989,
+   "kind": "INLINE_IMPORT",
+   "detail": "from mcmillan_advisory_layer import enrich_csv as _mcmillan_enrich_csv"
+  },
+  {
+   "line": 4998,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_mcmillan_enrich_csv",
+   "resolves_to": "mcmillan_advisory_layer.enrich_csv",
+   "src": "_mcm_stats = _mcmillan_enrich_csv("
+  },
+  {
+   "line": 5019,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_mcmillan_enrich_csv",
+   "resolves_to": "mcmillan_advisory_layer.enrich_csv",
+   "src": "_mcm_exec_stats = _mcmillan_enrich_csv("
+  },
+  {
+   "line": 5049,
+   "kind": "INLINE_IMPORT",
+   "detail": "from eod_candidate_engine import build_candidate_manifest"
+  },
+  {
+   "line": 5091,
+   "kind": "REPO_MODULE_CALL",
+   "call": "build_candidate_manifest",
+   "resolves_to": "eod_candidate_engine.build_candidate_manifest",
+   "src": "build_candidate_manifest("
+  },
+  {
+   "line": 5121,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_b1.read_csv",
+   "resolves_to": "pandas",
+   "src": "_oi_b1 = _pd_b1.read_csv(_oi_b1_path, low_memory=False)"
+  },
+  {
+   "line": 5124,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_b1.read_csv",
+   "resolves_to": "pandas",
+   "src": "_morning_b1 = _pd_b1.read_csv(_morning_csv_path, low_memory=False)"
+  },
+  {
+   "line": 5180,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_b4.read_csv",
+   "resolves_to": "pandas",
+   "src": "_eil_b4 = _pd_b4.read_csv(_eil_csv, low_memory=False)"
+  },
+  {
+   "line": 5183,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_b4.read_csv",
+   "resolves_to": "pandas",
+   "src": "_morning_b4 = _pd_b4.read_csv(_morning_csv_path, low_memory=False)"
+  },
+  {
+   "line": 5206,
+   "kind": "INLINE_IMPORT",
+   "detail": "from mcmillan_advisory_layer import MCMILLAN_FIELDS as _MCMILLAN_FIELDS"
+  },
+  {
+   "line": 5220,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_mcm.read_csv",
+   "resolves_to": "pandas",
+   "src": "_eil_mcm = _pd_mcm.read_csv(_eil_csv, low_memory=False)"
+  },
+  {
+   "line": 5223,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_mcm.read_csv",
+   "resolves_to": "pandas",
+   "src": "_morning_mcm = _pd_mcm.read_csv(_morning_csv_path, low_memory=False)"
+  },
+  {
+   "line": 5270,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_exp_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_exp_spec = _exp_ilu.spec_from_file_location(\"macro_exposure_resolver\", str(_exp_script))"
+  },
+  {
+   "line": 5271,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_exp_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_exp_mod  = _exp_ilu.module_from_spec(_exp_spec)"
+  },
+  {
+   "line": 5273,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_exp.read_csv",
+   "resolves_to": "pandas",
+   "src": "_exp_df = _pd_exp.read_csv(_morning_csv_path, low_memory=False)"
+  },
+  {
+   "line": 5295,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_exit_ilu.spec_from_file_location",
+   "resolves_to": "importlib.util",
+   "src": "_exit_spec = _exit_ilu.spec_from_file_location(\"exit_rules_engine\", str(_exit_script))"
+  },
+  {
+   "line": 5296,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_exit_ilu.module_from_spec",
+   "resolves_to": "importlib.util",
+   "src": "_exit_mod  = _exit_ilu.module_from_spec(_exit_spec)"
+  },
+  {
+   "line": 5298,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_exit.read_csv",
+   "resolves_to": "pandas",
+   "src": "_exit_df = _pd_exit.read_csv(_morning_csv_path, low_memory=False)"
+  },
+  {
+   "line": 5321,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_market_context_read_only_diagnostics",
+   "resolves_to": "intelligent_orchestrator.run_market_context_read_only_diagnostics",
+   "src": "run_market_context_read_only_diagnostics(canonical_run_id, data_mode=_data_mode)"
+  },
+  {
+   "line": 5398,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_int.read_csv",
+   "resolves_to": "pandas",
+   "src": "_eil_int_df  = _pd_int.read_csv(_eil_int_path)"
+  },
+  {
+   "line": 5432,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_int.read_csv",
+   "resolves_to": "pandas",
+   "src": "_mv_int_df  = _pd_int.read_csv(_mv_int_path)"
+  },
+  {
+   "line": 5433,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_int.Series",
+   "resolves_to": "pandas",
+   "src": "_tier_a     = int((_mv_int_df.get(\"structural_tier\", _pd_int.Series()) == \"A\").sum())"
+  },
+  {
+   "line": 5434,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_int.Series",
+   "resolves_to": "pandas",
+   "src": "_tier_b     = int((_mv_int_df.get(\"structural_tier\", _pd_int.Series()) == \"B\").sum())"
+  },
+  {
+   "line": 5435,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_int.Series",
+   "resolves_to": "pandas",
+   "src": "_tier_c     = int((_mv_int_df.get(\"structural_tier\", _pd_int.Series()) == \"C\").sum())"
+  },
+  {
+   "line": 5599,
+   "kind": "INLINE_IMPORT",
+   "detail": "from dropoff_audit import build_dropoff_audit"
+  },
+  {
+   "line": 5601,
+   "kind": "REPO_MODULE_CALL",
+   "call": "build_dropoff_audit",
+   "resolves_to": "dropoff_audit.build_dropoff_audit",
+   "src": "_dropoff_df = build_dropoff_audit(canonical_run_id, runs_dir=cfg.RUNS_DIR)"
+  },
+  {
+   "line": 5613,
+   "kind": "INLINE_IMPORT",
+   "detail": "from handoff_contract_audit import audit_run as _audit_handoff_contract"
+  },
+  {
+   "line": 5615,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_audit_handoff_contract",
+   "resolves_to": "handoff_contract_audit.audit_run",
+   "src": "_handoff_audit = _audit_handoff_contract(canonical_run_id, runs_dir=cfg.RUNS_DIR)"
+  },
+  {
+   "line": 5627,
+   "kind": "INLINE_IMPORT",
+   "detail": "from uat_audit_report import write_uat_audit_report"
+  },
+  {
+   "line": 5629,
+   "kind": "REPO_MODULE_CALL",
+   "call": "write_uat_audit_report",
+   "resolves_to": "uat_audit_report.write_uat_audit_report",
+   "src": "_uat_report = write_uat_audit_report(canonical_run_id, runs_dir=cfg.RUNS_DIR)"
+  },
+  {
+   "line": 5638,
+   "kind": "INLINE_IMPORT",
+   "detail": "from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book"
+  },
+  {
+   "line": 5639,
+   "kind": "REPO_MODULE_CALL",
+   "call": "write_final_run_manifest",
+   "resolves_to": "contracts.lab_control.write_final_run_manifest",
+   "src": "_manifest = write_final_run_manifest(canonical_run_id, cfg.RUNS_DIR, pipeline_mode=\"EOD\")"
+  },
+  {
+   "line": 5653,
+   "kind": "REPO_MODULE_CALL",
+   "call": "_pd_lab_sync.read_csv",
+   "resolves_to": "pandas",
+   "src": "_lab_rows = _pd_lab_sync.read_csv(_lab_source, low_memory=False).to_dict(\"records\")"
+  },
+  {
+   "line": 5654,
+   "kind": "REPO_MODULE_CALL",
+   "call": "write_final_opportunity_book",
+   "resolves_to": "contracts.lab_control.write_final_opportunity_book",
+   "src": "_lab_book = write_final_opportunity_book("
+  },
+  {
+   "line": 5670,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "archive_outputs",
+   "resolves_to": "intelligent_orchestrator.archive_outputs",
+   "src": "archive_outputs(canonical_run_id)"
+  },
+  {
+   "line": 5671,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "prune_old_runs",
+   "resolves_to": "intelligent_orchestrator.prune_old_runs",
+   "src": "prune_old_runs()"
+  },
+  {
+   "line": 5672,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "generate_report",
+   "resolves_to": "intelligent_orchestrator.generate_report",
+   "src": "generate_report(summary, canonical_run_id, session_id)"
+  },
+  {
+   "line": 5679,
+   "kind": "INLINE_IMPORT",
+   "detail": "from outcome_capture import run_outcome_capture"
+  },
+  {
+   "line": 5680,
+   "kind": "REPO_MODULE_CALL",
+   "call": "run_outcome_capture",
+   "resolves_to": "outcome_capture.run_outcome_capture",
+   "src": "_oc = run_outcome_capture(dry_run=False)"
+  },
+  {
+   "line": 5699,
+   "kind": "INLINE_IMPORT",
+   "detail": "from weekly_intelligence_report import run_weekly_report"
+  },
+  {
+   "line": 5700,
+   "kind": "REPO_MODULE_CALL",
+   "call": "run_weekly_report",
+   "resolves_to": "weekly_intelligence_report.run_weekly_report",
+   "src": "_wr = run_weekly_report()"
+  },
+  {
+   "line": 5721,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "_update_run_meta_status",
+   "resolves_to": "intelligent_orchestrator._update_run_meta_status",
+   "src": "_update_run_meta_status(canonical_run_id, \"COMPLETED\", pipeline_mode=\"EOD\")"
+  }
+ ],
+ "premarket_workflow": [
+  {
+   "line": 5795,
+   "kind": "LOCAL_STAGE_FN",
+   "call": "run_catalyst_truth_layer",
+   "resolves_to": "intelligent_orchestrator.run_catalyst_truth_layer",
+   "src": "run_catalyst_truth_layer(_run_id, stage=\"pre_morning_validation\")"
+  },
+  {
+   "line": 5798,
+   "kind": "INLINE_IMPORT",
+   "detail": "from morning_gate import run_morning_gate"
+  },
+  {
+   "line": 5799,
+   "kind": "REPO_MODULE_CALL",
+   "call": "run_morning_gate",
+   "resolves_to": "morning_gate.run_morning_gate",
+   "src": "results = run_morning_gate("
+  },
+  {
+   "line": 5815,
+   "kind": "INLINE_IMPORT",
+   "detail": "from morning_handoff_finalizer import finalize_morning_handoff"
+  },
+  {
+   "line": 5817,
+   "kind": "REPO_MODULE_CALL",
+   "call": "finalize_morning_handoff",
+   "resolves_to": "morning_handoff_finalizer.finalize_morning_handoff",
+   "src": "_handoff = finalize_morning_handoff("
+  }
+ ]
+}

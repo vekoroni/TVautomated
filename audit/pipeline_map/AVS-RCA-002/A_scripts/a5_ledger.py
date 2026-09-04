@@ -1,0 +1,31 @@
+"""AVS-RCA-002 A5 - request ledger / cache reuse. READ ONLY (sqlite mode=ro)."""
+import sqlite3, pandas as pd
+con=sqlite3.connect("file:data/canonical/control_plane.sqlite?mode=ro", uri=True)
+q=lambda s,*a: pd.read_sql_query(s, con, params=a)
+print("### runs in ledger ###")
+print(q("select run_id, count(*) n, sum(physical_request_count) phys from api_request_ledger group by run_id order by run_id").to_string(index=False))
+print("\n### 20260904_004338 by dataset_type x reason ###")
+d=q("select dataset_type, reason, count(*) rows, sum(physical_request_count) phys from api_request_ledger where run_id=? group by dataset_type, reason order by dataset_type, reason","20260904_004338")
+print(d.to_string(index=False))
+print("\n### by provider ###")
+print(q("select provider, count(*) rows, sum(physical_request_count) phys from api_request_ledger where run_id=? group by provider","20260904_004338").to_string(index=False))
+print("\n### by stage ###")
+print(q("select stage, dataset_type, count(*) rows, sum(physical_request_count) phys from api_request_ledger where run_id=? group by stage, dataset_type order by phys desc","20260904_004338").to_string(index=False))
+print("\n### distinct reasons overall (all runs) ###")
+print(q("select reason, count(*) n from api_request_ledger group by reason order by n desc").to_string(index=False))
+print("\n### OPTION_CHAIN identity overlap with 20260902_232526 ###")
+o=q("""select a.ticker, a.scope_fingerprint, a.dataset_type
+       from api_request_ledger a where a.run_id=? and a.dataset_type like '%OPTION%'""","20260904_004338")
+p=q("""select b.ticker, b.scope_fingerprint, b.dataset_type
+       from api_request_ledger b where b.run_id=? and b.dataset_type like '%OPTION%'""","20260902_232526")
+print("904 option rows:", len(o), " 902 option rows:", len(p))
+if len(o) and len(p):
+    ko=set(zip(o.ticker,o.scope_fingerprint)); kp=set(zip(p.ticker,p.scope_fingerprint))
+    print("exact (ticker,scope_fingerprint) overlap:", len(ko&kp))
+    print("ticker-only overlap:", len(set(o.ticker)&set(p.ticker)))
+    print("sample 904 scope_fingerprints:", list(o.scope_fingerprint.head(3)))
+    print("sample 902 scope_fingerprints:", list(p.scope_fingerprint.head(3)))
+print("\n### dataset_registry OPTION rows by source_run_id ###")
+print(q("select dataset_type, source_run_id, count(*) n from dataset_registry where dataset_type like '%OPTION%' group by dataset_type, source_run_id order by n desc").head(20).to_string(index=False))
+print("\n### all dataset_types in ledger for this run ###")
+print(q("select dataset_type, count(*) rows, sum(physical_request_count) phys, sum(retry_count) retries from api_request_ledger where run_id=? group by dataset_type order by phys desc","20260904_004338").to_string(index=False))

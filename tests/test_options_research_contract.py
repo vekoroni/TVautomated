@@ -204,45 +204,48 @@ def test_incomplete_marketdata_chain_quote_triggers_contract_quote_fallback():
     assert enriched["mark_synthetic"] is False
 
 
-def test_missing_critical_fields_blocks_go_review():
+def test_missing_critical_fields_are_visible_without_granting_execution():
     result = _route(contract=_contract(bid=None, ask=None))
 
     assert result["execution_permission"] == oi.OPTIONS_RESEARCH_PERMISSION
-    assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
-    assert "MISSING_CRITICAL_OPTION_FIELDS" in result["hard_vetoes"]
+    assert result["final_route"] == oi.OPTIONS_GO_ROUTE
+    assert result["contract_repair_required"] is True
+    assert "CONTRACT_DATA_INCOMPLETE" in result["contract_review_flags"]
     assert "bid" in result["missing_data"]
     assert "ask" in result["missing_data"]
 
 
-def test_spread_above_fifteen_percent_blocks():
+def test_wide_spread_is_advisory_repair_evidence_in_research_route():
     result = _route(contract=_contract(bid=1.60, ask=2.40, mark=2.00))
 
-    assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
-    assert "SPREAD_GT_15PCT" in result["hard_vetoes"]
+    assert result["final_route"] == oi.OPTIONS_GO_ROUTE
+    assert result["contract_repair_required"] is True
+    assert "SPREAD_GT_25PCT" in result["contract_review_flags"]
 
 
-def test_breakeven_feasibility_below_one_blocks():
+def test_breakeven_feasibility_is_advisory_in_research_route():
     result = _route(
         ctx=_ctx(structural_target=101.0, atr=0.2),
         econ=_econ(breakeven_price=105.0),
     )
 
-    assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
-    assert "BREAKEVEN_FEASIBILITY_LT_1" in result["hard_vetoes"]
+    assert result["final_route"] == oi.OPTIONS_GO_ROUTE
+    assert result["breakeven_info_flag"] == "BREAKEVEN_FEASIBILITY_LT_1"
 
 
-def test_estimated_r_below_two_blocks():
-    result = _route(econ=_econ(rr_options=1.5))
+def test_estimated_r_is_advisory_in_research_route():
+    result = _route(econ=_econ(rr_options=0.5))
 
-    assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
-    assert "ESTIMATED_R_LT_2" in result["hard_vetoes"]
+    assert result["final_route"] == oi.OPTIONS_GO_ROUTE
+    assert "ESTIMATED_R_LT_1" in result["contract_review_flags"]
 
 
-def test_no_trigger_blocks_go_review():
+def test_no_trigger_is_visible_without_becoming_capital_authority():
     result = _route(ctx=_ctx(phase="B"), signal=pd.Series({}))
 
-    assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
-    assert "NO_TRIGGER" in result["hard_vetoes"]
+    assert result["final_route"] == oi.OPTIONS_GO_ROUTE
+    assert result["trigger_state"] == "NO_TRIGGER"
+    assert result["trigger_info_flag"] == "NO_TRIGGER"
 
 
 def test_stand_down_record_is_research_only():

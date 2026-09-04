@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AVSHUNTER — Trigger Layer v2.1
+AVSHUNTER — Trigger Layer v2.2
 ==============================
 Phase 8.6 — sits between Actuarial Enrichment (Phase 8.5) and EDE (Phase 9.5).
 
@@ -9,6 +9,13 @@ Architecture:
         → [THIS MODULE] Trigger Layer
         → EDE v4.1 (EV-primary)
         → Enhancement → Candidates
+
+v2.2 changes (2026-08-28):
+    Separate structural context from actual source-data freshness. FAR now means
+    EARLY_FORMATION_ABSENT and days_in_range>15 means RANGE_EXTENDED; neither
+    suppresses independent T1-T4 observations. Actual stale data is resolved
+    only from governed source freshness/age fields, blocks GO eligibility, and
+    is commuted alongside context through packages, sidecar, and EIL CSV.
 
 v2.1 changes (2026-04-29):
     Fix 7: _compute_ev — replaced expected_value_10d (dollar EV, negative for most
@@ -45,6 +52,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 log = logging.getLogger("trigger_layer")
@@ -57,6 +65,7 @@ TRIGGER_WEIGHTS: Dict[str, float] = {
     "RANGE_BREAK_EARLY":    1.5,   # ADX rising, momentum building
     "RANGE_BREAK":          2.0,   # confirmed breakout
     "VWAP_RECLAIM":         1.5,
+    "VWAP_LOSS":            1.5,
     "TRAP":                 2.5,   # highest weight — hardest to fake
 }
 
@@ -90,10 +99,32 @@ T3_CONF_PHASES        = {"MARKUP", "DISTRIBUTION"}
 # T4 — Trap (structure-confirmed — Fix 3)
 # Requires PCR contradiction + structure failure evidence
 
-# T5 — Staleness (Fix 5)
-# catalyst_proximity=FAR means signal is too far from resolution
-STALENESS_BLOCK       = {"FAR"}   # block these
-FRESHNESS_REQUIRED    = {"WITHIN_3D", "WITHIN_10D"}   # allow these
+# Trigger context is not data freshness.  FAR means that Discovery did not find
+# an early catalyst/compression formation; it does not mean the underlying bars
+# are old.  Likewise, days_in_range is setup age, not source-data age.
+TRIGGER_MAX_AGE_SESSIONS = 2
+_EXPLICIT_STALE_STATES = {"STALE", "STALE_DATA", "EXPIRED", "INVALID_STALE"}
+_EXPLICIT_FRESH_STATES = {"FRESH", "CURRENT", "VALID", "OK"}
+_FRESHNESS_STATE_FIELDS = (
+    "trigger_source_freshness",
+    "equity_data_freshness",
+    "price_data_freshness",
+    "market_data_freshness",
+    "data_freshness_status",
+)
+_FRESHNESS_AGE_FIELDS = (
+    "trigger_source_age_sessions",
+    "equity_data_age_sessions",
+    "price_data_age_sessions",
+    "market_data_age_sessions",
+)
+_FRESHNESS_ASOF_FIELDS = (
+    "trigger_source_asof",
+    "equity_data_asof",
+    "price_data_asof",
+    "market_data_asof",
+    "source_max_date",
+)
 
 # EV threshold
 EV_ZERO_THRESHOLD = 1e-8
@@ -160,31 +191,102 @@ def _direction(row: Dict) -> str:
     return "NONE"
 
 
-def _is_stale(row: Dict) -> bool:
-    """
-    Fix 5: Staleness gate.
-    catalyst_proximity=FAR means the signal's structural trigger is far from
-    resolution — the setup is too early or too extended to trade now.
-    This correctly filters 57% of the universe (FAR signals) and keeps the
-    43% that are WITHIN_10D or WITHIN_3D.
-
-    FIX-STALE-MISSING (2026-04-29): days_in_range is only populated for 43% of
-    the universe (Crabel-scored signals only). The >15 gate must not fire when
-    the field is absent — absence means the signal type does not use range-day
-    tracking, not that it has been in range for 0 days.
-    """
-    prox = _str(row, "catalyst_proximity")
-    if prox in STALENESS_BLOCK:
-        return True
-    # Only apply days_in_range gate when the field is actually populated
-    dir_val = row.get("days_in_range")
-    if dir_val not in (None, "", "nan", "None"):
+def _parse_date(value: Any) -> Optional[date]:
+    if value in (None, "", "nan", "None"):
+        return None
+    try:
+        text = str(value).strip().replace("Z", "+00:00")
+        return datetime.fromisoformat(text).date()
+    except (TypeError, ValueError):
         try:
-            if float(dir_val) > 15:
-                return True
+            return datetime.strptime(str(value).strip()[:10], "%Y-%m-%d").date()
         except (TypeError, ValueError):
-            pass
-    return False
+            return None
+
+
+def _business_sessions_between(start: date, end: date) -> int:
+    """Weekday session distance; exchange holidays remain upstream governance."""
+    if start >= end:
+        return 0
+    sessions = 0
+    cursor = start
+    while cursor < end:
+        cursor = date.fromordinal(cursor.toordinal() + 1)
+        if cursor.weekday() < 5:
+            sessions += 1
+    return sessions
+
+
+def _trigger_context(row: Dict) -> Dict[str, str]:
+    """Describe structural setup context without claiming that data is stale."""
+    reasons: List[str] = []
+    if _str(row, "catalyst_proximity") == "FAR":
+        reasons.append("EARLY_FORMATION_ABSENT")
+    days_in_range = row.get("days_in_range")
+    if days_in_range not in (None, "", "nan", "None"):
+        try:
+            if float(days_in_range) > 15:
+                reasons.append("RANGE_EXTENDED")
+        except (TypeError, ValueError):
+            reasons.append("RANGE_AGE_INVALID")
+    return {
+        "state": "|".join(reasons) if reasons else "ELIGIBLE",
+        "reasons": "|".join(reasons) if reasons else "NONE",
+    }
+
+
+def _trigger_data_freshness(row: Dict) -> Dict[str, Any]:
+    """Resolve actual data age only from explicit freshness evidence.
+
+    `catalyst_proximity`, `days_in_range`, `asof_date`, and `score_date` are
+    deliberately excluded as source-age evidence: they describe setup/run
+    context.  When no governed source timestamp or status is supplied, UNKNOWN
+    is safer and more truthful than fabricating either FRESH or STALE.
+    """
+    for field in _FRESHNESS_STATE_FIELDS:
+        state = _str(row, field)
+        if state in _EXPLICIT_STALE_STATES:
+            return {"state": "STALE", "asof": "", "age_sessions": "", "reason": f"{field}={state}", "stale": True}
+        if state in _EXPLICIT_FRESH_STATES:
+            return {"state": "FRESH", "asof": "", "age_sessions": "", "reason": f"{field}={state}", "stale": False}
+
+    for field in _FRESHNESS_AGE_FIELDS:
+        value = row.get(field)
+        if value not in (None, "", "nan", "None"):
+            try:
+                age = max(0, int(float(value)))
+                stale = age > TRIGGER_MAX_AGE_SESSIONS
+                return {
+                    "state": "STALE" if stale else "FRESH",
+                    "asof": "",
+                    "age_sessions": age,
+                    "reason": f"{field}={age}",
+                    "stale": stale,
+                }
+            except (TypeError, ValueError):
+                continue
+
+    anchor = _parse_date(row.get("asof_date")) or _parse_date(row.get("score_date"))
+    if anchor:
+        for field in _FRESHNESS_ASOF_FIELDS:
+            source_date = _parse_date(row.get(field))
+            if source_date:
+                age = _business_sessions_between(source_date, anchor)
+                stale = age > TRIGGER_MAX_AGE_SESSIONS
+                return {
+                    "state": "STALE" if stale else "FRESH",
+                    "asof": source_date.isoformat(),
+                    "age_sessions": age,
+                    "reason": f"{field}={source_date.isoformat()}",
+                    "stale": stale,
+                }
+
+    return {"state": "UNKNOWN", "asof": "", "age_sessions": "", "reason": "NO_EXPLICIT_SOURCE_AGE", "stale": False}
+
+
+def _is_stale(row: Dict) -> bool:
+    """Backward-compatible alias: true only for actual stale source data."""
+    return bool(_trigger_data_freshness(row)["stale"])
 
 
 def _compute_ev(row: Dict) -> float:
@@ -325,7 +427,7 @@ def _t2_vwap_reclaim(row: Dict) -> Optional[str]:
             and controller == "SELLERS"
             and volume_ratio >= T2_VOLUME_RATIO_MIN
             and direction in ("PUT", "NONE")):
-        return "VWAP_RECLAIM"
+        return "VWAP_LOSS"
 
     return None
 
@@ -466,7 +568,7 @@ def trigger_quality(triggers: List[str]) -> str:
 def trigger_primary(triggers: List[str]) -> str:
     """
     Returns highest-weight trigger. Weighted priority:
-    TRAP(2.5) > VOL_COMPRESSION(2.0) = RANGE_BREAK(2.0) > VWAP_RECLAIM(1.5) = RANGE_BREAK_EARLY(1.5)
+    TRAP(2.5) > VOL_COMPRESSION(2.0) = RANGE_BREAK(2.0) > VWAP_RECLAIM/VWAP_LOSS(1.5) = RANGE_BREAK_EARLY(1.5)
     """
     if not triggers:
         return "NONE"
@@ -476,7 +578,7 @@ def trigger_primary(triggers: List[str]) -> str:
 def is_go_eligible(triggers: List[str]) -> bool:
     """
     Fix 6: GO requires a primary trigger from the high-conviction set.
-    VWAP_RECLAIM alone is not sufficient for GO — it is a supportive signal.
+    VWAP_RECLAIM or VWAP_LOSS alone is not sufficient for GO — each is supportive.
     Primary must be VOL_COMPRESSION, RANGE_BREAK_EARLY, RANGE_BREAK, or TRAP.
     """
     if not triggers:
@@ -492,12 +594,9 @@ def is_go_eligible(triggers: List[str]) -> bool:
 def evaluate_triggers(row: Dict) -> List[str]:
     """
     Evaluate all triggers against a signal row.
-    Staleness gate applied first — stale signals return empty list.
+    Trigger observations are retained even when source data is explicitly stale;
+    capital eligibility is handled separately in build_trigger_block().
     """
-    # Fix 5: staleness gate — no triggers for FAR signals
-    if _is_stale(row):
-        return []
-
     triggers = []
 
     t1 = _t1_vol_compression(row)
@@ -533,7 +632,9 @@ def build_trigger_block(row: Dict) -> Dict[str, Any]:
     score       = _trigger_score(triggers)
     quality     = trigger_quality(triggers)
     primary     = trigger_primary(triggers)
-    go_eligible = is_go_eligible(triggers)
+    freshness   = _trigger_data_freshness(row)
+    context     = _trigger_context(row)
+    go_eligible = is_go_eligible(triggers) and not freshness["stale"]
 
     return {
         "codes":        "|".join(triggers) if triggers else "NONE",
@@ -542,7 +643,13 @@ def build_trigger_block(row: Dict) -> Dict[str, Any]:
         "primary":      primary,
         "score":        round(score, 2),
         "go_eligible":  go_eligible,
-        "stale":        _is_stale(row),
+        "stale":        freshness["stale"],
+        "freshness_state": freshness["state"],
+        "data_asof":    freshness["asof"],
+        "age_sessions": freshness["age_sessions"],
+        "freshness_reason": freshness["reason"],
+        "context_state": context["state"],
+        "context_reasons": context["reasons"],
         "ev_10d":       ev,
         "ev_sign": (
             "POSITIVE" if ev > EV_ZERO_THRESHOLD
@@ -568,6 +675,12 @@ TRIGGER_CSV_COLUMNS = [
     "trigger_score",
     "trigger_go_eligible",
     "trigger_stale",
+    "trigger_freshness_state",
+    "trigger_data_asof",
+    "trigger_age_sessions",
+    "trigger_freshness_reason",
+    "trigger_context_state",
+    "trigger_context_reasons",
     "trigger_ev_10d",
     "trigger_ev_sign",
 ]
@@ -606,6 +719,12 @@ def _load_package_trigger_map(input_path: pathlib.Path) -> Dict[str, Dict[str, A
                     "score": row.get("trigger_score", 0),
                     "go_eligible": row.get("trigger_go_eligible", False),
                     "stale": row.get("trigger_stale", False),
+                    "freshness_state": row.get("trigger_freshness_state", "UNKNOWN"),
+                    "data_asof": row.get("trigger_data_asof", ""),
+                    "age_sessions": row.get("trigger_age_sessions", ""),
+                    "freshness_reason": row.get("trigger_freshness_reason", "NO_EXPLICIT_SOURCE_AGE"),
+                    "context_state": row.get("trigger_context_state", "ELIGIBLE"),
+                    "context_reasons": row.get("trigger_context_reasons", "NONE"),
                 }
         return out
     except Exception:
@@ -633,14 +752,22 @@ def _trigger_block_from_package(row: Dict[str, Any], pkg_trigger: Dict[str, Any]
     go_eligible = go_raw if isinstance(go_raw, bool) else str(go_raw).strip().upper() in {"TRUE", "1", "YES"}
     stale_raw = pkg_trigger.get("stale", False)
     stale = stale_raw if isinstance(stale_raw, bool) else str(stale_raw).strip().upper() in {"TRUE", "1", "YES"}
+    freshness_state = str(pkg_trigger.get("freshness_state") or ("STALE" if stale else "UNKNOWN")).strip().upper()
+    stale = bool(stale) or freshness_state == "STALE"
     return {
         "codes": codes,
         "count": count,
         "quality": quality or "NONE",
         "primary": primary or "NONE",
         "score": round(_flt(pkg_trigger, "score", _trigger_score(trigger_list)), 2),
-        "go_eligible": bool(go_eligible),
+        "go_eligible": bool(go_eligible) and not bool(stale),
         "stale": bool(stale),
+        "freshness_state": freshness_state,
+        "data_asof": pkg_trigger.get("data_asof", ""),
+        "age_sessions": pkg_trigger.get("age_sessions", ""),
+        "freshness_reason": str(pkg_trigger.get("freshness_reason") or "NO_EXPLICIT_SOURCE_AGE"),
+        "context_state": str(pkg_trigger.get("context_state") or "ELIGIBLE"),
+        "context_reasons": str(pkg_trigger.get("context_reasons") or "NONE"),
         "ev_10d": ev,
         "ev_sign": (
             "POSITIVE" if ev > EV_ZERO_THRESHOLD
@@ -705,6 +832,7 @@ def enrich_csv(
         "trigger_strong": 0,
         "go_eligible": 0,
         "stale_filtered": 0,
+        "context_flagged": 0,
         "ev_positive": 0,
         "ev_negative": 0,
         "ev_zero": 0,
@@ -723,6 +851,12 @@ def enrich_csv(
         row["trigger_score"]      = round(tb["score"], 2)
         row["trigger_go_eligible"]= tb["go_eligible"]
         row["trigger_stale"]      = tb["stale"]
+        row["trigger_freshness_state"] = tb["freshness_state"]
+        row["trigger_data_asof"] = tb["data_asof"]
+        row["trigger_age_sessions"] = tb["age_sessions"]
+        row["trigger_freshness_reason"] = tb["freshness_reason"]
+        row["trigger_context_state"] = tb["context_state"]
+        row["trigger_context_reasons"] = tb["context_reasons"]
         row["trigger_ev_10d"]     = round(tb["ev_10d"], 8)
         row["trigger_ev_sign"]    = tb["ev_sign"]
         enriched.append(row)
@@ -730,6 +864,8 @@ def enrich_csv(
         stats["patched"] += 1
         if tb.get("stale"):
             stats["stale_filtered"] += 1
+        if tb.get("context_state") != "ELIGIBLE":
+            stats["context_flagged"] += 1
         q = tb["quality"]
         if q == "STRONG":
             stats["trigger_strong"] += 1
@@ -756,13 +892,14 @@ def enrich_csv(
 
     log.info(
         "Trigger Layer enrich_csv — %d rows enriched | "
-        "STRONG=%d SINGLE=%d NONE=%d | GO=%d | stale=%d | EV+=%d EV-=%d → %s",
+        "STRONG=%d SINGLE=%d NONE=%d | GO=%d | data_stale=%d | context=%d | EV+=%d EV-=%d → %s",
         stats["patched"],
         stats["trigger_strong"],
         stats["trigger_single"],
         stats["trigger_none"],
         stats["go_eligible"],
         stats["stale_filtered"],
+        stats["context_flagged"],
         stats["ev_positive"],
         stats["ev_negative"],
         output_path.name,
@@ -817,6 +954,7 @@ def patch_run_packages(
         "trigger_strong": 0,
         "go_eligible": 0,
         "stale_filtered": 0,
+        "context_flagged": 0,
         "ev_positive": 0,
         "ev_negative": 0,
         "ev_zero": 0,
@@ -838,6 +976,8 @@ def patch_run_packages(
             trig = pkg["triggers"]
             if trig.get("stale"):
                 stats["stale_filtered"] += 1
+            if trig.get("context_state") != "ELIGIBLE":
+                stats["context_flagged"] += 1
             q = trig["quality"]
             if q == "STRONG":
                 stats["trigger_strong"] += 1
@@ -864,21 +1004,28 @@ def patch_run_packages(
                 "trigger_score": trig.get("score", 0),
                 "trigger_go_eligible": trig.get("go_eligible", False),
                 "trigger_stale": trig.get("stale", False),
+                "trigger_freshness_state": trig.get("freshness_state", "UNKNOWN"),
+                "trigger_data_asof": trig.get("data_asof", ""),
+                "trigger_age_sessions": trig.get("age_sessions", ""),
+                "trigger_freshness_reason": trig.get("freshness_reason", "NO_EXPLICIT_SOURCE_AGE"),
+                "trigger_context_state": trig.get("context_state", "ELIGIBLE"),
+                "trigger_context_reasons": trig.get("context_reasons", "NONE"),
             })
 
         except Exception as e:
             log.warning("Trigger Layer: failed to patch %s — %s", pkg_path.name, e)
 
     log.info(
-        "Trigger Layer v2.0 complete — %d patched | "
+        "Trigger Layer v2.2 complete — %d patched | "
         "STRONG=%d SINGLE=%d NONE=%d | GO_ELIGIBLE=%d | "
-        "stale_filtered=%d | EV+=%d EV-=%d",
+        "data_stale=%d | context=%d | EV+=%d EV-=%d",
         stats["patched"],
         stats["trigger_strong"],
         stats["trigger_single"],
         stats["trigger_none"],
         stats["go_eligible"],
         stats["stale_filtered"],
+        stats["context_flagged"],
         stats["ev_positive"],
         stats["ev_negative"],
     )
@@ -891,6 +1038,9 @@ def patch_run_packages(
                     "ticker", "trigger_codes", "trigger_count", "trigger_primary",
                     "trigger_quality", "trigger_score", "trigger_go_eligible",
                     "trigger_stale",
+                    "trigger_freshness_state", "trigger_data_asof",
+                    "trigger_age_sessions", "trigger_freshness_reason",
+                    "trigger_context_state", "trigger_context_reasons",
                 ]
                 writer = _csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
                 writer.writeheader()
@@ -907,7 +1057,7 @@ def patch_run_packages(
 
 if __name__ == "__main__":
     import argparse, sys
-    parser = argparse.ArgumentParser(description="AVSHUNTER Trigger Layer v2.1")
+    parser = argparse.ArgumentParser(description="AVSHUNTER Trigger Layer v2.2")
     subparsers = parser.add_subparsers(dest="command")
 
     # patch: original package JSON patching mode
@@ -947,9 +1097,10 @@ if __name__ == "__main__":
         stats = patch_run_packages(run_id, base_dir, vanguard_csv)
 
     total = max(stats.get("patched", 1), 1)
-    print("\nTRIGGER LAYER v2.1 RESULTS")
+    print("\nTRIGGER LAYER v2.2 RESULTS")
     print(f"  Rows/packages     : {stats.get('patched', 0)}")
-    print(f"  Stale (filtered)  : {stats.get('stale_filtered', 0)} ({stats.get('stale_filtered',0)/total*100:.1f}%)")
+    print(f"  Data stale        : {stats.get('stale_filtered', 0)} ({stats.get('stale_filtered',0)/total*100:.1f}%)")
+    print(f"  Context flagged   : {stats.get('context_flagged', 0)}")
     print(f"  STRONG (weighted) : {stats.get('trigger_strong', 0)}")
     print(f"  SINGLE            : {stats.get('trigger_single', 0)}")
     print(f"  NONE              : {stats.get('trigger_none', 0)}")

@@ -1,52 +1,111 @@
 r"""
-â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
-â•‘  AVSHUNTER Â· INTELLIGENCE LAB v2.0                                         â•‘
-â•‘  Port: 5002                                                                 â•‘
-â•‘                                                                             â•‘
-â•‘  ARCHITECTURE CHANGE v2.0:                                                 â•‘
-â•‘  OLD: superbrain_enriched is the primary signal source (138 cols)          â•‘
-â•‘  NEW: eil_enriched is the primary signal source (232 cols)                 â•‘
-â•‘       superbrain_enriched retained for sb_final_verdict only               â•‘
-â•‘       v5 CSV provides the 32-candidate execution layer                     â•‘
-â•‘       All existing merge logic preserved: options, wbs, garch, mv, ct      â•‘
-â•‘                                                                             â•‘
-â•‘  DATA CONTRACT (what each file contributes):                                â•‘
-â•‘    eil_enriched          â†’ signals base, 1312 rows, 232 cols               â•‘
-â•‘                            verdicts, EIL scores, EV, triggers, structure   â•‘
-â•‘    execution_v3_5        â†’ campaign_verdict, execution_verdict (delta only) â•‘
-â•‘    options_intelligence  â†’ opt__ prefix: contract, IV, greeks, walls       â•‘
-â•‘    vanguard_signals_e    â†’ vg__ prefix: actuarial, win rate, tier, phase   â•‘
-â•‘    wall_break_scores     â†’ wbs__ prefix: 9 BUY_NOW tickers, entry/stop     â•‘
-â•‘    eil_enriched (garch)  â†’ garch__ prefix: vol forecasts, jump risk        â•‘
-â•‘    garch_forecasts       â†’ garch__ prefix: forward vol, tailwind, method   â•‘
-â•‘    morning_validation    â†’ mv__ prefix: live price, drift, TCE             â•‘
-â•‘    superbrain_enriched   â†’ sb_final_verdict only                           â•‘
-â•‘    AVSHUNTER_SIGNALS_V5  â†’ v5__ prefix: thesis_decision, size, conflicts   â•‘
-â•‘                                                                             â•‘
-â•‘  PRIORITY RANKING (new pipeline fields):                                   â•‘
-â•‘    options_verdict  (22%) campaign_verdict (16%) execution_verdict (12%)   â•‘
-â•‘    eil_composite    (14%) ev2_ev_conf_adj  (10%) rr_options        (8%)    â•‘
-â•‘    options_score    (8%)  wbs              (5%)  garch_tailwind    (5%)    â•‘
-â•‘                                                                             â•‘
-â•‘  START:                                                                     â•‘
-â•‘    cd C:\Users\ACKVerissimo\intelligence-lab                                â•‘
-â•‘    .\venv\Scripts\Activate.ps1                                              â•‘
-â•‘    python intelligence_lab.py                                               â•‘
-â•‘  OPEN:  http://localhost:5002                                               â•‘
-â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  AVSHUNTER · INTELLIGENCE LAB v2.0                                         ║
+║  Port: 5002                                                                 ║
+║                                                                             ║
+║  ARCHITECTURE CHANGE v2.0:                                                 ║
+║  OLD: superbrain_enriched is the primary signal source (138 cols)          ║
+║  NEW: final_opportunity_book v2 is the governed browser signal source      ║
+║       EIL/options/execution remain legacy read-only fallback sources        ║
+║       one pipeline writer owns membership, provenance and reconciliation   ║
+║       macro and EV remain advisory; morning validation owns live action    ║
+║                                                                             ║
+║  DATA CONTRACT (what each file contributes):                                ║
+║    eil_enriched          → signals base, 1312 rows, 232 cols               ║
+║                            verdicts, EIL scores, EV, triggers, structure   ║
+║    execution_v3_5        → campaign_verdict, execution_verdict (delta only) ║
+║    options_intelligence  → opt__ prefix: contract, IV, greeks, walls       ║
+║    vanguard_signals_e    → vg__ prefix: actuarial, win rate, tier, phase   ║
+║    wall_break_scores     → wbs__ prefix: 9 BUY_NOW tickers, entry/stop     ║
+║    eil_enriched (garch)  → garch__ prefix: vol forecasts, jump risk        ║
+║    garch_forecasts       → garch__ prefix: forward vol, tailwind, method   ║
+║    morning_validation    → mv__ prefix: live price, drift, TCE             ║
+║    superbrain_enriched   → sb_final_verdict only                           ║
+║    AVSHUNTER_SIGNALS_V5  → v5__ prefix: thesis_decision, size, conflicts   ║
+║                                                                             ║
+║  PRIORITY RANKING (new pipeline fields):                                   ║
+║    options_verdict  (22%) campaign_verdict (16%) execution_verdict (12%)   ║
+║    eil_composite    (14%) ev2_ev_conf_adj  (10%) rr_options        (8%)    ║
+║    options_score    (8%)  wbs              (5%)  garch_tailwind    (5%)    ║
+║                                                                             ║
+║  START:                                                                     ║
+║    cd C:\Users\ACKVerissimo\intelligence-lab                                ║
+║    .\venv\Scripts\Activate.ps1                                              ║
+║    python intelligence_lab.py                                               ║
+║  OPEN:  http://localhost:5002                                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 from flask import Flask, jsonify, send_from_directory, request, Response
+from flask.json.provider import DefaultJSONProvider
 from flask_cors import CORS
-import os, csv, json, glob, sys, io
+import os, csv, json, glob, sys, io, math
+from collections.abc import Mapping
 from pathlib import Path
 from datetime import datetime, timezone
 
+
+def _configure_console_encoding(stream):
+    """Make diagnostic output safe in hidden Windows/PowerShell processes."""
+    if stream is None:
+        return
+    reconfigure = getattr(stream, "reconfigure", None)
+    if not callable(reconfigure):
+        return
+    try:
+        reconfigure(encoding="utf-8", errors="backslashreplace")
+    except (AttributeError, OSError, ValueError):
+        # Console output is diagnostic only and must never block the API.
+        pass
+
+
+_configure_console_encoding(sys.stdout)
+_configure_console_encoding(sys.stderr)
+
+
+def _strict_json_value(value):
+    """Return a standards-compliant JSON value without mutating source data.
+
+    Pandas represents missing CSV cells as floating-point NaN.  Python's JSON
+    encoder can emit the non-standard token ``NaN``, but browsers correctly
+    reject it in ``response.json()``.  Normalising at the Flask boundary keeps
+    calculations and governed artefacts untouched while guaranteeing every API
+    response is valid JSON.
+    """
+
+    if isinstance(value, Mapping):
+        return {str(key): _strict_json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_strict_json_value(item) for item in value]
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value.__class__.__name__ in {"NAType", "NaTType"}:
+        return None
+    # NumPy scalar values can survive dataframe-to-dict conversion.  Convert
+    # them to their native Python equivalent before Flask serialises them.
+    item = getattr(value, "item", None)
+    if callable(item) and value.__class__.__module__.startswith("numpy"):
+        try:
+            return _strict_json_value(item())
+        except (TypeError, ValueError, OverflowError):
+            return None
+    return value
+
+
+class StrictJSONProvider(DefaultJSONProvider):
+    """Flask JSON provider that rejects non-finite output by construction."""
+
+    def dumps(self, obj, **kwargs):
+        kwargs["allow_nan"] = False
+        return super().dumps(_strict_json_value(obj), **kwargs)
+
+
 app = Flask(__name__, static_folder="static")
+app.json = StrictJSONProvider(app)
 CORS(app)
 
-# â”€â”€â”€ CONFIG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-BASE_DIR = Path(__file__).resolve().parent.parent   # â†’ AVSHUNTER-Intelligence\
+# ─── CONFIG ────────────────────────────────────────────────────────────────────
+BASE_DIR = Path(__file__).resolve().parent.parent   # → AVSHUNTER-Intelligence\
 RUNS_DIR = BASE_DIR / "data" / "output" / "runs"
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
@@ -69,6 +128,7 @@ if LAB_STRANGLE_POLICY not in _LAB_STRANGLE_POLICIES:
     LAB_STRANGLE_POLICY = "INCLUDE_LABELLED"
 
 from contracts.lab_control import (
+    FINAL_BOOK_FIELDS,
     LAB_REQUIRED_FIELDS,
     apply_lab_resolution,
     build_final_run_manifest,
@@ -76,9 +136,14 @@ from contracts.lab_control import (
     load_final_run_manifest,
     read_final_opportunity_book,
     resolve_lab_tradeability,
-    write_final_opportunity_book,
     write_final_run_manifest,
 )
+from contracts.lab_evidence_overlay import (
+    OverlayValidationError,
+    apply_latest_compatible_overlays,
+    load_overlays,
+)
+from msi_runtime import active_flags
 
 _run_cache: dict = {}
 
@@ -93,7 +158,7 @@ PHYSICS_FIELDS = [
     "transition_success_10d", "transition_success_20d",
 ]
 
-# â”€â”€â”€ HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── HELPERS ───────────────────────────────────────────────────────────────────
 
 def _read_csv(path):
     if not path or not Path(path).exists():
@@ -102,7 +167,7 @@ def _read_csv(path):
         with open(path, newline='', encoding='utf-8-sig') as f:
             return list(csv.DictReader(f))
     except Exception as e:
-        print(f"  âš  CSV read error [{Path(path).name}]: {e}")
+        print(f"  ⚠ CSV read error [{Path(path).name}]: {e}")
         return []
 
 def _read_json(path):
@@ -112,7 +177,7 @@ def _read_json(path):
         with open(path, encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f"  âš  JSON read error [{Path(path).name}]: {e}")
+        print(f"  ⚠ JSON read error [{Path(path).name}]: {e}")
         return {}
 
 def _glob_first(folder, pattern):
@@ -171,6 +236,30 @@ def _primary_signal_paths(run_dir, sb_dir, run_id):
         opt_path = _glob_first(run_dir / "options", "options_intelligence_*.csv")
     return {"eil_enriched": eil_path, "options_intelligence": opt_path}
 
+def _secondary_signal_paths(run_dir, sb_dir, run_id):
+    """Every file capable of changing a governed Lab field.
+
+    The browser cache must follow the complete Lab source manifest, not only
+    the historical EIL/Options pair.
+    """
+    paths = {
+        "execution": _glob_first(run_dir / "execution", f"execution_v3_5_{run_id}.csv"),
+        "vanguard": _glob_first(run_dir / "options", f"vanguard_signals_enriched_{run_id}.csv"),
+        "wall_break": _glob_first(sb_dir, f"wall_break_scores_{run_id}.csv"),
+        "garch": _glob_first(run_dir / "qomega", f"garch_forecasts_{run_id}.csv"),
+        "final_opportunity_book": run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json",
+        "msi_evidence_overlay": run_dir / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl",
+        "ev3_authority_overlay": _glob_first(run_dir / "ev3_shadow", f"ev3_authority_overlay_{run_id}.*"),
+        "macro_snapshot": run_dir / "macro_snapshot.json",
+        "macro_quant_packet": run_dir / "macro_quant_packet.json",
+        "interpreter_macro_context": run_dir / "interpreter" / "interpreter_macro_context.json",
+        "governed_lab_v3": run_dir / "intelligence_lab" / "lab_signal_book_v3.csv",
+        "governed_lab_v3_manifest": run_dir / "intelligence_lab" / "lab_signal_book_v3.manifest.json",
+        "interpreter_handoff_manifest": run_dir / "interpreter" / "handoff_manifest.json",
+        "interpreter_evidence_bundles": run_dir / "interpreter" / "interpreter_evidence_bundle_v1.jsonl",
+    }
+    return paths
+
 def _lab_cache_signature(run_id):
     run_dir = RUNS_DIR / run_id
     if not run_dir.exists():
@@ -178,7 +267,49 @@ def _lab_cache_signature(run_id):
     sb_dir = _find_superbrain_dir(run_dir)
     paths = _morning_handoff_paths(run_dir, sb_dir, run_id)
     paths.update(_primary_signal_paths(run_dir, sb_dir, run_id))
+    paths.update(_secondary_signal_paths(run_dir, sb_dir, run_id))
     return {name: _file_signature(path) for name, path in paths.items()}
+
+def _governed_lab_book(run_id):
+    """Return the highest accepted writer-owned Lab signal book.
+
+    With MSI active, an accepted atomic v3 handoff is the only executable
+    display source.  Before Morning publication (or with MSI disabled), the
+    immutable v2 EOD book remains the review-only source.
+    """
+    if active_flags().lab_v3_view:
+        handoff_path = RUNS_DIR / run_id / "interpreter" / "handoff_manifest.json"
+        if handoff_path.is_file():
+            try:
+                from contracts.interpreter_handoff import validate_handoff_manifest
+                handoff = validate_handoff_manifest(handoff_path, require_accepted=True)
+                rows = [dict(row) for row in handoff.book_rows]
+                if str(handoff.manifest.get("run_id")) == str(run_id):
+                    return {
+                        "lab_schema_version": "lab_signal_book_v3",
+                        "candidate_count": len(rows),
+                        "rows": rows,
+                        "reconciliation": {
+                            "status": handoff.manifest.get("reconciliation_status"),
+                            "handoff_manifest": str(handoff_path),
+                            "hashes_verified": True,
+                        },
+                    }
+            except Exception:
+                # An invalid or unaccepted v3 baton must never be displayed.
+                # The v2 book below remains review-only and grants no new action.
+                pass
+    payload = read_final_opportunity_book(run_id, RUNS_DIR)
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get("lab_schema_version") != "lab_signal_book_v2":
+        return {}
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return {}
+    if payload.get("candidate_count") not in (None, len(rows)):
+        return {}
+    return payload
 
 def _utc_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -315,6 +446,16 @@ def _first_signal_value(row, keys, default=""):
             return cleaned
     return default
 
+
+def _first_trigger_signal_value(row, keys, default=""):
+    """Preserve Trigger Layer's explicit NONE category for the UI/API."""
+    for key in keys:
+        value = row.get(key) if isinstance(row, dict) else None
+        cleaned = str(value).strip() if value is not None else ""
+        if cleaned and cleaned.upper() not in {"N/A", "NA", "UNKNOWN", "NULL", "NAN"}:
+            return cleaned
+    return default
+
 def _first_numeric_signal_value(row, keys, default=0.0, prefer_nonzero=True):
     first_valid = None
     for key in keys:
@@ -393,6 +534,7 @@ def _norm_horizon_label(value):
 
 def _extract_time_horizon(sig):
     routed = _norm_horizon_label(_first_signal_value(sig, [
+        "time_horizon", "eod__time_horizon", "mv__time_horizon",
         "eod__horizon_bucket", "horizon_bucket", "exe__horizon_bucket",
         "vg__horizon_bucket", "wbs__horizon_bucket", "opt__horizon_bucket",
     ]))
@@ -420,7 +562,24 @@ def _extract_time_horizon(sig):
     return ""
 
 def _extract_hold_period(sig):
-    return _first_signal_value(sig, ["hold_label", "opt__hold_label", "exe__hold_label", "vg__hold_label", "doss__opt__hold_label"])
+    explicit = _first_signal_value(sig, [
+        "hold_period", "eod__hold_period", "mv__hold_period",
+        "hold_label", "opt__hold_label", "exe__hold_label", "vg__hold_label",
+        "doss__opt__hold_label",
+    ])
+    if explicit:
+        return explicit
+    planned = _first_signal_value(sig, [
+        "planned_hold_sessions", "eod__planned_hold_sessions",
+        "opt__planned_hold_sessions", "exe__planned_hold_sessions",
+    ])
+    try:
+        sessions = int(float(planned))
+        if sessions > 0:
+            return f"{sessions} days"
+    except (TypeError, ValueError):
+        pass
+    return ""
 
 def _extract_execution_category(sig):
     for key in [
@@ -572,8 +731,8 @@ def _update_lab_journal_row(trade_id, sig, body, premium_risk_total):
             "options_research_score": _safe_float(_first_signal_value(sig, ["options_research_score", "eod__options_research_score", "opt__options_research_score"], "0")),
             "options_hard_vetoes": options_hard_vetoes,
             "contract_snapshot_json": json.dumps(contract_snapshot, ensure_ascii=True, default=str),
-            "trigger_primary": _first_signal_value(sig, ["trigger_primary", "eod__trigger_primary", "vg__trigger_primary", "catalyst_type", "eod__catalyst_type"]),
-            "trigger_quality": _first_signal_value(sig, ["trigger_quality", "eod__trigger_quality", "vg__trigger_quality", "catalyst_event_status", "eod__catalyst_event_status"]),
+            "trigger_primary": _first_trigger_signal_value(sig, ["trigger_primary", "eod__trigger_primary", "vg__trigger_primary"]),
+            "trigger_quality": _first_trigger_signal_value(sig, ["trigger_quality", "eod__trigger_quality", "vg__trigger_quality"]),
             "trigger_score": _safe_float(_first_signal_value(sig, ["trigger_score", "eod__trigger_score", "vg__trigger_score", "catalyst_truth_score", "eod__catalyst_truth_score"], "0")),
             "trigger_codes": _first_signal_value(sig, ["trigger_codes", "eod__trigger_codes", "vg__trigger_codes", "catalyst_reason_codes", "eod__catalyst_reason_codes"]),
             "catalyst_inside_dte": _first_signal_value(sig, ["catalyst_inside_dte", "eod__catalyst_inside_dte", "opt__catalyst_inside_dte", "vg__catalyst_inside_dte"]),
@@ -656,47 +815,69 @@ def _find_superbrain_dir(run_dir):
 def _normalise_macro(m):
     if not isinstance(m, dict):
         return {}
-    macro_quant = m.get("macro_quant_packet") if isinstance(m.get("macro_quant_packet"), dict) else {}
-    sector_rotation = m.get("sector_rotation") if isinstance(m.get("sector_rotation"), dict) else {}
+    governed_packet = m if m.get("schema_version") == "interpreter_macro_context_v1" else {}
+    source = (
+        governed_packet.get("core_macro")
+        if isinstance(governed_packet.get("core_macro"), dict)
+        else m
+    )
+    macro_quant = (
+        governed_packet.get("macro_quant_packet")
+        if isinstance(governed_packet.get("macro_quant_packet"), dict)
+        else source.get("macro_quant_packet")
+        if isinstance(source.get("macro_quant_packet"), dict)
+        else {}
+    )
+    sector_rotation = source.get("sector_rotation") if isinstance(source.get("sector_rotation"), dict) else {}
     sector_bias = sector_rotation.get("sector_bias_map") if isinstance(sector_rotation.get("sector_bias_map"), dict) else {}
     if not sector_bias:
         sector_bias = {}
-        for sector in m.get("sector_lead") or m.get("leading_sectors") or []:
+        for sector in source.get("sector_lead") or source.get("leading_sectors") or []:
             sector_bias[str(sector)] = "FAVOURED"
-        for sector in m.get("sector_avoid") or m.get("avoid_sectors") or []:
+        for sector in source.get("sector_avoid") or source.get("avoid_sectors") or []:
             sector_bias[str(sector)] = "UNDERWEIGHT"
     execution_bias = {
-        "macro_filter": m.get("macro_filter") or macro_quant.get("macro_execution_caution") or "",
-        "preferred_horizon": m.get("macro_preferred_horizon") or macro_quant.get("macro_preferred_horizon") or "",
-        "size_multiplier": m.get("size_multiplier") or "",
-        "trigger_required": m.get("trigger_required") or "",
+        "macro_caution": macro_quant.get("macro_execution_caution") or "",
+        "preferred_horizon": source.get("macro_preferred_horizon") or macro_quant.get("macro_preferred_horizon") or "",
     }
     return {
-        "regime_state": str(m.get("regime_state") or m.get("regime") or ""),
-        "dir_bias":     str(m.get("dir_bias") or m.get("directional_bias") or ""),
-        "trend_energy": str(m.get("trend_energy") or ""),
-        "risk_switch":  str(m.get("risk_on_off_switch") or m.get("risk_switch") or ""),
-        "vol_mode":     str(m.get("vol_mode") or ""),
-        "sector_tilt":  str(m.get("sector_tilt") or ""),
-        "conviction":   m.get("macro_conviction") or m.get("conviction") or "",
+        "packet_id": governed_packet.get("packet_id", ""),
+        "source_fingerprint": governed_packet.get("source_fingerprint", ""),
+        "as_of_utc": governed_packet.get("as_of_utc", ""),
+        "freshness": governed_packet.get("freshness", "UNKNOWN"),
+        "data_quality": governed_packet.get("quality", "UNKNOWN"),
+        "context_state": governed_packet.get("macro_context_state", ""),
+        "authority": governed_packet.get("authority_statement", "MACRO_ADVISORY_ONLY"),
+        "regime_state": str(source.get("regime_state") or source.get("regime") or ""),
+        "dir_bias":     str(source.get("dir_bias") or source.get("directional_bias") or ""),
+        "trend_energy": str(source.get("trend_energy") or ""),
+        "risk_switch":  "ADVISORY_ONLY",
+        "vol_mode":     str(source.get("vol_mode") or ""),
+        "sector_tilt":  str(source.get("sector_tilt") or ""),
+        "conviction":   source.get("macro_conviction") or source.get("conviction") or "",
         "conviction_score": (
             macro_quant.get("macro_conviction_score")
             or macro_quant.get("macro_confidence")
-            or m.get("macro_conviction")
-            or m.get("conviction")
+            or source.get("macro_conviction")
+            or source.get("conviction")
             or ""
         ),
-        "regime_drift": str(m.get("regime_drift_status") or m.get("regime_drift") or ""),
-        "liquidity_pulse": str(m.get("liquidity_pulse") or macro_quant.get("liquidity_pulse") or ""),
-        "rates_impulse": str(m.get("rates_impulse") or macro_quant.get("rates_impulse") or ""),
-        "vix_contango": macro_quant.get("vix_contango") if macro_quant.get("vix_contango") is not None else m.get("vix_contango"),
-        "sector_lead": m.get("sector_lead") or macro_quant.get("leading_sectors") or [],
-        "sector_avoid": m.get("sector_avoid") or macro_quant.get("avoid_sectors") or [],
+        "regime_drift": str(source.get("regime_drift_status") or source.get("regime_drift") or ""),
+        "liquidity_pulse": str(source.get("liquidity_pulse") or macro_quant.get("liquidity_pulse") or ""),
+        "rates_impulse": str(source.get("rates_impulse") or macro_quant.get("rates_impulse") or ""),
+        "vix_contango": macro_quant.get("vix_contango") if macro_quant.get("vix_contango") is not None else source.get("vix_contango"),
+        "sector_lead": source.get("sector_lead") or macro_quant.get("leading_sectors") or [],
+        "sector_avoid": source.get("sector_avoid") or macro_quant.get("avoid_sectors") or [],
         "sector_bias": sector_bias,
         "execution_bias": {k: v for k, v in execution_bias.items() if v not in ("", None, [])},
+        "plain_language_advisory": governed_packet.get("plain_language_advisory", ""),
+        "bond": governed_packet.get("bond", {}),
+        "auction_calendar": governed_packet.get("auction_calendar", {}),
+        "conflicts": governed_packet.get("conflicts", []),
+        "source_manifest": governed_packet.get("source_manifest", {}),
     }
 
-# â”€â”€â”€ PRIORITY SCORING (pipeline-native fields) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── PRIORITY SCORING (pipeline-native fields) ──────────────────────────────
 def _compute_priority_score(sig):
     """
     Priority score built entirely from new pipeline fields.
@@ -704,15 +885,15 @@ def _compute_priority_score(sig):
     sb_campaign, sb_execution_mode, sb_conv_score, sb_risk_label.
 
     Weights (sum to 1.0):
-      options_verdict    0.22  â€” options layer verdict
-      campaign_verdict   0.16  â€” campaign readiness
-      execution_verdict  0.12  â€” execution gate
-      eil_composite      0.14  â€” EIL execution quality
-      ev2_ev_conf_adj    0.10  â€” EV engine (post-fix: 0.003â€“0.625)
-      rr_options         0.08  â€” risk/reward
-      options_score      0.08  â€” options contract quality
-      wbs                0.05  â€” wall break score (icing)
-      garch_tailwind     0.05  â€” vol state from GARCH
+      options_verdict    0.22  — options layer verdict
+      campaign_verdict   0.16  — campaign readiness
+      execution_verdict  0.12  — execution gate
+      eil_composite      0.14  — EIL execution quality
+      ev2_ev_conf_adj    0.10  — EV engine (post-fix: 0.003–0.625)
+      rr_options         0.08  — risk/reward
+      options_score      0.08  — options contract quality
+      wbs                0.05  — wall break score (icing)
+      garch_tailwind     0.05  — vol state from GARCH
     """
     def _f(key, default=0.0):
         try:
@@ -751,7 +932,7 @@ def _compute_priority_score(sig):
     # EIL composite
     w_eil = min(eil_c / 100, 1.0) * 0.14
 
-    # EV engine â€” range is 0.002â€“0.025 pre-fix, 0.003â€“0.625 post-fix
+    # EV engine — range is 0.002–0.025 pre-fix, 0.003–0.625 post-fix
     w_ev2 = min(max((ev_adj + 0.25) / 0.50, 0), 1) * 0.10
 
     # RR
@@ -760,11 +941,11 @@ def _compute_priority_score(sig):
     # Options score
     w_opt = min(opt_s / 100, 1.0) * 0.08
 
-    # WBS â€” icing, not gate
+    # WBS — icing, not gate
     wbs_mult = {"PROBABLE": 1.0, "POSSIBLE": 0.6, "UNLIKELY": 0.2}.get(wbs_g, 0)
     w_wbs = (wbs_s / 100) * wbs_mult * 0.05
 
-    # GARCH vol state â€” cheap vol = buying edge
+    # GARCH vol state — cheap vol = buying edge
     w_gar = (1.0 if tail < -0.03 else 0.5 if abs(tail) <= 0.03 else 0.1) * 0.05
 
     raw = (w_ov + w_cv + w_ev + w_eil + w_ev2 + w_rr + w_opt + w_wbs + w_gar) * 100
@@ -923,7 +1104,7 @@ def _finalise_lab_priority_ranking(signals):
     for rank, sig in enumerate(ranked, 1):
         sig["priority_rank"] = rank
 
-# â”€â”€â”€ CONVEXITY CHECKS (pipeline-native) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── CONVEXITY CHECKS (pipeline-native) ─────────────────────────────────────
 def _compute_conv_checks(sig):
     """
     Replaces sb_c_compression/energy/underpriced_vol/gamma_proximity/runway
@@ -986,7 +1167,7 @@ def _compute_conv_checks(sig):
         "conv_score":    conv_score,
     }
 
-# â”€â”€â”€ STAGE LADDER (execution readiness) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── STAGE LADDER (execution readiness) ─────────────────────────────────────
 def _compute_stage_ladder(sig):
     """
     Repurposes Stage Ladder as Execution Readiness across 4 intelligent layers.
@@ -1014,10 +1195,10 @@ def _compute_stage_ladder(sig):
     alert = "3" if s3 and not s4 else "2" if s2 and not s3 else ""
 
     summary = (
-        "All 4 layers aligned â€” ENTER NOW" if s4 else
-        f"EIL cleared Â· waiting on execution gate" if s3 else
-        f"Campaign ready Â· EIL checking microstructure" if s2 else
-        f"Signal triggered Â· campaign building" if s1 else
+        "All 4 layers aligned — ENTER NOW" if s4 else
+        f"EIL cleared · waiting on execution gate" if s3 else
+        f"Campaign ready · EIL checking microstructure" if s2 else
+        f"Signal triggered · campaign building" if s1 else
         "Signal not yet triggered"
     )
 
@@ -1029,7 +1210,7 @@ def _compute_stage_ladder(sig):
         "stages_passed":   current,
     }
 
-# â”€â”€â”€ MAIN LOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── MAIN LOAD ──────────────────────────────────────────────────────────────
 def _load_run(run_id, force_reload=False):
     run_dir = RUNS_DIR / run_id
     if not run_dir.exists():
@@ -1039,12 +1220,12 @@ def _load_run(run_id, force_reload=False):
     if not force_reload and cached and cached.get("_cache_signature") == current_cache_signature:
         return cached
     if not force_reload and cached:
-        print(f"  â†» Lab cache refresh: Morning handoff changed for run {run_id}")
+        print(f"  ↻ Lab cache refresh: Morning handoff changed for run {run_id}")
 
     result = {"run_id": run_id, "loaded_at": _utc_iso()}
     sb_dir = _find_superbrain_dir(run_dir)
 
-    # â”€â”€ 1. PRIMARY SIGNAL SOURCE: eil_enriched (232 cols, 1312 rows) â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 1. PRIMARY SIGNAL SOURCE: eil_enriched (232 cols, 1312 rows) ────────
     # This replaces superbrain_enriched as the base signal table.
     eil_path = _glob_first(sb_dir, f"eil_enriched_{run_id}.csv")
     if not eil_path:
@@ -1052,17 +1233,17 @@ def _load_run(run_id, force_reload=False):
     eil_rows = _read_csv(eil_path)
     result["signals"] = eil_rows
     eil_map = {r.get("ticker","").upper(): r for r in eil_rows}
-    print(f"  âœ“ EIL (primary): {len(eil_rows)} signals")
+    print(f"  ✓ EIL (primary): {len(eil_rows)} signals")
 
-    # â”€â”€ 2. SUPERBRAIN: sb_final_verdict only â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 2. SUPERBRAIN: sb_final_verdict only ────────────────────────────────
     sb_path = _glob_first(sb_dir, f"superbrain_enriched_{run_id}.csv")
     if not sb_path:
         sb_path = _glob_first(sb_dir, "superbrain_enriched_*.csv")
     sb_rows = _read_csv(sb_path)
     sb_map = {r.get("ticker","").upper(): r for r in sb_rows}
-    print(f"  âœ“ SuperBrain (verdict only): {len(sb_rows)} rows")
+    print(f"  ✓ SuperBrain (verdict only): {len(sb_rows)} rows")
 
-    # â”€â”€ 3. EXECUTION VERDICTS: campaign_verdict, execution_verdict â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 3. EXECUTION VERDICTS: campaign_verdict, execution_verdict ───────────
     exe_path = _glob_first(run_dir / "execution", f"execution_v3_5_{run_id}.csv")
     if not exe_path:
         exe_path = _glob_first(run_dir / "execution", "execution_v3_5_*.csv")
@@ -1073,9 +1254,9 @@ def _load_run(run_id, force_reload=False):
     exe_rows = _read_csv(exe_path)
     exe_map = {r.get("ticker","").upper(): r for r in exe_rows}
     result["execution_signals"] = exe_rows
-    print(f"  âœ“ Execution verdicts: {len(exe_rows)} rows")
+    print(f"  ✓ Execution verdicts: {len(exe_rows)} rows")
 
-    # â”€â”€ 4. OPTIONS INTELLIGENCE (opt__ prefix) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 4. OPTIONS INTELLIGENCE (opt__ prefix) ───────────────────────────────
     opt_path = _glob_first(run_dir / "options", f"options_intelligence_{run_id}.csv")
     if not opt_path:
         opt_path = _glob_first(run_dir / "options", "options_intelligence_*.csv")
@@ -1097,9 +1278,9 @@ def _load_run(run_id, force_reload=False):
 
     opt_map = {r.get("ticker","").upper(): _norm_opt(r) for r in opt_rows}
     result["options_intelligence"] = opt_rows
-    print(f"  âœ“ Options intel: {len(opt_rows)} rows")
+    print(f"  ✓ Options intel: {len(opt_rows)} rows")
 
-    # â”€â”€ 5. VANGUARD (vg__ prefix) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 5. VANGUARD (vg__ prefix) ────────────────────────────────────────────
     vg_path = _glob_first(run_dir / "options", f"vanguard_signals_enriched_{run_id}.csv")
     if not vg_path:
         vg_path = _glob_first(run_dir / "vanguard", "vanguard_signals_enriched_*.csv")
@@ -1108,21 +1289,21 @@ def _load_run(run_id, force_reload=False):
     vg_rows = _read_csv(vg_path)
     vg_map = {r.get("ticker","").upper(): r for r in vg_rows}
     result["vanguard_signals"] = vg_rows
-    print(f"  âœ“ Vanguard: {len(vg_rows)} rows")
+    print(f"  ✓ Vanguard: {len(vg_rows)} rows")
 
-    # â”€â”€ 6. WBS (wbs__ prefix) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 6. WBS (wbs__ prefix) ────────────────────────────────────────────────
     wbs_path = _glob_first(sb_dir, f"wall_break_scores_{run_id}.csv")
     if not wbs_path:
         wbs_path = _glob_first(sb_dir, "wall_break_scores_*.csv")
     wbs_rows = _read_csv(wbs_path)
     wbs_map = {r.get("ticker","").upper(): r for r in wbs_rows}
     result["wall_break_scores"] = wbs_rows
-    print(f"  âœ“ WBS: {len(wbs_rows)} rows")
+    print(f"  ✓ WBS: {len(wbs_rows)} rows")
 
     wbs_sum_path = _glob_first(sb_dir, "wall_break_summary_*.json")
     result["wall_break_summary"] = _read_json(wbs_sum_path)
 
-    # â”€â”€ 7. GARCH (garch__ prefix) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 7. GARCH (garch__ prefix) ────────────────────────────────────────────
     garch_path = _glob_first(run_dir / "qomega", f"garch_forecasts_{run_id}.csv")
     if not garch_path:
         garch_path = _glob_first(run_dir / "qomega", "garch_forecasts_*.csv")
@@ -1131,7 +1312,7 @@ def _load_run(run_id, force_reload=False):
     garch_rows = _read_csv(garch_path)
     garch_map = {r.get("ticker","").upper(): r for r in garch_rows}
     result["garch_forecasts"] = garch_rows
-    print(f"  âœ“ GARCH: {len(garch_rows)} rows")
+    print(f"  ✓ GARCH: {len(garch_rows)} rows")
 
     if garch_rows:
         tailwinds = [float(r.get("l3_iv_tailwind_score",0) or 0) for r in garch_rows]
@@ -1147,29 +1328,35 @@ def _load_run(run_id, force_reload=False):
     else:
         result["garch_stats"] = {}
 
-    # â”€â”€ 8. MACRO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 8. MACRO ─────────────────────────────────────────────────────────────
     ci_path = _glob_first(run_dir / "core_intel", f"core_intel_dossiers_{run_id}.json")
     if not ci_path:
         ci_path = _glob_first(run_dir / "core_intel", "core_intel_dossiers_*.json")
     core_intel = _read_json(ci_path)
-    raw_macro = core_intel.get("macro", {}) if isinstance(core_intel, dict) else {}
+    governed_macro_path = run_dir / "interpreter" / "interpreter_macro_context.json"
+    governed_macro = _read_json(governed_macro_path)
+    raw_macro = (
+        governed_macro
+        if isinstance(governed_macro, dict) and governed_macro
+        else core_intel.get("macro", {}) if isinstance(core_intel, dict) else {}
+    )
     dossier_list = core_intel.get("dossiers", []) if isinstance(core_intel, dict) else []
     dossier_map = {d.get("ticker","").upper(): d for d in dossier_list}
     result["macro"] = _normalise_macro(raw_macro)
 
-    # â”€â”€ 9. MORNING VALIDATION (mv__ prefix) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 9. MORNING VALIDATION (mv__ prefix) ──────────────────────────────────
     handoff_paths = _morning_handoff_paths(run_dir, sb_dir, run_id)
     mv_path = handoff_paths["morning_validation"]
     mv_rows = _read_csv(mv_path) if mv_path else []
     mv_map = {r.get("ticker","").upper(): r for r in mv_rows}
     result["mv_signals"] = mv_rows
-    print(f"  âœ“ Morning validation: {len(mv_rows)} rows")
+    print(f"  ✓ Morning validation: {len(mv_rows)} rows")
 
     eod_path = handoff_paths["eod_candidates"]
     eod_candidate_rows = _read_csv(eod_path) if eod_path else []
     eod_candidate_map = {r.get("ticker","").upper(): r for r in eod_candidate_rows}
     result["eod_candidates"] = eod_candidate_rows
-    print(f"  âœ“ EOD candidates: {len(eod_candidate_rows)} rows")
+    print(f"  ✓ EOD candidates: {len(eod_candidate_rows)} rows")
 
     # Lab lifecycle:
     #   1) After EOD run: show morning_candidates as the prep queue.
@@ -1206,11 +1393,11 @@ def _load_run(run_id, force_reload=False):
     print(f"  Lab handoff: {handoff_mode} via {handoff_source} | {len(result['signals'])}/{pre_filter_count} rows")
 
 
-    # â”€â”€ 10. DISCOVERY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 10. DISCOVERY ─────────────────────────────────────────────────────────
     disc_path = _glob_first(run_dir / "discovery", "discovery_candidates_*.csv")
     result["discovery"] = _read_csv(disc_path)
 
-    # â”€â”€ 11. V5 SIGNALS (v5__ prefix) â€” 32 candidate execution layer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── 11. V5 SIGNALS (v5__ prefix) — 32 candidate execution layer ──────────
     # Load from superbrain dir or runs dir. Placed there manually or by pipeline.
     v5_path = _glob_latest(sb_dir, "AVSHUNTER_SIGNALS_V5_*.csv")
     if not v5_path:
@@ -1220,13 +1407,13 @@ def _load_run(run_id, force_reload=False):
     v5_rows = _read_csv(v5_path) if v5_path else []
     v5_map = {r.get("ticker","").upper(): r for r in v5_rows}
     result["v5_signals"] = v5_rows
-    print(f"  âœ“ V5 signals: {len(v5_rows)} rows ({v5_path.name if v5_path else 'not found'})")
+    print(f"  ✓ V5 signals: {len(v5_rows)} rows ({v5_path.name if v5_path else 'not found'})")
 
-    # â”€â”€ SUMMARY JSON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── SUMMARY JSON ──────────────────────────────────────────────────────────
     sum_path = _glob_first(sb_dir, "superbrain_summary_*.json")
     result["summary"] = _read_json(sum_path)
 
-    # â”€â”€ RUN HEALTH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── RUN HEALTH ────────────────────────────────────────────────────────────
     required = [("eil_enriched", eil_path)]
     optional = [
         ("superbrain_enriched", sb_path),
@@ -1247,7 +1434,7 @@ def _load_run(run_id, force_reload=False):
         "missing_optional": missing_opt,
     }
 
-    # â”€â”€ MERGE: annotate each signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── MERGE: annotate each signal ───────────────────────────────────────────
     def _first_nonempty(*values):
         for val in values:
             if val is None:
@@ -1557,8 +1744,8 @@ def _load_run(run_id, force_reload=False):
         sig.setdefault("campaign_verdict",  exe.get("campaign_verdict",""))
         sig.setdefault("execution_verdict", exe.get("execution_verdict",""))
 
-        # â”€â”€ FIELD ALIASES: map new pipeline fields to lab's old names â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        # The UI reads these bare names â€” set them from eil fields
+        # ── FIELD ALIASES: map new pipeline fields to lab's old names ─────────
+        # The UI reads these bare names — set them from eil fields
         sig.setdefault("rr",                sig.get("rr_options",""))
         sig.setdefault("ev",                sig.get("ev2_ev_conf_adj","") or sig.get("eil_ev_net",""))
         sig.setdefault("ev_final",          sig.get("ev2_ev_conf_adj",""))
@@ -1591,7 +1778,7 @@ def _load_run(run_id, force_reload=False):
             sig.setdefault("sb_position_size_pct",
                            100 if eil_c >= 85 else 75 if eil_c >= 70 else 55 if eil_c >= 55 else 35)
 
-        # Contract validity â†’ veto display
+        # Contract validity → veto display
         cv_flags = sig.get("contract_validity","")
         bad_flags = [f for f in cv_flags.split("|") if f and f != "CONTRACT_OK"]
         sig.setdefault("sb_vetoes",       "|".join(bad_flags) if bad_flags else "")
@@ -1792,7 +1979,7 @@ def _load_run(run_id, force_reload=False):
         sig["sb_time_stop_date"]   = sig.get("opt__contract_expiry","")
         sig["sb_checkpoint_rule"]  = sig.get("wbs__wbs_wall_stall_rule","")
 
-    # â”€â”€ RESEARCH PRIORITY SCORE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── RESEARCH PRIORITY SCORE ───────────────────────────────────────────────
     # Final action ranking is recomputed after morning validation/Lab control.
     for sig in result["signals"]:
         score = _compute_priority_score(sig)
@@ -1838,8 +2025,56 @@ def _load_run(run_id, force_reload=False):
         "conflict_flags": run_manifest.get("conflict_flags", []),
     }
     _opportunity_book_path = RUNS_DIR / run_id / "intelligence_lab" / f"final_opportunity_book_{run_id}.json"
-    if not _opportunity_book_path.exists():
-        write_final_opportunity_book(run_id, result["signals"], run_manifest, RUNS_DIR)
+    governed_book = _governed_lab_book(run_id)
+    if governed_book:
+        result["signals"] = [dict(row) for row in governed_book.get("rows", [])]
+        _book_schema = governed_book.get("lab_schema_version", "lab_signal_book_v2")
+        result["lab_signal_source"] = (
+            "GOVERNED_ACCEPTED_LAB_SIGNAL_BOOK_V3"
+            if _book_schema == "lab_signal_book_v3"
+            else "GOVERNED_FINAL_OPPORTUNITY_BOOK_V2"
+        )
+        result["lab_reconciliation"] = dict(governed_book.get("reconciliation") or {})
+    else:
+        # The trader-facing production surface is governed-book only.  Legacy
+        # assembly remains useful for diagnostics but cannot be shown as an
+        # actionable signal universe.
+        result["signals"] = []
+        result["lab_signal_source"] = "GOVERNED_BOOK_UNAVAILABLE_FAIL_CLOSED"
+        result["lab_data_notice"] = (
+            (result.get("lab_data_notice") or "")
+            + " Governed Lab book unavailable; actionable signals are withheld."
+        ).strip()
+        result["lab_fail_closed"] = True
+        result["lab_failure_reason"] = "GOVERNED_BOOK_OR_LINEAGE_UNAVAILABLE"
+        result["run_health"] = {
+            **dict(result.get("run_health") or {}),
+            "ok": False,
+            "next_action": "PUBLISH_ACCEPTED_GOVERNED_LAB_BOOK",
+        }
+    # MSI display is additive and non-authoritative.  It is enabled only after
+    # the governed v3 rollout flag is set; the final opportunity book remains
+    # the sole source of membership and trading authority.
+    if active_flags().lab_v3_view:
+        _overlay_path = RUNS_DIR / run_id / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl"
+        try:
+            _overlays = load_overlays(_overlay_path)
+            result["signals"] = apply_latest_compatible_overlays(result["signals"], _overlays)
+            result["msi_evidence_overlay"] = {
+                "enabled": True,
+                "path": str(_overlay_path),
+                "records": len(_overlays),
+                "authority": "ADVISORY_EVIDENCE_ONLY",
+            }
+        except OverlayValidationError as _overlay_error:
+            result["msi_evidence_overlay"] = {
+                "enabled": True,
+                "path": str(_overlay_path),
+                "records": 0,
+                "authority": "ADVISORY_EVIDENCE_ONLY",
+                "status": "REJECTED_INVALID_OVERLAY",
+                "reason": str(_overlay_error),
+            }
     _verdict_counts = {}
     for _sig in result["signals"]:
         _v = str(_sig.get("lab_verdict") or _sig.get("sb_final_verdict") or "UNKNOWN").upper()
@@ -1852,7 +2087,7 @@ def _load_run(run_id, force_reload=False):
         "verdict_counts": _verdict_counts,
     }
 
-    # â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── STATS ─────────────────────────────────────────────────────────────────
     signals  = result["signals"]
     execute  = [s for s in signals if s.get("options_verdict","").upper()=="EXECUTE"
                 or str(s.get("lab_verdict","")).upper() in ("GO", "GO_LIMIT", "PROBE", "EOD_EXEC")
@@ -1866,9 +2101,15 @@ def _load_run(run_id, force_reload=False):
     v5_probe = [s for s in signals if s.get("thesis_decision","")=="PROBE"]
 
     wbs_grades = {}
-    for r in wbs_rows:
+    governed_wbs_scores = []
+    for r in signals:
         g = r.get("wbs_grade","")
         if g: wbs_grades[g] = wbs_grades.get(g,0)+1
+        try:
+            if str(r.get("wbs", "")).strip() not in ("", "nan", "None"):
+                governed_wbs_scores.append(float(r.get("wbs")))
+        except (TypeError, ValueError):
+            pass
 
     eil_verdicts = {}
     for r in eil_rows:
@@ -1926,13 +2167,13 @@ def _load_run(run_id, force_reload=False):
         "top_execute":         [s.get("ticker") for s in execute],
         "top_armed":           summary_j.get("top_armed",[s.get("ticker") for s in armed[:8]]),
         # WBS
-        "wbs_count":           len(wbs_rows),
+        "wbs_count":           sum(wbs_grades.values()),
         "wbs_probable":        wbs_grades.get("PROBABLE",0),
         "wbs_possible":        wbs_grades.get("POSSIBLE",0),
         "wbs_unlikely":        wbs_grades.get("UNLIKELY",0),
         "wbs_imminent":        wbs_grades.get("IMMINENT",0),
-        "wbs_avg_score":       result.get("wall_break_summary",{}).get("wbs_avg",0),
-        "wbs_max_score":       result.get("wall_break_summary",{}).get("wbs_max",0),
+        "wbs_avg_score":       round(sum(governed_wbs_scores) / len(governed_wbs_scores), 2) if governed_wbs_scores else 0,
+        "wbs_max_score":       round(max(governed_wbs_scores), 2) if governed_wbs_scores else 0,
         # EIL
         "eil_count":           len(eil_rows),
         "eil_execute_now":     eil_verdicts.get("EXECUTE",0) + eil_verdicts.get("EXECUTE_NOW",0),
@@ -1969,8 +2210,8 @@ def _load_run(run_id, force_reload=False):
         **result.get("garch_stats",{}),
         # Priority ranking
         "top_priority":        [s.get("ticker") for s in sorted(
-            [x for x in signals if x.get("priority_rank",9999)<=10],
-            key=lambda x: x.get("priority_rank",9999))],
+            [x for x in signals if _safe_int(x.get("priority_rank"), 9999) <= 10],
+            key=lambda x: _safe_int(x.get("priority_rank"), 9999))],
         "data_weak_count":     sum(1 for s in signals if str(s.get("ev_status","")).upper()=="DATA_WEAK"),
         "exec_mode_full":      sum(1 for s in signals if s.get("thesis_decision","")=="GO"),
         "exec_mode_reduced":   sum(1 for s in signals if "REDUCED" in s.get("v5_execution_mode","")),
@@ -1986,7 +2227,7 @@ def _load_run(run_id, force_reload=False):
     _run_cache[run_id] = result
     return result
 
-# â”€â”€â”€ ROUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── ROUTES ────────────────────────────────────────────────────────────────────
 
 
 
@@ -2019,9 +2260,11 @@ _LAB_COMPACT_BASE_FIELDS = {
     "precor_intent", "sector", "sector_short", "gics_sector", "sector_name", "sector_etf", "sector_proxy", "industry", "macro_regime", "macro_regime_label",
     "regime_drift_status", "time_horizon", "horizon_bucket", "hold_label", "hold_urgency",
 }
+_LAB_COMPACT_BASE_FIELDS.update(field for field in FINAL_BOOK_FIELDS if field != "source_payload_json")
 _LAB_COMPACT_PREFIXES = (
     "opt__", "wbs__", "garch__", "mv__", "doss__", "display_", "lab_", "sb_",
-    "ev2_", "mv_", "tce_", "qomega_", "eil_",
+    "ev2_", "ev3_", "mv_", "tce_", "qomega_", "eil_", "eod__", "exe__",
+    "trigger_", "catalyst_", "actuarial_", "contract_",
 )
 _LAB_COMPACT_VG_FIELDS = {
     "vg__physics_state_id", "vg__hidden_state_label", "vg__state_transition_label",
@@ -2039,9 +2282,118 @@ _LAB_DROP_TOPLEVEL = {
     "garch_forecasts", "v5_signals",
 }
 
+
+def _governed_ui_projection(sig):
+    """Expose the v2 governed book through the Lab's legacy display names.
+
+    This is deliberately a name-only projection.  It must not rescore, rerank,
+    infer execution permission, or otherwise reinterpret the governed row.
+    """
+    if not isinstance(sig, dict) or sig.get("lab_schema_version") != "lab_signal_book_v2":
+        return sig
+
+    out = dict(sig)
+
+    def project(target, *sources):
+        current = out.get(target)
+        if current is not None and str(current).strip() not in ("", "nan", "None"):
+            return
+        for source in sources:
+            value = out.get(source)
+            if value is not None and str(value).strip() not in ("", "nan", "None"):
+                out[target] = value
+                return
+
+    aliases = {
+        "opt__contract_strike": ("strike",),
+        "opt__contract_expiry": ("expiry",),
+        "opt__contract_dte": ("dte",),
+        "opt__premium_mid": ("premium_mid", "contract_mid"),
+        "opt__contract_premium": ("premium_mid", "contract_mid"),
+        "opt__recommended_contract": ("contract_symbol",),
+        "opt__options_strategy": ("instrument",),
+        "opt__structural_target": ("structural_target", "target_price"),
+        "opt__hold_label": ("hold_period", "hold_window", "time_horizon"),
+        "opt__hold_urgency": ("hold_urgency",),
+        "opt__gain_at_target": ("option_gain_at_target",),
+        "opt__breakeven_price": ("breakeven_price",),
+        "opt__breakeven_pct": ("breakeven_pct",),
+        "opt__contract_delta": ("contract_delta",),
+        "opt__contract_gamma": ("contract_gamma",),
+        "opt__contract_theta": ("contract_theta",),
+        "opt__contract_vega": ("contract_vega",),
+        "opt__contract_iv": ("contract_iv",),
+        "opt__options_score": ("options_score",),
+        "opt__iv_rank": ("iv_rank",),
+        "opt__ivp_label": ("ivp_label",),
+        "opt__atm_iv": ("atm_iv",),
+        "opt__hv_30d": ("hv_30d",),
+        "opt__iv_vs_hv": ("iv_vs_hv",),
+        "opt__term_structure": ("term_structure",),
+        "opt__theta_drag_pct": ("theta_drag_pct",),
+        "opt__vega_risk_pct": ("vega_risk_pct",),
+        "opt__theta_constrained": ("theta_constrained",),
+        "opt__contract_oi": ("contract_oi",),
+        "opt__contract_volume": ("contract_volume",),
+        "opt__contract_spread_pct": ("spread_pct",),
+        "opt__contract_mark_synthetic": ("contract_mark_synthetic",),
+        "opt__call_wall": ("call_wall",),
+        "opt__put_wall": ("put_wall",),
+        "opt__gamma_flip": ("gamma_flip",),
+        "opt__pcr_signal": ("pcr_signal",),
+        "opt__target_in_play": ("target_in_play",),
+        "opt__max_pain": ("max_pain",),
+        "opt__positive_factors": ("positive_factors",),
+        "opt__negative_factors": ("negative_factors",),
+        "wbs__wbs_grade": ("wbs_grade",),
+        "wbs__wbs_score": ("wbs",),
+        "wbs__wbs": ("wbs",),
+        "wbs__wall_price": ("wbs_wall_price",),
+        "wbs__wbs_wall_price": ("wbs_wall_price",),
+        "wbs__distance_to_wall_pct": ("wbs_wall_dist_pct",),
+        "wbs__wbs_wall_dist_pct": ("wbs_wall_dist_pct",),
+        "wbs__break_direction": ("wbs_break_direction",),
+        "wbs__momentum_alignment_state": ("wbs_momentum_alignment_state",),
+        "garch__l3_vol_forecast": ("garch_forecast_vol",),
+        "garch__l3_iv_tailwind_score": ("garch_iv_tailwind_score",),
+        "garch__l3_jump_risk_flag": ("garch_jump_risk_flag",),
+        "garch__l3_forecast_confidence": ("garch_forecast_confidence",),
+        "garch__l3_expected_move_1_5d": ("garch_expected_move_1_5d",),
+        "garch__l3_expected_move_6_10d": ("garch_expected_move_6_10d",),
+        "garch__l3_expected_move_11_20d": ("garch_expected_move_11_20d",),
+        "garch__l3_n_bars": ("garch_price_bars_used",),
+        "sb_instrument_now": ("instrument",),
+        "sb_verdict_reason": ("entry_reason",),
+        "sb_checkpoint_rule": ("wbs_wall_stall_rule", "ts_checkpoint_rule"),
+        "sb_time_stop_date": ("ts_expiry_date", "expiry"),
+        "sb_conv_score": ("convexity_score",),
+        "sb_current_stage": ("readiness_stage",),
+        "sb_ladder_summary": ("readiness_label",),
+        "composite": ("composite_score",),
+        "display_eod_candidate_status": ("eod_candidate_status",),
+    }
+    for target, sources in aliases.items():
+        project(target, *sources)
+
+    enter_now = out.get("readiness_enter_now") is True or str(out.get("readiness_enter_now", "")).lower() == "true"
+    out["sb_enter_now_stages"] = "4" if enter_now else ""
+    readiness_stage = str(out.get("readiness_stage", "") or "")
+    out["sb_alert_stages"] = "3" if not enter_now and readiness_stage == "3" else ""
+    out["sb_stages_missed"] = 0
+
+    if not str(out.get("position_size_display", "") or "").strip():
+        if str(out.get("morning_data_state", "")).upper() == "NOT_RUN_EOD":
+            out["position_size_display"] = "0% - MORNING VALIDATION REQUIRED"
+        elif not enter_now:
+            out["position_size_display"] = "0% - MANUAL REVIEW"
+    out["sb_position_size_display"] = out.get("position_size_display", "")
+    return out
+
+
 def _compact_lab_signal(sig):
     if not isinstance(sig, dict):
         return sig
+    sig = _governed_ui_projection(sig)
     out = {}
     for k, v in sig.items():
         if (
@@ -2171,7 +2523,7 @@ def api_health():
         "run_count": len(runs),
         "latest_run": runs[0] if runs else None,
         "server_time": _utc_iso(),
-        "version": "2.0 â€” EIL-primary architecture"
+        "version": "2.1 — governed Lab signal book"
     })
 
 @app.route("/api/runs")
@@ -2268,7 +2620,7 @@ def api_reload_morning():
         count = len(_run_cache)
         _run_cache.clear()
         msg = f"All {count} cached runs cleared"
-    print(f"  ðŸ”„ /api/reload_morning â€” {msg}")
+    print(f"  🔄 /api/reload_morning — {msg}")
     return jsonify({"ok": True, "message": msg})
 
 @app.route("/api/enter_trade", methods=["POST"])
@@ -2330,6 +2682,7 @@ def api_enter_trade():
                 "ok": False,
                 "error": f"{ticker}: live validation confirmation required before entry",
                 "lab_verdict": resolved["lab_verdict"],
+                "lab_tradeable": resolved["lab_tradeable"],
                 "execution_lock_reason": resolved["execution_lock_reason"],
                 "morning_lab_alignment_status": resolved["morning_lab_alignment_status"],
                 "morning_lab_alignment_reason": resolved["morning_lab_alignment_reason"],
@@ -2462,7 +2815,7 @@ def api_enter_trade():
         if not tradeable:
             return jsonify({
                 "ok": False,
-                "error": f"{ticker}: options_verdict={opt_v}, campaign={camp_v}, thesis={thesis} â€” not tradeable"
+                "error": f"{ticker}: options_verdict={opt_v}, campaign={camp_v}, thesis={thesis} — not tradeable"
             }), 400
 
         existing = find_open_contract(ticker)
@@ -2597,21 +2950,21 @@ def api_export_csv():
         return jsonify({"ok":False,"error":str(e),"trace":traceback.format_exc()}), 500
 
 
-# â”€â”€â”€ SPRINT 3: KPI SCOREBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── SPRINT 3: KPI SCOREBOARD ──────────────────────────────────────────────────
 @app.route("/api/kpi")
 def api_kpi():
     """
-    KPI scoreboard â€” computes pipeline health metrics across the last N runs.
+    KPI scoreboard — computes pipeline health metrics across the last N runs.
 
     Business model alignment:
-      Pattern  â†’ candidate_ratio (discovery finding setups)
-      Profile  â†’ actuarial_match_rate (edge database coverage)
-      Players  â†’ call_put_ratio (direction balance)
-      Gamma    â†’ avg_iv_rank (options premium quality)
-      Contract â†’ avg_spread_pct (executability)
-      Trigger  â†’ morning_pass_rate (live confirmation rate)
-      Kill     â†’ stale_data_rate (data integrity)
-      Monetise â†’ execute_rate, avg_trust_score (pipeline confidence)
+      Pattern  → candidate_ratio (discovery finding setups)
+      Profile  → actuarial_match_rate (edge database coverage)
+      Players  → call_put_ratio (direction balance)
+      Gamma    → avg_iv_rank (options premium quality)
+      Contract → avg_spread_pct (executability)
+      Trigger  → morning_pass_rate (live confirmation rate)
+      Kill     → stale_data_rate (data integrity)
+      Monetise → execute_rate, avg_trust_score (pipeline confidence)
 
     Returns targets alongside actuals so the operator can see progress.
     """
@@ -2673,14 +3026,14 @@ def api_kpi():
             except Exception:
                 continue
 
-        # KPI targets (Sprint 3 â€” business model alignment)
+        # KPI targets (Sprint 3 — business model alignment)
         targets = {
-            "execute_rate":    {"target": 0.10, "label": "â‰¥10% of signals EXECUTE"},
+            "execute_rate":    {"target": 0.10, "label": "≥10% of signals EXECUTE"},
             "call_put_ratio":  {"target": "market_dependent", "label": "Not 100/0 without explanation"},
             "stale_rate":      {"target": 0.02, "label": "<2% stale data"},
             "no_match_rate":   {"target": 0.20, "label": "<20% actuarial no-match"},
-            "avg_trust_score": {"target": 80.0, "label": "â‰¥80 avg signal trust"},
-            "avg_spread_pct":  {"target": 8.0,  "label": "â‰¤8% avg options spread"},
+            "avg_trust_score": {"target": 80.0, "label": "≥80 avg signal trust"},
+            "avg_spread_pct":  {"target": 8.0,  "label": "≤8% avg options spread"},
         }
 
         # Summary across all runs
@@ -2704,11 +3057,11 @@ def api_kpi():
         return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()}), 500
 
 
-# â”€â”€â”€ ITEM 3: OUTCOME CAPTURE â€” same principle as trade entry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── ITEM 3: OUTCOME CAPTURE — same principle as trade entry ──────────────────
 # Three endpoints mirror the trade entry flow:
-#   /api/monitor_positions  â€” see open positions with current marks (read-only)
-#   /api/log_exit           â€” record an exit and classify the outcome
-#   /api/outcomes           â€” view closed trade performance vs predicted edge
+#   /api/monitor_positions  — see open positions with current marks (read-only)
+#   /api/log_exit           — record an exit and classify the outcome
+#   /api/outcomes           — view closed trade performance vs predicted edge
 
 _JOURNAL_DB = BASE_DIR / "data" / "journal" / "trade_journal.db"
 
@@ -2717,7 +3070,7 @@ _JOURNAL_DB = BASE_DIR / "data" / "journal" / "trade_journal.db"
 def api_monitor_positions():
     """
     Read-only view of all open positions with current marks and unrealised P&L.
-    Calls outcome_capture.run_monitor in dry_run=True mode â€” no writes.
+    Calls outcome_capture.run_monitor in dry_run=True mode — no writes.
 
     Returns each open position with:
       - current mark from Tastytrade or Polygon
@@ -2736,7 +3089,7 @@ def api_monitor_positions():
             return jsonify({
                 "ok": True,
                 "open_positions": [],
-                "message": "No trade journal found â€” no positions to monitor",
+                "message": "No trade journal found — no positions to monitor",
                 "journal_path": str(_JOURNAL_DB),
             })
 
@@ -2820,14 +3173,14 @@ def api_monitor_positions():
 def api_log_exit():
     """
     Log an exit for an open position.
-    Same principle as /api/enter_trade â€” single action, immediate feedback.
+    Same principle as /api/enter_trade — single action, immediate feedback.
 
     Body (JSON):
-      ticker        â€” required
-      exit_premium  â€” required (actual exit price per contract)
-      exit_reason   â€” optional: TIME_STOP | INVALIDATION | TARGET_HIT | EXPIRY | MANUAL
-      trade_id      â€” optional (auto-detected from journal if omitted)
-      notes         â€” optional
+      ticker        — required
+      exit_premium  — required (actual exit price per contract)
+      exit_reason   — optional: TIME_STOP | INVALIDATION | TARGET_HIT | EXPIRY | MANUAL
+      trade_id      — optional (auto-detected from journal if omitted)
+      notes         — optional
 
     Returns outcome classification and P&L immediately.
     """
@@ -2923,7 +3276,7 @@ def api_log_exit():
             "pnl_usd":       pnl_usd,
             "rr_realised":   rr_realised,
             "outcome_class": outcome_cls,
-            "message":       f"{ticker} exit logged â€” {outcome_cls} ({pnl_pct:+.1f}%)",
+            "message":       f"{ticker} exit logged — {outcome_cls} ({pnl_pct:+.1f}%)",
         })
 
     except Exception as e:
@@ -2939,7 +3292,7 @@ def api_capture_outcomes():
     but only /api/log_exit closes a journal row.
 
     Body (JSON, all optional):
-      dry_run  â€” accepted for compatibility; forced true
+      dry_run  — accepted for compatibility; forced true
 
     What it does:
       1. Reads all open positions from trade journal
@@ -2962,7 +3315,7 @@ def api_capture_outcomes():
             return jsonify({
                 "ok":      True,
                 "exits_detected": 0,
-                "message": "No trade journal found â€” no positions to capture",
+                "message": "No trade journal found — no positions to capture",
             })
 
         result = run_monitor(db_path=_JOURNAL_DB, dry_run=dry_run)
@@ -2991,7 +3344,7 @@ def api_capture_outcomes():
 @app.route("/api/outcomes")
 def api_outcomes():
     """
-    Closed trade performance summary â€” predicted edge vs realised outcomes.
+    Closed trade performance summary — predicted edge vs realised outcomes.
     This is the feedback loop view: are the pipeline's predictions accurate?
 
     Returns:
@@ -3013,7 +3366,7 @@ def api_outcomes():
                 "ok":      True,
                 "summary": [],
                 "recent_trades": [],
-                "message": "No journal found â€” start logging trades via /api/enter_trade",
+                "message": "No journal found — start logging trades via /api/enter_trade",
             })
 
         # Pattern validation summary
@@ -3046,7 +3399,7 @@ def api_outcomes():
         except Exception:
             pass
 
-        # Calibration score â€” how well predicted R:R matches realised
+        # Calibration score — how well predicted R:R matches realised
         calibration = None
         if summary:
             s = summary[0]
@@ -3074,7 +3427,7 @@ def api_outcomes():
         return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()}), 500
 
 
-# â”€â”€â”€ ENTRY POINT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 @app.route("/api/learning_feedback")
 def api_learning_feedback():
     try:
@@ -3088,7 +3441,7 @@ def api_learning_feedback():
 
 if __name__ == "__main__":
     print("=" * 65)
-    print("  AVSHUNTER Â· INTELLIGENCE LAB v2.0")
+    print("  AVSHUNTER · INTELLIGENCE LAB v2.0")
     print("  EIL-primary architecture")
     print("=" * 65)
     print(f"  Pipeline dir : {RUNS_DIR}")

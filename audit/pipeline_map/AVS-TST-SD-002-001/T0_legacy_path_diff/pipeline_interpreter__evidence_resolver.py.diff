@@ -1,0 +1,31 @@
+--- a/pipeline_interpreter/evidence_resolver.py
++++ b/pipeline_interpreter/evidence_resolver.py
+@@ -79,6 +79,14 @@
+     def ticker(self) -> str:
+         return str(self.bundle["ticker"])
+ 
++    @property
++    def frozen_thesis(self) -> Mapping[str, Any]:
++        return dict(self.bundle.get("frozen_thesis") or {})
++
++    @property
++    def current_validation(self) -> Mapping[str, Any]:
++        return dict(self.bundle.get("current_validation") or {})
++
+ 
+ def _text(value: Any) -> str:
+     return str(value or "").strip()
+@@ -146,6 +154,13 @@
+         governed_value = (bundle.get("governed_record") or {}).get(field)
+         if _text(book.get(field)).upper() != _text(governed_value).upper():
+             raise EvidenceResolutionError("BOOK_BUNDLE_AUTHORITY_MISMATCH", field)
++    validation = bundle.get("current_validation") or {}
++    if validation and _text(book.get("validation_event_id")) != _text(
++        validation.get("validation_event_id")
++    ):
++        raise EvidenceResolutionError(
++            "BOOK_BUNDLE_IDENTITY_MISMATCH", "validation_event_id"
++        )
+ 
+ 
+ def _refresh_requirement(

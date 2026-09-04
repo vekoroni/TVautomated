@@ -1,0 +1,116 @@
+{
+ "Discovery": {
+  "rel": "discovery/discovery_candidates_ultimate_20260831_010309.csv",
+  "rows": 1527,
+  "uniq": 1527,
+  "col": "ticker"
+ },
+ "Vanguard": {
+  "rel": "vanguard/vanguard_signals.csv",
+  "rows": 1481,
+  "uniq": 1481,
+  "col": "ticker"
+ },
+ "Vanguard enriched": {
+  "rel": "options/vanguard_signals_enriched_20260831_010309.csv",
+  "rows": 1481,
+  "uniq": 1481,
+  "col": "ticker"
+ },
+ "Options Intelligence": {
+  "rel": "options/options_intelligence_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "Options (phantom)": {
+  "rel": "options/options_intelligence_phantom_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "Horizon 1_5d": {
+  "rel": "horizon/horizon_1_5d_20260831_010309.csv",
+  "rows": 655,
+  "uniq": 655,
+  "col": "ticker"
+ },
+ "Horizon 6_10d": {
+  "rel": "horizon/horizon_6_10d_20260831_010309.csv",
+  "rows": 284,
+  "uniq": 284,
+  "col": "ticker"
+ },
+ "Horizon 11_20d": {
+  "rel": "horizon/horizon_11_20d_20260831_010309.csv",
+  "rows": 0,
+  "uniq": 0,
+  "col": "ticker"
+ },
+ "Horizon blocked": {
+  "rel": "horizon/horizon_blocked_20260831_010309.csv",
+  "rows": 17,
+  "uniq": 17,
+  "col": "ticker"
+ },
+ "SuperBrain enriched": {
+  "rel": "superbrain/superbrain_enriched_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "Wall Break": {
+  "rel": "superbrain/wall_break_scores_20260831_010309.csv",
+  "rows": 31,
+  "uniq": 31,
+  "col": "ticker"
+ },
+ "EIL enriched": {
+  "rel": "superbrain/eil_enriched_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "Execution v3.5": {
+  "rel": "execution/execution_v3_5_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "GARCH": {
+  "rel": "qomega/garch_forecasts_20260831_010309.csv",
+  "rows": 1248,
+  "uniq": 1248,
+  "col": "ticker"
+ },
+ "EOD candidates": {
+  "rel": "morning_validation/morning_candidates_20260831_010309.csv",
+  "rows": 201,
+  "uniq": 201,
+  "col": "ticker"
+ },
+ "Morning blocked review": {
+  "rel": "morning_validation/morning_blocked_review_20260831_010309.csv",
+  "rows": 736,
+  "uniq": 736,
+  "col": "ticker"
+ },
+ "Final book (CSV)": {
+  "rel": "intelligence_lab/final_opportunity_book_20260831_010309.csv",
+  "rows": 201,
+  "uniq": 201,
+  "col": "ticker"
+ },
+ "Options blocked review": {
+  "rel": "options/options_blocked_review.csv",
+  "rows": 311,
+  "uniq": 311,
+  "col": "ticker"
+ },
+ "Contract rejection log": {
+  "rel": "options/contract_rejection_log_20260831_010309.csv",
+  "rows": 1102,
+  "uniq": 1102,
+  "col": "ticker"
+ }
+}

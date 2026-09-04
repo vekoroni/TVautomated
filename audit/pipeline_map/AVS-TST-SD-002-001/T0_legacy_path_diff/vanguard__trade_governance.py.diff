@@ -1,0 +1,41 @@
+--- a/vanguard/trade_governance.py
++++ b/vanguard/trade_governance.py
+@@ -151,9 +151,7 @@
+ 
+         # ── Q2: Macro Regime Flip (HARD) ──────────────────────────────────────
+         q2 = self._check_macro_flip(contract, current_state)
+-        if q2["breach"] and q2.get("severity") == "HARD":
+-            hard_breaches.append(q2)
+-        elif q2["breach"]:
++        if q2["breach"]:
+             soft_breaches.append(q2)
+         else:
+             passing.append(q2)
+@@ -281,22 +279,13 @@
+             return {"gate": gate, "breach": False,
+                     "reason": f"Q2 PASS: Macro regime unchanged ({entry_macro})"}
+ 
+-        transition = (entry_macro, current_macro)
+-        if transition in HARD_MACRO_FLIPS:
+-            return {
+-                "gate": gate, "breach": True, "severity": "HARD",
+-                "reason": (
+-                    f"Q2 BREACH: Macro regime flipped {entry_macro} → {current_macro}. "
+-                    f"Risk environment fundamentally changed — thesis entered in different regime."
+-                )
+-            }
+-
+-        # Softer transition (e.g. RISK_ON → TRANSITIONAL)
++        # Macro never closes or invalidates a ticker thesis. Preserve every
++        # transition as an advisory review item for the human trader.
+         return {
+-            "gate": gate, "breach": True, "severity": "SOFT",
++            "gate": gate, "breach": True, "severity": "ADVISORY",
+             "reason": (
+-                f"Q2 SOFT: Macro drifted {entry_macro} → {current_macro}. "
+-                f"Monitor closely but thesis not fully invalidated."
++                f"Q2 ADVISORY: Macro changed {entry_macro} → {current_macro}. "
++                "Review sector rotation and expression; price/structure retain authority."
+             )
+         }
+ 

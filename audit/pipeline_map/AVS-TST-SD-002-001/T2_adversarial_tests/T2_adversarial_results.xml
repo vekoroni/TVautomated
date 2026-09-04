@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="26" time="1.599" timestamp="2026-09-03T18:51:29.927492+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_not_monetisable_with_viable_quote_is_not_blocked[CALL]" time="0.008" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_not_monetisable_with_viable_quote_is_not_blocked[PUT]" time="0.007" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_not_monetisable_with_viable_quote_is_not_blocked[OTHER]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[DATA_MISSING-CALL]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[DATA_MISSING-PUT]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[INVALID_QUOTE-CALL]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[INVALID_QUOTE-PUT]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[UNSUPPORTED_STRUCTURE-CALL]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[UNSUPPORTED_STRUCTURE-PUT]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[ZERO_BID_REVIEW-CALL]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[ZERO_BID_REVIEW-PUT]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[BLOCKED_WIDE_SPREAD-CALL]" time="0.007" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[BLOCKED_WIDE_SPREAD-PUT]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[MANUAL_LIQUIDITY_REVIEW-CALL]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_viability_failure_blocks_even_when_scenario_is_monetisable[MANUAL_LIQUIDITY_REVIEW-PUT]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_absent_execution_viability_state_must_not_reach_buy_now[CALL]" time="0.006"><failure message="AssertionError: Execution Gate granted BUY_NOW with no execution_viability_state; the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and no equivalent guard exists for the replacement authority&#10;assert 'BUY_NOW' != 'BUY_NOW'">direction = 'CALL'
+
+    @pytest.mark.parametrize("direction", ["CALL", "PUT"])
+    def test_absent_execution_viability_state_must_not_reach_buy_now(direction: str) -&gt; None:
+        """THE ADVERSARIAL PROBE.
+    
+        Before Phase 2 the Execution Gate refused a GO row whose *capital-relevant
+        quote evidence* was missing (``MONETISABILITY_STATE_MISSING`` -&gt;
+        CONTRACT_REPAIR).  Phase 2 deleted that guard and did not replace it for the
+        new authority.  A row that arrives with no ``execution_viability_state`` at
+        all therefore carries no hard current-quote evidence.
+    
+        AVS-SD-002 authority invariant: "missing measurements remain null with an
+        explicit reason and never become zero"; AVS-AR-003 requires the capital
+        owner to fail closed.  This test asserts the fail-closed behaviour.  It is
+        EXPECTED TO FAIL against the current tree -- that failure is the defect.
+        """
+        result = execution_gate(_row(direction, viability=None))
+&gt;       assert result["final_action"] != "BUY_NOW", (
+            "Execution Gate granted BUY_NOW with no execution_viability_state; "
+            "the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and "
+            "no equivalent guard exists for the replacement authority"
+        )
+E       AssertionError: Execution Gate granted BUY_NOW with no execution_viability_state; the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and no equivalent guard exists for the replacement authority
+E       assert 'BUY_NOW' != 'BUY_NOW'
+
+audit\pipeline_map\AVS-TST-SD-002-001\T2_adversarial_tests\test_t2_retired_behaviour_readmission.py:149: AssertionError</failure></testcase><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_absent_execution_viability_state_must_not_reach_buy_now[PUT]" time="0.006"><failure message="AssertionError: Execution Gate granted BUY_NOW with no execution_viability_state; the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and no equivalent guard exists for the replacement authority&#10;assert 'BUY_NOW' != 'BUY_NOW'">direction = 'PUT'
+
+    @pytest.mark.parametrize("direction", ["CALL", "PUT"])
+    def test_absent_execution_viability_state_must_not_reach_buy_now(direction: str) -&gt; None:
+        """THE ADVERSARIAL PROBE.
+    
+        Before Phase 2 the Execution Gate refused a GO row whose *capital-relevant
+        quote evidence* was missing (``MONETISABILITY_STATE_MISSING`` -&gt;
+        CONTRACT_REPAIR).  Phase 2 deleted that guard and did not replace it for the
+        new authority.  A row that arrives with no ``execution_viability_state`` at
+        all therefore carries no hard current-quote evidence.
+    
+        AVS-SD-002 authority invariant: "missing measurements remain null with an
+        explicit reason and never become zero"; AVS-AR-003 requires the capital
+        owner to fail closed.  This test asserts the fail-closed behaviour.  It is
+        EXPECTED TO FAIL against the current tree -- that failure is the defect.
+        """
+        result = execution_gate(_row(direction, viability=None))
+&gt;       assert result["final_action"] != "BUY_NOW", (
+            "Execution Gate granted BUY_NOW with no execution_viability_state; "
+            "the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and "
+            "no equivalent guard exists for the replacement authority"
+        )
+E       AssertionError: Execution Gate granted BUY_NOW with no execution_viability_state; the pre-Phase-2 MONETISABILITY_STATE_MISSING guard was removed and no equivalent guard exists for the replacement authority
+E       assert 'BUY_NOW' != 'BUY_NOW'
+
+audit\pipeline_map\AVS-TST-SD-002-001\T2_adversarial_tests\test_t2_retired_behaviour_readmission.py:149: AssertionError</failure></testcase><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_wide_spread_quote_is_still_stopped_by_the_gate[CALL]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_wide_spread_quote_is_still_stopped_by_the_gate[PUT]" time="0.005" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_spread_between_old_and_new_hard_cap_is_a_behaviour_change[CALL]" time="0.006" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_spread_between_old_and_new_hard_cap_is_a_behaviour_change[PUT]" time="0.004" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_research_advisory_flags_cannot_by_themselves_reach_capital[CALL]" time="0.004" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_research_advisory_flags_cannot_by_themselves_reach_capital[PUT]" time="0.004" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_missing_bid_ask_is_stopped_by_viability_not_by_the_retired_veto[CALL]" time="0.004" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_missing_bid_ask_is_stopped_by_viability_not_by_the_retired_veto[PUT]" time="0.009" /><testcase classname="audit.pipeline_map.AVS-TST-SD-002-001.T2_adversarial_tests.test_t2_retired_behaviour_readmission" name="test_other_direction_never_reaches_capital" time="0.003" /></testsuite></testsuites>

@@ -20,6 +20,8 @@ import tempfile
 import time
 from pathlib import Path
 
+from contracts.lab_control import write_final_opportunity_book
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -38,6 +40,23 @@ def _write_csv(path: Path, columns: list[str], row: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     values = [str(row.get(col, "")) for col in columns]
     path.write_text(",".join(columns) + "\n" + ",".join(values) + "\n", encoding="utf-8")
+
+
+def _publish_governed_book(tmp_path: Path, run_id: str, **overrides) -> None:
+    signal = {
+        "ticker": "AAA", "direction": "CALL", "strike": "100",
+        "expiry": "2099-01-19", "premium_mid": "1.0",
+        "target_price": "110", "invalidation_price": "95",
+        "lab_verdict": "GO", "lab_tradeable": False,
+    }
+    signal.update(overrides)
+    write_final_opportunity_book(
+        run_id,
+        [signal],
+        {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
+        tmp_path / "runs",
+        sync_interpreter=False,
+    )
 
 
 def test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear():
@@ -60,6 +79,7 @@ def test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear
             "premium_mid": "1.0", "target_price": "110", "invalidation_price": "95",
             "lab_verdict": "GO", "trigger_score": "0.0",
         })
+        _publish_governed_book(tmp_path, run_id)
 
         first = lab._load_run(run_id, force_reload=True)
         first_sig = first["signals"][0]
@@ -71,6 +91,7 @@ def test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear
             "premium_mid": "1.0", "target_price": "110", "invalidation_price": "95",
             "lab_verdict": "GO", "trigger_score": "3.5",
         })
+        _publish_governed_book(tmp_path, run_id)
 
         second = lab._load_run(run_id)  # no force_reload — this is the bug path
         second_sig = second["signals"][0]
@@ -103,20 +124,22 @@ def test_lab_reload_detects_fresh_options_intelligence_output_without_manual_cac
         })
 
         opt_path = run_dir / "options" / f"options_intelligence_{run_id}.csv"
-        opt_columns = ["ticker", "rr_options", "trigger_score"]
-        _write_csv(opt_path, opt_columns, {"ticker": "AAA", "rr_options": "0.0", "trigger_score": "0.0"})
+        opt_columns = ["ticker", "rr_options", "iv_rank"]
+        _write_csv(opt_path, opt_columns, {"ticker": "AAA", "rr_options": "0.0", "iv_rank": "0.0"})
+        _publish_governed_book(tmp_path, run_id, iv_rank="0.0")
 
         first = lab._load_run(run_id, force_reload=True)
         first_sig = first["signals"][0]
-        assert first_sig["opt__trigger_score"] == "0.0"
+        assert first_sig["iv_rank"] == "0.0"
 
         time.sleep(0.02)
-        _write_csv(opt_path, opt_columns, {"ticker": "AAA", "rr_options": "2.1", "trigger_score": "55.0"})
+        _write_csv(opt_path, opt_columns, {"ticker": "AAA", "rr_options": "2.1", "iv_rank": "55.0"})
+        _publish_governed_book(tmp_path, run_id, iv_rank="55.0")
 
         second = lab._load_run(run_id)  # no force_reload — this is the bug path
         second_sig = second["signals"][0]
         assert second is not first
-        assert second_sig["opt__trigger_score"] == "55.0", (
+        assert second_sig["iv_rank"] == "55.0", (
             "cache served a stale options_intelligence value; "
             "_lab_cache_signature() is not fingerprinting the options_intelligence path"
         )

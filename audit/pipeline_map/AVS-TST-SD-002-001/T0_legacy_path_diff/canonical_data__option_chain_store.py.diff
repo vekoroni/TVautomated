@@ -1,0 +1,41 @@
+--- a/canonical_data/option_chain_store.py
++++ b/canonical_data/option_chain_store.py
+@@ -26,6 +26,7 @@
+ from .lifecycle import LifecycleManager
+ from .registry import CanonicalRegistry
+ from .request_ledger import RequestLedger, RequestResolution
++from .session_clock import session_bounds
+ 
+ 
+ CHAIN_SCHEMA_VERSION = "option_chain_v1"
+@@ -85,6 +86,9 @@
+         session_date: date,
+         dte_max: int,
+         min_open_interest: int,
++        invocation_id: str | None = None,
++        evidence_cutoff_utc: datetime | None = None,
++        exchange_calendar: str = "XNYS",
+         flags: CanonicalFeatureFlags | None = None,
+     ) -> None:
+         self.registry = CanonicalRegistry(registry_path)
+@@ -97,6 +101,9 @@
+         )
+         self.payload_root = Path(payload_root)
+         self.run_id = run_id
++        self.invocation_id = invocation_id or run_id
++        self.evidence_cutoff_utc = evidence_cutoff_utc or session_bounds(session_date)[1]
++        self.exchange_calendar = exchange_calendar
+         self.session_date = session_date
+         self.scope = DataScope(
+             start_date=session_date,
+@@ -118,6 +125,10 @@
+             accepted_providers=("MARKETDATA",),
+             adjustment_convention=CHAIN_ADJUSTMENT,
+             schema_version=CHAIN_SCHEMA_VERSION,
++            invocation_id=self.invocation_id,
++            evidence_cutoff_utc=self.evidence_cutoff_utc,
++            exchange_calendar=self.exchange_calendar,
++            evidence_state="COMPLETED_SESSION",
+         )
+ 
+     def _quote_as_of(self, frame: pd.DataFrame) -> datetime:

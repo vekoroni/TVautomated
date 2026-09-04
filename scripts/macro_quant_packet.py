@@ -530,6 +530,24 @@ def build_macro_quant_packet(
     if not macro:
         return missing_macro_quant_packet(source_path)
 
+    availability = str(macro.get("macro_availability") or "").strip().upper()
+    if availability.startswith("UNAVAILABLE"):
+        packet = missing_macro_quant_packet(source_path)
+        packet.update({
+            "macro_contract_version": str(
+                macro.get("schema_version") or "macro_advisory_fallback_v1"
+            ),
+            "macro_generated_at_utc": str(
+                macro.get("as_of_utc") or macro.get("generated_at") or ""
+            ),
+            "macro_regime_label": "TRANSITIONAL",
+            "macro_regime_sub_state": "TRANSITIONAL_NEUTRAL",
+            "regime_drift_status": "UNKNOWN",
+            "risk_on_off_score": 0.0,
+            "macro_execution_caution": "MACRO_UNAVAILABLE_ADVISORY_ONLY",
+        })
+        return packet
+
     source = str(source_path or find_field(macro, "source_path", default=""))
     generated_at = (
         find_field(macro, "as_of_utc", default=None)

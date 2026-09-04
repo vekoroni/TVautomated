@@ -147,3 +147,21 @@ _cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipe
 _cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engineolddnu1905.py
 _cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engineold1905.py
 _cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipeline_interpreter_engine1905dnuold.py
+
+# ============================================================
+# AVS-OPS-001 (2026-09-04) — pre-commit-1 additions.
+# Section 3 of the prompt permits one .gitignore edit before commit 3 to keep
+# bulk out of the baseline commit. Verified NOT ignored at that point:
+#   backups/        59 dirs, 14,518 files, 35.0 GB (5 files >100 MB)
+#   data/canonical/ 6,261 stageable files, 463 MB of canonical dataset payloads
+#   .codex_*/       vendored CPython runtimes, 5,849 files, 103.6 MB
+#                   (ACK decision 2026-09-04: ignore rather than commit-then-attic,
+#                    so the runtime never enters permanent history)
+# data/ is NOT excluded wholesale: that would defeat the
+# !data/universe/polygon_liquid_universe.csv negation above and untrack the
+# 5 files already tracked under data/. The 9 files already tracked under
+# backups/ are unaffected — .gitignore does not untrack.
+# ============================================================
+backups/
+data/canonical/
+.codex_*/

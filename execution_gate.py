@@ -7,12 +7,20 @@ import csv, json, logging
 from datetime import datetime, timezone
 from pathlib import Path
 
+from contracts.direction_governance import validate_direction_record
+from contracts.options_liquidity_execution_guard import evaluate_olm_execution_guard
+from contracts.selected_contract_economics import contract_symbols
+from contracts.long_option_policy import (
+    LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
+    quote_spread_fraction,
+)
+
 log = logging.getLogger("avshunter.execution_gate")
-GATE_VERSION = "1.1.0"
+GATE_VERSION = "1.4.0"
 
 class ExecutionGateConfig:
     SPREAD_FULL: float = 0.08
-    SPREAD_MAX:  float = 0.15
+    SPREAD_MAX:  float = LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT / 100.0
     DELTA_HARD_MIN: float = 0.20
     DELTA_SOFT_MIN: float = 0.30
     DELTA_SOFT_MAX: float = 0.60
@@ -138,11 +146,88 @@ def _preserve(row, action, reason, warnings=None):
         "preservation_gate": True,
     }
 
-def execution_gate(row: dict) -> dict:
+
+def _has_contract_alternative(row: dict) -> bool:
+    return any(
+        str(row.get(field) or "").strip().upper() not in {"", "NAN", "NONE", "NULL", "N/A"}
+        for field in ("alternative_contract_1", "alternative_contract_2", "alternative_contract_3")
+    )
+
+def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
     ticker = _s(row, "ticker", "UNK")
     ts = datetime.now(timezone.utc).isoformat()
     try:
+        # Evaluate OLM for every production row so even an independently
+        # blocked direction row retains complete guard lineage. Direction
+        # integrity still owns the returned action when it fails.
+        olm_guard = evaluate_olm_execution_guard(row, require_contract=require_olm)
+        guarded_row = {**row, **olm_guard.as_fields()}
+        direction_valid, direction_reason = validate_direction_record(guarded_row)
+        if not direction_valid:
+            guarded = {
+                **guarded_row,
+                "check_direction_integrity_pass": False,
+                "check_direction_integrity_reason": direction_reason,
+                "direction_integrity_status": "FAILED",
+            }
+            return _preserve(
+                guarded,
+                "BLOCK",
+                f"DIRECTION_INTEGRITY_FAILED:{direction_reason}",
+            )
+        row = {
+            **guarded_row,
+            "check_direction_integrity_pass": True,
+            "check_direction_integrity_reason": direction_reason,
+            "direction_integrity_status": "PASS",
+        }
+        if olm_guard.disposition != "CONTINUE":
+            return _preserve(row, olm_guard.disposition, olm_guard.reason)
         morning_perm = _morning_permission(row)
+        viability_state = _s(row, "execution_viability_state")
+        if morning_perm in ("GO", "GO_LIMIT", "PROBE") and not viability_state:
+            return _preserve(
+                row,
+                "CONTRACT_REPAIR",
+                "EXECUTION_VIABILITY_STATE_MISSING",
+            )
+        if morning_perm in ("GO", "GO_LIMIT", "PROBE") and viability_state not in (
+            "EXECUTABLE_QUOTE",
+            "DATA_MISSING",
+            "INVALID_QUOTE",
+            "UNSUPPORTED_STRUCTURE",
+            "ZERO_BID_REVIEW",
+            "BLOCKED_WIDE_SPREAD",
+            "MANUAL_LIQUIDITY_REVIEW",
+        ):
+            return _preserve(
+                row,
+                "CONTRACT_REPAIR",
+                f"EXECUTION_VIABILITY_STATE_UNKNOWN:{viability_state}",
+            )
+        selected_symbols = contract_symbols(
+            _first_value(
+                row,
+                "morning_selected_contract_symbol",
+                "contract_symbol",
+                "live_contract_symbol",
+                "recommended_contract",
+            )
+        )
+        viability_symbols = contract_symbols(row.get("execution_viability_contract_symbol"))
+        if viability_state == "EXECUTABLE_QUOTE" and (
+            not selected_symbols or selected_symbols != viability_symbols
+        ):
+            return _preserve(row, "CONTRACT_REPAIR", "EXECUTION_VIABILITY_CONTRACT_IDENTITY_MISMATCH")
+        if viability_state in (
+            "DATA_MISSING", "INVALID_QUOTE", "UNSUPPORTED_STRUCTURE",
+            "ZERO_BID_REVIEW", "BLOCKED_WIDE_SPREAD", "MANUAL_LIQUIDITY_REVIEW",
+        ):
+            return _preserve(
+                row,
+                "CONTRACT_REPAIR",
+                _s(row, "execution_viability_reason", "EXECUTION_VIABILITY_FAILED"),
+            )
         if morning_perm in ("BLOCKED", "BLOCK", "REJECT", "REJECTED"):
             return _preserve(row, "BLOCK", "UPSTREAM_BLOCK")
         if morning_perm == "CONTRACT_REPAIR":
@@ -174,7 +259,9 @@ def execution_gate(row: dict) -> dict:
         if ask <= 0 or bid < 0:
             return _preserve(row, "CONTRACT_REPAIR", "LIVE_CONTRACT_QUOTE_INVALID")
         mid = (bid + ask) / 2.0
-        spread_pct = (ask - bid) / max(ask, 0.001)
+        spread_pct = quote_spread_fraction(bid, ask)
+        if spread_pct is None:
+            return _preserve(row, "CONTRACT_REPAIR", "LIVE_CONTRACT_QUOTE_INVALID")
         warnings = []
         penalty = 1.0
         conviction_override = _is_conviction_override(row)
@@ -351,11 +438,18 @@ def run_execution_gate(signals, run_id, output_dir):
     log.info("AVSHUNTER EXECUTION GATE v%s — Run: %s", GATE_VERSION, run_id)
     log.info("Signals in: %d", len(signals))
     log.info("="*60)
-    gated = [execution_gate(s) for s in signals]
-    counts={}; reasons={}; warn_freq={}
+    # Production batches require the governed lifecycle baton. Direct legacy
+    # callers remain readable through execution_gate(require_olm=False), but a
+    # production handoff cannot silently bypass OLM because fields are absent.
+    gated = [execution_gate(s, require_olm=True) for s in signals]
+    counts={}; reasons={}; warn_freq={}; olm_dispositions={}; olm_reasons={}
     for s in gated:
         a=s.get("final_action","UNKNOWN"); r=s.get("gate_reason","")
         counts[a]=counts.get(a,0)+1; reasons[r]=reasons.get(r,0)+1
+        olm_disposition = str(s.get("olm_guard_disposition") or "MISSING")
+        olm_reason = str(s.get("olm_guard_reason") or "MISSING")
+        olm_dispositions[olm_disposition] = olm_dispositions.get(olm_disposition, 0) + 1
+        olm_reasons[olm_reason] = olm_reasons.get(olm_reason, 0) + 1
         for w in str(s.get("gate_warnings","")).split(","):
             if w: warn_freq[w]=warn_freq.get(w,0)+1
     actionable = [s for s in gated if s.get("final_action") in ("BUY_NOW","BUY_SMALL")]
@@ -367,6 +461,8 @@ def run_execution_gate(signals, run_id, output_dir):
                "completed_at":datetime.now(timezone.utc).isoformat(),
                "signals_in":len(signals),"signals_out":len(actionable),"signals_preserved":len(preserved),
                "action_counts":counts,"reason_counts":reasons,
+               "olm_guard_disposition_counts":olm_dispositions,
+               "olm_guard_reason_counts":olm_reasons,
                "warning_frequency":warn_freq,
                "actionable_rate":round(len(actionable)/max(len(gated),1),4)}
     output_dir = Path(output_dir); output_dir.mkdir(parents=True, exist_ok=True)

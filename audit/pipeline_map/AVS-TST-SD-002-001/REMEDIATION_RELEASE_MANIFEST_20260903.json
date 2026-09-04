@@ -1,0 +1,168 @@
+{
+  "schema_version": "avs_remediation_release_manifest_v1",
+  "release": "AVS-SD-002-REV1.1",
+  "generated_at_utc": "2026-09-03T22:23:44.620156+00:00",
+  "status": "OFFLINE_ACCEPTED_LIVE_CYCLE_REQUIRED",
+  "feature_flags_enabled": [],
+  "control_plane_schema": "cds_control_plane_v2",
+  "files": [
+    {
+      "path": "execution_gate.py",
+      "bytes": 22120,
+      "sha256": "d2f9179b2b91250a0e25f414525ef031f2cca97d1982bfca073fbc0dc7759ed1"
+    },
+    {
+      "path": "intelligent_orchestrator.py",
+      "bytes": 316506,
+      "sha256": "8edf904eed8f90b0b843631d80c12495c3560ca98603b8d54f6459b468b20e57"
+    },
+    {
+      "path": "macro_horizon_router.py",
+      "bytes": 37845,
+      "sha256": "42428c063924a3d9d421c5871cdfdbfc950bc3d405474ff542a4cb073d26f39d"
+    },
+    {
+      "path": "canonical_data/__init__.py",
+      "bytes": 7038,
+      "sha256": "b9b8ad096fd52489dfc6365c2ca6b18466bd3219762d8e1ea0e28249ca6b567b"
+    },
+    {
+      "path": "canonical_data/marketdata_response.py",
+      "bytes": 7824,
+      "sha256": "45ad0b7beca218707fed4dafe49b65285f18e234dd7bb44c325c0ddc7b12aa23"
+    },
+    {
+      "path": "canonical_data/registry.py",
+      "bytes": 24341,
+      "sha256": "dca6037f0226496143cb60ad2f0d80a6ca8ffa01015aa2198ddf816a96fc2130"
+    },
+    {
+      "path": "contracts/market_profile_evidence.py",
+      "bytes": 5027,
+      "sha256": "6ae271bbd09fd0ac64b0e15f4e16c743e3762644b9947ef24ee0f0fdb680e725"
+    },
+    {
+      "path": "contracts/options_liquidity_lifecycle.py",
+      "bytes": 25463,
+      "sha256": "5a2e7802e07c47317ebae5aa357b488b4a3724aec6f5e45101d769a32f5cb55c"
+    },
+    {
+      "path": "contracts/quote_change_evidence.py",
+      "bytes": 11865,
+      "sha256": "aea2c3ccf48035f8d4265eebfc5711f22ded6d2de0ca5924d6fcd3a6857097bb"
+    },
+    {
+      "path": "contracts/selected_contract_economics.py",
+      "bytes": 26463,
+      "sha256": "6650f3b5691c2225ae4c6e21383fc011ce973d0124b6178525b743a8c6133504"
+    },
+    {
+      "path": "orchestrator/__init__.py",
+      "bytes": 2772,
+      "sha256": "8f145cd356146b0997252e23760f6475413fde1ea44295060680e2b7b109b0a1"
+    },
+    {
+      "path": "orchestrator/dynamic_thesis.py",
+      "bytes": 6311,
+      "sha256": "dc26a3751f17056bc2c92da960e9a035677de02233cc44bff932327148a80953"
+    },
+    {
+      "path": "orchestrator/dynamic_validation.py",
+      "bytes": 14407,
+      "sha256": "12de4094fa5d529cbb6dc4487db9285ec1e3a7c7fbb23874d5f0aa0b190a6ff4"
+    },
+    {
+      "path": "scripts/avshunter_options_intelligence.py",
+      "bytes": 439772,
+      "sha256": "5bf471961001a1acd0032acd7dc259c4624e554bc29bcea8c3496a77a232bae5"
+    },
+    {
+      "path": "scripts/build_completed_market_profiles.py",
+      "bytes": 10026,
+      "sha256": "6889fb187c3f3c4614d7bab0a806a7c6eb185ee5ddb09ce8edebd2225759ef1a"
+    },
+    {
+      "path": "scripts/migrate_control_plane.py",
+      "bytes": 1854,
+      "sha256": "ee982776d4a0019f4aecff287eb7827405d38efd866be4cf1849b32738ac1c0a"
+    },
+    {
+      "path": "scripts/release_baseline.py",
+      "bytes": 20080,
+      "sha256": "5069c44dc8a5a85cffa08fb1280df9750c6f24ba52aee4b7e4f568780c9bae27"
+    },
+    {
+      "path": "tests/test_actuarial_cache_v7_contract.py",
+      "bytes": 5797,
+      "sha256": "bffe7a9bb183b2f0108a21b55a4906798b030d4fc3ed98ec96539866bffbbdb4"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase0.py",
+      "bytes": 11750,
+      "sha256": "86c4361fd5b31912e9768765b8190cc3515f0fa4ece76a045e5ab507181079f0"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase1.py",
+      "bytes": 17556,
+      "sha256": "1cb2839f1ce2103e101608973fa5b5f21631a14b281ce3efff4e79d34e1cf7b2"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase2.py",
+      "bytes": 10890,
+      "sha256": "794664185e98c0ea006697ce539d11327a7ddcec7e7bb3d4cf9b80dc02a6e747"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase4.py",
+      "bytes": 11407,
+      "sha256": "2dd682173afe743e3427d53e6b6db5f9dc2df29d0d99a0afb3b1596def91446e"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase5.py",
+      "bytes": 12093,
+      "sha256": "cf8f0db6280750b6bc5afc58140c10456a88b4954ad7c5e4d8c3d5be8e1e1b57"
+    },
+    {
+      "path": "tests/test_dynamic_session_phase6.py",
+      "bytes": 6942,
+      "sha256": "dddaacd82484e7d5a253583161b3bc0f8890da5948a57f771a7e51d6d673da6b"
+    },
+    {
+      "path": "tests/test_execution_monetisability_gate.py",
+      "bytes": 3191,
+      "sha256": "ca194d2980f6c4969e4a3ca1cf4cc8b38f0066ae8bbd29e96aa038ceb242c0e2"
+    },
+    {
+      "path": "tests/test_long_option_policy.py",
+      "bytes": 1598,
+      "sha256": "9a2b5ded725ed6529dbb091b5207092f3194339d85c56418b7746c418954fea0"
+    },
+    {
+      "path": "tests/test_selected_contract_economics.py",
+      "bytes": 10615,
+      "sha256": "4062661055f3c347064c9ebdd1d6ee11d135e1c9f7fbea21d283554b78092a62"
+    }
+  ],
+  "test_evidence": [
+    {
+      "name": "phase0_8_authoritative",
+      "tests": 116,
+      "failures": 0,
+      "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/phase0_8_authoritative.xml"
+    },
+    {
+      "name": "external_adversarial_final",
+      "tests": 85,
+      "failures": 0,
+      "note": "70 independent plus 15 shared Phase-2 cases",
+      "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/external_adversarial_final.xml"
+    },
+    {
+      "name": "spread_lifecycle_owner",
+      "tests": 66,
+      "failures": 0,
+      "path": "backups/avs_sd_002_remediation_prechange_20260903_202434/accepted_artifacts/spread_lifecycle_owner.xml"
+    }
+  ],
+  "rollback_manifest": "backups/avs_sd_002_remediation_prechange_20260903_202434/phase0_release_manifest.json",
+  "claim_sheet": "audit/pipeline_map/AVS-TST-SD-002-001/REMEDIATION_CLAIM_SHEET_20260903.md"
+}

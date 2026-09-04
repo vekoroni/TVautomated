@@ -12,6 +12,8 @@ if str(INTERPRETER) not in sys.path:
 from pipeline_interpreter_commands import (  # noqa: E402
     _classify_battlefield_candidate,
     _lab_monetisation_failure,
+    cmd_live,
+    cmd_morning,
 )
 
 
@@ -51,10 +53,15 @@ def test_lab_and_morning_authority_contract() -> None:
     assert "LAB_AUTHORITY_INVALID" in reason
 
 
-def test_lab_monetisation_gate_fails_closed() -> None:
-    assert _lab_monetisation_failure({"EV_Decision": "WEAK", "RR": "2.0"}) == "EV_WEAK_NOT_MONETISABLE"
-    assert _lab_monetisation_failure({"EV_Decision": "AVOID", "RR": "2.0"}) == "EV_AVOID_NOT_MONETISABLE"
-    assert _lab_monetisation_failure({"EV_Decision": "MODERATE", "RR": "0"}) == "RR_NON_POSITIVE"
-    assert _lab_monetisation_failure({"EV_Decision": "STRONG", "RR": ""}) == "RR_MISSING_OR_INVALID"
+def test_interpreter_does_not_create_a_second_ev_or_rr_gate() -> None:
+    assert _lab_monetisation_failure({"EV_Decision": "WEAK", "RR": "2.0"}) == ""
+    assert _lab_monetisation_failure({"EV_Decision": "AVOID", "RR": "2.0"}) == ""
+    assert _lab_monetisation_failure({"EV_Decision": "MODERATE", "RR": "0"}) == ""
+    assert _lab_monetisation_failure({"EV_Decision": "STRONG", "RR": ""}) == ""
     assert _lab_monetisation_failure({"EV_Decision": "MODERATE", "RR": "1.25"}) == ""
     assert _lab_monetisation_failure({"EV_Decision": "STRONG", "RR": "0.01"}) == ""
+
+
+def test_retired_commands_do_not_create_second_data_or_validation_authority() -> None:
+    assert cmd_live("AAA") is None
+    assert cmd_morning("ignored.csv") is None

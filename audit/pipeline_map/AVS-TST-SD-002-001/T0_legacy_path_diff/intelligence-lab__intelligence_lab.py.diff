@@ -1,0 +1,38 @@
+--- a/intelligence-lab/intelligence_lab.py
++++ b/intelligence-lab/intelligence_lab.py
+@@ -253,6 +253,10 @@
+         "macro_snapshot": run_dir / "macro_snapshot.json",
+         "macro_quant_packet": run_dir / "macro_quant_packet.json",
+         "interpreter_macro_context": run_dir / "interpreter" / "interpreter_macro_context.json",
++        "governed_lab_v3": run_dir / "intelligence_lab" / "lab_signal_book_v3.csv",
++        "governed_lab_v3_manifest": run_dir / "intelligence_lab" / "lab_signal_book_v3.manifest.json",
++        "interpreter_handoff_manifest": run_dir / "interpreter" / "handoff_manifest.json",
++        "interpreter_evidence_bundles": run_dir / "interpreter" / "interpreter_evidence_bundle_v1.jsonl",
+     }
+     return paths
+ 
+@@ -2032,11 +2036,22 @@
+         )
+         result["lab_reconciliation"] = dict(governed_book.get("reconciliation") or {})
+     else:
+-        result["lab_signal_source"] = "LEGACY_IN_MEMORY_ASSEMBLY"
++        # The trader-facing production surface is governed-book only.  Legacy
++        # assembly remains useful for diagnostics but cannot be shown as an
++        # actionable signal universe.
++        result["signals"] = []
++        result["lab_signal_source"] = "GOVERNED_BOOK_UNAVAILABLE_FAIL_CLOSED"
+         result["lab_data_notice"] = (
+             (result.get("lab_data_notice") or "")
+-            + " Governed v2 Lab book unavailable; displaying the legacy read-only assembly."
++            + " Governed Lab book unavailable; actionable signals are withheld."
+         ).strip()
++        result["lab_fail_closed"] = True
++        result["lab_failure_reason"] = "GOVERNED_BOOK_OR_LINEAGE_UNAVAILABLE"
++        result["run_health"] = {
++            **dict(result.get("run_health") or {}),
++            "ok": False,
++            "next_action": "PUBLISH_ACCEPTED_GOVERNED_LAB_BOOK",
++        }
+     # MSI display is additive and non-authoritative.  It is enabled only after
+     # the governed v3 rollout flag is set; the final opportunity book remains
+     # the sole source of membership and trading authority.

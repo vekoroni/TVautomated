@@ -1,0 +1,2303 @@
+[
+ {
+  "path": "scripts/__init__.py",
+  "n_lines": 1,
+  "classification": "LIBRARY",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_cds2_historical_prices.py",
+   "tests/test_msi_options_chain_v2_integration.py",
+   "tests/test_option_liquidity_lifecycle.py",
+   "tests/test_options_crossed_quote_integration.py",
+   "tests/test_options_research_contract.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/actuarial_enrichment_pass.py",
+  "n_lines": 1157,
+  "classification": "ORCHESTRATED",
+  "commit": "6567a8b",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "vanguard/tests/test_phase2_baton_validation.py"
+  ],
+  "imports": [
+   "scripts/behaviour_state_builder.py",
+   "vanguard/core/actuarial_registry.py",
+   "vanguard/core/cache_integrity.py",
+   "vanguard/core/schema_contract_v6.py",
+   "vanguard/core/truth_packet.py"
+  ],
+  "docstring": "actuarial_enrichment_pass.py\n=============================\nAVSHUNTER \u2014 Post-Vanguard Actuarial Enrichment Pass\nVersion : 1.5.0\n\nWHY THIS EXISTS\n---------------\nbuild_packages_from_discovery.py runs BEFORE Vanguard. At that point the\nSTATE_COLS required for actuarial lookup are not available.\nResult: every package gets state_key with empty dimensions \u2014 no_match=True.\nEDE then correctly blocks every signal with LOW_EDGE (score=0.000).\n\nFIX v1.4 (2026-04-28)\n----------------------\nROOT CAUSE 4 (final): _derive_adx_bucket() returned HIGH/MEDIUM/LOW but the\nactuarial cache uses STRONG/MODERATE/WEAK",
+  "functions": [
+   "_preflight_fingerprint_check:225",
+   "_load_actuarial:263",
+   "_derive_adx_bucket:467",
+   "_derive_atr_pct_bucket:507",
+   "_derive_state_from_vanguard_row:537",
+   "_result_get:587",
+   "_has_committed_value:612",
+   "_aliases_for_horizon_field:620",
+   "_preserve_horizon_future_fields:632",
+   "_preserve_phase2_baton_fields:663",
+   "_build_actuarial_block:701",
+   "_load_vanguard_index:783",
+   "_patch_package:832",
+   "run_actuarial_enrichment_pass:963",
+   "_setup_logging:1108",
+   "main:1117"
+  ],
+  "classes": [],
+  "raises": [
+   "ValueError:258"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "247: (registry.get(\"canonical_database\") or {}).get(\"expected_schema_fingerprint\", \"\")",
+   "257: if registry_strict_mode() or registry.get(\"strict_actuarial_mode\", False):",
+   "482: v = str(row.get(k) or \"\").strip().upper()",
+   "570: v = str(row.get(alias) or \"\").strip()",
+   "596: return result.get(key, default)",
+   "716: \"reason\": _ACTUARIAL_ERROR or \"Cache not loaded\",",
+   "814: t = str(row.get(\"ticker\") or \"\").strip().upper()",
+   "854: ticker = str(pkg.get(\"ticker\") or \"\").upper()",
+   "863: act.setdefault(\"actuarial_source\", SOURCE_MISSING)",
+   "864: act.setdefault(\"schema_version\", _SCHEMA_VERSION)",
+   "865: act.setdefault(\"schema_fingerprint\", _SCHEMA_FINGERPRINT)",
+   "866: act.setdefault(\"canonical_database_path\", _CANONICAL_DB_PATH)",
+   "885: _state_key_preview = \"|\".join(state.get(d, \"\") for d in [",
+   "950: elif actuarial_block.get(\"fallback_depth\", 0) > 0:"
+  ],
+  "writes": [
+   "852: return (pkg_path.stem.replace(\".package\", \"\"), f\"ERROR_READ:{e}\")",
+   "875: with pkg_path.open(\"w\", encoding=\"utf-8\") as f:",
+   "876: json.dump(pkg, f, indent=2, ensure_ascii=False)",
+   "956: with pkg_path.open(\"w\", encoding=\"utf-8\") as f:",
+   "957: json.dump(pkg, f, indent=2, ensure_ascii=False)",
+   "1077: with index_path.open(\"w\", encoding=\"utf-8\") as f:",
+   "1078: json.dump(index, f, indent=2, ensure_ascii=False)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "308: # QA-FIX-1: only force catalyst_proximity=NONE when the loaded cache",
+   "310: # STATE_COLS only inside state_key, not as physical columns, so inspect",
+   "408: # \"||| which never matches any cache entry."
+  ],
+  "version_fields": [
+   "140: schema_version as registry_schema_version,",
+   "172: _SCHEMA_VERSION = \"\"",
+   "299: _SCHEMA_VERSION = _CACHE_VALIDATION.schema_version or registry_schema_version()",
+   "713: \"schema_version\": _SCHEMA_VERSION,",
+   "728: \"schema_version\":        _SCHEMA_VERSION,",
+   "766: \"schema_version\": _SCHEMA_VERSION,"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 22,
+   "write": 7
+  }
+ },
+ {
+  "path": "scripts/apply_ev3_authority.py",
+  "n_lines": 262,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_ev3_authority.py"
+  ],
+  "imports": [
+   "scripts/ev3_calibration_report.py"
+  ],
+  "docstring": "Attach EV3 decisions to Options Intelligence under governed activation gates.\n\nThe overlay is always useful as an audit annotation.  It becomes an EV\neligibility authority only when explicitly enabled *and* every readiness gate\npasses.  It can never grant final trade permission; downstream structure,\nmacro, risk, and live-execution controls still apply.",
+  "functions": [
+   "_atomic_csv:43",
+   "_atomic_json:53",
+   "activation_reasons:63",
+   "authority_state:99",
+   "_permission:120",
+   "apply_overlay:133",
+   "main:237"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:262",
+   "ValueError:160",
+   "ValueError:164"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "77: if dict(status.get(\"system_defects\", {}) or {}):",
+   "79: if dict(status.get(\"unclassified_rejections\", {}) or {}):",
+   "81: if float(status.get(\"adjudication_coverage\", 0.0) or 0.0) < 0.95:",
+   "100: status = str(row.get(\"ev3_status\", \"\")).upper()",
+   "101: absolute = str(row.get(\"ev3_absolute_state\", \"\")).upper()",
+   "102: reason = str(row.get(\"ev3_reason_code\", \"\")).upper()",
+   "108: }.get(absolute, \"NOT_EVALUATED_DATA_DEFECT\")"
+  ],
+  "writes": [
+   "46: frame.to_csv(temporary, index=False)",
+   "47: os.replace(temporary, path)",
+   "56: temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding=\"utf-8\")",
+   "57: os.replace(temporary, path)",
+   "257: print(json.dumps(status, indent=2, sort_keys=True))"
+  ],
+  "atomic_markers": [
+   "44: temporary = path.with_name(f\".{path.stem}.{uuid.uuid4().hex}.tmp{path.suffix}\")",
+   "47: os.replace(temporary, path)",
+   "54: temporary = path.with_name(f\".{path.name}.{uuid.uuid4().hex}.tmp\")",
+   "57: os.replace(temporary, path)"
+  ],
+  "authority_comments": [
+   "152: # fields, but never convert them into capital permission."
+  ],
+  "version_fields": [
+   "29: SCHEMA_VERSION = \"ev3-authority-overlay-v1\"",
+   "168: \"ev3_authority_schema_version\", \"ev3_authority_mode\",",
+   "181: overlay[\"ev3_authority_schema_version\"] = SCHEMA_VERSION"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 7,
+   "write": 5
+  }
+ },
+ {
+  "path": "scripts/apply_external_intel_review_lane.py",
+  "n_lines": 356,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_external_intel_review_lane.py"
+  ],
+  "imports": [
+   "contracts/macro_enrichment_delta.py"
+  ],
+  "docstring": "Attach governed catalyst/macro context without changing Discovery membership.\n\nDiscovery is the authority for the macro-agnostic core candidate set. Existing\nDiscovery survivors may receive additive external-intelligence annotations,\nbut catalyst or macro-only tickers are written to a separate advisory artifact.\nThey cannot be appended to the core CSV, create Packages/Vanguard work, or\nreactivate a ticker that Discovery dropped.",
+  "functions": [
+   "_utc_now:60",
+   "_ticker:64",
+   "_is_plain_us_ticker:68",
+   "_json_cell:73",
+   "_safe_float:81",
+   "_read_csv:90",
+   "_write_csv:98",
+   "_ordered_fields:106",
+   "_direction_from_catalyst:117",
+   "_read_catalyst_calendar:129",
+   "_load_macro_context:160",
+   "_macro_external_info:171",
+   "_merge_info:197",
+   "apply_external_intel_review_lane:222",
+   "_stamp_row:302",
+   "main:324"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:356"
+  ],
+  "direction_branches": [
+   "122: if any(token in raw for token in (\"PUT\", \"BEAR\", \"SHORT\", \"NEGATIVE\", \"LOSER\", \"VULNERABLE\")):",
+   "123: return \"PUT\"",
+   "124: if any(token in raw for token in (\"CALL\", \"BULL\", \"LONG\", \"POSITIVE\", \"BENEFICIARY\")):",
+   "125: return \"CALL\""
+  ],
+  "fallbacks": [
+   "65: return str(value or \"\").strip().upper()",
+   "119: str(row.get(key) or \"\")",
+   "150: \"catalyst_status\": str(best.get(\"catalyst_status\") or best.get(\"event_status\") or \"\"),",
+   "151: \"catalyst_type\": str(best.get(\"catalyst_type\") or \"\"),",
+   "152: \"catalyst_date\": str(best.get(\"catalyst_date\") or best.get(\"event_window_start\") or \"\"),",
+   "153: \"source_tier\": str(best.get(\"source_tier\") or \"\"),",
+   "154: \"data_quality\": str(best.get(\"date_quality\") or best.get(\"data_quality\") or \"\"),",
+   "186: \"macro_theme_count\": str(audit.get(\"macro_enrichment_theme_count\") or 0),",
+   "189: \"macro_pressure_label\": str(audit.get(\"macro_enrichment_pressure_label\") or \"\"),",
+   "200: c = catalyst.get(symbol, {})",
+   "201: m = macro.get(symbol, {})",
+   "212: \"macro_theme_count\": m.get(\"macro_theme_count\", \"\"),",
+   "213: \"macro_theme_ids\": m.get(\"macro_theme_ids\", \"\"),",
+   "214: \"macro_roles\": m.get(\"macro_roles\", \"\"),"
+  ],
+  "writes": [
+   "61: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "75: return json.dumps(list(value) if isinstance(value, set) else value, sort_keys=True, ensure_ascii=True)",
+   "100: with path.open(\"w\", encoding=\"utf-8\", newline=\"\") as fh:",
+   "101: writer = csv.DictWriter(fh, fieldnames=fields, extrasaction=\"ignore\")",
+   "271: discovery_csv.name.replace(",
+   "344: report_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 4,
+   "fallback": 31,
+   "write": 6
+  }
+ },
+ {
+  "path": "scripts/apply_macro_enrichment_to_discovery.py",
+  "n_lines": 328,
+  "classification": "ORCHESTRATED",
+  "commit": "b22071f",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_macro_enrichment_discovery_options.py"
+  ],
+  "imports": [
+   "contracts/macro_enrichment_delta.py",
+   "scripts/macro_quant_packet.py"
+  ],
+  "docstring": "Apply additive macro enrichment context to discovery CSV rows.\n\nThis keeps ticker intake plain while making narrative/event macro context\navailable to the Options layer through the discovery baton. It never changes\nexisting discovery columns and never changes protected macro gates.",
+  "functions": [
+   "_read_enrichment_route:44",
+   "read_json:81",
+   "json_cell:86",
+   "as_bool_text:94",
+   "ordered_fields:98",
+   "bonus_hint_from_audit:106",
+   "_extract_bias_maps:121",
+   "_resolve_macro_bias:136",
+   "_load_macro_bias_map_from_macro_json:150",
+   "_bias_from_sector_etf:178",
+   "enrich_discovery_csv:186",
+   "main:289"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:328"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "107: macro_filter = str(macro.get(\"macro_filter\") or \"\").upper()",
+   "111: theme_count = int(audit.get(\"macro_enrichment_theme_count\") or 0)",
+   "169: signal = str(info.get(\"signal\") or info.get(\"macro_signal\") or \"\").upper()",
+   "171: signal = str(info or \"\").upper()",
+   "172: result[str(etf).upper().strip()] = _signal_to_bias.get(signal, \"NEUTRAL\")",
+   "183: return macro_bias_map.get(etf, \"NEUTRAL\")",
+   "207: ticker = str(row.get(\"ticker\") or row.get(\"symbol\") or \"\").strip().upper()",
+   "209: theme_count = int(audit.get(\"macro_enrichment_theme_count\") or 0)",
+   "219: \"macro_enrichment_pressure_label\": str(audit.get(\"macro_enrichment_pressure_label\") or \"\"),",
+   "221: \"macro_enrichment_gate_preserved\": as_bool_text(audit.get(\"macro_enrichment_gate_preserved\", True)),",
+   "222: \"macro_enrichment_macro_filter\": str(macro.get(\"macro_filter\") or \"\"),",
+   "224: \"macro_enrichment_put_gate_permission\": str(put_gate.get(\"current_permission\") or \"\"),",
+   "225: \"macro_enrichment_audit_note\": str(audit.get(\"macro_enrichment_audit_note\") or \"\"),",
+   "226: \"macro_alignment_state\": str(audit.get(\"macro_alignment_state\") or \"\"),"
+  ],
+  "writes": [
+   "88: return json.dumps(value, sort_keys=True, ensure_ascii=True)",
+   "268: with discovery_csv.open(\"w\", encoding=\"utf-8\", newline=\"\") as fh:",
+   "269: writer = csv.DictWriter(fh, fieldnames=output_fields, extrasaction=\"ignore\")",
+   "285: \"generated_utc\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "305: with report_path.open(\"w\", encoding=\"utf-8\") as fh:",
+   "306: json.dump(result, fh, indent=2, sort_keys=True)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "37: # delta is explicitly demoted to CONTEXT_ONLY at this consumption point.",
+   "45: \"\"\"Demote any news terminal route recommendation to CONTEXT_ONLY.\"\"\"",
+   "256: # Augment only \u2014 do not overwrite columns already populated"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 25,
+   "write": 6
+  }
+ },
+ {
+  "path": "scripts/avshunter_monetisation_policy.py",
+  "n_lines": 736,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "map_options_row_to_policy_input:577",
+   "summarise_policy_output:656"
+  ],
+  "classes": [
+   {
+    "name": "DecisionState:46",
+    "methods": []
+   },
+   {
+    "name": "Severity:58",
+    "methods": []
+   },
+   {
+    "name": "RuleEvent:66",
+    "methods": []
+   },
+   {
+    "name": "PolicyInput:78",
+    "methods": []
+   },
+   {
+    "name": "PolicyOutput:126",
+    "methods": []
+   },
+   {
+    "name": "MonetisationPolicy:137",
+    "methods": [
+     "evaluate:200",
+     "_base_size_from_regime:562"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "235: if x.ev3_authority_active or str(x.ev3_authority_state or \"\").strip():",
+   "236: ev3_state = str(x.ev3_authority_state or \"NOT_EVALUATED\").upper()",
+   "496: _mp_sector_score = float(getattr(x, \"sector_alignment_score\", 1.00) or 1.00)",
+   "600: return str(value or \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}",
+   "606: quote_source = str(row.get(\"quote_source\") or row.get(\"md_quote_source\") or \"\").lower()",
+   "621: thesis_valid = bool(row.get(\"thesis_valid\", True)),",
+   "624: contradictions = _int(\"contradictions_count\") or 0,",
+   "625: data_complete = not bool(row.get(\"data_missing\", False)),",
+   "626: stale_data = bool(row.get(\"stale_data\", False)),",
+   "627: quote_source_live = (\"marketdata\" in quote_source) or bool(row.get(\"live_quote\", False)),",
+   "639: ev3_authority_state = str(row.get(\"ev3_authority_state\") or \"NOT_EVALUATED\"),",
+   "645: regime_state = str(row.get(\"regime_state\") or row.get(\"macro_regime\") or \"UNKNOWN\"),",
+   "646: setup_type = str(row.get(\"setup_type\") or row.get(\"campaign_type\") or \"UNKNOWN\"),",
+   "650: macro_sector_bias      = str(row.get(\"macro_sector_bias\", \"UNKNOWN\") or \"UNKNOWN\").upper(),"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "185: # These cap the MAXIMUM size_mult, not the base size \u2014 they never increase size.",
+   "222: # 1) Data integrity \u2014 unknown must not masquerade as bad edge",
+   "234: # ranking/outcome analysis, but never grant or deny capital with it.",
+   "308: # Even $0.05 premium trades can be monetised \u2014 pipeline must not block them.",
+   "341: # These are ceilings, never floors \u2014 they only reduce inflated sizes.",
+   "490: # 6) Macro sector-rotation context (advisory only)"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 17,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/avshunter_superbrain_layer.py",
+  "n_lines": 2771,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "ev_engine_v2.py",
+   "scripts/data_contract_validator.py"
+  ],
+  "docstring": "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557\n\u2551         AVSHUNTER - SUPER BRAIN LAYER  v1.2                                    \u2551\n\u2551         Post-processor for avshunter_options_intelligence.py output            \u2551\n\u2551                                                                                  \u2551\n\u2551  PURPOSE                                                                         \u2551\n\u2551  Enriches every options intelligence signal with Super Brain framework          \u2551\n\u2551  outputs - preventing the pipeline from executing negative-EV, late-entry,     \u2551\n\u2551  no-runway",
+  "functions": [
+   "_compute_execution_mode:182",
+   "_load_sector_map:309",
+   "_get_sector:356",
+   "_f:451",
+   "_s:462",
+   "_ticker:468",
+   "_calc_rr:472",
+   "_direction:498",
+   "_phase:508",
+   "_spot:518",
+   "_ivp:540",
+   "_breakeven:552",
+   "_verdict:556",
+   "_downgrade:567",
+   "apply_behavioural_vetoes:578",
+   "compute_convexity_score:786",
+   "_dte_nudge_from_horizon:1001",
+   "build_instrument_ladder:1031",
+   "_parse_ymd:1187",
+   "_dte:1198",
+   "compute_time_stop:1239",
+   "assemble_execution_plan:1328",
+   "assemble_final_verdict:1743",
+   "_calc_regime_sensitivity:1763",
+   "_compute_unified_ev:1820",
+   "process_signal:1959",
+   "_load_csv:2305",
+   "_load_dashboard:2317",
+   "_write_csv:2327",
+   "run_superbrain:2347"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "500: raw = (_s(row, 'options_direction') or _s(row, 'direction') or _s(row, 'dir')).upper().strip()",
+   "501: if raw in ('C', 'CALL', 'LONG_CALL', 'BUY_CALL'):",
+   "502: return 'CALL'",
+   "503: if raw in ('P', 'PUT', 'LONG_PUT', 'BUY_PUT'):",
+   "504: return 'PUT'",
+   "531: direction = (_s(row, 'options_direction') or _s(row, 'direction')).upper()",
+   "533: if direction in ('CALL', 'C', 'LONG_CALL'):",
+   "535: elif direction in ('PUT', 'P', 'LONG_PUT'):",
+   "638: if direction == 'CALL':",
+   "655: elif direction == 'PUT':",
+   "675: if direction == 'CALL' and spot > 0 and call_wall > spot:",
+   "677: elif direction == 'PUT' and spot > 0 and 0 < put_wall < spot:",
+   "718: if direction == 'CALL' and pcr_vol > VETO_PCR_CALL_MAX:",
+   "725: elif direction == 'PUT' and pcr_vol < VETO_PCR_PUT_MIN:"
+  ],
+  "fallbacks": [
+   "194: conviction = int(conv_score or 0)",
+   "334: ticker = str(row.get('ticker', '')).strip().upper()",
+   "337: sector = str(row.get('sector', '')).strip()",
+   "338: industry = str(row.get('industry', '')).strip()",
+   "339: sector_etf = str(row.get('sector_etf', '')).strip()",
+   "341: 'sector':      sector or 'UNKNOWN',",
+   "342: 'sector_short': SECTOR_SHORT_MAP.get(sector, sector[:4].upper() if sector else 'N/A'),",
+   "343: 'sector_etf':  sector_etf or '',",
+   "344: 'industry':    industry or 'UNKNOWN',",
+   "345: 'sector_regime_sensitivity': SECTOR_REGIME_SENSITIVITY.get(sector, 'MEDIUM'),",
+   "454: v = row.get(key, '')",
+   "464: v = row.get(key, default)",
+   "469: \"\"\"Extract ticker - tolerates 'underlying' or 'ticker' column name.\"\"\"",
+   "569: if VERDICT_ORDER.get(target, 0) < VERDICT_ORDER.get(current, 0):"
+  ],
+  "writes": [
+   "514: return raw.replace(prefix, '').strip() or raw[-1]",
+   "2333: with open(path, 'w', newline='', encoding='utf-8') as f:",
+   "2334: w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))",
+   "2598: 'generated_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),",
+   "2666: with open(summary_json, 'w', encoding='utf-8') as f:",
+   "2667: json.dump(summary_data, f, indent=2)",
+   "2710: with open(summary_txt, 'w', encoding='utf-8') as f:"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "2: # STATUS: DEPRECATED / BYPASSED (Phase 8d passthrough only)",
+   "12: #                spread columns with NaN placeholders. It never calls",
+   "234: # \u2500\u2500 EV Engine v2 (single source of truth for expectancy) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+   "499: \"\"\"Normalise direction to canonical CALL / PUT string.\"\"\""
+  ],
+  "version_fields": [
+   "270: VERSION = 'v2.3.0'"
+  ],
+  "counts": {
+   "direction": 28,
+   "fallback": 124,
+   "write": 7
+  }
+ },
+ {
+  "path": "scripts/avshunter_universe_scanner.py",
+  "n_lines": 3203,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER UNIVERSE OPTIONS MISPRICING SCANNER v7.0\n===================================================\nTwo-tier scanner operating INDEPENDENTLY of the main pipeline universe.\nPurpose: find cheap/mispriced options the pipeline would never see.\n\nMARKETDATA-ONLY ARCHITECTURE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nMarketData.app \u2014 stock OHLCV (RV calculation), live options chains\n                 (bid/ask/OI/Greeks), and historical IV for true IV Rank.\n                 Trader plan: real-time options data, unlimited history,\n                 100,000 credits/day (resets 9:30am ET).\n                 Credit strategy: ",
+  "functions": [
+   "_synthetic_price_data:197",
+   "_synthetic_options_chain:237",
+   "_synthetic_iv_series:285",
+   "process_ticker_test:301",
+   "run_test_scan:332",
+   "init_iv_cache:478",
+   "_compute_options_volume_anomaly:504",
+   "get_cached_iv_series:596",
+   "seed_iv_cache_from_phantom:609",
+   "needs_cold_start:690",
+   "needs_refresh:707",
+   "upsert_iv_records:718",
+   "marketdata_get:745",
+   "_normal_cdf:810",
+   "_call_price_black_scholes:814",
+   "_implied_volatility_from_call:830",
+   "fetch_atm_iv_marketdata:859",
+   "build_iv_history_marketdata:938",
+   "get_iv_series:1009",
+   "fetch_short_borrow_data:1037",
+   "fetch_price_data:1055",
+   "fetch_options_chain_marketdata:1150",
+   "fetch_options_chain:1251",
+   "build_tier1_universe:1260",
+   "compute_vms:1274",
+   "fetch_sector_etf_momentum:1425",
+   "compute_sector_relative_strength:1438",
+   "compute_dark_pool_proxy:1465",
+   "compute_etf_relative_flow:1523",
+   "_load_form4_signals:1562"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "256: for contract_type in [\"call\", \"put\"]:",
+   "262: if contract_type == \"put\":",
+   "268: delta = 0.5 - moneyness * 10 if contract_type == \"call\" else -0.5 + moneyness * 10",
+   "271: \"contract_type\":      contract_type,",
+   "542: call_mask = options_df[\"contract_type\"].str.lower().str.startswith(\"call\")",
+   "543: put_mask  = options_df[\"contract_type\"].str.lower().str.startswith(\"put\")",
+   "1233: \"contract_type\":   sides[i]   if i < len(sides)   else None,",
+   "1322: put_iv  = options_df[options_df[\"contract_type\"] == \"put\"][\"implied_volatility\"].mean()",
+   "1323: call_iv = options_df[options_df[\"contract_type\"] == \"call\"][\"implied_volatility\"].mean()",
+   "1368: direction = \"CALL\"; direction_side = \"call\"",
+   "1371: direction = \"PUT\"; direction_side = \"put\"",
+   "1965: def _component_dc(contract_type: str, direction: str,",
+   "1981: ctype   = contract_type.lower() if contract_type else \"\"",
+   "1984: if direction == \"CALL\" and ctype == \"call\":"
+  ],
+  "fallbacks": [
+   "96: MARKETDATA_API_KEY  = os.environ.get(\"MARKETDATA_API_KEY\", \"YOUR_MARKETDATA_API_KEY\")",
+   "207: rng   = np.random.default_rng(seeds.get(ticker, 42))",
+   "210: spot  = spots.get(ticker, 200.0)",
+   "219: atr_pct  = atr_pcts.get(ticker, 0.40)",
+   "254: base_iv = iv_levels.get(ticker, 0.30)",
+   "291: rng   = np.random.default_rng(seeds.get(ticker, 10))",
+   "294: mean_iv  = iv_means.get(ticker, 0.30)",
+   "751: r = requests.get(url, headers=headers, params=params, timeout=15)",
+   "761: detail = payload.get(\"errmsg\", payload.get(\"s\", \"rate limited\"))",
+   "767: reset_text = reset_raw or \"the provider reset time\"",
+   "782: detail, remaining or \"unknown\", wait,",
+   "792: error_detail = r.json().get(\"errmsg\", r.json().get(\"s\", \"unknown\"))",
+   "794: error_detail = (r.text or \"unknown\")[:200]",
+   "890: strike_list = data.get(\"strike\", [])"
+  ],
+  "writes": [
+   "1105: rs           = gain / loss.replace(0, np.nan)",
+   "1495: _sprd = (options_df[\"ask\"] - options_df[\"bid\"]) / _mid.replace(0, np.nan)",
+   "2422: \"olis_components\":  json.dumps(component_breakdown),",
+   "2849: contracts_df.to_csv(OUTPUT_DIR / f\"contracts_{run_id}.csv\",  index=False)",
+   "2850: contracts_df.to_csv(OUTPUT_DIR / \"contracts_latest.csv\",      index=False)",
+   "2861: vms_df[\"scanner_manifest_at\"] = datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "2862: vms_df.to_csv(OUTPUT_DIR / f\"vms_scoreboard_{run_id}.csv\",   index=False)",
+   "2863: vms_df.to_csv(OUTPUT_DIR / \"vms_scoreboard_latest.csv\",       index=False)",
+   "2908: \"scanner_manifest_at\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "2931: _detected_at = datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "90: # Pipeline universe \u2014 for overlap tagging only, never scanned",
+   "127: # Used only to invert historical option prices into implied volatility.",
+   "475: # Warm run: only fetches the latest completed session when needed.",
+   "875: \"strikeLimit\":  2,           # only 2 strikes nearest ATM",
+   "885: # Reject only an explicit error/no-data status; the requested arrays"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 20,
+   "fallback": 97,
+   "write": 14
+  }
+ },
+ {
+  "path": "scripts/backfill_timeseries_into_packages.py",
+  "n_lines": 896,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "canonical_data/history_bridge.py",
+   "scripts/data_contract_validator.py"
+  ],
+  "docstring": "AVSHUNTER - Backfill Daily Timeseries Into Packages (hardened)\n\nPurpose\n- For each <TICKER>.package.json in a packages dir, backfill:\n    ohlcv_daily       (top-level, read directly by run_vanguard_from_packages.py)\n    timeseries.ohlcv_daily  (internal store for audit)\n    timeseries.returns_daily\n- Sources:\n    1) Local cache (if you have one)\n    2) Polygon (optional; guarded by --allow-polygon flag)\n    3) MarketData intraday candles for LATEST mode (optional)\n\nChange (2026-04 \u2014 Actuarial Integration):\n- Actuarial block preserved across backfill writes (never overwritten)\n- data_contract a",
+  "functions": [
+   "read_json:79",
+   "write_json:84",
+   "utc_now_iso:100",
+   "find_latest_run_id:107",
+   "list_candidate_packages_dirs:117",
+   "resolve_packages_dir:128",
+   "_preserve_actuarial_block:167",
+   "_stamp_actuarial_data_quality:178",
+   "polygon_fetch_ohlcv_daily:201",
+   "polygon_fetch_intraday_session:226",
+   "marketdata_fetch_intraday_session:283",
+   "compute_returns:352",
+   "validate_series:364",
+   "backfill_package:403",
+   "main:754"
+  ],
+  "classes": [],
+  "raises": [
+   "FileNotFoundError:109",
+   "FileNotFoundError:141",
+   "FileNotFoundError:149",
+   "FileNotFoundError:161",
+   "SystemExit:798",
+   "SystemExit:829",
+   "SystemExit:896",
+   "ValueError:113"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "111: run_id = (latest.get(\"run_id\") or \"\").strip()",
+   "190: dc = pkg.setdefault(\"data_contract\", {})",
+   "317: if str(data.get(\"s\", \"\")).lower() != \"ok\":",
+   "430: - data_contract actuarial_data_quality is stamped: \"OHLCV_OK\" or \"OHLCV_FAIL\"",
+   "434: ticker = (pkg.get(\"ticker\") or \"\").strip().upper()",
+   "444: actuarial_snapshot.get(\"penalty_multiplier\", 1.0),",
+   "445: actuarial_snapshot.get(\"fallback_depth\", 0),",
+   "446: actuarial_snapshot.get(\"valid\", False),",
+   "449: pkg.setdefault(\"timeseries\", {})",
+   "450: pkg.setdefault(\"data_contract\", {})",
+   "547: last_date_str = existing[-1].get(\"date\", \"\")",
+   "555: dc.update({\"has_ohlcv_daily\": True, \"timeseries_source\": ts.get(\"source\") or \"CACHED\"})",
+   "577: dc.update({\"has_ohlcv_daily\": True, \"timeseries_source\": ts.get(\"source\") or \"CACHED\"})",
+   "625: source_run_id=str(pkg.get(\"run_id\") or \"\") or None,"
+  ],
+  "writes": [
+   "89: with tmp_path.open(\"w\", encoding=\"utf-8\") as f:",
+   "90: json.dump(obj, f, indent=2, ensure_ascii=False)",
+   "91: os.replace(tmp_path, path)",
+   "101: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "174: return json.loads(json.dumps(act, default=str))"
+  ],
+  "atomic_markers": [
+   "86: tmp_path = path.with_name(f\"{path.name}.tmp.{os.getpid()}\")",
+   "91: os.replace(tmp_path, path)"
+  ],
+  "authority_comments": [
+   "53: # Data contract validator \u2014 single source of truth for data integrity",
+   "455: # CDS-2 ACTIVE: a canonical hit may short-circuit only when its final bar"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 20,
+   "write": 5
+  }
+ },
+ {
+  "path": "scripts/behaviour_state_builder.py",
+  "n_lines": 199,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/actuarial_enrichment_pass.py",
+   "scripts/behaviour_cache_builder.py",
+   "scripts/run_vanguard_from_packages.py",
+   "scripts/validate_behaviour_state.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Behaviour State Builder.\n\nProduction-intended additive helper:\n- keep existing state_hash as the broad actuarial bucket\n- add behaviour_state_key/hash as the finer monetisation state\n- avoid raw free-text tags inside hashes",
+  "functions": [
+   "_is_blank:30",
+   "_norm:42",
+   "_first:48",
+   "derive_horizon_bucket:59",
+   "derive_catalyst_overlay:84",
+   "derive_direction:117",
+   "derive_trigger_state:141",
+   "build_behaviour_state_key:163",
+   "is_precise_behaviour_state_key:174",
+   "build_behaviour_state_hash:180",
+   "enrich_dataframe:184",
+   "resolve_match_type:192"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "126: \"options_direction\",",
+   "132: if side in {\"CALL\", \"BUY\", \"BULL\", \"BULLISH\", \"LONG_CALL\", \"UP\"}:",
+   "134: if side in {\"PUT\", \"SELL\", \"BEAR\", \"BEARISH\", \"LONG_PUT\", \"DOWN\"}:"
+  ],
+  "fallbacks": [
+   "138: return side or \"UNK\"",
+   "176: parts = str(key or \"\").split(\"|\")"
+  ],
+  "writes": [
+   "45: return str(value).upper().strip().replace(\" \", \"_\").replace(\"-\", \"_\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "175: \"\"\"Return True only when all seven controlled behaviour dimensions are present.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 2,
+   "write": 1
+  }
+ },
+ {
+  "path": "scripts/build_actuarial_v7.py",
+  "n_lines": 152,
+  "classification": "LIBRARY",
+  "commit": "dfc5a8d",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/build_actuarial_v7_sharded.py"
+  ],
+  "imports": [
+   "vanguard/core/actuarial_core_v7.py"
+  ],
+  "docstring": "Build a reproducible actuarial v7 parquet from persisted daily CSV files.\n\nThis command never fetches an API and refuses to write to the live v6 path.",
+  "functions": [
+   "_source_fingerprint:28",
+   "_build_one:41",
+   "build:52",
+   "main:128"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:69",
+   "FileNotFoundError:59",
+   "ValueError:108",
+   "ValueError:140",
+   "ValueError:55",
+   "ValueError:90"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "32: record = source_manifest.get(\"tickers\", {}).get(path.stem.upper(), {})",
+   "146: values = args.tickers or \"AAPL,MSFT,NVDA,SPY,QQQ\""
+  ],
+  "writes": [
+   "109: os.replace(temporary, output)",
+   "124: manifest_path.write_text(json.dumps(manifest, indent=2), encoding=\"utf-8\")",
+   "148: print(json.dumps(build(args.daily_dir, tickers, args.output, args.workers), indent=2))"
+  ],
+  "atomic_markers": [
+   "67: temporary = output.with_suffix(output.suffix + \".tmp\")",
+   "109: os.replace(temporary, output)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "89: if observations.duplicated([\"ticker\", \"date\", \"calculation_version\"]).any():"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 3
+  }
+ },
+ {
+  "path": "scripts/build_packages_from_discovery.py",
+  "n_lines": 629,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_macro_enrichment_delta.py"
+  ],
+  "imports": [
+   "contracts/handoff_contract.py",
+   "scripts/data_contract_validator.py",
+   "scripts/macro_quant_packet.py"
+  ],
+  "docstring": "AVSHUNTER - Build Packages From Discovery (hardened)\n\nPurpose\n- Reads discovery candidates for a run (CSV)\n- Pins/loads a macro snapshot (macro_snapshot.json OR macro_intelligence_latest.json)\n- Emits per-ticker \"package\" JSON files + packages/index.json for Vanguard / Light Core handoff\n\nACTUARIAL NOTE (2026-04 fix)\n- Actuarial enrichment is NOT performed here. This script runs BEFORE Vanguard,\n  so the six STATE_COLS required for lookup do not yet exist:\n    vol_regime, trend_direction, structure_quality \u2192 written by Vanguard (layer2__ cols)\n    adx_bucket                                    ",
+  "functions": [
+   "_safe_float_pkg:80",
+   "_safe_int:90",
+   "read_json:137",
+   "write_json:144",
+   "utc_now_iso:150",
+   "auto_discover_discovery_csv:157",
+   "normalise_macro_snapshot:179",
+   "find_latest_run_id:225",
+   "resolve_run_dir:235",
+   "locate_macro_snapshot:251",
+   "read_discovery_csv:293",
+   "get_ticker:309",
+   "dedupe_discovery_rows_by_ticker:317",
+   "ensure_us_ticker_sane:333",
+   "build_package:362",
+   "enforce_data_contract:505",
+   "main:523"
+  ],
+  "classes": [
+   {
+    "name": "PackageMeta:355",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:139",
+   "FileNotFoundError:227",
+   "FileNotFoundError:240",
+   "FileNotFoundError:247",
+   "FileNotFoundError:287",
+   "FileNotFoundError:295",
+   "SystemExit:629",
+   "ValueError:215",
+   "ValueError:231",
+   "ValueError:305",
+   "ValueError:348"
+  ],
+  "direction_branches": [
+   "439: \"contract_type\": discovery_row.get(\"contract_type\") or discovery_row.get(\"direction\") or None,",
+   "476: \"contract_type\": discovery_row.get(\"contract_type\") or discovery_row.get(\"direction\") or None,"
+  ],
+  "fallbacks": [
+   "181: raw.setdefault(\"contract_version\", \"macro_contract_v1_0\")",
+   "192: \"contract_version\": raw.get(\"contract_version\") or \"macro_contract_v1_0\",",
+   "204: \"contract_version\": raw.get(\"contract_version\") or \"macro_contract_v1_0\",",
+   "212: raw.setdefault(\"as_of_utc\", raw.get(\"normalised_at_utc\") or utc_now_iso())",
+   "229: run_id = (latest.get(\"run_id\") or \"\").strip()",
+   "311: v = (row.get(k) or \"\").strip().upper()",
+   "379: macro_snapshot.setdefault(\"macro_quant_packet\", macro_quant_packet)",
+   "431: \"bar_data_as_of\": discovery_row.get(\"data_as_of\", None),",
+   "432: \"data_source\":    discovery_row.get(\"data_source\", \"UNKNOWN\"),",
+   "509: package.setdefault(\"data_contract\", {})[\"build_repair\"] = reason"
+  ],
+  "writes": [
+   "146: with path.open(\"w\", encoding=\"utf-8\") as f:",
+   "147: json.dump(obj, f, indent=2, ensure_ascii=False)",
+   "151: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "81: \"\"\"Return float or None \u2014 never 0.0 for missing data.\"\"\"",
+   "463: # no ev_ column at all; EV Engine v2 (the only live producer of a"
+  ],
+  "version_fields": [
+   "181: raw.setdefault(\"contract_version\", \"macro_contract_v1_0\")",
+   "192: \"contract_version\": raw.get(\"contract_version\") or \"macro_contract_v1_0\",",
+   "204: \"contract_version\": raw.get(\"contract_version\") or \"macro_contract_v1_0\",",
+   "211: if raw.get(\"contract_version\") and (raw.get(\"as_of_utc\") or raw.get(\"normalised_at_utc\")):"
+  ],
+  "counts": {
+   "direction": 2,
+   "fallback": 10,
+   "write": 3
+  }
+ },
+ {
+  "path": "scripts/build_phase_transition_matrix.py",
+  "n_lines": 417,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "_normalise_phase:43",
+   "_normalise_label:48",
+   "_parquet_row_count:53",
+   "_available_columns:62",
+   "build_transition_matrix:75",
+   "main:355"
+  ],
+  "classes": [],
+  "raises": [
+   "FileNotFoundError:97",
+   "SystemExit:417",
+   "ValueError:103",
+   "ValueError:393"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "181: safe_label = label.replace(\" \", \"_\").replace(\"/\", \"-\")",
+   "183: data.to_csv(",
+   "187: data.to_csv(",
+   "271: consolidated.to_csv(",
+   "276: consolidated.to_csv(",
+   "282: consolidated.to_csv(",
+   "327: meta_path.write_text(json.dumps(meta, indent=2), encoding=\"utf-8\")",
+   "328: latest_meta_path.write_text(json.dumps(meta, indent=2), encoding=\"utf-8\")",
+   "403: print(json.dumps(result, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "281: # Alias expected by intelligent_orchestrator.py health check (existence + size only)"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 9
+  }
+ },
+ {
+  "path": "scripts/compute_greeks_bs.py",
+  "n_lines": 305,
+  "classification": "LIBRARY",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "empirical_option_ev.py",
+   "scripts/phantom_compute_historical_greeks.py"
+  ],
+  "imports": [],
+  "docstring": "Local Black-Scholes Greek computation for PHANTOM historical option rows.\n\nMarketData historical EOD option chains preserve raw option tape fields but may\nreturn null Greeks. This module computes an auditable local Greek set from the\narchived MarketData fields without calling any external API.",
+  "functions": [
+   "to_float:21",
+   "norm_pdf:33",
+   "norm_cdf:37",
+   "_d1_d2:41",
+   "black_scholes_price:48",
+   "no_arbitrage_bounds:59",
+   "choose_market_price:69",
+   "solve_implied_vol:92",
+   "compute_greeks:139",
+   "compute_greeks_from_row:200"
+  ],
+  "classes": [
+   {
+    "name": "GreekResult:169",
+    "methods": [
+     "as_dict:183"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:157",
+   "ValueError:56"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "49: side_l = str(side or \"\").lower()",
+   "61: side_l = str(side or \"\").lower()",
+   "145: side_l = str(side or \"\").lower()",
+   "202: side = str(row.get(\"side\") or \"\").lower()",
+   "283: return GreekResult(status, flags, price_source, market_price, rate, None, None, None, None, None, iterations, solver_error or \"\")"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 5,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/core_intel_exporter.py",
+  "n_lines": 627,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "CORE INTEL EXPORTER v1.0\n------------------------------------------------------------\nRead-only post-processing stage that converts Vanguard (and optional Options)\noutputs into compact JSON artefacts for GPT CORE-INTEL (contract-driven).\n\nDesign goals:\n- Non-invasive: reads existing outputs, writes new outputs only.\n- Fail-open by default: exporter failure must not break the main pipeline.\n- Strict mode available for QA: failures raise non-zero exit.\n\nInputs (minimum):\n- data/output/latest.json\n- data/output/runs/{run_id}/vanguard/vanguard_run_summary.json  (or supplied path)\n- vanguard_signal",
+  "functions": [
+   "_utc_now_iso:56",
+   "_read_json:60",
+   "_write_json:67",
+   "_safe_path_from_windows:73",
+   "_coerce_numeric:81",
+   "_first_existing:95",
+   "_resolve_col:151",
+   "_derive_tier:160",
+   "_select_fields:198",
+   "_rank_score:227",
+   "_pick_menu:262",
+   "export_core_intel:314",
+   "main:591"
+  ],
+  "classes": [
+   {
+    "name": "ContractValidationError:48",
+    "methods": []
+   },
+   {
+    "name": "InputNotFoundError:52",
+    "methods": []
+   },
+   {
+    "name": "ExportResult:305",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "ContractValidationError:211",
+   "ContractValidationError:331",
+   "InputNotFoundError:335",
+   "InputNotFoundError:345",
+   "InputNotFoundError:360",
+   "InputNotFoundError:368",
+   "InputNotFoundError:62",
+   "RuntimeError:322"
+  ],
+  "direction_branches": [
+   "435: \"options_direction\", \"options_strategy\", \"options_score\","
+  ],
+  "fallbacks": [
+   "154: for alt in ALIASES.get(wanted, []):",
+   "239: edge = str(row.get(\"l2__edge_status\", \"\")).upper()",
+   "247: verdict = str(row.get(\"opt__options_verdict\", \"\")).upper()",
+   "248: verdict_bonus = {\"EXECUTE\": 30.0, \"ARMED\": 15.0, \"CAUTION\": 5.0}.get(verdict, 0.0)",
+   "268: verdict = str(d.get(\"opt__options_verdict\", \"\")).upper()",
+   "279: lane = str(d.get(\"lane_tag\", \"\")).upper().strip()",
+   "285: lanes[lane].sort(key=lambda x: x.get(\"_rank_score\", 0.0), reverse=True)",
+   "289: remaining.sort(key=lambda x: x.get(\"_rank_score\", 0.0), reverse=True)",
+   "294: pool.sort(key=lambda x: x.get(\"_rank_score\", 0.0), reverse=True)",
+   "329: run_id = str(latest.get(\"run_id\", \"\")).strip()",
+   "349: v_csv_str = str(v_sum.get(\"output_csv\", \"\")).strip()",
+   "463: ticker = str(r.get(\"ticker\", \"\")).strip().upper()",
+   "487: sb_vetoes   = str(d.get(\"sb_vetoes\", \"\")).upper()",
+   "488: sb_campaign = str(d.get(\"sb_campaign\", \"\")).upper()"
+  ],
+  "writes": [
+   "69: with path.open(\"w\", encoding=\"utf-8\") as f:",
+   "70: json.dump(obj, f, ensure_ascii=False, indent=2)",
+   "78: return Path(win_path.replace(\"\\\\\", \"/\"))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "264: # even if the Vanguard tier column only shows 0 (no actuarial edge yet)",
+   "411: # Only bring in columns not already in vanguard CSV to avoid conflicts"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 19,
+   "write": 3
+  }
+ },
+ {
+  "path": "scripts/data_contract_validator.py",
+  "n_lines": 214,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/avshunter_superbrain_layer.py",
+   "scripts/backfill_timeseries_into_packages.py",
+   "scripts/build_packages_from_discovery.py",
+   "scripts/run_vanguard_from_packages.py"
+  ],
+  "imports": [
+   "canonical_data/history_bridge.py"
+  ],
+  "docstring": "AVSHUNTER - Data Contract Validator\n====================================\nSingle source of truth for package data integrity.\nCalled by: backfill, build_packages, run_vanguard_from_packages, superbrain.\n\nDesign principles\n-----------------\n- Fail-closed: missing or insufficient data returns (False, reason) never raises\n- Consistent thresholds in one place: change MIN_BARS here, all callers benefit\n- Repair path: attempt_repair() promotes timeseries -> ohlcv without fabricating\n- Transparent: every result carries a human-readable reason code\n\nUsage\n-----\n    from data_contract_validator import Da",
+  "functions": [],
+  "classes": [
+   {
+    "name": "DataContractValidator:46",
+    "methods": [
+     "validate:57",
+     "confidence_level:91",
+     "attempt_repair:106",
+     "annotate:147",
+     "_resolve_ohlcv:167",
+     "_is_usable:179",
+     "_check_nulls:183",
+     "_check_staleness:191",
+     "_has_regime:205"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "120: package.setdefault(\"data_contract\", {})[\"ohlcv_repair_source\"] = \"daily_df\"",
+   "129: package.setdefault(\"data_contract\", {})[\"ohlcv_repair_source\"] = \"ohlcv_daily\"",
+   "139: package.setdefault(\"data_contract\", {})[\"ohlcv_repair_source\"] = \"timeseries.ohlcv_daily\"",
+   "143: package.setdefault(\"data_contract\", {})[\"ohlcv_repair_source\"] = \"NONE\"",
+   "156: dc = package.setdefault(\"data_contract\", {})",
+   "193: last_date_str = ohlcv[-1].get(\"date\", \"\")"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "36: # Single source of truth for thresholds used everywhere in the pipeline",
+   "115: # Priority 1: daily_df (canonical alias, written by backfill)"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 6,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/ev3_calibration_report.py",
+  "n_lines": 151,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/apply_ev3_authority.py",
+   "tests/test_ev3_calibration_report.py"
+  ],
+  "imports": [],
+  "docstring": "Build the governed EV3 outcome-calibration readiness report.",
+  "functions": [
+   "_read_sqlite:23",
+   "_prediction_rows:37",
+   "build_report:63",
+   "write_report:126",
+   "main:137"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:151"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "50: frame[\"ticker\"] = frame.get(\"ticker\", \"\").astype(str).str.upper().str.strip()",
+   "71: journal.get(\"pnl_pct_premium\", journal.get(\"pnl_usd\")), errors=\"coerce\"",
+   "92: absolute = matched.get(\"ev3_absolute_state\", pd.Series(index=matched.index, dtype=str)).astype(str)",
+   "103: realised = matched.get(\"realised_pnl\", pd.Series(dtype=float))"
+  ],
+  "writes": [
+   "130: temporary.write_text(json.dumps(report, indent=2, sort_keys=True), encoding=\"utf-8\")",
+   "131: os.replace(temporary, output_path)",
+   "146: print(json.dumps(report, indent=2, sort_keys=True))"
+  ],
+  "atomic_markers": [
+   "128: temporary = output_path.with_name(f\".{output_path.name}.{uuid.uuid4().hex}.tmp\")",
+   "131: os.replace(temporary, output_path)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "17: SCHEMA_VERSION = \"ev3-calibration-readiness-v1\"",
+   "105: \"schema_version\": SCHEMA_VERSION,"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 3
+  }
+ },
+ {
+  "path": "scripts/exit_rules_engine.py",
+  "n_lines": 101,
+  "classification": "ORCHESTRATED",
+  "commit": "a3cded6",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Exit Rules Engine\n=================\nConverts existing manifest fields into explicit per-trade exit rules.\nRuns on morning_candidates CSV via orchestrator Phase 10.\nAll 6 output fields are additive \u2014 no existing columns are modified.",
+  "functions": [
+   "_f:16",
+   "compute_exit_rules:30",
+   "enrich_dataframe:95"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "39: row.get(\"canonical_direction\") or row.get(\"primary_direction\") or \"\"",
+   "56: if direction == \"CALL\":"
+  ],
+  "fallbacks": [
+   "39: row.get(\"canonical_direction\") or row.get(\"primary_direction\") or \"\""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/finalize_phantom_weekly_snapshot.py",
+  "n_lines": 183,
+  "classification": "LIBRARY",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_phantom_weekly_maintenance.py"
+  ],
+  "imports": [],
+  "docstring": "Finalize one newly appended PHANTOM weekly snapshot without a full-table scan.",
+  "functions": [
+   "entropy:15",
+   "dte_bucket:24",
+   "nearest_iv:38",
+   "main:54"
+  ],
+  "classes": [],
+  "raises": [
+   "RuntimeError:78",
+   "RuntimeError:81",
+   "SystemExit:183"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "98: own_med = medians.get((ticker, bucket, side))",
+   "99: opp_med = medians.get((ticker, bucket, opposite))",
+   "100: put_med = medians.get((ticker, bucket, \"put\"))",
+   "101: call_med = medians.get((ticker, bucket, \"call\"))",
+   "102: put25 = iv25.get((ticker, bucket, \"put\"))",
+   "103: call25 = iv25.get((ticker, bucket, \"call\"))",
+   "131: atm = valid_iv.groupby(\"ticker\", as_index=False).first()[[\"ticker\", \"iv\"]]"
+  ],
+  "writes": [
+   "88: / pd.to_numeric(frame[\"mid\"], errors=\"coerce\").replace(0, pd.NA)",
+   "176: args.report.write_text(json.dumps(report, indent=2), encoding=\"utf-8\")",
+   "177: print(json.dumps(report, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 7,
+   "write": 3
+  }
+ },
+ {
+  "path": "scripts/go_live_uat_audit_watch.py",
+  "n_lines": 479,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/capture_end_to_end_run.py"
+  ],
+  "imports": [
+   "dropoff_audit.py",
+   "handoff_contract_audit.py",
+   "scripts/macro_quant_packet.py",
+   "scripts/monitor_uat_pipeline.py",
+   "uat_audit_report.py"
+  ],
+  "docstring": "Go-live UAT audit watcher for AVSHUNTER.\n\nThis wrapper is intentionally non-invasive: it never changes trading outputs.\nIt follows the newest run folder, samples pipeline progress, and materializes\nthe same diagnostic artifacts we review after UAT:\n\n* dropoff_audit_<run_id>.csv/json\n* handoff_contract_audit_<run_id>.csv/json\n* uat_audit_report_<run_id>.md/json\n* data/output/qa/go_live_uat_audit_watch_latest.json\n\nThe watcher can be started before the orchestrator. It will switch to the new\nrun folder as soon as the run appears.",
+  "functions": [
+   "_now:76",
+   "_iso:80",
+   "_safe_read_json:84",
+   "_safe_read_csv:93",
+   "_macro_packet_from_json:102",
+   "_latest_run_id:116",
+   "_glob_latest:136",
+   "_row_count:145",
+   "_artifact_map:155",
+   "_input_contract_status:176",
+   "_counts_from_csv:267",
+   "_run_deep_audits:280",
+   "_business_counts:334",
+   "_write_latest:354",
+   "sample_once:366",
+   "print_compact:437",
+   "main:455"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:479"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "106: if \"macro_freshness_status\" in macro or \"macro_data_quality\" in macro:",
+   "130: run_id = str(payload.get(\"run_id\") or payload.get(\"latest_run_id\") or \"\").strip()",
+   "166: \"latest\": str(latest or \"\"),",
+   "250: \"macro_freshness_status\": macro_payload.get(\"macro_freshness_status\", \"\"),",
+   "251: \"macro_data_quality\": macro_payload.get(\"macro_data_quality\", \"\"),",
+   "252: \"macro_active_conflict_flags\": macro_payload.get(\"macro_active_conflict_flags\", []),",
+   "253: \"macro_resolved_conflict_flags\": macro_payload.get(\"macro_resolved_conflict_flags\", []),",
+   "294: \"dropoff_stage_counts\": dropoff_payload.get(\"dropoff_stage_counts\", {}),",
+   "295: \"root_cause_family_counts\": dropoff_payload.get(\"root_cause_family_counts\", {}),",
+   "296: \"top_dropoff_reasons\": dropoff_payload.get(\"top_dropoff_reasons\", {}),",
+   "303: artifact_map.get(name, {}).get(\"present\")",
+   "357: run_path = QA_DIR / f\"go_live_uat_audit_watch_{payload.get('run_id') or 'no_run'}.json\"",
+   "394: macro_quality = str(input_status[\"macro_latest\"].get(\"macro_data_quality\") or \"\").upper()",
+   "398: handoff = audits.get(\"handoff_contract_audit\", {})"
+  ],
+  "writes": [
+   "81: return (dt or _now()).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "169: datetime.fromtimestamp(latest.stat().st_mtime, timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "229: \"last_write_utc\": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "238: \"last_write_utc\": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "259: \"last_write_utc\": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "358: text = json.dumps(payload, indent=2, ensure_ascii=True, default=str)",
+   "361: tmp.write_text(text, encoding=\"utf-8\")",
+   "362: os.replace(tmp, path)"
+  ],
+  "atomic_markers": [
+   "360: tmp = path.with_name(f\"{path.name}.tmp.{os.getpid()}\")",
+   "362: os.replace(tmp, path)"
+  ],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 25,
+   "write": 8
+  }
+ },
+ {
+  "path": "scripts/inject_macro_into_packages.py",
+  "n_lines": 259,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "contracts/handoff_contract.py",
+   "contracts/macro_enrichment_delta.py",
+   "scripts/macro_quant_packet.py"
+  ],
+  "docstring": "AVSHUNTER - Inject macro snapshot into packages.\n\nWrites macro data into every <TICKER>.package.json under <run_id>/packages/:\n  pkg[\"macro\"][\"payload\"]    \u2014 full macro snapshot (read by run_vanguard)\n  pkg[\"macro\"][\"source_path\"]\n  pkg[\"macro\"][\"ingested_utc\"]\n  pkg[\"regime_snapshot\"]     \u2014 top-level alias (run_vanguard fail-closed gate)\n\nSkips index.json and any non-package JSON files.\nFails closed if macro file is missing or invalid.",
+  "functions": [
+   "load_json:60",
+   "save_json:65",
+   "utc_now_iso:73",
+   "_flatten_macro:77",
+   "build_regime_snapshot:107",
+   "main:131"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:259"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "120: \"source_as_of_utc\":    flat.get(\"as_of_utc\") or flat.get(\"generated_at_utc\") or \"\",",
+   "121: \"regime_state\":        flat.get(\"regime_state\") or \"UNKNOWN\",",
+   "122: \"dir_bias\":            flat.get(\"dir_bias\") or \"UNKNOWN\",",
+   "123: \"vol_mode\":            flat.get(\"volatility_mode\") or flat.get(\"vol_mode\") or \"UNKNOWN\",",
+   "124: \"regime_drift_status\": flat.get(\"regime_drift_status\") or \"UNKNOWN\",",
+   "125: \"macro_conviction\":    flat.get(\"macro_conviction\") or \"UNKNOWN\",",
+   "126: \"macro_freshness_status\": (macro_quant_packet or {}).get(\"macro_freshness_status\", \"UNKNOWN\"),",
+   "127: \"macro_data_quality\":     (macro_quant_packet or {}).get(\"macro_data_quality\", \"UNKNOWN\"),"
+  ],
+  "writes": [
+   "68: with tmp.open(\"w\", encoding=\"utf-8\") as f:",
+   "69: json.dump(obj, f, indent=2, ensure_ascii=False)",
+   "70: tmp.replace(p)",
+   "74: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "atomic_markers": [
+   "67: tmp = p.with_suffix(p.suffix + \".tmp\")"
+  ],
+  "authority_comments": [
+   "197: # Only process *.package.json files \u2014 avoids index.json and any stray files"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 8,
+   "write": 4
+  }
+ },
+ {
+  "path": "scripts/macro_exposure_resolver.py",
+  "n_lines": 178,
+  "classification": "ORCHESTRATED",
+  "commit": "68437a2",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 Macro Exposure Resolver\n=====================================\nResolves per-ticker macro exposure role and reason from the enrichment delta\nticker_role_map and base macro context.\n\nOUTPUT COLUMNS (display only \u2014 NEVER read by scoring, EIL, Vanguard, OI, or execution):\n  macro_exposure_role    BENEFICIARY | VULNERABLE | NEUTRAL\n  macro_exposure_reason  One-line human-readable string\n\nThis module is DISPLAY ONLY. Its outputs must never feed into any execution\nverdict, execution_permission, EIL scoring, Vanguard StateVector, or OI bonus.",
+  "functions": [
+   "_load_json:33",
+   "_extract_ticker_role_map:43",
+   "_build_theme_reasons:63",
+   "_macro_narrative_summary:86",
+   "resolve:101",
+   "enrich_dataframe:157"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "68: theme_name = str(theme.get(\"theme_name\") or theme.get(\"theme_id\") or \"\")",
+   "78: reasons.setdefault(key, [])",
+   "89: regime   = str(macro.get(\"regime_state\") or \"\").replace(\"_\", \" \").title()",
+   "90: dir_bias = str(macro.get(\"dir_bias\") or \"\").replace(\"_\", \" \").title()",
+   "133: role = role_map.get(key, NEUTRAL_ROLE)",
+   "137: themes = theme_reasons.get(key, [])",
+   "173: lambda t: lookup.get(str(t).strip().upper(), {}).get(\"macro_exposure_role\",   NEUTRAL_ROLE)",
+   "176: lambda t: lookup.get(str(t).strip().upper(), {}).get(\"macro_exposure_reason\", NEUTRAL_REASON)"
+  ],
+  "writes": [
+   "89: regime   = str(macro.get(\"regime_state\") or \"\").replace(\"_\", \" \").title()",
+   "90: dir_bias = str(macro.get(\"dir_bias\") or \"\").replace(\"_\", \" \").title()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 8,
+   "write": 2
+  }
+ },
+ {
+  "path": "scripts/macro_quant_packet.py",
+  "n_lines": 898,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "avshunter_discovery_ULTIMATE.py",
+   "eod_candidate_engine.py",
+   "execution_intelligence_runner.py",
+   "intelligent_orchestrator.py",
+   "scripts/apply_macro_enrichment_to_discovery.py",
+   "scripts/avshunter_options_intelligence.py",
+   "scripts/build_packages_from_discovery.py",
+   "scripts/go_live_uat_audit_watch.py",
+   "scripts/inject_macro_into_packages.py",
+   "scripts/normalise_macro_contract.py",
+   "scripts/qa_macro_enrichment_injection.py",
+   "scripts/run_vanguard_from_packages.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER macro quant packet helper.\n\nBuilds the Phase 3 machine-readable macro baton from the existing\nmacro_contract_v1_0 JSON without replacing the raw macro narrative.",
+  "functions": [
+   "utc_now:83",
+   "utc_iso:87",
+   "read_json:92",
+   "write_json:97",
+   "_is_missing:102",
+   "_walk_values:112",
+   "find_field:124",
+   "_safe_float:134",
+   "_clip:143",
+   "_as_list:149",
+   "_parse_ts:170",
+   "_age_hours:183",
+   "_freshness_status:193",
+   "_normalise_confidence:205",
+   "_regime_label:214",
+   "_risk_score:233",
+   "_liquidity_pulse:251",
+   "_vix_structure:267",
+   "_vol_mode:282",
+   "_dealer_gamma:299",
+   "_rates_impulse:309",
+   "_usd_state:320",
+   "_credit_state:331",
+   "_sector_rotation_state:342",
+   "_macro_horizon:369",
+   "_bucket_clarity:403",
+   "_primary_bucket:416",
+   "_equity_drawer_active:429",
+   "_macro_execution_caution:442",
+   "_ticker_alignment:455"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "215: text = str(raw or \"UNKNOWN\").strip().upper().replace(\"-\", \"_\").replace(\" \", \"_\")",
+   "226: if \"RISK_OFF\" in text or \"DEFENSIVE\" in text:",
+   "234: text = \" \".join(str(v or \"\") for v in (regime, risk_switch, macro_filter)).upper()",
+   "240: if \"NO_GO\" in text or \"NO-GO\" in text:",
+   "246: if \"TRANSITION\" in text or \"CHOPPY\" in text:",
+   "252: text = str(label or \"\").upper()",
+   "268: text = str(vol_mode or \"\").upper()",
+   "283: text = str(vol_mode or \"\").upper()",
+   "310: text = str(raw or \"\").upper()",
+   "321: text = str(raw or \"\").upper()",
+   "332: text = str(raw or \"\").upper()",
+   "343: text = str(rotation_signal or \"\").upper()",
+   "358: if \"TECH\" in pref_text or \"XLK\" in pref_text or \"QQQ\" in pref_text:",
+   "385: score = prob if prob is not None else (size or 0.0) * 100.0"
+  ],
+  "writes": [
+   "89: return value.isoformat().replace(\"+00:00\", \"Z\")",
+   "98: with Path(path).open(\"w\", encoding=\"utf-8\") as fh:",
+   "99: json.dump(obj, fh, indent=2, ensure_ascii=False)",
+   "166: return [part.strip() for part in raw.replace(\"|\", \",\").split(\",\") if part.strip()]",
+   "174: text = str(value).replace(\"Z\", \"+00:00\")",
+   "177: parsed = parsed.replace(tzinfo=timezone.utc)",
+   "189: current = current.replace(tzinfo=timezone.utc)",
+   "215: text = str(raw or \"UNKNOWN\").strip().upper().replace(\"-\", \"_\").replace(\" \", \"_\")",
+   "406: commodities = \"GOLD\" in json.dumps(macro).upper() or \"COMMOD\" in json.dumps(macro).upper()",
+   "828: return json.dumps(value, sort_keys=True, ensure_ascii=False)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "863: \"\"\"Collapse macro merge suffixes back to canonical column names.\"\"\""
+  ],
+  "version_fields": [
+   "17: MACRO_QUANT_CONTRACT_VERSION = \"macro_quant_contract_v1\"",
+   "26: \"macro_contract_version\",",
+   "537: \"macro_contract_version\": str(",
+   "538: macro.get(\"schema_version\") or \"macro_advisory_fallback_v1\"",
+   "645: \"macro_quant_contract_version\": MACRO_QUANT_CONTRACT_VERSION,",
+   "647: \"macro_contract_version\": str(find_field(macro, \"contract_version\", default=\"UNKNOWN\")),"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 39,
+   "write": 10
+  }
+ },
+ {
+  "path": "scripts/monitor_uat_pipeline.py",
+  "n_lines": 510,
+  "classification": "LIBRARY",
+  "commit": "81b0d52",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/go_live_uat_audit_watch.py"
+  ],
+  "imports": [],
+  "docstring": "Lightweight AVSHUNTER UAT pipeline monitor.\n\nThis script watches run-folder artefacts and the orchestrator log without\ntouching the running pipeline. It is intentionally dependency-free so it can\nrun in a separate PowerShell window during long UAT runs.",
+  "functions": [
+   "utc_now:59",
+   "iso_utc:63",
+   "latest_run_id:69",
+   "iter_files:82",
+   "phase_status:89",
+   "_line_time_utc:122",
+   "_run_start_utc:134",
+   "tail_log:149",
+   "_read_tail_lines:188",
+   "actuarial_neutral_prior_snapshot:204",
+   "parse_vanguard_progress:233",
+   "parse_options_progress:254",
+   "process_snapshot:274",
+   "build_snapshot:300",
+   "print_snapshot:427",
+   "write_snapshot:471",
+   "main:480"
+  ],
+  "classes": [
+   {
+    "name": "PhaseStatus:32",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "SystemExit:510"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "163: if run_id in line or has_progress or \"PHASE\" in line or \"\u25b6\" in line or \"WARNING\" in line or \"ERROR\" in line or \"Traceback\" in line:",
+   "167: if \"PHASE\" in line or \"\u25b6\" in line or re.search(r\"\\[\\d+\\s*/\\s*\\d+\\]\", line)",
+   "172: if \"\u2192 ERROR:\" in line or \"-> ERROR:\" in line",
+   "176: if (\"ERROR\" in line or \"Traceback\" in line)",
+   "219: states[state] = states.get(state, 0) + 1",
+   "236: for line in log.get(\"phase_lines\", []) + log.get(\"warnings\", []) + log.get(\"errors\", []):",
+   "257: for line in log.get(\"phase_lines\", []) + log.get(\"warnings\", []) + log.get(\"errors\", []):",
+   "455: for item in neutral.get(\"top_states\", [])[:3]:"
+  ],
+  "writes": [
+   "66: return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "131: return naive.replace(tzinfo=local_tz).astimezone(timezone.utc)",
+   "141: return datetime.fromisoformat(str(raw).replace(\"Z\", \"+00:00\")).astimezone(timezone.utc)",
+   "332: progress_time = datetime.fromisoformat(vanguard_progress[\"line_time_utc\"].replace(\"Z\", \"+00:00\"))",
+   "356: progress_time = datetime.fromisoformat(options_progress[\"line_time_utc\"].replace(\"Z\", \"+00:00\"))",
+   "400: datetime.fromisoformat(phase.newest_write_utc.replace(\"Z\", \"+00:00\"))",
+   "475: tmp.write_text(json.dumps(snapshot, indent=2), encoding=\"utf-8\")",
+   "476: os.replace(tmp, path)"
+  ],
+  "atomic_markers": [
+   "474: tmp = path.with_name(f\"{path.name}.tmp.{os.getpid()}\")",
+   "476: os.replace(tmp, path)"
+  ],
+  "authority_comments": [
+   "286: except Exception as exc:  # pragma: no cover - defensive monitor only"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 8,
+   "write": 8
+  }
+ },
+ {
+  "path": "scripts/normalise_macro_contract.py",
+  "n_lines": 330,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_normalise_macro_contract_scores.py"
+  ],
+  "imports": [
+   "contracts/macro_regime_safety.py",
+   "scripts/macro_quant_packet.py"
+  ],
+  "docstring": "normalise_macro_contract.py\n============================\nAVSHUNTER \u2014 Macro Contract Normaliser  [FIX-04]\n\nPurpose:\n    Reads the raw GPT-generated macro_intelligence_latest.json and writes\n    the four structured score fields that RegimeConsensus (regime_consensus.py)\n    needs to run in \"structured\" mode instead of \"legacy_fallback\".\n\n    Without these four fields the RCS computes using hardcoded fallback\n    defaults (net_liquidity=0.5, vix=0.8, gex=0.5, momentum=0.5) regardless\n    of actual macro conditions \u2014 producing a meaningless neutral RCS=57.5.\n\n    This script ADDS fields to the exi",
+  "functions": [
+   "_find_field:80",
+   "_safe_float:94",
+   "_clip:103",
+   "derive_net_liquidity_score:109",
+   "derive_vix_regime_score:144",
+   "derive_gex_regime_score:161",
+   "derive_macro_momentum_score:193",
+   "normalise:215",
+   "main:294"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "120: _find_field(macro, \"liquidity_status\") or \"\"",
+   "182: gex_label = str(_find_field(macro, \"gex_regime\") or \"\").upper()",
+   "183: if \"DAMPENING\" in gex_label or \"POSITIVE\" in gex_label:",
+   "185: if \"AMPLIFYING\" in gex_label or \"NEGATIVE\" in gex_label:",
+   "232: log.info(f\"  source_file:         {macro.get('source_file', '?')}\")",
+   "233: log.info(f\"  normalised_at_utc:   {macro.get('normalised_at_utc', 'never')}\")",
+   "234: log.info(f\"  regime_state:        {_find_field(macro, 'regime_state') or '?'}\")",
+   "236: log.info(f\"  regime_sub_state:    {macro.get('regime_sub_state', '?')}\")",
+   "237: log.info(f\"  regime_distribution: {macro.get('regime_distribution', '?')}\")"
+  ],
+  "writes": [
+   "277: with open(macro_path, \"w\", encoding=\"utf-8\") as f:",
+   "278: json.dump(macro, f, indent=2)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "188: # No GEX data: absence must not be manufactured into a neutral reading.",
+   "250: # Producer-supplied structured scores are authoritative. These",
+   "251: # derivations exist only to fill an absent or invalid legacy field."
+  ],
+  "version_fields": [
+   "267: macro[\"macro_quant_contract_version\"] = macro[\"macro_quant_packet\"][\"macro_quant_contract_version\"]",
+   "270: macro[\"macro_quant_packet\"][\"macro_quant_contract_version\"],"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 9,
+   "write": 2
+  }
+ },
+ {
+  "path": "scripts/options_db_writer.py",
+  "n_lines": 248,
+  "classification": "LIBRARY",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_compute_historical_greeks.py",
+   "scripts/phantom_computed_greeks_audit.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM computed options-Greeks database writer.\n\nCreates an auditable computed-Greeks table and hydrates the existing\nchain_snapshots Greek columns consumed by PHANTOM IV/gamma mechanisms.",
+  "functions": [
+   "utc_now:15",
+   "has_column:19",
+   "ensure_computed_greeks_schema:24",
+   "upsert_greek_records:95",
+   "hydrate_chain_snapshots:176",
+   "write_run_audit:225"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "126: rec.get(\"greeks_source\", \"COMPUTED_BS\"),",
+   "180: if not str(rec.get(\"quality_status\") or \"\").startswith(\"OK\"):",
+   "188: rec.get(\"greeks_source\", \"COMPUTED_BS\"),",
+   "221: updated += int(cur.rowcount or 0)",
+   "239: int(payload.get(\"rows_targeted\") or 0),",
+   "240: int(payload.get(\"rows_processed\") or 0),",
+   "241: int(payload.get(\"rows_ok\") or 0),",
+   "242: int(payload.get(\"rows_failed\") or 0),",
+   "243: int(payload.get(\"chain_rows_updated\") or 0),"
+  ],
+  "writes": [
+   "244: json.dumps(payload.get(\"status_counts\") or {}, sort_keys=True),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 9,
+   "write": 1
+  }
+ },
+ {
+  "path": "scripts/phantom_bayesian.py",
+  "n_lines": 105,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM Bayesian actuarial bridge.",
+  "functions": [
+   "_float:14",
+   "_normalise_prob:28",
+   "_regime_prior:36",
+   "compute_bayesian_edge:47"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "39: direction = str(row.get(\"options_direction\") or row.get(\"direction\") or row.get(\"primary_direction\") or \"\").upper()",
+   "40: if direction == \"CALL\":",
+   "42: if direction == \"PUT\":"
+  ],
+  "fallbacks": [
+   "39: direction = str(row.get(\"options_direction\") or row.get(\"direction\") or row.get(\"primary_direction\") or \"\").upper()"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/phantom_criticality.py",
+  "n_lines": 44,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM phase-transition / criticality mechanism.",
+  "functions": [
+   "_float:9",
+   "compute_criticality:23"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "33: iv_accel = str(row.get(\"iv_accel_detected\") or \"\").upper() in {\"1\", \"TRUE\", \"YES\"}",
+   "34: phase = str(row.get(\"phase\") or row.get(\"phase_best\") or row.get(\"layer2__phase_v2\") or \"\").upper()"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/phantom_database.py",
+  "n_lines": 456,
+  "classification": "ORCHESTRATED",
+  "commit": "e432e67",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py",
+   "scripts/phantom_greek_rehydrate.py",
+   "scripts/run_phantom_backfill.py",
+   "scripts/run_phantom_backfill_parallel.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM database layer.\n\nStores historical options-chain snapshots, IV-surface summaries, PHANTOM scores,\nand audit records in a standalone SQLite database. This database is intentionally\nseparate from the Vanguard actuarial database.",
+  "functions": [
+   "utc_now:23",
+   "default_repo_root:27",
+   "default_db_path:31",
+   "_to_float:36",
+   "_to_int:48",
+   "_array:57",
+   "normalize_marketdata_chain:62"
+  ],
+  "classes": [
+   {
+    "name": "PhantomDatabase:128",
+    "methods": [
+     "__init__:129",
+     "connect:137",
+     "initialise:148",
+     "upsert_chain_rows:284",
+     "write_backfill_audit:298",
+     "audit_exists:315",
+     "latest_chain_rows:323",
+     "historical_iv_values:343",
+     "preload_tickers:357",
+     "batch_write_phantom_scores:392",
+     "write_phantom_score:421",
+     "write_run_audit:443"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "58: value = data.get(key, [])",
+   "310: int(rows_written or 0), int(estimated_credits or 0), str(error or \"\"),",
+   "371: self._iv_cache.setdefault(t, []).append(float(row[\"iv\"]))",
+   "386: self._chain_cache.setdefault(t, []).append(dict(row))",
+   "389: self._iv_cache.setdefault(t, [])",
+   "390: self._chain_cache.setdefault(t, [])"
+  ],
+  "writes": [
+   "309: query_key, ticker.upper(), quote_date, json.dumps(params, sort_keys=True), status,",
+   "404: json.dumps(payload, sort_keys=True, default=str), utc_now(),",
+   "439: json.dumps(payload, sort_keys=True, default=str), utc_now(),",
+   "454: int(hard_veto_respected_count), json.dumps(summary, sort_keys=True, default=str), utc_now(),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "20: SCHEMA_VERSION = 1",
+   "281: (\"schema_version\", str(SCHEMA_VERSION)),"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 6,
+   "write": 4
+  }
+ },
+ {
+  "path": "scripts/phantom_engine.py",
+  "n_lines": 306,
+  "classification": "ORCHESTRATED",
+  "commit": "e432e67",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/run_phantom.py"
+  ],
+  "imports": [
+   "scripts/phantom_bayesian.py",
+   "scripts/phantom_criticality.py",
+   "scripts/phantom_database.py",
+   "scripts/phantom_gamma_field.py",
+   "scripts/phantom_info_flow.py",
+   "scripts/phantom_iv_surface.py"
+  ],
+  "docstring": "PHANTOM production scoring engine.",
+  "functions": [
+   "_float:42",
+   "_upper:52",
+   "_parse_vetoes:56",
+   "_has_selected_contract:81",
+   "_true_hard_veto:87",
+   "_decision:105",
+   "_weights:117",
+   "_composite:124",
+   "score_row:132",
+   "apply_payload:200",
+   "run_phantom:235",
+   "build_arg_parser:281",
+   "main:291"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:298",
+   "SystemExit:305"
+  ],
+  "direction_branches": [
+   "99: direction = _upper(row.get(\"primary_direction\") or row.get(\"options_direction\") or row.get(\"direction\"))",
+   "100: if direction not in {\"CALL\", \"PUT\", \"LONG\", \"SHORT\", \"BUY\", \"SELL\"}:"
+  ],
+  "fallbacks": [
+   "53: return str(value or \"\").strip().upper()",
+   "97: if verdict in {\"STAND_DOWN\", \"BLOCKED\"} and (\"NO CONTRACT\" in reason or \"NO_CHAIN\" in reason):",
+   "127: s = max(0.0, min(1.0, scores.get(key, 0.0) / 100.0))",
+   "172: \"phantom_data_quality\": \"|\".join(sorted(set([iv.get(\"iv_data_quality\", \"\"), info.get(\"info_flow_source\", \"\")]))),",
+   "207: if payload.get(\"phantom_ois_adjustment\", 0) > 0:",
+   "221: f\"Phantom {promotion}: {payload.get('phantom_promotion_reason','')}. \"",
+   "225: factors = str(row.get(\"positive_factors\") or \"\")",
+   "226: note = payload.get(\"phantom_promotion_reason\", \"\")",
+   "241: unique_tickers = list({str(r.get(\"ticker\") or \"\").upper() for r in records if r.get(\"ticker\")})",
+   "252: score_payloads.append((str(record.get(\"ticker\") or \"\"), payload))",
+   "257: scores.append(float(payload.get(\"phantom_score\") or 0.0))"
+  ],
+  "writes": [
+   "77: out.extend([p.strip().upper() for p in text.replace(\";\", \",\").split(\",\") if p.strip()])",
+   "264: out_df.to_csv(output_csv, index=False)",
+   "277: summary_path.write_text(json.dumps(summary, indent=2), encoding=\"utf-8\")",
+   "300: print(json.dumps(summary, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 11,
+   "write": 4
+  }
+ },
+ {
+  "path": "scripts/phantom_gamma_field.py",
+  "n_lines": 70,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM gamma field mechanism.",
+  "functions": [
+   "_float:9",
+   "_direction:23",
+   "compute_gamma_trajectory:32"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "24: value = str(row.get(\"primary_direction\") or row.get(\"options_direction\") or row.get(\"direction\") or \"\").upper()",
+   "25: if value in {\"CALL\", \"LONG\", \"BUY\"}:",
+   "26: return \"CALL\"",
+   "27: if value in {\"PUT\", \"SHORT\", \"SELL\"}:",
+   "28: return \"PUT\"",
+   "50: direction_sign = 1.0 if direction == \"CALL\" else (-1.0 if direction == \"PUT\" else 0.0)",
+   "62: signed = score if direction == \"CALL\" else (-score if direction == \"PUT\" else 0.0)"
+  ],
+  "fallbacks": [
+   "24: value = str(row.get(\"primary_direction\") or row.get(\"options_direction\") or row.get(\"direction\") or \"\").upper()",
+   "33: ticker = str(row.get(\"ticker\") or \"\").upper()",
+   "45: gamma = float(r[\"gamma\"] or 0.0)",
+   "46: open_interest = float(r[\"open_interest\"] or 0.0)"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 7,
+   "fallback": 4,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/phantom_info_flow.py",
+  "n_lines": 47,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM information-flow mechanism.",
+  "functions": [
+   "_float:9",
+   "compute_info_flow:23"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "34: crowd = str(row.get(\"crowd_arrival_state\") or row.get(\"crowd_arrival_label\") or \"\").upper()",
+   "35: arb = str(row.get(\"direction_arbitration_status\") or \"\").upper()",
+   "40: arbitration_score = 15.0 if \"ALIGNED\" in arb or \"RESOLVED\" in arb else 0.0"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/phantom_iv_surface.py",
+  "n_lines": 66,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM IV surface and entropy mechanism.",
+  "functions": [
+   "_float:10",
+   "_entropy:20",
+   "compute_iv_surface:29"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "30: ticker = str(row.get(\"ticker\") or \"\").upper()",
+   "63: \"iv_hist_median\": round(hist_med or 0.0, 5),"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/promote_ev3_barrier_cache.py",
+  "n_lines": 172,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_ev3_cache_promotion.py"
+  ],
+  "imports": [
+   "vanguard/ev3_stage0.py"
+  ],
+  "docstring": "Validate and atomically promote an EV3 barrier sidecar to its governed path.",
+  "functions": [
+   "validate_candidate:34",
+   "promote:96",
+   "main:162"
+  ],
+  "classes": [],
+  "raises": [
+   "FileNotFoundError:100",
+   "FileNotFoundError:103",
+   "SystemExit:172",
+   "ValueError:106",
+   "ValueError:109",
+   "ValueError:124",
+   "ValueError:51",
+   "ValueError:53",
+   "ValueError:56",
+   "ValueError:61",
+   "ValueError:63",
+   "ValueError:65",
+   "ValueError:73",
+   "ValueError:75",
+   "ValueError:77",
+   "ValueError:81"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "125: os.replace(temporary, output)",
+   "142: output.with_suffix(\".audit.json\").write_text(",
+   "143: json.dumps(final_audit, indent=2, sort_keys=True), encoding=\"utf-8\",",
+   "156: output.with_suffix(\".promotion.json\").write_text(",
+   "157: json.dumps(manifest, indent=2, sort_keys=True), encoding=\"utf-8\",",
+   "167: print(json.dumps(promote(args.source, args.output), indent=2, sort_keys=True))"
+  ],
+  "atomic_markers": [
+   "120: temporary = output.with_name(f\".{output.name}.{uuid.uuid4().hex}.tmp\")",
+   "125: os.replace(temporary, output)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "47: \"schema_version\", \"calculation_version\",",
+   "64: if set(frame[\"schema_version\"].astype(str)) != {EV3_BARRIER_SCHEMA_VERSION}:",
+   "67: f\"{sorted(frame['schema_version'].astype(str).unique())}\"",
+   "146: \"schema_version\": \"ev3-cache-promotion-v1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 6
+  }
+ },
+ {
+  "path": "scripts/run_ev3_shadow.py",
+  "n_lines": 280,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "scripts/run_ev3_shadow_phase.py",
+   "tests/test_ev3_options_handoff.py"
+  ],
+  "imports": [
+   "vanguard/ev_engine_v3.py"
+  ],
+  "docstring": "Run EV Engine v3 as governed production evidence (legacy path compatible).",
+  "functions": [
+   "_load:32",
+   "_sha256:38",
+   "_atomic_dataframe_write:46",
+   "_atomic_json_write:61",
+   "_candidate_rows:72",
+   "run_shadow:129",
+   "main:263"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:280"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "169: result[\"ticker\"] = source.get(\"ticker\", source.get(\"symbol\", \"\"))"
+  ],
+  "writes": [
+   "52: frame.to_parquet(temporary, index=False)",
+   "54: frame.to_csv(temporary, index=False)",
+   "55: os.replace(temporary, path)",
+   "65: temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding=\"utf-8\")",
+   "66: os.replace(temporary, path)",
+   "275: print(json.dumps(audit, indent=2, sort_keys=True))"
+  ],
+  "atomic_markers": [
+   "49: temporary = path.with_name(f\".{path.stem}.{uuid.uuid4().hex}.tmp{path.suffix}\")",
+   "55: os.replace(temporary, path)",
+   "63: temporary = path.with_name(f\".{path.name}.{uuid.uuid4().hex}.tmp\")",
+   "66: os.replace(temporary, path)"
+  ],
+  "authority_comments": [
+   "119: # The canonical adapter checks the top-level selected-quote alias"
+  ],
+  "version_fields": [
+   "212: \"artifact_contract_version\": \"ev3-production-evidence-v0.6.0\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 6
+  }
+ },
+ {
+  "path": "scripts/run_ev3_shadow_phase.py",
+  "n_lines": 448,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_ev3_shadow_phase.py"
+  ],
+  "imports": [
+   "scripts/run_ev3_shadow.py"
+  ],
+  "docstring": "Run EV-1.5 as a governed, non-authoritative pipeline shadow phase.\n\nThe phase discovers the Options Intelligence artifact for one canonical run,\npublishes input coverage, invokes EV-1, and writes a run-scoped status contract.\nIt never modifies candidate, GO-list, morning-gate, or execution artifacts.",
+  "functions": [
+   "_present:63",
+   "_coalesced_presence:69",
+   "build_coverage:77",
+   "_sha256:120",
+   "_atomic_json:128",
+   "_base_status:139",
+   "run_phase:173",
+   "main:405"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:448"
+  ],
+  "direction_branches": [
+   "40: \"direction\": (\"canonical_direction\", \"resolved_direction\", \"options_direction\", \"direction\"),",
+   "86: directional_mask = direction.isin({\"CALL\", \"PUT\"})"
+  ],
+  "fallbacks": [
+   "227: evaluated = int(audit.get(\"rows_evaluated\", 0))",
+   "228: received = int(audit.get(\"rows_received\", 0))",
+   "229: rejected = int(audit.get(\"rows_rejected\", 0))",
+   "230: not_applicable = int(audit.get(\"rows_not_applicable\", 0))",
+   "240: reason_counts = audit.get(\"reason_counts\", {})",
+   "277: if str(code) in expected_rejection_codes and int(count or 0) > 0",
+   "282: if str(code) in system_contract_codes and int(count or 0) > 0",
+   "290: and int(count or 0) > 0",
+   "292: contract_reason_counts = audit.get(\"contract_evaluation_reason_counts\", {})",
+   "298: and int(count or 0) > 0",
+   "322: if str(code) in system_contract_codes and int(count or 0) > 0",
+   "355: if str(code).startswith(\"REJECT_\") and int(count or 0) > 0",
+   "395: contract_evaluation_structure_counts=audit.get(\"contract_evaluation_structure_counts\", {}),",
+   "396: absolute_state_counts=audit.get(\"absolute_state_counts\", {}),"
+  ],
+  "writes": [
+   "132: temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding=\"utf-8\")",
+   "133: os.replace(temporary, path)",
+   "441: print(json.dumps(status, indent=2, sort_keys=True))",
+   "443: print(json.dumps(status, indent=2, sort_keys=True))"
+  ],
+  "atomic_markers": [
+   "130: temporary = path.with_name(f\".{path.name}.{uuid.uuid4().hex}.tmp\")",
+   "133: os.replace(temporary, path)"
+  ],
+  "authority_comments": [
+   "1: \"\"\"Run EV-1.5 as a governed, non-authoritative pipeline shadow phase.",
+   "159: # for the \"never changes manifest permission\" guarantee this must",
+   "350: # PRODUCTION_EVIDENCE_ONLY, the non-rejection success marker, and picking that",
+   "380: # decisions and fails only for system or unknown outcomes."
+  ],
+  "version_fields": [
+   "29: EV3_SHADOW_PHASE_VERSION = \"ev3-shadow-phase-v0.8.0\"",
+   "141: \"schema_version\": EV3_SHADOW_PHASE_VERSION,"
+  ],
+  "counts": {
+   "direction": 2,
+   "fallback": 16,
+   "write": 4
+  }
+ },
+ {
+  "path": "scripts/run_phantom.py",
+  "n_lines": 6,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "__main__",
+  "imported_by": [],
+  "imports": [
+   "scripts/phantom_engine.py"
+  ],
+  "docstring": "",
+  "functions": [],
+  "classes": [],
+  "raises": [
+   "SystemExit:5"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/sector_alignment.py",
+  "n_lines": 488,
+  "classification": "ORCHESTRATED",
+  "commit": "68437a2",
+  "entry_points": "__main__",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER \u00e2\u20ac\u201d Sector Alignment Utility\n=====================================\nSingle source of truth for per-ticker sector bias classification.\n\nAll pipeline modules (superbrain, options intelligence, EIL, FinalDecisionEngine,\nmonetisation policy) call this module to derive the 9 required sector alignment\nfields from the macro JSON sector_rotation block and the ticker's GICS sector.\n\nDEPLOY\n------\n  Copy to: C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\scripts\\sector_alignment.py\n\nUSAGE\n-----\n  from scripts.sector_alignment import classify_sector_alignment, load_sector_bias_map\n\n  # Once \u00e2\u20ac\u201d in",
+  "functions": [
+   "load_sector_bias_map:96",
+   "load_macro_conviction:181",
+   "classify_sector_alignment:206",
+   "classify_from_row:352"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "119: sector_rotation = macro_json.get(\"sector_rotation\", {})",
+   "121: raw_map = sector_rotation.get(\"sector_bias_map\", {})",
+   "146: sector_lead  = macro_json.get(\"sector_lead\",  []) or []",
+   "147: sector_avoid = macro_json.get(\"sector_avoid\", []) or []",
+   "150: extras = macro_json.get(\"extras\", {})",
+   "152: extras_st = extras.get(\"sector_tilt\", {})",
+   "154: sector_lead  = sector_lead  or extras_st.get(\"lead_long\", []) or extras_st.get(\"long\", [])",
+   "155: sector_avoid = sector_avoid or extras_st.get(\"avoid\",    [])",
+   "159: gics = ETF_TO_GICS.get(etf_upper, etf_upper)",
+   "164: gics = ETF_TO_GICS.get(etf_upper, etf_upper)",
+   "190: extras = macro_json.get(\"extras\", {})",
+   "240: or _os.environ.get(\"AVSHUNTER_MACRO_REGIME_STATE\", \"\").strip().upper()",
+   "251: sector_etf = GICS_TO_ETF.get(gics_norm, GICS_TO_ETF.get(gics_key, \"\"))",
+   "268: macro_bias  = macro_bias or \"NEUTRAL\""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "40: # GICS SECTOR \u00e2\u2020\u2019 ETF MAP (canonical GICS sector name \u00e2\u2020\u2019 primary sector ETF)",
+   "282: # Approach warning: log only, no block",
+   "290: # MACRO REDESIGN: hard BLOCK only on RISK_OFF regime, not conviction alone",
+   "484: # Validate D-MACRO-SEC-002 is fixed: AAPL+XLK must NOT return UNKNOWN"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 27,
+   "write": 0
+  }
+ }
+]

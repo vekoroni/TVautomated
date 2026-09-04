@@ -1,0 +1,91 @@
+--- a/morning_handoff_finalizer.py
++++ b/morning_handoff_finalizer.py
+@@ -353,8 +353,10 @@
+     macro_reference: Mapping[str, Any] | None = None,
+ ) -> dict[str, Any]:
+     from msi_runtime import active_flags
++    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+ 
+     flags = active_flags()
++    dynamic_flags = DynamicSessionFeatureFlags.from_environment()
+     if flags.lab_v3_view != flags.interpreter_resolver:
+         raise MorningHandoffError(
+             "MSI_LAB_V3_VIEW and MSI_INTERPRETER_RESOLVER must activate together"
+@@ -362,9 +364,31 @@
+     if not flags.lab_v3_view:
+         return {"status": "DISABLED", "feature_flags": flags.to_dict()}
+ 
++    if dynamic_flags.lab_dynamic_view != dynamic_flags.interpreter_dynamic_resolver:
++        raise MorningHandoffError(
++            "dynamic Lab and Interpreter resolver flags must activate together"
++        )
++
++    validation_events: list[dict[str, Any]] = []
++    if dynamic_flags.lab_dynamic_view:
++        candidates = sorted(
++            list((run_dir / "validation").glob("*.json"))
++            + list((run_dir / "morning_validation" / "validation_events").glob("*.json"))
++        )
++        for path in candidates:
++            try:
++                payload = json.loads(path.read_text(encoding="utf-8-sig"))
++            except (OSError, json.JSONDecodeError) as error:
++                raise MorningHandoffError(
++                    f"dynamic validation event unreadable: {path}: {error}"
++                ) from error
++            if isinstance(payload, Mapping):
++                validation_events.append(dict(payload))
++
++    source_rows = [dict(row) for row in lab_rows]
+     actionable = [
+         dict(row)
+-        for row in lab_rows
++        for row in source_rows
+         if str(row.get("final_action") or "").strip().upper()
+         in {"BUY_NOW", "BUY_SMALL"}
+     ]
+@@ -426,6 +450,8 @@
+         },
+         morning_gate_completed_utc=completed_at_utc,
+         macro_reference=macro_reference or _macro_reference(run_dir, session_date),
++        validation_events=validation_events,
++        require_validation_lineage=dynamic_flags.lab_dynamic_view,
+     )
+     independent = reconcile_handoff(result["handoff_manifest_path"])
+     if independent.get("status") != "PASS":
+@@ -434,6 +460,35 @@
+             + ";".join(independent.get("mismatches") or [])
+         )
+ 
++    if dynamic_flags.decision_outcome_ledger:
++        from canonical_data.decision_outcome_ledger import (
++            DecisionOutcomeLedger,
++            candidate_events_from_rows,
++            make_ledger_event,
++        )
++
++        ledger_path = run_dir.parents[2] / "canonical" / "decision_outcome_ledger.sqlite"
++        ledger = DecisionOutcomeLedger(ledger_path)
++        ledger.append_many(candidate_events_from_rows(
++            source_rows, run_id=run_id, occurred_at_utc=completed_at_utc,
++        ))
++        for event in validation_events:
++            ledger.append(make_ledger_event(
++                event_type="VALIDATION",
++                occurred_at_utc=str(event.get("evidence_cutoff_utc") or completed_at_utc),
++                run_id=run_id,
++                ticker=str(event.get("ticker") or ""),
++                thesis_id=str(event.get("thesis_id") or ""),
++                validation_event_id=str(event.get("validation_event_id") or ""),
++                payload=event,
++            ))
++        result["decision_outcome_ledger"] = {
++            "path": str(ledger_path),
++            "candidate_events": len(source_rows),
++            "validation_events": len(validation_events),
++            "append_only": True,
++        }
++
+     structured_flag_names = (
+         "v2_capture", "cds_resolver", "minute_bars", "structure",
+         "lab_v3_view", "macro_advisory", "interpreter_resolver",

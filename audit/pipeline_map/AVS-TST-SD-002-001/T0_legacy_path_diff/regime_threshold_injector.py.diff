@@ -1,0 +1,61 @@
+--- a/regime_threshold_injector.py
++++ b/regime_threshold_injector.py
+@@ -222,7 +222,7 @@
+ 
+ def apply_regime_to_config(cfg, macro_path: Optional[Path]) -> object:
+     """
+-    Inject regime-adjusted thresholds into UltimateConfig.
++    Attach the external regime as advisory metadata without changing thresholds.
+ 
+     Args:
+         cfg: UltimateConfig instance (from avshunter_discovery_ULTIMATE.py)
+@@ -237,37 +237,23 @@
+ 
+     regime_key, regime_label = resolve_regime(macro_path)
+ 
+-    # Fetch threshold sets
+-    tier_thresholds = REGIME_TIER_THRESHOLDS.get(regime_key, REGIME_TIER_THRESHOLDS[DEFAULT_REGIME])
+-    compression_thresholds = REGIME_COMPRESSION_THRESHOLDS.get(regime_key, REGIME_COMPRESSION_THRESHOLDS[DEFAULT_REGIME])
+-    vol_minimum = REGIME_VOLUME_MINIMUMS.get(regime_key, REGIME_VOLUME_MINIMUMS[DEFAULT_REGIME])
+-
+-    tier1_min, tier2_min, tier3_min, early_score_floor = tier_thresholds
+-    compression_max, extreme_compression = compression_thresholds
+-
+-    # Log the injection
++    # External macro is a separately refreshed advisory product.  Historical
++    # threshold tables remain in this module for audit/research reproducibility,
++    # but production Discovery must produce the same membership for the same
++    # ticker evidence whether the macro file is present, stale or absent.
+     logger.info("─" * 60)
+-    logger.info("REGIME THRESHOLD INJECTION")
+-    logger.info(f"  Regime:             {regime_label} → [{regime_key}]")
+-    logger.info(f"  Tier 1 floor:       {cfg.tier1_min}  →  {tier1_min}")
+-    logger.info(f"  Tier 2 floor:       {cfg.tier2_min}  →  {tier2_min}")
+-    logger.info(f"  Tier 3 floor:       {cfg.tier3_min}  →  {tier3_min}")
+-    logger.info(f"  Compression max:    {cfg.compression_max}  →  {compression_max}")
+-    logger.info(f"  Extreme compress:   {cfg.extreme_compression}  →  {extreme_compression}")
+-    logger.info(f"  Min avg volume:     {cfg.min_avg_vol20:,.0f}  →  {vol_minimum:,.0f}")
++    logger.info("MACRO ADVISORY ATTACHMENT (ZERO CORE AUTHORITY)")
++    logger.info(f"  Advisory regime:    {regime_label} → [{regime_key}]")
++    logger.info(f"  Core tier floors:   {cfg.tier1_min}/{cfg.tier2_min}/{cfg.tier3_min} (unchanged)")
++    logger.info(f"  Core compression:   {cfg.compression_max} (unchanged)")
++    logger.info(f"  Core min volume:    {cfg.min_avg_vol20:,.0f} (unchanged)")
+     logger.info("─" * 60)
+ 
+-    # Apply to config
+-    cfg.tier1_min = tier1_min
+-    cfg.tier2_min = tier2_min
+-    cfg.tier3_min = tier3_min
+-    cfg.compression_max = compression_max
+-    cfg.extreme_compression = extreme_compression
+-    cfg.min_avg_vol20 = vol_minimum
+-
+-    # Store regime on config for downstream use (e.g. logging, signal metadata)
++    # Preserve the snapshot for display/lineage only.
+     cfg.active_regime = regime_key
+     cfg.active_regime_label = regime_label
++    cfg.macro_authority = "ADVISORY_ONLY"
++    cfg.macro_core_effective_delta = 0.0
+ 
+     return cfg
+ 

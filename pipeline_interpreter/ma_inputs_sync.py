@@ -69,7 +69,7 @@ FILE_ROUTING = [
         "destination": MA_PIPELINE_OUT,
         "extensions": [".csv", ".json", ".parquet", ".xlsx"],
         "keywords": [
-            "avshunter_signals", "lab_triage_view", "morning_candidates", "morning_validation", "morning_val",
+            "avshunter_signals", "lab_triage_view", "final_opportunity_book", "morning_candidates", "morning_validation", "morning_val",
             "horizon_1_5d", "horizon_6_10d", "horizon_11_20d", "execute_tickers",
             "superbrain_enriched", "superbrain", "wall_break_scores",
             "vanguard_signals", "vanguard_enriched", "vanguard_output", "vanguard",
@@ -78,7 +78,7 @@ FILE_ROUTING = [
             "macro_enrichment", "macro_delta", "macro_intelligence", "market_narrative",
             "mna", "m_and_a", "ma_events", "event_intelligence", "corporate_events",
             "garch_forecasts", "garch",
-            "eil", "execution_intelligence", "execution_v", "execution_decision",
+            "eil", "execution_intelligence", "execution_v", "execution_decision", "execution_gated", "execution_actionable",
             "pse", "position_sizing",
             "top_trades", "avshunter_top", "candidate", "candidates", "watchlist",
             "master_dashboard", "master_dash", "final_decision", "avshunter_master",

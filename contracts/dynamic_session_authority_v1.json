@@ -1,0 +1,51 @@
+{
+  "contract_id": "AVS-DYNAMIC-SESSION-AUTHORITY",
+  "version": "1.0.0",
+  "status": "FROZEN_PHASE_0",
+  "capital_authority_owner": "execution_gate",
+  "invariants": [
+    "completed evidence is immutable",
+    "current evidence annotates and never rewrites a completed thesis",
+    "macro, Market Profile, EV, R:R, Intelligence Lab and Pipeline Interpreter have no capital authority",
+    "direction, horizon, target, invalidation and selected contract are frozen at thesis publication",
+    "a changed ticker set, session, interval or cutoff requires a new invocation identity",
+    "missing measurements remain null with an explicit reason and never become zero",
+    "only authorised active tickers may produce provider requests",
+    "input_count equals processed plus excluded plus deferred plus exception_count"
+  ],
+  "feature_flags": {
+    "AVSHUNTER_DYNAMIC_PLAN_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_THESIS_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_VALIDATION_ENABLED": false,
+    "AVSHUNTER_PROFILE_LIFECYCLE_ENABLED": false,
+    "AVSHUNTER_LAB_DYNAMIC_VIEW_ENABLED": false,
+    "AVSHUNTER_INTERPRETER_DYNAMIC_RESOLVER_ENABLED": false,
+    "AVSHUNTER_DECISION_LEDGER_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_AUTO_ENABLED": false
+  },
+  "fields": [
+    {"name": "pipeline_run_id", "type": "string", "owner": "dynamic_orchestrator", "authority": "identity", "consumers": ["all_stages"]},
+    {"name": "invocation_id", "type": "string", "owner": "dynamic_orchestrator", "authority": "identity", "consumers": ["canonical_gateway", "all_stages"]},
+    {"name": "thesis_id", "type": "string", "owner": "completed_thesis_builder", "authority": "identity", "consumers": ["validation_gate", "lab", "interpreter", "ledger"]},
+    {"name": "validation_event_id", "type": "string|null", "owner": "validation_gate", "authority": "identity", "consumers": ["execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "dataset_id", "type": "string", "owner": "canonical_data_gateway", "authority": "identity", "consumers": ["evidence_producers", "ledger"]},
+    {"name": "evidence_id", "type": "string", "owner": "evidence_producer", "authority": "identity", "consumers": ["thesis_builder", "validation_gate", "lab", "interpreter", "ledger"]},
+    {"name": "contract_episode_id", "type": "string|null", "owner": "options_intelligence", "authority": "identity", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "quote_observation_id", "type": "string|null", "owner": "canonical_option_lifecycle", "authority": "identity", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "governed_direction", "type": "CALL|PUT|NON_DIRECTIONAL", "owner": "direction_governance", "authority": "thesis", "consumers": ["vanguard", "horizon_router", "options_intelligence", "validation_gate", "execution_gate", "lab", "interpreter"]},
+    {"name": "planned_hold_sessions", "type": "integer", "owner": "horizon_router", "authority": "thesis", "consumers": ["options_intelligence", "validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "target_spot", "type": "number", "owner": "thesis_geometry", "authority": "thesis", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "invalidation_spot", "type": "number", "owner": "thesis_geometry", "authority": "thesis", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "selected_contract", "type": "object|null", "owner": "options_intelligence", "authority": "thesis", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter", "ledger"]},
+    {"name": "current_underlying_price", "type": "number|null", "owner": "canonical_market_observation", "authority": "validation_evidence", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter"]},
+    {"name": "current_option_quote", "type": "object|null", "owner": "canonical_option_lifecycle", "authority": "execution_evidence", "consumers": ["validation_gate", "execution_gate", "lab", "interpreter"]},
+    {"name": "completed_market_profile", "type": "object|null", "owner": "market_profile_service", "authority": "advisory_evidence", "consumers": ["vanguard", "validation_gate", "lab", "interpreter"]},
+    {"name": "developing_market_profile", "type": "object|null", "owner": "market_profile_service", "authority": "advisory_evidence", "consumers": ["validation_gate", "lab", "interpreter"]},
+    {"name": "macro_context", "type": "object|null", "owner": "macro_pipeline", "authority": "advisory_only", "consumers": ["thesis_builder", "validation_gate", "lab", "interpreter"]},
+    {"name": "ev3_state", "type": "string|null", "owner": "ev3_engine", "authority": "advisory_only", "consumers": ["lab", "interpreter", "ledger"]},
+    {"name": "risk_reward_display", "type": "number|null", "owner": "scenario_economics", "authority": "advisory_only", "consumers": ["lab", "interpreter"]},
+    {"name": "execution_action", "type": "string", "owner": "execution_gate", "authority": "capital", "consumers": ["lab", "interpreter", "ledger"]},
+    {"name": "capital_permission", "type": "boolean", "owner": "execution_gate", "authority": "capital", "consumers": ["lab", "interpreter", "ledger"]}
+  ]
+}
+

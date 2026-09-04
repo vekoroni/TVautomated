@@ -98,7 +98,7 @@ import os
 
 PSE_VERSION       = "1.1.0"
 PSE_PRODUCTION_RETIRED = True
-PSE_RETIRED_POLICY = "ADVISORY_ONLY"
+PSE_RETIRED_POLICY = "PSE_IGNORED_MANUAL_SIZING"
 
 # Base risk per trade as fraction of portfolio
 BASE_RISK         = 0.015   # 1.5% base

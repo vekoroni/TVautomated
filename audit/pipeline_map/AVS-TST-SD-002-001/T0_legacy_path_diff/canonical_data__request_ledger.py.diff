@@ -1,0 +1,27 @@
+--- a/canonical_data/request_ledger.py
++++ b/canonical_data/request_ledger.py
+@@ -40,8 +40,10 @@
+                 """
+                 INSERT INTO api_request_ledger(
+                     request_id, run_id, stage, ticker, dataset_type,
+-                    scope_fingerprint, provider, resolution, started_at
+-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
++                    scope_fingerprint, provider, resolution, started_at,
++                    invocation_id, evidence_cutoff_utc, exchange_calendar,
++                    evidence_state, request_fingerprint
++                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 """,
+                 (
+                     identifier,
+@@ -53,6 +55,11 @@
+                     provider.upper() if provider else None,
+                     RequestResolution.PENDING.value,
+                     iso_utc(utc_now()),
++                    request.invocation_id,
++                    iso_utc(request.evidence_cutoff_utc),
++                    request.exchange_calendar,
++                    request.evidence_state,
++                    request.request_fingerprint,
+                 ),
+             )
+         return identifier

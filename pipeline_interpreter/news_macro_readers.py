@@ -3,7 +3,7 @@ news_macro_readers.py
 Macro, enrichment delta, and news terminal reader functions — appended to engine.
 
 Three sources:
-  1. macro_intelligence_latest.json  — full macro contract (main authority)
+  1. governed macro_quant_packet reference — advisory context only
   2. avshunter_macro_enrichment_delta.json — session narrative overlay and theme deltas
   3. News terminal output — CSV rows or pasted plain text brief
 """
@@ -289,7 +289,12 @@ def read_news_terminal_output(
 
 
 # ── 4. Combined context builder ───────────────────────────────────────────────
-def read_all_news_macro_context(ticker: str = None, ma_macro_dir: Path = None, ma_news_dir: Path = None) -> str:
+def read_all_news_macro_context(
+    ticker: str = None,
+    ma_macro_dir: Path = None,
+    ma_news_dir: Path = None,
+    governed_macro_context: str = "",
+) -> str:
     """
     Build the complete macro + enrichment delta + news context block
     for injection into a single prompt.
@@ -298,20 +303,18 @@ def read_all_news_macro_context(ticker: str = None, ma_macro_dir: Path = None, m
     """
     parts = []
 
-    macro = read_macro_context(ma_macro_dir=ma_macro_dir)
-    if macro:
-        parts.append(macro)
-
-    delta = read_enrichment_delta(ma_macro_dir=ma_macro_dir)
-    if delta:
-        parts.append(delta)
+    # Production macro may enter only through the hash-bound handoff bundle.
+    # MA_Inputs modification time and hardcoded Dropbox files are not evidence
+    # identity and therefore cannot be selected automatically here.
+    if governed_macro_context:
+        parts.append(governed_macro_context)
 
     news = read_news_terminal_output(ticker=ticker, ma_news_dir=ma_news_dir)
     if news:
         parts.append(news)
 
     if not parts:
-        return "MACRO_DATA_MISSING | NEWS_DATA_MISSING — no context files found."
+        return "MACRO_DATA_MISSING | NEWS_DATA_MISSING — no governed context found."
 
     return "\n\n".join(parts)
 

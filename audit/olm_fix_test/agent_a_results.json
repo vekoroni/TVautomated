@@ -1,0 +1,309 @@
+{
+  "TC-07": {
+    "before_final_action": "BUY_NOW",
+    "before_gate_reason": "OK",
+    "after_default_final_action": "BLOCK",
+    "after_default_gate_reason": "OLM_THESIS_INVALIDATED",
+    "after_prod_final_action": "BLOCK",
+    "after_prod_gate_reason": "OLM_THESIS_INVALIDATED",
+    "after_prod_olm_guard_disposition": "BLOCK",
+    "after_prod_olm_guard_pass": false
+  },
+  "MATRIX_11_2": {
+    "CALL:THESIS_INVALIDATED": {
+      "expected": "BLOCK",
+      "actual_final_action": "BLOCK",
+      "actual_gate_reason": "OLM_THESIS_INVALIDATED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:MOVE_ALREADY_REALIZED": {
+      "expected": "BLOCK",
+      "actual_final_action": "BLOCK",
+      "actual_gate_reason": "OLM_MOVE_ALREADY_REALIZED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:CONTRACT_REPRICE_REQUIRED": {
+      "expected": "CONTRACT_REPAIR",
+      "actual_final_action": "CONTRACT_REPAIR",
+      "actual_gate_reason": "OLM_CONTRACT_REPRICE_REQUIRED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:WAIT_FOR_PULLBACK": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_WAIT_FOR_PULLBACK",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:GAP_CONFIRMATION_EXTENDED": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_GAP_CONFIRMATION_EXTENDED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:LIQUIDITY_STILL_PENDING": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_LIQUIDITY_STILL_PENDING",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:EOD_PENDING_MORNING_REQUOTE": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_EOD_PENDING_MORNING_REQUOTE",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "CALL:EXECUTABLE_NOW": {
+      "expected": "BUY_NOW",
+      "actual_final_action": "BUY_NOW",
+      "actual_gate_reason": "OK",
+      "olm_guard_pass": true,
+      "capital_zero": false,
+      "pass": true
+    },
+    "PUT:THESIS_INVALIDATED": {
+      "expected": "BLOCK",
+      "actual_final_action": "BLOCK",
+      "actual_gate_reason": "OLM_THESIS_INVALIDATED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:MOVE_ALREADY_REALIZED": {
+      "expected": "BLOCK",
+      "actual_final_action": "BLOCK",
+      "actual_gate_reason": "OLM_MOVE_ALREADY_REALIZED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:CONTRACT_REPRICE_REQUIRED": {
+      "expected": "CONTRACT_REPAIR",
+      "actual_final_action": "CONTRACT_REPAIR",
+      "actual_gate_reason": "OLM_CONTRACT_REPRICE_REQUIRED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:WAIT_FOR_PULLBACK": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_WAIT_FOR_PULLBACK",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:GAP_CONFIRMATION_EXTENDED": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_GAP_CONFIRMATION_EXTENDED",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:LIQUIDITY_STILL_PENDING": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_LIQUIDITY_STILL_PENDING",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:EOD_PENDING_MORNING_REQUOTE": {
+      "expected": "MANUAL_REVIEW",
+      "actual_final_action": "MANUAL_REVIEW",
+      "actual_gate_reason": "OLM_EOD_PENDING_MORNING_REQUOTE",
+      "olm_guard_pass": false,
+      "capital_zero": true,
+      "pass": true
+    },
+    "PUT:EXECUTABLE_NOW": {
+      "expected": "BUY_NOW",
+      "actual_final_action": "BUY_NOW",
+      "actual_gate_reason": "OK",
+      "olm_guard_pass": true,
+      "capital_zero": false,
+      "pass": true
+    }
+  },
+  "GAP_CONFIRMATION_WITH_RUNWAY_CONTINUE_NOT_CAPITAL": {
+    "CALL": {
+      "wide_spread_final_action": "CONTRACT_REPAIR",
+      "wide_spread_capital_granted": false,
+      "wide_spread_gate_reason": "COST_DESTRUCTION",
+      "olm_disposition_on_fail_case": "CONTINUE",
+      "clean_final_action": "BUY_NOW",
+      "clean_reaches_buy_now": true
+    },
+    "PUT": {
+      "wide_spread_final_action": "CONTRACT_REPAIR",
+      "wide_spread_capital_granted": false,
+      "wide_spread_gate_reason": "COST_DESTRUCTION",
+      "olm_disposition_on_fail_case": "CONTINUE",
+      "clean_final_action": "BUY_NOW",
+      "clean_reaches_buy_now": true
+    }
+  },
+  "EXECUTABLE_NOW_REACHES_BUY_NOW": {
+    "CALL": {
+      "final_action": "BUY_NOW",
+      "pass": true
+    },
+    "PUT": {
+      "final_action": "BUY_NOW",
+      "pass": true
+    }
+  },
+  "EXECUTABLE_NOW_FALSE_NO_CAPITAL": {
+    "CALL": {
+      "final_action": "MANUAL_REVIEW",
+      "capital_zero": true,
+      "gate_reason": "OLM_EXECUTABLE_FLAG_FALSE"
+    },
+    "PUT": {
+      "final_action": "MANUAL_REVIEW",
+      "capital_zero": true,
+      "gate_reason": "OLM_EXECUTABLE_FLAG_FALSE"
+    }
+  },
+  "CONTRADICTORY_COMBINATION_NO_CAPITAL": {
+    "CALL": {
+      "non_active_thesis_final_action": "MANUAL_REVIEW",
+      "non_active_thesis_capital_zero": true,
+      "non_executable_liquidity_final_action": "MANUAL_REVIEW",
+      "non_executable_liquidity_capital_zero": true
+    },
+    "PUT": {
+      "non_active_thesis_final_action": "MANUAL_REVIEW",
+      "non_active_thesis_capital_zero": true,
+      "non_executable_liquidity_final_action": "MANUAL_REVIEW",
+      "non_executable_liquidity_capital_zero": true
+    }
+  },
+  "UNKNOWN_MISSING_STATE_PRODUCTION_REQUIRED": {
+    "CALL": {
+      "final_action": "MANUAL_REVIEW",
+      "gate_reason": "OLM_TRANSITION_MISSING",
+      "capital_zero": true,
+      "olm_guard_disposition_counts": {
+        "MANUAL_REVIEW": 1
+      }
+    },
+    "CALL_field_absent": {
+      "final_action": "MANUAL_REVIEW",
+      "gate_reason": "OLM_TRANSITION_MISSING",
+      "capital_zero": true
+    },
+    "PUT": {
+      "final_action": "MANUAL_REVIEW",
+      "gate_reason": "OLM_TRANSITION_MISSING",
+      "capital_zero": true,
+      "olm_guard_disposition_counts": {
+        "MANUAL_REVIEW": 1
+      }
+    },
+    "PUT_field_absent": {
+      "final_action": "MANUAL_REVIEW",
+      "gate_reason": "OLM_TRANSITION_MISSING",
+      "capital_zero": true
+    }
+  },
+  "LEGACY_FIXTURE_COMPATIBILITY": {
+    "CALL": {
+      "compat_mode_final_action": "BUY_NOW",
+      "compat_mode_olm_guard_disposition": "CONTINUE",
+      "compat_mode_olm_guard_reason": "LEGACY_DIRECT_CALL_NO_OLM_CONTRACT",
+      "production_batch_final_action": "MANUAL_REVIEW",
+      "production_batch_gate_reason": "OLM_LIFECYCLE_REQUIRED",
+      "production_batch_capital_zero": true
+    },
+    "PUT": {
+      "compat_mode_final_action": "BUY_NOW",
+      "compat_mode_olm_guard_disposition": "CONTINUE",
+      "compat_mode_olm_guard_reason": "LEGACY_DIRECT_CALL_NO_OLM_CONTRACT",
+      "production_batch_final_action": "MANUAL_REVIEW",
+      "production_batch_gate_reason": "OLM_LIFECYCLE_REQUIRED",
+      "production_batch_capital_zero": true
+    }
+  },
+  "HIGH_MATURATION_SCORE_NEVER_OVERRIDES": {
+    "CALL": {
+      "high_score_terminal_final_action": "BLOCK",
+      "high_score_terminal_capital_zero": true,
+      "high_score_pending_final_action": "MANUAL_REVIEW",
+      "high_score_pending_capital_zero": true,
+      "maturation_authority_claim_true_final_action": "BLOCK",
+      "maturation_authority_claim_true_reason": "OLM_MATURATION_AUTHORITY_VIOLATION"
+    },
+    "PUT": {
+      "high_score_terminal_final_action": "BLOCK",
+      "high_score_terminal_capital_zero": true,
+      "high_score_pending_final_action": "MANUAL_REVIEW",
+      "high_score_pending_capital_zero": true,
+      "maturation_authority_claim_true_final_action": "BLOCK",
+      "maturation_authority_claim_true_reason": "OLM_MATURATION_AUTHORITY_VIOLATION"
+    }
+  },
+  "REASON_CODES": {
+    "OLM_THESIS_INVALIDATED": {
+      "literal_reason_emitted": "OLM_THESIS_INVALIDATED",
+      "disposition": "BLOCK"
+    },
+    "OLM_MOVE_ALREADY_REALIZED": {
+      "literal_reason_emitted": "OLM_MOVE_ALREADY_REALIZED",
+      "disposition": "BLOCK"
+    },
+    "OLM_CONTRACT_REPRICE_REQUIRED": {
+      "literal_reason_emitted": "OLM_CONTRACT_REPRICE_REQUIRED",
+      "disposition": "CONTRACT_REPAIR"
+    },
+    "OLM_WAIT_FOR_PULLBACK": {
+      "literal_reason_emitted": "OLM_WAIT_FOR_PULLBACK",
+      "disposition": "MANUAL_REVIEW"
+    },
+    "OLM_GAP_CONFIRMATION_EXTENDED": {
+      "literal_reason_emitted": "OLM_GAP_CONFIRMATION_EXTENDED",
+      "disposition": "MANUAL_REVIEW"
+    },
+    "OLM_LIQUIDITY_STILL_PENDING": {
+      "literal_reason_emitted": "OLM_LIQUIDITY_STILL_PENDING",
+      "disposition": "MANUAL_REVIEW"
+    },
+    "OLM_MORNING_REQUOTE_REQUIRED (design) / attempt via EOD_PENDING_MORNING_REQUOTE transition": {
+      "literal_reason_emitted": "OLM_EOD_PENDING_MORNING_REQUOTE",
+      "disposition": "MANUAL_REVIEW"
+    },
+    "OLM_CONTRACT_INCOHERENT (design) / attempt via contradictory executable transition": {
+      "literal_reason_emitted": "OLM_THESIS_INVALIDATED",
+      "disposition": "BLOCK"
+    },
+    "OLM_STATE_MISSING_OR_UNKNOWN (design) / attempt via missing transition, production-required": {
+      "literal_reason_emitted": "OLM_TRANSITION_MISSING",
+      "disposition": "MANUAL_REVIEW"
+    },
+    "_design_code_literal_match": {
+      "OLM_THESIS_INVALIDATED": true,
+      "OLM_MOVE_ALREADY_REALIZED": true,
+      "OLM_CONTRACT_REPRICE_REQUIRED": true,
+      "OLM_WAIT_FOR_PULLBACK": true,
+      "OLM_GAP_CONFIRMATION_EXTENDED": true,
+      "OLM_LIQUIDITY_STILL_PENDING": true,
+      "OLM_MORNING_REQUOTE_REQUIRED": false,
+      "OLM_CONTRACT_INCOHERENT": false,
+      "OLM_STATE_MISSING_OR_UNKNOWN": false
+    }
+  }
+}

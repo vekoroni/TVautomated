@@ -1,0 +1,328 @@
+{
+  "pack_id": "AVS-MAP-001-EXEC-CC",
+  "version": "v2",
+  "generated": "2026-08-29",
+  "note": "Machine-readable input/output contract per stage, in actual execution order (not nominal phase number - see PIPELINE_END_TO_END_MAP_20260829.md 'Top-level finding'). Field lists are representative confidence/quality fields only, not exhaustive schemas.",
+  "reference_runs": {
+    "same_day_eod": "data/output/runs/20260829_100803/",
+    "most_recent_morning_completed": "data/output/runs/20260828_094349/"
+  },
+  "stages": [
+    {
+      "id": "preflight",
+      "nominal_phase_label": "Phase 0",
+      "producer_file": "intelligent_orchestrator.py::run_preflight_checks",
+      "inputs": ["UNIVERSE_FILE", "dependency scripts", "macro JSON (soft-required)"],
+      "outputs": ["pass/fail boolean", "resolved macro_path"],
+      "capital_authority": false,
+      "downstream_consumer": ["macro_normalisation", "discovery"]
+    },
+    {
+      "id": "macro_normalisation",
+      "nominal_phase_label": "Phase 1B (mislabelled - runs standalone/pre-orchestrator plus post-Phase-8a for horizon router)",
+      "producer_file": "build_macro_json.py, macro_horizon_router.py, bond_macro_intelligence.py, contracts/bond_macro_contract.py",
+      "inputs": ["~20 dropbox/market_data CSV/JSON feeds", "Treasury auction calendar", "FRED yield series", "Polygon ZN futures OHLCV", "HYG/LQD ratio"],
+      "outputs": ["macro_snapshot.json", "macro_quant_packet.json", "horizon_summary_{run_id}.json", "bond_macro_state.json"],
+      "confidence_fields": ["macro_conviction", "regime_probability", "vix_regime_score", "credit_risk_score", "gex_regime_score", "net_liquidity_score", "bond_macro_score", "bond_macro_flag", "horizon_biases.*.size_multiplier"],
+      "capital_authority": false,
+      "notes": "macro_conviction is a live LLM output (model claude-sonnet-4-6), not a calibrated/backtested statistic. bond_macro_score can be silently nulled by stale yield-curve data.",
+      "downstream_consumer": ["discovery", "package_build"]
+    },
+    {
+      "id": "actuarial_cache_build",
+      "nominal_phase_label": "Phase 4.6/4.7",
+      "producer_file": "actuarial_cache_builder.py (C:\\Users\\ACKVerissimo\\vanguard - separate tree from repo's vanguard/), vanguard/layer2_statistical/actuarial_query.py, state_calculator.py",
+      "inputs": ["actuarial_database_v7.parquet (3816857 rows, 67 cols, live-verified)"],
+      "outputs": ["actuarial_cache_v7.parquet (508 states x 45 outcome cols)", "pkg[actuarial] block per package"],
+      "confidence_fields": ["sample_size", "sample_confidence_bucket", "confidence_weight", "state_match_quality", "actuarial_match_type", "actuarial_ev_weight", "layer2__probability_verdict", "layer2__probability_edge"],
+      "capital_authority": false,
+      "notes": "Most trustworthy, deterministic, empirically-grounded confidence machinery found. Today: 61.8% NEGATIVE_EDGE across 1528 packages.",
+      "downstream_consumer": ["package_build"]
+    },
+    {
+      "id": "discovery",
+      "nominal_phase_label": "Phase 1",
+      "producer_file": "avshunter_discovery_ULTIMATE.py, canonical_data/discovery_publisher.py",
+      "inputs": ["universe CSV", "OHLCV bars", "sector map", "macro_snapshot"],
+      "outputs": ["discovery_candidates_ultimate_{run_id}.csv", "discovery_candidates_cds3_{run_id}.csv", "discovery_lifecycle_{run_id}.csv"],
+      "confidence_fields": ["wyckoff_score", "crabel_score", "composite_score", "tier", "win_probability", "fusion_alignment_score", "vms_score"],
+      "gates": {"tier1_min": 50.0, "tier2_min": 35.0, "tier3_min": 25.0, "tier1_min_risk_off": 72.0, "tier1_min_transitional": 68.0},
+      "capital_authority": false,
+      "notes": "Today: only 18/1527 (1.2%) reach tier 1. win_probability is an unexplained linear heuristic.",
+      "downstream_consumer": ["external_intel_lane", "package_build"]
+    },
+    {
+      "id": "external_intel_lane",
+      "nominal_phase_label": "unnumbered",
+      "producer_file": "scripts/apply_external_intel_review_lane.py, contracts/macro_enrichment_delta.py",
+      "inputs": ["discovery_candidates_ultimate.csv", "dropbox/inputs/catalyst_calendar_latest.csv", "macro exposure index"],
+      "outputs": ["patched discovery CSV (in place)", "external_intel_review_candidates_{run_id}.csv"],
+      "confidence_fields": ["external_intel_source_tier", "external_intel_macro_pressure_label", "external_intel_data_quality"],
+      "capital_authority": false,
+      "notes": "Additive/advisory only; architecturally cannot promote non-Discovery tickers into the core candidate set.",
+      "downstream_consumer": ["package_build"]
+    },
+    {
+      "id": "package_build_backfill",
+      "nominal_phase_label": "Phase 5, within run_vanguard_pipeline()",
+      "producer_file": "scripts/build_packages_from_discovery.py, scripts/backfill_timeseries_into_packages.py",
+      "inputs": ["patched discovery CSV", "macro_snapshot.json", "per-ticker OHLCV"],
+      "outputs": ["packages/{TICKER}.package.json x1527", "packages/index.json"],
+      "confidence_fields": ["data_contract.dcv_valid", "data_contract.dcv_confidence", "data_contract.dcv_bars", "data_failure"],
+      "gates": {"AVSHUNTER_MAX_BACKFILL_FAILURE_RATIO": 0.05},
+      "capital_authority": false,
+      "known_defect": "data_failure/dcv_valid never refreshed after backfill populates real OHLCV - stale for ~100% of sampled packages (400/400 data_failure=True, 388/400 also have real OHLCV present)",
+      "downstream_consumer": ["vanguard"]
+    },
+    {
+      "id": "vanguard",
+      "nominal_phase_label": "Phase 6",
+      "producer_file": "vanguard/main.py, vanguard/core/actuarial_core_v7.py, scripts/run_vanguard_from_packages.py, scripts/behaviour_state_builder.py",
+      "inputs": ["packages/*.package.json", "regime_snapshot"],
+      "outputs": ["vanguard/vanguard_signals.csv", "vanguard/vanguard_rejects.csv", "vanguard_run_summary.json"],
+      "confidence_fields": ["state_hash", "behaviour_state_hash", "sample_confidence_bucket", "preferred_horizon", "win_rate_5d", "win_rate_10d", "win_rate_20d", "expected_value_5d", "expected_value_10d", "expected_value_20d", "has_edge", "edge_direction"],
+      "capital_authority": false,
+      "notes": "Documents that sample_confidence_bucket MUST gate downstream execution, but no such gate exists anywhere in code (verified unenforced).",
+      "downstream_consumer": ["options_intelligence"]
+    },
+    {
+      "id": "options_intelligence",
+      "nominal_phase_label": "Phase 8a/8b",
+      "producer_file": "scripts/avshunter_options_intelligence.py",
+      "inputs": ["vanguard_signals.csv", "live options chain (Polygon/MarketData.app)"],
+      "outputs": ["options_intelligence_{run_id}.csv", "vanguard_signals_enriched_{run_id}.csv", "contract_rejection_log_{run_id}.csv"],
+      "confidence_fields": ["options_verdict", "options_verdict_tier", "final_route", "options_research_score", "contract_score", "options_score"],
+      "capital_authority": false,
+      "notes": "Today: STAND_DOWN 1102 (83.7%), ARMED 133, EXECUTE 81 (6.2%). Deep funnel claims carried forward from prior audit, not re-verified this pass.",
+      "downstream_consumer": ["horizon_router", "ev3_shadow", "superbrain_passthrough", "wall_break_scorer", "trigger_layer"]
+    },
+    {
+      "id": "horizon_router",
+      "nominal_phase_label": "labelled Phase 1B, actually runs after Phase 8a",
+      "producer_file": "macro_horizon_router.py",
+      "inputs": ["options_intelligence.csv", "horizon_summary.json"],
+      "outputs": ["horizon-patched options_intelligence.csv"],
+      "capital_authority": false,
+      "downstream_consumer": ["ev3_shadow"]
+    },
+    {
+      "id": "ev3_governed_shadow",
+      "nominal_phase_label": "EV-1.5",
+      "producer_file": "vanguard/ev_engine_v3.py, vanguard/ev3_stage0.py, scripts/apply_ev3_authority.py",
+      "inputs": ["horizon-patched options_intelligence.csv", "ev3_barrier_outcome_cache.parquet"],
+      "outputs": ["ev3_shadow/ev3_stage1_shadow_results.parquet", "ev3_authority_overlay.csv", "ev3_calibration_readiness.json"],
+      "confidence_fields": ["ev3_authority_state", "ev3_monetisation_permission", "ev3_ev_eligible", "ev3_authority_active", "capital_authority_calibrated"],
+      "capital_authority": false,
+      "notes": "authority_active hardcoded False (apply_ev3_authority.py:153). 1316/1316 rows verified today. Calibration requires >=30 matched outcomes; 0 exist.",
+      "downstream_consumer": ["advisory only"]
+    },
+    {
+      "id": "actuarial_enrichment_pass",
+      "nominal_phase_label": "Phase 8.5",
+      "producer_file": "scripts/actuarial_enrichment_pass.py",
+      "inputs": ["actuarial_database_v7.parquet / actuarial_cache_v7.parquet", "package JSONs"],
+      "outputs": ["patched package JSONs", "flat columns injected into superbrain_enriched"],
+      "confidence_fields": ["enriched_by", "actuarial_fill_rate"],
+      "gates": {"fill_rate_soft_gate": 0.80},
+      "capital_authority": false,
+      "known_defect": "actuarial.deferred=true never cleared on enriched packages (merge-on-top-of-existing-dict bug). Uses a second, independently-defined 9-dim state key distinct from Vanguard's own.",
+      "downstream_consumer": ["eil"]
+    },
+    {
+      "id": "phantom_scoring",
+      "nominal_phase_label": "Phase 7.5",
+      "producer_file": "scripts/phantom_engine.py",
+      "inputs": ["options_intelligence.csv", "phantom_history.db"],
+      "outputs": ["options_intelligence_phantom_{run_id}.csv"],
+      "capital_authority": false,
+      "notes": "PHANTOM_AUTHORITY_MODE hardcoded ADVISORY_PROMOTION; requires >=1 week live trading data to flip to FULL_PROMOTION.",
+      "downstream_consumer": ["superbrain_passthrough"]
+    },
+    {
+      "id": "trigger_layer_package_patch",
+      "nominal_phase_label": "Phase 8.6",
+      "producer_file": "trigger_layer.py",
+      "inputs": ["vanguard_signals_enriched.csv"],
+      "outputs": ["package JSON triggers block patched"],
+      "confidence_fields": ["trigger_score", "trigger_quality", "trigger_go_eligible", "eligible_for_trade"],
+      "gates": {"QUALITY_STRONG_MIN": 3.5, "QUALITY_SINGLE_MIN": 1.5, "T1_COMPRESSION_MAX": 0.45, "T1_ATR_PERCENTILE_MAX": 30.0, "T2_VOLUME_RATIO_MIN": 1.1, "T3_EARLY_ADX_MIN": 18.0, "T3_EARLY_ADX_MAX": 28.0, "T3_CONF_ADX_MIN": 25.0, "TRIGGER_MAX_AGE_SESSIONS": 2},
+      "capital_authority": false,
+      "downstream_consumer": ["superbrain_passthrough"]
+    },
+    {
+      "id": "superbrain_passthrough",
+      "nominal_phase_label": "Phase 8d",
+      "producer_file": "intelligent_orchestrator.py::run_superbrain_passthrough",
+      "inputs": ["options_intelligence.csv or phantom-enriched variant"],
+      "outputs": ["superbrain_enriched_{run_id}.csv"],
+      "confidence_fields": ["sb_final_verdict"],
+      "capital_authority": false,
+      "notes": "Pure passthrough/shim - SuperBrain's own scoring deprecated 2026-04-28. No new computation occurs here.",
+      "downstream_consumer": ["catastrophe_gate", "wall_break_scorer", "eil", "garch"]
+    },
+    {
+      "id": "catastrophe_gate",
+      "nominal_phase_label": "Phase 8b (name collision with options_intelligence)",
+      "producer_file": "intelligent_orchestrator.py::run_catastrophe_gate",
+      "inputs": [],
+      "outputs": [],
+      "capital_authority": false,
+      "notes": "Confirmed no-op stub, returns True unconditionally. Retired Sprint 2.",
+      "downstream_consumer": []
+    },
+    {
+      "id": "wall_break_scorer",
+      "nominal_phase_label": "Phase 8e",
+      "producer_file": "wall_break_scorer.py",
+      "inputs": ["superbrain_enriched.csv", "options_intelligence.csv greeks"],
+      "outputs": ["superbrain/wall_break_scores_{run_id}.csv"],
+      "confidence_fields": ["wbs_score", "wbs_grade"],
+      "gates": {"IMMINENT_MIN": 75, "PROBABLE_MIN": 55, "POSSIBLE_MIN": 35},
+      "capital_authority": false,
+      "notes": "Today: 81 rows scored, PROBABLE=39, POSSIBLE=35, UNLIKELY=5, IMMINENT=2. Not confirmed read by any downstream sizing code - could not fully verify consumption.",
+      "downstream_consumer": ["eil (unconfirmed)"]
+    },
+    {
+      "id": "eil_pse",
+      "nominal_phase_label": "Phase 9",
+      "producer_file": "execution_intelligence_runner.py, position_sizing_engine.py (retired, not imported)",
+      "inputs": ["superbrain_enriched.csv with actuarial pre-injected"],
+      "outputs": ["superbrain/eil_enriched_{run_id}.csv"],
+      "confidence_fields": ["pse_execution_mode", "pse_final_size", "capital_permission", "campaign_verdict", "kelly_verdict"],
+      "capital_authority": false,
+      "critical_finding": "pse_final_size hardcoded 0.0 at 20+ assignment sites, unconditionally. _PSE_AVAILABLE=False hardcoded. Verified 1316/1316 rows today, including 41 WBS-IMMINENT/PROBABLE rows and 81 EXECUTE-verdict rows. This is the single gate architected to convert confidence into capital, and it is closed.",
+      "downstream_consumer": ["garch", "trigger_layer_post_eil"]
+    },
+    {
+      "id": "garch_runner",
+      "nominal_phase_label": "Phase 10a/10b (runs immediately after EIL by design)",
+      "producer_file": "garch_runner.py, layer3_forward_variance.py",
+      "inputs": ["superbrain_enriched.csv ticker list", "252 trading days OHLCV", "options_intelligence.csv IV map", "macro regime"],
+      "outputs": ["qomega/garch_forecasts_{run_id}.csv"],
+      "confidence_fields": ["l3_method", "l3_forward_realised_vol", "l3_vol_forecast_conf", "l3_iv_tailwind_score", "l3_n_bars"],
+      "capital_authority": false,
+      "notes": "Today: 1316/1316 (100%) HAR_RV method, zero fallback usage.",
+      "downstream_consumer": ["trigger_layer_post_eil merge into eil_enriched"]
+    },
+    {
+      "id": "trigger_layer_post_eil",
+      "nominal_phase_label": "Phase 8.6b - runs AFTER Phase 9/10 by explicit documented design, despite the label",
+      "producer_file": "trigger_layer.py::enrich_csv",
+      "inputs": ["eil_enriched.csv", "vanguard_signals_enriched.csv (governance columns re-injected)"],
+      "outputs": ["eil_enriched.csv (in place)", "trigger_layer_summary_{run_id}.csv"],
+      "confidence_fields": ["trigger_codes", "trigger_count", "trigger_primary", "trigger_quality", "trigger_score", "trigger_go_eligible"],
+      "capital_authority": false,
+      "notes": "Today: trigger_go_eligible True=985 (74.8%). Historical wiring-gap bug (ede_trigger_count=0 for all rows) CONFIRMED FIXED.",
+      "downstream_consumer": ["catalyst_truth_post_eil"]
+    },
+    {
+      "id": "catalyst_truth_post_eil",
+      "nominal_phase_label": "unnumbered, stage=post_eil",
+      "producer_file": "catalyst_truth_engine.py",
+      "inputs": ["every stage CSV with a ticker column", "optional catalyst calendar"],
+      "outputs": ["catalysts/catalyst_truth_{run_id}.csv", "catalysts/catalyst_truth_summary_{run_id}.json"],
+      "confidence_fields": ["catalyst_truth_score", "catalyst_binary_score", "event_convexity_score", "catalyst_data_quality", "catalyst_trade_class", "catalyst_direction_bias"],
+      "capital_authority": false,
+      "notes": "Explicitly self-labelled shadow/advisory. Today: catalyst_detected=15/1528 (1.0%), all 15 manually sourced, zero organic inference.",
+      "downstream_consumer": ["mcmillan_advisory", "direction_governance", "eod_candidate_engine", "morning_gate"]
+    },
+    {
+      "id": "mcmillan_advisory",
+      "nominal_phase_label": "Phase 9D",
+      "producer_file": "mcmillan_advisory_layer.py",
+      "inputs": ["IV percentile fields", "GEX/gamma-regime labels", "expected-move/theta/delta fields"],
+      "outputs": ["eil_enriched.csv patched", "execution_v3_5_{run_id}.csv patched if exists"],
+      "confidence_fields": ["iv_gex_entry_quality", "crowd_arrival_score"],
+      "capital_authority": false,
+      "notes": "Confirmed genuinely read-only by full code read - no filter/mask/verdict-change logic exists.",
+      "downstream_consumer": ["eod_candidate_engine (safety-net rescue-join)"]
+    },
+    {
+      "id": "eod_candidate_engine",
+      "nominal_phase_label": "Phase 10",
+      "producer_file": "eod_candidate_engine.py",
+      "inputs": ["execution/execution_v3_5_{run_id}.csv", "wall_break_scores", "discovery_candidates_ultimate", "vanguard_signals_enriched", "horizon summary"],
+      "outputs": ["morning_validation/morning_candidates_{run_id}.csv"],
+      "confidence_fields": ["structural_tier", "monetisation_fit_score", "eod_candidate_status"],
+      "capital_authority": false,
+      "notes": "Today: 817 rows written. Single biggest volume bottleneck: 1010/1527 (66.1%) dropped upstream at OPTIONS_INTELLIGENCE stage before reaching this engine.",
+      "downstream_consumer": ["pipeline_integrity_report", "morning_gate"]
+    },
+    {
+      "id": "pipeline_integrity_report",
+      "nominal_phase_label": "unnumbered, FIX-INTEGRITY v3.3",
+      "producer_file": "intelligent_orchestrator.py (inline)",
+      "inputs": ["actuarial fill rate", "horizon routing presence", "tier A/B/exec-ready counts"],
+      "outputs": ["pipeline_integrity_{run_id}.json"],
+      "confidence_fields": ["manifest_permission", "pipeline_technical_health", "final_pipeline_state"],
+      "capital_authority": false,
+      "notes": "Today: manifest_permission=MORNING_VALIDATION_REQUIRED.",
+      "downstream_consumer": ["diagnostics_archive"]
+    },
+    {
+      "id": "diagnostics_archive",
+      "nominal_phase_label": "unnumbered",
+      "producer_file": "dropoff_audit.py, handoff_contract_audit.py, uat_audit_report.py, market_context_diagnostics.py",
+      "inputs": ["all upstream run artefacts"],
+      "outputs": ["diagnostics/dropoff_audit_{run_id}.csv/.json", "diagnostics/handoff_contract_audit_{run_id}.json", "diagnostics/uat_audit_report_{run_id}.json/.md", "diagnostics/market_breadth_diagnostic_{run_id}.json", "final_run_manifest.json"],
+      "capital_authority": false,
+      "notes": "TODAY'S RUN STOPS HERE. final_run_manifest.json shows morning_validation=PENDING, next_action=NEEDS_MORNING_VALIDATION. morning_gate.py has not yet run against 20260829_100803.",
+      "downstream_consumer": ["morning_gate"]
+    },
+    {
+      "id": "morning_gate",
+      "nominal_phase_label": "morning entry point, v1.3, 8 checks (prior docs claim 5, v1.2 - CONTRADICTED)",
+      "producer_file": "morning_gate.py",
+      "inputs": ["morning_candidates_{run_id}.csv", "live equity/options quotes (Polygon snapshot, MarketData.app)"],
+      "outputs": ["morning_validated_trades_{run_id}.csv"],
+      "confidence_fields": ["direction_resolution_confidence", "l3_model_risk_flags", "contract_spread_policy_state", "score_integrity_status", "verdict", "morning_execution_permission", "morning_execution_route"],
+      "checks": [
+        {"id": 0, "name": "Upstream Authority", "gating": true, "aug28_fail_rate": "594/819 (72.5%)"},
+        {"id": 1, "name": "Monetisability", "gating": true, "aug28_block_rate_of_authority_passed": "77/225 (34.2%)"},
+        {"id": 2, "name": "EV3 Evidence", "gating": false, "notes": "always returns True - advisory only"},
+        {"id": 3, "name": "Invalidation Intact", "gating": true},
+        {"id": 4, "name": "Macro Context", "gating": false, "notes": "macro_pass hardcoded True literal - display only"},
+        {"id": 5, "name": "Contract Liquid", "gating": true, "aug28_success_rate": "190/198 (95.96%)"},
+        {"id": 6, "name": "Bond Macro Context", "gating": false, "notes": "bond_pass never referenced in verdict cascade - advisory only"},
+        {"id": 7, "name": "Layer 3 Model Risk", "gating": true, "notes": "FLAG not BLOCK on trigger"}
+      ],
+      "capital_authority": true,
+      "notes": "Genuinely capital-gating for 6/8 checks. Freshest data is Aug 28 (2026-08-28), since today's run has not reached this stage.",
+      "downstream_consumer": ["morning_handoff_finalizer"]
+    },
+    {
+      "id": "morning_handoff_finalizer_execution_gate",
+      "nominal_phase_label": "Phase 11 per orchestrator's own code comments",
+      "producer_file": "morning_handoff_finalizer.py, execution_gate.py",
+      "inputs": ["morning_gate.py output"],
+      "outputs": ["final_run_manifest.json (updated)", "final_opportunity_book_{run_id}.csv/.json"],
+      "confidence_fields": ["gate_size_penalty", "final_action"],
+      "gates": {"spread_hard_block_pct": 15.0, "delta_range": [0.20, 0.85]},
+      "capital_authority": true,
+      "notes": "True terminal actionability field is final_action. Aug 28 actionable rate: 75/819 (9.16%). Fail-closed row-by-row reconciliation against Lab (execution_lab_mismatch_count=0 on Aug 28).",
+      "downstream_consumer": ["governed_book"]
+    },
+    {
+      "id": "governed_book",
+      "nominal_phase_label": "final read model",
+      "producer_file": "contracts/lab_control.py::build_final_opportunity_book / opportunity_book_row / write_final_opportunity_book",
+      "inputs": ["morning_candidates.csv (fallback eil_enriched.csv)", "9 additional source CSVs merged with priority table"],
+      "outputs": ["intelligence_lab/final_opportunity_book_{run_id}.csv/.json (297 fields, live-verified)", "lab_triage_view_{run_id}.csv"],
+      "confidence_fields": ["lab_rank", "priority_rank", "lab_verdict", "lab_tradeable", "readiness_stage", "readiness_label", "readiness_enter_now", "composite_score", "priority_score", "direction_resolution_confidence", "ev3_status", "actuarial_confidence", "catalyst_truth_score", "market_energy_score", "eil_signal_verdict", "garch_forecast_confidence", "convexity_score", "trigger_quality", "monetisability_status"],
+      "gates": {"LAB_EXECUTABLE_SPREAD_MAX_PCT": 18.0, "LAB_ABSOLUTE_SPREAD_MAX_PCT": 25.0},
+      "capital_authority": false,
+      "notes": "Terminal synthesis field readiness_label = EOD_PREP_COMPLETE_MORNING_VALIDATION_REQUIRED on all 817/817 rows today. Field count resolved: 297 current (232/185 prior figures were stale/inconsistent).",
+      "downstream_consumer": ["intelligence_lab_ui"]
+    },
+    {
+      "id": "intelligence_lab_ui",
+      "nominal_phase_label": "final consumer",
+      "producer_file": "intelligence-lab/intelligence_lab.py, intelligence-lab/static/index.html, static/AVSHUNTER_sector_ui_patch.js",
+      "inputs": ["final_opportunity_book_{run_id}.json (297 fields, unmodified)"],
+      "outputs": ["rendered Lab UI panels", "CSV export"],
+      "capital_authority": false,
+      "known_defect": "159/297 governed fields never surfaced in UI, including readiness_label. 5 specific panels (Convexity Score/Engine tab, Vetoes Fired, Entry Reason, Composite Score, AVOID/STAGED campaign stats) read legacy field names absent from the current schema, rendering 0/blank/dash instead of real populated values.",
+      "downstream_consumer": ["trader"]
+    }
+  ]
+}

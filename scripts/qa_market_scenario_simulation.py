@@ -32,7 +32,13 @@ QA_DIR = ROOT / "data" / "output" / "qa"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from morning_thesis_validator import build_summary, run_morning_validation  # noqa: E402
+try:
+    from morning_thesis_validator import build_summary, run_morning_validation  # type: ignore[import-not-found]  # noqa: E402
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = True
+except ModuleNotFoundError:
+    build_summary = None
+    run_morning_validation = None
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = False
 
 
 SCENARIOS = [
@@ -966,6 +972,12 @@ def run(run_id: str, max_candidates: int) -> Dict[str, Any]:
 
 
 def main() -> int:
+    if not _LEGACY_MORNING_VALIDATOR_AVAILABLE:
+        print(
+            "RETIRED: this scenario replayer targeted morning_thesis_validator.py. "
+            "Production uses morning_gate.py; run the current morning-gate tests instead."
+        )
+        return 2
     parser = argparse.ArgumentParser(description="Stress-test completed AVSHUNTER output with synthetic live scenarios.")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--max-candidates", type=int, default=60)

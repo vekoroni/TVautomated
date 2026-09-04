@@ -1,0 +1,4608 @@
+[
+ {
+  "path": "pipeline_interpreter/Archive/ma_inputs_sync.py",
+  "n_lines": 389,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER MA_Inputs Auto-Sync v1.1 FIXED\n=========================================\nPurpose:\n    Sync AVSHUNTER outputs and /input-style folders into MA_Inputs so the\n    interpreter can consume the latest pipeline files.\n\nKey fixes vs v1.0:\n    - Adds input/source folder discovery.\n    - Supports recursive scanning.\n    - Scans .json and .webp as well as CSV/images.\n    - Adds macro/catalyst/calendar routing keywords.\n    - Allows force sync with --all-hours or --hours 0.\n    - Adds clearer diagnostics for unmatched and stale files.\n\nUsage:\n    python ma_inputs_sync_v1_1_FIXED.py --sync\n    py",
+  "functions": [
+   "_ts:128",
+   "_is_inside:132",
+   "_matches_rule:140",
+   "_route_file:148",
+   "_is_fresh:155",
+   "_already_synced:166",
+   "_iter_files:176",
+   "sync_file:185",
+   "sync_to_ma_inputs:210",
+   "add_source_path:304",
+   "on_pipeline_complete:312",
+   "show_status:327",
+   "watch_and_sync:351"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "278: counts[label] = counts.get(label, 0) + 1"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/Archive/news_macro_readers.py",
+  "n_lines": 65,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Macro and News Terminal reader functions \u2014 appended to engine",
+  "functions": [
+   "read_macro_context:5",
+   "read_news_terminal_output:34"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "49: filtered = [r for r in rows if t in str(r.get(\"ticker\",\"\")).upper()",
+   "50: or t in str(r.get(\"narrative\",\"\")).upper()]",
+   "60: parts = [f\"{c}={str(row.get(c,''))[:80]}\" for c in avail if str(row.get(c,'')).strip() not in ('','nan','None')]"
+  ],
+  "writes": [
+   "27: if isinstance(val, (dict,list)): val = json.dumps(val, separators=(',',':'))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/Archive/pipeline_interpreter_commands.py",
+  "n_lines": 727,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/interpreter_qa.py",
+   "pipeline_interpreter/pipeline_interpreter_outputs.py"
+  ],
+  "docstring": "AVSHUNTER Pipeline Interpreter v1.0 \u00e2\u20ac\u201d Command Router",
+  "functions": [
+   "_safe_name:51",
+   "_print_all_ma_input_csvs:59",
+   "_print_results:73",
+   "cmd_triage:90",
+   "cmd_interpret:255",
+   "cmd_morning:299",
+   "cmd_ticker:326",
+   "cmd_auto:384",
+   "cmd_load:430",
+   "cmd_options:440",
+   "cmd_chart:447",
+   "cmd_macro:556",
+   "cmd_news:568",
+   "cmd_sync:583",
+   "cmd_inputs:605",
+   "cmd_status:639",
+   "cmd_reset:655",
+   "route_command:661"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "76: n=_safe_name(results[\"brief_csv\"]); r=results[\"brief_csv\"].get(\"rows\",\"?\") if isinstance(results[\"brief_csv\"],dict) else \"?\"",
+   "105: all_csvs = ma_summary.get(\"all_csv_files\", [])",
+   "106: recognised = ma_summary.get(\"recognised_csv_files\", {})",
+   "108: other_csvs = ma_summary.get(\"other_csv_files\", [])",
+   "109: missing = ma_summary.get(\"missing_expected_pipeline_files\", [])",
+   "182: 1 for r in rows if str(r.get(\"eil_v3_verdict\", \"\")).upper() == \"BLOCKED\"",
+   "186: rows = [r for r in rows if str(r.get(\"eil_v3_verdict\", \"\")).upper() != \"BLOCKED\"]",
+   "189: chart_tickers = set(ma_summary.get(\"chart_files\", {}).keys())",
+   "190: opt_tickers   = set(ma_summary.get(\"options_files\", {}).keys())",
+   "206: tc = results.get(\"triage_csv\", {})",
+   "207: th = results.get(\"triage_html\", {})",
+   "208: n = tc.get(\"rows\", 0) if isinstance(tc, dict) else \"?\"",
+   "243: macro_json     = SESSION.get(\"macro_json\") or \"\",",
+   "246: if _qa.get(\"checks\", {}).get(\"pipeline_csv\", {}).get(\"status\") != \"FAIL\":"
+  ],
+  "writes": [
+   "674: files=[f.strip().strip('\"').strip(\"'\") for f in arg.replace(\",\",\" \").split() if f.strip()]"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "345: # Fix C -- never block analysis on execution_permission value"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 26,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/Archive/pipeline_interpreter_engine.py",
+  "n_lines": 888,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER Pipeline Interpreter v1.0 \u00e2\u20ac\u201d Core Engine\nReads pipeline CSV outputs and produces Dr. Magnus Vale trade narratives",
+  "functions": [
+   "_translate_display_labels:47",
+   "load_system_prompt:122",
+   "load_image:127",
+   "call_api:142",
+   "read_pipeline_csv:170",
+   "read_options_file:183",
+   "find_pipeline_files:198",
+   "run_session_check:220",
+   "_date:302",
+   "_select_fields:320",
+   "_format_rows:329",
+   "build_interpret_prompt:347",
+   "build_single_ticker_prompt:413",
+   "build_triage_prompt:454",
+   "build_chart_prompt:577",
+   "build_morning_validation_prompt:651",
+   "extract_section:680",
+   "extract_verdict:684",
+   "parse_brief_csv:699",
+   "scan_ma_inputs_for_ticker:712",
+   "scan_ma_pipeline_outputs:746",
+   "classify_ma_input_csvs:768",
+   "scan_all_ma_inputs:794",
+   "get_ma_inputs_status:833",
+   "get_timestamp:884",
+   "get_run_dir:885"
+  ],
+  "classes": [
+   {
+    "name": "InterpreterSession:103",
+    "methods": [
+     "__init__:104",
+     "reset:105",
+     "add_verdict:109",
+     "summary:111"
+    ]
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:124",
+   "FileNotFoundError:131",
+   "ImportError:145"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "337: val = _translate_display_labels(str(r.get(f,\"\")).strip())",
+   "469: chart_tickers  = set(ma_inputs_summary.get(\"chart_files\", {}).keys())",
+   "470: options_tickers= set(ma_inputs_summary.get(\"options_files\", {}).keys())",
+   "471: screen_tickers = set(ma_inputs_summary.get(\"screenshot_files\", {}).keys())",
+   "472: all_csvs = ma_inputs_summary.get(\"all_csv_files\", [])",
+   "473: recognised = ma_inputs_summary.get(\"recognised_csv_files\", {})",
+   "475: other_csvs = ma_inputs_summary.get(\"other_csv_files\", [])",
+   "476: missing = ma_inputs_summary.get(\"missing_expected_pipeline_files\", [])",
+   "480: ) or \"  None\"",
+   "781: recognised.setdefault(key, []).append(str(f))",
+   "843: recognised = summary.get(\"recognised_csv_files\", {})",
+   "850: other = summary.get(\"other_csv_files\", [])",
+   "855: missing = summary.get(\"missing_expected_pipeline_files\", [])"
+  ],
+  "writes": [
+   "192: return json.dumps(json.load(f),indent=2)",
+   "702: clean=re.sub(r'```[a-z]*','',text).replace('```','').strip()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "36: # Applied in the display layer only \u2014 underlying field values are unchanged",
+   "452: execution_permission=NONE_PIPELINE_INTERPRETER_ONLY\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 13,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/_append_helper.py",
+  "n_lines": 328,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Append new functions to pipeline_interpreter_outputs.py",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "32: _t  = _row.get(\"ticker\", \"\")",
+   "33: _v  = _row.get(\"final_verdict\", \"WAIT\")",
+   "34: _st = _row.get(\"trade_state\", \"WATCH\")",
+   "193: _t  = _row.get(\"ticker\", \"\")",
+   "194: _v  = _row.get(\"final_verdict\", \"WAIT\")",
+   "195: _st = _row.get(\"trade_state\", \"WATCH\")"
+  ],
+  "writes": [
+   "26: (run_dir / f\"raw_response_{ts}.txt\").write_text(main_response, encoding=\"utf-8\")",
+   "27: (run_dir / f\"raw_story_{ts}.txt\").write_text(story_response, encoding=\"utf-8\")",
+   "58: .replace(\"&\", \"&amp;\")",
+   "59: .replace(\"<\", \"&lt;\")",
+   "60: .replace(\">\", \"&gt;\")",
+   "103: unified_html = main_html.replace(\"</body>\", ete_block_html + junior_block + \"\\\\n</body>\")",
+   "106: hp.write_text(unified_html, encoding=\"utf-8\")",
+   "187: (run_dir / f\"raw_response_{ts}.txt\").write_text(main_response, encoding=\"utf-8\")",
+   "188: (run_dir / f\"raw_story_{ts}.txt\").write_text(story_response, encoding=\"utf-8\")",
+   "218: .replace(\"&\", \"&amp;\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "72: \"INFORMATIONAL ONLY &#8212; NEVER BLOCKS VERDICT</div>\"",
+   "96: \"EXECUTION PERMISSION: NONE &#8212; READ ONLY</div>\"",
+   "233: \"INFORMATIONAL ONLY &#8212; NEVER BLOCKS VERDICT</div>\"",
+   "262: \"EXECUTION PERMISSION: NONE &#8212; READ ONLY</div>\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 6,
+   "write": 15
+  }
+ },
+ {
+  "path": "pipeline_interpreter/_append_outputs.py",
+  "n_lines": 180,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "One-shot: append write_all_outputs_with_junior + _build_junior_section_cards to outputs file.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "28: \"        _t  = _row.get(\\\"ticker\\\", \\\"\\\")\\n\"",
+   "29: \"        _v  = _row.get(\\\"final_verdict\\\", \\\"WAIT\\\")\\n\"",
+   "30: \"        _st = _row.get(\\\"trade_state\\\", \\\"WATCH\\\")\\n\""
+  ],
+  "writes": [
+   "22: \"    (run_dir / f\\\"raw_response_{ts}.txt\\\").write_text(main_response, encoding=\\\"utf-8\\\")\\n\"",
+   "23: \"    (run_dir / f\\\"raw_story_{ts}.txt\\\").write_text(story_response, encoding=\\\"utf-8\\\")\\n\"",
+   "54: \"            .replace(\\\"&\\\", \\\"&amp;\\\")\\n\"",
+   "55: \"            .replace(\\\"<\\\", \\\"&lt;\\\")\\n\"",
+   "56: \"            .replace(\\\">\\\", \\\"&gt;\\\")\\n\"",
+   "108: \"    unified_html = main_html.replace(\\\"</body>\\\", ete_block_html + junior_block + \\\"\\\\n</body>\\\")\\n\"",
+   "111: \"    hp.write_text(unified_html, encoding=\\\"utf-8\\\")\\n\"",
+   "176: with open(TARGET, \"wb\") as f:"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "66: \"            \\\"INFORMATIONAL ONLY &#8212; NEVER BLOCKS VERDICT</div>\\\"\\n\"",
+   "96: \"        \\\"EXECUTION PERMISSION: NONE &#8212; READ ONLY</div>\\\"\\n\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 8
+  }
+ },
+ {
+  "path": "pipeline_interpreter/_patch_cmd_ticker.py",
+  "n_lines": 114,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Patch cmd_ticker in pipeline_interpreter_commands.py to call write_all_outputs_with_junior.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "76: src = src.replace(old_block, new_block, 1)",
+   "80: old_crlf = old_block.replace(\"\\n\", \"\\r\\n\")",
+   "82: new_crlf = new_block.replace(\"\\n\", \"\\r\\n\")",
+   "83: src = src.replace(old_crlf, new_crlf, 1)",
+   "112: with open(TARGET, \"wb\") as f:"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 5
+  }
+ },
+ {
+  "path": "pipeline_interpreter/alternative_contract_selector.py",
+  "n_lines": 209,
+  "classification": "INTERPRETER",
+  "commit": "ade4290",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [
+   "morning_gate.py"
+  ],
+  "docstring": "Alternative Contract Selector \u2014 AVSHUNTER Pipeline Interpreter\nWhen the conflict resolver detects misdiagnosis, selects an alternative\ncontract in the dominant direction and fetches its live Greeks.",
+  "functions": [
+   "_build_occ_symbol:23",
+   "_select_strike:41",
+   "_next_monthly_expiry:61",
+   "_parse_expiry_from_occ:81",
+   "select_alternative_contract:109"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "36: cp = \"C\" if direction.upper() == \"CALL\" else \"P\"",
+   "55: if direction.upper() == \"CALL\":"
+  ],
+  "fallbacks": [
+   "118: ticker = str(row.get(\"ticker\") or row.get(\"symbol\") or \"\").upper()",
+   "140: or \"\"",
+   "157: f\"{row.get('direction','?')} to {dominant_direction}. \""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 3,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/assessment_contract.py",
+  "n_lines": 242,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "tests/msi/test_flow.py",
+   "tests/msi/test_functionality.py",
+   "tests/msi/test_logic.py",
+   "tests/test_msi_interpreter_handoff.py"
+  ],
+  "imports": [],
+  "docstring": "Structured, append-only and non-authoritative Interpreter assessments.",
+  "functions": [
+   "_text:52",
+   "_canonical_contract:56",
+   "_bundle_authority:60",
+   "_narrative_conflicts:81",
+   "build_assessment:99",
+   "validate_assessment:165",
+   "append_assessment:200",
+   "latest_valid_assessment:212"
+  ],
+  "classes": [
+   {
+    "name": "AssessmentStatus:22",
+    "methods": []
+   },
+   {
+    "name": "AssessmentValidationError:29",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "AssessmentValidationError:170",
+   "AssessmentValidationError:176",
+   "AssessmentValidationError:182",
+   "AssessmentValidationError:184",
+   "AssessmentValidationError:186",
+   "AssessmentValidationError:188",
+   "AssessmentValidationError:192",
+   "AssessmentValidationError:196"
+  ],
+  "direction_branches": [
+   "38: \"governed_direction\", \"selected_contract_symbol\", \"thesis_state\",",
+   "63: \"governed_direction\": _text(",
+   "64: governed.get(\"governed_direction\") or governed.get(\"final_direction\")",
+   "85: expected_direction = authority.get(\"governed_direction\", \"\")"
+  ],
+  "fallbacks": [
+   "53: return str(value or \"\").strip()",
+   "85: expected_direction = authority.get(\"governed_direction\", \"\")",
+   "90: expected_contract = authority.get(\"selected_contract_symbol\", \"\")"
+  ],
+  "writes": [
+   "57: return _text(value).upper().replace(\"O:\", \"\").replace(\" \", \"\")",
+   "180: datetime.fromisoformat(value[\"created_utc\"].replace(\"Z\", \"+00:00\"))",
+   "205: with target.open(\"a\", encoding=\"utf-8\", newline=\"\\n\") as handle:",
+   "206: handle.write(json.dumps(value, sort_keys=True, separators=(\",\", \":\")) + \"\\n\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Structured, append-only and non-authoritative Interpreter assessments.\"\"\"",
+   "42: # Macro/news packets are useful context but never execution evidence.  Their",
+   "44: # ticker assessment.  Only the domains used to describe the governed ticker,",
+   "201: \"\"\"Preserve valid and rejected attempts; consumers display only VALID rows.\"\"\""
+  ],
+  "version_fields": [
+   "15: ASSESSMENT_SCHEMA_VERSION = \"interpreter_assessment_v1\"",
+   "141: \"schema_version\": ASSESSMENT_SCHEMA_VERSION,",
+   "169: if value.get(\"schema_version\") != ASSESSMENT_SCHEMA_VERSION:"
+  ],
+  "counts": {
+   "direction": 4,
+   "fallback": 3,
+   "write": 4
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/__init__.py",
+  "n_lines": 56,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "tests/qa/test_p1_p10_adversarial_probes.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/legacy_adapter.py",
+   "pipeline_interpreter/automation_v2/metrics.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/provider.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/retry.py",
+   "pipeline_interpreter/automation_v2/rollout.py",
+   "pipeline_interpreter/automation_v2/veto.py"
+  ],
+  "docstring": "Stateless, shadow-mode Pipeline Interpreter automation.\n\nThis package is intentionally not wired into the production command router.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/batch.py",
+  "n_lines": 139,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/retry.py",
+   "pipeline_interpreter/automation_v2/serialization.py",
+   "pipeline_interpreter/automation_v2/shadow.py"
+  ],
+  "docstring": "Bounded, stateless multi-ticker shadow coordination.",
+  "functions": [
+   "_atomic_json:43",
+   "run_batch:58"
+  ],
+  "classes": [
+   {
+    "name": "BatchItem:25",
+    "methods": []
+   },
+   {
+    "name": "BatchResult:37",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileExistsError:115",
+   "ValueError:70",
+   "ValueError:72",
+   "ValueError:74",
+   "ValueError:80"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "51: temp.write_text(json.dumps(value, indent=2, sort_keys=True), encoding=\"utf-8\")",
+   "52: os.replace(temp, path)"
+  ],
+  "atomic_markers": [
+   "7: import tempfile",
+   "45: fd, temp_name = tempfile.mkstemp(",
+   "46: prefix=f\".{path.name}.\", suffix=\".tmp\", dir=path.parent",
+   "52: os.replace(temp, path)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "122: \"schema_version\": \"automation_v2.batch.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/cli.py",
+  "n_lines": 192,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/comparison.py",
+   "pipeline_interpreter/automation_v2/compatibility.py",
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/fixture_provider.py",
+   "pipeline_interpreter/automation_v2/legacy_adapter.py",
+   "pipeline_interpreter/automation_v2/live_provider.py",
+   "pipeline_interpreter/automation_v2/metrics.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/replay.py",
+   "pipeline_interpreter/automation_v2/serialization.py",
+   "pipeline_interpreter/automation_v2/shadow.py",
+   "pipeline_interpreter/automation_v2/trial.py"
+  ],
+  "docstring": "Explicit-input, shadow-only command line entry point.",
+  "functions": [
+   "_parser:23",
+   "main:77"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:130"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "101: print(json.dumps({\"shadow\": True, \"request\": str(output)}, sort_keys=True))",
+   "116: json.dumps(",
+   "146: (checkpoint_dir / f\"{stage}_response.txt\").write_text(",
+   "161: print(json.dumps(to_plain(trial), indent=2, sort_keys=True))",
+   "166: rendered = json.dumps(to_plain(report), indent=2, sort_keys=True)",
+   "170: output.write_text(rendered, encoding=\"utf-8\")",
+   "182: rendered = json.dumps(payload, indent=2, sort_keys=True)",
+   "186: output.write_text(rendered, encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Explicit-input, shadow-only command line entry point.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 8
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/comparison.py",
+  "n_lines": 81,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/compatibility.py",
+   "pipeline_interpreter/automation_v2/models.py"
+  ],
+  "docstring": "Machine-readable legacy-versus-shadow artifact comparison.",
+  "functions": [
+   "compare_legacy_to_shadow:27"
+  ],
+  "classes": [
+   {
+    "name": "ComparisonReport:15",
+    "methods": [
+     "passed:23"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "42: artifact_names = {item[\"name\"] for item in manifest.get(\"artifacts\", ())}"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/compatibility.py",
+  "n_lines": 74,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/comparison.py",
+   "tests/test_pipeline_interpreter_automation_v2_adapter.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py"
+  ],
+  "imports": [],
+  "docstring": "Compatibility contracts for legacy ticker artifacts.",
+  "functions": [
+   "_sections:36",
+   "_has_prefix:40",
+   "profile_legacy_artifacts:44"
+  ],
+  "classes": [
+   {
+    "name": "ArtifactContract:26",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:50"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/core.py",
+  "n_lines": 80,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py",
+   "pipeline_interpreter/automation_v2/shadow.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "tests/qa/test_s9_live_provider_permission_promotion.py",
+   "tests/test_pipeline_interpreter_automation_v2.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase3.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py",
+   "tests/test_pipeline_interpreter_automation_v2_report.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/veto.py"
+  ],
+  "docstring": "Pure ticker interpretation orchestration.",
+  "functions": [
+   "interpret_ticker:21"
+  ],
+  "classes": [
+   {
+    "name": "AnalysisProvider:16",
+    "methods": [
+     "analyze:17"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "74: proposed_verdict=analysis.proposed_verdict.strip().upper() or \"WAIT\","
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+  "n_lines": 165,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator_cli.py",
+   "pipeline_interpreter/automation_v2/lab_batch.py",
+   "tests/test_pipeline_interpreter_automation_v2_e2e_orchestrator.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/evidence_package.py",
+   "pipeline_interpreter/automation_v2/lab_structured.py",
+   "pipeline_interpreter/automation_v2/package_publisher.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py"
+  ],
+  "docstring": "Resumable post-capture orchestration for one staged ticker.",
+  "functions": [
+   "_inside:17",
+   "_write_state:25",
+   "_load_report:38",
+   "run_e2e_workflow:42"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:59",
+   "FileNotFoundError:111",
+   "FileNotFoundError:153",
+   "FileNotFoundError:90",
+   "ValueError:55",
+   "ValueError:62"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "78: if steps.get(\"lab_structured\", {}).get(\"status\") != \"complete\":",
+   "94: if steps.get(\"evidence_package\", {}).get(\"status\") != \"complete\":",
+   "127: if steps.get(\"shadow_ingestion\", {}).get(\"status\") != \"complete\":"
+  ],
+  "writes": [
+   "30: temporary.write_text(",
+   "31: json.dumps(payload, indent=2, sort_keys=True), encoding=\"utf-8\"",
+   "33: os.replace(temporary, path)"
+  ],
+  "atomic_markers": [
+   "7: import tempfile",
+   "26: handle, name = tempfile.mkstemp(prefix=f\".{path.name}.\", dir=path.parent)",
+   "33: os.replace(temporary, path)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "66: \"schema_version\": \"automation_v2.e2e_workflow.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/e2e_orchestrator_cli.py",
+  "n_lines": 48,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:48"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "33: print(json.dumps({",
+   "38: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/evidence.py",
+  "n_lines": 119,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/legacy_adapter.py",
+   "tests/test_pipeline_interpreter_automation_v2.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/models.py"
+  ],
+  "docstring": "Read-only evidence discovery with exact ticker identity.",
+  "functions": [
+   "filename_belongs_to_ticker:34",
+   "classify_chart_asset:43",
+   "discover_ticker_assets:54",
+   "sha256_file:76",
+   "build_chart_manifest:84"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Read-only evidence discovery with exact ticker identity.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/evidence_package.py",
+  "n_lines": 197,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/evidence_package_cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_evidence_package.py"
+  ],
+  "imports": [],
+  "docstring": "Assemble verified capture and Lab artifacts into one staged ticker package.",
+  "functions": [
+   "_sha256:28",
+   "_json_files:36",
+   "_load:50",
+   "_newest:57",
+   "_resolve_asset:65",
+   "_discover:72",
+   "assemble_evidence_package:150"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:160"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "79: if not payload or str(payload.get(\"ticker\", \"\")).upper() != symbol:",
+   "81: schema = str(payload.get(\"schema_version\", \"\"))",
+   "96: for value in payload.get(\"assets\", []):",
+   "108: screen = str(payload.get(\"screen\", \"\")).lower()",
+   "117: canonical = payload.get(\"assets\", [])",
+   "122: raw = payload.get(\"market_screen\", {}).get(\"diagnostic\")",
+   "130: for item in payload.get(\"assets\", []):"
+  ],
+  "writes": [
+   "183: manifest.write_text(json.dumps({",
+   "193: os.replace(stage, final)"
+  ],
+  "atomic_markers": [
+   "9: import tempfile",
+   "162: stage = Path(tempfile.mkdtemp(prefix=f\".{final.name}.\", dir=final.parent))",
+   "193: os.replace(stage, final)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "81: schema = str(payload.get(\"schema_version\", \"\"))",
+   "184: \"schema_version\": \"automation_v2.evidence_package.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 7,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/evidence_package_cli.py",
+  "n_lines": 36,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/evidence_package.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:36"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "22: print(json.dumps({",
+   "27: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/field_comparison.py",
+  "n_lines": 83,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [],
+  "docstring": "Field-level comparison between legacy and shadow trade briefs.",
+  "functions": [
+   "_normal:55",
+   "compare_trade_briefs:59"
+  ],
+  "classes": [
+   {
+    "name": "FieldDifference:34",
+    "methods": []
+   },
+   {
+    "name": "FieldComparison:41",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "56: return \" \".join(str(value or \"\").strip().upper().split())"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/fixture_provider.py",
+  "n_lines": 30,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py",
+   "tests/test_pipeline_interpreter_automation_v2_report.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/parser.py"
+  ],
+  "docstring": "Offline provider backed by captured main/story response text.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "FixtureResponseProvider:13",
+    "methods": [
+     "analyze:17"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/lab_batch.py",
+  "n_lines": 205,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/lab_batch_cli.py",
+   "tests/qa/test_numeric_fail_closed.py",
+   "tests/qa/test_p4_nan_rr_bypass.py",
+   "tests/test_pipeline_interpreter_automation_v2_lab_batch.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/numeric_validation.py"
+  ],
+  "docstring": "Lab-driven batch launcher for the stateless ticker workflow.",
+  "functions": [
+   "_atomic_write:20",
+   "_rank:32",
+   "_normalise_signal_row:40",
+   "_negative_rr:55",
+   "discover_latest_lab_universe:60",
+   "run_lab_batch:90"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:106",
+   "FileNotFoundError:73",
+   "ValueError:109",
+   "ValueError:83",
+   "ValueError:86"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "33: raw = row.get(\"lab_rank\") or row.get(\"priority_rank\") or \"999999\"",
+   "35: return int(float(raw)), row.get(\"ticker\", \"\")",
+   "37: return 999999, row.get(\"ticker\", \"\")",
+   "45: \"ticker\": str(row.get(\"Ticker\") or normalised.get(\"ticker\") or \"\").strip().upper(),",
+   "46: \"run_id\": str(row.get(\"Run_ID\") or normalised.get(\"run_id\") or \"\").strip(),",
+   "47: \"lab_rank\": str(row.get(\"Priority_Rank\") or normalised.get(\"lab_rank\") or \"\").strip(),",
+   "48: \"lab_verdict\": str(row.get(\"Verdict\") or normalised.get(\"lab_verdict\") or \"\").strip().upper(),",
+   "49: \"rr_predicted\": str(row.get(\"RR\") or normalised.get(\"rr_predicted\") or \"\").strip(),",
+   "50: \"ev_predicted\": str(row.get(\"EV\") or normalised.get(\"ev_predicted\") or \"\").strip(),",
+   "84: run_ids = {row.get(\"run_id\", \"\").strip() for row in rows}",
+   "113: ticker = row.get(\"ticker\", \"\").strip().upper()",
+   "114: verdict = row.get(\"lab_verdict\", \"\").strip().upper()",
+   "116: source_contract = row.get(\"source_contract\", \"LAB_TRIAGE_VIEW\")",
+   "124: vetoes.append(f\"UPSTREAM_{verdict or 'VERDICT_MISSING'}\")"
+  ],
+  "writes": [
+   "26: temporary.write_text(json.dumps(payload, indent=2, sort_keys=True))",
+   "27: os.replace(temporary, path)"
+  ],
+  "atomic_markers": [
+   "8: import tempfile",
+   "22: handle, name = tempfile.mkstemp(prefix=f\".{path.name}.\", dir=path.parent)",
+   "27: os.replace(temporary, path)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "142: \"schema_version\": \"automation_v2.lab_batch.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 17,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/lab_batch_cli.py",
+  "n_lines": 95,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/lab_batch.py",
+   "pipeline_interpreter/automation_v2/live_provider.py",
+   "pipeline_interpreter/capture_v1/attended_workflow.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:95"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "77: print(json.dumps({",
+   "82: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/lab_structured.py",
+  "n_lines": 219,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/lab_structured_cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_e2e_orchestrator.py",
+   "tests/test_pipeline_interpreter_automation_v2_lab_structured.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/veto.py"
+  ],
+  "docstring": "Structured Intelligence Lab adapter for the automated ticker workflow.",
+  "functions": [
+   "_read_ticker_row:62",
+   "_run_suffix:70",
+   "discover_lab_sources:74",
+   "_present_fields:110",
+   "_normalise_row:120",
+   "build_structured_lab_manifest:137"
+  ],
+  "classes": [
+   {
+    "name": "LabStructuredResult:55",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileExistsError:199",
+   "LookupError:107",
+   "ValueError:151"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "65: if str(row.get(\"ticker\") or row.get(\"Ticker\") or \"\").strip().upper() == ticker:",
+   "149: run_id = str(triage.get(\"run_id\", \"\")).strip()",
+   "157: or \"\""
+  ],
+  "writes": [
+   "207: temporary.write_text(",
+   "208: json.dumps(payload, indent=2, sort_keys=True),",
+   "211: os.replace(temporary, target)"
+  ],
+  "atomic_markers": [
+   "8: import tempfile",
+   "201: handle, temporary_name = tempfile.mkstemp(",
+   "211: os.replace(temporary, target)"
+  ],
+  "authority_comments": [
+   "147: # Enriched EIL supplies missing detail; Lab triage remains authoritative."
+  ],
+  "version_fields": [
+   "173: \"schema_version\": \"automation_v2.lab_structured.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/lab_structured_cli.py",
+  "n_lines": 38,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/lab_structured.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:38"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "25: print(json.dumps({",
+   "29: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/legacy_adapter.py",
+  "n_lines": 279,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_adapter.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/evidence.py",
+   "pipeline_interpreter/automation_v2/models.py"
+  ],
+  "docstring": "Explicit-path adapter from legacy Interpreter files to immutable requests.\n\nThis module deliberately does not implement \"latest file\" discovery. Callers\nmust select the run and sources before invoking it.",
+  "functions": [
+   "_read_csv:53",
+   "_exact_rows:60",
+   "_one_exact_row:71",
+   "_parse_as_of:90",
+   "_file_item:97",
+   "_row_run_finding:132",
+   "_load_macro:141",
+   "build_request_from_legacy:154"
+  ],
+  "classes": [
+   {
+    "name": "LegacyInputError:24",
+    "methods": []
+   },
+   {
+    "name": "MissingTickerError:28",
+    "methods": []
+   },
+   {
+    "name": "AmbiguousTickerError:32",
+    "methods": []
+   },
+   {
+    "name": "LegacyInputSpec:37",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "AmbiguousTickerError:84",
+   "LegacyInputError:145",
+   "LegacyInputError:150",
+   "LegacyInputError:55",
+   "MissingTickerError:81"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "67: if str(row.get(\"ticker\", \"\")).strip().upper() == symbol",
+   "135: actual = str(row.get(\"run_id\", \"\")).strip()"
+  ],
+  "writes": [
+   "91: parsed = datetime.fromisoformat(value.replace(\"Z\", \"+00:00\"))",
+   "93: parsed = parsed.replace(tzinfo=timezone.utc)",
+   "114: \"modified_at\": modified.isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/live_provider.py",
+  "n_lines": 65,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/lab_batch_cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/provider.py",
+   "pipeline_interpreter/pipeline_interpreter.py"
+  ],
+  "docstring": "Lazy construction of the existing Claude provider in shadow mode.",
+  "functions": [
+   "_load_repository_anthropic_key:12",
+   "create_live_shadow_provider:35"
+  ],
+  "classes": [],
+  "raises": [
+   "RuntimeError:16",
+   "RuntimeError:25",
+   "RuntimeError:31"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/metrics.py",
+  "n_lines": 102,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [],
+  "docstring": "Observability and acceptance metrics for shadow trials.",
+  "functions": [
+   "evaluate_acceptance:49",
+   "load_trial_metrics:97"
+  ],
+  "classes": [
+   {
+    "name": "TrialMetric:12",
+    "methods": []
+   },
+   {
+    "name": "AcceptanceThresholds:28",
+    "methods": []
+   },
+   {
+    "name": "AcceptanceReport:38",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/models.py",
+  "n_lines": 174,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/comparison.py",
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/evidence.py",
+   "pipeline_interpreter/automation_v2/fixture_provider.py",
+   "pipeline_interpreter/automation_v2/legacy_adapter.py",
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py",
+   "pipeline_interpreter/automation_v2/parser.py",
+   "pipeline_interpreter/automation_v2/provider.py",
+   "pipeline_interpreter/automation_v2/renderers.py"
+  ],
+  "imports": [],
+  "docstring": "Immutable domain contracts for Pipeline Interpreter automation v2.",
+  "functions": [
+   "_freeze_mapping:16"
+  ],
+  "classes": [
+   {
+    "name": "RunStatus:21",
+    "methods": []
+   },
+   {
+    "name": "EvidenceItem:29",
+    "methods": [
+     "__post_init__:40"
+    ]
+   },
+   {
+    "name": "EvidenceManifest:46",
+    "methods": [
+     "__post_init__:54",
+     "validate:59"
+    ]
+   },
+   {
+    "name": "TickerRunRequest:82",
+    "methods": [
+     "__post_init__:99"
+    ]
+   },
+   {
+    "name": "AnalysisPayload:128",
+    "methods": [
+     "__post_init__:136"
+    ]
+   },
+   {
+    "name": "TickerRunResult:144",
+    "methods": [
+     "__post_init__:161"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:116",
+   "ValueError:118",
+   "ValueError:120",
+   "ValueError:124",
+   "ValueError:172",
+   "ValueError:174"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "169: datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/numeric_validation.py",
+  "n_lines": 32,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/lab_batch.py",
+   "pipeline_interpreter/automation_v2/veto.py",
+   "tests/qa/test_numeric_fail_closed.py"
+  ],
+  "imports": [],
+  "docstring": "Shared fail-closed validation for safety-critical numeric inputs.",
+  "functions": [
+   "finite_decimal:9",
+   "invalid_or_negative:23",
+   "positive_finite:29"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "30: \"\"\"Return True only for a finite numeric value strictly greater than zero.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/package_publisher.py",
+  "n_lines": 148,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/package_publisher_cli.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py",
+   "pipeline_interpreter/automation_v2/production_deploy.py",
+   "tests/test_pipeline_interpreter_automation_v2_package_publisher.py"
+  ],
+  "imports": [],
+  "docstring": "Fail-closed publication gate for a complete staged evidence package.",
+  "functions": [
+   "_sha256:25",
+   "_inside:33",
+   "validate_package:41",
+   "publish_package:83"
+  ],
+  "classes": [
+   {
+    "name": "PublicationResult:19",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "51: ticker = str(payload.get(\"ticker\", \"\")).strip().upper()",
+   "54: required = set(payload.get(\"required_kinds\", []))",
+   "56: for record in payload.get(\"assets\", []):",
+   "57: kind = str(record.get(\"kind\", \"\"))",
+   "59: filename = str(record.get(\"filename\", \"\"))",
+   "75: source = (manifest.parent / str(lab.get(\"filename\", \"\"))).resolve()",
+   "97: os.environ.get(PUBLISH_FEATURE_FLAG, \"\").strip() == \"1\""
+  ],
+  "writes": [
+   "135: os.replace(target, backup)",
+   "137: os.replace(staged, target)",
+   "146: os.replace(backup, target)"
+  ],
+  "atomic_markers": [
+   "9: import tempfile",
+   "119: transaction = Path(tempfile.mkdtemp(",
+   "135: os.replace(target, backup)",
+   "137: os.replace(staged, target)",
+   "146: os.replace(backup, target)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "45: if payload.get(\"schema_version\") != \"automation_v2.evidence_package.1\":"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 7,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/package_publisher_cli.py",
+  "n_lines": 41,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/package_publisher.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:41"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "27: print(json.dumps({",
+   "32: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/package_shadow.py",
+  "n_lines": 144,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/package_shadow_cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_package_shadow.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/package_publisher.py",
+   "pipeline_interpreter/automation_v2/renderers.py"
+  ],
+  "docstring": "Isolated publication and stateless-ingestion proof for evidence packages.",
+  "functions": [
+   "_flatten_sections:32",
+   "run_package_shadow:42"
+  ],
+  "classes": [
+   {
+    "name": "PackageVerificationProvider:19",
+    "methods": [
+     "analyze:22"
+    ]
+   }
+  ],
+  "raises": [
+   "FileExistsError:54",
+   "RuntimeError:51",
+   "RuntimeError:64"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "34: for section in payload.get(\"sections\", {}).values():",
+   "37: sovereign = payload.get(\"sovereign\", {})",
+   "38: merged[\"rr\"] = sovereign.get(\"rr\", \"\")",
+   "112: expected_vetoes = set(lab.get(\"sovereign\", {}).get(\"veto_codes\", []))"
+  ],
+  "writes": [
+   "141: report_path.write_text(",
+   "142: json.dumps(report, indent=2, sort_keys=True), encoding=\"utf-8\""
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "20: \"\"\"Deterministic provider used only to prove request ingestion and vetoes.\"\"\""
+  ],
+  "version_fields": [
+   "116: \"schema_version\": \"automation_v2.package_shadow.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/package_shadow_cli.py",
+  "n_lines": 45,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/package_shadow.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:45"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "29: print(json.dumps({",
+   "34: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/parser.py",
+  "n_lines": 107,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/fixture_provider.py",
+   "pipeline_interpreter/automation_v2/provider.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase3.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/schemas.py"
+  ],
+  "docstring": "Strict parser for the existing tagged text response contract.",
+  "functions": [
+   "extract_section:38",
+   "parse_trade_brief:47",
+   "parse_junior_briefing:64",
+   "parse_legacy_responses:80"
+  ],
+  "classes": [
+   {
+    "name": "ParsedLegacyAnalysis:20",
+    "methods": [
+     "to_payload:27"
+    ]
+   }
+  ],
+  "raises": [
+   "SchemaValidationError:50",
+   "SchemaValidationError:58",
+   "SchemaValidationError:72",
+   "SchemaValidationError:98"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/production_deploy.py",
+  "n_lines": 140,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/production_deploy_cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_production_deploy.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/package_publisher.py"
+  ],
+  "docstring": "Recoverable production deployment for a validated ticker evidence package.",
+  "functions": [
+   "_sha256:16",
+   "deploy_package:24"
+  ],
+  "classes": [],
+  "raises": [
+   "RuntimeError:100",
+   "RuntimeError:105"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "43: os.environ.get(PUBLISH_FEATURE_FLAG, \"\").strip() == \"1\""
+  ],
+  "writes": [
+   "88: receipt_path.write_text(json.dumps(receipt, indent=2), encoding=\"utf-8\")",
+   "112: receipt_path.write_text(json.dumps(receipt, indent=2), encoding=\"utf-8\")",
+   "133: receipt_path.write_text(json.dumps(receipt, indent=2), encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "77: \"schema_version\": \"automation_v2.production_deployment.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/production_deploy_cli.py",
+  "n_lines": 33,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/automation_v2/production_deploy.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:10"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:33"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "28: print(json.dumps(result, sort_keys=True))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/provider.py",
+  "n_lines": 162,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/live_provider.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase3.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/parser.py",
+   "pipeline_interpreter/automation_v2/schemas.py"
+  ],
+  "docstring": "Injected adapter for the existing Claude prompt/call workflow.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "PromptFactory:15",
+    "methods": [
+     "build_main:16",
+     "build_story:19"
+    ]
+   },
+   {
+    "name": "LegacyEnginePromptFactory:29",
+    "methods": [
+     "_options:40",
+     "_authoritative_context:47",
+     "build_main:65",
+     "build_story:93"
+    ]
+   },
+   {
+    "name": "LegacyClaudeProvider:112",
+    "methods": [
+     "analyze:128"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "42: f\"option_context_{index + 1}\": json.dumps(dict(row), sort_keys=True)",
+   "61: + json.dumps(context, indent=2, sort_keys=True)",
+   "67: lab = json.dumps(dict(request.lab_context), indent=2, sort_keys=True)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/renderers.py",
+  "n_lines": 234,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase3.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py",
+   "tests/test_pipeline_interpreter_automation_v2_report.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/schemas.py"
+  ],
+  "docstring": "Run-scoped compatibility artifacts with atomic shadow publication.",
+  "functions": [
+   "_default_html:23",
+   "_enhanced_html:44",
+   "_sha256:125",
+   "_write_csv:129",
+   "publish_complete_shadow_artifacts:137"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:152",
+   "ValueError:145",
+   "ValueError:147"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "50: raw = row.get(name, \"\")",
+   "65: vetoes = \" | \".join(result.veto_codes) or \"NONE\"",
+   "192: field: row.get(field, \"\") for field in MARKET_STRUCTURE_FIELDS"
+  ],
+  "writes": [
+   "61: f\"<h2>{html.escape(str(tag).replace('_', ' ').title())}</h2>\"",
+   "131: with path.open(\"w\", encoding=\"utf-8\", newline=\"\") as handle:",
+   "132: writer = csv.DictWriter(handle, fieldnames=fields, extrasaction=\"ignore\")",
+   "166: raw_path.write_text(result.analysis.raw_response, encoding=\"utf-8\")",
+   "167: story_path.write_text(result.analysis.raw_story, encoding=\"utf-8\")",
+   "176: html_path.write_text(renderer(result, row), encoding=\"utf-8\")",
+   "177: sidecar_path.write_text(",
+   "178: json.dumps(",
+   "207: manifest_path.write_text(",
+   "208: json.dumps("
+  ],
+  "atomic_markers": [
+   "11: import tempfile",
+   "155: tempfile.mkdtemp(prefix=f\".{result.invocation_id}.\", dir=final_dir.parent)",
+   "230: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [],
+  "version_fields": [
+   "180: \"schema_version\": \"automation_v2.sidecar.1\",",
+   "210: \"schema_version\": \"automation_v2.artifacts.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 11
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/replay.py",
+  "n_lines": 119,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_adapter.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/models.py"
+  ],
+  "docstring": "Stable JSON serialization for immutable request replay.",
+  "functions": [
+   "_plain:12",
+   "request_to_dict:20",
+   "request_from_dict:61",
+   "write_request_fixture:105",
+   "read_request_fixture:115"
+  ],
+  "classes": [],
+  "raises": [
+   "ValueError:118",
+   "ValueError:63"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "70: findings=tuple(manifest_value.get(\"findings\", ())),",
+   "77: as_of=item.get(\"as_of\", \"\"),",
+   "78: sha256=item.get(\"sha256\", \"\"),",
+   "79: required=bool(item.get(\"required\", False)),",
+   "80: fresh=bool(item.get(\"fresh\", True)),",
+   "81: metadata=item.get(\"metadata\", {}),",
+   "83: for item in manifest_value.get(\"items\", ())",
+   "92: lab_context=value.get(\"lab_context\", {}),",
+   "93: option_context=tuple(value.get(\"option_context\", ())),",
+   "94: chart_assets=tuple(value.get(\"chart_assets\", ())),",
+   "95: macro_context=value.get(\"macro_context\", {}),",
+   "96: sector_context=value.get(\"sector_context\", {}),",
+   "97: trader_note=value.get(\"trader_note\", \"\"),",
+   "98: live_validation=value.get(\"live_validation\", {}),"
+  ],
+  "writes": [
+   "108: output.write_text(",
+   "109: json.dumps(request_to_dict(request), indent=2, sort_keys=True),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "22: \"schema_version\": \"automation_v2.request.1\",",
+   "62: if value.get(\"schema_version\") != \"automation_v2.request.1\":"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 17,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/retry.py",
+  "n_lines": 67,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/schemas.py"
+  ],
+  "docstring": "Retry policy for transient analysis-provider failures.",
+  "functions": [
+   "is_retryable_provider_error:16"
+  ],
+  "classes": [
+   {
+    "name": "RetryPolicy:33",
+    "methods": [
+     "__post_init__:39"
+    ]
+   },
+   {
+    "name": "RetryingProvider:45",
+    "methods": [
+     "analyze:52"
+    ]
+   }
+  ],
+  "raises": [
+   "AssertionError:67",
+   "ValueError:41"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "29: return status_code == 429 or 500 <= status_code <= 599"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/rollout.py",
+  "n_lines": 54,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [],
+  "docstring": "Disabled-by-default rollout contract; not wired into production commands.",
+  "functions": [
+   "load_rollout_config:27",
+   "run_with_legacy_fallback:40"
+  ],
+  "classes": [
+   {
+    "name": "RolloutMode:11",
+    "methods": []
+   },
+   {
+    "name": "RolloutConfig:17",
+    "methods": [
+     "__post_init__:22"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:24",
+   "ValueError:33"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "31: raw = source.get(\"AVSHUNTER_INTERPRETER_AUTOMATION_V2\", \"OFF\").strip().upper()"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "46: \"\"\"Always return the legacy result; shadow observation is non-authoritative.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/schemas.py",
+  "n_lines": 138,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/parser.py",
+   "pipeline_interpreter/automation_v2/provider.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/retry.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase3.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase4.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/models.py"
+  ],
+  "docstring": "Validated structured contracts recovered from legacy model responses.",
+  "functions": [
+   "_frozen:58"
+  ],
+  "classes": [
+   {
+    "name": "SchemaValidationError:52",
+    "methods": [
+     "__init__:53"
+    ]
+   },
+   {
+    "name": "TradeBrief:63",
+    "methods": [
+     "__post_init__:70",
+     "from_row:80",
+     "sovereign_row:101"
+    ]
+   },
+   {
+    "name": "JuniorBriefing:127",
+    "methods": [
+     "__post_init__:131"
+    ]
+   }
+  ],
+  "raises": [
+   "SchemaValidationError:136",
+   "SchemaValidationError:91"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "82: ticker = str(row.get(\"ticker\", \"\")).strip().upper()",
+   "88: if not str(row.get(key, \"\")).strip():",
+   "92: values = {field: row.get(field, \"\") for field in TRADE_BRIEF_FIELDS}",
+   "108: row = {field: self.values.get(field, \"\") for field in TRADE_BRIEF_FIELDS}"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/serialization.py",
+  "n_lines": 25,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/trial.py"
+  ],
+  "imports": [],
+  "docstring": "Stable result serialization shared by CLI and batch manifests.",
+  "functions": [
+   "to_plain:11"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/shadow.py",
+  "n_lines": 59,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "tests/test_pipeline_interpreter_automation_v2.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/veto.py"
+  ],
+  "docstring": "Shadow-only adapter and isolated artifact publisher.",
+  "functions": [
+   "_json_value:17",
+   "publish_shadow_result:34",
+   "run_shadow:49"
+  ],
+  "classes": [],
+  "raises": [
+   "ValueError:57"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "42: output.write_text(",
+   "43: json.dumps(_json_value(result), indent=2, sort_keys=True),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Shadow-only adapter and isolated artifact publisher.\"\"\"",
+   "37: \"\"\"Write only to an explicitly supplied shadow root.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/automation_v2/trial.py",
+  "n_lines": 84,
+  "classification": "INTERPRETER",
+  "commit": "d4b2a45",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/cli.py",
+   "tests/test_pipeline_interpreter_automation_v2_phase5.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/metrics.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/retry.py",
+   "pipeline_interpreter/automation_v2/serialization.py",
+   "pipeline_interpreter/automation_v2/shadow.py"
+  ],
+  "docstring": "One controlled live/offline shadow trial with metrics.",
+  "functions": [
+   "run_shadow_trial:26"
+  ],
+  "classes": [
+   {
+    "name": "TrialResult:20",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "80: metric_path.write_text(",
+   "81: json.dumps(to_plain(metric), indent=2, sort_keys=True),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/__init__.py",
+  "n_lines": 6,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_pipeline_interpreter_capture_v1_dpi.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/service.py"
+  ],
+  "docstring": "Isolated, read-only screenshot capture adapter for Pipeline Interpreter.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Isolated, read-only screenshot capture adapter for Pipeline Interpreter.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/attended_workflow.py",
+  "n_lines": 128,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/automation_v2/lab_batch_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_attended_workflow.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py"
+  ],
+  "docstring": "Attended end-to-end Webull evidence capture for one shadow ticker.",
+  "functions": [
+   "run_attended_capture:18"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:36",
+   "RuntimeError:41",
+   "RuntimeError:44",
+   "RuntimeError:81",
+   "RuntimeError:94"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "94: raise RuntimeError(noii.finding or \"NOII_CAPTURE_NOT_VERIFIED\")"
+  ],
+  "writes": [
+   "109: manifest.write_text(",
+   "110: json.dumps("
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "112: \"schema_version\": \"capture_v1.attended_workflow.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/backend.py",
+  "n_lines": 107,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/market_screen_cli.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/navigation_cli.py",
+   "pipeline_interpreter/capture_v1/noii_calibration_cli.py",
+   "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+   "pipeline_interpreter/capture_v1/service.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/ticker_batch_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/windows.py"
+  ],
+  "docstring": "Screenshot backend interface and Windows shadow implementation.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "CaptureBackend:12",
+    "methods": [
+     "discover:13",
+     "capture_window:14"
+    ]
+   },
+   {
+    "name": "WindowsShadowBackend:18",
+    "methods": [
+     "discover:19",
+     "capture_window:23"
+    ]
+   }
+  ],
+  "raises": [
+   "RuntimeError:25",
+   "RuntimeError:29",
+   "RuntimeError:33",
+   "RuntimeError:84",
+   "RuntimeError:97"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/cli.py",
+  "n_lines": 50,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/service.py"
+  ],
+  "docstring": "Command-line entry point for attended dry-run and shadow capture.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:50"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "38: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/contracts.py",
+  "n_lines": 86,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/__init__.py",
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/cli.py",
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/service.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py",
+   "pipeline_interpreter/capture_v1/windows.py",
+   "tests/test_pipeline_interpreter_capture_v1.py"
+  ],
+  "imports": [],
+  "docstring": "Immutable contracts for the screenshot capture boundary.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "CaptureMode:12",
+    "methods": []
+   },
+   {
+    "name": "CaptureStatus:19",
+    "methods": []
+   },
+   {
+    "name": "ViewSpec:28",
+    "methods": []
+   },
+   {
+    "name": "CaptureRequest:39",
+    "methods": [
+     "__post_init__:51"
+    ]
+   },
+   {
+    "name": "WindowInfo:66",
+    "methods": []
+   },
+   {
+    "name": "CaptureResult:76",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "ValueError:54",
+   "ValueError:56",
+   "ValueError:58"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "53: if not ticker or not ticker.replace(\".\", \"\").replace(\"-\", \"\").isalnum():"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/dpi.py",
+  "n_lines": 31,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/windows.py"
+  ],
+  "imports": [],
+  "docstring": "Windows DPI coordination for consistent capture and cursor coordinates.",
+  "functions": [
+   "enable_per_monitor_dpi_awareness:11"
+  ],
+  "classes": [],
+  "raises": [
+   "RuntimeError:30"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/market_screen.py",
+  "n_lines": 138,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/market_screen_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_market_screen.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker_market_screen.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/privacy_crop.py",
+   "pipeline_interpreter/capture_v1/validation.py"
+  ],
+  "docstring": "Allowlisted Webull market-screen navigation for shadow calibration.",
+  "functions": [
+   "record_ticker_verification:42",
+   "map_market_screen:69"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:87",
+   "RuntimeError:109",
+   "RuntimeError:82",
+   "RuntimeError:96",
+   "ValueError:80"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "62: manifest_path.write_text(",
+   "63: json.dumps(metadata, indent=2, sort_keys=True),",
+   "113: manifest_path.write_text(",
+   "114: json.dumps("
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "21: # only primary read-only tabs; controls that can submit or modify orders are",
+   "28: # Greeks columns visible. It opens the same read-only primary tab.",
+   "33: # Read-only Short Interest tab in the accepted full-window Webull strip.",
+   "76: \"\"\"Open one read-only market tab and emit cropped calibration evidence.\"\"\""
+  ],
+  "version_fields": [
+   "116: \"schema_version\": \"capture_v1.market_screen_map.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 4
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/market_screen_cli.py",
+  "n_lines": 81,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/market_screen.py"
+  ],
+  "docstring": "Interactive shadow CLI for mapping Webull market-data screens.",
+  "functions": [
+   "main:18"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:81"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "33: print(json.dumps({",
+   "54: print(json.dumps({",
+   "59: print(json.dumps({",
+   "69: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 4
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/navigation.py",
+  "n_lines": 533,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation_cli.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/ticker_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py",
+   "pipeline_interpreter/capture_v1/timeframe_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_batch.py",
+   "tests/test_pipeline_interpreter_capture_v1_market_screen.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/dpi.py",
+   "pipeline_interpreter/capture_v1/privacy_crop.py",
+   "pipeline_interpreter/capture_v1/validation.py"
+  ],
+  "docstring": "Allowlisted Webull navigation primitives for interactive shadow mapping.",
+  "functions": [
+   "ticker_virtual_keys:98",
+   "open_chart_workspace:123",
+   "map_timeframe_menu:341",
+   "select_bottom_timeframe:401",
+   "switch_ticker_for_visual_review:464"
+  ],
+  "classes": [
+   {
+    "name": "RelativePoint:17",
+    "methods": [
+     "__post_init__:21"
+    ]
+   },
+   {
+    "name": "SafeZone:27",
+    "methods": [
+     "contains:34"
+    ]
+   },
+   {
+    "name": "WebullLayoutProfile:42",
+    "methods": [
+     "require_allowed:48"
+    ]
+   },
+   {
+    "name": "NavigationDriver:113",
+    "methods": [
+     "foreground:114",
+     "is_foreground:115",
+     "click_relative:116",
+     "replace_text:117",
+     "press_down:118",
+     "press_enter:119",
+     "capture_screen_region:120"
+    ]
+   },
+   {
+    "name": "WindowsNavigationDriver:140",
+    "methods": [
+     "_foreground_handle:142",
+     "foreground:148",
+     "is_foreground:154",
+     "_wait_for_stable_foreground:159",
+     "_fresh_window_bounds:174",
+     "_cursor_positions:194",
+     "_cursor_at:213",
+     "_send_input_move:222",
+     "click_relative:254",
+     "capture_screen_region:308",
+     "_tap_virtual_key:316",
+     "replace_text:321",
+     "press_enter:334",
+     "press_down:337"
+    ]
+   }
+  ],
+  "raises": [
+   "FileExistsError:353",
+   "FileExistsError:418",
+   "FileExistsError:482",
+   "RuntimeError:128",
+   "RuntimeError:134",
+   "RuntimeError:152",
+   "RuntimeError:171",
+   "RuntimeError:187",
+   "RuntimeError:190",
+   "RuntimeError:243",
+   "RuntimeError:252",
+   "RuntimeError:273",
+   "RuntimeError:290",
+   "RuntimeError:299",
+   "RuntimeError:362",
+   "RuntimeError:414",
+   "RuntimeError:427",
+   "RuntimeError:478",
+   "RuntimeError:491",
+   "RuntimeError:509"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "102: if \"A\" <= character <= \"Z\" or \"0\" <= character <= \"9\":",
+   "146: return int(user32.GetForegroundWindow() or 0)"
+  ],
+  "writes": [
+   "369: manifest_path.write_text(",
+   "370: json.dumps(",
+   "433: manifest_path.write_text(",
+   "434: json.dumps(",
+   "473: if not normalized or not normalized.replace(\".\", \"\").replace(\"-\", \"\").isalnum():",
+   "512: manifest_path.write_text(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "82: # Primary read-only Chart workspace tab. Every timeframe batch establishes",
+   "348: \"\"\"Open only the timeframe menu and capture a diagnostic mapping image.\"\"\""
+  ],
+  "version_fields": [
+   "372: \"schema_version\": \"capture_v1.navigation_map.1\",",
+   "436: \"schema_version\": \"capture_v1.timeframe_selection.1\",",
+   "513: \"schema_version\": \"capture_v1.ticker_switch.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 6
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/navigation_cli.py",
+  "n_lines": 48,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/navigation.py"
+  ],
+  "docstring": "Interactive-only CLI for mapping allowlisted Webull controls.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:48"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "28: print(json.dumps({",
+   "38: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Interactive-only CLI for mapping allowlisted Webull controls.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/noii_calibration_cli.py",
+  "n_lines": 87,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py"
+  ],
+  "docstring": "One-time live calibration for the Webull NOII Closing Cross control.",
+  "functions": [
+   "main:18"
+  ],
+  "classes": [
+   {
+    "name": "Point:14",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileExistsError:74",
+   "SystemExit:87"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "29: print(json.dumps({",
+   "46: print(json.dumps({",
+   "58: print(json.dumps({",
+   "76: target.write_text(",
+   "77: json.dumps(payload, indent=2, sort_keys=True), encoding=\"utf-8\"",
+   "79: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "66: \"schema_version\": \"capture_v1.noii_navigation_profile.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 6
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/noii_cross.py",
+  "n_lines": 110,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_noii_cross.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/privacy_crop.py",
+   "pipeline_interpreter/capture_v1/validation.py"
+  ],
+  "docstring": "Dual Opening/Closing Cross capture from an already verified NOII screen.",
+  "functions": [
+   "_token:34",
+   "capture_noii_crosses:38"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:53",
+   "RuntimeError:67",
+   "RuntimeError:83",
+   "RuntimeError:86",
+   "RuntimeError:91"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "87: f\"NOII_CROSS_TYPE_MISMATCH:{phase}:{observed.strip() or 'EMPTY'}\""
+  ],
+  "writes": [
+   "99: manifest.write_text(json.dumps({",
+   "104: os.replace(stage, final_dir)"
+  ],
+  "atomic_markers": [
+   "9: import tempfile",
+   "55: stage = Path(tempfile.mkdtemp(prefix=f\".{final_dir.name}.\", dir=final_dir.parent))",
+   "104: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [
+   "60: # Capture the already-visible Opening Cross first. Only after it is"
+  ],
+  "version_fields": [
+   "100: \"schema_version\": \"capture_v1.noii_cross.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+  "n_lines": 59,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "main:12"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:59"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "41: point = profile.get(\"relative_point\", {})"
+  ],
+  "writes": [
+   "24: print(json.dumps({\"status\": \"stopped\", \"finding\": f\"WEBULL_WINDOW_COUNT:{len(windows)}\", \"published\": False}))",
+   "50: print(json.dumps({\"status\": \"stopped\", \"finding\": str(exc), \"published\": False}, sort_keys=True))",
+   "52: print(json.dumps({\"status\": \"captured\", \"ticker\": args.ticker.upper(),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "39: if profile.get(\"schema_version\") != \"capture_v1.noii_navigation_profile.1\":"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/privacy_crop.py",
+  "n_lines": 52,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py",
+   "tests/test_pipeline_interpreter_capture_v1_crop.py"
+  ],
+  "imports": [],
+  "docstring": "Privacy-safe crop for the accepted full Webull chart layout.",
+  "functions": [
+   "crop_chart_in_place:27"
+  ],
+  "classes": [
+   {
+    "name": "RelativeCrop:12",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "45: temporary.replace(path)"
+  ],
+  "atomic_markers": [
+   "43: temporary = path.with_suffix(\".cropped.tmp.png\")"
+  ],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/service.py",
+  "n_lines": 137,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/__init__.py",
+   "pipeline_interpreter/capture_v1/cli.py",
+   "tests/test_pipeline_interpreter_capture_v1.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/validation.py"
+  ],
+  "docstring": "Fail-closed orchestration for isolated screenshot capture.",
+  "functions": [
+   "_timestamp:21",
+   "_sha256:25",
+   "run_capture:29"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:83",
+   "RuntimeError:91",
+   "RuntimeError:96"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "22: return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "57: (f\"FORBIDDEN_TRADING_SURFACE:{forbidden.upper().replace(' ', '_')}\",),",
+   "122: (stage / \"capture_manifest.json\").write_text(",
+   "123: json.dumps(manifest, indent=2, sort_keys=True), encoding=\"utf-8\"",
+   "125: os.replace(stage, final_dir)"
+  ],
+  "atomic_markers": [
+   "9: import tempfile",
+   "85: stage = Path(tempfile.mkdtemp(prefix=f\".{request.invocation_id}.\", dir=final_dir.parent))",
+   "125: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [
+   "30: \"\"\"Discover and optionally shadow-capture; never publish to MA_Inputs/charts.\"\"\""
+  ],
+  "version_fields": [
+   "112: \"schema_version\": \"capture_v1.manifest.1\", \"ticker\": request.ticker,"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 5
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/ticker_batch.py",
+  "n_lines": 98,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/ticker_batch_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker_batch.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py"
+  ],
+  "docstring": "Combined ticker selection and five-timeframe shadow capture.",
+  "functions": [
+   "capture_ticker_workflow:22"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:38",
+   "RuntimeError:50"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "51: f\"TICKER_EXACT_MATCH_NOT_CONFIRMED:{normalized}:{observed or 'EMPTY'}\""
+  ],
+  "writes": [
+   "63: workflow_manifest.write_text(",
+   "64: json.dumps(",
+   "76: ).replace(\"\\\\\", \"/\"),",
+   "79: ).replace(\"\\\\\", \"/\"),",
+   "83: ).replace(\"\\\\\", \"/\"),",
+   "91: os.replace(stage, final_dir)"
+  ],
+  "atomic_markers": [
+   "8: import tempfile",
+   "40: stage = Path(tempfile.mkdtemp(prefix=f\".{final_dir.name}.\", dir=final_dir.parent))",
+   "91: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [
+   "32: \"\"\"Select, manually verify, then capture; never publish partial output.\"\"\""
+  ],
+  "version_fields": [
+   "66: \"schema_version\": \"capture_v1.ticker_workflow.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 6
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/ticker_batch_cli.py",
+  "n_lines": 66,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py"
+  ],
+  "docstring": "Interactive CLI for the combined Webull ticker workflow.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:66"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "27: print(json.dumps({",
+   "50: print(json.dumps({",
+   "55: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/ticker_cli.py",
+  "n_lines": 44,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/navigation.py"
+  ],
+  "docstring": "Interactive shadow CLI for Webull ticker switching.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:44"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "25: print(json.dumps({\"status\": \"stopped\", \"finding\": f\"WEBULL_WINDOW_COUNT:{len(windows)}\"}))",
+   "33: print(json.dumps({\"status\": \"stopped\", \"finding\": str(exc), \"published\": False}))",
+   "35: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+  "n_lines": 172,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_attended_workflow.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker_market_screen.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation.py"
+  ],
+  "docstring": "Integrated ticker switch and verified market-screen shadow workflow.",
+  "functions": [
+   "_screen_token:40",
+   "capture_ticker_market_screen:53"
+  ],
+  "classes": [
+   {
+    "name": "TickerMarketScreenResult:45",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "FileExistsError:68"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "116: workflow_manifest.write_text(",
+   "117: json.dumps(",
+   "125: \"diagnostic\": str(ticker_image.relative_to(stage)).replace(\"\\\\\", \"/\"),",
+   "126: \"manifest\": str(ticker_manifest.relative_to(stage)).replace(\"\\\\\", \"/\"),",
+   "129: \"diagnostic\": str(screen_image.relative_to(stage)).replace(\"\\\\\", \"/\"),",
+   "130: \"manifest\": str(screen_manifest.relative_to(stage)).replace(\"\\\\\", \"/\"),",
+   "150: \"source\": str(screen_image.relative_to(stage)).replace(\"\\\\\", \"/\"),",
+   "162: os.replace(stage, final_dir)"
+  ],
+  "atomic_markers": [
+   "8: import tempfile",
+   "70: stage = Path(tempfile.mkdtemp(prefix=f\".{final_dir.name}.\", dir=final_dir.parent))",
+   "162: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [
+   "63: \"\"\"Switch ticker, capture one read-only screen, and preserve mismatch evidence.\"\"\""
+  ],
+  "version_fields": [
+   "119: \"schema_version\": \"capture_v1.ticker_market_screen.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 8
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+  "n_lines": 77,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py"
+  ],
+  "docstring": "CLI for integrated Webull ticker and market-screen shadow capture.",
+  "functions": [
+   "main:14"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:77"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "29: print(json.dumps({",
+   "58: print(json.dumps({",
+   "72: print(json.dumps(payload, sort_keys=True))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/timeframe_batch.py",
+  "n_lines": 164,
+  "classification": "INTERPRETER",
+  "commit": "d1f1b5f",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch_cli.py",
+   "tests/test_pipeline_interpreter_capture_v1_batch.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/privacy_crop.py",
+   "pipeline_interpreter/capture_v1/validation.py"
+  ],
+  "docstring": "Five-timeframe Webull shadow capture with deterministic selection checks.",
+  "functions": [
+   "_sha256:31",
+   "_selected_indicator_visible:35",
+   "capture_timeframe_batch:56"
+  ],
+  "classes": [],
+  "raises": [
+   "FileExistsError:71",
+   "RuntimeError:113",
+   "RuntimeError:119",
+   "RuntimeError:122",
+   "RuntimeError:79"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "134: manifest.write_text(json.dumps({",
+   "144: os.replace(stage, final_dir)"
+  ],
+  "atomic_markers": [
+   "9: import tempfile",
+   "73: stage = Path(tempfile.mkdtemp(prefix=f\".{final_dir.name}.\", dir=final_dir.parent))",
+   "144: os.replace(stage, final_dir)"
+  ],
+  "authority_comments": [
+   "65: \"\"\"Navigate/capture five charts; never publish outside the shadow directory.\"\"\"",
+   "103: # Only the winning attempt's diagnostic is disposable --"
+  ],
+  "version_fields": [
+   "135: \"schema_version\": \"capture_v1.timeframe_batch.1\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/timeframe_batch_cli.py",
+  "n_lines": 46,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py"
+  ],
+  "docstring": "Interactive CLI for five-timeframe shadow capture.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:46"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "27: print(json.dumps({\"status\": \"stopped\", \"finding\": f\"WEBULL_WINDOW_COUNT:{len(windows)}\"}))",
+   "35: print(json.dumps({\"status\": \"stopped\", \"finding\": str(exc), \"published\": False}))",
+   "37: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/timeframe_cli.py",
+  "n_lines": 52,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/navigation.py"
+  ],
+  "docstring": "Interactive shadow CLI for direct bottom-bar timeframe selection.",
+  "functions": [
+   "main:13"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:52"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "30: print(json.dumps({",
+   "41: print(json.dumps({"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/validation.py",
+  "n_lines": 50,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/service.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py"
+  ],
+  "imports": [],
+  "docstring": "Deterministic image checks applied before a capture can be manifested.",
+  "functions": [
+   "validate_png:21"
+  ],
+  "classes": [
+   {
+    "name": "ImageValidation:10",
+    "methods": [
+     "valid:17"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "40: image_format = image.format or \"\""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/capture_v1/windows.py",
+  "n_lines": 59,
+  "classification": "INTERPRETER",
+  "commit": "e18e329",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/capture_v1/backend.py",
+   "tests/test_pipeline_interpreter_capture_v1.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/dpi.py"
+  ],
+  "docstring": "Minimal Windows window discovery with no input or trading capability.",
+  "functions": [
+   "_title_matches:12",
+   "discover_windows:25"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "19: # must never be mistaken for the application merely because a viewer"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/direction_conflict_resolver.py",
+  "n_lines": 244,
+  "classification": "INTERPRETER",
+  "commit": "ade4290",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Direction Conflict Resolver \u2014 AVSHUNTER Pipeline Interpreter\nScores 7 evidence layers for a single ticker row.\nDetects pipeline misdiagnosis when dominant direction != pipeline direction.",
+  "functions": [
+   "_get_str:15",
+   "_get_float:23",
+   "_score_layer:34",
+   "_compute_weights:105",
+   "resolve_direction:176"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "4: Detects pipeline misdiagnosis when dominant direction != pipeline direction.",
+   "35: \"\"\"Return (vote, reason). vote is 'CALL', 'PUT', or 'NEUTRAL'.\"\"\"",
+   "40: return \"CALL\", f\"macro_regime={regime}\"",
+   "42: return \"PUT\", f\"macro_regime={regime}\"",
+   "47: if \"POSITIVE_EDGE\" in verdict or verdict == \"CALL\":",
+   "48: return \"CALL\", f\"probability_verdict={verdict}\"",
+   "49: if \"NEGATIVE_EDGE\" in verdict or verdict == \"PUT\":",
+   "50: return \"PUT\", f\"probability_verdict={verdict}\"",
+   "56: return \"CALL\", f\"pcr_signal={pcr}\"",
+   "58: return \"PUT\", f\"pcr_signal={pcr}\"",
+   "63: if \"CALL\" in cat or \"BULLISH\" in cat:",
+   "64: return \"CALL\", f\"catalyst_direction={cat}\"",
+   "65: if \"PUT\" in cat or \"BEARISH\" in cat:",
+   "66: return \"PUT\", f\"catalyst_direction={cat}\""
+  ],
+  "fallbacks": [
+   "35: \"\"\"Return (vote, reason). vote is 'CALL', 'PUT', or 'NEUTRAL'.\"\"\"",
+   "43: return \"NEUTRAL\", f\"macro_regime={regime or 'missing'}\"",
+   "51: return \"NEUTRAL\", f\"probability_verdict={verdict or 'missing'}\"",
+   "59: return \"NEUTRAL\", f\"pcr_signal={pcr or 'missing'}\"",
+   "63: if \"CALL\" in cat or \"BULLISH\" in cat:",
+   "65: if \"PUT\" in cat or \"BEARISH\" in cat:",
+   "67: return \"NEUTRAL\", f\"catalyst_direction={cat or 'missing'}\"",
+   "72: if (\"ACCUMULATION\" in phase or \"MARKUP\" in phase) and (\"BULLISH\" in intent or \"LONG\" in intent):",
+   "74: if (\"ACCUMULATION\" in phase or \"MARKUP\" in phase):",
+   "76: if (\"DISTRIBUTION\" in phase or \"MARKDOWN\" in phase) and (\"BEARISH\" in intent or \"SHORT\" in intent):",
+   "78: if (\"DISTRIBUTION\" in phase or \"MARKDOWN\" in phase):",
+   "80: return \"NEUTRAL\", f\"wyckoff_phase={phase or 'missing'}\"",
+   "88: return \"NEUTRAL\", f\"trader_narrative={narr or 'missing'}\"",
+   "96: return \"NEUTRAL\", f\"pipeline_direction={direction or 'missing'}\""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 33,
+   "fallback": 15,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/entry_timing_engine.py",
+  "n_lines": 509,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/entry_timing_engine_test.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commandsold2505.py"
+  ],
+  "imports": [],
+  "docstring": "Entry Timing Engine \u2014 pre-trade probability and timing layer.\nStandalone module. No imports from any interpreter engine file.\nStandard library only: math, csv, pathlib.",
+  "functions": [
+   "compute_first_passage_probability:15",
+   "estimate_crowd_arrival_window:77",
+   "compute_kill_switch_breach_probability:148",
+   "build_pre_trade_probability_block:197",
+   "load_garch_rows:335",
+   "assess_garch_availability:363",
+   "compute_entry_quality:413"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "240: for k in (\"direction\", \"canonical_direction\", \"resolved_direction\"):",
+   "245: if \"PUT\" in raw_dir:",
+   "246: direction = \"PUT\"",
+   "247: elif \"CALL\" in raw_dir:",
+   "248: direction = \"CALL\"",
+   "264: trigger_ok = trigger_level > 0 and kill_switch_level > 0 and current_price > 0 and direction in (\"CALL\", \"PUT\")",
+   "427: direction: \"CALL\" or \"PUT\"",
+   "470: if direction == \"PUT\":",
+   "473: elif direction == \"CALL\":",
+   "485: \"note\":                    f\"No {'resistance' if direction == 'PUT' else 'support'} level available\","
+  ],
+  "fallbacks": [
+   "206: v = d.get(k, \"\")",
+   "217: v = d.get(k, \"\")",
+   "227: \"signal_price\", \"underlying_price\", \"scanner_price\") or 0.0",
+   "229: \"entry_trigger\", \"scenario_entry_trigger\") or 0.0",
+   "231: \"stop_price\", \"exit_stop\", \"invalidation_price\") or 0.0",
+   "232: dte               = _int(pipeline_row, \"dte\") or 10",
+   "233: _ivp_raw          = _float(pipeline_row, \"ivp\", \"iv_percentile\", \"iv_rank\") or 50.0",
+   "234: # Normalise: iv_percentile may be stored as 0-1 decimal (0.635) or 0-100 (63.5)",
+   "236: volume_vs_20d     = _float(pipeline_row, \"volume_vs_20d_avg\", \"vol_ratio\") or 1.0",
+   "237: options_flow_z    = _float(pipeline_row, \"options_flow_zscore\", \"flow_zscore\") or 0.0",
+   "241: v = pipeline_row.get(k, \"\")",
+   "252: garch_daily_vol = _float(garch_row, \"daily_vol\", \"garch_vol_1d\", \"vol_1d\", \"sigma_1d\") or 0.0",
+   "311: if garch_row and any(garch_row.get(f, \"\") for f in (\"daily_vol\", \"garch_vol_1d\", \"vol_1d\", \"sigma_1d\")):",
+   "352: key = row.get(\"ticker\") or row.get(\"underlying\") or \"\""
+  ],
+  "writes": [
+   "505: \"zone_position\":           f\"{'NEAR' if distance_pct <= 2.0 else 'FAR_FROM'}_{anchor_label.upper().replace(' ','_') if anchor_label else 'ANCHOR'}\","
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 10,
+   "fallback": 18,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/entry_timing_engine_test.py",
+  "n_lines": 47,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/entry_timing_engine.py"
+  ],
+  "docstring": "",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "10: dte=7, garch_daily_vol=0.80, direction=\"PUT\"",
+   "29: dte_remaining=5, garch_daily_vol=0.80, direction=\"PUT\"",
+   "37: \"ticker\": \"NEE\", \"direction\": \"PUT\","
+  ],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/interpreter_qa.py",
+  "n_lines": 571,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "final_verify_c9.py",
+   "pipeline_interpreter/Archive/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commandsold2505.py",
+   "section11_tests.py",
+   "section11_tests_v2.py",
+   "step10_test.py"
+  ],
+  "imports": [],
+  "docstring": "interpreter_qa.py\nRuns after every /triage and /ticker command.\nChecks: data ingestion completeness, output section integrity,\n        pipeline-vs-interpreter verdict consistency.\nWrites: QA block to console + appends to interpreter_qa_log_YYYYMMDD.csv",
+  "functions": [
+   "check_triage_qa:51",
+   "check_ticker_qa:115",
+   "print_qa_report:204",
+   "append_qa_log:238",
+   "check_story_interdependencies:280",
+   "check_story_qa:302",
+   "check_lab_reconciliation_qa:419",
+   "check_delta_qa:482",
+   "check_delta_qa_batch:550"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "47: BULLISH_KEYWORDS = {\"LONG_CALL\", \"BULLISH\", \"CALL\", \"UPSIDE\", \"BUY\"}",
+   "48: BEARISH_KEYWORDS = {\"LONG_PUT\", \"BEARISH\", \"PUT\", \"DOWNSIDE\", \"SELL\", \"SHORT\"}"
+  ],
+  "fallbacks": [
+   "79: report_date = macro.get(\"report_date\", \"UNKNOWN\")",
+   "85: \"batch_id\": macro.get(\"batch_id\", \"MISSING\"),",
+   "162: pipeline_verdict = str(pipeline_row.get(\"eil_v3_verdict\", \"\")).upper()",
+   "163: pipeline_bias    = str(pipeline_row.get(\"catalyst_direction_bias\", \"\")).upper()",
+   "190: pipeline_date = pipeline_row.get(\"run_date\", pipeline_row.get(\"date\", \"UNKNOWN\"))",
+   "191: macro_date    = macro_data.get(\"report_date\", \"UNKNOWN\")",
+   "205: ticker  = results.get(\"ticker\", \"TRIAGE\")",
+   "206: mode    = results.get(\"mode\", \"\")",
+   "212: for name, check in results.get(\"checks\", {}).items():",
+   "213: status = check.get(\"status\", \"UNKNOWN\")",
+   "219: icon = {\"PASS\": \"\u2713\", \"WARN\": \"\u26a0\", \"FAIL\": \"\u2717\", \"INFO\": \"\u2139\"}.get(status, \"?\")",
+   "242: \"ticker\":    results.get(\"ticker\", \"TRIAGE\"),",
+   "245: for name, check in results.get(\"checks\", {}).items():",
+   "246: row[f\"{name}_status\"] = check.get(\"status\", \"\")"
+  ],
+  "writes": [
+   "252: df.to_csv(QA_LOG, index=False)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "255: # \u2500\u2500 STORY OF THE TRADE \u2014 additions only, appended at bottom \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+   "342: # Check 2 \u2014 Each section contains an INTERDEP: line (WARN only)",
+   "417: # are NOT modified. Lab QA uses a separate function only."
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 23,
+   "write": 1
+  }
+ },
+ {
+  "path": "pipeline_interpreter/lab_reconciliation.py",
+  "n_lines": 398,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "lab_recon_selftest.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commandsold2505.py",
+   "pipeline_interpreter/pipeline_interpreter_outputs.py",
+   "step7_test_v2.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Pipeline Interpreter \u2014 Component 9\nIntelligence Lab Reconciliation Layer\n\nStandalone module. Zero imports from pipeline_interpreter_engine,\npipeline_interpreter_commands, or any other interpreter module.\nStandard library only: csv, json, pathlib, datetime.",
+  "functions": [
+   "_normalise_lab_triage_view_row:80",
+   "load_lab_export:101",
+   "reconcile_universes:177",
+   "get_lab_row:205",
+   "check_run_id_alignment:219",
+   "validate_lab_field_alignment:247",
+   "build_lab_alignment_block:309",
+   "build_lab_context_block:351",
+   "build_field_conflict_block:372"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "61: \"canonical_direction\": \"Direction\",  # fallback if direction empty",
+   "285: if \"PUT\" in s:",
+   "286: return \"PUT\"",
+   "287: if \"CALL\" in s:",
+   "288: return \"CALL\""
+  ],
+  "fallbacks": [
+   "88: v = r.get(src, \"\")",
+   "136: r[\"Ticker\"] = str(r.get(\"Ticker\", \"\")).strip().upper()",
+   "167: r[\"Ticker\"] = str(r.get(\"Ticker\", \"\")).strip().upper()",
+   "235: lab_run_id = str(lab_rows[0].get(\"Run_ID\", \"\")).strip()",
+   "260: lab_val  = str(lab_row.get(lab_field,  \"\")).strip()",
+   "261: pipe_val = str(pipeline_row.get(pipe_field, \"\")).strip()",
+   "301: \"severity\":       FIELD_SEVERITY.get(lab_field, \"WARN\"),",
+   "330: f\"  confirmed:    {reconciliation.get('confirmed_count', 0)} tickers\"",
+   "334: f\"  lab_only:     {reconciliation.get('lab_only_count', 0)} tickers\"",
+   "338: f\"  interp_only:  {reconciliation.get('interp_only_count', 0)} tickers\"",
+   "342: interp_only = reconciliation.get(\"interp_only\", [])",
+   "363: val = lab_row.get(field, \"\")"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "33: # WARN = surfaces in EVIDENCE QUALITY only",
+   "56: # \u2500\u2500 lab_triage_view field \u2192 canonical lab row field mapping \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+   "57: # lab_triage_view_*.csv uses lowercase field names; normalise to canonical form",
+   "61: \"canonical_direction\": \"Direction\",  # fallback if direction empty",
+   "143: # This will produce false CONFIRMED counts. Only use if no avshunter_signals found.",
+   "166: # Ticker normalisation happens here only \u2014 never mutated elsewhere"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 12,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/lab_reconciliationold2505.py",
+  "n_lines": 368,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER Pipeline Interpreter \u2014 Component 9\nIntelligence Lab Reconciliation Layer\n\nStandalone module. Zero imports from pipeline_interpreter_engine,\npipeline_interpreter_commands, or any other interpreter module.\nStandard library only: csv, json, pathlib, datetime.",
+  "functions": [
+   "_normalise_lab_triage_view_row:75",
+   "load_lab_export:96",
+   "reconcile_universes:149",
+   "get_lab_row:177",
+   "check_run_id_alignment:191",
+   "validate_lab_field_alignment:219",
+   "build_lab_alignment_block:281",
+   "build_lab_context_block:323",
+   "build_field_conflict_block:344"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "61: \"canonical_direction\": \"Direction\",  # fallback if direction empty",
+   "257: if \"PUT\" in s:",
+   "258: return \"PUT\"",
+   "259: if \"CALL\" in s:",
+   "260: return \"CALL\""
+  ],
+  "fallbacks": [
+   "83: v = r.get(src, \"\")",
+   "139: r[\"Ticker\"] = str(r.get(\"Ticker\", \"\")).strip().upper()",
+   "207: lab_run_id = str(lab_rows[0].get(\"Run_ID\", \"\")).strip()",
+   "232: lab_val  = str(lab_row.get(lab_field,  \"\")).strip()",
+   "233: pipe_val = str(pipeline_row.get(pipe_field, \"\")).strip()",
+   "273: \"severity\":       FIELD_SEVERITY.get(lab_field, \"WARN\"),",
+   "302: f\"  confirmed:    {reconciliation.get('confirmed_count', 0)} tickers\"",
+   "306: f\"  lab_only:     {reconciliation.get('lab_only_count', 0)} tickers\"",
+   "310: f\"  interp_only:  {reconciliation.get('interp_only_count', 0)} tickers\"",
+   "314: interp_only = reconciliation.get(\"interp_only\", [])",
+   "335: val = lab_row.get(field, \"\")"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "33: # WARN = surfaces in EVIDENCE QUALITY only",
+   "56: # \u2500\u2500 lab_triage_view field \u2192 canonical lab row field mapping \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+   "57: # lab_triage_view_*.csv uses lowercase field names; normalise to canonical form",
+   "61: \"canonical_direction\": \"Direction\",  # fallback if direction empty",
+   "138: # Ticker normalisation happens here only \u2014 never mutated elsewhere"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 11,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/live_market_reader.py",
+  "n_lines": 703,
+  "classification": "INTERPRETER",
+  "commit": "80848e1",
+  "entry_points": "__main__",
+  "imported_by": [
+   "pipeline_interpreter/pipeline_interpreter_engine_backup_20260522.py"
+  ],
+  "imports": [],
+  "docstring": "live_market_reader.py\n=====================\nFetches the four live data gaps identified in the WFC Interpreter output:\n\n  1. Intraday options volume  \u2014 Polygon.io options chain with volume (not OI-only)\n  2. Institutional flow       \u2014 Unusual options activity via Polygon/MarketData\n  3. Live bid/ask spread      \u2014 Polygon snapshot for specific contract\n  4. Sector peer confirmation \u2014 Live quotes for peer tickers (JPM/BAC/C for WFC etc.)\n\nCalled by:\n  - /intraday TICKER command in pipeline_interpreter_commands.py\n  - /ticker TICKER command (auto-fetches if morning session)\n  - morning_thesis_vali",
+  "functions": [
+   "_http_get:84",
+   "_marketdata_get:98",
+   "_take_array:125",
+   "_marketdata_chain_rows:130",
+   "_marketdata_option_quote:168",
+   "fetch_intraday_options_volume:195",
+   "fetch_unusual_options_activity:260",
+   "fetch_live_contract_spread:321",
+   "fetch_peer_quotes:369",
+   "fetch_all_live_data:453",
+   "format_live_data_for_prompt:513",
+   "fetch_all_live_data_for_candidates:598"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "38: POLYGON_API_KEY    = os.environ.get(\"POLYGON_API_KEY\", \"\")",
+   "39: MARKETDATA_API_KEY = os.environ.get(\"MARKETDATA_API_KEY\", \"\")",
+   "117: print(f\"  [MARKETDATA] status={payload.get('s')} msg={payload.get('errmsg', '')}\")",
+   "126: val = payload.get(key, [])",
+   "147: \"type\": str(at(\"side\", \"\") or \"\").lower(),",
+   "154: \"volume\": at(\"volume\") or 0,",
+   "155: \"open_interest\": at(\"openInterest\") or 0,",
+   "169: contract = str(contract_ticker or \"\").upper().replace(\"O:\", \"\")",
+   "213: vol = int(r.get(\"volume\") or 0)",
+   "214: oi = int(r.get(\"open_interest\") or 0)",
+   "217: ctype = str(r.get(\"type\") or \"\").lower()",
+   "223: \"contract\": r.get(\"contract\", \"\"),",
+   "236: processed.sort(key=lambda x: int(x.get(\"volume\") or 0), reverse=True)",
+   "272: oi = int(r.get(\"open_interest\") or 0)"
+  ],
+  "writes": [
+   "169: contract = str(contract_ticker or \"\").upper().replace(\"O:\", \"\")",
+   "503: out_path.write_text(json.dumps(results, indent=2), encoding=\"utf-8\")",
+   "688: write_path.write_text(_json.dumps(payload, indent=2), encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "95: # \u2500\u2500 1. Intraday options volume (replaces OI_ONLY) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 46,
+   "write": 3
+  }
+ },
+ {
+  "path": "pipeline_interpreter/macro_context.py",
+  "n_lines": 207,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/evidence_resolver.py",
+   "tests/msi/test_flow.py",
+   "tests/msi/test_logic.py",
+   "tests/test_interpreter_macro_advisory_handoff.py",
+   "tests/test_msi_interpreter_handoff.py"
+  ],
+  "imports": [
+   "contracts/interpreter_macro_context.py"
+  ],
+  "docstring": "Hash-bound, advisory-only macro packet adapter for the Interpreter.",
+  "functions": [
+   "_text:49",
+   "_sha256:53",
+   "missing_macro_context:87",
+   "load_macro_packet:100",
+   "assert_macro_did_not_change_authority:195"
+  ],
+  "classes": [
+   {
+    "name": "MacroContextState:23",
+    "methods": []
+   },
+   {
+    "name": "MacroPacketError:32",
+    "methods": []
+   },
+   {
+    "name": "MacroContext:62",
+    "methods": [
+     "prompt_block:73"
+    ]
+   }
+  ],
+  "raises": [
+   "MacroPacketError:111",
+   "MacroPacketError:121",
+   "MacroPacketError:123",
+   "MacroPacketError:125",
+   "MacroPacketError:129",
+   "MacroPacketError:132",
+   "MacroPacketError:135",
+   "MacroPacketError:200"
+  ],
+  "direction_branches": [
+   "42: \"direction\", \"governed_direction\", \"selected_contract_symbol\","
+  ],
+  "fallbacks": [
+   "50: return str(value or \"\").strip()",
+   "168: ticker_map.get(symbol, [])",
+   "173: enrichment.get(\"narrative_overlay\", {})",
+   "178: enrichment.get(\"event_guard_deltas\", [])",
+   "189: quality=_text(reference.get(\"quality\") or payload.get(\"quality\") or \"UNKNOWN\").upper(),"
+  ],
+  "writes": [
+   "84: return \"GOVERNED MACRO ADVISORY:\\n\" + json.dumps(payload, sort_keys=True, default=str)",
+   "127: datetime.fromisoformat(_text(reference[\"as_of_utc\"]).replace(\"Z\", \"+00:00\"))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Hash-bound, advisory-only macro packet adapter for the Interpreter.\"\"\"",
+   "106: \"\"\"Load only the packet explicitly referenced by a validated bundle.\"\"\"",
+   "149: # v1 composite packets carry all four canonical macro sources.  Expose a"
+  ],
+  "version_fields": [
+   "152: if _text(payload.get(\"schema_version\")) == \"interpreter_macro_context_v1\":"
+  ],
+  "counts": {
+   "direction": 1,
+   "fallback": 5,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/pipeline_interpreter_commandsold2505.py",
+  "n_lines": 1683,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/entry_timing_engine.py",
+   "pipeline_interpreter/interpreter_qa.py",
+   "pipeline_interpreter/lab_reconciliation.py",
+   "pipeline_interpreter/pipeline_interpreter_outputs.py",
+   "pipeline_interpreter/thesis_registry.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "cmd_inputs:2",
+   "_safe_name:74",
+   "_print_all_ma_input_csvs:82",
+   "_print_results:96",
+   "_build_battlefield_triage_response:115",
+   "cmd_triage:358",
+   "cmd_interpret:609",
+   "cmd_morning:653",
+   "cmd_ticker:680",
+   "cmd_live:840",
+   "cmd_price:917",
+   "cmd_intraday:998",
+   "cmd_reset:1126",
+   "cmd_brief:1137",
+   "cmd_note:1169",
+   "route_command:1243",
+   "cmd_story:1343",
+   "cmd_update:1491",
+   "cmd_lab:1635"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "198: r.get(\"canonical_direction\"),",
+   "204: mc.get(\"canonical_direction\"),",
+   "209: ex.get(\"canonical_direction\"),",
+   "218: if u in {\"CALL\", \"PUT\", \"LONG_CALL\", \"LONG_PUT\"}:",
+   "221: return \"CALL\"",
+   "223: return \"PUT\""
+  ],
+  "fallbacks": [
+   "99: n=_safe_name(results[\"brief_csv\"]); r=results[\"brief_csv\"].get(\"rows\",\"?\") if isinstance(results[\"brief_csv\"],dict) else \"?\"",
+   "129: mode = str(_json.loads(sm.read_text(encoding=\"utf-8\")).get(\"session_mode\", \"eod\")).upper()",
+   "139: if not morning_rows or \"live_validation_state\" not in morning_rows[0]:",
+   "152: t = str(r.get(\"ticker\", \"\") or r.get(\"underlying\", \"\")).strip().upper()",
+   "184: def first(*vals):",
+   "192: return layers.get(key, {}).get(ticker, {})",
+   "244: return num(first(r.get(\"validation_score\"), r.get(\"pse_score\"), mc.get(\"pse_score\"), mc.get(\"composite_score\"), 0))",
+   "253: f\"state={first(r.get('live_validation_state'), 'NA')}\",",
+   "254: f\"perm={first(r.get('morning_execution_permission'), 'NA')}\",",
+   "255: f\"score={first(r.get('validation_score'), r.get('pse_score'), mc.get('pse_score'), '0')}\",",
+   "256: f\"contract={first(r.get('contract_tradability_state'), 'NA')}\",",
+   "258: iv = first(r.get(\"morning_iv_rank_state\"), r.get(\"iv_gex_entry_quality_label\"), mc.get(\"iv_gex_entry_quality_label\"))",
+   "261: eil_v = first(eil.get(\"eil_v3_verdict\"), eil.get(\"eil_label\"), eil.get(\"final_verdict\"), exe.get(\"eil_v3_verdict\"), exe.get(\"final_verdict\"))",
+   "264: sb_v = first(sb.get(\"superbrain_verdict\"), sb.get(\"final_verdict\"), sb.get(\"verdict\"))"
+  ],
+  "writes": [
+   "219: return u.replace(\"LONG_\", \"\")",
+   "295: writer = _csv.DictWriter(buf, fieldnames=fields, lineterminator=\"\\n\")",
+   "1207: notes_path.write_text(_json.dumps(notes,indent=2),encoding=\"utf-8\")",
+   "1256: files=[f.strip().strip('\"').strip(\"'\") for f in arg.replace(\",\",\" \").split() if f.strip()]",
+   "1432: kill_switch_level=float(str(row.get(\"kill_switch_level\", 0) or 0).replace(\"$\", \"\")),",
+   "1433: probe_trigger=float(str(row.get(\"probe_trigger\", 0) or 0).replace(\"$\", \"\")),",
+   "1434: armed_trigger=float(str(row.get(\"armed_trigger\", 0) or 0).replace(\"$\", \"\")),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 6,
+   "fallback": 120,
+   "write": 7
+  }
+ },
+ {
+  "path": "pipeline_interpreter/pipeline_interpreter_engine2105old.py",
+  "n_lines": 912,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "AVSHUNTER Pipeline Interpreter v1.0 \u00e2\u20ac\u201d Core Engine\nReads pipeline CSV outputs and produces Dr. Magnus Vale trade narratives",
+  "functions": [
+   "_translate_display_labels:50",
+   "_print_results:125",
+   "load_system_prompt:135",
+   "load_image:140",
+   "call_api:155",
+   "read_pipeline_csv:198",
+   "read_options_file:211",
+   "find_pipeline_files:226",
+   "run_session_check:248",
+   "_date:315",
+   "_select_fields:333",
+   "_format_rows:342",
+   "_format_ma_inputs:360",
+   "build_interpret_prompt:371",
+   "build_single_ticker_prompt:434",
+   "build_triage_prompt:499",
+   "build_chart_prompt:577",
+   "build_morning_validation_prompt:674",
+   "extract_section:703",
+   "extract_verdict:707",
+   "parse_brief_csv:722",
+   "scan_ma_inputs_for_ticker:736",
+   "scan_ma_pipeline_outputs:770",
+   "classify_ma_input_csvs:792",
+   "scan_all_ma_inputs:818",
+   "get_ma_inputs_status:857",
+   "get_timestamp:908",
+   "get_run_dir:909"
+  ],
+  "classes": [
+   {
+    "name": "InterpreterSession:106",
+    "methods": [
+     "__init__:107",
+     "reset:108",
+     "add_verdict:112",
+     "summary:114"
+    ]
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:137",
+   "FileNotFoundError:144",
+   "ImportError:158"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "128: rows = val.get('rows', '')",
+   "256: active_run_id = sm.get(\"run_id\",\"\").strip()",
+   "257: session_mode  = sm.get(\"session_mode\",\"UNKNOWN\").upper()",
+   "258: except Exception: pass",
+   "350: val = _translate_display_labels(str(r.get(f,\"\")).strip())",
+   "509: session_mode=_d.get(\"session_mode\",\"eod\").upper()",
+   "510: except Exception: pass",
+   "535: except Exception: pass",
+   "805: recognised.setdefault(key, []).append(str(f))",
+   "867: recognised = summary.get(\"recognised_csv_files\", {})",
+   "874: other = summary.get(\"other_csv_files\", [])",
+   "879: missing = summary.get(\"missing_expected_pipeline_files\", [])"
+  ],
+  "writes": [
+   "220: return json.dumps(json.load(f),indent=2)",
+   "725: clean=re.sub(r'```[a-z]*','',text).replace('```','').strip()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "39: # Applied in the display layer only \u2014 underlying field values are unchanged",
+   "497: execution_permission=NONE_PIPELINE_INTERPRETER_ONLY\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 12,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/pipeline_interpreter_engine_backup_20260522.py",
+  "n_lines": 1140,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/live_market_reader.py"
+  ],
+  "docstring": "AVSHUNTER Pipeline Interpreter v1.0 \u00e2\u20ac\u201d Core Engine\nReads pipeline CSV outputs and produces Dr. Magnus Vale trade narratives",
+  "functions": [
+   "_translate_display_labels:68",
+   "_print_results:153",
+   "load_system_prompt:163",
+   "load_image:168",
+   "call_api:183",
+   "read_pipeline_csv:235",
+   "read_options_file:248",
+   "find_pipeline_files:263",
+   "run_session_check:285",
+   "_date:352",
+   "_select_fields:370",
+   "_format_rows:379",
+   "_format_ma_inputs:397",
+   "build_interpret_prompt:408",
+   "build_single_ticker_prompt:471",
+   "build_triage_prompt:540",
+   "build_chart_prompt:636",
+   "build_morning_validation_prompt:738",
+   "extract_section:767",
+   "extract_verdict:771",
+   "parse_brief_csv:786",
+   "scan_ma_inputs_for_ticker:806",
+   "scan_ma_pipeline_outputs:840",
+   "classify_ma_input_csvs:862",
+   "scan_all_ma_inputs:888",
+   "get_ma_inputs_status:927",
+   "format_live_price_block:980",
+   "build_intraday_prompt:1004",
+   "get_timestamp:1136",
+   "get_run_dir:1137"
+  ],
+  "classes": [
+   {
+    "name": "InterpreterSession:134",
+    "methods": [
+     "__init__:135",
+     "reset:136",
+     "add_verdict:140",
+     "summary:142"
+    ]
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:165",
+   "FileNotFoundError:172",
+   "ImportError:192"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "156: rows = val.get('rows', '')",
+   "293: active_run_id = sm.get(\"run_id\",\"\").strip()",
+   "294: session_mode  = sm.get(\"session_mode\",\"UNKNOWN\").upper()",
+   "295: except Exception: pass",
+   "387: val = _translate_display_labels(str(r.get(f,\"\")).strip())",
+   "550: session_mode=_d.get(\"session_mode\",\"eod\").upper()",
+   "551: except Exception: pass",
+   "560: _v = row.get(_f, \"\")",
+   "594: except Exception: pass",
+   "875: recognised.setdefault(key, []).append(str(f))",
+   "937: recognised = summary.get(\"recognised_csv_files\", {})",
+   "944: other = summary.get(\"other_csv_files\", [])",
+   "949: missing = summary.get(\"missing_expected_pipeline_files\", [])",
+   "988: price     = entry.get(\"price\", \"\")"
+  ],
+  "writes": [
+   "257: return json.dumps(json.load(f),indent=2)",
+   "789: clean=re.sub(r'```[a-z]*','',text).replace('```','').strip()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "57: # Applied in the display layer only \u2014 underlying field values are unchanged",
+   "538: execution_permission=NONE_PIPELINE_INTERPRETER_ONLY\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 20,
+   "write": 2
+  }
+ },
+ {
+  "path": "pipeline_interpreter/pipeline_interpreter_outputs.py",
+  "n_lines": 1556,
+  "classification": "INTERPRETER",
+  "commit": "a26bab6",
+  "entry_points": "",
+  "imported_by": [
+   "final_verify_c9.py",
+   "pipeline_interpreter/Archive/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commandsold2505.py",
+   "section11_tests.py",
+   "section11_tests_v2.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/lab_reconciliation.py"
+  ],
+  "docstring": "AVSHUNTER Pipeline Interpreter v1.0 \u2014 Output Writers\nTrade narrative HTML + brief CSV",
+  "functions": [
+   "_extract_section:21",
+   "_extract_ticker_narrative:25",
+   "_clean_csv:30",
+   "_parse_csv:35",
+   "_write_csv:46",
+   "_verdict_style:58",
+   "_md_to_html:76",
+   "_build_ticker_card:113",
+   "_build_summary_bar:149",
+   "build_html:162",
+   "_parse_triage_csv:435",
+   "_triage_verdict_style:443",
+   "build_triage_html:453",
+   "write_triage_outputs:796",
+   "write_all_outputs:834",
+   "_extract_junior_section:941",
+   "_extract_status:959",
+   "_story_badge_html:965",
+   "render_state_chain:975",
+   "build_story_html:1014",
+   "write_story_outputs:1178",
+   "write_all_outputs_with_junior:1293",
+   "_build_junior_section_cards:1402",
+   "write_interpreter_sidecar:1451",
+   "load_interpreter_sidecar:1545"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "629: dir_col = \"#00c853\" if \"CALL\" in direction else (\"#ef4444\" if \"PUT\" in direction else \"#64748b\")"
+  ],
+  "fallbacks": [
+   "74: return styles.get(v,(\"#64748b\",\"#0f1520\",\"#64748b22\"))",
+   "172: t=row.get(\"ticker\",\"\")",
+   "173: v=row.get(\"final_verdict\",\"WAIT\")",
+   "174: st=row.get(\"trade_state\",\"WATCH\")",
+   "183: v=session.verdicts.get(t,{}).get(\"verdict\",\"WAIT\")",
+   "197: v=session.verdicts.get(t,{}).get(\"verdict\",\"WAIT\")",
+   "214: val=str(row.get(col,\"\")).strip()",
+   "451: return styles.get(v, (\"#64748b\",\"#0f1520\",\"#64748b44\"))",
+   "466: _confirmed_set   = set(t.upper() for t in (lab_reconciliation or {}).get(\"confirmed\",   []))",
+   "467: _interp_only_set = set(t.upper() for t in (lab_reconciliation or {}).get(\"interp_only\", []))",
+   "468: _lab_only_set    = set(t.upper() for t in (lab_reconciliation or {}).get(\"lab_only\",    []))",
+   "490: confirmed_n   = lab_reconciliation.get(\"confirmed_count\",   0)",
+   "491: lab_only_n    = lab_reconciliation.get(\"lab_only_count\",    0)",
+   "492: interp_only_n = lab_reconciliation.get(\"interp_only_count\", 0)"
+  ],
+  "writes": [
+   "31: text=re.sub(r'```[a-z]*','',text).replace('```','').strip()",
+   "49: with open(path,\"w\",newline=\"\",encoding=\"utf-8\") as f:",
+   "50: w=csv.DictWriter(f,fieldnames=fields,extrasaction=\"ignore\")",
+   "78: text=text.replace(\"&\",\"&amp;\").replace(\"<\",\"&lt;\").replace(\">\",\"&gt;\")",
+   "110: else: parts.append(f'<p>{para.replace(chr(10),\" \")}</p>')",
+   "118: content=_extract_section(narrative, tag) or _extract_section(narrative, tag.replace(\"_\",\" \"))",
+   "122: if tag.replace('_',' ').upper() in line.upper() or tag in line.upper():",
+   "209: hdr=''.join(f'<th>{c.replace(\"_\",\" \").title()}</th>' for c in avail)",
+   "802: (run_dir / f\"raw_triage_{ts}.txt\").write_text(response, encoding=\"utf-8\")",
+   "812: with open(cp, \"w\", newline=\"\", encoding=\"utf-8\") as f:"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "448: \"WATCH_ONLY\":     (\"#64748b\",\"#0f1520\",\"#64748b44\"),",
+   "509: # Interp-only ticker list",
+   "532: {_lab_badge(\"LAB ONLY\", \"#f59e0b\", \"#1a1200\")}",
+   "534: <strong style=\"color:#f59e0b\">{lab_only_n}</strong>",
+   "541: <strong style=\"color:#ef4444\">{interp_only_n}</strong>"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 61,
+   "write": 23
+  }
+ },
+ {
+  "path": "pipeline_interpreter/prepare_interpreter_session.py",
+  "n_lines": 534,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [],
+  "imports": [
+   "pipeline_interpreter/thesis_registry.py"
+  ],
+  "docstring": "prepare_interpreter_session.py\n================================\nPopulates MA_Inputs with all files needed before running the Pipeline Interpreter.\nRun this BEFORE starting pipeline_interpreter.py \u2014 for both sessions.\n\nTWO MODES:\n\n  EOD SESSION (after evening pipeline completes, before morning validation)\n  -------------------------------------------------------------------------\n  python prepare_interpreter_session.py --eod\n\n  Pulls from the latest evening run:\n    - morning_candidates_<run_id>.csv          (the prep input)\n    - eil_enriched_<run_id>.csv\n    - execution_v3_5_<run_id>.csv\n    ",
+  "functions": [
+   "ts:98",
+   "resolve_run_id:102",
+   "ensure_dirs:120",
+   "copy_file:125",
+   "sync_macro_files:141",
+   "sync_live_data_files:158",
+   "sync_run_files:233",
+   "write_session_marker:265",
+   "print_next_steps:278",
+   "main:343"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "110: run_id = str(data.get(\"run_id\", \"\")).strip()",
+   "204: ticker_map = {data.get(\"ticker\", \"UNKNOWN\"): data}",
+   "421: if r.get(\"ticker\", \"\").upper() == ticker.upper()),",
+   "426: _raw = str(row.get(\"last_price\", 0) or row.get(\"price\", 0))",
+   "494: _t  = _sc.get(\"ticker\", \"\")",
+   "498: _dstatus = _delta.get(\"status\", \"UNKNOWN\")",
+   "499: _cnt = _delta.get(\"change_count\", 0)",
+   "501: print(f\"  [{ts()}] DELTA  {_t}: {_dstatus} -- {_delta.get('narrative','')[:60]}\")"
+  ],
+  "writes": [
+   "218: dest.write_text(",
+   "219: _json.dumps(ticker_data, indent=2),",
+   "274: marker_path.write_text(json.dumps(marker, indent=2), encoding=\"utf-8\")",
+   "427: current_price = float(_raw.replace(\"$\", \"\").replace(\",\", \"\"))",
+   "463: _ss_path.write_text(json.dumps(session_state, indent=2), encoding=\"utf-8\")",
+   "468: _ss_path.write_text(",
+   "469: json.dumps({\"session_mode\": \"MORNING\",",
+   "508: _dr_path.write_text(_json3.dumps(_delta_report, indent=2), encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "103: \"\"\"Read the canonical run_id from latest.json.\"\"\"",
+   "390: # 5b. STORY OF THE TRADE \u2014 thesis registry scan (morning mode only)"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 8,
+   "write": 8
+  }
+ },
+ {
+  "path": "pipeline_interpreter/score_integrity_check.py",
+  "n_lines": 227,
+  "classification": "INTERPRETER",
+  "commit": "7c165d3",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "pipeline_interpreter/pipeline_interpreter_commands.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Score Integrity Check\n=================================\nAsserts that scs_score values in morning_validated_trades match\nwhat the Intelligence Lab receives. Logs mismatch rate per run.\nWrites audit log to data/output/runs/{run_id}/score_integrity_{run_id}.json\n\nA mismatch is defined as: abs(triage_score - lab_score) > 0.01\nDecommission threshold: mismatch_rate > 0.05 across 10 consecutive runs.",
+  "functions": [
+   "_utc_now:33",
+   "_read_csv:37",
+   "_f:44",
+   "_load_run_id:52",
+   "check_score_integrity:66",
+   "_update_history:163",
+   "_write_decommission_notice:200"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "57: return str(data.get(\"run_id\") or data.get(\"latest_run_id\", \"\")).strip() or None",
+   "86: ticker = str(row.get(\"ticker\", \"\")).strip().upper()",
+   "107: ticker = str(row.get(\"ticker\", \"\")).strip().upper()"
+  ],
+  "writes": [
+   "34: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "150: audit_path.write_text(json.dumps(report, indent=2), encoding=\"utf-8\")",
+   "197: AUDIT_LOG.write_text(json.dumps(history, indent=2), encoding=\"utf-8\")",
+   "216: notice_path.write_text(json.dumps(notice, indent=2), encoding=\"utf-8\")",
+   "227: print(json.dumps(report, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "78: # Source 1: morning_validated_trades (canonical pipeline output)",
+   "179: # Keep last 20 runs only"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 5
+  }
+ },
+ {
+  "path": "pipeline_interpreter/screenshot_adapter.py",
+  "n_lines": 83,
+  "classification": "INTERPRETER",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [],
+  "imports": [],
+  "docstring": "Provider-neutral MSI-7b screenshot extraction boundary.\n\nNo model implementation is activated here.  The contract permits only true\ndepth/order-book, NOII and broker-only tape evidence and requires explicit\noperator identity confirmation before an extraction can enter a bundle.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "ScreenType:18",
+    "methods": []
+   },
+   {
+    "name": "CaptureTimeProvenance:24",
+    "methods": []
+   },
+   {
+    "name": "ScreenshotExtractionRequest:30",
+    "methods": [
+     "__post_init__:42",
+     "image_sha256:58"
+    ]
+   },
+   {
+    "name": "ScreenshotExtractionResult:63",
+    "methods": []
+   },
+   {
+    "name": "ScreenshotExtractionAdapter:73",
+    "methods": [
+     "extract:75"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:45",
+   "ValueError:47",
+   "ValueError:53"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "pipeline_interpreter/thesis_registry.py",
+  "n_lines": 365,
+  "classification": "INTERPRETER",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "check7_prompt.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_commandsold2505.py",
+   "pipeline_interpreter/prepare_interpreter_session.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Pipeline Interpreter \u2014 Thesis Registry\nCross-session thesis lifecycle management.\nZero dependency on the Anthropic API \u2014 pure file I/O.",
+  "functions": [
+   "_registry_path:16",
+   "_load_registry:20",
+   "_save_registry:29",
+   "_direction_short:36",
+   "_strike_lower:45",
+   "_build_thesis_id:49",
+   "get_active_thesis:55",
+   "create_thesis:64",
+   "update_thesis:108",
+   "close_thesis:136",
+   "get_latest_story_path:150",
+   "get_carry_forward_tickers:161",
+   "should_close_thesis:176",
+   "_baseline_path:213",
+   "save_evening_baseline:218",
+   "load_evening_baseline:245",
+   "compute_morning_delta:260"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "39: if \"PUT\" in d or \"BEAR\" in d:",
+   "40: return \"PUT\"",
+   "41: if \"CALL\" in d or \"BULL\" in d:",
+   "42: return \"CALL\"",
+   "189: if \"PUT\" in direction or \"BEAR\" in direction:"
+  ],
+  "fallbacks": [
+   "39: if \"PUT\" in d or \"BEAR\" in d:",
+   "41: if \"CALL\" in d or \"BULL\" in d:",
+   "168: if any(t.get(\"active\") for t in data.get(\"theses\", [])):",
+   "185: ks = float(thesis.get(\"kill_switch_level\", 0))",
+   "188: direction = thesis.get(\"direction\", \"\").upper()",
+   "189: if \"PUT\" in direction or \"BEAR\" in direction:",
+   "295: baseline_snap = baseline_data.get(\"snapshot\", {})",
+   "296: baseline_ts   = baseline_data.get(\"saved_at\", \"UNKNOWN\")"
+  ],
+  "writes": [
+   "33: tmp.write_text(json.dumps(data, indent=2), encoding=\"utf-8\")",
+   "34: tmp.replace(path)",
+   "47: return str(strike_zone).replace(\" \", \"\").split(\"-\")[0]",
+   "169: ticker = path.name.replace(\"_thesis_registry.json\", \"\")",
+   "237: tmp.write_text(json.dumps(payload, indent=2), encoding=\"utf-8\")",
+   "238: tmp.replace(path)"
+  ],
+  "atomic_markers": [
+   "32: tmp  = path.with_suffix(\".tmp\")",
+   "236: tmp = path.with_suffix(\".tmp\")"
+  ],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 8,
+   "write": 6
+  }
+ },
+ {
+  "path": "pipeline_interpreter/trade_brief_builder.py",
+  "n_lines": 276,
+  "classification": "INTERPRETER",
+  "commit": "a26bab6",
+  "entry_points": "",
+  "imported_by": [
+   "pipeline_interpreter/pipeline_interpreter_commands.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Trade Brief Builder\n==============================\nTakes a fully-enriched interpreter row (including dcr_* and alt_*\nfields from Sprint 2) and produces a structured trade brief.\n\nThe interpreter always produces a trade. The three possible\noutcomes are:\n\n  TRADE_NOW     - gate is GO, direction confirmed, contract liquid\n  TRADE_ON_CONDITION - direction clear, waiting for one trigger\n  NO_EDGE       - both directions have equal evidence (rare),\n                  skip this ticker\n\nThere is no AVOID or DO_NOT_ENTER output. If the pipeline\nmisdiagnosed, the alternative trade is the recomm",
+  "functions": [
+   "_s:24",
+   "_f:31",
+   "build_trade_brief:39",
+   "format_trade_brief:209"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "58: or row.get(\"canonical_direction\")",
+   "127: if direction == \"CALL\" and ema9:",
+   "132: elif direction == \"PUT\" and ema9:",
+   "138: side = \"above\" if direction == \"CALL\" else \"below\"",
+   "148: if direction == \"UNCLEAR\":"
+  ],
+  "fallbacks": [
+   "49: ticker = _s(row.get(\"ticker\", \"UNKNOWN\")).upper()",
+   "55: dcr_misdiag    = str(row.get(\"dcr_misdiagnosed\", \"\")).upper() == \"TRUE\"",
+   "174: dcr_call_score = _f(row.get(\"dcr_call_score\", 0)) or 0.0",
+   "175: dcr_put_score  = _f(row.get(\"dcr_put_score\", 0)) or 0.0",
+   "221: action = brief.get(\"action\", \"UNKNOWN\")",
+   "229: lines.append(f\"  DIRECTION  : {brief.get('direction', '?')}  [{brief.get('direction_source', '?')}]\")",
+   "249: lines.append(f\"  GATE       : {brief.get('gate_verdict', '?')}\")",
+   "270: lines.append(f\"  REASON     : {brief.get('action_reason', '')}\")"
+  ],
+  "writes": [
+   "33: val = float(str(v).replace(\"$\", \"\").replace(\"%\", \"\").strip())"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 8,
+   "write": 1
+  }
+ }
+]

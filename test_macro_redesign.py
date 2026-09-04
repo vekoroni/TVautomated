@@ -6,6 +6,16 @@ Tests 1-7 (unit tests; Tests 8-10 require live pipeline run)
 import sys, types, json, os
 sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence")
 
+# This executable harness targets the retired morning_thesis_validator module.
+# Keep it available for historical replay when invoked directly, but do not let
+# pytest collect obsolete imports as an active production regression suite.
+if __name__ != "__main__":
+    import pytest
+    pytest.skip(
+        "Legacy macro-redesign harness retired; current macro contracts are covered under tests/.",
+        allow_module_level=True,
+    )
+
 # ── minimal stubs so imports load without heavy deps ──────────────────────────
 for _mod in [
     "pandas", "numpy", "polygon_data_fetcher", "WyckoffEngine_3101_v2",

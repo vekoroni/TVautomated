@@ -9,6 +9,8 @@ from datetime import date, timedelta
 import math
 from typing import Any
 
+from contracts.governed_states import LifecycleEvaluationState
+
 
 _MAX_THETA_DAYS = 365
 
@@ -31,7 +33,7 @@ def compute_exit_rules(row: dict) -> dict:
     try:
         live_price   = _f(row, "live_price", "signal_price")
         target       = _f(row, "structural_target")
-        stop         = _f(row, "structural_stop", "invalidation_level")
+        stop         = _f(row, "invalidation_spot", "ev3_invalidation_spot")
         theta        = abs(_f(row, "contract_theta"))
         dte          = _f(row, "dte", "contract_dte")
         contract_mid = _f(row, "contract_mid")
@@ -56,10 +58,12 @@ def compute_exit_rules(row: dict) -> dict:
             if direction == "CALL":
                 reward = exit_target - live_price
                 risk   = live_price  - exit_stop
-            else:
+            elif direction == "PUT":
                 reward = live_price  - exit_target
                 risk   = exit_stop   - live_price
-            rr_ok = risk > 0 and (reward / risk) >= 1.5
+            else:
+                reward = risk = 0.0
+            rr_ok = direction in {"CALL", "PUT"} and risk > 0 and (reward / risk) >= 1.5
 
         parts = []
         if exit_target:
@@ -79,7 +83,11 @@ def compute_exit_rules(row: dict) -> dict:
             "exit_theta_date":   exit_theta_date,
             "exit_max_dte":      exit_max_dte,
             "exit_rr_valid":     bool(rr_ok),
-            "exit_rule_summary": " | ".join(parts) if parts else "MANUAL_REVIEW",
+            "exit_rule_summary": (
+                LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value
+                if direction not in {"CALL", "PUT"}
+                else " | ".join(parts) if parts else "MANUAL_REVIEW"
+            ),
         }
     except Exception:
         return {

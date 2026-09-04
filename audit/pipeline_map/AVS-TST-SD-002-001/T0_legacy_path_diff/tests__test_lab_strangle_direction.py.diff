@@ -1,0 +1,137 @@
+--- a/tests/test_lab_strangle_direction.py
++++ b/tests/test_lab_strangle_direction.py
+@@ -19,6 +19,9 @@
+ import tempfile
+ from pathlib import Path
+ 
++from contracts.lab_control import write_final_opportunity_book
++from contracts.direction_governance import resolve_governed_direction
++
+ ROOT = Path(__file__).resolve().parents[1]
+ if str(ROOT) not in sys.path:
+     sys.path.insert(0, str(ROOT))
+@@ -64,6 +67,27 @@
+         mv_columns,
+         [{"ticker": r["ticker"], "morning_execution_permission": "GO", "live_validation_state": "CONFIRMED"} for r in rows],
+     )
++    governed_rows = []
++    for source in rows:
++        item = dict(source)
++        side = str(item.get("options_direction") or "").upper()
++        if side in {"CALL", "PUT"}:
++            item.update(
++                resolve_governed_direction(
++                    ticker=item["ticker"], run_id=run_id,
++                    discovery_direction=side, governed_direction=side,
++                    governed_basis=f"fixture={side}", row={},
++                    decided_at_utc="2099-01-01T01:01:01+00:00",
++                )
++            )
++        governed_rows.append(item)
++    write_final_opportunity_book(
++        run_id,
++        governed_rows,
++        {"pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []},
++        lab.RUNS_DIR,
++        sync_interpreter=False,
++    )
+     return run_dir
+ 
+ 
+@@ -137,12 +161,13 @@
+         payload = lab._load_run("20990101_120300", force_reload=True)
+         by_ticker = {s["ticker"]: s for s in payload["signals"]}
+         strangle = by_ticker["STR1"]
+-        assert strangle.get("options_direction") == "STRANGLE"
+-        assert strangle.get("lab_coherence_status") == "STRANGLE_NONDIRECTIONAL"
++        assert strangle.get("direction") not in ("CALL", "PUT")
++        assert strangle.get("lab_tradeable") is False
++        assert strangle.get("lab_verdict") == "BLOCKED"
+ 
+         put_row = by_ticker["T"]
+-        assert put_row.get("options_direction") == "PUT"
+-        assert put_row.get("lab_coherence_status") != "STRANGLE_NONDIRECTIONAL"
++        assert put_row.get("direction") == "PUT"
++        assert put_row.get("direction_integrity_status") == "PASS"
+ 
+ 
+ def test_strangle_policy_include_labelled_keeps_row_in_default_queue():
+@@ -157,7 +182,7 @@
+         assert strangle.get("lab_hidden_by_default") is not True
+ 
+ 
+-def test_strangle_policy_flag_only_hides_row_from_default_queue_but_keeps_it():
++def test_local_flag_policy_cannot_override_governed_book_membership():
+     lab = _load_lab_module()
+     lab.LAB_STRANGLE_POLICY = "FLAG_ONLY"
+     with tempfile.TemporaryDirectory() as tmp:
+@@ -166,18 +191,21 @@
+         tickers = {s["ticker"] for s in payload["signals"]}
+         assert "STR1" in tickers, "FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)"
+         strangle = next(s for s in payload["signals"] if s["ticker"] == "STR1")
+-        assert strangle.get("lab_hidden_by_default") is True
++        assert strangle.get("lab_tradeable") is False
++        assert strangle.get("direction") not in ("CALL", "PUT")
+ 
+ 
+-def test_strangle_policy_exclude_removes_row_entirely():
++def test_local_exclude_policy_cannot_delete_governed_book_evidence():
+     lab = _load_lab_module()
+     lab.LAB_STRANGLE_POLICY = "EXCLUDE"
+     with tempfile.TemporaryDirectory() as tmp:
+         _make_run(Path(tmp), "20990101_120600", _FIXTURE_ROWS, lab)
+         payload = lab._load_run("20990101_120600", force_reload=True)
+         tickers = {s["ticker"] for s in payload["signals"]}
+-        assert "STR1" not in tickers, "EXCLUDE must remove the row from the signal set entirely"
++        assert "STR1" in tickers, "governed-book membership cannot be changed by a local UI policy"
+         assert {"T", "ABS1"} <= tickers, "EXCLUDE must not touch non-strangle rows"
++        strangle = next(s for s in payload["signals"] if s["ticker"] == "STR1")
++        assert strangle.get("lab_tradeable") is False
+ 
+ 
+ def test_strangle_direction_survives_conflicting_eod_candidate_manifest():
+@@ -214,35 +242,23 @@
+             f"eod_candidate_map's direction=CALL must not overwrite a row already "
+             f"marked STRANGLE_NONDIRECTIONAL, got {strangle.get('direction')!r}"
+         )
+-        assert strangle.get("lab_coherence_status") == "STRANGLE_NONDIRECTIONAL"
++        assert strangle.get("lab_tradeable") is False
+ 
+         # A genuine single-leg row must still pick up the eod_candidate_map
+         # value normally -- the guard must be scoped to the strangle case only.
+         assert by_ticker["T"].get("direction") == "PUT"
+ 
+ 
+-def test_property_directional_rows_have_target_on_profitable_side():
+-    """For every row where Direction resolved to CALL or PUT, Structural_Target
+-    must sit on the profitable side of Strike. This is the property the whole
+-    fix exists to restore — it must hold across the fixture regardless of
+-    policy."""
++def test_directional_thesis_target_survives_without_fabricated_contract_geometry():
++    """A governed thesis target survives while an unselected contract strike
++    remains absent; thesis geometry and contract geometry must not be mixed."""
+     lab = _load_lab_module()
+     lab.LAB_STRANGLE_POLICY = "INCLUDE_LABELLED"
+     with tempfile.TemporaryDirectory() as tmp:
+         _make_run(Path(tmp), "20990101_120700", _FIXTURE_ROWS, lab)
+         payload = lab._load_run("20990101_120700", force_reload=True)
+-        checked = 0
+-        for sig in payload["signals"]:
+-            direction = sig.get("direction")
+-            if direction not in ("CALL", "PUT"):
+-                continue
+-            strike = float(sig.get("strike") or sig.get("contract_strike") or 0)
+-            target = float(sig.get("structural_target") or sig.get("opt__structural_target") or 0)
+-            if not strike or not target:
+-                continue
+-            checked += 1
+-            if direction == "CALL":
+-                assert target > strike, f"{sig['ticker']}: CALL target {target} must be above strike {strike}"
+-            else:
+-                assert target < strike, f"{sig['ticker']}: PUT target {target} must be below strike {strike}"
+-        assert checked >= 1, "fixture must exercise at least one directional row"
++        put_row = next(sig for sig in payload["signals"] if sig["ticker"] == "T")
++        assert put_row["direction"] == "PUT"
++        assert float(put_row["structural_target"]) == 19.7
++        assert put_row.get("strike") in (None, "")
++        assert put_row["contract_data_state"] == "NOT_APPLICABLE_NO_SELECTED_CONTRACT"

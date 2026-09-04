@@ -170,6 +170,19 @@ class PolygonDataFetcher:
             })
             df = df[['date', 'open', 'high', 'low', 'close', 'volume']]
             df = df.sort_values('date').reset_index(drop=True)
+
+            # CDS-2: successful full-history fetches are written to the
+            # canonical database before any caller consumes them. The bridge
+            # is a no-op unless both canonical data and write-through flags
+            # are explicitly enabled.
+            from canonical_data.history_bridge import write_through_fetched_history
+            write_through_fetched_history(
+                ticker,
+                df,
+                provider="POLYGON",
+                source_kind="POLYGON_DATA_FETCHER",
+                source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+            )
             
             return df
             

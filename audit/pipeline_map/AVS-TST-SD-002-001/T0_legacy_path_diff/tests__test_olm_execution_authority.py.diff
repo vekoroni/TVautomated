@@ -1,0 +1,17 @@
+--- a/tests/test_olm_execution_authority.py
++++ b/tests/test_olm_execution_authority.py
+@@ -180,11 +180,11 @@
+     assert result["final_action"] == "MANUAL_REVIEW"
+ 
+ 
+-def test_existing_valid_action_and_limited_cap_remain_compatible() -> None:
++def test_existing_valid_action_and_advisory_monetisability_remain_compatible() -> None:
+     assert execution_gate(_row(), require_olm=True)["final_action"] == "BUY_NOW"
+     limited = execution_gate(_row(monetisability_state="LIMITED"), require_olm=True)
+-    assert limited["final_action"] == "BUY_SMALL"
+-    assert "LIMITED_MONETISABILITY" in limited["gate_warnings"]
++    assert limited["final_action"] == "BUY_NOW"
++    assert limited["monetisability_state"] == "LIMITED"
+ 
+ 
+ def test_direct_legacy_caller_remains_compatible_but_production_batch_requires_olm(tmp_path) -> None:

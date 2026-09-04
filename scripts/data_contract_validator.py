@@ -36,7 +36,11 @@ log = logging.getLogger("DCV")
 # Single source of truth for thresholds used everywhere in the pipeline
 MIN_BARS_HARD      = 50    # absolute floor: below this = DATA_FAILURE (reject)
 MIN_BARS_PREFERRED = 200   # preferred: below this = LOW_CONFIDENCE (downgrade, not reject)
-MAX_STALENESS_DAYS = 5     # last bar may not be older than this (weekends + US holidays)
+try:
+    from canonical_data.history_bridge import DEFAULT_HISTORY_MAX_STALENESS_DAYS
+except ImportError:  # direct-script compatibility before repository root is on sys.path
+    DEFAULT_HISTORY_MAX_STALENESS_DAYS = 5
+MAX_STALENESS_DAYS = DEFAULT_HISTORY_MAX_STALENESS_DAYS
 
 
 class DataContractValidator:

@@ -1,4 +1,4 @@
-"""Run EV Engine v3 Stage EV-1 as an isolated shadow sidecar."""
+"""Run EV Engine v3 as governed production evidence (legacy path compatible)."""
 
 from __future__ import annotations
 
@@ -22,8 +22,10 @@ from vanguard.ev_engine_v3 import (  # noqa: E402
     EV3BarrierCache,
     EV3Policy,
     evaluate_contract,
+    not_applicable_result,
     policy_as_dict,
     select_contract,
+    EV3_EVALUATED_STATUS,
 )
 
 
@@ -70,7 +72,11 @@ def _atomic_json_write(payload: dict[str, Any], path: Path) -> None:
 def _candidate_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
     """Expand the selected contract plus complete JSON alternatives."""
     candidates: list[dict[str, Any]] = []
-    selected_symbol = source.get("contract_occ_symbol") or source.get("recommended_contract")
+    selected_symbol = (
+        source.get("contract_occ_symbol")
+        or source.get("recommended_contract")
+        or source.get("contract_symbol")
+    )
     if selected_symbol is not None and not pd.isna(selected_symbol) and str(selected_symbol).strip():
         candidates.append(dict(source))
 
@@ -117,7 +123,7 @@ def _candidate_rows(source: dict[str, Any]) -> list[dict[str, Any]]:
             if nested_name in alternative:
                 candidate[nested_name] = alternative[nested_name]
         candidates.append(candidate)
-    return candidates or [dict(source)]
+    return candidates
 
 
 def run_shadow(
@@ -136,7 +142,17 @@ def run_shadow(
     for index, source in frame.iterrows():
         source_dict = source.to_dict()
         candidates = _candidate_rows(source_dict)
-        if len(candidates) == 1:
+        if not candidates:
+            result = not_applicable_result(
+                "NOT_APPLICABLE_NO_SELECTED_CONTRACT",
+                "Options Intelligence supplied neither a selected contract nor a complete alternative",
+            )
+            evaluations = []
+            result["ev3_selection_reason"] = "NO_SELECTED_OR_ALTERNATIVE_CONTRACT"
+            result["ev3_candidates_received"] = 0
+            result["ev3_candidates_evaluated"] = 0
+            result["ev3_candidates_valid"] = 0
+        elif len(candidates) == 1:
             result = evaluate_contract(
                 candidates[0], cache, policy=policy, phase=phase, now_utc=now_utc
             )
@@ -144,7 +160,7 @@ def run_shadow(
             result["ev3_selection_reason"] = "SELECTED_CONTRACT_ONLY"
             result["ev3_candidates_received"] = 1
             result["ev3_candidates_evaluated"] = 1
-            result["ev3_candidates_valid"] = int(result.get("ev3_status") == "EVALUATED_SHADOW")
+            result["ev3_candidates_valid"] = int(result.get("ev3_status") == EV3_EVALUATED_STATUS)
         else:
             result, evaluations = select_contract(
                 candidates, cache, policy=policy, phase=phase, now_utc=now_utc
@@ -168,7 +184,7 @@ def run_shadow(
     _atomic_dataframe_write(results, result_path)
     rejected = results[results["ev3_status"] == "REJECTED"].copy()
     _atomic_dataframe_write(rejected, rejection_path)
-    ranked = results[results["ev3_status"] == "EVALUATED_SHADOW"].copy()
+    ranked = results[results["ev3_status"] == EV3_EVALUATED_STATUS].copy()
     if "ev3_ev_lower_bound_return" in ranked.columns:
         ranked = ranked.sort_values("ev3_ev_lower_bound_return", ascending=False)
     _atomic_dataframe_write(ranked, ranked_path)
@@ -186,11 +202,17 @@ def run_shadow(
         if "ev3_structure" in evaluation_frame.columns
         else {}
     )
+    state_match_counts = (
+        results["ev3_state_match_type"].value_counts(dropna=False).to_dict()
+        if "ev3_state_match_type" in results.columns
+        else {}
+    )
     audit = {
         "stage": "EV-2B",
-        "artifact_contract_version": "ev3-shadow-artifacts-v0.3.0",
-        "mode": "SHADOW_ONLY",
-        "production_consumer_enabled": False,
+        "artifact_contract_version": "ev3-production-evidence-v0.6.0",
+        "mode": "PRODUCTION_EVIDENCE",
+        "production_consumer_enabled": True,
+        "production_authority": False,
         "capital_eligibility_enabled": False,
         "built_at_utc": datetime.now(timezone.utc).isoformat(),
         "phase": phase.upper(),
@@ -202,8 +224,9 @@ def run_shadow(
         "engine_source_sha256": _sha256(REPO_ROOT / "vanguard" / "ev_engine_v3.py"),
         "runner_source_sha256": _sha256(Path(__file__)),
         "rows_received": int(len(frame)),
-        "rows_evaluated": int((results["ev3_status"] == "EVALUATED_SHADOW").sum()),
+        "rows_evaluated": int((results["ev3_status"] == EV3_EVALUATED_STATUS).sum()),
         "rows_rejected": int((results["ev3_status"] == "REJECTED").sum()),
+        "rows_not_applicable": int((results["ev3_status"] == "NOT_APPLICABLE").sum()),
         "contract_candidates_received": int(sum(len(_candidate_rows(row)) for row in frame.to_dict("records"))),
         "contract_evaluations_written": int(len(contract_evaluations)),
         "reason_counts": {str(k): int(v) for k, v in reason_counts.items()},
@@ -214,12 +237,13 @@ def run_shadow(
             str(k): int(v) for k, v in structure_counts.items()
         },
         "absolute_state_counts": {str(k): int(v) for k, v in state_counts.items()},
+        "state_match_counts": {str(k): int(v) for k, v in state_match_counts.items()},
         "policy": policy_as_dict(policy),
         "limitations": [
             "Long CALL/PUT and same-expiry bull-call/bear-put debit spreads",
             "Vertical short-leg assignment and discrete ex-dividend event risk are reported but not separately modelled",
-            "Barrier cache supports exact 5, 10, and 20 session holds",
-            "No production orchestrator, Lab, morning gate, or execution consumer is connected",
+            "Barrier cache supports exact 5, 10, and 20 session holds plus audited core-aligned 5-of-7 state fallback",
+            "EV3 is production evidence but remains non-authoritative until outcome calibration passes",
         ],
         "outputs": {
             "results": str(result_path.resolve()),

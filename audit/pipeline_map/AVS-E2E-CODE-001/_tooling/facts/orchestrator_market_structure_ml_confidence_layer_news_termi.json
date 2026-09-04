@@ -1,0 +1,1488 @@
+[
+ {
+  "path": "bridge/avshunter_reader.py",
+  "n_lines": 104,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "bridge/scheduler.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "_truthy:8",
+   "_float:12",
+   "_read_csv:19",
+   "_latest:24",
+   "load_trade_candidates:33",
+   "write_would_have_ordered:95"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "58: ticker = str(row.get(\"ticker\") or row.get(\"symbol\") or \"\").strip().upper()",
+   "59: signature = str(row.get(\"debug_signature\") or \"\").strip()",
+   "65: ticker = str(row.get(\"ticker\") or row.get(\"symbol\") or \"\").strip().upper()",
+   "68: approval = str(row.get(\"reviewer_approval\") or \"\").strip().upper()",
+   "76: permission = str(row.get(\"morning_execution_permission\") or row.get(\"execution_permission\") or row.get(\"campaign_verdict\") or row.get(\"effective_execu",
+   "85: out[\"state_key_6dim\"] = row.get(\"layer2__matched_state_key\") or row.get(\"state_key_6dim\") or \"\"",
+   "86: out[\"state_key_9dim\"] = vanguard_by_ticker.get(ticker, \"\")",
+   "88: out[\"bridge_source_vanguard_csv\"] = str(vanguard_path or \"\")"
+  ],
+  "writes": [
+   "100: with output_path.open(\"w\", encoding=\"utf-8\", newline=\"\") as fh:",
+   "101: writer = csv.DictWriter(fh, fieldnames=fields, extrasaction=\"ignore\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 8,
+   "write": 2
+  }
+ },
+ {
+  "path": "ma_cockpit/ma_cockpit_commands.py",
+  "n_lines": 212,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "ma_cockpit/ma_cockpit.py",
+   "ma_cockpit/ma_cockpit_scheduler.py"
+  ],
+  "imports": [
+   "ma_cockpit/ma_cockpit_engine.py",
+   "ma_cockpit/ma_cockpit_outputs.py",
+   "ma_cockpit/ma_csv_schema.py"
+  ],
+  "docstring": "AVSHUNTER M&A Cockpit v1.0 \u2014 Command Router",
+  "functions": [
+   "_safe_name:31",
+   "_print_results:40",
+   "_print_section:60",
+   "cmd_scan:70",
+   "cmd_deal:83",
+   "cmd_triage:94",
+   "cmd_activist:105",
+   "cmd_arb:116",
+   "cmd_sector:127",
+   "cmd_events:138",
+   "cmd_validate:149",
+   "cmd_status:166",
+   "cmd_reset:180",
+   "route_command:184"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "45: n=_safe_name(results[key]); r=results[key].get(\"rows\",\"?\") if isinstance(results[key],dict) else \"?\"",
+   "52: n=results[\"master\"].get(\"added\",0)"
+  ],
+  "writes": [
+   "65: print(f\"  {tag.replace('_',' ')}\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 1
+  }
+ },
+ {
+  "path": "ma_cockpit/ma_cockpit_engine.py",
+  "n_lines": 237,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "ma_cockpit/ma_cockpit_commands.py",
+   "ma_cockpit/ma_cockpit_outputs.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER M&A Cockpit v1.0 \u2014 Core Engine\nHandles API calls, session state, response parsing, prompt builders",
+  "functions": [
+   "load_system_prompt:45",
+   "call_api:49",
+   "extract_section:61",
+   "clean_csv_block:65",
+   "parse_csv:75",
+   "extract_verdict:87",
+   "get_ts:97",
+   "get_run_dir:98",
+   "_date:103",
+   "build_full_scan_prompt:105",
+   "build_deal_prompt:138",
+   "build_activist_prompt:160",
+   "build_arb_prompt:176",
+   "build_sector_prompt:193",
+   "build_corporate_event_prompt:202",
+   "build_triage_prompt:221"
+  ],
+  "classes": [
+   {
+    "name": "MACockpitSession:23",
+    "methods": [
+     "__init__:24",
+     "reset:25",
+     "add_candidates:29",
+     "summary:35"
+    ]
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:47",
+   "ImportError:51"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "9: ANTHROPIC_API_KEY = os.environ.get(\"ANTHROPIC_API_KEY\", \"sk-ant-api03-bIMyLSiQbpJlw5QzA79HvsPGcJPAfLjsqM4_3Pz0AYGoYiH7tvoaGQn-nKQY6kXMsYvywGOaJd2ELDqJ",
+   "32: t=r.get(\"affected_ticker\") or r.get(\"ticker\",\"\")",
+   "40: \"desk_verdict\":self.desk_verdict or \"PENDING\"}"
+  ],
+  "writes": [
+   "66: text = re.sub(r'```[a-z]*','',text).replace('```','').strip()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "136: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO, created_by=MA_COCKPIT_v1.0\"\"\"",
+   "158: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\"",
+   "174: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\"",
+   "191: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\"",
+   "200: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\"",
+   "219: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\"",
+   "237: execution_permission=NONE_MA_COCKPIT_ONLY, capital_grade=NO\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 1
+  }
+ },
+ {
+  "path": "ma_cockpit/ma_cockpit_outputs.py",
+  "n_lines": 415,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "ma_cockpit/ma_cockpit_commands.py"
+  ],
+  "imports": [
+   "ma_cockpit/ma_cockpit_engine.py"
+  ],
+  "docstring": "AVSHUNTER M&A Cockpit v1.0 \u2014 Output Writers\nCSV (full schema), HTML brief, master calendar",
+  "functions": [
+   "_extract_section:42",
+   "_clean_csv:46",
+   "_parse_csv:53",
+   "_write_csv:66",
+   "_deduplicate_master:78",
+   "_verdict_color:99",
+   "_priority_badge:106",
+   "_role_color:115",
+   "_verdict_badge:121",
+   "_dbs_color:125",
+   "_csv_to_table:131",
+   "_md_to_html:173",
+   "build_html:209",
+   "write_ma_candidates_flat:331",
+   "write_all_outputs:367"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "165: c='#00c853' if 'BULL' in val or 'CALL' in val else ('#ef4444' if 'BEAR' in val or 'PUT' in val else '#f59e0b')"
+  ],
+  "fallbacks": [
+   "83: key=f\"{r.get('affected_ticker','')}-{r.get('event_date','')}-{str(r.get('headline',''))[:30]}\"",
+   "90: key=f\"{r.get('affected_ticker','')}-{r.get('event_date','')}-{str(r.get('headline',''))[:30]}\"",
+   "100: if \"PIPELINE_NOW\" in v or \"CONFIRMED\" in v: return \"#00c853\"",
+   "101: if \"WATCHLIST\" in v or \"HIGH_PROB\" in v: return \"#f59e0b\"",
+   "103: if \"RUMOUR\" in v or \"BLOCK\" in v: return \"#ef4444\"",
+   "112: s=styles.get(p,\"color:#64748b;background:#0a0a0a;\")",
+   "119: \"COMPETITOR\":\"#ef4444\",\"SECTOR_SYMPATHY\":\"#64748b\"}.get(r,\"#64748b\")",
+   "122: c={\"GO\":\"#00c853\",\"ARMED_HALF\":\"#f59e0b\",\"WAIT\":\"#64748b\",\"BLOCKED\":\"#ef4444\"}.get(v,\"#64748b\")",
+   "147: val=str(row.get(col,'')).strip()",
+   "165: c='#00c853' if 'BULL' in val or 'CALL' in val else ('#ef4444' if 'BEAR' in val or 'PUT' in val else '#f59e0b')",
+   "213: desk_verdict=session.desk_verdict or \"PENDING\"",
+   "356: row.setdefault(col, \"\")"
+  ],
+  "writes": [
+   "47: text = re.sub(r'```[a-z]*','',text).replace('```','').strip()",
+   "69: with open(path,\"w\",newline=\"\",encoding=\"utf-8\") as f:",
+   "70: w=csv.DictWriter(f,fieldnames=fields,extrasaction=\"ignore\")",
+   "87: with open(master,\"a\",newline=\"\",encoding=\"utf-8\") as f:",
+   "93: writer=csv.DictWriter(f,fieldnames=list(r.keys()),extrasaction=\"ignore\")",
+   "142: hdr=''.join(f'<th>{c.replace(\"_\",\" \").title()}</th>' for c in show)",
+   "175: text=text.replace(\"&\",\"&amp;\").replace(\"<\",\"&lt;\").replace(\">\",\"&gt;\")",
+   "206: else: parts.append(f'<p>{para.replace(chr(10),\" \")}</p>')",
+   "301: <div class=\"badges\"><div class=\"vbadge\">{desk_verdict.replace(\"_\",\" \")}</div></div>",
+   "305: <div class=\"stat\"><div class=\"slbl\">Desk Verdict</div><div class=\"sval\" style=\"font-size:9px;color:{vc}\">{desk_verdict.replace(\"_\",\" \")}</div></div>"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "110: \"WATCH_ONLY\":\"color:#334155;background:#0a0a0a;border:1px solid #33415555;\","
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 12,
+   "write": 15
+  }
+ },
+ {
+  "path": "ma_cockpit/ma_csv_schema.py",
+  "n_lines": 306,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "ma_cockpit/ma_cockpit_commands.py",
+   "ma_cockpit/validate_ma_csv.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "create_ma_manual_review_template:157",
+   "validate_ma_manual_review_csv:166",
+   "_validate_row:187",
+   "_check_enum:283",
+   "_norm:294",
+   "_is_true:298",
+   "_int_or_zero:302"
+  ],
+  "classes": [
+   {
+    "name": "ValidationReport:149",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "203: notes = row.get(\"manual_reviewer_notes\", \"\")",
+   "234: ticker = row.get(ticker_field, \"\")",
+   "295: return (value or \"\").strip().upper()",
+   "304: return int((value or \"0\").strip() or \"0\")"
+  ],
+  "writes": [
+   "160: with path.open(\"w\", newline=\"\", encoding=\"utf-8\") as handle:",
+   "161: writer = csv.DictWriter(handle, fieldnames=REQUIRED_COLUMNS)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 2
+  }
+ },
+ {
+  "path": "market_structure/lifecycle.py",
+  "n_lines": 25,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "market_structure/service.py",
+   "tests/msi/test_computation.py",
+   "tests/msi/test_functionality.py",
+   "tests/msi/test_logic.py",
+   "tests/msi/test_regression.py",
+   "tests/test_msi_agent1_data_foundation.py"
+  ],
+  "imports": [
+   "market_structure/params.py"
+  ],
+  "docstring": "Market-structure lifecycle and governed-direction relationship mapping.",
+  "functions": [
+   "transition_lifecycle:7",
+   "direction_relationship:19"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "19: def direction_relationship(*, governed_direction: str, structure_direction: str | None, lifecycle: str, quality: str) -> str:",
+   "22: direction = governed_direction.strip().upper()",
+   "23: if direction not in {\"CALL\", \"PUT\"} or lifecycle not in {\"MS_ACCEPTED\", \"MS_CONTINUING\"}: return \"NEUTRAL\"",
+   "24: aligned = (direction == \"CALL\" and structure_direction == \"ABOVE\") or (direction == \"PUT\" and structure_direction == \"BELOW\")"
+  ],
+  "fallbacks": [
+   "8: previous = str(prior or \"\").upper()"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 4,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "market_structure/params.py",
+  "n_lines": 28,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "market_structure/__init__.py",
+   "market_structure/lifecycle.py",
+   "market_structure/profile.py",
+   "market_structure/service.py",
+   "tests/msi/test_computation.py",
+   "tests/msi/test_logic.py",
+   "tests/msi/test_regression.py",
+   "tests/test_msi_agent1_data_foundation.py"
+  ],
+  "imports": [],
+  "docstring": "Versioned MSI calibration seeds; not empirically accepted thresholds.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "MSParams:8",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "market_structure/profile.py",
+  "n_lines": 107,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "market_structure/__init__.py",
+   "market_structure/service.py",
+   "tests/msi/test_computation.py",
+   "tests/msi/test_logic.py",
+   "tests/msi/test_regression.py"
+  ],
+  "imports": [
+   "market_structure/params.py"
+  ],
+  "docstring": "Deterministic one-minute-estimated TPO and volume profile calculations.",
+  "functions": [
+   "round_to_tick:25",
+   "profile_bin_width:30",
+   "_value_area:35",
+   "build_market_profile:44",
+   "_threshold_period:70",
+   "detect_double_distribution:77"
+  ],
+  "classes": [
+   {
+    "name": "MarketProfile:14",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "ValueError:26",
+   "ValueError:31"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "ml_confidence_layer/ml_confidence_engine.py",
+  "n_lines": 658,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "ml_confidence_layer/__init__.py",
+   "ml_confidence_layer/run_ml_on_vanguard_output.py",
+   "scripts/run_ml_on_vanguard_output.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER ML Confidence Engine\n================================\nXGBoost + LSTM Ensemble \u2014 Post-VANGUARD EV Adjustment\n\nPurpose:\n    Takes each ticker that reaches VANGUARD and produces two scores:\n      1. XGBoost Feature Importance Score (0-100)\n         Evaluates: Wyckoff phase, compression state, regime,\n                    control state, options flow, win rate, EV\n      2. LSTM Sequence Confidence Score (0-100)\n         Reads: last 60 bars of price/volume behaviour\n\n    These combine into a single ML Edge Multiplier (0.5x \u2013 1.5x)\n    that adjusts VANGUARD's EV calculation upward or downwar",
+  "functions": [
+   "build_xgb_features:109",
+   "build_lstm_sequence:132",
+   "_freeze_weights_baseline:403",
+   "run_outcome_regression:430"
+  ],
+  "classes": [
+   {
+    "name": "VanguardSignal:71",
+    "methods": []
+   },
+   {
+    "name": "MLEdgeResult:91",
+    "methods": []
+   },
+   {
+    "name": "ModelManager:170",
+    "methods": [
+     "__init__:171",
+     "_load_or_init:177",
+     "_build_xgb:198",
+     "_build_lstm:207",
+     "retrain:221"
+    ]
+   },
+   {
+    "name": "MLConfidenceEngine:255",
+    "methods": [
+     "__init__:265",
+     "score:268",
+     "_score_xgb:297",
+     "_score_lstm:307",
+     "_xgb_heuristic:317",
+     "_lstm_heuristic:332",
+     "_score_to_multiplier:346",
+     "_build_note:356",
+     "log_outcome:368"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "492: f\"Eligible trades analysed: {n}  |  Run ID: {run_id or 'N/A'}\",",
+   "556: f\"{(pd.to_numeric(df.get('rr_predicted', pd.Series()), errors='coerce') > 1.0).mean():.1%}\")",
+   "563: f\"{pd.to_numeric(df.get('rr_predicted', pd.Series()), errors='coerce').mean():.3f}\")"
+  ],
+  "writes": [
+   "388: with open(OUTCOMES_LOG, \"w\") as f:",
+   "389: json.dump(outcomes, f, indent=2)",
+   "424: with open(baseline_path, \"w\", encoding=\"utf-8\") as fh:",
+   "425: _json.dump(weights, fh, indent=2)",
+   "613: with open(report_path, \"w\", encoding=\"utf-8\") as fh:"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 5
+  }
+ },
+ {
+  "path": "news_terminal/news_terminal_commands.py",
+  "n_lines": 381,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "news_terminal/news_terminal.py",
+   "news_terminal/news_terminal_scheduler.py"
+  ],
+  "imports": [
+   "news_terminal/news_terminal_engine.py",
+   "news_terminal/news_terminal_outputs.py"
+  ],
+  "docstring": "AVSHUNTER News Terminal v1.3 \u2014 Command Router\nMaps /commands to prompts, API calls and output writers",
+  "functions": [
+   "print_results:37",
+   "print_text_response:94",
+   "cmd_brief:107",
+   "cmd_mna:132",
+   "cmd_sector:147",
+   "cmd_event:161",
+   "cmd_forward:175",
+   "cmd_map:186",
+   "cmd_watchlist:197",
+   "cmd_risk:212",
+   "cmd_sources:223",
+   "cmd_refine:234",
+   "cmd_ticker_csv:249",
+   "cmd_handoff_csv:263",
+   "cmd_status:277",
+   "deploy_news_terminal_outputs:291",
+   "_run_combiner:334",
+   "cmd_reset:346",
+   "route_command:351"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "49: if isinstance(v, dict): return v.get(\"rows\", \"?\")",
+   "66: cnt = v.get(\"added\", v) if isinstance(v, dict) else v"
+  ],
+  "writes": [
+   "101: print(f\"  {sec.replace('_',' ')}\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 1
+  }
+ },
+ {
+  "path": "news_terminal/news_terminal_engine.py",
+  "n_lines": 190,
+  "classification": "LIBRARY",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "news_terminal/news_terminal_commands.py",
+   "news_terminal/news_terminal_outputs.py",
+   "news_terminal/news_terminal_scheduler.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER News Terminal v1.3 \u2014 Core Engine",
+  "functions": [
+   "load_system_prompt:46",
+   "call_api:52",
+   "extract_section:67",
+   "parse_csv_section:72",
+   "parse_json_section:86",
+   "extract_desk_verdict:97",
+   "extract_options_regime:106",
+   "get_timestamp:112",
+   "get_run_dir:114",
+   "get_session_label:120",
+   "build_brief_prompt:125",
+   "build_mna_prompt:150",
+   "build_sector_prompt:154",
+   "build_event_prompt:158",
+   "build_forward_prompt:162",
+   "build_watchlist_prompt:166",
+   "build_risk_prompt:169",
+   "build_sources_prompt:174",
+   "build_refine_prompt:177",
+   "build_map_prompt:188"
+  ],
+  "classes": [
+   {
+    "name": "SessionState:19",
+    "methods": [
+     "__init__:20",
+     "reset:21",
+     "add_candidates:28",
+     "get_high_priority:33",
+     "summary:35"
+    ]
+   }
+  ],
+  "raises": [
+   "FileNotFoundError:49",
+   "ImportError:56"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "8: ANTHROPIC_API_KEY = os.environ.get(\"ANTHROPIC_API_KEY\", \"sk-ant-api03-bIMyLSiQbpJlw5QzA79HvsPGcJPAfLjsqM4_3Pz0AYGoYiH7tvoaGQn-nKQY6kXMsYvywGOaJd2ELDqJ",
+   "40: \"narratives\":len(self.narratives),\"desk_verdict\":self.desk_verdict or \"PENDING\",",
+   "41: \"options_regime\":self.options_regime or \"PENDING\"}",
+   "170: tickers = [c.get(\"ticker\",\"\") for c in session.candidates[:10]]",
+   "181: \"priority\":c.get(\"upload_priority\"),\"narrative\":str(c.get(\"narrative\",\"\"))[:50]}"
+  ],
+  "writes": [
+   "75: clean = re.sub(r'```[a-z]*','',csv_text).replace('```','').strip()",
+   "89: clean = re.sub(r'```[a-z]*','',json_text).replace('```','').strip()",
+   "179: cand_list = json.dumps([{\"ticker\":c.get(\"ticker\"),\"anis\":c.get(\"anis_total_score\"),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "135: return f\"\"\"Run /brief \u2014 {lbl} session. Date: {date_str}\\n{focus}\\n\\nProduce complete global session intelligence brief. Include TICKER_CSV_DATA, HANDO",
+   "152: return f\"\"\"Run /mna \u2014 M&A, strategic review and activist signals. Date: {date_str}\\nSearch for: M&A deals announced today, SEC merger filings, activis",
+   "156: return f\"\"\"Run /sector {sector}. Date: {date_str}\\nSearch for: latest news in the {sector} sector \u2014 earnings, guidance, policy, competitive developmen",
+   "160: return f\"\"\"Run /event \u2014 analyse this specific event:\\n\"{event_description}\"\\nDate: {date_str}\\n\\nSearch for current information. Map full transmission",
+   "164: return f\"\"\"Run /forward \u2014 forward-looking impact view with FIPS scoring.\\n{context}\\n\\nFor each narrative: known impact, expected future impact, secon",
+   "167: return \"\"\"Run /watchlist \u2014 WATCHLIST_ONLY candidates from current session.\\nInclude tickers with unconfirmed signals, rumours needing confirmation, co",
+   "172: return f\"\"\"Run /risk \u2014 all risk flags for current session.\\n{context}\\n\\nAnalyse and report:\\n1. STALE signals\\n2. CROWDED trades (consensus positioni"
+  ],
+  "version_fields": [
+   "145: JSON macro enrichment delta. contract_version: macro_enrichment_delta_v1_2. merge_mode: AUGMENT_ONLY_DO_NOT_REPLACE. Do not include protected macro fi"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 5,
+   "write": 3
+  }
+ },
+ {
+  "path": "news_terminal/news_terminal_outputs.py",
+  "n_lines": 770,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "news_terminal/news_terminal_commands.py",
+   "news_terminal/news_terminal_scheduler.py"
+  ],
+  "imports": [
+   "news_terminal/news_terminal_engine.py"
+  ],
+  "docstring": "AVSHUNTER News Terminal v1.3 \u2014 Output Writers\nCSV, JSON, HTML brief, newsletter",
+  "functions": [
+   "_get_paths:16",
+   "write_ticker_csv:24",
+   "write_handoff_csv:34",
+   "write_macro_json:45",
+   "write_full_brief:56",
+   "write_trader_brief:63",
+   "write_summary_text:70",
+   "write_all_outputs:77",
+   "update_catalyst_master:116",
+   "_extract_section:153",
+   "_clean_csv_block:159",
+   "_extract_csv_blocks:184",
+   "_extract_json:222",
+   "_minimal_macro_json:250",
+   "_enforce_permissions:274",
+   "_verdict_color:302",
+   "_md_to_html:310",
+   "_render_table:355",
+   "_extract_section:364",
+   "_csv_to_table:370",
+   "_build_html:439",
+   "_build_summary:591",
+   "write_catalyst_csv_v2:634",
+   "write_macro_enrichment_delta:668",
+   "write_tickers_file:698",
+   "write_ticker_csv_only:745",
+   "_write_csv_rows:754"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "446: rc = \"#ef4444\" if \"PUT\" in options_regime else \"#22c55e\" if \"CALL\" in options_regime else \"#f59e0b\""
+  ],
+  "fallbacks": [
+   "129: key = (row.get('ticker',''), row.get('generated_date',''), row.get('narrative',''))",
+   "138: key = (row.get('ticker',''), row.get('generated_date',''), row.get('narrative',''))",
+   "165: # Detect by looking for pattern: \"...NONE_NEWS_TERMINAL_ONLY TICKER,\" or \"...NONE_NEWS_TERMINAL_ONLY NEWS_TERMINAL_TICKER\"",
+   "197: if 'ticker_csv' not in results or 'handoff_csv' not in results:",
+   "204: if 'ticker_csv' not in results and ('export_type' in header or 'pipeline_input_type' in header or 'ticker' in header):",
+   "411: val = str(row.get(col, '')).strip()",
+   "424: except: pass",
+   "442: desk_verdict = session.desk_verdict or \"PENDING\"",
+   "443: options_regime = session.options_regime or \"\u2014\"",
+   "444: dte = session.dte_preference or \"\u2014\"",
+   "593: desk_verdict = session.desk_verdict or \"PENDING\"",
+   "594: options_regime = session.options_regime or \"\u2014\"",
+   "595: dte = session.dte_preference or \"\u2014\"",
+   "657: row.setdefault(col, \"\")"
+  ],
+  "writes": [
+   "29: out.write_text(blocks['ticker_csv'], encoding=\"utf-8\")",
+   "40: out.write_text(blocks['handoff_csv'], encoding=\"utf-8\")",
+   "52: out.write_text(json.dumps(data, indent=2), encoding=\"utf-8\")",
+   "59: out.write_text(html, encoding=\"utf-8\")",
+   "66: out.write_text(html, encoding=\"utf-8\")",
+   "73: out.write_text(text, encoding=\"utf-8\")",
+   "82: raw_path.write_text(response, encoding=\"utf-8\")",
+   "144: with open(catalyst_master, 'w', newline='', encoding='utf-8') as f:",
+   "145: writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')",
+   "162: text = re.sub(r'```[a-z]*', '', text).replace('```', '').strip()"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "165: # Detect by looking for pattern: \"...NONE_NEWS_TERMINAL_ONLY TICKER,\" or \"...NONE_NEWS_TERMINAL_ONLY NEWS_TERMINAL_TICKER\"",
+   "371: \"\"\"Convert raw CSV text into an HTML table, showing only key columns.\"\"\"",
+   "396: 'WATCH_ONLY': ('#f59e0b', '#1a1200'),",
+   "397: 'CONTEXT_ONLY': ('#64748b', '#111'),"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 16,
+   "write": 28
+  }
+ },
+ {
+  "path": "orchestrator/claude_api.py",
+  "n_lines": 16,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/__init__.py",
+   "orchestrator/main.py"
+  ],
+  "imports": [],
+  "docstring": "<SYNTAX_ERROR>",
+  "syntax_error": "invalid non-printable character U+FEFF (<unknown>, line 1)",
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "orchestrator/collector.py",
+  "n_lines": 123,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/__init__.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Data Collector\nCollects CSVs, charts, and screenshots from data folder",
+  "functions": [],
+  "classes": [
+   {
+    "name": "DataCollector:11",
+    "methods": [
+     "__init__:12",
+     "get_today_folder:20",
+     "check_data_ready:28",
+     "collect_all_data:72",
+     "get_summary:110"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "orchestrator/data_monitor.py",
+  "n_lines": 42,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/main.py"
+  ],
+  "imports": [],
+  "docstring": "<SYNTAX_ERROR>",
+  "syntax_error": "invalid non-printable character U+FEFF (<unknown>, line 1)",
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "orchestrator/email_sender.py",
+  "n_lines": 40,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/__init__.py",
+   "orchestrator/main.py"
+  ],
+  "imports": [],
+  "docstring": "<SYNTAX_ERROR>",
+  "syntax_error": "invalid non-printable character U+FEFF (<unknown>, line 1)",
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "orchestrator/macro_loader.py",
+  "n_lines": 299,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/options_intelligence.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Macro Intelligence Loader v1.1\n========================================\n\nReplaces PDF parsing with JSON file loading.\nPlace macro_intelligence_YYYY-MM-DD.json in reports/daily/\nSystem automatically picks the most recent file.\n\nv1.1 changes:\n  - VALID_VALUES expanded to accept all AVSHUNTER_GPT output variants\n    (uppercase compound values, MODERATE conviction, extended sector_bias values)\n  - Backward compatible: legacy MacroLoader values still accepted\n\nUsage:\n    from orchestrator.macro_loader import MacroLoader\n    loader = MacroLoader()\n    macro_data = loader.load()\n    if macr",
+  "functions": [],
+  "classes": [
+   {
+    "name": "MacroLoader:115",
+    "methods": [
+     "__init__:122",
+     "load:125",
+     "_find_latest_json:176",
+     "_validate:185",
+     "_normalise:250",
+     "_age_hours:292"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "160: age_hours = self._age_hours(macro_data.get('as_of_utc', ''))",
+   "242: rd = data.get('report_date', '')",
+   "288: 'sector_bias':         data.get('sector_bias', {}),",
+   "289: 'notes':               data.get('notes', ''),"
+  ],
+  "writes": [
+   "295: dt = datetime.fromisoformat(as_of_utc.replace('Z', '+00:00'))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 1
+  }
+ },
+ {
+  "path": "orchestrator/main.py",
+  "n_lines": 258,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/__init__.py",
+   "run.py"
+  ],
+  "imports": [
+   "orchestrator/claude_api.py",
+   "orchestrator/data_monitor.py",
+   "orchestrator/email_sender.py",
+   "orchestrator/options_intelligence.py",
+   "orchestrator/report_generator.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "_ensure_utf8_stdout:16",
+   "_safe_print:24"
+  ],
+  "classes": [
+   {
+    "name": "AVSHUNTEROrchestrator:34",
+    "methods": [
+     "__init__:35",
+     "_init_options_intelligence_if_enabled:89",
+     "run:113",
+     "_run_monitor_mode:123",
+     "_run_immediate_mode:160",
+     "_process_data:200"
+    ]
+   }
+  ],
+  "raises": [
+   "RuntimeError:181",
+   "RuntimeError:192",
+   "ValueError:121"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "46: ctx = os.environ.get(\"AVSHUNTER_CONTEXT_DIR\", \"\").strip()",
+   "92: features = self.config.get(\"features\", {}) if isinstance(self.config, dict) else {}",
+   "93: oi_cfg = features.get(\"options_intelligence\", {}) if isinstance(features, dict) else {}",
+   "94: enabled = bool(oi_cfg.get(\"enabled\", False))",
+   "168: orch_cfg = self.config.get('orchestrator', {})",
+   "169: allow_incomplete = bool(orch_cfg.get('immediate_allow_incomplete', False))",
+   "170: discovery_only = bool(orch_cfg.get('immediate_discovery_only', False))",
+   "172: csvs_n = status.get('csvs_count', 0)",
+   "173: charts_n = status.get('charts_count', 0)",
+   "174: shots_n = status.get('screenshots_count', 0)",
+   "183: if not status.get('ready', False) and not allow_incomplete:",
+   "186: if not status.get('has_csvs', False):",
+   "188: if not status.get('has_charts', False):",
+   "190: if not status.get('has_screenshots', False):"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "165: # You can loosen this only intentionally via config:",
+   "167: #   orchestrator.immediate_discovery_only = true  (allows zero-input runs, but flags them)"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 15,
+   "write": 0
+  }
+ },
+ {
+  "path": "orchestrator/options_intelligence.py",
+  "n_lines": 938,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/main.py"
+  ],
+  "imports": [
+   "orchestrator/macro_loader.py",
+   "orchestrator/wyckoff_engine.py",
+   "wyckoff_crabel_precor_logic_v2.py"
+  ],
+  "docstring": "AVSHUNTER Options Intelligence v4.1 - JIM SIMONS EDITION + CRABEL PRECOR\n\nRENAISSANCE MEDALLION PRINCIPLES APPLIED:\n========================================\n\n1. ALWAYS Generate Tradeable Signals\n   - Multi-tier thresholds (never zero output)\n   - Both long AND short opportunities\n   - Mean reversion + trend continuation\n   \n2. Statistical Edge Over Volume\n   - 50-100 signals daily across confidence spectrum\n   - Size by conviction (TIER 1 = 100%, TIER 2 = 50%, TIER 3 = 25%)\n   - Rapid evaluation, selective execution\n\n3. Probabilistic Framework\n   - No binary yes/no - everything has a probabili",
+  "functions": [],
+  "classes": [
+   {
+    "name": "OptionsIntelligence:96",
+    "methods": [
+     "__init__:109",
+     "_setup_logging:159",
+     "_load_options_config:170",
+     "_load_sector_map:194",
+     "_initialize_outcomes_db:208",
+     "_find_intelligence_report:225",
+     "_extract_full_pdf_text:232",
+     "_parse_intelligence_report:249",
+     "_extract_risk_switch:284",
+     "_extract_conviction_score:293",
+     "_extract_liquidity_pulse:305",
+     "_extract_volatility_mode:318",
+     "_load_macro_data:335",
+     "_validate_macro_regime:358",
+     "_calculate_atr:386",
+     "_apply_crabel_filter_multitier:398",
+     "scan_options:497",
+     "_scan_tier:558"
+    ]
+   }
+  ],
+  "raises": [
+   "Exception:885"
+  ],
+  "direction_branches": [
+   "596: if stock_signal.get('direction') == 'PUT':",
+   "701: WyckoffEngine provides: phase, trade_direction, price levels, setup_quality",
+   "721: # trade_direction NONE is handled below with Precor Phase B override",
+   "722: direction = 'CALL' if wyckoff_result['trade_direction'] == 'LONG' else 'PUT'",
+   "759: if (wyckoff_result['trade_direction'] == 'NONE' and",
+   "764: direction = 'CALL'",
+   "766: direction = 'PUT'",
+   "770: elif wyckoff_result['trade_direction'] == 'NONE':",
+   "774: if precor_intent == 'BUY_SETUP' and direction == 'PUT':",
+   "776: elif precor_intent == 'SELL_SETUP' and direction == 'CALL':",
+   "780: if wyckoff_result['trade_direction'] == 'NONE':",
+   "784: if not CRABEL_PRECOR_AVAILABLE and wyckoff_result['trade_direction'] == 'NONE':"
+  ],
+  "fallbacks": [
+   "118: preset_name = self.options_config.get('active_preset', 'medium_term')",
+   "363: risk_on_prob = macro_data.get('risk_on_prob', 0.50)",
+   "364: liquidity = macro_data.get('liquidity_status', 'UNKNOWN')",
+   "365: vix_contango = macro_data.get('vix_contango', 0.0)",
+   "366: risk_switch = macro_data.get('risk_on_switch', 'UNKNOWN')",
+   "435: comp_state = precor.get('crabel_compression_state', 'NONE')",
+   "568: sector = self.sector_map.get(ticker, 'UNKNOWN')",
+   "581: stock_signal.get('precor_compression_state', 'NONE'),",
+   "582: stock_signal.get('precor_intent', 'WAIT'),",
+   "583: stock_signal.get('precor_transition_conf', 0.0),",
+   "584: stock_signal.get('precor_intent_conf', 0.0),",
+   "585: stock_signal.get('precor_control', 'EQUILIBRIUM')",
+   "613: precor_tag = f\" [{stock_signal.get('precor_compression_state', '')}]\" if CRABEL_PRECOR_AVAILABLE else \"\"",
+   "630: sector_bias = self.macro_data.get('sector_bias', {}) if self.macro_data else {}"
+  ],
+  "writes": [
+   "212: with open(self.outcomes_db_path, 'w', newline='', encoding='utf-8') as f:",
+   "831: with open(csv_path, 'w', newline='', encoding='utf-8') as f:",
+   "832: writer = csv.DictWriter(f, fieldnames=fieldnames)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 12,
+   "fallback": 33,
+   "write": 3
+  }
+ },
+ {
+  "path": "orchestrator/report_generator.py",
+  "n_lines": 91,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/__init__.py",
+   "orchestrator/main.py"
+  ],
+  "imports": [],
+  "docstring": "<SYNTAX_ERROR>",
+  "syntax_error": "invalid non-printable character U+FEFF (<unknown>, line 1)",
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "short_swing/short_swing_contract.py",
+  "n_lines": 446,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "short_swing/run_short_swing.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 SHORT-SWING CONTRACT SELECTOR v1.0\n================================================================================\nComponent 2 of 5 in the Short-Swing Module (Scope 2)\n\nPURPOSE:\n    For each eligible ticker, selects the optimal 7-14 DTE contract.\n    Strategy: first OTM strike within 2% of spot, targeting delta 0.35-0.50.\n\nLOGIC:\n    1. If the evening-run contract is already in 5-21 DTE range \u2192 USE it\n    2. Otherwise \u2192 fetch the live chain from Polygon, find the nearest\n       expiry in the 7-21 day window, select optimal strike\n\nCONTRACT SELECTION RULES (short-swing specific):\n ",
+  "functions": [
+   "setup_logger:71",
+   "select_contract:191",
+   "process_eligible:276"
+  ],
+  "classes": [
+   {
+    "name": "PolygonSSClient:86",
+    "methods": [
+     "__init__:89",
+     "_throttle:97",
+     "get_spot:103",
+     "get_available_expiries:114",
+     "get_chain_for_expiry:138"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:92"
+  ],
+  "direction_branches": [
+   "171: 'right':         (d.get('contract_type', '') or '').upper()[:1],",
+   "196: right = 'C' if direction.upper() == 'CALL' else 'P'",
+   "318: direction = str(row.get('options_direction', 'CALL')).upper()"
+  ],
+  "fallbacks": [
+   "107: r = self.session.get(url, params={'apiKey': self.api_key}, timeout=10)",
+   "109: d = r.json().get('ticker', {})",
+   "110: return d.get('day', {}).get('c') or d.get('prevDay', {}).get('c')",
+   "130: for result in r.json().get('results', []):",
+   "146: r = self.session.get(url, params=params, timeout=15)",
+   "149: results = data.get('results', [])",
+   "165: d = res.get('details', {})",
+   "166: g = res.get('greeks', {}) or {}",
+   "167: q = res.get('last_quote', {}) or {}",
+   "168: day = res.get('day', {}) or {}",
+   "170: 'option_symbol': d.get('ticker', ''),",
+   "171: 'right':         (d.get('contract_type', '') or '').upper()[:1],",
+   "172: 'strike':        float(d.get('strike_price', 0)),",
+   "173: 'expiry':        d.get('expiration_date', expiry),"
+  ],
+  "writes": [
+   "185: df['spread_pct'] = (df['ask'] - df['bid']) / df['mid'].replace(0, np.nan)",
+   "426: with open(out_path, 'w') as f:",
+   "427: json.dump(selected, f, indent=2, default=str)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 44,
+   "write": 3
+  }
+ },
+ {
+  "path": "short_swing/short_swing_monitor.py",
+  "n_lines": 500,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "short_swing/run_short_swing.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 SHORT-SWING EOD MONITOR v1.0\n================================================================================\nComponent 3 of 5 in the Short-Swing Module (Scope 2)\n\nPURPOSE:\n    End-of-day position monitor for short-swing paper trades.\n    NOT an intraday loop \u2014 runs once after close to check entry triggers,\n    update open positions, and flag exits.\n\nKEY DIFFERENCE FROM 0DTE:\n    0DTE: continuous 5-min intraday loop, same-day exit\n    Short-swing: EOD check only, multi-day hold, exit at Day 3 close\n\nDAILY SEQUENCE:\n    Morning (pre-open):  Check if any open positions hit their hard",
+  "functions": [
+   "setup_logger:60",
+   "check_crabel_trigger:135",
+   "check_adverse_close:168"
+  ],
+  "classes": [
+   {
+    "name": "PolygonEODClient:75",
+    "methods": [
+     "__init__:77",
+     "_throttle:85",
+     "get_daily_candles:91",
+     "get_option_mid:113"
+    ]
+   },
+   {
+    "name": "ShortSwingPosition:196",
+    "methods": [
+     "__init__:198",
+     "is_past_hard_exit:221",
+     "days_in_trade:224",
+     "pnl:233",
+     "open_position:237",
+     "close:244",
+     "to_dict:250"
+    ]
+   },
+   {
+    "name": "ShortSwingMonitor:278",
+    "methods": [
+     "__init__:280",
+     "load_contracts:287",
+     "load_open_positions:302",
+     "save_open_positions:332",
+     "save_outcomes:339",
+     "run_eod_check:356"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:80"
+  ],
+  "direction_branches": [
+   "150: if direction.upper() == 'CALL':",
+   "180: if direction.upper() == 'CALL':",
+   "314: 'direction':       pos_data.get('direction', 'CALL'),"
+  ],
+  "fallbacks": [
+   "103: results = r.json().get('results', [])",
+   "118: r = self.session.get(url, params={'apiKey': self.api_key}, timeout=10)",
+   "120: result = r.json().get('results', {})",
+   "121: q = result.get('last_quote', {}) or {}",
+   "122: bid = float(q.get('bid', 0))",
+   "123: ask = float(q.get('ask', 0))",
+   "127: lt = result.get('last_trade', {}) or {}",
+   "128: return float(lt.get('price', 0)) or None",
+   "145: today_open  = float(today.get('open', 0))",
+   "146: prior_high  = float(prior.get('high', 0))",
+   "147: prior_low   = float(prior.get('low', 0))",
+   "148: today_close = float(today.get('close', 0))",
+   "178: close = float(today.get('close', 0))",
+   "206: self.entry_date      = contract.get('entry_date', date.today().isoformat())"
+  ],
+  "writes": [
+   "336: with open(state_path, 'w') as f:",
+   "337: json.dump(data, f, indent=2)",
+   "345: new_df.to_csv(day_path, index=False)",
+   "353: combined.to_csv(cumulative_path, index=False)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 30,
+   "write": 4
+  }
+ },
+ {
+  "path": "short_swing/short_swing_outcome_logger.py",
+  "n_lines": 368,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "short_swing/run_short_swing.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 SHORT-SWING OUTCOME LOGGER v1.0\n================================================================================\nComponent 4 of 5 in the Short-Swing Module (Scope 2)\n\nPURPOSE:\n    Aggregates all paper trade outcomes from the EOD monitor,\n    computes performance statistics by Crabel pattern and phase,\n    and formats observations ready to feed the main actuarial database\n    once Phase C/E Crabel hashes cross n\u226550.\n\nACTUARIAL INTEGRATION:\n    Each outcome is tagged with state_hash from the parent Vanguard signal.\n    Short-swing observations build a SEPARATE hash accumulation layer",
+  "functions": [
+   "setup_logger:50",
+   "load_todays_outcomes:65",
+   "load_cumulative:74",
+   "load_contracts_today:80",
+   "compute_daily_stats:95",
+   "compute_cumulative_stats:124",
+   "format_actuarial_observations:203",
+   "build_intel_panel:239",
+   "run_outcome_logger:295"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "190: 'sharpe_approx':      round(closed['pnl_dollars'].mean() / (closed['pnl_dollars'].std() or 1), 3),",
+   "216: 'state_hash':    str(row.get('state_hash', 'UNKNOWN')),",
+   "217: 'ticker':        str(row.get('ticker', '')),",
+   "220: 'crabel_pattern':str(row.get('crabel_pattern', '')),",
+   "221: 'phase':         str(row.get('phase', '')),",
+   "222: 'direction':     str(row.get('direction', '')),",
+   "223: 'dte_entry':     int(row.get('dte', 0)) if 'dte' in row else 0,",
+   "224: 'days_held':     int(row.get('days_in_trade', 0)),",
+   "225: 'entry_premium': float(row.get('entry_premium', 0)),",
+   "226: 'exit_premium':  float(row.get('exit_premium', 0)),",
+   "227: 'pnl_dollars':   float(row.get('pnl_dollars', 0)),",
+   "228: 'pnl_pct':       float(row.get('pnl_pct', 0)),",
+   "229: 'exit_reason':   str(row.get('exit_reason', '')),",
+   "230: 'win':           1 if float(row.get('pnl_dollars', 0)) > 0 else 0,"
+  ],
+  "writes": [
+   "331: updated.to_csv(CUMULATIVE_PATH, index=False)",
+   "337: with open(obs_path, 'w') as f:",
+   "338: json.dump(obs, f, indent=2)",
+   "348: with open(panel_path, 'w') as f:",
+   "349: json.dump(panel, f, indent=2, default=str)",
+   "353: with open(summary_path, 'w') as f:",
+   "354: json.dump({'daily': daily_stats, 'cumulative': cumul_stats}, f, indent=2)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 39,
+   "write": 7
+  }
+ },
+ {
+  "path": "zero_dte/intraday_0dte_trigger.py",
+  "n_lines": 575,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "zero_dte/run_0dte.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 INTRADAY 0DTE TRIGGER ENGINE v1.0\n================================================================================\nComponent 3 of 4 in the 0DTE Day Trade Module\n\nPURPOSE:\n    Monitors the 0DTE contract shortlist during market hours using 5-minute\n    bars and fires entry/exit alerts when trigger conditions are met.\n\nDESIGN:\n    Standalone module. Does NOT modify intraday_spring_detector.py.\n    Replicates the 5-minute bar monitoring pattern and adds 0DTE-specific\n    trigger logic on top.\n\nTRIGGER CONDITIONS (all required for ENTER signal):\n    1. Spring confirm  \u2014 5m close above p",
+  "functions": [
+   "setup_logger:79",
+   "now_et:94",
+   "is_in_window:105",
+   "is_entry_window:113",
+   "is_past_hard_exit:117",
+   "is_market_hours:122",
+   "detect_spring_trigger:189",
+   "detect_volume_confirm:234",
+   "detect_reversal_exit:249"
+  ],
+  "classes": [
+   {
+    "name": "IntradayDataFetcher:130",
+    "methods": [
+     "__init__:133",
+     "_throttle:141",
+     "get_bars:147",
+     "get_option_quote:169"
+    ]
+   },
+   {
+    "name": "ZeroDTEPosition:277",
+    "methods": [
+     "__init__:280",
+     "check_stop:295",
+     "pnl:298",
+     "close:301",
+     "to_dict:307"
+    ]
+   },
+   {
+    "name": "ZeroDTETriggerEngine:329",
+    "methods": [
+     "__init__:335",
+     "load_contracts:343",
+     "scan_once:365",
+     "_log_outcome:499",
+     "_save_outcomes:503",
+     "run:508",
+     "run_test:543"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:136"
+  ],
+  "direction_branches": [
+   "205: if direction.upper() == 'CALL':",
+   "262: if direction.upper() == 'CALL':"
+  ],
+  "fallbacks": [
+   "159: results = r.json().get('results', [])",
+   "174: r = self.session.get(url, params={'apiKey': self.api_key}, timeout=10)",
+   "177: result = data.get('results', {})",
+   "178: q = result.get('last_quote', {})",
+   "179: bid = float(q.get('bid', 0))",
+   "180: ask = float(q.get('ask', 0))",
+   "181: mid = (bid + ask) / 2 if (bid + ask) > 0 else float(result.get('last_trade', {}).get('price', 0))",
+   "466: 'type':          'ENTER_PAPER' if contract.get('paper_mode', True) else 'ENTER',",
+   "476: 'rank':          contract.get('zero_dte_rank', 0),"
+  ],
+  "writes": [
+   "506: pd.DataFrame(self.outcomes).to_csv(out_path, index=False)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "423: # \u2500\u2500 Check for new entries (entry window only) \u2500\u2500"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 9,
+   "write": 1
+  }
+ },
+ {
+  "path": "zero_dte/zero_dte_contract.py",
+  "n_lines": 457,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "zero_dte/run_0dte.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 0DTE CONTRACT SELECTOR v1.0\n================================================================================\nComponent 2 of 4 in the 0DTE Day Trade Module\n\nPURPOSE:\n    For each ticker passing the screener, fetches the live 0DTE options chain\n    via Polygon API and selects the optimal contract for execution.\n\nCONTRACT SELECTION RULES:\n    - Direction: from Vanguard precor_intent (BUY_SETUP \u2192 CALL, SELL_SETUP \u2192 PUT)\n    - Expiry:    today's date only (0DTE by definition)\n    - Strike:    first OTM within 1% of spot (not ATM \u2014 too expensive for 0DTE R:R)\n    - Delta:     target 0.35",
+  "functions": [
+   "setup_logger:66",
+   "select_contract:182",
+   "process_eligible_tickers:317"
+  ],
+  "classes": [
+   {
+    "name": "PolygonOptionsClient:81",
+    "methods": [
+     "__init__:87",
+     "_throttle:98",
+     "get_snapshot:104",
+     "get_options_chain:117"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:90"
+  ],
+  "direction_branches": [
+   "162: 'right':          d.get('contract_type', '').upper()[0] if d.get('contract_type') else '',",
+   "194: direction: 'CALL' or 'PUT'",
+   "203: right = 'C' if direction.upper() == 'CALL' else 'P'",
+   "368: direction = str(row.get('options_direction', 'CALL')).upper()"
+  ],
+  "fallbacks": [
+   "109: r = self.session.get(url, params={'apiKey': self.api_key}, timeout=10)",
+   "112: return data.get('ticker', {}).get('day', {}).get('c') or \\",
+   "113: data.get('ticker', {}).get('prevDay', {}).get('c')",
+   "134: r = self.session.get(url, params=params, timeout=15)",
+   "137: results = data.get('results', [])",
+   "155: d = r.get('details', {})",
+   "156: g = r.get('greeks', {})",
+   "157: day = r.get('day', {})",
+   "158: q = r.get('last_quote', {})",
+   "161: 'option_symbol':  d.get('ticker', ''),",
+   "162: 'right':          d.get('contract_type', '').upper()[0] if d.get('contract_type') else '',",
+   "163: 'strike':         float(d.get('strike_price', 0)),",
+   "164: 'expiry':         d.get('expiration_date', ''),",
+   "166: 'delta':          float(g.get('delta', 0)) if g else 0,"
+  ],
+  "writes": [
+   "221: side['spread_pct'] = (side['ask'] - side['bid']) / side['mid'].replace(0, np.nan)",
+   "423: with open(out_path, 'w') as f:",
+   "424: json.dump(selected_contracts, f, indent=2, default=str)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "57: MAX_CONTRACTS_PAPER = 1      # Paper mode: 1 contract only"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 4,
+   "fallback": 39,
+   "write": 3
+  }
+ },
+ {
+  "path": "zero_dte/zero_dte_outcome_logger.py",
+  "n_lines": 445,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "zero_dte/run_0dte.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER \u2014 0DTE OUTCOME LOGGER & ACTUARIAL FEEDER v1.0\n================================================================================\nComponent 4 of 4 in the 0DTE Day Trade Module\n\nPURPOSE:\n    1. Aggregates all paper trade outcomes from the trigger engine\n    2. Computes daily performance statistics\n    3. Formats outcome data as state hash observations ready to feed into\n       the main actuarial database once Phase E hashes cross n\u226550\n    4. Generates the 0DTE panel data for the Intelligence Lab dashboard\n\nACTUARIAL READINESS:\n    Each outcome is tagged with the state_hash from the paren",
+  "functions": [
+   "setup_logger:53",
+   "load_todays_outcomes:68",
+   "load_cumulative_outcomes:80",
+   "load_enriched_signals_for_hashes:87",
+   "compute_daily_stats:111",
+   "compute_cumulative_stats:161",
+   "format_actuarial_observations:214",
+   "build_intel_panel:256",
+   "run_outcome_logger:328"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "202: 'sharpe_approx':       round(closed['pnl_dollars'].mean() / (closed['pnl_dollars'].std() or 1), 3),",
+   "203: 'max_drawdown_day':    round(closed.groupby(closed.get('entry_time', 'date'))['pnl_dollars'].sum().min() if 'entry_time' in closed.columns else 0, 2),",
+   "235: 'state_hash':       str(row.get('state_hash', 'UNKNOWN')),",
+   "236: 'ticker':           str(row.get('ticker', '')),",
+   "238: 'direction':        str(row.get('direction', '')),",
+   "239: 'entry_premium':    float(row.get('entry_premium', 0)),",
+   "240: 'exit_premium':     float(row.get('exit_premium', 0)),",
+   "241: 'pnl_dollars':      float(row.get('pnl_dollars', 0)),",
+   "242: 'pnl_pct':          float(row.get('pnl_pct', 0)),",
+   "243: 'exit_reason':      str(row.get('exit_reason', '')),",
+   "244: 'win':              1 if float(row.get('pnl_dollars', 0)) > 0 else 0,",
+   "245: 'hold_hours':       float(row.get('hold_hours', 0)) if 'hold_hours' in row else 0,",
+   "271: 'trades_to_n50':      cumulative_stats.get('trades_to_n50', 50),",
+   "272: 'actuarial_ready':    cumulative_stats.get('actuarial_ready', False),"
+  ],
+  "writes": [
+   "377: updated_cumulative.to_csv(CUMULATIVE_PATH, index=False)",
+   "384: with open(obs_path, 'w') as f:",
+   "385: json.dump(actuarial_obs, f, indent=2)",
+   "411: with open(panel_path, 'w') as f:",
+   "412: json.dump(panel, f, indent=2, default=str)",
+   "417: with open(summary_path, 'w') as f:",
+   "418: json.dump({'daily': daily_stats, 'cumulative': cumulative_stats}, f, indent=2)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 37,
+   "write": 7
+  }
+ }
+]

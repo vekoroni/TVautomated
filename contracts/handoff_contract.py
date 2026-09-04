@@ -132,7 +132,7 @@ TRUTH_PACKET_FIELD_GROUPS = {
     ],
     "vanguard": [
         "state_v2", "state_hash", "behaviour_state_key", "behaviour_state_hash",
-        "actuarial_match_type", "actuarial_ev_weight", "catalyst_overlay",
+        "actuarial_match_type", "actuarial_ev_weight",
         "future_momentum_bucket", "preferred_horizon",
         "layer2__preferred_horizon", "layer2__state_match_method",
         "layer2__state_match_stage", "layer2__state_match_dimensions",

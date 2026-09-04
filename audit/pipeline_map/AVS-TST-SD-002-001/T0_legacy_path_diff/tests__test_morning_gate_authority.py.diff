@@ -1,0 +1,28 @@
+--- a/tests/test_morning_gate_authority.py
++++ b/tests/test_morning_gate_authority.py
+@@ -14,6 +14,8 @@
+     row = {
+         "ticker": "SAFE",
+         "direction": "CALL",
++        "instrument": "LONG_CALL",
++        "contract_symbol": "O:SAFE261016C00100000",
+         "macro_regime": "BULLISH",
+         "invalidation_spot": 95.0,
+         "rr_premium_expected": 1.5,
+@@ -170,12 +172,12 @@
+     assert gated["verdict"] == "GO"
+ 
+ 
+-def test_not_monetisable_contract_can_never_go() -> None:
++def test_scenario_not_monetisable_is_advisory_when_execution_quote_is_viable() -> None:
+     gated = _gate(_row(monetisability_state="NOT_MONETISABLE"))
+ 
+-    assert gated["check_premium_economics_pass"] == "FALSE"
+-    assert gated["verdict"] == "BLOCK"
+-    assert gated["morning_execution_permission"] == "NO_GO_ECONOMICS"
++    assert gated["check_premium_economics_pass"] == "TRUE"
++    assert gated["verdict"] == "GO"
++    assert gated["morning_execution_permission"] == "GO_LIMIT"
+ 
+ 
+ def test_legacy_ev_status_is_advisory_when_premium_rr_is_positive() -> None:

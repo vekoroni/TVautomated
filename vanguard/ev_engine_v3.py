@@ -1,13 +1,15 @@
-"""AVSHUNTER EV Engine v3, Stage EV-2B shadow implementation.
+"""AVSHUNTER EV Engine v3, Stage EV-2B production-evidence implementation.
 
 This module compares long CALL/PUT contracts with bull-call/bear-put debit
-spreads. It is deliberately isolated from production consumers: every output
-is namespaced ``ev3_*`` and ``ev3_capital_eligible`` remains false.
+spreads. Every output is namespaced ``ev3_*`` and is published as governed
+production evidence. ``ev3_capital_eligible`` remains false until a separately
+calibrated capital policy is approved.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
 import math
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -18,12 +20,13 @@ import pandas as pd
 from vanguard.ev3_stage0 import EV3ValidationResult, validate_ev3_input
 
 
-EV3_ENGINE_VERSION = "ev3-stage2b-v0.3.0"
+EV3_ENGINE_VERSION = "ev3-stage2b-v0.6.0"
+EV3_EVALUATED_STATUS = "EVALUATED_PRODUCTION_EVIDENCE"
 
 
 @dataclass(frozen=True)
 class EV3Policy:
-    """Versioned economic and uncertainty policy for the shadow engine."""
+    """Versioned economic and uncertainty policy for the EV3 evidence engine."""
 
     policy_version: str = "ev3-policy-v0.3.0"
     default_risk_free_rate: float = 0.045
@@ -51,7 +54,23 @@ def _rejection(reason: str, detail: str = "", **values: Any) -> dict[str, Any]:
         "ev3_reason_detail": detail,
         "ev3_absolute_state": "UNVALIDATED",
         "ev3_capital_eligible": False,
-        "ev3_shadow_only": True,
+        "ev3_shadow_only": False,
+        "ev3_evidence_mode": "PRODUCTION_EVIDENCE",
+    }
+    result.update(values)
+    return result
+
+
+def not_applicable_result(reason: str, detail: str = "", **values: Any) -> dict[str, Any]:
+    result = {
+        "ev3_engine_version": EV3_ENGINE_VERSION,
+        "ev3_status": "NOT_APPLICABLE",
+        "ev3_reason_code": reason,
+        "ev3_reason_detail": detail,
+        "ev3_absolute_state": "NOT_APPLICABLE",
+        "ev3_capital_eligible": False,
+        "ev3_shadow_only": False,
+        "ev3_evidence_mode": "PRODUCTION_EVIDENCE",
     }
     result.update(values)
     return result
@@ -67,6 +86,9 @@ class EV3BarrierCache:
         "target_distance_fraction",
         "stop_distance_fraction",
     ]
+    EXIT_SESSION_DEFAULT_UNCERTAINTY_RETURN = 0.01
+    FALLBACK_MIN_EFFECTIVE_OBSERVATIONS = 30.0
+    FALLBACK_PENALTY_RETURN = 0.02
 
     def __init__(self, frame: pd.DataFrame):
         required = set(self.KEY) | {
@@ -101,14 +123,51 @@ class EV3BarrierCache:
         # Stage EV-0 deliberately materialised only exact policy endpoints.
         if horizon_sessions not in {5, 10, 20}:
             return None, "REJECT_BARRIER_HORIZON_UNAVAILABLE", f"hold={horizon_sessions}; available=5,10,20"
-        subset = self.frame[
-            (self.frame["state_key"] == str(state_key).strip().upper())
-            & (self.frame["direction"] == str(direction).upper())
-            & (self.frame["horizon_sessions"] == int(horizon_sessions))
+        requested_state = str(state_key).strip().upper()
+        direction = str(direction).upper()
+        horizon_sessions = int(horizon_sessions)
+        exact_subset = self.frame[
+            (self.frame["state_key"] == requested_state)
+            & (self.frame["direction"] == direction)
+            & (self.frame["horizon_sessions"] == horizon_sessions)
         ]
+        subset = exact_subset
+        fallback_match_count: int | None = None
+        requested_parts = requested_state.split("|")
         if subset.empty:
-            return None, "REJECT_BARRIER_STATE_UNAVAILABLE", f"state={state_key}, direction={direction}, hold={horizon_sessions}"
-
+            if len(requested_parts) != 7:
+                return None, "REJECT_BARRIER_STATE_UNAVAILABLE", (
+                    f"state={requested_state}; expected=7 dimensions"
+                )
+            candidates = self.frame[
+                (self.frame["direction"] == direction)
+                & (self.frame["horizon_sessions"] == horizon_sessions)
+            ].copy()
+            if not candidates.empty:
+                candidate_parts = candidates["state_key"].str.split("|")
+                core_aligned = candidate_parts.map(
+                    lambda parts: len(parts) == 7
+                    and parts[0] == requested_parts[0]
+                    and parts[1] == requested_parts[1]
+                )
+                candidates = candidates[core_aligned].copy()
+                if not candidates.empty:
+                    candidates["_state_matches"] = candidates["state_key"].map(
+                        lambda key: sum(
+                            left == right
+                            for left, right in zip(str(key).split("|"), requested_parts)
+                        )
+                    )
+                    fallback_match_count = int(candidates["_state_matches"].max())
+                    if fallback_match_count >= 5:
+                        subset = candidates[
+                            candidates["_state_matches"] == fallback_match_count
+                        ].copy()
+            if subset.empty:
+                return None, "REJECT_BARRIER_STATE_UNAVAILABLE", (
+                    f"state={requested_state}, direction={direction}, hold={horizon_sessions}; "
+                    "no core-aligned state matched at least 5 of 7 dimensions"
+                )
         targets = sorted(subset["target_distance_fraction"].unique())
         stops = sorted(subset["stop_distance_fraction"].unique())
         # Conservative discretisation: target no easier than requested; stop no
@@ -124,10 +183,75 @@ class EV3BarrierCache:
             np.isclose(subset["target_distance_fraction"], target_grid)
             & np.isclose(subset["stop_distance_fraction"], stop_grid)
         ]
-        if len(cell) != 1:
+        if fallback_match_count is None and len(cell) != 1:
             return None, "REJECT_BARRIER_LOOKUP", f"matched_rows={len(cell)}"
-        return cell.iloc[0], "ACCEPTED", ""
+        if fallback_match_count is None:
+            result = cell.iloc[0].copy()
+        else:
+            weights = pd.to_numeric(cell["n_effective"], errors="coerce").fillna(0.0)
+            total_weight = float(weights.sum())
+            if total_weight < self.FALLBACK_MIN_EFFECTIVE_OBSERVATIONS:
+                return None, "REJECT_BARRIER_STATE_SPARSE", (
+                    f"fallback_n_effective={total_weight:.1f}; "
+                    f"minimum={self.FALLBACK_MIN_EFFECTIVE_OBSERVATIONS:.0f}"
+                )
+            result = cell.iloc[0].copy()
+            weighted_fields = (
+                "p_target_first", "p_stop_first", "p_timeout",
+                "target_exit_session_mean", "stop_exit_session_mean_conservative",
+                "timeout_exit_session",
+            )
+            for field in weighted_fields:
+                values = pd.to_numeric(cell[field], errors="coerce")
+                valid = values.notna() & (weights > 0)
+                result[field] = (
+                    float(np.average(values[valid], weights=weights[valid]))
+                    if valid.any() else math.nan
+                )
+            probability_sum = sum(float(result[field]) for field in (
+                "p_target_first", "p_stop_first", "p_timeout"
+            ))
+            if not math.isfinite(probability_sum) or probability_sum <= 0:
+                return None, "REJECT_BARRIER_LOOKUP", "fallback probabilities invalid"
+            for field in ("p_target_first", "p_stop_first", "p_timeout"):
+                result[field] = float(result[field]) / probability_sum
+            result["n_effective"] = total_weight
+            result["state_key"] = requested_state
+        result = self._normalise_exit_sessions(result, horizon_sessions)
+        source_keys = sorted(cell["state_key"].astype(str).unique().tolist())
+        if fallback_match_count is None:
+            result["state_match_type"] = "EXACT"
+            result["state_similarity"] = 1.0
+            result["state_fallback_penalty_return"] = 0.0
+        else:
+            result["state_match_type"] = f"FALLBACK_{fallback_match_count}_OF_7"
+            result["state_similarity"] = fallback_match_count / 7.0
+            result["state_fallback_penalty_return"] = self.FALLBACK_PENALTY_RETURN
+        result["state_source_count"] = len(source_keys)
+        result["state_source_keys_json"] = json.dumps(source_keys)
+        return result, "ACCEPTED", ""
 
+    def _normalise_exit_sessions(self, result: pd.Series, horizon_sessions: int) -> pd.Series:
+        result = result.copy()
+        defaults: list[str] = []
+        fallback_values = {
+            # Conservative option economics: receive a target benefit late and
+            # realise a stop loss early. Timeout always occurs at the hold limit.
+            "target_exit_session_mean": float(horizon_sessions),
+            "stop_exit_session_mean_conservative": 1.0,
+            "timeout_exit_session": float(horizon_sessions),
+        }
+        for field, fallback in fallback_values.items():
+            value = pd.to_numeric(pd.Series([result.get(field)]), errors="coerce").iloc[0]
+            if pd.isna(value) or not math.isfinite(float(value)):
+                value = fallback
+                defaults.append(field)
+            result[field] = min(max(float(value), 1.0), float(horizon_sessions))
+        result["exit_session_defaulted_fields_json"] = json.dumps(defaults, sort_keys=True)
+        result["exit_session_default_penalty_return"] = (
+            self.EXIT_SESSION_DEFAULT_UNCERTAINTY_RETURN if defaults else 0.0
+        )
+        return result
 
 def american_option_price(
     spot: float,
@@ -372,7 +496,13 @@ def evaluate_vertical_debit(
     freshness_limit = min(float(long_c["quote_freshness_limit_seconds"]), float(short_c["quote_freshness_limit_seconds"]))
     quote_uncertainty = min(max(max_quote_age / max(freshness_limit, 1.0), 0.0) * 0.01, 0.01)
     default_uncertainty = policy.default_input_uncertainty_return * int(rate_defaulted or dividend_defaulted)
-    uncertainty_total = probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty + quote_uncertainty + default_uncertainty
+    state_fallback_uncertainty = float(cell.get("state_fallback_penalty_return", 0.0))
+    exit_session_default_uncertainty = float(cell.get("exit_session_default_penalty_return", 0.0))
+    uncertainty_total = (
+        probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty
+        + quote_uncertainty + default_uncertainty + state_fallback_uncertainty
+        + exit_session_default_uncertainty
+    )
     lower_bound = ev_conservative - uncertainty_total
     absolute_state = "NEGATIVE_EV" if ev_conservative <= 0 else (
         "INDETERMINATE" if lower_bound <= policy.capital_hurdle_return else "POSITIVE_UNVALIDATED"
@@ -382,12 +512,13 @@ def evaluate_vertical_debit(
     output: dict[str, Any] = {
         "ev3_engine_version": EV3_ENGINE_VERSION,
         "ev3_policy_version": policy.policy_version,
-        "ev3_status": "EVALUATED_SHADOW",
-        "ev3_reason_code": "SHADOW_ONLY",
-        "ev3_reason_detail": "Stage EV-2B cannot grant capital eligibility",
+        "ev3_status": EV3_EVALUATED_STATUS,
+        "ev3_reason_code": "PRODUCTION_EVIDENCE_ONLY",
+        "ev3_reason_detail": "Production evidence; capital authority is not calibrated",
         "ev3_absolute_state": absolute_state,
         "ev3_capital_eligible": False,
-        "ev3_shadow_only": True,
+        "ev3_shadow_only": False,
+        "ev3_evidence_mode": "PRODUCTION_EVIDENCE",
         "ev3_contract_symbol": composite_symbol,
         "ev3_structure": structure,
         "ev3_direction": direction,
@@ -405,6 +536,11 @@ def evaluate_vertical_debit(
         "ev3_barrier_target_grid": float(cell["target_distance_fraction"]),
         "ev3_barrier_stop_grid": float(cell["stop_distance_fraction"]),
         "ev3_barrier_calculation_version": cell["calculation_version"],
+        "ev3_state_match_type": str(cell.get("state_match_type", "EXACT")),
+        "ev3_state_similarity": float(cell.get("state_similarity", 1.0)),
+        "ev3_state_source_count": int(cell.get("state_source_count", 1)),
+        "ev3_state_source_keys_json": str(cell.get("state_source_keys_json", "[]")),
+        "ev3_exit_session_defaulted_fields_json": str(cell.get("exit_session_defaulted_fields_json", "[]")),
         "ev3_p_target": float(probabilities[0]),
         "ev3_p_stop": float(probabilities[1]),
         "ev3_p_timeout": float(probabilities[2]),
@@ -417,6 +553,8 @@ def evaluate_vertical_debit(
         "ev3_liquidity_uncertainty_return": liquidity_uncertainty,
         "ev3_quote_uncertainty_return": quote_uncertainty,
         "ev3_default_input_uncertainty_return": default_uncertainty,
+        "ev3_state_fallback_uncertainty_return": state_fallback_uncertainty,
+        "ev3_exit_session_default_uncertainty_return": exit_session_default_uncertainty,
         "ev3_uncertainty_total_return": uncertainty_total,
         "ev3_ev_lower_bound_return": lower_bound,
         "ev3_capital_hurdle_return": policy.capital_hurdle_return,
@@ -454,6 +592,18 @@ def evaluate_contract(
     """Evaluate one long single or vertical debit candidate in shadow mode."""
 
     policy = policy or EV3Policy()
+    raw_direction = str(
+        row.get("canonical_direction")
+        or row.get("resolved_direction")
+        or row.get("options_direction")
+        or row.get("direction")
+        or ""
+    ).strip().upper()
+    if raw_direction in {"STRANGLE", "STRADDLE", "NON_DIRECTIONAL"}:
+        return not_applicable_result(
+            "NOT_APPLICABLE_NON_DIRECTIONAL",
+            f"direction={raw_direction}; directional EV3 supports CALL/PUT only",
+        )
     structure = str(row.get("contract_structure") or row.get("structure") or "LONG_SINGLE").strip().upper()
     if structure in {"BULL_CALL_DEBIT", "BEAR_PUT_DEBIT"}:
         return evaluate_vertical_debit(
@@ -467,6 +617,8 @@ def evaluate_contract(
         minimum_volume=policy.minimum_volume,
     )
     if not validation.accepted:
+        if validation.reason_code.startswith("NOT_APPLICABLE_"):
+            return not_applicable_result(validation.reason_code, validation.detail)
         return _rejection(validation.reason_code, validation.detail)
     c = validation.canonical
     if float(c["spread_fraction_mid"]) > policy.maximum_spread_fraction_mid:
@@ -520,7 +672,13 @@ def evaluate_contract(
     freshness_fraction = float(c["quote_age_seconds"]) / max(float(c["quote_freshness_limit_seconds"]), 1.0)
     quote_uncertainty = min(max(freshness_fraction, 0.0) * 0.01, 0.01)
     default_uncertainty = policy.default_input_uncertainty_return * int(rate_defaulted or dividend_defaulted)
-    uncertainty_total = probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty + quote_uncertainty + default_uncertainty
+    state_fallback_uncertainty = float(cell.get("state_fallback_penalty_return", 0.0))
+    exit_session_default_uncertainty = float(cell.get("exit_session_default_penalty_return", 0.0))
+    uncertainty_total = (
+        probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty
+        + quote_uncertainty + default_uncertainty + state_fallback_uncertainty
+        + exit_session_default_uncertainty
+    )
     lower_bound = ev_conservative - uncertainty_total
     if ev_conservative <= 0:
         absolute_state = "NEGATIVE_EV"
@@ -533,12 +691,13 @@ def evaluate_contract(
     output: dict[str, Any] = {
         "ev3_engine_version": EV3_ENGINE_VERSION,
         "ev3_policy_version": policy.policy_version,
-        "ev3_status": "EVALUATED_SHADOW",
-        "ev3_reason_code": "SHADOW_ONLY",
-        "ev3_reason_detail": "Stage EV-1 cannot grant capital eligibility",
+        "ev3_status": EV3_EVALUATED_STATUS,
+        "ev3_reason_code": "PRODUCTION_EVIDENCE_ONLY",
+        "ev3_reason_detail": "Production evidence; capital authority is not calibrated",
         "ev3_absolute_state": absolute_state,
         "ev3_capital_eligible": False,
-        "ev3_shadow_only": True,
+        "ev3_shadow_only": False,
+        "ev3_evidence_mode": "PRODUCTION_EVIDENCE",
         "ev3_contract_symbol": c["contract_symbol"],
         "ev3_structure": c["contract_structure"],
         "ev3_strike": float(c["strike"]),
@@ -551,6 +710,11 @@ def evaluate_contract(
         "ev3_barrier_target_grid": float(cell["target_distance_fraction"]),
         "ev3_barrier_stop_grid": float(cell["stop_distance_fraction"]),
         "ev3_barrier_calculation_version": cell["calculation_version"],
+        "ev3_state_match_type": str(cell.get("state_match_type", "EXACT")),
+        "ev3_state_similarity": float(cell.get("state_similarity", 1.0)),
+        "ev3_state_source_count": int(cell.get("state_source_count", 1)),
+        "ev3_state_source_keys_json": str(cell.get("state_source_keys_json", "[]")),
+        "ev3_exit_session_defaulted_fields_json": str(cell.get("exit_session_defaulted_fields_json", "[]")),
         "ev3_p_target": float(probabilities[0]),
         "ev3_p_stop": float(probabilities[1]),
         "ev3_p_timeout": float(probabilities[2]),
@@ -569,6 +733,8 @@ def evaluate_contract(
         "ev3_liquidity_uncertainty_return": liquidity_uncertainty,
         "ev3_quote_uncertainty_return": quote_uncertainty,
         "ev3_default_input_uncertainty_return": default_uncertainty,
+        "ev3_state_fallback_uncertainty_return": state_fallback_uncertainty,
+        "ev3_exit_session_default_uncertainty_return": exit_session_default_uncertainty,
         "ev3_uncertainty_total_return": uncertainty_total,
         "ev3_ev_lower_bound_return": lower_bound,
         "ev3_capital_hurdle_return": policy.capital_hurdle_return,
@@ -604,8 +770,16 @@ def select_contract(
                           max_quote_age_seconds=max_quote_age_seconds)
         for x in bounded
     ]
-    valid = [x for x in evaluations if x.get("ev3_status") == "EVALUATED_SHADOW"]
+    valid = [x for x in evaluations if x.get("ev3_status") == EV3_EVALUATED_STATUS]
     if not valid:
+        not_applicable = [x for x in evaluations if x.get("ev3_status") == "NOT_APPLICABLE"]
+        if not_applicable and len(not_applicable) == len(evaluations):
+            selected = dict(not_applicable[0])
+            selected["ev3_selection_reason"] = "NOT_APPLICABLE_TO_ALL_CANDIDATES"
+            selected["ev3_candidates_received"] = len(candidates)
+            selected["ev3_candidates_evaluated"] = len(bounded)
+            selected["ev3_candidates_valid"] = 0
+            return selected, evaluations
         rejection_counts: dict[str, int] = {}
         for evaluation in evaluations:
             reason = str(evaluation.get("ev3_reason_code") or "UNKNOWN")
@@ -616,7 +790,11 @@ def select_contract(
         detail = f"candidates={len(bounded)}"
         if reason_summary:
             detail = f"{detail}; child_rejections={reason_summary}"
-        return _rejection("REJECT_NO_EVALUABLE_CONTRACT", detail), evaluations
+        return _rejection(
+            "REJECT_NO_EVALUABLE_CONTRACT",
+            detail,
+            ev3_child_rejection_counts_json=json.dumps(rejection_counts, sort_keys=True),
+        ), evaluations
     ordered = sorted(valid, key=lambda x: float(x["ev3_ev_lower_bound_return"]), reverse=True)
     best_value = float(ordered[0]["ev3_ev_lower_bound_return"])
     runner_up_value = float(ordered[1]["ev3_ev_lower_bound_return"]) if len(ordered) > 1 else None

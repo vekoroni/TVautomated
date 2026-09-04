@@ -7,22 +7,16 @@ import sys as _sys
 from pathlib import Path
 from datetime import datetime
 _sys.path.insert(0, str(Path(__file__).parent))
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from news_macro_readers import (
     read_macro_context, read_news_terminal_output,
     read_enrichment_delta, read_all_news_macro_context, save_pasted_brief,
 )
-try:
-    from live_market_reader import (
-        fetch_all_live_data, format_live_data_for_prompt,
-        fetch_live_contract_spread, fetch_peer_quotes,
-    )
-    _LIVE_MARKET_AVAILABLE = True
-except ImportError:
-    _LIVE_MARKET_AVAILABLE = False
-    def fetch_all_live_data(*a, **kw): return {}
-    def format_live_data_for_prompt(*a, **kw): return ""
-    def fetch_live_contract_spread(*a, **kw): return {}
-    def fetch_peer_quotes(*a, **kw): return {}
+def format_live_data_for_prompt(data):
+    """Format already-governed evidence; never fetch from a provider here."""
+    if not data:
+        return ""
+    return "GOVERNED LIVE EVIDENCE:\n" + json.dumps(data, sort_keys=True, default=str)[:4000]
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
@@ -484,6 +478,23 @@ def find_pipeline_files(directory:str=None) -> dict:
 
 # â”€â”€ PROMPT BUILDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def run_session_check():
+    try:
+        from msi_runtime import active_flags
+        if active_flags().interpreter_resolver:
+            from evidence_resolver import handoff_status
+            status = handoff_status()
+            print("\n" + "=" * 60)
+            print("  GOVERNED INTERPRETER HANDOFF STATUS")
+            print(json.dumps(status, indent=2, default=str))
+            print("=" * 60 + "\n")
+            if status.get("status") == "READY":
+                SESSION["run_id"] = status.get("run_id", "")
+                SESSION["pipeline_run_id"] = status.get("run_id", "")
+                SESSION["handoff_manifest"] = status.get("manifest", "")
+            return status.get("status") == "READY"
+    except Exception as error:
+        print(f"  [MSI HANDOFF BLOCKED] {error}")
+        return False
     import json as _json
     TODAY = datetime.now().strftime("%Y%m%d")
     active_run_id = None; session_mode = "UNKNOWN"
@@ -614,7 +625,8 @@ def _format_ma_inputs(ma_inputs: dict) -> str:
 
 
 def build_interpret_prompt(pipeline_data:dict, options_data:dict=None,
-                            focus_tickers:list=None, session_context:str=None) -> str:
+                            focus_tickers:list=None, session_context:str=None,
+                            governed_macro_context:str="") -> str:
     date_str = _date()
     focus_str = f"\nFocus tickers: {', '.join(focus_tickers)}" if focus_tickers else ""
     ctx_str = f"\nSession context: {session_context}" if session_context else ""
@@ -635,9 +647,10 @@ def build_interpret_prompt(pipeline_data:dict, options_data:dict=None,
     pipeline_text = "\n\n".join(sections) if sections else "No pipeline data provided."
     options_text  = "\n\n".join(opt_sections) if opt_sections else "No options data provided."
 
-    # Load macro and news context
-    macro_text = read_macro_context(ma_macro_dir=MA_MACRO)
-    news_text  = read_news_terminal_output(ma_news_dir=MA_NEWS)
+    combined_context = read_all_news_macro_context(
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
+    )
 
     return f"""Run Pipeline Interpreter full analysis. Date: {date_str}{focus_str}{ctx_str}
 
@@ -683,7 +696,8 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
                                 lab_context_block:str="",
                                 lab_conflict_block:str="",
                                 pre_trade_prob_block:str="",
-                                chart_images_present: bool=False) -> str:
+                                chart_images_present: bool=False,
+                                governed_macro_context: str="") -> str:
     date_str=_date()
     row_text="\n".join(f"{k}: {_translate_display_labels(str(v))}" for k,v in pipeline_row.items() if v)
     opt_text=""
@@ -700,7 +714,11 @@ def build_single_ticker_prompt(ticker:str, pipeline_row:dict,
         _trader_note_block = f"TICKER_NARRATIVE: {ticker}\n{ticker_note.strip()}\nEND_TICKER_NARRATIVE\n\n"
 
     # Load macro and news terminal context
-    combined_context = read_all_news_macro_context(ticker=ticker if "ticker" in dir() else None, ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS)
+    combined_context = read_all_news_macro_context(
+        ticker=ticker,
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
+    )
 
     # Inject live price if registered via /price command
     _live_price_block = format_live_price_block(ticker, LIVE_PRICES)
@@ -769,7 +787,8 @@ execution_permission=NONE_PIPELINE_INTERPRETER_ONLY"""
 def build_triage_prompt(pipeline_rows:list, ma_inputs_summary:dict=None,
                         session_mode:str="EOD",
                         lab_alignment_block:str="",
-                        pre_trade_prob_block:str="") -> str:
+                        pre_trade_prob_block:str="",
+                        governed_macro_context:str="") -> str:
     import json as _json
     date_str = _date()
     hour = datetime.now().hour
@@ -780,7 +799,10 @@ def build_triage_prompt(pipeline_rows:list, ma_inputs_summary:dict=None,
             _d=_json.loads(_sm.read_text(encoding="utf-8"))
             session_mode=_d.get("session_mode","eod").upper()
         except Exception: pass
-    combined_context = read_all_news_macro_context(ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS)
+    combined_context = read_all_news_macro_context(
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
+    )
 
     # v1.1 — Pre-filter to OIS>=50 tickers before formatting for Claude.
     # Prevents the 40-row cap from discarding high-quality signals in favour
@@ -898,7 +920,7 @@ def build_triage_prompt(pipeline_rows:list, ma_inputs_summary:dict=None,
             and "BLOCK" not in _get_fld(_r, "verdict", "execution_permission", "morning_execution_permission", default="").upper()
         ]
         if _sec_go_tickers:
-            _sg_lines.append(f"Note: {_sn} has {len(_sec_go_tickers)} GO candidates -- check macro alignment before entry.")
+            _sg_lines.append(f"Note: {_sn} has {len(_sec_go_tickers)} governed candidates; macro is advisory sector-rotation context only.")
         _sg_lines.append("")
     sector_grouped_text = "\n".join(_sg_lines)
 
@@ -975,7 +997,7 @@ End with: EXECUTION PERMISSION: NONE_PIPELINE_INTERPRETER_ONLY
 def build_chart_prompt(ticker:str, chart_descriptions:list,
                        pipeline_row:dict=None, options_data:dict=None,
                        chart_types:list=None, ticker_note:str="",
-                       context_block:str="") -> str:
+                       context_block:str="", governed_macro_context:str="") -> str:
     """Build prompt for chart image analysis â€” feeds into Dr. Magnus Vale + Soul of the Chart."""
     date_str = _date()
     chart_type_str = ""
@@ -1003,7 +1025,11 @@ def build_chart_prompt(ticker:str, chart_descriptions:list,
         chart_desc = "\nCHART DESCRIPTIONS PROVIDED BY USER:\n" + "\n".join(chart_descriptions)
 
     # Load macro and news context
-    combined_context = read_all_news_macro_context(ticker=ticker if "ticker" in dir() else None, ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS)
+    combined_context = read_all_news_macro_context(
+        ticker=ticker,
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
+    )
 
     # Inject live price if registered via /price command
     _live_price_block = format_live_price_block(ticker, LIVE_PRICES)
@@ -1088,7 +1114,7 @@ TOP PIPELINE CANDIDATES:
 This is the pre-market morning validation pass.
 
 For each candidate:
-1. Is the thesis from last night still live given current macro?
+1. Describe macro sector-rotation context without changing the governed thesis.
 2. What must the first hour of tape show to confirm or deny the thesis?
 3. What is the exact trigger level for today?
 4. What is the exact kill switch for today?
@@ -1376,6 +1402,7 @@ def build_intraday_prompt(
     ticker_note: str = "",
     chart_timeframes: list = None,
     chart_images_present: bool = False,
+    governed_macro_context: str = "",
 ) -> str:
     """
     Build the intraday chart + live price analysis prompt.
@@ -1409,7 +1436,9 @@ def build_intraday_prompt(
         )
 
     combined_context = read_all_news_macro_context(
-        ticker=ticker, ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS
+        ticker=ticker,
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
     )
 
     live_price_section = (
@@ -1501,7 +1530,7 @@ Apply the Soul of the Chart intraday framework:
    For 1-5d horizon: Has the first hour confirmed direction?
    For 6-10d / 11-20d: Is the intraday structure consistent with thesis?
 
-INTRADAY VERDICT (replaces morning validator output for this ticker):
+INTRADAY ADVISORY STATE (does not replace Morning Gate output):
 INTRADAY_CONFIRMED  — thesis live, trigger valid, entry conditions met
 INTRADAY_FORMING    — thesis intact but not yet triggered, watch
 INTRADAY_WAIT       — thesis unclear, do not enter this session
@@ -1531,6 +1560,7 @@ def build_story_prompt(
     ticker_note: str = "",
     previous_story_html: str = "",
     update_type: str = "FULL",  # FULL|CHART_UPDATE|OPTIONS_UPDATE|MACRO_UPDATE|OVERNIGHT
+    governed_macro_context: str = "",
 ) -> str:
     """
     Build the Story of the Trade prompt for /story and /update commands.
@@ -1578,7 +1608,9 @@ def build_story_prompt(
                 pass
 
     combined_context = read_all_news_macro_context(
-        ticker=ticker, ma_macro_dir=MA_MACRO, ma_news_dir=MA_NEWS
+        ticker=ticker,
+        ma_news_dir=MA_NEWS,
+        governed_macro_context=governed_macro_context,
     )
 
     _lpb = live_price_block or format_live_price_block(ticker, LIVE_PRICES)

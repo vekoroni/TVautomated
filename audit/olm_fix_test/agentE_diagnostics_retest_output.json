@@ -1,0 +1,64 @@
+{
+  "diagnostics_dict_populated_by_direct_call": {
+    "diagnostics": {
+      "retained_oi_below_50": 1,
+      "retained_zero_volume": 1,
+      "rejected_invalid_missing_quote": 0,
+      "rejected_spread": 2,
+      "rejected_dte_delta_geometry": 2,
+      "final_bounded_candidate_count": 2
+    },
+    "retained_symbols": [
+      "RET_LOWOI",
+      "RET_ZEROVOL"
+    ],
+    "retained_count": 2
+  },
+  "repair_selector_diagnostic_fields_output": {
+    "fields": {
+      "repair_selector_diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+      "repair_selector_retained_oi_below_50": 1,
+      "repair_selector_retained_zero_volume": 1,
+      "repair_selector_rejected_invalid_missing_quote": 0,
+      "repair_selector_rejected_spread": 2,
+      "repair_selector_rejected_dte_delta_geometry": 2,
+      "repair_selector_final_bounded_candidate_count": 2
+    }
+  },
+  "run_level_aggregate_summary": {
+    "per_row_fields": [
+      {
+        "repair_selector_diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+        "repair_selector_retained_oi_below_50": 1,
+        "repair_selector_retained_zero_volume": 1,
+        "repair_selector_rejected_invalid_missing_quote": 0,
+        "repair_selector_rejected_spread": 2,
+        "repair_selector_rejected_dte_delta_geometry": 2,
+        "repair_selector_final_bounded_candidate_count": 2
+      },
+      {
+        "repair_selector_diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+        "repair_selector_retained_oi_below_50": 1,
+        "repair_selector_retained_zero_volume": 0,
+        "repair_selector_rejected_invalid_missing_quote": 0,
+        "repair_selector_rejected_spread": 0,
+        "repair_selector_rejected_dte_delta_geometry": 0,
+        "repair_selector_final_bounded_candidate_count": 1
+      }
+    ],
+    "aggregate": {
+      "diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+      "selector_invocations": 2,
+      "retained_oi_below_50": 2,
+      "retained_zero_volume": 1,
+      "rejected_invalid_missing_quote": 0,
+      "rejected_spread": 2,
+      "rejected_dte_delta_geometry": 2,
+      "final_bounded_candidate_count": 3
+    }
+  },
+  "run_summary_json_builder_wiring": {
+    "found_in_summary_dict_literal": true,
+    "approx_source_line": 8266
+  }
+}

@@ -35,12 +35,35 @@ def test_trap_engine_uses_canonical_control_and_event_vwap():
     assert "SHIFTING_BULLISH" not in src
     assert "SHIFTING_BEARISH" not in src
     assert 'vwap_reclaim = "VWAP_RECLAIM" in trigger_primary or "VWAP_RECLAIM" in trigger_codes' in src
+    assert '"VWAP_LOSS" in trigger_primary' in src
 
 
-def test_morning_gate_missing_data_is_warned_not_confirmed():
+def test_vwap_trigger_names_are_directionally_distinct():
+    from trigger_layer import _t2_vwap_reclaim
+
+    common = {
+        "control_state": "SHIFTING",
+        "volume_ratio_x": 1.5,
+    }
+    assert _t2_vwap_reclaim({
+        **common,
+        "vwap_bias": "ABOVE",
+        "layer1__control__controller": "BUYERS",
+        "direction": "CALL",
+    }) == "VWAP_RECLAIM"
+    assert _t2_vwap_reclaim({
+        **common,
+        "vwap_bias": "BELOW",
+        "layer1__control__controller": "SELLERS",
+        "direction": "PUT",
+    }) == "VWAP_LOSS"
+
+
+def test_morning_gate_missing_data_fails_closed():
     src = read("morning_gate.py")
     assert "CANNOT_VERIFY - live price unavailable" in src
-    assert "WARN - no invalidation level on record" in src
+    assert "MISSING_AUTHORITATIVE_STOP" in src
+    assert "WARN - no invalidation level on record" not in src
     assert "EOD structure assumed intact" not in src
 
 

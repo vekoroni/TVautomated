@@ -29,9 +29,9 @@ WHAT THIS FILE DOES
 
 TIER DEFINITIONS
 -----------------
-A  — Top-quartile OIS (≥35) + RR ≥ 1.5 + WBS PROBABLE + conv_score ≥ 3
-B  — OIS ≥ 25 + RR ≥ 1.0 + WBS POSSIBLE + conv_score ≥ 2
-C  — All other signals passing quality floor (OIS ≥ 15, RR > 0)
+A  — Top-quartile OIS (≥35) + strong structural/trigger evidence
+B  — OIS ≥ 25 + supporting structural evidence
+C  — All other signals passing the non-economic quality floor
 WATCH — Below quality floor but structurally interesting (no execution)
 
 STRUCTURAL CONVICTION SCORE (SCS) — EOD only, no live data
@@ -39,7 +39,7 @@ STRUCTURAL CONVICTION SCORE (SCS) — EOD only, no live data
 Component               Weight   Source
 ───────────────────────────────────────────────────────────
 Options Intelligence    25%      options_score (0-41 observed max)
-R:R Quality             20%      rr (0-3+ range)
+Scenario asymmetry      advisory  retained for research, never tier/capital authority
 Wyckoff/EV Structural   20%      ev2_ev_structural + composite
 WBS Wall Strength       15%      wbs (0-60) + wbs_grade
 Campaign Quality        10%      sb_conv_score (0-4) + sb_campaign
@@ -77,6 +77,22 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from contracts.direction_governance import (
+    DIRECTED as GOVERNED_DIRECTED_SIDES,
+    NON_DIRECTIONAL as GOVERNED_NON_DIRECTIONAL_SIDES,
+    direction_fields_from_record_json,
+    normalise_side as _governed_side,
+    resolve_governed_direction,
+)
+from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
+from contracts.selected_contract_economics import (
+    economics_evaluation_id,
+    evaluate_long_option_monetisability,
+    parse_occ_symbol,
+)
+from contracts.long_option_policy import evaluate_execution_viability
+from execution_schema import validate_trigger_handoff_row
+
 try:
     from scripts.macro_quant_packet import MACRO_QUANT_CSV_FIELDS
 except Exception:
@@ -109,12 +125,28 @@ log = logging.getLogger("eod_candidate_engine")
 
 # ─── QUALITY FLOOR (minimum to appear in candidate manifest) ─────────────────
 MIN_OPTIONS_SCORE  = 15     # below this → not worth monitoring
-MIN_RR             = 0.0    # negative RR excluded
+# Legacy R:R remains in exports for labelled research only. It is deliberately
+# absent from tier, candidate-membership and capital-permission authority.
+MIN_RR             = 0.0
 MIN_COMPOSITE      = 40.0   # below this → structurally weak
 OPTIONS_RESEARCH_PERMISSION = "MANUAL_REVIEW_REQUIRED"
 OPTIONS_BLOCKED_ROUTES = {"OPTIONS_BLOCKED", "OPTIONS_EQUITY_ONLY_BETTER"}
 OPTIONS_REVIEWABLE_ROUTES = {"OPTIONS_GO_REVIEW", "OPTIONS_ARMED_HALF", "OPTIONS_PROBE_ONLY"}
 OPTIONS_MISSING_TOKENS = {"", "NAN", "NONE", "NULL", "NA", "N/A"}
+
+TRIGGER_AUTHORITY_FIELDS = (
+    "trigger_primary",
+    "trigger_quality",
+    "trigger_codes",
+    "trigger_count",
+    "trigger_score",
+    "trigger_state",
+    "trigger_go_eligible",
+    "trigger_freshness_state",
+    "trigger_stale",
+    "trigger_data_asof",
+)
+TRIGGER_QUALITY_STATES = frozenset({"STRONG", "SINGLE", "NONE"})
 
 EOD_CARRY_FORWARD_STATUSES = {
     "EOD_THESIS_READY",
@@ -293,30 +325,21 @@ def _setup_type(row: dict) -> str:
 # ─── INVALIDATION LEVEL ──────────────────────────────────────────────────────
 def _invalidation_level(row: dict) -> Optional[float]:
     """
-    For puts: invalidation is above entry (price rallies through stop).
-    For calls: invalidation is below entry (price falls through stop).
-    Uses stop_loss from discovery layer, falls back to signal_price ± ATR.
-    """
-    signal = _flt(row, "signal_price")
-    direction = str(row.get("direction", "")).upper()
-    stop = _flt(row, "stop_loss")
-    if stop and stop > 0:
-        if not signal:
-            return round(stop, 2)
-        if direction == "PUT" and stop > signal:
-            return round(stop, 2)
-        if direction != "PUT" and stop < signal:
-            return round(stop, 2)
+    Return only a governed, direction-correct invalidation level.
 
-    atr    = _flt(row, "ATR_14")
-    if signal and atr:
-        if direction == "PUT":
-            return round(signal + atr * 1.5, 2)
-        return round(signal - atr * 1.5, 2)
-    if signal:
-        if direction == "PUT":
-            return round(signal * 1.03, 2)
-        return round(signal * 0.97, 2)
+    A missing or wrong-sided level is a data-state outcome.  It must not be
+    replaced by an ATR or percentage convention because doing so changes the
+    thesis after it has been authored upstream.
+    """
+    signal = _first_flt(row, "entry_spot", "signal_price", "underlying_price", default=0.0)
+    direction = str(row.get("direction", "")).upper()
+    stop = _first_flt(row, "invalidation_spot", "ev3_invalidation_spot", default=0.0)
+    if direction not in GOVERNED_DIRECTED_SIDES or not signal or not stop:
+        return None
+    if direction == "CALL" and stop < signal:
+        return round(stop, 2)
+    if direction == "PUT" and stop > signal:
+        return round(stop, 2)
     return None
 
 # ─── FLOAT HELPER ────────────────────────────────────────────────────────────
@@ -329,11 +352,51 @@ def _flt(row: dict, key: str, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         return default
 
+def _optional_flt(row: dict, key: str) -> Optional[float]:
+    """Return a finite float without converting missing telemetry to zero."""
+    try:
+        value = row.get(key)
+        if value is None or str(value).strip().lower() in {"", "nan", "none"}:
+            return None
+        number = float(value)
+        return None if number != number else number
+    except (TypeError, ValueError):
+        return None
+
+
+def _has_direction_conflict_lineage(row: dict) -> bool:
+    """Return whether upstream evidence conflicted, even if side was resolved."""
+    conflict_status = _str(row, "direction_conflict_status").upper()
+    arbitration_status = _str(row, "direction_arbitration_status").upper()
+    return (
+        conflict_status in {"UNRESOLVED", "MITIGATED_REQUIRES_CONFIRMATION"}
+        or arbitration_status == "CONFLICT_STRUCTURE_LEADS"
+    )
+
 def _str(row: dict, key: str, default: str = "") -> str:
     v = row.get(key, default)
     if v is None or str(v).lower() in ("nan", "none", ""):
         return default
     return str(v).strip()
+
+
+def _trigger_text(row: dict, key: str, default: str = "") -> str:
+    """Preserve the governed categorical literal ``NONE``.
+
+    The generic string helper predates Trigger Layer and intentionally treats
+    ``none`` as a missing token. Trigger Layer uses ``NONE`` as an explicit,
+    valid observation, so trigger handoff fields require a typed accessor.
+    """
+    value = row.get(key, default)
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    return default if not text else text
 
 def _first_str(row: dict, *keys: str, default: str = "") -> str:
     for key in keys:
@@ -348,6 +411,20 @@ def _first_flt(row: dict, *keys: str, default: float = 0.0) -> float:
         if value != 0.0:
             return value
     return default
+
+
+def _first_optional_flt(row: dict, *keys: str) -> Optional[float]:
+    """Return the first finite value while preserving missingness.
+
+    Critical thesis and contract fields must not use ``0.0`` as a sentinel;
+    zero is a real price/value and downstream validation must be able to tell it
+    apart from unavailable data.
+    """
+    for key in keys:
+        value = _optional_flt(row, key)
+        if value is not None:
+            return value
+    return None
 
 def _flag_text(row: dict, *keys: str) -> str:
     for key in keys:
@@ -509,7 +586,7 @@ def _candidate_permission_fields(row: dict, eod_status: str) -> dict:
         "live_capital_permission": live_permission,
         "eod_candidate_permission": candidate_permission,
         "candidate_size": 0.0,
-        "sizing_policy": "ADVISORY_ONLY",
+        "sizing_policy": "PSE_IGNORED_MANUAL_SIZING",
         "candidate_size_status": "MANUAL_SIZE_REQUIRED"
         if manual_required
         else "REVIEW_ONLY_NO_SIZE",
@@ -592,8 +669,7 @@ def _true_fatal_block(row: dict) -> bool:
     signal = _resolved_signal_type(row).upper()
     eil = _str(row, "eil_v3_verdict").upper()
     ois = _flt(row, "options_score")
-    rr = _flt(row, "rr_underlying") or _flt(row, "rr")
-    if signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"} and eil in {"EXECUTE", "EXECUTE_WITH_CAUTION"} and ois >= MIN_OPTIONS_SCORE and rr >= MIN_RR:
+    if signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"} and eil in {"EXECUTE", "EXECUTE_WITH_CAUTION"} and ois >= MIN_OPTIONS_SCORE:
         return False
     return has_fatal_label and fd_verdict == "BLOCK"
 
@@ -674,6 +750,150 @@ def _normalise_current_contract(row: dict) -> dict:
             default=0.0,
         )
     return row
+
+
+def _load_trigger_authority_overlay(path: Optional[str | Path]) -> dict[str, dict]:
+    """Load only governed Trigger Layer fields keyed by ticker.
+
+    The final Execution artifact remains the candidate/capital authority.  This
+    overlay repairs a stage-order interface: Trigger Layer runs later in EIL,
+    so its categorical evidence cannot exist in the earlier Execution file.
+    No verdict, direction, size or permission field is imported here.
+    """
+    if path is None:
+        return {}
+    overlay_path = Path(path)
+    if not overlay_path.exists():
+        raise FileNotFoundError(f"trigger authority overlay not found: {overlay_path}")
+    frame = pd.read_csv(overlay_path, low_memory=False)
+    if "ticker" not in frame.columns:
+        raise ValueError("trigger authority overlay has no ticker column")
+    tickers = frame["ticker"].fillna("").astype(str).str.strip().str.upper()
+    if tickers.eq("").any():
+        raise ValueError("trigger authority overlay contains blank ticker identity")
+    if tickers.duplicated().any():
+        duplicates = sorted(tickers[tickers.duplicated(keep=False)].unique().tolist())
+        raise ValueError(f"trigger authority overlay contains duplicate tickers: {duplicates[:10]}")
+    present = [field for field in TRIGGER_AUTHORITY_FIELDS if field in frame.columns]
+    required = {"trigger_primary", "trigger_quality", "trigger_codes", "trigger_go_eligible"}
+    missing = sorted(required - set(present))
+    if missing:
+        raise ValueError(f"trigger authority overlay missing required fields: {missing}")
+    result: dict[str, dict] = {}
+    for index, ticker in tickers.items():
+        values = {field: frame.at[index, field] for field in present}
+        quality = str(values.get("trigger_quality") or "").strip().upper()
+        if quality not in TRIGGER_QUALITY_STATES:
+            raise ValueError(
+                f"trigger_quality must be categorical for {ticker}; got {quality!r}"
+            )
+        values["trigger_quality"] = quality
+        result[ticker] = values
+    return result
+
+
+def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
+    """Evaluate one completed-session long option without an API call."""
+    symbol = _first_str(
+        row, "recommended_contract", "contract_occ_symbol", "contract_symbol"
+    ).replace("O:", "")
+    bid = _first_flt(row, "contract_bid", default=0.0)
+    ask = _first_flt(row, "contract_ask", default=0.0)
+    strike = _first_flt(row, "contract_strike", "strike", default=0.0)
+    target = _first_flt(
+        row, "target_spot", "structural_target", "target_price", default=0.0
+    )
+    quote_timestamp = _first_str(
+        row, "contract_quote_timestamp_utc", "quote_as_of", "quote_timestamp_utc"
+    )
+    snapshot_id = _first_str(
+        row, "selected_quote_dataset_id", "option_chain_dataset_id"
+    )
+    base = {
+        "monetisability_evaluation_phase": "EOD_CLOSE",
+        "monetisability_refresh_status": GovernedDataState.PENDING_MORNING_REFRESH.value,
+        "monetisability_quote_timestamp_utc": quote_timestamp,
+        "monetisability_quote_snapshot_id": snapshot_id,
+        "monetisability_data_source": "MARKETDATA_CANONICAL_COMPLETED_SESSION",
+        "execution_viability_state": "DATA_MISSING",
+        "execution_viability_reason": "EOD_SELECTED_QUOTE_INCOMPLETE",
+        "execution_viability_eligible": False,
+        "execution_viability_reviewable": False,
+    }
+    if direction not in GOVERNED_DIRECTED_SIDES:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "DATA_MISSING",
+            "monetisability_reason": "GOVERNED_DIRECTION_MISSING",
+            "monetisability_eligible": False,
+        }
+    if not symbol:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "DATA_MISSING",
+            "monetisability_reason": "SELECTED_CONTRACT_MISSING",
+            "monetisability_eligible": False,
+        }
+    if not quote_timestamp or not snapshot_id:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "DATA_MISSING",
+            "monetisability_reason": "SELECTED_QUOTE_IDENTITY_MISSING",
+            "monetisability_eligible": False,
+            "monetisability_contract_symbol": symbol,
+        }
+    try:
+        parsed = parse_occ_symbol(symbol)
+    except ValueError:
+        parsed = None
+    parsed_side = str((parsed or {}).get("side") or "").upper()
+    if parsed_side and parsed_side != direction:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "CONTRACT_REPAIR",
+            "monetisability_reason": "SELECTED_CONTRACT_DIRECTION_MISMATCH",
+            "monetisability_eligible": False,
+            "monetisability_contract_symbol": symbol,
+        }
+    if ask <= 0 or strike <= 0 or target <= 0:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "DATA_MISSING",
+            "monetisability_reason": "EOD_ASK_STRIKE_OR_TARGET_MISSING",
+            "monetisability_eligible": False,
+            "monetisability_contract_symbol": symbol,
+        }
+    evaluation_id = economics_evaluation_id(
+        row.get("ticker"), direction, "LONG_SINGLE", [symbol]
+    )
+    hydrated = {
+        "selected_structure_hydration_status": "COMPLETE",
+        "selected_structure": "LONG_SINGLE",
+        "selected_structure_id": evaluation_id,
+        "selected_contract_symbol": symbol,
+        "selected_quote_timestamp_utc": quote_timestamp,
+        "selected_quote_snapshot_id": snapshot_id,
+        "selected_long_leg": {
+            "symbol": symbol,
+            "bid": bid,
+            "ask": ask,
+            "strike": strike,
+        },
+    }
+    result = evaluate_long_option_monetisability(
+        {
+            "canonical_direction": direction,
+            "target_spot": target,
+        },
+        hydrated,
+    )
+    viability = evaluate_execution_viability(row, hydrated)
+    return {**base, **result, **viability}
 
 def _audit_raw_blank(value) -> bool:
     if value is None:
@@ -810,7 +1030,11 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
 
     structural_conflict = _str(row, "direction_arbitration_status").upper() == "CONFLICT_STRUCTURE_LEADS"
     catalyst_conflict = _str(row, "catalyst_direction_conflict_status").upper() == "CATALYST_CONFLICT_REQUIRES_CONFIRMATION"
-    pcr_conflict = "CONFLICT" in _str(row, "pcr_direction_conflict_status").upper()
+    _pcr_status = _str(row, "pcr_direction_conflict_status").upper()
+    pcr_conflict = (
+        "CONFLICT" in _pcr_status
+        and _pcr_status not in {"NO_CONFLICT", "NO_PCR_CONFLICT"}
+    )
     if verdict in {"STAND_DOWN", "BLOCK", "BLOCKED"}:
         row["direction_conflict_status"] = "NOT_EVALUATED"
         row["direction_conflict_reason"] = ""
@@ -838,27 +1062,29 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
     if _options_hard_vetoes(row) and not _str(row, "options_hard_vetoes"):
         row["options_hard_vetoes"] = _options_hard_vetoes(row)
 
-    # put_gate enforcement: gate PUT candidates when macro explicitly blocks PUTs or
-    # when the enrichment delta marks do_not_unblock_put_gate on every matched theme.
+    # Legacy macro PUT-gate fields are retained as advisory context only.  Macro
+    # can describe a directional/sector headwind, but it must not manufacture a
+    # direction conflict or change candidate eligibility.
     _candidate_side = _audit_side(_first_str(
         row, "canonical_direction", "resolved_direction", "direction",
         "primary_direction", "options_direction", "option_direction",
     ))
     if _candidate_side == "PUT":
         _put_perm = _str(row, "macro_enrichment_put_gate_permission").upper()
-        _existing_cs = _str(row, "direction_conflict_status").upper()
         _enrichment_confs = _str(row, "macro_enrichment_confirmation_required").upper()
         _needs_gate = (
             _put_perm in {"BLOCKED", "RESTRICTED", "NO_GO"}
             or "PUT_GATE_DELTA_LOCK" in _enrichment_confs
         )
-        if _needs_gate and _existing_cs not in {"UNRESOLVED", "NOT_EVALUATED"}:
-            row["direction_conflict_status"] = "MITIGATED_REQUIRES_CONFIRMATION"
-            _gate_tag = f"PUT_GATE_{_put_perm}" if _put_perm in {"BLOCKED", "RESTRICTED", "NO_GO"} else "PUT_GATE_DELTA_LOCK"
-            _existing_reason = _str(row, "direction_conflict_reason")
-            row["direction_conflict_reason"] = "; ".join(filter(None, [_existing_reason, _gate_tag]))
-            if not _str(row, "direction_conflict_gate") or _str(row, "direction_conflict_gate") == "NONE":
-                row["direction_conflict_gate"] = "PUT_GATE_MACRO_REQUIRED"
+        if _needs_gate:
+            _advisory_tag = (
+                f"PUT_MACRO_{_put_perm}"
+                if _put_perm in {"BLOCKED", "RESTRICTED", "NO_GO"}
+                else "PUT_MACRO_DELTA_LOCK"
+            )
+            row["macro_directional_context"] = "HEADWIND"
+            row["macro_directional_context_reason"] = _advisory_tag
+            row["macro_capital_authority"] = "ADVISORY_ONLY"
 
     return row
 
@@ -874,6 +1100,7 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     signal = _resolved_signal_type(row).upper()
     momentum_tier = _resolved_momentum_tier(row).upper()
     horizon_bucket = _str(row, "horizon_bucket").lower()
+    liquidity_state = _str(row, "liquidity_state").upper()
 
     if options_block_reason:
         failure_class = _eod_failure_class(row, options_block_reason)
@@ -881,8 +1108,10 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
             return "EOD_NO_OPTIONS_ROUTE", f"NO_OPTIONS_ROUTE:{options_block_reason}"
         if failure_class == "STRUCTURAL_BLOCK":
             return "EOD_STRUCTURAL_BLOCK", f"STRUCTURAL_BLOCK:{options_block_reason}"
+        if _options_research_route(row) in OPTIONS_BLOCKED_ROUTES:
+            return "EOD_BLOCK", f"OPTIONS_RESEARCH_BLOCKED:{options_block_reason}"
         # Under the v4 signal-first policy, options economics/score vetoes are
-        # advisory unless they prove there is no liquid OTM contract.
+        # repairable unless the options layer explicitly blocks the route.
 
     if _true_fatal_block(row):
         reason = _str(row, "signal_authority_reason") or _str(row, "pse_block_reason") or "HARD_BLOCK"
@@ -901,6 +1130,12 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
 
     if repair_required:
         return "EOD_THESIS_READY_REPAIR_AT_OPEN", _str(row, "contract_repair_reason") or "CONTRACT_REPAIR_REQUIRED"
+
+    if liquidity_state and liquidity_state != "EXECUTABLE_NOW":
+        return (
+            "EOD_THESIS_READY_REPAIR_AT_OPEN",
+            f"CONTRACT_{liquidity_state}:REQUOTE_OR_MONITOR_AT_OPEN",
+        )
 
     if trigger_go:
         return "EOD_TRIGGER_READY", "TRIGGER_GO_ELIGIBLE"
@@ -932,77 +1167,13 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     return "EOD_WATCHLIST_MONETISABLE", "STRUCTURE_VALID_BUT_NOT_EXECUTE"
 
 def _footprint_direction(row: dict) -> str:
-    """Resolve the structural Wyckoff/compression footprint side.
+    """Return the preliminary Discovery hint for audit only.
 
-    The footprint is the thesis anchor for the expected hold window. Option
-    contract side, macro hints, and morning tape can require repair or
-    confirmation, but they must not silently invert this side.
+    The former implementation reconstructed and locked a second direction
+    authority. Direction governance explicitly prohibits that behaviour.
     """
-    explicit_footprint = _side_from_text(_str(row, "footprint_direction"))
-    if explicit_footprint in {"CALL", "PUT"}:
-        return explicit_footprint
-
-    call_score = 0.0
-    put_score = 0.0
-
-    def add(side: str, points: float) -> None:
-        nonlocal call_score, put_score
-        if side == "CALL":
-            call_score += points
-        elif side == "PUT":
-            put_score += points
-
-    for key, points in (
-        ("direction", 2.0),
-        ("signal_direction", 1.5),
-        ("recommended_direction", 1.5),
-        ("swing_direction", 2.0),
-        ("fusion_direction", 2.0),
-        ("vanguard_edge_direction", 1.0),
-        ("layer2__edge_direction", 1.0),
-    ):
-        side = _side_from_text(_str(row, key))
-        if side:
-            add(side, points)
-
-    phase_text = " ".join(
-        _str(row, key).upper()
-        for key in (
-            "wyckoff_phase_bucket",
-            "phase",
-            "phase_v2",
-            "dominant_event",
-            "intent",
-            "precor_intent",
-            "dominant_trend",
-            "control_state",
-            "setup_type",
-            "crabel_state",
-            "crabel_pattern",
-        )
-    )
-    if any(token in phase_text for token in ("ACCUMULATION", "SPRING", "SIGN_OF_STRENGTH", "SOS", "BUY_SETUP", "MARKUP", "BUYERS")):
-        add("CALL", 2.0)
-    if any(token in phase_text for token in ("DISTRIBUTION", "UPTHRUST", "SIGN_OF_WEAKNESS", "SOW", "SELL_SETUP", "MARKDOWN", "SELLERS")):
-        add("PUT", 2.0)
-
-    force = _flt(row, "directional_force")
-    if force >= 5:
-        add("CALL", 1.0)
-    elif force <= -5:
-        add("PUT", 1.0)
-
-    signal = _flt(row, "signal_price") or _first_flt(row, "underlying_price", "current_price", "spot_price")
-    target = _flt(row, "target_price") or _first_flt(row, "structural_target", "target")
-    if signal and target:
-        if target > signal * 1.003:
-            add("CALL", 1.0)
-        elif target < signal * 0.997:
-            add("PUT", 1.0)
-
-    if abs(call_score - put_score) < 1.0:
-        return ""
-    return "CALL" if call_score > put_score else "PUT"
+    side = _governed_side(row.get("discovery_direction_preliminary"))
+    return side if side in GOVERNED_DIRECTED_SIDES else ""
 
 
 def _major_catalyst_can_break_footprint(row: dict, catalyst_side: str, footprint_side: str) -> bool:
@@ -1016,42 +1187,12 @@ def _major_catalyst_can_break_footprint(row: dict, catalyst_side: str, footprint
     return False
 
 def _candidate_direction(row: dict) -> str:
-    """Resolve the executable CALL/PUT side for the morning handoff."""
-    footprint = _footprint_direction(row)
-    if footprint in {"CALL", "PUT"}:
-        return footprint
-    for key in (
-        "direction",
-        "options_direction",
-        "option_direction",
-        "signal_direction",
-        "recommended_direction",
-    ):
-        value = _str(row, key).upper()
-        if value in {"CALL", "PUT"}:
-            return value
-        if value == "BULLISH":
-            return "CALL"
-        if value == "BEARISH":
-            return "PUT"
-
-    raw = " ".join(
-        _str(row, key).upper()
-        for key in (
-            "intent",
-            "precor_intent",
-            "dominant_trend",
-            "control_state",
-            "options_strategy",
-            "recommended_contract",
-            "contract_occ_symbol",
-        )
-    )
-    if "SELL_SETUP" in raw or "LONG_PUT" in raw or "BEARISH" in raw or "SELLERS" in raw:
-        return "PUT"
-    if "BUY_SETUP" in raw or "LONG_CALL" in raw or "BULLISH" in raw or "BUYERS" in raw:
-        return "CALL"
-    return ""
+    """Consume the governed final direction without re-deriving it."""
+    for key in ("final_direction", "governed_direction", "options_direction", "canonical_direction"):
+        side = _governed_side(row.get(key))
+        if side in GOVERNED_DIRECTED_SIDES | GOVERNED_NON_DIRECTIONAL_SIDES:
+            return side
+    return "UNRESOLVED"
 
 def _side_from_text(value: str) -> str:
     text = str(value or "").upper()
@@ -1081,125 +1222,122 @@ def _contract_side(row: dict) -> str:
     return ""
 
 def _direction_evidence(row: dict) -> dict:
-    """
-    Resolve the best trade expression without treating the first selected side
-    as gospel. This is conservative: it only reroutes when the current side is
-    empty/strangle or when evidence materially contradicts a bad expression.
-    """
-    primary = _candidate_direction(row)
-    footprint = _footprint_direction(row)
-    call_score = 0.0
-    put_score = 0.0
-    reasons: list[str] = []
-
-    def add(side: str, points: float, reason: str) -> None:
-        nonlocal call_score, put_score
-        if side == "CALL":
-            call_score += points
-            reasons.append(f"CALL:{reason}+{points:g}")
-        elif side == "PUT":
-            put_score += points
-            reasons.append(f"PUT:{reason}+{points:g}")
-
-    if footprint:
-        add(footprint, 4.0, "footprint_anchor")
-
-    opt_dir = _str(row, "options_direction").upper()
-    if opt_dir in {"CALL", "PUT"}:
-        add(opt_dir, 2.0, "options_direction")
-    elif opt_dir == "STRANGLE":
-        reasons.append("NEUTRAL:options_direction=STRANGLE")
-
-    for key, points in (
-        ("vanguard_edge_direction", 2.0),
-        ("layer2__edge_direction", 2.0),
-        ("catalyst_direction_bias", 2.5),
-        ("iv_direction", 0.5),
-    ):
-        side = _side_from_text(_str(row, key))
-        if side:
-            add(side, points, key)
-
-    force = _flt(row, "directional_force")
-    if force >= 5:
-        add("CALL", 1.5, "directional_force")
-    elif force <= -5:
-        add("PUT", 1.5, "directional_force")
-
-    signal = _flt(row, "signal_price") or _first_flt(row, "underlying_price", "current_price", "spot_price")
-    target = _flt(row, "target_price") or _first_flt(row, "structural_target", "target")
-    if signal and target:
-        if target > signal * 1.003:
-            add("CALL", 1.5, "target_above_signal")
-        elif target < signal * 0.997:
-            add("PUT", 1.5, "target_below_signal")
-
-    raw = " ".join(
-        _str(row, key).upper()
-        for key in ("intent", "precor_intent", "wyckoff_phase_bucket", "dominant_trend", "control_state")
+    """Consume the Options GDR; never reconstruct or silently invert direction."""
+    working = dict(row)
+    recovered = direction_fields_from_record_json(
+        working.get("governed_direction_record_json")
     )
-    if any(token in raw for token in ("BUY_SETUP", "ACCUMULATION", "MARKUP", "BULL")):
-        add("CALL", 1.0, "structure")
-    if any(token in raw for token in ("SELL_SETUP", "DISTRIBUTION", "MARKDOWN", "BEAR")):
-        add("PUT", 1.0, "structure")
+    for key, value in recovered.items():
+        if not _str(working, key) and value not in (None, ""):
+            working[key] = value
 
-    contract_side = _contract_side(row)
-    if contract_side:
-        add(contract_side, 0.25 if footprint and contract_side != footprint else 0.5, "selected_contract_side")
+    # A temporary migration adapter is permitted only when Options supplied an
+    # explicit CALL/PUT/STRANGLE. It cannot consult the Discovery footprint,
+    # targets, contracts or free-text fields.
+    if not _str(working, "dir_calc_version"):
+        options_side = _governed_side(
+            working.get("options_direction")
+            or working.get("canonical_direction")
+        )
+        if options_side not in GOVERNED_DIRECTED_SIDES | GOVERNED_NON_DIRECTIONAL_SIDES:
+            options_side = "UNRESOLVED"
+        adapter = resolve_governed_direction(
+            ticker=working.get("ticker"),
+            run_id=working.get("run_id"),
+            discovery_direction=working.get("discovery_direction_preliminary"),
+            governed_direction=options_side,
+            governed_basis="LEGACY_OPTIONS_DIRECTION_MIGRATION_ADAPTER",
+            row=working,
+        )
+        working.update(adapter)
 
-    chosen = primary
-    margin = abs(call_score - put_score)
-    voted = "CALL" if call_score > put_score else "PUT" if put_score > call_score else ""
-    rr_options = _flt(row, "rr_options") or _flt(row, "rr_premium_expected")
-    gain_at_target = _flt(row, "option_gain_at_target")
-    expression_poor = rr_options <= 0 or gain_at_target < 0
-    catalyst_side = _side_from_text(_str(row, "catalyst_direction_bias"))
+    governed = _governed_side(working.get("governed_direction"))
+    final_direction = _governed_side(working.get("final_direction"))
+    if final_direction not in GOVERNED_DIRECTED_SIDES | GOVERNED_NON_DIRECTIONAL_SIDES:
+        final_direction = "UNRESOLVED"
+    contract_side = _contract_side(working)
+    contract_reselection_required = (
+        final_direction not in GOVERNED_DIRECTED_SIDES
+        or (contract_side in GOVERNED_DIRECTED_SIDES and contract_side != final_direction)
+    )
+    path = _str(working, "direction_resolution_path") or "UNRESOLVED"
+    reason = (
+        f"GDR:{governed}->{final_direction}; path={path}; "
+        f"authority={_str(working, 'governed_direction_authority') or 'OPTIONS_INTELLIGENCE'}"
+    )
+    reroute = (
+        "NONE" if path == "DIRECTION_CONFIRMED"
+        else "GOVERNED_PRECONTRACT_RESOLUTION" if final_direction in GOVERNED_DIRECTED_SIDES
+        else "DIRECTION_UNRESOLVED"
+    )
 
-    reroute = "NONE"
-    if not chosen and voted:
-        chosen = voted
-        reroute = "SELECTED_FROM_EVIDENCE"
-    elif opt_dir == "STRANGLE" and voted and margin >= 1.5:
-        chosen = voted
-        reroute = "STRANGLE_TO_DIRECTIONAL"
-    elif catalyst_side and catalyst_side != chosen and margin >= 1.0:
-        # Catalysts are powerful confirmation/invalidation inputs, but they are
-        # not allowed to silently rewrite the recorded thesis side. Preserve the
-        # footprint/current thesis and route the conflict to live confirmation.
-        if footprint and chosen == footprint:
-            reroute = "CATALYST_CONFLICT_THESIS_PRESERVED"
-            reasons.append(f"REVIEW:catalyst_{catalyst_side}_conflicts_with_locked_thesis_{chosen}")
-        else:
-            reroute = "CATALYST_CONFLICT_REQUIRES_CONFIRMATION"
-            reasons.append(f"REVIEW:catalyst_{catalyst_side}_conflicts_with_current_thesis_{chosen or 'UNKNOWN'}")
-    elif voted and chosen and voted != chosen and expression_poor and margin >= 2.0:
-        if footprint and chosen == footprint:
-            reroute = "FOOTPRINT_LOCKED_EXPRESSION_REPAIR"
-        else:
-            chosen = voted
-            reroute = "PRIMARY_EXPRESSION_FAILED_REROUTED"
-
-    if not chosen:
-        chosen = contract_side or voted or ""
-
-    if footprint in {"CALL", "PUT"} and chosen in {"CALL", "PUT"} and chosen != footprint:
-        reasons.append(f"GUARD:restored_locked_footprint_{footprint}_from_{chosen}")
-        chosen = footprint
-        reroute = "THESIS_LOCK_GUARD_RESTORED_FOOTPRINT"
-
-    return {
-        "primary_direction": primary,
-        "resolved_direction": chosen,
-        "canonical_direction": chosen,
-        "footprint_direction": footprint,
-        "footprint_lock_status": "LOCKED_UNTIL_LIVE_INVALIDATION" if footprint else "UNLOCKED_NO_CLEAR_FOOTPRINT",
-        "footprint_lock_reason": "Wyckoff/compression footprint anchors thesis during expected hold window; catalyst conflicts require live confirmation and must not rewrite thesis direction" if footprint else "",
+    result = {
+        "primary_direction": governed,
+        "resolved_direction": final_direction,
+        "canonical_direction": final_direction,
+        "footprint_direction": _footprint_direction(working),
+        "footprint_lock_status": "DECOMMISSIONED_GDR_AUTHORITY",
+        "footprint_lock_reason": "Footprint retained for audit only; it has no direction authority",
         "direction_reroute_status": reroute,
-        "direction_decision_reason": "; ".join(reasons[:12]),
-        "direction_call_score": round(call_score, 2),
-        "direction_put_score": round(put_score, 2),
+        "direction_decision_reason": reason,
+        "direction_call_score": _flt(working, "direction_resolution_call_score"),
+        "direction_put_score": _flt(working, "direction_resolution_put_score"),
         "selected_contract_side": contract_side,
+        "direction_contract_reselection_required": str(contract_reselection_required).upper(),
+        "direction_integrity_status": "PENDING_MORNING_VALIDATION",
     }
+    for field in (
+        "dir_calc_version", "direction_policy_version", "direction_policy_sha256",
+        "discovery_direction_preliminary", "governed_direction",
+        "governed_direction_authority", "governed_direction_basis",
+        "final_direction", "direction_resolution_path",
+        "direction_governance_status", "direction_resolution_confidence",
+        "direction_resolution_call_score", "direction_resolution_put_score",
+        "direction_resolution_winning_share", "direction_resolution_margin",
+        "direction_resolution_evidence_count", "direction_resolution_evidence_json",
+        "direction_resolution_chain_json", "direction_excluded_evidence_json",
+        "governed_direction_record_json", "governed_direction_record_sha256",
+    ):
+        result[field] = working.get(field, "")
+    return result
+
+
+_DIRECTION_DEPENDENT_CONTRACT_FIELDS = (
+    "recommended_contract", "contract_occ_symbol", "contract_symbol",
+    "preferred_contract", "alternative_contract_1", "alternative_contract_2",
+    "alternative_contract_3", "alternative_contracts_json", "strike", "expiry",
+    "dte", "premium", "contract_premium", "contract_bid", "contract_ask",
+    "contract_mid", "contract_spread_pct", "contract_delta", "contract_gamma",
+    "contract_theta", "contract_vega", "contract_iv", "contract_oi",
+    "contract_volume", "rr_options", "rr_premium_expected", "option_gain_at_target",
+    "ev_predicted", "ev3_evaluation_id",
+)
+
+
+def _invalidate_direction_dependent_contract(row: dict, direction_info: dict) -> dict:
+    """Invalidate a contract selected for a different or unresolved direction."""
+    if _str(direction_info, "direction_contract_reselection_required").upper() != "TRUE":
+        return row
+    result = dict(row)
+    previous = _first_str(
+        result, "recommended_contract", "contract_occ_symbol", "contract_symbol"
+    )
+    for field in _DIRECTION_DEPENDENT_CONTRACT_FIELDS:
+        if field in result:
+            result[field] = ""
+    result["direction_invalidated_contract_symbol"] = previous
+    result["direction_contract_reselection_required"] = "TRUE"
+    result["contract_repair_required"] = "TRUE"
+    result["contract_repair_status"] = "DIRECTION_RESELECTION_REQUIRED"
+    result["contract_repair_reason"] = (
+        "Final governed direction is unresolved or differs from the selected contract; "
+        "select and hydrate a new exact contract before economics"
+    )
+    result["selected_contract_side"] = ""
+    result["selected_contract_economics_ready"] = False
+    result["economics_recompute_required"] = "TRUE"
+    return result
+
 
 def _spread_pct_from_row(row: dict) -> float:
     spread = _first_flt(row, "contract_spread_pct", "eil_spread_pct_live", default=0.0)
@@ -1316,7 +1454,7 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         mode = "SCALE_AT_WALL"
         scale = "60/25/15"
 
-    if not target and entry:
+    if not target and entry and direction_u in GOVERNED_DIRECTED_SIDES:
         move = abs(expected_move_pct) / 100.0 if abs(expected_move_pct) > 1 else abs(expected_move_pct)
         target = entry * (1 + move) if direction_u == "CALL" else entry * (1 - move)
     if not wall_price:
@@ -1326,11 +1464,15 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         t1 = wall_price or target
         t2 = target or wall_price
         t3 = max(x for x in [t1, t2, entry] if x) * 1.03 if any([t1, t2, entry]) else 0.0
-    else:
+    elif direction_u == "PUT":
         t1 = wall_price or target
         t2 = target or wall_price
         vals = [x for x in [t1, t2, entry] if x]
         t3 = min(vals) * 0.97 if vals else 0.0
+    else:
+        t1 = t2 = t3 = 0.0
+        mode = "NOT_APPLICABLE"
+        scale = "NOT_APPLICABLE"
 
     return {
         "exit_mode": mode,
@@ -1339,7 +1481,11 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         "exit_t2": round(float(t2), 4) if t2 else 0.0,
         "exit_t3": round(float(t3), 4) if t3 else 0.0,
         "exit_invalidation_price": round(float(invalidation), 4) if invalidation else 0.0,
-        "exit_plan_reason": f"WBS={wbs_grade or 'NONE'}; GARCH/expected move={expected_move_pct}",
+        "exit_plan_reason": (
+            LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value
+            if direction_u not in GOVERNED_DIRECTED_SIDES
+            else f"WBS={wbs_grade or 'NONE'}; GARCH/expected move={expected_move_pct}"
+        ),
     }
 
 def _eod_dropoff_reason(row: dict, tier: str, eod_status: str, contract_profile: dict) -> str:
@@ -1351,6 +1497,13 @@ def _eod_dropoff_reason(row: dict, tier: str, eod_status: str, contract_profile:
         return eod_status
     if eod_status in {"EOD_NO_OPTIONS_ROUTE", "EOD_STRUCTURAL_BLOCK"}:
         return eod_status
+    if eod_status == "EOD_BLOCK":
+        options_block_reason = _options_research_block_reason(row)
+        return (
+            f"OPTIONS_RESEARCH_BLOCKED:{options_block_reason}"
+            if options_block_reason
+            else "EOD_BLOCK"
+        )
     if eod_status in {"EOD_EXECUTE_CANDIDATE", "EOD_CATALYST_EXECUTE_CANDIDATE"}:
         return "SURVIVED_TO_EOD_EXECUTE"
     options_block_reason = _options_research_block_reason(row)
@@ -1367,8 +1520,6 @@ def _eod_dropoff_reason(row: dict, tier: str, eod_status: str, contract_profile:
         gaps = []
         if _flt(row, "options_score") < MIN_OPTIONS_SCORE:
             gaps.append("OPTIONS_SCORE_BELOW_FLOOR")
-        if (_flt(row, "rr_underlying") or _flt(row, "rr")) < MIN_RR:
-            gaps.append("RR_BELOW_FLOOR")
         if _flt(row, "composite") < MIN_COMPOSITE:
             gaps.append("COMPOSITE_BELOW_FLOOR")
         return ";".join(gaps) or "QUALITY_FLOOR_NOT_MET"
@@ -1669,7 +1820,6 @@ def structural_conviction_score(row: dict) -> tuple[float, dict]:
 def classify_tier(row: dict) -> str:
     ois     = _flt(row, "options_score")
     # EOD-01: use rr_underlying (structural price R:R, from FIX-01) — not rr_options
-    rr      = _flt(row, "rr_underlying") or _flt(row, "rr")
     conv    = _flt(row, "sb_conv_score")
     comp    = _flt(row, "composite")
     eil_verdict = _str(row, "eil_v3_verdict").upper()
@@ -1689,7 +1839,7 @@ def classify_tier(row: dict) -> str:
         return "WATCH"
 
     # Quality floor check
-    if ois < MIN_OPTIONS_SCORE or rr < MIN_RR or comp < MIN_COMPOSITE:
+    if ois < MIN_OPTIONS_SCORE or comp < MIN_COMPOSITE:
         return "WATCH"
 
     if _true_fatal_block(row):
@@ -1706,10 +1856,9 @@ def classify_tier(row: dict) -> str:
     options_power = ois >= 45
 
     # Tier A: capital-grade EOD thesis, not live capital permission.
-    # Requires tradability + R/R + one execution clue and one market-behaviour clue.
+    # Requires strong non-economic evidence plus one execution clue.
     if (
         ois >= TIER_A["options_score"]
-        and rr >= TIER_A["rr"]
         and comp >= 55
         and (eil_verdict == "EXECUTE" or catalyst_ready)
         and (trigger_ready or campaign_ready or options_power)
@@ -1718,10 +1867,9 @@ def classify_tier(row: dict) -> str:
 
     # Tier B: realistic morning-validation slate. Markets often give tradeable
     # follow-through without every model agreeing, so one strong evidence family
-    # can qualify if liquidity/economics are present.
+    # can qualify from the non-economic evidence families.
     if (
         ois >= TIER_B["options_score"]
-        and rr >= TIER_B["rr"]
         and comp >= 50
         and (execute_like or trigger_present or catalyst_ready or campaign_ready or options_power)
     ):
@@ -1742,12 +1890,17 @@ def build_candidate_manifest(
     horizon_summary: Optional[dict] = None,
     horizon_1_5d_path: Optional[str | Path] = None,
     horizon_6_10d_path: Optional[str | Path] = None,
+    trigger_overlay_path: Optional[str | Path] = None,
 ) -> pd.DataFrame:
     """
     Build the morning candidate manifest from EOD pipeline outputs.
 
     Args:
-        eil_path           Path to eil_enriched_{run_id}.csv
+        eil_path           Legacy parameter name. Production must pass the
+                           final execution_v3_5_{run_id}.csv authority artifact.
+        trigger_overlay_path
+                           Compatibility-only overlay for pre-WS2 replays.
+                           Production reads trigger evidence from eil_path.
         wbs_path           Path to wall_break_scores_{run_id}.csv (optional)
         discovery_path     Path to discovery_candidates_ultimate_{run_id}.csv (optional)
         output_path        Where to write morning_candidates_{run_id}.csv
@@ -1766,11 +1919,30 @@ def build_candidate_manifest(
     validation can apply DTE-appropriate gates and correctly classify 1-5D
     entries vs 6-10D continuations vs 11-20D monitor-only signals.
     """
-    log.info(f"Loading EIL enriched data: {eil_path}")
+    authority_source_path = Path(eil_path)
+    authority_source_stage = (
+        "FINAL_EXECUTION"
+        if authority_source_path.name.startswith("execution_v3_5_")
+        else "LEGACY_NONFINAL"
+    )
+    log.info(
+        "Loading candidate authority data: %s | source_stage=%s",
+        authority_source_path,
+        authority_source_stage,
+    )
     df = pd.read_csv(eil_path, low_memory=False)
     log.info(f"  {len(df)} rows loaded")
+    ev3_authority_columns = [
+        column for column in df.columns if str(column).startswith("ev3_")
+    ]
 
     rows = df.to_dict(orient="records")
+    trigger_map = _load_trigger_authority_overlay(trigger_overlay_path)
+    if trigger_overlay_path is not None:
+        log.info(
+            "Trigger authority overlay loaded: %d tickers from %s",
+            len(trigger_map), Path(trigger_overlay_path).name,
+        )
 
     # ── v4.1: Build horizon lookup from Phase 1B router CSVs ─────────────────
     # Maps ticker → {horizon_bucket, horizon_action, horizon_size_multiplier}
@@ -1909,6 +2081,23 @@ def build_candidate_manifest(
     for row in rows:
         ticker = str(row.get("ticker", "")).strip().upper()
 
+        # Trigger Layer is the sole owner of trigger evidence. Production WS2
+        # reads it directly from execution_v3_5. The optional overlay remains
+        # only for replaying pre-WS2 artifacts.
+        if ticker in trigger_map:
+            row.update(trigger_map[ticker])
+        if (
+            authority_source_stage == "FINAL_EXECUTION"
+            and str(row.get("trigger_handoff_schema_version", "")).strip()
+        ):
+            try:
+                validate_trigger_handoff_row(row)
+            except ValueError as trigger_error:
+                raise RuntimeError(
+                    f"WS2 execution trigger handoff invalid for {ticker or 'UNKNOWN'}: "
+                    f"{trigger_error}"
+                ) from trigger_error
+
         # Merge WBS fields
         if ticker in wbs_map:
             for col in WBS_MERGE_COLS:
@@ -1929,13 +2118,12 @@ def build_candidate_manifest(
 
         row = _normalise_current_contract(row)
 
-        # Resolve the trade expression before tiering. A failed/ambiguous CALL
-        # should be allowed to become a PUT thesis when the evidence says so,
-        # and vice versa; only the live/morning step can approve capital.
+        # Consume the governed direction record before tiering. EOD has no
+        # authority to reconstruct, invert or footprint-lock the Options result.
         direction_info = _direction_evidence(row)
         direction = str(direction_info.get("resolved_direction") or "")
-        if direction:
-            row["direction"] = direction
+        row["direction"] = direction or "UNRESOLVED"
+        row = _invalidate_direction_dependent_contract(row, direction_info)
         contract_profile = _contract_repair_profile(row, direction_info)
         for _k, _v in {**direction_info, **contract_profile}.items():
             row[_k] = _v
@@ -1956,17 +2144,16 @@ def build_candidate_manifest(
         wall_dist      = _flt(row, "wbs_wall_dist_pct") or _flt(row, "runway_to_wall_pct")
         exit_plan      = _exit_intelligence_plan(row, direction, invalidation, wall_price, _flt(row, "target_price"))
         eod_status, eod_reason = _eod_candidate_status(row, tier)
-        # FIX 1: detect direction-conflict rows that were promoted to EOD_TRIGGER_READY
-        _direction_conflict_flag = (
-            eod_status == "EOD_TRIGGER_READY"
-            and "DIRECTION_CONFLICT" in (eod_reason or "").upper()
-        )
+        # A conflict remains part of the signal lineage after structure resolves
+        # the trade side.  This flag is diagnostic and never blocks the route.
+        _direction_conflict_flag = _has_direction_conflict_lineage(row)
         monetisation = _monetisation_fit(row, tier, contract_profile, direction_info)
         eod_dropoff_reason = _eod_dropoff_reason(row, tier, eod_status, contract_profile)
         permission_fields = _candidate_permission_fields(row, eod_status)
         eod_failure_class = _eod_failure_class(row, eod_reason)
         thesis_state = _thesis_state_from_eod_status(eod_status)
         morning_tasks = _morning_tasks_for_status(row, eod_status, eod_reason)
+        eod_monetisability = _eod_selected_contract_monetisability(row, direction)
 
         # ── v4.1: Resolve horizon context ────────────────────────────────────
         # Priority: Phase 1B horizon CSV > EIL enriched row column > default
@@ -1990,6 +2177,30 @@ def build_candidate_manifest(
             "footprint_lock_status": direction_info.get("footprint_lock_status", ""),
             "footprint_lock_reason": direction_info.get("footprint_lock_reason", ""),
             "options_direction":     _str(row, "options_direction"),
+            "dir_calc_version": direction_info.get("dir_calc_version", ""),
+            "direction_policy_version": direction_info.get("direction_policy_version", ""),
+            "direction_policy_sha256": direction_info.get("direction_policy_sha256", ""),
+            "discovery_direction_preliminary": direction_info.get("discovery_direction_preliminary", ""),
+            "governed_direction": direction_info.get("governed_direction", ""),
+            "governed_direction_authority": direction_info.get("governed_direction_authority", ""),
+            "governed_direction_basis": direction_info.get("governed_direction_basis", ""),
+            "final_direction": direction_info.get("final_direction", direction),
+            "direction_resolution_path": direction_info.get("direction_resolution_path", ""),
+            "direction_governance_status": direction_info.get("direction_governance_status", ""),
+            "direction_resolution_confidence": direction_info.get("direction_resolution_confidence", ""),
+            "direction_resolution_call_score": direction_info.get("direction_resolution_call_score", ""),
+            "direction_resolution_put_score": direction_info.get("direction_resolution_put_score", ""),
+            "direction_resolution_winning_share": direction_info.get("direction_resolution_winning_share", ""),
+            "direction_resolution_margin": direction_info.get("direction_resolution_margin", ""),
+            "direction_resolution_evidence_count": direction_info.get("direction_resolution_evidence_count", ""),
+            "direction_resolution_evidence_json": direction_info.get("direction_resolution_evidence_json", ""),
+            "direction_resolution_chain_json": direction_info.get("direction_resolution_chain_json", ""),
+            "direction_excluded_evidence_json": direction_info.get("direction_excluded_evidence_json", ""),
+            "governed_direction_record_json": direction_info.get("governed_direction_record_json", ""),
+            "governed_direction_record_sha256": direction_info.get("governed_direction_record_sha256", ""),
+            "direction_integrity_status": direction_info.get("direction_integrity_status", ""),
+            "direction_contract_reselection_required": direction_info.get("direction_contract_reselection_required", "FALSE"),
+            "direction_invalidated_contract_symbol": _str(row, "direction_invalidated_contract_symbol"),
             "signal_price":         _flt(row, "signal_price"),
             "target_price":         _flt(row, "target_price"),
             "sector":               _str(row, "sector"),
@@ -2022,6 +2233,54 @@ def build_candidate_manifest(
             "eod_status":           eod_status,
             "eod_failure_class":    eod_failure_class,
             "thesis_state":         thesis_state,
+            "eod_thesis_classification": thesis_state,
+            "thesis_id":            _str(row, "thesis_id"),
+            "legacy_thesis_id":     _str(row, "legacy_thesis_id"),
+            "thesis_calculation_version": _str(row, "thesis_calculation_version"),
+            "supersedes_calculation_version": _str(row, "supersedes_calculation_version"),
+            "evidence_session_date": _str(row, "evidence_session_date"),
+            "evidence_session_source": _str(row, "evidence_session_source"),
+            "liquidity_thesis_state": _str(row, "thesis_state"),
+            "lifecycle_contract_version": _str(row, "lifecycle_contract_version"),
+            "liquidity_state":      _str(row, "liquidity_state"),
+            "morning_transition_state": _str(row, "morning_transition_state"),
+            "recovery_disposition": _str(row, "recovery_disposition"),
+            "executable_now":       row.get("executable_now", False),
+            "moneyness_state":      _str(row, "moneyness_state"),
+            "delta_band":           _str(row, "delta_band"),
+            "minimum_required_dte": _first_optional_flt(row, "minimum_required_dte"),
+            "remaining_hold_sessions": _first_optional_flt(row, "remaining_hold_sessions"),
+            "planned_hold_sessions": _first_optional_flt(row, "planned_hold_sessions"),
+            "planned_hold_source": _str(row, "planned_hold_source"),
+            "dte_buffer_sessions":  _first_optional_flt(row, "dte_buffer_sessions"),
+            "atm_distance_sigma":   _first_optional_flt(row, "atm_distance_sigma"),
+            "remaining_runway_pct": _first_optional_flt(row, "remaining_runway_pct"),
+            "remaining_runway_state": _str(row, "remaining_runway_state"),
+            "invalidation_spot": _first_optional_flt(row, "invalidation_spot"),
+            "invalidation_source": _str(row, "invalidation_source"),
+            "quote_as_of": _first_str(
+                row, "contract_quote_timestamp_utc", "quote_as_of", "quote_timestamp_utc"
+            ),
+            "option_chain_dataset_id": _str(row, "option_chain_dataset_id"),
+            "selected_quote_dataset_id": _str(row, "selected_quote_dataset_id"),
+            "remaining_runway_state": _str(row, "remaining_runway_state"),
+            "maturation_state_1d":  _str(row, "maturation_state_1d"),
+            "maturation_state_2d":  _str(row, "maturation_state_2d"),
+            "maturation_state_3d":  _str(row, "maturation_state_3d"),
+            "maturation_score_1d":  _first_flt(row, "maturation_score_1d"),
+            "maturation_score_2d":  _first_flt(row, "maturation_score_2d"),
+            "maturation_score_3d":  _first_flt(row, "maturation_score_3d"),
+            "maturation_score_is_probability": False,
+            "maturation_execution_authority": False,
+            "previous_contract_symbol": _str(row, "previous_contract_symbol"),
+            "contract_changed":     row.get("contract_changed", False),
+            "contract_selection_reason": _str(row, "contract_selection_reason"),
+            "quote_as_of":          _str(row, "quote_as_of"),
+            "quote_freshness":      _str(row, "quote_freshness"),
+            "liquidity_persistence_status": _str(row, "liquidity_persistence_status"),
+            "option_chain_dataset_id": _str(row, "option_chain_dataset_id"),
+            "option_chain_provider": _str(row, "option_chain_provider"),
+            "option_chain_resolution": _str(row, "option_chain_resolution"),
             "thesis_summary":       f"{direction or 'UNKNOWN'} {setup_type} | {move_window} | {eod_status}: {eod_reason}",
             "expected_holding_window": move_window,
             "expected_move":        _first_flt(row, "expected_move_pct", "expected_move", "l3_expected_move_6_10d", "l3_expected_move_1_5d"),
@@ -2063,15 +2322,22 @@ def build_candidate_manifest(
                 ] if x
             ),
             "notes":                eod_reason,
-            # FIX 1: direction-conflict flag — trader must verify at open
+            # Conflict lineage is retained even when structure resolved the side.
             "direction_conflict_flag": _direction_conflict_flag,
             "direction_conflict_note": (
-                f"Direction conflict detected: {eod_reason}. Trader to verify at open."
+                "Direction conflict retained for audit: "
+                f"{_str(row, 'direction_conflict_reason') or eod_reason}. "
+                "Use the governed resolved direction; verify the conflicting evidence at open."
                 if _direction_conflict_flag else ""
             ),
             "eod_live_capital_permission": permission_fields["eod_live_capital_permission"],
             "live_capital_permission": permission_fields["live_capital_permission"],
+            "capital_permission": _str(row, "capital_permission"),
             "eod_candidate_permission": permission_fields["eod_candidate_permission"],
+            "eod_candidate_authorized": row.get("eod_candidate_authorized", False),
+            "execution_authorized": row.get("execution_authorized", False),
+            "authority_source_stage": authority_source_stage,
+            "authority_source_path": str(authority_source_path.resolve()),
             "candidate_size": permission_fields["candidate_size"],
             "sizing_policy": permission_fields["sizing_policy"],
             "candidate_size_status": permission_fields["candidate_size_status"],
@@ -2137,7 +2403,7 @@ def build_candidate_manifest(
             "gamma_island_distance_pct": _flt(row, "gamma_island_distance_pct"),
             "gamma_island_source": _str(row, "gamma_island_source"),
             "gamma_island_note": _str(row, "gamma_island_note"),
-            "move_theta_ratio": _flt(row, "move_theta_ratio"),
+            "move_theta_ratio": _optional_flt(row, "move_theta_ratio"),
             "move_theta_margin_label": _str(row, "move_theta_margin_label"),
             "move_theta_narrative": _str(row, "move_theta_narrative"),
             "crowd_arrival_state": _str(row, "crowd_arrival_state"),
@@ -2167,7 +2433,7 @@ def build_candidate_manifest(
             "recommended_contract": (_str(row, "recommended_contract") or
                                      _str(row, "contract_occ_symbol")),
             "options_strategy":     _str(row, "options_strategy"),
-            "selected_contract_side": direction_info["selected_contract_side"],
+            "selected_contract_side": _str(row, "selected_contract_side"),
             "contract_quality_score": contract_profile["contract_quality_score"],
             "contract_repair_status": contract_profile["contract_repair_status"],
             "contract_repair_required": str(contract_profile["contract_repair_required"]).upper(),
@@ -2247,12 +2513,12 @@ def build_candidate_manifest(
             "pse_block_reason":     _str(row, "pse_block_reason"),
             "pse_score":            _flt(row, "pse_score"),
             "pse_edge_score":       _flt(row, "pse_edge_score"),
-            "trigger_primary":      _str(row, "trigger_primary"),
-            "trigger_quality":      _str(row, "trigger_quality"),
+            "trigger_primary":      _trigger_text(row, "trigger_primary"),
+            "trigger_quality":      _trigger_text(row, "trigger_quality"),
             "trigger_count":        _flt(row, "trigger_count"),
             "trigger_score":        _flt(row, "trigger_score"),
             "trigger_go_eligible":  _str(row, "trigger_go_eligible"),
-            "trigger_codes":        _str(row, "trigger_codes"),
+            "trigger_codes":        _trigger_text(row, "trigger_codes"),
             "thesis_decision":      _str(row, "thesis_decision") or _str(row, "fd_verdict"),
             "execution_mode":       _str(row, "execution_mode"),
 
@@ -2305,6 +2571,9 @@ def build_candidate_manifest(
             candidate[macro_col] = row.get(macro_col, "")
         for catalyst_col in CATALYST_TRUTH_FIELDS:
             candidate[catalyst_col] = row.get(catalyst_col, "")
+        for ev3_col in ev3_authority_columns:
+            candidate[ev3_col] = row.get(ev3_col, "")
+        candidate.update(eod_monetisability)
         candidates.append(candidate)
 
     out_df = pd.DataFrame(candidates)
@@ -2331,11 +2600,27 @@ def build_candidate_manifest(
         "EOD_BLOCK": 8,
     }
     trigger_order = {"STRONG": 0, "SINGLE": 1, "NONE": 2, "": 3}
+    # WS2 observability: retain an internal row identity so the governed
+    # trigger-priority rank can be compared with the same deterministic slate
+    # ranked without trigger priority.  This is diagnostics only; it does not
+    # alter candidate eligibility, scores, permissions or the production rank.
+    out_df["_ws2_rank_row_id"] = range(len(out_df))
     out_df["_tier_sort"] = out_df["structural_tier"].map(tier_order).fillna(4)
     out_df["_status_sort"] = out_df["eod_candidate_status"].map(status_order).fillna(8)
     out_df["_trigger_sort"] = (
         out_df["trigger_quality"].fillna("").astype(str).str.upper().map(trigger_order).fillna(3)
     )
+    _ws2_neutral_order = out_df.sort_values(
+        ["_status_sort", "_tier_sort", "monetisation_fit_score", "scs_score"],
+        ascending=[True, True, False, False],
+        kind="mergesort",
+    )
+    _ws2_neutral_rank_by_id = {
+        int(row_id): rank
+        for rank, row_id in enumerate(
+            _ws2_neutral_order["_ws2_rank_row_id"].tolist(), start=1
+        )
+    }
     out_df = out_df.sort_values(
         ["_status_sort", "_tier_sort", "_trigger_sort", "monetisation_fit_score", "scs_score"],
         ascending=[True, True, True, False, False],
@@ -2343,6 +2628,34 @@ def build_candidate_manifest(
     out_df = out_df.drop(columns=["_tier_sort", "_status_sort", "_trigger_sort"])
     full_out_df = out_df.reset_index(drop=True)
     full_out_df["slate_rank"] = range(1, len(full_out_df) + 1)
+    _ws2_rank_audit_df = full_out_df[[
+        column for column in (
+            "_ws2_rank_row_id", "ticker", "trigger_primary", "trigger_quality",
+            "trigger_score", "trigger_go_eligible", "trigger_freshness_state",
+            "trigger_data_asof", "trigger_handoff_schema_version", "slate_rank",
+        ) if column in full_out_df.columns
+    ]].copy()
+    _ws2_rank_audit_df["trigger_neutral_rank"] = (
+        _ws2_rank_audit_df["_ws2_rank_row_id"]
+        .map(_ws2_neutral_rank_by_id)
+        .astype("int64")
+    )
+    _ws2_rank_audit_df["trigger_rank_delta"] = (
+        pd.to_numeric(_ws2_rank_audit_df["slate_rank"], errors="raise").astype("int64")
+        - _ws2_rank_audit_df["trigger_neutral_rank"]
+    )
+    _ws2_rank_audit_df = _ws2_rank_audit_df.drop(columns=["_ws2_rank_row_id"])
+    full_out_df = full_out_df.drop(columns=["_ws2_rank_row_id"])
+    _ws2_changed_ranks = int(_ws2_rank_audit_df["trigger_rank_delta"].ne(0).sum())
+    _ws2_max_abs_delta = int(
+        _ws2_rank_audit_df["trigger_rank_delta"].abs().max()
+    ) if not _ws2_rank_audit_df.empty else 0
+    log.info(
+        "WS2 trigger rank impact: changed=%d/%d | max_abs_delta=%d",
+        _ws2_changed_ranks,
+        len(_ws2_rank_audit_df),
+        _ws2_max_abs_delta,
+    )
 
     # Slate-level direction conflict guard: if > 50% of candidates carry
     # MITIGATED_REQUIRES_CONFIRMATION, the whole slate is directionally suspect —
@@ -2422,8 +2735,37 @@ def build_candidate_manifest(
         full_out_df["shadow_opportunity_reason"] = []
 
     if output_path:
+        ws2_rank_audit_path = Path(output_path).with_name(
+            f"ws2_trigger_rank_audit_{run_id}.csv"
+        )
+        ws2_rank_audit_path.parent.mkdir(parents=True, exist_ok=True)
+        _ws2_rank_audit_df.to_csv(ws2_rank_audit_path, index=False)
+        log.info("  WS2 trigger rank audit written -> %s", ws2_rank_audit_path)
+        direction_transition_columns = [
+            column for column in (
+                "discovery_direction_preliminary", "governed_direction",
+                "final_direction", "direction_resolution_path",
+                "direction_governance_status", "dir_calc_version",
+            ) if column in full_out_df.columns
+        ]
+        if direction_transition_columns:
+            direction_transition_path = Path(output_path).with_name(
+                f"direction_transition_matrix_{run_id}.csv"
+            )
+            (
+                full_out_df.groupby(direction_transition_columns, dropna=False)
+                .size()
+                .reset_index(name="row_count")
+                .sort_values("row_count", ascending=False)
+                .to_csv(direction_transition_path, index=False)
+            )
+            log.info("  Direction transition matrix written -> %s", direction_transition_path)
         audit_cols = [
             "run_id", "ticker", "options_direction", "primary_direction", "direction",
+            "discovery_direction_preliminary", "governed_direction", "final_direction",
+            "direction_resolution_path", "direction_governance_status",
+            "direction_resolution_confidence", "dir_calc_version",
+            "direction_resolution_chain_json", "governed_direction_record_sha256",
             "direction_reroute_status", "direction_call_score", "direction_put_score",
             "slate_rank", "shadow_opportunity_score", "shadow_opportunity_label",
             "shadow_opportunity_reason",
@@ -2664,13 +3006,14 @@ def build_candidate_manifest(
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         out_df.to_csv(output_path, index=False)
         log.info(f"\n  Manifest written → {output_path}")
-        try:
-            import sys as _ma_sys
-            _ma_sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\pipeline_interpreter")
-            from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
-            _ma_on_pipeline_complete(str(output_path), output_dir=str(Path(output_path).parent))
-        except Exception as _ma_sync_err:
-            log.warning("MA_Inputs sync skipped for candidate manifest: %s", _ma_sync_err)
+        if str(run_id or "").upper() != "TEST":
+            try:
+                import sys as _ma_sys
+                _ma_sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\pipeline_interpreter")
+                from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
+                _ma_on_pipeline_complete(str(output_path), output_dir=str(Path(output_path).parent))
+            except Exception as _ma_sync_err:
+                log.warning("MA_Inputs sync skipped for candidate manifest: %s", _ma_sync_err)
 
     return out_df
 

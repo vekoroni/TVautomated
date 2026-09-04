@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AVSHUNTER Â· Intelligence Lab</title>
+<title>AVSHUNTER · Intelligence Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -107,11 +107,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 
 /* SIGNAL TABLE */
 .sig-list-zone{padding:0 20px 20px;overflow-x:auto}
-.sig-list-head{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px;min-width:1510px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
+.sig-list-head{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 76px 76px 72px;min-width:1874px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
 .slh{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:7px 9px;cursor:pointer;user-select:none;border-right:1px solid var(--border);white-space:nowrap}
 .slh:hover{color:var(--cyan)}.slh.sorted{color:var(--cyan)}.slh:last-child{border-right:none}
 .sig-list-body{border:1px solid var(--border);border-radius:0 0 4px 4px;overflow:hidden}
-.sig-row{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px;min-width:1510px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
+.sig-row{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 76px 76px 72px;min-width:1874px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
 .sig-row:last-child{border-bottom:none}.sig-row:hover{background:rgba(255,255,255,.025)}.sig-row.exec-row{background:rgba(0,229,160,.015)}.sig-row.exec-row:hover{background:rgba(0,229,160,.04)}
 .sig-row.selected-row{background:rgba(0,200,255,.05)!important}.sig-row.selected-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan)}
 .sig-row.audit-row{opacity:.62;background:rgba(255,61,90,.018)}.sig-row.audit-row::after{content:'';position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,61,90,.45)}
@@ -195,7 +195,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 .fs-k{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}.fs-arrow{font-size:18px;color:var(--border2);flex-shrink:0}
 .warn-list{display:flex;flex-direction:column;gap:5px}
 .warn-item{display:flex;align-items:center;gap:8px;padding:7px 11px;background:rgba(255,184,77,.04);border:1px solid rgba(255,184,77,.15);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)}
-.warn-item::before{content:'âš ';font-size:13px;flex-shrink:0}
+.warn-item::before{content:'⚠';font-size:13px;flex-shrink:0}
 
 /* DISCOVERY */
 .disc-table-zone{padding:0 20px 20px}
@@ -222,7 +222,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 /* PRIORITY SHORTLIST PANEL */
 .priority-panel{background:var(--bg2);border:1px solid rgba(0,229,160,.2);border-radius:6px;padding:14px 16px;margin:0 20px 14px}
 .pp-hdr{font-family:'Share Tech Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:var(--green);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.pp-hdr::before{content:'â—‰';font-size:12px}
+.pp-hdr::before{content:'◉';font-size:12px}
 .pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px}
 .pp-card{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
 .pp-card:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,229,160,.08)}
@@ -266,14 +266,14 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
   <div class="h-logo">AVSHUNTER</div>
   <div class="h-sub">INTELLIGENCE LAB</div>
   <div class="h-div"></div>
-  <div class="h-tag"><span>RUN</span>&nbsp;<span class="c" id="h-run-id">â€”</span></div>
+  <div class="h-tag"><span>RUN</span>&nbsp;<span class="c" id="h-run-id">—</span></div>
   <div class="h-div"></div>
-  <div class="h-tag"><span>REGIME</span>&nbsp;<span class="a" id="h-regime">â€”</span></div>
+  <div class="h-tag"><span>REGIME</span>&nbsp;<span class="a" id="h-regime">—</span></div>
   <div class="h-right">
     <select class="run-sel" id="run-selector" onchange="switchRun(this.value)"></select>
-    <button class="h-refresh" onclick="refreshData()">âŸ³ Refresh</button>
+    <button class="h-refresh" onclick="refreshData()">⟳ Refresh</button>
     <label class="h-chk"><input type="checkbox" id="chk-invalid" onchange="toggleInvalid(this.checked)">Show invalid</label>
-    <div class="h-badge" id="h-badge">â€” EXECUTE Â· â€” ARMED</div>
+    <div class="h-badge" id="h-badge">— EXECUTE · — ARMED</div>
   </div>
 </header>
 
@@ -292,7 +292,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
   <div class="macro-bar" id="macro-bar">Loading macro data...</div>
   <!-- PRIORITY SHORTLIST -->
   <div class="priority-panel" id="priority-panel" style="display:none">
-    <div class="pp-hdr">Priority Shortlist â€” Top Actionable Signals</div>
+    <div class="pp-hdr">Priority Shortlist — Top Actionable Signals</div>
     <div class="pp-grid" id="priority-grid"></div>
   </div>
   <div class="cards-zone" id="cards-zone"></div>
@@ -333,20 +333,20 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     </select>
     <div class="f-sep"></div>
     <span class="fb-lbl">Quick</span>
-    <button class="fb" id="btn-pos-rr" onclick="toggleQuick('rr',this)" title="Show only positive R:R signals">R:R &gt; 0</button>
+    <button class="fb" id="btn-monetisable" onclick="toggleQuick('monetisable',this)" title="Show only contracts classified as monetisable">Monetisable</button>
     <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals">EV &gt; 0</button>
     <button class="fb" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Show morning-blocked, rejected, and stand-down names for audit">Show blocked</button>
-    <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by R:R descending">â¬‡ R:R</button>
-    <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending">â¬‡ EV</button>
+    <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by conservative target profit descending">⬇ Target Profit</button>
+    <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending">⬇ EV</button>
     <div class="f-sep"></div>
-    <input class="search-inp" type="text" placeholder="Search tickerâ€¦" oninput="doSearch(this.value)">
+    <input class="search-inp" type="text" placeholder="Search ticker…" oninput="doSearch(this.value)">
     <div class="f-sep"></div>
-    <button class="fb" onclick="exportCSV()" title="Export current filtered view to CSV" style="border-color:rgba(0,229,160,.4);color:var(--green)">â¬‡ CSV</button>
+    <button class="fb" onclick="exportCSV()" title="Export current filtered view to CSV" style="border-color:rgba(0,229,160,.4);color:var(--green)">⬇ CSV</button>
     <span id="export-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)"></span>
   </div>
   <div class="sig-list-zone">
     <div class="sig-list-head">
-      <div class="slh priority-col sorted" onclick="sortBy(0)">â¬† Rank</div>
+      <div class="slh priority-col sorted" onclick="sortBy(0)">⬆ Rank</div>
       <div class="slh" onclick="sortBy(1)">Ticker</div>
       <div class="slh" onclick="sortBy(2)">Verdict</div>
       <div class="slh" onclick="sortBy(3)">Campaign</div>
@@ -359,7 +359,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(10)">Horizon</div>
       <div class="slh" onclick="sortBy(11)">Trigger</div>
       <div class="slh" onclick="sortBy(12)">Trig Evidence</div>
-      <div class="slh" onclick="sortBy(13)">R:R</div>
+      <div class="slh" onclick="sortBy(13)">Monetisable</div>
       <div class="slh" onclick="sortBy(14)">EV</div>
       <div class="slh" onclick="sortBy(15)">IVP</div>
       <div class="slh" onclick="sortBy(16)">Vol State</div>
@@ -369,6 +369,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh">Drift</div>
       <div class="slh" onclick="sortBy(21)">Sector</div>
       <div class="slh" onclick="sortBy(22)">EIL</div>
+      <div class="slh" onclick="sortBy(23)">Quote</div>
+      <div class="slh" onclick="sortBy(24)">Fresh</div>
+      <div class="slh" onclick="sortBy(25)">MS Life</div>
+      <div class="slh" onclick="sortBy(26)">MS Dir</div>
+      <div class="slh" onclick="sortBy(27)">Assess</div>
     </div>
     <div class="sig-list-body" id="sig-body"></div>
   </div>
@@ -378,9 +383,9 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 <div class="page" id="page-intel">
   <div class="lab-zone">
     <div class="lab-tabs">
-      <button class="ltab active" onclick="switchLab('execute',this)">â–¶ Execute Brief</button>
-      <button class="ltab" onclick="switchLab('armed',this)">â—ˆ Armed Monitor</button>
-      <button class="ltab" onclick="switchLab('conv',this)">â¬¡ Convexity Engine</button>
+      <button class="ltab active" onclick="switchLab('execute',this)">▶ Execute Brief</button>
+      <button class="ltab" onclick="switchLab('armed',this)">◈ Armed Monitor</button>
+      <button class="ltab" onclick="switchLab('conv',this)">⬡ Convexity Engine</button>
       <button class="ltab" onclick="switchLab('open',this)">Open Positions</button>
       <button class="ltab" onclick="switchLab('exit',this)">Exit Ticket</button>
       <button class="ltab" onclick="switchLab('outcomes',this)">Outcomes</button>
@@ -417,7 +422,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <button class="fb" onclick="setDiscF('phase','D',this)">D</button>
       <button class="fb" onclick="setDiscF('phase','E',this)">E</button>
       <div class="f-sep"></div>
-      <input class="search-inp" type="text" placeholder="Search tickerâ€¦" oninput="doDiscSearch(this.value)">
+      <input class="search-inp" type="text" placeholder="Search ticker…" oninput="doDiscSearch(this.value)">
     </div>
     <div class="disc-table-zone">
       <div class="disc-head">
@@ -436,8 +441,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div style="display:flex;align-items:center;gap:16px">
       <div class="page-info" id="disc-page-info"></div>
       <div class="disc-page-btns">
-        <button class="page-btn" id="disc-prev" onclick="discPage(-1)">â—€ Prev</button>
-        <button class="page-btn" id="disc-next" onclick="discPage(1)">Next â–¶</button>
+        <button class="page-btn" id="disc-prev" onclick="discPage(-1)">◀ Prev</button>
+        <button class="page-btn" id="disc-next" onclick="discPage(1)">Next ▶</button>
       </div>
     </div>
   </div>
@@ -465,10 +470,10 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 <div id="et-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3001;background:#0e1117;border:1px solid #00ff88;border-radius:6px;padding:28px 32px;min-width:380px;max-width:460px;font-family:'Share Tech Mono',monospace">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#00ff88;letter-spacing:.06em" id="et-ticker-hdr">â€”</div>
-      <div style="font-size:10px;color:#888;margin-top:2px" id="et-meta-hdr">â€”</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#00ff88;letter-spacing:.06em" id="et-ticker-hdr">—</div>
+      <div style="font-size:10px;color:#888;margin-top:2px" id="et-meta-hdr">—</div>
     </div>
-    <button onclick="closeETModal()" style="background:transparent;border:1px solid #333;color:#888;font-size:12px;padding:4px 10px;cursor:pointer;border-radius:2px">âœ•</button>
+    <button onclick="closeETModal()" style="background:transparent;border:1px solid #333;color:#888;font-size:12px;padding:4px 10px;cursor:pointer;border-radius:2px">✕</button>
   </div>
 
   <!-- Signal summary strip -->
@@ -480,7 +485,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <label style="font-size:10px;color:#888;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em">Entry Premium Paid (per share $)</label>
     <input id="et-premium" type="number" step="0.01" min="0.01" placeholder="e.g. 0.85"
       style="width:100%;box-sizing:border-box;background:#080b10;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;font-size:15px;padding:8px 12px;border-radius:3px;outline:none">
-    <div style="font-size:9px;color:#555;margin-top:3px">The actual premium you paid at your broker â€” per share (multiply Ã—100 for 1 contract cost)</div>
+    <div style="font-size:9px;color:#555;margin-top:3px">The actual premium you paid at your broker — per share (multiply ×100 for 1 contract cost)</div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
@@ -504,7 +509,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <label style="font-size:10px;color:#888;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em">Invalidation Price (underlying stock stop $)</label>
     <input id="et-invalidation" type="number" step="0.01" min="0.01" placeholder="e.g. 34.50"
       style="width:100%;box-sizing:border-box;background:#080b10;border:1px solid #ff4466;color:#ff4466;font-family:'Share Tech Mono',monospace;font-size:15px;padding:8px 12px;border-radius:3px;outline:none">
-    <div style="font-size:9px;color:#555;margin-top:3px">Stock price at which the PUT thesis is invalidated â€” governance engine will EXIT if breached</div>
+    <div style="font-size:9px;color:#555;margin-top:3px">Stock price at which the PUT thesis is invalidated — governance engine will EXIT if breached</div>
   </div>
 
   <!-- Account size helper -->
@@ -515,7 +520,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <input id="et-account" type="number" step="1" min="1" placeholder="250" value="250"
         style="width:80px;background:#080b10;border:1px solid #333;color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;padding:4px 8px;border-radius:2px;outline:none"
         oninput="etCalcSize()">
-      <span style="font-size:10px;color:#666">Ã— 30% =</span>
+      <span style="font-size:10px;color:#666">× 30% =</span>
       <span id="et-size-dollars" style="font-size:12px;color:#f5a623;font-weight:bold">$75.00</span>
     </div>
     <div id="et-contracts-note" style="font-size:10px;color:#555"></div>
@@ -527,12 +532,12 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
   <!-- Confirm button -->
   <button id="et-confirm-btn" onclick="confirmEnterTrade()"
     style="width:100%;padding:12px;background:#00ff88;color:#080b10;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.1em;border:none;border-radius:3px;cursor:pointer;transition:opacity .15s">
-    â—‰ LOCK IN TRADE â€” CREATE CONTRACT
+    ◉ LOCK IN TRADE — CREATE CONTRACT
   </button>
 
   <!-- Success state -->
   <div id="et-success" style="display:none;text-align:center;padding:10px 0 0">
-    <div style="font-size:12px;color:#00ff88;margin-bottom:6px">âœ“ Contract created successfully</div>
+    <div style="font-size:12px;color:#00ff88;margin-bottom:6px">✓ Contract created successfully</div>
     <div id="et-success-detail" style="font-size:10px;color:#666"></div>
   </div>
 </div>
@@ -541,12 +546,12 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
 <div class="modal" id="sig-modal">
   <div class="modal-hdr">
-    <div class="m-ticker" id="m-ticker">â€”</div>
+    <div class="m-ticker" id="m-ticker">—</div>
     <div class="m-meta">
       <div class="m-verdict-row" id="m-badges"></div>
-      <div class="m-sub" id="m-sub">â€”</div>
+      <div class="m-sub" id="m-sub">—</div>
     </div>
-    <button class="modal-close" onclick="closeModal()">âœ• Close</button>
+    <button class="modal-close" onclick="closeModal()">✕ Close</button>
   </div>
   <div class="modal-tabs">
     <button class="mtab active" onclick="switchMTab('overview',this)">Overview</button>
@@ -557,6 +562,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <button class="mtab" onclick="switchMTab('morning',this)">Morning Val</button>
     <button class="mtab" onclick="switchMTab('eil',this)">EIL</button>
     <button class="mtab" onclick="switchMTab('qomega',this)">Q-OMEGA</button>
+    <button class="mtab" onclick="switchMTab('msi',this)">MSI Evidence</button>
   </div>
   <div class="modal-body">
     <div class="mpane active" id="mp-overview"></div>
@@ -567,11 +573,12 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="mpane" id="mp-morning"></div>
     <div class="mpane" id="mp-eil"></div>
     <div class="mpane" id="mp-qomega"></div>
+    <div class="mpane" id="mp-msi"></div>
   </div>
 </div>
 
 <script>
-// â•â•â• STATE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ STATE ═══════════════════════════════════════════════════════════════
 const API = 'http://localhost:5002/api';
 let RUN_DATA = null;   // full loaded run payload
 let SHOW_INVALID = false; // show schema-invalid rows
@@ -580,7 +587,7 @@ let ALL_SIGS = [];     // all signals including SD
 let DISCOVERY = [];
 
 const filters = {verdict:'ALL', dir:'ALL', camp:'ALL', exec:'ALL', eod:'ALL', morning:'ALL', optRoute:'ALL'};
-const quickFilters = {rr: false, ev: false};  // positive R:R / EV toggles
+const quickFilters = {monetisable: false, ev: false};
 let searchTerm = '', sortCol = 0, sortDir = 1, selectedTicker = null;  // default: priority rank ascending
 let activeCardId = null;
 let campaignViewMode = false;  // when true, table shows all CORE_CAMPAIGN signals
@@ -589,7 +596,7 @@ const discFilters = {tier:'ALL', phase:'ALL'};
 let discSearch = '', discPage_ = 0;
 const DISC_PAGE_SIZE = 100;
 
-// â•â•â• BOOT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ BOOT ════════════════════════════════════════════════════════════════
 async function boot() {
   // Safety: force-hide loader after 15s no matter what
   const loaderTimeout = setTimeout(() => {
@@ -627,7 +634,7 @@ async function boot() {
     setTimeout(() => document.getElementById('loader').classList.add('hidden'), 300);
   } catch(e) {
     clearTimeout(loaderTimeout);
-    showLoaderError(`Cannot reach Flask server at ${API}\n\nMake sure intelligence_lab.py is running:\n  python intelligence_lab.py\n\nError: ${e.message}`);
+    showLoaderError(`Intelligence Lab could not load pipeline data from ${API}\n\nThe server may be stopped, or an API response may be invalid.\nMake sure intelligence_lab.py is running, then refresh.\n\nError: ${e.message}`);
   }
 }
 
@@ -704,7 +711,7 @@ async function switchRun(runId) {
   }
 }
 
-// â•â•â• RENDER ALL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ RENDER ALL ══════════════════════════════════════════════════════════
 function renderAll() {
   if (!RUN_DATA) return;
   const stats = RUN_DATA.stats || {};
@@ -716,9 +723,9 @@ function renderAll() {
   document.getElementById('h-run-id').textContent = runId;
   document.getElementById('h-regime').textContent = [
     macro.regime_state, macro.regime_drift
-  ].filter(Boolean).join(' Â· ') || 'â€”';
+  ].filter(Boolean).join(' · ') || '—';
   document.getElementById('h-badge').textContent =
-    `${stats.lab_go_count || 0} GO Â· ${stats.lab_blocked_count || 0} BLOCKED Â· ${stats.lab_armed_count || 0} ARMED`;
+    `${stats.lab_go_count || 0} GO · ${stats.lab_blocked_count || 0} BLOCKED · ${stats.lab_armed_count || 0} ARMED`;
   // Exec mode sub-counts in badge tooltip
   document.getElementById('h-badge').title =
     `FULL:${stats.exec_mode_full||0} REDUCED:${stats.exec_mode_reduced||0} PROBE:${stats.exec_mode_probe||0} | DataWeak:${stats.data_weak_count||0} | BridgeWR:${stats.win_rate_bridge_count||0}`;
@@ -728,11 +735,11 @@ function renderAll() {
   const badge = document.getElementById('h-badge');
   if(RUN_DATA.lab_handoff_mode === 'EOD_PREP' || rh.next_action === 'NEEDS_MORNING_VALIDATION'){
     const eodCount = RUN_DATA.lab_handoff_count || stats.eod_candidate_count || 0;
-    badge.textContent = `EOD PREP Â· ${eodCount} candidates Â· MV pending`;
+    badge.textContent = `EOD PREP · ${eodCount} candidates · MV pending`;
     badge.style.background = 'var(--amber)';
     badge.style.color = 'black';
   } else if(rh.ok === false){
-    badge.textContent = `PIPELINE INCOMPLETE Â· missing: ${(rh.missing_required||[]).join(', ') || 'unknown'}`;
+    badge.textContent = `PIPELINE INCOMPLETE · missing: ${(rh.missing_required||[]).join(', ') || 'unknown'}`;
     badge.style.background = 'var(--red)';
     badge.style.color = 'white';
   } else {
@@ -740,7 +747,7 @@ function renderAll() {
     badge.style.color = '';
   }
   document.getElementById('n-run-info').textContent =
-    `SB v2.3.0 Â· ${stats.total_scanned || 0} scanned Â· ${stats.vetoes_fired || 0} vetoes Â· ${stats.data_weak_count||0} DW`;
+    `SB v2.3.0 · ${stats.total_scanned || 0} scanned · ${stats.vetoes_fired || 0} vetoes · ${stats.data_weak_count||0} DW`;
 
   renderMacroBanner(macro);
   renderPriorityPanel();
@@ -760,23 +767,23 @@ function renderAll() {
   renderDiscovery();
 }
 
-// â•â•â• MACRO BANNER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ MACRO BANNER ════════════════════════════════════════════════════════
 function renderMacroBanner(m) {
   const items = [
-    ['REGIME', m.regime_state || 'â€”'],
-    ['RISK', m.risk_switch || 'â€”'],
-    ['VOL', m.vol_mode || 'â€”'],
-    ['TILT', m.sector_tilt || 'â€”'],
-    ['CONVICTION', m.conviction ? String(m.conviction) : 'â€”'],
+    ['REGIME', m.regime_state || '—'],
+    ['RISK', m.risk_switch || '—'],
+    ['VOL', m.vol_mode || '—'],
+    ['TILT', m.sector_tilt || '—'],
+    ['CONVICTION', m.conviction ? String(m.conviction) : '—'],
   ];
   document.getElementById('macro-bar').innerHTML = items.map(([k,v]) =>
     `<div class="mb"><span class="mb-k">${k}</span>&nbsp;<span class="mb-v">${v}</span></div>`
   ).join('');
 }
 
-// â•â•â• PRIORITY SHORTLIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ PRIORITY SHORTLIST ══════════════════════════════════════════════════
 function renderPriorityPanel() {
-  // Top 5 by priority_rank â€” filtered to Lab-actionable verdicts only
+  // Top 5 by priority_rank — filtered to Lab-actionable verdicts only
   const actionable = ALL_SIGS
     .filter(s => isActionSignal(s) && !isAuditOnlySignal(s) && s.conflict_state !== 'HARD_CONFLICT')
     .sort((a,b) => parseFloat(a.priority_rank||9999) - parseFloat(b.priority_rank||9999))
@@ -792,7 +799,7 @@ function renderPriorityPanel() {
     const fv   = finalLabVerdict(s);
     const camp = displayCampaign(s).replace('_CAMPAIGN','');
     const dir  = (s.direction||'').toUpperCase();
-    const ev   = getEv(s); const rr = parseFloat(s.rr||0);
+    const ev   = getEv(s); const monProfit = getMonetisabilityProfitPct(s);
     const em   = displayExecutionMode(s).replace('_EXECUTE','').replace('FULL','FULL').replace('REDUCED','RED');
     const vC   = ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(fv)?'p-exec':fv==='ARMED'?'p-armed':'p-risk';
     const emC  = em==='FULL'?'var(--green)':em==='RED'?'var(--cyan)':em==='PROBE'?'var(--amber)':'var(--text3)';
@@ -804,7 +811,7 @@ function renderPriorityPanel() {
       <div class="pp-rank">${i+1}</div>
       <div class="pp-ticker">${s.ticker}</div>
       <div class="pp-meta">
-        <span class="pill ${vC}" style="font-size:8px;padding:2px 6px">${fv.replace('_WITH_RISK','âš ')}</span>
+        <span class="pill ${vC}" style="font-size:8px;padding:2px 6px">${fv.replace('_WITH_RISK','⚠')}</span>
         <span style="color:var(--amber);font-size:9px">${camp}</span>
         <span style="color:${emC};font-family:'Share Tech Mono',monospace;font-size:9px">${em}</span>
         ${isDW?'<span class="dw-badge">DATA WEAK</span>':''}
@@ -815,8 +822,8 @@ function renderPriorityPanel() {
       </div>
       <div class="pp-badges">
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${s.sb_conv_score||0}/8</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${rr>=2?'var(--green)':rr>=1?'var(--amber)':'var(--red)'}">R:R ${rr.toFixed(2)}Ã—</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${ev>=0?'var(--green)':'var(--red)'}">${formatEv(ev)} EV</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}">${formatEv(ev)} EV</span>
         ${hint?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${hintC}">${hint}</span>`:''}
         ${qs>0?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">Q:${qs.toFixed(0)}</span>`:''}
       </div>
@@ -824,60 +831,60 @@ function renderPriorityPanel() {
   }).join('');
 }
 
-// â•â•â• STAT CARDS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ STAT CARDS ══════════════════════════════════════════════════════════
 function renderCards(stats) {
   const execute = ALL_SIGS.filter(s => ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(finalLabVerdict(s)));
-  const topExec = execute.map(s => s.ticker).join(', ') || 'â€”';
+  const topExec = execute.map(s => s.ticker).join(', ') || '—';
   const eodCaution = ALL_SIGS.filter(s => finalLabVerdict(s) === 'EOD_CAUTION').length;
   const executeTotal = execute.length || ((stats.lab_go_count || 0) + (stats.lab_eod_exec_count || 0)) || 0;
   const routerLine = (stats.mv_count || 0) > 0
-    ? `${stats.mv_go_now_count||0} GO Â· ${stats.mv_go_limit_count||0} LIMIT Â· ${stats.mv_contract_repair_count||0} REPAIR`
-    : `${topExec} Â· ${eodCaution} caution`;
+    ? `${stats.mv_go_now_count||0} GO · ${stats.mv_go_limit_count||0} LIMIT · ${stats.mv_contract_repair_count||0} REPAIR`
+    : `${topExec} · ${eodCaution} caution`;
   document.getElementById('cards-zone').innerHTML = `
     <div class="scard sc-exec" onclick="toggleCard('c-exec',this)">
       <div class="sc-n">${executeTotal}</div>
       <div class="sc-k">Lab Execute</div>
       <div class="sc-d">${routerLine}</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>
     <div class="scard sc-armed" onclick="toggleCard('c-armed',this)">
       <div class="sc-n">${stats.lab_armed_count || 0}</div>
       <div class="sc-k">Lab Armed</div>
-      <div class="sc-d">${stats.core_armed_count || 0} CORE Â· ${stats.staged_armed_count || 0} STAGED</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-d">${stats.core_armed_count || 0} CORE · ${stats.staged_armed_count || 0} STAGED</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>
     <div class="scard sc-sd" onclick="toggleCard('c-sd',this)">
       <div class="sc-n">${stats.stand_down_count || 0}</div>
       <div class="sc-k">Stand Down</div>
       <div class="sc-d">${stats.total_scanned || 0} total scanned</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>
     <div class="scard sc-disc" onclick="toggleCard('c-disc',this)">
       <div class="sc-n">${stats.discovery_count || 0}</div>
       <div class="sc-k">Discovery Universe</div>
-      <div class="sc-d">Tiers 0â€“3 Â· Phase Aâ€“E</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-d">Tiers 0–3 · Phase A–E</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>
     <div class="scard sc-vang" onclick="toggleCard('c-vang',this)">
       <div class="sc-n">${stats.vanguard_count || 0}</div>
       <div class="sc-k">Vanguard Signals</div>
       <div class="sc-d">L1 + L2 intelligence</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>
     <div class="scard sc-camp" onclick="toggleCard('c-camp',this)">
       <div class="sc-n">${stats.core_campaign_count || 0}</div>
       <div class="sc-k">Core Campaigns</div>
       <div class="sc-d">${stats.vetoes_fired || 0} vetoes fired</div>
-      <div class="sc-click">Click for detail â–¾</div>
+      <div class="sc-click">Click for detail ▾</div>
     </div>`;
-    // DATA WEAK card â€” only show when non-zero
+    // DATA WEAK card — only show when non-zero
     if ((stats.data_weak_count||0) > 0) {
       document.getElementById('cards-zone').innerHTML += `
         <div class="scard" style="border-color:rgba(255,61,90,.2)" onclick="setF('verdict','ALL',document.querySelector('.fb'))">
           <div class="sc-n" style="color:var(--red)">${stats.data_weak_count||0}</div>
           <div class="sc-k">Data Weak</div>
-          <div class="sc-d">No actuarial hit rates â€” structural est. only</div>
-          <div class="sc-click">Check DW column in table â–¾</div>
+          <div class="sc-d">No actuarial hit rates — structural est. only</div>
+          <div class="sc-click">Check DW column in table ▾</div>
         </div>`;
     }
     // WBS card
@@ -886,8 +893,8 @@ function renderCards(stats) {
         <div class="scard sc-disc" onclick="toggleCard('c-wbs',this)" style="--before-bg:var(--amber)">
           <div class="sc-n" style="color:var(--amber)">${stats.wbs_count || 0}</div>
           <div class="sc-k">Wall Break</div>
-          <div class="sc-d">${stats.wbs_probable||0} PROBABLE Â· ${stats.wbs_possible||0} POSSIBLE</div>
-          <div class="sc-click">Click for detail â–¾</div>
+          <div class="sc-d">${stats.wbs_probable||0} PROBABLE · ${stats.wbs_possible||0} POSSIBLE</div>
+          <div class="sc-click">Click for detail ▾</div>
         </div>`;
     }
     // Q-OMEGA GARCH card
@@ -901,8 +908,8 @@ function renderCards(stats) {
         <div class="scard sc-disc" onclick="toggleCard('c-garch',this)" style="--before-bg:var(--cyan)">
           <div class="sc-n" style="color:var(--cyan)">${cheapN}</div>
           <div class="sc-k">Cheap Vol</div>
-          <div class="sc-d">${expN} EXPENSIVE Â· ${jumpN} JUMP RISK Â· ${garchMethod}</div>
-          <div class="sc-click">Click for detail â–¾</div>
+          <div class="sc-d">${expN} EXPENSIVE · ${jumpN} JUMP RISK · ${garchMethod}</div>
+          <div class="sc-click">Click for detail ▾</div>
         </div>`;
     }
 }
@@ -910,20 +917,18 @@ function renderCards(stats) {
 function renderCardPanels(stats, macro, summary) {
   const execute = ALL_SIGS.filter(s => ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(finalLabVerdict(s)));
   const armed   = ALL_SIGS.filter(s => ['ARMED','EOD_CAUTION','CONTRACT_REPAIR'].includes(finalLabVerdict(s)));
-  // Armed sorted by R:R descending
-  const armedByRR = [...armed].sort((a,b) => parseFloat(b.rr||0) - parseFloat(a.rr||0));
-  const bestRR = armedByRR[0];
+  const monetisableArmed = armed.filter(s => ['MONETISABLE','LIMITED'].includes(getMonetisabilityState(s)));
 
   document.getElementById('card-panels').innerHTML = `
     <div class="card-meta-panel" id="c-exec">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--green)">â—‰ Execute Signals â€” Full Metadata</span><button class="cmp-close" onclick="closeCard('c-exec')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--green)">◉ Execute Signals — Full Metadata</span><button class="cmp-close" onclick="closeCard('c-exec')">✕ Close</button></div>
       <div class="cmp-body">
         ${execute.length === 0 ? '<div class="meta-note">No EXECUTE signals this run.</div>' :
           execute.map(s => execCardHTML(s)).join('')}
       </div>
     </div>
     <div class="card-meta-panel" id="c-armed">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--cyan)">â—ˆ Armed Signals â€” Summary</span><button class="cmp-close" onclick="closeCard('c-armed')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--cyan)">◈ Armed Signals — Summary</span><button class="cmp-close" onclick="closeCard('c-armed')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Morning GO now</span><span class="mr-v g">${stats.mv_go_now_count||0}</span></div>
@@ -933,7 +938,7 @@ function renderCardPanels(stats, macro, summary) {
           <div class="mrow"><span class="mr-k">Total Armed</span><span class="mr-v c">${armed.length}</span></div>
           <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_armed_count||0}</span></div>
           <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${stats.staged_armed_count||0}</span></div>
-          <div class="mrow"><span class="mr-k">Best R:R (Armed)</span><span class="mr-v g">${bestRR ? bestRR.ticker+' '+parseFloat(bestRR.rr||0).toFixed(3)+'Ã—' : 'â€”'}</span></div>
+          <div class="mrow"><span class="mr-k">Monetisable (Armed)</span><span class="mr-v g">${monetisableArmed.length} signals</span></div>
           <div class="mrow"><span class="mr-k">Positive EV</span><span class="mr-v g">${armed.filter(s=>getEv(s)>0).length} signals</span></div>
           <div class="mrow"><span class="mr-k">PCR Vetoes</span><span class="mr-v a">${armed.filter(s=>s.sb_vetoes&&s.sb_vetoes.includes('V6')).length} signals</span></div>
           <div class="mrow"><span class="mr-k">Zero-entry (size=0)</span><span class="mr-v r">${armed.filter(s=>s.sb_position_size_pct==='0'||s.sb_position_size_pct===0).length} signals</span></div>
@@ -945,23 +950,23 @@ function renderCardPanels(stats, macro, summary) {
       </div>
     </div>
     <div class="card-meta-panel" id="c-sd">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--red)">âœ• Stand Down â€” Breakdown</span><button class="cmp-close" onclick="closeCard('c-sd')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--red)">✕ Stand Down — Breakdown</span><button class="cmp-close" onclick="closeCard('c-sd')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Stand Down Count</span><span class="mr-v r">${stats.stand_down_count||0}</span></div>
           <div class="mrow"><span class="mr-k">Total Scanned</span><span class="mr-v">${stats.total_scanned||0}</span></div>
-          <div class="mrow"><span class="mr-k">Stand Down Rate</span><span class="mr-v r">${stats.total_scanned ? ((stats.stand_down_count/stats.total_scanned)*100).toFixed(1)+'%' : 'â€”'} filtered</span></div>
+          <div class="mrow"><span class="mr-k">Stand Down Rate</span><span class="mr-v r">${stats.total_scanned ? ((stats.stand_down_count/stats.total_scanned)*100).toFixed(1)+'%' : '—'} filtered</span></div>
           <div class="mrow"><span class="mr-k">Total Vetoes Fired</span><span class="mr-v a">${stats.vetoes_fired||0}</span></div>
           <div class="mrow"><span class="mr-k">Verdicts Changed</span><span class="mr-v a">${stats.verdicts_changed||0} SB overrides</span></div>
-          <div class="mrow"><span class="mr-k">AVOID Campaign</span><span class="mr-v r">${ALL_SIGS.filter(s=>s.sb_campaign==='AVOID').length} â€” structural avoids</span></div>
-          <div class="mrow"><span class="mr-k">STAGED Campaign (all)</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} â€” not ready</span></div>
-          <div class="mrow"><span class="mr-k">Regime</span><span class="mr-v a">${macro.regime_state||'â€”'}</span></div>
+          <div class="mrow"><span class="mr-k">AVOID Campaign</span><span class="mr-v r">${ALL_SIGS.filter(s=>s.sb_campaign==='AVOID').length} — structural avoids</span></div>
+          <div class="mrow"><span class="mr-k">STAGED Campaign (all)</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} — not ready</span></div>
+          <div class="mrow"><span class="mr-k">Regime</span><span class="mr-v a">${macro.regime_state||'—'}</span></div>
         </div>
-        <div class="meta-note">Most stand-downs result from V6 PCR contradictions, negative R:R, or TRANSITIONAL regime + expensive vol dual headwind.</div>
+        <div class="meta-note">Stand-downs are controlled by the governed Execution Gate; macro and EV remain advisory.</div>
       </div>
     </div>
     <div class="card-meta-panel" id="c-disc">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--amber)">â—Ž Discovery Universe</span><button class="cmp-close" onclick="closeCard('c-disc')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--amber)">◎ Discovery Universe</span><button class="cmp-close" onclick="closeCard('c-disc')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Total Universe</span><span class="mr-v a">${DISCOVERY.length.toLocaleString()}</span></div>
@@ -979,7 +984,7 @@ function renderCardPanels(stats, macro, summary) {
       </div>
     </div>
     <div class="card-meta-panel" id="c-vang">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--purple)">â¬¡ Vanguard Signals</span><button class="cmp-close" onclick="closeCard('c-vang')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--purple)">⬡ Vanguard Signals</span><button class="cmp-close" onclick="closeCard('c-vang')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Total Processed</span><span class="mr-v p">${stats.vanguard_count||0}</span></div>
@@ -991,47 +996,47 @@ function renderCardPanels(stats, macro, summary) {
       </div>
     </div>
     <div class="card-meta-panel" id="c-wbs">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--amber)">âš¡ Wall Break Scorer</span><button class="cmp-close" onclick="closeCard('c-wbs')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--amber)">⚡ Wall Break Scorer</span><button class="cmp-close" onclick="closeCard('c-wbs')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Actionable Signals</span><span class="mr-v a">${(RUN_DATA.stats||{}).wbs_count||0}</span></div>
           <div class="mrow"><span class="mr-k">IMMINENT</span><span class="mr-v r">${(RUN_DATA.stats||{}).wbs_imminent||0}</span></div>
-          <div class="mrow"><span class="mr-k">PROBABLE</span><span class="mr-v a">${(RUN_DATA.stats||{}).wbs_probable||0} â€” prioritise</span></div>
+          <div class="mrow"><span class="mr-k">PROBABLE</span><span class="mr-v a">${(RUN_DATA.stats||{}).wbs_probable||0} — prioritise</span></div>
           <div class="mrow"><span class="mr-k">POSSIBLE</span><span class="mr-v c">${(RUN_DATA.stats||{}).wbs_possible||0}</span></div>
           <div class="mrow"><span class="mr-k">UNLIKELY</span><span class="mr-v">${(RUN_DATA.stats||{}).wbs_unlikely||0}</span></div>
           <div class="mrow"><span class="mr-k">Avg WBS Score</span><span class="mr-v a">${parseFloat((RUN_DATA.stats||{}).wbs_avg_score||0).toFixed(1)}</span></div>
           <div class="mrow"><span class="mr-k">Max WBS Score</span><span class="mr-v g">${parseFloat((RUN_DATA.stats||{}).wbs_max_score||0).toFixed(1)}</span></div>
         </div>
-        <div class="meta-note"><strong>PROBABLE / IMMINENT signals</strong> â€” price approaching a structural wall with momentum alignment. These should be reviewed first for entry timing.</div>
+        <div class="meta-note"><strong>PROBABLE / IMMINENT signals</strong> — price approaching a structural wall with momentum alignment. These should be reviewed first for entry timing.</div>
       </div>
     </div>
     <div class="card-meta-panel" id="c-garch">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--cyan)">â—Ž Q-OMEGA Layer 3 â€” Vol Mispricing</span><button class="cmp-close" onclick="closeCard('c-garch')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--cyan)">◎ Q-OMEGA Layer 3 — Vol Mispricing</span><button class="cmp-close" onclick="closeCard('c-garch')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
           <div class="mrow"><span class="mr-k">Tickers Forecasted</span><span class="mr-v a">${(RUN_DATA.stats||{}).count||0}</span></div>
-          <div class="mrow"><span class="mr-k">CHEAP Vol (buy edge)</span><span class="mr-v g">${(RUN_DATA.stats||{}).cheap_vol||0} â€” IV below forecast</span></div>
+          <div class="mrow"><span class="mr-k">CHEAP Vol (buy edge)</span><span class="mr-v g">${(RUN_DATA.stats||{}).cheap_vol||0} — IV below forecast</span></div>
           <div class="mrow"><span class="mr-k">FAIR Vol</span><span class="mr-v">${(RUN_DATA.stats||{}).fair_vol||0}</span></div>
-          <div class="mrow"><span class="mr-k">EXPENSIVE Vol (headwind)</span><span class="mr-v r">${(RUN_DATA.stats||{}).expensive_vol||0} â€” explains red R:R</span></div>
+          <div class="mrow"><span class="mr-k">EXPENSIVE Vol (headwind)</span><span class="mr-v r">${(RUN_DATA.stats||{}).expensive_vol||0} — premium headwind</span></div>
           <div class="mrow"><span class="mr-k">Jump Risk Flags</span><span class="mr-v ${((RUN_DATA.stats||{}).jump_risk||0)>0?'r':''}">${(RUN_DATA.stats||{}).jump_risk||0} tickers moving abnormally fast</span></div>
           <div class="mrow"><span class="mr-k">GARCH fitted</span><span class="mr-v g">${(RUN_DATA.stats||{}).garch_count||0}</span></div>
           <div class="mrow"><span class="mr-k">EWMA fallback</span><span class="mr-v a">${(RUN_DATA.stats||{}).ewma_count||0}</span></div>
         </div>
-        <div class="meta-note"><strong>Vol State column in the table</strong> shows CHEAP / FAIR / EXP per ticker. CHEAP = options underpriced vs AVSHUNTER forecast â€” buy edge exists. EXP = options overpriced â€” the reason R:R is negative. âš¡ = jump risk flag active on that ticker.</div>
+        <div class="meta-note"><strong>Vol State column in the table</strong> shows CHEAP / FAIR / EXP per ticker. CHEAP = options underpriced vs AVSHUNTER forecast. EXP = premium headwind. ⚡ = jump risk flag active.</div>
       </div>
     </div>
     <div class="card-meta-panel" id="c-camp">
-      <div class="cmp-head"><span class="cmp-title" style="color:var(--gold)">â—† Core Campaigns</span><button class="cmp-close" onclick="closeCard('c-camp')">âœ• Close</button></div>
+      <div class="cmp-head"><span class="cmp-title" style="color:var(--gold)">◆ Core Campaigns</span><button class="cmp-close" onclick="closeCard('c-camp')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
-          <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_campaign_count||0} tickers â€” conv â‰¥ 3/5</span></div>
-          <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} tickers â€” conv 1-2/5</span></div>
+          <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_campaign_count||0} tickers — conv ≥ 3/5</span></div>
+          <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} tickers — conv 1-2/5</span></div>
           <div class="mrow"><span class="mr-k">AVOID</span><span class="mr-v r">${ALL_SIGS.filter(s=>s.sb_campaign==='AVOID').length} tickers</span></div>
           <div class="mrow"><span class="mr-k">Verdicts Changed</span><span class="mr-v a">${stats.verdicts_changed||0}</span></div>
           <div class="mrow"><span class="mr-k">Vetoes Fired</span><span class="mr-v a">${stats.vetoes_fired||0}</span></div>
           <div class="mrow"><span class="mr-k">CORE execute rate</span><span class="mr-v">${stats.execute_count||0} of ${stats.core_campaign_count||0} CORE</span></div>
-          <div class="mrow"><span class="mr-k">Data Weak signals</span><span class="mr-v r">${stats.data_weak_count||0} â€” no actuarial data</span></div>
-          <div class="mrow"><span class="mr-k">Discovery Bridge WR</span><span class="mr-v a">${stats.win_rate_bridge_count||0} â€” Wyckoff structural estimate</span></div>
+          <div class="mrow"><span class="mr-k">Data Weak signals</span><span class="mr-v r">${stats.data_weak_count||0} — no actuarial data</span></div>
+          <div class="mrow"><span class="mr-k">Discovery Bridge WR</span><span class="mr-v a">${stats.win_rate_bridge_count||0} — Wyckoff structural estimate</span></div>
           <div class="mrow"><span class="mr-k">Exec Mode: FULL</span><span class="mr-v g">${stats.exec_mode_full||0}</span></div>
           <div class="mrow"><span class="mr-k">Exec Mode: REDUCED</span><span class="mr-v c">${stats.exec_mode_reduced||0}</span></div>
           <div class="mrow"><span class="mr-k">Exec Mode: PROBE</span><span class="mr-v a">${stats.exec_mode_probe||0}</span></div>
@@ -1041,7 +1046,7 @@ function renderCardPanels(stats, macro, summary) {
 }
 
 function execCardHTML(s) {
-  const opt = (k) => s[`opt__${k}`] || s[k] || 'â€”';
+  const opt = (k) => s[`opt__${k}`] || s[k] || '—';
   const verdict = finalLabVerdict(s);
   const campaign = displayCampaign(s);
   const execMode = displayExecutionMode(s);
@@ -1049,10 +1054,10 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Ticker</span><span class="mr-v c">${s.ticker}</span></div>
     <div class="mrow"><span class="mr-k">Verdict</span><span class="mr-v ${canOpenEntry(s)?'g':'a'}">${verdict}</span></div>
     <div class="mrow"><span class="mr-k">Campaign</span><span class="mr-v g">${campaign}</span></div>
-    <div class="mrow"><span class="mr-k">Conviction</span><span class="mr-v a">${s.sb_conv_score||'â€”'} / 8</span></div>
-    <div class="mrow"><span class="mr-k">Direction</span><span class="mr-v c">${s.direction||'â€”'}</span></div>
-    <div class="mrow"><span class="mr-k">Phase</span><span class="mr-v p">${s.phase||'â€”'}</span></div>
-    <div class="mrow"><span class="mr-k">Instrument</span><span class="mr-v sm">${s.sb_instrument_now||'â€”'}</span></div>
+    <div class="mrow"><span class="mr-k">Conviction</span><span class="mr-v a">${s.sb_conv_score||'—'} / 8</span></div>
+    <div class="mrow"><span class="mr-k">Direction</span><span class="mr-v c">${s.direction||'—'}</span></div>
+    <div class="mrow"><span class="mr-k">Phase</span><span class="mr-v p">${s.phase||'—'}</span></div>
+    <div class="mrow"><span class="mr-k">Instrument</span><span class="mr-v sm">${s.sb_instrument_now||'—'}</span></div>
     <div class="mrow"><span class="mr-k">Strike</span><span class="mr-v c">$${opt('contract_strike')}</span></div>
     <div class="mrow"><span class="mr-k">Target Strike</span><span class="mr-v g">$${parseFloat(opt('structural_target')||0).toFixed(2)}</span></div>
     <div class="mrow"><span class="mr-k">Expiry</span><span class="mr-v">${opt('contract_expiry')}</span></div>
@@ -1062,52 +1067,125 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Horizon/Hold</span><span class="mr-v ${getHorizonHoldAlignment(s)==='ALIGNED'?'g':'a'}">${getHorizonHoldAlignment(s)}</span></div>
     <div class="mrow"><span class="mr-k">Premium</span><span class="mr-v">${getPremiumDisplay(s)}</span></div>
     <div class="mrow"><span class="mr-k">Breakeven</span><span class="mr-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</span></div>
-    <div class="mrow"><span class="mr-k">IVP</span><span class="mr-v g">${opt('iv_rank')}% Â· ${opt('ivp_label')}</span></div>
-    <div class="mrow"><span class="mr-k">R:R</span><span class="mr-v">${parseFloat(s.rr||0).toFixed(3)}</span></div>
-    <div class="mrow"><span class="mr-k">EV</span><span class="mr-v ${getEv(s)>=0?'g':'r'}">${getEv(s).toFixed(3)}</span></div>
+    <div class="mrow"><span class="mr-k">IVP</span><span class="mr-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</span></div>
+    <div class="mrow"><span class="mr-k">Monetisability</span><span class="mr-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
+    <div class="mrow"><span class="mr-k">Conservative Target Profit</span><span class="mr-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</span></div>
+    <div class="mrow"><span class="mr-k">EV3 Advisory</span><span class="mr-v ${evDisplayClass(getEv(s))}">${formatEv(getEv(s))}</span></div>
     <div class="mrow"><span class="mr-k">Theta Drag</span><span class="mr-v g">${opt('theta_drag_pct')}%</span></div>
     <div class="mrow"><span class="mr-k">Size</span><span class="mr-v a">${displaySize(s)}</span></div>
-    <div class="mrow"><span class="mr-k">Vetoes</span><span class="mr-v g">${s.sb_vetoes_count||0} Â· ${s.sb_vetoes||'NONE'}</span></div>
+    <div class="mrow"><span class="mr-k">Vetoes</span><span class="mr-v g">${s.sb_vetoes_count||0} · ${s.sb_vetoes||'NONE'}</span></div>
     <div class="mrow"><span class="mr-k">Call Wall</span><span class="mr-v c">$${opt('call_wall')}</span></div>
     <div class="mrow"><span class="mr-k">Gamma Flip</span><span class="mr-v a">$${parseFloat(opt('gamma_flip')||0).toFixed(2)}</span></div>
-    <div class="mrow"><span class="mr-k">Stage Ladder</span><span class="mr-v sm">${s.sb_ladder_summary||'â€”'}</span></div>
-    <div class="mrow"><span class="mr-k">Priority Score</span><span class="mr-v ${parseFloat(s.priority_score||0)>=60?'g':parseFloat(s.priority_score||0)>=40?'a':'r'}">${parseFloat(s.priority_score||0).toFixed(1)} / 100 (Rank #${s.priority_rank||'â€”'})</span></div>
-    <div class="mrow"><span class="mr-k">EV Decision Hint</span><span class="mr-v ${s.ev2_decision_hint==='STRONG'?'g':s.ev2_decision_hint==='MODERATE'?'c':s.ev2_decision_hint==='WEAK'?'a':'r'}">${s.ev2_decision_hint||'â€”'}</span></div>
-    <div class="mrow"><span class="mr-k">EV Quality Score</span><span class="mr-v a">${parseFloat(s.ev2_quality_score||0).toFixed(1)}</span></div>
-    <div class="mrow"><span class="mr-k">Win Rate Source</span><span class="mr-v ${s.win_rate_source==='DISCOVERY_BRIDGE'?'a':'g'}">${s.win_rate_source||'ACTUARIAL'}</span></div>
+    <div class="mrow"><span class="mr-k">Execution Readiness</span><span class="mr-v sm">${s.sb_ladder_summary||'—'}</span></div>
+    <div class="mrow"><span class="mr-k">Priority Score</span><span class="mr-v ${parseFloat(s.priority_score||0)>=60?'g':parseFloat(s.priority_score||0)>=40?'a':'r'}">${parseFloat(s.priority_score||0).toFixed(1)} / 100 (Rank #${s.priority_rank||'—'})</span></div>
+    <div class="mrow"><span class="mr-k">EV3 State</span><span class="mr-v a">${s.ev3_absolute_state||s.ev3_status||s.ev3_data_state||'NOT EVALUATED'}</span></div>
+    <div class="mrow"><span class="mr-k">EV3 Data State</span><span class="mr-v a">${s.ev3_data_state||'NOT EVALUATED'}</span></div>
+    <div class="mrow"><span class="mr-k">Win Rate Source</span><span class="mr-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</span></div>
     <div class="mrow"><span class="mr-k">Exec Mode</span><span class="mr-v ${canOpenEntry(s)?'g':'a'}">${execMode}</span></div>
-    <div class="mrow"><span class="mr-k">EV Status</span><span class="mr-v ${s.ev_status==='DATA_WEAK'?'r':s.ev_status==='PASS_HIGH'?'g':'a'}">${s.ev_status||'â€”'}</span></div>
+    <div class="mrow"><span class="mr-k">EV Role</span><span class="mr-v a">ADVISORY ONLY</span></div>
   </div>
-  <div class="meta-note"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'â€”'}</div>`;
+  <div class="meta-note"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'—'}</div>`;
 }
 
-// â•â•â• SIGNAL TABLE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ SIGNAL TABLE ════════════════════════════════════════════════════════
 function getOpt(s, k) { return s[`opt__${k}`] || s[k] || ''; }
+
+function getMonetisabilityState(s) {
+  return cleanCategory(firstSignalValue(s, ['monetisability_state'])) || 'DATA_MISSING';
+}
+
+function getMonetisabilityProfitPct(s) {
+  const value = parseFloat(firstSignalValue(s, ['monetisability_target_profit_pct']));
+  return Number.isFinite(value) ? value : Number.NaN;
+}
+
+function monetisabilityLabel(s) {
+  const state = getMonetisabilityState(s);
+  return {
+    MONETISABLE: 'YES', LIMITED: 'LIMITED', NOT_MONETISABLE: 'NO',
+    CONTRACT_REPAIR: 'REPAIR', DATA_MISSING: 'DATA MISSING'
+  }[state] || state.replaceAll('_', ' ');
+}
+
+function monetisabilityClass(s) {
+  const state = getMonetisabilityState(s);
+  return state === 'MONETISABLE' ? 'g' : state === 'LIMITED' ? 'a' : 'r';
+}
+
+function directionResolutionPath(s) {
+  return cleanCategory(firstSignalValue(s, ['direction_resolution_path'])) || 'UNRESOLVED';
+}
+
+function directionResolutionBadge(s) {
+  const path = directionResolutionPath(s);
+  if (path === 'DIRECTION_CONFIRMED') return {label:'✓', title:'Direction confirmed by governed structural authority', cls:'g'};
+  if (path.includes('RESOLVED')) return {label:'⚑', title:`${path} · confidence ${s.direction_resolution_confidence||'—'}`, cls:'a'};
+  return {label:'!', title:`${path} · not executable`, cls:'r'};
+}
+
+function parseDirectionChain(s) {
+  const raw = firstSignalValue(s, ['direction_resolution_chain_json']);
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== 'string') return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function renderDirectionChain(s) {
+  const chain = parseDirectionChain(s);
+  if (!chain.length) {
+    const message = directionResolutionPath(s) === 'DIRECTION_CONFIRMED'
+      ? 'Governed structural direction was confirmed; no override was applied.'
+      : 'No valid independent-evidence resolution chain is available.';
+    return `<div class="m-reason"><strong>Direction lineage:</strong> ${message}</div>`;
+  }
+  return chain.map(step => {
+    const evidence = Array.isArray(step.evidence) ? step.evidence : [];
+    const evidenceText = evidence.map(item =>
+      `${htmlSafe(item.family || item.source || 'UNKNOWN')}: ${htmlSafe(item.side || '—')}`
+    ).join(' · ');
+    return `<div class="m-reason"><strong>${htmlSafe(step.from || 'UNRESOLVED')} → ${htmlSafe(step.to || 'UNRESOLVED')}</strong>`+
+      ` · ${htmlSafe(step.protocol || 'UNKNOWN POLICY')}`+
+      ` · confidence ${htmlSafe(step.confidence || '—')}`+
+      `<br>${evidenceText || 'No evidence recorded'}</div>`;
+  }).join('');
+}
+
+function getSelectedContract(s) {
+  return firstSignalValue(s, [
+    'morning_selected_contract_symbol', 'contract_symbol', 'live_contract_symbol',
+    'recommended_contract', 'opt__recommended_contract'
+  ]);
+}
+
+function getGovernedContractField(s, field, ...aliases) {
+  return firstSignalValue(s, [
+    field, ...aliases, `opt__${field}`
+  ]);
+}
 
 function cleanUiHtml(value) {
   return String(value ?? '')
-    .replaceAll('Ã¢â‚¬â€', '-')
-    .replaceAll('Ã¢â‚¬â€œ', '-')
-    .replaceAll('â€”', '-')
-    .replaceAll('â€“', '-')
-    .replaceAll('â€', '-')
-    .replaceAll('Ãƒâ€”', 'x')
-    .replaceAll('Ã—', 'x')
-    .replaceAll('Ã‚Â·', ' · ')
-    .replaceAll('Â·', ' · ')
-    .replaceAll('Ã¢Å¡Â¡', '!')
-    .replaceAll('âš¡', '!')
-    .replaceAll('Ã¢Å“â€¢', 'x')
-    .replaceAll('âœ•', 'x')
-    .replaceAll('Ã¢â‚¬Â¦', '...')
-    .replaceAll('â€¦', '...');
+    .replaceAll('—', '-')
+    .replaceAll('–', '-')
+    .replaceAll('×', 'x')
+    .replaceAll('·', ' · ')
+    .replaceAll('⚡', '!')
+    .replaceAll('✕', 'x')
+    .replaceAll('…', '...');
 }
 
-// â”€â”€ EV authority fallback chain â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── EV authority fallback chain ───────────────────────────────────────────
 // Server overwrites s.ev directly (intelligence_lab.py FIX-EV).
 // These helpers are belt-and-suspenders for legacy / uncached payloads.
 function getEv(s) {
+  if (!hasComparableEconomics(s)) return Number.NaN;
   const values = [
+    s.ev3_ev_conservative_return, s.ev3_ev_lower_bound_return, s.ev_predicted,
     s.ev2_ev_conf_adj, s['eil__ev2_ev_conf_adj'],
     s.fd_ev_used, s['eil__fd_ev_used'],
     s.ev_final, s['eil__ev_final'],
@@ -1122,6 +1200,26 @@ function getEv(s) {
     if (Math.abs(n) > 0) return n;
   }
   return firstValid;
+}
+
+function hasComparableEconomics(s) {
+  const evAligned = cleanCategory(s.ev3_selected_contract_aligned);
+  if (['FALSE','0','NO'].includes(evAligned)) return false;
+  const reason = cleanCategory(s.economics_mismatch_reason);
+  if (reason) return false;
+  const state = cleanCategory(s.economics_comparable);
+  if (['FALSE','0','NO'].includes(state)) return false;
+  // Legacy books pre-date the identity field. Their EV remains visible as
+  // advisory, while every newly materialised book supplies an explicit state.
+  return true;
+}
+
+function evDisplayClass(v) {
+  return !Number.isFinite(v) ? 'a' : v >= 0 ? 'g' : 'r';
+}
+
+function evDisplayColor(v) {
+  return !Number.isFinite(v) ? 'var(--amber)' : v >= 0 ? 'var(--green)' : 'var(--red)';
 }
 
 function getEvDecisionHint(s) {
@@ -1140,36 +1238,21 @@ function hasEvAvoid(s) {
   return hint === 'AVOID' || status === 'AVOID' || status === 'FAIL' || status === 'NEGATIVE_EV';
 }
 
-function hasNegativeOptionRr(s) {
-  const raw = firstSignalValue(s, ['rr_options', 'opt__rr_options', 'option_rr', 'rr']);
-  if (raw === '' || raw === null || raw === undefined) return false;
-  const rr = parseFloat(raw);
-  return !Number.isNaN(rr) && rr < 0;
-}
-
 function getMonetisationFailure(s) {
-  const evDecision = getEvDecisionHint(s);
-  if (!['STRONG', 'MODERATE'].includes(evDecision)) {
-    return `EV_${evDecision || 'MISSING'}_NOT_MONETISABLE`;
-  }
-  const raw = firstSignalValue(s, ['rr_options', 'opt__rr_options', 'option_rr', 'rr']);
-  if (raw === '' || raw === null || raw === undefined) return 'RR_MISSING_OR_INVALID';
-  const rr = parseFloat(raw);
-  if (Number.isNaN(rr)) return 'RR_MISSING_OR_INVALID';
-  if (rr <= 0) return 'RR_NON_POSITIVE';
-  return '';
+  const state = getMonetisabilityState(s);
+  return ['MONETISABLE','LIMITED'].includes(state) ? '' : state;
 }
 
 function formatEv(v) {
   const ev = parseFloat(v);
-  if (Number.isNaN(ev)) return 'â€”';
+  if (Number.isNaN(ev)) return 'NOT COMPARABLE';
   if (ev !== 0 && Math.abs(ev) < 0.01) {
     return `${ev>=0?'+':''}${(ev * 10000).toFixed(1)}bp`;
   }
   return `${ev>=0?'+':''}${ev.toFixed(3)}`;
 }
 
-// â”€â”€ Price fallback chain â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Price fallback chain ──────────────────────────────────────────────────
 // current_price = 0 in EOD mode. Fall back to signal_price (always populated).
 function getPrice(s) {
   for (const c of [s.current_price, s.signal_price, s.spot_price, s.underlying_price]) {
@@ -1179,7 +1262,7 @@ function getPrice(s) {
   return 0;
 }
 
-// â”€â”€ Premium display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Premium display ───────────────────────────────────────────────────────
 // Returns amber "BSM" span for synthetic fallback, "$x.xx" for real quotes.
 function getPremiumDisplay(s) {
   if (s.premium_is_synthetic === true  || s.premium_is_synthetic === 'true' ||
@@ -1187,13 +1270,25 @@ function getPremiumDisplay(s) {
       String(s.premium) === '1'        || String(s.premium) === '1.0') {
     return '<span style="color:var(--amber);font-size:9px;font-family:\'Share Tech Mono\',monospace">BSM</span>';
   }
-  const raw = getOpt(s,'premium_mid') || getOpt(s,'premium') || s.premium_mid || s.premium;
+  const raw = firstSignalValue(s, [
+    'premium_mid', 'contract_mid', 'live_contract_mid',
+    'opt__premium_mid', 'opt__premium', 'premium'
+  ]);
   const p = parseFloat(raw);
-  return (p > 0 && p !== 1) ? `$${p.toFixed(2)}` : 'â€”';
+  return (p > 0 && p !== 1) ? `$${p.toFixed(2)}` : '—';
 }
 function fNum(v) { return isNaN(parseFloat(v)) ? v : parseFloat(v); }
 function attrSafe(v) {
   return String(v || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function htmlSafe(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function cleanCategory(v) {
@@ -1201,10 +1296,7 @@ function cleanCategory(v) {
 }
 
 function finalLabVerdict(s) {
-  const verdict = cleanCategory(s.display_final_verdict || s.lab_status || s.lab_verdict || s.sb_final_verdict || 'WAIT');
-  if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
-  if (['GO','GO_LIMIT','PROBE','EOD_EXEC','ARMED'].includes(verdict) && getMonetisationFailure(s)) return 'NON_MONETISABLE';
-  if (['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict) && hasEvAvoid(s)) return 'EOD_CAUTION';
+  const verdict = cleanCategory(s.lab_verdict || s.lab_status || s.display_final_verdict || 'WAIT');
   return verdict;
 }
 
@@ -1300,6 +1392,12 @@ function canOpenEntry(s) {
 }
 
 function getExecutionCategory(s) {
+  const actionMap = {
+    BUY_NOW:'GO', BUY_SMALL:'GO_LIMIT', CONTRACT_REPAIR:'CONTRACT_REPAIR',
+    MANUAL_REVIEW:'MANUAL_REVIEW', BLOCK:'BLOCKED', SKIP:'BLOCKED'
+  };
+  const governedAction = cleanCategory(s.final_action);
+  if (actionMap[governedAction]) return actionMap[governedAction];
   const candidates = [
     s.display_execution_category,
     getMorningExecutionPermission(s),
@@ -1321,9 +1419,6 @@ function getExecutionCategory(s) {
   for (const v of candidates) {
     const c = cleanCategory(v);
     if (c && !['NONE','N/A','NA','UNKNOWN','NULL','NAN'].includes(c)) {
-      if (['GO','GO_NOW','GO_LIMIT','PROBE','ARMED','EXECUTE','EXECUTE_WITH_CAUTION'].includes(c) && getMonetisationFailure(s)) {
-        return 'NON_MONETISABLE';
-      }
       return c;
     }
   }
@@ -1452,7 +1547,7 @@ function getMorningLabAlignment(s) {
 
 function displayCategory(cat) {
   const c = cleanCategory(cat);
-  return c ? c.replace(/_/g, ' ') : 'â€”';
+  return c ? c.replace(/_/g, ' ') : '—';
 }
 
 function formatPriceLevel(value) {
@@ -1581,12 +1676,11 @@ function getSectorDisplay(s) {
 }
 
 function getVolTailwindState(s) {
-  const g = parseFloat(s['garch__l3_iv_tailwind_score'] || '');
+  const g = parseFloat(s['garch__l3_iv_tailwind_score'] || s.garch_iv_tailwind_score || '');
   return isNaN(g) ? '' : (g < -0.03 ? 'CHEAP' : g > 0.05 ? 'EXP' : 'FAIR');
 }
 
 function getEilDisplay(s) {
-  if (hasNegativeOptionRr(s)) return 'NEGATIVE_RR';
   const display = firstSignalValue(s, [
     'eil__raw_verdict',
     'eil__eil_raw_verdict',
@@ -1645,7 +1739,7 @@ function getTimeHorizon(s) {
   if (hold) return String(hold).replace(/\s*days?\b/i, 'd');
 
   const dte = parseFloat(firstSignalValue(s, ['contract_dte', 'opt__contract_dte', 'exe__contract_dte', 'dte', 'opt__dte', 'vg__dte']));
-  return dte > 0 ? `${Math.round(dte)}D DTE` : 'â€”';
+  return dte > 0 ? `${Math.round(dte)}D DTE` : '—';
 }
 
 function getHorizonMeta(s) {
@@ -1658,7 +1752,7 @@ function getHorizonMeta(s) {
 }
 
 function getHoldPeriod(s) {
-  return firstSignalValue(s, ['hold_label', 'opt__hold_label', 'exe__hold_label', 'vg__hold_label', 'doss__opt__hold_label']) || 'â€”';
+  return firstSignalValue(s, ['hold_label', 'opt__hold_label', 'exe__hold_label', 'vg__hold_label', 'doss__opt__hold_label']) || '—';
 }
 
 function maxDaysFromLabel(label) {
@@ -1758,14 +1852,14 @@ function filteredData() {
     if (!campaignViewMode && filters.camp !== 'ALL' && camp !== filters.camp) return false;
     if (searchTerm && !String(s.ticker || '').toUpperCase().includes(searchTerm)) return false;
     // Quick filters
-    if (quickFilters.rr && parseFloat(s.rr||0) <= 0) return false;
-    if (quickFilters.ev && getEv(s) <= 0) return false;
+    if (quickFilters.monetisable && !['MONETISABLE','LIMITED'].includes(getMonetisabilityState(s))) return false;
+    if (quickFilters.ev && (!Number.isFinite(getEv(s)) || getEv(s) <= 0)) return false;
     return true;
   });
 }
 
 const sortKeys = [
-  s => parseFloat(s.priority_rank||9999),          // 0  â¬† Rank
+  s => parseFloat(s.priority_rank||9999),          // 0  ⬆ Rank
   s => s.ticker,                                    // 1  Ticker
   s => finalLabVerdict(s),                          // 2  Lab Verdict
   s => displayCampaign(s),                          // 3  Campaign
@@ -1778,16 +1872,21 @@ const sortKeys = [
   s => getTimeHorizon(s),                           // 10 Horizon
   s => triggerSortValue(s),                         // 11 Trigger
   s => triggerEvidenceSortValue(s),                 // 12 Trigger Evidence
-  s => parseFloat(s.rr||0),                         // 13 R:R
+  s => getMonetisabilityProfitPct(s),               // 13 conservative target profit
   s => getEv(s),                                    // 14 EV
   s => parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||0),  // 15 IVP
-  s => parseFloat(s['garch__l3_iv_tailwind_score']||0), // 16 Vol State
+  s => parseFloat(s['garch__l3_iv_tailwind_score']||s.garch_iv_tailwind_score||0), // 16 Vol State
   s => getOpt(s,'hold_label'),                      // 17 Hold
   s => s['wbs__wbs_grade']||'',                      // 18 WBS
   s => s['mv__verdict']||'',                         // 19 MV
   s => parseFloat(s['mv__drift_pct']||0),            // 20 Drift
   s => getSectorDisplay(s),                         // 21 Sector
   s => getEilDisplay(s),                            // 22 EIL
+  s => parseFloat(s.current_contract_mid||0),       // 23 Current quote
+  s => s.quote_freshness||'',                       // 24 Quote freshness
+  s => s.ms_lifecycle||'',                          // 25 Structure lifecycle
+  s => s.ms_direction_relationship||'',             // 26 Structure relationship
+  s => s.interpreter_assessment_status||'',         // 27 Interpreter assessment
 ];
 
 function sortBy(col) {
@@ -1812,8 +1911,8 @@ function buildTable() {
   // Campaign view mode banner
   const campBanner = campaignViewMode ? `
     <div style="padding:8px 20px;background:rgba(212,160,23,.12);border-bottom:1px solid rgba(212,160,23,.3);font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--gold);display:flex;align-items:center;justify-content:space-between">
-      <span>â—† CORE CAMPAIGN VIEW â€” showing all ${data.length} CORE_CAMPAIGN signals (EXECUTE + ARMED + STAND_DOWN)</span>
-      <button onclick="campaignViewMode=false;closeCard('c-camp');buildTable()" style="background:none;border:1px solid rgba(212,160,23,.4);color:var(--gold);font-size:10px;padding:2px 8px;cursor:pointer;font-family:inherit">âœ• Return to Signal View</button>
+      <span>◆ CORE CAMPAIGN VIEW — showing all ${data.length} CORE_CAMPAIGN signals (EXECUTE + ARMED + STAND_DOWN)</span>
+      <button onclick="campaignViewMode=false;closeCard('c-camp');buildTable()" style="background:none;border:1px solid rgba(212,160,23,.4);color:var(--gold);font-size:10px;padding:2px 8px;cursor:pointer;font-family:inherit">✕ Return to Signal View</button>
     </div>` : '';
 
   const tableEl = document.getElementById('sig-body');
@@ -1828,12 +1927,12 @@ function buildTable() {
   }
 
   const tableHtml = data.map(s => {
-    const rr = parseFloat(s.rr||0);
+    const monProfit = getMonetisabilityProfitPct(s);
     const ev = getEv(s);
     const ivr = parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||s.ivp||0);
-    const rrC = rr>=2?'rh':rr>=1?'rm':rr>=0?'rl':'rn';
-    const evC = ev>=0?'ev-p':'ev-n';
-    const dir = (s.direction||'CALL').toUpperCase();
+    const evC = !Number.isFinite(ev)?'':ev>=0?'ev-p':'ev-n';
+    const dir = (s.final_direction||s.direction||s.canonical_direction||'—').toUpperCase();
+    const dirBadge = directionResolutionBadge(s);
     const dirClass = dir==='CALL'?'p-call':dir.includes('PUT')?'p-put':'p-strangle';
     const labV = finalLabVerdict(s);
     const labCat = cleanCategory(labV);
@@ -1847,31 +1946,31 @@ function buildTable() {
     const dots = checks.map(k => `<div class="cdot ${s[k]==='Y'?'on':'off'}"></div>`).join('');
     const _ivpRaw = (getOpt(s,'ivp_label')||s['mv__ivp_label']||s['ivp_label']||'').trim();
     const ivpLbl = (_ivpRaw && !['UNKNOWN','N/A','NONE'].includes(_ivpRaw.toUpperCase()))
-      ? _ivpRaw : (ivr >= 1 ? (ivr < 20 ? 'CHEAP' : ivr < 50 ? 'FAIR' : 'RICH') : 'â€”');
+      ? _ivpRaw : (ivr >= 1 ? (ivr < 20 ? 'CHEAP' : ivr < 50 ? 'FAIR' : 'RICH') : '—');
     const ivpC = ivpLbl==='CHEAP'?'style="color:var(--green)"':ivpLbl==='EXPENSIVE'?'style="color:var(--red)"':'';
 
     // Q-OMEGA vol state from GARCH Layer 3
-    const gTailwind = parseFloat(s['garch__l3_iv_tailwind_score'] || '');
+    const gTailwind = parseFloat(s['garch__l3_iv_tailwind_score'] || s.garch_iv_tailwind_score || '');
     const gVolState = !isNaN(gTailwind)
       ? (gTailwind < -0.03 ? 'CHEAP' : gTailwind > 0.05 ? 'EXP' : 'FAIR')
       : '';
     const gVolC = gVolState==='CHEAP'?'style="color:var(--green)"':gVolState==='EXP'?'style="color:var(--red)"':'style="color:var(--amber)"';
-    const gJump  = String(s['garch__l3_jump_risk_flag']||'').toLowerCase()==='true';
+    const gJump  = String(s['garch__l3_jump_risk_flag']||s.garch_jump_risk_flag||'').toLowerCase()==='true';
 
-    const strike = getOpt(s,'contract_strike')||s.strike||'â€”';
+    const strike = getOpt(s,'contract_strike')||s.strike||'—';
     const premDisplay = getPremiumDisplay(s);
     const trgDisplay = getTriggerDisplay(s);
     const trgEvidence = getTriggerEvidenceDisplay(s);
 
     const horizon = getTimeHorizon(s);
     const horizonMeta = getHorizonMeta(s);
-    const hold = getOpt(s,'hold_label')||'â€”';
-    const instr = s.sb_instrument_now || s.opt__options_strategy || 'â€”';
+    const hold = getOpt(s,'hold_label')||'—';
+    const instr = s.sb_instrument_now || s.instrument || s.opt__options_strategy || '—';
     // Priority rank badge
     const pr = parseInt(s.priority_rank||9999);
     const ps = parseFloat(s.priority_score||0);
     const prCls = auditOnly ? 'pr-low' : pr<=3?'pr-top':pr<=10?'pr-high':pr<=25?'pr-mid':'pr-low';
-    const prLbl = auditOnly ? 'AUD' : (pr<=999?pr:'â€”');
+    const prLbl = auditOnly ? 'AUD' : (pr<=999?pr:'—');
     // Execution category badge
     const execCat = getExecutionCategory(s);
     const execLbl = shortExecutionCategory(execCat);
@@ -1883,7 +1982,7 @@ function buildTable() {
       eodStatus ? `EOD ${shortExecutionCategory(eodStatus)}` : '',
       morningPerm ? `MV ${shortExecutionCategory(morningPerm)}` : '',
       optRoute ? `OPT ${shortExecutionCategory(optRoute)}` : ''
-    ].filter(Boolean).join(' Â· ');
+    ].filter(Boolean).join(' · ');
     // Data quality flag
     const isDW = String(s.ev_status||'').toUpperCase()==='DATA_WEAK';
     // Win rate source
@@ -1893,31 +1992,31 @@ function buildTable() {
         <span class="prank ${prCls}">${prLbl}</span>
         <div style="width:28px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div style="height:100%;width:${ps}%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:1px"></div></div>
       </div>
-      <div class="sc"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data â€” structural estimate only">DW</span>':''}</div>
+      <div class="sc"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}</div>
       <div class="sc"><span class="pill ${vClass}">${labV}</span></div>
       <div class="sc"><span class="pill ${campClass}">${camp.replace('_CAMPAIGN','')}</span></div>
       <div class="sc"><div class="conv-dots">${dots}</div></div>
       <div class="sc" title="${attrSafe(subRoute || execCat.replace(/_/g,' '))}" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;overflow:hidden">
         <span class="pill ${execClass}" style="font-size:8px;padding:2px 5px">${execLbl}</span>
-        <span style="font-size:8px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${subRoute || 'â€”'}</span>
+        <span style="font-size:8px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${subRoute || '—'}</span>
       </div>
-      <div class="sc"><span class="pill ${dirClass}">${dir}</span></div>
+      <div class="sc" title="${attrSafe(dirBadge.title)}"><span class="pill ${dirClass}">${dir}</span><span class="${dirBadge.cls}" style="margin-left:3px">${dirBadge.label}</span></div>
       <div class="sc" style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis">${instr}</div>
       <div class="sc" style="color:var(--cyan)">$${strike}</div>
       <div class="sc" style="color:var(--text2)">${premDisplay}</div>
       <div class="sc" title="${attrSafe(horizonMeta)}" style="font-size:10px;color:var(--amber)">${horizon}</div>
       <div class="sc" title="${attrSafe(getTriggerPriceRaw(s))}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
       <div class="sc" title="${attrSafe(firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']) || trgEvidence)}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
-      <div class="sc ${rrC}">${rr.toFixed(3)}Ã—</div>
+      <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.monetisability_reason||'')}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
       <div class="sc ${evC}">${formatEv(ev)}</div>
       <div class="sc" ${ivpC}>${ivpLbl}</div>
-      <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">âš¡</span>':''}` : '<span style="color:var(--text3)">â€”</span>'}</div>
+      <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">⚡</span>':''}` : '<span style="color:var(--text3)">—</span>'}</div>
       <div class="sc" style="font-size:10px;color:var(--cyan)">${hold}</div>
       <div class="sc">${(() => {
-        const g = s['wbs__wbs_grade'] || s['wbs__grade'] || '';
-        if (!g) return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">â€”</span>';
+        const g = s['wbs__wbs_grade'] || s['wbs__grade'] || s.wbs_grade || '';
+        if (!g) return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">—</span>';
         const cls = g==='IMMINENT'?'p-wbs-im':g==='PROBABLE'?'p-wbs-pr':g==='POSSIBLE'?'p-wbs-po':'p-wbs-un';
-        const sc = parseFloat(s['wbs__wbs_score']||s['wbs__wbs']||s['wbs__score']||0).toFixed(0);
+        const sc = parseFloat(s['wbs__wbs_score']||s['wbs__wbs']||s['wbs__score']||s.wbs||0).toFixed(0);
         return `<span class="pill ${cls}">${g.slice(0,4)} ${sc}</span>`;
       })()}</div>
       <div class="sc">${(() => {
@@ -1932,7 +2031,7 @@ function buildTable() {
       })()}</div>
       <div class="sc" style="font-size:10px">${(() => {
         const d = parseFloat(s['mv__drift_pct'] || '');
-        if (isNaN(d)) return '<span style="color:var(--text3)">â€”</span>';
+        if (isNaN(d)) return '<span style="color:var(--text3)">—</span>';
         const col = Math.abs(d) < 1 ? 'var(--green)' : Math.abs(d) < 2.5 ? 'var(--amber)' : 'var(--red)';
         return `<span style="color:${col}">${d >= 0 ? '+' : ''}${d.toFixed(2)}%</span>`;
       })()}</div>
@@ -1951,6 +2050,11 @@ function buildTable() {
         const lbl = display==='EXECUTE_NOW'?'NOW':display==='EXECUTE_WITH_CAUTION'?'CAUT':display==='EXECUTE_DEFER'?'DEFR':display==='EXECUTE'?'EXEC':'STOP';
         return `<span class="pill ${cls}" style="font-size:7px;padding:2px 5px">${lbl}</span>`;
       })()}</div>
+      <div class="sc" title="Current exact-contract bid / ask" style="font-size:9px;color:var(--cyan)">${s.current_contract_bid ?? 'MISSING'} / ${s.current_contract_ask ?? 'MISSING'}</div>
+      <div class="sc" style="font-size:8px;color:${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${s.quote_freshness || 'MISSING'}</div>
+      <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_lifecycle || 'INSUFFICIENT_DATA'}</div>
+      <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_direction_relationship || 'INSUFFICIENT_DATA'}</div>
+      <div class="sc" style="font-size:8px;color:var(--text2)">${s.interpreter_assessment_status || 'NOT_APPLICABLE'}</div>
     </div>`;
   }).join('') || '<div style="padding:16px 20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No signals match current filters.</div>';
   tableEl.innerHTML = cleanUiHtml(tableHtml);
@@ -1982,11 +2086,11 @@ function toggleAuditRows(btn) {
 }
 
 function highlightSort(col) {
-  // Visual feedback â€” columns already sorted by sortBy(), this just flashes the header
+  // Visual feedback — columns already sorted by sortBy(), this just flashes the header
   document.querySelectorAll('.slh').forEach((h,i) => h.classList.toggle('sorted', i===col));
 }
 
-// â”€â”€â”€ CSV EXPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
 // Define the columns to export (label: field extractor).
 // Extracted from exportCSV() so it is independently testable — see
 // tests/js/test_fix1_numeric_blank_vs_zero.js.
@@ -2005,9 +2109,13 @@ function buildExportColumns() {
     ['Effective_Execution_Verdict', s => s.effective_execution_verdict || ''],
     ['EOD_Candidate_Status', s => s.eod_candidate_status || ''],
     ['Campaign',        s => displayCampaign(s)],
-    ['Direction',       s => s.direction],
+    ['Direction',       s => s.final_direction || s.direction],
     ['Options_Direction', s => s.options_direction || s.opt__options_direction || ''],
     ['Lab_Coherence_Status', s => (s.lab_coherence_status === 'CLEAN' ? 'OK' : s.lab_coherence_status) || 'OK'],
+    ['Direction_Path',  s => s.direction_resolution_path || ''],
+    ['Direction_Confidence', s => s.direction_resolution_confidence || ''],
+    ['Governed_Direction', s => s.governed_direction || ''],
+    ['Discovery_Preliminary_Direction', s => s.discovery_direction_preliminary || ''],
     ['Conv_Score',      s => s.sb_conv_score],
     ['Execution_Mode',  s => displayExecutionMode(s)],
     ['Instrument',      s => s.sb_instrument_now],
@@ -2028,8 +2136,10 @@ function buildExportColumns() {
     ['Trigger_Score',   s => firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score'])],
     ['Trigger_Codes',   s => firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])],
     ['Premium_Mid',     s => { const r=getOpt(s,'premium_mid')||getOpt(s,'premium')||s.premium_mid||s.premium; return parseFloat(r)>0?r:''; }],
-    ['RR',              s => parseFloat(s.rr||0).toFixed(4)],
-    ['EV',              s => getEv(s).toFixed(8)],
+    ['Monetisability',  s => getMonetisabilityState(s)],
+    ['Target_Profit_Pct', s => Number.isFinite(getMonetisabilityProfitPct(s)) ? getMonetisabilityProfitPct(s).toFixed(2) : ''],
+    ['Monetisability_Reason', s => s.monetisability_reason || ''],
+    ['EV',              s => Number.isFinite(getEv(s)) ? getEv(s).toFixed(8) : ''],
     ['EV_Decision',     s => s.ev2_decision_hint || ''],
     ['EV_Quality',      s => s.ev2_quality_score || ''],
     ['Win_Rate_20d',    s => s.win_rate_20d || ''],
@@ -2071,7 +2181,7 @@ function exportCSV() {
   });
 
   if (!data.length) {
-    alert('No signals match the current filters â€” nothing to export.');
+    alert('No signals match the current filters — nothing to export.');
     return;
   }
 
@@ -2098,9 +2208,9 @@ function exportCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
-// â•â•â• CARD TOGGLE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ CARD TOGGLE ═════════════════════════════════════════════════════════
 function toggleCard(id, cardEl) {
   document.querySelectorAll('.card-meta-panel').forEach(p => p.classList.remove('open'));
   document.querySelectorAll('.scard').forEach(c => c.classList.remove('active-card'));
@@ -2125,15 +2235,15 @@ function closeCard(id) {
   if (id === 'c-camp') { campaignViewMode = false; buildTable(); }
 }
 
-// â•â•â• SIGNAL MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ SIGNAL MODAL ════════════════════════════════════════════════════════
 function openModal(ticker) {
   const s = ALL_SIGS.find(x => x.ticker === ticker) || SIGNALS.find(x => x.ticker === ticker);
   if (!s) return;
   selectedTicker = ticker;
   buildTable();
 
-  const opt = (k) => s[`opt__${k}`] || s[k] || 'â€”';
-  const dir = (s.direction||'').toUpperCase();
+  const opt = (k) => s[`opt__${k}`] || s[k] || '—';
+  const dir = (s.final_direction||s.governed_direction||s.direction||'UNRESOLVED').toUpperCase();
   const dirClass = dir==='CALL'?'call':dir.includes('PUT')?'put':'strangle';
   const finalV = finalLabVerdict(s);
   const campaign = displayCampaign(s);
@@ -2149,8 +2259,7 @@ function openModal(ticker) {
   const vClass = ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(finalV)?'p-exec':finalV==='BLOCKED'?'p-sd':finalV==='CONTRACT_REPAIR'?'p-armed':'p-armed';
   const campClass = campaign==='CORE_CAMPAIGN'||campaign==='READY_EXECUTE'?'p-core':'p-staged';
   const dirPillClass = dir==='CALL'?'p-call':dir.includes('PUT')?'p-put':'p-strangle';
-  const rr = parseFloat(s.rr||0), ev = getEv(s);
-  const rrC = rr>=2?'var(--green)':rr>=1?'var(--amber)':rr>=0?'#ff8c00':'var(--red)';
+  const ev = getEv(s);
 
   document.getElementById('m-ticker').className = 'm-ticker ' + dirClass;
   document.getElementById('m-ticker').textContent = s.ticker;
@@ -2158,25 +2267,48 @@ function openModal(ticker) {
   const wbsCls = wbsGrade==='IMMINENT'?'p-wbs-im':wbsGrade==='PROBABLE'?'p-wbs-pr':wbsGrade==='POSSIBLE'?'p-wbs-po':'p-wbs-un';
   document.getElementById('m-badges').innerHTML = `
     <span class="pill ${vClass}">${finalV}</span>
-    <span class="pill ${campClass}">${campaign||'â€”'}</span>
+    <span class="pill ${campClass}">${campaign||'—'}</span>
     ${eodStatus ? `<span class="pill ${executionCategoryClass(eodStatus)}">EOD ${shortExecutionCategory(eodStatus)}</span>` : ''}
     ${morningPerm ? `<span class="pill ${executionCategoryClass(morningPerm)}">MV ${shortExecutionCategory(morningPerm)}</span>` : ''}
     <span class="pill ${dirPillClass}">${dir}</span>
-    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--amber)">Phase ${s.phase||'â€”'}</span>
-    ${wbsGrade ? `<span class="pill ${wbsCls}">âš¡ ${wbsGrade}</span>` : ''}
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--amber)">Phase ${s.phase||'—'}</span>
+    ${wbsGrade ? `<span class="pill ${wbsCls}">⚡ ${wbsGrade}</span>` : ''}
     ${parseInt(s.sb_vetoes_count||0)>0
-      ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--red)">âš  VETO</span>'
-      : '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--green)">âœ“ CLEAN</span>'}`;
+      ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--red)">⚠ VETO</span>'
+      : '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--green)">✓ CLEAN</span>'}`;
   const sectorLabel = s.gics_sector||s.sector_name||s.sector||s.sector_short||'';
   document.getElementById('m-sub').textContent =
-    `${s.sb_instrument_now||opt('options_strategy')||'â€”'} Â· ${getTimeHorizon(s)} horizon Â· ${opt('hold_label')} Â· ${sizeLabel}${sectorLabel?' Â· '+sectorLabel:''}`;
+    `${s.sb_instrument_now||opt('options_strategy')||'—'} · ${getTimeHorizon(s)} horizon · ${opt('hold_label')} · ${sizeLabel}${sectorLabel?' · '+sectorLabel:''}`;
 
   // TAB 1: OVERVIEW
   document.getElementById('mp-overview').innerHTML = `
+    <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(s.lab_status_banner||'THESIS PREPARED — CURRENT VALIDATION NOT RUN')}</div>
+    <div class="m-sec-hdr" style="margin-top:18px">Frozen Thesis — Completed Evidence</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Completed Session</div><div class="mf-v c">${htmlSafe(s.evidence_session_date||s.completed_session||s.thesis_session_date||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Direction</div><div class="mf-v ${dirClass}">${htmlSafe(s.governed_direction||dir)}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Close</div><div class="mf-v">${htmlSafe(s.completed_close||s.eod_close||s.signal_price||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Horizon</div><div class="mf-v a">${htmlSafe(s.planned_hold_sessions||s.expected_holding_window||s.horizon_bucket||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Target</div><div class="mf-v g">${htmlSafe(s.target_spot||s.target_price||s.structural_target||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Invalidation</div><div class="mf-v r">${htmlSafe(s.invalidation_spot||s.invalidation_price||s.structural_invalidation||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen Contract</div><div class="mf-v sm">${htmlSafe(s.selected_contract_symbol||s.contract_symbol||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Completed Profile ID</div><div class="mf-v sm">${htmlSafe(s.completed_profile_evidence_id||s.market_profile_evidence_id||'NOT EVALUATED')}</div></div>
+    </div>
+    <div class="m-sec-hdr">Current Validation — Point in Time</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Validation Event</div><div class="mf-v sm">${htmlSafe(s.validation_event_id||'NOT RUN')}</div></div>
+      <div class="m-field"><div class="mf-k">Transition</div><div class="mf-v a">${htmlSafe(s.validation_transition||'NOT RUN')}</div></div>
+      <div class="m-field"><div class="mf-k">Evidence Cutoff</div><div class="mf-v sm">${htmlSafe(s.validation_evidence_cutoff_utc||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v c">${htmlSafe(s.validation_current_price||s['mv__current_price']||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Gap / Drift</div><div class="mf-v a">${htmlSafe(s.validation_gap_pct||s['mv__drift_pct']||'—')}%</div></div>
+      <div class="m-field"><div class="mf-k">Profile State</div><div class="mf-v a">${htmlSafe(s.validation_profile_evidence_state||s.ms_profile_evidence_state||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Data Status</div><div class="mf-v sm">${htmlSafe(s.validation_data_status||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Execution Permission</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${htmlSafe(s.final_action||'—')}</div></div>
+    </div>
     <div class="m-sec-hdr" style="margin-top:0">Signal Classification</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Final Verdict</div><div class="mf-v ${canOpenEntry(s)?'g':'c'}">${finalV||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Campaign</div><div class="mf-v ${campaign==='READY_EXECUTE'||campaign==='CORE_CAMPAIGN'?'g':'a'}">${campaign||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Final Verdict</div><div class="mf-v ${canOpenEntry(s)?'g':'c'}">${finalV||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Campaign</div><div class="mf-v ${campaign==='READY_EXECUTE'||campaign==='CORE_CAMPAIGN'?'g':'a'}">${campaign||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Action Category</div><div class="mf-v a">${displayCategory(execCat)}</div></div>
       <div class="m-field"><div class="mf-k">EOD Candidate Status</div><div class="mf-v a">${displayCategory(eodStatus)}</div></div>
       <div class="m-field"><div class="mf-k">Morning Permission</div><div class="mf-v ${morningPerm==='GO'?'g':morningPerm==='BLOCKED'?'r':'a'}">${displayCategory(morningPerm)}</div></div>
@@ -2184,53 +2316,91 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Morning/Lab Alignment</div><div class="mf-v ${morningAlign.includes('CONFLICT')?'r':morningAlign.includes('ALIGNED')?'g':'a'}">${displayCategory(morningAlign)}</div></div>
       <div class="m-field"><div class="mf-k">Options Route</div><div class="mf-v c">${displayCategory(optRoute)}</div></div>
       <div class="m-field"><div class="mf-k">Options Permission</div><div class="mf-v sm">${displayCategory(optPermission)}</div></div>
-      <div class="m-field"><div class="mf-k">Conviction Score</div><div class="mf-v a">${s.sb_conv_score||'â€”'} / 8</div></div>
-      <div class="m-field"><div class="mf-k">Sector</div><div class="mf-v c">${s.gics_sector||s.sector_name||s.sector||s.sector_short||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Sector ETF</div><div class="mf-v" style="color:var(--text2)">${s.sector_etf||s.sector_proxy||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Wyckoff Phase</div><div class="mf-v p">${s.phase||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Direction</div><div class="mf-v ${dirClass}">${dir}</div></div>
-      <div class="m-field"><div class="mf-k">Intent</div><div class="mf-v sm">${s.intent||s.precor_intent||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Convexity Score</div><div class="mf-v a">${s.sb_conv_score||'—'} / 8</div></div>
+      <div class="m-field"><div class="mf-k">Sector</div><div class="mf-v c">${s.gics_sector||s.sector_name||s.sector||s.sector_short||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Sector ETF</div><div class="mf-v" style="color:var(--text2)">${s.sector_etf||s.sector_proxy||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Wyckoff Phase</div><div class="mf-v p">${s.phase||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Direction</div><div class="mf-v ${dirClass}">${dir} ${directionResolutionBadge(s).label}</div></div>
+      <div class="m-field"><div class="mf-k">Direction Path</div><div class="mf-v ${directionResolutionPath(s)==='DIRECTION_CONFIRMED'?'g':directionResolutionPath(s).includes('RESOLVED')?'a':'r'}">${displayCategory(directionResolutionPath(s))}</div></div>
+      <div class="m-field"><div class="mf-k">Direction Confidence</div><div class="mf-v a">${s.direction_resolution_confidence||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Governed Basis</div><div class="mf-v sm">${htmlSafe(s.governed_direction_basis||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Preliminary → Governed</div><div class="mf-v sm">${htmlSafe((s.discovery_direction_preliminary||'—')+' → '+(s.governed_direction||'—'))}</div></div>
+      <div class="m-field"><div class="mf-k">Direction Integrity</div><div class="mf-v ${String(s.check_direction_integrity_pass).toUpperCase()==='TRUE'?'g':'r'}">${s.check_direction_integrity_reason||s.direction_integrity_status||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Intent</div><div class="mf-v sm">${s.intent||s.precor_intent||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Position Size</div><div class="mf-v ${canOpenEntry(s)?'a':'r'}">${sizeLabel}</div></div>
       <div class="m-field"><div class="mf-k">Vetoes Fired</div><div class="mf-v ${parseInt(s.sb_vetoes_count||0)===0?'g':'r'}">${s.sb_vetoes_count||0}</div></div>
-      <div class="m-field"><div class="mf-k">Composite Score</div><div class="mf-v">${s.composite||s[`doss__composite_score`]||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Composite Score</div><div class="mf-v">${s.composite||s[`doss__composite_score`]||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Time Horizon</div><div class="mf-v a">${getTimeHorizon(s)}</div></div>
       <div class="m-field"><div class="mf-k">Horizon/Hold Alignment</div><div class="mf-v ${getHorizonHoldAlignment(s)==='ALIGNED'?'g':'a'}">${getHorizonHoldAlignment(s)}</div></div>
-      <div class="m-field"><div class="mf-k">Days to Trigger</div><div class="mf-v">${s[`doss__days_to_trigger`]||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Tier</div><div class="mf-v sm">${s.tier||s[`doss__tier_label`]||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Regime</div><div class="mf-v a">${s.regime||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Priority Rank</div><div class="mf-v ${parseFloat(s.priority_rank||9999)<=5?'g':parseFloat(s.priority_rank||9999)<=15?'c':'a'}">#${s.priority_rank||'â€”'} Â· Score ${parseFloat(s.priority_score||0).toFixed(1)}</div></div>
-      <div class="m-field"><div class="mf-k">EV Decision Hint</div><div class="mf-v ${s.ev2_decision_hint==='STRONG'?'g':s.ev2_decision_hint==='MODERATE'?'c':s.ev2_decision_hint==='WEAK'?'a':'r'}">${s.ev2_decision_hint||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">EV Quality Score</div><div class="mf-v a">${parseFloat(s.ev2_quality_score||0).toFixed(1)} / 100</div></div>
-      <div class="m-field"><div class="mf-k">Execution Mode</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${execMode||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Win Rate Source</div><div class="mf-v ${s.win_rate_source==='DISCOVERY_BRIDGE'?'a':'g'}">${s.win_rate_source||'ACTUARIAL'}</div></div>
-      <div class="m-field"><div class="mf-k">EV Status</div><div class="mf-v ${s.ev_status==='DATA_WEAK'?'r':s.ev_status==='PASS_HIGH'?'g':'a'}">${s.ev_status||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Days to Trigger</div><div class="mf-v">${s[`doss__days_to_trigger`]||s.days_to_trigger||'NOT APPLICABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Tier</div><div class="mf-v sm">${s.tier||s[`doss__tier_label`]||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Regime</div><div class="mf-v a">${s.regime||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Priority Rank</div><div class="mf-v ${parseFloat(s.priority_rank||9999)<=5?'g':parseFloat(s.priority_rank||9999)<=15?'c':'a'}">#${s.priority_rank||'—'} · Score ${parseFloat(s.priority_score||0).toFixed(1)}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Advisory State</div><div class="mf-v a">${s.ev3_absolute_state||s.ev3_status||s.ev3_data_state||'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Conservative EV</div><div class="mf-v a">${formatEv(getEv(s))} (advisory)</div></div>
+      <div class="m-field"><div class="mf-k">Execution Mode</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${execMode||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Win Rate Source</div><div class="mf-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Data State</div><div class="mf-v ${s.ev3_data_state==='AVAILABLE'?'g':'a'}">${s.ev3_data_state||'NOT EVALUATED'}</div></div>
     </div>
-    <div class="m-reason"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'â€”'}</div>
-    ${parseInt(s.sb_vetoes_count||0)>0 ? `<div class="m-veto"><div class="m-factor-hdr veto">âš  Active Veto</div>${s.sb_vetoes||'â€”'}</div>` : ''}
-    <div class="m-pos"><div class="m-factor-hdr pos">âœ“ Positive Factors</div>${opt('positive_factors')}</div>
-    <div class="m-neg"><div class="m-factor-hdr neg">âœ— Negative Factors</div>${opt('negative_factors')}</div>`;
+    <div class="m-sec-hdr">Direction Governance Lineage</div>
+    ${renderDirectionChain(s)}
+    <div class="m-sec-hdr">Macro Advisory — Context Only</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Macro State</div><div class="mf-v a">${displayCategory(s.macro_context_state||'UNAVAILABLE')}</div></div>
+      <div class="m-field"><div class="mf-k">Freshness / Quality</div><div class="mf-v ${String(s.macro_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${displayCategory(s.macro_freshness||'UNKNOWN')} · ${displayCategory(s.macro_data_quality||'UNKNOWN')}</div></div>
+      <div class="m-field"><div class="mf-k">Sector Alignment</div><div class="mf-v c">${displayCategory(s.macro_sector_alignment||'UNMAPPED')}</div></div>
+      <div class="m-field"><div class="mf-k">Ticker Alignment</div><div class="mf-v a">${displayCategory(s.macro_ticker_alignment||'NO OVERLAY')}</div></div>
+      <div class="m-field"><div class="mf-k">Directional Pressure</div><div class="mf-v sm">${htmlSafe(s.macro_directional_pressure||'NO TICKER-SPECIFIC PRESSURE')}</div></div>
+      <div class="m-field"><div class="mf-k">Macro Observation</div><div class="mf-v sm">${htmlSafe(s.macro_as_of_utc||'UNKNOWN')}</div></div>
+      <div class="m-field"><div class="mf-k">Themes</div><div class="mf-v sm">${htmlSafe(s.macro_active_themes||'[]')}</div></div>
+      <div class="m-field"><div class="mf-k">Event Guards</div><div class="mf-v sm">${htmlSafe(s.macro_event_guards||'[]')}</div></div>
+    </div>
+    <div class="m-reason"><strong>Macro advisory:</strong> ${htmlSafe(s.macro_plain_language_advisory||'No current governed macro narrative is available.')}</div>
+    <div class="meta-note">Macro is advisory only and cannot change direction, contract, lifecycle, final action, capital permission or position size. Packet ${htmlSafe(String(s.macro_packet_id||'UNAVAILABLE'))}.</div>
+    <div class="m-reason"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'—'}</div>
+    ${parseInt(s.sb_vetoes_count||0)>0 ? `<div class="m-veto"><div class="m-factor-hdr veto">⚠ Active Veto</div>${s.sb_vetoes||'—'}</div>` : ''}
+    <div class="m-pos"><div class="m-factor-hdr pos">✓ Positive Factors</div>${opt('positive_factors')}</div>
+    <div class="m-neg"><div class="m-factor-hdr neg">✗ Negative Factors</div>${opt('negative_factors')}</div>`;
 
   // TAB 2: TRADE SETUP
-  const strike = parseFloat(opt('contract_strike')||0);
-  const target = parseFloat(opt('structural_target')||0);
-  const targetDiff = strike > 0 && target > 0 ? ((target-strike)/strike*100).toFixed(1) : 'â€”';
+  const strike = parseFloat(getGovernedContractField(s,'contract_strike','strike')||0);
+  const target = parseFloat(firstSignalValue(s,['target_spot','target_price','structural_target','opt__structural_target'])||0);
+  const targetDiff = strike > 0 && target > 0 ? ((target-strike)/strike*100).toFixed(1) : '—';
   const gainAtTgt = opt('gain_at_target');
   document.getElementById('mp-trade').innerHTML = `
     <div class="target-highlight">
-      <div class="th-item"><div class="th-k">Strike (Entry)</div><div class="th-v strike">$${strike||'â€”'}</div><div class="th-sub">${opt('contract_expiry')} expiry</div></div>
-      <div class="th-item"><div class="th-k">Structural Target</div><div class="th-v target">$${target?target.toFixed(2):'â€”'}</div><div class="th-sub">${targetDiff!=='â€”'?targetDiff+'% from strike':''} ${gainAtTgt&&gainAtTgt!=='â€”'?'Â· +'+Math.round(parseFloat(gainAtTgt)*100)+'% on premium':''}</div></div>
-      <div class="th-item"><div class="th-k">Hold Period</div><div class="th-v hold">${opt('hold_label')}</div><div class="th-sub">${opt('hold_urgency')} urgency Â· DTE ${opt('contract_dte')}</div></div>
+      <div class="th-item"><div class="th-k">Strike (Entry)</div><div class="th-v strike">$${strike||'—'}</div><div class="th-sub">${getGovernedContractField(s,'contract_expiry','expiry')} expiry</div></div>
+      <div class="th-item"><div class="th-k">Structural Target</div><div class="th-v target">$${target?target.toFixed(2):'—'}</div><div class="th-sub">${targetDiff!=='—'?targetDiff+'% from strike':''} ${gainAtTgt&&gainAtTgt!=='—'?'· +'+Math.round(parseFloat(gainAtTgt)*100)+'% on premium':''}</div></div>
+      <div class="th-item"><div class="th-k">Hold Period</div><div class="th-v hold">${opt('hold_label')}</div><div class="th-sub">${opt('hold_urgency')} urgency · DTE ${getGovernedContractField(s,'contract_dte','dte')}</div></div>
     </div>
     <div class="m-sec-hdr">Contract Specification</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Instrument</div><div class="mf-v sm">${s.sb_instrument_now||opt('options_strategy')||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Contract Code</div><div class="mf-v sm">${opt('recommended_contract')}</div></div>
+      <div class="m-field"><div class="mf-k">Instrument</div><div class="mf-v sm">${s.instrument||s.sb_instrument_now||opt('options_strategy')||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Contract Code</div><div class="mf-v sm">${getSelectedContract(s)||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Selected Structure</div><div class="mf-v sm">${s.selected_structure||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Premium</div><div class="mf-v">${getPremiumDisplay(s)}${(s.premium_is_synthetic===true||s.premium_is_synthetic==='true'||s.premium_label==='BSM')?'':'/share'}</div></div>
-      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${parseFloat(opt('contract_delta')||0).toFixed(3)}</div></div>
+      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${parseFloat(getGovernedContractField(s,'contract_delta','live_contract_delta')||0).toFixed(3)}</div></div>
       <div class="m-field"><div class="mf-k">Breakeven Price</div><div class="mf-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</div></div>
-      <div class="m-field"><div class="mf-k">R:R Ratio</div><div class="mf-v" style="color:${rrC}">${rr.toFixed(3)}Ã—</div></div>
-      <div class="m-field"><div class="mf-k">EV Adjusted</div><div class="mf-v ${ev>=0?'g':'r'}">${ev>=0?'+':''}${ev.toFixed(4)}</div></div>
+      <div class="m-field"><div class="mf-k">Monetisability</div><div class="mf-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</div></div>
+      <div class="m-field"><div class="mf-k">Conservative Target Profit</div><div class="mf-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Advisory</div><div class="mf-v ${evDisplayClass(ev)}">${formatEv(ev)}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Hydration</div><div class="mf-v ${cleanCategory(s.selected_structure_hydration_status)==='COMPLETE'?'g':'a'}">${s.selected_structure_hydration_status||'LEGACY / NOT RUN'}</div></div>
+      <div class="m-field"><div class="mf-k">Monetisability Check</div><div class="mf-v ${cleanCategory(s.monetisability_status)==='COMPLETE'?'g':'a'}">${s.monetisability_status||'NOT RUN'}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Contract Alignment</div><div class="mf-v ${hasComparableEconomics(s)?'g':'a'}">${hasComparableEconomics(s)?'ALIGNED':'ADVISORY UNAVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Time (UTC)</div><div class="mf-v sm">${s.selected_quote_timestamp_utc||s.contract_quote_timestamp||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Position Size</div><div class="mf-v a">${sizeLabel}</div></div>
+    </div>
+    <div class="m-sec-hdr">Liquidity Lifecycle</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Liquidity State</div><div class="mf-v ${s.executable_now===true||String(s.executable_now).toUpperCase()==='TRUE'?'g':'a'}">${displayCategory(s.liquidity_state||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Transition</div><div class="mf-v a">${displayCategory(s.morning_transition_state||'NOT RUN')}</div></div>
+      <div class="m-field"><div class="mf-k">Distance to ATM</div><div class="mf-v">${Number.isFinite(parseFloat(s.atm_distance_sigma))?parseFloat(s.atm_distance_sigma).toFixed(2)+' sigma':'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Remaining Runway</div><div class="mf-v ${String(s.remaining_runway_state||'').includes('REALIZED')?'r':'a'}">${Number.isFinite(parseFloat(s.remaining_runway_pct))?parseFloat(s.remaining_runway_pct).toFixed(1)+'%':'—'} · ${displayCategory(s.remaining_runway_state||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v ${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${displayCategory(s.quote_freshness||'UNKNOWN')} ${s.quote_as_of?'· '+htmlSafe(s.quote_as_of):''}</div></div>
+      <div class="m-field"><div class="mf-k">Canonical Quote Lineage</div><div class="mf-v sm">${htmlSafe(s.option_chain_provider||'MARKETDATA')} · ${htmlSafe(s.option_chain_resolution||s.live_options_resolution||'DIRECT')}<br><span class="dim">chain ${htmlSafe(String(s.option_chain_dataset_id||'unavailable').slice(0,16))} · exact ${htmlSafe(String(s.selected_quote_dataset_id||'unavailable').slice(0,16))}</span></div></div>
+      <div class="m-field"><div class="mf-k">Contract Changed</div><div class="mf-v ${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'a':'g'}">${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'YES':'NO'}${s.contract_selection_reason?' · '+htmlSafe(s.contract_selection_reason):''}</div></div>
+      <div class="m-field"><div class="mf-k">Maturation 1 / 2 / 3 Sessions</div><div class="mf-v sm">${s.maturation_score_1d??'—'} / ${s.maturation_score_2d??'—'} / ${s.maturation_score_3d??'—'} · monitoring estimate only — not a probability and cannot authorize entry</div></div>
+      <div class="m-field"><div class="mf-k">Moneyness / Delta Band</div><div class="mf-v sm">${displayCategory(s.moneyness_state||'UNKNOWN')} · ${displayCategory(s.delta_band||'UNKNOWN')}</div></div>
     </div>
     <div class="m-sec-hdr">GEX Levels</div>
     <div class="m-grid">
@@ -2238,38 +2408,38 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Put Wall (Floor)</div><div class="mf-v r">$${opt('put_wall')}</div></div>
       <div class="m-field"><div class="mf-k">Gamma Flip</div><div class="mf-v a">$${parseFloat(opt('gamma_flip')||0).toFixed(2)}</div></div>
       <div class="m-field"><div class="mf-k">PCR Signal</div><div class="mf-v">${opt('pcr_signal')}</div></div>
-      <div class="m-field"><div class="mf-k">Target In Play</div><div class="mf-v ${opt('target_in_play')==='True'?'g':'r'}">${opt('target_in_play')||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Max Pain</div><div class="mf-v">$${opt('max_pain')||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Target In Play</div><div class="mf-v ${opt('target_in_play')==='True'?'g':'r'}">${opt('target_in_play')||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Max Pain</div><div class="mf-v">$${opt('max_pain')||'—'}</div></div>
     </div>
     ${(() => {
       const wg = s['wbs__wbs_grade'] || s['wbs__grade'] || '';
       if (!wg) return '';
       const wsc = parseFloat(s['wbs__wbs_score']||s['wbs__wbs']||s['wbs__score']||0).toFixed(1);
-      const wdist = s['wbs__distance_to_wall_pct'] || s['wbs__wbs_wall_dist_pct'] || s['wbs__dist_pct'] || 'â€”';
-      const wwall = s['wbs__wall_price'] || s['wbs__wbs_wall_price'] || s['wbs__nearest_wall'] || 'â€”';
-      const wdir  = s['wbs__break_direction'] || s['wbs__direction'] || 'â€”';
+      const wdist = s['wbs__distance_to_wall_pct'] || s['wbs__wbs_wall_dist_pct'] || s['wbs__dist_pct'] || '—';
+      const wwall = s['wbs__wall_price'] || s['wbs__wbs_wall_price'] || s['wbs__nearest_wall'] || '—';
+      const wdir  = s['wbs__break_direction'] || s['wbs__direction'] || '—';
       const wbadge = wg==='IMMINENT'?'var(--red)':wg==='PROBABLE'?'var(--amber)':wg==='POSSIBLE'?'var(--cyan)':'var(--text2)';
-      return `<div class="m-sec-hdr" style="color:var(--amber)">âš¡ Wall Break Intelligence</div>
+      return `<div class="m-sec-hdr" style="color:var(--amber)">⚡ Wall Break Intelligence</div>
       <div class="m-grid">
         <div class="m-field"><div class="mf-k">WBS Grade</div><div class="mf-v" style="color:${wbadge};font-weight:700">${wg}</div></div>
         <div class="m-field"><div class="mf-k">WBS Score</div><div class="mf-v a">${wsc} / 100</div></div>
         <div class="m-field"><div class="mf-k">Nearest Wall</div><div class="mf-v c">$${wwall}</div></div>
         <div class="m-field"><div class="mf-k">Distance to Wall</div><div class="mf-v">${wdist}%</div></div>
         <div class="m-field"><div class="mf-k">Break Direction</div><div class="mf-v">${wdir}</div></div>
-        <div class="m-field"><div class="mf-k">Momentum Aligned</div><div class="mf-v ${(s['wbs__momentum_aligned']||s['wbs__momentum_ok']||'')==='Y'?'g':'r'}">${s['wbs__momentum_aligned']||s['wbs__momentum_ok']||'â€”'}</div></div>
+        <div class="m-field"><div class="mf-k">Momentum Alignment</div><div class="mf-v ${(s['wbs__momentum_alignment_state']||'').startsWith('ALIGNED')?'g':(s['wbs__momentum_alignment_state']||'').startsWith('NOT_ALIGNED')?'r':'a'}">${s['wbs__momentum_alignment_state']||'UNAVAILABLE'}</div></div>
       </div>`;
     })()}
-    <div class="m-sec-hdr">Stage Ladder</div>
-    <div class="m-reason">${s.sb_ladder_summary||'â€”'} | Checkpoint: ${s.sb_checkpoint_rule||'â€”'}</div>
+    <div class="m-sec-hdr">Execution Readiness</div>
+    <div class="m-reason">${s.sb_ladder_summary||'—'} | Checkpoint: ${s.sb_checkpoint_rule||'—'}</div>
     ${canOpenEntry(s) ? `
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
       <button onclick="openETModal('${s.ticker}')"
         style="width:100%;padding:13px;background:#00ff88;color:#080b10;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.12em;border:none;border-radius:3px;cursor:pointer;transition:opacity .15s"
         onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-        â—‰ ENTER TRADE â€” LOCK CONTRACT
+        ◉ ENTER TRADE — LOCK CONTRACT
       </button>
       <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);text-align:center;margin-top:6px">
-        Creates immutable trade contract Â· Governance engine tracks from next run
+        Creates immutable trade contract · Governance engine tracks from next run
       </div>
     </div>` : ''}`;
 
@@ -2286,7 +2456,7 @@ function openModal(ticker) {
     </div>
     <div class="m-sec-hdr">Volatility</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">IVP / Label</div><div class="mf-v g">${opt('iv_rank')}% Â· ${opt('ivp_label')}</div></div>
+      <div class="m-field"><div class="mf-k">IVP / Label</div><div class="mf-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</div></div>
       <div class="m-field"><div class="mf-k">ATM IV</div><div class="mf-v">${(parseFloat(opt('atm_iv')||0)*100).toFixed(1)}%</div></div>
       <div class="m-field"><div class="mf-k">HV 30d</div><div class="mf-v">${(parseFloat(opt('hv_30d')||0)*100).toFixed(1)}%</div></div>
       <div class="m-field"><div class="mf-k">IV vs HV</div><div class="mf-v">${opt('iv_vs_hv')}</div></div>
@@ -2302,22 +2472,25 @@ function openModal(ticker) {
 
   // TAB 4: CONVEXITY
   const checks = [
-    {name:'Compression',key:'sb_c_compression',desc:'IV rank compressed below 40% â€” options cheap vs recent history'},
-    {name:'Energy',key:'sb_c_energy',desc:'PCR volume balanced â€” smart money flow supports directional thesis'},
-    {name:'Underpriced Vol',key:'sb_c_underpriced_vol',desc:'IVP below 20% â€” vol cheap enough for convexity injection'},
-    {name:'Gamma Proximity',key:'sb_c_gamma_proximity',desc:'Price within 7% of call/put wall â€” gamma acceleration near'},
-    {name:'Runway',key:'sb_c_runway',desc:'Clear space to structural target â€” at least 2Ã— breakeven distance'}
+    {name:'Compression',key:'sb_c_compression',desc:'IV rank compressed below 40% — options cheap vs recent history'},
+    {name:'Energy',key:'sb_c_energy',desc:'PCR volume balanced — smart money flow supports directional thesis'},
+    {name:'Underpriced Vol',key:'sb_c_underpriced_vol',desc:'IVP below 20% — vol cheap enough for convexity injection'},
+    {name:'Gamma Proximity',key:'sb_c_gamma_proximity',desc:'Price within 7% of call/put wall — gamma acceleration near'},
+    {name:'Runway',key:'sb_c_runway',desc:'Clear space to structural target — at least 2× breakeven distance'}
   ];
+  const convexityAvailable = s.convexity_data_state === 'AVAILABLE';
   document.getElementById('mp-convexity').innerHTML = `
-    <div class="m-sec-hdr" style="margin-top:0">Convexity Score: ${s.sb_conv_score||0}/8</div>
+    <div class="m-sec-hdr" style="margin-top:0">Convexity Score: ${convexityAvailable ? (s.sb_conv_score||0)+'/8' : 'NOT GOVERNED / UNAVAILABLE'}</div>
     <div class="conv-checks">
       ${checks.map(c => {
-        const pass = s[c.key] === 'Y';
+        const state = s[c.key];
+        const pass = state === 'Y';
+        const available = state === 'Y' || state === 'N';
         return `<div class="conv-check">
-          <div class="cc-icon">${pass?'âœ…':'âŒ'}</div>
+          <div class="cc-icon">${!available?'?':pass?'✅':'❌'}</div>
           <div class="cc-body">
-            <div class="cc-name ${pass?'pass':'fail'}">${c.name}</div>
-            <div class="cc-detail">${c.desc}</div>
+            <div class="cc-name ${!available?'':pass?'pass':'fail'}">${c.name}: ${!available?'UNAVAILABLE':pass?'PASS':'FAIL'}</div>
+            <div class="cc-detail">${available?c.desc:'No governed producer field was supplied; the Lab did not infer this check.'}</div>
           </div>
         </div>`;
       }).join('')}
@@ -2331,7 +2504,7 @@ function openModal(ticker) {
   const alertSt  = s.sb_alert_stages||'';
   const missedSt = s.sb_stages_missed||0;
   const currentSt= parseInt(s.sb_current_stage||0);
-  let ladderHtml = `<div class="m-sec-hdr" style="margin-top:0">Campaign Stage Ladder</div><div class="stage-ladder">`;
+  let ladderHtml = `<div class="m-sec-hdr" style="margin-top:0">Governed Execution Readiness</div><div class="stage-ladder">`;
   for (let i=1; i<=stageCount; i++) {
     const inEnter = enterNow.includes(String(i));
     const inAlert = alertSt.includes(String(i));
@@ -2346,11 +2519,11 @@ function openModal(ticker) {
   }
   ladderHtml += `</div>
     <div class="m-sec-hdr">Ladder Summary</div>
-    <div class="m-reason">${s.sb_ladder_summary||'â€”'}</div>
+    <div class="m-reason">${s.sb_ladder_summary||'—'}</div>
     <div class="m-sec-hdr">Timing</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Time Stop</div><div class="mf-v">${s.sb_time_stop_date||'N/A'}</div></div>
-      <div class="m-field"><div class="mf-k">Checkpoint Rule</div><div class="mf-v sm">${s.sb_checkpoint_rule||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Checkpoint Rule</div><div class="mf-v sm">${s.sb_checkpoint_rule||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Stages Missed</div><div class="mf-v ${missedSt>0?'r':'g'}">${missedSt}</div></div>
       <div class="m-field"><div class="mf-k">Current Stage</div><div class="mf-v a">${currentSt||'None'}</div></div>
     </div>`;
@@ -2368,25 +2541,25 @@ function openModal(ticker) {
   const mvColor    = mvVerdict==='TRIGGERED'?'var(--green)':mvVerdict==='VALID'?'var(--cyan)':mvVerdict==='DRIFTED'?'var(--amber)':'var(--red)';
   const mvPillCls  = mvVerdict==='TRIGGERED'?'p-exec':mvVerdict==='VALID'?'p-armed':mvVerdict==='DRIFTED'?'p-risk':'p-stand';
   const driftCol   = mvDrift===null?'var(--text2)':Math.abs(mvDrift)<1?'var(--green)':Math.abs(mvDrift)<2.5?'var(--amber)':'var(--red)';
-  // Pre-compute TCE variables â€” must be outside template literal to avoid CSP eval block
+  // Pre-compute TCE variables — must be outside template literal to avoid CSP eval block
   const tceState   = s['tce_trigger_state']||s['mv__tce_trigger_state']||'';
   const tceScore   = parseFloat(s['tce_trigger_score']||s['mv__tce_trigger_score']||0).toFixed(1);
   const tceColor   = tceState==='CONFIRMED'?'var(--green)':tceState==='PARTIAL'?'var(--amber)':'var(--red)';
   const tcePill    = tceState==='CONFIRMED'?'p-exec':tceState==='PARTIAL'?'p-risk':'p-stand';
-  const tceEntry   = s['tce_entry_type']||s['mv__tce_entry_type']||'â€”';
+  const tceEntry   = s['tce_entry_type']||s['mv__tce_entry_type']||'—';
   const tceQuality = parseFloat(s['mv__tce_data_quality_score']||0).toFixed(0);
-  const tceConf    = s['mv__tce_confirmed_components']||'â€”';
-  const tcePoss    = s['mv__tce_possible_components']||'â€”';
-  const tceReason  = s['tce_trigger_reason']||s['mv__tce_trigger_reason']||s['mv__tce_summary_line']||'â€”';
+  const tceConf    = s['mv__tce_confirmed_components']||'—';
+  const tcePoss    = s['mv__tce_possible_components']||'—';
+  const tceReason  = s['tce_trigger_reason']||s['mv__tce_trigger_reason']||s['mv__tce_summary_line']||'—';
   const tcePillHtml= tceState
     ? '<span class="pill '+tcePill+'" style="font-size:12px;padding:5px 14px">'+tceState+'</span>'
       +'<span style="font-family:\'Share Tech Mono\',monospace;font-size:13px;color:'+tceColor+'">'+tceScore+' / 100</span>'
-    : '<span style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No TCE data â€” run morning_validation.py</span>';
+    : '<span style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No TCE data — run morning_validation.py</span>';
   // Pre-compute MVS display variables
-  const mvsScore   = s['mv__score']||s['mv_score']||'â€”';
-  const mvsSize    = s['mv__position_size']||s['mv_position_size']||'â€”';
+  const mvsScore   = s['mv__score']||s['mv_score']||'—';
+  const mvsSize    = s['mv__position_size']||s['mv_position_size']||'—';
   const mvsRejects = s['mv__hard_rejects']||s['mv_hard_rejects']||'';
-  const mvsVwap    = (s['live_vwap']||s['mv__live_vwap']) ? '$'+parseFloat(s['live_vwap']||s['mv__live_vwap']).toFixed(2) : 'â€”';
+  const mvsVwap    = (s['live_vwap']||s['mv__live_vwap']) ? '$'+parseFloat(s['live_vwap']||s['mv__live_vwap']).toFixed(2) : '—';
   const mvsRejCls  = mvsRejects ? 'r' : 'g';
   document.getElementById('mp-morning').innerHTML = mvVerdict ? `
     <div class="m-sec-hdr" style="margin-top:0">Morning Validation Status</div>
@@ -2395,19 +2568,19 @@ function openModal(ticker) {
       <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text2)">${mvAt ? 'Validated: ' + mvAt : ''}</span>
     </div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v a">${mvPrice ? '$' + parseFloat(mvPrice).toFixed(2) : 'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Drift %</div><div class="mf-v" style="color:${driftCol}">${mvDrift!==null ? (mvDrift>=0?'+':'')+mvDrift.toFixed(2)+'%' : 'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Bid</div><div class="mf-v">${mvBid ? '$'+parseFloat(mvBid).toFixed(2) : 'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Ask</div><div class="mf-v">${mvAsk ? '$'+parseFloat(mvAsk).toFixed(2) : 'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">Spread %</div><div class="mf-v ${parseFloat(mvSpread||0)>5?'r':''}">${mvSpread ? parseFloat(mvSpread).toFixed(2)+'%' : 'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v a">${mvPrice ? '$' + parseFloat(mvPrice).toFixed(2) : '—'}</div></div>
+      <div class="m-field"><div class="mf-k">Drift %</div><div class="mf-v" style="color:${driftCol}">${mvDrift!==null ? (mvDrift>=0?'+':'')+mvDrift.toFixed(2)+'%' : '—'}</div></div>
+      <div class="m-field"><div class="mf-k">Bid</div><div class="mf-v">${mvBid ? '$'+parseFloat(mvBid).toFixed(2) : '—'}</div></div>
+      <div class="m-field"><div class="mf-k">Ask</div><div class="mf-v">${mvAsk ? '$'+parseFloat(mvAsk).toFixed(2) : '—'}</div></div>
+      <div class="m-field"><div class="mf-k">Spread %</div><div class="mf-v ${parseFloat(mvSpread||0)>5?'r':''}">${mvSpread ? parseFloat(mvSpread).toFixed(2)+'%' : '—'}</div></div>
       <div class="m-field"><div class="mf-k">Time Stop Alert</div><div class="mf-v ${mvStop?'r':''}">${mvStop || 'None'}</div></div>
     </div>
     <div class="m-sec-hdr">Interpretation</div>
     <div class="m-reason" style="color:${mvColor}">
-      ${mvVerdict==='TRIGGERED' ? 'ðŸŽ¯ Price has reached the trigger zone â€” entry conditions met. Validate manually before execution.' :
-        mvVerdict==='VALID'     ? 'âœ… Signal is intact and within acceptable drift range. Monitor for entry.' :
-        mvVerdict==='DRIFTED'   ? 'âš  Price has moved beyond the 2.5% drift gate. Re-assess entry and premium before trading.' :
-        mvVerdict==='INVALIDATED' ? 'âŒ Signal no longer valid â€” structural conditions have changed. Stand down.' :
+      ${mvVerdict==='TRIGGERED' ? '🎯 Price has reached the trigger zone — entry conditions met. Validate manually before execution.' :
+        mvVerdict==='VALID'     ? '✅ Signal is intact and within acceptable drift range. Monitor for entry.' :
+        mvVerdict==='DRIFTED'   ? '⚠ Price has moved beyond the 2.5% drift gate. Re-assess entry and premium before trading.' :
+        mvVerdict==='INVALIDATED' ? '❌ Signal no longer valid — structural conditions have changed. Stand down.' :
         'No interpretation available.'}
     </div>
     <div class="m-sec-hdr">Morning Validation Score (MVS)</div>
@@ -2440,10 +2613,10 @@ function openModal(ticker) {
   const eilColor= eilDisp==='EXECUTE_NOW'?'var(--green)':eilDisp==='EXECUTE_WITH_CAUTION'?'var(--cyan)':eilDisp==='EXECUTE_DEFER'?'var(--amber)':'var(--red)';
   const eilPill = eilDisp==='EXECUTE_NOW'?'p-exec':eilDisp==='EXECUTE_WITH_CAUTION'?'p-armed':eilDisp==='EXECUTE_DEFER'?'p-risk':'p-stand';
   const eilInterpret = eilDisp==='EXECUTE_NOW'?'All five microstructure checks passed. Optimal entry conditions.':
-    eilDisp==='EXECUTE_WITH_CAUTION'?'Minor friction detected. Proceed with noted conditions â€” consider 70% size.':
+    eilDisp==='EXECUTE_WITH_CAUTION'?'Minor friction detected. Proceed with noted conditions — consider 70% size.':
     eilDisp==='EXECUTE_DEFER'?'Microstructure unfavourable right now. Wait for conditions to improve before entering.':
     eilDisp==='STAND_DOWN_MICROSTRUCTURE'?'One or more checks failed outright. Do not enter without documented override reason.':
-    'Advisory mode active â€” EIL scored but not blocking.';
+    'Advisory mode active — EIL scored but not blocking.';
   document.getElementById('mp-eil').innerHTML = eilScore || eilDisp ? `
     <div class="m-sec-hdr" style="margin-top:0">Execution Intelligence Layer</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:4px">
@@ -2451,17 +2624,17 @@ function openModal(ticker) {
       ${!isNaN(eilScore) ? `<span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--amber)">${eilScore.toFixed(1)} / 100</span>` : ''}
     </div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Liquidity Window</div><div class="mf-v">${s['eil__liquidity_window']||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">Liquidity Window</div><div class="mf-v">${s['eil__liquidity_window']||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Liquidity Score</div><div class="mf-v">${parseFloat(s['eil__liquidity_score']||0).toFixed(1)}</div></div>
       <div class="m-field"><div class="mf-k">IV Distortion</div><div class="mf-v ${s['eil__iv_distortion_flag']==='True'?'r':'g'}">${s['eil__iv_distortion_flag']==='True'?'DISTORTED':'CLEAN'}</div></div>
       <div class="m-field"><div class="mf-k">IV Score</div><div class="mf-v">${parseFloat(s['eil__iv_score']||0).toFixed(1)}</div></div>
-      <div class="m-field"><div class="mf-k">GEX Regime</div><div class="mf-v">${s['eil__gex_regime']||'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">GEX Flip Level</div><div class="mf-v a">${s['eil__gex_flip_level']?'$'+parseFloat(s['eil__gex_flip_level']).toFixed(2):'â€”'}</div></div>
-      <div class="m-field"><div class="mf-k">OBI Regime</div><div class="mf-v">${s['eil__obi_regime']||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">GEX Regime</div><div class="mf-v">${s['eil__gex_regime']||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">GEX Flip Level</div><div class="mf-v a">${s['eil__gex_flip_level']?'$'+parseFloat(s['eil__gex_flip_level']).toFixed(2):'—'}</div></div>
+      <div class="m-field"><div class="mf-k">OBI Regime</div><div class="mf-v">${s['eil__obi_regime']||'—'}</div></div>
       <div class="m-field"><div class="mf-k">OBI Score</div><div class="mf-v">${parseFloat(s['eil__obi_score']||0).toFixed(1)}</div></div>
-      <div class="m-field"><div class="mf-k">POC Position</div><div class="mf-v">${s['eil__poc_position']||'â€”'}</div></div>
+      <div class="m-field"><div class="mf-k">POC Position</div><div class="mf-v">${s['eil__poc_position']||'—'}</div></div>
       <div class="m-field"><div class="mf-k">POC Proximity</div><div class="mf-v">${parseFloat(s['eil__poc_proximity_pct']||0).toFixed(2)}%</div></div>
-      <div class="m-field"><div class="mf-k">Size Multiplier</div><div class="mf-v ${parseFloat(s['eil__size_multiplier']||1)<1?'r':'g'}">${parseFloat(s['eil__size_multiplier']||1).toFixed(2)}Ã—</div></div>
+      <div class="m-field"><div class="mf-k">Size Multiplier</div><div class="mf-v ${parseFloat(s['eil__size_multiplier']||1)<1?'r':'g'}">${parseFloat(s['eil__size_multiplier']||1).toFixed(2)}×</div></div>
       <div class="m-field"><div class="mf-k">Advisory Only</div><div class="mf-v">${eilAdv?'YES':'NO'}</div></div>
     </div>
     ${s['eil__defer_reason']?`<div class="m-sec-hdr">Defer Reason</div><div class="m-reason" style="color:var(--amber)">${s['eil__defer_reason']}</div>`:''}
@@ -2470,7 +2643,7 @@ function openModal(ticker) {
     <div class="m-reason" style="color:${eilColor}">${eilInterpret}</div>` :
     '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No EIL data. Run execution_intelligence_runner.py to populate.</div>';
 
-  // â”€â”€ Q-OMEGA Layer 3 pane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Q-OMEGA Layer 3 pane ────────────────────────────────────────────────────
   const g = k => s[`garch__l3_${k}`] !== undefined ? s[`garch__l3_${k}`] : (s[`garch__${k}`] !== undefined ? s[`garch__${k}`] : null);
   const fwdVol     = parseFloat(g('forward_realised_vol') || 0);
   const tailwind   = parseFloat(g('iv_tailwind_score')    || 0);
@@ -2479,9 +2652,9 @@ function openModal(ticker) {
   const em610      = parseFloat(g('expected_move_6_10d')  || 0);
   const em1120     = parseFloat(g('expected_move_11_20d') || 0);
   const jumpFlag   = String(g('jump_risk_flag')||'').toLowerCase() === 'true';
-  const garchMethod= g('method') || 'â€”';
-  const garchConf  = conf > 0 ? conf.toFixed(1) : 'â€”';
-  const nBars      = g('n_bars') || 'â€”';
+  const garchMethod= g('method') || '—';
+  const garchConf  = conf > 0 ? conf.toFixed(1) : '—';
+  const nBars      = g('n_bars') || '—';
 
   // Vol state label + colour
   const volState   = tailwind < -0.03 ? 'CHEAP' : tailwind > 0.05 ? 'EXPENSIVE' : 'FAIR';
@@ -2490,17 +2663,17 @@ function openModal(ticker) {
   // Tailwind explanation
   const tailwindAbs = Math.abs(tailwind * 100).toFixed(1);
   const tailwindExplain = tailwind < -0.03
-    ? `Market IV is ${tailwindAbs}% below AVSHUNTER forecast vol â€” options underpriced. Buying edge exists.`
+    ? `Market IV is ${tailwindAbs}% below AVSHUNTER forecast vol — options underpriced. Buying edge exists.`
     : tailwind > 0.05
-    ? `Market IV is ${tailwindAbs}% above AVSHUNTER forecast vol â€” options overpriced. This is why R:R is negative.`
+    ? `Market IV is ${tailwindAbs}% above AVSHUNTER forecast vol — option premium is a headwind.`
     : `Market IV broadly in line with AVSHUNTER forecast vol. No strong mispricing signal.`;
 
-  const qomegaGate = s['qomega_gate'] || 'â€”';
+  const qomegaGate = s['qomega_gate'] || '—';
   const qomegaGateC = qomegaGate==='GO'?'g':qomegaGate==='ARMED_HALF'?'a':qomegaGate==='WAIT'?'a':'r';
   const qomegaReason = s['qomega_gate_reason'] || '';
 
   document.getElementById('mp-qomega').innerHTML = fwdVol > 0 ? `
-    <div class="m-sec-hdr" style="margin-top:0">Q-OMEGA Layer 3 â€” Forward Variance</div>
+    <div class="m-sec-hdr" style="margin-top:0">Q-OMEGA Layer 3 — Forward Variance</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:4px">
       <span class="pill ${volStateC}" style="font-size:12px;padding:5px 14px">${volState} VOL</span>
       <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text2)">RIEG: <span style="color:${tailwind<-0.03?'var(--green)':tailwind>0.05?'var(--red)':'var(--amber)'}">${(tailwind*100).toFixed(1)}%</span></span>
@@ -2511,22 +2684,82 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Vol State</div><div class="mf-v ${volStateC}">${volState}</div></div>
       <div class="m-field"><div class="mf-k">IV Tailwind Score</div><div class="mf-v ${tailwind<0?'g':'r'}">${(tailwind*100).toFixed(2)}%</div></div>
       <div class="m-field"><div class="mf-k">Forecast Confidence</div><div class="mf-v">${garchConf} / 100</div></div>
-      <div class="m-field"><div class="mf-k">Expected Move 1â€“5d</div><div class="mf-v a">${em15.toFixed(2)}%</div></div>
-      <div class="m-field"><div class="mf-k">Expected Move 6â€“10d</div><div class="mf-v">${em610.toFixed(2)}%</div></div>
-      <div class="m-field"><div class="mf-k">Expected Move 11â€“20d</div><div class="mf-v">${em1120.toFixed(2)}%</div></div>
-      <div class="m-field"><div class="mf-k">Jump Risk Flag</div><div class="mf-v ${jumpFlag?'r':'g'}">${jumpFlag?'YES â€” vol cluster detected':'NO'}</div></div>
+      <div class="m-field"><div class="mf-k">Expected Move 1–5d</div><div class="mf-v a">${em15.toFixed(2)}%</div></div>
+      <div class="m-field"><div class="mf-k">Expected Move 6–10d</div><div class="mf-v">${em610.toFixed(2)}%</div></div>
+      <div class="m-field"><div class="mf-k">Expected Move 11–20d</div><div class="mf-v">${em1120.toFixed(2)}%</div></div>
+      <div class="m-field"><div class="mf-k">Jump Risk Flag</div><div class="mf-v ${jumpFlag?'r':'g'}">${jumpFlag?'YES — vol cluster detected':'NO'}</div></div>
       <div class="m-field"><div class="mf-k">Forecast Method</div><div class="mf-v ${garchMethod==='GARCH'?'g':'a'}">${garchMethod}</div></div>
       <div class="m-field"><div class="mf-k">Price Bars Used</div><div class="mf-v">${nBars}</div></div>
     </div>
     <div class="m-sec-hdr">Vol Mispricing Interpretation</div>
     <div class="m-reason" style="color:${tailwind<-0.03?'var(--green)':tailwind>0.05?'var(--red)':'var(--amber)'}">${tailwindExplain}</div>
-    ${qomegaGate !== 'â€”' ? `
+    ${qomegaGate !== '—' ? `
     <div class="m-sec-hdr">Q-OMEGA Sovereign Gate</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
       <span class="pill ${qomegaGateC}" style="font-size:13px;padding:6px 16px">${qomegaGate}</span>
     </div>
     <div class="m-reason" style="color:var(--text2);font-size:11px">${qomegaReason}</div>` : ''}
   ` : '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No GARCH data. Run garch_runner.py to populate.</div>';
+
+  // MSI is a read-only evidence surface. It never replaces the governed
+  // direction, selected contract, final action or capital permission shown in
+  // the existing tabs. Canonical missing states are explicit, not zero-filled.
+  // Canonical absent states: MISSING, STALE, NOT_APPLICABLE, INSUFFICIENT_DATA.
+  const msiVal = (value, missing='MISSING') => {
+    if (value === null || value === undefined || String(value).trim() === '') {
+      return `<span class="a">${missing}</span>`;
+    }
+    return htmlSafe(value);
+  };
+  const msiNum = (value, digits=2, suffix='', missing='MISSING') => {
+    const number = Number(value);
+    return Number.isFinite(number) ? `${number.toFixed(digits)}${suffix}` : `<span class="a">${missing}</span>`;
+  };
+  document.getElementById('mp-msi').innerHTML = `
+    <div class="m-sec-hdr" style="margin-top:0">Current Selected-Contract Quote</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Selected Contract</div><div class="mf-v sm">${msiVal(getSelectedContract(s),'NOT_APPLICABLE')}</div></div>
+      <div class="m-field"><div class="mf-k">Bid / Ask</div><div class="mf-v">${msiNum(s.current_contract_bid)} / ${msiNum(s.current_contract_ask)}</div></div>
+      <div class="m-field"><div class="mf-k">Mid</div><div class="mf-v">${msiNum(s.current_contract_mid)}</div></div>
+      <div class="m-field"><div class="mf-k">Spread</div><div class="mf-v">${msiNum(s.current_contract_spread_pct,2,'%')}</div></div>
+      <div class="m-field"><div class="mf-k">Bid / Ask Size</div><div class="mf-v">${msiVal(s.contract_bid_size)} / ${msiVal(s.contract_ask_size)}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v ${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${msiVal(s.quote_freshness,'MISSING')}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.quote_timestamp_utc,'MISSING')}</div></div>
+      <div class="m-field"><div class="mf-k">Comparison State</div><div class="mf-v a">${msiVal(s.comparison_status,'NOT_APPLICABLE')}</div></div>
+    </div>
+    <div class="m-sec-hdr">Underlying Session Evidence</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Last / NBBO Mid</div><div class="mf-v">${msiNum(s.underlying_last)} / ${msiNum(s.underlying_nbbo_mid)}</div></div>
+      <div class="m-field"><div class="mf-k">NBBO Bid / Ask</div><div class="mf-v">${msiNum(s.underlying_nbbo_bid)} / ${msiNum(s.underlying_nbbo_ask)}</div></div>
+      <div class="m-field"><div class="mf-k">NBBO Bid / Ask Size</div><div class="mf-v">${msiVal(s.underlying_nbbo_bid_size)} / ${msiVal(s.underlying_nbbo_ask_size)}</div></div>
+      <div class="m-field"><div class="mf-k">NBBO Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.underlying_nbbo_timestamp_utc)}</div></div>
+      <div class="m-field"><div class="mf-k">Canonical VWAP</div><div class="mf-v">${msiNum(s.underlying_vwap_canonical)}</div></div>
+      <div class="m-field"><div class="mf-k">VWAP Relationship</div><div class="mf-v a">${msiVal(s.underlying_vwap_relationship)}</div></div>
+      <div class="m-field"><div class="mf-k">Overnight Gap</div><div class="mf-v">${msiNum(s.overnight_gap_pct,2,'%')}</div></div>
+      <div class="m-field"><div class="mf-k">Remaining Runway</div><div class="mf-v">${msiNum(s.remaining_runway_pct,2,'%')}</div></div>
+      <div class="m-field"><div class="mf-k">Session State</div><div class="mf-v a">${msiVal(s.session_state,'SESSION_NOT_EVALUATED')}</div></div>
+    </div>
+    <div class="m-sec-hdr">Market Structure Lifecycle</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Profile / Lifecycle</div><div class="mf-v">${msiVal(s.ms_profile_type,'INSUFFICIENT_DATA')} / ${msiVal(s.ms_lifecycle,'INSUFFICIENT_DATA')}</div></div>
+      <div class="m-field"><div class="mf-k">Direction Relationship</div><div class="mf-v a">${msiVal(s.ms_direction_relationship)}</div></div>
+      <div class="m-field"><div class="mf-k">POC Developing / Final</div><div class="mf-v">${msiNum(s.ms_developing_poc)} / ${msiNum(s.ms_final_poc)}</div></div>
+      <div class="m-field"><div class="mf-k">Acceptance</div><div class="mf-v">${msiVal(s.ms_acceptance_minutes)} min · ${msiVal(s.ms_acceptance_closes)} closes</div></div>
+      <div class="m-field"><div class="mf-k">Quality / Reason</div><div class="mf-v sm">${msiVal(s.ms_quality_class)} · ${msiVal(s.ms_reason_code)}</div></div>
+      <div class="m-field"><div class="mf-k">Screenshot Evidence</div><div class="mf-v a">${msiVal(s.screenshot_confirmation_status,'MICROSTRUCTURE_NOT_OBSERVED')}</div></div>
+    </div>
+    <div class="m-sec-hdr">Interpreter Assessment — Advisory Only</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Assessment State</div><div class="mf-v a">${msiVal(s.interpreter_assessment_status,'NOT_ASSESSED')}</div></div>
+      <div class="m-field"><div class="mf-k">Strengthening / Weakening</div><div class="mf-v">${msiVal(s.interpreter_strengthening_weakening,'NOT_ASSESSED')}</div></div>
+      <div class="m-field"><div class="mf-k">Agreement / Conflict</div><div class="mf-v">${msiVal(s.interpreter_agreement_conflict,'NOT_ASSESSED')}</div></div>
+      <div class="m-field"><div class="mf-k">Created (UTC)</div><div class="mf-v sm">${msiVal(s.interpreter_created_utc,'NOT_ASSESSED')}</div></div>
+    </div>
+    <div class="m-sec-hdr">Plain-Language Assessment</div>
+    <div class="m-reason">${msiVal(s.interpreter_plain_language_reason,'NOT_ASSESSED')}</div>
+    <div class="m-sec-hdr">Manual Checks / Data Gaps</div>
+    <div class="m-reason">${msiVal(s.interpreter_manual_checks,'NO_MANUAL_CHECKS_RECORDED')}<br>${msiVal(s.interpreter_data_gaps,'NO_DATA_GAPS_RECORDED')}</div>
+    <div class="m-reason" style="margin-top:12px;color:var(--amber)">${msiVal(s.interpreter_authority_statement,'ADVISORY_ONLY — NO INTERPRETER CAPITAL AUTHORITY')}</div>`;
 
   document.getElementById('modal-overlay').classList.add('open');
   document.getElementById('sig-modal').classList.add('open');
@@ -2549,7 +2782,7 @@ function switchMTab(name, btn) {
   btn?.classList.add('active');
 }
 
-// â•â•â• EXECUTE PANE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ EXECUTE PANE ════════════════════════════════════════════════════════
 function renderExecutePane() {
   const execute = ALL_SIGS.filter(s => {
     const cat = getExecutionCategory(s);
@@ -2565,28 +2798,28 @@ function renderExecutePane() {
     return;
   }
   document.getElementById('execute-pane-content').innerHTML = execute.map(s => {
-    const opt = (k) => s[`opt__${k}`] || s[k] || 'â€”';
+    const opt = (k) => s[`opt__${k}`] || s[k] || '—';
     const strike = parseFloat(opt('contract_strike')||0);
     const target = parseFloat(opt('structural_target')||0);
     const gain = opt('gain_at_target');
     const ps = parseFloat(s.priority_score||0);
-    const pr = s.priority_rank||'â€”';
+    const pr = s.priority_rank||'—';
     const em = displayExecutionMode(s);
     const emColor = canOpenEntry(s)?'var(--green)':em.includes('PROBE')?'var(--amber)':em.includes('LIMIT')?'var(--cyan)':'var(--text3)';
     const execCat = getExecutionCategory(s);
     const execClass = executionCategoryClass(execCat);
     const vBorder = canOpenEntry(s)?'rgba(0,229,160,.3)':'rgba(255,184,77,.2)';
     const isDW = String(s.ev_status||'').toUpperCase()==='DATA_WEAK';
-    const hint = s.ev2_decision_hint||'â€”';
+    const hint = s.ev2_decision_hint||'—';
     const hintC = hint==='STRONG'?'var(--green)':hint==='MODERATE'?'var(--cyan)':hint==='WEAK'?'var(--amber)':'var(--text3)';
     const mvState = s.mv_live_validation_state || s.mv__live_validation_state || 'PENDING';
-    const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : 'â€”');
-    const mvScore = s.mv_validation_score || s.mv__validation_score || 'â€”';
+    const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : '—');
+    const mvScore = s.mv_validation_score || s.mv__validation_score || '—';
     const mvColor = mvPerm==='GO'?'var(--green)':mvPerm==='BLOCKED'?'var(--red)':mvPerm==='WAIT'?'var(--amber)':'var(--cyan)';
-    const physicsState = s.physics_state_id || s.vg__physics_state_id || 'â€”';
-    const hiddenState = s.hidden_state_label || s.vg__hidden_state_label || 'â€”';
-    const transitionLabel = s.state_transition_label || s.vg__state_transition_label || 'â€”';
-    const transitionProb = s.phase_transition_probability || s.vg__phase_transition_probability || 'â€”';
+    const physicsState = s.physics_state_id || s.vg__physics_state_id || '—';
+    const hiddenState = s.hidden_state_label || s.vg__hidden_state_label || '—';
+    const transitionLabel = s.state_transition_label || s.vg__state_transition_label || '—';
+    const transitionProb = s.phase_transition_probability || s.vg__phase_transition_probability || '—';
     return `
       <div style="border:1px solid ${vBorder};border-radius:6px;padding:14px;margin-bottom:16px;background:var(--bg3)">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
@@ -2615,77 +2848,76 @@ function renderExecutePane() {
             <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:3px">Q-SCORE</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">${parseFloat(s.ev2_quality_score||0).toFixed(1)}</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:3px">MV PERM</div>
-            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${mvColor}">${mvPerm} Â· ${mvScore}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${mvColor}">${mvPerm} · ${mvScore}</div>
           </div>
         </div>
       <div class="target-highlight">
-        <div class="th-item"><div class="th-k">${s.ticker} â€” Strike (Enter)</div><div class="th-v strike">$${strike||'â€”'}</div><div class="th-sub">${opt('contract_expiry')} expiry</div></div>
-        <div class="th-item"><div class="th-k">Structural Target</div><div class="th-v target">$${target?target.toFixed(2):'â€”'}</div><div class="th-sub">${strike&&target?((target-strike)/strike*100).toFixed(1)+'% from strike':''}${gain&&gain!=='â€”'?' Â· +'+Math.round(parseFloat(gain)*100)+'% on premium':''}</div></div>
-        <div class="th-item"><div class="th-k">Hold Period</div><div class="th-v hold">${opt('hold_label')}</div><div class="th-sub">${opt('hold_urgency')} Â· DTE ${opt('contract_dte')}</div></div>
-        <div class="th-item"><div class="th-k">Morning Validation</div><div class="th-v hold">${mvState}</div><div class="th-sub">VWAP ${s.mv__vwap_confirmed||'â€”'} Â· Spread ${s.mv__spread_confirmed||'â€”'} Â· Physics ${s.mv__physics_transition_confirmed||'â€”'}</div></div>
-        <div class="th-item"><div class="th-k">Physics State</div><div class="th-v hold">${hiddenState}</div><div class="th-sub">physics_state_id ${physicsState} Â· ${transitionLabel}</div></div>
-        <div class="th-item"><div class="th-k">Transition Probability</div><div class="th-v hold">${transitionProb}</div><div class="th-sub">phase_transition_probability Â· committed physics baton</div></div>
+        <div class="th-item"><div class="th-k">${s.ticker} — Strike (Enter)</div><div class="th-v strike">$${strike||'—'}</div><div class="th-sub">${opt('contract_expiry')} expiry</div></div>
+        <div class="th-item"><div class="th-k">Structural Target</div><div class="th-v target">$${target?target.toFixed(2):'—'}</div><div class="th-sub">${strike&&target?((target-strike)/strike*100).toFixed(1)+'% from strike':''}${gain&&gain!=='—'?' · +'+Math.round(parseFloat(gain)*100)+'% on premium':''}</div></div>
+        <div class="th-item"><div class="th-k">Hold Period</div><div class="th-v hold">${opt('hold_label')}</div><div class="th-sub">${opt('hold_urgency')} · DTE ${opt('contract_dte')}</div></div>
+        <div class="th-item"><div class="th-k">Morning Validation</div><div class="th-v hold">${mvState}</div><div class="th-sub">VWAP ${s.mv__vwap_confirmed||'—'} · Spread ${s.mv__spread_confirmed||'—'} · Physics ${s.mv__physics_transition_confirmed||'—'}</div></div>
+        <div class="th-item"><div class="th-k">Physics State</div><div class="th-v hold">${hiddenState}</div><div class="th-sub">physics_state_id ${physicsState} · ${transitionLabel}</div></div>
+        <div class="th-item"><div class="th-k">Transition Probability</div><div class="th-v hold">${transitionProb}</div><div class="th-sub">phase_transition_probability · committed physics baton</div></div>
       </div>
       ${execCardHTML(s)}
       <div style="margin-top:10px;display:flex;gap:8px">
-        <button onclick="openModal('${s.ticker}')" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 14px;background:transparent;border:1px solid var(--green);border-radius:2px;color:var(--green);cursor:pointer">â—‰ Full Dossier â†’</button>
-        <button onclick="openEnterTradeModal('${s.ticker}')" ${canOpenEntry(s) ? '' : 'disabled'} title="${s.execution_lock_reason||''}" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 14px;background:rgba(0,229,160,.08);border:1px solid var(--green);border-radius:2px;color:var(--green);cursor:pointer">â¬† Enter Trade</button>
+        <button onclick="openModal('${s.ticker}')" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 14px;background:transparent;border:1px solid var(--green);border-radius:2px;color:var(--green);cursor:pointer">◉ Full Dossier →</button>
+        <button onclick="openEnterTradeModal('${s.ticker}')" ${canOpenEntry(s) ? '' : 'disabled'} title="${s.execution_lock_reason||''}" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 14px;background:rgba(0,229,160,.08);border:1px solid var(--green);border-radius:2px;color:var(--green);cursor:pointer">⬆ Enter Trade</button>
       </div>
       </div>`;
   }).join('');
 }
 
-// â•â•â• ARMED LIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ ARMED LIST ══════════════════════════════════════════════════════════
 function buildArmedList() {
   const armed = ALL_SIGS.filter(s => ['ARMED','CONTRACT_REPAIR','EOD_CAUTION'].includes(finalLabVerdict(s)))
     .sort((a,b) => parseFloat(a.priority_rank||9999) - parseFloat(b.priority_rank||9999));
-  const opt = (s,k) => s[`opt__${k}`] || s[k] || 'â€”';
+  const opt = (s,k) => s[`opt__${k}`] || s[k] || '—';
 
   document.getElementById('armed-list-items').innerHTML = armed.map(s => {
-    const rr = parseFloat(s.rr||0), ev = getEv(s);
+    const ev = getEv(s);
     const camp = displayCampaign(s);
     const isCamp = camp === 'CORE_CAMPAIGN' || camp === 'READY_EXECUTE';
     const dir = (s.direction||'').toUpperCase();
     const dirClass = dir==='CALL'?'p-call':dir.includes('PUT')?'p-put':'p-strangle';
-    const rrC = rr>=2?'var(--green)':rr>=1?'var(--amber)':rr>=0?'#ff8c00':'var(--red)';
-    const evC = ev>=0?'var(--green)':'var(--red)';
+    const evC = evDisplayColor(ev);
     const watch = s.requires_live_validation ? 'LIVE CHECK' : (s.execution_lock_reason || (rr>=2&&ev>0 ? 'WATCH' : parseInt(s.sb_vetoes_count||0)>0 ? 'VETOED' : 'MONITOR'));
     const watchColor = s.requires_live_validation ? 'var(--amber)' : rr>=2&&ev>0 ? 'var(--green)' : parseInt(s.sb_vetoes_count||0)>0 ? 'var(--amber)' : 'var(--text3)';
-    const ivpLbl = (opt(s,'ivp_label')||s['mv__ivp_label']||'').replace(/unknown|n\/a|none/i,'').trim() || 'â€”';
+    const ivpLbl = (opt(s,'ivp_label')||s['mv__ivp_label']||'').replace(/unknown|n\/a|none/i,'').trim() || '—';
     const ivr = opt(s,'iv_rank') || s['mv__iv_pct'] || 0;
     const mvState = s.mv_live_validation_state || s.mv__live_validation_state || 'PENDING';
-    const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : 'â€”');
-    const mvScore = s.mv_validation_score || s.mv__validation_score || 'â€”';
+    const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : '—');
+    const mvScore = s.mv_validation_score || s.mv__validation_score || '—';
     return `<div class="armed-item ${isCamp?'ai-core':'ai-staged'}" onclick="toggleArmed(this,'${s.ticker}')">
       <div class="ai-top">
         <span class="ai-ticker">${s.ticker}</span>
         <div class="ai-badges">
-          <span class="pill ${isCamp?'p-core':'p-staged'}">${camp||'â€”'}</span>
+          <span class="pill ${isCamp?'p-core':'p-staged'}">${camp||'—'}</span>
           <span class="pill ${dirClass}">${dir}</span>
           <span class="pill ${mvPerm==='BLOCKED'?'p-sd':mvPerm==='GO'?'p-exec':'p-armed'}">MV ${mvState}</span>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--purple)">Ph ${s.phase||'â€”'}</span>
-          ${parseInt(s.sb_vetoes_count||0)>0 ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--red)">âš </span>' : ''}
+          <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--purple)">Ph ${s.phase||'—'}</span>
+          ${parseInt(s.sb_vetoes_count||0)>0 ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--red)">⚠</span>' : ''}
         </div>
         <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${watchColor};margin-left:auto">${watch}</span>
       </div>
       <div class="ai-stats">
-        <div class="aistat"><span class="ais-k">Rank</span><span class="ais-v ${parseInt(s.priority_rank||9999)<=10?'g':'a'}">#${s.priority_rank||'â€”'} Â· ${parseFloat(s.priority_score||0).toFixed(0)}</span></div>
-        <div class="aistat"><span class="ais-k">R:R</span><span class="ais-v" style="color:${rrC}">${rr.toFixed(3)}Ã—</span></div>
-        <div class="aistat"><span class="ais-k">EV</span><span class="ais-v" style="color:${evC}">${ev>=0?'+':''}${ev.toFixed(3)}</span></div>
+        <div class="aistat"><span class="ais-k">Rank</span><span class="ais-v ${parseInt(s.priority_rank||9999)<=10?'g':'a'}">#${s.priority_rank||'—'} · ${parseFloat(s.priority_score||0).toFixed(0)}</span></div>
+        <div class="aistat"><span class="ais-k">Monetisable</span><span class="ais-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
+        <div class="aistat"><span class="ais-k">EV</span><span class="ais-v" style="color:${evC}">${formatEv(ev)}</span></div>
         <div class="aistat"><span class="ais-k">IVP</span><span class="ais-v g">${ivpLbl} (${parseFloat(ivr||0).toFixed(0)}%)</span></div>
         <div class="aistat"><span class="ais-k">Strike</span><span class="ais-v c">$${opt(s,'contract_strike')}</span></div>
         <div class="aistat"><span class="ais-k">Target</span><span class="ais-v g">$${parseFloat(opt(s,'structural_target')||0).toFixed(2)}</span></div>
         <div class="aistat"><span class="ais-k">Hold</span><span class="ais-v c">${opt(s,'hold_label')}</span></div>
         <div class="aistat"><span class="ais-k">Conv</span><span class="ais-v a">${s.sb_conv_score||0}/8</span></div>
         <div class="aistat"><span class="ais-k">Size</span><span class="ais-v ${canOpenEntry(s)?'a':'r'}">${displaySize(s)}</span></div>
-        <div class="aistat"><span class="ais-k">MV Score</span><span class="ais-v a">${mvPerm} Â· ${mvScore}</span></div>
+        <div class="aistat"><span class="ais-k">MV Score</span><span class="ais-v a">${mvPerm} · ${mvScore}</span></div>
       </div>
       <div class="ai-detail">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);line-height:1.65;margin-bottom:8px">${s.sb_verdict_reason||'â€”'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);line-height:1.65;margin-bottom:8px">${s.sb_verdict_reason||'—'}</div>
         ${parseInt(s.sb_vetoes_count||0)>0 ? `<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--amber);padding:6px 8px;background:rgba(255,184,77,.04);border:1px solid rgba(255,184,77,.15);border-radius:3px;margin-bottom:6px">${s.sb_vetoes}</div>` : ''}
-        <div style="font-size:12px;color:var(--text2);margin-bottom:5px"><strong style="color:var(--green)">âœ“</strong> ${opt(s,'positive_factors')}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:8px"><strong style="color:var(--red)">âœ—</strong> ${opt(s,'negative_factors')}</div>
-        <button onclick="event.stopPropagation();openModal('${s.ticker}')" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:4px 12px;background:transparent;border:1px solid var(--border2);border-radius:2px;color:var(--cyan);cursor:pointer">â—‰ Full Dossier â†’</button>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:5px"><strong style="color:var(--green)">✓</strong> ${opt(s,'positive_factors')}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px"><strong style="color:var(--red)">✗</strong> ${opt(s,'negative_factors')}</div>
+        <button onclick="event.stopPropagation();openModal('${s.ticker}')" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:4px 12px;background:transparent;border:1px solid var(--border2);border-radius:2px;color:var(--cyan);cursor:pointer">◉ Full Dossier →</button>
       </div>
     </div>`;
   }).join('') || '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px">No armed signals this run.</div>';
@@ -2697,7 +2929,7 @@ function toggleArmed(el) {
   if (!was) el.classList.add('ai-selected');
 }
 
-// â•â•â• CONVEXITY ENGINE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ CONVEXITY ENGINE ════════════════════════════════════════════════════
 function buildConvEngine() {
   const ea = SIGNALS;
   document.getElementById('conv-cards').innerHTML = ea.map(s => {
@@ -2716,13 +2948,13 @@ function buildConvEngine() {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#fff">${s.ticker}</span>
         <span class="pill ${['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict)?'p-exec':'p-armed'}">${verdict}</span>
-        <span class="pill ${campaign==='CORE_CAMPAIGN'||campaign==='READY_EXECUTE'?'p-core':'p-staged'}" style="font-size:8px">${campaign||'â€”'}</span>
+        <span class="pill ${campaign==='CORE_CAMPAIGN'||campaign==='READY_EXECUTE'?'p-core':'p-staged'}" style="font-size:8px">${campaign||'—'}</span>
         <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:${passed>=3?'var(--green)':passed>=2?'var(--amber)':'var(--red)'};margin-left:auto">${passed}<span style="font-size:13px;color:var(--text3)">/8</span></span>
       </div>
       <div style="display:flex;gap:5px">
         ${checks.map(c => `<div style="flex:1;text-align:center;padding:5px 4px;background:${s[c.key]==='Y'?'rgba(0,229,160,.08)':'rgba(255,255,255,.03)'};border:1px solid ${s[c.key]==='Y'?'rgba(0,229,160,.25)':'var(--border)'};border-radius:2px">
           <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:${s[c.key]==='Y'?'var(--green)':'var(--text3)'};">${c.label}</div>
-          <div style="font-size:14px;margin-top:2px">${s[c.key]==='Y'?'âœ“':'âœ—'}</div>
+          <div style="font-size:14px;margin-top:2px">${s[c.key]==='Y'?'✓':'✗'}</div>
         </div>`).join('')}
       </div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);margin-top:7px;line-height:1.5">${(s.sb_conv_detail||'').split('|').slice(0,3).join(' | ')}</div>
@@ -2730,7 +2962,7 @@ function buildConvEngine() {
   }).join('') || '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px">No signals loaded.</div>';
 }
 
-// â•â•â• DISCOVERY â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ DISCOVERY ═══════════════════════════════════════════════════════════
 function renderDiscovery() { discPage_ = 0; buildDiscTable(); }
 
 function getDiscData() {
@@ -2749,18 +2981,18 @@ function buildDiscTable() {
   const total = data.length;
   const page = data.slice(discPage_*DISC_PAGE_SIZE, (discPage_+1)*DISC_PAGE_SIZE);
   document.getElementById('disc-page-info').textContent =
-    `Showing ${discPage_*DISC_PAGE_SIZE+1}â€“${Math.min((discPage_+1)*DISC_PAGE_SIZE,total)} of ${total.toLocaleString()} candidates`;
+    `Showing ${discPage_*DISC_PAGE_SIZE+1}–${Math.min((discPage_+1)*DISC_PAGE_SIZE,total)} of ${total.toLocaleString()} candidates`;
   document.getElementById('disc-prev').disabled = discPage_===0;
   document.getElementById('disc-next').disabled = (discPage_+1)*DISC_PAGE_SIZE>=total;
   document.getElementById('disc-body').innerHTML = page.map(r => {
-    const tier = r.tier||r.tier_label||'â€”';
-    const ph = (r.phase||r.wyckoff_phase||'â€”').toUpperCase();
+    const tier = r.tier||r.tier_label||'—';
+    const ph = (r.phase||r.wyckoff_phase||'—').toUpperCase();
     const comp = parseFloat(r.composite_score||r.composite||0).toFixed(1);
     const wy = parseFloat(r.wyckoff_score||0).toFixed(1);
-    const wp = r.win_prob||r.win_probability||'â€”';
-    const ent = r.entry_price||r.support||'â€”';
-    const stop = r.stop_loss||r.stop||'â€”';
-    const ctrl = r.control||r.trend||'â€”';
+    const wp = r.win_prob||r.win_probability||'—';
+    const ent = r.entry_price||r.support||'—';
+    const stop = r.stop_loss||r.stop||'—';
+    const ctrl = r.control||r.trend||'—';
     const phColor = ph==='C'?'var(--green)':ph==='D'?'var(--cyan)':ph==='B'?'var(--amber)':'var(--text2)';
     return `<div class="disc-row">
       <div class="sc"><span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff">${r.ticker}</span></div>
@@ -2768,9 +3000,9 @@ function buildDiscTable() {
       <div class="sc" style="color:${phColor};font-weight:700">${ph}</div>
       <div class="sc" style="color:var(--text)">${comp}</div>
       <div class="sc" style="color:var(--text2)">${wy}</div>
-      <div class="sc" style="color:${parseFloat(wp||0)>0.6?'var(--green)':'var(--text2)'}">${wp !== 'â€”' ? (parseFloat(wp)*100).toFixed(0)+'%' : 'â€”'}</div>
-      <div class="sc" style="color:var(--cyan)">${ent !== 'â€”' ? '$'+parseFloat(ent).toFixed(2) : 'â€”'}</div>
-      <div class="sc" style="color:var(--red)">${stop !== 'â€”' ? '$'+parseFloat(stop).toFixed(2) : 'â€”'}</div>
+      <div class="sc" style="color:${parseFloat(wp||0)>0.6?'var(--green)':'var(--text2)'}">${wp !== '—' ? (parseFloat(wp)*100).toFixed(0)+'%' : '—'}</div>
+      <div class="sc" style="color:var(--cyan)">${ent !== '—' ? '$'+parseFloat(ent).toFixed(2) : '—'}</div>
+      <div class="sc" style="color:var(--red)">${stop !== '—' ? '$'+parseFloat(stop).toFixed(2) : '—'}</div>
       <div class="sc" style="font-size:10px;color:var(--text2)">${ctrl}</div>
     </div>`;
   }).join('');
@@ -2786,21 +3018,26 @@ function setDiscF(type, val, btn) {
 function doDiscSearch(v) { discSearch = v.toUpperCase(); discPage_ = 0; buildDiscTable(); }
 function discPage(dir) { discPage_ += dir; buildDiscTable(); }
 
-// â•â•â• MACRO PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ MACRO PAGE ══════════════════════════════════════════════════════════
 function renderMacroPage(m) {
   const fields = [
-    ['Regime State', m.regime_state||'â€”'],
-    ['Directional Bias', m.dir_bias||'â€”'],
-    ['Trend Energy', m.trend_energy||'â€”'],
-    ['Regime Drift', m.regime_drift||'â€”'],
-    ['Risk Switch', m.risk_switch||'â€”'],
-    ['Vol Mode', m.vol_mode||'â€”'],
-    ['Liquidity', m.liquidity_pulse||'â€”'],
-    ['Rates Impulse', m.rates_impulse||'â€”'],
-    ['Conviction', m.conviction||'â€”'],
-    ['Sector Tilt', m.sector_tilt||'â€”'],
-    ['VIX Contango', m.vix_contango!=null ? (parseFloat(m.vix_contango)*100).toFixed(2)+'%' : 'â€”'],
-    ['Macro Conviction', m.conviction_score||m.conviction||'â€”'],
+    ['Packet', m.packet_id||'—'],
+    ['As Of', m.as_of_utc||'—'],
+    ['Freshness', m.freshness||'UNKNOWN'],
+    ['Data Quality', m.data_quality||'UNKNOWN'],
+    ['Context State', m.context_state||'—'],
+    ['Regime State', m.regime_state||'—'],
+    ['Directional Bias', m.dir_bias||'—'],
+    ['Trend Energy', m.trend_energy||'—'],
+    ['Regime Drift', m.regime_drift||'—'],
+    ['Risk Switch', m.risk_switch||'—'],
+    ['Vol Mode', m.vol_mode||'—'],
+    ['Liquidity', m.liquidity_pulse||'—'],
+    ['Rates Impulse', m.rates_impulse||'—'],
+    ['Conviction', m.conviction||'—'],
+    ['Sector Tilt', m.sector_tilt||'—'],
+    ['VIX Contango', m.vix_contango!=null ? (parseFloat(m.vix_contango)*100).toFixed(2)+'%' : '—'],
+    ['Macro Conviction', m.conviction_score||m.conviction||'—'],
   ];
   document.getElementById('macro-cards').innerHTML = cleanUiHtml(fields.map(([k,v]) =>
     `<div class="mc"><div class="mc-k">${k}</div><div class="mc-v">${v}</div></div>`
@@ -2822,9 +3059,15 @@ function renderMacroPage(m) {
   document.getElementById('exec-bias').innerHTML = cleanUiHtml(rows.length ?
     rows.map(([k,v]) => `<div class="eb-row"><span class="eb-k">${k.replace(/_/g,' ')}</span><span class="eb-v">${v}</span></div>`).join('') :
     '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3)">No execution bias data this run.</div>');
+  if (m.plain_language_advisory) {
+    document.getElementById('exec-bias').innerHTML += cleanUiHtml(
+      `<div class="eb-row"><span class="eb-k">Advisory</span><span class="eb-v">${m.plain_language_advisory}</span></div>` +
+      `<div class="eb-row"><span class="eb-k">Authority</span><span class="eb-v">${m.authority||'MACRO_ADVISORY_ONLY'}</span></div>`
+    );
+  }
 }
 
-// â•â•â• PIPELINE PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ PIPELINE PAGE ═══════════════════════════════════════════════════════
 function renderPipelinePage(stats, summary, runId) {
   document.getElementById('pipeline-content').innerHTML = `
     <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px;padding-bottom:5px;border-bottom:1px solid var(--border)">Run Metadata</div>
@@ -2839,11 +3082,11 @@ function renderPipelinePage(stats, summary, runId) {
     <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.15em;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border)">Signal Funnel</div>
     <div class="funnel-row">
       <div class="funnel-step"><div class="fs-n a">${stats.total_scanned||0}</div><div class="fs-k">Options Scanned</div></div>
-      <div class="fs-arrow">â†’</div>
+      <div class="fs-arrow">→</div>
       <div class="funnel-step"><div class="fs-n a">${stats.vetoes_fired||0}</div><div class="fs-k">Vetoes Fired</div></div>
-      <div class="fs-arrow">â†’</div>
+      <div class="fs-arrow">→</div>
       <div class="funnel-step"><div class="fs-n a">${stats.verdicts_changed||0}</div><div class="fs-k">Verdicts Changed</div></div>
-      <div class="fs-arrow">â†’</div>
+      <div class="fs-arrow">→</div>
       <div class="funnel-step"><div class="fs-n g">${stats.execute_count||0}</div><div class="fs-k">EXECUTE</div></div>
       <div class="fs-arrow">+</div>
       <div class="funnel-step"><div class="fs-n c">${stats.armed_count||0}</div><div class="fs-k">ARMED</div></div>
@@ -2873,18 +3116,18 @@ async function renderOpenPositions() {
       <div class="armed-item">
         <div class="ai-top"><span class="ai-ticker">${p.ticker}</span><span class="pill p-armed">${p.action||'HOLD'}</span></div>
         <div class="ai-stats">
-          <div class="aistat"><span class="ais-k">Direction</span><span class="ais-v">${p.options_direction||p.direction||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Contract</span><span class="ais-v">${p.strike||'â€”'} ${p.expiry||''}</span></div>
-          <div class="aistat"><span class="ais-k">Entry</span><span class="ais-v">$${p.entry_premium||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Mark</span><span class="ais-v">${p.current_mark!=null?'$'+p.current_mark:'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">P&L</span><span class="ais-v">${p.unrealised_pnl_pct!=null?p.unrealised_pnl_pct+'%':'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Horizon</span><span class="ais-v a">${p.time_horizon||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Hold</span><span class="ais-v c">${p.hold_period||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Action</span><span class="ais-v">${p.lab_action_category||p.execution_category||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">EOD</span><span class="ais-v">${p.eod_candidate_status||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Morning</span><span class="ais-v">${p.morning_execution_permission||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Opt Route</span><span class="ais-v">${p.options_research_route||'â€”'}</span></div>
-          <div class="aistat"><span class="ais-k">Align</span><span class="ais-v ${p.horizon_hold_alignment==='ALIGNED'?'g':'a'}">${p.horizon_hold_alignment||'â€”'}</span></div>
+          <div class="aistat"><span class="ais-k">Direction</span><span class="ais-v">${p.options_direction||p.direction||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Contract</span><span class="ais-v">${p.strike||'—'} ${p.expiry||''}</span></div>
+          <div class="aistat"><span class="ais-k">Entry</span><span class="ais-v">$${p.entry_premium||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Mark</span><span class="ais-v">${p.current_mark!=null?'$'+p.current_mark:'—'}</span></div>
+          <div class="aistat"><span class="ais-k">P&L</span><span class="ais-v">${p.unrealised_pnl_pct!=null?p.unrealised_pnl_pct+'%':'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Horizon</span><span class="ais-v a">${p.time_horizon||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Hold</span><span class="ais-v c">${p.hold_period||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Action</span><span class="ais-v">${p.lab_action_category||p.execution_category||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">EOD</span><span class="ais-v">${p.eod_candidate_status||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Morning</span><span class="ais-v">${p.morning_execution_permission||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Opt Route</span><span class="ais-v">${p.options_research_route||'—'}</span></div>
+          <div class="aistat"><span class="ais-k">Align</span><span class="ais-v ${p.horizon_hold_alignment==='ALIGNED'?'g':'a'}">${p.horizon_hold_alignment||'—'}</span></div>
         </div>
         <button onclick="prepareExitTicket('${p.trade_id||''}','${p.ticker}',${p.entry_premium||0})" style="font-family:'Share Tech Mono',monospace;font-size:10px;padding:4px 12px;background:transparent;border:1px solid var(--cyan);border-radius:2px;color:var(--cyan);cursor:pointer">Open Exit Ticket</button>
       </div>`).join('') : '<div class="meta-note">No open journal positions.</div>';
@@ -2899,7 +3142,7 @@ function prepareExitTicket(tradeId, ticker, entryPremium) {
   el.innerHTML = `
     <div class="meta-grid">
       <div class="mrow"><span class="mr-k">Trade</span><span class="mr-v c">${ticker}</span></div>
-      <div class="mrow"><span class="mr-k">Entry Premium</span><span class="mr-v">$${entryPremium||'â€”'}</span></div>
+      <div class="mrow"><span class="mr-k">Entry Premium</span><span class="mr-v">$${entryPremium||'—'}</span></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <input id="exit-premium" class="search-inp" placeholder="Exit premium" type="number" step="0.01">
@@ -2919,7 +3162,7 @@ async function submitExitTicket(tradeId, ticker) {
     notes: document.getElementById('exit-notes').value || ''
   };
   const res = await fetch(`${API}/log_exit`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(r => r.json());
-  document.getElementById('exit-ticket-result').textContent = res.ok ? `${res.message} | P&L ${res.pnl_pct}% | R ${res.rr_realised||'â€”'}` : (res.error || 'Exit failed');
+  document.getElementById('exit-ticket-result').textContent = res.ok ? `${res.message} | P&L ${res.pnl_pct}% | R ${res.rr_realised||'—'}` : (res.error || 'Exit failed');
   renderOpenPositions(); renderOutcomes(); renderLearningLoop();
 }
 
@@ -2933,17 +3176,15 @@ async function renderOutcomes() {
       <div class="meta-grid">
         <div class="mrow"><span class="mr-k">Trades</span><span class="mr-v">${fb.n_trades || 0}</span></div>
         <div class="mrow"><span class="mr-k">Win Rate</span><span class="mr-v g">${((fb.win_rate||0)*100).toFixed(1)}%</span></div>
-        <div class="mrow"><span class="mr-k">Avg Pred R:R</span><span class="mr-v">${fb.avg_predicted_rr || 'â€”'}</span></div>
-        <div class="mrow"><span class="mr-k">Avg Real R:R</span><span class="mr-v">${fb.avg_realised_rr || 'â€”'}</span></div>
-        <div class="mrow"><span class="mr-k">Calibration</span><span class="mr-v c">${fb.calibration_score ?? 'â€”'}</span></div>
+        <div class="mrow"><span class="mr-k">Calibration</span><span class="mr-v c">${fb.calibration_score ?? '—'}</span></div>
       </div>
       ${(data.recent_trades||[]).map(t => `<div class="meta-note">
         ${t.exit_date||''} <strong>${t.ticker}</strong> ${t.outcome_class||''} P&L ${t.pnl_usd||0}
-        <br><span style="color:var(--text3)">Horizon</span> ${t.time_horizon||'â€”'} Â·
-        <span style="color:var(--text3)">Hold</span> ${t.hold_period||'â€”'} Â·
-        <span style="color:var(--text3)">Action</span> ${t.lab_action_category||t.execution_category||'â€”'} Â·
-        <span style="color:var(--text3)">Morning</span> ${t.morning_execution_permission||'â€”'} Â·
-        <span style="color:var(--text3)">Align</span> ${t.horizon_hold_alignment||'â€”'}
+        <br><span style="color:var(--text3)">Horizon</span> ${t.time_horizon||'—'} ·
+        <span style="color:var(--text3)">Hold</span> ${t.hold_period||'—'} ·
+        <span style="color:var(--text3)">Action</span> ${t.lab_action_category||t.execution_category||'—'} ·
+        <span style="color:var(--text3)">Morning</span> ${t.morning_execution_permission||'—'} ·
+        <span style="color:var(--text3)">Align</span> ${t.horizon_hold_alignment||'—'}
       </div>`).join('')}`;
   } catch(e) {
     el.innerHTML = `<div class="meta-note">Outcomes unavailable: ${e.message}</div>`;
@@ -2959,8 +3200,7 @@ async function renderLearningLoop() {
     const states = (fb.win_rate_by_physics_state || []).slice(0,8);
     el.innerHTML = `
       <div class="meta-grid">
-        <div class="mrow"><span class="mr-k">Pred vs Real R:R</span><span class="mr-v">${fb.avg_predicted_rr||0} / ${fb.avg_realised_rr||0}</span></div>
-        <div class="mrow"><span class="mr-k">Calibration</span><span class="mr-v c">${fb.calibration_score ?? 'â€”'}</span></div>
+        <div class="mrow"><span class="mr-k">Calibration</span><span class="mr-v c">${fb.calibration_score ?? '—'}</span></div>
         <div class="mrow"><span class="mr-k">Avg Hold</span><span class="mr-v">${fb.average_hold_days||0}d</span></div>
       </div>
       ${states.map(s => `<div class="meta-note">${s.bucket}: n=${s.n} win=${(s.win_rate*100).toFixed(1)}% avgPnL=${s.avg_pnl_usd}</div>`).join('') || '<div class="meta-note">No closed trades yet.</div>'}`;
@@ -2978,7 +3218,7 @@ async function renderRunHealth() {
     const phase = (man.manifest && man.manifest.phase_status) || {};
     el.innerHTML = `
       <div class="meta-grid">
-        <div class="mrow"><span class="mr-k">Run</span><span class="mr-v c">${status.run_id||'â€”'}</span></div>
+        <div class="mrow"><span class="mr-k">Run</span><span class="mr-v c">${status.run_id||'—'}</span></div>
         <div class="mrow"><span class="mr-k">Health</span><span class="mr-v ${status.run_health_score>=80?'g':'a'}">${status.run_health_score||0}</span></div>
         <div class="mrow"><span class="mr-k">Next</span><span class="mr-v">${status.next_action||'UNKNOWN'}</span></div>
       </div>
@@ -2991,7 +3231,7 @@ async function renderRunHealth() {
   }
 }
 
-// â•â•â• ENTER TRADE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ ENTER TRADE ════════════════════════════════════════════════════════
 let ET_TICKER = null;
 
 function openEnterTradeModal(ticker) { openETModal(ticker); }
@@ -3004,23 +3244,22 @@ function openETModal(ticker) {
   // Header
   document.getElementById('et-ticker-hdr').textContent = ticker;
   document.getElementById('et-meta-hdr').textContent =
-    `${displayCampaign(s)||'â€”'} Â· Phase ${s.phase||'â€”'} Â· ${s.sb_instrument_now||'â€”'} Â· Conv ${s.sb_conv_score||0}/8`;
+    `${displayCampaign(s)||'—'} · Phase ${s.phase||'—'} · ${s.sb_instrument_now||'—'} · Conv ${s.sb_conv_score||0}/8`;
 
   // Summary strip
-  const rr = parseFloat(s.rr||0), ev = getEv(s);
-  const rrC = rr>=2?'#00ff88':rr>=1?'#f5a623':'#ff4466';
+  const ev = getEv(s);
   const mvState = s.mv_live_validation_state || s.mv__live_validation_state || 'PENDING';
-  const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : 'â€”');
+  const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : '—');
   document.getElementById('et-summary').innerHTML = `
     <div><span style="color:#555">Direction</span><br><span style="color:#ff4466;font-size:12px">${(s.direction||'').toUpperCase()}</span></div>
-    <div><span style="color:#555">R:R Ratio</span><br><span style="color:${rrC};font-size:12px">${rr.toFixed(2)}Ã—</span></div>
-    <div><span style="color:#555">EV Adjusted</span><br><span style="color:${ev>=0?'#00ff88':'#ff4466'};font-size:12px">${ev>=0?'+':''}${ev.toFixed(4)}</span></div>
+    <div><span style="color:#555">Monetisability</span><br><span class="${monetisabilityClass(s)}" style="font-size:12px">${monetisabilityLabel(s)}</span></div>
+    <div><span style="color:#555">EV Adjusted</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatEv(ev)}</span></div>
     <div><span style="color:#555">Position Size</span><br><span style="color:#f5a623;font-size:12px">${displaySize(s)}</span></div>
     <div><span style="color:#555">Conviction</span><br><span style="color:#fff;font-size:12px">${s.sb_conv_score||0}/8</span></div>
-    <div><span style="color:#555">Vetoes</span><br><span style="color:${parseInt(s.sb_vetoes_count||0)===0?'#00ff88':'#ff4466'};font-size:12px">${parseInt(s.sb_vetoes_count||0)===0?'âœ“ CLEAN':'âš  '+s.sb_vetoes_count}</span></div>
+    <div><span style="color:#555">Vetoes</span><br><span style="color:${parseInt(s.sb_vetoes_count||0)===0?'#00ff88':'#ff4466'};font-size:12px">${parseInt(s.sb_vetoes_count||0)===0?'✓ CLEAN':'⚠ '+s.sb_vetoes_count}</span></div>
     <div><span style="color:#555">Horizon</span><br><span style="color:#f5a623;font-size:12px">${getTimeHorizon(s)}</span></div>
     <div><span style="color:#555">Hold</span><br><span style="color:#00c8ff;font-size:12px">${getHoldPeriod(s)}</span></div>
-    <div><span style="color:#555">Morning Validation</span><br><span style="color:${mvPerm==='GO'?'#00ff88':mvPerm==='BLOCKED'?'#ff4466':'#f5a623'};font-size:12px">${mvState} Â· ${mvPerm}</span></div>`;
+    <div><span style="color:#555">Morning Validation</span><br><span style="color:${mvPerm==='GO'?'#00ff88':mvPerm==='BLOCKED'?'#ff4466':'#f5a623'};font-size:12px">${mvState} · ${mvPerm}</span></div>`;
 
   // Reset inputs
   document.getElementById('et-premium').value = '';
@@ -3064,8 +3303,8 @@ function etCalcSize() {
     const contracts = Math.floor(dollars / contractCost);
     document.getElementById('et-contracts-note').textContent =
       contracts >= 1
-        ? `At $${premium.toFixed(2)} premium â†’ 1 contract = $${contractCost.toFixed(2)} â†’ you can buy ${contracts} contract${contracts!==1?'s':''}`
-        : `At $${premium.toFixed(2)} premium â†’ 1 contract = $${contractCost.toFixed(2)} â†’ account too small for 1 contract at this premium`;
+        ? `At $${premium.toFixed(2)} premium → 1 contract = $${contractCost.toFixed(2)} → you can buy ${contracts} contract${contracts!==1?'s':''}`
+        : `At $${premium.toFixed(2)} premium → 1 contract = $${contractCost.toFixed(2)} → account too small for 1 contract at this premium`;
   } else {
     document.getElementById('et-contracts-note').textContent = 'Enter premium above to see contract count';
   }
@@ -3110,7 +3349,7 @@ async function confirmEnterTrade() {
 
   const btn = document.getElementById('et-confirm-btn');
   btn.disabled = true;
-  btn.textContent = 'âŸ³ CREATING CONTRACT...';
+  btn.textContent = '⟳ CREATING CONTRACT...';
 
   try {
     const runId = RUN_DATA?.run_id || null;
@@ -3133,7 +3372,7 @@ async function confirmEnterTrade() {
       btn.style.display = 'none';
       const cs = data.contract_summary || {};
       document.getElementById('et-success-detail').textContent =
-        `${cs.direction||'PUT'} ${cs.instrument||''} Â· ${cs.horizon||getTimeHorizon(s)} horizon Â· Hold ${cs.hold_period||getHoldPeriod(s)} Â· Premium $${premium.toFixed(2)} Â· Inv $${invalidation.toFixed(2)} Â· EV ${parseFloat(cs.ev||0).toFixed(4)} Â· Journal OPEN.`;
+        `${cs.direction||'PUT'} ${cs.instrument||''} · ${cs.horizon||getTimeHorizon(s)} horizon · Hold ${cs.hold_period||getHoldPeriod(s)} · Premium $${premium.toFixed(2)} · Inv $${invalidation.toFixed(2)} · EV ${parseFloat(cs.ev||0).toFixed(4)} · Journal OPEN.`;
       document.getElementById('et-success').style.display = 'block';
       // Hide the entry ticket after a successful manual journal capture.
       setTimeout(() => closeETModal(), 4000);
@@ -3141,17 +3380,17 @@ async function confirmEnterTrade() {
       errEl.textContent = data.error || 'Unknown error from server';
       errEl.style.display = 'block';
       btn.disabled = false;
-      btn.textContent = 'â—‰ LOCK IN TRADE â€” CREATE CONTRACT';
+      btn.textContent = '◉ LOCK IN TRADE — CREATE CONTRACT';
     }
   } catch (e) {
-    errEl.textContent = `Network error: ${e.message} â€” is Intelligence Lab running on port 5002?`;
+    errEl.textContent = `Network error: ${e.message} — is Intelligence Lab running on port 5002?`;
     errEl.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = 'â—‰ LOCK IN TRADE â€” CREATE CONTRACT';
+    btn.textContent = '◉ LOCK IN TRADE — CREATE CONTRACT';
   }
 }
 
-// â•â•â• PAGE NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ PAGE NAV ════════════════════════════════════════════════════════════
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
@@ -3169,7 +3408,7 @@ function switchLab(name, btn) {
   if (name === 'health') renderRunHealth();
 }
 
-// â•â•â• BOOT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══ BOOT ════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>

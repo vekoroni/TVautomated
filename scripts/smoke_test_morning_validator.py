@@ -15,10 +15,22 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from contracts.lab_control import resolve_lab_tradeability
-from morning_thesis_validator import latest_run_id, run_morning_validation
+try:
+    from morning_thesis_validator import latest_run_id, run_morning_validation  # type: ignore[import-not-found]
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = True
+except ModuleNotFoundError:
+    latest_run_id = None
+    run_morning_validation = None
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = False
 
 
 def main() -> int:
+    if not _LEGACY_MORNING_VALIDATOR_AVAILABLE:
+        print(
+            "RETIRED: smoke_test_morning_validator.py targeted the archived validator. "
+            "Production smoke coverage is tests/test_morning_gate_authority.py."
+        )
+        return 2
     runs_dir = ROOT / "data" / "output" / "runs"
     run_id = latest_run_id(runs_dir)
     if not run_id:

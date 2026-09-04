@@ -1,0 +1,12 @@
+AVS-OPS-001 verification item 6 - reachability diff
+before: audit/ops/AVS-OPS-001/usage_graph_20260904.json  head=5d886f07c1d2  nodes=680 reachable=200
+after : audit/ops/AVS-OPS-001/usage_graph_20260904.json  head=5d886f07c1d2  nodes=680 reachable=200
+entry points before: 31  after: 31
+
+reachable set (normalised, _attic/ prefix stripped): before=200 after=200
+LOST   (reachable before, not after): 0
+GAINED (reachable after, not before): 0
+
+EMPTY DIFF - reachability is identical. Item 6 PASS.
+
+parse errors before=0 after=0

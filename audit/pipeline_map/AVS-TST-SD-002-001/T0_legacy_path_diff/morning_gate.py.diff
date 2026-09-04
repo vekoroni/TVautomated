@@ -1,0 +1,291 @@
+--- a/morning_gate.py
++++ b/morning_gate.py
+@@ -62,7 +62,13 @@
+     parse_occ_symbol,
+     recompute_premium_rr,
+ )
+-from contracts.long_option_policy import LONG_OPTION_EXECUTION_POLICY
++from contracts.long_option_policy import (
++    LONG_OPTION_EXECUTION_POLICY,
++    evaluate_execution_viability,
++    quote_age_seconds,
++    quote_spread_percent,
++)
++from contracts.core_authority_policy import assert_frozen_thesis_fields
+ from contracts.options_liquidity_lifecycle import (
+     LifecycleInputs,
+     evaluate_options_liquidity_lifecycle,
+@@ -278,8 +284,14 @@
+ 
+ 
+ def _check_premium_economics(row: Dict[str, Any]) -> tuple[bool, str]:
+-    """Compatibility wrapper; R:R no longer has capital authority."""
+-    return _check_monetisability(row)
++    """Check observable execution viability; EV/R:R/scenario value are advisory."""
++    state = _u(row.get("execution_viability_state"))
++    reason = _s(row.get("execution_viability_reason")) or "UNSPECIFIED"
++    if state == "EXECUTABLE_QUOTE":
++        return True, f"EXECUTION_VIABLE:{reason}"
++    if state == "MANUAL_LIQUIDITY_REVIEW":
++        return True, f"EXECUTION_REVIEW_REQUIRED:{reason}"
++    return False, f"EXECUTION_NOT_VIABLE:{state or 'MISSING'}:{reason}"
+ 
+ 
+ def _check_ev3_authority(row: Dict[str, Any]) -> tuple[bool, str]:
+@@ -840,11 +852,7 @@
+             bid = _f(api_value("bid"))
+             ask = _f(api_value("ask"))
+             mid = (bid + ask) / 2.0 if bid is not None and ask is not None else None
+-            spread_pct = (
+-                (ask - bid) / mid * 100.0
+-                if bid is not None and ask is not None and mid and mid > 0
+-                else None
+-            )
++            spread_pct = quote_spread_percent(bid, ask)
+             return {
+                 "live_contract_bid":        bid,
+                 "live_contract_ask":        ask,
+@@ -1952,7 +1960,12 @@
+             current_spot=float(required["current_spot"]),
+             structural_target=float(required["target"]),
+             invalidation_spot=float(required["invalidation"]),
+-            quote_age_seconds=0.0,
++            quote_age_seconds=quote_age_seconds(
++                live_data.get("live_contract_provider_updated")
++                or live_data.get("live_contract_quote_timestamp")
++                or live_data.get("selected_quote_timestamp_utc")
++                or live_data.get("live_options_fetched_at")
++            ),
+             listed_market=True,
+         ))
+     except (KeyError, TypeError, ValueError) as exc:
+@@ -2097,6 +2110,10 @@
+     economics_recompute_complete = False
+     if hydration_attempted:
+         economics_recompute_complete = _recompute_selected_contract_economics(out, live_data)
++    # Direct live observations and fully hydrated canonical structures resolve
++    # through the same policy.  Recompute on every Morning Gate invocation so
++    # an EOD viability label can never masquerade as current quote evidence.
++    out.update(evaluate_execution_viability(out, live_data))
+ 
+     previous_contract_symbol = _s(
+         out.get("contract_symbol_original")
+@@ -2620,10 +2637,13 @@
+     # v6 actuarial display fields â€” pass-through from EOD manifest
+     # These are informational context for the trader and Intelligence Lab.
+     # They NEVER gate the verdict.
+-    for _v6_field in V6_ACTUARIAL_DISPLAY_FIELDS:
+-        if _v6_field in row and _v6_field not in out:
+-            out[_v6_field] = row[_v6_field]
+-
++    for _v6_field in V6_ACTUARIAL_DISPLAY_FIELDS:
++        if _v6_field in row and _v6_field not in out:
++            out[_v6_field] = row[_v6_field]
++
++    # Current evidence may invalidate, defer or require a new contract episode;
++    # it cannot silently rewrite the published direction, horizon or geometry.
++    assert_frozen_thesis_fields(row, out)
+     return out
+ 
+ 
+@@ -3292,31 +3312,26 @@
+     return results
+ 
+ 
+-def _fetch_polygon_minute_bars(
++def _fetch_marketdata_five_minute_bars(
+     ticker: str,
+     start_utc: datetime,
+     end_utc: datetime,
+ ) -> Any:
+-    """Fetch licensed one-minute aggregates for a governed missing interval."""
+-    import urllib.parse
+-    import urllib.request
+-
+-    import pandas as pd
+-
+-    start_ms = int(start_utc.timestamp() * 1000)
+-    end_ms = int(end_utc.timestamp() * 1000)
+-    encoded = urllib.parse.quote(ticker.strip().upper(), safe="")
+-    url = (
+-        f"https://api.polygon.io/v2/aggs/ticker/{encoded}/range/1/minute/"
+-        f"{start_ms}/{end_ms}?adjusted=false&sort=asc&limit=50000&apiKey="
+-        f"{POLYGON_API_KEY}"
+-    )
+-    with urllib.request.urlopen(url, timeout=LIVE_FETCH_TIMEOUT) as response:
+-        payload = json.loads(response.read().decode("utf-8"))
+-    rows = payload.get("results") or []
+-    if not rows:
+-        raise ValueError(f"Polygon returned no one-minute bars for {ticker}")
+-    return pd.DataFrame(rows)
++    """Fetch governed five-minute MarketData candles for the active session."""
++    from canonical_data import MarketDataStockCandleAdapter, session_snapshot
++
++    snapshot = session_snapshot()
++    session_date = snapshot.session_date or snapshot.last_completed_session
++    return MarketDataStockCandleAdapter(
++        MARKETDATA_API_KEY, timeout_seconds=LIVE_FETCH_TIMEOUT
++    ).fetch_range(
++        ticker,
++        start_utc,
++        end_utc,
++        session_date=session_date,
++        interval_minutes=5,
++        session_segment="REGULAR",
++    )
+ 
+ 
+ def _market_structure_populations(
+@@ -3373,9 +3388,32 @@
+     from market_structure import calculate_market_structure_evidence
+     from market_structure.service import CanonicalMarketStructureService
+ 
+-    snapshot = session_snapshot()
++    validation_cutoff_utc = datetime.now(timezone.utc).replace(microsecond=0)
++    snapshot = session_snapshot(validation_cutoff_utc)
+     session_date = snapshot.session_date or snapshot.last_completed_session
+     regular_open, regular_close = session_bounds(session_date)
++    profile_evidence_state = (
++        "PENDING_MARKET_OPEN"
++        if snapshot.state.value == "PREMARKET"
++        else "DEVELOPING_SESSION"
++        if snapshot.state.value == "REGULAR"
++        else "PARTIAL_SESSION"
++        if snapshot.state.value == "AFTER_HOURS"
++        else "NOT_EVALUATED"
++    )
++    rows_by_ticker = {_u(row.get("ticker")): row for row in candidates}
++    if profile_evidence_state == "PENDING_MARKET_OPEN":
++        for ticker, row in rows_by_ticker.items():
++            pending = {
++                "ms_profile_evidence_state": "PENDING_MARKET_OPEN",
++                "ms_profile_authority": "ADVISORY_ONLY",
++                "ms_profile_can_grant_capital": False,
++                "ms_profile_can_reverse_direction": False,
++                "ms_profile_reason_code": "REGULAR_SESSION_NOT_YET_OBSERVABLE",
++            }
++            row.update(pending)
++            live_map[ticker].update(pending)
++        return {"eligible": len(worklist_tickers), "calculated": 0, "unavailable": 0}
+     if snapshot.session_date == session_date and snapshot.last_closed_minute_utc:
+         end_utc = min(snapshot.last_closed_minute_utc, regular_close - timedelta(minutes=1))
+     else:
+@@ -3409,13 +3447,15 @@
+         registry_path=registry_path,
+         payload_root=payload_root,
+         run_id=run_id,
++        invocation_id=f"{run_id}:developing-profile:{validation_cutoff_utc.isoformat()}",
++        evidence_cutoff_utc=validation_cutoff_utc,
++        requesting_stage="MARKET_STRUCTURE",
+         flags=canonical_flags,
+     )
+     structure_store = CanonicalMarketStructureService(
+         registry_path=registry_path,
+         payload_root=payload_root,
+     )
+-    rows_by_ticker = {_u(row.get("ticker")): row for row in candidates}
+     calculated = 0
+     unavailable = 0
+     for ticker in tickers:
+@@ -3423,13 +3463,14 @@
+         live = live_map[ticker]
+         atr14 = _f(row.get("atr14") or row.get("atr") or row.get("atr_14"))
+         if atr14 is None or atr14 <= 0:
+-            live.update(
+-                {
++            unavailable_fields = {
+                     "ms_authority": "ADVISORY_ONLY",
+                     "ms_reason_code": "MS_ATR_MISSING",
+                     "ms_quality_class": "INSUFFICIENT_DATA",
++                    "ms_profile_evidence_state": profile_evidence_state,
+                 }
+-            )
++            live.update(unavailable_fields)
++            row.update(unavailable_fields)
+             unavailable += 1
+             continue
+         try:
+@@ -3438,9 +3479,12 @@
+                 session_date=session_date,
+                 start_utc=regular_open,
+                 end_utc=end_utc,
+-                fetch_missing=_fetch_polygon_minute_bars,
+-                provider="POLYGON_AGGREGATES",
++                fetch_missing=_fetch_marketdata_five_minute_bars,
++                provider="MARKETDATA",
++                interval_minutes=5,
+                 session_segment="REGULAR",
++                evidence_state=profile_evidence_state,
++                adjustment_convention="SPLIT_ADJUSTED",
+             )
+             hashes = []
+             for dataset_id in minute_result.dataset_ids:
+@@ -3464,20 +3508,24 @@
+                 prior_lifecycle=_s(row.get("ms_lifecycle")) or None,
+             )
+             record = structure_store.persist(evidence)
++            evidence["ms_profile_evidence_state"] = profile_evidence_state
++            evidence["ms_profile_authority"] = "ADVISORY_ONLY"
+             live.update(evidence)
+             live["ms_dataset_id"] = record.dataset_id
+             live["ms_minute_resolution"] = minute_result.resolution
+             live["ms_physical_fetches"] = minute_result.physical_fetches
++            row.update(live)
+             calculated += 1
+         except Exception as error:
+-            live.update(
+-                {
++            unavailable_fields = {
+                     "ms_authority": "ADVISORY_ONLY",
+                     "ms_reason_code": f"MS_DATA_ERROR:{type(error).__name__}",
+                     "ms_quality_class": "INSUFFICIENT_DATA",
+                     "ms_error": str(error),
++                    "ms_profile_evidence_state": profile_evidence_state,
+                 }
+-            )
++            live.update(unavailable_fields)
++            row.update(unavailable_fields)
+             unavailable += 1
+     return {
+         "eligible": publication.authorised_count,
+@@ -3649,6 +3697,11 @@
+         "monetisability_breakeven_spot", "monetisability_structural_target_spot",
+         "monetisability_target_intrinsic_per_share",
+         "monetisability_target_profit_per_share", "monetisability_target_profit_pct",
++        "execution_viability_policy_version", "execution_viability_state",
++        "execution_viability_reason", "execution_viability_eligible",
++        "execution_viability_reviewable", "execution_viability_contract_symbol",
++        "execution_viability_bid", "execution_viability_ask",
++        "execution_viability_spread_pct", "execution_viability_spread_denominator",
+         "ev_predicted", "ev3_ev_conservative_return", "ev3_ev_lower_bound_return",
+         "ev3_uncertainty_total_return", "ev3_p_target", "ev3_p_stop",
+         "ev3_p_timeout", "ev3_evaluation_id",
+@@ -3713,16 +3766,24 @@
+ 
+     monetisability_result = evaluate_long_option_monetisability(row, live_data)
+     row.update(monetisability_result)
++    viability_result = evaluate_execution_viability(row, live_data)
++    row.update(viability_result)
+     if monetisability_result.get("monetisability_status") != "COMPLETE":
+         row["economics_comparable"] = False
+         row["economics_mismatch_reason"] = monetisability_result.get(
+             "monetisability_reason", "MONETISABILITY_RECOMPUTE_FAILED"
+         )
+-        row["economics_recompute_required"] = "TRUE"
+-        row["selected_contract_economics_ready"] = False
++        row["economics_recompute_required"] = "FALSE"
++        row["selected_contract_economics_ready"] = bool(
++            viability_result.get("execution_viability_state")
++            not in {"DATA_MISSING", "INVALID_QUOTE", "UNSUPPORTED_STRUCTURE"}
++        )
+         row["ev3_selected_contract_aligned"] = False
+-        return False
+-    row["selected_contract_economics_ready"] = True
++    else:
++        row["selected_contract_economics_ready"] = bool(
++            viability_result.get("execution_viability_state")
++            not in {"DATA_MISSING", "INVALID_QUOTE", "UNSUPPORTED_STRUCTURE"}
++        )
+ 
+     ev3_result = _evaluate_hydrated_ev3(row, live_data)
+     row.update(ev3_result)

@@ -1,0 +1,81 @@
+{
+  "pipeline_run_id": "20260902_232526",
+  "invocation_id": "inv_c60b905c2301b1dfbd0b5b13",
+  "requested_action": "AUTO",
+  "resolved_action": "VALIDATE",
+  "as_of_utc": "2026-09-03T13:00:00Z",
+  "evidence_cutoff_utc": "2026-09-03T13:00:00Z",
+  "exchange_calendar": "XNYS",
+  "session_state": "PREMARKET",
+  "last_completed_session": "2026-09-02",
+  "current_session": "2026-09-03",
+  "operational_context": "VALIDATION_DUE",
+  "existing_thesis_id": "book:20260902_232526",
+  "stages_to_run": [
+    "UNDERLYING_VALIDATION",
+    "SURVIVOR_OPTION_REFRESH",
+    "EXECUTION_GATE",
+    "PUBLISH_VALIDATION"
+  ],
+  "stages_to_reuse": [
+    "COMPLETED_THESIS",
+    "COMPLETED_MARKET_PROFILE"
+  ],
+  "datasets_required": [
+    {
+      "dataset_type": "UNDERLYING_NBBO",
+      "session_date": "2026-09-03",
+      "evidence_state": "CURRENT_QUOTE",
+      "authorised_tickers": [
+        "AAPL",
+        "MSFT"
+      ],
+      "interval_minutes": null,
+      "cache_exact_hits": 0,
+      "cache_partial_hits": 0,
+      "estimated_physical_requests": 2
+    },
+    {
+      "dataset_type": "EXACT_OPTION_QUOTE",
+      "session_date": "2026-09-03",
+      "evidence_state": "CURRENT_QUOTE",
+      "authorised_tickers": [
+        "AAPL",
+        "MSFT"
+      ],
+      "interval_minutes": null,
+      "cache_exact_hits": 0,
+      "cache_partial_hits": 0,
+      "estimated_physical_requests": 2
+    }
+  ],
+  "authorised_ticker_worklists": {
+    "UNDERLYING_VALIDATION": [
+      "AAPL",
+      "MSFT"
+    ],
+    "SURVIVOR_OPTION_REFRESH": [
+      "AAPL",
+      "MSFT"
+    ],
+    "EXECUTION_GATE": [
+      "AAPL",
+      "MSFT"
+    ],
+    "PUBLISH_VALIDATION": [
+      "AAPL",
+      "MSFT"
+    ]
+  },
+  "estimated_physical_requests": 4,
+  "estimated_provider_credits": 4,
+  "expected_outputs": [
+    "validation_event",
+    "execution_gate_result",
+    "governed_handoff"
+  ],
+  "execution_authority_ceiling": "EXECUTION_GATE_ELIGIBLE",
+  "retry_of_invocation_id": null,
+  "supersedes_invocation_id": null,
+  "plan_hash": "52ce811de7642a1853275c25d584df535013ad8da6a5c84c4d488f0b897b214c"
+}

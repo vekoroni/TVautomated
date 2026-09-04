@@ -19,9 +19,9 @@ import numpy as np
 import pandas as pd
 
 
-EV3_STAGE0_VERSION = "ev3-stage0-v0.2.0"
-EV3_INPUT_SCHEMA_VERSION = "ev3-input-v0.2.0"
-EV3_BARRIER_SCHEMA_VERSION = "ev3-barrier-v0.2.0"
+EV3_STAGE0_VERSION = "ev3-stage0-v0.4.0"
+EV3_INPUT_SCHEMA_VERSION = "ev3-input-v0.3.0"
+EV3_BARRIER_SCHEMA_VERSION = "ev3-barrier-v0.3.0"
 
 STATE_DIMENSIONS: tuple[str, ...] = (
     "vol_regime",
@@ -33,8 +33,12 @@ STATE_DIMENSIONS: tuple[str, ...] = (
     "atr_pct_bucket",
 )
 
-DEFAULT_TARGET_GRID: tuple[float, ...] = (0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20)
-DEFAULT_STOP_GRID: tuple[float, ...] = (0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15)
+DEFAULT_TARGET_GRID: tuple[float, ...] = (
+    0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50,
+)
+DEFAULT_STOP_GRID: tuple[float, ...] = (
+    0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20, 0.25,
+)
 DEFAULT_HORIZONS: tuple[int, ...] = (5, 10, 20)
 
 ACCEPTED_DIRECTION_STATES = {
@@ -45,6 +49,7 @@ ACCEPTED_DIRECTION_STATES = {
     "OK",
     "AGREEMENT",
     "NO_PROBABILITY_OPINION",
+    "CONFLICT_STRUCTURE_LEADS",
 }
 REJECTED_DIRECTION_STATES = {
     "",
@@ -64,13 +69,20 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "options_direction",
         "direction",
     ),
+    "direction_resolution_status": (
+        "direction_resolution_status",
+        "direction_status",
+        "direction_arbitration_status",
+        "direction_conflict_status",
+    ),
     "direction_status": (
+        "direction_resolution_status",
         "direction_status",
         "direction_arbitration_status",
         "direction_conflict_status",
     ),
     "entry_spot": ("entry_spot", "signal_price", "underlying_price", "current_price"),
-    "target_spot": ("target_spot", "target_price", "structural_target", "target_in_play"),
+    "target_spot": ("target_spot", "target_price", "structural_target"),
     "invalidation_spot": (
         "invalidation_spot",
         "invalidation_price",
@@ -160,6 +172,23 @@ def _normalise_direction(value: Any) -> str:
     return mapping.get(text, text)
 
 
+def _normalise_direction_resolution(value: Any, direction: str) -> str:
+    """Convert legacy arbitration vocabulary into the EV3 resolution contract.
+
+    ``CONFLICT_STRUCTURE_LEADS`` describes *how* a CALL/PUT was selected; it is
+    not an unresolved direction.  Non-directional strategies are routed out of
+    the directional EV engine explicitly instead of being reported as defects.
+    """
+    text = str(value or "").strip().upper()
+    if direction in {"STRANGLE", "STRADDLE", "NON_DIRECTIONAL"}:
+        return "NON_DIRECTIONAL"
+    if text in ACCEPTED_DIRECTION_STATES:
+        return "RESOLVED"
+    if text in REJECTED_DIRECTION_STATES:
+        return "UNRESOLVED"
+    return text
+
+
 def _normalise_horizon(value: Any) -> str:
     text = str(value or "").strip().upper().replace("–", "_").replace("-", "_")
     text = text.replace(" ", "")
@@ -244,6 +273,16 @@ def validate_ev3_input(
 
     direction = _normalise_direction(resolve("canonical_direction"))
     canonical["canonical_direction"] = direction
+    if direction in {"STRANGLE", "STRADDLE", "NON_DIRECTIONAL"}:
+        canonical["direction_resolution_status"] = "NON_DIRECTIONAL"
+        canonical["direction_status"] = "NON_DIRECTIONAL"
+        return EV3ValidationResult(
+            False,
+            "NOT_APPLICABLE_NON_DIRECTIONAL",
+            canonical,
+            provenance,
+            f"direction={direction}",
+        )
     if direction not in {"CALL", "PUT"}:
         return EV3ValidationResult(
             False,
@@ -253,15 +292,18 @@ def validate_ev3_input(
             f"direction={direction or 'MISSING'}",
         )
 
-    direction_status = str(resolve("direction_status") or "").strip().upper()
+    raw_direction_status = str(resolve("direction_resolution_status") or "").strip().upper()
+    direction_status = _normalise_direction_resolution(raw_direction_status, direction)
+    canonical["direction_arbitration_status"] = raw_direction_status
+    canonical["direction_resolution_status"] = direction_status
     canonical["direction_status"] = direction_status
-    if direction_status in REJECTED_DIRECTION_STATES or direction_status not in ACCEPTED_DIRECTION_STATES:
+    if direction_status != "RESOLVED":
         return EV3ValidationResult(
             False,
             "REJECT_DIRECTION_UNRESOLVED",
             canonical,
             provenance,
-            f"direction_status={direction_status or 'MISSING'}",
+            f"direction_resolution_status={direction_status or 'MISSING'}; raw={raw_direction_status or 'MISSING'}",
         )
 
     for field_name in ("entry_spot", "target_spot", "invalidation_spot"):
@@ -305,7 +347,7 @@ def validate_ev3_input(
     hold = _number(resolve("planned_hold_sessions"))
     canonical["horizon_bucket"] = horizon
     canonical["planned_hold_sessions"] = int(hold) if hold is not None and hold.is_integer() else hold
-    if horizon not in {"1_5D", "6_10D", "11_20D"} or hold is None or not hold.is_integer() or not 1 <= hold <= 20:
+    if horizon not in {"1_5D", "6_10D", "11_20D"} or hold is None or not hold.is_integer():
         return EV3ValidationResult(
             False,
             "REJECT_HORIZON",
@@ -313,15 +355,18 @@ def validate_ev3_input(
             provenance,
             f"horizon={horizon or 'MISSING'}, planned_hold_sessions={hold}",
         )
-    horizon_bounds = {"1_5D": (1, 5), "6_10D": (6, 10), "11_20D": (11, 20)}
-    lower_hold, upper_hold = horizon_bounds[horizon]
-    if not lower_hold <= int(hold) <= upper_hold:
+    # The barrier sidecar is materialised only at the governed policy endpoints.
+    # Accepting an intermediate value here merely delays the same rejection to
+    # cache lookup and makes coverage diagnostics misleading.
+    horizon_endpoint = {"1_5D": 5, "6_10D": 10, "11_20D": 20}
+    expected_hold = horizon_endpoint[horizon]
+    if int(hold) != expected_hold:
         return EV3ValidationResult(
             False,
             "REJECT_HORIZON",
             canonical,
             provenance,
-            f"planned_hold_sessions={int(hold)} outside {horizon}",
+            f"planned_hold_sessions={int(hold)}; {horizon} requires endpoint={expected_hold}",
         )
 
     for horizon_days in (5, 10, 20):
@@ -416,10 +461,27 @@ def validate_ev3_input(
 
     bid, ask = canonical["bid"], canonical["ask"]
     if bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask:
-        return EV3ValidationResult(False, "REJECT_QUOTE", canonical, provenance, f"bid={bid}, ask={ask}")
+        return EV3ValidationResult(
+            False,
+            "REJECT_QUOTE_INVALID_MARKET",
+            canonical,
+            provenance,
+            f"bid={bid}, ask={ask}; invalid or crossed market",
+        )
+    if bid == 0:
+        return EV3ValidationResult(
+            False,
+            "REJECT_LIQUIDITY_ZERO_BID",
+            canonical,
+            provenance,
+            f"bid={bid}, ask={ask}; no executable exit bid",
+        )
     canonical["mid"] = (bid + ask) / 2.0
     canonical["spread_fraction_mid"] = (ask - bid) / canonical["mid"] if canonical["mid"] > 0 else math.inf
-    if not 0 <= canonical["spread_fraction_mid"] <= 1:
+    # A valid two-sided quote can have a spread approaching 200% of mid.
+    # Whether it is tradeable is an economic liquidity policy, not a unit
+    # validation question. Keep only mathematically impossible values here.
+    if not math.isfinite(canonical["spread_fraction_mid"]) or not 0 <= canonical["spread_fraction_mid"] < 2:
         return EV3ValidationResult(
             False,
             "REJECT_UNIT_SPREAD",

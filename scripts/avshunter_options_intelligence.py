@@ -23,8 +23,8 @@
 ║                                                                              ║
 ║  OUTPUT FIELDS TO INTELLIGENCE LAB:                                          ║
 ║    options_verdict       : EXECUTE / ARMED / STAND_DOWN                     ║
-║    options_direction     : CALL / PUT / STRANGLE / NONE                     ║
-║    options_strategy      : LONG_CALL / LONG_PUT / DEBIT_SPREAD / STRADDLE   ║
+║    options_direction     : CALL / PUT / NONE                                ║
+║    options_strategy      : LONG_CALL / LONG_PUT                              ║
 ║    recommended_contract  : ticker symbol of best contract                    ║
 ║    contract_strike       : recommended strike                                ║
 ║    contract_expiry       : recommended expiry date                           ║
@@ -79,18 +79,31 @@
 # ─────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-import sys, os, time, json, math, cmath, warnings, random, re
+import sys, os, time, json, math, cmath, warnings, random, re, hashlib
 
-# ── Windows CP1252 fix: force UTF-8 on stdout/stderr so emoji chars don't crash ──
-if hasattr(sys.stdout, "buffer"):
-    import io as _io
-    sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
-    sys.stderr = _io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+# ── Windows CP1252 fix: configure streams in place so importing this module
+# never replaces or closes a host/test runner's capture streams.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
+        except (AttributeError, OSError, ValueError):
+            pass
 from datetime import datetime, timezone, date, timedelta
 from math import log, sqrt, exp
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
+# This file is launched directly by intelligent_orchestrator.py. In that mode
+# Python places scripts\ (rather than the repository root) on sys.path, so
+# sibling packages such as contracts\ are otherwise unavailable. Keep this
+# bootstrap before any repository-local imports and mirror the production
+# entrypoint in regression coverage.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 import numpy as np
 import pandas as pd
@@ -98,6 +111,129 @@ import requests
 from scipy.stats import norm
 from scipy.optimize import brentq, minimize
 from scipy.integrate import quad
+
+from contracts.direction_governance import (
+    DIRECTED as GOVERNED_DIRECTED_SIDES,
+    resolve_governed_direction,
+    structural_direction,
+)
+from canonical_data.contract_reference import infer_standard_occ_multiplier
+from contracts.long_option_policy import (
+    LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
+    LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT,
+    quote_spread_fraction,
+)
+from contracts.options_liquidity_lifecycle import (
+    LifecycleInputs,
+    OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+    evaluate_options_liquidity_lifecycle,
+)
+from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
+from contracts.thesis_geometry import select_directional_invalidation
+from msi_runtime import active_flags as active_msi_flags
+
+_CDS_CHAIN_SERVICE = None
+_CDS_LIQUIDITY_STORE = None
+_CDS_V2_CHAIN_RESOLVER = None
+_CDS_V2_SESSION = None
+_MD_RAW_CHAIN_PAYLOADS: Dict[str, Dict[str, Any]] = {}
+
+OPTIONS_SESSION_EXCEPTION_COLUMNS = [
+    "ticker",
+    "expected_session",
+    "actual_session",
+    "session_source",
+    "data_source",
+    "is_stale",
+    "exception_reason",
+    "exception_action",
+]
+
+
+def _resolve_options_session_scope(
+    eligible: pd.DataFrame,
+) -> Tuple[date, str, pd.DataFrame]:
+    """Resolve the governed session and quarantine ticker-level data exceptions.
+
+    A stale or missing ticker observation must not make an otherwise coherent
+    Options population ambiguous.  The strict canonical resolver therefore sees
+    only rows that upstream explicitly represents as current.  Any disagreement
+    among those current rows remains a hard failure.
+    """
+    from canonical_data import resolve_completed_session_date
+
+    session_source = ""
+    session_values = pd.Series(index=eligible.index, dtype="object")
+    for session_col in ("bar_data_asof", "data_as_of"):
+        if session_col not in eligible.columns:
+            continue
+        candidate_values = eligible[session_col]
+        if candidate_values.notna().any():
+            session_source = session_col
+            session_values = candidate_values
+            break
+
+    parsed_sessions = pd.to_datetime(session_values, errors="coerce").dt.date
+    stale_mask = pd.Series(False, index=eligible.index, dtype=bool)
+    if "is_stale" in eligible.columns:
+        stale_mask |= eligible["is_stale"].map(
+            lambda value: str(value).strip().lower() in {"1", "true", "yes", "on"}
+        )
+    for source_col in ("data_source", "bar_data_source"):
+        if source_col in eligible.columns:
+            stale_mask |= (
+                eligible[source_col]
+                .fillna("")
+                .astype(str)
+                .str.upper()
+                .str.strip()
+                .eq("STALE_CACHE")
+            )
+
+    fresh_sessions = parsed_sessions[parsed_sessions.notna() & ~stale_mask].tolist()
+    run_session = resolve_completed_session_date(fresh_sessions)
+
+    exception_mask = stale_mask | parsed_sessions.isna() | parsed_sessions.ne(run_session)
+    exception_rows: List[Dict[str, Any]] = []
+    for index in eligible.index[exception_mask]:
+        actual = parsed_sessions.loc[index]
+        if pd.isna(actual):
+            reason = "UNDERLYING_SESSION_UNAVAILABLE"
+            actual_text = ""
+        elif actual != run_session:
+            reason = "UNDERLYING_SESSION_MISMATCH"
+            actual_text = actual.isoformat()
+        else:
+            reason = "UNDERLYING_DATA_STALE"
+            actual_text = actual.isoformat()
+        source = ""
+        for source_col in ("data_source", "bar_data_source"):
+            if source_col in eligible.columns:
+                raw_value = eligible.at[index, source_col]
+                if pd.isna(raw_value):
+                    continue
+                value = str(raw_value).strip()
+                if value and value.lower() not in {"nan", "none"}:
+                    source = value
+                    break
+        raw_ticker = eligible.at[index, "ticker"]
+        ticker = "" if pd.isna(raw_ticker) else str(raw_ticker).strip()
+        exception_rows.append({
+            "ticker": ticker,
+            "expected_session": run_session.isoformat(),
+            "actual_session": actual_text,
+            "session_source": session_source,
+            "data_source": source,
+            "is_stale": bool(stale_mask.loc[index]),
+            "exception_reason": reason,
+            "exception_action": "QUARANTINE_MONITOR_ONLY_NO_OPTIONS_ACQUISITION",
+        })
+
+    return (
+        run_session,
+        session_source,
+        pd.DataFrame(exception_rows, columns=OPTIONS_SESSION_EXCEPTION_COLUMNS),
+    )
 
 try:
     from scripts.macro_quant_packet import (
@@ -164,8 +300,11 @@ OPTIONS_ARMED_ROUTE = "OPTIONS_ARMED_HALF"
 OPTIONS_PROBE_ROUTE = "OPTIONS_PROBE_ONLY"
 OPTIONS_EQUITY_ONLY_ROUTE = "OPTIONS_EQUITY_ONLY_BETTER"
 OPTIONS_BLOCKED_ROUTE = "OPTIONS_BLOCKED"
+# Research scoring bands.  These classify contract quality but never grant
+# capital.  The final executable/reviewable limits live in
+# ``contracts.long_option_policy`` and are evaluated again on the exact quote.
 OPTIONS_SPREAD_PASS_PCT = 0.15
-OPTIONS_SPREAD_HARD_PCT = 0.25
+OPTIONS_SPREAD_HARD_PCT = LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT / 100.0
 OPTIONS_MIN_BREAKEVEN_FEASIBILITY = 1.0
 OPTIONS_MIN_R_MULTIPLE = 1.0
 OPTIONS_THETA_DECAY_LIMIT_PCT = 35.0
@@ -215,6 +354,7 @@ def _direction_conflict_status_oi(direction: str, pcr_signal: Any, pcr_value: An
 
 
 def _macro_multiplier_audit_oi(ctx: Dict[str, Any], macro_adj: Dict[str, Any]) -> Dict[str, Any]:
+    """Publish the legacy macro multipliers as advisory values only."""
     trade_type = str(macro_adj.get("trade_type_classification") or "").upper()
     alignment = str(macro_adj.get("macro_alignment_state") or "").upper()
     authority = str(macro_adj.get("macro_direction_authority") or "").upper()
@@ -233,8 +373,11 @@ def _macro_multiplier_audit_oi(ctx: Dict[str, Any], macro_adj: Dict[str, Any]) -
             macro_mult = 0.8
 
     return {
-        "macro_multiplier": round(macro_mult, 4),
-        "structural_multiplier": round(structural_mult, 4),
+        "macro_multiplier": 1.0,
+        "structural_multiplier": 1.0,
+        "macro_multiplier_advisory": round(macro_mult, 4),
+        "structural_multiplier_advisory": round(structural_mult, 4),
+        "macro_multiplier_authority": "ADVISORY_ONLY",
     }
 
 
@@ -282,6 +425,25 @@ def _direction_arbitration_oi(ctx: Dict[str, Any]) -> Dict[str, str]:
         or "NONE"
     ).upper()
     intent = str(ctx.get("intent") or "").upper()
+    governed = str(ctx.get("governed_direction") or ctx.get("direction") or "").upper()
+    final_direction = str(ctx.get("direction") or "").upper()
+    if governed in {"STRANGLE", "UNRESOLVED"}:
+        if final_direction in {"CALL", "PUT"}:
+            return {
+                "direction_arbitration_status": "GOVERNED_NON_DIRECTIONAL_RESOLVED",
+                "direction_arbitration_reason": (
+                    f"Structural direction {governed} resolved to {final_direction} "
+                    "by the governed pre-contract protocol"
+                ),
+                "direction_conflict_gate": "NONE",
+            }
+        return {
+            "direction_arbitration_status": "STRUCTURAL_NON_DIRECTIONAL",
+            "direction_arbitration_reason": (
+                f"Structural direction remains {governed}; directional resolution required"
+            ),
+            "direction_conflict_gate": "DIRECTION_RESOLUTION_REQUIRED",
+        }
     if intent == "SELL_SETUP" and vg_edge_dir == "CALL":
         return {
             "direction_arbitration_status": "CONFLICT_STRUCTURE_LEADS",
@@ -332,7 +494,7 @@ def _options_verdict_tier_oi(
         tier = "STAND_DOWN"
     attempts = []
     if tier == "STRUCTURE_CONFIRMED_CONTRACT_BLOCKED":
-        attempts = ["NEXT_OTM_STRIKE", "NEXT_MONTHLY_EXPIRY", "DEBIT_SPREAD_RR_GE_1_SPREAD_LT_25PCT"]
+        attempts = ["NEXT_OTM_STRIKE", "NEXT_ATM_STRIKE", "NEXT_MONTHLY_EXPIRY"]
     return {
         "options_verdict_tier": tier,
         "alternative_contract_attempts": "|".join(attempts),
@@ -466,7 +628,7 @@ def options_macro_alignment_adjustment(
         )
         bonus = 0.0
         if hard_gate_active:
-            label = "ALIGNED_BUT_MACRO_GATE_PRESERVED" if aligned else "MACRO_GATE_PRESERVED"
+            label = "ALIGNED_WITH_MACRO_HEADWIND" if aligned else "MACRO_HEADWIND_ADVISORY"
         elif conflicts:
             label = "CONFLICT_REQUIRES_CONFIRMATION"
         elif confirmations:
@@ -482,7 +644,7 @@ def options_macro_alignment_adjustment(
             label = "MACRO_CONTEXT_NEUTRAL"
         note = str(row_get("macro_enrichment_audit_note", "") or "")
         if hard_gate_active:
-            note = f"{note} Hard macro gate preserved; no options promotion bonus applied."
+            note = f"{note} Legacy macro gate retained as advisory context only."
         elif bonus > 0:
             note = f"{note} Options-only alignment bonus applied: +{bonus:.1f} OIS."
         elif bonus < 0:
@@ -490,7 +652,7 @@ def options_macro_alignment_adjustment(
         return {
             "options_macro_alignment_label": label,
             "options_macro_alignment_bonus": bonus,
-            "options_macro_gate_preserved": True,
+            "options_macro_gate_preserved": False,
             "options_macro_theme_ids": str(row_get("macro_enrichment_theme_ids", "") or ""),
             "options_macro_roles": str(row_get("macro_enrichment_roles", "") or ""),
             "options_macro_event_guards": str(row_get("macro_enrichment_event_guards", "") or ""),
@@ -507,7 +669,7 @@ def options_macro_alignment_adjustment(
         return {
             "options_macro_alignment_label": "NO_MACRO_ENRICHMENT",
             "options_macro_alignment_bonus": 0.0,
-            "options_macro_gate_preserved": True,
+            "options_macro_gate_preserved": False,
             "options_macro_theme_ids": "",
             "options_macro_roles": "",
             "options_macro_event_guards": "",
@@ -564,7 +726,7 @@ def options_macro_alignment_adjustment(
         if direction_authority == "DISABLED" or applicability == "NOT_APPLICABLE":
             label = alignment_state or "MACRO_STRUCTURE_FIRST"
         elif hard_gate_active:
-            label = "ALIGNED_BUT_MACRO_GATE_PRESERVED" if aligned else "MACRO_GATE_PRESERVED"
+            label = "ALIGNED_WITH_MACRO_HEADWIND" if aligned else "MACRO_HEADWIND_ADVISORY"
         elif conflicts:
             label = "CONFLICT_REQUIRES_CONFIRMATION"
         elif confirmations:
@@ -581,7 +743,7 @@ def options_macro_alignment_adjustment(
 
     note = audit.get("macro_enrichment_audit_note") or ""
     if hard_gate_active:
-        note = f"{note} Hard macro gate preserved; no options promotion bonus applied."
+        note = f"{note} Legacy macro gate retained as advisory context only."
     if decision:
         note = f"{note} {decision.get('macro_interpretation_reason', '')}".strip()
     elif bonus > 0:
@@ -592,7 +754,7 @@ def options_macro_alignment_adjustment(
     return {
         "options_macro_alignment_label": label,
         "options_macro_alignment_bonus": bonus,
-        "options_macro_gate_preserved": True,
+        "options_macro_gate_preserved": False,
         "options_macro_theme_ids": _json_csv(audit.get("macro_enrichment_theme_ids") or []),
         "options_macro_roles": _json_csv(audit.get("macro_enrichment_roles") or []),
         "options_macro_event_guards": _json_csv(audit.get("macro_enrichment_event_guards") or []),
@@ -1018,8 +1180,9 @@ CHAIN_EXPIRY_DAYS     = 110   # FIX-DTE-WINDOW (2026-04-19): increased from 60 t
                                # Phase C signals, leaving no scoreable contracts → OIS=0
                                # → STAND_DOWN on every PhC/PhA/PhB BUY_SETUP or SELL_SETUP.
 MIN_OI                = 50
+OPTION_CHAIN_ACQUISITION_MIN_OI = 0  # OI is scored downstream, never an acquisition filter
 MIN_LIQUIDITY_VOLUME  = 0
-MAX_SPREAD_PCT        = 0.25  # max (ask-bid)/mid — hard liquidity gate
+MAX_SPREAD_PCT        = LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT / 100.0
 
 # DTE matrix — derived from tier + phase
 # (tier, phase) → (dte_min, dte_target, dte_max)
@@ -1044,7 +1207,9 @@ DTE_MATRIX = {
 DTE_DEFAULT = (14, 28, 45)
 
 # FIX 4: Horizon-aware DTE config — keyed by horizon_bucket from Fix 3 discovery router.
-# Replaces the binary quality gate with tier-appropriate windows and spread thresholds.
+# ``spread_max`` is a monitoring/search bound, not execution permission.  A
+# retained developing contract is re-quoted and governed by long_option_policy
+# before any capital action can be emitted.
 DTE_CONFIG = {
     "1_5d":   {"dte_min": 7,  "dte_max": 21, "spread_max": 0.15, "delta_min": 0.40, "delta_max": 0.60},
     "6_10d":  {"dte_min": 21, "dte_max": 35, "spread_max": 0.25, "delta_min": 0.35, "delta_max": 0.55},
@@ -1061,8 +1226,18 @@ EV3_VERTICAL_CANDIDATE_LIMIT = 6
 EV3_TOTAL_CANDIDATE_LIMIT = 12
 EV3_MIN_OPEN_INTEREST = int(os.environ.get("AVSHUNTER_EV3_MIN_OPEN_INTEREST", "50"))
 EV3_MIN_VOLUME = int(os.environ.get("AVSHUNTER_EV3_MIN_VOLUME", "1"))
-EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.2.0"
+EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.3.0"
 EV3_VERTICAL_POLICY_VERSION = "ev3-vertical-debit-candidates-v0.1.0"
+EV3_REPAIR_DIAGNOSTICS_VERSION = "ev3-repair-selector-diagnostics-v1"
+
+_EV3_REPAIR_DIAGNOSTIC_KEYS = (
+    "retained_oi_below_50",
+    "retained_zero_volume",
+    "rejected_invalid_missing_quote",
+    "rejected_spread",
+    "rejected_dte_delta_geometry",
+    "final_bounded_candidate_count",
+)
 
 # Contract tiers for tiered review (replaces binary STAND_DOWN gate)
 # CLEAN: all thresholds met | REVIEW_SPREAD: spread too wide | REVIEW_COMPOUND: multiple marginal
@@ -1127,32 +1302,17 @@ def _get(url: str, params: dict = None) -> Optional[dict]:
     return None
 
 
-def _polygon_contract_multiplier(symbol: Any) -> Tuple[Optional[float], Optional[str]]:
-    """Resolve the deliverable multiplier from Polygon contract reference data."""
-    raw_symbol = str(symbol or '').strip().upper()
-    if not raw_symbol:
-        return None, None
-    polygon_symbol = raw_symbol if raw_symbol.startswith('O:') else f'O:{raw_symbol}'
-    if polygon_symbol in _CONTRACT_MULTIPLIER_CACHE:
-        return _CONTRACT_MULTIPLIER_CACHE[polygon_symbol]
-    payload = _get(f'https://api.polygon.io/v3/reference/options/contracts/{polygon_symbol}')
-    result = payload.get('results') if isinstance(payload, dict) else None
-    multiplier = _repair_alt_float(result.get('shares_per_contract')) if isinstance(result, dict) else None
-    resolved = (
-        (multiplier, 'polygon.reference.shares_per_contract')
-        if multiplier is not None and multiplier > 0
-        else (None, None)
-    )
-    _CONTRACT_MULTIPLIER_CACHE[polygon_symbol] = resolved
-    return resolved
-
-
 def _enrich_ev3_contract_multipliers(
     selected_contract: Optional[Dict[str, Any]],
     alternatives: List[Dict[str, Any]],
     underlying_ticker: Any = None,
 ) -> None:
-    """Populate selected/alternative multipliers without assuming standard 100."""
+    """Populate governed multipliers without calling a retired options API.
+
+    MarketData chain metadata remains authoritative. If that field is absent,
+    only an unambiguous standard OCC symbol may use the standard 100-share
+    convention; adjusted or malformed symbols remain explicitly unresolved.
+    """
     top_level_records = ([selected_contract] if selected_contract else []) + list(alternatives or [])
     vertical_records = [
         record for record in top_level_records
@@ -1174,40 +1334,14 @@ def _enrich_ev3_contract_multipliers(
     ]
     if not unresolved:
         return
-    symbols = {_repair_alt_row_symbol(record) for record in unresolved}
-    resolved: Dict[str, Tuple[Optional[float], Optional[str]]] = {}
-    ticker = str(underlying_ticker or '').strip().upper()
-    if ticker:
-        expiries = sorted(
-            str(record.get('expiry') or record.get('expiration_date') or '')[:10]
-            for record in unresolved
-            if record.get('expiry') or record.get('expiration_date')
-        )
-        params: Dict[str, Any] = {'underlying_ticker': ticker, 'expired': 'false', 'limit': 1000}
-        if expiries:
-            params['expiration_date.gte'] = expiries[0]
-            params['expiration_date.lte'] = expiries[-1]
-        payload = _get('https://api.polygon.io/v3/reference/options/contracts', params)
-        for item in (payload.get('results') or []) if isinstance(payload, dict) else []:
-            symbol = _repair_alt_symbol(item.get('ticker')).removeprefix('O:')
-            multiplier = _repair_alt_float(item.get('shares_per_contract'))
-            if symbol in symbols and multiplier is not None and multiplier > 0:
-                resolved[symbol] = (multiplier, 'polygon.reference.shares_per_contract')
-
-    missing_symbols = symbols - set(resolved)
-    if missing_symbols:
-        with ThreadPoolExecutor(max_workers=min(4, len(missing_symbols))) as executor:
-            futures = {executor.submit(_polygon_contract_multiplier, symbol): symbol for symbol in missing_symbols}
-            for future, symbol in futures.items():
-                try:
-                    resolved[symbol] = future.result(timeout=SESSION_TIMEOUT + 5)
-                except Exception:
-                    resolved[symbol] = (None, None)
     for record in unresolved:
-        multiplier, source = resolved.get(_repair_alt_row_symbol(record), (None, None))
-        if multiplier is not None:
-            record['contract_multiplier'] = multiplier
-            record['contract_multiplier_source'] = source
+        inference = infer_standard_occ_multiplier(_repair_alt_row_symbol(record))
+        inferred_multiplier = _repair_alt_float(inference.get('multiplier'))
+        if inferred_multiplier is not None:
+            record['contract_multiplier'] = inferred_multiplier
+        record['contract_multiplier_source'] = inference['source']
+        record['contract_multiplier_inferred'] = bool(inference['inferred'])
+        record['contract_multiplier_reason'] = inference['reason']
     for vertical in vertical_records:
         long_leg = vertical.get('long_leg') or {}
         short_leg = vertical.get('short_leg') or {}
@@ -1264,27 +1398,42 @@ def init_auth() -> bool:
 # SECTION 1b — MARKETDATA.APP QUOTE ENRICHMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 #
-# marketdata.app provides real bid/ask/mid/greeks/IV per OCC option symbol.
-# Used to enrich the best contract selected from the Polygon chain with live
-# quotes, replacing BSM-synthetic marks (synthetic mark is now a warning, not a penalty).
+# marketdata.app provides bid/ask/mid/greeks/IV per OCC option symbol.
+# It is both the canonical chain provider and the exact-contract quote provider.
 #
 # Architecture:
-#   1. Polygon fetches the full chain (structure: strikes, expiries, OI, volume)
-#   2. Contract selection picks the best contract by delta/DTE/spread criteria
-#   3. marketdata.app enriches ONLY the selected contract with real quotes
-#      → 1 API credit per enrichment call (credit-efficient)
+#   1. CDS resolves a completed-session MarketData chain when available.
+#   2. Otherwise MarketData fetches the chain and CDS writes it through.
+#   3. Contract selection picks a long CALL or PUT using delta/DTE and current
+#      quote evidence; exact-contract MarketData enrichment refreshes the quote.
 #
 # OCC Symbol format: AAPL271217C00250000
 #   = Underlying (up to 6 chars) + YYMMDD + C/P + 8-digit strike (×1000)
 #
-# Fallback: if marketdata.app call fails or key not set,
-#           BSM-derived values are used (existing behaviour, mark_synthetic=True)
+# No provider fallback is authorised for options. Theoretical BSM values remain
+# calculation evidence only and can never make a contract executable.
 # ─────────────────────────────────────────────────────────────────────────────
 
 MD_BASE_URL     = "https://api.marketdata.app/v1/options/quotes"
 _MD_RATE_WINDOW_CLEARED = False   # FIX-MD-429: set True after first 60s recovery wait
 MD_SESSION      = requests.Session()
 _MD_AVAILABLE   = False   # set to True after successful auth check
+
+
+def _canonical_offline_replay_enabled() -> bool:
+    """True only for a controlled, provider-free canonical-data replay."""
+    return os.environ.get(
+        "AVSHUNTER_CANONICAL_OFFLINE_REPLAY", "0"
+    ).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _canonical_lifecycle_persistence_enabled(flags: Any) -> bool:
+    """Allow lifecycle writes only in an explicitly write-through live run."""
+    return bool(
+        getattr(flags, "enabled", False)
+        and getattr(flags, "write_through", False)
+        and not getattr(flags, "offline_replay", False)
+    )
 
 
 def _build_occ_symbol(ticker: str, expiry: str, right: str, strike: float) -> Optional[str]:
@@ -1313,13 +1462,14 @@ def _build_occ_symbol(ticker: str, expiry: str, right: str, strike: float) -> Op
 def init_marketdata_auth() -> bool:
     """
     Verify marketdata.app key is set and reachable.
-    Called once at pipeline startup alongside init_auth() for Polygon.
+    Called once at pipeline startup. Polygon authentication is unrelated and is
+    used only for optional equity/sector context.
     """
     global _MD_AVAILABLE
     if not MARKETDATA_API_KEY:
-        print("[MD_AUTH] ⚠️  MARKETDATA_API_KEY not set — real quote enrichment disabled.")
+        print("[MD_AUTH] ⚠️  MARKETDATA_API_KEY not set — options acquisition disabled.")
         print("[MD_AUTH]    Set env var: MARKETDATA_API_KEY=your_token")
-        print("[MD_AUTH]    Falling back to BSM synthetic marks (existing behaviour).")
+        print("[MD_AUTH]    No options-provider fallback is authorised.")
         _MD_AVAILABLE = False
         return False
     try:
@@ -1349,6 +1499,65 @@ def init_marketdata_auth() -> bool:
         return False
 
 
+def _normalise_option_quote(bid_raw: Any, ask_raw: Any, mid_raw: Any) -> Dict[str, Any]:
+    """Return governed top-of-book semantics without inventing executability."""
+    def _finite(value: Any) -> Optional[float]:
+        try:
+            number = float(value)
+            return number if math.isfinite(number) else None
+        except (TypeError, ValueError):
+            return None
+
+    bid = _finite(bid_raw)
+    ask = _finite(ask_raw)
+    mid = _finite(mid_raw)
+    flags: List[str] = []
+    if (bid is not None and bid < 0) or (ask is not None and ask < 0):
+        quality = "INVALID"
+        flags.append("NEGATIVE_QUOTE")
+    elif bid is not None and ask is not None and bid > ask:
+        quality = "INVALID"
+        flags.append("CROSSED_QUOTE")
+    elif bid == 0 and ask is not None and ask > 0:
+        quality = "ONE_SIDED"
+        flags.append("ZERO_BID")
+        mid = ask / 2.0
+    elif bid is not None and ask is not None and bid > 0 and ask > 0:
+        quality = "TWO_SIDED"
+        mid = (bid + ask) / 2.0
+    else:
+        quality = "INCOMPLETE"
+
+    spread_pct = quote_spread_fraction(bid, ask) if quality != "INVALID" else None
+    return {
+        "bid": bid,
+        "ask": ask,
+        "mid": mid,
+        "spread_pct": spread_pct,
+        "quote_quality": quality,
+        "quality_flags": tuple(flags),
+        "quote_fields_complete": quality == "TWO_SIDED",
+    }
+
+
+def _quote_flags(value: Any) -> set[str]:
+    """Normalise list/tuple/JSON/string quality flags for defensive checks."""
+    if value is None:
+        return set()
+    if isinstance(value, (list, tuple, set)):
+        return {str(item).strip().upper() for item in value if str(item).strip()}
+    text = str(value).strip()
+    if not text:
+        return set()
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return {str(item).strip().upper() for item in parsed if str(item).strip()}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return {part.strip().upper() for part in re.split(r"[,|;]", text) if part.strip()}
+
+
 def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
     """
     Fetch real bid/ask/mid/greeks/IV from marketdata.app for a selected contract.
@@ -1362,7 +1571,7 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
     Credit cost: 1 credit per call (real-time or 15-min delayed).
     Called ONLY for the single best contract per signal — not the full chain.
     """
-    if not _MD_AVAILABLE:
+    if _canonical_offline_replay_enabled() or not _MD_AVAILABLE:
         return contract   # BSM fallback — no change
 
     # If contract already has a complete real MD top-of-book from fetch_chain_md(),
@@ -1417,9 +1626,10 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
             val = data.get(key, [None])
             return val[0] if val else None
 
-        bid   = _md("bid")
-        ask   = _md("ask")
-        mid   = _md("mid")
+        quote = _normalise_option_quote(_md("bid"), _md("ask"), _md("mid"))
+        bid   = quote["bid"]
+        ask   = quote["ask"]
+        mid   = quote["mid"]
         iv    = _md("iv")
         delta = _md("delta")
         gamma = _md("gamma")
@@ -1430,19 +1640,51 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
         spot  = _md("underlyingPrice")
         updated = _md("updated")
         multiplier = _md("contractMultiplier") or _md("multiplier")
+        bid_size = _md("bidSize")
+        ask_size = _md("askSize")
+
+        if quote["quote_quality"] == "INVALID":
+            rejected = dict(contract)
+            rejected["quote_refresh_status"] = "REJECTED_INVALID_QUOTE"
+            rejected["quote_refresh_flags"] = list(quote["quality_flags"])
+            print(
+                f"  [{ticker}] ⚠️  MD exact quote rejected for {occ_sym}: "
+                f"{','.join(quote['quality_flags']) or 'INVALID_QUOTE'}"
+            )
+            return rejected
 
         enriched = dict(contract)   # shallow copy — don't mutate original
 
         if mid is not None and float(mid) > 0:
             enriched['mark']          = float(mid)
-            enriched['mark_synthetic'] = False    # real quote — mark is reliable
+        enriched['mark_synthetic'] = quote["quote_quality"] != "TWO_SIDED"
+        enriched['quote_quality'] = quote["quote_quality"]
+        enriched['quality_flags'] = list(quote["quality_flags"])
+        enriched['quote_fields_complete'] = quote["quote_fields_complete"]
 
         if bid is not None:
             enriched['bid'] = float(bid)
         if ask is not None:
             enriched['ask'] = float(ask)
-        if bid is not None and ask is not None and mid and float(mid) > 0:
-            enriched['spread_pct'] = (float(ask) - float(bid)) / float(mid)
+        if bid_size is not None:
+            _bid_size = float(bid_size)
+            if _bid_size < 0 or not _bid_size.is_integer():
+                raise ValueError(f"invalid MarketData bidSize={bid_size!r}")
+            enriched['bid_size'] = int(_bid_size)
+            enriched['bid_size_quality'] = 'OBSERVED_ZERO' if int(_bid_size) == 0 else 'OBSERVED_POSITIVE'
+        else:
+            enriched['bid_size'] = None
+            enriched['bid_size_quality'] = 'MISSING'
+        if ask_size is not None:
+            _ask_size = float(ask_size)
+            if _ask_size < 0 or not _ask_size.is_integer():
+                raise ValueError(f"invalid MarketData askSize={ask_size!r}")
+            enriched['ask_size'] = int(_ask_size)
+            enriched['ask_size_quality'] = 'OBSERVED_ZERO' if int(_ask_size) == 0 else 'OBSERVED_POSITIVE'
+        else:
+            enriched['ask_size'] = None
+            enriched['ask_size_quality'] = 'MISSING'
+        enriched['spread_pct'] = quote["spread_pct"]
 
         if iv    is not None: enriched['implied_vol'] = float(iv)
         if delta is not None: enriched['delta']       = float(delta)
@@ -1486,7 +1728,12 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
         if extrinsic is not None: enriched['extrinsic_value'] = float(extrinsic)
 
         enriched['md_occ_symbol']   = occ_sym
-        enriched['md_quote_source'] = 'marketdata.app'
+        enriched['md_quote_source'] = (
+            'marketdata.app' if quote["quote_fields_complete"] else 'marketdata.app_incomplete'
+        )
+        enriched['quote_refresh_status'] = (
+            'ACCEPTED_TWO_SIDED' if quote["quote_fields_complete"] else 'ACCEPTED_MONITOR_ONLY'
+        )
 
         return enriched
 
@@ -1961,23 +2208,34 @@ def heston_greeks(S: float, K: float, T: float, r: float,
     }
 
 def backfill_greeks_vectorised(df: pd.DataFrame) -> pd.DataFrame:
-    """Vectorised gamma/delta/theta/vega backfill for missing greeks."""
+    """Vectorised IV and Greek backfill for incomplete option quotes."""
     if df.empty: return df
-    need = df['gamma'].isna() | (df['gamma'] == 0)
+    gamma_values = pd.to_numeric(df['gamma'], errors='coerce')
+    iv_values = pd.to_numeric(df['implied_vol'], errors='coerce')
+    # IV is an independent EV3 requirement. The former gamma-only mask skipped
+    # contracts whose vendor Greeks were present but IV was null, producing
+    # REJECT_UNIT_IV even though bid/ask, spot, strike and DTE were sufficient
+    # to solve IV locally.
+    need = (
+        gamma_values.isna()
+        | (gamma_values == 0)
+        | iv_values.isna()
+        | (iv_values <= 0)
+    )
     if not need.any(): return df
 
     sub  = df[need].copy()
-    S    = sub['underlying_price'].values
-    K    = sub['strike'].values
-    T    = (sub['dte'].fillna(1)/365.0).clip(1e-6).values
-    sig  = sub['implied_vol'].values
-    right = sub['right'].fillna('C').values
-    mark  = sub['mark'].fillna(0).values
-    bid   = sub['bid'].fillna(0).values
-    ask   = sub['ask'].fillna(0).values
+    S    = pd.to_numeric(sub['underlying_price'], errors='coerce').to_numpy(dtype=float)
+    K    = pd.to_numeric(sub['strike'], errors='coerce').to_numpy(dtype=float)
+    T    = (pd.to_numeric(sub['dte'], errors='coerce').fillna(1)/365.0).clip(1e-6).to_numpy(dtype=float)
+    sig  = pd.to_numeric(sub['implied_vol'], errors='coerce').to_numpy(dtype=float)
+    right = sub['right'].fillna('C').astype(str).str.upper().to_numpy()
+    mark  = pd.to_numeric(sub['mark'], errors='coerce').fillna(0).to_numpy(dtype=float)
+    bid   = pd.to_numeric(sub['bid'], errors='coerce').fillna(0).to_numpy(dtype=float)
+    ask   = pd.to_numeric(sub['ask'], errors='coerce').fillna(0).to_numpy(dtype=float)
 
     # Fill missing IV first
-    missing_iv = np.isnan(sig) | (sig == 0)
+    missing_iv = ~np.isfinite(sig) | (sig <= 0)
     if missing_iv.any():
         mp = np.where(~np.isnan(mark) & (mark > 0), mark, (bid+ask)/2)
         new_iv = np.array([
@@ -1987,8 +2245,11 @@ def backfill_greeks_vectorised(df: pd.DataFrame) -> pd.DataFrame:
             else sig[i]
             for i in range(len(sub))
         ], dtype=float)
-        sig = np.where(missing_iv, np.where(new_iv is None, np.nan, new_iv), sig)
+        sig = np.where(missing_iv, new_iv, sig)
         df.loc[need, 'implied_vol'] = sig
+        solved_iv = missing_iv & np.isfinite(new_iv) & (new_iv > 0)
+        if solved_iv.any():
+            df.loc[sub.index[solved_iv], 'implied_vol_source'] = 'BSM_SOLVED_FROM_MARK_V1'
 
     # Vectorised BSM
     valid = (np.isfinite(S) & np.isfinite(K) & np.isfinite(T) &
@@ -2015,17 +2276,24 @@ def backfill_greeks_vectorised(df: pd.DataFrame) -> pd.DataFrame:
         thetas[valid] = t_arr
         vegas[valid]  = sv*norm.pdf(d1v)*np.sqrt(tv)/100.0
 
-    df.loc[need, 'gamma']  = gammas
-    df.loc[need, 'delta']  = deltas
-    df.loc[need, 'theta']  = thetas
-    df.loc[need, 'vega']   = vegas
+    # Preserve valid vendor Greeks. Solving an independently missing IV must
+    # not replace MarketData's existing delta/gamma/theta/vega values.
+    for greek_name, computed in (
+        ('gamma', gammas),
+        ('delta', deltas),
+        ('theta', thetas),
+        ('vega', vegas),
+    ):
+        existing = pd.to_numeric(sub[greek_name], errors='coerce').to_numpy(dtype=float)
+        missing_greek = ~np.isfinite(existing) | (existing == 0)
+        if missing_greek.any():
+            df.loc[sub.index[missing_greek], greek_name] = computed[missing_greek]
     return df
 
 
 def backfill_mark_from_bsm(df: pd.DataFrame) -> pd.DataFrame:
     """
-    When Polygon plan does not supply bid/ask/mark (quote layer not included),
-    derive a theoretical mark from BSM using the already-available IV, spot,
+    Derive a calculation-only theoretical mark from BSM using IV, spot,
     strike, DTE and risk-free rate.
 
     Sets a boolean column 'mark_synthetic' = True where BSM was used so
@@ -2033,7 +2301,8 @@ def backfill_mark_from_bsm(df: pd.DataFrame) -> pd.DataFrame:
     higher execution uncertainty).
 
     Only fills rows where mark is NaN or zero AND implied_vol is available.
-    Real Polygon marks (if ever present) are never overwritten.
+    Real MarketData marks are never overwritten. A synthetic result must remain
+    non-executable in the lifecycle contract.
     """
     if df.empty:
         return df
@@ -2082,7 +2351,7 @@ def backfill_mark_from_bsm(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 3 — CHAIN FETCHER  (MarketData.app primary · Polygon fallback)
+# SECTION 3 — CHAIN FETCHER  (MarketData.app/CDS only)
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # Architecture v2 (post MarketData.app support ticket 2026-04-11):
@@ -2092,9 +2361,7 @@ def backfill_mark_from_bsm(df: pd.DataFrame) -> pd.DataFrame:
 #              in a single API call -- real marks, no BSM synthesis needed.
 #              Data is real-time on Trader plan (OPRA signed) or 15-min delayed otherwise.
 #
-#   FALLBACK : Polygon /v3/snapshot/options/{ticker}
-#              Chain structure only (strikes, OI, volume). Greeks and IV are
-#              Polygon-plan-dependent. BSM synthetic marks applied when bid/ask absent.
+#   FALLBACK : None. A MarketData miss stands down; Polygon options are disabled.
 #
 # CORRECT MD CHAIN PARAMETERS (confirmed by MD support 2026-04-11):
 #   OK  strike=100-200        range syntax  (NOT minStrike/maxStrike -- INVALID)
@@ -2246,17 +2513,19 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
       strike={lo}-{hi}     Range syntax — NOT minStrike/maxStrike (those return 400)
       from=YYYY-MM-DD      Date filter  — NOT dte=1-45 (dte is single-value only)
       to=YYYY-MM-DD        Date filter
-      minOpenInterest=5    Liquidity gate
+      minOpenInterest=0    Acquisition retains developing-liquidity contracts
       side=call or put     Optional — we fetch both in one call (omit side param)
 
     Data is real-time on the Trader plan (OPRA entitlement required for RT).
     15-minute delayed otherwise. Post-close either equals closing mark — accurate
     for evening pipeline. Always verify live mid in Tastytrade before order entry.
 
-    Returns empty DataFrame on failure — caller falls back to fetch_chain() (Polygon).
+    Returns an empty DataFrame on failure; no Polygon options fallback exists.
     """
     if not _MD_AVAILABLE or not MARKETDATA_API_KEY:
         return pd.DataFrame()
+
+    _MD_RAW_CHAIN_PAYLOADS.pop(ticker.upper(), None)
 
     try:
         today      = date.today()
@@ -2267,7 +2536,7 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
         params = {
             "from":            date_from,
             "to":              date_to,
-            "minOpenInterest": MIN_OI,
+            "minOpenInterest": OPTION_CHAIN_ACQUISITION_MIN_OI,
             "mode":            "cached",   # FIX-CREDIT-BURN: costs 1 credit per request
                                            # regardless of chain size. Without this, each
                                            # option symbol in the response consumes 1 credit
@@ -2295,10 +2564,10 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
         )
 
         if r.status_code == 400:
-            print(f"  [{ticker}] MD chain 400 — params: {params} — falling back to Polygon")
+            print(f"  [{ticker}] MD chain 400 — params: {params} — no authorised fallback")
             return pd.DataFrame()
         if r.status_code == 404:
-            print(f"  [{ticker}] MD chain 404 — no options data — falling back to Polygon")
+            print(f"  [{ticker}] MD chain 404 — no options data — no authorised fallback")
             return pd.DataFrame()
         if r.status_code == 429:
             # FIX-MD-429 (2026-04-19): Two-tier 429 recovery.
@@ -2320,11 +2589,11 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
                 timeout=30,
             )
             if not r2.ok:
-                print(f"  [{ticker}] MD chain HTTP {r2.status_code} after retry — falling back to Polygon")
+                print(f"  [{ticker}] MD chain HTTP {r2.status_code} after retry — no authorised fallback")
                 return pd.DataFrame()
             r = r2
         elif not r.ok:
-            print(f"  [{ticker}] MD chain HTTP {r.status_code} — falling back to Polygon")
+            print(f"  [{ticker}] MD chain HTTP {r.status_code} — no authorised fallback")
             return pd.DataFrame()
 
         _md_http_status = r.status_code
@@ -2335,6 +2604,7 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
         data = r.json()
         if data.get("s") != "ok":
             return pd.DataFrame()
+        _MD_RAW_CHAIN_PAYLOADS[ticker.upper()] = dict(data)
 
         # MD returns parallel arrays — zip them into rows
         def _arr(key):
@@ -2347,6 +2617,8 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
         dtes        = _arr("dte")
         bids        = _arr("bid")
         asks        = _arr("ask")
+        bid_sizes   = _arr("bidSize")
+        ask_sizes   = _arr("askSize")
         mids        = _arr("mid")
         ivs         = _arr("iv")
         deltas      = _arr("delta")
@@ -2384,6 +2656,15 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
 
             bid_val = float(bids[i])  if i < len(bids)  and bids[i]  is not None else None
             ask_val = float(asks[i])  if i < len(asks)  and asks[i]  is not None else None
+            def _validated_display_size(values, field_name):
+                if i >= len(values) or values[i] is None:
+                    return None
+                numeric = float(values[i])
+                if numeric < 0 or not numeric.is_integer():
+                    raise ValueError(f"invalid MarketData {field_name}={values[i]!r}")
+                return int(numeric)
+            bid_size_val = _validated_display_size(bid_sizes, "bidSize")
+            ask_size_val = _validated_display_size(ask_sizes, "askSize")
             mid_val = float(mids[i])  if i < len(mids)  and mids[i]  is not None else None
             iv_val  = float(ivs[i])   if i < len(ivs)   and ivs[i]   is not None else None
             d_val   = float(deltas[i])if i < len(deltas) and deltas[i] is not None else None
@@ -2400,19 +2681,17 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
                 else None
             )
 
-            # Mark = mid (real bid/ask midpoint from MD when bid/ask exist).
+            # Mark = governed midpoint. Crossed/negative quotes remain visible
+            # as invalid evidence but never produce a negative spread.
             # Some marketdata.app responses can contain a mark/mid without
             # executable bid/ask. Treat those as incomplete so the selected
             # contract gets a quote-endpoint fallback before Options Research.
-            mark = mid_val if mid_val and mid_val > 0 else None
-            spread_pct = None
-            if bid_val is not None and ask_val is not None and mid_val and mid_val > 0:
-                spread_pct = (ask_val - bid_val) / mid_val
-            quote_fields_complete = (
-                bid_val is not None and bid_val > 0
-                and ask_val is not None and ask_val > 0
-                and mark is not None and mark > 0
-            )
+            quote = _normalise_option_quote(bid_val, ask_val, mid_val)
+            bid_val = quote["bid"]
+            ask_val = quote["ask"]
+            mark = quote["mid"] if quote["mid"] is not None and quote["mid"] > 0 else None
+            spread_pct = quote["spread_pct"]
+            quote_fields_complete = quote["quote_fields_complete"]
 
             rows.append({
                 'underlying'      : ticker.upper(),
@@ -2430,11 +2709,17 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
                 'vega'            : v_val,
                 'bid'             : bid_val,
                 'ask'             : ask_val,
+                'bid_size'        : bid_size_val,
+                'ask_size'        : ask_size_val,
+                'bid_size_quality': ('MISSING' if bid_size_val is None else ('OBSERVED_ZERO' if bid_size_val == 0 else 'OBSERVED_POSITIVE')),
+                'ask_size_quality': ('MISSING' if ask_size_val is None else ('OBSERVED_ZERO' if ask_size_val == 0 else 'OBSERVED_POSITIVE')),
                 'mark'            : mark,
                 'spread_pct'      : spread_pct,
                 'underlying_price': spot,
                 'mark_synthetic'  : not quote_fields_complete,
                 'quote_fields_complete': quote_fields_complete,
+                'quote_quality'   : quote["quote_quality"],
+                'quality_flags'   : list(quote["quality_flags"]),
                 'md_quote_source'  : 'marketdata.app' if quote_fields_complete else 'marketdata.app_incomplete',
                 'md_freshness'     : _md_freshness,
                 'quote_timestamp_utc': quote_timestamp_utc,
@@ -2457,175 +2742,141 @@ def fetch_chain_md(ticker: str) -> pd.DataFrame:
 
         df = df.dropna(subset=['strike','right'])
         df = df[df['dte'].notna() & (df['dte'] > 0) & (df['dte'] <= CHAIN_EXPIRY_DAYS)]
-        df = df[df['open_interest'].fillna(0) >= MIN_OI]
+        # Retain zero/low-OI strikes. A newly active contract may acquire
+        # liquidity as the underlying approaches its strike; OI is downstream
+        # ranking evidence, not a reason to delete the observation.
 
+        invalid_count = int((df.get('quote_quality') == 'INVALID').sum())
+        incomplete_count = int((df.get('quote_quality') != 'TWO_SIDED').sum())
         print(f"  [{ticker}] MD chain: {len(df)} contracts "
-              f"(real marks, 15-min delayed, mark_synthetic=False)")
+              f"(two-sided={len(df)-incomplete_count}, monitor-only={incomplete_count-invalid_count}, "
+              f"invalid={invalid_count}, 15-min delayed)")
         return df.reset_index(drop=True)
 
     except Exception as e:
-        print(f"  [{ticker}] MD chain exception: {e} — falling back to Polygon")
+        print(f"  [{ticker}] MD chain exception: {e} — no authorised fallback")
         return pd.DataFrame()
+
+
+def _fetch_chain_md_payload(ticker: str) -> Dict[str, Any]:
+    """Return the raw licensed response while retaining the existing adapter."""
+    frame = fetch_chain_md(ticker)
+    payload = _MD_RAW_CHAIN_PAYLOADS.pop(ticker.upper(), None)
+    if frame.empty or not payload:
+        raise ValueError(f"MarketData option chain unavailable for {ticker}")
+    return payload
+
+
+def _chain_v2_to_options_frame(payload: Any) -> pd.DataFrame:
+    """Map canonical option_chain_v2 records onto the legacy calculation schema."""
+    if not isinstance(payload, list) or not payload:
+        return pd.DataFrame()
+    frame = pd.DataFrame(payload).copy()
+    rename = {
+        "mid": "mark",
+        "quote_timestamp_utc": "quote_timestamp_utc",
+    }
+    frame = frame.rename(columns=rename)
+    if "mark" not in frame:
+        frame["mark"] = np.nan
+    frame["mark_synthetic"] = frame.get("quote_quality", "").astype(str).ne("TWO_SIDED")
+    frame["quote_fields_complete"] = ~frame["mark_synthetic"]
+    frame["md_quote_source"] = np.where(
+        frame["quote_fields_complete"],
+        "marketdata.app",
+        "marketdata.app_incomplete",
+    )
+    frame["md_freshness"] = frame.get("quote_freshness", "UNASSESSED")
+    frame["quote_timestamp_source"] = np.where(
+        frame.get("quote_timestamp_utc", pd.Series(index=frame.index, dtype=object)).notna(),
+        "marketdata.app.updated",
+        None,
+    )
+    frame["contract_multiplier_source"] = np.where(
+        frame.get("contract_multiplier", pd.Series(index=frame.index, dtype=float)).notna(),
+        "marketdata.app",
+        None,
+    )
+    required = (
+        "underlying", "symbol", "right", "strike", "dte", "expiration_date",
+        "open_interest", "volume", "implied_vol", "gamma", "delta", "theta",
+        "vega", "bid", "ask", "bid_size", "ask_size", "bid_size_quality",
+        "ask_size_quality", "mark", "spread_pct", "underlying_price",
+        "mark_synthetic", "quote_fields_complete", "md_quote_source",
+        "md_freshness", "quote_timestamp_utc", "quote_timestamp_source",
+        "contract_multiplier", "contract_multiplier_source", "quote_quality",
+        "quality_flags",
+    )
+    for name in required:
+        if name not in frame:
+            frame[name] = None
+    return frame[list(required)].reset_index(drop=True)
 
 
 def _fetch_chain_polygon(ticker: str) -> pd.DataFrame:
-    """
-    Fetch options chain from Polygon /v3/snapshot/options/{ticker}.
-    Returns DataFrame with full chain structure, OI, Greeks, volume.
-    Polygon: unlimited calls on your plan — always runs, never rate-limited.
-    Primary source for: OI (for GEX), chain structure, expiry coverage.
-    """
-    base   = f"https://api.polygon.io/v3/snapshot/options/{ticker}"
-    cutoff = (date.today() + timedelta(days=CHAIN_EXPIRY_DAYS)).strftime('%Y-%m-%d')
-    params = {"limit": 250, "expiration_date.lte": cutoff}
-    raw    = _paginate(base, params, cap=MAX_CHAIN_RECORDS)
-
-    if not raw:
-        return pd.DataFrame()
-
-    rows = []
-    for r in raw:
-        d     = _safe(r,'details') or {}
-        g     = _extract_greeks(r)
-        iv    = _extract_iv(r)
-        bid, ask = _extract_quote(r)
-        quote_timestamp_utc = _quote_timestamp_utc(
-            _safe(r, 'last_quote', 'sip_timestamp')
-            or _safe(r, 'last_quote', 'participant_timestamp')
-            or _safe(r, 'last_quote', 'last_updated')
-            or r.get('updated')
-        )
-        mark  = (bid+ask)/2 if (bid and ask) else None
-        sym   = r.get('ticker') or _safe(r,'details','ticker')
-        right = None
-        if sym:
-            right = 'C' if 'C' in sym[-9:] else ('P' if 'P' in sym[-9:] else None)
-        right = right or _safe(d,'contract_type','').upper()[:1] or None
-        strike = _safe(d,'strike_price') or _safe(r,'strike_price')
-        try: strike = float(strike)
-        except: strike = None
-
-        exp_str = _safe(d,'expiration_date') or _safe(r,'expiration_date')
-        dte_val = _dte(exp_str)
-        oi  = r.get('open_interest')
-        spot = _safe(r,'underlying_asset','price') or _safe(r,'underlying_price')
-        day  = _safe(r,'day') or {}
-        vol  = day.get('volume')
-        spread_pct = None
-        if bid and ask and mark and mark > 0:
-            spread_pct = (ask-bid)/mark
-        contract_multiplier = (
-            _safe(d, 'shares_per_contract')
-            or _safe(d, 'contract_multiplier')
-            or r.get('contract_multiplier')
-        )
-
-        rows.append({
-            'underlying'     : ticker,
-            'symbol'         : sym,
-            'right'          : right,
-            'strike'         : strike,
-            'dte'            : dte_val,
-            'expiration_date': exp_str,
-            'open_interest'  : oi,
-            'volume'         : vol,
-            'implied_vol'    : iv,
-            'gamma'          : g.get('gamma'),
-            'delta'          : g.get('delta'),
-            'theta'          : g.get('theta'),
-            'vega'           : g.get('vega'),
-            'bid'            : bid,
-            'ask'            : ask,
-            'mark'           : mark,
-            'spread_pct'     : spread_pct,
-            'underlying_price': spot,
-            'quote_timestamp_utc': quote_timestamp_utc,
-            'quote_timestamp_source': 'polygon.last_quote' if quote_timestamp_utc else None,
-            'contract_multiplier': contract_multiplier,
-            'contract_multiplier_source': 'polygon' if contract_multiplier is not None else None,
-        })
-
-    if not rows:
-        return pd.DataFrame()
-
-    df = pd.DataFrame(rows)
-    for c in ['strike','dte','open_interest','gamma','delta','theta',
-              'vega','bid','ask','mark','implied_vol','volume','spread_pct',
-              'underlying_price']:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors='coerce')
-
-    df = df.dropna(subset=['strike','right'])
-    df = df[df['open_interest'].fillna(0) >= MIN_OI]
-    df = df[df['dte'].notna() & (df['dte'] > 0) & (df['dte'] <= CHAIN_EXPIRY_DAYS)]
-    df = backfill_greeks_vectorised(df)
-    df = backfill_mark_from_bsm(df)
-    return df.reset_index(drop=True)
+    """Decommissioned compatibility stub; Polygon options are never queried."""
+    return pd.DataFrame()
 
 
 def fetch_chain(ticker: str) -> pd.DataFrame:
     """
     MIGRATION-MD-PRIMARY (2026-05-22): MarketData.app is the primary chain source.
-    Polygon is a structural fallback only — used when MD returns empty/error.
+    MarketData and the canonical completed-session database are the only
+    authorised option-chain sources. Polygon options access is decommissioned.
 
     Architecture:
       - MD chain: real bid/ask/mid/IV/Greeks in a single call. mark_synthetic=False.
         mode=cached: 1 credit per ticker. 15-min delayed (DELAYED_15M).
-      - Polygon fallback: chain structure with BSM synthetic marks. Used only
-        when MD returns empty/400/404. mark_synthetic=True.
-      - Both are fetched in parallel for speed. MD result is preferred if non-empty.
+      - CDS-4 persists the successful session/scope response and serves a
+        same-session rerun without a provider request.
 
     The previous Polygon-base + MD-overlay architecture caused BLOCK_NO_CONTRACT
     for ~811 tickers: when MD returned 400, Polygon-only chains had BSM synthetic
     marks that required IV for computation. Polygon plan does not return IV for many
     tickers → BSM mark=None → mark > 0 gate eliminated all contracts.
     """
-    poly_df = pd.DataFrame()
-    md_df   = pd.DataFrame()
+    global _CDS_CHAIN_SERVICE, _CDS_LIQUIDITY_STORE
+    if _CDS_V2_CHAIN_RESOLVER is not None and _CDS_V2_SESSION is not None:
+        result = _CDS_V2_CHAIN_RESOLVER.option_chain(
+            ticker=ticker,
+            session_date=_CDS_V2_SESSION,
+            dte_max=CHAIN_EXPIRY_DAYS,
+            min_open_interest=OPTION_CHAIN_ACQUISITION_MIN_OI,
+            fetch=_fetch_chain_md_payload,
+            provider="MARKETDATA",
+        )
+        frame = _chain_v2_to_options_frame(result.payload)
+        frame.attrs["canonical_dataset_id"] = result.dataset_id
+        frame.attrs["canonical_provider"] = result.provider
+        frame.attrs["canonical_resolution"] = result.resolution
+        frame.attrs["canonical_schema_version"] = "option_chain_v2"
+        print(
+            f"  [{ticker}] CDS v2 chain {result.resolution}: "
+            f"{len(frame)} contracts provider={result.provider}"
+        )
+        return frame
+    if _CDS_CHAIN_SERVICE is not None:
+        result = _CDS_CHAIN_SERVICE.get(
+            ticker,
+            marketdata_fetch=fetch_chain_md,
+        )
+        print(
+            f"  [{ticker}] CDS chain {result.resolution}: "
+            f"{len(result.frame)} contracts provider={result.provider}"
+        )
+        result.frame.attrs["canonical_dataset_id"] = result.dataset_id
+        result.frame.attrs["canonical_provider"] = result.provider
+        result.frame.attrs["canonical_resolution"] = result.resolution
+        return result.frame
 
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        poly_future = ex.submit(_fetch_chain_polygon, ticker)
-        md_future   = ex.submit(fetch_chain_md, ticker) if _MD_AVAILABLE else None
-
-        try:
-            poly_df = poly_future.result(timeout=45)
-        except Exception as e:
-            print(f"  [{ticker}] Polygon chain error: {e}")
-
-        if md_future is not None:
-            try:
-                md_df = md_future.result(timeout=45)
-            except Exception as e:
-                print(f"  [{ticker}] MD chain error in parallel fetch: {e}")
-
-    # ── MD is primary — use it when available ─────────────────────────────────
+    # CDS rollback path remains MarketData-only. Missing contract multipliers
+    # stay unresolved rather than calling an unavailable options provider.
+    md_df = fetch_chain_md(ticker) if _MD_AVAILABLE else pd.DataFrame()
     if not md_df.empty:
-        # MarketData supplies executable quotes and an authoritative `updated`
-        # timestamp but does not publish the deliverable multiplier. Polygon
-        # snapshot details do; join that metadata by OCC symbol rather than
-        # assuming every contract has the standard 100-share deliverable.
-        if not poly_df.empty and {'symbol', 'contract_multiplier'}.issubset(poly_df.columns):
-            multiplier_lookup = (
-                poly_df.dropna(subset=['symbol', 'contract_multiplier'])
-                .drop_duplicates('symbol')
-                .set_index('symbol')['contract_multiplier']
-            )
-            mapped = md_df['symbol'].map(multiplier_lookup)
-            if 'contract_multiplier' not in md_df.columns:
-                md_df['contract_multiplier'] = mapped
-            else:
-                md_df['contract_multiplier'] = md_df['contract_multiplier'].fillna(mapped)
-            filled = md_df['contract_multiplier'].notna()
-            md_df.loc[filled, 'contract_multiplier_source'] = 'polygon.details.shares_per_contract'
         print(f"  [{ticker}] MD chain (primary): {len(md_df)} contracts, mark_synthetic=False")
         return md_df
 
-    # ── Polygon fallback — only reached when MD is empty or unavailable ───────
-    if not poly_df.empty:
-        print(f"  [{ticker}] MD empty — Polygon fallback: {len(poly_df)} contracts (BSM marks)")
-        return poly_df
-
-    print(f"  [{ticker}] Both chains empty — STAND_DOWN")
+    print(f"  [{ticker}] MarketData chain unavailable — STAND_DOWN (Polygon options disabled)")
     return pd.DataFrame()
 
 def compute_gex(df: pd.DataFrame, spot: float) -> Tuple[pd.DataFrame, Optional[float], float]:
@@ -2978,6 +3229,14 @@ def fetch_sector_regime(ticker: str) -> Dict:
 
     Returns: sector_etf, sector_5d_return, sector_regime, sector_alignment_ok
     """
+    if _canonical_offline_replay_enabled():
+        return {
+            'sector_etf': None,
+            'sector_5d_return': None,
+            'sector_regime': 'UNKNOWN',
+            'sector_alignment_ok': True,
+        }
+
     # Sector ETF mapping — common US equities
     SECTOR_MAP = {
         # Consumer Staples
@@ -3130,6 +3389,17 @@ def enrich_contract_with_heston_greeks(contract: Dict,
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _fetch_hist_closes(ticker: str, days: int = 252) -> List[float]:
+    try:
+        from canonical_data.history_bridge import read_canonical_history
+        canonical = read_canonical_history(ticker, bars=days)
+        if canonical is not None and not canonical.empty:
+            return [float(value) for value in canonical['close'].tolist()]
+    except Exception:
+        pass
+
+    if _canonical_offline_replay_enabled():
+        return []
+
     end   = date.today()
     start = end - timedelta(days=days)
     try:
@@ -3612,6 +3882,9 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
 # SECTION 6 — STRUCTURAL CONTEXT PARSER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_select_directional_invalidation = select_directional_invalidation
+
+
 def parse_structural_context(signal_row: pd.Series) -> Dict:
     """
     Extract all structural intelligence from the merged Vanguard + Discovery row.
@@ -3642,7 +3915,11 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         _stop_authoritative = _raw_stop is not None and float(_raw_stop) > 0
     except (TypeError, ValueError):
         _stop_authoritative = False
-    stop        = float(_raw_stop) if _stop_authoritative else entry*0.97
+    # A missing structural invalidation is missing data, not permission to
+    # fabricate a conventional three-percent stop.  Downstream lifecycle and
+    # economics consumers must either use the governed stop or disclose that
+    # the thesis is not yet evaluable.
+    stop        = float(_raw_stop) if _stop_authoritative else None
     composite   = float(_f('composite_score', 50) or 50)
     win_prob    = float(_f('win_probability', 50) or 50)
     crabel      = str(_f('crabel_pattern', '') or '')
@@ -3653,10 +3930,10 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     pct_52w_low = float(_f('pct_from_52w_low', 0) or 0)
 
     # Risk levels from structure
-    stop_dist   = max(entry - stop, 0.01)
-    stop_pct    = stop_dist / entry if entry > 0 else 0.03
-    target_2r   = entry + 2*stop_dist
-    target_3r   = entry + 3*stop_dist
+    stop_dist   = abs(entry - stop) if stop is not None else None
+    stop_pct    = stop_dist / entry if stop_dist is not None and entry > 0 else None
+    target_2r   = entry + 2*stop_dist if stop_dist is not None else None
+    target_3r   = entry + 3*stop_dist if stop_dist is not None else None
 
     # L1 scenario prices from Vanguard
     l1_near  = _f('layer1__scenarios__conditional_near__trigger_price')
@@ -3709,95 +3986,69 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
             return "PUT"
         return None
 
-    # Derive direction from intent first, then repair WAIT rows when Vanguard or
-    # upstream discovery supplies a tradeable long-call/long-put clue. WAIT means
-    # structure did not fire yet; it should not hide a confirmed statistical or
-    # catalyst-supported options opportunity from audit/contract selection.
-    if intent == 'BUY_SETUP':
-        direction = 'CALL'
-    elif intent == 'SELL_SETUP':
-        direction = 'PUT'
-    elif intent == 'TRANSITION':
-        # Transition: direction from trend context
-        direction = 'CALL' if trend == 'BULLISH' else ('PUT' if trend == 'BEARISH' else 'STRANGLE')
+    # Stage 1 has a closed, fail-closed structural table.  The previous WAIT,
+    # transition and asymmetric L1/L2 repairs were hidden writers of direction;
+    # they are replaced by the audited independent-evidence protocol below.
+    discovery_preliminary = str(
+        _f('discovery_direction_preliminary', '')
+        or _f('direction', '')
+        or _f('fusion_direction', '')
+        or ''
+    ).upper().strip()
+    discovery_authority = str(_f('direction_authority', '') or '').upper().strip()
+    structural_candidate, structural_basis = structural_direction(intent, trend)
+    if discovery_authority == 'DISCOVERY_GOVERNED':
+        governed_direction = discovery_preliminary
+        governed_basis = str(
+            _f('discovery_direction_basis', '')
+            or f'DISCOVERY_GOVERNED:{discovery_preliminary}'
+        )
+        governed_authority = 'DISCOVERY_GOVERNED'
+        allow_non_directional_resolution = False
     else:
-        direction = 'NONE'  # WAIT — no options trade
-
-    # ── A4: Direction reconciliation — L1 auction + L2 statistics override ──
-    # Fires when auction control and actuarial distribution both point opposite
-    # to the upstream intent. Intent is STRUCTURAL; this is MARKET REALITY check.
-    # Only overrides CALL→PUT or NONE→PUT (not PUT→CALL: seller setups are rare
-    # false positives; buyer setups are more commonly missed than incorrectly assigned).
-    direction_override_reason = None
-
-    vanguard_supported = (
-        vanguard_verdict in {'TRADE', 'ACTUARIAL_SUPPORT', 'ACTUARIAL_MODERATE'}
-        or l2_prob_verdict == 'STRONG_EDGE'
-        or l2_edge_quality == 'STRONG'
-        or 'EDGE_STRONG' in final_rec
+        # Compatibility for pre-v1.2 Discovery artefacts. Fresh runs must carry
+        # DISCOVERY_GOVERNED and do not enter this branch.
+        governed_direction = structural_candidate
+        governed_basis = structural_basis
+        governed_authority = 'OPTIONS_INTELLIGENCE_LEGACY_ADAPTER'
+        allow_non_directional_resolution = True
+    raw_for_direction = signal_row.to_dict() if hasattr(signal_row, 'to_dict') else dict(signal_row)
+    direction_record = resolve_governed_direction(
+        ticker=ticker,
+        run_id=_f('run_id', '') or _f('scanner_run_id', ''),
+        discovery_direction=discovery_preliminary,
+        governed_direction=governed_direction,
+        governed_basis=governed_basis,
+        row=raw_for_direction,
+        decided_at_utc=str(_f('generated_at_utc', '') or _f('scanner_timestamp_utc', '') or ''),
+        authority=governed_authority,
+        allow_non_directional_resolution=allow_non_directional_resolution,
     )
-    if direction == 'NONE' and vanguard_supported:
-        repaired_direction = None
-        if l2_edge_direction in {'CALL', 'PUT'}:
-            repaired_direction = l2_edge_direction
-        else:
-            repaired_direction = _direction_from_text(final_rec) or _direction_from_text(upstream_direction)
-        if repaired_direction in {'CALL', 'PUT'}:
-            direction = repaired_direction
-            direction_override_reason = (
-                f'VANGUARD_SUPPORT_DIRECTION_REPAIR: verdict={vanguard_verdict or "-"}, '
-                f'probability={l2_prob_verdict or "-"}, edge_quality={l2_edge_quality or "-"}, '
-                f'final_recommendation={final_rec or "-"}'
-            )
-    elif (
-        direction == 'STRANGLE'
-        and vanguard_supported
-        and l2_edge_direction in {'CALL', 'PUT'}
-    ):
-        # A mixed-trend TRANSITION is non-directional structurally, but a
-        # governed strong Vanguard edge can resolve the options thesis.  Weak
-        # or absent probability opinions remain STRANGLE and therefore remain
-        # ineligible for the directional EV engine.
-        direction = l2_edge_direction
-        direction_override_reason = (
-            f'VANGUARD_TRANSITION_DIRECTION_REPAIR: direction={l2_edge_direction}, '
-            f'verdict={vanguard_verdict or "-"}, probability={l2_prob_verdict or "-"}, '
-            f'edge_quality={l2_edge_quality or "-"}'
-        )
+    direction = str(direction_record['final_direction'])
+    direction_override_reason = (
+        direction_record['direction_resolution_path']
+        if direction != governed_direction else None
+    )
 
-    effective_control = control_state or precor_control   # prefer precor if control_state blank
-
-    seller_dominant = 'SELLER' in effective_control
-    buyer_dominant  = 'BUYER'  in effective_control
-
-    # Seller override: fires when seller control is strong AND actuarial is net-down
-    # Threshold: p_return_gt0 < 0.50 means more historical observations fell than rose.
-    # median_loss threshold: must be meaningful (>= 4%) not just noise.
-    if (seller_dominant and
-            l2_p_return_gt0 < 0.50 and
-            abs(l2_median_loss) >= 4.0 and
-            l2_n_obs >= 100 and          # need sufficient sample to trust the stats
-            direction in ('CALL', 'NONE')):
-        direction = 'PUT'
-        direction_override_reason = (
-            f'L1_L2_SELLER_OVERRIDE: control={effective_control}, '
-            f'p_return_gt0={l2_p_return_gt0:.1%}, '
-            f'median_loss={l2_median_loss:.2f}%, '
-            f'n={l2_n_obs} — upstream direction overridden to PUT'
-        )
-
-    # Buyer override: fires when buyer control is strong AND actuarial is net-up
-    # Stricter threshold (0.55) — buyer signals are more commonly correct upstream.
-    elif (buyer_dominant and
-            l2_p_return_gt0 >= 0.55 and
-            l2_n_obs >= 100 and
-            direction == 'PUT'):
-        direction = 'CALL'
-        direction_override_reason = (
-            f'L1_L2_BUYER_OVERRIDE: control={effective_control}, '
-            f'p_return_gt0={l2_p_return_gt0:.1%}, '
-            f'n={l2_n_obs} — upstream PUT overridden to CALL'
-        )
+    # Re-resolve invalidation only after the frozen direction is known.  This
+    # prevents a CALL-style support stop being attached to a PUT thesis.
+    stop, stop_source, stop_state = _select_directional_invalidation(
+        raw_for_direction,
+        direction,
+        entry,
+    )
+    _stop_authoritative = stop is not None
+    stop_dist = abs(entry - stop) if stop is not None else None
+    stop_pct = stop_dist / entry if stop_dist is not None and entry > 0 else None
+    if direction == 'CALL':
+        target_2r = entry + 2 * stop_dist if stop_dist is not None else None
+        target_3r = entry + 3 * stop_dist if stop_dist is not None else None
+    elif direction == 'PUT':
+        target_2r = entry - 2 * stop_dist if stop_dist is not None else None
+        target_3r = entry - 3 * stop_dist if stop_dist is not None else None
+    else:
+        target_2r = None
+        target_3r = None
 
     # Derive DTE window from tier + phase, then let the horizon router override it.
     dte_window = DTE_MATRIX.get((tier, phase), DTE_DEFAULT)
@@ -3861,17 +4112,23 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     else:
         hold_urgency = 'PATIENT'
 
-    # Strategy type from phase and crabel
-    if phase in ('D','E') or 'Extreme' in crabel:
+    # Strategy and contract selection are absent until direction is governed.
+    # This prevents STRANGLE/NONE from silently falling through to LONG_PUT.
+    if direction not in GOVERNED_DIRECTED_SIDES:
+        delta_zone = DELTA_ZONES['COMPRESSION']
+        preferred_strategy = 'NO_DIRECTIONAL_STRATEGY'
+    elif phase in ('D','E') or 'Extreme' in crabel:
         delta_zone = DELTA_ZONES['MOMENTUM']
         preferred_strategy = 'LONG_CALL' if direction=='CALL' else 'LONG_PUT'
     elif phase == 'C' or 'NR7' in crabel:
         delta_zone = DELTA_ZONES['COMPRESSION']
         preferred_strategy = 'LONG_CALL' if direction=='CALL' else 'LONG_PUT'
     else:
-        # Phase A/B — Tier 0 early — debit spread preserves capital
+        # Production mandate is long single-leg options only. Phase A/B may
+        # require a more patient liquidity monitor, but must not silently
+        # switch the trader into a debit spread.
         delta_zone = DELTA_ZONES['EARLY']
-        preferred_strategy = 'DEBIT_SPREAD_CALL' if direction=='CALL' else 'DEBIT_SPREAD_PUT'
+        preferred_strategy = 'LONG_CALL' if direction=='CALL' else 'LONG_PUT'
 
     # Use L1 far trigger as structural target if available, else 3R
     # Direction-aware: CALL target must be ABOVE entry, PUT target must be BELOW entry.
@@ -3879,16 +4136,26 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     # wrongly set above entry when l1_far existed, producing option_value_at_target = 0
     # and rr_options = -1.0. Fix: gate on direction before accepting l1_far.
     structural_target = None
-    if l1_far and direction == 'CALL' and float(l1_far) > entry:
+    try:
+        discovery_target = float(_f('structural_target'))
+        if not np.isfinite(discovery_target) or discovery_target <= 0:
+            discovery_target = None
+    except (TypeError, ValueError):
+        discovery_target = None
+    if discovery_target and direction == 'CALL' and discovery_target > entry:
+        structural_target = discovery_target
+    elif discovery_target and direction == 'PUT' and discovery_target < entry:
+        structural_target = discovery_target
+    elif l1_far and direction == 'CALL' and float(l1_far) > entry:
         structural_target = float(l1_far)
     elif l1_far and direction == 'PUT' and float(l1_far) < entry:
         structural_target = float(l1_far)
-    elif direction == 'CALL':
+    elif direction == 'CALL' and target_3r is not None:
         structural_target = target_3r
-    elif direction == 'PUT':
+    elif direction == 'PUT' and stop_dist is not None:
         structural_target = entry - 3*stop_dist
     else:
-        structural_target = target_2r
+        structural_target = None
 
     return {
         '_signal_row'        : signal_row,   # FIX (2026-03-07): raw row stash for asof_date in _stand_down
@@ -3897,6 +4164,7 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'phase'              : phase,
         'intent'             : intent,
         'direction'          : direction,
+        **direction_record,
         'direction_override_reason': direction_override_reason,   # A4: None or override string
         'vanguard_support_direction_repair': bool(
             direction_override_reason
@@ -3909,7 +4177,8 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'entry'              : entry,
         'stop'               : stop,
         'stop_authoritative' : _stop_authoritative,
-        'stop_source'        : 'stop_loss' if _stop_authoritative else 'LEGACY_DEFAULT_NOT_EV_ELIGIBLE',
+        'stop_source'        : stop_source,
+        'stop_state'         : stop_state,
         'stop_dist'          : stop_dist,
         'stop_pct'           : stop_pct,
         'target_2r'          : target_2r,
@@ -3984,16 +4253,22 @@ def _ev3_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     direction = str(ctx.get('direction') or '').upper()
 
     invalidation = None
-    invalidation_source = 'MISSING_AUTHORITATIVE_STOP'
-    if entry and raw_stop and bool(ctx.get('stop_authoritative')):
+    invalidation_source = (
+        'NOT_APPLICABLE_NON_DIRECTIONAL'
+        if direction not in {'CALL', 'PUT'}
+        else LifecycleEvaluationState.MISSING_AUTHORITATIVE_STOP.value
+    )
+    invalidation_state = (
+        GovernedDataState.NOT_APPLICABLE.value
+        if direction not in {'CALL', 'PUT'} else 'MISSING'
+    )
+    if entry and raw_stop and bool(ctx.get('stop_authoritative')) and direction in {'CALL', 'PUT'}:
         if (direction == 'CALL' and raw_stop < entry) or (direction == 'PUT' and raw_stop > entry):
             invalidation = raw_stop
             invalidation_source = str(ctx.get('stop_source') or 'stop_loss')
-        elif direction in {'CALL', 'PUT'}:
-            risk_distance = abs(entry - raw_stop)
-            if risk_distance > 0:
-                invalidation = entry - risk_distance if direction == 'CALL' else entry + risk_distance
-                invalidation_source = 'DIRECTION_MIRROR_FROM_STOP_LOSS_V1'
+            invalidation_state = 'AVAILABLE'
+        else:
+            invalidation_state = LifecycleEvaluationState.DATA_DEFECT_WRONG_SIDE.value
 
     horizon_text = str(ctx.get('horizon_bucket') or '').upper().replace('-', '_').replace(' ', '')
     if '1_5' in horizon_text:
@@ -4034,7 +4309,8 @@ def _ev3_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
         'target_spot': target,
         'invalidation_spot': invalidation,
         'invalidation_source': invalidation_source,
-        'invalidation_policy_version': 'EV3_DIRECTIONAL_STOP_V1',
+        'invalidation_state': invalidation_state,
+        'invalidation_policy_version': 'EV3_GOVERNED_STOP_V2',
         'planned_hold_sessions': planned_hold_sessions,
         'planned_hold_source': 'HORIZON_BUCKET_ENDPOINT_V1' if planned_hold_sessions else 'UNROUTED',
         'ev3_handoff_schema_version': 'ev3-options-handoff-v1',
@@ -4076,18 +4352,29 @@ def _ev3_direction_fields(
 ) -> Dict[str, Any]:
     """Expose the governed direction contract consumed by EV3.
 
-    STRANGLE remains unresolved because EV3 currently prices directional long
-    calls/puts and vertical debit spreads.  Genuine structure/probability
-    conflicts remain rejected by carrying their arbitration state unchanged.
+    Arbitration outcome and resolution state are deliberately separate.  A
+    structure-led CALL/PUT is resolved even though an explanatory conflict is
+    retained. STRANGLE is explicitly non-directional and is routed outside the
+    directional EV3 model.
     """
     direction = str(ctx.get('direction') or '').strip().upper()
     status = str(
         direction_arbitration.get('direction_arbitration_status') or 'NOT_EVALUATED'
     ).strip().upper()
+    if direction in {'CALL', 'PUT'} and status in {
+        'AGREEMENT', 'NO_PROBABILITY_OPINION', 'CONFLICT_STRUCTURE_LEADS',
+        'GOVERNED_NON_DIRECTIONAL_RESOLVED',
+    }:
+        resolution_status = 'RESOLVED'
+    elif direction in {'STRANGLE', 'STRADDLE'}:
+        resolution_status = 'NON_DIRECTIONAL'
+    else:
+        resolution_status = 'UNRESOLVED'
     return {
         'canonical_direction': direction if direction in {'CALL', 'PUT'} else direction,
-        'direction_status': status,
-        'ev3_direction_source': 'OPTIONS_DIRECTION_AFTER_ARBITRATION',
+        'direction_resolution_status': resolution_status,
+        'direction_status': resolution_status,
+        'ev3_direction_source': 'GOVERNED_DIRECTION_RECORD_FINAL',
     }
 
 
@@ -4111,6 +4398,19 @@ def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     fields: Dict[str, Any] = {}
     fields.update(_ev3_direction_fields(ctx, direction_arbitration))
     fields.update(direction_arbitration)
+    for field in (
+        'dir_calc_version', 'direction_policy_version', 'direction_policy_sha256',
+        'discovery_direction_preliminary', 'governed_direction',
+        'governed_direction_authority', 'governed_direction_basis',
+        'final_direction', 'direction_resolution_path',
+        'direction_governance_status', 'direction_resolution_confidence',
+        'direction_resolution_call_score', 'direction_resolution_put_score',
+        'direction_resolution_winning_share', 'direction_resolution_margin',
+        'direction_resolution_evidence_count', 'direction_resolution_evidence_json',
+        'direction_resolution_chain_json', 'direction_excluded_evidence_json',
+        'governed_direction_record_json', 'governed_direction_record_sha256',
+    ):
+        fields[field] = ctx.get(field, '')
     fields.update(macro_quant_columns_for_row(signal_row, signal_row))
     return fields
 
@@ -4128,12 +4428,13 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
     if df.empty: return None
 
     direction = ctx['direction']
-    if direction == 'NONE': return None
+    if direction not in ('CALL', 'PUT'):
+        return None
 
     # Filter by right
-    if direction in ('CALL', 'STRANGLE'):
+    if direction == 'CALL':
         call_df = df[df['right'].str.upper()=='C'].copy()
-    if direction in ('PUT', 'STRANGLE'):
+    if direction == 'PUT':
         put_df  = df[df['right'].str.upper()=='P'].copy()
 
     def _score_leg(leg_df: pd.DataFrame, right: str) -> Optional[Dict]:
@@ -4157,41 +4458,50 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             leg_df = strict_df
         if leg_df.empty: return None
 
-        # OTM/ATM only. The strategy forbids ITM contracts because expensive
-        # premium collapses the intended 1R-to-open-ended payoff profile.
-        if right == 'C':
-            leg_df = leg_df[leg_df['strike'] >= spot].copy()
-            delta_abs = leg_df['delta'].fillna(0).abs()
-        else:
-            leg_df = leg_df[leg_df['strike'] <= spot].copy()
-            delta_abs = leg_df['delta'].fillna(0).abs()
+        # Governed long-option moneyness range. Near-ATM OTM remains preferred,
+        # but a developing OTM or moderately ITM contract is a valid contract
+        # family member. It must be classified and monitored, not erased. Far
+        # OTM (<.20 delta) and deep ITM (>.75 delta) remain outside mandate.
+        delta_abs = leg_df['delta'].abs()
+        leg_df = leg_df[delta_abs.between(0.20, 0.75, inclusive='both')].copy()
         if leg_df.empty: return None
 
-        # Hard OTM delta cap and executable liquidity floor.
-        # Horizon-aware delta band. Keep a small outer buffer so a thin chain can
-        # still produce a repair/review contract instead of disappearing.
-        leg_df = leg_df[delta_abs <= max(0.65, delta_max + 0.10)].copy()
-        if leg_df.empty: return None
+        # Invalid/crossed observations are retained in the canonical chain for
+        # audit, but are never selectable. One-sided and incomplete contracts
+        # remain monitorable because liquidity can develop as spot approaches.
+        quality = leg_df.get(
+            'quote_quality', pd.Series('INCOMPLETE', index=leg_df.index, dtype=object)
+        ).fillna('INCOMPLETE').astype(str).str.upper()
+        bid_values = pd.to_numeric(
+            leg_df.get('bid', pd.Series(np.nan, index=leg_df.index)), errors='coerce'
+        )
+        ask_values = pd.to_numeric(
+            leg_df.get('ask', pd.Series(np.nan, index=leg_df.index)), errors='coerce'
+        )
+        invalid_flags = leg_df.get(
+            'quality_flags', pd.Series([()] * len(leg_df), index=leg_df.index, dtype=object)
+        ).map(lambda value: bool({'CROSSED_QUOTE', 'NEGATIVE_QUOTE'} & _quote_flags(value)))
+        invalid_quote = (
+            quality.eq('INVALID')
+            | invalid_flags
+            | (bid_values.notna() & (bid_values < 0))
+            | (ask_values.notna() & (ask_values < 0))
+            | (bid_values.notna() & ask_values.notna() & (bid_values > ask_values))
+        )
+        leg_df = leg_df.loc[~invalid_quote].copy()
+        if leg_df.empty:
+            return None
+        # OI and volume are evidence, not execution authority. New strikes can
+        # show low prior-session OI and still have an executable current quote.
+        # Preserve them for scoring and lifecycle monitoring. A positive mark
+        # is still required so contract economics can be computed.
+        eligible_df = leg_df[leg_df['mark'].fillna(0) > 0].copy()
+        if eligible_df.empty: return None
 
-        all_synthetic = leg_df['mark_synthetic'].fillna(True).all()
-        oi_floor  = MIN_OI
-        vol_floor = MIN_LIQUIDITY_VOLUME
-        if all_synthetic:
-            spread_ok = pd.Series(True, index=leg_df.index)
-        else:
-            spread_ok = leg_df['spread_pct'].fillna(1.0) <= spread_limit
-        liquid_df = leg_df[
-            (leg_df['open_interest'] >= oi_floor) &
-            (leg_df['volume'].fillna(0) >= vol_floor) &
-            spread_ok &
-            (leg_df['mark'].fillna(0) > 0)   # BSM-derived marks always > 0 after backfill
-        ].copy()
-        if liquid_df.empty: return None
-
-        core_delta = liquid_df['delta'].fillna(0).abs()
-        core_df = liquid_df[core_delta.between(delta_min, delta_max)].copy()
+        core_delta = eligible_df['delta'].fillna(0).abs()
+        core_df = eligible_df[core_delta.between(delta_min, delta_max)].copy()
         if core_df.empty:
-            leg_df = liquid_df.copy()
+            leg_df = eligible_df.copy()
             leg_df["best_available_suboptimal"] = True
         else:
             leg_df = core_df
@@ -4243,7 +4553,13 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             mark      = row['mark']  or 0
             oi        = row['open_interest'] or 0
             vol       = row['volume'] or 0
-            spread    = row['spread_pct'] or 0.15
+            raw_spread = row.get('spread_pct')
+            try:
+                spread = float(raw_spread)
+                if not math.isfinite(spread) or spread < 0:
+                    spread = 0.15
+            except (TypeError, ValueError):
+                spread = 0.15
             bid       = row.get('bid', None)
             ask       = row.get('ask', None)
 
@@ -4260,16 +4576,19 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             # 4. Vega quality: want positive vega exposure (15%)
             vega_score = min(100, vega*300) if vega else 0
 
-            # 5. Liquidity (15%)
+            # 5. Liquidity (15%). OI/volume contribute to rank but are never a
+            # terminal filter. Current spread remains the primary executable
+            # evidence and is re-evaluated after exact quote enrichment.
             liq_score = min(100, (vol + oi/10)/5)
-            spread_pen = min(50, spread*200)
-            liq_final  = max(0, liq_score - spread_pen)
+            spread_pen = min(50, max(0, spread*200))
+            liq_final  = min(100, max(0, liq_score - spread_pen))
 
             composite = (0.30*delta_score + 0.20*dte_score + 0.20*theta_score +
                          0.15*vega_score + 0.15*liq_final)
 
             scores.append({
                 'symbol'          : row.get('symbol'),
+                'underlying'      : row.get('underlying') or ctx.get('ticker'),
                 'right'           : right,
                 'strike'          : row['strike'],
                 'expiry'          : row['expiration_date'],
@@ -4278,6 +4597,10 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'mid'             : mark,
                 'bid'             : None if pd.isna(bid) else bid,
                 'ask'             : None if pd.isna(ask) else ask,
+                'bid_size'        : None if pd.isna(row.get('bid_size')) else row.get('bid_size'),
+                'ask_size'        : None if pd.isna(row.get('ask_size')) else row.get('ask_size'),
+                'bid_size_quality': row.get('bid_size_quality', 'MISSING'),
+                'ask_size_quality': row.get('ask_size_quality', 'MISSING'),
                 'delta'           : row['delta'],
                 'gamma'           : row['gamma'],
                 'theta'           : theta,
@@ -4289,9 +4612,23 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'volume'          : vol,
                 'spread_pct'      : spread,
                 'mark_synthetic'  : bool(row.get('mark_synthetic', False)),
+                'quote_quality'   : str(row.get('quote_quality') or 'INCOMPLETE').upper(),
+                'quality_flags'   : list(_quote_flags(row.get('quality_flags'))),
+                'quote_fields_complete': bool(row.get('quote_fields_complete', False)),
                 'best_available_suboptimal': bool(row.get('best_available_suboptimal', False)),
                 'otm_delta_target': target_delta,
                 'contract_score'  : round(composite, 2),
+                'selection_reason': (
+                    'BEST_CURRENT_LONG_OPTION_QUOTE'
+                    if (
+                        str(row.get('quote_quality') or '').upper() == 'TWO_SIDED'
+                        and not bool(row.get('mark_synthetic', False))
+                        and spread <= (LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT / 100.0)
+                    )
+                    else 'BEST_MONITORABLE_LONG_OPTION_CONTRACT'
+                ),
+                'oi_used_as_hard_gate': False,
+                'volume_used_as_hard_gate': False,
                 'quote_timestamp_utc': row.get('quote_timestamp_utc'),
                 'quote_timestamp_source': row.get('quote_timestamp_source'),
                 'contract_multiplier': row.get('contract_multiplier'),
@@ -4307,15 +4644,201 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         return _score_leg(call_df, 'C')
     elif direction == 'PUT':
         return _score_leg(put_df, 'P')
-    elif direction == 'STRANGLE':
-        c = _score_leg(call_df, 'C')
-        p = _score_leg(put_df,  'P')
-        if c and p:
-            # Merge into strangle package
-            return {**c, 'put_leg': p, 'type': 'STRANGLE',
-                    'total_premium': (c['mark'] + p['mark'])*100}
-        return c or p
     return None
+
+
+def _normalise_forecast_vol_decimal(*values: Any) -> Optional[float]:
+    """Return the first usable annualised volatility as a decimal."""
+    for value in values:
+        parsed = _repair_alt_float(value)
+        if parsed is None or parsed <= 0:
+            continue
+        if parsed > 5.0:
+            parsed /= 100.0
+        if 0 < parsed <= 5.0:
+            return parsed
+    return None
+
+
+def _context_signal_row(ctx: Dict[str, Any]) -> Any:
+    """Return the captured signal row without evaluating pandas truthiness.
+
+    Production contexts carry a pandas Series under ``_signal_row`` while
+    tests and replays may use dictionaries.  Both expose ``get`` and are safe
+    to consume directly.  Missing or malformed values fail closed to an empty
+    mapping; this helper never invents lifecycle evidence or authority.
+    """
+    if not hasattr(ctx, "get"):
+        return {}
+    raw_row = ctx.get("_signal_row")
+    return raw_row if hasattr(raw_row, "get") else {}
+
+
+def _options_liquidity_lifecycle_fields(
+    ctx: Dict[str, Any],
+    contract: Dict[str, Any],
+    iv_ctx: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Build the governed EOD lifecycle handoff for one exact contract.
+
+    This adapter has no provider calls and cannot authorise capital. It turns
+    missing inputs into an explicit repair state instead of inventing defaults.
+    """
+    ticker = str(ctx.get("ticker") or "").strip().upper()
+    side = str(ctx.get("direction") or "").strip().upper()
+    signal_row = _context_signal_row(ctx)
+    quote_as_of = str(
+        contract.get("quote_timestamp_utc")
+        or contract.get("quote_as_of")
+        or ""
+    ).strip()
+    quote_session = None
+    if quote_as_of:
+        try:
+            quote_session = pd.Timestamp(quote_as_of).date().isoformat()
+        except (TypeError, ValueError):
+            quote_session = None
+    evidence_session = quote_session or _resolve_asof_date(signal_row)
+    legacy_thesis_id = f"{ticker}:{side}:{evidence_session or 'UNKNOWN_SESSION'}"
+    # v1 persisted terminal states were calculated with a different stop and
+    # hold convention.  A versioned identity preserves that immutable history
+    # while preventing a false v1 terminal event from governing corrected v2
+    # evidence for the same completed market session.
+    thesis_id = f"{legacy_thesis_id}:OLM2"
+    base: Dict[str, Any] = {
+        "thesis_id": thesis_id,
+        "legacy_thesis_id": legacy_thesis_id,
+        "supersedes_calculation_version": "options-liquidity-lifecycle-v1",
+        "thesis_calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+        "evidence_session_date": evidence_session or "",
+        "evidence_session_source": (
+            "SELECTED_CONTRACT_QUOTE_TIMESTAMP"
+            if quote_session else "SIGNAL_ASOF_FALLBACK"
+        ),
+        "thesis_state": "ACTIVE",
+        "morning_transition_state": "EOD_PENDING_MORNING_REQUOTE",
+        "maturation_score_is_probability": False,
+        "maturation_execution_authority": False,
+        "previous_contract_symbol": "",
+        "contract_changed": False,
+        "contract_selection_reason": contract.get("selection_reason") or "EOD_CONTRACT_SELECTION",
+        "quote_as_of": quote_as_of or evidence_session,
+    }
+    if side not in {"CALL", "PUT"}:
+        return {
+            **base,
+            "thesis_state": GovernedDataState.NOT_APPLICABLE.value,
+            "morning_transition_state": GovernedDataState.NOT_APPLICABLE.value,
+            "liquidity_state": LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value,
+            "recovery_disposition": GovernedDataState.NOT_APPLICABLE.value,
+            "executable_now": False,
+            "quote_freshness": GovernedDataState.NOT_APPLICABLE.value,
+            "invalidation_spot": None,
+            "invalidation_source": "NOT_APPLICABLE_NON_DIRECTIONAL",
+            "invalidation_state": GovernedDataState.NOT_APPLICABLE.value,
+            "liquidity_lifecycle_reason": LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value,
+        }
+    forecast_vol = _normalise_forecast_vol_decimal(
+        signal_row.get("garch_forecast_vol"),
+        signal_row.get("l3_vol_forecast"),
+        iv_ctx.get("hv_30d"),
+        iv_ctx.get("atm_iv"),
+        contract.get("iv"),
+        contract.get("implied_vol"),
+    )
+    governed_handoff = _ev3_handoff_fields(ctx)
+    required = {
+        "side": side if side in {"CALL", "PUT"} else None,
+        "spot": _repair_alt_float(ctx.get("spot")),
+        "strike": _repair_alt_float(contract.get("strike")),
+        "dte": _repair_alt_float(contract.get("dte")),
+        # Lifecycle and contract selection must consume the same routed
+        # horizon.  layer2__recommended_hold_days is an actuarial outcome
+        # window, not the governed planned holding period for this trade.
+        "remaining_hold_sessions": _repair_alt_float(
+            governed_handoff.get("planned_hold_sessions")
+        ),
+        "forecast_vol_annual": forecast_vol,
+        "structural_target": _repair_alt_float(ctx.get("structural_target")),
+        # The EV3 handoff owns direction-correct invalidation geometry.  Using
+        # ctx.stop here caused PUT rows to be assessed against the opposite
+        # side of their published invalidation.
+        "invalidation_spot": _repair_alt_float(
+            governed_handoff.get("invalidation_spot")
+        ),
+    }
+    missing = [key for key, value in required.items() if value is None]
+    if missing:
+        return {
+            **base,
+            "thesis_state": "DATA_INCOMPLETE",
+            "liquidity_state": "LIFECYCLE_DATA_INCOMPLETE",
+            "recovery_disposition": "CONTRACT_REPAIR",
+            "executable_now": False,
+            "quote_freshness": "UNKNOWN",
+            "liquidity_lifecycle_reason": "MISSING:" + ",".join(missing),
+        }
+
+    # Synthetic quotes can support EOD research calculations but never current
+    # executability. Mark them stale for lifecycle purposes; the Morning Gate
+    # replaces this assessment with an exact MarketData quote.
+    mark_synthetic = bool(contract.get("mark_synthetic", False))
+    quote_age_seconds = 901.0 if mark_synthetic else None
+    try:
+        lifecycle = evaluate_options_liquidity_lifecycle(
+            LifecycleInputs(
+                side=str(required["side"]),
+                spot=float(required["spot"]),
+                strike=float(required["strike"]),
+                delta=_repair_alt_float(contract.get("delta")),
+                bid=_repair_alt_float(contract.get("bid")),
+                ask=_repair_alt_float(contract.get("ask")),
+                dte=float(required["dte"]),
+                remaining_hold_sessions=float(required["remaining_hold_sessions"]),
+                forecast_vol_annual=float(required["forecast_vol_annual"]),
+                thesis_spot=float(required["spot"]),
+                current_spot=float(required["spot"]),
+                structural_target=float(required["structural_target"]),
+                invalidation_spot=float(required["invalidation_spot"]),
+                quote_age_seconds=quote_age_seconds,
+                listed_market=True,
+            )
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        return {
+            **base,
+            "thesis_state": "DATA_INCOMPLETE",
+            "liquidity_state": "LIFECYCLE_DATA_INVALID",
+            "recovery_disposition": "CONTRACT_REPAIR",
+            "executable_now": False,
+            "quote_freshness": "UNKNOWN",
+            "liquidity_lifecycle_reason": str(exc),
+        }
+
+    runway_factor = _repair_alt_float(lifecycle.get("remaining_runway_factor"), 0.0) or 0.0
+    lifecycle.update({
+        **base,
+        "planned_hold_sessions": required["remaining_hold_sessions"],
+        "planned_hold_source": governed_handoff.get("planned_hold_source"),
+        "invalidation_spot": required["invalidation_spot"],
+        "invalidation_source": governed_handoff.get("invalidation_source"),
+        "thesis_state": (
+            "INVALIDATED" if lifecycle.get("remaining_runway_state") == "THESIS_INVALIDATED"
+            else "TARGET_REALIZED" if lifecycle.get("remaining_runway_state") == "MOVE_ALREADY_REALIZED"
+            else "ACTIVE"
+        ),
+        "dte_buffer_sessions": round(
+            float(required["dte"]) - float(lifecycle.get("minimum_required_dte") or 0), 2
+        ),
+        "atm_distance_sigma": lifecycle.get("atm_distance_sigma_1d"),
+        "remaining_runway_pct": round(runway_factor * 100.0, 2),
+        "quote_freshness": "SYNTHETIC_NOT_EXECUTABLE" if mark_synthetic else "SESSION_ALIGNED",
+    })
+    # The deterministic maturation score is deliberately never a probability
+    # or an execution authority, even when the contract is executable now.
+    lifecycle["maturation_score_is_probability"] = False
+    lifecycle["maturation_execution_authority"] = False
+    return lifecycle
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -4365,13 +4888,61 @@ def _repair_alt_row_symbol(row: Any) -> str:
     return ""
 
 
+def _new_repair_selector_diagnostics() -> Dict[str, int]:
+    return {key: 0 for key in _EV3_REPAIR_DIAGNOSTIC_KEYS}
+
+
+def _repair_selector_diagnostic_fields(diagnostics: Optional[Dict[str, int]]) -> Dict[str, Any]:
+    source = diagnostics or {}
+    return {
+        "repair_selector_diagnostics_version": EV3_REPAIR_DIAGNOSTICS_VERSION,
+        **{
+            f"repair_selector_{key}": int(source.get(key) or 0)
+            for key in _EV3_REPAIR_DIAGNOSTIC_KEYS
+        },
+    }
+
+
+def _aggregate_repair_selector_diagnostics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    aggregate = {
+        "diagnostics_version": EV3_REPAIR_DIAGNOSTICS_VERSION,
+        "selector_invocations": 0,
+        **{key: 0 for key in _EV3_REPAIR_DIAGNOSTIC_KEYS},
+    }
+    for result in results:
+        if result.get("repair_selector_diagnostics_version") != EV3_REPAIR_DIAGNOSTICS_VERSION:
+            continue
+        aggregate["selector_invocations"] += 1
+        for key in _EV3_REPAIR_DIAGNOSTIC_KEYS:
+            try:
+                aggregate[key] += int(result.get(f"repair_selector_{key}") or 0)
+            except (TypeError, ValueError):
+                continue
+    return aggregate
+
+
 def select_repair_alternative_contracts(
     df: pd.DataFrame,
     ctx: Dict,
     selected_contract: Optional[Dict] = None,
     limit: int = EV3_LONG_SINGLE_CANDIDATE_LIMIT,
+    diagnostics: Optional[Dict[str, int]] = None,
 ) -> List[Dict[str, Any]]:
-    """Return a strict EV-2 long-single set from two expiries x three strikes."""
+    """Return governed long-single repair candidates from two expiries x three strikes.
+
+    Open interest and current volume are ranking evidence only.  A new or
+    developing strike can have a valid two-sided quote before either field has
+    accumulated, so neither value is allowed to delete an otherwise-valid
+    contract family member.
+    """
+    if diagnostics is not None:
+        for key in _EV3_REPAIR_DIAGNOSTIC_KEYS:
+            diagnostics.setdefault(key, 0)
+
+    def _reject(reason: str) -> None:
+        if diagnostics is not None:
+            diagnostics[reason] = int(diagnostics.get(reason) or 0) + 1
+
     try:
         if df is None or df.empty:
             return []
@@ -4387,8 +4958,6 @@ def select_repair_alternative_contracts(
         wanted_rights = {"C"}
     elif direction == "PUT":
         wanted_rights = {"P"}
-    elif direction == "STRANGLE":
-        wanted_rights = {"C", "P"}
     else:
         return []
 
@@ -4436,34 +5005,50 @@ def select_repair_alternative_contracts(
         implied_volatility = _repair_alt_float(row.get("implied_vol"), _repair_alt_float(row.get("iv")))
         quote_timestamp = _quote_timestamp_utc(row.get("quote_timestamp_utc"))
         if (
-            strike is None or dte_val is None or not expiry
-            or bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask
-            or signed_delta is None or gamma is None or theta is None or vega is None
+            bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask
+            or gamma is None or theta is None or vega is None
             or implied_volatility is None or not quote_timestamp
         ):
+            _reject("rejected_invalid_missing_quote")
+            continue
+        if strike is None or dte_val is None or not expiry or signed_delta is None:
+            _reject("rejected_dte_delta_geometry")
             continue
         if dte_val < float(dte_min) or dte_val > float(dte_max):
+            _reject("rejected_dte_delta_geometry")
             continue
 
         if dte_val < minimum_dte:
+            _reject("rejected_dte_delta_geometry")
             continue
 
         if spot and spot > 0:
             if right == "C" and strike < spot * 0.90:
+                _reject("rejected_dte_delta_geometry")
                 continue
             if right == "P" and strike > spot * 1.10:
+                _reject("rejected_dte_delta_geometry")
                 continue
 
         if (right == "C" and signed_delta <= 0) or (right == "P" and signed_delta >= 0):
+            _reject("rejected_dte_delta_geometry")
             continue
         delta_abs = abs(signed_delta)
-        oi = _repair_alt_float(row.get("open_interest"), _repair_alt_float(row.get("oi"), 0.0)) or 0.0
-        volume = _repair_alt_float(row.get("volume"), 0.0) or 0.0
-        if oi < EV3_MIN_OPEN_INTEREST or volume < EV3_MIN_VOLUME:
-            continue
+        oi_value = _repair_alt_float(row.get("open_interest"))
+        if oi_value is None:
+            oi_value = _repair_alt_float(row.get("oi"))
+        volume_value = _repair_alt_float(row.get("volume"))
+        oi_observation_status = "REPORTED" if oi_value is not None else "MISSING_ASSUMED_ZERO"
+        volume_observation_status = (
+            "REPORTED" if volume_value is not None else "MISSING_ASSUMED_ZERO"
+        )
+        oi = oi_value if oi_value is not None else 0.0
+        volume = volume_value if volume_value is not None else 0.0
         mark = (bid + ask) / 2.0
-        spread = max(0.0, ask - bid) / mark if mark > 0 else math.inf
+        spread = quote_spread_fraction(bid, ask)
+        spread = spread if spread is not None else math.inf
         if not math.isfinite(spread) or spread > spread_limit:
+            _reject("rejected_spread")
             continue
 
         delta_score = max(0.0, 100.0 - abs(delta_abs - target_delta) * 300.0)
@@ -4502,6 +5087,10 @@ def select_repair_alternative_contracts(
             "iv": implied_volatility,
             "oi": oi,
             "volume": volume,
+            "oi_observation_status": oi_observation_status,
+            "volume_observation_status": volume_observation_status,
+            "oi_used_as_hard_gate": False,
+            "volume_used_as_hard_gate": False,
             "spread_pct": round(float(spread), 6) if spread is not None else "",
             "quote_timestamp_utc": quote_timestamp,
             "quote_timestamp_source": row.get("quote_timestamp_source"),
@@ -4555,6 +5144,18 @@ def select_repair_alternative_contracts(
     bounded = bounded[:cap]
     for rank, candidate in enumerate(bounded, start=1):
         candidate["candidate_generation_rank"] = rank
+    if diagnostics is not None:
+        diagnostics["retained_oi_below_50"] += sum(
+            candidate.get("oi_observation_status") == "REPORTED"
+            and float(candidate.get("oi") or 0.0) < 50.0
+            for candidate in bounded
+        )
+        diagnostics["retained_zero_volume"] += sum(
+            candidate.get("volume_observation_status") == "REPORTED"
+            and float(candidate.get("volume") or 0.0) == 0.0
+            for candidate in bounded
+        )
+        diagnostics["final_bounded_candidate_count"] += len(bounded)
     return bounded
 
 
@@ -4666,7 +5267,7 @@ def _format_repair_alternative_fields(
         "contract_repair_action": "NO_ALTERNATIVE_FOUND",
         "alternative_contract_attempts": "",
         "alternative_contracts_json": "[]",
-        "alternative_contracts_schema_version": "ev3-contract-candidates-v3",
+        "alternative_contracts_schema_version": "ev3-contract-candidates-v4",
         "alternative_contracts_count": 0,
     }
     for idx, alt in enumerate((alternatives or [])[:3], start=1):
@@ -4704,6 +5305,124 @@ def _format_repair_alternative_fields(
     elif reason:
         out["alternative_contract_attempts"] = f"NO_REPAIR_ALTERNATIVE_FOUND; reason={reason}"
     return out
+
+
+def _ev3_candidate_missing_fields(candidate: Dict[str, Any]) -> List[str]:
+    """Return missing canonical fields for one EV3 candidate record."""
+    structure = str(candidate.get("structure") or "LONG_SINGLE").upper()
+    common = ("symbol", "expiry", "dte", "contract_multiplier")
+    leg_fields = (
+        "symbol", "strike", "expiry", "dte", "bid", "ask", "delta", "gamma",
+        "theta", "vega", "iv", "oi", "volume", "quote_timestamp_utc",
+        "contract_multiplier",
+    )
+
+    def missing(record: Dict[str, Any], names: Tuple[str, ...], prefix: str = "") -> List[str]:
+        result: List[str] = []
+        for name in names:
+            value = record.get(name)
+            if value is None or (isinstance(value, str) and not value.strip()):
+                result.append(f"{prefix}{name}")
+            elif isinstance(value, float) and pd.isna(value):
+                result.append(f"{prefix}{name}")
+        return result
+
+    if structure in {"BULL_CALL_DEBIT", "BEAR_PUT_DEBIT"}:
+        result = missing(candidate, common)
+        for leg_name in ("long_leg", "short_leg"):
+            leg = candidate.get(leg_name)
+            if not isinstance(leg, dict):
+                result.append(leg_name)
+            else:
+                result.extend(missing(leg, leg_fields, f"{leg_name}."))
+        return result
+    return missing(candidate, leg_fields)
+
+
+def _partition_complete_ev3_candidates(
+    candidates: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Keep only complete alternatives and retain explicit rejection diagnostics."""
+    complete: List[Dict[str, Any]] = []
+    rejected: List[Dict[str, Any]] = []
+    for candidate in candidates or []:
+        missing = _ev3_candidate_missing_fields(candidate)
+        if missing:
+            rejected.append({
+                "symbol": candidate.get("symbol", ""),
+                "structure": candidate.get("structure", "LONG_SINGLE"),
+                "reason": "INCOMPLETE_EV3_HANDOFF",
+                "missing_fields": missing,
+            })
+        else:
+            complete.append(candidate)
+    return complete, rejected
+
+
+def _alternative_handoff_audit(rejected: List[Dict[str, Any]]) -> Dict[str, Any]:
+    return {
+        "alternative_contracts_rejected_incomplete": len(rejected),
+        "alternative_contracts_rejection_reasons_json": json.dumps(rejected, sort_keys=True),
+    }
+
+
+def _annotate_ev3_handoff_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Publish an explicit selected-contract readiness state before EV3 runs."""
+    result = frame.copy()
+    required_aliases: Dict[str, Tuple[str, ...]] = {
+        "contract_symbol": ("contract_occ_symbol", "recommended_contract", "contract_symbol"),
+        "entry_spot": ("entry_spot",), "target_spot": ("target_spot",),
+        "invalidation_spot": ("invalidation_spot",),
+        "planned_hold_sessions": ("planned_hold_sessions",),
+        "state_key": ("ev3_barrier_state_key", "state_key"),
+        "strike": ("contract_strike",), "expiration": ("contract_expiry",),
+        "dte": ("contract_dte",), "bid": ("contract_bid",), "ask": ("contract_ask",),
+        "delta": ("contract_delta",), "gamma": ("contract_gamma",),
+        "theta": ("contract_theta",), "vega": ("contract_vega",),
+        "iv": ("contract_iv",), "open_interest": ("contract_oi",),
+        "volume": ("contract_volume",),
+        "quote_timestamp": ("contract_quote_timestamp_utc", "quote_timestamp_utc"),
+        "contract_multiplier": ("contract_multiplier",),
+    }
+
+    def first_present(row: pd.Series, aliases: Tuple[str, ...]) -> Any:
+        for alias in aliases:
+            if alias not in row.index:
+                continue
+            value = row.get(alias)
+            if value is None or (isinstance(value, str) and not value.strip()):
+                continue
+            try:
+                if pd.isna(value):
+                    continue
+            except (TypeError, ValueError):
+                pass
+            return value
+        return None
+
+    statuses: List[str] = []
+    missing_json: List[str] = []
+    for _, row in result.iterrows():
+        direction = str(row.get("canonical_direction") or "").upper()
+        symbol = first_present(row, required_aliases["contract_symbol"])
+        if direction not in {"CALL", "PUT"}:
+            statuses.append("NOT_APPLICABLE_NON_DIRECTIONAL")
+            missing_json.append("[]")
+            continue
+        if symbol is None:
+            statuses.append("NOT_APPLICABLE_NO_SELECTED_CONTRACT")
+            missing_json.append("[]")
+            continue
+        missing = [
+            field for field, aliases in required_aliases.items()
+            if first_present(row, aliases) is None
+        ]
+        statuses.append("COMPLETE" if not missing else "INCOMPLETE")
+        missing_json.append(json.dumps(missing))
+    result["ev3_selected_handoff_status"] = statuses
+    result["ev3_selected_handoff_missing_fields_json"] = missing_json
+    result["ev3_handoff_schema_version"] = "ev3-options-handoff-v2"
+    return result
 
 
 def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
@@ -4969,7 +5688,6 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
 
     # ── [C] TRADE ECONOMICS (22 pts) ──────────────────────────────────────────
     rr     = econ.get('rr_options', 0)
-    ev_adj = econ.get('ev_adjusted', 0)
     theta_pct = econ.get('theta_drag_pct', 100)
     be_pct = abs(econ.get('breakeven_pct', 10))
 
@@ -4983,21 +5701,24 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
         iv_factor = 1.0
     ev_adj_final = econ.get('ev_ratio', 0) * iv_factor
 
-    # AMENDMENT (2026-05-02): R:R scoring decoupled from gating.
-    # The derive_verdict() gate handles EXECUTE/ARMED decision based on R:R floor.
-    # Scoring here should reward good R:R without destroying OIS for sub-threshold.
-    # Negative R:R does not earn negative points — derive_verdict already demotes.
-    if rr >= 3.0:        score += 9; pos.append(f"R:R={rr:.1f} excellent (+9)")
-    elif rr >= 2.0:      score += 6; pos.append(f"R:R={rr:.1f} good (+6)")
-    elif rr >= 1.5:      score += 3; pos.append(f"R:R={rr:.1f} acceptable (+3)")
-    elif rr >= 1.0:      score += 1; pos.append(f"R:R={rr:.1f} marginal (+1)")
-    elif rr >= 0:        neg.append(f"R:R={rr:.1f} — insufficient reward for premium paid")
-    else:                neg.append(f"R:R={rr:.3f} — negative R:R (derive_verdict will demote)")
+    # Legacy premium R:R is a labelled expiry-intrinsic research scenario.
+    # It contributes zero points and cannot promote or demote the Options
+    # verdict for a 1-20 session thesis.
+    if rr >= 0:
+        pos.append(f"R:R research scenario={rr:.2f} (advisory; zero authority)")
+    else:
+        neg.append(f"R:R research scenario={rr:.3f} (advisory; zero authority)")
 
-    if ev_adj_final >= 0.5:   score += 7; pos.append(f"EV/premium={ev_adj_final:.2f} strong (+7)")
-    elif ev_adj_final >= 0.2: score += 4; pos.append(f"EV/premium={ev_adj_final:.2f} positive (+4)")
-    elif ev_adj_final >= 0.0: score += 2
-    else:                     neg.append(f"EV/premium={ev_adj_final:.2f} negative — premium not justified")
+    # EV is diagnostic evidence, not capital authority.  Keep a fixed two-point
+    # economics-computation credit so removing the former variable EV bonus does
+    # not silently rebase the established OIS thresholds.  The EV value remains
+    # in the output for ranking, review, and later model calibration, but it can
+    # neither promote nor demote the options verdict.
+    score += 2
+    if ev_adj_final < 0:
+        neg.append(f"EV/premium={ev_adj_final:.2f} negative — advisory only")
+    else:
+        pos.append(f"EV/premium={ev_adj_final:.2f} — advisory only")
 
     if theta_pct < 20:   score += 6; pos.append(f"Theta drag={theta_pct:.0f}% low (+6)")
     elif theta_pct < 40: score += 3; pos.append(f"Theta drag={theta_pct:.0f}% manageable (+3)")
@@ -5177,7 +5898,6 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
     ivp       = iv_ctx.get('iv_percentile')
     ivp_252   = iv_ctx.get('ivp_252d')
     iv_vs_hv  = iv_ctx.get('iv_vs_hv')
-    ev_adj    = econ.get('ev_adjusted', 0)
     theta_pct = econ.get('theta_drag_pct', 100)
     iv_regime = iv_ctx.get('iv_regime', 'UNKNOWN')
 
@@ -5234,6 +5954,21 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
     # Gate 5b: Spread too wide — execution cost destroys edge before trade begins
     # Fires only when real bid/ask are present (not synthetic mark alone).
     if contract:
+        bid_raw = _repair_alt_float(contract.get('bid'))
+        ask_raw = _repair_alt_float(contract.get('ask'))
+        quality = str(contract.get('quote_quality') or '').strip().upper()
+        flags = _quote_flags(contract.get('quality_flags'))
+        if (
+            quality == 'INVALID'
+            or bool({'CROSSED_QUOTE', 'NEGATIVE_QUOTE'} & flags)
+            or (bid_raw is not None and bid_raw < 0)
+            or (ask_raw is not None and ask_raw < 0)
+            or (bid_raw is not None and ask_raw is not None and bid_raw > ask_raw)
+        ):
+            return 'STAND_DOWN', (
+                'BLOCK_INVALID_QUOTE: Selected contract has a crossed, negative, '
+                'or otherwise malformed top-of-book quote.'
+            )
         spread_pct_val = contract.get('spread_pct')
         if spread_pct_val is not None and not bool(contract.get('mark_synthetic', False)):
             try:
@@ -5250,8 +5985,9 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
         mark_val = float(contract.get('mark') or contract.get('mid_price') or 0)
         if (bid_val is not None and ask_val is not None and
                 float(bid_val) >= 0 and float(ask_val) > 0 and mark_val > 0):
-            spread_abs = float(ask_val) - float(bid_val)
-            spread_pct = spread_abs / mark_val
+            spread_pct = quote_spread_fraction(bid_val, ask_val)
+            if spread_pct is None:
+                spread_pct = math.inf
             if spread_pct > MAX_SPREAD_PCT:
                 return 'STAND_DOWN', (
                     f'BLOCK_SPREAD: Spread {spread_pct:.0%} of mark ${mark_val:.2f} '
@@ -5303,28 +6039,13 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
 
     # ── DEMOTIONS (not hard blocks): expensive vol, stretched IV — ARMED not STAND_DOWN ──
     # These are warnings that Vanguard's edge may face headwind, but the setup is still valid.
-    # Expensive vol with negative EV → demote to ARMED (trader decides sizing)
-    if ivp is not None and ivp > IVP_EXPENSIVE and ev_adj < 0:
-        # Not a hard block — Vanguard confirmed the setup. Demote, surface warning.
-        pass  # Handled in score-based verdict below via negative EV penalty
-
     # EVENT_PRICED IV with IVP > 75% but no imminent binary event → ARMED (vol warning, not block)
     # 252d annual high + IV/HV stretched → ARMED (structural cost, not block)
     # Both are captured in the neg_factors list and will demote via score, not hard gate
 
     # Score-based verdict
-    rr = econ.get('rr_options', 0)
     final_verdict = None
     final_reason  = ''
-
-    # R:R floor for EXECUTE — calibrated to quote source.
-    # 1.5 is appropriate when real bid/ask/mid from marketdata.app is available.
-    # When ALL contracts used BSM synthetic marks, premium estimates carry model
-    # error that can make R:R look artificially low. Lower the floor to 1.0 for
-    # synthetic-mark runs so valid setups are not blocked on imprecise premium data.
-    # Real quotes (mark_synthetic=False) restore the 1.5 floor automatically.
-    _is_synthetic = (contract or {}).get('mark_synthetic', True)
-    _rr_execute_floor = 1.0
 
     # Three-tier threshold: EOD / LIVE_LOW / FULL_LIVE
     # mark_synthetic=True  → EOD (no live chain quotes)
@@ -5347,17 +6068,8 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
         _tier_note = ''
 
     if ois_score >= _exec_min:
-        if rr < 0:
-            final_verdict = 'ARMED'
-            final_reason  = f'OIS={ois_score:.0f} qualifies but R:R={rr:.3f} negative — demoted to ARMED{_tier_note}'
-        elif rr < _rr_execute_floor:
-            final_verdict = 'ARMED'
-            final_reason  = (f'OIS={ois_score:.0f} qualifies but R:R={rr:.2f} below '
-                             f'floor ({_rr_execute_floor}) — BLOCK_RR_FLOOR: demoted to ARMED{_tier_note}')
-        else:
-            final_verdict = 'EXECUTE'
-            if _tier_note:
-                final_reason = (final_reason + _tier_note) if final_reason else f'All gates passed{_tier_note}'
+        final_verdict = 'EXECUTE'
+        final_reason = f'All observable Options gates passed; R:R is advisory{_tier_note}'
     elif ois_score >= _arm_min:
         final_verdict = 'ARMED'
         final_reason  = ('; '.join(neg_factors[:2]) if neg_factors else 'Conditions not fully optimal') + _tier_note
@@ -5407,6 +6119,83 @@ def _oi_float(value: Any, default: Optional[float] = None) -> Optional[float]:
         return out
     except Exception:
         return default
+
+
+def _md_first_value(value: Any) -> Any:
+    """Return the first MarketData parallel-array value, accepting scalars too."""
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else None
+    return value
+
+
+def _fetch_underlying_nbbo_fields(ticker: str) -> Dict[str, Any]:
+    """Fetch non-authoritative equity NBBO sizes used by the EIL OBI overlay."""
+    fields: Dict[str, Any] = {
+        "l2_bid_size": None,
+        "l2_ask_size": None,
+        "l2_quote_source": "UNAVAILABLE",
+        "l2_quote_timestamp_utc": None,
+    }
+    if _canonical_offline_replay_enabled() or not ticker or not MARKETDATA_API_KEY:
+        return fields
+
+    try:
+        response = MD_SESSION.get(
+            f"https://api.marketdata.app/v1/stocks/quotes/{ticker}/",
+            headers={"Authorization": f"Token {MARKETDATA_API_KEY}"},
+            timeout=8,
+        )
+        if not response.ok:
+            return fields
+
+        payload = response.json()
+        if payload.get("s") != "ok":
+            return fields
+
+        bid_size = _oi_float(_md_first_value(payload.get("bidSize")))
+        ask_size = _oi_float(_md_first_value(payload.get("askSize")))
+        if bid_size is not None and bid_size < 0:
+            bid_size = None
+        if ask_size is not None and ask_size < 0:
+            ask_size = None
+
+        fields["l2_bid_size"] = bid_size
+        fields["l2_ask_size"] = ask_size
+        if bid_size is not None or ask_size is not None:
+            fields["l2_quote_source"] = "MARKETDATA_STOCK_NBBO"
+            fields["l2_quote_timestamp_utc"] = _quote_timestamp_utc(
+                _md_first_value(payload.get("updated"))
+            )
+    except Exception:
+        # OBI is an advisory overlay. Missing NBBO remains explicit and EIL uses
+        # its governed GEX/wall fallback rather than failing the options layer.
+        pass
+    return fields
+
+
+def _resolve_underlying_nbbo_fields(ticker: str, signal_row: Any) -> Dict[str, Any]:
+    """Reuse upstream NBBO sizes and call MarketData only for missing values."""
+    get_value = signal_row.get if hasattr(signal_row, "get") else lambda _key: None
+    upstream_bid = _oi_float(get_value("l2_bid_size"))
+    upstream_ask = _oi_float(get_value("l2_ask_size"))
+    if upstream_bid is not None and upstream_ask is not None:
+        return {
+            "l2_bid_size": upstream_bid,
+            "l2_ask_size": upstream_ask,
+            "l2_quote_source": str(get_value("l2_quote_source") or "UPSTREAM_REUSE"),
+            "l2_quote_timestamp_utc": get_value("l2_quote_timestamp_utc"),
+        }
+
+    fetched = _fetch_underlying_nbbo_fields(ticker)
+    if upstream_bid is not None:
+        fetched["l2_bid_size"] = upstream_bid
+    if upstream_ask is not None:
+        fetched["l2_ask_size"] = upstream_ask
+    if (upstream_bid is not None or upstream_ask is not None) and fetched["l2_quote_source"] != "UNAVAILABLE":
+        fetched["l2_quote_source"] = "UPSTREAM_AND_MARKETDATA_STOCK_NBBO"
+    elif upstream_bid is not None or upstream_ask is not None:
+        fetched["l2_quote_source"] = "UPSTREAM_PARTIAL"
+    return fetched
 
 
 def _oi_bool(value: Any) -> bool:
@@ -5553,7 +6342,22 @@ def build_options_research_contract(
     breakeven = _oi_float(econ.get("breakeven_price"))
 
     spread_pct_input = _oi_float(contract.get("spread_pct"))
-    if mid is not None and mid > 0 and spread_pct_input is not None:
+    quote_quality = str(contract.get("quote_quality") or "").strip().upper()
+    quote_flags = _quote_flags(contract.get("quality_flags"))
+    invalid_quote = (
+        quote_quality == "INVALID"
+        or bool({"CROSSED_QUOTE", "NEGATIVE_QUOTE"} & quote_flags)
+        or (bid is not None and bid < 0)
+        or (ask is not None and ask < 0)
+        or (bid is not None and ask is not None and bid > ask)
+        or (spread_pct_input is not None and spread_pct_input < 0)
+    )
+    if invalid_quote:
+        hard_vetoes.append("INVALID_CROSSED_QUOTE")
+    if (
+        not invalid_quote and mid is not None and mid > 0
+        and spread_pct_input is not None and spread_pct_input >= 0
+    ):
         # Some selected contracts carried a real marketdata.app midpoint and
         # spread_pct but dropped raw bid/ask during selection. Reconstructing
         # the implied top-of-book preserves the execution-cost check instead
@@ -5596,9 +6400,10 @@ def build_options_research_contract(
         soft_review_flags.append("CONTRACT_DATA_INCOMPLETE")
 
     spread_pct = None
-    if bid is not None and ask is not None and mid is not None and mid > 0:
-        spread_pct = round(max(0.0, ask - bid) / mid, 6)
-        if spread_pct > OPTIONS_SPREAD_HARD_PCT:
+    if not invalid_quote and bid is not None and ask is not None and mid is not None and mid > 0:
+        spread_fraction = quote_spread_fraction(bid, ask)
+        spread_pct = round(spread_fraction, 6) if spread_fraction is not None else None
+        if spread_pct is not None and spread_pct > OPTIONS_SPREAD_HARD_PCT:
             soft_review_flags.append("SPREAD_GT_25PCT")
 
     if dte is not None and dte <= 0:
@@ -5830,10 +6635,15 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     if not ticker or spot <= 0:
         return _stand_down(ctx, 'Invalid ticker or spot price from pipeline')
 
-    # Direction guard — no chain fetch if no CALL/PUT can be inferred even
-    # after Vanguard/statistical support direction repair.
-    if ctx['direction'] == 'NONE':
-        return _stand_down(ctx, 'No tradeable CALL/PUT direction after Vanguard support repair')
+    # Direction guard — no option-chain request is permitted until the GDR has
+    # a validated long CALL/PUT side. STRANGLE and UNRESOLVED are retained for
+    # audit, but this production pipeline does not trade non-directional or
+    # exotic structures.
+    if ctx['direction'] not in GOVERNED_DIRECTED_SIDES:
+        return _stand_down(
+            ctx,
+            'No governed long CALL/PUT direction; chain request suppressed',
+        )
 
     print(f"  [{ticker}] T{ctx['tier']} Ph{ctx['phase']} "
           f"{ctx['intent']} → {ctx['direction']} | "
@@ -5865,15 +6675,43 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         print(f"  [{ticker}] SCANNER: iv_rank={_sc_iv_rank:.3f} "
               f"hv_30d={_sc_hv_30d:.4f} src={_sc_iv_src}")
 
+    # Resolve the governed horizon before chain access so failures retain the
+    # DTE window that was actually requested.
+    _horizon_key = str(signal_row.get('horizon_bucket') or ctx.get('horizon_bucket') or '1_5d').lower()
+    _dte_cfg = DTE_CONFIG.get(_horizon_key, DTE_CONFIG.get('1_5d', {}))
+
+    def _contract_rejection_fields(reason: str, stage: str, chain_rows: int = 0) -> Dict[str, Any]:
+        return {
+            'contract_rejection_reason': reason,
+            'contract_rejection_stage': stage,
+            'contract_rejection_horizon': _horizon_key,
+            'contract_rejection_dte_min': _dte_cfg.get('dte_min', ''),
+            'contract_rejection_dte_max': _dte_cfg.get('dte_max', ''),
+            'contract_rejection_chain_rows': chain_rows,
+        }
+
     # ── 1. Fetch chain ─────────────────────────────────────────────────────
     try:
         chain = fetch_chain(ticker)
     except Exception as e:
         print(f"  [{ticker}] Chain fetch failed: {e}")
-        return _stand_down(ctx, f'Chain fetch failed: {e}')
+        return {
+            **_stand_down(ctx, f'Chain fetch failed: {e}'),
+            **_contract_rejection_fields('CHAIN_FETCH_FAILED', 'CHAIN_FETCH'),
+        }
+
+    _chain_lineage = {
+        'option_chain_dataset_id': chain.attrs.get('canonical_dataset_id', ''),
+        'option_chain_provider': chain.attrs.get('canonical_provider', 'MARKETDATA'),
+        'option_chain_resolution': chain.attrs.get('canonical_resolution', ''),
+    }
 
     if chain.empty:
-        return _stand_down(ctx, 'No options chain data available')
+        return {
+            **_stand_down(ctx, 'No options chain data available'),
+            **_contract_rejection_fields('NO_OPTIONS_CHAIN_DATA', 'CHAIN_FETCH'),
+            **_chain_lineage,
+        }
 
     # ── 2. GEX + walls + PCR ───────────────────────────────────────────────
     gex_df, gamma_flip, flip_conf = compute_gex(chain, spot)
@@ -5968,10 +6806,6 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         sector_data = {}
 
     # ── 4. Contract selection ──────────────────────────────────────────────
-    # FIX 4: Horizon-aware DTE config for contract selection
-    _horizon_key = str(signal_row.get('horizon_bucket') or ctx.get('horizon_bucket') or '1_5d').lower()
-    _dte_cfg = DTE_CONFIG.get(_horizon_key, DTE_CONFIG.get('1_5d', {}))
-
     contract = select_best_contract(chain, ctx)
     # FIX 4: Tiered contract review — replaces binary STAND_DOWN gate.
     # Write contract rejection log entry for diagnostics.
@@ -5981,20 +6815,13 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         _chain_has_data = chain is not None and (hasattr(chain, '__len__') and len(chain) > 0)
         if _chain_has_data:
             _contract_tier = CONTRACT_TIER_REVIEW_NO_PASS
-            # Log the rejection for the contract_rejection_log
-            _rejection_entry = {
-                'ticker': ticker,
-                'horizon': _horizon_key,
-                'rejection_reason': 'NO_CONTRACT_PASSED_QUALITY_GATES',
-                'dte_scanned_min': _dte_cfg.get('dte_min', '?'),
-                'dte_scanned_max': _dte_cfg.get('dte_max', '?'),
-            }
         else:
             _contract_tier = CONTRACT_TIER_REVIEW_NO_PASS
 
     if not contract:
         _chain_has_data = chain is not None and (hasattr(chain, '__len__') and len(chain) > 0)
         _base_no_contract = {**_stand_down(ctx, 'No contract passed quality gates'),
+                **_chain_lineage,
                 'iv_rank'        : iv_ctx.get('iv_rank'),
                 'iv_percentile'  : iv_ctx.get('iv_percentile'),
                 'ivp_label'      : iv_ctx.get('ivp_label'),
@@ -6008,20 +6835,36 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'pcr_signal'     : pcr_signal,
                 'atm_iv'         : iv_ctx.get('atm_iv'),
                 'iv_regime'      : iv_ctx.get('iv_regime'),
-                'skew_label'     : iv_ctx.get('skew_label')}
+                'skew_label'     : iv_ctx.get('skew_label'),
+                **_contract_rejection_fields(
+                    'NO_CONTRACT_PASSED_QUALITY_GATES',
+                    'CONTRACT_SELECTION',
+                    len(chain),
+                )}
         if _chain_has_data:
+            _repair_selector_diagnostics = _new_repair_selector_diagnostics()
             _no_contract_singles = select_repair_alternative_contracts(
-                chain, ctx, None, limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT
+                chain,
+                ctx,
+                None,
+                limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT,
+                diagnostics=_repair_selector_diagnostics,
             )
-            _no_contract_verticals = select_ev3_vertical_debit_candidates(chain, ctx)
-            _no_contract_alternatives = (
-                _no_contract_singles + _no_contract_verticals
-            )[:EV3_TOTAL_CANDIDATE_LIMIT]
+            # Production is long single-leg CALL/PUT only. Do not mix vertical
+            # research structures into the executable repair handoff.
+            _no_contract_alternatives = _no_contract_singles[:EV3_TOTAL_CANDIDATE_LIMIT]
             if str(ctx.get('direction') or '').upper() in {'CALL', 'PUT'}:
                 _enrich_ev3_contract_multipliers(None, _no_contract_alternatives, ctx.get('ticker'))
+            _no_contract_alternatives, _incomplete_alternatives = _partition_complete_ev3_candidates(
+                _no_contract_alternatives
+            )
             _repair_alt_fields = _format_repair_alternative_fields(
                 _no_contract_alternatives,
                 'NO_CONTRACT_PASSED_QUALITY_GATES',
+            )
+            _repair_alt_fields.update(_alternative_handoff_audit(_incomplete_alternatives))
+            _repair_alt_fields.update(
+                _repair_selector_diagnostic_fields(_repair_selector_diagnostics)
             )
             _base_no_contract.update({
                 'execution_permission': OPTIONS_RESEARCH_PERMISSION,
@@ -6040,6 +6883,21 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'block_family': 'SCORE',
                 'block_severity': 'SOFT',
                 'block_detail': 'No contract passed quality gates',
+                'thesis_id': (
+                    f"{str(ctx.get('ticker') or '').upper()}:"
+                    f"{str(ctx.get('direction') or '').upper()}:"
+                    f"{_resolve_asof_date(_context_signal_row(ctx)) or 'UNKNOWN_SESSION'}"
+                ),
+                'thesis_state': 'ACTIVE',
+                'liquidity_state': 'CONTRACT_FAMILY_REPAIR_REQUIRED',
+                'morning_transition_state': 'CONTRACT_REPRICE_REQUIRED',
+                'recovery_disposition': 'CONTRACT_REPAIR',
+                'executable_now': False,
+                'maturation_score_is_probability': False,
+                'maturation_execution_authority': False,
+                'contract_changed': False,
+                'contract_selection_reason': 'NO_LONG_SINGLE_CONTRACT_IN_GOVERNED_DTE_DELTA_RANGE',
+                'quote_freshness': 'UNAVAILABLE',
             })
             _base_no_contract.update(_repair_alt_fields)
             return _base_no_contract
@@ -6050,33 +6908,17 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     was_synthetic = contract.get('mark_synthetic', False)
     contract = enrich_contract_with_real_quotes(contract)
 
-    # ── 4c. NBBO top-of-book — feeds OBI predictor (FIX-08, 2026-05-02) ───
-    # MarketData /v1/stocks/quotes/{ticker}/ returns bidSize and askSize.
-    # Wire to result so EIL ctx.l2_bid_size/l2_ask_size are populated.
-    # Without this OBI runs on GEX synthesis only.
-    try:
-        if MARKETDATA_API_KEY:
-            _nbbo_r = SESSION.get(
-                f'https://api.marketdata.app/v1/stocks/quotes/{ticker}/',
-                headers={'Authorization': f'Token {MARKETDATA_API_KEY}'},
-                timeout=8
-            )
-            if _nbbo_r.ok:
-                _nbbo_j = _nbbo_r.json()
-                if _nbbo_j.get('s') == 'ok':
-                    _bsz = _nbbo_j.get('bidSize', [None])
-                    _asz = _nbbo_j.get('askSize', [None])
-                    result['l2_bid_size'] = _bsz[0] if _bsz else None
-                    result['l2_ask_size'] = _asz[0] if _asz else None
-    except Exception:
-        pass  # non-critical — OBI falls back to GEX synthesis
+    # ── 4c. NBBO top-of-book — feeds the non-authoritative OBI overlay ───
+    # Reuse upstream sizes when present. Otherwise fetch once and carry the
+    # values into the returned row; missing data remains explicit.
+    nbbo_fields = _resolve_underlying_nbbo_fields(ticker, signal_row)
 
-    # ── IV-FIX-002: Backfill iv_ctx from MD contract when Polygon IV missing ─
-    # Polygon chain returns rows but implied_vol=NaN (EOD / plan limitation).
-    # MD enrichment (step 4b above) obtains real contract IV from marketdata.app.
+    # ── IV-FIX-002: Backfill iv_ctx from the selected MD contract ──────────
+    # A chain response can contain rows with missing IV. Exact-contract MD
+    # enrichment obtains current contract IV when available.
     # Use that single-contract IV as atm_iv proxy, then run iv_engine to compute
     # VRP, expected move, and a proxy iv_rank via absolute-level estimate.
-    # This is the Polygon→MD fallback: use Polygon when available, MD when not.
+    # This is a same-provider refinement, not a source fallback.
     _md_iv = (contract.get('implied_vol') or
               contract.get('contract_iv') or
               contract.get('iv'))
@@ -6171,13 +7013,20 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         vol_confirm=vol_confirm, sector_data=sector_data)
     ois_pre_macro = ois
     macro_adj = options_macro_alignment_adjustment(ctx, macro_context, signal_row)
+    macro_adj["options_macro_authority"] = "ADVISORY_ONLY"
+    macro_adj["options_macro_effective_score_delta"] = 0.0
     macro_bonus = float(macro_adj.get("options_macro_alignment_bonus") or 0.0)
     if macro_bonus:
-        ois = round(max(0.0, min(100.0, ois + macro_bonus)), 2)
         if macro_bonus > 0:
-            pos_factors.append(f"Macro enrichment aligned with options direction (+{macro_bonus:.1f})")
+            pos_factors.append(
+                f"Macro enrichment aligned with options direction "
+                f"(advisory score {macro_bonus:+.1f}; no OIS effect)"
+            )
         else:
-            neg_factors.append(f"Macro enrichment contradicts options direction ({macro_bonus:.1f})")
+            neg_factors.append(
+                f"Macro enrichment contradicts options direction "
+                f"(advisory score {macro_bonus:+.1f}; no OIS effect)"
+            )
     verdict, stand_down_reason = derive_verdict(
         ois, ctx, iv_ctx, econ, neg_factors, sector_data=sector_data,
         contract=contract)
@@ -6218,7 +7067,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     if _oi_float(contract.get('spread_pct')) is None and resolved_bid is not None and resolved_ask is not None:
         resolved_mid = _oi_float(contract.get('mark')) or _oi_float(contract.get('mid')) or ((resolved_bid + resolved_ask) / 2.0)
         if resolved_mid and resolved_mid > 0:
-            contract['spread_pct'] = round(max(0.0, resolved_ask - resolved_bid) / resolved_mid, 6)
+            spread_fraction = quote_spread_fraction(resolved_bid, resolved_ask)
+            if spread_fraction is not None:
+                contract['spread_pct'] = round(spread_fraction, 6)
+    liquidity_lifecycle = _options_liquidity_lifecycle_fields(ctx, contract, iv_ctx)
     research_contract = build_options_research_contract(
         ctx=ctx,
         signal_row=signal_row,
@@ -6230,27 +7082,34 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         stand_down_reason=stand_down_reason,
         walls=walls,
     )
+    research_contract.update(liquidity_lifecycle)
     direction_arbitration = _direction_arbitration_oi(ctx)
     ev3_direction_fields = _ev3_direction_fields(ctx, direction_arbitration)
     repair_required = bool(research_contract.get('contract_repair_required'))
+    repair_selector_diagnostics = _new_repair_selector_diagnostics()
     long_alternatives = select_repair_alternative_contracts(
         chain,
         ctx,
         selected_contract=contract,
         limit=max(1, EV3_LONG_SINGLE_CANDIDATE_LIMIT - 1),
+        diagnostics=repair_selector_diagnostics,
     )
-    vertical_alternatives = select_ev3_vertical_debit_candidates(chain, ctx)
-    alternatives = (long_alternatives + vertical_alternatives)[: max(1, EV3_TOTAL_CANDIDATE_LIMIT - 1)]
+    alternatives = long_alternatives[: max(1, EV3_TOTAL_CANDIDATE_LIMIT - 1)]
     if (
         str(direction_arbitration.get('direction_arbitration_status') or '').upper()
-        in {'AGREEMENT', 'NO_PROBABILITY_OPINION'}
+        in {'AGREEMENT', 'NO_PROBABILITY_OPINION', 'CONFLICT_STRUCTURE_LEADS'}
         and str(ctx.get('direction') or '').upper() in {'CALL', 'PUT'}
     ):
         _enrich_ev3_contract_multipliers(contract, alternatives, ctx.get('ticker'))
+    alternatives, incomplete_alternatives = _partition_complete_ev3_candidates(alternatives)
     repair_alt_fields = _format_repair_alternative_fields(
         alternatives,
         str(research_contract.get('contract_repair_reason') or '') if repair_required else '',
         repair_required=repair_required,
+    )
+    repair_alt_fields.update(_alternative_handoff_audit(incomplete_alternatives))
+    repair_alt_fields.update(
+        _repair_selector_diagnostic_fields(repair_selector_diagnostics)
     )
     authoritative_route = str(research_contract.get('final_route', '') or '').upper()
     resolved_options_verdict = verdict
@@ -6261,6 +7120,21 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             research_contract.get('research_route_reason')
             or stand_down_reason
             or 'OPTIONS_RESEARCH_BLOCKED'
+        )
+    if (
+        not bool(liquidity_lifecycle.get('executable_now'))
+        and resolved_options_verdict == 'EXECUTE'
+    ):
+        # Preserve the thesis and economics, but do not advertise immediate
+        # execution when the exact selected contract is only monitorable.
+        resolved_options_verdict = 'ARMED'
+        authoritative_route = OPTIONS_PROBE_ROUTE
+        research_contract['final_route'] = OPTIONS_PROBE_ROUTE
+        research_contract['options_route_verdict'] = OPTIONS_PROBE_ROUTE
+        research_contract['execution_permission'] = OPTIONS_RESEARCH_PERMISSION
+        resolved_stand_down_reason = (
+            f"CONTRACT_{liquidity_lifecycle.get('liquidity_state') or 'NOT_EXECUTABLE'}; "
+            "retain thesis for morning exact-contract re-evaluation"
         )
     block_taxonomy = _classify_block(resolved_stand_down_reason or "")
     pcr_resolution = _direction_conflict_status_oi(ctx.get("direction"), pcr_signal, pcr_val)
@@ -6289,6 +7163,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'asof_date'               : _resolve_asof_date(signal_row),
         **_ev3_handoff_fields(ctx),
         **ev3_direction_fields,
+        **_common_options_handoff_fields(ctx),
+        **_chain_lineage,
 
         # Verdict
         'legacy_options_verdict'  : verdict,
@@ -6364,8 +7240,20 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'contract_oi'             : contract.get('oi'),
         'contract_volume'         : contract.get('volume'),
         'contract_spread_pct'     : contract.get('spread_pct'),
+        'contract_bid_size'       : contract.get('bid_size'),
+        'contract_ask_size'       : contract.get('ask_size'),
+        'contract_bid_size_quality': contract.get('bid_size_quality', 'MISSING'),
+        'contract_ask_size_quality': contract.get('ask_size_quality', 'MISSING'),
         'contract_mark_synthetic' : contract.get('mark_synthetic', False),
-        'contract_quote_source'   : contract.get('md_quote_source', 'polygon_bsm'),
+        'contract_quote_quality'  : contract.get('quote_quality'),
+        'contract_quality_flags'  : json.dumps(
+            sorted(_quote_flags(contract.get('quality_flags'))), separators=(',', ':')
+        ),
+        'contract_quote_fields_complete': contract.get('quote_fields_complete', False),
+        'contract_quote_refresh_status': contract.get('quote_refresh_status'),
+        'contract_quote_source'   : contract.get(
+            'md_quote_source', 'SYNTHETIC_BSM_NO_PROVIDER_QUOTE'
+        ),
         'contract_spread_source'  : contract.get('spread_source'),
         'contract_occ_symbol'     : contract.get('md_occ_symbol'),
         'contract_quote_timestamp_utc': contract.get('quote_timestamp_utc'),
@@ -6373,6 +7261,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'quote_timestamp_utc'     : contract.get('quote_timestamp_utc'),
         'contract_multiplier'     : contract.get('contract_multiplier'),
         'contract_multiplier_source': contract.get('contract_multiplier_source'),
+        **nbbo_fields,
 
         # IV environment — core
         'atm_iv'                  : iv_ctx.get('atm_iv'),
@@ -6713,7 +7602,10 @@ def build_convexity_strike_map(
     # ── Verdict logic (TRAP and TOO_LATE override BUYABLE/WAIT) ──────────────
     if _abs_delta > 0.70:
         csm_verdict = "TRAP"
-        csm_verdict_reason = f"Delta {_abs_delta:.2f} > 0.70 — deep ITM lottery ticket geometry"
+        csm_verdict_reason = (
+            f"Delta {_abs_delta:.2f} > 0.70 — deep ITM stock-replacement profile "
+            "outside the default convex long-option mandate"
+        )
     elif ivp is not None and ivp > 75:
         csm_verdict = "TRAP"
         csm_verdict_reason = f"IVP {ivp:.0f} > 75 — buying at peak volatility"
@@ -6966,6 +7858,11 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
         'pcr_confidence_weight': 0.0,
         'macro_multiplier': 1.0,
         'structural_multiplier': 1.0,
+        'macro_multiplier_advisory': 1.0,
+        'structural_multiplier_advisory': 1.0,
+        'macro_multiplier_authority': 'ADVISORY_ONLY',
+        'options_macro_authority': 'ADVISORY_ONLY',
+        'options_macro_effective_score_delta': 0.0,
         'macro_confirmation_level': 'STANDARD',
         'macro_routing_state': 'STANDARD',
         'horizon_bucket': ctx.get('horizon_bucket') or ctx.get('macro_preferred_horizon') or '',
@@ -6985,6 +7882,10 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
         'contract_expiry'  : None,
         'contract_dte'     : None,
         'contract_premium' : None,
+        'contract_bid_size': None,
+        'contract_ask_size': None,
+        'contract_bid_size_quality': 'MISSING',
+        'contract_ask_size_quality': 'MISSING',
         'dte'              : None,
         'expiry'           : None,
         'strike'           : None,
@@ -6994,6 +7895,10 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
         'quote_timestamp_utc': None,
         'contract_multiplier': None,
         'contract_multiplier_source': None,
+        'l2_bid_size': None,
+        'l2_ask_size': None,
+        'l2_quote_source': 'UNAVAILABLE',
+        'l2_quote_timestamp_utc': None,
         # Superbrain passthrough — populated even on STAND_DOWN so veto context is available
         'phase_best'       : ctx.get('phase', ''),
         'underlying_price' : ctx.get('spot', 0),
@@ -7009,9 +7914,442 @@ def _stand_down(ctx: Dict, reason: str) -> Dict:
     }
 
 
+CONTRACT_REJECTION_LOG_COLUMNS = [
+    'ticker',
+    'contract',
+    'horizon',
+    'rejection_reason',
+    'rejection_stage',
+    'dte_scanned_min',
+    'dte_scanned_max',
+    'chain_rows',
+    'final_route',
+]
+
+
+def _build_contract_rejection_log_rows(out_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """Build one auditable contract-rejection record per affected signal."""
+    def _text(value: Any) -> str:
+        text = str(value if value is not None else '').strip()
+        return '' if text.lower() in {'', 'nan', 'none'} else text
+
+    rows: List[Dict[str, Any]] = []
+    for row in out_df.to_dict('records'):
+        reason = _text(row.get('contract_rejection_reason'))
+        stage = _text(row.get('contract_rejection_stage'))
+
+        repair_required = str(row.get('contract_repair_required', '') or '').upper() in {
+            'TRUE', '1', 'YES'
+        }
+        if not reason and repair_required:
+            reason = (
+                _text(row.get('contract_repair_reason'))
+                or _text(row.get('contract_review_flags'))
+                or 'CONTRACT_REPAIR_REQUIRED'
+            )
+            stage = stage or 'CONTRACT_REPAIR'
+
+        if not reason:
+            continue
+
+        horizon = (
+            _text(row.get('contract_rejection_horizon'))
+            or _text(row.get('horizon_bucket'))
+            or '1_5d'
+        ).lower()
+        dte_cfg = DTE_CONFIG.get(horizon, DTE_CONFIG.get('1_5d', {}))
+        rows.append({
+            'ticker': row.get('ticker', ''),
+            'contract': (
+                _text(row.get('recommended_contract'))
+                or _text(row.get('contract_occ_symbol'))
+                or _text(row.get('contract_symbol'))
+            ),
+            'horizon': horizon,
+            'rejection_reason': reason,
+            'rejection_stage': stage or 'UNKNOWN',
+            'dte_scanned_min': row.get('contract_rejection_dte_min', '') or dte_cfg.get('dte_min', ''),
+            'dte_scanned_max': row.get('contract_rejection_dte_max', '') or dte_cfg.get('dte_max', ''),
+            'chain_rows': row.get('contract_rejection_chain_rows', ''),
+            'final_route': row.get('final_route', ''),
+        })
+    return rows
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECTION 12 — MAIN PIPELINE RUNNER
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def _parse_utc_datetime(value: Any) -> Optional[datetime]:
+    if value is None or str(value).strip() == "":
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _persist_options_lifecycle_result(result: Dict[str, Any], run_id: str) -> None:
+    """Persist one EOD thesis/quote/selection into the existing CDS database."""
+    global _CDS_LIQUIDITY_STORE
+    if bool(result.get("options_session_exception")):
+        # Session-quarantined rows have no governed option observation. Keep the
+        # underlying thesis untouched and retain the exception in run artifacts.
+        result["liquidity_persistence_status"] = "SKIPPED_SESSION_DATA_EXCEPTION"
+        return
+    if _CDS_LIQUIDITY_STORE is None:
+        result["liquidity_persistence_status"] = "DISABLED"
+        return
+    from canonical_data import (
+        CompletenessStatus,
+        ContractLiquidityState,
+        DataScope,
+        DatasetRecord,
+        DatasetType,
+        MonitorState,
+        ThesisState,
+    )
+
+    thesis_id = str(result.get("thesis_id") or "").strip()
+    ticker = str(result.get("ticker") or "").strip().upper()
+    side = str(result.get("options_direction") or result.get("direction") or "").strip().upper()
+    if not thesis_id or not ticker or side not in {"CALL", "PUT"}:
+        result["liquidity_persistence_status"] = "SKIPPED_NO_GOVERNED_THESIS"
+        return
+
+    terminal_map = {
+        "INVALIDATED": ThesisState.INVALIDATED,
+        "TARGET_REALIZED": ThesisState.TARGET_REALIZED,
+        "HORIZON_EXPIRED": ThesisState.HORIZON_EXPIRED,
+        "COMPLETED": ThesisState.COMPLETED,
+    }
+    thesis_state = terminal_map.get(str(result.get("thesis_state") or "").upper(), ThesisState.ACTIVE)
+    terminal_thesis_states = frozenset(terminal_map.values())
+    terminal_transition = thesis_state in terminal_thesis_states
+    executable = bool(result.get("executable_now"))
+    monitor_state = (
+        MonitorState.TERMINAL if terminal_transition
+        else MonitorState.NOT_REQUIRED if executable
+        else MonitorState.ACTIVE
+    )
+    latest_thesis = _CDS_LIQUIDITY_STORE.latest_thesis(thesis_id)
+    legacy_thesis_id = str(result.get("legacy_thesis_id") or "").strip()
+    legacy_thesis = (
+        _CDS_LIQUIDITY_STORE.latest_thesis(legacy_thesis_id)
+        if legacy_thesis_id and legacy_thesis_id != thesis_id else None
+    )
+    corrects_legacy_terminal = bool(
+        legacy_thesis is not None
+        and legacy_thesis.thesis_state in terminal_thesis_states
+    )
+    if latest_thesis is not None and latest_thesis.thesis_state in terminal_thesis_states:
+        # A terminal thesis is immutable. Weekend reruns can legitimately
+        # revisit the same ticker/direction/completed-session identity, but
+        # they must not reactivate it or try to attach a later observation.
+        # Preserve the canonical terminal state in the emitted row and make
+        # the persistence seam idempotent instead of aborting the run.
+        stored_state = latest_thesis.thesis_state.value
+        transition_by_state = {
+            ThesisState.INVALIDATED: "THESIS_INVALIDATED",
+            ThesisState.TARGET_REALIZED: "MOVE_ALREADY_REALIZED",
+            ThesisState.HORIZON_EXPIRED: "HORIZON_EXPIRED",
+            ThesisState.COMPLETED: "THESIS_COMPLETED",
+        }
+        result.update({
+            "thesis_state": stored_state,
+            "liquidity_state": latest_thesis.reason_code,
+            "morning_transition_state": transition_by_state[latest_thesis.thesis_state],
+            "executable_now": False,
+            "maturation_execution_authority": False,
+            "recovery_disposition": "STAND_DOWN",
+            "liquidity_persistence_status": "TERMINAL_THESIS_ALREADY_RECORDED",
+        })
+        if latest_thesis.thesis_state is ThesisState.INVALIDATED:
+            result["remaining_runway_state"] = "THESIS_INVALIDATED"
+        elif latest_thesis.thesis_state is ThesisState.TARGET_REALIZED:
+            result["remaining_runway_state"] = "MOVE_ALREADY_REALIZED"
+        return
+    expiry_text = str(result.get("contract_expiry") or result.get("expiry") or "")[:10]
+    try:
+        expiration_date = date.fromisoformat(expiry_text) if expiry_text else None
+    except ValueError:
+        expiration_date = None
+    lifecycle_anchor = _parse_utc_datetime(
+        result.get("quote_as_of") or result.get("contract_quote_timestamp_utc")
+    )
+    horizon_end = (
+        (pd.Timestamp(lifecycle_anchor.date()) + pd.offsets.BDay(3)).date()
+        if lifecycle_anchor is not None else None
+    )
+    def _record_eod_thesis_event(
+        *,
+        state: Any,
+        monitoring: Any,
+        event_key: str,
+        expected_version: Optional[int],
+        reason_code: str,
+        correction_successor: bool = False,
+    ) -> Any:
+        correction_kwargs = {}
+        if correction_successor and corrects_legacy_terminal:
+            correction_kwargs = {
+                "supersedes_event_id": legacy_thesis.event_id,
+                "correction_reason": "LEGACY_INVALIDATION_GEOMETRY_OR_HOLD_DEFECT",
+                "corrected_by_run_id": run_id,
+                "correction_state": LifecycleEvaluationState.SUPERSEDED_DATA_DEFECT.value,
+            }
+        return _CDS_LIQUIDITY_STORE.record_thesis_event(
+            thesis_id=thesis_id,
+            event_key=event_key,
+            run_id=run_id,
+            ticker=ticker,
+            direction=side,
+            thesis_state=state,
+            monitor_state=monitoring,
+            reason_code=reason_code,
+            structural_target=_repair_alt_float(result.get("structural_target")),
+            invalidation_spot=_repair_alt_float(
+                result.get("ev3_invalidation_spot") or result.get("invalidation_spot")
+            ),
+            horizon_end_date=horizon_end,
+            expected_version=expected_version,
+            metadata={
+                "lifecycle_contract_version": result.get("lifecycle_contract_version"),
+                "morning_transition_state": result.get("morning_transition_state"),
+                "maturation_execution_authority": False,
+            },
+            calculation_version=str(
+                result.get("thesis_calculation_version")
+                or OPTIONS_LIQUIDITY_LIFECYCLE_VERSION
+            ),
+            **correction_kwargs,
+        )
+
+    contract_symbol = str(result.get("recommended_contract") or result.get("contract_symbol") or "").strip()
+    chain_dataset_id = str(result.get("option_chain_dataset_id") or "").strip()
+    quote_as_of = lifecycle_anchor
+    strike = _repair_alt_float(result.get("contract_strike") or result.get("strike"))
+    dte = _repair_alt_float(result.get("contract_dte") or result.get("dte"))
+    spot = _repair_alt_float(result.get("underlying_price") or result.get("signal_price"))
+    if not all((contract_symbol, chain_dataset_id, quote_as_of, expiry_text)) or None in {strike, dte, spot}:
+        _record_eod_thesis_event(
+            state=thesis_state,
+            monitoring=monitor_state,
+            event_key=f"EOD:{run_id}",
+            expected_version=latest_thesis.version if latest_thesis else None,
+            reason_code=str(result.get("liquidity_state") or "LIFECYCLE_RECORDED"),
+            correction_successor=True,
+        )
+        result["liquidity_persistence_status"] = "THESIS_ONLY_CONTRACT_PROVENANCE_INCOMPLETE"
+        return
+    # Persistence is the final defence boundary. Invalid/crossed quote evidence
+    # may be retained in the raw option-chain dataset, but it must never be
+    # registered as a selected quote or contract observation. Record only the
+    # governed thesis event so a bad provider row cannot abort the whole run.
+    persisted_bid = _repair_alt_float(result.get("contract_bid"))
+    persisted_ask = _repair_alt_float(result.get("contract_ask"))
+    persisted_spread = _repair_alt_float(result.get("contract_spread_pct"))
+    persisted_quality = str(result.get("contract_quote_quality") or "").strip().upper()
+    persisted_flags = _quote_flags(result.get("contract_quality_flags"))
+    invalid_selected_quote = (
+        persisted_quality == "INVALID"
+        or bool({"CROSSED_QUOTE", "NEGATIVE_QUOTE"} & persisted_flags)
+        or (persisted_bid is not None and persisted_bid < 0)
+        or (persisted_ask is not None and persisted_ask < 0)
+        or (
+            persisted_bid is not None and persisted_ask is not None
+            and persisted_bid > persisted_ask
+        )
+        or (persisted_spread is not None and persisted_spread < 0)
+    )
+    if invalid_selected_quote:
+        _record_eod_thesis_event(
+            state=thesis_state,
+            monitoring=MonitorState.ACTIVE if not terminal_transition else MonitorState.TERMINAL,
+            event_key=f"EOD:{run_id}",
+            expected_version=latest_thesis.version if latest_thesis else None,
+            reason_code="INVALID_SELECTED_QUOTE",
+            correction_successor=True,
+        )
+        result.update({
+            "liquidity_state": "INVALID_QUOTE",
+            "executable_now": False,
+            "maturation_execution_authority": False,
+            "liquidity_persistence_status": "THESIS_ONLY_INVALID_SELECTED_QUOTE",
+            "liquidity_persistence_error": "CROSSED_NEGATIVE_OR_MALFORMED_SELECTED_QUOTE",
+        })
+        return
+
+    try:
+        expiration = expiration_date
+        if expiration is None:
+            raise ValueError("contract expiration unavailable")
+        liquidity_state = ContractLiquidityState[str(result.get("liquidity_state") or "").upper()]
+    except (ValueError, KeyError):
+        _record_eod_thesis_event(
+            state=thesis_state,
+            monitoring=monitor_state,
+            event_key=f"EOD:{run_id}",
+            expected_version=latest_thesis.version if latest_thesis else None,
+            reason_code=str(result.get("liquidity_state") or "LIFECYCLE_RECORDED"),
+            correction_successor=True,
+        )
+        result["liquidity_persistence_status"] = "THESIS_ONLY_LIQUIDITY_STATE_UNSUPPORTED"
+        return
+
+    # Contract evidence must be appended while the thesis is active. Closing
+    # the thesis first makes the store reject its own final observation. For a
+    # terminal result, create an idempotent active capture event, persist the
+    # quote and selection below, and append the terminal event last.
+    if terminal_transition:
+        staged_thesis = _record_eod_thesis_event(
+            state=ThesisState.ACTIVE,
+            monitoring=MonitorState.ACTIVE,
+            event_key=f"EOD_OBSERVATION:{run_id}",
+            expected_version=latest_thesis.version if latest_thesis else None,
+            reason_code="TERMINAL_OBSERVATION_CAPTURE",
+            correction_successor=True,
+        )
+    else:
+        staged_thesis = _record_eod_thesis_event(
+            state=thesis_state,
+            monitoring=monitor_state,
+            event_key=f"EOD:{run_id}",
+            expected_version=latest_thesis.version if latest_thesis else None,
+            reason_code=str(result.get("liquidity_state") or "LIFECYCLE_RECORDED"),
+            correction_successor=True,
+        )
+
+    # The selected exact-contract snapshot is its own canonical data object.
+    # Do not claim that a later quote-endpoint enrichment came from the original
+    # full-chain payload. This also gives the Intelligence Lab an exact lineage
+    # target for the values shown to the trader.
+    quote_payload = {
+        key: result.get(key)
+        for key in (
+            "ticker", "recommended_contract", "contract_bid", "contract_ask",
+            "contract_mid", "contract_spread_pct", "contract_delta",
+            "contract_gamma", "contract_theta", "contract_vega", "contract_iv",
+            "contract_oi", "contract_volume", "contract_quote_source",
+            "contract_quote_timestamp_utc", "contract_mark_synthetic",
+            "contract_quote_quality", "contract_quality_flags",
+            "contract_quote_fields_complete", "contract_quote_refresh_status",
+        )
+    }
+    quote_payload["source_chain_dataset_id"] = chain_dataset_id
+    encoded = json.dumps(
+        quote_payload, sort_keys=True, separators=(",", ":"), default=str
+    ).encode("utf-8")
+    content_hash = hashlib.sha256(encoded).hexdigest()
+    selected_dataset_id = hashlib.sha256(
+        (
+            f"LIVE_OPTION|{ticker}|{contract_symbol}|{quote_as_of.isoformat()}|"
+            f"{content_hash}"
+        ).encode("utf-8")
+    ).hexdigest()
+    payload_dir = (
+        _REPO_ROOT / "data" / "canonical" / "live_options"
+        / quote_as_of.date().isoformat() / ticker
+    )
+    payload_dir.mkdir(parents=True, exist_ok=True)
+    payload_path = payload_dir / f"{selected_dataset_id}.json"
+    if not payload_path.exists():
+        temporary = payload_path.with_suffix(".tmp")
+        temporary.write_bytes(encoded)
+        os.replace(temporary, payload_path)
+    _CDS_LIQUIDITY_STORE.registry.register_dataset(DatasetRecord(
+        dataset_id=selected_dataset_id,
+        dataset_type=DatasetType.LIVE_OPTION,
+        instrument_id=ticker,
+        session_date=quote_as_of.date(),
+        scope=DataScope(
+            start_date=quote_as_of.date(),
+            end_date=quote_as_of.date(),
+            fields=tuple(quote_payload.keys()),
+            sides=(side,),
+            extra=(
+                ("contract_symbol", contract_symbol.replace("O:", "")),
+                ("source_chain_dataset_id", chain_dataset_id),
+            ),
+        ),
+        provider="MARKETDATA",
+        content_hash=content_hash,
+        completeness_status=(
+            CompletenessStatus.COMPLETE
+            if (
+                persisted_bid is not None and persisted_bid > 0
+                and persisted_ask is not None and persisted_ask >= persisted_bid
+                and not bool(result.get("contract_mark_synthetic", False))
+            )
+            else CompletenessStatus.PARTIAL
+        ),
+        storage_uri=str(payload_path.resolve()),
+        observed_at=quote_as_of,
+        as_of=quote_as_of,
+        adjustment_convention="RAW_OPTION_CONTRACT",
+        schema_version="selected_option_quote_v1",
+        source_run_id=run_id,
+    ))
+    result["selected_quote_dataset_id"] = selected_dataset_id
+
+    observation = _CDS_LIQUIDITY_STORE.record_contract_observation(
+        thesis_id=thesis_id,
+        run_id=run_id,
+        ticker=ticker,
+        contract_symbol=contract_symbol,
+        option_side=side,
+        quote_as_of=quote_as_of,
+        source_dataset_id=selected_dataset_id,
+        spot=float(spot),
+        strike=float(strike),
+        expiration=expiration,
+        dte=float(dte),
+        delta=_repair_alt_float(result.get("contract_delta")),
+        bid=_repair_alt_float(result.get("contract_bid")),
+        ask=_repair_alt_float(result.get("contract_ask")),
+        spread_pct=_repair_alt_float(result.get("contract_spread_pct")),
+        volume=_repair_alt_float(result.get("contract_volume")),
+        open_interest=_repair_alt_float(result.get("contract_oi")),
+        iv=_repair_alt_float(result.get("contract_iv")),
+        liquidity_state=liquidity_state,
+        maturation_score_1d=_repair_alt_float(result.get("maturation_score_1d")),
+        maturation_score_2d=_repair_alt_float(result.get("maturation_score_2d")),
+        maturation_score_3d=_repair_alt_float(result.get("maturation_score_3d")),
+        maturation_score_is_probability=False,
+        atm_distance_sigma=_repair_alt_float(result.get("atm_distance_sigma")),
+        remaining_runway_pct=_repair_alt_float(result.get("remaining_runway_pct")),
+        calculation_version=OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+    )
+    latest_selection = _CDS_LIQUIDITY_STORE.latest_selection(thesis_id)
+    # The EOD event payload must be stable on replay. A same-event replay must
+    # not rewrite `previous` from the selection that the first pass just made.
+    previous_symbol = str(result.get("previous_contract_symbol") or "").strip() or None
+    _CDS_LIQUIDITY_STORE.record_selection_event(
+        thesis_id=thesis_id,
+        event_key=f"EOD_SELECTION:{run_id}",
+        run_id=run_id,
+        previous_contract_symbol=previous_symbol,
+        selected_contract_symbol=contract_symbol,
+        selected_observation_id=observation.record.observation_id,
+        selection_reason=str(result.get("contract_selection_reason") or "EOD_CONTRACT_SELECTION"),
+        economics_recomputed=True,
+        expected_version=latest_selection.selection_version if latest_selection else None,
+        metadata={"selected_contract_economics_ready": True},
+        calculation_version=OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+    )
+    if terminal_transition:
+        _record_eod_thesis_event(
+            state=thesis_state,
+            monitoring=MonitorState.TERMINAL,
+            event_key=f"EOD:{run_id}",
+            expected_version=staged_thesis.record.version,
+            reason_code=str(result.get("liquidity_state") or "LIFECYCLE_RECORDED"),
+        )
+        result["liquidity_persistence_status"] = "PERSISTED_TERMINAL"
+    else:
+        result["liquidity_persistence_status"] = "PERSISTED"
+
 
 def run_options_layer(
     discovery_csv: str,
@@ -7034,6 +8372,8 @@ def run_options_layer(
     Returns:
         DataFrame of options intelligence results, one row per signal
     """
+    global _CDS_CHAIN_SERVICE, _CDS_LIQUIDITY_STORE, _MD_AVAILABLE
+    global _CDS_V2_CHAIN_RESOLVER, _CDS_V2_SESSION
     if not run_id:
         run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
 
@@ -7042,12 +8382,17 @@ def run_options_layer(
     print(f"Run: {run_id}")
     print("="*72)
 
-    # Auth — MarketData.app (required, primary chain source) + Polygon (optional fallback)
-    if not init_marketdata_auth():
-        print("[FATAL] Cannot proceed without MarketData.app authentication.")
-        return pd.DataFrame()
-    if not init_auth():
-        print("[WARN] Polygon authentication failed — Polygon fallback chain unavailable.")
+    # Auth — a controlled replay is provider-free and therefore skips every
+    # authentication/network probe. Normal production behaviour is unchanged.
+    if _canonical_offline_replay_enabled():
+        _MD_AVAILABLE = False
+        print("[CDS-REPLAY] Offline canonical replay enabled — all provider calls disabled")
+    else:
+        if not init_marketdata_auth():
+            print("[FATAL] Cannot proceed without MarketData.app authentication.")
+            return pd.DataFrame()
+        if not init_auth():
+            print("[WARN] Polygon authentication failed — underlying/sector context may be reduced; options remain MarketData-only.")
 
     # Load data
     print("\n[LOAD] Reading pipeline outputs...")
@@ -7106,6 +8451,128 @@ def run_options_layer(
         eligible = eligible.head(max_signals)
         print(f"[SCOPE] Capped at {max_signals} for this run")
 
+    # CDS-3/4 production seam. Publish the exact post-scope Options worklist
+    # before any chain request, then resolve/write-through one canonical chain
+    # per ticker/session. In enforced mode any publication defect fails closed.
+    _cds_options_publication = None
+    _options_session_exception_by_ticker: Dict[str, Dict[str, Any]] = {}
+    try:
+        from canonical_data import (
+            CanonicalFeatureFlags,
+            CanonicalMarketObservationResolver,
+            CanonicalOptionChainService,
+            CanonicalRegistry,
+            OptionLiquidityLifecycleStore,
+            publish_options_worklist,
+        )
+
+        _cds_flags = CanonicalFeatureFlags.from_environment()
+        _msi_flags = active_msi_flags()
+        if _cds_flags.enabled:
+            _root = Path(__file__).resolve().parents[1]
+            _registry_path = _root / "data" / "canonical" / "control_plane.sqlite"
+
+            # Resolve the run-level option session from explicitly current rows.
+            # Ticker-level stale/missing/session-mismatched rows are quarantined
+            # and remain visible as MONITOR_ONLY data exceptions; they do not
+            # receive option-chain acquisition authority.  The canonical resolver
+            # remains strict if the current population itself is ambiguous.
+            _run_session, _session_source, _session_exceptions = (
+                _resolve_options_session_scope(eligible)
+            )
+            _options_session_exception_by_ticker = {
+                str(record["ticker"]): record
+                for record in _session_exceptions.to_dict("records")
+            }
+            _exception_tickers = set(_options_session_exception_by_ticker)
+            _exception_dir = Path(output_dir)
+            _exception_dir.mkdir(parents=True, exist_ok=True)
+            _exception_path = (
+                _exception_dir / f"options_session_exceptions_{run_id}.csv"
+            )
+            _session_exceptions.to_csv(_exception_path, index=False)
+            print(
+                f"[CDS-4] Completed option session: {_run_session.isoformat()} "
+                f"from fresh {_session_source} rows (run date={run_id[:8]})"
+            )
+            print(
+                f"[CDS-4] Session exceptions: {len(_session_exceptions)} "
+                f"quarantined -> {_exception_path}"
+            )
+
+            _chain_authorised_tickers = []
+            for _, _candidate in eligible.iterrows():
+                try:
+                    _candidate_ticker = str(_candidate.get("ticker", ""))
+                    if _candidate_ticker in _exception_tickers:
+                        continue
+                    if parse_structural_context(_candidate).get("direction") in GOVERNED_DIRECTED_SIDES:
+                        _chain_authorised_tickers.append(_candidate_ticker)
+                except Exception:
+                    # The row remains in Options output as a fail-closed data
+                    # record, but receives no chain acquisition authority.
+                    continue
+            _publication = publish_options_worklist(
+                CanonicalRegistry(_registry_path),
+                run_id=run_id,
+                input_tickers=merged["ticker"].astype(str),
+                eligible_tickers=_chain_authorised_tickers,
+            )
+            if not _publication.reconciled:
+                raise RuntimeError("CDS-3 Options worklist reconciliation failed")
+            _cds_options_publication = _publication
+            print(
+                f"[CDS-3] Options worklist: input={_publication.input_count} "
+                f"authorised={_publication.authorised_count} "
+                f"equity_only={_publication.excluded_count}"
+            )
+            if _msi_flags.v2_capture:
+                _CDS_V2_CHAIN_RESOLVER = CanonicalMarketObservationResolver(
+                    registry_path=_registry_path,
+                    payload_root=_root / "data" / "canonical" / "market_observations",
+                    run_id=run_id,
+                    flags=_cds_flags,
+                )
+                _CDS_V2_SESSION = _run_session
+                _CDS_CHAIN_SERVICE = None
+                print("[MSI-1] option_chain_v2 capture/resolution enabled")
+            else:
+                _CDS_V2_CHAIN_RESOLVER = None
+                _CDS_V2_SESSION = None
+                _CDS_CHAIN_SERVICE = CanonicalOptionChainService(
+                    registry_path=_registry_path,
+                    payload_root=_root / "data" / "canonical" / "options",
+                    run_id=run_id,
+                    session_date=_run_session,
+                    dte_max=CHAIN_EXPIRY_DAYS,
+                    min_open_interest=OPTION_CHAIN_ACQUISITION_MIN_OI,
+                    flags=_cds_flags,
+                )
+            if _canonical_lifecycle_persistence_enabled(_cds_flags):
+                _CDS_LIQUIDITY_STORE = OptionLiquidityLifecycleStore(
+                    CanonicalRegistry(_registry_path)
+                )
+                _CDS_LIQUIDITY_STORE.initialise()
+            else:
+                _CDS_LIQUIDITY_STORE = None
+                print(
+                    "[CDS-REPLAY] Lifecycle persistence disabled — "
+                    "historical thesis state is immutable"
+                )
+        else:
+            _CDS_CHAIN_SERVICE = None
+            _CDS_LIQUIDITY_STORE = None
+            _CDS_V2_CHAIN_RESOLVER = None
+            _CDS_V2_SESSION = None
+    except Exception as _cds_error:
+        _CDS_CHAIN_SERVICE = None
+        _CDS_LIQUIDITY_STORE = None
+        _CDS_V2_CHAIN_RESOLVER = None
+        _CDS_V2_SESSION = None
+        if os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower() in {"1", "true", "yes", "on"}:
+            raise RuntimeError(f"CDS-3/4 Options authority failed closed: {_cds_error}") from _cds_error
+        print(f"[CDS-3/4] Shadow setup unavailable — legacy primary/fallback path retained: {_cds_error}")
+
     print(f"\n[START] Processing {len(eligible)} signals...\n")
 
     macro_contexts = load_package_macro_contexts(run_id, output_dir)
@@ -7134,26 +8601,65 @@ def run_options_layer(
 
         print(f"[{i}/{len(eligible)}] {ticker} T{tier} Ph{phase} {intent}")
 
-        try:
-            result = process_ticker(row, macro_context=macro_contexts.get(ticker), tle_context=tle_contexts.get(ticker))
-            for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
-                result.setdefault(_baton_col, row.get(_baton_col))
-            results.append(result)
-            v = result.get('options_verdict','?')
-            s = result.get('options_score', 0)
-            print(f"         → {v} (OIS={s})")
-        except Exception as e:
-            print(f"         → ERROR: {e}")
+        _session_exception = _options_session_exception_by_ticker.get(ticker)
+        if _session_exception is not None:
             try:
                 ctx = parse_structural_context(row)
             except Exception:
-                # Fallback context when parse itself fails (e.g. NaN fields on days_to_trigger)
-                _fb_tier = row.get("tier", 2)
-                ctx = {"ticker": str(row.get("ticker", "UNKNOWN")), "tier": _safe_int(_fb_tier, 2)}
-            result = _stand_down(ctx, f"Unhandled exception: {e}")
+                ctx = {"ticker": ticker, "tier": tier, "phase": phase, "intent": intent}
+            _exception_reason = (
+                "BLOCK_DATA_EXCEPTION: "
+                f"{_session_exception['exception_reason']} "
+                f"expected={_session_exception['expected_session']} "
+                f"actual={_session_exception['actual_session'] or 'MISSING'} "
+                f"source={_session_exception['data_source'] or 'UNKNOWN'}"
+            )
+            result = _stand_down(ctx, _exception_reason)
+            result.update({
+                "options_session_exception": True,
+                "options_session_exception_reason": _session_exception["exception_reason"],
+                "options_session_expected": _session_exception["expected_session"],
+                "options_session_actual": _session_exception["actual_session"],
+                "options_session_source": _session_exception["session_source"],
+                "options_session_exception_action": _session_exception["exception_action"],
+                "execution_permission": "NO_CAPITAL",
+            })
             for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
                 result.setdefault(_baton_col, row.get(_baton_col))
             results.append(result)
+            print(f"         → DATA_EXCEPTION ({_session_exception['exception_reason']})")
+        else:
+            try:
+                result = process_ticker(row, macro_context=macro_contexts.get(ticker), tle_context=tle_contexts.get(ticker))
+                for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
+                    result.setdefault(_baton_col, row.get(_baton_col))
+                results.append(result)
+                v = result.get('options_verdict','?')
+                s = result.get('options_score', 0)
+                print(f"         → {v} (OIS={s})")
+            except Exception as e:
+                print(f"         → ERROR: {e}")
+                try:
+                    ctx = parse_structural_context(row)
+                except Exception:
+                    # Fallback context when parse itself fails (e.g. NaN fields on days_to_trigger)
+                    _fb_tier = row.get("tier", 2)
+                    ctx = {"ticker": str(row.get("ticker", "UNKNOWN")), "tier": _safe_int(_fb_tier, 2)}
+                result = _stand_down(ctx, f"Unhandled exception: {e}")
+                for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
+                    result.setdefault(_baton_col, row.get(_baton_col))
+                results.append(result)
+
+        try:
+            _persist_options_lifecycle_result(results[-1], run_id)
+        except Exception as _lifecycle_error:
+            results[-1]['liquidity_persistence_status'] = f"ERROR:{type(_lifecycle_error).__name__}"
+            results[-1]['liquidity_persistence_error'] = str(_lifecycle_error)
+            if os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower() in {"1", "true", "yes", "on"}:
+                raise RuntimeError(
+                    f"Options liquidity lifecycle persistence failed for {ticker}: {_lifecycle_error}"
+                ) from _lifecycle_error
+            print(f"         → CDS lifecycle warning: {_lifecycle_error}")
 
         # MD Trader plan: 100,000 credits/day. 0.10s sleep retained as courtesy
         # throttle — avoids any undocumented burst limit on MD infrastructure.
@@ -7201,7 +8707,7 @@ def run_options_layer(
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── Build output DataFrame ─────────────────────────────────────────────
-    out_df = pd.DataFrame(results)
+    out_df = _annotate_ev3_handoff_frame(pd.DataFrame(results))
 
     # Summary stats
     verdicts = out_df['options_verdict'].value_counts().to_dict()
@@ -7233,8 +8739,8 @@ def run_options_layer(
         for _route, _count in route_counts.items():
             print(f"    {_route:28s}: {_count}")
     print(f"\n  Quote source:")
-    print(f"    Real marks  (MD chain+quotes): {md_enriched}  [real-time on Trader plan / OPRA signed]")
-    print(f"    BSM synthetic (Polygon fallbk): {bsm_fallback}")
+    print(f"    Real marks  (MD chain+quotes): {md_enriched}  [MarketData provider]")
+    print(f"    Synthetic/incomplete quote marks: {bsm_fallback}")
     if md_enriched == 0 and bsm_fallback > 0:
         print(f"  \u26a0\ufe0f  All marks BSM synthetic. Check MARKETDATA_API_KEY and auth.")
         print(f"     R:R and spread gate use imprecise BSM estimates until MD chain is live.")
@@ -7264,6 +8770,29 @@ def run_options_layer(
     latest_path = os.path.join(output_dir, 'options_intelligence_latest.csv')
     out_df.to_csv(latest_path, index=False)
     print(f"[SAVE] {latest_path}")
+    direction_record_columns = [
+        column for column in (
+            'ticker', 'run_id', 'dir_calc_version', 'direction_policy_version',
+            'discovery_direction_preliminary', 'governed_direction',
+            'governed_direction_authority', 'governed_direction_basis',
+            'final_direction', 'direction_resolution_path',
+            'direction_governance_status', 'direction_resolution_confidence',
+            'direction_resolution_evidence_json',
+            'direction_resolution_chain_json',
+            'governed_direction_record_json',
+            'governed_direction_record_sha256',
+        ) if column in out_df.columns
+    ]
+    direction_records_path = os.path.join(
+        output_dir, f'governed_direction_records_{run_id}.jsonl'
+    )
+    out_df[direction_record_columns].to_json(
+        direction_records_path,
+        orient='records',
+        lines=True,
+        force_ascii=False,
+    )
+    print(f"[SAVE] {direction_records_path} ({len(out_df)} governed direction records)")
     if 'final_route' in out_df.columns:
         ranked_path = os.path.join(output_dir, 'options_candidates_ranked.csv')
         route_rank = {
@@ -7287,25 +8816,14 @@ def run_options_layer(
         ranked_df[ranked_df['final_route'].isin([OPTIONS_BLOCKED_ROUTE, OPTIONS_EQUITY_ONLY_ROUTE])].to_csv(blocked_path, index=False)
         print(f"[SAVE] {blocked_path}")
 
-    # FIX 4: Write contract_rejection_log — records why contracts failed quality gates
-    _rejection_rows = []
-    for _row in out_df.to_dict('records') if 'final_route' in out_df.columns else []:
-        if str(_row.get('final_route', '')).upper() == OPTIONS_BLOCKED_ROUTE:
-            _horizon_k = str(_row.get('horizon_bucket', '1_5d') or '1_5d').lower()
-            _dte_c = DTE_CONFIG.get(_horizon_k, DTE_CONFIG.get('1_5d', {}))
-            _rejection_rows.append({
-                'ticker': _row.get('ticker', ''),
-                'contract': _row.get('recommended_contract', '') or _row.get('contract_occ_symbol', ''),
-                'horizon': _horizon_k,
-                'rejection_reason': _row.get('stand_down_reason', '') or _row.get('block_detail', '') or 'UNKNOWN',
-                'dte_scanned_min': _dte_c.get('dte_min', ''),
-                'dte_scanned_max': _dte_c.get('dte_max', ''),
-            })
-    if _rejection_rows:
-        import pandas as _pd_rej
-        _rej_path = os.path.join(output_dir, f'contract_rejection_log_{run_id}.csv')
-        _pd_rej.DataFrame(_rejection_rows).to_csv(_rej_path, index=False)
-        print(f"[SAVE] {_rej_path} ({len(_rejection_rows)} contract rejections logged)")
+    # Deterministic observability: emit the log even when no rejection occurs.
+    _rejection_rows = _build_contract_rejection_log_rows(out_df)
+    _rej_path = os.path.join(output_dir, f'contract_rejection_log_{run_id}.csv')
+    pd.DataFrame(
+        _rejection_rows,
+        columns=CONTRACT_REJECTION_LOG_COLUMNS,
+    ).to_csv(_rej_path, index=False)
+    print(f"[SAVE] {_rej_path} ({len(_rejection_rows)} contract rejections logged)")
 
     # Enriched vanguard — write options fields back to vanguard CSV
     options_fields = [
@@ -7316,6 +8834,8 @@ def run_options_layer(
         'options_strategy','recommended_contract','contract_strike',
         'contract_expiry','contract_dte','contract_premium',
         'contract_bid','contract_ask','contract_mid','options_bid','options_ask',
+        'contract_quote_quality','contract_quality_flags',
+        'contract_quote_fields_complete','contract_quote_refresh_status',
         'spread_source','options_spread_source','contract_spread_source','contract_delta',
         'contract_iv','contract_volume',
         'contract_theta','contract_vega','iv_rank','iv_percentile',
@@ -7326,6 +8846,9 @@ def run_options_layer(
         'call_wall','put_wall','pcr_signal',
         'target_in_play','breakeven_pct','rr_options','ev_adjusted',
         'theta_drag_pct','options_score','stand_down_reason',
+        'options_session_exception','options_session_exception_reason',
+        'options_session_expected','options_session_actual',
+        'options_session_source','options_session_exception_action',
         'execution_permission','final_route','options_research_score',
         'confidence_score','hard_vetoes','missing_data',
         'contract_repair_status','contract_repair_required','contract_repair_reason',
@@ -7334,6 +8857,11 @@ def run_options_layer(
         'alternative_contract_1_score','alternative_contract_2_score','alternative_contract_3_score',
         'alternative_contract_1_reason','alternative_contract_2_reason','alternative_contract_3_reason',
         'alternative_contracts_json','alternative_contracts_schema_version','alternative_contracts_count',
+        'alternative_contracts_rejected_incomplete','alternative_contracts_rejection_reasons_json',
+        'repair_selector_diagnostics_version','repair_selector_retained_oi_below_50',
+        'repair_selector_retained_zero_volume','repair_selector_rejected_invalid_missing_quote',
+        'repair_selector_rejected_spread','repair_selector_rejected_dte_delta_geometry',
+        'repair_selector_final_bounded_candidate_count',
         'trigger_state','trigger_status_reason','expected_move_pct',
         'expected_move_price','breakeven_feasibility','estimated_R',
         'theta_decay_expected','runway_to_wall_pct','liquidity_score',
@@ -7342,7 +8870,17 @@ def run_options_layer(
         'trigger_score','research_route_reason',
         'direction_arbitration_status','direction_arbitration_reason',
         'direction_conflict_gate',
-        'canonical_direction','direction_status','ev3_direction_source',
+        'canonical_direction','direction_resolution_status','direction_status','ev3_direction_source',
+        'dir_calc_version','direction_policy_version','direction_policy_sha256',
+        'discovery_direction_preliminary','governed_direction',
+        'governed_direction_authority','governed_direction_basis','final_direction',
+        'direction_resolution_path','direction_governance_status',
+        'direction_resolution_confidence','direction_resolution_call_score',
+        'direction_resolution_put_score','direction_resolution_winning_share',
+        'direction_resolution_margin','direction_resolution_evidence_count',
+        'direction_resolution_evidence_json','direction_resolution_chain_json',
+        'direction_excluded_evidence_json','governed_direction_record_json',
+        'governed_direction_record_sha256',
         'horizon_bucket','horizon_action','horizon_size_multiplier',
         'entry_spot','target_spot','invalidation_spot','invalidation_source',
         'invalidation_policy_version','planned_hold_sessions','planned_hold_source',
@@ -7350,9 +8888,26 @@ def run_options_layer(
         'ev3_barrier_state_key','ev3_barrier_state_key_source','ev3_barrier_state_key_version',
         'contract_quote_timestamp_source',
         'contract_multiplier','contract_multiplier_source',
+        'contract_bid_size','contract_ask_size','contract_bid_size_quality','contract_ask_size_quality',
+        # Options liquidity maturation lifecycle — governed EOD-to-morning baton.
+        'thesis_id','thesis_state','liquidity_state','morning_transition_state',
+        'recovery_disposition','executable_now','moneyness_state','delta_band',
+        'minimum_required_dte','dte_buffer_sessions','atm_distance_sigma',
+        'remaining_runway_pct','remaining_runway_state',
+        'maturation_state_1d','maturation_state_2d','maturation_state_3d',
+        'maturation_score_1d','maturation_score_2d','maturation_score_3d',
+        'maturation_score_is_probability','maturation_execution_authority',
+        'previous_contract_symbol','contract_changed','contract_selection_reason',
+        'quote_as_of','quote_freshness','liquidity_persistence_status',
+        'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',
+        'option_chain_provider','option_chain_resolution',
+        # EIL S4 OBI: real equity NBBO when available, explicit fallback otherwise.
+        'l2_bid_size','l2_ask_size','l2_quote_source','l2_quote_timestamp_utc',
+        'ev3_selected_handoff_status','ev3_selected_handoff_missing_fields_json',
         'horizon_block_reason','horizon_source','router_version',
         'options_score_pre_macro','options_macro_alignment_label',
         'options_macro_alignment_bonus','options_macro_gate_preserved',
+        'options_macro_authority','options_macro_effective_score_delta',
         'options_macro_theme_ids','options_macro_roles',
         'options_macro_event_guards','options_macro_conflict_flags',
         'options_macro_confirmation_required','options_macro_alignment_note',
@@ -7419,6 +8974,72 @@ def run_options_layer(
     merged_enriched.to_csv(enriched_path, index=False)
     print(f"[SAVE] {enriched_path}")
 
+    # CDS request telemetry is part of the run artifact so operations can prove
+    # cache reuse and explicit fallback without querying SQLite manually.
+    _cds_chain_telemetry = {
+        "enabled": _CDS_CHAIN_SERVICE is not None or _CDS_V2_CHAIN_RESOLVER is not None,
+        "schema_version": (
+            "option_chain_v2" if _CDS_V2_CHAIN_RESOLVER is not None else "option_chain_v1"
+        ),
+        "worklist_authorised": (
+            _cds_options_publication.authorised_count
+            if _cds_options_publication is not None else 0
+        ),
+        "worklist_excluded": (
+            _cds_options_publication.excluded_count
+            if _cds_options_publication is not None else 0
+        ),
+        "session_exceptions": len(_options_session_exception_by_ticker),
+        "physical_requests": 0,
+        "cache_hits": 0,
+        "marketdata_fetches": 0,
+        "polygon_fallback_fetches": 0,
+        "polygon_options_disabled": True,
+        "marketdata_empty": 0,
+        "blocked_requests": 0,
+        "liquidity_lifecycle_enabled": _CDS_LIQUIDITY_STORE is not None,
+        "liquidity_lifecycle_persisted": sum(
+            1 for item in results
+            if item.get("liquidity_persistence_status") == "PERSISTED"
+        ),
+        "liquidity_lifecycle_thesis_only": sum(
+            1 for item in results
+            if str(item.get("liquidity_persistence_status") or "").startswith("THESIS_ONLY")
+        ),
+        "liquidity_lifecycle_errors": sum(
+            1 for item in results
+            if str(item.get("liquidity_persistence_status") or "").startswith("ERROR")
+        ),
+    }
+    _cds_ledger = (
+        _CDS_V2_CHAIN_RESOLVER.ledger
+        if _CDS_V2_CHAIN_RESOLVER is not None
+        else (_CDS_CHAIN_SERVICE.ledger if _CDS_CHAIN_SERVICE is not None else None)
+    )
+    if _cds_ledger is not None:
+        _cds_entries = _cds_ledger.entries(run_id)
+        _cds_chain_telemetry["physical_requests"] = sum(
+            int(entry.get("physical_request_count") or 0) for entry in _cds_entries
+        )
+        _cds_chain_telemetry["cache_hits"] = sum(
+            str(entry.get("resolution") or "") in {"CACHE_HIT", "SUPERSET_HIT"}
+            for entry in _cds_entries
+        )
+        _cds_chain_telemetry["marketdata_fetches"] = sum(
+            str(entry.get("provider") or "").upper() == "MARKETDATA"
+            and str(entry.get("resolution") or "") == "PROVIDER_FETCH"
+            for entry in _cds_entries
+        )
+        _cds_chain_telemetry["marketdata_empty"] = sum(
+            str(entry.get("provider") or "").upper() == "MARKETDATA"
+            and str(entry.get("resolution") or "") == "PROVIDER_ERROR"
+            for entry in _cds_entries
+        )
+        _cds_chain_telemetry["blocked_requests"] = sum(
+            str(entry.get("resolution") or "") == "BLOCKED_NOT_AUTHORISED"
+            for entry in _cds_entries
+        )
+
     # Summary JSON
     summary = {
         'run_id'            : run_id,
@@ -7432,6 +9053,8 @@ def run_options_layer(
         'route_counts'      : route_counts,
         'execution_permission': OPTIONS_RESEARCH_PERMISSION,
         'elapsed_seconds'   : round(elapsed, 1),
+        'cds_chain_telemetry': _cds_chain_telemetry,
+        'repair_selector_diagnostics': _aggregate_repair_selector_diagnostics(results),
         'top_execute'       : (
             out_df[out_df['options_verdict']=='EXECUTE']
             .sort_values('options_score', ascending=False)

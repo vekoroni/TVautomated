@@ -28,9 +28,9 @@ MISSING_TOKENS = {
 }
 OPTIONS_RESEARCH_PERMISSION_VALUES = {"NONE_OPTIONS_RESEARCH_ONLY", "MANUAL_REVIEW_REQUIRED"}
 OPTIONS_BLOCKED_ROUTES = {"OPTIONS_BLOCKED", "OPTIONS_EQUITY_ONLY_BETTER"}
-PSE_RETIRED_POLICY = "ADVISORY_ONLY"
+PSE_RETIRED_POLICY = "PSE_IGNORED_MANUAL_SIZING"
 PSE_LEGACY_RETIRED_POLICIES = {
-    "PSE_IGNORED_MANUAL_SIZING",
+    "ADVISORY_ONLY",
     "POSITION_SIZING_RETIRED_ADVISORY_ONLY",
 }
 
@@ -79,7 +79,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "option_direction", "aliases": ["options_direction", "option_direction", "direction"], "severity": "FAIL"},
         {"name": "selected_contract", "aliases": ["recommended_contract", "contract_occ_symbol", "contract_symbol", "occ_symbol", "option_symbol"], "severity": "FAIL"},
         {"name": "contract_strike", "aliases": ["contract_strike", "strike"], "severity": "WARN"},
@@ -105,7 +104,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "eil_verdict", "aliases": ["eil_v3_verdict", "eil_raw_verdict"], "severity": "FAIL"},
         {"name": "execution_mode", "aliases": ["pse_execution_mode", "effective_execution_verdict"], "severity": "FAIL"},
         {"name": "trigger_readiness", "aliases": ["trigger_quality", "trigger_go_eligible", "trigger_primary", "trigger_score"], "severity": "WARN"},
@@ -128,7 +126,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "execution_verdict", "aliases": ["effective_execution_verdict", "execution_verdict", "fd_verdict"], "severity": "FAIL"},
         {"name": "capital_permission", "aliases": ["capital_permission", "final_size", "position_size", "size"], "severity": "FAIL"},
         {"name": "eod_candidate_permission", "aliases": ["eod_candidate_permission", "eod_candidate_authorized"], "severity": "WARN"},
@@ -148,7 +145,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "eod_status", "aliases": ["eod_candidate_status"], "severity": "FAIL"},
         {"name": "eod_reason", "aliases": ["eod_candidate_reason", "eod_dropoff_reason"], "severity": "FAIL"},
         {"name": "structural_tier", "aliases": ["structural_tier"], "severity": "FAIL"},
@@ -172,7 +168,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "shadow_opportunity_score", "aliases": ["shadow_opportunity_score"], "severity": "FAIL"},
         {"name": "shadow_opportunity_label", "aliases": ["shadow_opportunity_label"], "severity": "WARN"},
         {"name": "shadow_opportunity_reason", "aliases": ["shadow_opportunity_reason", "eod_dropoff_reason"], "severity": "WARN"},
@@ -186,7 +181,6 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
         {"name": "behaviour_state", "aliases": ["behaviour_state_key", "behaviour_state_hash"], "severity": "WARN"},
         {"name": "actuarial_match_type", "aliases": ["actuarial_match_type", "actuarial_ev_weight"], "severity": "WARN"},
-        {"name": "catalyst_overlay", "aliases": ["catalyst_overlay"], "severity": "WARN"},
         {"name": "morning_permission", "aliases": ["morning_execution_permission", "morning_execution_route", "execution_permission", "mv_verdict"], "severity": "FAIL"},
         {"name": "morning_state", "aliases": ["live_validation_state", "mv_score"], "severity": "FAIL"},
         {"name": "eod_status", "aliases": ["eod_candidate_status"], "severity": "FAIL"},

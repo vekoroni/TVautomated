@@ -31,24 +31,31 @@ def normalise_bond_macro_sidecar(state: Mapping[str, Any]) -> dict[str, Any]:
     zn = _section(state, "zn_futures", "zn_direction")
     credit = _section(state, "credit_stress")
     composite = _section(state, "composite")
+    curve_stale = bool(yield_curve.get("stale_flag", False))
+    curve_state = "STALE_UNAVAILABLE" if curve_stale else yield_curve.get("curve_state", "UNKNOWN")
 
     # Preserve every source field/section so future additive schema changes
     # flow through without another hand-maintained orchestrator mapping.
     result = deepcopy(dict(state))
     result.update({
         "source_schema_version": state.get("schema_version", "UNKNOWN"),
-        "curve_state": yield_curve.get("curve_state", "UNKNOWN"),
-        "yield_2y": yield_curve.get("yield_2y"),
-        "yield_10y": yield_curve.get("yield_10y"),
-        "yield_30y": yield_curve.get("yield_30y"),
-        "spread_bps": yield_curve.get("spread_bps"),
-        "spread_10s30s_bps": yield_curve.get("spread_10s30s_bps"),
-        "curve_move_1d": yield_curve.get("curve_move_1d", "UNKNOWN"),
-        "curve_move_5d": yield_curve.get("curve_move_5d", "UNKNOWN"),
-        "russell_tailwind": bool(yield_curve.get("russell_tailwind", False)),
+        "curve_state": curve_state,
+        "yield_2y": None if curve_stale else yield_curve.get("yield_2y"),
+        "yield_10y": None if curve_stale else yield_curve.get("yield_10y"),
+        "yield_30y": None if curve_stale else yield_curve.get("yield_30y"),
+        "spread_bps": None if curve_stale else yield_curve.get("spread_bps"),
+        "spread_10s30s_bps": None if curve_stale else yield_curve.get("spread_10s30s_bps"),
+        "curve_move_1d": "STALE_UNAVAILABLE" if curve_stale else yield_curve.get("curve_move_1d", "UNKNOWN"),
+        "curve_move_5d": "STALE_UNAVAILABLE" if curve_stale else yield_curve.get("curve_move_5d", "UNKNOWN"),
+        "russell_tailwind": False if curve_stale else bool(yield_curve.get("russell_tailwind", False)),
         "yield_data_quality": yield_curve.get("data_quality", "UNKNOWN"),
         "yield_stale_flag": bool(yield_curve.get("stale_flag", False)),
         "yield_staleness_sessions": yield_curve.get("staleness_sessions"),
+        "yield_curve_freshness": "STALE" if curve_stale else "CURRENT",
+        "yield_curve_as_of_date": yield_curve.get("as_of_date", state.get("as_of_date", "")),
+        "source_curve_state": yield_curve.get("curve_state", "UNKNOWN"),
+        "source_curve_move_1d": yield_curve.get("curve_move_1d", "UNKNOWN"),
+        "composite_freshness": "PARTIAL_STALE_CURVE" if curve_stale else "CURRENT",
         "zn_ticker": _first(zn, "ticker_used", "ticker", default="UNKNOWN"),
         "zn_direction": _first(zn, "zn_direction", "direction", default="UNKNOWN"),
         "zn_5d_trend": zn.get("zn_5d_trend", "UNKNOWN"),
@@ -63,8 +70,13 @@ def normalise_bond_macro_sidecar(state: Mapping[str, Any]) -> dict[str, Any]:
         "auction_spread_risk": bool(_first(auction, "spread_risk_flag", "auction_today", default=False)),
         "long_end_in_window": bool(auction.get("long_end_in_window", False)),
         "days_to_next_long_end": auction.get("days_to_next_long_end"),
-        "bond_macro_flag": _first(composite, "morning_manifest_flag", "flag", default="UNKNOWN"),
-        "bond_macro_score": _first(composite, "macro_bond_score", "score"),
+        "bond_macro_flag": (
+            "BOND_MACRO_PARTIAL_CONTEXT" if curve_stale
+            else _first(composite, "morning_manifest_flag", "flag", default="UNKNOWN")
+        ),
+        "bond_macro_score": None if curve_stale else _first(composite, "macro_bond_score", "score"),
+        "source_bond_macro_flag": _first(composite, "morning_manifest_flag", "flag", default="UNKNOWN"),
+        "source_bond_macro_score": _first(composite, "macro_bond_score", "score"),
         "breakeven_adjustment_pct": composite.get("breakeven_adjustment_pct", 0),
         "trade_go": bool(composite.get("trade_go", True)),
         "primary_warning": composite.get("primary_warning", ""),

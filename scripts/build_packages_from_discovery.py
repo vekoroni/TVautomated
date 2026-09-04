@@ -331,9 +331,21 @@ def dedupe_discovery_rows_by_ticker(rows: List[Dict[str, Any]]) -> Tuple[List[Di
 
 
 def ensure_us_ticker_sane(ticker: str) -> None:
-    """Block tickers that look contaminated (.V, .L, etc.)"""
-    if "." in ticker:
-        raise ValueError(f"Universe contamination: ticker has suffix: {ticker}")
+    """Allow governed US share classes while blocking foreign dot suffixes."""
+    if "." not in ticker:
+        return
+
+    parts = ticker.split(".")
+    is_us_share_class = (
+        len(parts) == 2
+        and 1 <= len(parts[0]) <= 6
+        and parts[0].isalpha()
+        and parts[1] in {"A", "B", "C"}
+    )
+    if is_us_share_class:
+        return
+
+    raise ValueError(f"Universe contamination: ticker has suffix: {ticker}")
 
 
 # -----------------------------

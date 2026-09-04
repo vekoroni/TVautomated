@@ -1,0 +1,73 @@
+--- a/canonical_data/market_observation_resolver.py
++++ b/canonical_data/market_observation_resolver.py
+@@ -26,6 +26,7 @@
+ from .registry import CanonicalRegistry
+ from .request_ledger import RequestLedger, RequestResolution
+ from .storage import AtomicPayloadStore
++from .session_clock import session_bounds
+ 
+ 
+ OPTION_CHAIN_V2 = "option_chain_v2"
+@@ -101,7 +102,11 @@
+ 
+ 
+ class CanonicalMarketObservationResolver:
+-    def __init__(self, *, registry_path: Path, payload_root: Path, run_id: str, flags: CanonicalFeatureFlags | None = None) -> None:
++    def __init__(self, *, registry_path: Path, payload_root: Path, run_id: str,
++                 invocation_id: str | None = None,
++                 evidence_cutoff_utc: datetime | None = None,
++                 exchange_calendar: str = "XNYS",
++                 flags: CanonicalFeatureFlags | None = None) -> None:
+         self.registry = CanonicalRegistry(registry_path)
+         self.registry.initialise()
+         self.lifecycle = LifecycleManager(self.registry)
+@@ -110,6 +115,14 @@
+         self.gateway = CanonicalDataGateway(self.registry, self.lifecycle, self.ledger, flags=self.flags)
+         self.store = AtomicPayloadStore(payload_root)
+         self.run_id = run_id
++        self.invocation_id = invocation_id or run_id
++        self.evidence_cutoff_utc = evidence_cutoff_utc
++        self.exchange_calendar = exchange_calendar
++
++    def _cutoff(self, session_date: date, *, completed: bool) -> datetime:
++        if self.evidence_cutoff_utc is not None:
++            return self.evidence_cutoff_utc
++        return session_bounds(session_date)[1] if completed else datetime.now(timezone.utc)
+ 
+     def _read_json(self, record: DatasetRecord) -> Any:
+         path = Path(record.storage_uri)
+@@ -171,7 +184,9 @@
+                           sides=("CALL", "PUT"), extra=(("min_open_interest", str(min_open_interest)),))
+         request = DatasetRequest(self.run_id, "OPTIONS", DatasetType.OPTION_CHAIN, ticker, session_date,
+                                  scope=scope, accepted_providers=(provider,), adjustment_convention="RAW_OPTION_CONTRACT",
+-                                 schema_version=OPTION_CHAIN_V2)
++                                 schema_version=OPTION_CHAIN_V2, invocation_id=self.invocation_id,
++                                 evidence_cutoff_utc=self._cutoff(session_date, completed=True),
++                                 exchange_calendar=self.exchange_calendar, evidence_state="COMPLETED_SESSION")
+         def normalise(raw: Mapping[str, Any]) -> tuple[Any, datetime, tuple[str, ...]]:
+             frame = parse_marketdata_option_response(raw, ticker=ticker, quote_source=provider)
+             if frame.empty:
+@@ -195,7 +210,10 @@
+                                  ("selected_structure_id", selected_structure_id), ("leg_identity", leg_identity)))
+         request = DatasetRequest(self.run_id, "MORNING_GATE", DatasetType.EXACT_OPTION_QUOTE, ticker, session_date,
+                                  scope=scope, freshness_seconds=freshness_seconds, accepted_providers=(provider,),
+-                                 adjustment_convention="RAW_OPTION_CONTRACT", schema_version=EXACT_OPTION_QUOTE_V2)
++                                 adjustment_convention="RAW_OPTION_CONTRACT", schema_version=EXACT_OPTION_QUOTE_V2,
++                                 invocation_id=self.invocation_id,
++                                 evidence_cutoff_utc=self._cutoff(session_date, completed=False),
++                                 exchange_calendar=self.exchange_calendar, evidence_state="CURRENT_QUOTE")
+         def normalise(raw: Mapping[str, Any]) -> tuple[Any, datetime, tuple[str, ...]]:
+             quote = parse_exact_option_quote(raw, ticker=ticker, symbol=canonical)
+             quote.update({"run_id": self.run_id, "thesis_id": thesis_id, "trade_idea_id": trade_idea_id,
+@@ -210,7 +228,10 @@
+         request = DatasetRequest(self.run_id, "MORNING_GATE", DatasetType.UNDERLYING_NBBO, ticker, session_date,
+                                  scope=DataScope(fields=("BID", "ASK", "BID_SIZE", "ASK_SIZE")),
+                                  freshness_seconds=freshness_seconds, accepted_providers=(provider,),
+-                                 adjustment_convention="UNADJUSTED", schema_version=UNDERLYING_NBBO_QUOTE_V1)
++                                 adjustment_convention="UNADJUSTED", schema_version=UNDERLYING_NBBO_QUOTE_V1,
++                                 invocation_id=self.invocation_id,
++                                 evidence_cutoff_utc=self._cutoff(session_date, completed=False),
++                                 exchange_calendar=self.exchange_calendar, evidence_state="CURRENT_QUOTE")
+         def normalise(raw: Mapping[str, Any]) -> tuple[Any, datetime, tuple[str, ...]]:
+             quote = normalise_underlying_nbbo(raw, ticker=ticker, provider=provider)
+             return quote, _utc(quote["provider_updated_utc"]), ()

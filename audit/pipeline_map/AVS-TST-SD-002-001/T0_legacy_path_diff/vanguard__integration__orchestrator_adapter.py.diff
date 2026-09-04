@@ -1,0 +1,11 @@
+--- a/vanguard/integration/orchestrator_adapter.py
++++ b/vanguard/integration/orchestrator_adapter.py
+@@ -176,6 +176,8 @@
+             macro_regime        = tech.macro_regime,
+             compression_ratio   = tech.compression_ratio,
+             wyckoff_phase       = tech.wyckoff_phase,
++            market_profile_evidence = payload.get("market_profile_evidence"),
++            market_profile_contract_required = bool(payload.get("market_profile_contract_required", False)),
+         )
+ 
+     def _tech(self, payload: dict, ticker: str) -> "TechnicalData":

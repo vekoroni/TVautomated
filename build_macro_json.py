@@ -635,6 +635,55 @@ def _first_present(row: dict, *keys: str):
     return None
 
 
+def _select_gex_primary(rows: list[dict]) -> dict:
+    """Select the canonical GEX row without depending on CSV row order.
+
+    SPY is the macro GEX authority.  The v4 feed can publish both a live and a
+    historical SPY row, so choose a usable live observation first, then a
+    usable historical observation.  If neither is OK, retain the newest SPY
+    diagnostic row so downstream coverage logic can correctly expose MISSING
+    data.  The non-SPY fallback preserves compatibility with legacy files that
+    did not contain SPY.
+    """
+    populated = [
+        row for row in rows
+        if isinstance(row, dict)
+        and any(str(value or "").strip() for value in row.values())
+    ]
+    if not populated:
+        return {}
+
+    spy_rows = [
+        row for row in populated
+        if str(row.get("Ticker", "")).strip().upper() == "SPY"
+    ]
+    candidates = spy_rows or populated
+
+    def _priority(row: dict) -> int:
+        mode = str(_first_present(row, "Data_Mode", "Mode") or "").strip().upper()
+        status = str(_first_present(row, "Data_Status", "Status") or "").strip().upper()
+        if status == "OK" and mode.startswith("LIVE"):
+            return 3
+        if status == "OK" and mode.startswith("HISTORICAL"):
+            return 2
+        return 1
+
+    def _recency(row: dict) -> tuple[str, str, str, str]:
+        # All current feed timestamps use ISO/date-sortable representations.
+        return tuple(
+            str(row.get(key, "") or "").strip()
+            for key in ("Snapshot_UTC", "As_Of", "Date", "Run_Id")
+        )
+
+    # The serialised row is only a final deterministic tie-breaker.  It makes
+    # the result independent of input order even when two rows have identical
+    # mode, status and timestamps.
+    return max(
+        candidates,
+        key=lambda row: (_priority(row), _recency(row), json.dumps(row, sort_keys=True)),
+    )
+
+
 def _parse_date(value):
     text = str(value or "").strip()
     if not text:
@@ -856,7 +905,7 @@ def extract_market_data_overrides(payload: dict) -> dict:
     sectors_rows = _csv_rows(data.get("sectors_csv", ""))
     report = data.get("report_json", {}) if isinstance(data.get("report_json"), dict) else {}
 
-    gex_primary = next((r for r in gex_rows if str(r.get("Ticker", "")).upper() == "SPY"), gex_rows[0] if gex_rows else {})
+    gex_primary = _select_gex_primary(gex_rows)
     sector_tickers = {str(r.get("ticker", "")).upper(): r for r in sectors_rows}
 
     # v4 publishes audited direct/proxy columns; retain legacy aliases for
@@ -913,6 +962,10 @@ def extract_market_data_overrides(payload: dict) -> dict:
         "gex_flip": _safe_float(gex_primary.get("Gamma_Flip")),
         "gex_stress": gex_primary.get("GEX_Stress", ""),
         "gex_contracts_used": _safe_float(gex_primary.get("Contracts_Used")),
+        "gex_data_mode": _first_present(gex_primary, "Data_Mode", "Mode") or "",
+        "gex_data_status": _first_present(gex_primary, "Data_Status", "Status") or "",
+        "gex_run_id": gex_primary.get("Run_Id", ""),
+        "gex_as_of": _first_present(gex_primary, "As_Of", "Snapshot_UTC", "Date") or "",
         "usslind_status": macro_master.get("USSLIND_Status", ""),
         "usslind_quarantined": usslind_quarantined,
         "usslind_source_date": usslind_freshness["source_date"],
@@ -1014,6 +1067,10 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
             "stress": overrides["gex_stress"],
             "contracts_used": overrides["gex_contracts_used"],
             "score": overrides["gex_score"],
+            "data_mode": overrides["gex_data_mode"],
+            "data_status": overrides["gex_data_status"],
+            "run_id": overrides["gex_run_id"],
+            "as_of": overrides["gex_as_of"],
             "source": "avshunter_gex_proxy.csv",
         }
     else:

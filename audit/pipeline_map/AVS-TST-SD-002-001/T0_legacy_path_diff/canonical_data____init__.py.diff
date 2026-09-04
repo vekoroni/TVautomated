@@ -1,0 +1,56 @@
+--- a/canonical_data/__init__.py
++++ b/canonical_data/__init__.py
+@@ -67,10 +67,23 @@
+ )
+ from .intraday_bars import (
+     CanonicalMinuteBarResolver,
++    IntradayBatchResult,
+     IntradayBarResult,
++    IntradayQuality,
++    IntradayRequestPlan,
+     INTRADAY_BAR_SCHEMA_VERSION,
++    assess_intraday_quality,
++    expected_intraday_timestamps,
++    intraday_schema_version,
++    missing_intraday_ranges,
++    normalise_intraday_bars,
+     normalise_minute_bars,
+ )
++from .marketdata_stock_candles import (
++    MARKETDATA_PROVIDER,
++    MarketDataStockCandleAdapter,
++    parse_marketdata_stock_candles,
++)
+ from .session_clock import (
+     FreshnessState,
+     SessionSnapshot,
+@@ -99,6 +112,12 @@
+     filter_rows_to_worklist,
+     reconcile_stage_outcomes,
+ )
++from .decision_outcome_ledger import (
++    DecisionOutcomeLedger,
++    LedgerEvent,
++    candidate_events_from_rows,
++    make_ledger_event,
++)
+ 
+ __all__ = [
+     "AtomicPayloadStore",
+@@ -159,8 +178,14 @@
+     "parse_exact_option_quote", "parse_marketdata_option_response",
+     "CanonicalMarketObservationResolver", "ObservationResult", "OPTION_CHAIN_V2",
+     "EXACT_OPTION_QUOTE_V2", "UNDERLYING_NBBO_QUOTE_V1", "normalise_underlying_nbbo",
+-    "CanonicalMinuteBarResolver", "IntradayBarResult", "INTRADAY_BAR_SCHEMA_VERSION",
+-    "normalise_minute_bars", "FreshnessState", "SessionSnapshot", "SessionState",
++    "CanonicalMinuteBarResolver", "IntradayBatchResult", "IntradayBarResult",
++    "IntradayQuality", "IntradayRequestPlan", "INTRADAY_BAR_SCHEMA_VERSION",
++    "assess_intraday_quality", "expected_intraday_timestamps", "intraday_schema_version",
++    "missing_intraday_ranges", "normalise_intraday_bars", "normalise_minute_bars",
++    "MARKETDATA_PROVIDER", "MarketDataStockCandleAdapter", "parse_marketdata_stock_candles",
++    "FreshnessState", "SessionSnapshot", "SessionState",
+     "evaluate_freshness", "is_early_close", "is_xnys_session", "previous_xnys_session",
+     "session_bounds", "session_snapshot",
++    "DecisionOutcomeLedger", "LedgerEvent", "candidate_events_from_rows",
++    "make_ledger_event",
+ ]

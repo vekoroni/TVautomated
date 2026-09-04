@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Force governed catalyst/macro-enrichment tickers into downstream review.
+Attach governed catalyst/macro context without changing Discovery membership.
 
-Discovery is an intake/classification stage. It should not silently drop
-tickers supplied by governed catalyst or macro-enrichment contracts. This
-script appends missing external-intel tickers to the discovery CSV with a
-review-only lane flag. Later layers still decide whether structure, options
-economics, triggers, and live validation support a trade.
+Discovery is the authority for the macro-agnostic core candidate set. Existing
+Discovery survivors may receive additive external-intelligence annotations,
+but catalyst or macro-only tickers are written to a separate advisory artifact.
+They cannot be appended to the core CSV, create Packages/Vanguard work, or
+reactivate a ticker that Discovery dropped.
 """
 
 from __future__ import annotations
@@ -224,6 +224,7 @@ def apply_external_intel_review_lane(
     macro_path: Path,
     catalyst_calendar: Optional[Path] = None,
     enrichment_path: Optional[Path] = None,
+    review_output: Optional[Path] = None,
 ) -> Dict[str, Any]:
     rows, original_fields = _read_csv(discovery_csv)
     output_fields = _ordered_fields(original_fields)
@@ -239,6 +240,7 @@ def apply_external_intel_review_lane(
 
     existing = {_ticker(row.get("ticker") or row.get("symbol")) for row in rows}
     matched_existing = 0
+    advisory_rows: List[Dict[str, Any]] = []
     for row in rows:
         symbol = _ticker(row.get("ticker") or row.get("symbol"))
         info = valid_external.get(symbol)
@@ -246,8 +248,9 @@ def apply_external_intel_review_lane(
             continue
         matched_existing += 1
         _stamp_row(row, info, appended=False)
+        advisory_rows.append(dict(row))
 
-    appended = 0
+    advisory_only = 0
     for symbol, info in sorted(valid_external.items()):
         if symbol in existing:
             continue
@@ -258,23 +261,40 @@ def apply_external_intel_review_lane(
         row["precor_intent"] = "WAIT"
         row["external_intel_created_utc"] = _utc_now()
         _stamp_row(row, info, appended=True)
-        rows.append(row)
-        appended += 1
+        advisory_rows.append(row)
+        advisory_only += 1
 
+    if review_output is not None:
+        review_path = review_output
+    elif "discovery_candidates_ultimate_" in discovery_csv.name:
+        review_path = discovery_csv.with_name(
+            discovery_csv.name.replace(
+                "discovery_candidates_ultimate_", "external_intel_review_candidates_"
+            )
+        )
+    else:
+        review_path = discovery_csv.with_name(
+            f"{discovery_csv.stem}_external_intel_review.csv"
+        )
     _write_csv(discovery_csv, rows, output_fields)
+    _write_csv(review_path, advisory_rows, output_fields)
     return {
         "status": "PASS",
         "discovery_csv": str(discovery_csv),
         "macro_path": str(macro_path),
         "macro_enrichment_path": selected_enrichment,
         "catalyst_calendar": str(catalyst_path),
-        "input_rows": len(rows) - appended,
+        "input_rows": len(rows),
         "output_rows": len(rows),
         "external_tickers": len(external),
         "valid_external_tickers": len(valid_external),
         "invalid_external_tickers": invalid_tickers,
         "matched_existing_rows": matched_existing,
-        "appended_forced_review_rows": appended,
+        "appended_forced_review_rows": 0,
+        "advisory_review_rows": len(advisory_rows),
+        "advisory_only_rows": advisory_only,
+        "review_output": str(review_path),
+        "core_membership_changed": False,
         "generated_utc": _utc_now(),
     }
 
@@ -283,7 +303,9 @@ def _stamp_row(row: Dict[str, Any], info: Mapping[str, Any], appended: bool) -> 
     row["external_intel_lane"] = "TRUE"
     row["external_intel_force_review"] = "TRUE"
     row["external_intel_source"] = str(info.get("source") or "")
-    row["external_intel_stage_status"] = "APPENDED_FOR_REVIEW" if appended else "ALREADY_IN_DISCOVERY"
+    row["external_intel_stage_status"] = (
+        "ADVISORY_ONLY_NOT_DISCOVERY" if appended else "ALREADY_IN_DISCOVERY"
+    )
     row["external_intel_reason"] = str(info.get("reason") or "")
     row["external_intel_direction_bias"] = str(info.get("direction_bias") or "")
     row["external_intel_catalyst_status"] = str(info.get("catalyst_status") or "")
@@ -305,6 +327,7 @@ def main() -> int:
     parser.add_argument("--macro-path", required=True)
     parser.add_argument("--catalyst-calendar", default="")
     parser.add_argument("--enrichment-path", default="")
+    parser.add_argument("--review-output", default="")
     parser.add_argument("--report-path", default="")
     args = parser.parse_args()
 
@@ -313,6 +336,7 @@ def main() -> int:
         macro_path=Path(args.macro_path),
         catalyst_calendar=Path(args.catalyst_calendar) if args.catalyst_calendar else None,
         enrichment_path=Path(args.enrichment_path) if args.enrichment_path else None,
+        review_output=Path(args.review_output) if args.review_output else None,
     )
     if args.report_path:
         report_path = Path(args.report_path)
@@ -322,7 +346,7 @@ def main() -> int:
     print(
         "[OK] External intel review lane: "
         f"{result['matched_existing_rows']} existing stamped, "
-        f"{result['appended_forced_review_rows']} appended, "
+        f"{result['advisory_only_rows']} advisory-only, "
         f"{len(result['invalid_external_tickers'])} invalid skipped"
     )
     return 0

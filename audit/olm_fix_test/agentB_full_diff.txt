@@ -1,0 +1,67 @@
+--- backups/olm_blocker_remediation_prechange_20260829_2035/scripts/avshunter_options_intelligence.py	2026-08-29 19:26:37.470244100 +0100
++++ scripts/avshunter_options_intelligence.py	2026-08-29 20:56:32.010431300 +0100
+@@ -1113,7 +1113,7 @@
+ EV3_TOTAL_CANDIDATE_LIMIT = 12
+ EV3_MIN_OPEN_INTEREST = int(os.environ.get("AVSHUNTER_EV3_MIN_OPEN_INTEREST", "50"))
+ EV3_MIN_VOLUME = int(os.environ.get("AVSHUNTER_EV3_MIN_VOLUME", "1"))
+-EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.2.0"
++EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.3.0"
+ EV3_VERTICAL_POLICY_VERSION = "ev3-vertical-debit-candidates-v0.1.0"
+ 
+ # Contract tiers for tiered review (replaces binary STAND_DOWN gate)
+@@ -4379,7 +4379,13 @@
+     selected_contract: Optional[Dict] = None,
+     limit: int = EV3_LONG_SINGLE_CANDIDATE_LIMIT,
+ ) -> List[Dict[str, Any]]:
+-    """Return a strict EV-2 long-single set from two expiries x three strikes."""
++    """Return governed long-single repair candidates from two expiries x three strikes.
++
++    Open interest and current volume are ranking evidence only.  A new or
++    developing strike can have a valid two-sided quote before either field has
++    accumulated, so neither value is allowed to delete an otherwise-valid
++    contract family member.
++    """
+     try:
+         if df is None or df.empty:
+             return []
+@@ -4463,10 +4469,16 @@
+         if (right == "C" and signed_delta <= 0) or (right == "P" and signed_delta >= 0):
+             continue
+         delta_abs = abs(signed_delta)
+-        oi = _repair_alt_float(row.get("open_interest"), _repair_alt_float(row.get("oi"), 0.0)) or 0.0
+-        volume = _repair_alt_float(row.get("volume"), 0.0) or 0.0
+-        if oi < EV3_MIN_OPEN_INTEREST or volume < EV3_MIN_VOLUME:
+-            continue
++        oi_value = _repair_alt_float(row.get("open_interest"))
++        if oi_value is None:
++            oi_value = _repair_alt_float(row.get("oi"))
++        volume_value = _repair_alt_float(row.get("volume"))
++        oi_observation_status = "REPORTED" if oi_value is not None else "MISSING_ASSUMED_ZERO"
++        volume_observation_status = (
++            "REPORTED" if volume_value is not None else "MISSING_ASSUMED_ZERO"
++        )
++        oi = oi_value if oi_value is not None else 0.0
++        volume = volume_value if volume_value is not None else 0.0
+         mark = (bid + ask) / 2.0
+         spread = max(0.0, ask - bid) / mark if mark > 0 else math.inf
+         if not math.isfinite(spread) or spread > spread_limit:
+@@ -4508,6 +4520,10 @@
+             "iv": implied_volatility,
+             "oi": oi,
+             "volume": volume,
++            "oi_observation_status": oi_observation_status,
++            "volume_observation_status": volume_observation_status,
++            "oi_used_as_hard_gate": False,
++            "volume_used_as_hard_gate": False,
+             "spread_pct": round(float(spread), 6) if spread is not None else "",
+             "quote_timestamp_utc": quote_timestamp,
+             "quote_timestamp_source": row.get("quote_timestamp_source"),
+@@ -4672,7 +4688,7 @@
+         "contract_repair_action": "NO_ALTERNATIVE_FOUND",
+         "alternative_contract_attempts": "",
+         "alternative_contracts_json": "[]",
+-        "alternative_contracts_schema_version": "ev3-contract-candidates-v3",
++        "alternative_contracts_schema_version": "ev3-contract-candidates-v4",
+         "alternative_contracts_count": 0,
+     }
+     for idx, alt in enumerate((alternatives or [])[:3], start=1):

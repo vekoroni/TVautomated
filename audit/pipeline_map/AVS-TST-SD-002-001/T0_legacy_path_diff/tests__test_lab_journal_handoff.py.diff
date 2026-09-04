@@ -1,0 +1,62 @@
+--- a/tests/test_lab_journal_handoff.py
++++ b/tests/test_lab_journal_handoff.py
+@@ -12,6 +12,7 @@
+     sys.path.insert(0, str(ROOT))
+ 
+ from avshunter_trade_journal import get_open_positions, log_entry, log_exit
++from contracts.lab_control import write_final_opportunity_book
+ 
+ 
+ def _route_signal(permission: str, route: str | None = None, ticker: str = "TST") -> dict:
+@@ -264,11 +265,27 @@
+                 "live_validation_state": "WAIT_RETEST",
+             },
+         )
++        governed_signal = {
++            "ticker": "AAA", "direction": "CALL", "strike": "100",
++            "expiry": "2099-01-19", "premium_mid": "1.0",
++            "target_price": "110", "invalidation_price": "95",
++            "lab_verdict": "GO", "lab_tradeable": False,
++            "morning_execution_permission": "WAIT",
++            "morning_execution_route": "WAIT",
++            "live_validation_state": "WAIT_RETEST",
++        }
++        governed_manifest = {
++            "pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []
++        }
++        write_final_opportunity_book(
++            run_id, [governed_signal], governed_manifest, lab.RUNS_DIR,
++            sync_interpreter=False,
++        )
+ 
+         first = lab._load_run(run_id, force_reload=True)
+         first_sig = first["signals"][0]
+         assert first_sig["morning_execution_permission"] == "WAIT"
+-        assert first_sig["lab_verdict"] == "WAIT"
++        assert first_sig["lab_verdict"] == "MANUAL_REVIEW"
+ 
+         time.sleep(0.02)
+         _write_csv(
+@@ -282,10 +299,20 @@
+                 "live_validation_state": "CONFIRMED",
+             },
+         )
++        governed_signal.update(
++            morning_execution_permission="GO_LIMIT",
++            morning_execution_route="GO_LIMIT",
++            live_validation_state="CONFIRMED",
++        )
++        write_final_opportunity_book(
++            run_id, [governed_signal], governed_manifest, lab.RUNS_DIR,
++            sync_interpreter=False,
++        )
+ 
+         second = lab._load_run(run_id)
+         second_sig = second["signals"][0]
+         assert second is not first
+         assert second_sig["morning_execution_permission"] == "GO_LIMIT"
+-        assert second_sig["lab_verdict"] == "GO_LIMIT"
+-        assert second_sig["morning_lab_alignment_status"] == "ALIGNED"
++        # This fixture has no governed direction lineage, so GO_LIMIT cannot
++        # independently upgrade the Lab row above manual review.
++        assert second_sig["lab_verdict"] == "MANUAL_REVIEW"

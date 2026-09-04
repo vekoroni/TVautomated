@@ -1,0 +1,85 @@
+--- a/scripts/avshunter_options_intelligence.py
++++ b/scripts/avshunter_options_intelligence.py
+@@ -121,6 +121,7 @@
+ from contracts.long_option_policy import (
+     LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
+     LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT,
++    quote_spread_fraction,
+ )
+ from contracts.options_liquidity_lifecycle import (
+     LifecycleInputs,
+@@ -1522,9 +1523,7 @@
+     else:
+         quality = "INCOMPLETE"
+ 
+-    spread_pct = None
+-    if quality != "INVALID" and bid is not None and ask is not None and mid is not None and mid > 0:
+-        spread_pct = (ask - bid) / mid
++    spread_pct = quote_spread_fraction(bid, ask) if quality != "INVALID" else None
+     return {
+         "bid": bid,
+         "ask": ask,
+@@ -5696,16 +5695,13 @@
+         iv_factor = 1.0
+     ev_adj_final = econ.get('ev_ratio', 0) * iv_factor
+ 
+-    # AMENDMENT (2026-05-02): R:R scoring decoupled from gating.
+-    # The derive_verdict() gate handles EXECUTE/ARMED decision based on R:R floor.
+-    # Scoring here should reward good R:R without destroying OIS for sub-threshold.
+-    # Negative R:R does not earn negative points — derive_verdict already demotes.
+-    if rr >= 3.0:        score += 9; pos.append(f"R:R={rr:.1f} excellent (+9)")
+-    elif rr >= 2.0:      score += 6; pos.append(f"R:R={rr:.1f} good (+6)")
+-    elif rr >= 1.5:      score += 3; pos.append(f"R:R={rr:.1f} acceptable (+3)")
+-    elif rr >= 1.0:      score += 1; pos.append(f"R:R={rr:.1f} marginal (+1)")
+-    elif rr >= 0:        neg.append(f"R:R={rr:.1f} — insufficient reward for premium paid")
+-    else:                neg.append(f"R:R={rr:.3f} — negative R:R (derive_verdict will demote)")
++    # Legacy premium R:R is a labelled expiry-intrinsic research scenario.
++    # It contributes zero points and cannot promote or demote the Options
++    # verdict for a 1-20 session thesis.
++    if rr >= 0:
++        pos.append(f"R:R research scenario={rr:.2f} (advisory; zero authority)")
++    else:
++        neg.append(f"R:R research scenario={rr:.3f} (advisory; zero authority)")
+ 
+     # EV is diagnostic evidence, not capital authority.  Keep a fixed two-point
+     # economics-computation credit so removing the former variable EV bonus does
+@@ -6041,19 +6037,9 @@
+     # Both are captured in the neg_factors list and will demote via score, not hard gate
+ 
+     # Score-based verdict
+-    rr = econ.get('rr_options', 0)
+     final_verdict = None
+     final_reason  = ''
+ 
+-    # R:R floor for EXECUTE — calibrated to quote source.
+-    # 1.5 is appropriate when real bid/ask/mid from marketdata.app is available.
+-    # When ALL contracts used BSM synthetic marks, premium estimates carry model
+-    # error that can make R:R look artificially low. Lower the floor to 1.0 for
+-    # synthetic-mark runs so valid setups are not blocked on imprecise premium data.
+-    # Real quotes (mark_synthetic=False) restore the 1.5 floor automatically.
+-    _is_synthetic = (contract or {}).get('mark_synthetic', True)
+-    _rr_execute_floor = 1.0
+-
+     # Three-tier threshold: EOD / LIVE_LOW / FULL_LIVE
+     # mark_synthetic=True  → EOD (no live chain quotes)
+     # mark_synthetic=False and score<55 → LIVE_LOW (real quotes, mkt env caps score)
+@@ -6075,17 +6061,8 @@
+         _tier_note = ''
+ 
+     if ois_score >= _exec_min:
+-        if rr < 0:
+-            final_verdict = 'ARMED'
+-            final_reason  = f'OIS={ois_score:.0f} qualifies but R:R={rr:.3f} negative — demoted to ARMED{_tier_note}'
+-        elif rr < _rr_execute_floor:
+-            final_verdict = 'ARMED'
+-            final_reason  = (f'OIS={ois_score:.0f} qualifies but R:R={rr:.2f} below '
+-                             f'floor ({_rr_execute_floor}) — BLOCK_RR_FLOOR: demoted to ARMED{_tier_note}')
+-        else:
+-            final_verdict = 'EXECUTE'
+-            if _tier_note:
+-                final_reason = (final_reason + _tier_note) if final_reason else f'All gates passed{_tier_note}'
++        final_verdict = 'EXECUTE'
++        final_reason = f'All observable Options gates passed; R:R is advisory{_tier_note}'
+     elif ois_score >= _arm_min:
+         final_verdict = 'ARMED'
+         final_reason  = ('; '.join(neg_factors[:2]) if neg_factors else 'Conditions not fully optimal') + _tier_note

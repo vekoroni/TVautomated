@@ -1,0 +1,3937 @@
+{
+ "results": {
+  "WyckoffEngine_3101_v2.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "avshunter_ticker_probe.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "actuarial_hash_diagnostic.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "actuarial_live_updater.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "add_state_hash.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "asymmetry_gate_swing.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "atheoretic_signals.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "enhancement_integration.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "audit_latest_run.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "avshunter_db_update.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "avshunter_discovery_ULTIMATE.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 11
+  },
+  "avshunter_exit_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "avshunter_monetisation_policy.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py",
+    "intelligent_orchestrator.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "avshunter_regime_screener.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "avshunter_ticker_probe.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 8
+  },
+  "avshunter_trade_journal.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligence-lab/intelligence_lab.py",
+    "intelligent_orchestrator.py",
+    "outcome_capture.py",
+    "scripts/qa_live_uat_readiness.py",
+    "weekly_intelligence_report.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 0
+  },
+  "avshunter_trap_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "bond_macro_intelligence.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "bridge/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "bridge/avshunter_reader.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "bridge/scheduler.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "bridge/feedback_writer.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "bridge/order_manager.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "bridge/outcome_recorder.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "bridge/scheduler.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "bridge/tastytrade_client.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "build_macro_json.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "canonical_data/__init__.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "morning_gate.py",
+    "scripts/avshunter_options_intelligence.py",
+    "tools/cds2_import_historical_prices.py",
+    "tools/cds2_replay_lifecycle_shadow.py",
+    "tools/cds2_validate_historical_prices.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 20
+  },
+  "canonical_data/bundle_freshness.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/interpreter_handoff_materializer.py",
+    "pipeline_interpreter/evidence_resolver.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "canonical_data/contract_reference.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/avshunter_options_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "canonical_data/contracts.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/discovery_publisher.py",
+    "canonical_data/gateway.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/lifecycle.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py",
+    "canonical_data/option_liquidity_lifecycle.py",
+    "canonical_data/registry.py",
+    "canonical_data/request_ledger.py",
+    "canonical_data/stage_publisher.py",
+    "market_structure/service.py"
+   ],
+   "n_refs": 12,
+   "imports_n": 1
+  },
+  "canonical_data/daily_adapter.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "canonical_data/discovery_publisher.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 5
+  },
+  "canonical_data/errors.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/contracts.py",
+    "canonical_data/discovery_publisher.py",
+    "canonical_data/gateway.py",
+    "canonical_data/historical_prices.py",
+    "canonical_data/lifecycle.py",
+    "canonical_data/option_liquidity_lifecycle.py",
+    "canonical_data/registry.py",
+    "canonical_data/storage.py",
+    "canonical_data/worklist_gate.py",
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 10,
+   "imports_n": 0
+  },
+  "canonical_data/feature_flags.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/gateway.py",
+    "canonical_data/history_bridge.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py",
+    "intelligent_orchestrator.py",
+    "morning_gate.py"
+   ],
+   "n_refs": 8,
+   "imports_n": 0
+  },
+  "canonical_data/gateway.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 6
+  },
+  "canonical_data/historical_prices.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/daily_adapter.py",
+    "canonical_data/history_bridge.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "canonical_data/history_bridge.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "canonical_data/__init__.py",
+    "garch_runner.py",
+    "polygon_data_fetcher.py",
+    "scripts/avshunter_options_intelligence.py",
+    "scripts/backfill_timeseries_into_packages.py",
+    "scripts/data_contract_validator.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 2
+  },
+  "canonical_data/intraday_bars.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 6
+  },
+  "canonical_data/lifecycle.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/discovery_publisher.py",
+    "canonical_data/gateway.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py",
+    "canonical_data/stage_publisher.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 3
+  },
+  "canonical_data/market_observation_resolver.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 9
+  },
+  "canonical_data/marketdata_response.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/market_observation_resolver.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "canonical_data/narrow_refresh.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "canonical_data/option_chain_store.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 6
+  },
+  "canonical_data/option_identity.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/contract_reference.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/marketdata_response.py",
+    "contracts/quote_change_evidence.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 0
+  },
+  "canonical_data/option_liquidity_lifecycle.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "canonical_data/registry.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/discovery_publisher.py",
+    "canonical_data/gateway.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/lifecycle.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py",
+    "canonical_data/option_liquidity_lifecycle.py",
+    "canonical_data/request_ledger.py",
+    "canonical_data/stage_publisher.py",
+    "market_structure/service.py",
+    "tools/validate_canonical_data.py"
+   ],
+   "n_refs": 12,
+   "imports_n": 2
+  },
+  "canonical_data/request_ledger.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/gateway.py",
+    "canonical_data/intraday_bars.py",
+    "canonical_data/market_observation_resolver.py",
+    "canonical_data/option_chain_store.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 2
+  },
+  "canonical_data/session_clock.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/bundle_freshness.py",
+    "contracts/quote_change_evidence.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "canonical_data/stage_publisher.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "canonical_data/storage.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/market_observation_resolver.py",
+    "market_structure/service.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "canonical_data/worklist_gate.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/__init__.py",
+    "canonical_data/discovery_publisher.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "catalyst_conflict_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "catalyst_truth_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "catastrophe_gate.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "check7_prompt.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "confirmation_ingester.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ml_confidence_layer/ml_confidence_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "contracts/bond_macro_contract.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "contracts/direction_governance.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "contracts/lab_control.py",
+    "eod_candidate_engine.py",
+    "execution_gate.py",
+    "morning_gate.py",
+    "morning_handoff_finalizer.py",
+    "scripts/avshunter_options_intelligence.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 0
+  },
+  "contracts/governed_states.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "eod_candidate_engine.py",
+    "morning_gate.py",
+    "scripts/avshunter_options_intelligence.py",
+    "scripts/exit_rules_engine.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "contracts/handoff_contract.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "eod_candidate_engine.py",
+    "execution_intelligence_runner.py",
+    "intelligent_orchestrator.py",
+    "scripts/build_packages_from_discovery.py",
+    "scripts/inject_macro_into_packages.py",
+    "scripts/qa_live_uat_readiness.py",
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 0
+  },
+  "contracts/interpreter_handoff.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/interpreter_handoff_materializer.py",
+    "intelligence-lab/intelligence_lab.py",
+    "pipeline_interpreter/evidence_resolver.py",
+    "tools/msi_production_readiness.py",
+    "tools/msi_reconcile.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 0
+  },
+  "contracts/interpreter_handoff_materializer.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_handoff_finalizer.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "contracts/interpreter_macro_context.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_handoff_finalizer.py",
+    "pipeline_interpreter/macro_context.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "contracts/lab_control.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligence-lab/intelligence_lab.py",
+    "intelligent_orchestrator.py",
+    "morning_handoff_finalizer.py",
+    "scripts/qa_conflict_resolver.py",
+    "scripts/qa_live_uat_readiness.py",
+    "scripts/qa_morning_validator.py",
+    "scripts/smoke_test_morning_validator.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 5
+  },
+  "contracts/lab_evidence_overlay.py": {
+   "category": "PROD_LAB",
+   "referenced_by": [
+    "canonical_data/narrow_refresh.py",
+    "intelligence-lab/intelligence_lab.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "contracts/long_option_policy.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/lab_control.py",
+    "morning_gate.py",
+    "scripts/avshunter_options_intelligence.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "contracts/macro_enrichment_delta.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/apply_external_intel_review_lane.py",
+    "scripts/apply_macro_enrichment_to_discovery.py",
+    "scripts/avshunter_options_intelligence.py",
+    "scripts/inject_macro_into_packages.py",
+    "scripts/qa_macro_enrichment_injection.py",
+    "test_macro_redesign.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 0
+  },
+  "contracts/macro_regime_safety.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/normalise_macro_contract.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "contracts/options_liquidity_execution_guard.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/lab_control.py",
+    "execution_gate.py",
+    "morning_handoff_finalizer.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "contracts/options_liquidity_lifecycle.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_gate.py",
+    "scripts/avshunter_options_intelligence.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "contracts/quote_change_evidence.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "canonical_data/narrow_refresh.py",
+    "contracts/interpreter_handoff_materializer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "contracts/selected_contract_economics.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/lab_control.py",
+    "eod_candidate_engine.py",
+    "execution_gate.py",
+    "morning_gate.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "convergence_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "enhancement_integration.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "desk_card.py": {
+   "category": "LAUNCHER_TARGET",
+   "referenced_by": [
+    "Run-DeskCard.ps1"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "dropoff_audit.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/go_live_uat_audit_watch.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "earnings_calendar_enricher.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_gate.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "eil_eod_resolver.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "empirical_option_ev.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "enhancement_integration.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 5
+  },
+  "enums_structural.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "WyckoffEngine_3101_v2.py",
+    "asymmetry_gate_swing.py",
+    "avshunter_discovery_ULTIMATE.py",
+    "swing_fusion.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "eod_candidate_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 7
+  },
+  "ev_engine_v2.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_ticker_probe.py",
+    "execution_intelligence.py",
+    "execution_intelligence_runner.py",
+    "final_decision_engine.py",
+    "scripts/avshunter_superbrain_layer.py",
+    "test_pipeline_regression.py",
+    "vanguard/layer2_statistical/edge_detector.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 0
+  },
+  "execution_decision_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "execution_gate.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "morning_handoff_finalizer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "execution_intelligence.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 7
+  },
+  "execution_intelligence_runner.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_ticker_probe.py",
+    "intelligent_orchestrator.py",
+    "scripts/qa_live_uat_readiness.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 13
+  },
+  "execution_schema.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py",
+    "vanguard/execution/strategies/gex_flipper.py",
+    "vanguard/execution/strategies/iv_distortion.py",
+    "vanguard/execution/strategies/liquidity_gate.py",
+    "vanguard/execution/strategies/obi_predictor.py",
+    "vanguard/execution/strategies/poc_timing.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 0
+  },
+  "final_decision_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "final_verify_c9.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 5
+  },
+  "garch_runner.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "handoff_contract_audit.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/go_live_uat_audit_watch.py",
+    "scripts/qa_uat_regression_backtest.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "intelligence-lab/intelligence_lab.py": {
+   "category": "PROD_LAB",
+   "referenced_by": [
+    "scripts/qa_baton_integrity.py",
+    "scripts/qa_live_uat_readiness.py",
+    "scripts/qa_morning_validator.py",
+    "scripts/smoke_test_live_uat_pipeline.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 7
+  },
+  "intelligent_orchestrator.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "resume_after_vanguard.py",
+    "run_evening.bat",
+    "run_premarket.bat",
+    "scripts/qa_live_uat_readiness.py",
+    "test_macro_redesign.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 57
+  },
+  "iv_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/avshunter_options_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "kelly_sizer.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "enhancement_integration.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "lab_recon_selftest.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "layer3_forward_variance.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "garch_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "layer4_mispricing.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "layer6_path_survival.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "liquidity_filter.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "ma_cockpit/ma_cockpit.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "ma_cockpit/ma_cockpit_commands.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ma_cockpit/ma_cockpit.py",
+    "ma_cockpit/ma_cockpit_scheduler.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "ma_cockpit/ma_cockpit_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ma_cockpit/ma_cockpit_commands.py",
+    "ma_cockpit/ma_cockpit_outputs.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "ma_cockpit/ma_cockpit_outputs.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ma_cockpit/ma_cockpit_commands.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "ma_cockpit/ma_cockpit_scheduler.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "ma_cockpit/ma_csv_schema.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ma_cockpit/ma_cockpit_commands.py",
+    "ma_cockpit/validate_ma_csv.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "ma_cockpit/validate_ma_csv.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "macro_horizon_router.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "macro_sector_propagation_test.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "mae_mfe_calculator.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "market_context_diagnostics.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "market_structure/__init__.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_gate.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "market_structure/lifecycle.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "market_structure/service.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "market_structure/params.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "market_structure/__init__.py",
+    "market_structure/lifecycle.py",
+    "market_structure/profile.py",
+    "market_structure/service.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "market_structure/profile.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "market_structure/__init__.py",
+    "market_structure/service.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "market_structure/service.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "market_structure/__init__.py",
+    "morning_gate.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 6
+  },
+  "mcmillan_advisory_layer.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "md_api_diagnostic.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "ml_confidence_layer/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "ml_confidence_layer/compounding_tracker.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "ml_confidence_layer/ml_confidence_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "ml_confidence_layer/__init__.py",
+    "ml_confidence_layer/run_ml_on_vanguard_output.py",
+    "scripts/run_ml_on_vanguard_output.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "ml_confidence_layer/run_ml_on_vanguard_output.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "morning_gate.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "pipeline_interpreter/alternative_contract_selector.py",
+    "scripts/qa_live_uat_readiness.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 13
+  },
+  "morning_handoff_finalizer.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "morning_gate.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 10
+  },
+  "morning_validation.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "morning_validation_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "msi_runtime.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligence-lab/intelligence_lab.py",
+    "intelligent_orchestrator.py",
+    "morning_gate.py",
+    "morning_handoff_finalizer.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/pipeline_interpreter_engine.py",
+    "scripts/avshunter_options_intelligence.py",
+    "tools/msi_production_readiness.py"
+   ],
+   "n_refs": 8,
+   "imports_n": 0
+  },
+  "news_terminal/build_premarket_candidates.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "news_terminal/news_terminal.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "news_terminal/news_terminal_commands.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "news_terminal/news_terminal.py",
+    "news_terminal/news_terminal_scheduler.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "news_terminal/news_terminal_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "news_terminal/news_terminal_commands.py",
+    "news_terminal/news_terminal_outputs.py",
+    "news_terminal/news_terminal_scheduler.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "news_terminal/news_terminal_outputs.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "news_terminal/news_terminal_commands.py",
+    "news_terminal/news_terminal_scheduler.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "news_terminal/news_terminal_scheduler.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 3
+  },
+  "orchestrator/WyckoffEngine_3101_v2.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/wyckoff_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "orchestrator/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 5
+  },
+  "orchestrator/claude_api.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/__init__.py",
+    "orchestrator/main.py",
+    "orchestrator/main_archive.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "orchestrator/collector.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "orchestrator/data_monitor.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/main.py",
+    "orchestrator/main_archive.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "orchestrator/email_sender.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/__init__.py",
+    "orchestrator/main.py",
+    "orchestrator/main_archive.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "orchestrator/macro_loader.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/options_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "orchestrator/main.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/__init__.py",
+    "run.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 5
+  },
+  "orchestrator/main_archive.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 5
+  },
+  "orchestrator/options_intelligence.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/main.py",
+    "orchestrator/main_archive.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "orchestrator/report_generator.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/__init__.py",
+    "orchestrator/main.py",
+    "orchestrator/main_archive.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "orchestrator/wyckoff_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "orchestrator/options_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "outcome_capture.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligence-lab/intelligence_lab.py",
+    "intelligent_orchestrator.py",
+    "scripts/qa_live_uat_readiness.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/_append_helper.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/_append_outputs.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/_patch_cmd_ticker.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/alternative_contract_selector.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/assessment_contract.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 10
+  },
+  "pipeline_interpreter/automation_v2/batch.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 6
+  },
+  "pipeline_interpreter/automation_v2/cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 12
+  },
+  "pipeline_interpreter/automation_v2/comparison.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/compatibility.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/comparison.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/core.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/package_shadow.py",
+    "pipeline_interpreter/automation_v2/shadow.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/e2e_orchestrator.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/e2e_orchestrator_cli.py",
+    "pipeline_interpreter/automation_v2/lab_batch.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/automation_v2/e2e_orchestrator_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/evidence.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/legacy_adapter.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/evidence_package.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+    "pipeline_interpreter/automation_v2/evidence_package_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/evidence_package_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/field_comparison.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/fixture_provider.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/automation_v2/lab_batch.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/lab_batch_cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/lab_batch_cli.py": {
+   "category": "LAUNCHER_TARGET",
+   "referenced_by": [
+    "run_shadow_automation.bat"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/automation_v2/lab_structured.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+    "pipeline_interpreter/automation_v2/lab_structured_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/lab_structured_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/legacy_adapter.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/live_provider.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/lab_batch_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/automation_v2/market_structure.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/fixture_provider.py",
+    "pipeline_interpreter/automation_v2/provider.py",
+    "pipeline_interpreter/automation_v2/renderers.py",
+    "pipeline_interpreter/automation_v2/schemas.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/metrics.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/models.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/comparison.py",
+    "pipeline_interpreter/automation_v2/core.py",
+    "pipeline_interpreter/automation_v2/evidence.py",
+    "pipeline_interpreter/automation_v2/fixture_provider.py",
+    "pipeline_interpreter/automation_v2/legacy_adapter.py",
+    "pipeline_interpreter/automation_v2/market_structure.py",
+    "pipeline_interpreter/automation_v2/package_shadow.py",
+    "pipeline_interpreter/automation_v2/parser.py",
+    "pipeline_interpreter/automation_v2/provider.py",
+    "pipeline_interpreter/automation_v2/renderers.py"
+   ],
+   "n_refs": 18,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/numeric_validation.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/lab_batch.py",
+    "pipeline_interpreter/automation_v2/veto.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/package_publisher.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+    "pipeline_interpreter/automation_v2/package_publisher_cli.py",
+    "pipeline_interpreter/automation_v2/package_shadow.py",
+    "pipeline_interpreter/automation_v2/production_deploy.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/package_publisher_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/package_shadow.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+    "pipeline_interpreter/automation_v2/package_shadow_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/automation_v2/package_shadow_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/parser.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/fixture_provider.py",
+    "pipeline_interpreter/automation_v2/provider.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/production_deploy.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/production_deploy_cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/production_deploy_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/provider.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/live_provider.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/automation_v2/renderers.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/package_shadow.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/automation_v2/replay.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/automation_v2/retry.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/rollout.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/schemas.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/parser.py",
+    "pipeline_interpreter/automation_v2/provider.py",
+    "pipeline_interpreter/automation_v2/renderers.py",
+    "pipeline_interpreter/automation_v2/retry.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/automation_v2/serialization.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/automation_v2/shadow.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/batch.py",
+    "pipeline_interpreter/automation_v2/cli.py",
+    "pipeline_interpreter/automation_v2/trial.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/automation_v2/trial.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 7
+  },
+  "pipeline_interpreter/automation_v2/veto.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/__init__.py",
+    "pipeline_interpreter/automation_v2/core.py",
+    "pipeline_interpreter/automation_v2/lab_structured.py",
+    "pipeline_interpreter/automation_v2/shadow.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/attended_workflow.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/lab_batch_cli.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 5
+  },
+  "pipeline_interpreter/capture_v1/backend.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/attended_workflow.py",
+    "pipeline_interpreter/capture_v1/market_screen_cli.py",
+    "pipeline_interpreter/capture_v1/navigation.py",
+    "pipeline_interpreter/capture_v1/navigation_cli.py",
+    "pipeline_interpreter/capture_v1/noii_calibration_cli.py",
+    "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+    "pipeline_interpreter/capture_v1/service.py",
+    "pipeline_interpreter/capture_v1/ticker_batch.py",
+    "pipeline_interpreter/capture_v1/ticker_batch_cli.py",
+    "pipeline_interpreter/capture_v1/ticker_cli.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch.py"
+   ],
+   "n_refs": 14,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/contracts.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/__init__.py",
+    "pipeline_interpreter/capture_v1/backend.py",
+    "pipeline_interpreter/capture_v1/cli.py",
+    "pipeline_interpreter/capture_v1/market_screen.py",
+    "pipeline_interpreter/capture_v1/navigation.py",
+    "pipeline_interpreter/capture_v1/noii_cross.py",
+    "pipeline_interpreter/capture_v1/service.py",
+    "pipeline_interpreter/capture_v1/ticker_batch.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch.py",
+    "pipeline_interpreter/capture_v1/windows.py"
+   ],
+   "n_refs": 11,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/capture_v1/dpi.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/navigation.py",
+    "pipeline_interpreter/capture_v1/windows.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/capture_v1/market_screen.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/market_screen_cli.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/capture_v1/market_screen_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/navigation.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/attended_workflow.py",
+    "pipeline_interpreter/capture_v1/market_screen.py",
+    "pipeline_interpreter/capture_v1/navigation_cli.py",
+    "pipeline_interpreter/capture_v1/noii_cross.py",
+    "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+    "pipeline_interpreter/capture_v1/ticker_batch.py",
+    "pipeline_interpreter/capture_v1/ticker_cli.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch.py",
+    "pipeline_interpreter/capture_v1/timeframe_cli.py"
+   ],
+   "n_refs": 10,
+   "imports_n": 5
+  },
+  "pipeline_interpreter/capture_v1/navigation_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/noii_calibration_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/capture_v1/noii_cross.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/attended_workflow.py",
+    "pipeline_interpreter/capture_v1/noii_cross_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/capture_v1/noii_cross_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/capture_v1/privacy_crop.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/market_screen.py",
+    "pipeline_interpreter/capture_v1/navigation.py",
+    "pipeline_interpreter/capture_v1/noii_cross.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/capture_v1/service.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/__init__.py",
+    "pipeline_interpreter/capture_v1/cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/capture_v1/ticker_batch.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/attended_workflow.py",
+    "pipeline_interpreter/capture_v1/ticker_batch_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "pipeline_interpreter/capture_v1/ticker_batch_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/ticker_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/ticker_market_screen.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/attended_workflow.py",
+    "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/capture_v1/timeframe_batch.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/ticker_batch.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch_cli.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 5
+  },
+  "pipeline_interpreter/capture_v1/timeframe_batch_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/timeframe_cli.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/capture_v1/validation.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/market_screen.py",
+    "pipeline_interpreter/capture_v1/navigation.py",
+    "pipeline_interpreter/capture_v1/noii_cross.py",
+    "pipeline_interpreter/capture_v1/service.py",
+    "pipeline_interpreter/capture_v1/timeframe_batch.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/capture_v1/windows.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "pipeline_interpreter/capture_v1/backend.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/direction_conflict_resolver.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/entry_timing_engine.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/entry_timing_engine_test.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/entry_timing_engine_test.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/evidence_resolver.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/pipeline_interpreter_engine.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/interpreter_qa.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "final_verify_c9.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/lab_reconciliation.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "final_verify_c9.py",
+    "lab_recon_selftest.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/pipeline_interpreter_outputs.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/live_market_reader.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/ma_inputs_sync.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "contracts/lab_control.py",
+    "eod_candidate_engine.py",
+    "execution_intelligence_runner.py",
+    "morning_handoff_finalizer.py",
+    "morning_validation.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/macro_context.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/evidence_resolver.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/news_macro_readers.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/pipeline_interpreter_engine.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/pipeline_interpreter.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/automation_v2/live_provider.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/pipeline_interpreter_commands.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "final_verify_c9.py",
+    "pipeline_interpreter/_patch_cmd_ticker.py",
+    "pipeline_interpreter/pipeline_interpreter.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 14
+  },
+  "pipeline_interpreter/pipeline_interpreter_engine.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "check7_prompt.py",
+    "final_verify_c9.py",
+    "pipeline_interpreter/automation_v2/live_provider.py",
+    "pipeline_interpreter/pipeline_interpreter.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/prepare_interpreter_session.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 3
+  },
+  "pipeline_interpreter/pipeline_interpreter_outputs.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "final_verify_c9.py",
+    "pipeline_interpreter/_append_outputs.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "pipeline_interpreter/prepare_interpreter_session.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "pipeline_interpreter/score_integrity_check.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/screenshot_adapter.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/thesis_registry.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "check7_prompt.py",
+    "pipeline_interpreter/pipeline_interpreter_commands.py",
+    "pipeline_interpreter/prepare_interpreter_session.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "pipeline_interpreter/trade_brief_builder.py": {
+   "category": "PROD_INTERPRETER",
+   "referenced_by": [
+    "pipeline_interpreter/pipeline_interpreter_commands.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "polygon_data_fetcher.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "avshunter_ticker_probe.py",
+    "position_lifecycle_tracker.py",
+    "scripts/repair_daily_from_polygon.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 1
+  },
+  "polygon_options_validation.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "position_lifecycle_tracker.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "position_sizing_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "avshunter_ticker_probe.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "premarket_intelligence_ULTIMATE.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "probability_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "rapid_rotation_flag.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "refresh_daily_data.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "regime_audit.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "regime_consensus.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "enhancement_integration.py",
+    "test_pipeline_regression.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "regime_threshold_injector.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "resume_after_vanguard.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "run.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "scenario_builder.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scenario_router.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/actuarial_enrichment_pass.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 5
+  },
+  "scripts/apply_ev3_authority.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/apply_external_intel_review_lane.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/apply_macro_enrichment_to_discovery.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "scripts/audit_runner.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/avshunter_monetisation_policy.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/avshunter_options_intelligence.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_ticker_probe.py",
+    "intelligent_orchestrator.py",
+    "scripts/diag_options.py",
+    "scripts/qa_live_uat_readiness.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 12
+  },
+  "scripts/avshunter_superbrain_layer.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "scripts/avshunter_universe_scanner.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "scripts/backfill_polygon_daily_v7.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/backfill_timeseries_into_packages.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "tools/create_cds_baseline.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "scripts/behaviour_cache_builder.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/behaviour_state_builder.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/actuarial_enrichment_pass.py",
+    "scripts/behaviour_cache_builder.py",
+    "scripts/run_vanguard_from_packages.py",
+    "scripts/validate_behaviour_state.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "scripts/build_actuarial_v7.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/build_actuarial_v7_sharded.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/build_actuarial_v7_sharded.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "scripts/build_ev3_stage0.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/build_packages_from_discovery.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "scripts/build_phase_transition_matrix.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/capture_end_to_end_run.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/start_end_to_end_run_capture.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/compute_greeks_bs.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "empirical_option_ev.py",
+    "scripts/phantom_compute_historical_greeks.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "scripts/core_intel_exporter.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/data_contract_validator.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/avshunter_superbrain_layer.py",
+    "scripts/backfill_timeseries_into_packages.py",
+    "scripts/build_packages_from_discovery.py",
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 1
+  },
+  "scripts/derive_actuarial_v7_universe.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/diag_options.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/enrich_actuarial_v7_diagnostics.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/ev3_calibration_report.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/apply_ev3_authority.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/ev_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/exit_rules_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/finalize_phantom_weekly_snapshot.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/generate_signal_lab.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/go_live_uat_audit_watch.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/capture_end_to_end_run.py",
+    "scripts/start_go_live_uat_audit_watch.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 5
+  },
+  "scripts/inject_macro_into_packages.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/qa_macro_enrichment_injection.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 3
+  },
+  "scripts/macro_exposure_resolver.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "test_macro_redesign.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "scripts/macro_quant_packet.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "eod_candidate_engine.py",
+    "execution_intelligence_runner.py",
+    "intelligent_orchestrator.py",
+    "scripts/apply_macro_enrichment_to_discovery.py",
+    "scripts/avshunter_options_intelligence.py",
+    "scripts/build_packages_from_discovery.py",
+    "scripts/go_live_uat_audit_watch.py",
+    "scripts/inject_macro_into_packages.py",
+    "scripts/normalise_macro_contract.py",
+    "scripts/qa_macro_enrichment_injection.py",
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 13,
+   "imports_n": 0
+  },
+  "scripts/monitor_uat_pipeline.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/go_live_uat_audit_watch.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/normalise_macro_contract.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "run.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "scripts/options_db_writer.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/phantom_compute_historical_greeks.py",
+    "scripts/phantom_computed_greeks_audit.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "scripts/patch_actuarial_winsorise.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/phantom_bayesian.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/phantom_compute_historical_greeks.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "scripts/phantom_computed_greeks_audit.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/phantom_criticality.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/phantom_database.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py",
+    "scripts/phantom_greek_rehydrate.py",
+    "scripts/run_phantom_backfill.py",
+    "scripts/run_phantom_backfill_parallel.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "scripts/phantom_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/run_phantom.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 6
+  },
+  "scripts/phantom_gamma_field.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/phantom_greek_coverage_audit.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/phantom_greek_rehydrate.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/phantom_info_flow.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/phantom_iv_surface.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/phantom_engine.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "scripts/phantom_marketdata_chain_probe.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/phantom_marketdata_quote_greek_rehydrate.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/phantom_marketdata_quote_probe.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/promote_actuarial_v7.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/promote_ev3_barrier_cache.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/publish_latest_run.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/qa_baton_integrity.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/qa_conflict_resolver.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/qa_live_uat_readiness.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 11
+  },
+  "scripts/qa_macro_enrichment_injection.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 3
+  },
+  "scripts/qa_market_scenario_simulation.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/qa_morning_validator.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "scripts/qa_uat_regression_backtest.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "scripts/repair_daily_from_polygon.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/run_ev3_shadow.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/run_ev3_shadow_phase.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/run_ev3_shadow_phase.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/run_ml_on_vanguard_output.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/run_phantom.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "scripts/run_phantom_backfill.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/run_phantom_backfill_parallel.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/run_vanguard_from_packages.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/qa_live_uat_readiness.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 11
+  },
+  "scripts/sector_alignment.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/avshunter_options_intelligence.py",
+    "scripts/avshunter_superbrain_layer.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "scripts/smoke_test_big_bang_phase_6_7.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/smoke_test_live_uat_pipeline.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/smoke_test_morning_validator.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/split_catalyst_from_macro_guards.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/start_end_to_end_run_capture.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/start_go_live_uat_audit_watch.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/upgrade_actuarial_database.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/validate_actuarial_v7.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/validate_behaviour_state.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "scripts/validate_macro_contract.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/validate_packages.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/verify_ev3_stage0.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "scripts/write_manifest.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "sec_activist_monitor.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "sec_form4_monitor.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "short_swing/run_short_swing.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 4
+  },
+  "short_swing/short_swing_contract.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "short_swing/run_short_swing.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "short_swing/short_swing_monitor.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "short_swing/run_short_swing.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "short_swing/short_swing_outcome_logger.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "short_swing/run_short_swing.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "short_swing/short_swing_screener.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "short_swing/run_short_swing.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "short_swing_screener.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "signal_funnel.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "enhancement_integration.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "signal_grader.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "swing_fusion.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "test_macro_redesign.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 3
+  },
+  "test_pipeline_regression.py": {
+   "category": "TEST_QA",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 7
+  },
+  "theta_bpr_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "tools/audit_from_packages.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "tools/cds2_import_historical_prices.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "tools/cds2_replay_lifecycle_shadow.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "tools/cds2_validate_historical_prices.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "tools/create_cds_baseline.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 8
+  },
+  "tools/enrich_universe_sector_polygon.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "tools/msi_production_readiness.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_handoff_finalizer.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "tools/msi_reconcile.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_handoff_finalizer.py",
+    "tools/msi_production_readiness.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "tools/refresh_daily_data_v2.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "tools/sanitize_universe.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "tools/validate_canonical_data.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "trade_book_builder.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "transition_matrix_consumer.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "kelly_sizer.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "trigger_confirmation_engine.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "morning_validation.py",
+    "morning_validation_engine.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "trigger_layer.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "uat_audit_report.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py",
+    "scripts/go_live_uat_audit_watch.py",
+    "scripts/qa_uat_regression_backtest.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 1
+  },
+  "vanguard/__init__.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "avshunter_ticker_probe.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/config.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/auction_synthesizer.py",
+    "vanguard/layer1_auction/control_identifier.py",
+    "vanguard/layer1_auction/market_profile.py",
+    "vanguard/layer1_auction/value_acceptance.py",
+    "vanguard/layer1_auction/value_migration.py",
+    "vanguard/layer2_statistical/actuarial_query.py",
+    "vanguard/layer2_statistical/edge_detector.py",
+    "vanguard/layer2_statistical/scenario_builder.py",
+    "vanguard/layer2_statistical/state_calculator.py",
+    "vanguard/layer3_execution/scenario_builder.py",
+    "vanguard/main.py"
+   ],
+   "n_refs": 11,
+   "imports_n": 0
+  },
+  "vanguard/core/actuarial_core_v7.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "scripts/build_actuarial_v7.py",
+    "scripts/build_actuarial_v7_sharded.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 0
+  },
+  "vanguard/core/actuarial_registry.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "regime_audit.py",
+    "scripts/actuarial_enrichment_pass.py",
+    "scripts/run_vanguard_from_packages.py",
+    "vanguard/core/cache_integrity.py",
+    "vanguard/core/schema_guard.py",
+    "vanguard/core/truth_packet.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 0
+  },
+  "vanguard/core/cache_integrity.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/actuarial_enrichment_pass.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "vanguard/core/schema_contract_v6.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/actuarial_enrichment_pass.py",
+    "vanguard/core/cache_integrity.py",
+    "vanguard/core/schema_guard.py",
+    "vanguard/core/truth_packet.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "vanguard/core/schema_guard.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "vanguard/core/truth_packet.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/actuarial_enrichment_pass.py",
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "vanguard/ev3_stage0.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "scripts/build_ev3_stage0.py",
+    "scripts/promote_ev3_barrier_cache.py",
+    "vanguard/ev_engine_v3.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "vanguard/ev_engine.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "vanguard/ev_engine_v2.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "vanguard/ev_engine_v3.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "morning_gate.py",
+    "scripts/run_ev3_shadow.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "vanguard/execution/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "vanguard/execution/strategies/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "vanguard/execution/strategies/gex_flipper.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/execution/strategies/iv_distortion.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/execution/strategies/liquidity_gate.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/execution/strategies/obi_predictor.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/execution/strategies/poc_timing.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vanguard/integration/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 1
+  },
+  "vanguard/integration/orchestrator_adapter.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/run_vanguard_from_packages.py",
+    "vanguard/integration/__init__.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 1
+  },
+  "vanguard/layer1_auction/__init__.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/main.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 5
+  },
+  "vanguard/layer1_auction/auction_synthesizer.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 7
+  },
+  "vanguard/layer1_auction/control_identifier.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/__init__.py",
+    "vanguard/layer1_auction/auction_synthesizer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "vanguard/layer1_auction/market_profile.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/__init__.py",
+    "vanguard/layer1_auction/auction_synthesizer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "vanguard/layer1_auction/value_acceptance.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/__init__.py",
+    "vanguard/layer1_auction/auction_synthesizer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "vanguard/layer1_auction/value_migration.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/__init__.py",
+    "vanguard/layer1_auction/auction_synthesizer.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 2
+  },
+  "vanguard/layer2_statistical/__init__.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/main.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 3
+  },
+  "vanguard/layer2_statistical/actuarial_query.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer2_statistical/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 2
+  },
+  "vanguard/layer2_statistical/edge_detector.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "execution_intelligence_runner.py",
+    "vanguard/layer2_statistical/__init__.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 5
+  },
+  "vanguard/layer2_statistical/scenario_builder.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 4
+  },
+  "vanguard/layer2_statistical/state_calculator.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer2_statistical/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 4
+  },
+  "vanguard/layer3_execution/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 2
+  },
+  "vanguard/layer3_execution/scenario_builder.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "vanguard/layer3_execution/__init__.py",
+    "vanguard/layer3_execution/trade_builder.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 4
+  },
+  "vanguard/layer3_execution/trade_builder.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "vanguard/layer3_execution/__init__.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 4
+  },
+  "vanguard/main.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/run_vanguard_from_packages.py",
+    "vanguard/__init__.py"
+   ],
+   "n_refs": 2,
+   "imports_n": 5
+  },
+  "vanguard/physics_state_engine.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "eod_candidate_engine.py",
+    "execution_intelligence_runner.py",
+    "scripts/qa_live_uat_readiness.py",
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 4,
+   "imports_n": 0
+  },
+  "vanguard/schemas/__init__.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 4
+  },
+  "vanguard/schemas/auction_schema.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer1_auction/auction_synthesizer.py",
+    "vanguard/layer1_auction/control_identifier.py",
+    "vanguard/layer1_auction/market_profile.py",
+    "vanguard/layer1_auction/value_acceptance.py",
+    "vanguard/layer1_auction/value_migration.py",
+    "vanguard/layer2_statistical/edge_detector.py",
+    "vanguard/layer2_statistical/scenario_builder.py",
+    "vanguard/layer2_statistical/state_calculator.py",
+    "vanguard/layer3_execution/scenario_builder.py",
+    "vanguard/layer3_execution/trade_builder.py",
+    "vanguard/schemas/__init__.py"
+   ],
+   "n_refs": 11,
+   "imports_n": 0
+  },
+  "vanguard/schemas/input_schema.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/integration/orchestrator_adapter.py",
+    "vanguard/layer1_auction/auction_synthesizer.py",
+    "vanguard/layer2_statistical/state_calculator.py",
+    "vanguard/main.py",
+    "vanguard/schemas/__init__.py"
+   ],
+   "n_refs": 5,
+   "imports_n": 0
+  },
+  "vanguard/schemas/state_outcomes_schema.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer2_statistical/actuarial_query.py",
+    "vanguard/layer2_statistical/edge_detector.py",
+    "vanguard/layer2_statistical/scenario_builder.py",
+    "vanguard/layer2_statistical/state_calculator.py",
+    "vanguard/layer3_execution/scenario_builder.py",
+    "vanguard/layer3_execution/trade_builder.py",
+    "vanguard/schemas/__init__.py"
+   ],
+   "n_refs": 7,
+   "imports_n": 0
+  },
+  "vanguard/schemas/trade_schema.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "vanguard/layer2_statistical/edge_detector.py",
+    "vanguard/layer2_statistical/scenario_builder.py",
+    "vanguard/layer3_execution/scenario_builder.py",
+    "vanguard/layer3_execution/trade_builder.py",
+    "vanguard/main.py",
+    "vanguard/schemas/__init__.py"
+   ],
+   "n_refs": 6,
+   "imports_n": 0
+  },
+  "vanguard/schemas/vanguard_contract.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "vanguard/trade_contract.py": {
+   "category": "PROD_SHARED",
+   "referenced_by": [
+    "intelligence-lab/intelligence_lab.py",
+    "scripts/run_vanguard_from_packages.py",
+    "vanguard/trade_governance.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "vanguard/trade_governance.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "scripts/run_vanguard_from_packages.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "vix_governor.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  },
+  "wall_break_scorer.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "weekly_intelligence_report.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "intelligent_orchestrator.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 1
+  },
+  "wyckoff_crabel_precor_logic_v2.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py",
+    "avshunter_ticker_probe.py",
+    "orchestrator/options_intelligence.py"
+   ],
+   "n_refs": 3,
+   "imports_n": 0
+  },
+  "wyckoff_phase_validator.py": {
+   "category": "PROD_EVENING",
+   "referenced_by": [
+    "avshunter_discovery_ULTIMATE.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "zero_dte/intraday_0dte_trigger.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "zero_dte/run_0dte.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "zero_dte/run_0dte.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 4
+  },
+  "zero_dte/zero_dte_contract.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "zero_dte/run_0dte.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "zero_dte/zero_dte_outcome_logger.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "zero_dte/run_0dte.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "zero_dte/zero_dte_screener.py": {
+   "category": "REFERENCED_NONPROD",
+   "referenced_by": [
+    "zero_dte/run_0dte.py"
+   ],
+   "n_refs": 1,
+   "imports_n": 0
+  },
+  "zero_dte_screener.py": {
+   "category": "UNREFERENCED",
+   "referenced_by": [],
+   "n_refs": 0,
+   "imports_n": 0
+  }
+ },
+ "counts": {
+  "LAUNCHER_TARGET": 2,
+  "PROD_EVENING": 105,
+  "PROD_INTERPRETER": 14,
+  "PROD_LAB": 2,
+  "PROD_SHARED": 52,
+  "REFERENCED_NONPROD": 90,
+  "TEST_QA": 14,
+  "UNREFERENCED": 140
+ },
+ "unparsed": [
+  [
+   "scripts/run_vanguard_from_packages.py",
+   "syntax:f-string: unmatched '(' (<unknown>, line 1416)"
+  ]
+ ],
+ "launcher_refs": {
+  "run_shadow_automation.bat": [
+   "pipeline_interpreter/automation_v2/lab_batch_cli.py"
+  ],
+  "run_premarket.bat": [
+   "intelligent_orchestrator.py"
+  ],
+  "run_evening.bat": [
+   "intelligent_orchestrator.py"
+  ],
+  "Run-DeskCard.ps1": [
+   "desk_card.py"
+  ]
+ },
+ "categories": {
+  "PROD_EVENING": [
+   "WyckoffEngine_3101_v2.py",
+   "asymmetry_gate_swing.py",
+   "avshunter_discovery_ULTIMATE.py",
+   "avshunter_monetisation_policy.py",
+   "avshunter_regime_screener.py",
+   "avshunter_trap_engine.py",
+   "canonical_data/contract_reference.py",
+   "catalyst_truth_engine.py",
+   "contracts/bond_macro_contract.py",
+   "contracts/handoff_contract.py",
+   "contracts/macro_enrichment_delta.py",
+   "contracts/macro_regime_safety.py",
+   "dropoff_audit.py",
+   "eil_eod_resolver.py",
+   "enums_structural.py",
+   "eod_candidate_engine.py",
+   "ev_engine_v2.py",
+   "execution_decision_engine.py",
+   "execution_intelligence.py",
+   "execution_intelligence_runner.py",
+   "execution_schema.py",
+   "final_decision_engine.py",
+   "garch_runner.py",
+   "handoff_contract_audit.py",
+   "intelligent_orchestrator.py",
+   "iv_engine.py",
+   "layer3_forward_variance.py",
+   "macro_horizon_router.py",
+   "market_context_diagnostics.py",
+   "mcmillan_advisory_layer.py",
+   "polygon_data_fetcher.py",
+   "position_lifecycle_tracker.py",
+   "premarket_intelligence_ULTIMATE.py",
+   "probability_engine.py",
+   "regime_threshold_injector.py",
+   "scenario_builder.py",
+   "scenario_router.py",
+   "scripts/actuarial_enrichment_pass.py",
+   "scripts/apply_ev3_authority.py",
+   "scripts/apply_external_intel_review_lane.py",
+   "scripts/apply_macro_enrichment_to_discovery.py",
+   "scripts/avshunter_monetisation_policy.py",
+   "scripts/avshunter_options_intelligence.py",
+   "scripts/avshunter_superbrain_layer.py",
+   "scripts/avshunter_universe_scanner.py",
+   "scripts/backfill_timeseries_into_packages.py",
+   "scripts/behaviour_state_builder.py",
+   "scripts/build_packages_from_discovery.py",
+   "scripts/build_phase_transition_matrix.py",
+   "scripts/core_intel_exporter.py",
+   "scripts/data_contract_validator.py",
+   "scripts/ev3_calibration_report.py",
+   "scripts/exit_rules_engine.py",
+   "scripts/inject_macro_into_packages.py",
+   "scripts/macro_exposure_resolver.py",
+   "scripts/macro_quant_packet.py",
+   "scripts/normalise_macro_contract.py",
+   "scripts/phantom_bayesian.py",
+   "scripts/phantom_criticality.py",
+   "scripts/phantom_database.py",
+   "scripts/phantom_engine.py",
+   "scripts/phantom_gamma_field.py",
+   "scripts/phantom_info_flow.py",
+   "scripts/phantom_iv_surface.py",
+   "scripts/run_ev3_shadow.py",
+   "scripts/run_ev3_shadow_phase.py",
+   "scripts/run_phantom.py",
+   "scripts/run_vanguard_from_packages.py",
+   "scripts/sector_alignment.py",
+   "swing_fusion.py",
+   "trade_book_builder.py",
+   "trigger_layer.py",
+   "uat_audit_report.py",
+   "vanguard/config.py",
+   "vanguard/core/actuarial_registry.py",
+   "vanguard/core/cache_integrity.py",
+   "vanguard/core/schema_contract_v6.py",
+   "vanguard/core/truth_packet.py",
+   "vanguard/execution/strategies/gex_flipper.py",
+   "vanguard/execution/strategies/iv_distortion.py",
+   "vanguard/execution/strategies/liquidity_gate.py",
+   "vanguard/execution/strategies/obi_predictor.py",
+   "vanguard/execution/strategies/poc_timing.py",
+   "vanguard/integration/orchestrator_adapter.py",
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/auction_synthesizer.py",
+   "vanguard/layer1_auction/control_identifier.py",
+   "vanguard/layer1_auction/market_profile.py",
+   "vanguard/layer1_auction/value_acceptance.py",
+   "vanguard/layer1_auction/value_migration.py",
+   "vanguard/layer2_statistical/__init__.py",
+   "vanguard/layer2_statistical/actuarial_query.py",
+   "vanguard/layer2_statistical/edge_detector.py",
+   "vanguard/layer2_statistical/state_calculator.py",
+   "vanguard/main.py",
+   "vanguard/physics_state_engine.py",
+   "vanguard/schemas/auction_schema.py",
+   "vanguard/schemas/input_schema.py",
+   "vanguard/schemas/state_outcomes_schema.py",
+   "vanguard/schemas/trade_schema.py",
+   "vanguard/trade_governance.py",
+   "wall_break_scorer.py",
+   "weekly_intelligence_report.py",
+   "wyckoff_crabel_precor_logic_v2.py",
+   "wyckoff_phase_validator.py"
+  ],
+  "UNREFERENCED": [
+   "actuarial_hash_diagnostic.py",
+   "actuarial_live_updater.py",
+   "add_state_hash.py",
+   "audit_latest_run.py",
+   "avshunter_db_update.py",
+   "avshunter_exit_engine.py",
+   "avshunter_ticker_probe.py",
+   "bond_macro_intelligence.py",
+   "bridge/__init__.py",
+   "bridge/feedback_writer.py",
+   "bridge/order_manager.py",
+   "bridge/outcome_recorder.py",
+   "bridge/scheduler.py",
+   "bridge/tastytrade_client.py",
+   "build_macro_json.py",
+   "canonical_data/narrow_refresh.py",
+   "catalyst_conflict_engine.py",
+   "catastrophe_gate.py",
+   "check7_prompt.py",
+   "empirical_option_ev.py",
+   "enhancement_integration.py",
+   "final_verify_c9.py",
+   "lab_recon_selftest.py",
+   "layer4_mispricing.py",
+   "layer6_path_survival.py",
+   "liquidity_filter.py",
+   "ma_cockpit/ma_cockpit.py",
+   "ma_cockpit/ma_cockpit_scheduler.py",
+   "ma_cockpit/validate_ma_csv.py",
+   "mae_mfe_calculator.py",
+   "md_api_diagnostic.py",
+   "ml_confidence_layer/__init__.py",
+   "ml_confidence_layer/compounding_tracker.py",
+   "ml_confidence_layer/run_ml_on_vanguard_output.py",
+   "morning_validation.py",
+   "morning_validation_engine.py",
+   "news_terminal/build_premarket_candidates.py",
+   "news_terminal/news_terminal.py",
+   "news_terminal/news_terminal_scheduler.py",
+   "orchestrator/__init__.py",
+   "orchestrator/main_archive.py",
+   "pipeline_interpreter/_append_helper.py",
+   "pipeline_interpreter/_append_outputs.py",
+   "pipeline_interpreter/_patch_cmd_ticker.py",
+   "pipeline_interpreter/alternative_contract_selector.py",
+   "pipeline_interpreter/automation_v2/__init__.py",
+   "pipeline_interpreter/automation_v2/cli.py",
+   "pipeline_interpreter/automation_v2/e2e_orchestrator_cli.py",
+   "pipeline_interpreter/automation_v2/evidence_package_cli.py",
+   "pipeline_interpreter/automation_v2/field_comparison.py",
+   "pipeline_interpreter/automation_v2/lab_structured_cli.py",
+   "pipeline_interpreter/automation_v2/package_publisher_cli.py",
+   "pipeline_interpreter/automation_v2/package_shadow_cli.py",
+   "pipeline_interpreter/automation_v2/production_deploy_cli.py",
+   "pipeline_interpreter/capture_v1/__init__.py",
+   "pipeline_interpreter/capture_v1/cli.py",
+   "pipeline_interpreter/capture_v1/market_screen_cli.py",
+   "pipeline_interpreter/capture_v1/navigation_cli.py",
+   "pipeline_interpreter/capture_v1/noii_calibration_cli.py",
+   "pipeline_interpreter/capture_v1/noii_cross_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_batch_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_cli.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen_cli.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch_cli.py",
+   "pipeline_interpreter/capture_v1/timeframe_cli.py",
+   "pipeline_interpreter/direction_conflict_resolver.py",
+   "pipeline_interpreter/live_market_reader.py",
+   "pipeline_interpreter/prepare_interpreter_session.py",
+   "pipeline_interpreter/screenshot_adapter.py",
+   "polygon_options_validation.py",
+   "rapid_rotation_flag.py",
+   "refresh_daily_data.py",
+   "regime_audit.py",
+   "resume_after_vanguard.py",
+   "run.py",
+   "scripts/__init__.py",
+   "scripts/audit_runner.py",
+   "scripts/backfill_polygon_daily_v7.py",
+   "scripts/behaviour_cache_builder.py",
+   "scripts/build_actuarial_v7_sharded.py",
+   "scripts/build_ev3_stage0.py",
+   "scripts/derive_actuarial_v7_universe.py",
+   "scripts/diag_options.py",
+   "scripts/enrich_actuarial_v7_diagnostics.py",
+   "scripts/ev_engine.py",
+   "scripts/finalize_phantom_weekly_snapshot.py",
+   "scripts/generate_signal_lab.py",
+   "scripts/patch_actuarial_winsorise.py",
+   "scripts/phantom_compute_historical_greeks.py",
+   "scripts/phantom_computed_greeks_audit.py",
+   "scripts/phantom_greek_coverage_audit.py",
+   "scripts/phantom_greek_rehydrate.py",
+   "scripts/phantom_marketdata_chain_probe.py",
+   "scripts/phantom_marketdata_quote_greek_rehydrate.py",
+   "scripts/phantom_marketdata_quote_probe.py",
+   "scripts/promote_actuarial_v7.py",
+   "scripts/promote_ev3_barrier_cache.py",
+   "scripts/publish_latest_run.py",
+   "scripts/repair_daily_from_polygon.py",
+   "scripts/run_ml_on_vanguard_output.py",
+   "scripts/run_phantom_backfill.py",
+   "scripts/run_phantom_backfill_parallel.py",
+   "scripts/split_catalyst_from_macro_guards.py",
+   "scripts/start_end_to_end_run_capture.py",
+   "scripts/start_go_live_uat_audit_watch.py",
+   "scripts/upgrade_actuarial_database.py",
+   "scripts/validate_actuarial_v7.py",
+   "scripts/validate_behaviour_state.py",
+   "scripts/validate_macro_contract.py",
+   "scripts/validate_packages.py",
+   "scripts/verify_ev3_stage0.py",
+   "scripts/write_manifest.py",
+   "sec_activist_monitor.py",
+   "sec_form4_monitor.py",
+   "short_swing/run_short_swing.py",
+   "short_swing_screener.py",
+   "signal_grader.py",
+   "theta_bpr_engine.py",
+   "tools/audit_from_packages.py",
+   "tools/cds2_import_historical_prices.py",
+   "tools/cds2_replay_lifecycle_shadow.py",
+   "tools/cds2_validate_historical_prices.py",
+   "tools/create_cds_baseline.py",
+   "tools/enrich_universe_sector_polygon.py",
+   "tools/refresh_daily_data_v2.py",
+   "tools/sanitize_universe.py",
+   "tools/validate_canonical_data.py",
+   "vanguard/core/schema_guard.py",
+   "vanguard/ev_engine.py",
+   "vanguard/ev_engine_v2.py",
+   "vanguard/execution/__init__.py",
+   "vanguard/execution/strategies/__init__.py",
+   "vanguard/integration/__init__.py",
+   "vanguard/layer2_statistical/scenario_builder.py",
+   "vanguard/layer3_execution/__init__.py",
+   "vanguard/schemas/__init__.py",
+   "vanguard/schemas/vanguard_contract.py",
+   "vix_governor.py",
+   "zero_dte/run_0dte.py",
+   "zero_dte_screener.py"
+  ],
+  "REFERENCED_NONPROD": [
+   "atheoretic_signals.py",
+   "bridge/avshunter_reader.py",
+   "confirmation_ingester.py",
+   "convergence_engine.py",
+   "kelly_sizer.py",
+   "ma_cockpit/ma_cockpit_commands.py",
+   "ma_cockpit/ma_cockpit_engine.py",
+   "ma_cockpit/ma_cockpit_outputs.py",
+   "ma_cockpit/ma_csv_schema.py",
+   "ml_confidence_layer/ml_confidence_engine.py",
+   "news_terminal/news_terminal_commands.py",
+   "news_terminal/news_terminal_engine.py",
+   "news_terminal/news_terminal_outputs.py",
+   "orchestrator/WyckoffEngine_3101_v2.py",
+   "orchestrator/claude_api.py",
+   "orchestrator/collector.py",
+   "orchestrator/data_monitor.py",
+   "orchestrator/email_sender.py",
+   "orchestrator/macro_loader.py",
+   "orchestrator/main.py",
+   "orchestrator/options_intelligence.py",
+   "orchestrator/report_generator.py",
+   "orchestrator/wyckoff_engine.py",
+   "pipeline_interpreter/automation_v2/batch.py",
+   "pipeline_interpreter/automation_v2/comparison.py",
+   "pipeline_interpreter/automation_v2/compatibility.py",
+   "pipeline_interpreter/automation_v2/core.py",
+   "pipeline_interpreter/automation_v2/e2e_orchestrator.py",
+   "pipeline_interpreter/automation_v2/evidence.py",
+   "pipeline_interpreter/automation_v2/evidence_package.py",
+   "pipeline_interpreter/automation_v2/fixture_provider.py",
+   "pipeline_interpreter/automation_v2/lab_batch.py",
+   "pipeline_interpreter/automation_v2/lab_structured.py",
+   "pipeline_interpreter/automation_v2/legacy_adapter.py",
+   "pipeline_interpreter/automation_v2/live_provider.py",
+   "pipeline_interpreter/automation_v2/market_structure.py",
+   "pipeline_interpreter/automation_v2/metrics.py",
+   "pipeline_interpreter/automation_v2/models.py",
+   "pipeline_interpreter/automation_v2/numeric_validation.py",
+   "pipeline_interpreter/automation_v2/package_publisher.py",
+   "pipeline_interpreter/automation_v2/package_shadow.py",
+   "pipeline_interpreter/automation_v2/parser.py",
+   "pipeline_interpreter/automation_v2/production_deploy.py",
+   "pipeline_interpreter/automation_v2/provider.py",
+   "pipeline_interpreter/automation_v2/renderers.py",
+   "pipeline_interpreter/automation_v2/replay.py",
+   "pipeline_interpreter/automation_v2/retry.py",
+   "pipeline_interpreter/automation_v2/rollout.py",
+   "pipeline_interpreter/automation_v2/schemas.py",
+   "pipeline_interpreter/automation_v2/serialization.py",
+   "pipeline_interpreter/automation_v2/shadow.py",
+   "pipeline_interpreter/automation_v2/trial.py",
+   "pipeline_interpreter/automation_v2/veto.py",
+   "pipeline_interpreter/capture_v1/attended_workflow.py",
+   "pipeline_interpreter/capture_v1/backend.py",
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/dpi.py",
+   "pipeline_interpreter/capture_v1/market_screen.py",
+   "pipeline_interpreter/capture_v1/navigation.py",
+   "pipeline_interpreter/capture_v1/noii_cross.py",
+   "pipeline_interpreter/capture_v1/privacy_crop.py",
+   "pipeline_interpreter/capture_v1/service.py",
+   "pipeline_interpreter/capture_v1/ticker_batch.py",
+   "pipeline_interpreter/capture_v1/ticker_market_screen.py",
+   "pipeline_interpreter/capture_v1/timeframe_batch.py",
+   "pipeline_interpreter/capture_v1/validation.py",
+   "pipeline_interpreter/capture_v1/windows.py",
+   "position_sizing_engine.py",
+   "regime_consensus.py",
+   "scripts/build_actuarial_v7.py",
+   "scripts/capture_end_to_end_run.py",
+   "scripts/compute_greeks_bs.py",
+   "scripts/go_live_uat_audit_watch.py",
+   "scripts/monitor_uat_pipeline.py",
+   "scripts/options_db_writer.py",
+   "short_swing/short_swing_contract.py",
+   "short_swing/short_swing_monitor.py",
+   "short_swing/short_swing_outcome_logger.py",
+   "short_swing/short_swing_screener.py",
+   "signal_funnel.py",
+   "transition_matrix_consumer.py",
+   "trigger_confirmation_engine.py",
+   "vanguard/__init__.py",
+   "vanguard/core/actuarial_core_v7.py",
+   "vanguard/layer3_execution/scenario_builder.py",
+   "vanguard/layer3_execution/trade_builder.py",
+   "zero_dte/intraday_0dte_trigger.py",
+   "zero_dte/zero_dte_contract.py",
+   "zero_dte/zero_dte_outcome_logger.py",
+   "zero_dte/zero_dte_screener.py"
+  ],
+  "PROD_SHARED": [
+   "avshunter_trade_journal.py",
+   "canonical_data/__init__.py",
+   "canonical_data/bundle_freshness.py",
+   "canonical_data/contracts.py",
+   "canonical_data/daily_adapter.py",
+   "canonical_data/discovery_publisher.py",
+   "canonical_data/errors.py",
+   "canonical_data/feature_flags.py",
+   "canonical_data/gateway.py",
+   "canonical_data/historical_prices.py",
+   "canonical_data/history_bridge.py",
+   "canonical_data/intraday_bars.py",
+   "canonical_data/lifecycle.py",
+   "canonical_data/market_observation_resolver.py",
+   "canonical_data/marketdata_response.py",
+   "canonical_data/option_chain_store.py",
+   "canonical_data/option_identity.py",
+   "canonical_data/option_liquidity_lifecycle.py",
+   "canonical_data/registry.py",
+   "canonical_data/request_ledger.py",
+   "canonical_data/session_clock.py",
+   "canonical_data/stage_publisher.py",
+   "canonical_data/storage.py",
+   "canonical_data/worklist_gate.py",
+   "contracts/direction_governance.py",
+   "contracts/governed_states.py",
+   "contracts/interpreter_handoff.py",
+   "contracts/interpreter_handoff_materializer.py",
+   "contracts/interpreter_macro_context.py",
+   "contracts/lab_control.py",
+   "contracts/long_option_policy.py",
+   "contracts/options_liquidity_execution_guard.py",
+   "contracts/options_liquidity_lifecycle.py",
+   "contracts/quote_change_evidence.py",
+   "contracts/selected_contract_economics.py",
+   "earnings_calendar_enricher.py",
+   "execution_gate.py",
+   "market_structure/__init__.py",
+   "market_structure/lifecycle.py",
+   "market_structure/params.py",
+   "market_structure/profile.py",
+   "market_structure/service.py",
+   "morning_gate.py",
+   "morning_handoff_finalizer.py",
+   "msi_runtime.py",
+   "outcome_capture.py",
+   "pipeline_interpreter/ma_inputs_sync.py",
+   "tools/msi_production_readiness.py",
+   "tools/msi_reconcile.py",
+   "vanguard/ev3_stage0.py",
+   "vanguard/ev_engine_v3.py",
+   "vanguard/trade_contract.py"
+  ],
+  "PROD_LAB": [
+   "contracts/lab_evidence_overlay.py",
+   "intelligence-lab/intelligence_lab.py"
+  ],
+  "LAUNCHER_TARGET": [
+   "desk_card.py",
+   "pipeline_interpreter/automation_v2/lab_batch_cli.py"
+  ],
+  "TEST_QA": [
+   "macro_sector_propagation_test.py",
+   "pipeline_interpreter/entry_timing_engine_test.py",
+   "scripts/qa_baton_integrity.py",
+   "scripts/qa_conflict_resolver.py",
+   "scripts/qa_live_uat_readiness.py",
+   "scripts/qa_macro_enrichment_injection.py",
+   "scripts/qa_market_scenario_simulation.py",
+   "scripts/qa_morning_validator.py",
+   "scripts/qa_uat_regression_backtest.py",
+   "scripts/smoke_test_big_bang_phase_6_7.py",
+   "scripts/smoke_test_live_uat_pipeline.py",
+   "scripts/smoke_test_morning_validator.py",
+   "test_macro_redesign.py",
+   "test_pipeline_regression.py"
+  ],
+  "PROD_INTERPRETER": [
+   "pipeline_interpreter/assessment_contract.py",
+   "pipeline_interpreter/entry_timing_engine.py",
+   "pipeline_interpreter/evidence_resolver.py",
+   "pipeline_interpreter/interpreter_qa.py",
+   "pipeline_interpreter/lab_reconciliation.py",
+   "pipeline_interpreter/macro_context.py",
+   "pipeline_interpreter/news_macro_readers.py",
+   "pipeline_interpreter/pipeline_interpreter.py",
+   "pipeline_interpreter/pipeline_interpreter_commands.py",
+   "pipeline_interpreter/pipeline_interpreter_engine.py",
+   "pipeline_interpreter/pipeline_interpreter_outputs.py",
+   "pipeline_interpreter/score_integrity_check.py",
+   "pipeline_interpreter/thesis_registry.py",
+   "pipeline_interpreter/trade_brief_builder.py"
+  ]
+ }
+}

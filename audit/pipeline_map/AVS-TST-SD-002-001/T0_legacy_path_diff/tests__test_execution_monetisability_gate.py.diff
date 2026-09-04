@@ -1,0 +1,42 @@
+--- a/tests/test_execution_monetisability_gate.py
++++ b/tests/test_execution_monetisability_gate.py
+@@ -40,26 +40,28 @@
+     assert result["final_action"] == "BUY_NOW"
+ 
+ 
+-def test_limited_monetisability_caps_action_at_buy_small() -> None:
++def test_limited_monetisability_is_advisory_to_execution_authority() -> None:
+     result = execution_gate(_row("LIMITED"))
+-    assert result["final_action"] == "BUY_SMALL"
+-    assert "LIMITED_MONETISABILITY" in result["gate_warnings"]
++    assert result["final_action"] == "BUY_NOW"
++    assert result["monetisability_state"] == "LIMITED"
+ 
+ 
+-def test_not_monetisable_blocks_when_no_alternative_exists() -> None:
++def test_not_monetisable_state_is_preserved_without_overriding_execution() -> None:
+     result = execution_gate(_row("NOT_MONETISABLE"))
+-    assert result["final_action"] == "BLOCK"
+-    assert result["gate_reason"] == "NOT_MONETISABLE"
++    assert result["final_action"] == "BUY_NOW"
++    assert result["monetisability_state"] == "NOT_MONETISABLE"
+ 
+ 
+-def test_not_monetisable_requests_repair_when_an_alternative_exists() -> None:
++def test_monetisability_alternative_does_not_replace_selected_contract() -> None:
+     row = _row("NOT_MONETISABLE")
+     row["alternative_contract_1"] = "AAA260918C00105000"
+     result = execution_gate(row)
+-    assert result["final_action"] == "CONTRACT_REPAIR"
+-    assert result["gate_reason"] == "NOT_MONETISABLE_ALTERNATIVE_AVAILABLE"
++    assert result["final_action"] == "BUY_NOW"
++    assert result["contract_symbol"] == "AAA260918C00100000"
++    assert result["alternative_contract_1"] == "AAA260918C00105000"
+ 
+ 
+-def test_missing_monetisability_data_fails_to_contract_repair() -> None:
++def test_missing_advisory_monetisability_does_not_create_a_false_veto() -> None:
+     result = execution_gate(_row("DATA_MISSING"))
+-    assert result["final_action"] == "CONTRACT_REPAIR"
++    assert result["final_action"] == "BUY_NOW"
++    assert result["monetisability_state"] == "DATA_MISSING"

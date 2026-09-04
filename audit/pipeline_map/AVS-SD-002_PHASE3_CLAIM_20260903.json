@@ -1,0 +1,14 @@
+{
+  "design_id": "AVS-SD-002-REV1.1",
+  "phase": 3,
+  "status": "COMPLETE_IN_CODE_NOT_YET_PRODUCTION_ENABLED",
+  "date": "2026-09-03",
+  "focused_tests": {"passed": 10, "failed": 0},
+  "compatibility_tests": {"passed": 6, "failed": 0},
+  "production_authority_changed": false,
+  "feature_flags_changed": false,
+  "rollback": [
+    "backups/avs_sd_002_rev1_1_phase3_prechange_20260903_150049",
+    "backups/avs_sd_002_rev1_1_phase0_prechange_20260903_133546"
+  ]
+}

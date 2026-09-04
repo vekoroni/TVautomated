@@ -100,6 +100,9 @@ class PolicyInput:
     # Raw trade economics (from options intelligence — for quality floor gate)
     rr_raw:              Optional[float] = None   # R:R from options intelligence
     ev_raw:              Optional[float] = None   # EV ratio from options intelligence
+    ev3_authority_active: bool = False
+    ev3_authority_state: str = "NOT_EVALUATED"
+    ev3_lower_bound_return: Optional[float] = None
 
     # Execution / live context
     drift_pct: Optional[float] = None
@@ -227,6 +230,19 @@ class MonetisationPolicy:
         else:
             events.append(RuleEvent("DATA_000", Severity.INFO, True, note="Data integrity acceptable", bucket="data"))
 
+        # EV is evidence, not authority. Preserve its state and lower bound for
+        # ranking/outcome analysis, but never grant or deny capital with it.
+        if x.ev3_authority_active or str(x.ev3_authority_state or "").strip():
+            ev3_state = str(x.ev3_authority_state or "NOT_EVALUATED").upper()
+            events.append(RuleEvent(
+                "EV3_ADVISORY",
+                Severity.INFO,
+                True,
+                value=x.ev3_lower_bound_return,
+                note=f"EV3 {ev3_state} retained as advisory evidence only",
+                bucket="evidence",
+            ))
+
         # ------------------------------------------------------------------
         # 2) Structure — thesis must be real enough to justify capital
         # ------------------------------------------------------------------
@@ -348,19 +364,16 @@ class MonetisationPolicy:
                         bucket="economics"
                     ))
 
-        # ── Minimum trade quality floor (prevents debris from passing post-theta-fix) ──
-        # Block when BOTH RR is negative AND EV is negative:
-        # These signals have neither structural reward nor actuarial expectancy.
-        # RR alone can be negative on short-dated options; EV alone can be negative
-        # in unfavourable regimes — but BOTH negative together is genuinely untradeable.
+        # ── Minimum observable trade-geometry floor ─────────────────────────
+        # Premium RR is authority; modelled EV is not. Negative premium RR is
+        # structurally untradeable regardless of any EV estimate.
         if hard_block is None and x.premium is not None:
             _rr_raw  = _safe_float_local(getattr(x, 'rr_raw',  None), 0.0)
-            _ev_raw  = _safe_float_local(getattr(x, 'ev_raw',  None), 0.0)
-            if _rr_raw < 0 and _ev_raw < 0:
+            if _rr_raw < 0:
                 events.append(RuleEvent("OPT_014", Severity.FATAL, False,
                     value=_rr_raw, threshold=0.0,
-                    note="Negative RR and negative EV — no structural or actuarial edge", bucket="economics"))
-                hard_block = (DecisionState.BLOCK_ECONOMICS, "Negative RR and negative EV")
+                    note="Negative premium RR — no positive payoff geometry", bucket="economics"))
+                hard_block = (DecisionState.BLOCK_ECONOMICS, "Negative premium RR")
 
         if hard_block is None and x.spread_pct is not None:
             hard_spread = self.HARD_DATA_LIVE_SPREAD_BLOCK if x.quote_source_live else self.HARD_SPREAD_BLOCK
@@ -474,41 +487,37 @@ class MonetisationPolicy:
                 notes.append("Execution mode BLOCKED")
 
         # ------------------------------------------------------------------
-        # 6) v1.1 — Macro sector alignment overlay
-        # Sector headwind/tailwind from macro JSON → size penalty or boost.
-        # BLOCK flag at high macro conviction overrides to hard block.
+        # 6) Macro sector-rotation context (advisory only)
+        # Macro can rank/explain a CALL or PUT thesis, but it cannot block the
+        # trade, alter execution permission, or change capital size.
         # ------------------------------------------------------------------
         _mp_sector_bias  = str(getattr(x, "macro_sector_bias", "UNKNOWN")).upper()
         _mp_sector_flag  = str(getattr(x, "sector_alignment_flag", "NEUTRAL")).upper()
         _mp_sector_score = float(getattr(x, "sector_alignment_score", 1.00) or 1.00)
 
-        if hard_block is None and _mp_sector_flag == "BLOCK":
+        if _mp_sector_flag == "BLOCK":
             events.append(RuleEvent(
-                "SECTOR_001", Severity.FATAL, False,
-                note=f"Macro HEADWIND BLOCK: {_mp_sector_bias} — high conviction headwind",
+                "SECTOR_001", Severity.INFO, True,
+                note=f"Macro sector {_mp_sector_bias} — strong headwind, advisory only",
                 bucket="macro_sector"
             ))
-            hard_block = (DecisionState.BLOCK_EXECUTION, f"MACRO_SECTOR_HEADWIND_BLOCK:{_mp_sector_bias}")
-        elif hard_block is None and _mp_sector_flag == "REDUCE" and _mp_sector_score < 1.0:
-            _penalty = _mp_sector_score  # e.g. 0.55 for HEADWIND, 0.80 for MIXED/UNKNOWN
-            size_mult *= _penalty
-            priority  *= _penalty
+            notes.append(f"Macro sector {_mp_sector_bias}: advisory headwind")
+        elif _mp_sector_flag == "REDUCE" and _mp_sector_score < 1.0:
             events.append(RuleEvent(
-                "SECTOR_002", Severity.TAX, False,
+                "SECTOR_002", Severity.INFO, True,
                 value=_mp_sector_score, threshold=1.0,
-                note=f"Macro sector {_mp_sector_bias} — size penalised to {_penalty:.0%}",
-                bucket="macro_sector", tax_bps=int((1.0 - _penalty) * 10000)
+                note=f"Macro sector {_mp_sector_bias} — headwind, advisory only",
+                bucket="macro_sector"
             ))
-            remediation.append(f"Sector {_mp_sector_bias}: reduce position or wait for sector rotation to NEUTRAL/TAILWIND.")
+            notes.append(f"Macro sector {_mp_sector_bias}: advisory review")
         elif _mp_sector_flag == "BOOST" and _mp_sector_score > 1.0:
-            size_mult = min(size_mult * _mp_sector_score, 1.00)  # cap at 100%
-            priority  = min(priority + 3.0, 100.0)
             events.append(RuleEvent(
                 "SECTOR_003", Severity.INFO, True,
                 value=_mp_sector_score, threshold=1.0,
-                note=f"Macro sector {_mp_sector_bias} — size boosted to {_mp_sector_score:.0%}",
+                note=f"Macro sector {_mp_sector_bias} — tailwind, advisory only",
                 bucket="macro_sector"
             ))
+            notes.append(f"Macro sector {_mp_sector_bias}: advisory tailwind")
 
         # ------------------------------------------------------------------
         # Final state logic
@@ -583,6 +592,12 @@ def map_options_row_to_policy_input(row: Dict) -> PolicyInput:
         v = row.get(k)
         if v in (None, "", "nan", "NaN", "N/A"):
             return None
+
+    def _bool(k: str) -> bool:
+        value = row.get(k)
+        if isinstance(value, bool):
+            return value
+        return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
         try:
             return int(float(v))
         except Exception:
@@ -620,6 +635,9 @@ def map_options_row_to_policy_input(row: Dict) -> PolicyInput:
         dte = _int("contract_dte") or _int("dte"),
         rr_raw = _float("rr_options") or _float("rr"),   # raw R:R for quality floor
         ev_raw = _float("ev_adjusted") or _float("ev_adj") or _float("ev"),
+        ev3_authority_active = _bool("ev3_authority_active"),
+        ev3_authority_state = str(row.get("ev3_authority_state") or "NOT_EVALUATED"),
+        ev3_lower_bound_return = _float("ev3_ev_lower_bound_return"),
         drift_pct = _float("entry_drift_pct") or _float("drift_pct"),
         nbbo_imbalance = _float("obi_score") or _float("nbbo_imbalance"),
         iv_distortion_score = _float("iv_distortion_score"),

@@ -27,7 +27,12 @@ def _import_commands():
     return commands, engine
 
 
-def test_trusted_source_prefers_lab_triage_view(tmp_path):
+def test_trusted_source_prefers_lab_triage_view(tmp_path, monkeypatch):
+    # This test exercises the two-cycle legacy compatibility path.  The
+    # production configuration deliberately enables the governed manifest
+    # resolver, so isolate the legacy path explicitly instead of inheriting
+    # machine-level rollout state.
+    monkeypatch.setenv("MSI_INTERPRETER_RESOLVER", "0")
     commands, engine = _import_commands()
     ma_inputs = tmp_path / "MA_Inputs"
     ma_pipeline = ma_inputs / "pipeline_outputs"
@@ -57,7 +62,10 @@ def test_trusted_source_prefers_lab_triage_view(tmp_path):
         commands.MA_PIPELINE = old_cmd_pipeline
 
 
-def test_explicit_source_still_wins_when_valid(tmp_path):
+def test_explicit_source_still_wins_when_valid(tmp_path, monkeypatch):
+    # Explicit loose files are supported only while the governed resolver is
+    # disabled.  Make that contract part of the fixture.
+    monkeypatch.setenv("MSI_INTERPRETER_RESOLVER", "0")
     commands, engine = _import_commands()
     ma_inputs = tmp_path / "MA_Inputs"
     ma_pipeline = ma_inputs / "pipeline_outputs"
@@ -85,3 +93,15 @@ def test_explicit_source_still_wins_when_valid(tmp_path):
         engine.MA_PIPELINE = old_engine_pipeline
         commands.MA_INPUTS = old_cmd_inputs
         commands.MA_PIPELINE = old_cmd_pipeline
+
+
+def test_msi_resolver_disables_all_loose_file_source_fallbacks(tmp_path, monkeypatch):
+    commands, _ = _import_commands()
+    explicit_path = tmp_path / "manual.csv"
+    _write_csv(explicit_path, "AAA", {"source": "manual"})
+    monkeypatch.setenv("MSI_INTERPRETER_RESOLVER", "1")
+    path, reason = commands.get_trusted_interpreter_source(
+        ticker="AAA", explicit_path=str(explicit_path)
+    )
+    assert path == ""
+    assert reason == "governed_manifest_only"

@@ -37,6 +37,10 @@ def _make_run(root: Path, run_id: str, include_eil: bool = True) -> Path:
     )
     _write_csv(run_dir / "options" / f"options_intelligence_{run_id}.csv", [{"ticker": "AAA", "options_verdict": "EXECUTE"}])
     _write_csv(run_dir / "execution" / f"execution_v3_5_{run_id}.csv", [{"ticker": "AAA", "execution_verdict": "BUY_NOW"}])
+    _write_csv(
+        run_dir / "morning_validation" / f"morning_candidates_{run_id}.csv",
+        [{"ticker": "AAA", "candidate_status": "MORNING_VALIDATION_REQUIRED"}],
+    )
     if include_eil:
         _write_csv(
             run_dir / "superbrain" / f"eil_enriched_{run_id}.csv",
@@ -57,8 +61,11 @@ def test_manifest_and_resolver() -> None:
         _make_run(runs, run_id, include_eil=True)
         manifest = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
         assert manifest["phase_status"]["eil"] == "PASS"
-        assert manifest["phase_status"]["morning_validation"] == "NOT_REQUIRED"
-        assert manifest["next_action"] == "READY_FOR_LAB"
+        assert manifest["phase_status"]["morning_validation"] == "PENDING"
+        assert manifest["next_action"] == "NEEDS_MORNING_VALIDATION"
+        assert manifest["v5_colab_decommissioned"] is True
+        assert "v5" not in manifest["missing_columns"]
+        assert "v5" not in manifest["required_columns_present"]
 
         live_manifest = build_final_run_manifest(run_id, runs, pipeline_mode="LIVE")
         assert "LIVE_VALIDATION_MISSING" in live_manifest["fatal_flags"]
@@ -119,11 +126,11 @@ def test_manifest_and_resolver() -> None:
             },
             {**manifest, "stale_flags": [], "fatal_flags": [], "pipeline_mode": "LIVE"},
         )
-        assert weak_ev["lab_verdict"] != "GO"
-        assert weak_ev["lab_tradeable"] is False
-        assert "SOFT:EV_WEAK_NOT_MONETISABLE" in weak_ev["conflict_flags"]
+        assert weak_ev["lab_verdict"] == "GO"
+        assert weak_ev["lab_tradeable"] is True
+        assert "EV_WEAK" in weak_ev["advisory_flags"]
 
-        negative_rr = resolve_lab_tradeability(
+        legacy_negative_rr = resolve_lab_tradeability(
             {
                 "ticker": "AAA",
                 "options_verdict": "EXECUTE",
@@ -139,16 +146,16 @@ def test_manifest_and_resolver() -> None:
             },
             {**manifest, "stale_flags": [], "fatal_flags": [], "pipeline_mode": "LIVE"},
         )
-        assert negative_rr["lab_verdict"] == "NEGATIVE_RR"
-        assert negative_rr["lab_tradeable"] is False
-        assert negative_rr["conflict_state"] == "HARD_CONFLICT"
-        assert "NEGATIVE_RR" in negative_rr["veto_flags"]
+        assert legacy_negative_rr["lab_verdict"] == "GO"
+        assert legacy_negative_rr["lab_tradeable"] is True
+        assert "NEGATIVE_RR" not in legacy_negative_rr["veto_flags"]
 
         missing_contract = resolve_lab_tradeability(
             {"ticker": "AAA", "options_verdict": "EXECUTE", "campaign_verdict": "READY_EXECUTE"},
             manifest,
         )
-        assert missing_contract["lab_verdict"] == "BLOCKED"
+        assert missing_contract["lab_verdict"] == "MORNING_VALIDATION_REQUIRED"
+        assert missing_contract["lab_tradeable"] is False
 
 
 def test_opportunity_book_and_learning_feedback() -> None:

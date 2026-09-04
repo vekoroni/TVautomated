@@ -218,7 +218,6 @@ def _compute_tle_inner(pkg: Dict) -> Dict[str, Any]:
     vwap_below = (
         "VWAP_LOSS" in trigger_primary
         or "VWAP_LOSS" in trigger_codes
-        or (("VWAP_RECLAIM" in trigger_primary or "VWAP_RECLAIM" in trigger_codes) and vwap_bias == "BELOW")
     )
     if vwap_below:
         bear_score += 2

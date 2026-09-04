@@ -41,12 +41,14 @@ import argparse
 import json
 import logging
 import os
+import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import urllib.parse
 import urllib.request
+import pandas as pd
 
 # Data contract validator — single source of truth for data integrity
 try:
@@ -59,6 +61,14 @@ log = logging.getLogger("backfill_timeseries")
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[1]
+# Direct execution sets sys.path[0] to ``scripts``.  Add the repository root
+# before the lazy CDS imports used by backfill_package, without changing the
+# pre-existing optional-validator import behavior above.
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from canonical_data.history_bridge import DEFAULT_HISTORY_MAX_STALENESS_DAYS
+
 RUNS_ROOT = REPO / "data" / "output" / "runs"
 LATEST_RUN_PTR = REPO / "data" / "output" / "latest.json"
 
@@ -75,6 +85,7 @@ def write_json(path: Path, obj: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(f"{path.name}.tmp.{os.getpid()}")
     try:
+        canonical_history_short = False
         with tmp_path.open("w", encoding="utf-8") as f:
             json.dump(obj, f, indent=2, ensure_ascii=False)
         os.replace(tmp_path, path)
@@ -351,7 +362,7 @@ def compute_returns(closes: List[float]) -> List[Optional[float]]:
 
 
 def validate_series(rows: List[Dict[str, Any]], min_bars: int,
-                    max_staleness_days: int = 5,
+                    max_staleness_days: int = DEFAULT_HISTORY_MAX_STALENESS_DAYS,
                     data_mode: str = "EOD") -> Tuple[bool, str]:
     """
     Validate that a fetched OHLCV series is usable.
@@ -441,6 +452,93 @@ def backfill_package(
     dc = pkg["data_contract"]
     ts = pkg["timeseries"]
 
+    # CDS-2 ACTIVE: a canonical hit may short-circuit only when its final bar
+    # satisfies the same freshness contract enforced by Vanguard.
+    canonical = None
+    _canonical_reader = None
+    try:
+        from canonical_data.history_bridge import (
+            canonical_history_is_fresh,
+            history_staleness_days,
+            observe_shadow_history,
+            read_canonical_history,
+        )
+        _canonical_reader = read_canonical_history
+        canonical = read_canonical_history(ticker, max_staleness_days=None)
+        canonical_history_short = canonical is not None and len(canonical) < min_bars
+        canonical_fresh = canonical_history_is_fresh(canonical)
+        if canonical is not None and len(canonical) >= min_bars and canonical_fresh:
+            canonical = canonical.copy()
+            canonical["date"] = pd.to_datetime(canonical["date"]).dt.strftime("%Y-%m-%d")
+            rows = canonical.to_dict(orient="records")
+            closes = [float(row["close"]) for row in rows]
+            returns = compute_returns(closes)
+            returns_rows = [
+                {"date": rows[index]["date"], "ret": returns[index]}
+                for index in range(len(rows))
+            ]
+            last_bar_date = rows[-1]["date"]
+            as_of = last_bar_date + "T00:00:00Z"
+            ts.update({
+                "ohlcv_daily": rows,
+                "returns_daily": returns_rows,
+                "source": "CANONICAL_HISTORICAL_PRICE_DB",
+                "as_of_utc": as_of,
+                "last_bar_utc": as_of,
+            })
+            pkg["ohlcv_daily"] = rows
+            pkg["daily_df"] = rows
+            pkg["ohlcv"] = rows
+            pkg["as_of_utc"] = as_of
+            pkg["bar_data_as_of"] = last_bar_date
+            pkg["bar_data_source"] = "CANONICAL_HISTORICAL_PRICE_DB"
+            pkg["intraday_partial"] = False
+            pkg["intraday_source"] = ""
+            dc.update({
+                "has_ohlcv_daily": True,
+                "has_returns_daily": True,
+                "timeseries_source": "CANONICAL_HISTORICAL_PRICE_DB",
+                "canonical_freshness_status": "FRESH_REUSED",
+                "intraday_partial": False,
+                "intraday_source": "",
+            })
+            try:
+                last_date = datetime.strptime(last_bar_date, "%Y-%m-%d").date()
+                pkg["bar_data_days_old"] = (
+                    datetime.now(timezone.utc).date() - last_date
+                ).days
+            except Exception:
+                pkg["bar_data_days_old"] = -1
+            if actuarial_snapshot is not None:
+                pkg["actuarial"] = actuarial_snapshot
+            pkg = _stamp_actuarial_data_quality(pkg, ohlcv_ok=True)
+            write_json(pkg_path, pkg)
+            return True, "CANONICAL_HISTORICAL_PRICE_DB"
+
+        if canonical is not None and not canonical.empty:
+            canonical_last = pd.to_datetime(
+                canonical["date"], errors="coerce"
+            ).max()
+            dc.update({
+                "canonical_freshness_status": "STALE_REFRESH_REQUIRED",
+                "canonical_stale_as_of": (
+                    canonical_last.date().isoformat()
+                    if pd.notna(canonical_last) else "UNKNOWN"
+                ),
+                "canonical_staleness_days": (
+                    history_staleness_days(canonical_last)
+                    if pd.notna(canonical_last) else None
+                ),
+            })
+
+        existing_for_shadow = pkg.get("ohlcv_daily")
+        if isinstance(existing_for_shadow, list) and existing_for_shadow:
+            observe_shadow_history(
+                ticker, pd.DataFrame(existing_for_shadow), consumer="PACKAGE_BACKFILL"
+            )
+    except Exception as error:
+        log.debug("%s CDS-2 canonical bridge unavailable: %s", ticker, error)
+
     # ── Already present and fresh — skip, but stamp actuarial quality ─────────
     existing = pkg.get("ohlcv_daily")
     if isinstance(existing, list) and len(existing) >= min_bars:
@@ -497,7 +595,52 @@ def backfill_package(
         return False, "POLYGON_API_KEY_MISSING"
 
     try:
-        rows = polygon_fetch_ohlcv_daily(ticker, start=start, api_key=api_key)
+        provider_start = start
+        if (
+            canonical is not None
+            and not canonical.empty
+            and "date" in canonical.columns
+            and not canonical_history_short
+        ):
+            canonical_last = pd.to_datetime(
+                canonical["date"], errors="coerce"
+            ).max()
+            if pd.notna(canonical_last):
+                provider_start = (
+                    canonical_last.date() + timedelta(days=1)
+                ).isoformat()
+        rows = polygon_fetch_ohlcv_daily(
+            ticker, start=provider_start, api_key=api_key
+        )
+
+        # Persist the completed daily series before adding any intraday partial
+        # bar to the package. This is a no-op unless CDS write-through is on.
+        if rows:
+            from canonical_data.history_bridge import write_through_fetched_history
+            write_through_fetched_history(
+                ticker,
+                rows,
+                provider="POLYGON",
+                source_kind="PACKAGE_BACKFILL",
+                source_run_id=str(pkg.get("run_id") or "") or None,
+                partial_current_session=(data_mode == "LATEST"),
+            )
+
+            # Re-read the governed full series after the missing tail commits.
+            # Validating the delta alone would incorrectly fail MIN_BARS.
+            if _canonical_reader is not None:
+                refreshed = _canonical_reader(ticker)
+                if refreshed is not None and not refreshed.empty:
+                    refreshed = refreshed.copy()
+                    refreshed["date"] = pd.to_datetime(
+                        refreshed["date"], errors="coerce"
+                    ).dt.strftime("%Y-%m-%d")
+                    rows = refreshed.to_dict(orient="records")
+                    dc["canonical_freshness_status"] = (
+                        "REFRESHED_FROM_PROVIDER_FULL_HISTORY"
+                        if canonical_history_short
+                        else "REFRESHED_FROM_PROVIDER_TAIL"
+                    )
 
         # LATEST mode: append today's intraday session bar if available.
         # This gives Vanguard a partial view of today's session alongside the

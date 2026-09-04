@@ -28,7 +28,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import pandas as pd
 
 
-CATALYST_VERSION = "catalyst_truth_v1.1"
+CATALYST_VERSION = "catalyst_truth_v1.2"
 
 CATALYST_OUTPUT_FIELDS = [
     "catalyst_engine_version",
@@ -40,6 +40,9 @@ CATALYST_OUTPUT_FIELDS = [
     "catalyst_truth_score",
     "catalyst_binary_score",
     "catalyst_direction_bias",
+    "catalyst_direction_independent",
+    "catalyst_direction_source",
+    "catalyst_direction_source_field",
     "catalyst_source_count",
     "catalyst_data_quality",
     "catalyst_trade_class",
@@ -137,6 +140,36 @@ def _first(rows: Iterable[Dict[str, Any]], fields: Iterable[str]) -> Tuple[str, 
             if value:
                 return value, field
     return "", ""
+
+
+_INDEPENDENT_CATALYST_SOURCES = {
+    "catalyst_calendar",
+    "manual_upload",
+    "news_terminal",
+    "ma_cockpit",
+}
+
+
+def _independent_catalyst_direction(
+    rows: Iterable[Dict[str, Any]],
+) -> Tuple[str, str, str]:
+    """Return only catalyst-native direction evidence with explicit provenance.
+
+    Pipeline direction fields such as ``options_direction``, ``direction`` and
+    Vanguard ``edge_direction`` are deliberately excluded.  Re-labelling one of
+    those fields as catalyst evidence would allow one signal family to satisfy
+    Direction Governance's two-family resolution rule twice.
+    """
+    for field in ("catalyst_direction_bias", "trade_bias", "expected_impact"):
+        for row in rows:
+            value = _norm(row.get(field))
+            if not value or not _direction_token(value):
+                continue
+            source = _norm(row.get("_catalyst_source")).lower()
+            explicitly_independent = _truthy(row.get("catalyst_direction_independent"))
+            if source in _INDEPENDENT_CATALYST_SOURCES or explicitly_independent:
+                return value, field, source or "DECLARED_INDEPENDENT"
+    return "", "", ""
 
 
 def _parse_date(value: Any) -> Optional[date]:
@@ -559,21 +592,13 @@ def _score(bundle: SourceBundle, run_dt: date) -> Dict[str, Any]:
     liquidity_ok, liquidity_reason = _liquidity(rows)
     reasons.append(liquidity_reason)
 
-    direction_value, direction_field = _first(
-        rows,
-        [
-            "catalyst_direction_bias",
-            "options_direction",
-            "direction",
-            "fusion_direction",
-            "repricing_direction",
-            "layer2__edge_direction",
-            "edge_direction",
-        ],
-    )
+    direction_value, direction_field, direction_source = _independent_catalyst_direction(rows)
     direction_bias = _direction_token(direction_value)
     if direction_field:
         fields.append(direction_field)
+        reasons.append("INDEPENDENT_CATALYST_DIRECTION")
+    elif detected:
+        reasons.append("NO_INDEPENDENT_CATALYST_DIRECTION")
 
     option_dir_value, _ = _first(rows, ["options_direction", "direction", "contract_type"])
     option_dir = _direction_token(option_dir_value)
@@ -654,6 +679,9 @@ def _score(bundle: SourceBundle, run_dt: date) -> Dict[str, Any]:
         "catalyst_truth_score": score,
         "catalyst_binary_score": round(binary_score, 3),
         "catalyst_direction_bias": direction_bias,
+        "catalyst_direction_independent": bool(direction_bias and direction_source),
+        "catalyst_direction_source": direction_source,
+        "catalyst_direction_source_field": direction_field,
         "catalyst_source_count": len(bundle.sources),
         "catalyst_data_quality": data_quality,
         "catalyst_trade_class": trade_class,

@@ -1,0 +1,326 @@
+AVS-OPS-001 Step 0 — pre-state snapshot
+generated_utc: 2026-09-04T06:39:02Z
+
+=== git rev-parse HEAD ===
+5d886f07c1d290f25600e2e7e62ae77aad85476a
+
+=== branch / HEAD state ===
+branch: master
+symbolic-ref: refs/heads/master
+merge in progress: no
+rebase in progress: no
+cherry-pick: no
+revert: no
+bisect: no
+
+=== git stash list ===
+(empty above = no stashes)
+
+=== git status --porcelain (collapsed untracked dirs) ===
+total entries: 301
+    182 ??
+     87  M
+     32  D
+
+--- full list ---
+ D ACTUARIAL_DISTRIBUTION_SPRINT_REPORT.md
+ D AUDIT.md
+ D AVSHUNTER_Code_Audit_Findings.md
+ D AVSHUNTER_Pipeline_Code_Audit_Requirements.md
+ D BASELINE.md
+ D CLAUDE.md
+ D CLAUDE_CODE_PROMPT_desk_card.md
+ D CLAUDE_CODE_QA_pipeline_interpreter.md
+ D CLAUDE_CODE_TASK_actuarial_distribution.md
+ D CLAUDE_CODE_TASK_database_current_state.md
+ D CLAUDE_CODE_TASK_defect_remediation.md
+ D CLAUDE_CODE_TASK_ev_engine_sprint.md
+ D CLAUDE_CODE_TASK_lab_fix_sprint.md
+ D CLAUDE_CODE_TASK_validation_and_direction.md
+ D CLAUDE_CODE_WORKORDER_regime_trend_fix.md
+ D CLAUDE_pipeline_functional_audit.md
+ D COLUMN_PROVENANCE.md
+ D DATABASE_CURRENT_STATE_REPORT.md
+ D EV_ENGINE_VERIFICATION.md
+ D LAB_AUDIT_EXECUTIVE_REVIEW.md
+ D LAB_FIX_SPRINT_REPORT.md
+ D PIPELINE_ARTIFACT_LINEAGE.md
+ D PIPELINE_FUNCTIONAL_AUDIT.md
+ D PIPELINE_LOW_PASS_RATIO_DIAGNOSTIC_20260716.md
+ D QA_REPORT_pipeline_interpreter_20260726.md
+ D REGIME_TREND_FIX_REPORT.md
+ D RELEASE_NOTES.md
+ D SPRINT_VALIDATION_FINDINGS.md
+ D avshunter_audit_report_20260627.md
+ M avshunter_discovery_ULTIMATE.py
+ M avshunter_monetisation_policy.py
+ M avshunter_trap_engine.py
+ D bond_macro_intelligence0908dnuold.py
+ D bond_macro_intelligence090908olddnu.py
+ M build_macro_json.py
+ M catalyst_truth_engine.py
+ M contracts/bond_macro_contract.py
+ M contracts/handoff_contract.py
+ M contracts/lab_control.py
+ M contracts/macro_enrichment_delta.py
+ M eod_candidate_engine.py
+ M execution_gate.py
+ M execution_intelligence.py
+ M execution_intelligence_runner.py
+ M execution_schema.py
+ M garch_runner.py
+ M handoff_contract_audit.py
+ M intelligence-lab/intelligence_lab.py
+ M intelligence-lab/static/AVSHUNTER_sector_ui_patch.js
+ M intelligence-lab/static/index.html
+ M intelligent_orchestrator.py
+ M macro_horizon_router.py
+ M morning_gate.py
+ D morning_thesis_validator.py
+ M orchestrator/__init__.py
+ M pipeline_interpreter/ma_inputs_sync.py
+ M pipeline_interpreter/news_macro_readers.py
+ M pipeline_interpreter/pipeline_interpreter.py
+ M pipeline_interpreter/pipeline_interpreter_commands.py
+ M pipeline_interpreter/pipeline_interpreter_engine.py
+ M pipeline_interpreter/pipeline_interpreter_system_prompt.txt
+ M polygon_data_fetcher.py
+ M position_sizing_engine.py
+ M regime_threshold_injector.py
+ M run_evening.bat
+ M run_premarket.bat
+ M scripts/apply_external_intel_review_lane.py
+ M scripts/avshunter_monetisation_policy.py
+ M scripts/avshunter_options_intelligence.py
+ M scripts/backfill_timeseries_into_packages.py
+ M scripts/build_packages_from_discovery.py
+ M scripts/data_contract_validator.py
+ M scripts/exit_rules_engine.py
+ M scripts/macro_quant_packet.py
+ M scripts/qa_live_uat_readiness.py
+ M scripts/qa_market_scenario_simulation.py
+ M scripts/qa_morning_validator.py
+ M scripts/run_ev3_shadow.py
+ M scripts/run_ev3_shadow_phase.py
+ M scripts/run_vanguard_from_packages.py
+ M scripts/smoke_test_morning_validator.py
+ M test_macro_redesign.py
+ M tests/js/test_fix9_monetisation_gate.js
+ M tests/test_actuarial_cache_v7_contract.py
+ M tests/test_audit_remediation_guards.py
+ M tests/test_big_bang_phase_6_7.py
+ M tests/test_bond_macro_contract.py
+ M tests/test_build_macro_json_market_data.py
+ M tests/test_directional_bias_fixes.py
+ M tests/test_eod_options_research_handoff.py
+ M tests/test_ev3_options_handoff.py
+ M tests/test_ev3_shadow_phase.py
+ M tests/test_ev3_stage0.py
+ M tests/test_ev_engine_v3.py
+ M tests/test_external_intel_review_lane.py
+ M tests/test_handoff_contract_audit.py
+ M tests/test_lab_cache_signature.py
+ M tests/test_lab_journal_handoff.py
+ M tests/test_lab_monetisation_gate.py
+ M tests/test_lab_ranking_basis_export.py
+ M tests/test_lab_strangle_direction.py
+ M tests/test_macro_enrichment_discovery_options.py
+ M tests/test_morning_gate_contract_repair.py
+ M tests/test_morning_thesis_validator.py
+ M tests/test_options_research_contract.py
+ M tests/test_pipeline_interpreter_lab_authority.py
+ M tests/test_pipeline_interpreter_trusted_source.py
+ M tests/test_pse_retired_authority.py
+ M tests/test_vanguard_production_fixes.py
+ M trigger_layer.py
+ M vanguard/ev3_stage0.py
+ M vanguard/ev_engine_v3.py
+ M vanguard/integration/orchestrator_adapter.py
+ M vanguard/layer1_auction/auction_synthesizer.py
+ M vanguard/layer2_statistical/state_calculator.py
+ M vanguard/schemas/auction_schema.py
+ M vanguard/schemas/input_schema.py
+ M vanguard/trade_governance.py
+ M wall_break_scorer.py
+?? .codex_python313_runtime/
+?? .codex_test_tmp/
+?? Archive/
+?? audit/
+?? audits/
+?? backups/20260901_direction_geometry_semantic_prechange/
+?? backups/20260902_ws2_trigger_spine_prechange/
+?? backups/avs_sd_002_remediation_prechange_20260903_202434/
+?? backups/avs_sd_002_rev1_1_phase0_prechange_20260903_133546/
+?? backups/avs_sd_002_rev1_1_phase2_prechange_20260903_145500/
+?? backups/avs_sd_002_rev1_1_phase3_prechange_20260903_150049/
+?? backups/avs_sd_002_rev1_1_phase4_prechange_20260903_151506/
+?? backups/avs_sd_002_rev1_1_phase5_prechange_20260903_163000/
+?? backups/avs_sd_002_rev1_1_phase6_prechange_20260903_154238/
+?? backups/avs_sd_002_rev1_1_phase7_prechange_20260903_155835/
+?? backups/avs_sd_002_rev1_1_phase8_prechange_20260903_161259/
+?? backups/canonical_dataset_idempotency_prechange_20260830_091441/
+?? backups/cds2_import_fix_prechange_20260824/
+?? backups/cds2_launcher_fix_prechange_20260824/
+?? backups/cds2_orchestrator_entrypoint_prechange_20260824/
+?? backups/cds3_cds4_prechange_20260827_2/
+?? backups/cds3_discovery_worklist_prechange_20260824/
+?? backups/cds3_external_intel_isolation_prechange_20260825/
+?? backups/cds3_external_intel_isolation_prechange_20260825_partial_apply_external_intel_review_lane.py
+?? backups/cds4a_contract_identity_prechange_20260825/
+?? backups/cds_0_1_prechange_20260822/
+?? backups/cds_2_prechange_20260822/
+?? backups/cds_2_shadow_activation_prechange_20260822/
+?? backups/cycle2_prechange_20260831_221858/
+?? backups/direction_governance_prechange_20260827/
+?? backups/ev3_full_remediation_20260820_prechange/
+?? backups/ev3_production_evidence_prechange_20260828/
+?? backups/ev_advisory_prechange_20260821/
+?? backups/gex_primary_prechange_20260901_110231/
+?? backups/intelligence_lab_accuracy_prechange_20260825_104310/
+?? backups/intelligence_lab_console_prechange_20260901_182000/
+?? backups/intelligence_lab_governed_handoff_prechange_20260825/
+?? backups/intelligence_lab_json_prechange_20260831/
+?? backups/low_risk_repairs_prechange_20260825/
+?? backups/macro_advisory_handoff_prechange_20260831/
+?? backups/monetisability_gate_prechange_20260827/
+?? backups/morning_cds_bootstrap_prechange_20260901_150540/
+?? backups/morning_handoff_fix_prechange_20260824/
+?? backups/morning_market_structure_restart_prechange_20260901_171500/
+?? backups/morning_quote_identity_prechange_20260901_152956/
+?? backups/morning_replay_terminal_prechange_20260901_161201/
+?? backups/msi_critical_repairs_prechange_20260830_153219/
+?? backups/msi_v11_prechange_20260830_110913/
+?? backups/olm_blocker_remediation_prechange_20260829_2035/
+?? backups/olm_live_series_repair_prechange_20260830_012331/
+?? backups/operational_readiness_prechange_20260821/
+?? backups/options_liquidity_maturation_prechange_20260829/
+?? backups/options_session_quarantine_prechange_20260901_081500/
+?? backups/parallel_monetisability_prechange_20260825/
+?? backups/production_readiness_prechange_20260827_2130/
+?? backups/regression_7_prechange_20260821/
+?? backups/terminal_lifecycle_persistence_prechange_20260830/
+?? backups/trading_style_freshness_prechange_20260901_164012/
+?? canonical_data/
+?? config/msi_runtime.json
+?? contracts/core_authority_policy.py
+?? contracts/direction_governance.py
+?? contracts/dynamic_session_authority_v1.json
+?? contracts/dynamic_session_contract.py
+?? contracts/governed_states.py
+?? contracts/interpreter_handoff.py
+?? contracts/interpreter_handoff_materializer.py
+?? contracts/interpreter_macro_context.py
+?? contracts/lab_evidence_overlay.py
+?? contracts/long_option_policy.py
+?? contracts/market_profile_evidence.py
+?? contracts/options_liquidity_execution_guard.py
+?? contracts/options_liquidity_lifecycle.py
+?? contracts/quote_change_evidence.py
+?? contracts/selected_contract_economics.py
+?? contracts/thesis_geometry.py
+?? data/canonical/
+?? data/phantom/
+?? docs/AVSHUNTER_CANONICAL_DATA_SYSTEM_SOLUTION_DESIGN_v1.md
+?? docs/AVSHUNTER_QUANT_DATA_THESIS_ASSESSMENT_20260829.md
+?? docs/CDS3_CDS4_PRODUCTION_SLICE_20260827.md
+?? docs/CDS_0_1_IMPLEMENTATION_RECORD_20260822.md
+?? docs/CDS_2_IMPLEMENTATION_RECORD_20260822.md
+?? docs/CDS_3_IMPLEMENTATION_RECORD_20260824.md
+?? docs/DIRECTION_GOVERNANCE_IMPLEMENTATION_20260827.md
+?? docs/EV3_FULL_REMEDIATION_IMPLEMENTATION_20260820.md
+?? docs/INTELLIGENCE_LAB_FUNCTIONALITY_DATA_ROADMAP.md
+?? docs/OLM_BLOCKER_REMEDIATION_IMPLEMENTATION_20260829.md
+?? docs/OLM_BLOCKER_REMEDIATION_SOLUTION_DESIGN_20260829.md
+?? docs/OLM_LIVE_SERIES_REPAIR_SOLUTION_DESIGN_20260830.md
+?? docs/OPTIONS_LIQUIDITY_MATURATION_IMPLEMENTATION_20260829.md
+?? docs/PIPELINE_INTERPRETER_GPT_AGENT_AUTOMATION_OPTIONS_PAPER.md
+?? docs/~$TELLIGENCE_LAB_FUNCTIONALITY_DATA_ROADMAP.md
+?? market_structure/
+?? morning_handoff_finalizer.py
+?? msi_runtime.py
+?? orchestrator/dynamic_dispatcher.py
+?? orchestrator/dynamic_release.py
+?? orchestrator/dynamic_thesis.py
+?? orchestrator/dynamic_validation.py
+?? pipeline_interpreter/assessment_contract.py
+?? pipeline_interpreter/evidence_resolver.py
+?? pipeline_interpreter/macro_context.py
+?? pipeline_interpreter/screenshot_adapter.py
+?? scripts/apply_ev3_authority.py
+?? scripts/build_completed_market_profiles.py
+?? scripts/ev3_calibration_report.py
+?? scripts/migrate_control_plane.py
+?? scripts/promote_ev3_barrier_cache.py
+?? scripts/release_baseline.py
+?? scripts/resolve_run_plan.py
+?? scripts/validate_dynamic_session_release.py
+?? tests/fixtures/marketdata/
+?? tests/msi/
+?? tests/rca/
+?? tests/test_canonical_data_system.py
+?? tests/test_cds2_historical_prices.py
+?? tests/test_cds4_option_chain_store.py
+?? tests/test_cycle2_governance.py
+?? tests/test_direction_geometry_semantic_repairs.py
+?? tests/test_direction_governance_contract.py
+?? tests/test_dynamic_session_phase0.py
+?? tests/test_dynamic_session_phase1.py
+?? tests/test_dynamic_session_phase2.py
+?? tests/test_dynamic_session_phase3.py
+?? tests/test_dynamic_session_phase4.py
+?? tests/test_dynamic_session_phase5.py
+?? tests/test_dynamic_session_phase6.py
+?? tests/test_dynamic_session_phase7.py
+?? tests/test_dynamic_session_phase8.py
+?? tests/test_ev3_authority.py
+?? tests/test_ev3_cache_promotion.py
+?? tests/test_ev3_calibration_report.py
+?? tests/test_ev3_monetisation_authority.py
+?? tests/test_ev3_orchestrator_order.py
+?? tests/test_execution_monetisability_gate.py
+?? tests/test_governed_states.py
+?? tests/test_handoff_conflict_guard.py
+?? tests/test_intelligence_lab_strict_json.py
+?? tests/test_interpreter_macro_advisory_handoff.py
+?? tests/test_lab_governed_handoff.py
+?? tests/test_long_option_policy.py
+?? tests/test_low_risk_pipeline_repairs.py
+?? tests/test_morning_gate_authority.py
+?? tests/test_morning_gate_bond_freshness.py
+?? tests/test_morning_gate_cds_bootstrap.py
+?? tests/test_morning_handoff_finalizer.py
+?? tests/test_morning_market_structure_restart.py
+?? tests/test_msi_agent1_data_foundation.py
+?? tests/test_msi_handoff_materializer.py
+?? tests/test_msi_identity_preflight.py
+?? tests/test_msi_interpreter_handoff.py
+?? tests/test_msi_market_structure_identity.py
+?? tests/test_msi_morning_capture.py
+?? tests/test_msi_options_chain_v2_integration.py
+?? tests/test_msi_orchestrator_run_meta.py
+?? tests/test_msi_production_readiness.py
+?? tests/test_msi_provider_fixtures.py
+?? tests/test_msi_quote_and_size_lineage.py
+?? tests/test_msi_runtime.py
+?? tests/test_msi_stage_worklist.py
+?? tests/test_olm_execution_authority.py
+?? tests/test_option_liquidity_lifecycle.py
+?? tests/test_options_crossed_quote_integration.py
+?? tests/test_options_greek_backfill_unit.py
+?? tests/test_options_liquidity_lifecycle.py
+?? tests/test_options_liquidity_morning_lab.py
+?? tests/test_options_session_exception_quarantine.py
+?? tests/test_pre_evening_production_repairs.py
+?? tests/test_production_readiness_guardrails.py
+?? tests/test_selected_contract_economics.py
+?? tests/test_trigger_layer_governance.py
+?? tests/test_wall_break_missing_pcr.py
+?? tests/test_ws2_trigger_spine.py
+?? tests/ws2_trigger_spine_runtime_probe.py
+?? tools/cds2_import_historical_prices.py
+?? tools/cds2_replay_lifecycle_shadow.py
+?? tools/cds2_validate_historical_prices.py
+?? tools/create_cds_baseline.py
+?? tools/msi_production_readiness.py
+?? tools/msi_reconcile.py
+?? tools/validate_canonical_data.py

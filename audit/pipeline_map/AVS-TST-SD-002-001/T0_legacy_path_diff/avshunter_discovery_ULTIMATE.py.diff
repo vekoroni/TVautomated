@@ -1,0 +1,278 @@
+--- a/avshunter_discovery_ULTIMATE.py
++++ b/avshunter_discovery_ULTIMATE.py
+@@ -585,25 +585,8 @@
+ # ============================= TIER ASSIGNMENT =============================
+ 
+ def assign_tier(wyckoff_score: float, crabel_score: float, composite_score: float, cfg: UltimateConfig) -> int:
+-    """Assign tier based on scores with regime-adaptive floors.
+-
+-    Regime composite floors (Enhancement 5):
+-        RISK_OFF:     >= 72 for Tier 1 (high conviction only — edge is scarce)
+-        TRANSITIONAL: >= 68 for Tier 1 (existing logic preserved)
+-        RISK_ON:      >= 50 standard (broader opportunity set)
+-
+-    Markets do not distribute edge evenly across regimes. Enforcing scarcity
+-    discipline in RISK_OFF prevents psychological noise from marginal setups.
+-    """
+-    active_regime = str(getattr(cfg, 'active_regime', 'UNKNOWN')).upper()
+-    transitional_floor = 68.0
+-    risk_off_floor = getattr(cfg, 'risk_off_composite_floor', 72.0)
+-
++    """Assign a macro-agnostic tier from ticker evidence only."""
+     if composite_score >= cfg.tier1_min:
+-        if active_regime == 'RISK_OFF' and composite_score < risk_off_floor:
+-            return 2  # Demote: below RISK_OFF conviction threshold
+-        if active_regime == 'TRANSITIONAL' and composite_score < transitional_floor:
+-            return 2  # Demote: below TRANSITIONAL conviction threshold
+         return 1
+     elif composite_score >= cfg.tier2_min:
+         return 2
+@@ -612,12 +595,8 @@
+     else:
+         return 4  # Rejected
+ 
+-# NOTE: Tier 3 (WATCH) — valid overflow bucket in RISK_OFF regimes.
+-# In RISK_ON/TRANSITIONAL: structural dead zone — DISTRIBUTION stocks penalised below T4,
+-#   non-DISTRIBUTION stocks boosted above T2. Nothing scores in the T3 band.
+-# In RISK_OFF: ACCUMULATION/MARKUP stocks receive +10/+12 prior boosts. Stocks with raw
+-#   scores ~39-41 land at ~51-53 adjusted — above T3 floor but below the elevated T2 floor (54).
+-#   These are genuine early-stage setups in a fearful market. T3 is a valid watch bucket.
++# Tier 3 is the macro-agnostic watch bucket between the configured structural
++# evidence floors. External regime state cannot move a ticker between tiers.
+ 
+ 
+ def calculate_composite_score(wyckoff_score: float, crabel_score: float) -> float:
+@@ -645,38 +624,8 @@
+ 
+ # ============================= STATE PRIOR WEIGHTING =======================
+ 
+-# Empirically derived from 3.7M cleaned actuarial observations.
+-# Key: (wyckoff_phase_bucket, macro_regime) → score adjustment
+-# Source: validate_enrichment.py output — Hit +10% / 20d rates by bucket × regime
+-#
+-# Baseline (mixed pool):       Hit10 = 28.8%
+-# MARKUP       × RISK_ON  :   Hit10 = 25.7%  → slight penalty vs baseline (already late)
+-# MARKUP       × RISK_OFF :   Hit10 = 30.2%  → boost (breakout against weak market = strong)
+-# MARKUP       × TRANS    :   Hit10 = 26.0%  → neutral
+-# ACCUMULATION × RISK_ON  :   Hit10 = 20.4%  → penalty (still building cause)
+-# ACCUMULATION × RISK_OFF :   Hit10 = 33.8%  → strong boost (cause building in adversity)
+-# ACCUMULATION × TRANS    :   Hit10 = 27.1%  → slight boost
+-# DISTRIBUTION × RISK_ON  :   Hit10 = 18.9%  → strong penalty
+-# DISTRIBUTION × RISK_OFF :   Hit10 = 22.0%  → penalty
+-# DISTRIBUTION × TRANS    :   Hit10 = 17.6%  → strong penalty
+-#
+-# Score adjustments are bounded: max +15, min -20
+-# Applied to composite_score BEFORE tier assignment so tier floors remain meaningful.
+-
+-_STATE_PRIOR_ADJUSTMENTS: dict = {
+-    ('MARKUP',       'RISK_ON'):      +2.0,   # slight: already extended
+-    ('MARKUP',       'RISK_OFF'):    +10.0,   # strong: breakout vs weak market
+-    ('MARKUP',       'TRANSITIONAL'): +1.0,   # neutral
+-    ('ACCUMULATION', 'RISK_ON'):      -5.0,   # penalty: still building cause
+-    ('ACCUMULATION', 'RISK_OFF'):    +12.0,   # strongest signal in the DB
+-    ('ACCUMULATION', 'TRANSITIONAL'): +3.0,   # slight boost
+-    ('DISTRIBUTION', 'RISK_ON'):     -15.0,   # strong penalty: rolling over in bull
+-    ('DISTRIBUTION', 'RISK_OFF'):    -12.0,   # penalty: rolling over in bear
+-    ('DISTRIBUTION', 'TRANSITIONAL'):-12.0,  # strong penalty: only negative EV bucket
+-}
+-
+-# Late trend maturity penalty — applied additionally when trend is LATE/EXHAUSTED
+-# in non-RISK_OFF regime (RISK_OFF late trend can still spring)
++# External-macro state priors were retired from production authority. The only
++# remaining adjustment is derived from the ticker's own trend maturity.
+ _LATE_TREND_PENALTY = -8.0
+ 
+ 
+@@ -852,7 +801,7 @@
+     data_as_of: str = '',   # E1: YYYY-MM-DD — decay penalises stale signals
+ ) -> tuple:
+     """
+-    Apply empirically-derived state prior adjustment to composite score.
++    Apply ticker-derived trend-maturity adjustment to composite score.
+ 
+     Returns:
+         (adjusted_composite: float, prior_adj: float, prior_label: str)
+@@ -861,8 +810,8 @@
+         max boost: +15 points
+         max penalty: -20 points
+ 
+-    This injects known historical asymmetry into Discovery WITHOUT querying
+-    the actuarial DB at runtime. The priors are pre-computed from 3.7M rows.
++    ``active_regime`` is accepted for schema compatibility and lineage only;
++    it cannot change the result.
+     """
+     bucket  = _wyckoff_phase_to_bucket(phase)
+     regime  = str(active_regime).upper().strip()
+@@ -875,12 +824,13 @@
+     else:
+         regime = 'TRANSITIONAL'
+ 
+-    key = (bucket, regime)
+-    adj = _STATE_PRIOR_ADJUSTMENTS.get(key, 0.0)
+-
+-    # Additional late trend penalty in non-RISK_OFF regimes
++    # The former phase x external-macro adjustment changed candidate membership
++    # whenever a separately refreshed narrative snapshot changed.  Keep macro
++    # in output lineage, but remove it from the production score.  Technical
++    # trend maturity remains valid ticker evidence and is retained.
++    adj = 0.0
+     maturity = str(trend_maturity).upper()
+-    if maturity in ('LATE', 'EXHAUSTED') and regime != 'RISK_OFF':
++    if maturity in ('LATE', 'EXHAUSTED'):
+         adj += _LATE_TREND_PENALTY
+ 
+     # Bound the adjustment
+@@ -891,11 +841,11 @@
+     # Human-readable label for output column — defined BEFORE decay block
+     # so the decay suffix can safely append to it.
+     if adj > 5:
+-        label = f"BOOSTED({bucket}×{regime}:{adj:+.0f})"
++        label = f"CORE_TECHNICAL_BOOST({bucket}:{adj:+.0f})"
+     elif adj < -5:
+-        label = f"PENALISED({bucket}×{regime}:{adj:+.0f})"
++        label = f"CORE_TECHNICAL_PENALTY({bucket}:{adj:+.0f})"
+     else:
+-        label = f"NEUTRAL({bucket}×{regime}:{adj:+.0f})"
++        label = f"CORE_MACRO_AGNOSTIC({bucket}:{adj:+.0f})"
+ 
+     # ── ENHANCEMENT 1: Signal decay (2026-04-16) ─────────────────────────────
+     # Wyckoff phases have a half-life. A Phase C spring identified on Monday
+@@ -1492,7 +1442,7 @@
+     #   recency_score         15%  — how fresh is the event (move_age_bars)
+     #   transition_alignment  10%  — is structure progressing toward actionable phase
+     #
+-    # Regime modulation: RISK_OFF +5pts, RISK_ON +2pts (conviction, not direction)
++    # External macro contributes zero points.
+ 
+     # Event quality bonus — confirmed specific events vs generic trading range
+     # D4 fix: use uppercase sets — _dom_event is now normalised uppercase
+@@ -1569,9 +1519,9 @@
+     # Normalise to 0-1
+     _pa_normalised = min(1.0, _pa_raw / 100.0)
+ 
+-    # Regime modulates conviction (not direction) — small boost for clean macro backdrop
+-    _regime_boost = {'RISK_OFF': 0.05, 'RISK_ON': 0.02}.get(regime_norm, 0.0)
+-    phase_align = round(min(1.0, _pa_normalised + _regime_boost), 3)
++    # External macro cannot alter core conviction.
++    _regime_boost = 0.0
++    phase_align = round(_pa_normalised, 3)
+ 
+     # Direction governance Stage 0: Discovery freezes the structural thesis
+     # before any direction-dependent geometry or contract work is performed.
+@@ -1596,11 +1546,9 @@
+         dominant_trend,
+     )
+ 
+-    # ── Component 3: Regime alignment — macro clarity score ──────────────────
+-    # Not direction-biased. Measures how clear the macro backdrop is for any move.
+-    # RISK_OFF = clearest directional moves historically. TRANSITIONAL = murky.
+-    regime_scores = {'RISK_ON': 0.6, 'RISK_OFF': 0.75, 'TRANSITIONAL': 0.45}
+-    regime_align  = regime_scores.get(regime_norm, 0.5)
++    # ── Component 3: neutral compatibility baseline ──────────────────────────
++    # Fixed across all macro payloads so external macro cannot alter the score.
++    regime_align = 0.5
+ 
+     # ── Component 4: Trend maturity ────────────────────────────────────────────
+     if trend_mat in ('EARLY', 'EMERGING'):
+@@ -1618,13 +1566,7 @@
+     # 0 = no compression, 100 = maximum compression (NR7 + ATR contracted + inside bars)
+     vol_expansion_potential = min(1.0, _crabel_score_raw / 100.0)
+ 
+-    # ENHANCEMENT 3: Macro sector tilt alignment (2026-04-16)
+-    # The macro intelligence JSON scores each sector ETF (XLK, XLF, XLI, etc.)
+-    # with a signal: LEAD_LONG (+1.0), LONG (+0.5), NEUTRAL (0), REDUCE (-0.5).
+-    # Map the ticker's sector to its ETF and apply the regime score as a
+-    # 6th lift component. This surfaces signals in macro-favoured sectors
+-    # (currently XLK Tech, XLI Industrials, XLF Financials = LEAD_LONG)
+-    # and suppresses those fighting the macro tide (XLE Energy = REDUCE).
++    # Macro sector tilt is retained for trader-facing advisory context only.
+     # NOTE: _sector_etf_map is defined AFTER get_sector() below because
+     # _sector must be assigned before it can be looked up here.
+     # A placeholder is used so lift_proxy_score can be computed in one place.
+@@ -1897,13 +1839,15 @@
+     _macro_sector_tilt = getattr(cfg, 'macro_sector_signals', {})
+     _ticker_etf  = _sector_etf_map.get(_sector, '')
+     _etf_signal  = _macro_sector_tilt.get(_ticker_etf, 'NEUTRAL')
+-    _sector_lift = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
++    _macro_sector_advisory_score = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
++    _sector_lift = 0.0
+ 
+     # If universe has explicit sector_etf, use it and recompute lift
+     if _univ_sec.get("sector_etf"):
+         _ticker_etf  = _univ_sec["sector_etf"]
+         _etf_signal  = _macro_sector_tilt.get(_ticker_etf, "NEUTRAL")
+-        _sector_lift = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
++        _macro_sector_advisory_score = _etf_signal_score.get(str(_etf_signal).upper(), 0.0)
++        _sector_lift = 0.0
+     _macro_abstain = str(_univ_sec.get("macro_abstain", "False")).upper() == "TRUE"
+ 
+     # Recompute lift_proxy_score with real sector lift (replaces placeholder above)
+@@ -1915,7 +1859,7 @@
+     # regime_align                   10     Macro backdrop clarity (not direction)
+     # maturity_score                 12     Trend maturity (early = higher options edge)
+     # vol_expansion_potential        10     Crabel score — NR7/ATR/inside-bar quality
+-    # sector_lift                     6     Macro sector tilt
++    # sector baseline                 6     fixed; macro tilt is advisory only
+     # volume_abnormality             10     Institutional activity (vol vs 20d avg)
+     # range_expansion                 6     Range vs 20d average (momentum displacement)
+     # vwap_acceptance                 4     Gap × VWAP alignment
+@@ -2011,6 +1955,11 @@
+         'prior_adjustment': prior_adj,                         # Enhancement 1: delta applied
+         'prior_label': prior_label,                            # Enhancement 1: human label
+         'lift_proxy_score': lift_proxy_score,                  # Enhancement 3 + Sprint A v2: 9-component ranking score
++        'macro_core_effective_delta': 0.0,
++        'macro_candidate_authority': 'NONE',
++        'macro_direction_authority': 'NONE',
++        'macro_capital_authority': 'ADVISORY_ONLY',
++        'macro_sector_advisory_score': _macro_sector_advisory_score,
+         # ── SPRINT A: Abnormal Repricing & Candidate Lane ─────────────────
+         'gap_pct':                   gap_pct,
+         'range_pct':                 range_pct,
+@@ -2135,11 +2084,8 @@
+         
+         'timestamp': datetime.now().isoformat(),
+         
+-        # Regime context (permanent — set by regime_threshold_injector at scan start)
+-        # Tells you which macro regime was active when this signal was scored.
+-        # Used for: post-run analysis, signal filtering, ML training labels.
+-        # NOTE: 'macro_regime' is the canonical field name read by Vanguard and Edge Detector.
+-        #       'active_regime' is retained as an audit/ML label alias — both are written.
++        # External regime snapshot is retained for display and later analysis.
++        # It has zero membership, direction, score or capital authority.
+         'macro_regime': getattr(cfg, 'active_regime', 'UNKNOWN'),
+         'active_regime': getattr(cfg, 'active_regime', 'UNKNOWN'),
+         # DISC-02: VMS scanner context — injected from scanner_context_{run_id}.json
+@@ -2386,10 +2332,9 @@
+ 
+     cfg = UltimateConfig()
+ 
+-    # === REGIME THRESHOLD INJECTION (permanent) ===
+-    # Reads macro_intelligence_latest.json and adjusts tier floors,
+-    # compression thresholds, and volume minimums based on current regime.
+-    # Fail-safe: if macro file is missing or unreadable, TRANSITIONAL defaults apply.
++    # === MACRO ADVISORY INGESTION ===
++    # Reads macro context for display/lineage. Production tier, compression and
++    # volume thresholds are invariant to the file's presence or contents.
+     try:
+         from regime_threshold_injector import apply_regime_to_config
+         macro_path = Path(__file__).resolve().parent / "dropbox" / "macro" / "macro_intelligence_latest.json"
+@@ -2456,17 +2401,12 @@
+         except Exception as _ve:
+             logger.warning(f"⚠️  VMS context load failed: {_ve}")
+ 
+-    # Regime diagnostic — critical for understanding tier floor activation
++    # Advisory macro diagnostic; it does not activate a different tier floor.
+     active_regime = getattr(cfg, 'active_regime', 'UNKNOWN')
+     active_regime_label = getattr(cfg, 'active_regime_label', active_regime)
+     risk_off_floor = getattr(cfg, 'risk_off_composite_floor', 72.0)
+     logger.info(f"📊 Active Regime       : {active_regime} ({active_regime_label})")
+-    if active_regime == 'RISK_OFF':
+-        logger.info(f"   Tier 1 floor       : {risk_off_floor} (RISK_OFF — scarcity mode)")
+-    elif active_regime == 'TRANSITIONAL':
+-        logger.info(f"   Tier 1 floor       : 68.0 (TRANSITIONAL)")
+-    else:
+-        logger.info(f"   Tier 1 floor       : 50.0 (RISK_ON — standard)")
++    logger.info(f"   Core macro authority: ADVISORY_ONLY; tier floors unchanged")
+     logger.info("")
+ 
+     universe_path = Path(args.universe)

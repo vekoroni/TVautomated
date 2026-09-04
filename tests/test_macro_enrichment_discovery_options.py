@@ -14,7 +14,7 @@ from scripts.apply_macro_enrichment_to_discovery import enrich_discovery_csv  # 
 from scripts.avshunter_options_intelligence import options_macro_alignment_adjustment  # noqa: E402
 
 
-def test_macro_enrichment_stamps_discovery_and_options_bonus() -> None:
+def test_macro_enrichment_stamps_discovery_and_options_advisory_score() -> None:
     with tempfile.TemporaryDirectory(dir=ROOT / "data" / "output" / "qa") as tmp:
         discovery_csv = Path(tmp) / "discovery_candidates_ultimate_TEST.csv"
         with discovery_csv.open("w", encoding="utf-8", newline="") as fh:
@@ -43,15 +43,15 @@ def test_macro_enrichment_stamps_discovery_and_options_bonus() -> None:
             row,
         )
 
-        assert adjustment["options_macro_gate_preserved"] is True
+        assert adjustment["options_macro_gate_preserved"] is False
         assert adjustment["options_macro_alignment_bonus"] >= 0.0
         assert adjustment["options_macro_alignment_label"] in {
             "MACRO_ALIGNED_OPTIONS_PLUS",
             "ALIGNED_REQUIRES_CONFIRMATION",
-            "ALIGNED_BUT_MACRO_GATE_PRESERVED",
+            "ALIGNED_WITH_MACRO_HEADWIND",
         }
 
 
 if __name__ == "__main__":
-    test_macro_enrichment_stamps_discovery_and_options_bonus()
+    test_macro_enrichment_stamps_discovery_and_options_advisory_score()
     print("macro_enrichment_discovery_options tests passed")

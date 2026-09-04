@@ -1,5 +1,17 @@
 
 def cmd_inputs():
+    try:
+        from msi_runtime import active_flags as _active_flags
+        from evidence_resolver import handoff_status as _handoff_status
+        if _active_flags().interpreter_resolver:
+            status = _handoff_status()
+            print("\n  Governed Interpreter handoff:")
+            for key, value in status.items():
+                print(f"  {key:<20} {value}")
+            return status
+    except Exception as error:
+        print(f"\n  Governed handoff status unavailable: {error}")
+        return {"status": "BLOCKED", "reason": str(error)}
     from pathlib import Path
     base = Path(__file__).parent / "MA_Inputs"
     folders = ["pipeline_outputs","news_terminal","macro","charts","options_data"]
@@ -16,8 +28,24 @@ def cmd_inputs():
 """
 AVSHUNTER Pipeline Interpreter v1.0 Ã¢â‚¬â€ Command Router
 """
+import hashlib
+import json
+import sys
 import time
 from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from msi_runtime import active_flags
+from evidence_resolver import (
+    EvidenceResolutionError,
+    IntendedUse,
+    handoff_status,
+    resolve_interpreter_evidence,
+    resolve_interpreter_run,
+)
 from pipeline_interpreter_engine import (
     call_api, session, SESSION, get_run_dir, parse_brief_csv,
     read_pipeline_csv, read_options_file, find_pipeline_files,
@@ -28,9 +56,7 @@ from pipeline_interpreter_engine import (
     scan_all_ma_inputs, get_ma_inputs_status, build_triage_prompt,
     MA_INPUTS, MA_CHARTS, MA_OPTIONS, MA_SCREENSHOTS, MA_PIPELINE, MA_MACRO, MA_NEWS, MA_LAB,
     EXECUTION_PERMISSION, MODEL_TRIAGE, MODEL_DEEP_DIVE, LIVE_PRICES, LIVE_DATA,
-    fetch_all_live_data, format_live_data_for_prompt,
-    fetch_live_contract_spread, fetch_peer_quotes,
-    _LIVE_MARKET_AVAILABLE,
+    format_live_data_for_prompt,
 )
 from ma_inputs_sync import sync_to_ma_inputs, show_status as sync_show_status, MA_PIPELINE_OUT
 from news_macro_readers import save_pasted_brief
@@ -47,11 +73,11 @@ MENU = """
 Ã¢â€¢â€˜     AVSHUNTER PIPELINE INTERPRETER v1.0 Ã¢â‚¬â€ COMMAND MENU          Ã¢â€¢â€˜
 Ã¢â€¢Â Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â£
 Ã¢â€¢â€˜  /triage [FILE]               Fast priority scan Ã¢â‚¬â€ rank all candidates  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Interpret pipeline CSV file(s)     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /morning FILE                Morning validation pass            Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Research-only loose-file analysis  Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /morning FILE                RETIRED — use governed handoff      Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /ticker TICKER FILE          Deep dive single ticker            Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /intraday TICKER [IMG...]    15m/30m chart + live price analysis Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /live TICKER [contract]     Fetch live options vol/flow/spread  Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /live TICKER [contract]     RETIRED — CDS owns provider access Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /price TICKER PRICE [chg%]  Register live price for analysis   Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /auto                        Auto-detect pipeline files         Ã¢â€¢â€˜
@@ -119,6 +145,8 @@ def get_trusted_interpreter_source(ticker: str = "", explicit_path: str = "") ->
     files still win, but normal interpreter commands should not drift back to
     stale session CSVs when a Lab view is available.
     """
+    if active_flags().interpreter_resolver:
+        return "", "governed_manifest_only"
     ticker = str(ticker or "").strip().upper()
     if explicit_path:
         if not ticker or _csv_has_ticker(explicit_path, ticker):
@@ -150,23 +178,12 @@ def get_trusted_interpreter_source(ticker: str = "", explicit_path: str = "") ->
 
 
 _MORNING_ACTIONABLE = {"PROBE", "ARMED", "GO", "GO_LIMIT", "EXECUTE", "EXECUTE_WITH_CAUTION"}
-_LAB_ACTIONABLE = {"GO", "ARMED"}
+_LAB_ACTIONABLE = {"GO", "GO_LIMIT", "PROBE", "ARMED"}
 _MONETISABLE_EV_DECISIONS = {"STRONG", "MODERATE"}
 
 
 def _lab_monetisation_failure(row: dict) -> str:
-    """Return the fail-closed reason a Lab row cannot enter the GO lane."""
-    ev_decision = str(row.get("EV_Decision", "") or "").strip().upper()
-    if ev_decision not in _MONETISABLE_EV_DECISIONS:
-        return f"EV_{ev_decision or 'MISSING'}_NOT_MONETISABLE"
-
-    raw_rr = row.get("RR")
-    try:
-        rr = float(str(raw_rr).strip())
-    except (TypeError, ValueError):
-        return "RR_MISSING_OR_INVALID"
-    if rr <= 0:
-        return "RR_NON_POSITIVE"
+    """Legacy compatibility hook; EV/R:R are not Interpreter authorities."""
     return ""
 
 
@@ -438,6 +455,174 @@ Jointly approved Lab + morning action-review names: {len(groups.get('DEEP_DIVE_N
 """
 
 
+def _msi_cmd_triage():
+    """Deterministic triage over one accepted, hash-verified handoff."""
+    import csv as _csv
+    import io as _io
+
+    try:
+        resolved = resolve_interpreter_run()
+    except EvidenceResolutionError as error:
+        print(f"  [MSI BLOCKED] {error}")
+        return None
+    rows = list(resolved.book_by_ticker.values())
+    rows.sort(
+        key=lambda row: (
+            int(float(str(row.get("lab_rank") or row.get("priority_rank") or 999999))),
+            str(row.get("ticker", "")),
+        )
+    )
+    SESSION["run_id"] = resolved.run_id
+    SESSION["pipeline_run_id"] = resolved.run_id
+    SESSION["handoff_manifest"] = str(resolved.handoff.manifest_path)
+    SESSION["msi_bundle_by_ticker"] = dict(resolved.bundle_by_ticker)
+    SESSION["lab_rows"] = rows
+    buffer = _io.StringIO()
+    fields = [
+        "ticker", "direction", "score", "dte", "horizon", "earnings_in_window",
+        "earnings_date", "ma_ready", "triage_verdict", "triage_rank", "urgency_flag",
+        "catalyst_freshness", "trigger_proximity", "why", "upgrade_condition",
+        "execution_permission",
+    ]
+    writer = _csv.DictWriter(buffer, fieldnames=fields)
+    writer.writeheader()
+    actionable = []
+    for rank, row in enumerate(rows, 1):
+        action = str(row.get("final_action", "")).upper()
+        if action in {"BUY_NOW", "BUY_SMALL"}:
+            verdict = "DEEP_DIVE_NOW"
+            actionable.append(str(row.get("ticker", "")).upper())
+        elif action in {"CONTRACT_REPAIR", "MANUAL_REVIEW"}:
+            verdict = "REVIEW_LATER"
+        elif action in {"BLOCK", "SKIP"}:
+            verdict = "SKIP_TODAY"
+        else:
+            verdict = "WATCH_ONLY"
+        writer.writerow({
+            "ticker": row.get("ticker", ""),
+            "direction": row.get("governed_direction") or row.get("final_direction", ""),
+            "score": row.get("priority_score") or row.get("composite_score", ""),
+            "dte": row.get("dte", ""),
+            "horizon": row.get("horizon", ""),
+            "ma_ready": "YES",
+            "triage_verdict": verdict,
+            "triage_rank": rank,
+            "why": f"Governed final_action={action or 'MISSING'}",
+            "upgrade_condition": row.get("morning_unlock_condition", ""),
+            "execution_permission": "NONE_PIPELINE_INTERPRETER_ONLY",
+        })
+    response = (
+        "[TRIAGE_RANKED_TABLE]\n" + buffer.getvalue().strip()
+        + "\n[/TRIAGE_RANKED_TABLE]\n\n[TRIAGE_SUMMARY]\n"
+        + f"Accepted run {resolved.run_id}; {len(rows)} governed rows; "
+        + f"{len(actionable)} action-review candidates. Interpreter grants no capital."
+        + "\n[/TRIAGE_SUMMARY]\n\n[TRIAGE_EXECUTION_ORDER]\n"
+        + ("\n".join(f"/ticker {ticker}" for ticker in actionable) or "No actionable review names.")
+        + "\n\nEXECUTION PERMISSION: NONE_PIPELINE_INTERPRETER_ONLY"
+        + "\n[/TRIAGE_EXECUTION_ORDER]"
+    )
+    run_dir, stamp = get_run_dir()
+    results = write_triage_outputs(response, run_dir, stamp, lab_rows=rows)
+    print(
+        f"  [MSI READY] run={resolved.run_id} rows={len(rows)} "
+        f"manifest={resolved.handoff.manifest_path.name}"
+    )
+    _print_results(results, response)
+    return response
+
+
+def _msi_cmd_ticker(ticker: str, intended_use: IntendedUse = IntendedUse.EXECUTABLE_SESSION):
+    """One prompt contract for structured evidence, with optional images only."""
+    try:
+        evidence = resolve_interpreter_evidence(ticker, intended_use=intended_use)
+    except EvidenceResolutionError as error:
+        print(f"  [MSI BLOCKED] {ticker.upper()}: {error}")
+        return None
+    SESSION["run_id"] = evidence.run_id
+    SESSION["pipeline_run_id"] = evidence.run_id
+    SESSION["handoff_manifest"] = str(evidence.manifest_path)
+    row = dict(evidence.book_row)
+    bundle = dict(evidence.bundle)
+    governed_macro = evidence.macro.prompt_block()
+    ma_files = scan_ma_inputs_for_ticker(ticker)
+    images = ma_files["charts"] + ma_files["screenshots"]
+    structured_options = {
+        "governed_bundle": json.dumps(
+            {
+                "selected_contract_symbol": bundle.get("selected_contract_symbol"),
+                "selected_quote_snapshot_id": bundle.get("selected_quote_snapshot_id"),
+                "quote_change": bundle.get("quote_change_evidence", {}),
+                "market_structure": bundle.get("market_structure", {}),
+                "freshness_map": bundle.get("freshness_map", {}),
+                "authority_map": bundle.get("authority_map", {}),
+            },
+            sort_keys=True,
+            default=str,
+        )
+    }
+    prompt = build_single_ticker_prompt(
+        ticker=ticker.upper(),
+        pipeline_row=row,
+        options_data=structured_options,
+        chart_images_present=bool(images),
+        governed_macro_context=governed_macro,
+    )
+    # Images are supplemental inputs to the same prompt; they never select a
+    # different numerical or authority path.
+    response = call_api(prompt, images=images or None, use_web_search=False)
+    run_dir, stamp = get_run_dir()
+    results = write_all_outputs(
+        response, session, run_dir, stamp, tickers=[ticker.upper()],
+        prefix=f"ticker_{ticker.lower()}_msi",
+    )
+    from assessment_contract import AssessmentStatus, append_assessment, build_assessment
+    from contracts.lab_evidence_overlay import append_overlay, build_overlay
+    model_output = {
+        "strengthening_weakening": "MODEL_NARRATIVE_ATTACHED",
+        "agreement_conflict": "REQUIRES_STRUCTURED_REVIEW",
+        "manual_checks": ["Confirm displayed quote freshness and wall behaviour"],
+        "data_gaps": [],
+        "plain_language_reason": response[:4000],
+    }
+    assessment = build_assessment(
+        bundle=bundle,
+        model_output=model_output,
+        model_id=MODEL_DEEP_DIVE,
+        prompt_version="msi-interpreter-prompt-v1.1",
+        prompt_hash=hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        temperature=0.0,
+    )
+    run_root = evidence.manifest_path.parent.parent
+    append_assessment(run_root / "interpreter" / "assessments.jsonl", assessment)
+    if assessment["assessment_status"] == AssessmentStatus.VALID.value:
+        overlay = build_overlay(
+            run_id=evidence.run_id,
+            ticker=ticker,
+            bundle_id=bundle["bundle_id"],
+            source="interpreter_assessment_v1",
+            fields={
+                "interpreter_assessment_id": assessment["assessment_id"],
+                "interpreter_created_utc": assessment["created_utc"],
+                "interpreter_strengthening_weakening": assessment["strengthening_weakening"],
+                "interpreter_agreement_conflict": assessment["agreement_conflict"],
+                "interpreter_manual_checks": assessment["manual_checks"],
+                "interpreter_data_gaps": assessment["data_gaps"],
+                "interpreter_plain_language_reason": assessment["plain_language_reason"],
+                "interpreter_authority_statement": assessment["authority_statement"],
+                "interpreter_assessment_status": assessment["assessment_status"],
+            },
+        )
+        append_overlay(
+            run_root / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl", overlay
+        )
+    print(
+        f"  [MSI ASSESSMENT] {assessment['assessment_status']} "
+        f"bundle={bundle['bundle_id']}"
+    )
+    _print_results(results, response)
+    return response
+
+
 def cmd_triage(file_path:str=None):
     """
     Fast triage pass Ã¢â‚¬â€ rank and prioritise the whole candidate list.
@@ -445,6 +630,11 @@ def cmd_triage(file_path:str=None):
     Run this BEFORE /ticker to know who gets the deep dive today.
     """
     global _loaded_pipeline
+    if active_flags().interpreter_resolver:
+        if file_path:
+            print("  [RESEARCH ONLY] Explicit files cannot override a production handoff.")
+            return None
+        return _msi_cmd_triage()
 
     # Run score integrity check before triage display
     try:
@@ -619,12 +809,16 @@ def cmd_triage(file_path:str=None):
             lab_ticker = str(lab_row.get("Ticker", "")).strip().upper()
             if not lab_ticker:
                 continue
+            final_action = str(lab_row.get("final_action") or "").strip().upper()
             lab_category = str(
-                lab_row.get("Exec_Category")
-                or lab_row.get("Morning_Permission")
+                lab_row.get("Lab_Verdict")
                 or lab_row.get("Verdict")
+                or lab_row.get("Exec_Category")
+                or lab_row.get("Morning_Permission")
                 or ""
             ).strip().upper()
+            if final_action in {"BUY_NOW", "BUY_SMALL"}:
+                lab_category = "GO" if final_action == "BUY_NOW" else "GO_LIMIT"
             if lab_category not in _LAB_ACTIONABLE:
                 non_actionable_reasons[lab_ticker] = f"LAB_CATEGORY_{lab_category or 'MISSING'}"
                 continue
@@ -825,33 +1019,18 @@ def cmd_interpret(file_paths:list):
     return response
 
 def cmd_morning(file_path:str):
-    print(f"\n  Running morning validation pass...")
-    rows=read_pipeline_csv(file_path)
-    if not rows: print("  Ã¢Å¡Â  No data loaded."); return
-    tickers=[r.get("ticker","") for r in rows if r.get("ticker","")]
-
-    # Load macro context if available
-    macro_ctx=None
-    macro_paths=[
-        r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\dropbox\macro\macro_intelligence_latest.json",
-        Path.home()/"AVSHUNTER-Intelligence"/"dropbox"/"macro"/"macro_intelligence_latest.json"
-    ]
-    for mp in macro_paths:
-        if Path(mp).exists():
-            macro_ctx=read_options_file(str(mp))[:1500]
-            print(f"  Ã¢Å“â€¦ Macro context loaded")
-            break
-
-    t0=time.time()
-    prompt=build_morning_validation_prompt(rows,macro_ctx)
-    response=call_api(prompt)
-    run_dir,ts=get_run_dir()
-    results=write_all_outputs(response,session,run_dir,ts,tickers=tickers,prefix="morning")
-    print(f"\n  Morning validation complete ({int(time.time()-t0)}s)")
-    _print_results(results,response)
-    return response
+    print(
+        "  [RETIRED] /morning cannot create a second validation authority. "
+        "Run the production Morning Gate and publish an accepted handoff bundle."
+    )
+    return None
 
 def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
+    if active_flags().interpreter_resolver:
+        if file_path:
+            print("  [RESEARCH ONLY] Explicit files cannot override a production handoff.")
+            return None
+        return _msi_cmd_ticker(ticker)
     print(f"\n  Running deep dive: {ticker}...")
     explicit_file = bool(file_path)
 
@@ -945,52 +1124,25 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
     _days_phase   = len(_active_t.get("state_chain", [])) if _active_t else 0
     _ete_block_t  = build_pre_trade_probability_block(ticker, row, _garch_row_t, _lab_r_t or {}, _days_phase)
     # -- End entry timing engine
-    # -- Direction Conflict Resolver + Alternative Contract Selector
-    _conflict  = {}
-    _alt_trade = None
-    try:
-        from direction_conflict_resolver import resolve_direction
-        from alternative_contract_selector import select_alternative_contract
-        _conflict = resolve_direction(row)
-        row["dcr_dominant_direction"] = _conflict.get("dominant_direction", "")
-        row["dcr_pipeline_direction"] = _conflict.get("pipeline_direction", "")
-        row["dcr_misdiagnosed"]       = _conflict.get("misdiagnosed", False)
-        row["dcr_conflict_severity"]  = _conflict.get("conflict_severity", "")
-        row["dcr_call_score"]         = _conflict.get("call_score", "")
-        row["dcr_put_score"]          = _conflict.get("put_score", "")
-        _diag_flag = "⚠ MISDIAGNOSIS" if _conflict.get("misdiagnosed") else ""
-        print(f"  [DCR] {ticker}: dominant={_conflict.get('dominant_direction')} pipeline={_conflict.get('pipeline_direction')} severity={_conflict.get('conflict_severity','NONE')} {_diag_flag}".strip())
-        if _conflict.get("misdiagnosed"):
-            _live_price = float(row.get("live_price") or row.get("last_price") or 0)
-            if _live_price > 0:
-                _alt_trade = select_alternative_contract(row, _conflict["dominant_direction"], _live_price)
-                row["alt_contract_symbol"] = _alt_trade.get("alt_contract_symbol", "")
-                row["alt_direction"]       = _alt_trade.get("alt_direction", "")
-                row["alt_strike"]          = _alt_trade.get("alt_strike", "")
-                row["alt_contract_status"] = _alt_trade.get("alt_contract_status", "")
-                print(f"  [ALT] {ticker}: {_alt_trade.get('alt_contract_symbol','')} status={_alt_trade.get('alt_contract_status','')}")
-    except Exception as _dcr_err:
-        print(f"  [DCR] skipped: {_dcr_err}")
-    # -- End Direction Conflict Resolver
-    _use_web_search = True
+    # Direction and contract are upstream authorities.  The Interpreter may
+    # disclose conflicts but never reruns a resolver or selects an alternative.
+    _use_web_search = False
     t0 = time.time()
-    if ticker_charts:
-        prompt   = build_chart_prompt(ticker=ticker, chart_descriptions=[],
-                                       pipeline_row=row,
-                                       options_data=ticker_options if ticker_options else None,
-                                       ticker_note=_ticker_note,
-                                       context_block=_context_block)
-        response = call_api(prompt, images=ticker_charts, use_web_search=_use_web_search)
-    else:
-        prompt   = build_single_ticker_prompt(ticker, row,
-                                               ticker_options if ticker_options else None,
-                                               ticker_note=_ticker_note,
-                                                context_block=_context_block,
-                                                lab_context_block=lab_context_block,
-                                                lab_conflict_block=lab_conflict_block,
-                                                pre_trade_prob_block=_ete_block_t,
-                                                chart_images_present=bool(ticker_charts))
-        response = call_api(prompt, use_web_search=_use_web_search)
+    prompt = build_single_ticker_prompt(
+        ticker, row,
+        ticker_options if ticker_options else None,
+        ticker_note=_ticker_note,
+        context_block=_context_block,
+        lab_context_block=lab_context_block,
+        lab_conflict_block=lab_conflict_block,
+        pre_trade_prob_block=_ete_block_t,
+        chart_images_present=bool(ticker_charts),
+    )
+    response = call_api(
+        prompt,
+        images=ticker_charts if ticker_charts else None,
+        use_web_search=_use_web_search,
+    )
     run_dir, ts = get_run_dir()
     results = write_all_outputs(response, session, run_dir, ts,
                                  tickers=[ticker], prefix=f"ticker_{ticker.lower()}")
@@ -1261,62 +1413,11 @@ def cmd_live(args: str = ""):
 
     Requires Polygon API key in environment or pipeline_interpreter_engine.py defaults.
     """
-    if not _LIVE_MARKET_AVAILABLE:
-        print("  âš   live_market_reader.py not found in interpreter directory.")
-        print("  Copy live_market_reader.py to the pipeline_interpreter folder.")
-        return
-
-    args = args.strip()
-
-    # No args â€” show store status
-    if not args:
-        if not LIVE_DATA:
-            print("  No live data fetched yet.")
-            print("  Usage: /live TICKER [contract_ticker] [call|put]")
-        else:
-            print(f"  Live data store ({len(LIVE_DATA)} tickers):")
-            for t, d in sorted(LIVE_DATA.items()):
-                fetched = d.get("fetched_at", "?")
-                ov = d.get("options_volume", {})
-                pc = d.get("peer_confirmation", {})
-                ls = d.get("live_spread", {})
-                vol_flag = ov.get("put_volume_flag", "") or ""
-                peer_v   = pc.get("alignment_verdict", "")[:35] if pc.get("status") == "OK" else ""
-                spread_q = ls.get("spread_quality", "")[:20] if ls.get("status") == "OK" else "no contract"
-                print(f"    {t:<8} [{fetched}]  {vol_flag[:40]}  {peer_v}  spread: {spread_q}")
-        return
-
-    tokens = args.split()
-    ticker       = tokens[0].upper()
-    contract     = tokens[1] if len(tokens) >= 2 and not tokens[1].lower() in ("call","put") else None
-    direction    = next((t for t in tokens[1:] if t.lower() in ("call","put")), None)
-
-    print(f"\n  Fetching live market data: {ticker}")
-    if contract:
-        print(f"  Contract: {contract}")
-    if direction:
-        print(f"  Direction filter: {direction}")
-
-    data = fetch_all_live_data(
-        ticker         = ticker,
-        contract_ticker= contract,
-        direction      = direction,
-        write_to_ma_inputs=True,
+    print(
+        "  [RETIRED] /live cannot call a market-data provider from the Pipeline "
+        "Interpreter. Run Morning Gate/CDS refresh and publish a new handoff bundle."
     )
-
-    # Store in session
-    LIVE_DATA[ticker] = data
-
-    # Print formatted summary
-    print()
-    summary = format_live_data_for_prompt(data)
-    if summary:
-        for line in summary.split("\n")[:35]:
-            print(f"  {line}")
-
-    print()
-    print(f"  âœ… LIVE_DATA[{ticker}] stored â€” will be injected into /ticker {ticker} and /intraday {ticker}")
-    print(f"  Run /ticker {ticker} or /intraday {ticker} to use in analysis.")
+    return None
 
 
 def cmd_price(args: str = ""):
@@ -1416,6 +1517,11 @@ def cmd_intraday(args: str = ""):
     Requires /price TICKER PRICE to have been run first for best analysis.
     """
     tokens = args.split() if args.strip() else []
+    if active_flags().interpreter_resolver:
+        if not tokens:
+            print("  Usage: /intraday TICKER")
+            return None
+        return _msi_cmd_ticker(tokens[0].upper(), IntendedUse.INTRADAY_ADVISORY)
 
     if not tokens:
         print("  Usage: /intraday TICKER [chart1.png] [chart2.png ...]")
@@ -1533,6 +1639,11 @@ def cmd_intraday(args: str = ""):
 
 def cmd_sync(source_path: str = None, max_age_hours: int = 24):
     """/sync -- copy AVSHUNTER pipeline outputs into MA_Inputs/pipeline_outputs/."""
+    if active_flags().interpreter_resolver:
+        status = handoff_status()
+        print("  [MSI] Broad folder sync is disabled; validated handoff status:")
+        print(json.dumps(status, indent=2, default=str))
+        return status
     try:
         from ma_inputs_sync import sync_to_ma_inputs
         kwargs = dict(max_age_hours=max_age_hours, verbose=True, recursive=True)
@@ -1933,13 +2044,58 @@ def cmd_note(args:str=""):
     print(f"  Will be injected into /ticker {ticker} automatically.")
 
 
+def cmd_status():
+    """Show governed baton integrity plus non-authoritative session state."""
+    status = handoff_status() if active_flags().interpreter_resolver else {
+        "status": "LEGACY_MODE", "run_id": SESSION.get("run_id", "")
+    }
+    print(json.dumps(status, indent=2, default=str))
+    print(f"  {EXECUTION_PERMISSION}")
+    return status
+
+
+def cmd_auto():
+    if active_flags().interpreter_resolver:
+        return _msi_cmd_triage()
+    print("  [LEGACY] /auto delegates to /triage; no archived handler is used.")
+    return cmd_triage()
+
+
+def cmd_load(file_path: str):
+    print("  [RESEARCH ONLY] Loose CSVs cannot enter the production handoff.")
+    rows = read_pipeline_csv(file_path)
+    if rows:
+        _loaded_pipeline[Path(file_path).stem] = rows
+    return rows
+
+
+def cmd_options(file_path: str):
+    print("  [RESEARCH ONLY] Loose options files are supplemental and non-authoritative.")
+    content = read_options_file(file_path)
+    _loaded_options[Path(file_path).stem] = content
+    return content
+
+
+def cmd_macro(file_path: str):
+    print("  [RESEARCH ONLY] Production macro comes only from the hash-bound handoff packet.")
+    SESSION["research_macro_path"] = str(file_path)
+    return read_options_file(file_path)
+
+
+def cmd_news(file_path: str, ticker: str = None):
+    print("  [RESEARCH ONLY] Loose news is narrative evidence and cannot alter governed fields.")
+    SESSION["research_news_path"] = str(file_path)
+    SESSION["research_news_ticker"] = ticker or ""
+    return read_options_file(file_path)
+
+
 MENU = """
 Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢â€”
 Ã¢â€¢â€˜     AVSHUNTER PIPELINE INTERPRETER v1.0 Ã¢â‚¬â€ COMMAND MENU          Ã¢â€¢â€˜
 Ã¢â€¢Â Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â£
 Ã¢â€¢â€˜  /triage [FILE]               Fast priority scan Ã¢â‚¬â€ rank all candidates  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Interpret pipeline CSV file(s)     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /morning FILE                Morning validation pass            Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Research-only loose-file analysis  Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /morning FILE                RETIRED — use governed handoff      Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /ticker TICKER FILE          Deep dive single ticker            Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      Ã¢â€¢â€˜
 Ã¢â€¢â€˜  /auto                        Auto-detect pipeline files         Ã¢â€¢â€˜
@@ -1978,12 +2134,12 @@ def route_command(raw:str):
         return cmd_triage(file)
     elif cmd=="/interpret":
         if arg:
+            print("  [RESEARCH ONLY] Loose-file interpretation cannot publish governed MSI output.")
             files=[f.strip().strip('"').strip("'") for f in arg.replace(","," ").split() if f.strip()]
             return cmd_interpret(files)
         else: print('  Usage: /interpret PATH/TO/pipeline.csv [PATH/TO/options.csv]')
     elif cmd=="/morning":
-        if arg: return cmd_morning(arg.strip('"').strip("'"))
-        else: print('  Usage: /morning PATH/TO/top_trades.csv')
+        print("  [RETIRED] Morning Gate is the sole production morning authority.")
     elif cmd=="/quick":
         return cmd_quick(arg.strip() if arg else "")
     elif cmd=="/ticker":
@@ -2057,6 +2213,8 @@ def route_command(raw:str):
         _tok = arg.strip().upper() if arg and arg.strip() else ""
         if not _tok:
             print("  Usage: /ete TICKER")
+        elif active_flags().interpreter_resolver:
+            return _msi_cmd_ticker(_tok, IntendedUse.INTRADAY_ADVISORY)
         else:
             _file, _source_reason = get_trusted_interpreter_source(ticker=_tok)
             _rows = read_pipeline_csv(_file) if _file else []
@@ -2072,6 +2230,12 @@ def route_command(raw:str):
 # â”€â”€ STORY OF THE TRADE â€” additions only, appended at bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def cmd_story(args: str = ""):
+    if active_flags().interpreter_resolver:
+        ticker = next((token for token in args.split() if not token.startswith("--")), "")
+        if not ticker:
+            print("  Usage: /story TICKER")
+            return None
+        return _msi_cmd_ticker(ticker.upper())
     """
     /story TICKER [--fresh]
     Generate the full Story of the Trade for a ticker.
@@ -2221,6 +2385,12 @@ def cmd_story(args: str = ""):
 
 
 def cmd_update(args: str = ""):
+    if active_flags().interpreter_resolver:
+        ticker = next((token for token in args.split() if not token.startswith("--")), "")
+        if not ticker:
+            print("  Usage: /update TICKER")
+            return None
+        return _msi_cmd_ticker(ticker.upper(), IntendedUse.INTRADAY_ADVISORY)
     """
     /update TICKER [chart IMG1 IMG2...] [options FILE]
     Update an existing story with new chart or options data.

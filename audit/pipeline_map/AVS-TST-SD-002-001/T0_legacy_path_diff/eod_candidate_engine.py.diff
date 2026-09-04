@@ -1,0 +1,151 @@
+--- a/eod_candidate_engine.py
++++ b/eod_candidate_engine.py
+@@ -29,17 +29,17 @@
+ 
+ TIER DEFINITIONS
+ -----------------
+-A  — Top-quartile OIS (≥35) + RR ≥ 1.5 + WBS PROBABLE + conv_score ≥ 3
+-B  — OIS ≥ 25 + RR ≥ 1.0 + WBS POSSIBLE + conv_score ≥ 2
+-C  — All other signals passing quality floor (OIS ≥ 15, RR > 0)
+-WATCH — Below quality floor but structurally interesting (no execution)
++A  — Top-quartile OIS (≥35) + strong structural/trigger evidence
++B  — OIS ≥ 25 + supporting structural evidence
++C  — All other signals passing the non-economic quality floor
++WATCH — Below quality floor but structurally interesting (no execution)
+ 
+ STRUCTURAL CONVICTION SCORE (SCS) — EOD only, no live data
+ ------------------------------------------------------------
+ Component               Weight   Source
+ ───────────────────────────────────────────────────────────
+ Options Intelligence    25%      options_score (0-41 observed max)
+-R:R Quality             20%      rr (0-3+ range)
++Scenario asymmetry      advisory  retained for research, never tier/capital authority
+ Wyckoff/EV Structural   20%      ev2_ev_structural + composite
+ WBS Wall Strength       15%      wbs (0-60) + wbs_grade
+ Campaign Quality        10%      sb_conv_score (0-4) + sb_campaign
+@@ -90,6 +90,7 @@
+     evaluate_long_option_monetisability,
+     parse_occ_symbol,
+ )
++from contracts.long_option_policy import evaluate_execution_viability
+ from execution_schema import validate_trigger_handoff_row
+ 
+ try:
+@@ -124,7 +125,9 @@
+ 
+ # ─── QUALITY FLOOR (minimum to appear in candidate manifest) ─────────────────
+ MIN_OPTIONS_SCORE  = 15     # below this → not worth monitoring
+-MIN_RR             = 0.0    # negative RR excluded
++# Legacy R:R remains in exports for labelled research only. It is deliberately
++# absent from tier, candidate-membership and capital-permission authority.
++MIN_RR             = 0.0
+ MIN_COMPOSITE      = 40.0   # below this → structurally weak
+ OPTIONS_RESEARCH_PERMISSION = "MANUAL_REVIEW_REQUIRED"
+ OPTIONS_BLOCKED_ROUTES = {"OPTIONS_BLOCKED", "OPTIONS_EQUITY_ONLY_BETTER"}
+@@ -666,8 +669,7 @@
+     signal = _resolved_signal_type(row).upper()
+     eil = _str(row, "eil_v3_verdict").upper()
+     ois = _flt(row, "options_score")
+-    rr = _flt(row, "rr_underlying") or _flt(row, "rr")
+-    if signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"} and eil in {"EXECUTE", "EXECUTE_WITH_CAUTION"} and ois >= MIN_OPTIONS_SCORE and rr >= MIN_RR:
++    if signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"} and eil in {"EXECUTE", "EXECUTE_WITH_CAUTION"} and ois >= MIN_OPTIONS_SCORE:
+         return False
+     return has_fatal_label and fd_verdict == "BLOCK"
+ 
+@@ -795,6 +797,7 @@
+     symbol = _first_str(
+         row, "recommended_contract", "contract_occ_symbol", "contract_symbol"
+     ).replace("O:", "")
++    bid = _first_flt(row, "contract_bid", default=0.0)
+     ask = _first_flt(row, "contract_ask", default=0.0)
+     strike = _first_flt(row, "contract_strike", "strike", default=0.0)
+     target = _first_flt(
+@@ -812,6 +815,10 @@
+         "monetisability_quote_timestamp_utc": quote_timestamp,
+         "monetisability_quote_snapshot_id": snapshot_id,
+         "monetisability_data_source": "MARKETDATA_CANONICAL_COMPLETED_SESSION",
++        "execution_viability_state": "DATA_MISSING",
++        "execution_viability_reason": "EOD_SELECTED_QUOTE_INCOMPLETE",
++        "execution_viability_eligible": False,
++        "execution_viability_reviewable": False,
+     }
+     if direction not in GOVERNED_DIRECTED_SIDES:
+         return {
+@@ -873,6 +880,7 @@
+         "selected_quote_snapshot_id": snapshot_id,
+         "selected_long_leg": {
+             "symbol": symbol,
++            "bid": bid,
+             "ask": ask,
+             "strike": strike,
+         },
+@@ -884,7 +892,8 @@
+         },
+         hydrated,
+     )
+-    return {**base, **result}
++    viability = evaluate_execution_viability(row, hydrated)
++    return {**base, **result, **viability}
+ 
+ def _audit_raw_blank(value) -> bool:
+     if value is None:
+@@ -1511,8 +1520,6 @@
+         gaps = []
+         if _flt(row, "options_score") < MIN_OPTIONS_SCORE:
+             gaps.append("OPTIONS_SCORE_BELOW_FLOOR")
+-        if (_flt(row, "rr_underlying") or _flt(row, "rr")) < MIN_RR:
+-            gaps.append("RR_BELOW_FLOOR")
+         if _flt(row, "composite") < MIN_COMPOSITE:
+             gaps.append("COMPOSITE_BELOW_FLOOR")
+         return ";".join(gaps) or "QUALITY_FLOOR_NOT_MET"
+@@ -1813,8 +1820,7 @@
+ def classify_tier(row: dict) -> str:
+     ois     = _flt(row, "options_score")
+     # EOD-01: use rr_underlying (structural price R:R, from FIX-01) — not rr_options
+-    rr      = _flt(row, "rr_underlying") or _flt(row, "rr")
+-    conv    = _flt(row, "sb_conv_score")
++    conv    = _flt(row, "sb_conv_score")
+     comp    = _flt(row, "composite")
+     eil_verdict = _str(row, "eil_v3_verdict").upper()
+     trigger_quality = _str(row, "trigger_quality").upper()
+@@ -1833,7 +1839,7 @@
+         return "WATCH"
+ 
+     # Quality floor check
+-    if ois < MIN_OPTIONS_SCORE or rr < MIN_RR or comp < MIN_COMPOSITE:
++    if ois < MIN_OPTIONS_SCORE or comp < MIN_COMPOSITE:
+         return "WATCH"
+ 
+     if _true_fatal_block(row):
+@@ -1849,12 +1855,11 @@
+     campaign_ready = conv >= 2
+     options_power = ois >= 45
+ 
+-    # Tier A: capital-grade EOD thesis, not live capital permission.
+-    # Requires tradability + R/R + one execution clue and one market-behaviour clue.
++    # Tier A: capital-grade EOD thesis, not live capital permission.
++    # Requires strong non-economic evidence plus one execution clue.
+     if (
+         ois >= TIER_A["options_score"]
+-        and rr >= TIER_A["rr"]
+-        and comp >= 55
++        and comp >= 55
+         and (eil_verdict == "EXECUTE" or catalyst_ready)
+         and (trigger_ready or campaign_ready or options_power)
+     ):
+@@ -1862,11 +1867,10 @@
+ 
+     # Tier B: realistic morning-validation slate. Markets often give tradeable
+     # follow-through without every model agreeing, so one strong evidence family
+-    # can qualify if liquidity/economics are present.
+-    if (
+-        ois >= TIER_B["options_score"]
+-        and rr >= TIER_B["rr"]
+-        and comp >= 50
++    # can qualify from the non-economic evidence families.
++    if (
++        ois >= TIER_B["options_score"]
++        and comp >= 50
+         and (execute_like or trigger_present or catalyst_ready or campaign_ready or options_power)
+     ):
+         return "B"

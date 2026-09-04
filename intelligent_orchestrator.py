@@ -145,12 +145,14 @@ import csv
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone, time as dtime
 from pathlib import Path
 from typing import List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -183,6 +185,21 @@ except Exception:
     )
 
 try:
+    from msi_runtime import MSI_CONFIG_VERSION, active_flags as _active_msi_flags
+except Exception:  # MSI flags are rollout controls and must fail safely off.
+    MSI_CONFIG_VERSION = "msi-runtime-unavailable"
+
+    def _active_msi_flags():
+        class _DisabledMSI:
+            fingerprint = ""
+
+            @staticmethod
+            def to_dict():
+                return {}
+
+        return _DisabledMSI()
+
+try:
     from contracts.macro_enrichment_delta import (
         find_macro_enrichment_delta,
         load_macro_enrichment_delta,
@@ -202,7 +219,76 @@ except Exception:
 
 
 def _strict_actuarial_v6_enabled() -> bool:
-    return os.environ.get("AVSHUNTER_STRICT_ACTUARIAL_V6", "").strip() == "1"
+    return os.environ.get("AVSHUNTER_STRICT_ACTUARIAL_V6", "1").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
+def _macro_core_required() -> bool:
+    """Return whether an external macro file is a hard core dependency."""
+    return os.environ.get("AVSHUNTER_MACRO_CORE_REQUIRED", "0").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
+def _neutral_macro_payload() -> dict:
+    """Build a governed neutral sidecar when standalone macro is unavailable."""
+    generated = datetime.now(timezone.utc).isoformat()
+    horizon = {
+        "direction": "NEUTRAL",
+        "bias": "NEUTRAL",
+        "bullish_prob_pct": 50.0,
+        "go_no_go": "GO_SELECTIVE",
+        "size_multiplier": 1.0,
+        "confidence": 0,
+        "confirm_required": [],
+    }
+    return {
+        "schema_version": "macro_advisory_fallback_v1",
+        "generated_at": generated,
+        "as_of_utc": generated,
+        "report_date": datetime.now(timezone.utc).date().isoformat(),
+        "macro_availability": "UNAVAILABLE_NEUTRAL_FALLBACK",
+        "macro_capital_authority": "NONE",
+        "macro_filter": "ADVISORY_UNAVAILABLE",
+        "risk_on_switch": "NEUTRAL",
+        "risk_on_off_switch": "NEUTRAL",
+        "regime_state": "TRANSITIONAL_NEUTRAL",
+        "regime_drift_status": "UNKNOWN",
+        "dir_bias": "NEUTRAL",
+        "conviction_score": 0.0,
+        "macro_conviction": 0.0,
+        "liquidity_status": "UNKNOWN",
+        "volatility_mode": "UNKNOWN",
+        "vix_contango": None,
+        "size_multiplier": 1.0,
+        "trigger_required": False,
+        "horizon_routing": {
+            "1_5d": dict(horizon),
+            "6_10d": dict(horizon),
+            "11_20d": dict(horizon),
+        },
+        "sector_rotation": {
+            "rotation_signal": "UNAVAILABLE",
+            "macro_capital_authority": "NONE",
+            "sectors": {},
+        },
+    }
+
+
+def _ensure_runtime_macro_path(session_id: str, macro_path: Optional[Path]) -> Path:
+    """Return the external macro path or create a run-scoped neutral sidecar."""
+    if macro_path is not None:
+        return macro_path
+    fallback = cfg.RUNS_DIR / session_id / "macro_advisory_fallback.json"
+    fallback.parent.mkdir(parents=True, exist_ok=True)
+    write_json(fallback, _neutral_macro_payload())
+    logger.warning(
+        "Macro standalone input unavailable — core run continuing with neutral "
+        "advisory sidecar: %s",
+        fallback,
+    )
+    return fallback
 
 
 PHASE2_LAYER2_FIELDS = [
@@ -345,23 +431,36 @@ class OrchestratorConfig:
     APPLY_MACRO_ENRICHMENT_DISCOVERY = SCRIPTS_DIR / "apply_macro_enrichment_to_discovery.py"
     APPLY_EXTERNAL_INTEL_REVIEW_LANE = SCRIPTS_DIR / "apply_external_intel_review_lane.py"
     BACKFILL_TIMESERIES = SCRIPTS_DIR / "backfill_timeseries_into_packages.py"
+    BUILD_COMPLETED_PROFILES = SCRIPTS_DIR / "build_completed_market_profiles.py"
     RUN_VANGUARD        = SCRIPTS_DIR / "run_vanguard_from_packages.py"
+    # AVS-SD-002: completed-session profile construction is part of the
+    # governed thesis build.  Do not introduce a second, orphaned switch for
+    # the same capability; controlled promotion owns this through the frozen
+    # dynamic-session flag contract.
+    COMPLETED_PROFILE_ENABLED = os.environ.get(
+        "AVSHUNTER_DYNAMIC_THESIS_ENABLED", "0"
+    ).strip().lower() in {"1", "true", "yes", "on"}
 
     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
     PHANTOM_RUNNER      = SCRIPTS_DIR / "run_phantom.py"
     PHANTOM_DB_PATH     = BASE_DIR / "data" / "phantom" / "phantom_history.db"
 
-    # EV-1.5 — governed shadow only. This phase may report health but cannot
-    # change candidates, GO lists, morning validation, or execution authority.
+    # EV-1.5 — governed advisory computation lane. EV is retained for ranking
+    # and outcome analysis but can never grant or deny trade authority.
     EV3_SHADOW_RUNNER   = SCRIPTS_DIR / "run_ev3_shadow_phase.py"
+    EV3_AUTHORITY_APPLIER = SCRIPTS_DIR / "apply_ev3_authority.py"
     EV3_BARRIER_CACHE   = Path(os.environ.get(
         "AVSHUNTER_EV3_BARRIER_CACHE",
-        r"C:\Users\ACKVerissimo\vanguard\data\staging\ev3_barrier_outcome_cache.parquet",
+        r"C:\Users\ACKVerissimo\vanguard\data\ev3_barrier_outcome_cache.parquet",
     ))
     EV3_SHADOW_ENABLED  = os.environ.get("AVSHUNTER_EV3_SHADOW_ENABLED", "1").strip().lower() not in {
         "0", "false", "no", "off",
     }
+    EV3_AUTHORITY_REQUESTED = os.environ.get("AVSHUNTER_EV3_AUTHORITY_ENABLED", "0").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+    EV3_AUTHORITY_ENABLED = False
     # Optional deterministic clock for explicitly labelled functional replays.
     # Empty in production: EV3 then enforces strict real-time freshness.
     EV3_FUNCTIONAL_TEST_NOW_UTC = os.environ.get(
@@ -871,6 +970,8 @@ def check_scripts() -> Tuple[bool, List[str]]:
         "Backfill Timeseries": cfg.BACKFILL_TIMESERIES,
         "Run VANGUARD":        cfg.RUN_VANGUARD,
     }
+    if cfg.COMPLETED_PROFILE_ENABLED:
+        required["Completed Market Profile"] = cfg.BUILD_COMPLETED_PROFILES
     optional = {
         "Position Tracker":          cfg.POSITION_TRACKER,
         "Premarket Intel":           cfg.PREMARKET_INTEL,
@@ -992,7 +1093,7 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     try:
         with open(macro_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
         return False, f"JSON parse error in {macro_file.name}: {e}", None
 
     flat = _flatten_macro(data)
@@ -1025,8 +1126,13 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
                 f"WARNING -- macro is {age_h:.0f}h old ({macro_file.name}). Consider updating before running.",
                 macro_file,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        return (
+            True,
+            f"WARNING -- macro timestamp is invalid ({type(exc).__name__}); "
+            "macro remains advisory and freshness is UNKNOWN.",
+            macro_file,
+        )
 
     # Derive regime distribution if absent (logging only)
     try:
@@ -1085,9 +1191,18 @@ def run_preflight_checks(min_universe: int, target_universe: int, universe_gate_
 
     # Macro JSON
     macro_ok, macro_msg, macro_path = check_macro_json()
-    if not macro_ok:
+    if not macro_ok and _macro_core_required():
         logger.error(f"   ❌ Macro JSON  : {macro_msg}")
         all_ok = False
+    elif not macro_ok:
+        logger.warning(
+            "   Macro JSON    : advisory input unavailable; core will use a "
+            "governed neutral sidecar (%s)",
+            macro_msg.replace("\n", " "),
+        )
+        macro_path = None
+    elif macro_msg.startswith("WARNING"):
+        logger.warning(f"   Macro JSON    : {macro_msg}")
     else:
         logger.info(f"   Macro JSON    : {macro_msg}")
 
@@ -1653,7 +1768,7 @@ def merge_macro_enrichment_into_macro_latest(macro_path: Path) -> bool:
 
 
 def apply_external_intel_review_lane(run_id: str, macro_path: Path) -> bool:
-    """Append governed catalyst/macro tickers to discovery for downstream review."""
+    """Annotate survivors and isolate macro/catalyst-only tickers for review."""
     discovery_csv = cfg.OUTPUT_DIR / f"discovery_candidates_ultimate_{run_id}.csv"
     if not discovery_csv.exists():
         logger.warning("External intel review lane skipped: missing discovery CSV: %s", discovery_csv)
@@ -1666,6 +1781,7 @@ def apply_external_intel_review_lane(run_id: str, macro_path: Path) -> bool:
         return False
 
     report_path = cfg.OUTPUT_DIR / "qa" / f"external_intel_review_lane_{run_id}.json"
+    review_path = cfg.OUTPUT_DIR / f"external_intel_review_candidates_{run_id}.csv"
     ok = _run(
         "External Intel -> Discovery Review Lane",
         [
@@ -1675,16 +1791,22 @@ def apply_external_intel_review_lane(run_id: str, macro_path: Path) -> bool:
             str(discovery_csv),
             "--macro-path",
             str(macro_path),
+            "--review-output",
+            str(review_path),
             "--report-path",
             str(report_path),
         ],
         critical=False,
     )
     if ok:
-        logger.info("External intel review lane complete -> %s", report_path)
+        logger.info(
+            "External intel advisory lane complete -> %s (review=%s)",
+            report_path,
+            review_path,
+        )
     else:
         logger.warning(
-            "External intel review lane failed; catalyst/macro-only tickers may not reach package review"
+            "External intel advisory lane failed; core Discovery membership is unchanged"
         )
     return ok
 
@@ -1827,6 +1949,31 @@ def run_position_tracking() -> bool:
 
 # ============================================================ PHASE 4.5: PIN RUN DIRECTORY
 
+
+def _update_run_meta_status(
+    run_id: str,
+    status: str,
+    *,
+    pipeline_mode: str | None = None,
+) -> None:
+    """Atomically advance operational run metadata without granting acceptance."""
+
+    status_value = str(status or "").strip().upper()
+    if status_value not in {"IN_PROGRESS", "COMPLETED", "ABORTED", "ACCEPTED"}:
+        raise ValueError(f"invalid run status: {status}")
+    path = cfg.RUNS_DIR / str(run_id) / "run_meta.json"
+    payload: dict = {}
+    if path.exists():
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    payload["run_status"] = status_value
+    if pipeline_mode:
+        payload["pipeline_mode"] = str(pipeline_mode).strip().upper()
+    payload["status_updated_at_utc"] = datetime.now(timezone.utc).isoformat()
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.parent.mkdir(parents=True, exist_ok=True)
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    temporary.replace(path)
+
 def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
     """Create per-run structure and stage macro_snapshot + discovery CSV."""
     logger.info("=" * 80)
@@ -1915,9 +2062,62 @@ def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
     else:
         logger.warning(f"⚠️  Flat discovery CSV not found — fallback may be used. Expected: {flat_csv}")
 
+    flat_lifecycle = cfg.OUTPUT_DIR / f"discovery_lifecycle_{discovery_run_id}.csv"
+    if flat_lifecycle.exists():
+        lifecycle_dest = discovery_dir / flat_lifecycle.name
+        try:
+            shutil.copy2(flat_lifecycle, lifecycle_dest)
+            logger.info(f"   CDS-3 lifecycle: {lifecycle_dest.name}  ✔")
+        except Exception as e:
+            logger.warning(f"⚠️  Could not stage CDS-3 lifecycle CSV: {e}")
+    else:
+        logger.warning(
+            "⚠️  CDS-3 lifecycle CSV not found — shadow publication unavailable. "
+            "Expected: %s",
+            flat_lifecycle,
+        )
+
+    flat_external_review = (
+        cfg.OUTPUT_DIR / f"external_intel_review_candidates_{discovery_run_id}.csv"
+    )
+    if flat_external_review.exists():
+        external_review_dest = discovery_dir / flat_external_review.name
+        try:
+            shutil.copy2(flat_external_review, external_review_dest)
+            logger.info(f"   External review: {external_review_dest.name}  ✔ advisory only")
+        except Exception as e:
+            logger.warning(f"⚠️  Could not stage external review CSV: {e}")
+
+    run_kind = str(os.getenv("AVSHUNTER_RUN_KIND", "PRODUCTION")).strip().upper()
+    allowed_run_kinds = {"PRODUCTION", "TEST", "REPLAY", "REPAIR", "RESEARCH"}
+    if run_kind not in allowed_run_kinds:
+        logger.warning("Unknown AVSHUNTER_RUN_KIND=%s; recording RESEARCH", run_kind)
+        run_kind = "RESEARCH"
+    try:
+        baseline_commit_hash = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=cfg.BASE_DIR,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()
+    except Exception:
+        baseline_commit_hash = "UNAVAILABLE"
+    msi_flags = _active_msi_flags()
     meta = {
+        "run_meta_schema_version": "run_meta_v2",
         "canonical_run_id": discovery_run_id,
         "discovery_run_id": discovery_run_id,
+        "run_kind": run_kind,
+        "run_status": "IN_PROGRESS",
+        "pipeline_mode": "EOD",
+        "operator_accepted_by": None,
+        "operator_accepted_at_utc": None,
+        "baseline_commit_hash": baseline_commit_hash,
+        "msi_config_version": MSI_CONFIG_VERSION,
+        "msi_config_hash": msi_flags.fingerprint,
+        "msi_feature_flags": msi_flags.to_dict(),
         "macro_source_path": str(macro_path),
         "macro_snapshot_path": str(snapshot_path),
         "macro_quant_packet_path": str(macro_quant_path),
@@ -1947,6 +2147,131 @@ def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
 
 # ============================================================ PHASES 5–8: VANGUARD PIPELINE
 
+def publish_cds3_discovery_worklist(run_id: str) -> bool:
+    """Publish the reconciled Discovery ledger and Packages worklist."""
+    outcome_path = (
+        cfg.RUNS_DIR / run_id / "discovery" / f"discovery_lifecycle_{run_id}.csv"
+    )
+    if not outcome_path.exists():
+        outcome_path = cfg.OUTPUT_DIR / f"discovery_lifecycle_{run_id}.csv"
+    if not outcome_path.exists():
+        logger.warning(
+            "CDS-3 shadow publication skipped: missing %s", outcome_path
+        )
+        return False
+    try:
+        from canonical_data import publish_discovery_csv
+
+        registry_path = cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
+        result = publish_discovery_csv(
+            registry_path,
+            outcome_path,
+            run_id=run_id,
+            session_date=datetime.now().date(),
+        )
+        report_dir = cfg.RUNS_DIR / run_id / "canonical"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        report_path = report_dir / f"cds3_discovery_publication_{run_id}.json"
+        _enforced = os.environ.get(
+            "AVSHUNTER_STAGE_GATING_ENFORCED", "0"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        report_path.write_text(
+            json.dumps(
+                {
+                    **result.as_dict(),
+                    "mode": "ENFORCED" if _enforced else "SHADOW",
+                    "enforcement_enabled": _enforced,
+                    "source": str(outcome_path),
+                    "registry": str(registry_path),
+                    "published_at_utc": datetime.now(timezone.utc).isoformat(),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        logger.info(
+            "CDS-3 Discovery %s reconciled: input=%d survivors=%d drops=%d "
+            "errors=%d packages=%d",
+            "enforced" if _enforced else "shadow",
+            result.input_count,
+            result.survivor_count,
+            result.drop_count,
+            result.error_count,
+            result.package_worklist_count,
+        )
+        return True
+    except Exception as error:
+        logger.error("CDS-3 Discovery shadow publication failed: %s", error)
+        return False
+
+
+def prepare_cds3_governed_package_input(run_id: str) -> Optional[Path]:
+    """Materialise a Packages input constrained to its persisted worklist.
+
+    Returns ``None`` in shadow mode. When enforcement is explicitly enabled,
+    any missing, duplicate or unexpected ticker fails closed.
+    """
+    from canonical_data import (
+        CanonicalFeatureFlags,
+        CanonicalRegistry,
+        DatasetType,
+        LifecycleManager,
+        filter_rows_to_worklist,
+    )
+    from canonical_data.errors import WorklistViolation
+
+    if not CanonicalFeatureFlags.from_environment().stage_gating_enforced:
+        return None
+
+    discovery_dir = cfg.RUNS_DIR / run_id / "discovery"
+    source = discovery_dir / f"discovery_candidates_ultimate_{run_id}.csv"
+    if not source.exists():
+        raise FileNotFoundError(source)
+    registry = CanonicalRegistry(
+        cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
+    )
+    lifecycle = LifecycleManager(registry)
+    authorised = lifecycle.stage_worklist_tickers(
+        run_id, "PACKAGES", DatasetType.DAILY_OHLCV
+    )
+    if not authorised:
+        raise WorklistViolation("Packages worklist is empty or was not published")
+
+    with source.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = list(reader.fieldnames or [])
+        rows = list(reader)
+    if "ticker" not in fieldnames:
+        raise WorklistViolation("Discovery candidate input has no ticker column")
+    source_tickers = [str(row.get("ticker", "")).strip().upper() for row in rows]
+    if len(source_tickers) != len(set(source_tickers)):
+        raise WorklistViolation("Discovery candidate input contains duplicate tickers")
+
+    governed = filter_rows_to_worklist(rows, authorised)
+    governed_tickers = {
+        str(row.get("ticker", "")).strip().upper() for row in governed
+    }
+    missing = set(authorised) - governed_tickers
+    if missing:
+        raise WorklistViolation(
+            "Packages worklist tickers missing from Discovery artifact: "
+            + ",".join(sorted(missing))
+        )
+
+    target = discovery_dir / f"discovery_candidates_cds3_{run_id}.csv"
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    with temporary.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(governed)
+    os.replace(temporary, target)
+    logger.info(
+        "CDS-3 Packages governed input ready: %d tickers -> %s",
+        len(governed),
+        target,
+    )
+    return target
+
 def run_dropoff_audit_checkpoint(run_id: str, label: str) -> None:
     """Write the drop-off audit at intermediate checkpoints without stopping the run."""
     try:
@@ -1965,6 +2290,29 @@ def run_dropoff_audit_checkpoint(run_id: str, label: str) -> None:
         logger.warning("⚠️  Drop-off audit checkpoint failed (%s): %s", label, err)
 
 
+def _parse_backfill_counts(output: str) -> Tuple[Optional[int], Optional[int]]:
+    """Extract governed success/failure counts from the backfill receipt."""
+    ok_match = re.search(r"Backfilled\s+OK\s*:\s*(\d+)", output or "", re.IGNORECASE)
+    fail_match = re.search(r"Failed\s*:\s*(\d+)", output or "", re.IGNORECASE)
+    return (
+        int(ok_match.group(1)) if ok_match else None,
+        int(fail_match.group(1)) if fail_match else None,
+    )
+
+
+def _backfill_failure_is_systemic(
+    output: str,
+    *,
+    max_failure_ratio: float = 0.05,
+) -> Tuple[bool, Optional[int], Optional[int], Optional[float]]:
+    """Fail closed when a partial backfill is uncounted or exceeds tolerance."""
+    ok_count, fail_count = _parse_backfill_counts(output)
+    if ok_count is None or fail_count is None or ok_count + fail_count <= 0:
+        return True, ok_count, fail_count, None
+    failure_ratio = fail_count / (ok_count + fail_count)
+    return failure_ratio > max_failure_ratio, ok_count, fail_count, failure_ratio
+
+
 def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD") -> bool:
     """Build packages, inject macro, backfill bars, run Vanguard."""
     logger.info("=" * 80)
@@ -1977,8 +2325,25 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
         logger.error("❌ VANGUARD pipeline aborted — could not pin run directory\n")
         return False
 
+    # CDS-3 shadow: persist the authority set, but do not alter production flow.
+    publication_ok = publish_cds3_discovery_worklist(run_id)
+    stage_gating = os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower()
+    stage_gating_enabled = stage_gating in {"1", "true", "yes", "on"}
+    if stage_gating_enabled and not publication_ok:
+        logger.error("CDS-3 enforced Packages build aborted: worklist publication failed")
+        return False
+    try:
+        governed_package_input = prepare_cds3_governed_package_input(run_id)
+    except Exception as error:
+        logger.error("CDS-3 enforced Packages build aborted: %s", error)
+        return False
+
+    package_args = ["--run-id", run_id]
+    if governed_package_input is not None:
+        package_args += ["--discovery-csv", str(governed_package_input)]
+
     for label, script, extra_args in [
-        ("Build Packages from Discovery", cfg.BUILD_PACKAGES, ["--run-id", run_id]),
+        ("Build Packages from Discovery", cfg.BUILD_PACKAGES, package_args),
         ("Inject Macro into Packages", cfg.INJECT_MACRO, ["--run-id", run_id, "--macro-path", str(macro_path)]),
     ]:
         ok = _run(label, [sys.executable, str(script)] + extra_args, critical=True)
@@ -2011,8 +2376,30 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
     if _backfill_proc.returncode == 0:
         logger.info(f"✅ {backfill_label} — DONE\n")
     elif _backfill_proc.returncode == 2:
+        try:
+            max_failure_ratio = float(
+                os.environ.get("AVSHUNTER_MAX_BACKFILL_FAILURE_RATIO", "0.05")
+            )
+        except ValueError:
+            max_failure_ratio = 0.05
+        systemic, ok_count, fail_count, failure_ratio = _backfill_failure_is_systemic(
+            _backfill_proc.stdout or "",
+            max_failure_ratio=max_failure_ratio,
+        )
+        if systemic:
+            ratio_label = (
+                f"{failure_ratio:.1%}" if failure_ratio is not None else "UNAVAILABLE"
+            )
+            logger.error(
+                "❌ VANGUARD pipeline aborted: systemic timeseries backfill failure\n"
+                f"   Backfilled OK: {ok_count} | Failed: {fail_count} | "
+                f"Failure ratio: {ratio_label} | Limit: {max_failure_ratio:.1%}\n"
+                "   Stale or unavailable prices cannot proceed to Vanguard.\n"
+            )
+            return False
         logger.warning(
-            "⚠️  Backfill had partial failures (TOO_SHORT tickers). Excluding them; continuing.\n"
+            "⚠️  Backfill had isolated failures — excluding affected tickers and continuing. "
+            f"OK={ok_count} failed={fail_count} ratio={failure_ratio:.1%}\n"
         )
     else:
         logger.error(
@@ -2022,6 +2409,25 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
             f"   python scripts\\{cfg.BACKFILL_TIMESERIES.name} {' '.join(backfill_args)}\n"
         )
         return False
+
+    # AVS-SD-002 Phase 4: build a completed-session profile from canonical
+    # intraday bars before Vanguard. Disabled until controlled promotion; when
+    # enabled, every package is explicitly marked governed so Vanguard cannot
+    # fall back to daily-as-intraday profile fabrication.
+    if cfg.COMPLETED_PROFILE_ENABLED:
+        from canonical_data import session_snapshot as _profile_session_snapshot
+        _profile_session = _profile_session_snapshot(datetime.now(timezone.utc)).last_completed_session
+        _profile_cmd = [
+            sys.executable, str(cfg.BUILD_COMPLETED_PROFILES),
+            "--run-id", run_id,
+            "--session-date", _profile_session.isoformat(),
+            "--interval-minutes", "5",
+        ]
+        if not _run("Build Completed Market Profiles", _profile_cmd, critical=True):
+            logger.error("VANGUARD pipeline aborted: governed completed-profile stage failed")
+            return False
+    else:
+        logger.info("Phase 4 completed Market Profile integration is built but not yet promoted")
 
     # ── Phase 5.5 — Trap-to-Launch Engine enrichment ─────────────────────────
     # Standalone enrichment: reads packages, writes tle_ fields, never blocks pipeline.
@@ -2140,24 +2546,39 @@ def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
     logger.info(f"   Vanguard CSV  : {vanguard_csv.name}")
     logger.info(f"   Output dir    : {output_dir}")
 
+    _cds_stage_enforced = os.environ.get(
+        "AVSHUNTER_STAGE_GATING_ENFORCED", "0"
+    ).strip().lower() in {"1", "true", "yes", "on"}
     ok = _run(
         "Options Intelligence Layer",
         [sys.executable, str(cfg.OPTIONS_INTEL), str(discovery_csv), str(vanguard_csv), run_id, str(output_dir)],
-        critical=False,
+        critical=_cds_stage_enforced,
     )
 
     if not ok:
-        logger.warning("⚠️  Options Intelligence failed — pipeline continues without options layer.")
+        if _cds_stage_enforced:
+            logger.error(
+                "❌ Options Intelligence failed under CDS enforcement — Evening run is not promotable."
+            )
+        else:
+            logger.warning("⚠️  Options Intelligence failed — pipeline continues without options layer.")
     else:
         # Warn (not abort) if the output CSV is empty — SuperBrain needs it
         _oi_csv = output_dir / f"options_intelligence_{run_id}.csv"
         if not _oi_csv.exists() or _oi_csv.stat().st_size < 100:
-            logger.warning(
+            _empty_message = (
                 "⚠️  Options Intelligence produced no output (empty or missing CSV).\n"
                 "   SuperBrain and policy engine will have no signals to process.\n"
-                "   Check options_intelligence log above for BLOCK_WRONG_STRIKE or API errors.\n"
-                "   Pipeline continues — morning validation will show 0 actionable signals."
+                "   Check options_intelligence log above for worklist, chain or contract errors."
             )
+            if _cds_stage_enforced:
+                logger.error(_empty_message + "\n   CDS enforcement blocks promotion.")
+                ok = False
+            else:
+                logger.warning(
+                    _empty_message
+                    + "\n   Pipeline continues — morning validation will show 0 actionable signals."
+                )
     run_dropoff_audit_checkpoint(run_id, "post_options")
     return ok
 
@@ -2183,12 +2604,34 @@ def run_ev3_governed_shadow(run_id: str, data_mode: str = "EOD") -> bool:
     if cfg.EV3_FUNCTIONAL_TEST_NOW_UTC:
         command.extend(["--now-utc", cfg.EV3_FUNCTIONAL_TEST_NOW_UTC])
         logger.warning(
-            "EV-1.5 uses FIXED_FUNCTIONAL_TEST clock=%s; shadow has no capital authority",
+            "EV-1.5 uses FIXED_FUNCTIONAL_TEST clock=%s; evidence has no capital authority",
             cfg.EV3_FUNCTIONAL_TEST_NOW_UTC,
         )
-    ok = _run("Phase EV-1.5 Governed Shadow", command, critical=False)
+    ok = _run("Phase EV-1.5 Production Evidence", command, critical=False)
     if not ok:
-        logger.warning("EV-1.5 failed in isolation — production pipeline continues unchanged")
+        logger.warning("EV-1.5 evidence failed in isolation — production pipeline continues unchanged")
+    return ok
+
+
+def run_ev3_authority_overlay(run_id: str) -> bool:
+    """Publish EV3 audit fields in permanently advisory mode."""
+    if not cfg.EV3_AUTHORITY_APPLIER.exists():
+        logger.warning("EV3 advisory overlay skipped — applier not found: %s", cfg.EV3_AUTHORITY_APPLIER)
+        return True
+    command = [
+        sys.executable,
+        str(cfg.EV3_AUTHORITY_APPLIER),
+        "--run-id", run_id,
+        "--runs-dir", str(cfg.RUNS_DIR),
+    ]
+    if cfg.EV3_AUTHORITY_REQUESTED:
+        logger.warning(
+            "AVSHUNTER_EV3_AUTHORITY_ENABLED was requested but is retired; "
+            "EV remains advisory only"
+        )
+    ok = _run("Phase EV-3 Advisory Overlay", command, critical=False)
+    if ok:
+        logger.info("EV3 overlay published in PRODUCTION_EVIDENCE_ADVISORY mode")
     return ok
 
 
@@ -2384,6 +2827,22 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         patched["horizon_action"] = patched["horizon_action"].fillna("UNKNOWN")
         patched["horizon_size_multiplier"] = patched["horizon_size_multiplier"].fillna(0.0)
         patched["horizon_block_reason"] = patched["horizon_block_reason"].fillna("")
+
+        # EV3 consumes planned_hold_sessions as part of the same governed
+        # horizon contract. Patching only horizon_bucket leaves the provisional
+        # pre-router hold in place (for example hold=5 with bucket=6_10d), which
+        # is a deterministic REJECT_HORIZON defect. Re-derive both fields from
+        # the final router bucket atomically.
+        _hold_by_bucket = {"1_5d": 5, "6_10d": 10, "11_20d": 20}
+        patched["planned_hold_sessions"] = patched["horizon_bucket"].map(
+            _hold_by_bucket
+        ).astype("Int64")
+        patched["planned_hold_source"] = patched["horizon_bucket"].map(
+            {
+                bucket: "FINAL_HORIZON_ROUTER_ENDPOINT_V1"
+                for bucket in _hold_by_bucket
+            }
+        ).fillna("UNROUTED")
 
         patched.to_csv(target_csv, index=False)
 
@@ -2590,6 +3049,136 @@ def run_wall_break_scorer(run_id: str) -> bool:
     if not ok:
         logger.warning("WBS failed -- pipeline continues unaffected")
     return True
+
+
+# ============================================================ WS2: GOVERNED TRIGGER SPINE
+
+_WS2_TRIGGER_INPUT_COLS = (
+    "crabel_state", "crabel_compression", "atr_percentile_rank",
+    "vwap_bias", "control_state", "wyckoff_phase_bucket",
+    "catalyst_proximity", "days_in_range", "adx_14", "ema_stack",
+    "dominant_trend", "volume_ratio_x", "layer1__control__controller",
+    "layer1__auction_state", "precor_intent",
+    "layer2__sample_confidence_bucket", "layer2__preferred_horizon",
+    "layer2__state_match_method", "layer2__state_match_stage",
+    "layer2__state_match_dimensions", "layer2__state_match_quality",
+    "layer2__state_match_is_exact",
+)
+
+
+def commute_trigger_spine_before_eil(run_id: str) -> dict:
+    """Calculate one governed trigger block on the EIL input spine.
+
+    Trigger Layer package processing remains the calculation owner.  This
+    bridge supplies its categorical result to SuperBrain before EIL writes the
+    immutable execution artifact, eliminating the late post-EIL authority join.
+    """
+    import pandas as _pd_ws2
+    from execution_schema import (
+        TRIGGER_HANDOFF_SCHEMA_VERSION,
+        validate_trigger_handoff_row,
+    )
+    from trigger_layer import enrich_csv as _ws2_enrich_csv
+
+    _run_dir = cfg.RUNS_DIR / run_id
+    _spine_path = _run_dir / "superbrain" / f"superbrain_enriched_{run_id}.csv"
+    _vanguard_path = _run_dir / "options" / f"vanguard_signals_enriched_{run_id}.csv"
+    if not _spine_path.exists():
+        raise FileNotFoundError(f"WS2 EIL input spine not found: {_spine_path}")
+    if not _vanguard_path.exists():
+        raise FileNotFoundError(f"WS2 Vanguard trigger source not found: {_vanguard_path}")
+
+    _spine = _pd_ws2.read_csv(_spine_path, low_memory=False)
+    _vanguard = _pd_ws2.read_csv(_vanguard_path, low_memory=False)
+    for _name, _frame in (("EIL_INPUT", _spine), ("VANGUARD", _vanguard)):
+        if "ticker" not in _frame.columns:
+            raise ValueError(f"WS2 {_name} frame has no ticker column")
+        _frame["ticker"] = _frame["ticker"].fillna("").astype(str).str.strip().str.upper()
+        if _frame["ticker"].eq("").any():
+            raise ValueError(f"WS2 {_name} frame contains blank ticker identity")
+        if _frame["ticker"].duplicated().any():
+            _duplicates = sorted(
+                _frame.loc[_frame["ticker"].duplicated(keep=False), "ticker"].unique().tolist()
+            )
+            raise ValueError(f"WS2 {_name} frame contains duplicate tickers: {_duplicates[:10]}")
+
+    _source_cols = [column for column in _WS2_TRIGGER_INPUT_COLS if column in _vanguard.columns]
+    if not _source_cols:
+        raise ValueError("WS2 Vanguard frame has no trigger input columns")
+    _spine = _spine.drop(columns=[c for c in _source_cols if c in _spine.columns], errors="ignore")
+    _spine = _spine.merge(
+        _vanguard[["ticker", *_source_cols]], on="ticker", how="left", validate="one_to_one"
+    )
+    _staged_path = _spine_path.with_name(f".{_spine_path.name}.ws2.tmp")
+    _spine.to_csv(_staged_path, index=False)
+
+    _stats = _ws2_enrich_csv(_staged_path, inplace=True)
+    if int(_stats.get("patched", 0)) != len(_spine):
+        raise RuntimeError(
+            "WS2 Trigger Layer did not classify the complete EIL input spine: "
+            f"patched={_stats.get('patched', 0)} expected={len(_spine)}"
+        )
+
+    _governed = _pd_ws2.read_csv(_staged_path, low_memory=False)
+    _governed["trigger_handoff_schema_version"] = TRIGGER_HANDOFF_SCHEMA_VERSION
+    for _index, _row in enumerate(_governed.to_dict(orient="records")):
+        try:
+            validate_trigger_handoff_row(_row)
+        except ValueError as _error:
+            raise RuntimeError(
+                "WS2 pre-EIL trigger validation failed: "
+                f"row={_index} ticker={_row.get('ticker', '')} error={_error}"
+            ) from _error
+    _governed.to_csv(_staged_path, index=False)
+    _staged_path.replace(_spine_path)
+    return {**_stats, "source_columns": len(_source_cols), "rows": len(_governed)}
+
+
+def verify_trigger_spine_after_eil(run_id: str) -> dict:
+    """Prove trigger values survived EIL without a second calculation/join."""
+    import pandas as _pd_ws2
+    from execution_schema import TRIGGER_HANDOFF_FIELDS, validate_trigger_handoff_row
+
+    _run_dir = cfg.RUNS_DIR / run_id
+    _paths = {
+        "execution": _run_dir / "execution" / f"execution_v3_5_{run_id}.csv",
+        "eil_enriched": _run_dir / "superbrain" / f"eil_enriched_{run_id}.csv",
+    }
+    _frames = {}
+    for _name, _path in _paths.items():
+        if not _path.exists():
+            raise FileNotFoundError(f"WS2 {_name} artifact missing: {_path}")
+        _frame = _pd_ws2.read_csv(_path, low_memory=False)
+        if "ticker" not in _frame.columns or _frame["ticker"].duplicated().any():
+            raise ValueError(f"WS2 {_name} ticker identity is missing or non-unique")
+        _frame["ticker"] = _frame["ticker"].fillna("").astype(str).str.strip().str.upper()
+        for _index, _row in enumerate(_frame.to_dict(orient="records")):
+            try:
+                validate_trigger_handoff_row(_row)
+            except ValueError as _error:
+                raise RuntimeError(
+                    f"WS2 {_name} trigger validation failed at row {_index}: {_error}"
+                ) from _error
+        _frames[_name] = _frame.set_index("ticker")
+
+    _execution = _frames["execution"]
+    _enriched = _frames["eil_enriched"]
+    if set(_execution.index) != set(_enriched.index):
+        raise RuntimeError("WS2 execution and EIL-enriched ticker sets differ")
+    _mismatches = []
+    for _ticker in _execution.index:
+        for _field in TRIGGER_HANDOFF_FIELDS:
+            _left = str(_execution.at[_ticker, _field]).strip().upper()
+            _right = str(_enriched.at[_ticker, _field]).strip().upper()
+            if _left != _right:
+                _mismatches.append((_ticker, _field, _left, _right))
+                if len(_mismatches) >= 10:
+                    break
+        if len(_mismatches) >= 10:
+            break
+    if _mismatches:
+        raise RuntimeError(f"WS2 trigger spine changed after EIL: {_mismatches}")
+    return {"rows": len(_execution), "mismatches": 0}
 
 
 # ============================================================ PHASE 9: EXECUTION INTELLIGENCE LAYER
@@ -3306,15 +3895,14 @@ def evening_workflow(
     # complete daily bars and valid TCE confirmation.
     # LATEST mode: pipeline runs at any time using the most recent snapshot.
     # TCE will apply PARTIAL trigger logic (same as EOD synthetic mode).
-    from datetime import time as dtime
     _now_utc = datetime.now(timezone.utc)
-    _et_offset = -4  # EDT (UTC-4); change to -5 in winter (EST)
-    _now_et_hour = (_now_utc.hour + _et_offset) % 24
-    _now_et_min  = _now_utc.minute
+    _now_et = _now_utc.astimezone(ZoneInfo("America/New_York"))
+    _now_et_hour = _now_et.hour
+    _now_et_min  = _now_et.minute
     _now_et_time = _now_et_hour * 60 + _now_et_min
     _market_open  = 9 * 60 + 30
     _market_close = 16 * 60 + 15
-    _et_date     = (_now_utc + __import__('datetime').timedelta(hours=_et_offset)).date()
+    _et_date     = _now_et.date()
     _is_weekend  = _et_date.weekday() >= 5
     _in_market_hours = (_market_open <= _now_et_time < _market_close) and not _is_weekend
 
@@ -3375,8 +3963,9 @@ def evening_workflow(
         target_universe=target_universe,
         universe_gate_mode=universe_gate_mode,
     )
-    if not preflight_ok or macro_path is None:
+    if not preflight_ok:
         return False
+    macro_path = _ensure_runtime_macro_path(session_id, macro_path)
 
     # ── SECTOR BIAS MAP — built once, passed to all downstream modules ────────
     # v1.1: load sector_rotation block from macro JSON into memory so all
@@ -3420,23 +4009,22 @@ def evening_workflow(
             if _tw: logger.info("   TAILWIND sectors : %s", ", ".join(_tw))
             if _hw: logger.info("   HEADWIND sectors : %s", ", ".join(_hw))
         else:
-            # Patch 2 — production guard: sector alignment is mandatory for live capital
-            # AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT=false to disable (research/dry-run only)
-            _require_sa = os.environ.get("AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT", "true").lower() == "true"
+            # Macro/sector alignment is advisory to the core signal pipeline.
+            _require_sa = os.environ.get("AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT", "false").lower() == "true"
             _sa_msg = (
                 f"sector_alignment.py not found at {_sa_path}. "
                 "Macro sector alignment cannot be applied — HEADWIND tickers will be sized identically to TAILWIND. "
-                "Deploy scripts/sector_alignment.py before running live capital. "
-                "Set AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT=false to bypass (research mode only)."
+                "Deploy scripts/sector_alignment.py to restore advisory sector context. "
+                "Set AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT=true only for a controlled legacy replay."
             )
             if _require_sa:
                 logger.error("🔴 %s", _sa_msg)
-                return False   # abort pipeline — live capital cannot run without sector alignment
+                return False
             else:
                 logger.warning("⚠️  %s", _sa_msg)
     except Exception as _sa_err:
         _macro_quant_packet = missing_macro_quant_packet(macro_path)
-        logger.error("🔴 Sector bias map load failed: %s — continuing without sector alignment", _sa_err)
+        logger.warning("Sector bias map load failed: %s — continuing with neutral advisory context", _sa_err)
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── FIX-04/07: Normalise macro contract before pipeline runs ──────────────
@@ -3765,8 +4353,11 @@ def evening_workflow(
     run_catalyst_truth_layer(canonical_run_id, stage="pre_options")
 
     run_position_lock_check(canonical_run_id)
-    run_options_intelligence(canonical_run_id)     # MUST precede Phase 8.5
-    run_ev3_governed_shadow(canonical_run_id, data_mode=_data_mode)
+    if not run_options_intelligence(canonical_run_id):     # MUST precede Phase 8.5
+        logger.error(
+            "Evening workflow aborted: governed Options acquisition did not complete"
+        )
+        return False
 
     # ── PHASE 1B: Macro Horizon Router ───────────────────────────────────────
     # NoneType.__dict__ crash (26-Apr) was caused by run_horizon_router()
@@ -3781,12 +4372,40 @@ def evening_workflow(
     # This is the primary injection point — before Phase 8d passthrough runs.
     _oi_horizon_target = (
         cfg.RUNS_DIR / canonical_run_id / "options" /
-        f"vanguard_signals_enriched_{canonical_run_id}.csv"
+        f"options_intelligence_{canonical_run_id}.csv"
     )
-    patch_horizon_fields_into_csv(
+    _oi_horizon_patched = patch_horizon_fields_into_csv(
         run_id     = canonical_run_id,
         target_csv = _oi_horizon_target,
         label      = "options_intelligence_OI",
+    )
+    if not _oi_horizon_patched:
+        logger.warning(
+            "EV-1.5 will fail closed for rows without a governed horizon; "
+            "the production pipeline remains non-authoritative for EV3."
+        )
+
+    # EV3 must evaluate the final governed horizon, never the provisional
+    # Options Intelligence horizon. Running this before the router created a
+    # split-brain contract where downstream sizing and EV used different hold
+    # periods.
+    _ev3_shadow_ok = run_ev3_governed_shadow(canonical_run_id, data_mode=_data_mode)
+    _ev3_overlay_ok = _ev3_shadow_ok and run_ev3_authority_overlay(canonical_run_id)
+    if not _ev3_overlay_ok:
+        logger.warning(
+            "EV3 advisory overlay failed; production continues because EV has no trade authority"
+        )
+
+    # Preserve the former enrichment target as a compatibility patch for
+    # consumers that read this pre-SuperBrain artifact directly.
+    _vanguard_enriched_horizon_target = (
+        cfg.RUNS_DIR / canonical_run_id / "options" /
+        f"vanguard_signals_enriched_{canonical_run_id}.csv"
+    )
+    patch_horizon_fields_into_csv(
+        run_id=canonical_run_id,
+        target_csv=_vanguard_enriched_horizon_target,
+        label="vanguard_signals_enriched",
     )
     run_catalyst_truth_layer(canonical_run_id, stage="post_options")
 
@@ -3944,14 +4563,10 @@ def evening_workflow(
     # 4 triggers: VOL_COMPRESSION, VWAP_RECLAIM, RANGE_BREAK, TRAP
     # Also computes ev_10d = win_rate * expected_move at runtime (never stored in DB).
     #
-    # FIX-WIRING-GAP (2026-04-29 v2.9): trigger_layer v2.0 only patched package
-    # JSONs. EDE reads the EIL CSV — trigger columns were never present there,
-    # causing ede_trigger_count=0 for all 1470 signals and sovereign gate WAIT.
-    # Fix: enrich_csv() now writes trigger columns into eil_enriched CSV after
-    # EIL completes. patch_run_packages still runs for package JSON compat.
-    # POSITION FIX: Phase 8.6 now runs AFTER EIL (Phase 9) so eil_enriched
-    # CSV exists when enrich_csv() is called. See ordering below.
-    # NON-CRITICAL: EDE falls back gracefully if trigger module absent.
+    # WS2 (2026-09-02): package classification remains the trigger authority.
+    # After SuperBrain is built, commute_trigger_spine_before_eil() writes the
+    # same typed trigger block onto the EIL input. EIL and EOD therefore consume
+    # one spine; the old post-EIL rewrite/overlay is no longer authoritative.
     try:
         from trigger_layer import patch_run_packages as _tl_patch, enrich_csv as _tl_enrich_csv
         _oi_enriched = (
@@ -3966,8 +4581,10 @@ def evening_workflow(
         _triggered    = _tl_stats.get("trigger_strong", 0) + _tl_stats.get("trigger_single", 0)
         _total_pkg    = _tl_stats.get("patched", 0)
 
-        # Set eligible_for_trade=False on zero-trigger packages (belt-and-braces).
-        _no_trig_flagged = 0
+        # Mirror the governed Trigger Layer eligibility into each package.
+        # Trigger count alone is insufficient: supportive-only triggers and
+        # explicitly stale source data must remain visible but ineligible.
+        _not_eligible_flagged = 0
         try:
             import json as _json
             _pkg_dir2 = cfg.RUNS_DIR / canonical_run_id / "packages"
@@ -3976,10 +4593,11 @@ def evening_workflow(
                     try:
                         with open(_pp, encoding="utf-8") as _pf2:
                             _p2 = _json.load(_pf2)
-                        _tc = int((_p2.get("triggers") or {}).get("count", 0))
-                        _p2["eligible_for_trade"] = (_tc > 0)
-                        if _tc == 0:
-                            _no_trig_flagged += 1
+                        _trigger_block = _p2.get("triggers") or {}
+                        _eligible = bool(_trigger_block.get("go_eligible", False))
+                        _p2["eligible_for_trade"] = _eligible
+                        if not _eligible:
+                            _not_eligible_flagged += 1
                         with open(_pp, "w", encoding="utf-8") as _pf2:
                             _json.dump(_p2, _pf2, indent=2)
                     except Exception:
@@ -3989,15 +4607,17 @@ def evening_workflow(
 
         _go_eligible = _tl_stats.get("go_eligible", 0)
         _stale       = _tl_stats.get("stale_filtered", 0)
+        _context     = _tl_stats.get("context_flagged", 0)
         logger.info(
             "✅ Phase 8.6 (Trigger Layer — package JSON) — %d packages patched | "
-            "STRONG=%d SINGLE=%d NONE=%d | GO_ELIGIBLE=%d | stale=%d | EV+=%d EV-=%d",
+            "STRONG=%d SINGLE=%d NONE=%d | GO_ELIGIBLE=%d | data_stale=%d | context=%d | EV+=%d EV-=%d",
             _total_pkg,
             _tl_stats.get("trigger_strong", 0),
             _tl_stats.get("trigger_single", 0),
             _tl_stats.get("trigger_none",   0),
             _go_eligible,
             _stale,
+            _context,
             _tl_stats.get("ev_positive",    0),
             _tl_stats.get("ev_negative",    0),
         )
@@ -4007,14 +4627,14 @@ def evening_workflow(
             _no_trig_pct = _tl_stats.get("trigger_none", 0) / _total_pkg * 100
             logger.info(
                 "   Triggered: %.1f%% | EV+: %.1f%% | "
-                "No-trigger (WAIT in EDE): %.1f%% | Stale filtered: %d",
-                _pct, _ev_pct, _no_trig_pct, _stale,
+                "No-trigger (WAIT in EDE): %.1f%% | Data stale: %d | Context flagged: %d",
+                _pct, _ev_pct, _no_trig_pct, _stale, _context,
             )
-            if _no_trig_flagged > 0:
+            if _not_eligible_flagged > 0:
                 logger.info(
-                    "   %d packages flagged eligible_for_trade=False (no trigger) "
-                    "→ EDE assigns WAIT verdict",
-                    _no_trig_flagged,
+                    "   %d packages flagged eligible_for_trade=False "
+                    "(no governed GO trigger or stale source data)",
+                    _not_eligible_flagged,
                 )
     except ImportError:
         logger.warning(
@@ -4222,6 +4842,24 @@ def evening_workflow(
         logger.warning("⚠️  FIX-ACTUARIAL-SEQ: pre-EIL injection failed — pipeline continues. Error: %s", _seq_err)
     # ──────────────────────────────────────────────────────────────────────────
 
+    # WS2: Trigger Layer must publish onto the single EIL input spine before
+    # execution_v3_5 is written.  A missing or malformed trigger block is a
+    # handoff defect, not an optional advisory omission.
+    try:
+        _ws2_trigger_stats = commute_trigger_spine_before_eil(canonical_run_id)
+        logger.info(
+            "✅ WS2 trigger spine commuted before EIL — rows=%d | STRONG=%d | "
+            "SINGLE=%d | NONE=%d | inputs=%d",
+            _ws2_trigger_stats.get("rows", 0),
+            _ws2_trigger_stats.get("trigger_strong", 0),
+            _ws2_trigger_stats.get("trigger_single", 0),
+            _ws2_trigger_stats.get("trigger_none", 0),
+            _ws2_trigger_stats.get("source_columns", 0),
+        )
+    except Exception as _ws2_trigger_error:
+        logger.error("❌ WS2 trigger spine failed before EIL: %s", _ws2_trigger_error)
+        raise RuntimeError("WS2 governed trigger handoff failed closed") from _ws2_trigger_error
+
     _eil_ok = run_execution_intelligence_layer(canonical_run_id)  # Phase 9 EIL
     if not _eil_ok:
         logger.error("EIL failed - skipping EIL-dependent post-processing for this run.")
@@ -4235,105 +4873,17 @@ def evening_workflow(
         run_garch_layer(canonical_run_id)              # Phase 10a
         merge_garch_into_enriched(canonical_run_id)   # Phase 10b — now patches eil_enriched too
 
-        # ── Phase 8.6b: Trigger Layer → EIL CSV enrichment ───────────────────────
-        # v3.1 FIX: enrich_csv() evaluates triggers against eil_enriched rows.
-        # superbrain_enriched (EIL input) has 138 cols — ZERO trigger input cols.
-        # All 18 trigger input cols live in vanguard_signals_enriched.
-        # Without injection: every trigger evaluates [] → trigger_quality=NONE=1343.
-        # FIX: merge vanguard trigger cols into eil_enriched BEFORE enrich_csv runs.
+        # WS2 post-EIL boundary: verify only. Trigger evidence was already
+        # calculated on the EIL input spine and must not be recomputed here.
         try:
-            from trigger_layer import enrich_csv as _tl_enrich_csv
-            import pandas as _pd86b
-            _eil_csv_path = (
-                cfg.RUNS_DIR / canonical_run_id / "superbrain" /
-                f"eil_enriched_{canonical_run_id}.csv"
+            _ws2_verify = verify_trigger_spine_after_eil(canonical_run_id)
+            logger.info(
+                "✅ WS2 trigger spine survived EIL unchanged — rows=%d | mismatches=%d",
+                _ws2_verify.get("rows", 0), _ws2_verify.get("mismatches", 0),
             )
-            _vg_enriched_path = (
-                cfg.RUNS_DIR / canonical_run_id / "options" /
-                f"vanguard_signals_enriched_{canonical_run_id}.csv"
-            )
-            _TRIGGER_INPUT_COLS = [
-                "crabel_state", "crabel_compression", "atr_percentile_rank",
-                "vwap_bias", "control_state", "wyckoff_phase_bucket",
-                "catalyst_proximity", "days_in_range", "adx_14", "ema_stack",
-                "dominant_trend", "volume_ratio_x",
-                "layer1__control__controller", "layer1__auction_state", "precor_intent",
-            ]
-
-            # Vanguard actuarial governance fields — must survive into EIL/PSE.
-            # These distinguish sample size from sample quality.
-            _VANGUARD_GOVERNANCE_COLS = [
-                "layer2__sample_confidence_bucket",
-                "layer2__preferred_horizon",
-                "layer2__state_match_method",
-                "layer2__state_match_stage",
-                "layer2__state_match_dimensions",
-                "layer2__state_match_quality",
-                "layer2__state_match_is_exact",
-            ]
-
-            _TRIGGER_INPUT_COLS = list(dict.fromkeys(_TRIGGER_INPUT_COLS + _VANGUARD_GOVERNANCE_COLS))
-            if _eil_csv_path.exists():
-                # Step 1: inject vanguard trigger cols into eil_enriched
-                if _vg_enriched_path.exists():
-                    try:
-                        _eil_df = _pd86b.read_csv(_eil_csv_path)
-                        _vg_df  = _pd86b.read_csv(_vg_enriched_path)
-                        _cols_to_inject = [
-                            c for c in _TRIGGER_INPUT_COLS
-                            if c in _vg_df.columns and (
-                                c not in _eil_df.columns or _eil_df[c].isna().all()
-                            )
-                        ]
-                        if _cols_to_inject:
-                            _vg_sub = _vg_df[["ticker"] + _cols_to_inject].copy()
-                            _vg_sub["ticker"] = _vg_sub["ticker"].str.strip().str.upper()
-                            _eil_df["ticker"] = _eil_df["ticker"].str.strip().str.upper()
-                            _eil_df = _eil_df.drop(columns=[c for c in _cols_to_inject if c in _eil_df.columns], errors="ignore")
-                            _eil_df = _eil_df.merge(_vg_sub, on="ticker", how="left")
-                            _eil_df.to_csv(_eil_csv_path, index=False)
-                            logger.info(
-                                "Phase 8.6b: Injected %d vanguard trigger cols into eil_enriched",
-                                len(_cols_to_inject)
-                            )
-                    except Exception as _inj_err:
-                        logger.warning("Phase 8.6b: Vanguard trigger injection failed: %s", _inj_err)
-                else:
-                    logger.warning("Phase 8.6b: vanguard_signals_enriched not found — trigger cols absent")
-
-                # Step 2: run enrich_csv — now has trigger input cols
-                _tl_csv_stats = _tl_enrich_csv(_eil_csv_path, inplace=True)
-                _go_elig  = _tl_csv_stats.get("go_eligible", 0)
-                _strong   = _tl_csv_stats.get("trigger_strong", 0)
-                _single   = _tl_csv_stats.get("trigger_single", 0)
-                _stale_c  = _tl_csv_stats.get("stale_filtered", 0)
-                _ev_pos   = _tl_csv_stats.get("ev_positive", 0)
-                _wait_est = max(0, _ev_pos - _go_elig)
-                logger.info(
-                    "✅ Phase 8.6b (Trigger Layer — EIL CSV) — %d rows enriched | "
-                    "GO_ELIGIBLE=%d | STRONG=%d SINGLE=%d | stale=%d | EV+=%d | ~%d WAIT→GO at open",
-                    _tl_csv_stats.get("patched", 0),
-                    _go_elig, _strong, _single, _stale_c, _ev_pos, _wait_est,
-                )
-                if _strong + _single == 0:
-                    logger.warning(
-                        "⚠️  Phase 8.6b: STILL zero triggers after vanguard injection — "
-                        "check catalyst_proximity (FAR blocks all triggers) and "
-                        "crabel_compression/atr_percentile_rank thresholds"
-                    )
-            else:
-                logger.warning(
-                    "⚠️  Phase 8.6b: eil_enriched CSV not found — "
-                    "trigger columns not written. Expected: %s", _eil_csv_path,
-                )
-        except ImportError:
-            logger.warning(
-                "⚠️  Phase 8.6b skipped — trigger_layer.py not found or missing enrich_csv. "
-                "Deploy trigger_layer.py v2.1+ to AVSHUNTER-Intelligence root."
-            )
-        except Exception as _tl_csv_err:
-            logger.warning("⚠️  Phase 8.6b exception: %s", _tl_csv_err)
-        # ─────────────────────────────────────────────────────────────────────────
+        except Exception as _ws2_verify_error:
+            logger.error("❌ WS2 trigger spine verification failed: %s", _ws2_verify_error)
+            raise RuntimeError("WS2 trigger spine changed after EIL") from _ws2_verify_error
 
         # ╔══ Phase 9.5 EDE: SUPERSEDED — PSE inside EIL runner is the replacement ══╗
         # ── V5 Colab decommissioned (May 2026). EDE functionality now delivered by
@@ -4573,22 +5123,29 @@ def evening_workflow(
         )
 
     # ── PHASE 10: EOD Candidate Engine ────────────────────────────────────────
-    # Converts the fully-enriched EIL+WBS+PSE output into a clean, structured
-    # morning_candidates_{run_id}.csv. This is the ONLY file that morning
-    # validation reads. Phase separation is enforced here — no live data,
-    # no execution gating, pure structural classification.
+    # Converts the final reconciled execution-authority output into a clean,
+    # structured morning_candidates_{run_id}.csv. This is the ONLY file that
+    # morning validation reads. EIL remains available for advisory enrichment,
+    # but it is not an authority source: using it here bypasses the final
+    # capital-permission reconciliation performed by Phase 9.
     # Non-critical — archive runs regardless.
     try:
         from eod_candidate_engine import build_candidate_manifest
         _mv_dir = cfg.RUNS_DIR / canonical_run_id / "morning_validation"
         _mv_dir.mkdir(parents=True, exist_ok=True)
         _eil_csv = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"eil_enriched_{canonical_run_id}.csv"
+        _execution_authority_csv = (
+            cfg.RUNS_DIR
+            / canonical_run_id
+            / "execution"
+            / f"execution_v3_5_{canonical_run_id}.csv"
+        )
         _wbs_csv = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"wall_break_scores_{canonical_run_id}.csv"
         _disc_csv = cfg.OUTPUT_DIR / f"discovery_candidates_ultimate_{canonical_run_id}.csv"
         if not _eil_csv.exists():
             # Fallback: superbrain_enriched if EIL output absent
             _eil_csv = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"superbrain_enriched_{canonical_run_id}.csv"
-        if _eil_csv.exists():
+        if _execution_authority_csv.exists():
             # ── Horizon context: pass horizon summary so morning manifest knows
             # which signals are 1-5D entries vs 6-10D continuations vs monitors.
             _horizon_summary = cfg.RUNS_DIR / canonical_run_id / "horizon" / f"horizon_summary_{canonical_run_id}.json"
@@ -4616,7 +5173,13 @@ def evening_workflow(
 
             _morning_csv_path = _mv_dir / f"morning_candidates_{canonical_run_id}.csv"
             build_candidate_manifest(
-                eil_path       = _eil_csv,
+                # The builder's legacy parameter name is retained for API
+                # compatibility; this path is deliberately the final execution
+                # artifact, never the earlier EIL frame.
+                eil_path       = _execution_authority_csv,
+                # WS2: trigger evidence is already part of the governed
+                # execution spine. No late EIL overlay or second calculation.
+                trigger_overlay_path = None,
                 wbs_path       = _wbs_csv if _wbs_csv.exists() else None,
                 discovery_path = _disc_csv if _disc_csv.exists() else None,
                 vanguard_path  = _van_enriched if _van_enriched.exists() else None,
@@ -4832,7 +5395,11 @@ def evening_workflow(
                 canonical_run_id,
             )
         else:
-            logger.warning("⚠️  Phase 10: EIL/superbrain CSV not found — morning manifest skipped")
+            logger.error(
+                "⛔ Phase 10: final execution authority CSV not found — "
+                "morning manifest skipped fail-closed: %s",
+                _execution_authority_csv,
+            )
     except Exception as _eod_err:
         logger.warning("⚠️  Phase 10 (EOD Candidate Engine) failed — pipeline continues. Error: %s", _eod_err)
     # ─────────────────────────────────────────────────────────────────────────
@@ -4849,6 +5416,52 @@ def evening_workflow(
         with open(_latest_out, "w", encoding="utf-8") as _lf:
             json.dump({"run_id": canonical_run_id}, _lf)
         logger.info("✅ latest.json updated → run_id: %s", canonical_run_id)
+
+        # Keep the legacy runs/latest directory truthful.  It is not the
+        # authority pointer (latest.json is), but older diagnostics still read
+        # scanner_context_latest.json from this location.  Never leave a prior
+        # run's scanner payload masquerading as the current run.
+        _legacy_latest_dir = cfg.RUNS_DIR / "latest"
+        _legacy_latest_dir.mkdir(parents=True, exist_ok=True)
+        _canonical_scanner_context = (
+            cfg.RUNS_DIR
+            / canonical_run_id
+            / f"scanner_context_{canonical_run_id}.json"
+        )
+        _scanner_latest_payload = {
+            "run_id": canonical_run_id,
+            "available": False,
+            "status": "NOT_AVAILABLE_FOR_RUN",
+            "tickers": {},
+        }
+        if _canonical_scanner_context.exists():
+            with open(_canonical_scanner_context, "r", encoding="utf-8-sig") as _scf:
+                _scanner_latest_payload = json.load(_scf)
+            _scanner_latest_payload["run_id"] = canonical_run_id
+            _scanner_latest_payload["available"] = True
+            _scanner_latest_payload["status"] = "AVAILABLE_FOR_RUN"
+        _scanner_latest_payload["pointer_updated_utc"] = datetime.now(timezone.utc).isoformat()
+        with open(
+            _legacy_latest_dir / "scanner_context_latest.json",
+            "w",
+            encoding="utf-8",
+        ) as _sc_latest:
+            json.dump(_scanner_latest_payload, _sc_latest, indent=2)
+        with open(
+            _legacy_latest_dir / "run_pointer.json",
+            "w",
+            encoding="utf-8",
+        ) as _run_pointer:
+            json.dump(
+                {
+                    "run_id": canonical_run_id,
+                    "authoritative_pointer": str(_latest_out),
+                    "updated_utc": datetime.now(timezone.utc).isoformat(),
+                },
+                _run_pointer,
+                indent=2,
+            )
+        logger.info("✅ Legacy runs/latest metadata governed → run_id: %s", canonical_run_id)
     except Exception as _lj_err:
         logger.warning("⚠️  Could not write latest.json: %s", _lj_err)
     # ─────────────────────────────────────────────────────────────────────────
@@ -4966,6 +5579,8 @@ def evening_workflow(
         _ev3_dominant_reason_code = None
         _ev3_dominant_reason_count = None
         _ev3_dominant_reason_share = None
+        _ev3_production_authority = False
+        _ev3_authority_mode = "PHASE_ABSENT"
         if _ev3_status_path.exists():
             try:
                 with open(_ev3_status_path, "r", encoding="utf-8") as _ev3_handle:
@@ -4983,6 +5598,8 @@ def evening_workflow(
                 _ev3_dominant_reason_code = _ev3_status.get("dominant_reason_code")
                 _ev3_dominant_reason_count = _ev3_status.get("dominant_reason_count")
                 _ev3_dominant_reason_share = _ev3_status.get("dominant_reason_share")
+                _ev3_production_authority = bool(_ev3_status.get("production_authority", False))
+                _ev3_authority_mode = str(_ev3_status.get("authority_mode", "PRODUCTION_EVIDENCE_ADVISORY"))
             except Exception as _ev3_status_error:
                 _ev3_health = f"STATUS_READ_FAILED:{type(_ev3_status_error).__name__}"
 
@@ -5020,21 +5637,27 @@ def evening_workflow(
             "ev3_dominant_reason_code":     _ev3_dominant_reason_code,
             "ev3_dominant_reason_count":    _ev3_dominant_reason_count,
             "ev3_dominant_reason_share":    _ev3_dominant_reason_share,
-            "ev3_production_authority":     False,
-            # EDE equivalent is ACTIVE inside EIL runner v4.1 via PSE chain.
+            "ev3_production_authority":     _ev3_production_authority,
+            "ev3_authority_mode":           _ev3_authority_mode,
+            # PSE and Final Decision are retained as legacy telemetry only.
             # V5 Colab decommissioned — all decision logic is now internal.
             # Phase 9.5 (separate EDE script) was superseded by PSE in EIL runner.
             # Phase 9B (Enhancement Layer) — confirm enhancement_integration.py on disk before re-enabling.
             # Phase 9C (Trade Book Builder) — depends on Phase 9B output; re-enable together.
-            "pse_active":                   True,    # PSE inside EIL runner is the EDE replacement
+            "pse_active":                   False,
+            "pse_status":                   "RETIRED_IGNORED_MANUAL_SIZING",
+            "pse_capital_authority":        "NONE",
             "v5_colab_decommissioned":      True,    # All scoring now internal — no external Colab dependency
             "eil_eod_mode":                 _eil_mode,       # PATCH 6: from actual eil_data_mode column
-            "morning_validation_command":   "python morning_gate.py",
+            "morning_validation_command":   (
+                "python intelligent_orchestrator.py --morning "
+                f"--run-id {canonical_run_id}"
+            ),
             "action_items": {
                 "sideways_ranging_gap":         "ACTION — run backfill_actuarial_db to add SIDEWAYS_RANGING as valid actuarial state.",
                 "enhancement_layer_9b":         "CONFIRM — check if enhancement_integration.py exists on disk before re-enabling Phase 9B.",
                 "trade_book_9c":                "CONFIRM — Phase 9C depends on Phase 9B output. Re-enable both together or neither.",
-                "eil_pattern_align":            "ACTIVE — fd_pattern_direction_align now written per row via final_decision_engine.py v1.1.",
+                "eil_pattern_align":            "RETIRED TELEMETRY — Final Decision fields have no candidate or capital authority.",
             },
         }
 
@@ -5118,9 +5741,15 @@ def evening_workflow(
                 _lab_source = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"eil_enriched_{canonical_run_id}.csv"
             if _lab_source.exists():
                 _lab_rows = _pd_lab_sync.read_csv(_lab_source, low_memory=False).to_dict("records")
-                _lab_book = write_final_opportunity_book(canonical_run_id, _lab_rows, _manifest, cfg.RUNS_DIR)
+                _lab_book = write_final_opportunity_book(
+                    canonical_run_id,
+                    _lab_rows,
+                    _manifest,
+                    cfg.RUNS_DIR,
+                    sync_interpreter=False,
+                )
                 logger.info(
-                    "Lab/Interpreter shared triage view written -> %s",
+                    "EOD Lab compatibility view written -> %s (Interpreter publication waits for Morning Gate)",
                     _lab_book.get("triage_csv_path"),
                 )
         except Exception as _lab_sync_err:
@@ -5178,11 +5807,19 @@ def evening_workflow(
         except Exception as _wr_err:
             logger.warning("⚠️  Stage 10 (Weekly Report) failed (non-critical): %s", _wr_err)
 
+    try:
+        _update_run_meta_status(canonical_run_id, "COMPLETED", pipeline_mode="EOD")
+    except Exception as _run_meta_error:
+        logger.warning("Could not close run_meta.json: %s", _run_meta_error)
+
     logger.info("=" * 80)
     logger.info("✅ EVENING WORKFLOW COMPLETE")
     logger.info("=" * 80)
     logger.info("Next: Run morning validation at 09:45 ET after market open")
-    logger.info("Next: python morning_gate.py --run-id %s\n", canonical_run_id)
+    logger.info(
+        "Next: python intelligent_orchestrator.py --morning --run-id %s\n",
+        canonical_run_id,
+    )
     return True
 
 
@@ -5263,65 +5900,32 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
             "✅ Morning gate complete — %d GO | %d FLAG | %d BLOCK | output: %s",
             go_count, flag_count, block_count, _output_path.name,
         )
-        # ── PHASE 11: Execution Gate ──────────────────────────────────────────
-        # Apply live-market feasibility checks to morning-validated signals.
-        # Checks: spread ≤ 8%, delta 0.30–0.60, IV ≤ 60%, runway ≥ 1.5%,
-        # gamma flip positioning, breakeven vs runway feasibility.
-        # Maps campaign/execution verdicts to final_action for trade dispatch.
-        # Non-critical — morning workflow completes regardless.
+        # Mandatory shared finaliser: Phase 11, Intelligence Lab rebuild,
+        # Interpreter sync, byte verification, and row reconciliation.  The
+        # direct morning_gate.py CLI calls this same function, preventing the
+        # two supported Morning entry paths from diverging again.
         try:
-            from execution_gate import run_execution_gate
-            _gate_dir = cfg.RUNS_DIR / _run_id / "trades"
-            gated_signals, gate_summary = run_execution_gate(
-                signals    = results,
-                run_id     = _run_id,
-                output_dir = _gate_dir,
-            )
-            _actionable = [s for s in gated_signals
-                           if s.get("final_action") in ("BUY_NOW", "BUY_SMALL")]
-            logger.info(
-                "✅ Phase 11 (Execution Gate) — %d actionable | actions: %s | "                "reasons: %s | output: %s",
-                len(_actionable),
-                gate_summary.get("action_counts", {}),
-                gate_summary.get("reason_counts", {}),
-                gate_summary.get("gated_csv", "?"),
-            )
-            if not _actionable:
-                logger.warning(
-                    "⚠️  Phase 11 — 0 actionable signals after execution gate. "                    "Check spread, delta, IV, runway, and campaign/execution verdicts "                    "in execution_gated_%s.csv",
-                    _run_id,
-                )
-        except Exception as _gate_err:
-            logger.warning(
-                "⚠️  Phase 11 (Execution Gate) failed — morning workflow continues. "                "Error: %s", _gate_err
-            )
-        # ─────────────────────────────────────────────────────────────────────
+            from morning_handoff_finalizer import finalize_morning_handoff
 
-        # Refresh the Lab / Pipeline Interpreter handoff from morning results.
-        # This keeps preservation-first morning decisions visible instead of
-        # leaving the EOD "morning validation required" view in place.
-        try:
-            from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book
-            _morning_manifest = write_final_run_manifest(_run_id, cfg.RUNS_DIR, pipeline_mode="MORNING_VALIDATION")
-            _lab_rows = gated_signals if "gated_signals" in locals() and gated_signals else results
-            _lab_book = write_final_opportunity_book(_run_id, _lab_rows, _morning_manifest, cfg.RUNS_DIR)
-            logger.info(
-                "Morning Lab/Interpreter handoff refreshed -> %s",
-                _lab_book.get("triage_csv_path"),
+            _handoff = finalize_morning_handoff(
+                _run_id,
+                results,
+                runs_dir=cfg.RUNS_DIR,
+                sync_interpreter=True,
             )
-            try:
-                from pipeline_interpreter.ma_inputs_sync import sync_file
-                for _sync_path in (
-                    _output_path,
-                    Path(_lab_book.get("triage_csv_path") or ""),
-                    Path(_lab_book.get("final_csv_path") or ""),
-                ):
-                    if _sync_path and _sync_path.exists():
-                        sync_file(_sync_path, verbose=True, force=True)
-            except Exception as _sync_err:
-                logger.warning("Morning MA_Inputs sync failed (non-critical): %s", _sync_err)
-        except Exception as _lab_err:
-            logger.warning("Morning Lab/Interpreter handoff refresh failed (non-critical): %s", _lab_err)
+            logger.info(
+                "✅ Morning final handoff — %d rows | %d Lab actionable | %s",
+                _handoff.get("lab_rows", 0),
+                _handoff.get("lab_actionable", 0),
+                _handoff.get("summary_path", "?"),
+            )
+        except Exception as _handoff_err:
+            logger.error(
+                "❌ Morning final handoff failed — workflow is incomplete: %s",
+                _handoff_err,
+                exc_info=True,
+            )
+            return False
 
         return True
 
@@ -5359,7 +5963,14 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
         eil_blocked = _series("eil_v3_verdict").fillna("").astype(str).str.upper().isin({"BLOCKED", "BLOCK"})
         trigger_primary = _series("trigger_primary").fillna("").astype(str).str.upper()
         trigger_quality = _series("trigger_quality").fillna("").astype(str).str.upper()
-        trigger_stale = _series("trigger_stale", False).fillna(False).astype(str).str.upper().isin({"TRUE", "1", "YES"})
+        # Trigger freshness is actual source-data age.  Structural context such
+        # as catalyst_proximity=FAR or days_in_range must never be treated as
+        # stale market data.  New runs publish trigger_freshness_state; retain
+        # trigger_stale only as a backward-compatible fallback for old runs.
+        if "trigger_freshness_state" in df.columns:
+            trigger_stale = _series("trigger_freshness_state").fillna("UNKNOWN").astype(str).str.upper().eq("STALE")
+        else:
+            trigger_stale = _series("trigger_stale", False).fillna(False).astype(str).str.upper().isin({"TRUE", "1", "YES"})
         trigger_missing = trigger_primary.isin({"", "NONE", "NAN"}) | trigger_quality.isin({"", "NONE", "NAN"})
 
         missing_phase2_fields = [field for field in PHASE2_LAYER2_FIELDS if field not in df.columns]
@@ -5385,7 +5996,7 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
             if bool(exec_mask.loc[idx] and eil_blocked.loc[idx]):
                 reasons.append("EIL_BLOCKED_WITH_EXECUTION_MODE")
             if bool(exec_mask.loc[idx] and trigger_stale.loc[idx]):
-                reasons.append("TRIGGER_STALE_WITH_EXECUTION_MODE")
+                reasons.append("TRIGGER_DATA_STALE_WITH_EXECUTION_MODE")
             if bool(exec_mask.loc[idx] and trigger_missing.loc[idx]):
                 reasons.append("TRIGGER_MISSING_WITH_EXECUTION_MODE")
             if bool(exec_mask.loc[idx] and phase2_missing.loc[idx]):
@@ -5402,6 +6013,8 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
             df.loc[conflict_mask, "pse_final_size"] = 0.0
             df.loc[conflict_mask, "fd_verdict"] = "WATCHLIST"
             df.loc[conflict_mask, "fd_size"] = 0.0
+            if "thesis_decision" in df.columns:
+                df.loc[conflict_mask, "thesis_decision"] = "WATCHLIST"
             logger.warning(
                 "handoff_guard: downgraded %d conflicting execution-like rows before downstream export",
                 int(conflict_mask.sum()),
@@ -5414,10 +6027,34 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
         if missing_phase2_fields:
             logger.warning("handoff_guard: missing Phase 2 fields: %s", missing_phase2_fields)
 
+        # A detected row-level contradiction is not itself a fatal run defect once
+        # every execution authority has been quarantined.  Re-evaluate the written
+        # authority fields after downgrade and reserve the strict global stop for
+        # unresolved capital exposure or a missing governed Phase 2 schema.
+        post_mode = _series("pse_execution_mode").fillna("").astype(str).str.upper()
+        post_fd = _series("fd_verdict").fillna("").astype(str).str.upper()
+        post_final = _series("thesis_decision").fillna("").astype(str).str.upper()
+        post_capital = _series("capital_permission").fillna("").astype(str).str.upper()
+        post_pse_size = _pd_guard.to_numeric(_series("pse_final_size", 0.0), errors="coerce").fillna(0.0)
+        post_fd_size = _pd_guard.to_numeric(_series("fd_size", 0.0), errors="coerce").fillna(0.0)
+        unresolved_mask = conflict_mask & (
+            post_mode.isin(execution_like)
+            | post_fd.isin({"EXECUTE", "EXECUTE_WITH_CAUTION", "GO"})
+            | post_final.eq("GO")
+            | post_capital.isin({"YES", "GO", "EXECUTE", "TRUE", "1"})
+            | post_pse_size.gt(0.0)
+            | post_fd_size.gt(0.0)
+        )
+
         df.to_csv(_eil_path, index=False)
-        if _strict_actuarial_v6_enabled() and (conflict_mask.any() or missing_phase2_fields):
+        if _strict_actuarial_v6_enabled() and (unresolved_mask.any() or missing_phase2_fields):
             logger.error("STRICT ACTUARIAL V6: handoff guard blocked downstream execution.")
             return False
+        if conflict_mask.any():
+            logger.info(
+                "handoff_guard: %d conflicts safely quarantined; downstream export may continue",
+                int(conflict_mask.sum()),
+            )
         return True
     except Exception as _guard_err:
         logger.warning("handoff_guard failed -- %s", _guard_err)
@@ -5562,6 +6199,41 @@ def inject_actuarial_into_eil_csv(run_id: str) -> None:
 
 # ============================================================ CLI =============
 
+def configure_cds_runtime_for_orchestrator(environment=None, base_dir=None):
+    """Activate the governed CDS-2 contract for production CLI workflows.
+
+    ``python intelligent_orchestrator.py --evening`` and ``--morning`` are the
+    production entrypoints.  Defaults are applied here so every subprocess
+    inherits write-through/canonical-read settings even when no batch wrapper is
+    used.  Explicit environment values are preserved for controlled rollback.
+    """
+    env = os.environ if environment is None else environment
+    root = Path(base_dir) if base_dir is not None else cfg.BASE_DIR
+    env.setdefault("AVSHUNTER_CANONICAL_DATA_ENABLED", "1")
+    env.setdefault("AVSHUNTER_CANONICAL_WRITE_THROUGH", "1")
+    env.setdefault("AVSHUNTER_CDS2_OHLCV_MODE", "ACTIVE")
+    env.setdefault("AVSHUNTER_STRICT_ACTUARIAL_V6", "1")
+    env.setdefault("AVSHUNTER_MACRO_CORE_REQUIRED", "0")
+    env.setdefault("AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT", "false")
+    # CDS-3 Packages and Options acquisition are production-governed. Explicit
+    # environment values remain the rollback switch for controlled diagnosis.
+    env.setdefault("AVSHUNTER_STAGE_GATING_ENFORCED", "1")
+    env.setdefault(
+        "AVSHUNTER_HISTORICAL_PRICE_DB",
+        str(root / "data" / "canonical" / "historical_prices.sqlite"),
+    )
+
+    from canonical_data.feature_flags import CanonicalFeatureFlags
+
+    flags = CanonicalFeatureFlags.from_environment(env)
+    return {
+        "enabled": flags.enabled,
+        "write_through": flags.write_through,
+        "ohlcv_mode": flags.ohlcv_mode,
+        "stage_gating_enforced": flags.stage_gating_enforced,
+        "database_path": env["AVSHUNTER_HISTORICAL_PRICE_DB"],
+    }
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AVSHUNTER Intelligent Orchestrator v3.1")
 
@@ -5574,6 +6246,12 @@ def main() -> None:
     parser.add_argument("--evening",   action="store_true", help="Run evening workflow (discovery → VANGUARD → EIL → Kelly → EOD candidate manifest)")
     parser.add_argument("--morning",   action="store_true", help="Run morning validation at 09:45 ET (live data scoring against EOD candidates)")
     parser.add_argument("--premarket", action="store_true", help="[DEPRECATED] Use --morning instead")
+    parser.add_argument("--auto", action="store_true", help="Resolve and execute the governed run-anytime action (feature-flagged)")
+    parser.add_argument("--finalise", action="store_true", help="Explicitly finalise provider-confirmed completed-session data (feature-flagged)")
+    parser.add_argument("--replay", action="store_true", help="Resolve an offline research replay plan; live execution is not permitted")
+    parser.add_argument("--plan-only", action="store_true", help="Print the dynamic RunPlan without provider calls or filesystem changes")
+    parser.add_argument("--as-of-utc", default=None, help="Timezone-aware ISO-8601 dispatcher clock; intended for deterministic replay/testing")
+    parser.add_argument("--provider-session-finalised", action="store_true", help="Confirm the provider has published the completed current session")
     parser.add_argument("--force",     action="store_true", help="Bypass market hours guard -- allow --evening during market hours (CAUTION: intraday data produces corrupted EOD candidates)")
     parser.add_argument(
         "--data-mode",
@@ -5605,10 +6283,159 @@ def main() -> None:
             "Example: data\\\\universe\\\\test_universe_50.csv"
         ),
     )
+    parser.add_argument(
+        "--cds-startup-self-test",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
 
     args = parser.parse_args()
 
-    if args.evening:
+    dynamic_requested = args.auto or args.finalise or args.replay or args.plan_only
+    if args.evening or args.morning or args.premarket or args.auto or args.finalise:
+        if args.plan_only:
+            cds_runtime = None
+        else:
+            cds_runtime = configure_cds_runtime_for_orchestrator()
+    else:
+        cds_runtime = None
+    if cds_runtime is not None:
+        logger.info(
+            "CDS-2 orchestrator runtime: enabled=%s write_through=%s mode=%s",
+            cds_runtime["enabled"],
+            cds_runtime["write_through"],
+            cds_runtime["ohlcv_mode"],
+        )
+        logger.info("CDS-2 canonical database: %s", cds_runtime["database_path"])
+        logger.info(
+            "CDS-3 stage gating: %s",
+            "ENFORCED" if cds_runtime["stage_gating_enforced"] else "SHADOW",
+        )
+        if not cds_runtime["enabled"] or not cds_runtime["write_through"]:
+            logger.warning(
+                "CDS-2 write-through is explicitly disabled by the environment."
+            )
+        if args.cds_startup_self_test:
+            child_check = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "from canonical_data.feature_flags import CanonicalFeatureFlags; "
+                        "f=CanonicalFeatureFlags.from_environment(); "
+                        "raise SystemExit(0 if f.enabled and f.write_through "
+                        "and f.ohlcv_mode == 'ACTIVE' else 3)"
+                    ),
+                ],
+                cwd=str(cfg.BASE_DIR),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+            if child_check.returncode != 0:
+                logger.error(
+                    "CDS-2 child-process inheritance self-test: FAIL %s",
+                    child_check.stdout.strip(),
+                )
+                sys.exit(3)
+            logger.info("CDS-2 child-process inheritance self-test: PASS")
+            logger.info("CDS-2 orchestrator startup self-test: PASS")
+            sys.exit(0)
+
+    if dynamic_requested or os.environ.get("AVSHUNTER_DYNAMIC_PLAN_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+        from orchestrator.dynamic_dispatcher import (
+            execute_dispatch_plan,
+            operator_summary,
+            persist_dispatch_plan,
+            requested_action_from_cli,
+            resolve_dispatch_plan,
+        )
+
+        try:
+            requested_action = requested_action_from_cli(
+                evening=args.evening,
+                morning=args.morning,
+                premarket=args.premarket,
+                auto=args.auto,
+                finalise=args.finalise,
+                replay=args.replay,
+            )
+            if args.as_of_utc:
+                raw_as_of = args.as_of_utc.strip().replace("Z", "+00:00")
+                as_of_utc = datetime.fromisoformat(raw_as_of)
+                if as_of_utc.tzinfo is None:
+                    raise ValueError("--as-of-utc must include a timezone")
+                as_of_utc = as_of_utc.astimezone(timezone.utc)
+            else:
+                as_of_utc = datetime.now(timezone.utc)
+            if requested_action.value == "AUTO" and args.data_mode != "EOD":
+                raise ValueError("AUTO production dispatch cannot use research-only LATEST data mode")
+            plan, selected_thesis = resolve_dispatch_plan(
+                output_dir=cfg.OUTPUT_DIR,
+                requested_action=requested_action,
+                as_of_utc=as_of_utc,
+                run_id=args.run_id,
+                provider_session_finalised=args.provider_session_finalised,
+            )
+            logger.info(operator_summary(plan, selected_thesis))
+            if args.plan_only:
+                print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))
+                success = True
+            else:
+                flags = DynamicSessionFeatureFlags.from_environment()
+                if not flags.plan_engine:
+                    raise RuntimeError("dynamic plan execution requires AVSHUNTER_DYNAMIC_PLAN_ENABLED=1")
+                if requested_action.value == "AUTO" and not flags.auto_dispatcher:
+                    raise RuntimeError("AUTO dispatch requires AVSHUNTER_DYNAMIC_AUTO_ENABLED=1")
+                if plan.resolved_action == "BUILD_THESIS" and not flags.completed_thesis_builder:
+                    raise RuntimeError("thesis build requires AVSHUNTER_DYNAMIC_THESIS_ENABLED=1")
+                if plan.resolved_action == "VALIDATE" and not flags.validation_gate:
+                    raise RuntimeError("validation requires AVSHUNTER_DYNAMIC_VALIDATION_ENABLED=1")
+                if plan.resolved_action == "FINALISE":
+                    if not args.provider_session_finalised:
+                        raise RuntimeError("FINALISE requires --provider-session-finalised")
+                    if not flags.completed_thesis_builder or not flags.profile_lifecycle:
+                        raise RuntimeError("FINALISE requires dynamic thesis and profile lifecycle flags")
+                if plan.resolved_action == "REPLAY":
+                    raise RuntimeError("REPLAY is research-only and must use the offline replay runner")
+                plan_path, inserted = persist_dispatch_plan(
+                    plan,
+                    output_dir=cfg.OUTPUT_DIR,
+                    plan_store_path=cfg.BASE_DIR / "data" / "canonical" / "run_plans.sqlite",
+                )
+                logger.info(
+                    "Dynamic plan persisted before execution: %s (%s)",
+                    plan_path,
+                    "new" if inserted else "idempotent reuse",
+                )
+
+                def _build(planned):
+                    return evening_workflow(
+                        run_id=planned.pipeline_run_id,
+                        min_universe=args.min_universe,
+                        target_universe=args.target_universe,
+                        universe_gate_mode=args.universe_gate_mode,
+                        force=args.force,
+                        universe_override=Path(args.universe).resolve() if args.universe else None,
+                        data_mode="EOD",
+                    )
+
+                callbacks = {
+                    "BUILD_THESIS": _build,
+                    "FINALISE": _build,
+                    "VALIDATE": lambda planned: premarket_workflow(
+                        run_id=planned.pipeline_run_id
+                    ),
+                }
+                dispatch = execute_dispatch_plan(plan, callbacks=callbacks)
+                logger.info("Dynamic dispatcher: %s", dispatch.message)
+                success = dispatch.success
+        except Exception as dynamic_error:
+            logger.error("Dynamic dispatcher failed closed: %s", dynamic_error)
+            success = False
+    elif args.evening:
         success = evening_workflow(
             run_id=args.run_id,
             min_universe=args.min_universe,
@@ -5623,7 +6450,7 @@ def main() -> None:
             logger.warning("⚠️  --premarket is deprecated. Use --morning instead.")
         success = premarket_workflow(run_id=args.run_id)
     else:
-        logger.error("Must specify --evening or --morning")
+        logger.error("Must specify --evening, --morning or --auto")
         logger.error("  python intelligent_orchestrator.py --evening")
         logger.error("  python intelligent_orchestrator.py --morning")
         success = False

@@ -6,6 +6,14 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
+pytest.skip(
+    "Legacy morning_thesis_validator was retired; production coverage lives in "
+    "test_morning_gate_authority.py and test_morning_gate_contract_repair.py.",
+    allow_module_level=True,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

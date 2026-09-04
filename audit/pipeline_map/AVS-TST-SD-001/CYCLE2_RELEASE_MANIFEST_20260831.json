@@ -1,0 +1,49 @@
+{
+  "release_id": "AVSHUNTER-CYCLE2-20260831",
+  "created_at_local": "2026-08-31",
+  "baseline_commit": "5d886f07c1d290f25600e2e7e62ae77aad85476a",
+  "status": "IMPLEMENTED_AWAITING_FRESH_PRODUCTION_CYCLE",
+  "backup": {
+    "path": "backups/cycle2_prechange_20260831_221858",
+    "control_plane_sha256": "7cdc59af8521a51c1ba8a63ff38756dd7e73f1f3dc25eb373bfec4c81db724a8"
+  },
+  "database": {
+    "path": "data/canonical/control_plane.sqlite",
+    "sha256_after_migration": "a2a68a951b159c1ae72b3c72e9e07d020f64c799ca3c72cacd255e9b91fb1ee2",
+    "integrity_check": "ok",
+    "schema_version": "option_liquidity_lifecycle_v2",
+    "row_counts": {
+      "option_thesis_events": 1507,
+      "option_contract_observations": 1021,
+      "option_contract_selection_events": 1021
+    },
+    "append_only_trigger_count": 6
+  },
+  "production_files": [
+    {"path": "contracts/governed_states.py", "sha256": "438218bb324b170420aecd70274ea4d0dc449890079cfbc5834b36bedff91e8a"},
+    {"path": "contracts/options_liquidity_lifecycle.py", "sha256": "c202a77e687c9d52c5eae97a858d48271e4b8b813dd841eaf85ab3f9e8ccd2c7"},
+    {"path": "canonical_data/option_liquidity_lifecycle.py", "sha256": "fb1790a04150065b97623b8b57a56b0cbaa7d7f2db49fc82ed30f2a3885fb706"},
+    {"path": "scripts/avshunter_options_intelligence.py", "sha256": "c246bc18549b4dd6e27c0645a4988a4f3b519169323a09ba6e093448cac76366"},
+    {"path": "eod_candidate_engine.py", "sha256": "0e769dc9f5092fed82297ae43ff26a8beb49deb86e3a9aa25e6bde68dbebddb0"},
+    {"path": "morning_gate.py", "sha256": "81dcaf37cd1e1d8e0410f3ab0eff62ab514c30ec61e36b3ed004ef0dd97fa0e1"},
+    {"path": "scripts/exit_rules_engine.py", "sha256": "38444201e396b5a9d1c46def836fd33e727a85eed29aea8b9ddac29cd0cf642e"}
+  ],
+  "tests": {
+    "focused": {"passed": 104, "failed": 0},
+    "governed_regression": {
+      "passed": 234,
+      "failed": 0,
+      "deselected_environment_only": 1,
+      "unittest_subtests_passed": 3
+    }
+  },
+  "next_gate": "FRESH_EVENING_THEN_MARKET_SESSION_MORNING_VALIDATION",
+  "rollback_triggers": [
+    "lifecycle contradiction",
+    "row-count loss or SQLite integrity failure",
+    "append-only trigger loss",
+    "wrong-sided invalidation accepted",
+    "non-routed hold accepted",
+    "non-directional row receives directional execution treatment"
+  ]
+}

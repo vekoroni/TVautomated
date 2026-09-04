@@ -1,0 +1,23 @@
+{
+  "run_id": "TESTA_LEGACY",
+  "gate_version": "1.4.0",
+  "completed_at": "2026-08-29T20:29:48.899356+00:00",
+  "signals_in": 1,
+  "signals_out": 0,
+  "signals_preserved": 1,
+  "action_counts": {
+    "MANUAL_REVIEW": 1
+  },
+  "reason_counts": {
+    "OLM_LIFECYCLE_REQUIRED": 1
+  },
+  "olm_guard_disposition_counts": {
+    "MANUAL_REVIEW": 1
+  },
+  "olm_guard_reason_counts": {
+    "OLM_LIFECYCLE_REQUIRED": 1
+  },
+  "warning_frequency": {},
+  "actionable_rate": 0.0,
+  "gated_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\olm_fix_test\\_tmp_out\\execution_gated_TESTA_LEGACY.csv"
+}

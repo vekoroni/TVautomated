@@ -178,6 +178,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from execution_schema import TRIGGER_HANDOFF_FIELDS, validate_trigger_handoff_row
+
 try:
     from scripts.macro_quant_packet import MACRO_QUANT_CSV_FIELDS, resolve_macro_suffix_columns
 except Exception:
@@ -220,9 +222,9 @@ from final_decision_engine import make_final_decision
 _pse_compute = None
 _PSE_AVAILABLE = False
 _PSE_RETIRED_ADVISORY_ONLY = True
-PSE_RETIRED_POLICY = "ADVISORY_ONLY"
+PSE_RETIRED_POLICY = "PSE_IGNORED_MANUAL_SIZING"
 PSE_LEGACY_RETIRED_POLICY = "POSITION_SIZING_RETIRED_ADVISORY_ONLY"
-PSE_OLD_RETIRED_POLICY = "PSE_IGNORED_MANUAL_SIZING"
+PSE_OLD_RETIRED_POLICY = "ADVISORY_ONLY"
 PSE_MANUAL_SIZING_NOTE = "MANUAL_SIZE_REQUIRED"
 OPTIONS_RESEARCH_PERMISSION = "MANUAL_REVIEW_REQUIRED"
 OPTIONS_GO_ROUTE = "OPTIONS_GO_REVIEW"
@@ -433,12 +435,10 @@ logger.info(
 LIVE_MODE = True
 
 # â”€â”€ Engine singleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# FIX-10: EV authority is ev_conf_adj (confidence-adjusted EV).
-# ev_final is written for audit only. All downstream gating uses ev_conf_adj.
-# build_execution_context_from_row() reads ev2_ev_conf_adj â†’ ev2_ev_final â†’ ev_final.
-# Do not add new reads from ev_final, ev_option, expected_value_20d etc.
+# EV is computed and preserved for advisory ranking/outcome analysis only.
+# It must never grant, deny, promote or demote a production candidate.
 _ev_engine = EVEngineV2()
-_EV_AUTHORITY_FIELD = "ev2_ev_conf_adj"   # sovereign EV field â€” do not change
+_EV_ADVISORY_FIELD = "ev2_ev_conf_adj"
 
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -948,21 +948,10 @@ def _compute_all_ev(rows: list[dict]) -> tuple[list[dict], list[EVResult]]:
 
 def _percentile_overrides(ev_results: list[EVResult]) -> list[bool]:
     """
-    FIX-6: Tightened percentile gate.
-    Top 30% of ev_conf_adj scores are marked for review â€” but in live mode
-    this only moves a signal from BLOCKâ†’WATCHLIST, never to execution.
-    A signal with negative EV that is in the top 30% is still a bad signal
-    in absolute terms. Relative ranking helps with watchlist ordering only.
-    Hard blocks (mp_block, EV_HARD_BLOCK, EIL failure) remain sovereign
-    regardless of percentile rank â€” see _process_row() gate ordering.
+    Retired compatibility hook. EV percentile ranking is observational and
+    cannot override or alter any production route.
     """
-    scores = [r.ev_conf_adj for r in ev_results]
-    if len(scores) < 10:
-        return [False] * len(scores)
-    threshold = sorted(scores)[int(len(scores) * 0.70)]
-    # FIX-6: percentile override only applies if EV is at least weakly positive
-    # Negative EV in top-30% is still negative EV â€” do not promote.
-    return [s >= threshold and s >= 0.0 for s in scores]
+    return [False] * len(ev_results)
 
 
 # Module-level EOD resolver state â€” set by run_engine() before Pass 2
@@ -1104,13 +1093,9 @@ def _apply_current_edge_hard_veto(row: dict) -> dict:
         row["future_state_action"] = "EOD_DATA_INSUFFICIENT_REVIEW"
         reason = "EOD_DATA_INSUFFICIENT_REVIEW:DATA_MISSING"
     else:
-        ev_status       = str(row.get("ev2_ev_status",              "") or "").upper().strip()
-        monetisation    = str(row.get("ev2_monetisation_readiness", "") or "").upper().strip()
         physics_verdict = str(row.get("physics_verdict",            "") or "").upper().strip()
         future_positive = (
-            ev_status       in {"PASS_SMALL", "PASS", "STRONG_PASS"}
-            or monetisation in {"YES_SMALL", "YES", "WATCH"}
-            or physics_verdict in {"EARLY_PRESSURE_BUILDING", "MONETISABLE_PRESSURE"}
+            physics_verdict in {"EARLY_PRESSURE_BUILDING", "MONETISABLE_PRESSURE"}
         )
         if future_positive:
             row["future_edge_valid"]   = True
@@ -1236,9 +1221,7 @@ def _process_row(
     campaign  = _campaign_verdict(row)
     execution = _execution_verdict(row)
 
-    # If row is marginally near-zero EV but top 30%, relax the hard block
-    if percentile_override and ev_result.ev_conf_adj >= -0.05:
-        row["_percentile_override_active"] = True
+    row["_percentile_override_active"] = False
 
     # â”€â”€ FIX-02: EIL microstructure (size penalty layer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if _EIL_AVAILABLE:
@@ -1336,9 +1319,10 @@ def _process_row(
 
             eil_result = _eil_evaluate(eil_ctx)
             # Normalise EIL token â†’ FDE EIL_SIZE_MAP vocabulary
-            raw_eil_token = eil_result.eil_verdict
+            final_eil_token = eil_result.eil_verdict
+            raw_eil_token = eil_result.eil_raw_verdict
             # FIX-3: Persist full EIL verdict â€” all diagnostic fields
-            row["eil_v3_verdict"]      = _EIL_TOKEN_NORMALISE.get(raw_eil_token, "BLOCKED")  # FIX-2: unknown token = BLOCKED
+            row["eil_v3_verdict"]      = _EIL_TOKEN_NORMALISE.get(final_eil_token, "BLOCKED")  # FIX-2: unknown token = BLOCKED
             row["eil_raw_verdict"]     = raw_eil_token
             row["eil_composite_score"] = eil_result.eil_composite_score
             row["eil_size_multiplier"] = eil_result.eil_size_multiplier
@@ -1445,7 +1429,6 @@ def _process_row(
         _eil_fail = str(row.get("eil_failure_reason", "") or "").strip()
         _contract = float(row.get("contract_premium", 0.0) or 0.0)
         _spread   = float(row.get("eil_spread_pct_live", 0.0) or 0.0)
-        _ev_adj   = float(ev_result.ev_conf_adj if ev_result else 0.0)
 
         # â”€â”€ Classify execution mode + reason â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if _sig in {"NO_EDGE", "DATA_MISSING"} or _tier in {"TIER_4_FLAT", "DATA_MISSING"}:
@@ -1584,7 +1567,7 @@ def _process_row(
 def run_engine(df: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"EIL v{EIL_RUNNER_VERSION} â€” processing {len(df)} rows")
     logger.info("PSE status: RETIRED â€” advisory telemetry only; no live capital sizing")
-    logger.info("EV authority: EVEngineV2 (4-layer). Candidate authority: signal policy + morning validation. Live size: manual.")
+    logger.info("EV mode: advisory-only. Candidate authority: signal policy + morning validation. Live size: manual.")
     logger.info(f"EIL microstructure: {'ACTIVE' if _EIL_AVAILABLE else 'INACTIVE (FIX-02 â€” deploy execution_intelligence.py)'}")
     logger.info(f"MonetisationPolicy: {'ACTIVE' if _MP_AVAILABLE else 'INACTIVE (FIX-06 â€” deploy avshunter_monetisation_policy.py)'}")
 
@@ -2079,7 +2062,7 @@ def _apply_retired_sizing_overlay(row: dict, ev_result, percentile_override: boo
     signal = str(row.get("signal_type", "") or "").upper().strip()
     tier = str(row.get("momentum_tier", "") or "").upper().strip()
     row["sizing_policy"] = PSE_RETIRED_POLICY
-    row["pse_engine_state"] = "ADVISORY_ONLY"
+    row["pse_engine_state"] = "IGNORED_MANUAL_SIZING"
     row["pse_execution_mode"] = row.get("pse_execution_mode") or "SIZING_IGNORED_REVIEW"
     row["pse_final_size"] = 0.0
     row["pse_block_reason"] = row.get("pse_block_reason") or ""
@@ -2140,7 +2123,7 @@ def _apply_eod_candidate_or_watch(
     row["eod_candidate_size"] = profile["candidate_size"] if profile["allowed"] else 0.0
     row["candidate_size"] = row["eod_candidate_size"]
     row["sizing_policy"] = profile.get("sizing_policy", PSE_RETIRED_POLICY)
-    row["pse_engine_state"] = "ADVISORY_ONLY"
+    row["pse_engine_state"] = "IGNORED_MANUAL_SIZING"
     row["pse_advisory_note"] = PSE_MANUAL_SIZING_NOTE
     row["pse_trade_veto"] = False
     row["manual_sizing_required"] = bool(profile["allowed"])
@@ -2228,12 +2211,12 @@ def _apply_signal_authority_policy(row: dict) -> dict:
         row["pse_final_size"]           = 0.0
         row["fd_verdict"]               = "WATCHLIST"
         row["fd_size"]                  = 0.0
-        row["capital_permission"]       = "WATCH_ONLY"
+        row["capital_permission"]       = "NO"
         row["eod_candidate_permission"] = "CONTRACT_REPAIR_REQUIRED"
         row["eod_candidate_size"]       = 0.0
         row["candidate_size"]           = 0.0
-        row["manual_sizing_required"]   = True
-        row["candidate_size_status"]    = "MANUAL_SIZING_REQUIRED"
+        row["manual_sizing_required"]   = False
+        row["candidate_size_status"]    = "NO_CANDIDATE_SIZE"
         row["candidate_size_source"]    = "OPTIONS_REPAIR_REQUIRED"
         row["future_state_action"]      = "OPTIONS_REPAIR_REQUIRED"
         row["pse_block_reason"]         = "OPTIONS_RESEARCH_BLOCKED"
@@ -2241,19 +2224,19 @@ def _apply_signal_authority_policy(row: dict) -> dict:
         return row
 
     if signal == "DATA_MISSING" or tier == "DATA_MISSING":
-        row["pse_execution_mode"]      = "EOD_DATA_INSUFFICIENT_REVIEW"
+        row["pse_execution_mode"]      = "DATA_REPAIR_REQUIRED"
         row["pse_final_size"]          = 0.0
         row["fd_verdict"]              = "WATCHLIST"
         row["fd_size"]                 = 0.0
-        row["capital_permission"]      = "EOD_CANDIDATE_ONLY"
-        row["eod_candidate_permission"] = "MORNING_VALIDATION_REQUIRED"
+        row["capital_permission"]      = "NO"
+        row["eod_candidate_permission"] = "NO"
         row["eod_candidate_size"]       = 0.0
         row["candidate_size"]           = 0.0
-        row["manual_sizing_required"]   = True
-        row["candidate_size_status"]    = "MANUAL_SIZING_REQUIRED"
-        row["candidate_size_source"]    = "DATA_INSUFFICIENT_REVIEW"
-        row["future_state_action"]     = "EOD_DATA_INSUFFICIENT_REVIEW"
-        row["signal_authority_reason"] = "DATA_MISSING_EOD_DATA_INSUFFICIENT_REVIEW"
+        row["manual_sizing_required"]   = False
+        row["candidate_size_status"]    = "NO_CANDIDATE_SIZE"
+        row["candidate_size_source"]    = "DATA_REPAIR_REQUIRED"
+        row["future_state_action"]     = "DATA_REPAIR_REQUIRED"
+        row["signal_authority_reason"] = "DATA_MISSING_REPAIR_REQUIRED"
         return row
 
     if signal == "NO_EDGE" or tier == "TIER_4_FLAT":
@@ -2360,7 +2343,7 @@ def _finalize_execution_authority(row: dict) -> dict:
     options_contract = _options_research_profile(row)
     options_research_blocked = bool(options_contract.get("present") and options_contract.get("blocked"))
     if options_research_blocked:
-        capital_permission = "WATCH_ONLY"
+        capital_permission = "NO"
         eod_candidate_permission = "CONTRACT_REPAIR_REQUIRED"
         pse_mode = "OPTIONS_REPAIR_REQUIRED"
         size = 0.0
@@ -2396,7 +2379,15 @@ def _finalize_execution_authority(row: dict) -> dict:
     elif eod_candidate_permission == "CONTRACT_REPAIR_REQUIRED":
         effective = "OPTIONS_REPAIR_REQUIRED"
         reason = row.get("signal_authority_reason") or "CONTRACT_REPAIR_REQUIRED_BEFORE_MORNING_VALIDATION"
-    elif pse_mode in {"STRUCTURAL_WATCH", "FUTURE_WATCH", "WATCHLIST", "SKIP", "FATAL_BLOCK", "OPTIONS_REPAIR_REQUIRED"}:
+    elif pse_mode in {
+        "STRUCTURAL_WATCH",
+        "FUTURE_WATCH",
+        "WATCHLIST",
+        "SKIP",
+        "FATAL_BLOCK",
+        "OPTIONS_REPAIR_REQUIRED",
+        "DATA_REPAIR_REQUIRED",
+    }:
         effective = pse_mode
         reason = row.get("signal_authority_reason") or "NO_CAPITAL_PERMISSION"
     elif size <= 0.0 or capital_permission in {"NO", "NO_CAPITAL", "WATCH_ONLY", ""}:
@@ -2431,7 +2422,7 @@ def _finalize_execution_authority(row: dict) -> dict:
     row["approved_size_contracts"] = row.get("approved_size_contracts", "")
     row["manual_review_required"] = True if eod_candidate_authorized else bool(row.get("manual_sizing_required", False))
     row.setdefault("sizing_policy", PSE_RETIRED_POLICY)
-    row.setdefault("pse_engine_state", "ADVISORY_ONLY")
+    row.setdefault("pse_engine_state", "IGNORED_MANUAL_SIZING")
     row.setdefault("pse_advisory_note", PSE_MANUAL_SIZING_NOTE)
     row.setdefault("pse_trade_veto", False)
     if eod_candidate_authorized:
@@ -3042,9 +3033,29 @@ def _defang_invalid_campaign_fatal_blocks(df: pd.DataFrame, logger=None) -> pd.D
         _log.info("DEFANG: %d FUTURE_EDGE â†’ FUTURE_WATCH", int(m_future.sum()))
 
     # â”€â”€ NO_EDGE / DATA_MISSING: skip, never fatal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    m_no_edge = is_generic_fatal & (
-        sig.isin(["NO_EDGE", "DATA_MISSING"])
-        | tier.isin(["TIER_4_FLAT", "DATA_MISSING"])
+    m_data_missing = is_generic_fatal & (
+        sig.eq("DATA_MISSING") | tier.eq("DATA_MISSING")
+    )
+    if m_data_missing.any():
+        df.loc[m_data_missing, "pse_execution_mode"] = "DATA_REPAIR_REQUIRED"
+        df.loc[m_data_missing, "pse_final_size"] = 0.0
+        df.loc[m_data_missing, "fd_size"] = 0.0
+        df.loc[m_data_missing, "fd_verdict"] = "WATCHLIST"
+        df.loc[m_data_missing, "capital_permission"] = "NO"
+        df.loc[m_data_missing, "eod_candidate_permission"] = "NO"
+        df.loc[m_data_missing, "execution_authorized"] = False
+        df.loc[m_data_missing, "eod_candidate_authorized"] = False
+        df.loc[m_data_missing, "eod_candidate_size"] = 0.0
+        df.loc[m_data_missing, "candidate_size"] = 0.0
+        df.loc[m_data_missing, "effective_execution_verdict"] = "DATA_REPAIR_REQUIRED"
+        df.loc[m_data_missing, "capital_authorization_state"] = "NOT_AUTHORIZED"
+        df.loc[m_data_missing, "future_state_action"] = "DATA_REPAIR_REQUIRED"
+        df.loc[m_data_missing, "pse_block_reason"] = "DATA_MISSING_REPAIR_REQUIRED"
+        df.loc[m_data_missing, "signal_authority_reason"] = "DATA_MISSING_REPAIR_REQUIRED"
+        _log.info("DEFANG: %d DATA_MISSING rows held for repair", int(m_data_missing.sum()))
+
+    m_no_edge = is_generic_fatal & ~m_data_missing & (
+        sig.eq("NO_EDGE") | tier.eq("TIER_4_FLAT")
     )
     if m_no_edge.any():
         df.loc[m_no_edge, "pse_execution_mode"] = "EOD_PROBE_CANDIDATE"
@@ -3065,7 +3076,7 @@ def _defang_invalid_campaign_fatal_blocks(df: pd.DataFrame, logger=None) -> pd.D
         df.loc[m_options_blocked, "pse_final_size"]     = 0.0
         df.loc[m_options_blocked, "fd_size"]            = 0.0
         df.loc[m_options_blocked, "fd_verdict"]         = "WATCHLIST"
-        df.loc[m_options_blocked, "capital_permission"] = "WATCH_ONLY"
+        df.loc[m_options_blocked, "capital_permission"] = "NO"
         df.loc[m_options_blocked, "eod_candidate_permission"] = "CONTRACT_REPAIR_REQUIRED"
         df.loc[m_options_blocked, "eod_candidate_authorized"] = False
         df.loc[m_options_blocked, "eod_candidate_size"] = 0.0
@@ -3159,7 +3170,7 @@ def _defang_invalid_campaign_fatal_blocks(df: pd.DataFrame, logger=None) -> pd.D
         )
         if m_opt_leak.any():
             df.loc[m_opt_leak, "eod_candidate_permission"] = "CONTRACT_REPAIR_REQUIRED"
-            df.loc[m_opt_leak, "capital_permission"]       = "WATCH_ONLY"
+            df.loc[m_opt_leak, "capital_permission"]       = "NO"
             df.loc[m_opt_leak, "pse_execution_mode"]       = "OPTIONS_REPAIR_REQUIRED"
             df.loc[m_opt_leak, "eod_candidate_authorized"] = False
             df.loc[m_opt_leak, "eod_candidate_size"]       = 0.0
@@ -3261,6 +3272,16 @@ if __name__ == "__main__":
     out = run_engine(df)
     out = append_physics_fields_from_source(out, df)
     out = _ensure_eil_audit_contract(out)
+    for _trigger_index, _trigger_row in enumerate(out.to_dict(orient="records")):
+        try:
+            validate_trigger_handoff_row(_trigger_row)
+        except ValueError as _trigger_error:
+            _trigger_ticker = str(_trigger_row.get("ticker", "")).strip().upper()
+            raise RuntimeError(
+                "WS2 trigger handoff failed before execution publication: "
+                f"row={_trigger_index} ticker={_trigger_ticker or 'UNKNOWN'} "
+                f"error={_trigger_error}"
+            ) from _trigger_error
     out = enrich_dataframe_with_truth_packets(
         out,
         source="EIL_PSE",
@@ -3334,6 +3355,9 @@ if __name__ == "__main__":
                 "horizon_bucket", "horizon_action", "horizon_size_multiplier",
                 "horizon_block_reason", "horizon_source",
                 "pse_horizon_multiplier_applied", "pse_pre_horizon_size",
+                # WS2: governed trigger block is calculated before EIL and
+                # explicitly survives both execution and enriched outputs.
+                *TRIGGER_HANDOFF_FIELDS,
                 # Spread audit field and runner version
                 "eil_spread_pct_live",
                 "eil_runner_version",

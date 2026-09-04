@@ -1,0 +1,249 @@
+--- backups/olm_blocker_remediation_prechange_20260829_2035/scripts/avshunter_options_intelligence.py	2026-08-29 19:26:37.470244100 +0100
++++ scripts/avshunter_options_intelligence.py	2026-08-29 21:54:56.426566000 +0100
+@@ -1113,8 +1113,18 @@
+ EV3_TOTAL_CANDIDATE_LIMIT = 12
+ EV3_MIN_OPEN_INTEREST = int(os.environ.get("AVSHUNTER_EV3_MIN_OPEN_INTEREST", "50"))
+ EV3_MIN_VOLUME = int(os.environ.get("AVSHUNTER_EV3_MIN_VOLUME", "1"))
+-EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.2.0"
++EV3_CANDIDATE_POLICY_VERSION = "ev3-long-single-candidates-v0.3.0"
+ EV3_VERTICAL_POLICY_VERSION = "ev3-vertical-debit-candidates-v0.1.0"
++EV3_REPAIR_DIAGNOSTICS_VERSION = "ev3-repair-selector-diagnostics-v1"
++
++_EV3_REPAIR_DIAGNOSTIC_KEYS = (
++    "retained_oi_below_50",
++    "retained_zero_volume",
++    "rejected_invalid_missing_quote",
++    "rejected_spread",
++    "rejected_dte_delta_geometry",
++    "final_bounded_candidate_count",
++)
+ 
+ # Contract tiers for tiered review (replaces binary STAND_DOWN gate)
+ # CLEAN: all thresholds met | REVIEW_SPREAD: spread too wide | REVIEW_COMPOUND: multiple marginal
+@@ -4373,13 +4383,61 @@
+     return ""
+ 
+ 
++def _new_repair_selector_diagnostics() -> Dict[str, int]:
++    return {key: 0 for key in _EV3_REPAIR_DIAGNOSTIC_KEYS}
++
++
++def _repair_selector_diagnostic_fields(diagnostics: Optional[Dict[str, int]]) -> Dict[str, Any]:
++    source = diagnostics or {}
++    return {
++        "repair_selector_diagnostics_version": EV3_REPAIR_DIAGNOSTICS_VERSION,
++        **{
++            f"repair_selector_{key}": int(source.get(key) or 0)
++            for key in _EV3_REPAIR_DIAGNOSTIC_KEYS
++        },
++    }
++
++
++def _aggregate_repair_selector_diagnostics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
++    aggregate = {
++        "diagnostics_version": EV3_REPAIR_DIAGNOSTICS_VERSION,
++        "selector_invocations": 0,
++        **{key: 0 for key in _EV3_REPAIR_DIAGNOSTIC_KEYS},
++    }
++    for result in results:
++        if result.get("repair_selector_diagnostics_version") != EV3_REPAIR_DIAGNOSTICS_VERSION:
++            continue
++        aggregate["selector_invocations"] += 1
++        for key in _EV3_REPAIR_DIAGNOSTIC_KEYS:
++            try:
++                aggregate[key] += int(result.get(f"repair_selector_{key}") or 0)
++            except (TypeError, ValueError):
++                continue
++    return aggregate
++
++
+ def select_repair_alternative_contracts(
+     df: pd.DataFrame,
+     ctx: Dict,
+     selected_contract: Optional[Dict] = None,
+     limit: int = EV3_LONG_SINGLE_CANDIDATE_LIMIT,
++    diagnostics: Optional[Dict[str, int]] = None,
+ ) -> List[Dict[str, Any]]:
+-    """Return a strict EV-2 long-single set from two expiries x three strikes."""
++    """Return governed long-single repair candidates from two expiries x three strikes.
++
++    Open interest and current volume are ranking evidence only.  A new or
++    developing strike can have a valid two-sided quote before either field has
++    accumulated, so neither value is allowed to delete an otherwise-valid
++    contract family member.
++    """
++    if diagnostics is not None:
++        for key in _EV3_REPAIR_DIAGNOSTIC_KEYS:
++            diagnostics.setdefault(key, 0)
++
++    def _reject(reason: str) -> None:
++        if diagnostics is not None:
++            diagnostics[reason] = int(diagnostics.get(reason) or 0) + 1
++
+     try:
+         if df is None or df.empty:
+             return []
+@@ -4442,34 +4500,49 @@
+         implied_volatility = _repair_alt_float(row.get("implied_vol"), _repair_alt_float(row.get("iv")))
+         quote_timestamp = _quote_timestamp_utc(row.get("quote_timestamp_utc"))
+         if (
+-            strike is None or dte_val is None or not expiry
+-            or bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask
+-            or signed_delta is None or gamma is None or theta is None or vega is None
++            bid is None or ask is None or bid < 0 or ask <= 0 or bid > ask
++            or gamma is None or theta is None or vega is None
+             or implied_volatility is None or not quote_timestamp
+         ):
++            _reject("rejected_invalid_missing_quote")
++            continue
++        if strike is None or dte_val is None or not expiry or signed_delta is None:
++            _reject("rejected_dte_delta_geometry")
+             continue
+         if dte_val < float(dte_min) or dte_val > float(dte_max):
++            _reject("rejected_dte_delta_geometry")
+             continue
+ 
+         if dte_val < minimum_dte:
++            _reject("rejected_dte_delta_geometry")
+             continue
+ 
+         if spot and spot > 0:
+             if right == "C" and strike < spot * 0.90:
++                _reject("rejected_dte_delta_geometry")
+                 continue
+             if right == "P" and strike > spot * 1.10:
++                _reject("rejected_dte_delta_geometry")
+                 continue
+ 
+         if (right == "C" and signed_delta <= 0) or (right == "P" and signed_delta >= 0):
++            _reject("rejected_dte_delta_geometry")
+             continue
+         delta_abs = abs(signed_delta)
+-        oi = _repair_alt_float(row.get("open_interest"), _repair_alt_float(row.get("oi"), 0.0)) or 0.0
+-        volume = _repair_alt_float(row.get("volume"), 0.0) or 0.0
+-        if oi < EV3_MIN_OPEN_INTEREST or volume < EV3_MIN_VOLUME:
+-            continue
++        oi_value = _repair_alt_float(row.get("open_interest"))
++        if oi_value is None:
++            oi_value = _repair_alt_float(row.get("oi"))
++        volume_value = _repair_alt_float(row.get("volume"))
++        oi_observation_status = "REPORTED" if oi_value is not None else "MISSING_ASSUMED_ZERO"
++        volume_observation_status = (
++            "REPORTED" if volume_value is not None else "MISSING_ASSUMED_ZERO"
++        )
++        oi = oi_value if oi_value is not None else 0.0
++        volume = volume_value if volume_value is not None else 0.0
+         mark = (bid + ask) / 2.0
+         spread = max(0.0, ask - bid) / mark if mark > 0 else math.inf
+         if not math.isfinite(spread) or spread > spread_limit:
++            _reject("rejected_spread")
+             continue
+ 
+         delta_score = max(0.0, 100.0 - abs(delta_abs - target_delta) * 300.0)
+@@ -4508,6 +4581,10 @@
+             "iv": implied_volatility,
+             "oi": oi,
+             "volume": volume,
++            "oi_observation_status": oi_observation_status,
++            "volume_observation_status": volume_observation_status,
++            "oi_used_as_hard_gate": False,
++            "volume_used_as_hard_gate": False,
+             "spread_pct": round(float(spread), 6) if spread is not None else "",
+             "quote_timestamp_utc": quote_timestamp,
+             "quote_timestamp_source": row.get("quote_timestamp_source"),
+@@ -4561,6 +4638,18 @@
+     bounded = bounded[:cap]
+     for rank, candidate in enumerate(bounded, start=1):
+         candidate["candidate_generation_rank"] = rank
++    if diagnostics is not None:
++        diagnostics["retained_oi_below_50"] += sum(
++            candidate.get("oi_observation_status") == "REPORTED"
++            and float(candidate.get("oi") or 0.0) < 50.0
++            for candidate in bounded
++        )
++        diagnostics["retained_zero_volume"] += sum(
++            candidate.get("volume_observation_status") == "REPORTED"
++            and float(candidate.get("volume") or 0.0) == 0.0
++            for candidate in bounded
++        )
++        diagnostics["final_bounded_candidate_count"] += len(bounded)
+     return bounded
+ 
+ 
+@@ -4672,7 +4761,7 @@
+         "contract_repair_action": "NO_ALTERNATIVE_FOUND",
+         "alternative_contract_attempts": "",
+         "alternative_contracts_json": "[]",
+-        "alternative_contracts_schema_version": "ev3-contract-candidates-v3",
++        "alternative_contracts_schema_version": "ev3-contract-candidates-v4",
+         "alternative_contracts_count": 0,
+     }
+     for idx, alt in enumerate((alternatives or [])[:3], start=1):
+@@ -6237,8 +6326,13 @@
+                     len(chain),
+                 )}
+         if _chain_has_data:
++            _repair_selector_diagnostics = _new_repair_selector_diagnostics()
+             _no_contract_singles = select_repair_alternative_contracts(
+-                chain, ctx, None, limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT
++                chain,
++                ctx,
++                None,
++                limit=EV3_LONG_SINGLE_CANDIDATE_LIMIT,
++                diagnostics=_repair_selector_diagnostics,
+             )
+             # Production is long single-leg CALL/PUT only. Do not mix vertical
+             # research structures into the executable repair handoff.
+@@ -6253,6 +6347,9 @@
+                 'NO_CONTRACT_PASSED_QUALITY_GATES',
+             )
+             _repair_alt_fields.update(_alternative_handoff_audit(_incomplete_alternatives))
++            _repair_alt_fields.update(
++                _repair_selector_diagnostic_fields(_repair_selector_diagnostics)
++            )
+             _base_no_contract.update({
+                 'execution_permission': OPTIONS_RESEARCH_PERMISSION,
+                 'final_route': OPTIONS_PROBE_ROUTE,
+@@ -6471,11 +6568,13 @@
+     direction_arbitration = _direction_arbitration_oi(ctx)
+     ev3_direction_fields = _ev3_direction_fields(ctx, direction_arbitration)
+     repair_required = bool(research_contract.get('contract_repair_required'))
++    repair_selector_diagnostics = _new_repair_selector_diagnostics()
+     long_alternatives = select_repair_alternative_contracts(
+         chain,
+         ctx,
+         selected_contract=contract,
+         limit=max(1, EV3_LONG_SINGLE_CANDIDATE_LIMIT - 1),
++        diagnostics=repair_selector_diagnostics,
+     )
+     alternatives = long_alternatives[: max(1, EV3_TOTAL_CANDIDATE_LIMIT - 1)]
+     if (
+@@ -6491,6 +6590,9 @@
+         repair_required=repair_required,
+     )
+     repair_alt_fields.update(_alternative_handoff_audit(incomplete_alternatives))
++    repair_alt_fields.update(
++        _repair_selector_diagnostic_fields(repair_selector_diagnostics)
++    )
+     authoritative_route = str(research_contract.get('final_route', '') or '').upper()
+     resolved_options_verdict = verdict
+     resolved_stand_down_reason = stand_down_reason
+@@ -7975,6 +8077,10 @@
+         'alternative_contract_1_reason','alternative_contract_2_reason','alternative_contract_3_reason',
+         'alternative_contracts_json','alternative_contracts_schema_version','alternative_contracts_count',
+         'alternative_contracts_rejected_incomplete','alternative_contracts_rejection_reasons_json',
++        'repair_selector_diagnostics_version','repair_selector_retained_oi_below_50',
++        'repair_selector_retained_zero_volume','repair_selector_rejected_invalid_missing_quote',
++        'repair_selector_rejected_spread','repair_selector_rejected_dte_delta_geometry',
++        'repair_selector_final_bounded_candidate_count',
+         'trigger_state','trigger_status_reason','expected_move_pct',
+         'expected_move_price','breakeven_feasibility','estimated_R',
+         'theta_decay_expected','runway_to_wall_pct','liquidity_score',
+@@ -8157,6 +8263,7 @@
+         'execution_permission': OPTIONS_RESEARCH_PERMISSION,
+         'elapsed_seconds'   : round(elapsed, 1),
+         'cds_chain_telemetry': _cds_chain_telemetry,
++        'repair_selector_diagnostics': _aggregate_repair_selector_diagnostics(results),
+         'top_execute'       : (
+             out_df[out_df['options_verdict']=='EXECUTE']
+             .sort_values('options_score', ascending=False)

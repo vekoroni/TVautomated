@@ -1,0 +1,2428 @@
+[
+ {
+  "path": "canonical_data/__init__.py",
+  "n_lines": 166,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "intelligent_orchestrator.py",
+   "morning_gate.py",
+   "scripts/avshunter_options_intelligence.py",
+   "tests/msi/test_flow.py",
+   "tests/msi/test_regression.py",
+   "tests/test_canonical_data_system.py",
+   "tests/test_cds2_historical_prices.py",
+   "tests/test_cds4_option_chain_store.py",
+   "tests/test_ev3_options_handoff.py",
+   "tests/test_msi_agent1_data_foundation.py",
+   "tests/test_msi_stage_worklist.py",
+   "tools/cds2_import_historical_prices.py"
+  ],
+  "imports": [
+   "canonical_data/contracts.py",
+   "canonical_data/daily_adapter.py",
+   "canonical_data/discovery_publisher.py",
+   "canonical_data/feature_flags.py",
+   "canonical_data/gateway.py",
+   "canonical_data/historical_prices.py",
+   "canonical_data/history_bridge.py",
+   "canonical_data/intraday_bars.py",
+   "canonical_data/lifecycle.py",
+   "canonical_data/market_observation_resolver.py",
+   "canonical_data/marketdata_response.py",
+   "canonical_data/option_chain_store.py",
+   "canonical_data/option_identity.py",
+   "canonical_data/option_liquidity_lifecycle.py"
+  ],
+  "docstring": "AVSHUNTER Canonical Data System (CDS) control-plane primitives.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"AVSHUNTER Canonical Data System (CDS) control-plane primitives.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "canonical_data/bundle_freshness.py",
+  "n_lines": 92,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "contracts/interpreter_handoff_materializer.py",
+   "pipeline_interpreter/evidence_resolver.py"
+  ],
+  "imports": [
+   "canonical_data/session_clock.py"
+  ],
+  "docstring": "Canonical semantic freshness for MSI evidence bundles.\n\nFreshness is derived from timestamps and market sessions.  Upstream labels are\nnever treated as authority because they can survive a contract or run change.",
+  "functions": [
+   "_first:15",
+   "_timestamp:23",
+   "_date:33",
+   "_state:42",
+   "derive_bundle_freshness:59"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "87: _first(row, \"macro_freshness_status\", \"macro_freshness\") or \"UNKNOWN\""
+  ],
+  "writes": [
+   "27: parsed = datetime.fromisoformat(str(value).strip().replace(\"Z\", \"+00:00\"))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Canonical semantic freshness for MSI evidence bundles."
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 1
+  }
+ },
+ {
+  "path": "canonical_data/contracts.py",
+  "n_lines": 264,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "audit/olm_test/_agent2_tc_runner.py",
+   "canonical_data/__init__.py",
+   "canonical_data/discovery_publisher.py",
+   "canonical_data/gateway.py",
+   "canonical_data/intraday_bars.py",
+   "canonical_data/lifecycle.py",
+   "canonical_data/market_observation_resolver.py",
+   "canonical_data/option_chain_store.py",
+   "canonical_data/option_liquidity_lifecycle.py",
+   "canonical_data/registry.py",
+   "canonical_data/request_ledger.py",
+   "canonical_data/stage_publisher.py"
+  ],
+  "imports": [
+   "canonical_data/errors.py"
+  ],
+  "docstring": "Canonical request, scope, dataset, and resolution contracts.",
+  "functions": [
+   "utc_now:15",
+   "iso_utc:19",
+   "parse_utc:27",
+   "_normalise_strings:39"
+  ],
+  "classes": [
+   {
+    "name": "DatasetType:43",
+    "methods": []
+   },
+   {
+    "name": "CompletenessStatus:57",
+    "methods": []
+   },
+   {
+    "name": "ResolutionKind:64",
+    "methods": []
+   },
+   {
+    "name": "DataScope:72",
+    "methods": [
+     "__post_init__:83",
+     "to_dict:104",
+     "from_dict:116",
+     "fingerprint:132",
+     "covers:138",
+     "overlaps:162"
+    ]
+   },
+   {
+    "name": "DatasetRequest:181",
+    "methods": [
+     "__post_init__:193"
+    ]
+   },
+   {
+    "name": "DatasetRecord:207",
+    "methods": [
+     "__post_init__:226",
+     "is_fresh:242"
+    ]
+   },
+   {
+    "name": "DatasetResolution:255",
+    "methods": [
+     "requires_provider_fetch:263"
+    ]
+   }
+  ],
+  "raises": [
+   "DatasetValidationError:102",
+   "DatasetValidationError:196",
+   "DatasetValidationError:198",
+   "DatasetValidationError:235",
+   "DatasetValidationError:92",
+   "DatasetValidationError:94",
+   "DatasetValidationError:96"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "23: value = value.replace(tzinfo=timezone.utc)",
+   "24: return value.astimezone(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "31: parsed = datetime.fromisoformat(value.replace(\"Z\", \"+00:00\"))",
+   "35: parsed = parsed.replace(tzinfo=timezone.utc)",
+   "133: encoded = json.dumps("
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Canonical request, scope, dataset, and resolution contracts.\"\"\""
+  ],
+  "version_fields": [
+   "191: schema_version: str = \"1\"",
+   "221: schema_version: str = \"1\""
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 5
+  }
+ },
+ {
+  "path": "contracts/macro_regime_safety.py",
+  "n_lines": 138,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "intelligent_orchestrator.py",
+   "scripts/normalise_macro_contract.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "_text:32",
+   "_float:36",
+   "_is_neutral_drift:48",
+   "derive_regime_sub_state:71",
+   "derive_regime_distribution:104",
+   "normalise_macro_regime_fields:114"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "95: if bias in {\"CALL\", \"BULLISH\", \"RISK_ON\"} and conviction is not None and conviction >= 0.55:",
+   "97: if bias in {\"PUT\", \"BEARISH\", \"RISK_OFF\"} and conviction is not None and conviction >= 0.55:"
+  ],
+  "fallbacks": [
+   "33: return str(value or \"\").strip().upper().replace(\" \", \"_\").replace(\"-\", \"_\")",
+   "77: rs = _text(regime_state) or \"UNKNOWN\"",
+   "86: if rs in ambiguous or \"TRANSITION\" in rs:",
+   "111: return dict(REGIME_DISTRIBUTION_MAP.get(sub_state, REGIME_DISTRIBUTION_MAP.get(_text(regime_state), BALANCED_DISTRIBUTION)))",
+   "116: regime_state = out.get(\"regime_state\") or out.get(\"regime_label\") or out.get(\"macro_regime_label\") or \"UNKNOWN\"",
+   "117: drift = out.get(\"regime_drift_status\") or out.get(\"drift_status\") or \"\"",
+   "118: dir_bias = out.get(\"dir_bias\") or out.get(\"direction_bias\") or out.get(\"macro_direction_bias\") or \"\""
+  ],
+  "writes": [
+   "33: return str(value or \"\").strip().upper().replace(\" \", \"_\").replace(\"-\", \"_\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 7,
+   "write": 1
+  }
+ },
+ {
+  "path": "contracts/quote_change_evidence.py",
+  "n_lines": 274,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "canonical_data/narrow_refresh.py",
+   "contracts/interpreter_handoff_materializer.py",
+   "tests/test_msi_quote_and_size_lineage.py"
+  ],
+  "imports": [
+   "canonical_data/option_identity.py",
+   "canonical_data/session_clock.py"
+  ],
+  "docstring": "Exact-contract Morning-to-current quote comparison evidence.",
+  "functions": [
+   "_first:39",
+   "_number:49",
+   "_size:57",
+   "_timestamp:64",
+   "_date:76",
+   "_contract:85",
+   "quote_snapshot_from_row:92",
+   "_complete:147",
+   "compare_exact_option_quotes:158",
+   "quote_change_overlay_fields:256"
+  ],
+  "classes": [
+   {
+    "name": "ComparisonStatus:15",
+    "methods": []
+   },
+   {
+    "name": "QuoteSnapshot:25",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "134: dataset_id=str(dataset_id or \"\").strip(),",
+   "143: source=str(source or \"\").strip().upper(),"
+  ],
+  "writes": [
+   "68: parsed = datetime.fromisoformat(str(value).strip().replace(\"Z\", \"+00:00\"))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 1
+  }
+ },
+ {
+  "path": "market_structure/__init__.py",
+  "n_lines": 7,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "morning_gate.py"
+  ],
+  "imports": [
+   "market_structure/params.py",
+   "market_structure/profile.py",
+   "market_structure/service.py"
+  ],
+  "docstring": "Deterministic, advisory-only Market Structure Evidence service.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Deterministic, advisory-only Market Structure Evidence service.\"\"\""
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "market_structure/service.py",
+  "n_lines": 91,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "",
+  "imported_by": [
+   "market_structure/__init__.py",
+   "morning_gate.py",
+   "tests/msi/test_computation.py",
+   "tests/msi/test_functionality.py",
+   "tests/msi/test_logic.py",
+   "tests/msi/test_regression.py",
+   "tests/test_msi_agent1_data_foundation.py",
+   "tests/test_msi_market_structure_identity.py"
+  ],
+  "imports": [
+   "canonical_data/contracts.py",
+   "canonical_data/registry.py",
+   "canonical_data/storage.py",
+   "market_structure/lifecycle.py",
+   "market_structure/params.py",
+   "market_structure/profile.py"
+  ],
+  "docstring": "Versioned deterministic Market Structure Evidence calculation/persistence.",
+  "functions": [
+   "_metrics:22",
+   "calculate_market_structure_evidence:48"
+  ],
+  "classes": [
+   {
+    "name": "CanonicalMarketStructureService:78",
+    "methods": [
+     "__init__:80",
+     "persist:82"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "31: acceptance_closes=int((closes>structure[\"separation_high\"]).sum() if direction==\"ABOVE\" else (closes<structure[\"separation_low\"]).sum())",
+   "34: hold=(frame[\"close\"]>=frame[\"vwap_canonical\"]) if direction==\"ABOVE\" else (frame[\"close\"]<=frame[\"vwap_canonical\"])",
+   "40: boundary=structure[\"separation_high\"] if direction==\"ABOVE\" else structure[\"separation_low\"]",
+   "41: beyond=(frame[\"close\"]>boundary) if direction==\"ABOVE\" else (frame[\"close\"]<boundary)",
+   "43: invalidated=bool((frame[\"close\"]<structure[\"first_low\"]).iloc[-1] if direction==\"ABOVE\" else (frame[\"close\"]>structure[\"first_high\"]).iloc[-1])",
+   "49: exchange_tick: float, atr14: float, regular_open_utc: datetime, governed_direction: str,",
+   "56: relationship=direction_relationship(governed_direction=governed_direction,structure_direction=structure.get(\"second_direction\"),lifecycle=lifecycle,qu"
+  ],
+  "fallbacks": [
+   "62: reason=(\"MS_INSUFFICIENT_DATA\" if quality==\"INSUFFICIENT_DATA\" else structure.get(\"reason\",\"MS_NO_STRUCTURE\"))",
+   "90: adjustment_convention=\"UNADJUSTED\",schema_version=ALGORITHM_VERSION,parent_dataset_ids=tuple(evidence.get(\"ms_input_dataset_ids\",())),source_run_id=ru"
+  ],
+  "writes": [
+   "65: \"ms_calculated_utc\":datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\",\"Z\"),",
+   "83: payload=json.dumps(dict(evidence),sort_keys=True,separators=(\",\",\":\"),allow_nan=False).encode(); content_hash=hashlib.sha256(payload).hexdigest()",
+   "85: stored=self.store.write_bytes(Path(\"market_structure\")/session.isoformat()/ticker/f\"{content_hash}.json\",payload)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "58: # ordered canonical inputs.  run_id and duplicated input hashes are",
+   "79: \"\"\"Persist derived evidence immutably; it never invokes a provider.\"\"\""
+  ],
+  "version_fields": [
+   "19: ALGORITHM_VERSION = \"market_structure_evidence_v1\"",
+   "90: adjustment_convention=\"UNADJUSTED\",schema_version=ALGORITHM_VERSION,parent_dataset_ids=tuple(evidence.get(\"ms_input_dataset_ids\",())),source_run_id=ru"
+  ],
+  "counts": {
+   "direction": 7,
+   "fallback": 2,
+   "write": 3
+  }
+ },
+ {
+  "path": "orchestrator/wyckoff_engine.py",
+  "n_lines": 4,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "orchestrator/options_intelligence.py"
+  ],
+  "imports": [
+   "WyckoffEngine_3101_v2.py"
+  ],
+  "docstring": "",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "scripts/phantom_gamma_field.py",
+  "n_lines": 70,
+  "classification": "ORCHESTRATED",
+  "commit": "81b0d52",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/phantom_engine.py"
+  ],
+  "imports": [],
+  "docstring": "PHANTOM gamma field mechanism.",
+  "functions": [
+   "_float:9",
+   "_direction:23",
+   "compute_gamma_trajectory:32"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "24: value = str(row.get(\"primary_direction\") or row.get(\"options_direction\") or row.get(\"direction\") or \"\").upper()",
+   "25: if value in {\"CALL\", \"LONG\", \"BUY\"}:",
+   "26: return \"CALL\"",
+   "27: if value in {\"PUT\", \"SHORT\", \"SELL\"}:",
+   "28: return \"PUT\"",
+   "50: direction_sign = 1.0 if direction == \"CALL\" else (-1.0 if direction == \"PUT\" else 0.0)",
+   "62: signed = score if direction == \"CALL\" else (-score if direction == \"PUT\" else 0.0)"
+  ],
+  "fallbacks": [
+   "24: value = str(row.get(\"primary_direction\") or row.get(\"options_direction\") or row.get(\"direction\") or \"\").upper()",
+   "33: ticker = str(row.get(\"ticker\") or \"\").upper()",
+   "45: gamma = float(r[\"gamma\"] or 0.0)",
+   "46: open_interest = float(r[\"open_interest\"] or 0.0)"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 7,
+   "fallback": 4,
+   "write": 0
+  }
+ },
+ {
+  "path": "tests/golden/regenerate_lab_export.py",
+  "n_lines": 568,
+  "classification": "LIBRARY",
+  "commit": "11fddc2",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "tests/test_lab_ranking_basis_export.py"
+  ],
+  "imports": [
+   "intelligence-lab/intelligence_lab.py"
+  ],
+  "docstring": "regenerate_lab_export.py \u2014 Python port of the Intelligence Lab's client-side\nCSV export (intelligence-lab/static/index.html, function exportCSV() and its\nhelpers), driven off the same intelligence_lab.py:_load_run() payload the\nbrowser receives as RUN_DATA.\n\nWHY THIS EXISTS (Phase 0.2 of CLAUDE_CODE_TASK_lab_fix_sprint.md):\nThe real export is produced by JavaScript running in a browser after a human\nclicks a button. That is not something the automated regression harness in\nthis sprint can invoke on every commit. This module is a line-for-line\ntranslation of the JS column extractors so the same",
+  "functions": [
+   "clean_category:48",
+   "first_signal_value:54",
+   "get_opt:64",
+   "_parse_float:69",
+   "get_ev:81",
+   "get_ev_decision_hint:103",
+   "has_ev_avoid:111",
+   "has_negative_option_rr:117",
+   "final_lab_verdict:125",
+   "display_campaign:146",
+   "display_execution_mode:159",
+   "display_size:165",
+   "get_live_validation_state:176",
+   "get_thesis_validity_state:183",
+   "get_morning_execution_permission:189",
+   "get_morning_execution_route:197",
+   "get_morning_lab_alignment:205",
+   "get_eod_candidate_status:211",
+   "get_options_research_route:224",
+   "get_options_research_permission:231",
+   "get_execution_category:238",
+   "is_audit_only_signal:265",
+   "normalise_horizon_label:293",
+   "get_time_horizon:303",
+   "get_hold_period:326",
+   "_max_days_from_label:330",
+   "get_horizon_hold_alignment:335",
+   "format_price_level:343",
+   "get_trigger_price_raw:353",
+   "get_trigger_display:363"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "445: (\"Options_Direction\", lambda s: s.get(\"options_direction\") or s.get(\"opt__options_direction\") or \"\"),"
+  ],
+  "fallbacks": [
+   "66: return s.get(f\"opt__{k}\") or s.get(k) or \"\"",
+   "129: s.get(\"lab_verdict\") or s.get(\"sb_final_verdict\") or \"WAIT\"",
+   "148: return s.get(\"display_campaign\") or _CAMPAIGN_MAP.get(v) or s.get(\"sb_campaign\") or \"WATCHLIST\"",
+   "162: s.get(\"sb_execution_mode\") or s.get(\"execution_mode\") or \"WAIT\")",
+   "208: ])) or \"NO_MORNING_BATON\"",
+   "294: raw = str(v or \"\").strip()",
+   "300: return _HORIZON_LABELS.get(c, raw.replace(\"_\", \"-\"))",
+   "327: return first_signal_value(s, [\"hold_label\", \"opt__hold_label\", \"exe__hold_label\", \"vg__hold_label\", \"doss__opt__hold_label\"]) or \"\u2014\"",
+   "331: nums = re.findall(r\"\\d+(?:\\.\\d+)?\", str(label or \"\"))",
+   "396: short_primary = str(primary or codes or \"TRIGGER\").replace(\"_\", \" \")[:14]",
+   "404: c_label = str(catalyst or catalyst_status or \"CATALYST\").replace(\"_\", \" \")[:14]",
+   "432: (\"Trade_Idea_Id\", lambda s: s.get(\"trade_idea_id\") or \"\"),",
+   "441: (\"Effective_Execution_Verdict\", lambda s: s.get(\"effective_execution_verdict\") or \"\"),",
+   "442: (\"EOD_Candidate_Status\", lambda s: s.get(\"eod_candidate_status\") or \"\"),"
+  ],
+  "writes": [
+   "300: return _HORIZON_LABELS.get(c, raw.replace(\"_\", \"-\"))",
+   "387: return str(evidence).replace(\"_\", \" \")[:18]",
+   "396: short_primary = str(primary or codes or \"TRIGGER\").replace(\"_\", \" \")[:14]",
+   "397: short_quality = f\" {str(quality).replace('_', ' ')[:6]}\" if has_quality else \"\"",
+   "404: c_label = str(catalyst or catalyst_status or \"CATALYST\").replace(\"_\", \" \")[:14]",
+   "497: (\"Verdict_Reason\", lambda s: str(s.get(\"sb_verdict_reason\") or \"\").replace(\",\", \";\")),",
+   "552: Path(path).write_text(buf.getvalue(), encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "266: \"\"\"Port of isAuditOnlySignal(s) \u2014 static/index.html:1259-1277.\"\"\"",
+   "521: # The browser never sees the raw _load_run() payload -- the /api/run/<id>",
+   "526: # production path drops them -- that was never a cache-staleness bug,"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 43,
+   "write": 7
+  }
+ },
+ {
+  "path": "tests/test_ev_engine_v3.py",
+  "n_lines": 309,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_ev3_shadow_phase.py"
+  ],
+  "imports": [
+   "vanguard/ev3_stage0.py",
+   "vanguard/ev_engine_v3.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "_cache:20",
+   "_row:45",
+   "_vertical_row:77",
+   "test_american_option_pricer_is_direction_correct:101",
+   "test_three_outcomes_are_exhaustive_and_timeout_is_priced:108",
+   "test_negative_contract_ev_remains_negative:124",
+   "test_call_and_put_use_direction_specific_barrier_cells:131",
+   "test_dte_does_not_select_barrier_horizon:140",
+   "test_unsupported_hold_fails_closed_instead_of_nearest_mapping:147",
+   "test_unseen_state_uses_governed_core_aligned_five_of_seven_fallback:154",
+   "test_missing_exit_timing_is_conservatively_defaulted_and_penalised:164",
+   "test_state_fallback_refuses_weak_or_cross_regime_matches:173",
+   "test_barrier_policy_grid_covers_wider_valid_trade_geometry:183",
+   "test_wider_spread_cannot_improve_robust_ev:188",
+   "test_stale_quote_rejects_and_shadow_never_grants_capital:198",
+   "test_selected_contract_cannot_bypass_liquidity_policy:205",
+   "test_selector_uses_lower_bound_and_is_bounded:229",
+   "test_selector_enforces_twelve_contract_scope_cap:242",
+   "test_selector_reports_child_rejection_counts_when_no_contract_is_evaluable:253",
+   "test_qualitative_conviction_cannot_multiply_ev:269",
+   "test_vertical_debit_engine_prices_bull_call_and_bear_put:279",
+   "test_vertical_debit_rejects_bad_geometry_and_multiplier_mismatch:293",
+   "test_selector_compares_long_single_and_vertical_on_same_lower_bound_objective:305"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "23: for direction in (\"CALL\", \"PUT\"):",
+   "45: def _row(direction: str = \"CALL\", symbol: str = \"TEST260918C00100000\") -> dict:",
+   "46: call = direction == \"CALL\"",
+   "49: \"canonical_direction\": direction,",
+   "77: def _vertical_row(direction: str = \"CALL\") -> dict:",
+   "79: is_call = direction == \"CALL\"",
+   "102: call = american_option_price(110, 100, 30 / 365, 0.04, 0.0, 0.3, \"CALL\")",
+   "103: put = american_option_price(90, 100, 30 / 365, 0.04, 0.0, 0.3, \"PUT\")",
+   "132: call = evaluate_contract(_row(\"CALL\"), _cache(), now_utc=NOW)",
+   "133: put = evaluate_contract(_row(\"PUT\", \"TEST260918P00100000\"), _cache(), now_utc=NOW)",
+   "134: assert call[\"ev3_direction\"] == \"CALL\"",
+   "135: assert put[\"ev3_direction\"] == \"PUT\"",
+   "166: frame.loc[frame[\"direction\"] == \"CALL\", \"target_exit_session_mean\"] = math.nan",
+   "280: for direction in (\"CALL\", \"PUT\"):"
+  ],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "38: \"calculation_version\": \"fixture-v1\",",
+   "39: \"schema_version\": \"fixture-v1\","
+  ],
+  "counts": {
+   "direction": 17,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "tests/test_pipeline_interpreter_capture_v1_navigation.py",
+  "n_lines": 215,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "__main__",
+  "imported_by": [
+   "tests/test_pipeline_interpreter_capture_v1_market_screen.py",
+   "tests/test_pipeline_interpreter_capture_v1_noii_cross.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker_batch.py",
+   "tests/test_pipeline_interpreter_capture_v1_ticker_market_screen.py"
+  ],
+  "imports": [
+   "pipeline_interpreter/capture_v1/contracts.py",
+   "pipeline_interpreter/capture_v1/navigation.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "window:47"
+  ],
+  "classes": [
+   {
+    "name": "FakeDriver:22",
+    "methods": [
+     "__init__:23",
+     "foreground:26",
+     "is_foreground:29",
+     "click_relative:33",
+     "capture_screen_region:36",
+     "replace_text:39",
+     "press_enter:41",
+     "press_down:43"
+    ]
+   },
+   {
+    "name": "NavigationMappingTests:51",
+    "methods": [
+     "test_mapping_clicks_only_allowlisted_timeframe_control:52",
+     "test_profile_rejects_point_outside_allowlisted_zone:67",
+     "test_direct_bottom_bar_selects_allowlisted_4h_only:83",
+     "test_direct_bottom_bar_rejects_unknown_timeframe:97"
+    ]
+   },
+   {
+    "name": "FakeUser32:108",
+    "methods": [
+     "__init__:109",
+     "IsWindow:115",
+     "GetWindowRect:118",
+     "GetSystemMetrics:123",
+     "SetCursorPos:126",
+     "GetCursorPos:133",
+     "GetPhysicalCursorPos:137",
+     "mouse_event:141"
+    ]
+   },
+   {
+    "name": "WindowsNavigationDriverTests:145",
+    "methods": [
+     "_driver:146",
+     "test_click_uses_unscaled_physical_window_coordinate:153",
+     "test_click_fails_closed_without_sending_mouse_click:168",
+     "test_send_input_fallback_uses_physical_target_and_verifies_before_click:190"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [
+   "2: import tempfile",
+   "53: with tempfile.TemporaryDirectory() as root:",
+   "74: with tempfile.TemporaryDirectory() as root:",
+   "84: with tempfile.TemporaryDirectory() as root:",
+   "98: with tempfile.TemporaryDirectory() as root:"
+  ],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "tools/msi_production_readiness.py",
+  "n_lines": 213,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "morning_handoff_finalizer.py",
+   "tests/test_msi_production_readiness.py"
+  ],
+  "imports": [
+   "contracts/interpreter_handoff.py",
+   "msi_runtime.py",
+   "tools/msi_reconcile.py"
+  ],
+  "docstring": "Read-only MSI production-cycle readiness assessment.\n\nThe evening run is allowed to report PENDING_MORNING_GATE.  Once Morning Gate\nhas produced an accepted atomic handoff, every critical identity, quote,\nfreshness and Lab/Interpreter parity check must pass.  This module never calls\na provider and never changes capital authority.",
+  "functions": [
+   "_text:80",
+   "assess_run:84",
+   "main:198"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:213"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "81: return str(value or \"\").strip()",
+   "134: \"run_meta_status\": _text(run_meta.get(\"run_status\")) or \"MISSING\",",
+   "156: for item in reconciliation.get(\"mismatches\", [])",
+   "167: ticker = _text(row.get(\"ticker\")).upper() or \"UNKNOWN\"",
+   "172: invalid_rows.append(f\"{ticker}:COMPARISON_STATUS:{comparison or 'MISSING'}\")",
+   "177: invalid_rows.append(f\"{ticker}:QUOTE_FRESHNESS:{freshness or 'MISSING'}\")",
+   "190: \"run_meta_status\": _text(run_meta.get(\"run_status\")) or \"MISSING\","
+  ],
+  "writes": [
+   "205: rendered = json.dumps(report, indent=2, sort_keys=True)",
+   "207: Path(args.output).write_text(rendered, encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "1: \"\"\"Read-only MSI production-cycle readiness assessment."
+  ],
+  "version_fields": [
+   "30: READINESS_SCHEMA_VERSION = \"msi_production_readiness_v1\"",
+   "41: \"lab_schema_version\",",
+   "102: \"schema_version\": READINESS_SCHEMA_VERSION,",
+   "128: \"schema_version\": READINESS_SCHEMA_VERSION,",
+   "143: \"schema_version\": READINESS_SCHEMA_VERSION,",
+   "168: if _text(row.get(\"lab_schema_version\")) != \"lab_signal_book_v3\":"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 7,
+   "write": 2
+  }
+ },
+ {
+  "path": "tools/msi_reconcile.py",
+  "n_lines": 133,
+  "classification": "ORCHESTRATED",
+  "commit": "UNTRACKED",
+  "entry_points": "__main__;argparse-CLI",
+  "imported_by": [
+   "morning_handoff_finalizer.py",
+   "tests/msi/test_flow.py",
+   "tests/test_msi_handoff_materializer.py",
+   "tools/msi_production_readiness.py"
+  ],
+  "imports": [
+   "contracts/interpreter_handoff.py"
+  ],
+  "docstring": "Independent MSI handoff reconciliation and command-line validator.",
+  "functions": [
+   "_text:39",
+   "_contract:43",
+   "reconcile_handoff:51",
+   "main:115"
+  ],
+  "classes": [],
+  "raises": [
+   "SystemExit:133"
+  ],
+  "direction_branches": [
+   "24: \"governed_direction\",",
+   "93: for prohibited in (\"final_action\", \"capital_permission\", \"governed_direction\"):"
+  ],
+  "fallbacks": [
+   "40: return str(value or \"\").strip()"
+  ],
+  "writes": [
+   "48: ).upper().replace(\"O:\", \"\").replace(\" \", \"\")",
+   "125: text = json.dumps(report, indent=2, sort_keys=True)",
+   "127: Path(args.output).write_text(text, encoding=\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "22: RECONCILE_VERSION = \"msi-reconcile-v1.1\"",
+   "63: \"schema_version\": \"msi_reconciliation_v1\",",
+   "103: \"schema_version\": \"msi_reconciliation_v1\","
+  ],
+  "counts": {
+   "direction": 2,
+   "fallback": 1,
+   "write": 3
+  }
+ },
+ {
+  "path": "vanguard/__init__.py",
+  "n_lines": 14,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "avshunter_ticker_probe.py"
+  ],
+  "imports": [
+   "vanguard/main.py"
+  ],
+  "docstring": "vanguard package public API\n\nKeep this file in lock-step with vanguard/main.py exports.\nThis prevents ImportError regressions in orchestrator scripts.",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/config.py",
+  "n_lines": 305,
+  "classification": "ORCHESTRATED",
+  "commit": "6567a8b",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_vanguard_production_fixes.py",
+   "vanguard/main.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD Configuration\nAll system parameters, thresholds, and settings",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "126: 'max_probability': 0.90,                   # Cap at 90% (never 100%)"
+  ],
+  "version_fields": [
+   "7: VANGUARD_VERSION = \"1.0.0\"",
+   "269: \"schema_version\",",
+   "270: \"bucket_schema_version\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/core/actuarial_core_v7.py",
+  "n_lines": 396,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/build_actuarial_v7.py",
+   "scripts/build_actuarial_v7_sharded.py",
+   "tests/test_actuarial_v7_database_contract.py"
+  ],
+  "imports": [],
+  "docstring": "Deterministic historical-equivalence contract for AVSHUNTER actuarial v7.\n\nOnly completed adjusted daily OHLCV is accepted.  Live auction, options,\nmacro, catalyst and clock-dependent inputs are deliberately excluded; those\nremain post-query overlays in the live pipeline.",
+  "functions": [
+   "canonical_session_date:38",
+   "normalise_daily_ohlcv:42",
+   "compute_technicals:65",
+   "_rank:109",
+   "_bucket:115",
+   "calculate_core_state:119",
+   "_calculate_core_state_fast:196",
+   "_forward_outcomes_arrays:268",
+   "compute_forward_outcomes:368",
+   "build_ticker_observations:379"
+  ],
+  "classes": [
+   {
+    "name": "ActuarialCoreContractError:34",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "ActuarialCoreContractError:395",
+   "ActuarialCoreContractError:46",
+   "ActuarialCoreContractError:52",
+   "ActuarialCoreContractError:54",
+   "ActuarialCoreContractError:56",
+   "ActuarialCoreContractError:61"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "75: df[\"atr_pct\"] = 100 * df[\"atr14\"] / close.replace(0, np.nan)",
+   "79: atr = tr.ewm(span=14, adjust=False).mean().replace(0, np.nan)",
+   "82: dx = 100 * (di_plus - di_minus).abs() / (di_plus + di_minus).replace(0, np.nan)",
+   "87: df[\"rsi\"] = (100 - 100 / (1 + gain / loss.replace(0, np.nan))).fillna(50.0)",
+   "89: df[\"bb_width\"] = 400 * bb_std / bb_mid.replace(0, np.nan)",
+   "92: df[\"dist_from_high\"] = (df[\"high_252\"] - close) / df[\"high_252\"].replace(0, np.nan)",
+   "93: df[\"dist_from_low\"] = (close - df[\"low_252\"]) / df[\"low_252\"].replace(0, np.nan)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "17: CALCULATION_VERSION = \"actuarial_core_v7.0.0\"",
+   "18: SCHEMA_VERSION = \"actuarial_v7\"",
+   "19: BUCKET_SCHEMA_VERSION = \"2.0.0\"",
+   "190: \"calculation_version\": CALCULATION_VERSION,",
+   "191: \"schema_version\": SCHEMA_VERSION,",
+   "192: \"bucket_schema_version\": BUCKET_SCHEMA_VERSION,"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 7
+  }
+ },
+ {
+  "path": "vanguard/core/actuarial_registry.py",
+  "n_lines": 106,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "regime_audit.py",
+   "scripts/actuarial_enrichment_pass.py",
+   "scripts/run_vanguard_from_packages.py",
+   "vanguard/core/cache_integrity.py",
+   "vanguard/core/schema_guard.py",
+   "vanguard/core/truth_packet.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "strict_mode:19",
+   "load_registry:23",
+   "_normalise_path:32",
+   "canonical_db_path:36",
+   "canonical_cache_path:48",
+   "pipeline_status_path:56",
+   "expected_schema_fingerprint:64",
+   "schema_version:69",
+   "is_forbidden_database_path:74",
+   "validate_production_db_path:82"
+  ],
+  "classes": [
+   {
+    "name": "ActuarialRegistryError:10",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "ActuarialRegistryError:104",
+   "ActuarialRegistryError:26",
+   "ActuarialRegistryError:40",
+   "ActuarialRegistryError:52",
+   "ActuarialRegistryError:60",
+   "FileNotFoundError:44"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "20: return os.environ.get(STRICT_ENV, \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}",
+   "66: return str((registry.get(\"canonical_database\") or {}).get(\"expected_schema_fingerprint\") or \"\")",
+   "71: return str(registry.get(\"schema_version\") or \"unknown\")",
+   "77: forbidden_names = {str(x).lower() for x in registry.get(\"forbidden_production_databases\", [])}",
+   "78: forbidden_suffixes = tuple(str(x).lower() for x in registry.get(\"forbidden_suffixes\", []))",
+   "91: canonical = _normalise_path(Path((registry.get(\"canonical_database\") or {}).get(\"path\", \"\")))"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "69: def schema_version(registry: Optional[Dict[str, Any]] = None) -> str:",
+   "71: return str(registry.get(\"schema_version\") or \"unknown\")"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 6,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/core/cache_integrity.py",
+  "n_lines": 114,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/actuarial_enrichment_pass.py"
+  ],
+  "imports": [
+   "vanguard/core/actuarial_registry.py",
+   "vanguard/core/schema_contract_v6.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "_single_value:49",
+   "annotate_cache_frame:56",
+   "validate_cache_frame:65",
+   "load_validated_cache:109"
+  ],
+  "classes": [
+   {
+    "name": "CacheIntegrityError:20",
+    "methods": []
+   },
+   {
+    "name": "CacheValidationResult:25",
+    "methods": [
+     "ok:34",
+     "to_dict:37"
+    ]
+   }
+  ],
+  "raises": [
+   "CacheIntegrityError:103",
+   "FileNotFoundError:112"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "94: path=str(path or \"\"),"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "14: schema_version,",
+   "27: schema_version: str = \"\"",
+   "40: \"schema_version\": self.schema_version,",
+   "58: out[\"schema_version\"] = schema_meta.schema_version",
+   "73: expected_version = schema_version(registry)",
+   "77: actual_version = _single_value(df, \"schema_version\")"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/core/schema_contract_v6.py",
+  "n_lines": 75,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/actuarial_enrichment_pass.py",
+   "vanguard/core/cache_integrity.py",
+   "vanguard/core/schema_guard.py",
+   "vanguard/core/truth_packet.py"
+  ],
+  "imports": [],
+  "docstring": "",
+  "functions": [
+   "strict_mode:70",
+   "aliases_for:74"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "71: return os.environ.get(STRICT_ENV, \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}",
+   "75: return REQUIRED_FIELD_ALIASES.get(field, (field,))"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "7: SCHEMA_VERSION = \"actuarial_v6\"",
+   "39: \"bucket_schema_version\",",
+   "63: \"schema_version\","
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/core/truth_packet.py",
+  "n_lines": 102,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/actuarial_enrichment_pass.py",
+   "scripts/run_vanguard_from_packages.py"
+  ],
+  "imports": [
+   "vanguard/core/actuarial_registry.py",
+   "vanguard/core/schema_contract_v6.py"
+  ],
+  "docstring": "",
+  "functions": [
+   "classify_truth_status:25",
+   "build_truth_packet_id:42",
+   "apply_truth_packet:58",
+   "validate_truth_packet:65"
+  ],
+  "classes": [
+   {
+    "name": "TruthPacketError:21",
+    "methods": []
+   }
+  ],
+  "raises": [
+   "TruthPacketError:99"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "26: source = str(block.get(\"actuarial_source\") or block.get(\"source\") or \"\").upper()",
+   "30: if source == SOURCE_MISSING or no_match or not block.get(\"available\", True):",
+   "34: if int(block.get(\"fallback_depth\") or 0) > 0:",
+   "71: source = str(block.get(\"actuarial_source\") or \"\").upper()"
+  ],
+  "writes": [
+   "54: blob = json.dumps(payload, sort_keys=True, separators=(\",\", \":\"), default=str).encode(\"utf-8\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [
+   "8: from .actuarial_registry import expected_schema_fingerprint, schema_version, strict_mode",
+   "45: \"schema_version\": block.get(\"schema_version\"),",
+   "75: expected_version = schema_version()",
+   "77: if block.get(\"schema_version\") != expected_version:",
+   "79: f\"truth packet schema_version mismatch: expected {expected_version}, got {block.get('schema_version')}\""
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 1
+  }
+ },
+ {
+  "path": "vanguard/ev3_stage0.py",
+  "n_lines": 1040,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/build_ev3_stage0.py",
+   "scripts/promote_ev3_barrier_cache.py",
+   "tests/test_ev3_cache_promotion.py",
+   "tests/test_ev3_stage0.py",
+   "tests/test_ev_engine_v3.py",
+   "vanguard/ev_engine_v3.py"
+  ],
+  "imports": [],
+  "docstring": "EV Engine v3 Stage EV-0 contracts and barrier-outcome instrumentation.\n\nThis module is intentionally non-authoritative.  It validates candidate inputs and\nbuilds an EV-specific historical barrier sidecar without changing the live\nactuarial database or any downstream execution decision.",
+  "functions": [
+   "_missing:141",
+   "_first_present:152",
+   "_number:159",
+   "_normalise_direction:169",
+   "_normalise_direction_resolution:175",
+   "_normalise_horizon:192",
+   "_parse_timestamp:212",
+   "validate_ev3_input:244",
+   "validate_ev3_dataframe:566",
+   "build_state_key:606",
+   "classify_barrier_path:615",
+   "_first_hit_days:677",
+   "_forward_matrix:682",
+   "accumulate_ticker_barriers:693",
+   "finalise_barrier_cache:837",
+   "merge_barrier_accumulators:954",
+   "build_barrier_cache_from_frames:975",
+   "barrier_cache_audit:1000",
+   "sha256_file:1035"
+  ],
+  "classes": [
+   {
+    "name": "EV3ValidationResult:225",
+    "methods": [
+     "diagnostic_row:232"
+    ]
+   },
+   {
+    "name": "BarrierGrid:586",
+    "methods": [
+     "__post_init__:592"
+    ]
+   },
+   {
+    "name": "_BarrierAccumulator:659",
+    "methods": [
+     "empty:670"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:595",
+   "ValueError:597",
+   "ValueError:599",
+   "ValueError:601",
+   "ValueError:603",
+   "ValueError:609",
+   "ValueError:611",
+   "ValueError:628",
+   "ValueError:630",
+   "ValueError:632",
+   "ValueError:704",
+   "ValueError:708",
+   "ValueError:716",
+   "ValueError:876",
+   "ValueError:947",
+   "ValueError:950",
+   "ValueError:986"
+  ],
+  "direction_branches": [
+   "58: \"UNRESOLVED\",",
+   "66: \"canonical_direction\": (",
+   "67: \"canonical_direction\",",
+   "69: \"options_direction\",",
+   "171: mapping = {\"LONG_CALL\": \"CALL\", \"BULLISH\": \"CALL\", \"LONG_PUT\": \"PUT\", \"BEARISH\": \"PUT\"}",
+   "183: if direction in {\"STRANGLE\", \"STRADDLE\", \"NON_DIRECTIONAL\"}:",
+   "188: return \"UNRESOLVED\"",
+   "274: direction = _normalise_direction(resolve(\"canonical_direction\"))",
+   "275: canonical[\"canonical_direction\"] = direction",
+   "276: if direction in {\"STRANGLE\", \"STRADDLE\", \"NON_DIRECTIONAL\"}:",
+   "286: if direction not in {\"CALL\", \"PUT\"}:",
+   "324: invalidation < entry < target if direction == \"CALL\" else target < entry < invalidation",
+   "509: if delta is None or not 0 < abs(delta) < 1 or (direction == \"CALL\" and delta <= 0) or (direction == \"PUT\" and delta >= 0):",
+   "627: if direction not in {\"CALL\", \"PUT\"}:"
+  ],
+  "fallbacks": [
+   "170: text = str(value or \"\").strip().upper()",
+   "172: return mapping.get(text, text)",
+   "182: text = str(value or \"\").strip().upper()",
+   "193: text = str(value or \"\").strip().upper().replace(\"\u2013\", \"_\").replace(\"-\", \"_\")",
+   "209: return mapping.get(text, text)",
+   "235: \"ticker\": self.canonical.get(\"ticker\", \"\"),",
+   "269: ticker = str(resolve(\"ticker\") or \"\").strip().upper()",
+   "292: f\"direction={direction or 'MISSING'}\",",
+   "295: raw_direction_status = str(resolve(\"direction_resolution_status\") or \"\").strip().upper()",
+   "306: f\"direction_resolution_status={direction_status or 'MISSING'}; raw={raw_direction_status or 'MISSING'}\",",
+   "356: f\"horizon={horizon or 'MISSING'}, planned_hold_sessions={hold}\",",
+   "394: state_key = str(resolve(\"state_key\") or \"\").strip()",
+   "399: contract_symbol = str(resolve(\"contract_symbol\") or \"\").strip().upper()",
+   "404: structure = str(resolve(\"contract_structure\") or \"LONG_SINGLE\").strip().upper()"
+  ],
+  "writes": [
+   "193: text = str(value or \"\").strip().upper().replace(\"\u2013\", \"_\").replace(\"-\", \"_\")",
+   "194: text = text.replace(\" \", \"\")",
+   "240: \"ev3_field_provenance\": json.dumps(self.provenance, sort_keys=True),",
+   "580: canonical[\"ev3_field_provenance\"] = json.dumps(result.provenance, sort_keys=True)"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "255: \"\"\"Validate and canonicalise one EV3 input row without fabricating data.\"\"\""
+  ],
+  "version_fields": [
+   "22: EV3_STAGE0_VERSION = \"ev3-stage0-v0.4.0\"",
+   "23: EV3_INPUT_SCHEMA_VERSION = \"ev3-input-v0.3.0\"",
+   "24: EV3_BARRIER_SCHEMA_VERSION = \"ev3-barrier-v0.3.0\"",
+   "239: \"ev3_input_schema_version\": EV3_INPUT_SCHEMA_VERSION,",
+   "259: \"ev3_input_schema_version\": EV3_INPUT_SCHEMA_VERSION,",
+   "841: calculation_version: str = EV3_STAGE0_VERSION,"
+  ],
+  "counts": {
+   "direction": 17,
+   "fallback": 17,
+   "write": 4
+  }
+ },
+ {
+  "path": "vanguard/ev_engine_v3.py",
+  "n_lines": 815,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "morning_gate.py",
+   "scripts/run_ev3_shadow.py",
+   "tests/test_ev_engine_v3.py"
+  ],
+  "imports": [
+   "vanguard/ev3_stage0.py"
+  ],
+  "docstring": "AVSHUNTER EV Engine v3, Stage EV-2B production-evidence implementation.\n\nThis module compares long CALL/PUT contracts with bull-call/bear-put debit\nspreads. Every output is namespaced ``ev3_*`` and is published as governed\nproduction evidence. ``ev3_capital_eligible`` remains false until a separately\ncalibrated capital policy is approved.",
+  "functions": [
+   "_rejection:49",
+   "not_applicable_result:64",
+   "american_option_price:256",
+   "_anchored_option_mid:294",
+   "_exit_return:327",
+   "_vertical_leg_row:355",
+   "evaluate_vertical_debit:374",
+   "evaluate_contract:583",
+   "select_contract:755",
+   "policy_as_dict:814"
+  ],
+  "classes": [
+   {
+    "name": "EV3Policy:28",
+    "methods": []
+   },
+   {
+    "name": "EV3BarrierCache:79",
+    "methods": [
+     "__init__:93",
+     "load:112",
+     "lookup:115",
+     "_normalise_exit_sessions:234"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:101",
+   "ValueError:103",
+   "ValueError:106"
+  ],
+  "direction_branches": [
+   "269: is_call = direction.upper() == \"CALL\"",
+   "312: dividend_yield, current_volatility, canonical[\"canonical_direction\"], steps=steps_now,",
+   "316: dividend_yield, exit_volatility, canonical[\"canonical_direction\"], steps=steps_exit,",
+   "320: intrinsic = max(exit_spot - canonical[\"strike\"], 0.0) if canonical[\"canonical_direction\"] == \"CALL\" else max(canonical[\"strike\"] - exit_spot, 0.0)",
+   "322: no_arbitrage_cap = exit_spot if canonical[\"canonical_direction\"] == \"CALL\" else canonical[\"strike\"]",
+   "384: expected_structure = {\"CALL\": \"BULL_CALL_DEBIT\", \"PUT\": \"BEAR_PUT_DEBIT\"}",
+   "405: direction = long_c[\"canonical_direction\"]",
+   "417: geometry_valid = long_strike < short_strike if direction == \"CALL\" else long_strike > short_strike",
+   "596: row.get(\"canonical_direction\")",
+   "598: or row.get(\"options_direction\")",
+   "602: if raw_direction in {\"STRANGLE\", \"STRADDLE\", \"NON_DIRECTIONAL\"}:",
+   "632: c[\"state_key\"], c[\"canonical_direction\"], int(c[\"planned_hold_sessions\"]),",
+   "707: \"ev3_direction\": c[\"canonical_direction\"],"
+  ],
+  "fallbacks": [
+   "309: steps_exit = min(policy.crr_max_steps, max(policy.crr_min_steps, remaining_days or 1))",
+   "383: structure = str(row.get(\"contract_structure\") or row.get(\"structure\") or \"\").upper()",
+   "441: return _rejection(reason, detail, ev3_contract_symbol=str(row.get(\"contract_symbol\") or row.get(\"symbol\") or \"\"))",
+   "499: state_fallback_uncertainty = float(cell.get(\"state_fallback_penalty_return\", 0.0))",
+   "500: exit_session_default_uncertainty = float(cell.get(\"exit_session_default_penalty_return\", 0.0))",
+   "535: \"ev3_candidate_policy_version\": str(row.get(\"ev3_candidate_policy_version\") or row.get(\"candidate_policy_version\") or \"\"),",
+   "539: \"ev3_state_match_type\": str(cell.get(\"state_match_type\", \"EXACT\")),",
+   "540: \"ev3_state_similarity\": float(cell.get(\"state_similarity\", 1.0)),",
+   "541: \"ev3_state_source_count\": int(cell.get(\"state_source_count\", 1)),",
+   "542: \"ev3_state_source_keys_json\": str(cell.get(\"state_source_keys_json\", \"[]\")),",
+   "543: \"ev3_exit_session_defaulted_fields_json\": str(cell.get(\"exit_session_defaulted_fields_json\", \"[]\")),",
+   "600: or \"\"",
+   "607: structure = str(row.get(\"contract_structure\") or row.get(\"structure\") or \"LONG_SINGLE\").strip().upper()",
+   "675: state_fallback_uncertainty = float(cell.get(\"state_fallback_penalty_return\", 0.0))"
+  ],
+  "writes": [
+   "231: result[\"state_source_keys_json\"] = json.dumps(source_keys)",
+   "250: result[\"exit_session_defaulted_fields_json\"] = json.dumps(defaults, sort_keys=True)",
+   "796: ev3_child_rejection_counts_json=json.dumps(rejection_counts, sort_keys=True),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "123: # Stage EV-0 deliberately materialised only exact policy endpoints."
+  ],
+  "version_fields": [
+   "23: EV3_ENGINE_VERSION = \"ev3-stage2b-v0.6.0\"",
+   "97: \"timeout_exit_session\", \"calculation_version\", \"schema_version\",",
+   "538: \"ev3_barrier_calculation_version\": cell[\"calculation_version\"],",
+   "712: \"ev3_barrier_calculation_version\": cell[\"calculation_version\"],"
+  ],
+  "counts": {
+   "direction": 13,
+   "fallback": 23,
+   "write": 3
+  }
+ },
+ {
+  "path": "vanguard/integration/__init__.py",
+  "n_lines": 8,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/integration/orchestrator_adapter.py",
+   "vanguard/integration/orchestrator_adapter1802dnu.py",
+   "vanguard/integration/orchestrator_adapter2102dnu.py",
+   "vanguard/integration/orchestrator_adapterold.py",
+   "vanguard/integration/orchestrator_adapterolddnu1504.py"
+  ],
+  "imports": [
+   "vanguard/integration/orchestrator_adapter.py"
+  ],
+  "docstring": "VANGUARD Integration Package\nAdapters for external systems (Orchestrator, APIs, etc.)",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/__init__.py",
+  "n_lines": 18,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/auction_synthesizer.py",
+   "vanguard/layer1_auction/control_identifier.py",
+   "vanguard/layer1_auction/market_profile.py",
+   "vanguard/layer1_auction/value_acceptance.py",
+   "vanguard/layer1_auction/value_migration.py",
+   "vanguard/main.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/auction_synthesizer.py",
+   "vanguard/layer1_auction/control_identifier.py",
+   "vanguard/layer1_auction/market_profile.py",
+   "vanguard/layer1_auction/value_acceptance.py",
+   "vanguard/layer1_auction/value_migration.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Auction Intelligence Package\nAll modules for market profile and auction theory analysis",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/auction_synthesizer.py",
+  "n_lines": 442,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/__init__.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/control_identifier.py",
+   "vanguard/layer1_auction/market_profile.py",
+   "vanguard/layer1_auction/value_acceptance.py",
+   "vanguard/layer1_auction/value_migration.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Auction Synthesizer\nCombines all auction modules into final verdict\n\nThis is the CRITICAL decision point:\n- Is market READY to trade?\n- If not ready NOW, when MIGHT it be ready?\n- Multi-scenario analysis (Aggressive, Moderate, Conservative)",
+  "functions": [],
+  "classes": [
+   {
+    "name": "AuctionStateSynthesizer:22",
+    "methods": [
+     "__init__:28",
+     "synthesize:35",
+     "_generate_scenarios:129",
+     "_assess_immediate_scenario:163",
+     "_assess_conditional_near:233",
+     "_assess_conditional_far:287",
+     "_determine_verdict:328"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "198: if migration.direction != \"SIDEWAYS\" and migration.consistency.startswith(\"CONSISTENT\"):"
+  ],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/control_identifier.py",
+  "n_lines": 388,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/auction_synthesizer.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Control Identifier\nDetermines who controls the tape: BUYERS, SELLERS, or NEUTRAL\n\nControl = Who is DRIVING price vs who is DEFENDING\nInitiative = Aggressive (taking liquidity)\nResponsive = Passive (providing liquidity)",
+  "functions": [],
+  "classes": [
+   {
+    "name": "ControlIdentifier:19",
+    "methods": [
+     "__init__:29",
+     "identify_control:32",
+     "_measure_aggression:72",
+     "_measure_aggression_from_tns:87",
+     "_estimate_aggression_from_bars:136",
+     "_measure_efficiency:171",
+     "_measure_volume_trend:216",
+     "_measure_volume_trend_from_tns:229",
+     "_measure_volume_trend_from_bars:267",
+     "_determine_control:304",
+     "_interpret_control:369"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/market_profile.py",
+  "n_lines": 292,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/auction_synthesizer.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Market Profile Calculator\nBuilds Market Profile (TPO chart) from intraday price data\nIdentifies Point of Control, Value Area, and profile characteristics",
+  "functions": [],
+  "classes": [
+   {
+    "name": "MarketProfileCalculator:14",
+    "methods": [
+     "__init__:27",
+     "calculate_profile:32",
+     "_build_tpo_distribution:83",
+     "_find_point_of_control:118",
+     "_calculate_value_area:130",
+     "_classify_profile_type:189",
+     "_assess_balance:240",
+     "_empty_profile:279"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "147: accumulated_tpo = tpo_counts.get(poc, 0)",
+   "173: tpo_above = tpo_counts.get(prices_sorted[value_high_idx + 1], 0) if can_expand_up else 0",
+   "174: tpo_below = tpo_counts.get(prices_sorted[value_low_idx - 1], 0) if can_expand_down else 0"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 3,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/value_acceptance.py",
+  "n_lines": 453,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/auction_synthesizer.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Value Acceptance Detector\nDetermines if current price is ACCEPTED or merely TOLERATED\n\nACCEPTED = Market agrees this is fair value (high volume, time, balanced flow)\nTOLERATED = Market is just passing through (low volume, brief, imbalanced)\n\nThis is THE critical filter that blocks 80% of trades",
+  "functions": [],
+  "classes": [
+   {
+    "name": "ValueAcceptanceDetector:21",
+    "methods": [
+     "__init__:29",
+     "detect_acceptance:32",
+     "_classify_position_in_profile:97",
+     "_measure_volume_at_price:116",
+     "_measure_time_at_price:165",
+     "_measure_flow_balance:201",
+     "_measure_flow_from_tns:219",
+     "_estimate_flow_from_bars:268",
+     "_measure_participant_diversity:320",
+     "_calculate_acceptance_score:364",
+     "_classify_acceptance:432"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "406: score += volume_scores.get(volume.quality, 10)",
+   "410: score += time_scores.get(time.quality, 5)",
+   "419: score += flow_scores.get(flow.quality, 5)",
+   "428: score += participant_scores.get(participants.quality, 3)"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 4,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer1_auction/value_migration.py",
+  "n_lines": 223,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer1_auction/__init__.py",
+   "vanguard/layer1_auction/auction_synthesizer.py"
+  ],
+  "imports": [
+   "vanguard/layer1_auction/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 1 - Value Migration Tracker\nDetermines if value is MIGRATING (trending) or HOLDING (range-bound)\n\nMigration = Value area moving up/down over multiple sessions\nHolding = Value area stable across sessions",
+  "functions": [],
+  "classes": [
+   {
+    "name": "ValueMigrationTracker:16",
+    "methods": [
+     "__init__:24",
+     "track_migration:27",
+     "_extract_migration_metrics:73",
+     "_analyze_direction:106",
+     "_analyze_speed:122",
+     "_analyze_consistency:142",
+     "_interpret_migration:189",
+     "_no_migration_available:213"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "198: if direction == \"SIDEWAYS\":"
+  ],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 1,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer2_statistical/__init__.py",
+  "n_lines": 14,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_actuarial_v7_cutover_paths.py",
+   "vanguard/layer2_statistical/actuarial_query.py",
+   "vanguard/layer2_statistical/actuarial_query0605old.py",
+   "vanguard/layer2_statistical/actuarial_querydnu0605old.py",
+   "vanguard/layer2_statistical/edge_detector.py",
+   "vanguard/layer2_statistical/scenario_builder.py",
+   "vanguard/layer2_statistical/state_calculator.py",
+   "vanguard/main.py"
+  ],
+  "imports": [
+   "vanguard/layer2_statistical/actuarial_query.py",
+   "vanguard/layer2_statistical/edge_detector.py",
+   "vanguard/layer2_statistical/state_calculator.py"
+  ],
+  "docstring": "VANGUARD Layer 2 - Statistical Edge Package\nState calculation, actuarial query, and edge detection",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer2_statistical/scenario_builder.py",
+  "n_lines": 535,
+  "classification": "LIBRARY",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_vanguard_production_fixes.py"
+  ],
+  "imports": [
+   "vanguard/layer2_statistical/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 3 - Multi-Scenario Builder\nAMENDED MERGED VERSION (2026-04-12)\n\nPurpose\n-------\nThis version restores the original public interface expected by Vanguard:\n    - class MultiScenarioBuilder\n    - method build_scenarios(...)\n\nIt also preserves the newer probability-fix logic introduced in the\nsimplified replacement file:\n    - composite score clamped to [0, 100]\n    - drift probability floor\n    - exact normalisation to sum to 1.0\n    - rounded outputs for readability\n\nWhy this merge exists\n---------------------\nThe prior replacement kept only a helper function and removed the\nMulti",
+  "functions": [
+   "_clamp:39",
+   "compute_scenario_probabilities:43"
+  ],
+  "classes": [
+   {
+    "name": "MultiScenarioBuilder:73",
+    "methods": [
+     "__init__:83",
+     "build:90",
+     "compute_probs:96",
+     "build_scenarios:105",
+     "_hold_days:133",
+     "_horizon_metrics:141",
+     "_build_aggressive_scenario:156",
+     "_build_moderate_scenario:270",
+     "_build_conservative_scenario:390",
+     "_design_options_strategy:501"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "176: if direction == \"CALL\":",
+   "194: if state.value_migration_direction != \"SIDEWAYS\":",
+   "303: if direction == \"CALL\":",
+   "316: if state.value_migration_direction != \"SIDEWAYS\":",
+   "415: if direction == \"CALL\":"
+  ],
+  "fallbacks": [
+   "53: base = float(row.get(\"composite\", 50) or 50)",
+   "135: base = float(getattr(outcomes, \"recommended_hold_days\", 20) or 20)",
+   "145: win_rate = float(getattr(outcomes, \"win_rate\", 0.0) or 0.0)",
+   "149: median_gain = float(getattr(outcomes, \"median_gain_if_up\", 0.0) or 0.0)",
+   "153: median_loss = float(getattr(outcomes, \"median_loss_if_down\", 0.0) or 0.0)"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 5,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer3_execution/__init__.py",
+  "n_lines": 12,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer3_execution/scenario_builder.py",
+   "vanguard/layer3_execution/scenario_builderolddnu1204.py",
+   "vanguard/layer3_execution/trade_builder.py",
+   "vanguard/layer3_execution/trade_builder2702old dnu.py",
+   "vanguard/layer3_execution/trade_builderadnu.py"
+  ],
+  "imports": [
+   "vanguard/layer3_execution/scenario_builder.py",
+   "vanguard/layer3_execution/trade_builder.py"
+  ],
+  "docstring": "VANGUARD Layer 3 - Execution Intelligence Package\nMulti-scenario trade planning and execution strategies",
+  "functions": [],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer3_execution/scenario_builder.py",
+  "n_lines": 535,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "tests/test_vanguard_production_fixes.py",
+   "vanguard/layer3_execution/__init__.py",
+   "vanguard/layer3_execution/trade_builder.py",
+   "vanguard/layer3_execution/trade_builder2702old dnu.py",
+   "vanguard/layer3_execution/trade_builderadnu.py"
+  ],
+  "imports": [
+   "vanguard/layer3_execution/__init__.py"
+  ],
+  "docstring": "VANGUARD Layer 3 - Multi-Scenario Builder\nAMENDED MERGED VERSION (2026-04-12)\n\nPurpose\n-------\nThis version restores the original public interface expected by Vanguard:\n    - class MultiScenarioBuilder\n    - method build_scenarios(...)\n\nIt also preserves the newer probability-fix logic introduced in the\nsimplified replacement file:\n    - composite score clamped to [0, 100]\n    - drift probability floor\n    - exact normalisation to sum to 1.0\n    - rounded outputs for readability\n\nWhy this merge exists\n---------------------\nThe prior replacement kept only a helper function and removed the\nMulti",
+  "functions": [
+   "_clamp:39",
+   "compute_scenario_probabilities:43"
+  ],
+  "classes": [
+   {
+    "name": "MultiScenarioBuilder:73",
+    "methods": [
+     "__init__:83",
+     "build:90",
+     "compute_probs:96",
+     "build_scenarios:105",
+     "_hold_days:133",
+     "_horizon_metrics:141",
+     "_build_aggressive_scenario:156",
+     "_build_moderate_scenario:270",
+     "_build_conservative_scenario:390",
+     "_design_options_strategy:501"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "176: if direction == \"CALL\":",
+   "194: if state.value_migration_direction != \"SIDEWAYS\":",
+   "303: if direction == \"CALL\":",
+   "316: if state.value_migration_direction != \"SIDEWAYS\":",
+   "415: if direction == \"CALL\":"
+  ],
+  "fallbacks": [
+   "53: base = float(row.get(\"composite\", 50) or 50)",
+   "135: base = float(getattr(outcomes, \"recommended_hold_days\", 20) or 20)",
+   "145: win_rate = float(getattr(outcomes, \"win_rate\", 0.0) or 0.0)",
+   "149: median_gain = float(getattr(outcomes, \"median_gain_if_up\", 0.0) or 0.0)",
+   "153: median_loss = float(getattr(outcomes, \"median_loss_if_down\", 0.0) or 0.0)"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 5,
+   "fallback": 5,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/layer3_execution/trade_builder.py",
+  "n_lines": 570,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/layer3_execution/__init__.py"
+  ],
+  "imports": [
+   "vanguard/layer3_execution/__init__.py",
+   "vanguard/layer3_execution/scenario_builder.py"
+  ],
+  "docstring": "VANGUARD Layer 3 - Trade Builder\nAssembles complete trade plan with all scenarios and recommendations",
+  "functions": [],
+  "classes": [
+   {
+    "name": "TradeBuilder:15",
+    "methods": [
+     "__init__:26",
+     "build_trade_plan:29",
+     "_determine_recommended_scenario:111",
+     "_build_pyramiding_plan:137",
+     "_define_invalidation_criteria:183",
+     "_calculate_overall_confidence:222",
+     "_calculate_overall_right_side_score:248",
+     "_generate_recommendation_rationale:273",
+     "_build_execution_gates:311",
+     "_recommend_horizon:523",
+     "_serialize_auction:541",
+     "_serialize_state:551",
+     "_serialize_outcomes:560"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "208: if auction.migration.direction != \"SIDEWAYS\":",
+   "209: opposite_dir = \"DOWN\" if auction.migration.direction == \"UP\" else \"UP\"",
+   "351: if direction == \"CALL\":",
+   "381: if direction == \"CALL\":",
+   "451: if direction == \"CALL\":",
+   "481: if direction == \"CALL\":"
+  ],
+  "fallbacks": [
+   "288: parts.append(f\"Entry: {scenario.entry_trigger or 'Immediate'}\")",
+   "526: Returns 5, 10, or 20.",
+   "528: recommended = getattr(outcomes, 'recommended_hold_days', 20) or 20"
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "128: # If auction is SEARCHING or weak signals \u2192 Conservative only",
+   "154: # Only build pyramiding if all scenarios are feasible"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 6,
+   "fallback": 3,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/physics_state_engine.py",
+  "n_lines": 447,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "eod_candidate_engine.py",
+   "execution_intelligence_runner.py",
+   "scripts/run_vanguard_from_packages.py",
+   "tests/test_market_physics.py"
+  ],
+  "imports": [],
+  "docstring": "AVSHUNTER Phase 5 - Market Physics State Engine.\n\nThis module enriches existing Vanguard / actuarial rows with deterministic\nphysics-derived state transition fields. It does not create signals, verdicts,\nor execution permission.",
+  "functions": [
+   "_is_missing:71",
+   "_first:84",
+   "_num:91",
+   "_clamp:101",
+   "_as_0_100:105",
+   "_signed_return:111",
+   "_word:117",
+   "_contains:122",
+   "_bucket:126",
+   "_future_state_from_label:140",
+   "_success_probability:155",
+   "calculate_market_physics:160",
+   "ensure_physics_fields:373",
+   "enrich_with_market_physics:394",
+   "append_physics_fields_from_source:421"
+  ],
+  "classes": [],
+  "raises": [],
+  "direction_branches": [
+   "236: if _contains(edge_direction, [\"UP\", \"CALL\", \"BULL\", \"LONG\"]):",
+   "238: elif _contains(edge_direction, [\"DOWN\", \"PUT\", \"BEAR\", \"SHORT\"]):"
+  ],
+  "fallbacks": [
+   "119: return str(value or \"\").strip().upper()",
+   "152: return f\"{mapping.get(label, 'INFERRED_UNKNOWN')}__{horizon}\"",
+   "156: multiplier = {\"5d\": 0.92, \"10d\": 1.0, \"20d\": 0.88}.get(horizon, 1.0)",
+   "197: or \"\"",
+   "257: drift_status = str(macro_context.get(\"regime_drift_status\") or row.get(\"regime_drift_status\") or \"\").upper()",
+   "411: degraded_count = int((out.get(\"physics_data_quality\", \"\") == \"DEGRADED_DEFAULTS\").sum())",
+   "426: if source_df is None or source_df.empty or \"ticker\" not in out.columns or \"ticker\" not in source_df.columns:"
+  ],
+  "writes": [
+   "367: \"physics_defaulted_fields\": json.dumps(sorted(set(defaulted))),"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 2,
+   "fallback": 7,
+   "write": 1
+  }
+ },
+ {
+  "path": "vanguard/schemas/auction_schema.py",
+  "n_lines": 174,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/schemas/__init__.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD Auction Schemas\nOutput data structures from Layer 1 - Auction Intelligence",
+  "functions": [],
+  "classes": [
+   {
+    "name": "MarketProfile:12",
+    "methods": []
+   },
+   {
+    "name": "VolumeQuality:32",
+    "methods": []
+   },
+   {
+    "name": "TimeQuality:42",
+    "methods": []
+   },
+   {
+    "name": "FlowBalance:51",
+    "methods": []
+   },
+   {
+    "name": "ParticipantQuality:62",
+    "methods": []
+   },
+   {
+    "name": "AcceptanceState:71",
+    "methods": []
+   },
+   {
+    "name": "AggressionMetrics:88",
+    "methods": []
+   },
+   {
+    "name": "EfficiencyMetrics:100",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/schemas/input_schema.py",
+  "n_lines": 214,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/integration/orchestrator_adapter.py",
+   "vanguard/main.py",
+   "vanguard/schemas/__init__.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD Input Schemas\nDefines data structures for inputs to VANGUARD system",
+  "functions": [],
+  "classes": [
+   {
+    "name": "CalendarData:13",
+    "methods": []
+   },
+   {
+    "name": "OptionsData:31",
+    "methods": []
+   },
+   {
+    "name": "TechnicalData:61",
+    "methods": []
+   },
+   {
+    "name": "MicrostructureData:140",
+    "methods": []
+   },
+   {
+    "name": "MacroData:168",
+    "methods": []
+   },
+   {
+    "name": "VanguardInput:183",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [
+   "147: # status: \"NO_CROSSING_ELIGIBLE\" or \"ACTIVE\""
+  ],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 1,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/schemas/state_outcomes_schema.py",
+  "n_lines": 442,
+  "classification": "LIBRARY",
+  "commit": "49febe3",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/schemas/__init__.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD State & Outcomes Schemas\nLayer 2 - Statistical Edge data structures\n\nUPDATED: Added multi-horizon outcome fields (5d, 10d) for options layer\n         compounding strategy. All new fields have defaults so existing\n         callers are unaffected.",
+  "functions": [],
+  "classes": [
+   {
+    "name": "StateVector:17",
+    "methods": []
+   },
+   {
+    "name": "ActuarialOutcomes:181",
+    "methods": [
+     "win_rate_for_hold:379",
+     "expected_value_for_hold:388",
+     "median_gain_for_hold:397",
+     "median_loss_for_hold:406"
+    ]
+   },
+   {
+    "name": "ScenarioOutcomes:417",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "175: # Advisory-only positional context used by EdgeDetector rationale.",
+   "325: # scalars above already use \u2014 see _calculate_outcomes(). Additive only:",
+   "327: # Absent/too-small horizon data -> None (null), never 0.0. Zero is a"
+  ],
+  "version_fields": [
+   "132: schema_version: str = \"2.2.0\"           # Hash dimension schema (9-dim)",
+   "133: bucket_schema_version: str = \"1.1.0\"    # Bucket boundary schema"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/schemas/trade_schema.py",
+  "n_lines": 220,
+  "classification": "ORCHESTRATED",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/main.py",
+   "vanguard/schemas/__init__.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD Trade Schemas\nFinal output structures - Multi-Scenario Trade Plans",
+  "functions": [],
+  "classes": [
+   {
+    "name": "EdgeAssessment:12",
+    "methods": []
+   },
+   {
+    "name": "TradeScenario:50",
+    "methods": []
+   },
+   {
+    "name": "TradePlan:112",
+    "methods": []
+   },
+   {
+    "name": "VanguardSignal:165",
+    "methods": []
+   },
+   {
+    "name": "DailyReport:194",
+    "methods": []
+   }
+  ],
+  "raises": [],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [],
+  "atomic_markers": [],
+  "authority_comments": [
+   "214: tier_3_signals: List[VanguardSignal] = field(default_factory=list)  # Statistical only"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 0
+  }
+ },
+ {
+  "path": "vanguard/schemas/vanguard_contract.py",
+  "n_lines": 485,
+  "classification": "LIBRARY",
+  "commit": "46c002f",
+  "entry_points": "",
+  "imported_by": [
+   "vanguard/tests/test_vanguard_contract.py"
+  ],
+  "imports": [],
+  "docstring": "Vanguard Contract + Validator (v2.0) \u2014 FAIL-CLOSED\n==================================================\n\nPurpose\n- Enforce a strict schema between Orchestrator and Vanguard.\n- Reject malformed universes, insufficient history (EMA200 integrity), and stale/missing regime snapshots.\n- Provide deterministic validation errors (no silent degradation).\n\nDesign principles\n- Fail-closed: unknown/missing == STOP.\n- Deterministic: same input => same verdict.\n- Auditable: structured error codes + JSONL logs.",
+  "functions": [
+   "_history_tier:126",
+   "_utcnow:137",
+   "_parse_iso8601_utc:141",
+   "validate_ticker_us_only:152",
+   "validate_regime_snapshot:186",
+   "_is_strictly_sorted_index:231",
+   "validate_daily_df_integrity:237",
+   "validate_vanguard_input:394",
+   "write_validation_log:462"
+  ],
+  "classes": [
+   {
+    "name": "ContractErrorCode:36",
+    "methods": []
+   },
+   {
+    "name": "RegimeSnapshot:67",
+    "methods": []
+   },
+   {
+    "name": "VanguardInput:81",
+    "methods": []
+   },
+   {
+    "name": "ValidationIssue:94",
+    "methods": []
+   },
+   {
+    "name": "ValidationResult:102",
+    "methods": [
+     "raise_if_failed:107"
+    ]
+   }
+  ],
+  "raises": [
+   "ValueError:110",
+   "ValueError:148"
+  ],
+  "direction_branches": [],
+  "fallbacks": [
+   "154: t = (ticker or \"\").strip().upper()",
+   "450: min_required = min_score_by_tier.get(tier, 90)"
+  ],
+  "writes": [
+   "471: \"ts_utc\": _utcnow().isoformat().replace(\"+00:00\", \"Z\"),",
+   "484: with open(log_path, \"a\", encoding=\"utf-8\") as f:",
+   "485: f.write(json.dumps(payload, ensure_ascii=False) + \"\\n\")"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "270: # Column normalisation: validate using lower-case canonical names.",
+   "351: # We only run this if index looks like datetime."
+  ],
+  "version_fields": [
+   "31: CONTRACT_VERSION = \"2.0\"",
+   "85: contract_version: str",
+   "399: if not hasattr(vin, \"contract_version\") or not vin.contract_version:",
+   "402: message=\"contract_version is required.\",",
+   "403: field=\"contract_version\",",
+   "407: elif vin.contract_version != CONTRACT_VERSION:"
+  ],
+  "counts": {
+   "direction": 0,
+   "fallback": 2,
+   "write": 3
+  }
+ },
+ {
+  "path": "vanguard/trade_contract.py",
+  "n_lines": 162,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "intelligence-lab/intelligence_lab.py",
+   "intelligence-lab/intelligence_lab0505.py",
+   "intelligence-lab/intelligence_labold.py",
+   "intelligence-lab/intelligence_labolddnu0605am.py",
+   "scripts/run_vanguard_from_packages.py",
+   "tests/test_lab_journal_handoff.py",
+   "vanguard/trade_governance.py"
+  ],
+  "imports": [],
+  "docstring": "VANGUARD \u2014 Trade Contract\n=========================\nWritten at trade entry (Day 0) to lock the thesis.\nThe entry block is IMMUTABLE after creation.\nOnly status, days_in_trade, governance_history, exit_date,\nand exit_reason are updated during the life of the trade.\n\nLocation:\n    open/    \u2192 vanguard/trades/open/\n    closed/  \u2192 vanguard/trades/closed/\n    logs/    \u2192 vanguard/trades/governance_log/\n\nFilename convention: {TICKER}_{YYYYMMDD}.json",
+  "functions": [
+   "_ensure_dirs:31",
+   "create_contract:38",
+   "find_open_contract:113",
+   "load_contract:120",
+   "save_contract:124",
+   "close_contract:128",
+   "list_open_contracts:139",
+   "list_open_tickers:145",
+   "_contract_path:152",
+   "_calc_expiry:156"
+  ],
+  "classes": [],
+  "raises": [
+   "ValueError:67"
+  ],
+  "direction_branches": [],
+  "fallbacks": [],
+  "writes": [
+   "107: path.write_text(json.dumps(contract, indent=2))",
+   "125: path.write_text(json.dumps(contract, indent=2))",
+   "134: closed_path.write_text(json.dumps(contract, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [],
+  "version_fields": [],
+  "counts": {
+   "direction": 0,
+   "fallback": 0,
+   "write": 3
+  }
+ },
+ {
+  "path": "vanguard/trade_governance.py",
+  "n_lines": 405,
+  "classification": "ORCHESTRATED",
+  "commit": "5d886f0",
+  "entry_points": "",
+  "imported_by": [
+   "scripts/run_vanguard_from_packages.py"
+  ],
+  "imports": [
+   "vanguard/trade_contract.py"
+  ],
+  "docstring": "VANGUARD \u2014 Trade Governance Engine\n====================================\nRuns on every daily pass for each open Trade Contract.\nAnswers 5 invalidation questions \u2014 NOT the entry question.\n\nRULE: Scanner logic cannot override campaign logic.\n      Only explicit thesis breach triggers exit.\n\nThe 5 Invalidation Questions\n------------------------------\nQ1. Price Invalidation   \u2014 Has price violated the entry stop level?\nQ2. Macro Regime Flip    \u2014 Has the macro regime changed from entry?\nQ3. Vol Regime Shift     \u2014 Has volatility regime changed materially?\nQ4. Structure Collapse   \u2014 Has structure quali",
+  "functions": [],
+  "classes": [
+   {
+    "name": "TradeGovernanceEngine:64",
+    "methods": [
+     "evaluate_all:71",
+     "evaluate_single:107",
+     "_evaluate_contract:127",
+     "_check_price_invalidation:233",
+     "_check_macro_flip:270",
+     "_check_vol_shift:305",
+     "_check_structure_collapse:334",
+     "_check_horizon_expiry:364",
+     "_write_governance_log:387"
+    ]
+   }
+  ],
+  "raises": [],
+  "direction_branches": [
+   "241: direction          = contract.get(\"direction\", \"CALL\")",
+   "244: if direction == \"CALL\":",
+   "254: elif direction == \"PUT\":"
+  ],
+  "fallbacks": [
+   "139: days_held    = contract.get(\"days_in_trade\", 0) + 1",
+   "240: invalidation_price = contract.get(\"invalidation_price\", 0)",
+   "241: direction          = contract.get(\"direction\", \"CALL\")",
+   "242: entry_price        = contract.get(\"entry_price\", 0)",
+   "273: entry_macro   = contract.get(\"entry_macro_regime\", \"TRANSITIONAL\")",
+   "308: entry_vol   = contract.get(\"entry_vol_regime\", \"NORMAL\")",
+   "337: entry_structure   = contract.get(\"entry_structure_quality\", \"NEUTRAL\")",
+   "368: horizon_type = contract.get(\"horizon_type\", \"20D\")"
+  ],
+  "writes": [
+   "404: log_path.write_text(json.dumps(summary, indent=2))"
+  ],
+  "atomic_markers": [],
+  "authority_comments": [
+   "344: # Only breach if structure entered as STRONG and has collapsed to WEAK"
+  ],
+  "version_fields": [],
+  "counts": {
+   "direction": 3,
+   "fallback": 8,
+   "write": 1
+  }
+ }
+]

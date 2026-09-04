@@ -1,0 +1,60 @@
+--- a/canonical_data/contracts.py
++++ b/canonical_data/contracts.py
+@@ -189,6 +189,10 @@
+     accepted_providers: tuple[str, ...] = ()
+     adjustment_convention: str = "UNSPECIFIED"
+     schema_version: str = "1"
++    invocation_id: str | None = None
++    evidence_cutoff_utc: datetime | None = None
++    exchange_calendar: str = "XNYS"
++    evidence_state: str = "COMPLETED_SESSION"
+ 
+     def __post_init__(self) -> None:
+         for name in ("run_id", "requesting_stage", "instrument_id"):
+@@ -196,12 +200,46 @@
+                 raise DatasetValidationError(f"{name} is required")
+         if self.freshness_seconds is not None and self.freshness_seconds < 0:
+             raise DatasetValidationError("freshness_seconds cannot be negative")
++        invocation_id = str(self.invocation_id or self.run_id).strip()
++        if not invocation_id:
++            raise DatasetValidationError("invocation_id is required")
++        cutoff = self.evidence_cutoff_utc
++        if cutoff is not None and cutoff.tzinfo is None:
++            raise DatasetValidationError("evidence_cutoff_utc must be timezone-aware")
++        calendar = str(self.exchange_calendar).strip().upper()
++        if not calendar:
++            raise DatasetValidationError("exchange_calendar is required")
++        evidence_state = str(self.evidence_state).strip().upper()
++        if not evidence_state:
++            raise DatasetValidationError("evidence_state is required")
+         object.__setattr__(self, "instrument_id", self.instrument_id.strip().upper())
+         object.__setattr__(self, "requesting_stage", self.requesting_stage.strip().upper())
++        object.__setattr__(self, "invocation_id", invocation_id)
++        object.__setattr__(self, "evidence_cutoff_utc", parse_utc(cutoff))
++        object.__setattr__(self, "exchange_calendar", calendar)
++        object.__setattr__(self, "evidence_state", evidence_state)
+         object.__setattr__(
+             self, "accepted_providers", _normalise_strings(self.accepted_providers)
+         )
+ 
++    @property
++    def request_fingerprint(self) -> str:
++        payload = {
++            "run_id": self.run_id,
++            "invocation_id": self.invocation_id,
++            "requesting_stage": self.requesting_stage,
++            "dataset_type": self.dataset_type.value,
++            "instrument_id": self.instrument_id,
++            "session_date": self.session_date.isoformat(),
++            "scope_fingerprint": self.scope.fingerprint,
++            "evidence_cutoff_utc": iso_utc(self.evidence_cutoff_utc),
++            "exchange_calendar": self.exchange_calendar,
++            "evidence_state": self.evidence_state,
++        }
++        return hashlib.sha256(
++            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
++        ).hexdigest()
++
+ 
+ @dataclass(frozen=True, slots=True)
+ class DatasetRecord:

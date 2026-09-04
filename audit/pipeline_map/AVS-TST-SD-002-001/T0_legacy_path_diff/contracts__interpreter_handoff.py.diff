@@ -1,0 +1,38 @@
+--- a/contracts/interpreter_handoff.py
++++ b/contracts/interpreter_handoff.py
+@@ -124,6 +124,21 @@
+         raise HandoffValidationError("BUNDLE_SCHEMA_UNSUPPORTED")
+     if value["authority_map_version"] != AUTHORITY_MAP_VERSION:
+         raise HandoffValidationError("AUTHORITY_MAP_UNSUPPORTED")
++    validation = value.get("current_validation")
++    if validation:
++        if not isinstance(validation, Mapping):
++            raise HandoffValidationError("BUNDLE_VALIDATION_EVENT_INVALID")
++        validation_id = _text(validation.get("validation_event_id"))
++        governed_id = _text(
++            (value.get("governed_record") or {}).get("validation_event_id")
++        )
++        if not validation_id or validation_id != governed_id:
++            raise HandoffValidationError("BUNDLE_VALIDATION_EVENT_ID_MISMATCH")
++        for field in ("ticker", "thesis_id"):
++            if _text(validation.get(field)).upper() != _text(value.get(field)).upper():
++                raise HandoffValidationError(
++                    f"BUNDLE_VALIDATION_EVENT_IDENTITY_MISMATCH:{field}"
++                )
+     try:
+         uuid.UUID(_text(value["bundle_id"]))
+     except ValueError as error:
+@@ -213,6 +228,13 @@
+         raise HandoffValidationError(
+             "HANDOFF_BOOK_BUNDLE_IDENTITY_MISMATCH:selected_contract_symbol"
+         )
++    validation = bundle.get("current_validation") or {}
++    if validation and _text(row.get("validation_event_id")) != _text(
++        validation.get("validation_event_id")
++    ):
++        raise HandoffValidationError(
++            "HANDOFF_BOOK_BUNDLE_VALIDATION_ID_MISMATCH"
++        )
+     governed = dict(bundle.get("governed_record") or {})
+     for field in (
+         "governed_direction", "thesis_state", "olm_guard_disposition",

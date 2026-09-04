@@ -5,6 +5,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
+# When this legacy entry point is imported as ``pipeline_interpreter`` from a
+# sys.path that points at this directory, expose the directory as a package
+# path as well.  This keeps governed imports such as
+# ``pipeline_interpreter.ma_inputs_sync`` deterministic during mixed legacy/v2
+# sessions without changing the interactive launcher.
+__path__ = [str(Path(__file__).resolve().parent)]
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")

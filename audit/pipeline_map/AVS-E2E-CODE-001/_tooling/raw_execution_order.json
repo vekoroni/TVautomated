@@ -1,0 +1,340 @@
+{
+ "run_phase_9c": [
+  {
+   "line": 3677,
+   "call": "build_and_write",
+   "kind": "STAGE_FN",
+   "scripts": []
+  }
+ ],
+ "evening_workflow": [
+  {
+   "line": 3790,
+   "call": "merge_scanner_inputs",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3790,
+   "call": "load_scanner_manifest",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3790,
+   "call": "load_manual_ticker_upload",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3791,
+   "call": "build_augmented_universe",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3796,
+   "call": "write_scanner_context",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3799,
+   "call": "run_dropoff_audit_checkpoint",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3802,
+   "call": "run_preflight_checks",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3823,
+   "call": "build_macro_quant_packet",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3913,
+   "call": "build_macro_quant_packet",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3915,
+   "call": "write_json",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3940,
+   "call": "write_json",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 3959,
+   "call": "merge_macro_enrichment_into_macro_latest",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4070,
+   "call": "write_scanner_context",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4115,
+   "call": "run_discovery",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4124,
+   "call": "write_scanner_context",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4125,
+   "call": "apply_external_intel_review_lane",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4126,
+   "call": "apply_macro_enrichment_to_discovery",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4128,
+   "call": "validate_quality",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4134,
+   "call": "run_position_tracking",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4183,
+   "call": "run_vanguard_pipeline",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4194,
+   "call": "run_catalyst_truth_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4196,
+   "call": "run_position_lock_check",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4197,
+   "call": "run_options_intelligence",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4208,
+   "call": "run_horizon_router",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4218,
+   "call": "patch_horizon_fields_into_csv",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4233,
+   "call": "run_ev3_governed_shadow",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4234,
+   "call": "run_ev3_authority_overlay",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4246,
+   "call": "patch_horizon_fields_into_csv",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4251,
+   "call": "run_catalyst_truth_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4398,
+   "call": "run_core_intel_exporter",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4497,
+   "call": "run_superbrain_passthrough",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4508,
+   "call": "patch_horizon_fields_into_csv",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4519,
+   "call": "run_catastrophe_gate",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4520,
+   "call": "run_wall_break_scorer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4690,
+   "call": "run_execution_intelligence_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4694,
+   "call": "inject_actuarial_into_eil_csv",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4700,
+   "call": "run_garch_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4701,
+   "call": "merge_garch_into_enriched",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4806,
+   "call": "enforce_handoff_conflict_guard",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 4984,
+   "call": "run_catalyst_truth_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5091,
+   "call": "build_candidate_manifest",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5321,
+   "call": "run_market_context_read_only_diagnostics",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5601,
+   "call": "build_dropoff_audit",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5629,
+   "call": "write_uat_audit_report",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5639,
+   "call": "write_final_run_manifest",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5654,
+   "call": "write_final_opportunity_book",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5670,
+   "call": "archive_outputs",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5672,
+   "call": "generate_report",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5680,
+   "call": "run_outcome_capture",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5700,
+   "call": "run_weekly_report",
+   "kind": "STAGE_FN",
+   "scripts": []
+  }
+ ],
+ "premarket_workflow": [
+  {
+   "line": 5795,
+   "call": "run_catalyst_truth_layer",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5799,
+   "call": "run_morning_gate",
+   "kind": "STAGE_FN",
+   "scripts": []
+  },
+  {
+   "line": 5817,
+   "call": "finalize_morning_handoff",
+   "kind": "STAGE_FN",
+   "scripts": []
+  }
+ ],
+ "main": [
+  {
+   "line": 6213,
+   "call": "subprocess.run",
+   "kind": "SUBPROCESS",
+   "scripts": []
+  }
+ ]
+}

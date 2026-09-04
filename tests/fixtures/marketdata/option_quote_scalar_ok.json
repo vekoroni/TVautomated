@@ -1,0 +1,1 @@
+{"s":"ok","optionSymbol":"O:AAPL260918C00200000","side":"call","strike":200,"expiration":1789689600,"dte":19,"bid":4.0,"ask":4.2,"mid":4.1,"bidSize":12,"askSize":9,"last":4.05,"openInterest":250,"volume":40,"iv":0.32,"delta":0.48,"gamma":0.02,"theta":-0.08,"vega":0.11,"underlyingPrice":201.5,"contractMultiplier":100,"updated":1788120000}

@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="25" skipped="0" tests="76" time="31.772" timestamp="2026-09-03T16:33:43.514348+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.test_execution_monetisability_gate" name="test_monetisable_contract_can_reach_buy_now" time="0.006" /><testcase classname="tests.test_execution_monetisability_gate" name="test_limited_monetisability_caps_action_at_buy_small" time="0.004"><failure message="AssertionError: assert 'BUY_NOW' == 'BUY_SMALL'&#10;  &#10;  - BUY_SMALL&#10;  + BUY_NOW">def test_limited_monetisability_caps_action_at_buy_small() -&gt; None:
+        result = execution_gate(_row("LIMITED"))
+&gt;       assert result["final_action"] == "BUY_SMALL"
+E       AssertionError: assert 'BUY_NOW' == 'BUY_SMALL'
+E         
+E         - BUY_SMALL
+E         + BUY_NOW
+
+tests\test_execution_monetisability_gate.py:45: AssertionError</failure></testcase><testcase classname="tests.test_execution_monetisability_gate" name="test_not_monetisable_blocks_when_no_alternative_exists" time="0.006"><failure message="AssertionError: assert 'BUY_NOW' == 'BLOCK'&#10;  &#10;  - BLOCK&#10;  + BUY_NOW">def test_not_monetisable_blocks_when_no_alternative_exists() -&gt; None:
+        result = execution_gate(_row("NOT_MONETISABLE"))
+&gt;       assert result["final_action"] == "BLOCK"
+E       AssertionError: assert 'BUY_NOW' == 'BLOCK'
+E         
+E         - BLOCK
+E         + BUY_NOW
+
+tests\test_execution_monetisability_gate.py:51: AssertionError</failure></testcase><testcase classname="tests.test_execution_monetisability_gate" name="test_not_monetisable_requests_repair_when_an_alternative_exists" time="0.005"><failure message="AssertionError: assert 'BUY_NOW' == 'CONTRACT_REPAIR'&#10;  &#10;  - CONTRACT_REPAIR&#10;  + BUY_NOW">def test_not_monetisable_requests_repair_when_an_alternative_exists() -&gt; None:
+        row = _row("NOT_MONETISABLE")
+        row["alternative_contract_1"] = "AAA260918C00105000"
+        result = execution_gate(row)
+&gt;       assert result["final_action"] == "CONTRACT_REPAIR"
+E       AssertionError: assert 'BUY_NOW' == 'CONTRACT_REPAIR'
+E         
+E         - CONTRACT_REPAIR
+E         + BUY_NOW
+
+tests\test_execution_monetisability_gate.py:59: AssertionError</failure></testcase><testcase classname="tests.test_execution_monetisability_gate" name="test_missing_monetisability_data_fails_to_contract_repair" time="0.005"><failure message="AssertionError: assert 'BUY_NOW' == 'CONTRACT_REPAIR'&#10;  &#10;  - CONTRACT_REPAIR&#10;  + BUY_NOW">def test_missing_monetisability_data_fails_to_contract_repair() -&gt; None:
+        result = execution_gate(_row("DATA_MISSING"))
+&gt;       assert result["final_action"] == "CONTRACT_REPAIR"
+E       AssertionError: assert 'BUY_NOW' == 'CONTRACT_REPAIR'
+E         
+E         - CONTRACT_REPAIR
+E         + BUY_NOW
+
+tests\test_execution_monetisability_gate.py:65: AssertionError</failure></testcase><testcase classname="tests.test_lab_cache_signature" name="test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear" time="1.408"><failure message="IndexError: list index out of range">def test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear():
+        """eil_enriched is the primary signal source (not a morning-validation
+        handoff file) — a change to it must still invalidate the cache."""
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            run_id = "20990101_100000"
+            lab.RUNS_DIR = tmp_path / "runs"
+            lab._run_cache.clear()
+    
+            run_dir = lab.RUNS_DIR / run_id
+            eil_path = run_dir / "superbrain" / f"eil_enriched_{run_id}.csv"
+            eil_columns = ["ticker", "direction", "strike", "expiry", "premium_mid",
+                           "target_price", "invalidation_price", "lab_verdict", "trigger_score"]
+    
+            _write_csv(eil_path, eil_columns, {
+                "ticker": "AAA", "direction": "CALL", "strike": "100", "expiry": "2099-01-19",
+                "premium_mid": "1.0", "target_price": "110", "invalidation_price": "95",
+                "lab_verdict": "GO", "trigger_score": "0.0",
+            })
+    
+            first = lab._load_run(run_id, force_reload=True)
+&gt;           first_sig = first["signals"][0]
+                        ^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+tests\test_lab_cache_signature.py:65: IndexError</failure></testcase><testcase classname="tests.test_lab_cache_signature" name="test_lab_reload_detects_fresh_options_intelligence_output_without_manual_cache_clear" time="0.809"><failure message="IndexError: list index out of range">def test_lab_reload_detects_fresh_options_intelligence_output_without_manual_cache_clear():
+        """options_intelligence_latest.csv backs every opt__-prefixed field
+        (including the trigger_score collision documented in LAB_QA_REPORT.md F5) —
+        a change to it must also invalidate the cache."""
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            run_id = "20990101_110000"
+            lab.RUNS_DIR = tmp_path / "runs"
+            lab._run_cache.clear()
+    
+            run_dir = lab.RUNS_DIR / run_id
+            eil_path = run_dir / "superbrain" / f"eil_enriched_{run_id}.csv"
+            eil_columns = ["ticker", "direction", "strike", "expiry", "premium_mid",
+                           "target_price", "invalidation_price", "lab_verdict"]
+            _write_csv(eil_path, eil_columns, {
+                "ticker": "AAA", "direction": "CALL", "strike": "100", "expiry": "2099-01-19",
+                "premium_mid": "1.0", "target_price": "110", "invalidation_price": "95",
+                "lab_verdict": "GO",
+            })
+    
+            opt_path = run_dir / "options" / f"options_intelligence_{run_id}.csv"
+            opt_columns = ["ticker", "rr_options", "trigger_score"]
+            _write_csv(opt_path, opt_columns, {"ticker": "AAA", "rr_options": "0.0", "trigger_score": "0.0"})
+    
+            first = lab._load_run(run_id, force_reload=True)
+&gt;           first_sig = first["signals"][0]
+                        ^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+tests\test_lab_cache_signature.py:110: IndexError</failure></testcase><testcase classname="tests.test_lab_journal_handoff" name="test_lab_trade_entry_captures_clean_handoff_fields_and_carries_to_close" time="0.955" /><testcase classname="tests.test_lab_journal_handoff" name="test_api_enter_trade_allows_go_limit_and_probe_only_when_lab_tradeable" time="1.365" /><testcase classname="tests.test_lab_journal_handoff" name="test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_clear" time="0.156"><failure message="IndexError: list index out of range">def test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_clear():
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            run_id = "20990101_093000"
+            lab.RUNS_DIR = tmp_path / "runs"
+            lab._JOURNAL_DB = tmp_path / "trade_journal.db"
+            lab._run_cache.clear()
+            # This regression exercises file-change detection, not run-health
+            # adjudication. Keep the production fail-closed manifest guard intact
+            # and supply a healthy manifest for the deliberately minimal fixture.
+            lab.write_final_run_manifest = lambda *args, **kwargs: {
+                "pipeline_mode": "MORNING_VALIDATION",
+                "fatal_flags": [],
+                "stale_flags": [],
+            }
+    
+            run_dir = lab.RUNS_DIR / run_id
+            _write_csv(
+                run_dir / "superbrain" / f"eil_enriched_{run_id}.csv",
+                ["ticker", "direction", "strike", "expiry", "premium_mid", "target_price", "invalidation_price", "lab_verdict"],
+                {
+                    "ticker": "AAA",
+                    "direction": "CALL",
+                    "strike": "100",
+                    "expiry": "2099-01-19",
+                    "premium_mid": "1.0",
+                    "target_price": "110",
+                    "invalidation_price": "95",
+                    "lab_verdict": "GO",
+                },
+            )
+            mv_path = run_dir / "morning_validation" / f"morning_validated_trades_{run_id}.csv"
+            mv_columns = [
+                "ticker",
+                "morning_execution_permission",
+                "morning_execution_route",
+                "execution_permission",
+                "live_validation_state",
+            ]
+            _write_csv(
+                mv_path,
+                mv_columns,
+                {
+                    "ticker": "AAA",
+                    "morning_execution_permission": "WAIT",
+                    "morning_execution_route": "WAIT",
+                    "execution_permission": "WAIT",
+                    "live_validation_state": "WAIT_RETEST",
+                },
+            )
+    
+            first = lab._load_run(run_id, force_reload=True)
+&gt;           first_sig = first["signals"][0]
+                        ^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+tests\test_lab_journal_handoff.py:269: IndexError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_row_does_not_receive_call_or_put_direction" time="0.192"><failure message="KeyError: 'STR1'">def test_strangle_row_does_not_receive_call_or_put_direction():
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120000", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120000", force_reload=True)
+            by_ticker = {s["ticker"]: s for s in payload["signals"]}
+&gt;           strangle = by_ticker["STR1"]
+                       ^^^^^^^^^^^^^^^^^
+E           KeyError: 'STR1'
+
+tests\test_lab_strangle_direction.py:104: KeyError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_genuine_put_row_still_resolves_to_put" time="0.178"><failure message="KeyError: 'T'">def test_genuine_put_row_still_resolves_to_put():
+        """The regression that matters most: a real single-leg PUT (ticker T in
+        the audited export) must be completely unaffected by this fix."""
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120100", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120100", force_reload=True)
+            by_ticker = {s["ticker"]: s for s in payload["signals"]}
+&gt;           assert by_ticker["T"].get("direction") == "PUT"
+                   ^^^^^^^^^^^^^^
+E           KeyError: 'T'
+
+tests\test_lab_strangle_direction.py:118: KeyError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_absent_direction_row_behaves_as_before" time="0.223"><failure message="KeyError: 'ABS1'">def test_absent_direction_row_behaves_as_before():
+        """A row with no direction-indicating field anywhere must still resolve
+        to no direction (unchanged, pre-existing behaviour) — not be affected by
+        the new STRANGLE short-circuit."""
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120200", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120200", force_reload=True)
+            by_ticker = {s["ticker"]: s for s in payload["signals"]}
+&gt;           assert by_ticker["ABS1"].get("direction") not in ("CALL", "PUT")
+                   ^^^^^^^^^^^^^^^^^
+E           KeyError: 'ABS1'
+
+tests\test_lab_strangle_direction.py:130: KeyError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_row_gets_options_direction_and_coherence_columns" time="0.190"><failure message="KeyError: 'STR1'">def test_strangle_row_gets_options_direction_and_coherence_columns():
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120300", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120300", force_reload=True)
+            by_ticker = {s["ticker"]: s for s in payload["signals"]}
+&gt;           strangle = by_ticker["STR1"]
+                       ^^^^^^^^^^^^^^^^^
+E           KeyError: 'STR1'
+
+tests\test_lab_strangle_direction.py:139: KeyError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_policy_include_labelled_keeps_row_in_default_queue" time="0.172"><failure message="AssertionError: assert 'STR1' in set()">def test_strangle_policy_include_labelled_keeps_row_in_default_queue():
+        lab = _load_lab_module()
+        lab.LAB_STRANGLE_POLICY = "INCLUDE_LABELLED"
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120400", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120400", force_reload=True)
+            tickers = {s["ticker"] for s in payload["signals"]}
+&gt;           assert "STR1" in tickers
+E           AssertionError: assert 'STR1' in set()
+
+tests\test_lab_strangle_direction.py:155: AssertionError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_policy_flag_only_hides_row_from_default_queue_but_keeps_it" time="0.232"><failure message="AssertionError: FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)&#10;assert 'STR1' in set()">def test_strangle_policy_flag_only_hides_row_from_default_queue_but_keeps_it():
+        lab = _load_lab_module()
+        lab.LAB_STRANGLE_POLICY = "FLAG_ONLY"
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120500", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120500", force_reload=True)
+            tickers = {s["ticker"] for s in payload["signals"]}
+&gt;           assert "STR1" in tickers, "FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)"
+E           AssertionError: FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)
+E           assert 'STR1' in set()
+
+tests\test_lab_strangle_direction.py:167: AssertionError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_policy_exclude_removes_row_entirely" time="0.216"><failure message="AssertionError: EXCLUDE must not touch non-strangle rows&#10;assert {'ABS1', 'T'} &lt;= set()&#10;  &#10;  Extra items in the left set:&#10;  'ABS1'&#10;  'T'">def test_strangle_policy_exclude_removes_row_entirely():
+        lab = _load_lab_module()
+        lab.LAB_STRANGLE_POLICY = "EXCLUDE"
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120600", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120600", force_reload=True)
+            tickers = {s["ticker"] for s in payload["signals"]}
+            assert "STR1" not in tickers, "EXCLUDE must remove the row from the signal set entirely"
+&gt;           assert {"T", "ABS1"} &lt;= tickers, "EXCLUDE must not touch non-strangle rows"
+E           AssertionError: EXCLUDE must not touch non-strangle rows
+E           assert {'ABS1', 'T'} &lt;= set()
+E             
+E             Extra items in the left set:
+E             'ABS1'
+E             'T'
+
+tests\test_lab_strangle_direction.py:180: AssertionError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_strangle_direction_survives_conflicting_eod_candidate_manifest" time="0.225"><failure message="KeyError: 'STR1'">def test_strangle_direction_survives_conflicting_eod_candidate_manifest():
+        """Regression for a second, independent source of the same defect found
+        while verifying this fix against the real production run: eod_candidate_map
+        (sourced from morning_candidates_*.csv, an upstream file this Lab does not
+        produce) can carry its own single-leg "direction" for a STRANGLE ticker.
+        Confirmed directly against run 20260731_083130: AVGO's morning_candidates
+        row has direction=CALL in the same row as options_direction=STRANGLE. The
+        Lab's EOD-candidate merge (intelligence_lab.py, the bare_key loop building
+        eod__-prefixed + selected bare fields) must not let that stale upstream
+        value overwrite a row this fix already correctly left non-directional.
+        """
+        lab = _load_lab_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            run_id = "20990101_120800"
+            run_dir = _make_run(Path(tmp), run_id, _FIXTURE_ROWS, lab)
+            _write_csv(
+                run_dir / "morning_validation" / f"morning_candidates_{run_id}.csv",
+                ["ticker", "direction", "primary_direction"],
+                [
+                    # Mirrors the real AVGO row: upstream already picked a single
+                    # leg for a ticker the Lab itself knows is a STRANGLE.
+                    {"ticker": "STR1", "direction": "CALL", "primary_direction": "CALL"},
+                    {"ticker": "T", "direction": "PUT", "primary_direction": "PUT"},
+                    {"ticker": "ABS1", "direction": "", "primary_direction": ""},
+                ],
+            )
+            payload = lab._load_run(run_id, force_reload=True)
+            by_ticker = {s["ticker"]: s for s in payload["signals"]}
+    
+&gt;           strangle = by_ticker["STR1"]
+                       ^^^^^^^^^^^^^^^^^
+E           KeyError: 'STR1'
+
+tests\test_lab_strangle_direction.py:212: KeyError</failure></testcase><testcase classname="tests.test_lab_strangle_direction" name="test_property_directional_rows_have_target_on_profitable_side" time="0.305"><failure message="AssertionError: fixture must exercise at least one directional row&#10;assert 0 &gt;= 1">def test_property_directional_rows_have_target_on_profitable_side():
+        """For every row where Direction resolved to CALL or PUT, Structural_Target
+        must sit on the profitable side of Strike. This is the property the whole
+        fix exists to restore — it must hold across the fixture regardless of
+        policy."""
+        lab = _load_lab_module()
+        lab.LAB_STRANGLE_POLICY = "INCLUDE_LABELLED"
+        with tempfile.TemporaryDirectory() as tmp:
+            _make_run(Path(tmp), "20990101_120700", _FIXTURE_ROWS, lab)
+            payload = lab._load_run("20990101_120700", force_reload=True)
+            checked = 0
+            for sig in payload["signals"]:
+                direction = sig.get("direction")
+                if direction not in ("CALL", "PUT"):
+                    continue
+                strike = float(sig.get("strike") or sig.get("contract_strike") or 0)
+                target = float(sig.get("structural_target") or sig.get("opt__structural_target") or 0)
+                if not strike or not target:
+                    continue
+                checked += 1
+                if direction == "CALL":
+                    assert target &gt; strike, f"{sig['ticker']}: CALL target {target} must be above strike {strike}"
+                else:
+                    assert target &lt; strike, f"{sig['ticker']}: PUT target {target} must be below strike {strike}"
+&gt;           assert checked &gt;= 1, "fixture must exercise at least one directional row"
+E           AssertionError: fixture must exercise at least one directional row
+E           assert 0 &gt;= 1
+
+tests\test_lab_strangle_direction.py:248: AssertionError</failure></testcase><testcase classname="tests.test_morning_gate_contract_repair" name="test_blank_primary_contract_promotes_live_repair_alternative" time="2.519"><failure message="AssertionError: assert 'REJECTED' == 'NOT_EVALUATE...TRACT_CHANGED'&#10;  &#10;  - NOT_EVALUATED_CONTRACT_CHANGED&#10;  + REJECTED">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000157F9A1E3F0&gt;
+
+    def test_blank_primary_contract_promotes_live_repair_alternative(monkeypatch) -&gt; None:
+        row = {
+            "ticker": "AAA",
+            "direction": "CALL",
+            "contract_symbol": "",
+            "recommended_contract": "",
+            "preferred_contract": "",
+            "macro_regime": "BULLISH",
+            "rr_premium_expected": 1.5,
+            "capital_permission": "EOD_CANDIDATE_ONLY",
+            "capital_authorization_state": "EOD_CANDIDATE_ONLY",
+            "eod_candidate_authorized": True,
+            "authority_source_stage": "FINAL_EXECUTION",
+            "contract_repair_action": "ALTERNATIVES_AVAILABLE",
+            "alternative_contract_1": "AAA260116C00100000",
+            "alternative_contract_2": "AAA260116C00105000",
+        }
+    
+        def fake_price(_ticker: str) -&gt; dict:
+            return {"live_price": 101.0, "live_data_source": "TEST"}
+    
+        def fake_contract(symbol: str) -&gt; dict:
+            assert symbol == "AAA260116C00100000"
+            return {
+                "live_contract_bid": 1.0,
+                "live_contract_ask": 1.1,
+                "live_contract_mid": 1.05,
+                "live_contract_spread_pct": 9.52,
+                "live_contract_delta": 0.45,
+                "live_contract_iv": 0.35,
+                "live_options_source": "TEST_MARKETDATA",
+            }
+    
+        monkeypatch.setattr(morning_gate, "_fetch_live_price", fake_price)
+        monkeypatch.setattr(morning_gate, "_fetch_live_contract", fake_contract)
+        monkeypatch.setattr(morning_gate, "_fetch_options_skew", lambda _ticker: {})
+        monkeypatch.setattr(morning_gate.time, "sleep", lambda _seconds: None)
+    
+        live_map = morning_gate._fetch_all_live([row], spread_threshold=25.0)
+        live = live_map["AAA"]
+    
+        assert live["morning_contract_repair_used"] == "TRUE"
+        assert live["morning_repair_contract_symbol"] == "AAA260116C00100000"
+        assert live["live_contract_symbol"] == "AAA260116C00100000"
+        assert live["live_options_source"] == "TEST_MARKETDATA"
+    
+        gated = morning_gate.run_gate(
+            row,
+            live,
+            current_regime="BULLISH",
+            spread_threshold=25.0,
+            bond_state={},
+            macro_state={
+                "regime_state": "BULLISH",
+                "macro_filter": "GO",
+                "macro_loaded": True,
+            },
+        )
+    
+        assert gated["contract_symbol"] == "AAA260116C00100000"
+        assert gated["recommended_contract"] == "AAA260116C00100000"
+        assert gated["morning_selected_contract_symbol"] == "AAA260116C00100000"
+        assert gated["contract_repair_resolved_at_open"] == "TRUE"
+        assert gated["contract_bid"] == 1.0
+        assert gated["contract_ask"] == 1.1
+        assert gated["contract_mid"] == 1.05
+        assert gated["rr_premium_expected"] == ""
+&gt;       assert gated["ev3_status"] == "NOT_EVALUATED_CONTRACT_CHANGED"
+E       AssertionError: assert 'REJECTED' == 'NOT_EVALUATE...TRACT_CHANGED'
+E         
+E         - NOT_EVALUATED_CONTRACT_CHANGED
+E         + REJECTED
+
+tests\test_morning_gate_contract_repair.py:80: AssertionError</failure></testcase><testcase classname="tests.test_morning_gate_contract_repair" name="test_failed_blank_primary_repair_records_attempts" time="0.009" /><testcase classname="tests.test_morning_gate_contract_repair" name="test_missing_live_price_can_never_produce_go" time="0.004" /><testcase classname="tests.test_morning_gate_contract_repair" name="test_primary_contract_recomputes_rr_and_ev3_with_one_identity" time="0.007" /><testcase classname="tests.test_morning_gate_contract_repair" name="test_ev3_unavailable_remains_advisory_when_exact_rr_is_complete" time="0.006" /><testcase classname="tests.test_morning_gate_contract_repair" name="test_morning_ev3_adapter_normalises_expected_move_percent_points" time="0.003" /><testcase classname="tests.test_morning_gate_contract_repair" name="test_composite_repair_is_hydrated_but_not_promoted_to_production" time="0.010"><failure message="assert True is False">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000157F9B0DD00&gt;
+
+    def test_composite_repair_is_hydrated_but_not_promoted_to_production(monkeypatch) -&gt; None:
+        long_symbol = "AAA260918C00100000"
+        short_symbol = "AAA260918C00110000"
+        composite = f"BULL_CALL_DEBIT:{long_symbol}/{short_symbol}"
+        row = _go_row(
+            contract_symbol="",
+            recommended_contract="",
+            instrument="DEBIT_SPREAD_CALL",
+            alternative_contract_1=composite,
+        )
+        calls = []
+    
+        def fake_contract(symbol: str) -&gt; dict:
+            calls.append(symbol)
+            if symbol == long_symbol:
+                return _quote(bid=4.8, ask=5.0, delta=0.55)
+            if symbol == short_symbol:
+                return _quote(bid=2.0, ask=2.2, delta=0.30)
+            raise AssertionError(symbol)
+    
+        monkeypatch.setattr(morning_gate, "_fetch_live_price", lambda _ticker: {"live_price": 101.0})
+        monkeypatch.setattr(morning_gate, "_fetch_live_contract", fake_contract)
+        monkeypatch.setattr(morning_gate, "_fetch_options_skew", lambda _ticker: {})
+        monkeypatch.setattr(morning_gate, "_evaluate_hydrated_ev3", _evaluated_ev3)
+        monkeypatch.setattr(morning_gate.time, "sleep", lambda _seconds: None)
+    
+        live = morning_gate._fetch_all_live([row], spread_threshold=25.0)["AAA"]
+        assert calls == [long_symbol, short_symbol]
+        assert live.get("morning_repair_contract_symbol", "") == ""
+        assert live["morning_contract_repair_used"] == "FALSE"
+        assert live["selected_structure"] == "BULL_CALL_DEBIT"
+        assert live["selected_max_leg_spread_pct"] &lt; 25.0
+    
+        gated = morning_gate.run_gate(
+            row, live, "BULLISH", 25.0, bond_state={}, macro_state={}
+        )
+        assert gated["rr_recompute_status"] == "COMPLETE"
+        assert gated["rr_premium_expected"] == 2.333333
+&gt;       assert gated["economics_comparable"] is False
+E       assert True is False
+
+tests\test_morning_gate_contract_repair.py:320: AssertionError</failure></testcase><testcase classname="tests.test_msi_agent1_data_foundation.MarketDataContractTests" name="test_negative_size_rejected_and_crossed_exact_rejected" time="0.024" /><testcase classname="tests.test_msi_agent1_data_foundation.MarketDataContractTests" name="test_no_data_and_incompatible_parallel_array" time="0.012" /><testcase classname="tests.test_msi_agent1_data_foundation.MarketDataContractTests" name="test_scalar_and_list_shapes_normalise_to_v2" time="0.018" /><testcase classname="tests.test_msi_agent1_data_foundation.MarketDataContractTests" name="test_zero_bid_is_observed_one_sided_not_missing" time="0.013" /><testcase classname="tests.test_msi_agent1_data_foundation.IdentityAndSessionTests" name="test_compact_occ_preserves_adjusted_root" time="0.003" /><testcase classname="tests.test_msi_agent1_data_foundation.IdentityAndSessionTests" name="test_semantic_eod_and_live_freshness" time="0.005" /><testcase classname="tests.test_msi_agent1_data_foundation.IdentityAndSessionTests" name="test_xnys_dst_holiday_and_early_close" time="0.004" /><testcase classname="tests.test_msi_agent1_data_foundation.MinuteAndStructureTests" name="test_lifecycle_and_relationship_are_deterministic" time="0.003" /><testcase classname="tests.test_msi_agent1_data_foundation.MinuteAndStructureTests" name="test_minute_contract_computes_canonical_vwap" time="0.075" /><testcase classname="tests.test_msi_agent1_data_foundation.MinuteAndStructureTests" name="test_structure_is_proposed_and_advisory_only" time="0.163" /><testcase classname="tests.test_msi_agent1_data_foundation.CanonicalResolverTests" name="test_chain_fetch_is_idempotent_and_non_worklisted_is_blocked" time="0.473"><failure message="ValueError: 2026-08-30 is not an XNYS session">self = &lt;test_msi_agent1_data_foundation.CanonicalResolverTests testMethod=test_chain_fetch_is_idempotent_and_non_worklisted_is_blocked&gt;
+
+    def test_chain_fetch_is_idempotent_and_non_worklisted_is_blocked(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary); registry=CanonicalRegistry(root/"control.sqlite"); registry.initialise()
+            session=date(2026,8,30); registry.register_run("R1","EVENING",session)
+            lifecycle=LifecycleManager(registry)
+            for ticker in ("AAPL","DROP"):
+                event=lifecycle.register("R1",ticker,allowed_capabilities=(DatasetType.OPTION_CHAIN,))
+                event=lifecycle.transition("R1",ticker,LifecycleState.ACTIVE_CORE,stage="PACKAGES",reason_code="TEST",expected_version=event.version,allowed_capabilities=(DatasetType.OPTION_CHAIN,))
+                lifecycle.transition("R1",ticker,LifecycleState.ACTIVE_OPTIONS,stage="OPTIONS",reason_code="TEST",expected_version=event.version,allowed_capabilities=(DatasetType.OPTION_CHAIN,))
+            lifecycle.create_worklist("R1","OPTIONS",DatasetType.OPTION_CHAIN,("AAPL",))
+            flags=CanonicalFeatureFlags(enabled=True,write_through=True,stage_gating_enforced=True,offline_replay=False,ohlcv_mode="ACTIVE")
+            resolver=CanonicalMarketObservationResolver(registry_path=root/"control.sqlite",payload_root=root/"payloads",run_id="R1",flags=flags)
+            calls=[]
+&gt;           first=resolver.option_chain(ticker="AAPL",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda ticker:(calls.append(ticker) or fixture("option_chain_list_sizes.json")))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_msi_agent1_data_foundation.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+canonical_data\market_observation_resolver.py:188: in option_chain
+    evidence_cutoff_utc=self._cutoff(session_date, completed=True),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+canonical_data\market_observation_resolver.py:125: in _cutoff
+    return session_bounds(session_date)[1] if completed else datetime.now(timezone.utc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = datetime.date(2026, 8, 30)
+
+    def session_bounds(value: date) -&gt; tuple[datetime, datetime]:
+        if not is_xnys_session(value):
+&gt;           raise ValueError(f"{value} is not an XNYS session")
+E           ValueError: 2026-08-30 is not an XNYS session
+
+canonical_data\session_clock.py:125: ValueError</failure></testcase><testcase classname="tests.test_msi_agent1_data_foundation.CanonicalResolverTests" name="test_exact_quote_and_minute_partition_are_immutable_cache_hits" time="1.340" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[THESIS_INVALIDATED-BLOCK]" time="0.007" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[MOVE_ALREADY_REALIZED-BLOCK]" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[CONTRACT_REPRICE_REQUIRED-CONTRACT_REPAIR]" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[WAIT_FOR_PULLBACK-MANUAL_REVIEW]" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[GAP_CONFIRMATION_EXTENDED-MANUAL_REVIEW]" time="0.006" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[LIQUIDITY_STILL_PENDING-MANUAL_REVIEW]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[EOD_PENDING_MORNING_REQUOTE-MANUAL_REVIEW]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[LEGACY_LIFECYCLE_NOT_EVALUATED-MANUAL_REVIEW]" time="0.007" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[EXECUTABLE_NOW-BUY_NOW]" time="0.007" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[GAP_CONFIRMATION_WITH_RUNWAY-BUY_NOW]" time="0.008" /><testcase classname="tests.test_olm_execution_authority" name="test_tc07_invalidated_thesis_cannot_receive_buy_now" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_corrected_v2_lifecycle_contract_is_supported_by_execution_guard" time="0.008" /><testcase classname="tests.test_olm_execution_authority" name="test_terminal_thesis_precedes_contradictory_executable_transition" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides0]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides1]" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides2]" time="0.010" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides3]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_unknown_transition_fails_closed" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_maturation_score_and_conviction_cannot_override_veto" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_veto_or_defer_happens_before_any_quote_fetch" time="0.006" /><testcase classname="tests.test_olm_execution_authority" name="test_existing_valid_action_and_limited_cap_remain_compatible" time="0.007"><failure message="AssertionError: assert 'BUY_NOW' == 'BUY_SMALL'&#10;  &#10;  - BUY_SMALL&#10;  + BUY_NOW">def test_existing_valid_action_and_limited_cap_remain_compatible() -&gt; None:
+        assert execution_gate(_row(), require_olm=True)["final_action"] == "BUY_NOW"
+        limited = execution_gate(_row(monetisability_state="LIMITED"), require_olm=True)
+&gt;       assert limited["final_action"] == "BUY_SMALL"
+E       AssertionError: assert 'BUY_NOW' == 'BUY_SMALL'
+E         
+E         - BUY_SMALL
+E         + BUY_NOW
+
+tests\test_olm_execution_authority.py:186: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_direct_legacy_caller_remains_compatible_but_production_batch_requires_olm" time="0.057" /><testcase classname="tests.test_olm_execution_authority" name="test_lab_defence_in_depth_blocks_impossible_buy_now" time="0.241" /><testcase classname="tests.test_olm_execution_authority" name="test_lab_preserves_valid_execution_gate_action" time="0.192" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_invariant_detects_action_above_olm_ceiling" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_invariant_accepts_matching_guarded_action" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_aborts_before_lab_publication_on_olm_authority_breach" time="0.015" /><testcase classname="tests.test_options_research_contract" name="test_good_long_call_contract_goes_to_research_review_only" time="0.005" /><testcase classname="tests.test_options_research_contract" name="test_negative_put_delta_is_valid_not_missing" time="0.004" /><testcase classname="tests.test_options_research_contract" name="test_missing_bid_ask_can_be_reconstructed_from_mid_and_spread" time="0.006" /><testcase classname="tests.test_options_research_contract" name="test_selected_contract_preserves_quote_fields_for_research_contract" time="0.035" /><testcase classname="tests.test_options_research_contract" name="test_incomplete_marketdata_chain_quote_triggers_contract_quote_fallback" time="0.006" /><testcase classname="tests.test_options_research_contract" name="test_missing_critical_fields_blocks_go_review" time="0.007"><failure message="AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'&#10;  &#10;  - OPTIONS_BLOCKED&#10;  + OPTIONS_GO_REVIEW">def test_missing_critical_fields_blocks_go_review():
+        result = _route(contract=_contract(bid=None, ask=None))
+    
+        assert result["execution_permission"] == oi.OPTIONS_RESEARCH_PERMISSION
+&gt;       assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
+E       AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'
+E         
+E         - OPTIONS_BLOCKED
+E         + OPTIONS_GO_REVIEW
+
+tests\test_options_research_contract.py:211: AssertionError</failure></testcase><testcase classname="tests.test_options_research_contract" name="test_spread_above_fifteen_percent_blocks" time="0.006"><failure message="AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'&#10;  &#10;  - OPTIONS_BLOCKED&#10;  + OPTIONS_GO_REVIEW">def test_spread_above_fifteen_percent_blocks():
+        result = _route(contract=_contract(bid=1.60, ask=2.40, mark=2.00))
+    
+&gt;       assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
+E       AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'
+E         
+E         - OPTIONS_BLOCKED
+E         + OPTIONS_GO_REVIEW
+
+tests\test_options_research_contract.py:220: AssertionError</failure></testcase><testcase classname="tests.test_options_research_contract" name="test_breakeven_feasibility_below_one_blocks" time="0.005"><failure message="AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'&#10;  &#10;  - OPTIONS_BLOCKED&#10;  + OPTIONS_GO_REVIEW">def test_breakeven_feasibility_below_one_blocks():
+        result = _route(
+            ctx=_ctx(structural_target=101.0, atr=0.2),
+            econ=_econ(breakeven_price=105.0),
+        )
+    
+&gt;       assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
+E       AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'
+E         
+E         - OPTIONS_BLOCKED
+E         + OPTIONS_GO_REVIEW
+
+tests\test_options_research_contract.py:230: AssertionError</failure></testcase><testcase classname="tests.test_options_research_contract" name="test_estimated_r_below_two_blocks" time="0.005"><failure message="AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'&#10;  &#10;  - OPTIONS_BLOCKED&#10;  + OPTIONS_GO_REVIEW">def test_estimated_r_below_two_blocks():
+        result = _route(econ=_econ(rr_options=1.5))
+    
+&gt;       assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
+E       AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'
+E         
+E         - OPTIONS_BLOCKED
+E         + OPTIONS_GO_REVIEW
+
+tests\test_options_research_contract.py:237: AssertionError</failure></testcase><testcase classname="tests.test_options_research_contract" name="test_no_trigger_blocks_go_review" time="0.004"><failure message="AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'&#10;  &#10;  - OPTIONS_BLOCKED&#10;  + OPTIONS_GO_REVIEW">def test_no_trigger_blocks_go_review():
+        result = _route(ctx=_ctx(phase="B"), signal=pd.Series({}))
+    
+&gt;       assert result["final_route"] == oi.OPTIONS_BLOCKED_ROUTE
+E       AssertionError: assert 'OPTIONS_GO_REVIEW' == 'OPTIONS_BLOCKED'
+E         
+E         - OPTIONS_BLOCKED
+E         + OPTIONS_GO_REVIEW
+
+tests\test_options_research_contract.py:244: AssertionError</failure></testcase><testcase classname="tests.test_options_research_contract" name="test_stand_down_record_is_research_only" time="0.003" /></testsuite></testsuites>

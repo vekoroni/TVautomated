@@ -1,0 +1,24 @@
+{
+  "run_id": "20260829_000008",
+  "gate_version": "1.4.0",
+  "completed_at": "2026-08-29T21:01:49.977086+00:00",
+  "signals_in": 1,
+  "signals_out": 1,
+  "signals_preserved": 1,
+  "action_counts": {
+    "BUY_NOW": 1
+  },
+  "reason_counts": {
+    "OK": 1
+  },
+  "olm_guard_disposition_counts": {
+    "CONTINUE": 1
+  },
+  "olm_guard_reason_counts": {
+    "OLM_EXECUTABLE_NOW": 1
+  },
+  "warning_frequency": {},
+  "actionable_rate": 1.0,
+  "gated_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\olm_fix_test\\tmp_runs\\20260829_000008\\trades\\execution_gated_20260829_000008.csv",
+  "actionable_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\olm_fix_test\\tmp_runs\\20260829_000008\\trades\\execution_actionable_20260829_000008.csv"
+}

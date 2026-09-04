@@ -1,0 +1,29 @@
+--- a/tests/test_msi_agent1_data_foundation.py
++++ b/tests/test_msi_agent1_data_foundation.py
+@@ -119,7 +119,7 @@
+     def test_chain_fetch_is_idempotent_and_non_worklisted_is_blocked(self):
+         with tempfile.TemporaryDirectory() as temporary:
+             root=Path(temporary); registry=CanonicalRegistry(root/"control.sqlite"); registry.initialise()
+-            session=date(2026,8,30); registry.register_run("R1","EVENING",session)
++            session=date(2026,8,28); registry.register_run("R1","EVENING",session)
+             lifecycle=LifecycleManager(registry)
+             for ticker in ("AAPL","DROP"):
+                 event=lifecycle.register("R1",ticker,allowed_capabilities=(DatasetType.OPTION_CHAIN,))
+@@ -129,11 +129,14 @@
+             flags=CanonicalFeatureFlags(enabled=True,write_through=True,stage_gating_enforced=True,offline_replay=False,ohlcv_mode="ACTIVE")
+             resolver=CanonicalMarketObservationResolver(registry_path=root/"control.sqlite",payload_root=root/"payloads",run_id="R1",flags=flags)
+             calls=[]
+-            first=resolver.option_chain(ticker="AAPL",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda ticker:(calls.append(ticker) or fixture("option_chain_list_sizes.json")))
+-            second=resolver.option_chain(ticker="AAPL",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda ticker:(calls.append(ticker) or fixture("option_chain_list_sizes.json")))
++            chain_payload=fixture("option_chain_list_sizes.json")
++            friday_close=int(datetime(2026,8,28,20,0,tzinfo=timezone.utc).timestamp())
++            chain_payload["updated"]=[friday_close] * len(chain_payload["optionSymbol"])
++            first=resolver.option_chain(ticker="AAPL",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda ticker:(calls.append(ticker) or chain_payload))
++            second=resolver.option_chain(ticker="AAPL",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda ticker:(calls.append(ticker) or chain_payload))
+             self.assertEqual(first.resolution,"PROVIDER_FETCH"); self.assertIn(second.resolution,{"EXACT_HIT","SUPERSET_HIT"}); self.assertEqual(calls,["AAPL"])
+             with self.assertRaises(FetchNotAuthorised):
+-                resolver.option_chain(ticker="DROP",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda _:fixture("option_chain_list_sizes.json"))
++                resolver.option_chain(ticker="DROP",session_date=session,dte_max=110,min_open_interest=0,fetch=lambda _:chain_payload)
+ 
+     def test_exact_quote_and_minute_partition_are_immutable_cache_hits(self):
+         with tempfile.TemporaryDirectory() as temporary:

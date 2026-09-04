@@ -1,0 +1,102 @@
+=== test_options_liquidity_lifecycle.py ===
+tests/test_options_liquidity_lifecycle.py::test_terminal_or_invalidated_candidates_cannot_receive_maturation_uplift PASSED [ 92%]
+tests/test_options_liquidity_lifecycle.py::test_composite_lifecycle_preserves_illiquid_developing_call PASSED [ 96%]
+tests/test_options_liquidity_lifecycle.py::test_unsupported_multileg_strategy_fails_closed PASSED [100%]
+
+============================= 27 passed in 0.31s ==============================
+=== test_option_liquidity_lifecycle.py ===
+tests/test_option_liquidity_lifecycle.py::OptionLiquidityLifecycleTests::test_selection_change_requires_exact_economics_recomputation PASSED [ 77%]
+tests/test_option_liquidity_lifecycle.py::OptionLiquidityLifecycleTests::test_terminal_drop_stops_monitoring_and_future_fetch PASSED [ 88%]
+tests/test_option_liquidity_lifecycle.py::OptionLiquidityLifecycleTests::test_thesis_events_are_append_only_idempotent_and_versioned PASSED [100%]
+
+============================== 9 passed in 4.02s ==============================
+=== test_eod_options_research_handoff.py ===
+
+tests/test_eod_options_research_handoff.py::test_eod_manifest_preserves_options_research_contract_and_blocks_vetoes PASSED [ 50%]
+tests/test_eod_options_research_handoff.py::test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developing PASSED [100%]
+
+============================== 2 passed in 2.03s ==============================
+=== test_direction_governance_contract.py ===
+    ~~~~~~~~~~~~~~~~~^^^
+ValueError: I/O operation on closed file.
+collected 0 items
+
+============================ no tests ran in 3.85s ============================
+=== test_selected_contract_economics.py ===
+tests/test_selected_contract_economics.py::test_single_put_monetisability_uses_put_breakeven PASSED [ 83%]
+tests/test_selected_contract_economics.py::test_target_that_does_not_clear_breakeven_is_not_monetisable PASSED [ 91%]
+tests/test_selected_contract_economics.py::test_contract_change_recomputes_monetisability_for_the_new_symbol PASSED [100%]
+
+============================= 12 passed in 0.26s ==============================
+=== test_execution_monetisability_gate.py ===
+tests/test_execution_monetisability_gate.py::test_not_monetisable_blocks_when_no_alternative_exists PASSED [ 60%]
+tests/test_execution_monetisability_gate.py::test_not_monetisable_requests_repair_when_an_alternative_exists PASSED [ 80%]
+tests/test_execution_monetisability_gate.py::test_missing_monetisability_data_fails_to_contract_repair PASSED [100%]
+
+============================== 5 passed in 0.25s ==============================
+=== test_olm_execution_authority.py ===
+tests/test_olm_execution_authority.py::test_finalizer_invariant_detects_action_above_olm_ceiling PASSED [ 92%]
+tests/test_olm_execution_authority.py::test_finalizer_invariant_accepts_matching_guarded_action PASSED [ 96%]
+tests/test_olm_execution_authority.py::test_finalizer_aborts_before_lab_publication_on_olm_authority_breach PASSED [100%]
+
+============================= 26 passed in 0.53s ==============================
+=== test_lab_monetisation_gate.py ===
+tests/test_lab_monetisation_gate.py::test_only_valid_long_single_contracts_are_executable PASSED [ 66%]
+tests/test_lab_monetisation_gate.py::test_upstream_quote_snapshot_identity_is_immutable PASSED [ 83%]
+tests/test_lab_monetisation_gate.py::test_opportunity_book_preserves_execution_and_monetisability_fields PASSED [100%]
+
+============================== 6 passed in 0.43s ==============================
+=== test_lab_governed_handoff.py ===
+tests/test_lab_governed_handoff.py::test_governed_materializer_corrects_legacy_put_wbs_missing_pcr_bonus PASSED [ 84%]
+tests/test_lab_governed_handoff.py::test_copied_wbs_fields_do_not_make_unscored_candidate_look_scored PASSED [ 92%]
+tests/test_lab_governed_handoff.py::test_ui_has_no_synthetic_call_default_and_ev_is_advisory_only PASSED [100%]
+
+============================= 13 passed in 1.62s ==============================
+=== test_morning_handoff_finalizer.py ===
+tests/test_morning_handoff_finalizer.py::MorningHandoffFinalizerTests::test_known_false_promotions_are_detected_by_exact_reconciliation PASSED [ 77%]
+tests/test_morning_handoff_finalizer.py::MorningHandoffFinalizerTests::test_recovery_requires_existing_morning_csv PASSED [ 88%]
+tests/test_morning_handoff_finalizer.py::MorningHandoffFinalizerTests::test_sync_survives_pipeline_interpreter_module_directory_collision PASSED [100%]
+
+==================== 9 passed, 3 subtests passed in 0.93s =====================
+=== test_ev3_options_handoff.py ===
+    ~~~~~~~~~~~~~~~~~^^^
+ValueError: I/O operation on closed file.
+collected 0 items
+
+============================ no tests ran in 3.82s ============================
+=== test_options_liquidity_morning_lab.py ===
+tests/test_options_liquidity_morning_lab.py::test_contract_reprice_required_is_never_tradeable PASSED [ 66%]
+tests/test_options_liquidity_morning_lab.py::test_lab_compact_projection_exposes_liquidity_lifecycle_without_inference PASSED [ 83%]
+tests/test_options_liquidity_morning_lab.py::test_intelligence_lab_has_trader_facing_liquidity_labels PASSED [100%]
+
+============================== 6 passed in 0.86s ==============================
+=== test_handoff_conflict_guard.py ===
+
+tests/test_handoff_conflict_guard.py::test_strict_guard_continues_after_execution_row_is_quarantined PASSED [ 50%]
+tests/test_handoff_conflict_guard.py::test_strict_guard_still_blocks_missing_phase2_schema PASSED [100%]
+
+============================== 2 passed in 1.79s ==============================
+=== test_production_readiness_guardrails.py ===
+tests/test_production_readiness_guardrails.py::test_calendar_direction_has_explicit_independent_provenance PASSED [ 50%]
+tests/test_production_readiness_guardrails.py::test_production_defaults_are_fail_closed_and_macro_advisory PASSED [ 75%]
+tests/test_production_readiness_guardrails.py::test_risk_off_macro_cannot_block_or_resize_core_signals PASSED [100%]
+
+============================== 4 passed in 2.18s ==============================
+=== test_long_option_policy.py ===
+
+tests/test_long_option_policy.py::test_morning_and_lab_share_one_spread_authority PASSED [ 50%]
+tests/test_long_option_policy.py::test_lab_instruments_come_from_governed_long_option_policy PASSED [100%]
+
+============================== 2 passed in 0.41s ==============================
+=== test_morning_gate_contract_repair.py ===
+tests/test_morning_gate_contract_repair.py::test_ev3_unavailable_remains_advisory_when_exact_rr_is_complete PASSED [ 71%]
+tests/test_morning_gate_contract_repair.py::test_morning_ev3_adapter_normalises_expected_move_percent_points PASSED [ 85%]
+tests/test_morning_gate_contract_repair.py::test_composite_repair_is_hydrated_but_not_promoted_to_production PASSED [100%]
+
+============================== 7 passed in 0.59s ==============================
+=== test_morning_gate_authority.py ===
+tests/test_morning_gate_authority.py::test_post_lab_score_integrity_reads_preserved_source_payload PASSED [ 90%]
+tests/test_morning_gate_authority.py::test_morning_closure_updates_manifest_without_live_authority PASSED [ 95%]
+tests/test_morning_gate_authority.py::test_passing_morning_integrity_clears_prior_not_evaluated_flag PASSED [100%]
+
+============================= 20 passed in 1.12s ==============================

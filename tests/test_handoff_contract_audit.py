@@ -10,7 +10,17 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from handoff_contract_audit import audit_run  # noqa: E402
+from contracts.handoff_contract import TRUTH_PACKET_FIELD_GROUPS  # noqa: E402
+from handoff_contract_audit import FIELD_CONTRACTS, audit_run  # noqa: E402
+
+
+def test_catalyst_overlay_is_not_a_required_handoff_input() -> None:
+    assert "catalyst_overlay" not in TRUTH_PACKET_FIELD_GROUPS["vanguard"]
+    assert all(
+        contract["name"] != "catalyst_overlay"
+        for stage_contracts in FIELD_CONTRACTS.values()
+        for contract in stage_contracts
+    )
 
 
 def test_vanguard_flattened_legacy_note_alias_is_accepted() -> None:
@@ -157,6 +167,7 @@ def test_options_blocked_cannot_be_promoted_to_eod_candidate() -> None:
 
 
 if __name__ == "__main__":
+    test_catalyst_overlay_is_not_a_required_handoff_input()
     test_vanguard_flattened_legacy_note_alias_is_accepted()
     test_options_blocked_cannot_be_promoted_to_eod_candidate()
     print("handoff_contract_audit tests passed")

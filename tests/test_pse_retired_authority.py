@@ -2,6 +2,8 @@ from types import SimpleNamespace
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -116,6 +118,7 @@ def test_data_missing_remains_not_authorized():
     assert row["capital_permission"] == "NO"
     assert row["execution_authorized"] is False
     assert row["eod_candidate_authorized"] is False
+    assert row["effective_execution_verdict"] == "DATA_REPAIR_REQUIRED"
 
 
 def test_direct_pse_call_is_retired_by_default():
@@ -125,3 +128,47 @@ def test_direct_pse_call_is_retired_by_default():
     assert result.pse_execution_mode == "SIZING_IGNORED_REVIEW"
     assert result.pse_block_reason == ""
     assert result.pse_size_breakdown == "PSE_IGNORED_MANUAL_SIZING"
+
+
+def test_dataframe_defang_cannot_reauthorize_data_missing():
+    frame = pd.DataFrame(
+        [{
+            "ticker": "MISS",
+            "signal_type": "DATA_MISSING",
+            "momentum_tier": "DATA_MISSING",
+            "pse_execution_mode": "FATAL_BLOCK",
+            "pse_block_reason": "CAMPAIGN_OR_EXECUTION_INVALID",
+            "pse_final_size": 0.0,
+            "fd_size": 0.0,
+        }]
+    )
+
+    row = eil._defang_invalid_campaign_fatal_blocks(frame).iloc[0]
+
+    assert row["capital_permission"] == "NO"
+    assert row["eod_candidate_permission"] == "NO"
+    assert bool(row["eod_candidate_authorized"]) is False
+    assert row["effective_execution_verdict"] == "DATA_REPAIR_REQUIRED"
+
+
+def test_dataframe_defang_keeps_options_blocked_fail_closed():
+    frame = pd.DataFrame(
+        [{
+            "ticker": "BLOCK",
+            "signal_type": "CURRENT_EDGE",
+            "momentum_tier": "TIER_2_ACTIVE",
+            "pse_execution_mode": "FATAL_BLOCK",
+            "pse_block_reason": "CAMPAIGN_OR_EXECUTION_INVALID",
+            "pse_final_size": 0.0,
+            "fd_size": 0.0,
+            "final_route": "OPTIONS_BLOCKED",
+            "hard_vetoes": "SPREAD_GT_15PCT",
+        }]
+    )
+
+    row = eil._defang_invalid_campaign_fatal_blocks(frame).iloc[0]
+
+    assert row["capital_permission"] == "NO"
+    assert row["eod_candidate_permission"] == "CONTRACT_REPAIR_REQUIRED"
+    assert bool(row["eod_candidate_authorized"]) is False
+    assert row["effective_execution_verdict"] == "OPTIONS_REPAIR_REQUIRED"

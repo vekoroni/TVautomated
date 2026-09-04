@@ -125,3 +125,61 @@ def test_v4_vix_aliases_and_stale_usslind_quarantine() -> None:
     assert not any("VIX9D/VIX3M missing" in flag for flag in macro["extras"]["conflict_flags"])
     assert not any("VVIX missing" in flag for flag in macro["extras"]["conflict_flags"])
     assert packet["macro_data_quality"] == "PARTIAL"
+
+
+def _dual_spy_gex_payload(*, live_status: str, reverse: bool = False) -> dict:
+    payload = _payload()
+    header = (
+        "Run_Id,Date,As_Of,Ticker,Snapshot_UTC,Data_Mode,Net_GEX_Bn,Regime,"
+        "Gamma_Flip,GEX_Stress,Contracts_Used,Data_Status\n"
+    )
+    rows = [
+        "hist-run,2026-08-31,2026-08-31T20:00:00Z,SPY,2026-08-31T20:01:00Z,"
+        "HISTORICAL,-11.0,NEGATIVE,610.0,HIGH,900,OK\n",
+        f"live-run,2026-09-01,2026-09-01T14:00:00Z,SPY,2026-09-01T14:01:00Z,"
+        f"LIVE,22.0,POSITIVE,620.0,LOW,1200,{live_status}\n",
+    ]
+    if reverse:
+        rows.reverse()
+    payload["data"]["gex_proxy_csv"] = header + "".join(rows)
+    return payload
+
+
+def test_gex_primary_prefers_ok_live_spy_independent_of_row_order() -> None:
+    forward = extract_market_data_overrides(
+        _dual_spy_gex_payload(live_status="OK", reverse=False)
+    )
+    reverse = extract_market_data_overrides(
+        _dual_spy_gex_payload(live_status="OK", reverse=True)
+    )
+
+    for overrides in (forward, reverse):
+        assert overrides["gex_net_bn"] == 22.0
+        assert overrides["gex_regime"] == "POSITIVE"
+        assert overrides["gex_data_mode"] == "LIVE"
+        assert overrides["gex_data_status"] == "OK"
+        assert overrides["gex_run_id"] == "live-run"
+
+
+def test_gex_primary_falls_back_to_ok_historical_when_live_not_ok() -> None:
+    overrides = extract_market_data_overrides(
+        _dual_spy_gex_payload(live_status="MISSING", reverse=False)
+    )
+
+    assert overrides["gex_net_bn"] == -11.0
+    assert overrides["gex_regime"] == "NEGATIVE"
+    assert overrides["gex_data_mode"] == "HISTORICAL"
+    assert overrides["gex_data_status"] == "OK"
+    assert overrides["gex_run_id"] == "hist-run"
+
+
+def test_gex_primary_preserves_spy_diagnostic_when_no_row_is_ok() -> None:
+    payload = _dual_spy_gex_payload(live_status="MISSING", reverse=True)
+    payload["data"]["gex_proxy_csv"] = payload["data"]["gex_proxy_csv"].replace(
+        "900,OK", "900,MISSING"
+    )
+    overrides = extract_market_data_overrides(payload)
+
+    assert overrides["gex_data_mode"] == "LIVE"
+    assert overrides["gex_data_status"] == "MISSING"
+    assert overrides["gex_run_id"] == "live-run"

@@ -23,7 +23,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from contracts.lab_control import resolve_lab_tradeability
-from morning_thesis_validator import latest_run_id, run_morning_validation, validate_candidate
+try:
+    from morning_thesis_validator import latest_run_id, run_morning_validation, validate_candidate  # type: ignore[import-not-found]
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = True
+except ModuleNotFoundError:
+    latest_run_id = None
+    run_morning_validation = None
+    validate_candidate = None
+    _LEGACY_MORNING_VALIDATOR_AVAILABLE = False
 
 
 def _candidate(**overrides):
@@ -61,6 +68,13 @@ def _live(**overrides):
 
 
 def main() -> int:
+    if not _LEGACY_MORNING_VALIDATOR_AVAILABLE:
+        print(
+            "RETIRED: qa_morning_validator.py targeted morning_thesis_validator.py. "
+            "Use pytest tests/test_morning_gate_authority.py "
+            "tests/test_morning_gate_contract_repair.py."
+        )
+        return 2
     results = []
 
     def check(name: str, condition: bool, detail: dict):
