@@ -1,0 +1,6 @@
+identical=True
+pre={'tests': 964, 'failures': 5, 'errors': 0, 'skipped': 1, 'passed': 958}
+post={'tests': 964, 'failures': 5, 'errors': 0, 'skipped': 1, 'passed': 958}
+per_file_diffs=0
+failing_files_pre={'test_olm_execution_authority': 5}
+failing_files_post={'test_olm_execution_authority': 5}

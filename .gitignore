@@ -165,3 +165,26 @@ _cleanup_holding/batch1_archive_paths_20260716/pipeline_interpreter/Archive/pipe
 backups/
 data/canonical/
 .codex_*/
+
+# ============================================================
+# AVS-OPS-001 (2026-09-04) — commit 3. Scratch, cache and backup patterns so
+# root debris stops coming back. Only patterns absent from the rules above are
+# added; __pycache__/, .pytest_cache/, pytest-of-*/, *.bak, *.bak_*, .env,
+# .env.txt, *.lnk and .codex_*/ were already present.
+#
+# These are ANCHORED to the repository root with a leading slash. The unanchored
+# forms in the AVS-OPS-001 prompt would have over-matched tracked evidence:
+#   tmp*/        -> audit/olm_fix_test/tmp_runs/ and
+#                   audit/pipeline_map/AVS-TST-SD-002-001/tmp/ (tracked test XMLs)
+#   *old0908.py  -> _attic/bond_macro_intelligenceold0908.py and
+#                   _attic/build_macro_jsonold0908.py, which must stay tracked
+# Verified: each anchored pattern matches 0 tracked paths.
+#
+# _attic/ is deliberately NOT ignored — it must stay tracked so every move in
+# commit 4c33c1c is visible and reversible with a single git mv back.
+# ============================================================
+/tmp*/
+/pip-*/
+/avs_macro_check_*/
+/*old0908.py
+*.rr_cap.bak

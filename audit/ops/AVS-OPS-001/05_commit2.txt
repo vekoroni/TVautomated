@@ -1,0 +1,25 @@
+AVS-OPS-001 commit 2 - move dead material to _attic/
+sha: 4c33c1cac2e97924dc9956faf7172127deeb037e
+parent: e183d60a1e843bf369a8a4fd81b38a0459e78c7f
+date_utc: 2026-09-04T08:14:25+01:00
+
+--- diff shape (must be renames only) ---
+ 34 files changed, 0 insertions(+), 0 deletions(-)
+     34 R100
+
+--- moved per tier ---
+Tier A: 13
+Tier B: 21
+total : 34   (.py 23, non-.py 11)
+
+--- deleted ---
+.env.txt  (untracked + gitignored .gitignore:43 *.env.txt; git rm not applicable, unlinked)
+git log --all -- .env.txt : 0 commits -> never in history, no rotation required on that ground
+
+--- deferred ---
+184 rows in deferred.csv  (Tier A 96, Tier B 17, Tier C 71)
+  46 UNTRACKED_GITIGNORED_NOT_A_GIT_OBJECT
+  37 PERMISSION_DENIED_UNREADABLE
+  71 TIER_C_*
+  20 REFERENCED_* (graph inbound or real filename reference)
+  10 ACK decisions / duplicate / empty dir

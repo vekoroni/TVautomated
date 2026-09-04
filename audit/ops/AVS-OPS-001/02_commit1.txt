@@ -1,0 +1,15 @@
+AVS-OPS-001 commit 1 - baseline as-is
+sha: e183d60a1e843bf369a8a4fd81b38a0459e78c7f
+tag: pre-tidy-20260904
+date_utc: 2026-09-04T07:13:23Z
+parent: 5d886f07c1d290f25600e2e7e62ae77aad85476a
+
+--- stat ---
+ vanguard/trade_governance.py                       |    23 +-
+ wall_break_scorer.py                               |    14 +-
+ 710 files changed, 208302 insertions(+), 2970 deletions(-)
+
+--- staged path count by status ---
+    590 A
+     88 M
+     32 R100

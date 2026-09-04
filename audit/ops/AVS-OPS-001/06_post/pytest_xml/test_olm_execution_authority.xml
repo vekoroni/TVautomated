@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="27" time="1.271" timestamp="2026-09-04T08:24:51.767093+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[THESIS_INVALIDATED-BLOCK]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[MOVE_ALREADY_REALIZED-BLOCK]" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[CONTRACT_REPRICE_REQUIRED-CONTRACT_REPAIR]" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[WAIT_FOR_PULLBACK-MANUAL_REVIEW]" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[GAP_CONFIRMATION_EXTENDED-MANUAL_REVIEW]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[LIQUIDITY_STILL_PENDING-MANUAL_REVIEW]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[EOD_PENDING_MORNING_REQUOTE-MANUAL_REVIEW]" time="0.005" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[LEGACY_LIFECYCLE_NOT_EVALUATED-MANUAL_REVIEW]" time="0.004" /><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[EXECUTABLE_NOW-BUY_NOW]" time="0.005"><failure message="AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'&#10;  &#10;  - BUY_NOW&#10;  + CONTRACT_REPAIR">transition = 'EXECUTABLE_NOW', expected_action = 'BUY_NOW'
+
+    @pytest.mark.parametrize(
+        ("transition", "expected_action"),
+        [
+            ("THESIS_INVALIDATED", "BLOCK"),
+            ("MOVE_ALREADY_REALIZED", "BLOCK"),
+            ("CONTRACT_REPRICE_REQUIRED", "CONTRACT_REPAIR"),
+            ("WAIT_FOR_PULLBACK", "MANUAL_REVIEW"),
+            ("GAP_CONFIRMATION_EXTENDED", "MANUAL_REVIEW"),
+            ("LIQUIDITY_STILL_PENDING", "MANUAL_REVIEW"),
+            ("EOD_PENDING_MORNING_REQUOTE", "MANUAL_REVIEW"),
+            ("LEGACY_LIFECYCLE_NOT_EVALUATED", "MANUAL_REVIEW"),
+            ("EXECUTABLE_NOW", "BUY_NOW"),
+            ("GAP_CONFIRMATION_WITH_RUNWAY", "BUY_NOW"),
+        ],
+    )
+    def test_full_morning_transition_matrix(transition: str, expected_action: str) -&gt; None:
+        result = execution_gate(_row(morning_transition_state=transition), require_olm=True)
+&gt;       assert result["final_action"] == expected_action
+E       AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'
+E         
+E         - BUY_NOW
+E         + CONTRACT_REPAIR
+
+tests\test_olm_execution_authority.py:92: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_full_morning_transition_matrix[GAP_CONFIRMATION_WITH_RUNWAY-BUY_NOW]" time="0.004"><failure message="AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'&#10;  &#10;  - BUY_NOW&#10;  + CONTRACT_REPAIR">transition = 'GAP_CONFIRMATION_WITH_RUNWAY', expected_action = 'BUY_NOW'
+
+    @pytest.mark.parametrize(
+        ("transition", "expected_action"),
+        [
+            ("THESIS_INVALIDATED", "BLOCK"),
+            ("MOVE_ALREADY_REALIZED", "BLOCK"),
+            ("CONTRACT_REPRICE_REQUIRED", "CONTRACT_REPAIR"),
+            ("WAIT_FOR_PULLBACK", "MANUAL_REVIEW"),
+            ("GAP_CONFIRMATION_EXTENDED", "MANUAL_REVIEW"),
+            ("LIQUIDITY_STILL_PENDING", "MANUAL_REVIEW"),
+            ("EOD_PENDING_MORNING_REQUOTE", "MANUAL_REVIEW"),
+            ("LEGACY_LIFECYCLE_NOT_EVALUATED", "MANUAL_REVIEW"),
+            ("EXECUTABLE_NOW", "BUY_NOW"),
+            ("GAP_CONFIRMATION_WITH_RUNWAY", "BUY_NOW"),
+        ],
+    )
+    def test_full_morning_transition_matrix(transition: str, expected_action: str) -&gt; None:
+        result = execution_gate(_row(morning_transition_state=transition), require_olm=True)
+&gt;       assert result["final_action"] == expected_action
+E       AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'
+E         
+E         - BUY_NOW
+E         + CONTRACT_REPAIR
+
+tests\test_olm_execution_authority.py:92: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_tc07_invalidated_thesis_cannot_receive_buy_now" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_corrected_v2_lifecycle_contract_is_supported_by_execution_guard" time="0.003"><failure message="AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'&#10;  &#10;  - BUY_NOW&#10;  + CONTRACT_REPAIR">def test_corrected_v2_lifecycle_contract_is_supported_by_execution_guard() -&gt; None:
+        result = execution_gate(
+            _row(lifecycle_contract_version="options-liquidity-lifecycle-v2"),
+            require_olm=True,
+        )
+&gt;       assert result["final_action"] == "BUY_NOW"
+E       AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'
+E         
+E         - BUY_NOW
+E         + CONTRACT_REPAIR
+
+tests\test_olm_execution_authority.py:115: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_terminal_thesis_precedes_contradictory_executable_transition" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides0]" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides1]" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides2]" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_executable_transition_requires_consistent_versioned_evidence[overrides3]" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_unknown_transition_fails_closed" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_maturation_score_and_conviction_cannot_override_veto" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_veto_or_defer_happens_before_any_quote_fetch" time="0.003" /><testcase classname="tests.test_olm_execution_authority" name="test_existing_valid_action_and_advisory_monetisability_remain_compatible" time="0.003"><failure message="AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'&#10;  &#10;  - BUY_NOW&#10;  + CONTRACT_REPAIR">def test_existing_valid_action_and_advisory_monetisability_remain_compatible() -&gt; None:
+&gt;       assert execution_gate(_row(), require_olm=True)["final_action"] == "BUY_NOW"
+E       AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'
+E         
+E         - BUY_NOW
+E         + CONTRACT_REPAIR
+
+tests\test_olm_execution_authority.py:184: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_direct_legacy_caller_remains_compatible_but_production_batch_requires_olm" time="0.036"><failure message="AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'&#10;  &#10;  - BUY_NOW&#10;  + CONTRACT_REPAIR">tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-147/test_direct_legacy_caller_rema0')
+
+    def test_direct_legacy_caller_remains_compatible_but_production_batch_requires_olm(tmp_path) -&gt; None:
+        legacy = _row()
+        for field in (
+            "lifecycle_contract_version", "thesis_state", "liquidity_state",
+            "morning_transition_state", "remaining_runway_state", "executable_now",
+        ):
+            legacy.pop(field, None)
+&gt;       assert execution_gate(legacy)["final_action"] == "BUY_NOW"
+E       AssertionError: assert 'CONTRACT_REPAIR' == 'BUY_NOW'
+E         
+E         - BUY_NOW
+E         + CONTRACT_REPAIR
+
+tests\test_olm_execution_authority.py:197: AssertionError</failure></testcase><testcase classname="tests.test_olm_execution_authority" name="test_lab_defence_in_depth_blocks_impossible_buy_now" time="0.081" /><testcase classname="tests.test_olm_execution_authority" name="test_lab_preserves_valid_execution_gate_action" time="0.079" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_invariant_detects_action_above_olm_ceiling" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_invariant_accepts_matching_guarded_action" time="0.002" /><testcase classname="tests.test_olm_execution_authority" name="test_finalizer_aborts_before_lab_publication_on_olm_authority_breach" time="0.027" /></testsuite></testsuites>

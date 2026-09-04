@@ -53,22 +53,36 @@ for p, why in [
 for d in sorted(x for x in os.listdir(".") if os.path.isdir(x)):
     if d.startswith((".codex_",)) or (d.startswith(("tmp","pip-","avs_macro_check_"))
                                       or d in ("datadnuold2404",)):
+        try:
+            os.listdir(d); listable = True
+        except OSError:
+            listable = False
         n = sum(len(f) for _, _, f in os.walk(d))
+        if d.startswith(".codex_"):
+            klass = "GITIGNORED_BY_ACK_DECISION"
+        elif not listable:
+            klass = "PERMISSION_DENIED_UNREADABLE"
+        elif n == 0:
+            klass = "EMPTY_DIR_NOT_A_GIT_OBJECT"
+        else:
+            klass = "UNTRACKED_DIR"
         out.append({"path": d + "/", "tier": "A",
-                    "class": ("GITIGNORED_BY_ACK_DECISION" if d.startswith(".codex_")
-                              else ("EMPTY_DIR_NOT_A_GIT_OBJECT" if n == 0
-                                    else "UNTRACKED_DIR")),
+                    "class": klass,
                     "tracked": False, "gitignored":
                         subprocess.run(["git","check-ignore","-q",d+"/"],
                                        capture_output=True).returncode == 0,
                     "graph_reachable": "", "graph_inbound": "", "grep_loose": "",
                     "grep_strict": "", "referrer": "",
-                    "reason": (f"{n} files; " + (
+                    "reason": (
                         "ACK 2026-09-04: .codex_*/ gitignored pre-commit-1 rather than "
                         "committed-then-attic'd, so the vendored runtime never enters history"
                         if d.startswith(".codex_") else
-                        "empty directory - git stores no empty directories, so there is "
-                        "nothing to git mv; commit 3 .gitignore hides it"))})
+                        ("directory is not readable by this account (PermissionError on "
+                         "listdir); git cannot enumerate or move it either. Left in place; "
+                         "commit 3 .gitignore hides it from git status"
+                         if not listable else
+                         f"{n} files; git stores no empty directories, so there is nothing "
+                         "to git mv; commit 3 .gitignore hides it"))})
 
 for r in tierc:
     out.append({"path": r["path"], "tier": "C", "class": "TIER_C_" + r["tier_c_status"],
