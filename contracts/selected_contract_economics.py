@@ -20,6 +20,13 @@ from contracts.long_option_policy import quote_spread_fraction
 
 RR_CALCULATION_VERSION = "selected-contract-rr-v1"
 MONETISABILITY_CALCULATION_VERSION = "expiry-intrinsic-floor-v2-advisory"
+#: AVS-FIX-001 W1.3 (QT-D07). Every monetisability outcome carries this,
+#: including FAILED and DATA_MISSING: the reader must never have to infer
+#: from a blank whether the figure was advisory. The value is the member
+#: AVS-SD-002 Phase 2 pinned; AVS-FIX-001 named it "ADVISORY_ONLY", which
+#: means the same thing but is not the vocabulary in use, and binding
+#: rule 9 forbids introducing a second name for one state.
+MONETISABILITY_AUTHORITY = "ADVISORY_SCENARIO_ONLY"
 MONETISABILITY_MIN_PROFIT_PCT = 20.0
 HYDRATION_SCHEMA_VERSION = "selected-contract-hydration-v1"
 
@@ -525,7 +532,7 @@ def evaluate_long_option_monetisability(
         "monetisability_contract_symbol": hydrated.get("selected_contract_symbol", ""),
         "monetisability_evaluation_id": hydrated.get("selected_structure_id", ""),
         "monetisability_eligible": False,
-        "monetisability_authority": "ADVISORY_SCENARIO_ONLY",
+        "monetisability_authority": MONETISABILITY_AUTHORITY,
         "monetisability_valuation_basis": "EXPIRY_INTRINSIC_FLOOR",
         "monetisability_hard_execution_authority": False,
     }

@@ -23,6 +23,8 @@ from contracts.options_liquidity_execution_guard import (
     evaluate_olm_execution_guard,
 )
 from contracts.selected_contract_economics import (
+    MONETISABILITY_AUTHORITY,
+    MONETISABILITY_CALCULATION_VERSION,
     canonical_structure as canonical_selected_structure,
     contract_symbols as selected_contract_symbols_from_value,
     economics_evaluation_id as selected_economics_evaluation_id,
@@ -2383,7 +2385,21 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "monetisability_state": first(sig, "monetisability_state"),
         "monetisability_reason": first(sig, "monetisability_reason"),
         "monetisability_eligible": first(sig, "monetisability_eligible"),
-        "monetisability_calculation_version": first(sig, "monetisability_calculation_version"),
+        # AVS-FIX-001 W1.3 (QT-D07). monetisability_authority was allow-listed
+        # in FINAL_BOOK_FIELDS but never assigned here -- the F29 shape -- so it
+        # was 0/294 non-null on run 20260905_151448 while the producers were
+        # setting it correctly. Both fields fall back to the constants rather
+        # than to blank: a monetisability figure is advisory whatever else
+        # failed, and a blank authority column invites the reader to assume
+        # otherwise.
+        "monetisability_authority": first(
+            sig, "monetisability_authority", default=MONETISABILITY_AUTHORITY
+        ),
+        "monetisability_calculation_version": first(
+            sig,
+            "monetisability_calculation_version",
+            default=MONETISABILITY_CALCULATION_VERSION,
+        ),
         "monetisability_contract_symbol": first(sig, "monetisability_contract_symbol"),
         "monetisability_evaluation_id": first(sig, "monetisability_evaluation_id"),
         "monetisability_entry_ask": first(sig, "monetisability_entry_ask"),

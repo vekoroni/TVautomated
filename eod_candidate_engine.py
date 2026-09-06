@@ -87,6 +87,8 @@ from contracts.direction_governance import (
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
 from contracts.selected_contract_economics import (
+    MONETISABILITY_AUTHORITY,
+    MONETISABILITY_CALCULATION_VERSION,
     economics_evaluation_id,
     evaluate_long_option_monetisability,
     parse_occ_symbol,
@@ -855,6 +857,13 @@ def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
         row, "selected_quote_dataset_id", "option_chain_dataset_id"
     )
     base = {
+        # AVS-FIX-001 W1.3 (QT-D07): stamped on every outcome, including the
+        # early returns below. On run 20260905_151448 these five FAILED paths
+        # emitted neither field, which is why 27 of 294 Lab rows had a null
+        # calculation version and why a reader could not tell whether a blank
+        # meant "not advisory" or "not evaluated".
+        "monetisability_authority": MONETISABILITY_AUTHORITY,
+        "monetisability_calculation_version": MONETISABILITY_CALCULATION_VERSION,
         "monetisability_evaluation_phase": "EOD_CLOSE",
         "monetisability_refresh_status": GovernedDataState.PENDING_MORNING_REFRESH.value,
         "monetisability_quote_timestamp_utc": quote_timestamp,
