@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from enum import Enum
 import hashlib
 import json
 import math
@@ -20,6 +19,13 @@ from typing import Any, Mapping
 from .contracts import DatasetType, iso_utc, parse_utc, utc_now
 from .errors import DatasetValidationError
 from .registry import CanonicalRegistry
+from domain.thesis_direction import ThesisState, TERMINAL_THESIS_STATES
+from domain.option_contract_liquidity import (
+    ContractLiquidityState,
+    MonitorState,
+    decide_contract_quote_fetch,
+    validate_contract_replacement,
+)
 
 
 OPTION_LIQUIDITY_SCHEMA_VERSION = "option_liquidity_lifecycle_v2"
@@ -39,45 +45,6 @@ class OptionLifecycleConcurrencyError(OptionLifecycleError):
     """Raised when a caller appends from a stale lifecycle version."""
 
 
-class ThesisState(str, Enum):
-    ACTIVE = "ACTIVE"
-    DEVELOPING = "DEVELOPING"
-    CONFIRMED = "CONFIRMED"
-    INVALIDATED = "INVALIDATED"
-    TARGET_REALIZED = "TARGET_REALIZED"
-    HORIZON_EXPIRED = "HORIZON_EXPIRED"
-    COMPLETED = "COMPLETED"
-
-
-class MonitorState(str, Enum):
-    NOT_REQUIRED = "NOT_REQUIRED"
-    ACTIVE = "ACTIVE"
-    PAUSED = "PAUSED"
-    TERMINAL = "TERMINAL"
-
-
-class ContractLiquidityState(str, Enum):
-    EXECUTABLE_NOW = "EXECUTABLE_NOW"
-    REVIEWABLE_SPREAD = "REVIEWABLE_SPREAD"
-    LIQUIDITY_PENDING = "LIQUIDITY_PENDING"
-    QUOTE_STALE = "QUOTE_STALE"
-    ZERO_BID = "ZERO_BID"
-    NO_DISPLAYED_SIZE = "NO_DISPLAYED_SIZE"
-    NO_CURRENT_MARKET = "NO_CURRENT_MARKET"
-    DTE_UNSUITABLE = "DTE_UNSUITABLE"
-    MONEYNESS_UNSUITABLE = "MONEYNESS_UNSUITABLE"
-    THESIS_TARGET_UNREACHABLE = "THESIS_TARGET_UNREACHABLE"
-    TERMINAL_REJECT = "TERMINAL_REJECT"
-
-
-TERMINAL_THESIS_STATES = frozenset(
-    {
-        ThesisState.INVALIDATED,
-        ThesisState.TARGET_REALIZED,
-        ThesisState.HORIZON_EXPIRED,
-        ThesisState.COMPLETED,
-    }
-)
 MONITORABLE_LIQUIDITY_STATES = frozenset(
     {
         ContractLiquidityState.REVIEWABLE_SPREAD,
@@ -1090,10 +1057,14 @@ class OptionLiquidityLifecycleStore:
         )
         if corrected_run and corrected_run != run:
             raise DatasetValidationError("corrected_by_run_id must equal the writing run_id")
-        if previous and previous != selected and not economics_recomputed:
-            raise DatasetValidationError(
-                "replacement contract requires exact economics recomputation"
+        try:
+            validate_contract_replacement(
+                previous_contract_symbol=previous,
+                selected_contract_symbol=selected,
+                economics_recomputed=economics_recomputed,
             )
+        except ValueError as error:
+            raise DatasetValidationError(str(error)) from error
 
         with self.registry.connection() as connection:
             observation_row = connection.execute(
@@ -1107,10 +1078,15 @@ class OptionLiquidityLifecycleStore:
                 raise DatasetValidationError(
                     "selected observation must belong to the thesis and run"
                 )
-            if observation.contract_symbol != selected:
-                raise DatasetValidationError(
-                    "selected contract does not match selected observation"
+            try:
+                validate_contract_replacement(
+                    previous_contract_symbol=previous,
+                    selected_contract_symbol=selected,
+                    economics_recomputed=economics_recomputed,
+                    observed_contract_symbol=observation.contract_symbol,
                 )
+            except ValueError as error:
+                raise DatasetValidationError(str(error)) from error
 
             selection_event_id = _hash("OPTION_SELECTION_EVENT_V1", thesis, key)
             payload = {
@@ -1218,22 +1194,27 @@ class OptionLiquidityLifecycleStore:
         if thesis is None:
             return FetchDecision(False, "THESIS_NOT_FOUND", None, None)
         latest = self.latest_observation(thesis.thesis_id)
-        if thesis.thesis_state in TERMINAL_THESIS_STATES:
-            return FetchDecision(False, f"THESIS_{thesis.thesis_state.value}", None, latest)
-        if thesis.monitor_state is not MonitorState.ACTIVE:
-            return FetchDecision(False, f"MONITOR_{thesis.monitor_state.value}", None, latest)
-        if thesis.horizon_end_date and instant.date() > thesis.horizon_end_date:
-            return FetchDecision(False, "HORIZON_EXPIRED", None, latest)
-        if latest is None:
-            return FetchDecision(True, "OBSERVATION_MISSING", MARKETDATA_PROVIDER, None)
-        if latest.liquidity_state is ContractLiquidityState.QUOTE_STALE:
-            return FetchDecision(True, "QUOTE_MARKED_STALE", MARKETDATA_PROVIDER, latest)
-        age_seconds = (instant - latest.quote_as_of).total_seconds()
-        if age_seconds <= freshness_seconds:
-            if latest.liquidity_state is ContractLiquidityState.EXECUTABLE_NOW:
-                return FetchDecision(False, "FRESH_EXECUTABLE_CONTRACT", None, latest)
-            return FetchDecision(False, "FRESH_CANONICAL_OBSERVATION", None, latest)
-        return FetchDecision(True, "CANONICAL_OBSERVATION_STALE", MARKETDATA_PROVIDER, latest)
+        age_seconds = (
+            (instant - latest.quote_as_of).total_seconds() if latest is not None else None
+        )
+        try:
+            policy = decide_contract_quote_fetch(
+                thesis_state=thesis.thesis_state,
+                monitor_state=thesis.monitor_state,
+                horizon_end_date=thesis.horizon_end_date,
+                current_date=instant.date(),
+                latest_liquidity_state=(latest.liquidity_state if latest else None),
+                latest_quote_age_seconds=age_seconds,
+                freshness_seconds=freshness_seconds,
+            )
+        except ValueError as error:
+            raise DatasetValidationError(str(error)) from error
+        return FetchDecision(
+            policy.should_fetch,
+            policy.reason,
+            MARKETDATA_PROVIDER if policy.should_fetch else None,
+            latest,
+        )
 
     def active_monitor_worklist(
         self,

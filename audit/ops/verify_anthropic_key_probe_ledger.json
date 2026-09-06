@@ -1,0 +1,11 @@
+{
+  "models_probe_count": 1,
+  "entries": [
+    {
+      "utc": "2026-09-06T14:35:00+00:00",
+      "http_status": 400,
+      "authorised_reprobe": false,
+      "note": "AVS-IMP-FIX-001 Part A, the single GET /v1/models permitted by binding rule 1. Spent 2026-09-06. Result: audit/ops/verify_anthropic_key_result_probe1_20260906.json. The script at that moment discarded error.message, so the 400 could not be diagnosed; the message-capture defect is fixed but re-probing needs ACK's authorisation."
+    }
+  ]
+}

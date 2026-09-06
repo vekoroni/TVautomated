@@ -1,4 +1,4 @@
-"""Structured, append-only and non-authoritative Interpreter assessments."""
+﻿"""Structured, append-only and non-authoritative Interpreter assessments."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from typing import Any, Mapping
 
 ASSESSMENT_SCHEMA_VERSION = "interpreter_assessment_v1"
 INTERPRETER_AUTHORITY_STATEMENT = (
-    "ADVISORY_ONLY — this assessment cannot change governed direction, selected "
+    "ADVISORY_ONLY â€” this assessment cannot change governed direction, selected "
     "contract, lifecycle, final action or capital permission."
 )
 
@@ -240,3 +240,4 @@ __all__ = [
     "INTERPRETER_AUTHORITY_STATEMENT", "append_assessment", "build_assessment",
     "latest_valid_assessment", "validate_assessment",
 ]
+

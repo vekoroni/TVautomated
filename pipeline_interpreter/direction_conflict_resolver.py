@@ -1,5 +1,5 @@
-"""
-Direction Conflict Resolver — AVSHUNTER Pipeline Interpreter
+﻿"""
+Direction Conflict Resolver â€” AVSHUNTER Pipeline Interpreter
 Scores 7 evidence layers for a single ticker row.
 Detects pipeline misdiagnosis when dominant direction != pipeline direction.
 """
@@ -242,3 +242,4 @@ def resolve_direction(row: dict) -> dict[str, Any]:
         "layer_detail":              layer_detail,
         "context_modifiers_applied": modifiers_applied,
     }
+

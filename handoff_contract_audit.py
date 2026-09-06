@@ -26,13 +26,28 @@ MISSING_TOKENS = {
     "[]",    # serialised empty Python list — options_hard_vetoes with no vetoes
     "{}",    # serialised empty Python dict
 }
-OPTIONS_RESEARCH_PERMISSION_VALUES = {"NONE_OPTIONS_RESEARCH_ONLY", "MANUAL_REVIEW_REQUIRED"}
+OPTIONS_RESEARCH_PERMISSION_VALUES = {
+    "NONE_OPTIONS_RESEARCH_ONLY",
+    "MANUAL_REVIEW_REQUIRED",
+    "NO_CAPITAL",
+}
 OPTIONS_BLOCKED_ROUTES = {"OPTIONS_BLOCKED", "OPTIONS_EQUITY_ONLY_BETTER"}
 PSE_RETIRED_POLICY = "PSE_IGNORED_MANUAL_SIZING"
 PSE_LEGACY_RETIRED_POLICIES = {
     "ADVISORY_ONLY",
     "POSITION_SIZING_RETIRED_ADVISORY_ONLY",
 }
+EOD_CARRY_FORWARD_STATUSES = {
+    "EOD_THESIS_READY", "EOD_THESIS_READY_REPAIR_AT_OPEN", "EOD_TRIGGER_READY",
+    "EOD_WATCHLIST_MONETISABLE", "EOD_PROBE_CANDIDATE",
+    "EOD_DATA_INSUFFICIENT_REVIEW", "EOD_CATALYST_EXECUTE_CANDIDATE",
+    "EOD_EXECUTE_CANDIDATE", "EOD_EXECUTE_WITH_CAUTION",
+    "EOD_CONTRACT_REPAIR_REQUIRED", "EOD_TRIGGER_READY_REVIEW",
+    "EOD_CATALYST_WATCH",
+}
+INTERPRETER_TEXT_PATTERN = (
+    r"unsupported operand|traceback|unhandled exception|typeerror|valueerror:|keyerror:"
+)
 
 MCMILLAN_FIELD_CONTRACTS = [
     {"name": "iv_gex_entry_quality", "aliases": ["iv_gex_entry_quality"], "severity": "WARN"},
@@ -192,6 +207,12 @@ FIELD_CONTRACTS: dict[str, list[dict[str, Any]]] = {
         {"name": "catalyst_event_identity", "aliases": ["catalyst_type", "catalyst_date", "catalyst_event_status", "catalyst_source_tier", "catalyst_source_url"], "severity": "WARN"},
         *MCMILLAN_FIELD_CONTRACTS,
     ],
+    "lab": [
+        {"name": "ticker", "aliases": ["ticker"], "severity": "FAIL"},
+        {"name": "lab_verdict", "aliases": ["lab_verdict", "final_action", "final_verdict"], "severity": "FAIL"},
+        {"name": "governed_invalidation", "aliases": ["invalidation_price", "invalidation_spot"], "severity": "WARN"},
+        {"name": "direction_lineage", "aliases": ["governed_direction_record_sha256"], "severity": "FAIL"},
+    ],
 }
 
 ARTIFACT_PATTERNS: dict[str, list[str]] = {
@@ -202,6 +223,7 @@ ARTIFACT_PATTERNS: dict[str, list[str]] = {
     "eod_candidates": [r"morning_validation/morning_candidates_{run_id}.csv", r"morning_validation/morning_candidates_*.csv"],
     "shadow_book": [r"morning_validation/missed_opportunity_shadow_book_{run_id}.csv", r"morning_validation/missed_opportunity_shadow_book_*.csv"],
     "morning_validation": [r"morning_validation/morning_validated_trades_{run_id}.csv", r"morning_validation/morning_validated_trades_*.csv"],
+    "lab": [r"intelligence_lab/final_opportunity_book_{run_id}.csv", r"intelligence_lab/final_opportunity_book_*.csv"],
 }
 
 
@@ -284,6 +306,19 @@ def _first_numeric_series(df: pd.DataFrame, aliases: Iterable[str]) -> pd.Series
         series = series.mask(take, values)
         seen = seen | take
     return series.fillna(0.0)
+
+
+def _first_nullable_numeric_series(df: pd.DataFrame, aliases: Iterable[str]) -> pd.Series:
+    series = pd.Series(float("nan"), index=df.index, dtype=float)
+    seen = pd.Series(False, index=df.index)
+    for alias in aliases:
+        if alias not in df.columns:
+            continue
+        values = pd.to_numeric(df[alias], errors="coerce")
+        take = ~seen & values.notna()
+        series = series.mask(take, values)
+        seen = seen | take
+    return series
 
 
 def _truthy_series(df: pd.DataFrame, aliases: Iterable[str]) -> pd.Series:
@@ -416,6 +451,295 @@ def _semantic_contract_audit(stage_frames: dict[str, pd.DataFrame], paths: dict[
                 ),
             ))
 
+    for stage in ("options_intelligence", "eil_enriched", "execution", "eod_candidates"):
+        df = stage_frames.get(stage, pd.DataFrame())
+        if df.empty:
+            continue
+        direction = _first_text_series(
+            df, ["governed_direction", "final_direction", "canonical_direction", "direction"]
+        ).str.upper()
+        invalidation_state = _first_text_series(
+            df, ["invalidation_state", "ev3_invalidation_state"]
+        ).str.upper()
+        invalidation = _first_numeric_series(
+            df, ["invalidation_spot", "ev3_invalidation_spot", "invalidation_price"]
+        )
+        capital_permission = _first_text_series(
+            df, ["capital_permission", "morning_execution_permission", "eod_candidate_permission"]
+        ).str.upper()
+        final_action = _first_text_series(
+            df, ["final_action", "morning_entry_action", "action_category"]
+        ).str.upper()
+        promoted = (
+            capital_permission.isin({"YES", "GO", "GO_LIMIT", "BUY_NOW", "BUY_SMALL", "READY_EXECUTE"})
+            | final_action.isin({"BUY_NOW", "BUY_SMALL", "GO", "GO_LIMIT"})
+            | _truthy_series(df, ["capital_authorized", "eod_candidate_authorized", "lab_tradeable"])
+        )
+        missing_invalidation = direction.isin({"CALL", "PUT"}) & (
+            (invalidation_state != "AVAILABLE") | invalidation.isna() | (invalidation <= 0.0)
+        )
+        contradiction = promoted & missing_invalidation
+        if contradiction.any():
+            records.append(_semantic_record(
+                stage=stage,
+                path=paths.get(stage, ""),
+                row_count=len(df),
+                field_contract="directional_invalidation_authority",
+                severity="FAIL",
+                status="DIRECTIONAL_TRADE_PROMOTED_WITHOUT_GOVERNED_INVALIDATION",
+                matched_rows=int(contradiction.sum()),
+                sample_tickers=_sample_tickers(df, contradiction),
+                recommendation=(
+                    "A directional CALL/PUT requires invalidation_state=AVAILABLE and a positive "
+                    "governed invalidation level before any execution or capital permission."
+                ),
+            ))
+
+    for stage in ("vanguard", "eil_enriched", "execution"):
+        df = stage_frames.get(stage, pd.DataFrame())
+        if df.empty:
+            continue
+        profile_type = _first_text_series(
+            df, ["profile_type", "layer1__profile_type", "vg__profile_type"]
+        ).str.upper()
+        profile_state = _first_text_series(
+            df, ["market_profile_state", "market_profile_data_state", "profile_data_state"]
+        ).str.upper()
+        poc = _first_numeric_series(df, ["poc", "profile_poc", "layer1__poc", "vg__poc"])
+        ready = _truthy_series(df, ["ready_to_trade", "auction_ready_to_trade"])
+        auction_state = _first_text_series(df, ["auction_state", "layer1__auction_state"]).str.upper()
+        unusable_profile = (
+            profile_type.isin({"INSUFFICIENT_DATA", "UNAVAILABLE", "UNKNOWN"})
+            | profile_state.isin({"MISSING", "UNAVAILABLE", "INSUFFICIENT_DATA", "PARTIAL"})
+            | poc.isna()
+            | (poc <= 0.0)
+        )
+        contradiction = unusable_profile & (ready | auction_state.eq("ALIGNED"))
+        if contradiction.any():
+            records.append(_semantic_record(
+                stage=stage,
+                path=paths.get(stage, ""),
+                row_count=len(df),
+                field_contract="market_profile_authority_semantics",
+                severity="FAIL",
+                status="UNUSABLE_PROFILE_MARKED_ALIGNED_OR_READY",
+                matched_rows=int(contradiction.sum()),
+                sample_tickers=_sample_tickers(df, contradiction),
+                recommendation=(
+                    "An unavailable or non-positive governed profile cannot contribute ALIGNED or "
+                    "ready-to-trade evidence. Preserve null levels and report NOT_EVALUATED."
+                ),
+            ))
+
+    # AVS-SD-003 G-12: explicit semantic rules.  These are intentionally
+    # separate records so a known-bad run must fail for each violated contract,
+    # rather than hiding several contradictions behind one aggregate status.
+    options = stage_frames.get("options_intelligence", pd.DataFrame())
+    if not options.empty:
+        direction = _first_text_series(
+            options, ["governed_direction", "final_direction", "canonical_direction", "direction"]
+        ).str.upper()
+        verdict = _first_text_series(
+            options, ["options_verdict", "verdict", "campaign_verdict"]
+        ).str.upper()
+        inv_state = _first_text_series(
+            options, ["invalidation_state", "ev3_invalidation_state"]
+        ).str.upper()
+        inv = _first_nullable_numeric_series(
+            options, ["invalidation_spot", "ev3_invalidation_spot"]
+        )
+        bad = direction.isin({"CALL", "PUT"}) & verdict.eq("ARMED") & (
+            inv_state.ne("AVAILABLE") | inv.isna() | inv.le(0.0)
+        )
+        if bad.any():
+            records.append(_semantic_record(
+                stage="options_intelligence", path=paths.get("options_intelligence", ""),
+                row_count=len(options), field_contract="armed_requires_invalidation",
+                severity="FAIL", status="ARMED_WITHOUT_GOVERNED_INVALIDATION",
+                matched_rows=int(bad.sum()), sample_tickers=_sample_tickers(options, bad),
+                recommendation="Stand down directional ARMED rows until governed invalidation is available.",
+            ))
+
+    eod = stage_frames.get("eod_candidates", pd.DataFrame())
+    if not eod.empty:
+        direction = _first_text_series(
+            eod, ["governed_direction", "final_direction", "canonical_direction", "direction"]
+        ).str.upper()
+        status = _first_text_series(eod, ["eod_candidate_status", "eod_status"]).str.upper()
+        permission = _first_text_series(
+            eod, ["capital_permission", "eod_candidate_permission", "candidate_status"]
+        ).str.upper()
+        inv_state = _first_text_series(eod, ["invalidation_state", "ev3_invalidation_state"]).str.upper()
+        inv = _first_nullable_numeric_series(
+            eod, ["invalidation_spot", "ev3_invalidation_spot", "invalidation_level"]
+        )
+        candidate_like = status.isin(EOD_CARRY_FORWARD_STATUSES) | permission.isin({
+            "EOD_CANDIDATE_ONLY", "MORNING_VALIDATION_REQUIRED", "READY_EXECUTE",
+        }) | _truthy_series(eod, ["eod_candidate_authorized", "execution_authorized"])
+        bad = direction.isin({"CALL", "PUT"}) & candidate_like & (
+            inv_state.ne("AVAILABLE") | inv.isna() | inv.le(0.0)
+        )
+        if bad.any():
+            records.append(_semantic_record(
+                stage="eod_candidates", path=paths.get("eod_candidates", ""),
+                row_count=len(eod), field_contract="eod_candidate_requires_invalidation",
+                severity="FAIL", status="EOD_CANDIDATE_WITHOUT_GOVERNED_INVALIDATION",
+                matched_rows=int(bad.sum()), sample_tickers=_sample_tickers(eod, bad),
+                recommendation="Remove candidate/capital authority until governed invalidation is available.",
+            ))
+
+    lab = stage_frames.get("lab", pd.DataFrame())
+    if not lab.empty:
+        direction = _first_text_series(
+            lab, ["governed_direction", "final_direction", "canonical_direction", "direction"]
+        ).str.upper()
+        action = _first_text_series(
+            lab, ["final_action", "lab_verdict", "final_verdict", "action_category"]
+        ).str.upper()
+        inv_state = _first_text_series(lab, ["invalidation_state", "ev3_invalidation_state"]).str.upper()
+        inv = _first_nullable_numeric_series(
+            lab, ["invalidation_price", "invalidation_spot", "ev3_invalidation_spot"]
+        )
+        executable = action.isin({"BUY_NOW", "BUY_SMALL", "GO", "GO_LIMIT", "EXECUTE"}) | _truthy_series(
+            lab, ["lab_tradeable", "capital_authorized", "execution_authorized"]
+        )
+        bad = direction.isin({"CALL", "PUT"}) & executable & (
+            inv_state.ne("AVAILABLE") | inv.isna() | inv.le(0.0)
+        )
+        if bad.any():
+            records.append(_semantic_record(
+                stage="lab", path=paths.get("lab", ""), row_count=len(lab),
+                field_contract="lab_execution_requires_invalidation", severity="FAIL",
+                status="LAB_EXECUTABLE_WITHOUT_GOVERNED_INVALIDATION",
+                matched_rows=int(bad.sum()), sample_tickers=_sample_tickers(lab, bad),
+                recommendation="The Lab must display the row as blocked until governed invalidation is available.",
+            ))
+
+    for stage in ("options_intelligence", "eil_enriched", "execution", "eod_candidates", "lab"):
+        df = stage_frames.get(stage, pd.DataFrame())
+        if df.empty:
+            continue
+        text = _first_text_series(
+            df,
+            ["stand_down_reason", "trigger_status_reason", "gate_reason", "notes", "eod_candidate_reason"],
+        )
+        bad = text.str.contains(INTERPRETER_TEXT_PATTERN, case=False, regex=True, na=False)
+        if bad.any():
+            records.append(_semantic_record(
+                stage=stage, path=paths.get(stage, ""), row_count=len(df),
+                field_contract="governed_reason_vocabulary", severity="FAIL",
+                status="RAW_INTERPRETER_TEXT_PUBLISHED",
+                matched_rows=int(bad.sum()), sample_tickers=_sample_tickers(df, bad),
+                recommendation="Publish governed reason codes; keep exception class and text in diagnostics only.",
+            ))
+
+    vanguard = stage_frames.get("vanguard", pd.DataFrame())
+    if not vanguard.empty:
+        profile_type = _first_text_series(
+            vanguard, ["profile_type", "layer1__profile_type", "vg__profile_type"]
+        ).str.upper()
+        profile_state = _first_text_series(
+            vanguard, ["market_profile_state", "market_profile_data_state", "profile_data_state"]
+        ).str.upper()
+        auction = _first_text_series(vanguard, ["auction_state", "layer1__auction_state"]).str.upper()
+        poc = _first_nullable_numeric_series(vanguard, ["poc", "profile_poc", "layer1__poc", "vg__poc"])
+        insufficient = profile_type.isin({"INSUFFICIENT_DATA", "UNAVAILABLE", "UNKNOWN"}) | profile_state.isin({
+            "MISSING", "UNAVAILABLE", "INSUFFICIENT_DATA", "PARTIAL", "NOT_EVALUATED",
+        })
+        bad_alignment = insufficient & auction.eq("ALIGNED")
+        if bad_alignment.any():
+            records.append(_semantic_record(
+                stage="vanguard", path=paths.get("vanguard", ""), row_count=len(vanguard),
+                field_contract="profile_state_vs_auction_state", severity="FAIL",
+                status="INSUFFICIENT_PROFILE_MARKED_ALIGNED",
+                matched_rows=int(bad_alignment.sum()), sample_tickers=_sample_tickers(vanguard, bad_alignment),
+                recommendation="An insufficient profile must remain NOT_EVALUATED and cannot be ALIGNED.",
+            ))
+        fabricated_zero = insufficient & poc.notna() & poc.eq(0.0)
+        if fabricated_zero.any():
+            records.append(_semantic_record(
+                stage="vanguard", path=paths.get("vanguard", ""), row_count=len(vanguard),
+                field_contract="missing_profile_levels_are_null", severity="FAIL",
+                status="MISSING_PROFILE_LEVEL_PUBLISHED_AS_ZERO",
+                matched_rows=int(fabricated_zero.sum()), sample_tickers=_sample_tickers(vanguard, fabricated_zero),
+                recommendation="Represent missing POC/VAH/VAL as null, never as a fabricated zero.",
+            ))
+
+    # Detect a universally lost field when an upstream artefact demonstrably
+    # contains it.  Named absence remains valid; silent disappearance does not.
+    lineage_contracts = {
+        "contract_bid_size": ["contract_bid_size", "live_contract_bid_size", "bid_size"],
+        "contract_ask_size": ["contract_ask_size", "live_contract_ask_size", "ask_size"],
+        "contract_quote_quality": ["contract_quote_quality", "live_contract_quote_quality", "quote_quality"],
+        "selected_quote_timestamp_utc": [
+            "selected_quote_timestamp_utc", "contract_quote_timestamp_utc", "quote_timestamp_utc", "quote_as_of",
+        ],
+        "execution_viability_state": ["execution_viability_state"],
+        "macro_packet_id": ["macro_packet_id"],
+        "macro_packet_sha256": ["macro_packet_sha256"],
+        "macro_source_fingerprint": ["macro_source_fingerprint"],
+        "macro_as_of_utc": ["macro_as_of_utc", "macro_generated_at_utc"],
+        "macro_session_date": ["macro_session_date"],
+    }
+    if not lab.empty:
+        for field, aliases in lineage_contracts.items():
+            source_stage = ""
+            source_filled = 0
+            for candidate_stage in ("morning_validation", "eod_candidates", "execution", "options_intelligence"):
+                source = stage_frames.get(candidate_stage, pd.DataFrame())
+                _, filled, _ = _fill_rate(source, aliases)
+                if filled > 0:
+                    source_stage = candidate_stage
+                    source_filled = filled
+                    break
+            if not source_stage:
+                continue
+            _, destination_filled, _ = _fill_rate(lab, [field, *aliases])
+            if destination_filled == 0:
+                records.append(_semantic_record(
+                    stage="lab", path=paths.get("lab", ""), row_count=len(lab),
+                    field_contract=f"lineage:{field}", severity="FAIL",
+                    status="UPSTREAM_FIELD_UNIVERSALLY_LOST",
+                    matched_rows=source_filled,
+                    recommendation=f"Map {field} from {source_stage} into every applicable Lab row or publish a named absence state.",
+                ))
+
+    if not options.empty and not lab.empty and "ticker" in options and "ticker" in lab:
+        source_hash = _first_text_series(options, ["governed_direction_record_sha256"])
+        target_hash = _first_text_series(lab, ["governed_direction_record_sha256"])
+        source = pd.DataFrame({"ticker": options["ticker"].astype(str).str.upper(), "source_hash": source_hash})
+        target = pd.DataFrame({"ticker": lab["ticker"].astype(str).str.upper(), "target_hash": target_hash})
+        joined = source.drop_duplicates("ticker", keep="last").merge(
+            target.drop_duplicates("ticker", keep="last"), on="ticker", how="inner"
+        )
+        comparable = ~joined["source_hash"].map(_missing) & ~joined["target_hash"].map(_missing)
+        bad = comparable & joined["source_hash"].ne(joined["target_hash"])
+        if bad.any():
+            records.append(_semantic_record(
+                stage="lab", path=paths.get("lab", ""), row_count=len(lab),
+                field_contract="options_to_lab_direction_hash", severity="FAIL",
+                status="DIRECTION_LINEAGE_HASH_MISMATCH", matched_rows=int(bad.sum()),
+                sample_tickers=",".join(joined.loc[bad, "ticker"].head(12).tolist()),
+                recommendation="Preserve the governed direction record hash unchanged from Options to the Lab.",
+            ))
+
+    for stage in ("options_intelligence", "eil_enriched", "execution", "eod_candidates", "lab"):
+        df = stage_frames.get(stage, pd.DataFrame())
+        if df.empty:
+            continue
+        source = _first_text_series(df, ["bar_data_source", "data_source"]).str.upper()
+        state = _first_text_series(df, ["bar_evidence_state"]).str.upper()
+        stale = source.eq("STALE_CACHE") | _truthy_series(df, ["is_stale"])
+        bad = stale & state.ne("APPROVED_FALLBACK")
+        if bad.any():
+            records.append(_semantic_record(
+                stage=stage, path=paths.get(stage, ""), row_count=len(df),
+                field_contract="stale_bar_fallback_lineage", severity="FAIL",
+                status="STALE_BAR_FALLBACK_UNNAMED", matched_rows=int(bad.sum()),
+                sample_tickers=_sample_tickers(df, bad),
+                recommendation="Stamp stale bars APPROVED_FALLBACK and preserve the state through every downstream handoff.",
+            ))
+
     return records
 
 
@@ -455,7 +779,7 @@ def audit_run(run_id: str, *, runs_dir: Path = RUNS_DIR, output_dir: Optional[Pa
             continue
 
         if not exists:
-            severity = "WARN" if stage in {"morning_validation", "shadow_book"} else "FAIL"
+            severity = "WARN" if stage == "morning_validation" else "FAIL"
             record = {
                 "stage": stage,
                 "artifact_exists": False,
@@ -471,6 +795,58 @@ def audit_run(run_id: str, *, runs_dir: Path = RUNS_DIR, output_dir: Optional[Pa
             }
             rows.append(record)
             outstanding.append(record)
+            continue
+
+        if stage == "shadow_book" and row_count == 0:
+            dropoff_path = _find_artifact(
+                run_dir,
+                run_id,
+                [
+                    r"morning_validation/eod_dropoff_audit_{run_id}.csv",
+                    r"morning_validation/eod_dropoff_audit_*.csv",
+                ],
+            )
+            dropoff = _read_csv(dropoff_path)
+            if dropoff.empty:
+                status = "EMPTY_UNCORROBORATED"
+                severity = "FAIL"
+                eligible_count = 0
+                recommendation = (
+                    "An empty shadow book requires the EOD drop-off audit; regenerate both artefacts together."
+                )
+            else:
+                scores = pd.to_numeric(
+                    dropoff.get("shadow_opportunity_score", pd.Series(0.0, index=dropoff.index)),
+                    errors="coerce",
+                ).fillna(0.0)
+                statuses = _first_text_series(
+                    dropoff, ["eod_candidate_status", "eod_status"]
+                ).str.upper()
+                eligible = scores.ge(40.0) & ~statuses.isin(EOD_CARRY_FORWARD_STATUSES)
+                eligible_count = int(eligible.sum())
+                status = "EMPTY_BY_DESIGN" if eligible_count == 0 else "EMPTY_UNEXPECTED"
+                severity = "INFO" if eligible_count == 0 else "FAIL"
+                recommendation = (
+                    "No row met the governed shadow mask; empty artefact is expected."
+                    if eligible_count == 0
+                    else "Rebuild the shadow book: the EOD drop-off audit contains eligible missed opportunities."
+                )
+            record = {
+                "stage": stage,
+                "artifact_exists": True,
+                "artifact_path": str(path),
+                "row_count": 0,
+                "field_contract": "__artifact__",
+                "severity": severity,
+                "status": status,
+                "present_aliases": "",
+                "filled_rows": eligible_count,
+                "fill_rate": 0.0,
+                "recommendation": recommendation,
+            }
+            rows.append(record)
+            if severity == "FAIL":
+                outstanding.append(record)
             continue
 
         for contract in FIELD_CONTRACTS[stage]:

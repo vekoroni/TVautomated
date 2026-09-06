@@ -1,5 +1,5 @@
-"""
-AVSHUNTER Pipeline Interpreter v1.0 — Interactive Entry Point
+﻿"""
+AVSHUNTER Pipeline Interpreter v1.0 â€” Interactive Entry Point
 """
 import sys
 from datetime import datetime
@@ -19,28 +19,28 @@ except Exception:
     pass
 
 HEADER = """
-╔══════════════════════════════════════════════════════════════════════════╗
-║                                                                          ║
-║   PIPELINE INTERPRETER v1.0                                              ║
-║   Dr. Magnus Vale  ×  Soul of the Chart  ×  AVSHUNTER                   ║
-║                                                                          ║
-║   STAGE 1  /triage    Rank and prioritise all candidates (fast)          ║
-║   STAGE 2  /ticker    Full deep dive — one ticker at a time              ║
-║   STAGE 2  /chart     Add chart images to the deep dive                  ║
-║                                                                          ║
-║   The machine discovers.  The narrative diagnoses.                       ║
-║   The market permits.     The trader executes.                           ║
-║                                                                          ║
-║   EXECUTION PERMISSION: NONE — PIPELINE INTERPRETER ONLY                ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝"""
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘                                                                          â•‘
+â•‘   PIPELINE INTERPRETER v1.0                                              â•‘
+â•‘   Dr. Magnus Vale  Ã—  Soul of the Chart  Ã—  AVSHUNTER                   â•‘
+â•‘                                                                          â•‘
+â•‘   STAGE 1  /triage    Rank and prioritise all candidates (fast)          â•‘
+â•‘   STAGE 2  /ticker    Full deep dive â€” one ticker at a time              â•‘
+â•‘   STAGE 2  /chart     Add chart images to the deep dive                  â•‘
+â•‘                                                                          â•‘
+â•‘   The machine discovers.  The narrative diagnoses.                       â•‘
+â•‘   The market permits.     The trader executes.                           â•‘
+â•‘                                                                          â•‘
+â•‘   EXECUTION PERMISSION: NONE â€” PIPELINE INTERPRETER ONLY                â•‘
+â•‘                                                                          â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"""
 
 def main():
     print(HEADER)
     date_str=datetime.now().strftime("%A %d %B %Y  |  %H:%M ET")
     print(f"\n  {date_str}")
     print(f"  Output directory: {Path(__file__).parent / 'outputs'}")
-    print(f"\n  Start here: /triage  →  then /ticker TICKER for each priority name")
+    print(f"\n  Start here: /triage  â†’  then /ticker TICKER for each priority name")
     print(f"  Type /menu for all commands  |  /inputs to check MA_Inputs  |  /exit to close\n")
 
     from pipeline_interpreter_commands import route_command, MENU
@@ -63,7 +63,8 @@ def main():
         except EOFError:
             break
         except Exception as e:
-            print(f"\n  ⚠ Error: {e}\n")
+            print(f"\n  âš  Error: {e}\n")
 
 if __name__=="__main__":
     main()
+

@@ -1,4 +1,4 @@
-"""Interactive shadow CLI for direct bottom-bar timeframe selection."""
+﻿"""Interactive shadow CLI for direct bottom-bar timeframe selection."""
 
 from __future__ import annotations
 
@@ -50,3 +50,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

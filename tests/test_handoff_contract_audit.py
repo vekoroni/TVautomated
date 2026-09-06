@@ -33,6 +33,7 @@ def test_vanguard_flattened_legacy_note_alias_is_accepted() -> None:
         (run_dir / "superbrain").mkdir()
         (run_dir / "execution").mkdir()
         (run_dir / "morning_validation").mkdir()
+        (run_dir / "intelligence_lab").mkdir()
 
         pd.DataFrame([{
             "ticker": "AAPL",
@@ -87,6 +88,15 @@ def test_vanguard_flattened_legacy_note_alias_is_accepted() -> None:
         pd.DataFrame([{
             "ticker": "AAPL", "shadow_opportunity_score": 0, "shadow_opportunity_label": "",
         }]).to_csv(run_dir / "morning_validation" / f"missed_opportunity_shadow_book_{run_id}.csv", index=False)
+
+        pd.DataFrame([{
+            "ticker": "AAPL", "lab_verdict": "BLOCKED", "direction": "CALL",
+            "invalidation_price": 95.0, "invalidation_state": "AVAILABLE",
+            "governed_direction_record_sha256": "fixture-direction-hash",
+        }]).to_csv(
+            run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.csv",
+            index=False,
+        )
 
         result = audit_run(run_id, runs_dir=runs_dir)
 

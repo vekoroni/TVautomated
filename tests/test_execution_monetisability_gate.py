@@ -34,6 +34,9 @@ def _row(state: str) -> dict:
         "execution_viability_reason": "QUOTE_WITHIN_EXECUTABLE_LIMIT",
         "execution_viability_contract_symbol": "AAA260918C00100000",
         "selected_contract_side": "CALL",
+        "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
+        "invalidation_source": "TEST_GOVERNED_THESIS",
         **direction,
     }
 
@@ -84,3 +87,21 @@ def test_unknown_execution_viability_fails_closed() -> None:
     result = execution_gate(row)
     assert result["final_action"] == "CONTRACT_REPAIR"
     assert result["gate_reason"] == "EXECUTION_VIABILITY_STATE_UNKNOWN:UNRECOGNISED"
+
+
+def test_missing_governed_invalidation_fails_closed_before_capital_authority() -> None:
+    row = _row("MONETISABLE")
+    row.pop("invalidation_spot")
+    row.pop("invalidation_state")
+    row["stop_loss"] = 95.0
+    result = execution_gate(row)
+    assert result["final_action"] == "BLOCK"
+    assert result["gate_reason"] == "INVALIDATION_MISSING"
+
+
+def test_wrong_sided_governed_invalidation_fails_closed() -> None:
+    row = _row("MONETISABLE")
+    row["invalidation_spot"] = 105.0
+    result = execution_gate(row)
+    assert result["final_action"] == "BLOCK"
+    assert result["gate_reason"] == "INVALIDATION_MISSING"

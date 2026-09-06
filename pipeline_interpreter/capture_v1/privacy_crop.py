@@ -1,4 +1,4 @@
-"""Privacy-safe crop for the accepted full Webull chart layout."""
+﻿"""Privacy-safe crop for the accepted full Webull chart layout."""
 
 from __future__ import annotations
 
@@ -50,3 +50,4 @@ def crop_chart_in_place(
         "output_dimensions": [cropped_width, cropped_height],
         "removed_regions": ["ACCOUNT_HEADER", "WATCHLIST", "NAVIGATION_RAIL", "BOTTOM_ACCOUNT_TICKER"],
     }
+

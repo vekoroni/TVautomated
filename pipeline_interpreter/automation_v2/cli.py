@@ -1,4 +1,4 @@
-"""Explicit-input, shadow-only command line entry point."""
+﻿"""Explicit-input, shadow-only command line entry point."""
 
 from __future__ import annotations
 
@@ -190,3 +190,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

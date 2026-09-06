@@ -1,4 +1,4 @@
-"""Injected adapter for the existing Claude prompt/call workflow."""
+﻿"""Injected adapter for the existing Claude prompt/call workflow."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ class LegacyEnginePromptFactory:
         )
         header = ",".join(TRADE_BRIEF_FIELDS)
         structured_first = (
-            "AUTOMATION V2 OUTPUT ORDER — MANDATORY:\n"
+            "AUTOMATION V2 OUTPUT ORDER â€” MANDATORY:\n"
             "Your response MUST start with [TRADE_BRIEF_CSV], followed immediately "
             "by exactly one CSV header and exactly one ticker row. Do not put prose "
             "before this block. Use this exact header:\n"
@@ -160,3 +160,4 @@ class LegacyClaudeProvider:
             raw_response=payload.raw_response,
             raw_story=payload.raw_story,
         )
+

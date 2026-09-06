@@ -1,4 +1,4 @@
-"""Recoverable production deployment for a validated ticker evidence package."""
+﻿"""Recoverable production deployment for a validated ticker evidence package."""
 
 from __future__ import annotations
 
@@ -138,3 +138,4 @@ def deploy_package(
             "receipt": str(receipt_path),
             "findings": [str(exc)],
         }
+

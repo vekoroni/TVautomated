@@ -151,6 +151,21 @@ def test_full_flag_morning_publication_passes_production_readiness(tmp_path, mon
         "underlying_nbbo_mid": 100.0, "underlying_nbbo_bid_size": 500,
         "underlying_nbbo_ask_size": 600, "underlying_nbbo_timestamp_utc": timestamp,
     }
+    validation_dir = run_root / "validation"
+    validation_dir.mkdir()
+    (validation_dir / "AAA.json").write_text(
+        json.dumps({
+            "validation_event_id": "VALIDATION:AAA",
+            "run_id": run_id,
+            "ticker": "AAA",
+            "thesis_id": "T",
+            "direction": "CALL",
+            "selected_contract": SYMBOL,
+            "evidence_cutoff_utc": timestamp,
+            "transition": "THESIS_CONFIRMED",
+        }),
+        encoding="utf-8",
+    )
     result = _publish_msi_handoff(
         run_id=run_id, run_dir=run_root, lab_rows=[row], completed_at_utc=timestamp,
     )

@@ -1,4 +1,4 @@
-"""
+﻿"""
 build_premarket_candidates.py
 Combines News Terminal catalyst CSV + MA Cockpit candidate CSV into a single
 pre-market candidate file at dropbox/inputs/.
@@ -70,7 +70,7 @@ def build_tickers_file(combined: pd.DataFrame):
 def build_combined():
     DROPBOX_INPUTS.mkdir(parents=True, exist_ok=True)
 
-    print(f"\n[BUILD] build_premarket_candidates.py — {TODAY}")
+    print(f"\n[BUILD] build_premarket_candidates.py â€” {TODAY}")
 
     nt_df = load_latest(
         NEWS_TERMINAL_OUTPUT,
@@ -145,3 +145,4 @@ def build_combined():
 
 if __name__ == "__main__":
     build_combined()
+

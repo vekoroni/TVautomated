@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
+from domain.thesis_direction import (
+    normalise_direction,
+    resolve_structural_direction,
+)
+
 
 DIR_CALC_VERSION = "dir_v1.2.0"
 RESOLUTION_POLICY_VERSION = "strangle_resolution_v1.1.0"
@@ -64,35 +69,16 @@ def _truthy(value: Any) -> bool:
 
 
 def normalise_side(value: Any) -> str:
-    text = _upper(value)
-    if text in DIRECTED | NON_DIRECTIONAL:
-        return text
-    if any(token in text for token in ("PUT", "SELL", "BEAR", "SHORT")):
-        return PUT
-    if any(token in text for token in ("CALL", "BUY", "BULL", "LONG")):
-        return CALL
-    if text in {"STRADDLE", "NON_DIRECTIONAL", "MIXED", "TRANSITION"}:
-        return STRANGLE
-    return UNRESOLVED
+    return normalise_direction(value, strangle_for_non_directional=True)
 
 
 def structural_direction(precor_intent: Any, trend: Any) -> Tuple[str, str]:
     """Closed, fail-closed structural direction table."""
-    intent = _upper(precor_intent)
-    trend_value = _upper(trend)
-    if intent == "BUY_SETUP":
-        return CALL, "precor_intent=BUY_SETUP"
-    if intent == "SELL_SETUP":
-        return PUT, "precor_intent=SELL_SETUP"
-    if intent == "TRANSITION":
-        if trend_value == "BULLISH":
-            return CALL, "precor_intent=TRANSITION, trend=BULLISH"
-        if trend_value == "BEARISH":
-            return PUT, "precor_intent=TRANSITION, trend=BEARISH"
-        return STRANGLE, f"precor_intent=TRANSITION, trend={trend_value or 'MIXED'}"
-    if intent == "WAIT":
-        return UNRESOLVED, "precor_intent=WAIT"
-    return UNRESOLVED, f"precor_intent={intent or 'MISSING'}"
+    return resolve_structural_direction(
+        precor_intent,
+        trend,
+        strangle_for_non_directional=True,
+    )
 
 
 def preliminary_discovery_direction(fusion_direction: Any, wyckoff_direction: Any) -> str:

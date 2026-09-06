@@ -2340,6 +2340,44 @@ def _finalize_execution_authority(row: dict) -> dict:
         row.get("eod_candidate_size", row.get("candidate_size", row.get("pse_pre_horizon_size", 0.0))),
         0.0,
     )
+    governed_direction = str(
+        row.get("governed_direction")
+        or row.get("canonical_direction")
+        or row.get("direction")
+        or row.get("options_direction")
+        or ""
+    ).upper().strip()
+    invalidation_raw = (
+        row.get("invalidation_spot")
+        if row.get("invalidation_spot") not in (None, "")
+        else row.get("invalidation_price")
+    )
+    invalidation_value = _as_float(invalidation_raw, 0.0)
+    invalidation_state = str(row.get("invalidation_state") or "").upper().strip()
+    invalidation_unavailable_states = {
+        "MISSING", "UNAVAILABLE", "NOT_AVAILABLE", "MISSING_AUTHORITATIVE_STOP",
+        "MISSING_GOVERNED_INVALIDATION", "NOT_EVALUATED_NON_DIRECTIONAL",
+    }
+    invalidation_missing = (
+        governed_direction in {"CALL", "PUT"}
+        and (invalidation_value <= 0.0 or invalidation_state in invalidation_unavailable_states)
+    )
+    if invalidation_missing:
+        capital_permission = "NO"
+        eod_candidate_permission = "STRUCTURAL_REVIEW_ONLY"
+        pse_mode = "DATA_REPAIR_REQUIRED"
+        size = 0.0
+        candidate_size = 0.0
+        row["capital_permission"] = capital_permission
+        row["eod_candidate_permission"] = eod_candidate_permission
+        row["pse_execution_mode"] = pse_mode
+        row["pse_final_size"] = 0.0
+        row["fd_size"] = 0.0
+        row["eod_candidate_size"] = 0.0
+        row["candidate_size"] = 0.0
+        row["invalidation_state"] = "MISSING_GOVERNED_INVALIDATION"
+        row["execution_geometry_state"] = "DATA_REPAIR_REQUIRED"
+        row["signal_authority_reason"] = "MISSING_GOVERNED_INVALIDATION"
     options_contract = _options_research_profile(row)
     options_research_blocked = bool(options_contract.get("present") and options_contract.get("blocked"))
     if options_research_blocked:

@@ -1,0 +1,52 @@
+{
+  "schema_version": "avs_ddd_production_integration_release_v1",
+  "release_id": "AVS-DDD-PRODUCTION-INTEGRATION-20260905",
+  "generated_at_utc": "2026-09-05T13:42:21Z",
+  "source_git_head": "6e834b838d35b6a061df12d44cafff6f72bf0dcb",
+  "source_tree_state": "PRE_EXISTING_DIRTY_WORKTREE_HASH_BOUND_BY_THIS_MANIFEST",
+  "status": "OFFLINE_ACCEPTED_CONTROLLED_LIVE_CYCLE_REQUIRED",
+  "runtime_profile": {
+    "path": "contracts/dynamic_session_runtime_v1.json",
+    "sha256": "2b416bbed94d80d8aa23a71f3ed199c444f2b429b7bcdcdce733a54f5508ee2f",
+    "status": "CONTROLLED_LIVE_CYCLE",
+    "auto_dispatcher": false,
+    "capital_authority": "execution_gate"
+  },
+  "offline_acceptance": {
+    "syntax_compile": "PASS",
+    "plan_only_evening_dispatch": "PASS_BUILD_THESIS_NO_WRITES_NO_PROVIDER_CALLS",
+    "focused_regression": {"passed": 161, "failed": 0},
+    "morning_validation_integration": {"passed": 52, "subtests_passed": 3, "failed": 0},
+    "historical_morning_adapter_replay": {"rows": 191, "events": 191, "unique_event_ids": 191, "failures": 0},
+    "consolidated_regression": {"passed": 1063, "skipped": 1, "subtests_passed": 43, "failed": 0},
+    "live_evening_run": "REQUIRED",
+    "live_morning_run": "REQUIRED"
+  },
+  "production_files": [
+    {"path":"contracts/dynamic_session_contract.py","bytes":10935,"sha256":"d63b1d090159022bfd0f2424110ca7f671f7b5463e5f99ebdcded778d9b7f2b4"},
+    {"path":"contracts/dynamic_session_runtime_v1.json","bytes":1537,"sha256":"2b416bbed94d80d8aa23a71f3ed199c444f2b429b7bcdcdce733a54f5508ee2f"},
+    {"path":"intelligent_orchestrator.py","bytes":321768,"sha256":"164ec618f3e658f78dea2b1170351fee3aaf808e133fc33dbf06f11586654d79"},
+    {"path":"orchestrator/dynamic_release.py","bytes":10511,"sha256":"a79f36820b5da6e630ace94a3ec785821614b485c014d4bdb32c34c7d4d5438a"},
+    {"path":"orchestrator/dynamic_dispatcher.py","bytes":10924,"sha256":"fc01f4b9664b7102a4b1d533ea46ac9678f66a799f1bce1831eda240bdce038a"},
+    {"path":"orchestrator/dynamic_validation.py","bytes":20568,"sha256":"192124280cccad75967f7b210ffb19bb86af9903cd4798026964af3561cc86de"},
+    {"path":"intelligence-lab/intelligence_lab.py","bytes":167617,"sha256":"5d01de040199755d38c3df0d5be5f2082c26111b042276fed9b89f0e4497c132"},
+    {"path":"avshunter_trade_journal.py","bytes":67763,"sha256":"5def1282162f0902ec84d78eda743e126f4b28b4970623f170eae766f4adcf38"},
+    {"path":"morning_handoff_finalizer.py","bytes":36507,"sha256":"e8014a0ec48fde35a26e26f289fd1958261285600328fc790badb23a24cf889e"}
+  ],
+  "test_files": [
+    {"path":"tests/test_ddd_production_integration.py","sha256":"5338f1e5d7543686392a89197ec7cc8990e8b6ac1608abfe7554741de7d2c951"},
+    {"path":"tests/test_ddd_morning_validation_integration.py","sha256":"cfaa0dd32ce2af318263494865584c620ce4dcaa42def99d255f71a6156c45b5"},
+    {"path":"tests/test_dynamic_session_phase6.py","sha256":"0c4855dc795c3a0c32f2d9622b0c1691d6a330c281784cda3c4619db09bd4f60"},
+    {"path":"tests/test_avs_sd003_authority_boundaries.py","sha256":"818e7ea0ec6be0d261261d21e4288965de16bdac52bae26020993d1ca6e8407b"},
+    {"path":"tests/test_msi_handoff_materializer.py","sha256":"0840a3412112b48b07d89b59df41d41ac9b6043dc26aca662018f8e6acefddba"},
+    {"path":"tests/test_msi_quote_and_size_lineage.py","sha256":"c24da32fac5cf5c8d03d46497fab21afcb9e2825d649f245122296a3be609f5b"}
+  ],
+  "rollback": "audit/pipeline_map/AVS-DDD-PRODUCTION-INTEGRATION-20260905/ROLLBACK_CONFIGURATION.json",
+  "backup": "backups/ddd_production_integration_prechange_20260905_120000",
+  "acceptance_sequence": [
+    "python intelligent_orchestrator.py --evening",
+    "verify accepted EOD thesis, completed-profile evidence, lifecycle identities and Lab EOD view",
+    "python intelligent_orchestrator.py --morning",
+    "verify Morning validation events, execution-to-Lab reconciliation, Interpreter evidence bundle and ledger counts"
+  ]
+}

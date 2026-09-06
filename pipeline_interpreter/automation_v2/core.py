@@ -1,4 +1,4 @@
-"""Pure ticker interpretation orchestration."""
+﻿"""Pure ticker interpretation orchestration."""
 
 from __future__ import annotations
 
@@ -78,3 +78,4 @@ def interpret_ticker(
         analysis=analysis,
         findings=findings,
     )
+

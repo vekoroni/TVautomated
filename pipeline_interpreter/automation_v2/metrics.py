@@ -1,4 +1,4 @@
-"""Observability and acceptance metrics for shadow trials."""
+﻿"""Observability and acceptance metrics for shadow trials."""
 
 from __future__ import annotations
 
@@ -100,3 +100,4 @@ def load_trial_metrics(root: str | Path) -> tuple[TrialMetric, ...]:
         raw = json.loads(path.read_text(encoding="utf-8"))
         values.append(TrialMetric(**raw))
     return tuple(values)
+

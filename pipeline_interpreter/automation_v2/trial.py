@@ -1,4 +1,4 @@
-"""One controlled live/offline shadow trial with metrics."""
+﻿"""One controlled live/offline shadow trial with metrics."""
 
 from __future__ import annotations
 
@@ -82,3 +82,4 @@ def run_shadow_trial(
         encoding="utf-8",
     )
     return TrialResult(metric, str(artifact_path), str(metric_path))
+

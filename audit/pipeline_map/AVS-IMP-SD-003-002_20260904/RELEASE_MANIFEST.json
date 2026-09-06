@@ -1,0 +1,45 @@
+{
+  "release_id": "AVS-IMP-SD-003-002_20260904",
+  "design_id": "AVS-SD-003",
+  "implemented_at_local": "2026-09-04T10:55:02+01:00",
+  "baseline_tag": "pre-tidy-20260904",
+  "baseline_commit": "6e834b8",
+  "rollback_package": "backups/avs_sd_003_phase0_prechange_20260904_093119",
+  "activation_status": "OFFLINE_ACCEPTED_LIVE_PROFILE_CAPABILITY_DISABLED",
+  "feature_flags": {
+    "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED": false
+  },
+  "test_results": {
+    "focused_authority": {"passed": 42, "failed": 0},
+    "production_regression": {"passed": 933, "skipped": 1, "subtests_passed": 43, "failed": 0},
+    "syntax_compile": "PASS",
+    "diff_check": "PASS",
+    "rollback_sqlite_quick_check": "ok"
+  },
+  "production_files": [
+    {"path": "execution_gate.py", "sha256": "976b7117aab26d8ba5db973e993a3d114960ea1401e8c871d19084a2cc2d90fc"},
+    {"path": "eod_candidate_engine.py", "sha256": "b7bef736b2e08cbbcd85d6995c37f5ba8c0b71bcca8904b8abc74f645bd9c5fc"},
+    {"path": "handoff_contract_audit.py", "sha256": "5ce657424bf176acfdaad0399d2ec83904f8b5f65683a8cd7f91962efba01003"},
+    {"path": "intelligent_orchestrator.py", "sha256": "ba48b66ccbcc1a888f6bb0ac6f9ad9b3e35ca584c498f084c1c0cc2645e6dd2c"},
+    {"path": "canonical_data/__init__.py", "sha256": "5edb1893a3a26690192c93d25796667ce41e905f43bd2f2870f4bffc20c47d37"},
+    {"path": "canonical_data/intraday_bars.py", "sha256": "c2e92922e250efeca87c2c967ab659b2667902690bdf258e546942da9b1a9ffb"},
+    {"path": "canonical_data/marketdata_stock_candles.py", "sha256": "cc6ffd36c44c372d254706b7e02ad6fe81a815cb7357bb2f099e5012101c9088"},
+    {"path": "canonical_data/request_ledger.py", "sha256": "8b5b87640f004ef4e778d9e1faad642373e065c83a473b2d4490f484bc08d37d"},
+    {"path": "contracts/dynamic_session_contract.py", "sha256": "70906984d934461ce7b519c58e680bce705a1253872b54ed4d17f20e1242f426"},
+    {"path": "contracts/dynamic_session_authority_v1.json", "sha256": "408079a031760da0b5244ca18ed6fa6c6b1e12b8cc3050e23b021ad83f0c6065"},
+    {"path": "contracts/lab_control.py", "sha256": "3ee1af0cf4dc70b8967fe15b7f7bf99ab73d8435ab2dd8227dda8b6bc05444ed"},
+    {"path": "scripts/avshunter_options_intelligence.py", "sha256": "b25c44dfb838cc6754cdd80eb7be5d9ea30f6de4f831351705938e1efab541b5"},
+    {"path": "scripts/build_completed_market_profiles.py", "sha256": "7dc80d1c9ff16b28472ede12f0096980bdb1c23fced5b55fea18681a9ccb0584"},
+    {"path": "scripts/run_vanguard_from_packages.py", "sha256": "1266234f27dd4a569a6a46556a073e9a97583e3cbede13e0f664013212c3d56e"},
+    {"path": "vanguard/integration/orchestrator_adapter.py", "sha256": "2abd83114431e28f9a51cac9c201c41be91e73bdb128636322b0e3955b565f5b"},
+    {"path": "vanguard/layer1_auction/auction_synthesizer.py", "sha256": "d52d36d1522a85eea917da484ce0f73b730b95cd4c8a87d0f3b71bc567cd5185"},
+    {"path": "vanguard/layer2_statistical/edge_detector.py", "sha256": "2cf25ae3f561d066b60420dbf03fc499da468c5ca01a754b9f0943680c37819b"},
+    {"path": "vanguard/schemas/input_schema.py", "sha256": "9a5d5c2a87c66cc2138b3d05502ede4a3ef2208f692813e13ce24e70460b7f4d"}
+  ],
+  "open_activation_gates": [
+    "representative acquisition-only MarketData probe",
+    "cold completed-profile cycle",
+    "same-session warm replay with zero physical provider requests",
+    "Morning Gate completed-to-developing profile continuity validation"
+  ]
+}

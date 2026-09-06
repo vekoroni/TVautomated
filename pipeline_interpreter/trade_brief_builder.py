@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Trade Brief Builder
 ==============================
 Takes a fully-enriched interpreter row (including dcr_* and alt_*
@@ -48,7 +48,7 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
 
     ticker = _s(row.get("ticker", "UNKNOWN")).upper()
 
-    # ── Direction ─────────────────────────────────────────────────
+    # â”€â”€ Direction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Use dominant direction from conflict resolver if available,
     # otherwise fall back to pipeline direction
     dcr_dominant   = _s(row.get("dcr_dominant_direction"))
@@ -69,7 +69,7 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         direction = "UNCLEAR"
         direction_source = "UNKNOWN"
 
-    # ── Contract ──────────────────────────────────────────────────
+    # â”€â”€ Contract â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # If repair selected a better contract, show that before the stale EOD contract.
     repair_contract = _s(
         row.get("morning_selected_contract_symbol")
@@ -105,14 +105,14 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         contract_iv     = _f(row.get("live_iv") or row.get("contract_iv"))
         contract_source = "PIPELINE"
 
-    # ── Gate verdict ──────────────────────────────────────────────
+    # â”€â”€ Gate verdict â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     gate_verdict = _s(
         row.get("verdict")
         or row.get("morning_execution_permission")
         or row.get("execution_permission")
     ).upper()
 
-    # ── Entry condition ───────────────────────────────────────────
+    # â”€â”€ Entry condition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Build from available price levels
     live_price     = _f(row.get("live_price") or row.get("last_price"))
     invalidation   = _f(
@@ -140,11 +140,11 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
     else:
         entry_condition = "Manual entry assessment required - key levels not available."
 
-    # ── Target levels ─────────────────────────────────────────────
+    # â”€â”€ Target levels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     exit_t1 = _f(row.get("exit_t1") or row.get("target_1") or row.get("t1"))
     exit_t2 = _f(row.get("exit_t2") or row.get("target_2") or row.get("t2"))
 
-    # ── Recommended action ────────────────────────────────────────
+    # â”€â”€ Recommended action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if direction == "UNCLEAR":
         action = "NO_EDGE"
         action_reason = "Evidence equally split across directions. Skip this ticker."
@@ -170,7 +170,7 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         action = "TRADE_ON_CONDITION"
         action_reason = f"Gate {gate_verdict}. Await trigger before entry."
 
-    # ── Confidence ────────────────────────────────────────────────
+    # â”€â”€ Confidence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     dcr_call_score = _f(row.get("dcr_call_score", 0)) or 0.0
     dcr_put_score  = _f(row.get("dcr_put_score", 0)) or 0.0
     total_score    = dcr_call_score + dcr_put_score
@@ -180,7 +180,7 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
     else:
         confidence_pct = None
 
-    # ── Assemble brief ────────────────────────────────────────────
+    # â”€â”€ Assemble brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     brief = {
         "ticker":               ticker,
         "action":               action,
@@ -274,3 +274,4 @@ def format_trade_brief(brief: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 # CONTRACT-REPAIR-ALT-001: Trade brief prefers morning/repair alternatives.
+

@@ -1,4 +1,4 @@
-"""Combined ticker selection and five-timeframe shadow capture."""
+﻿"""Combined ticker selection and five-timeframe shadow capture."""
 
 from __future__ import annotations
 
@@ -96,3 +96,4 @@ def capture_ticker_workflow(
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

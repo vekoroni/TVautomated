@@ -1,4 +1,4 @@
-"""Shared fail-closed validation for safety-critical numeric inputs."""
+﻿"""Shared fail-closed validation for safety-critical numeric inputs."""
 
 from __future__ import annotations
 
@@ -30,3 +30,4 @@ def positive_finite(value: Any) -> bool:
     """Return True only for a finite numeric value strictly greater than zero."""
     parsed = finite_decimal(value)
     return parsed is not None and parsed > 0
+

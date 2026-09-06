@@ -299,6 +299,99 @@ def _msi_identity_preflight(
     return report
 
 
+def _record_decision_outcome_ledger(
+    *,
+    run_id: str,
+    run_dir: Path,
+    rows: Iterable[Mapping[str, Any]],
+    validation_events: Iterable[Mapping[str, Any]],
+    occurred_at_utc: str,
+) -> dict[str, Any]:
+    """Persist the Morning decision episode without acquiring trade authority.
+
+    Rows lacking a governed thesis identity are reported, never assigned a
+    synthetic identity.  That observability defect cannot block an otherwise
+    valid Morning handoff because the ledger is explicitly observational.
+    """
+
+    from canonical_data.decision_outcome_ledger import (
+        DecisionOutcomeLedger,
+        candidate_events_from_rows,
+        execution_events_from_rows,
+        make_ledger_event,
+    )
+
+    ledger_path = run_dir.parents[2] / "canonical" / "decision_outcome_ledger.sqlite"
+    ledger = DecisionOutcomeLedger(ledger_path)
+    source_rows = [dict(row) for row in rows]
+    governed_rows = [
+        row for row in source_rows
+        if str(row.get("ticker") or "").strip()
+        and str(row.get("thesis_id") or "").strip()
+    ]
+    missing_identity = [
+        str(row.get("ticker") or "UNKNOWN").strip().upper() or "UNKNOWN"
+        for row in source_rows
+        if row not in governed_rows
+    ]
+
+    candidate_events = candidate_events_from_rows(
+        governed_rows,
+        run_id=run_id,
+        occurred_at_utc=occurred_at_utc,
+        decision_stage="MORNING_VALIDATION",
+    )
+    candidate_appended = ledger.append_many(candidate_events)
+
+    validation_ledger_events = []
+    validation_by_ticker = {}
+    for raw in validation_events:
+        event = dict(raw)
+        ticker = str(event.get("ticker") or "").strip().upper()
+        thesis_id = str(event.get("thesis_id") or "").strip()
+        if not ticker or not thesis_id:
+            continue
+        ledger_event = make_ledger_event(
+            event_type="VALIDATION",
+            occurred_at_utc=str(event.get("evidence_cutoff_utc") or occurred_at_utc),
+            run_id=run_id,
+            ticker=ticker,
+            thesis_id=thesis_id,
+            validation_event_id=str(event.get("validation_event_id") or "") or None,
+            payload=event,
+        )
+        validation_ledger_events.append(ledger_event)
+        current = validation_by_ticker.get(ticker)
+        if current is None or ledger_event.occurred_at_utc >= current.occurred_at_utc:
+            validation_by_ticker[ticker] = ledger_event
+    validation_appended = ledger.append_many(validation_ledger_events)
+
+    execution_events = execution_events_from_rows(
+        governed_rows,
+        run_id=run_id,
+        occurred_at_utc=occurred_at_utc,
+        validation_events_by_ticker=validation_by_ticker,
+    )
+    execution_appended = ledger.append_many(execution_events)
+    return {
+        "path": str(ledger_path),
+        "authority": "OBSERVATION_ONLY",
+        "can_grant_capital": False,
+        "input_rows": len(source_rows),
+        "governed_rows": len(governed_rows),
+        "missing_identity_count": len(missing_identity),
+        "missing_identity_tickers": missing_identity[:25],
+        "candidate_events": len(candidate_events),
+        "candidate_events_appended": candidate_appended,
+        "validation_events": len(validation_ledger_events),
+        "validation_events_appended": validation_appended,
+        "execution_decision_events": len(execution_events),
+        "execution_decision_events_appended": execution_appended,
+        "event_counts_for_run": ledger.event_counts(run_id),
+        "append_only": True,
+    }
+
+
 def _macro_reference(run_dir: Path, session_date: str) -> dict[str, Any] | None:
     packet_path = run_dir / "macro_quant_packet.json"
     if not packet_path.is_file():
@@ -361,9 +454,6 @@ def _publish_msi_handoff(
         raise MorningHandoffError(
             "MSI_LAB_V3_VIEW and MSI_INTERPRETER_RESOLVER must activate together"
         )
-    if not flags.lab_v3_view:
-        return {"status": "DISABLED", "feature_flags": flags.to_dict()}
-
     if dynamic_flags.lab_dynamic_view != dynamic_flags.interpreter_dynamic_resolver:
         raise MorningHandoffError(
             "dynamic Lab and Interpreter resolver flags must activate together"
@@ -386,6 +476,37 @@ def _publish_msi_handoff(
                 validation_events.append(dict(payload))
 
     source_rows = [dict(row) for row in lab_rows]
+    ledger_summary = None
+    if dynamic_flags.decision_outcome_ledger:
+        try:
+            ledger_summary = _record_decision_outcome_ledger(
+                run_id=run_id,
+                run_dir=run_dir,
+                rows=source_rows,
+                validation_events=validation_events,
+                occurred_at_utc=completed_at_utc,
+            )
+            ledger_summary["status"] = "PASS"
+        except Exception as ledger_error:
+            ledger_summary = {
+                "status": "ERROR",
+                "authority": "OBSERVATION_ONLY",
+                "can_grant_capital": False,
+                "error": str(ledger_error),
+            }
+            _atomic_json(
+                run_dir / "diagnostics" / "decision_outcome_ledger_error.json",
+                {"run_id": run_id, **ledger_summary},
+            )
+            log.warning(
+                "Decision ledger observation failed without changing Morning authority: %s",
+                ledger_error,
+            )
+    if not flags.lab_v3_view:
+        disabled = {"status": "DISABLED", "feature_flags": flags.to_dict()}
+        if ledger_summary is not None:
+            disabled["decision_outcome_ledger"] = ledger_summary
+        return disabled
     actionable = [
         dict(row)
         for row in source_rows
@@ -402,6 +523,8 @@ def _publish_msi_handoff(
             "actionable_rows": 0,
         }
         _atomic_json(status_path, status)
+        if ledger_summary is not None:
+            status["decision_outcome_ledger"] = ledger_summary
         return {**status, "status_path": str(status_path)}
 
     meta_path = run_dir / "run_meta.json"
@@ -460,34 +583,8 @@ def _publish_msi_handoff(
             + ";".join(independent.get("mismatches") or [])
         )
 
-    if dynamic_flags.decision_outcome_ledger:
-        from canonical_data.decision_outcome_ledger import (
-            DecisionOutcomeLedger,
-            candidate_events_from_rows,
-            make_ledger_event,
-        )
-
-        ledger_path = run_dir.parents[2] / "canonical" / "decision_outcome_ledger.sqlite"
-        ledger = DecisionOutcomeLedger(ledger_path)
-        ledger.append_many(candidate_events_from_rows(
-            source_rows, run_id=run_id, occurred_at_utc=completed_at_utc,
-        ))
-        for event in validation_events:
-            ledger.append(make_ledger_event(
-                event_type="VALIDATION",
-                occurred_at_utc=str(event.get("evidence_cutoff_utc") or completed_at_utc),
-                run_id=run_id,
-                ticker=str(event.get("ticker") or ""),
-                thesis_id=str(event.get("thesis_id") or ""),
-                validation_event_id=str(event.get("validation_event_id") or ""),
-                payload=event,
-            ))
-        result["decision_outcome_ledger"] = {
-            "path": str(ledger_path),
-            "candidate_events": len(source_rows),
-            "validation_events": len(validation_events),
-            "append_only": True,
-        }
+    if ledger_summary is not None:
+        result["decision_outcome_ledger"] = ledger_summary
 
     structured_flag_names = (
         "v2_capture", "cds_resolver", "minute_bars", "structure",
@@ -685,6 +782,23 @@ def finalize_morning_handoff(
         if before_authority != after_authority:
             raise MorningHandoffError("Macro advisory mutated governed authority fields")
 
+    completed_at_utc = _utc_now()
+    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+    dynamic_flags = DynamicSessionFeatureFlags.from_environment()
+    validation_event_summary: dict[str, Any] = {
+        "status": "DISABLED",
+        "authority": "VALIDATION_ONLY",
+    }
+    if dynamic_flags.validation_gate:
+        from orchestrator.dynamic_validation import persist_morning_validation_events
+
+        validation_event_summary = persist_morning_validation_events(
+            gated_rows,
+            run_id=run_id,
+            destination_dir=morning_dir / "validation_events",
+            fallback_evidence_cutoff_utc=completed_at_utc,
+        )
+
     manifest = write_final_run_manifest(
         run_id,
         Path(runs_dir),
@@ -742,7 +856,6 @@ def finalize_morning_handoff(
     triage_path = Path(str(lab_book.get("triage_csv_path") or ""))
     final_book_path = Path(str(lab_book.get("csv_path") or ""))
     required_paths = [morning_path, gated_path, triage_path, final_book_path]
-    completed_at_utc = _utc_now()
     msi_handoff = _publish_msi_handoff(
         run_id=run_id,
         run_dir=run_dir,
@@ -773,6 +886,7 @@ def finalize_morning_handoff(
         "lab_triage_path": str(triage_path),
         "interpreter_sync": sync_results,
         "msi_handoff": msi_handoff,
+        "dynamic_validation_events": validation_event_summary,
         "macro_advisory": {
             "packet_id": macro_reference.get("packet_id"),
             "packet_path": macro_materialization.get("packet_path"),

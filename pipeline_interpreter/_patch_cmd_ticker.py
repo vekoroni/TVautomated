@@ -1,4 +1,4 @@
-"""Patch cmd_ticker in pipeline_interpreter_commands.py to call write_all_outputs_with_junior."""
+﻿"""Patch cmd_ticker in pipeline_interpreter_commands.py to call write_all_outputs_with_junior."""
 import sys
 
 TARGET = "pipeline_interpreter_commands.py"
@@ -8,7 +8,7 @@ with open(TARGET, "rb") as f:
 
 src = raw.decode("utf-8-sig")
 
-# Find the exact target block — lines 774-779 from previous inspection
+# Find the exact target block â€” lines 774-779 from previous inspection
 # run_dir, ts = get_run_dir()
 # results = write_all_outputs(response, session, run_dir, ts,
 #                              tickers=[ticker], prefix=f"ticker_{ticker.lower()}")
@@ -112,3 +112,4 @@ encoded = src.encode("utf-8")
 with open(TARGET, "wb") as f:
     f.write(bom + encoded)
 print("Written.")
+

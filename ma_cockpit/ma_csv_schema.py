@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
@@ -304,3 +304,4 @@ def _int_or_zero(value: str | None) -> int:
         return int((value or "0").strip() or "0")
     except ValueError:
         return 0
+

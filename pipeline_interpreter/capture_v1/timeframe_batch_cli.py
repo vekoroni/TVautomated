@@ -1,4 +1,4 @@
-"""Interactive CLI for five-timeframe shadow capture."""
+﻿"""Interactive CLI for five-timeframe shadow capture."""
 
 from __future__ import annotations
 
@@ -44,3 +44,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

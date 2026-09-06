@@ -1,4 +1,4 @@
-"""Interactive-only CLI for mapping allowlisted Webull controls."""
+﻿"""Interactive-only CLI for mapping allowlisted Webull controls."""
 
 from __future__ import annotations
 
@@ -46,3 +46,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -1,4 +1,4 @@
-"""Deterministic market-structure projection from authoritative pipeline inputs."""
+﻿"""Deterministic market-structure projection from authoritative pipeline inputs."""
 
 from __future__ import annotations
 
@@ -95,3 +95,4 @@ def enrich_trade_brief(
     enriched = dict(trade_brief)
     enriched.update(project_market_structure(request))
     return enriched
+

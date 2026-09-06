@@ -1,4 +1,4 @@
-"""Disabled-by-default rollout contract; not wired into production commands."""
+﻿"""Disabled-by-default rollout contract; not wired into production commands."""
 
 from __future__ import annotations
 
@@ -52,3 +52,4 @@ def run_with_legacy_fallback(
             if not config.immediate_legacy_fallback:
                 raise
     return legacy_result
+

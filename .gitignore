@@ -188,3 +188,34 @@ data/canonical/
 /avs_macro_check_*/
 /*old0908.py
 *.rr_cap.bak
+
+# ============================================================
+# AVS-FIX-001 W0.1 (2026-09-06) — baseline commit. `git add -A` aborted with
+#   error: open("audit/ddd_closure_testdeps/py.py"): Permission denied
+# These are pytest basetemp / vendored-testdep scratch trees left by the DDD
+# closure and SD-002 remediation runs. Windows left restrictive ACLs on them,
+# so git cannot read them at all — they can never be committed, and they are
+# the same "ephemeral test scratch" class as the pytest-of-*/ rule above.
+#
+# ANCHORED to the repository root, and each verified to match 0 tracked paths:
+#   audit/pipeline_map/AVS-TST-SD-002-001/ holds 71 tracked files, 9 of them
+#   XMLs directly inside tmp/codex_remediation/ — so only that directory's
+#   SUBDIRECTORIES (the pytest basetemps) are excluded, never the XMLs.
+#   audit/pipeline_logic_review/ holds 3 tracked design notes — only its
+#   pytest_tmp_ws2*/ scratch is excluded.
+#   audit/olm_fix_test/tmp_runs/ is deliberately NOT listed: it is tracked
+#   evidence (see the AVS-OPS-001 note above).
+# ============================================================
+/audit/ddd_closure_full_tmp_20260905/
+/audit/ddd_closure_testdeps/
+/audit/ddd_closure_tmp_20260905/
+/audit/ddd_isolated_release_tmp_20260905/
+/audit/ddd_isolated_tmp_20260905/
+/audit/ddd_msi_w20_tmp_20260905/
+/audit/ddd_readiness_tmp/
+/audit/ddd_runtime_profile_tmp_20260905/
+/audit/ddd_test_tmp/
+/audit/ddd_test_tmp_full/
+/audit/pipeline_logic_review/pytest_tmp_ws2*/
+/audit/pipeline_map/.design_validation_tmp/
+/audit/pipeline_map/AVS-TST-SD-002-001/tmp/codex_remediation/*/

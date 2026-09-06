@@ -45,6 +45,9 @@ def _base_signal(**overrides):
         "morning_lab_alignment_status": "NO_MORNING_BATON",
         "priority_score": 70,
         "rr": 2.0,
+        "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
+        "invalidation_source": "TEST_GOVERNED_THESIS",
         **direction,
     }
     row.update(overrides)

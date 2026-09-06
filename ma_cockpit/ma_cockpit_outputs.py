@@ -1,5 +1,5 @@
-"""
-AVSHUNTER M&A Cockpit v1.0 — Output Writers
+﻿"""
+AVSHUNTER M&A Cockpit v1.0 â€” Output Writers
 CSV (full schema), HTML brief, master calendar
 """
 import csv, json, re, io
@@ -61,7 +61,7 @@ def _parse_csv(text:str) -> list:
             if not r.get("last_updated"): r["last_updated"]=datetime.now().strftime("%Y-%m-%d %H:%M")
         return rows
     except Exception as e:
-        print(f"  ⚠ CSV parse: {e}"); return []
+        print(f"  âš  CSV parse: {e}"); return []
 
 def _write_csv(rows:list, path:Path, fields:list) -> int:
     if not rows: return 0
@@ -230,25 +230,25 @@ def build_html(response:str, session, ts:str, mode:str="full") -> str:
     cand_table=_csv_to_table(ticker_csv) if ticker_csv else ""
     brand="AVSHUNTER M&A COCKPIT v1.0" if mode=="full" else "AVSHUNTER M&A INTELLIGENCE"
 
-    def sec(title,body,icon="▶",border_color=None):
+    def sec(title,body,icon="â–¶",border_color=None):
         if not body or not body.strip(): return ""
         bc=f"border-left:3px solid {border_color};" if border_color else ""
         return f'<div class="section" style="{bc}"><div class="sec-hdr">{icon} {title}</div><div class="sec-body brief-content">{_md_to_html(body)}</div></div>'
 
-    sections  = sec("Executive Summary",exec_sum,"◈","#a855f7")
-    sections += sec("Deals Detected",deals,"▶","#00c853")
-    sections += sec("Corporate Events",corp_events,"▶","#0080ff")
+    sections  = sec("Executive Summary",exec_sum,"â—ˆ","#a855f7")
+    sections += sec("Deals Detected",deals,"â–¶","#00c853")
+    sections += sec("Corporate Events",corp_events,"â–¶","#0080ff")
     sections += sec("Transmission & Sector Impact",trans)
-    sections += sec("Beneficiary Map",ben_map,"◈","#f59e0b")
+    sections += sec("Beneficiary Map",ben_map,"â—ˆ","#f59e0b")
 
     if cand_table:
-        sections += f'<div class="section" style="border-left:3px solid #a855f7"><div class="sec-hdr">◈ M&amp;A Pipeline Candidates</div><div class="sec-body">{cand_table}</div></div>'
+        sections += f'<div class="section" style="border-left:3px solid #a855f7"><div class="sec-hdr">â—ˆ M&amp;A Pipeline Candidates</div><div class="sec-body">{cand_table}</div></div>'
 
     sections += sec("Options Routing",routing)
     sections += sec("Pipeline Candidate List",pipeline)
 
     if mode=="full":
-        sections += sec("Failure & Caution List",caution,"⚠","#ef4444")
+        sections += sec("Failure & Caution List",caution,"âš ","#ef4444")
         sections += sec("Manual Validation Checklist",validation)
         sections += sec("Confirmed / Assumption / Missing",conf_table)
         sections += sec("Desk Verdict",desk_v)
@@ -256,7 +256,7 @@ def build_html(response:str, session, ts:str, mode:str="full") -> str:
     return f"""<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AVSHUNTER M&A Cockpit — {date_str}</title>
+<title>AVSHUNTER M&A Cockpit â€” {date_str}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 :root{{--bg:#09090d;--bg2:#0f1018;--bg3:#161820;--border:#1e2030;--accent:#a855f7;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}}
@@ -300,7 +300,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1
   <div class="meta">{date_str} &nbsp;|&nbsp; {time_str} &nbsp;|&nbsp; Run: {ts}</div></div>
   <div class="badges"><div class="vbadge">{desk_verdict.replace("_"," ")}</div></div>
 </div>
-<div class="banner">⚠&nbsp; EXECUTION PERMISSION: {EXECUTION_PERMISSION} &nbsp;—&nbsp; ANALYSIS ONLY &nbsp;—&nbsp; CAPITAL GRADE: {CAPITAL_GRADE}</div>
+<div class="banner">âš &nbsp; EXECUTION PERMISSION: {EXECUTION_PERMISSION} &nbsp;â€”&nbsp; ANALYSIS ONLY &nbsp;â€”&nbsp; CAPITAL GRADE: {CAPITAL_GRADE}</div>
 <div class="stats">
   <div class="stat"><div class="slbl">Desk Verdict</div><div class="sval" style="font-size:9px;color:{vc}">{desk_verdict.replace("_"," ")}</div></div>
   <div class="stat"><div class="slbl">Total Candidates</div><div class="sval">{s["total"]}</div></div>
@@ -311,7 +311,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1
 </div>
 <div class="content">{sections}</div>
 <div class="footer">
-  <div class="ftr-l">⚠ {EXECUTION_PERMISSION} | CAPITAL GRADE: {CAPITAL_GRADE}</div>
+  <div class="ftr-l">âš  {EXECUTION_PERMISSION} | CAPITAL GRADE: {CAPITAL_GRADE}</div>
   <div class="ftr-r">AVSHUNTER M&A Cockpit v1.0 | Generated {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
 </div></body></html>"""
 
@@ -344,7 +344,7 @@ def write_ma_candidates_flat(response: str, ts: str) -> "Path | None":
     try:
         rows = list(csv.DictReader(io.StringIO(clean)))
     except Exception as e:
-        print(f"  ⚠ MA candidates flat CSV parse: {e}")
+        print(f"  âš  MA candidates flat CSV parse: {e}")
         return None
     if not rows:
         return None
@@ -388,7 +388,7 @@ def write_all_outputs(response:str, session, run_dir:Path, ts:str, prefix:str=""
     tp=run_dir/f"{pfx}ma_candidates_{ts}.csv"
     n=_write_csv(ticker_rows,tp,TICKER_CSV_FIELDS)
     results["ticker_csv"]={"path":tp,"rows":n}
-    if n==0: print(f"  ⚠ No ticker rows extracted — check raw_response_{ts}.txt")
+    if n==0: print(f"  âš  No ticker rows extracted â€” check raw_response_{ts}.txt")
 
     # Write handoff CSV
     hp=run_dir/f"{pfx}ma_handoff_{ts}.csv"
@@ -407,9 +407,10 @@ def write_all_outputs(response:str, session, run_dir:Path, ts:str, prefix:str=""
     tp2=run_dir/f"{pfx}ma_brief_{ts}_trader.html"
     tp2.write_text(trader_html,encoding="utf-8"); results["trader_html"]={"path":tp2}
 
-    # Integration output — flat ma_cockpit/outputs/ma_candidates_YYYYMMDD.csv (32-col schema)
+    # Integration output â€” flat ma_cockpit/outputs/ma_candidates_YYYYMMDD.csv (32-col schema)
     flat_path = write_ma_candidates_flat(response, ts)
     if flat_path:
         results["ma_candidates_flat"] = {"path": flat_path}
 
     return results
+

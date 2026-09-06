@@ -1,4 +1,4 @@
-"""Machine-readable legacy-versus-shadow artifact comparison."""
+﻿"""Machine-readable legacy-versus-shadow artifact comparison."""
 
 from __future__ import annotations
 
@@ -79,3 +79,4 @@ def compare_legacy_to_shadow(
         sovereign_preserved=sovereign,
         differences=tuple(differences),
     )
+

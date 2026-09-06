@@ -76,6 +76,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from contracts.dynamic_session_contract import DataExceptionReason
 
 from contracts.direction_governance import (
     DIRECTED as GOVERNED_DIRECTED_SIDES,
@@ -572,7 +573,21 @@ def _candidate_permission_fields(row: dict, eod_status: str) -> dict:
     # FIX 5: PSE retired — default is MANUAL (not NO) so rows are not killed by legacy gate
     live_permission = _str(row, "capital_permission", "MANUAL").upper()
     status = str(eod_status or "").upper()
-    if status in EOD_STRUCTURAL_BLOCK_STATUSES:
+    direction = _first_str(row, "direction", "canonical_direction", "governed_direction").upper()
+    invalidation_state = _first_str(
+        row, "invalidation_state", "ev3_invalidation_state"
+    ).upper()
+    invalidation_available = (
+        direction not in GOVERNED_DIRECTED_SIDES
+        or (
+            invalidation_state == "AVAILABLE"
+            and _invalidation_level(row) is not None
+        )
+    )
+    if direction in GOVERNED_DIRECTED_SIDES and not invalidation_available:
+        live_permission = "NO"
+        candidate_permission = "STRUCTURAL_REVIEW_ONLY"
+    elif status in EOD_STRUCTURAL_BLOCK_STATUSES:
         candidate_permission = "STRUCTURAL_REVIEW_ONLY"
     elif status == "EOD_THESIS_READY_REPAIR_AT_OPEN":
         candidate_permission = "CONTRACT_REPAIR_REQUIRED"
@@ -594,9 +609,25 @@ def _candidate_permission_fields(row: dict, eod_status: str) -> dict:
         if manual_required
         else "REVIEW_ONLY",
         "manual_sizing_required": manual_required,
-        "eod_live_capital_permission": "HUMAN_REVIEW_REQUIRED"
-        if manual_required
-        else live_permission,
+        "eod_live_capital_permission": (
+            "NO" if not invalidation_available
+            else "HUMAN_REVIEW_REQUIRED" if manual_required
+            else live_permission
+        ),
+        "capital_permission": "NO" if not invalidation_available else live_permission,
+        "capital_authorization_state": (
+            "NOT_AUTHORIZED_INVALIDATION_MISSING"
+            if not invalidation_available else _str(row, "capital_authorization_state")
+        ),
+        "eod_candidate_authorized": bool(
+            invalidation_available and row.get("eod_candidate_authorized", False)
+        ),
+        "execution_authorized": bool(
+            invalidation_available and row.get("execution_authorized", False)
+        ),
+        "invalidation_permission_reason": (
+            "OK" if invalidation_available else DataExceptionReason.INVALIDATION_MISSING.value
+        ),
     }
 
 def _handoff_lane(eod_status: str) -> str:
@@ -1101,6 +1132,20 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     momentum_tier = _resolved_momentum_tier(row).upper()
     horizon_bucket = _str(row, "horizon_bucket").lower()
     liquidity_state = _str(row, "liquidity_state").upper()
+    direction = _first_str(
+        row, "governed_direction", "final_direction", "canonical_direction", "direction"
+    ).upper()
+    invalidation_state = _first_str(
+        row, "invalidation_state", "ev3_invalidation_state"
+    ).upper()
+
+    # A directional EOD thesis is incomplete without an authoritative stop.
+    # Keep it in the drop-off audit for investigation; do not advertise it as
+    # a Morning candidate merely because its option contract is repairable.
+    if direction in GOVERNED_DIRECTED_SIDES and (
+        invalidation_state != "AVAILABLE" or _invalidation_level(row) is None
+    ):
+        return "EOD_STRUCTURAL_BLOCK", "MISSING_GOVERNED_INVALIDATION"
 
     if options_block_reason:
         failure_class = _eod_failure_class(row, options_block_reason)
@@ -1488,7 +1533,13 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         ),
     }
 
-def _eod_dropoff_reason(row: dict, tier: str, eod_status: str, contract_profile: dict) -> str:
+def _eod_dropoff_reason(
+    row: dict,
+    tier: str,
+    eod_status: str,
+    contract_profile: dict,
+    eod_reason: str = "",
+) -> str:
     if eod_status in {"EOD_THESIS_READY", "EOD_TRIGGER_READY"}:
         return "PRESERVED_TO_MORNING_VALIDATION"
     if eod_status == "EOD_THESIS_READY_REPAIR_AT_OPEN":
@@ -1496,7 +1547,7 @@ def _eod_dropoff_reason(row: dict, tier: str, eod_status: str, contract_profile:
     if eod_status in {"EOD_PROBE_CANDIDATE", "EOD_WATCHLIST_MONETISABLE", "EOD_DATA_INSUFFICIENT_REVIEW"}:
         return eod_status
     if eod_status in {"EOD_NO_OPTIONS_ROUTE", "EOD_STRUCTURAL_BLOCK"}:
-        return eod_status
+        return f"{eod_status}:{eod_reason}" if eod_reason else eod_status
     if eod_status == "EOD_BLOCK":
         options_block_reason = _options_research_block_reason(row)
         return (
@@ -2020,6 +2071,9 @@ def build_candidate_manifest(
         "phase_evidence_strength", "dominant_event", "ATR_14",
         "wyckoff_phase_bucket", "dominant_trend", "ema_stack",
         "adx_14", "atr_percentile_rank",
+        "bar_data_source", "bar_data_asof", "bar_data_days_old",
+        "bar_evidence_state", "bar_evidence_reason", "is_stale",
+        *MACRO_QUANT_CSV_FIELDS,
     ]
 
     # ── Merge Vanguard (EOD-02) ───────────────────────────────────────────────
@@ -2148,7 +2202,9 @@ def build_candidate_manifest(
         # the trade side.  This flag is diagnostic and never blocks the route.
         _direction_conflict_flag = _has_direction_conflict_lineage(row)
         monetisation = _monetisation_fit(row, tier, contract_profile, direction_info)
-        eod_dropoff_reason = _eod_dropoff_reason(row, tier, eod_status, contract_profile)
+        eod_dropoff_reason = _eod_dropoff_reason(
+            row, tier, eod_status, contract_profile, eod_reason
+        )
         permission_fields = _candidate_permission_fields(row, eod_status)
         eod_failure_class = _eod_failure_class(row, eod_reason)
         thesis_state = _thesis_state_from_eod_status(eod_status)
@@ -2256,6 +2312,9 @@ def build_candidate_manifest(
             "atm_distance_sigma":   _first_optional_flt(row, "atm_distance_sigma"),
             "remaining_runway_pct": _first_optional_flt(row, "remaining_runway_pct"),
             "remaining_runway_state": _str(row, "remaining_runway_state"),
+            "invalidation_state": _first_str(
+                row, "invalidation_state", "ev3_invalidation_state"
+            ),
             "invalidation_spot": _first_optional_flt(row, "invalidation_spot"),
             "invalidation_source": _str(row, "invalidation_source"),
             "quote_as_of": _first_str(
@@ -2263,6 +2322,25 @@ def build_candidate_manifest(
             ),
             "option_chain_dataset_id": _str(row, "option_chain_dataset_id"),
             "selected_quote_dataset_id": _str(row, "selected_quote_dataset_id"),
+            "selected_quote_timestamp_utc": _first_str(
+                row, "selected_quote_timestamp_utc", "contract_quote_timestamp_utc",
+                "quote_timestamp_utc", "quote_as_of"
+            ),
+            "contract_bid_size": _first_optional_flt(
+                row, "contract_bid_size", "live_contract_bid_size", "bid_size"
+            ),
+            "contract_ask_size": _first_optional_flt(
+                row, "contract_ask_size", "live_contract_ask_size", "ask_size"
+            ),
+            "contract_quote_quality": _first_str(
+                row, "contract_quote_quality", "live_contract_quote_quality", "quote_quality"
+            ),
+            "bar_data_source": _str(row, "bar_data_source") or _str(row, "data_source"),
+            "bar_data_asof": _str(row, "bar_data_asof") or _str(row, "data_asof"),
+            "bar_data_days_old": row.get("bar_data_days_old", row.get("data_days_old", "")),
+            "bar_evidence_state": _str(row, "bar_evidence_state"),
+            "bar_evidence_reason": _str(row, "bar_evidence_reason"),
+            "is_stale": _str(row, "is_stale").lower() in {"1", "true", "yes", "y"},
             "remaining_runway_state": _str(row, "remaining_runway_state"),
             "maturation_state_1d":  _str(row, "maturation_state_1d"),
             "maturation_state_2d":  _str(row, "maturation_state_2d"),
@@ -2332,10 +2410,11 @@ def build_candidate_manifest(
             ),
             "eod_live_capital_permission": permission_fields["eod_live_capital_permission"],
             "live_capital_permission": permission_fields["live_capital_permission"],
-            "capital_permission": _str(row, "capital_permission"),
+            "capital_permission": permission_fields["capital_permission"],
             "eod_candidate_permission": permission_fields["eod_candidate_permission"],
-            "eod_candidate_authorized": row.get("eod_candidate_authorized", False),
-            "execution_authorized": row.get("execution_authorized", False),
+            "eod_candidate_authorized": permission_fields["eod_candidate_authorized"],
+            "execution_authorized": permission_fields["execution_authorized"],
+            "invalidation_permission_reason": permission_fields["invalidation_permission_reason"],
             "authority_source_stage": authority_source_stage,
             "authority_source_path": str(authority_source_path.resolve()),
             "candidate_size": permission_fields["candidate_size"],
@@ -2357,7 +2436,7 @@ def build_candidate_manifest(
                 or _str(row, "eil_v3_verdict")
             ),
             "eil_signal_verdict": _str(row, "eil_signal_verdict") or _str(row, "eil_v3_verdict"),
-            "capital_authorization_state": _str(row, "capital_authorization_state"),
+            "capital_authorization_state": permission_fields["capital_authorization_state"],
             "execution_authority_reason": _str(row, "execution_authority_reason"),
             "signal_authority_reason": _str(row, "signal_authority_reason"),
             "direction_arbitration_status": _str(row, "direction_arbitration_status"),

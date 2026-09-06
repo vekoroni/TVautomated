@@ -1,0 +1,243 @@
+M	.gitignore
+R100	actuarial_hash_diagnostic.py	_attic/actuarial_hash_diagnostic.py
+R100	add_state_hash.py	_attic/add_state_hash.py
+R100	audit_latest_run.py	_attic/audit_latest_run.py
+R100	bond_macro_intelligenceold0908.py	_attic/bond_macro_intelligenceold0908.py
+R100	build_macro_jsonold0908.py	_attic/build_macro_jsonold0908.py
+R100	check7_prompt.py	_attic/check7_prompt.py
+R100	check_pipeline.ps1	_attic/check_pipeline.ps1
+R100	cmd_lines_debug.txt	_attic/cmd_lines_debug.txt
+R100	comp9_spec.txt	_attic/comp9_spec.txt
+R100	docx_extracted.txt	_attic/docx_extracted.txt
+R100	final_verify_c9.py	_attic/final_verify_c9.py
+R100	hash_diag_20260421.json	_attic/hash_diag_20260421.json
+R100	hash_diag_fixed.json	_attic/hash_diag_fixed.json
+R100	lab_recon_selftest.py	_attic/lab_recon_selftest.py
+R100	macro_sector_propagation_test.py	_attic/macro_sector_propagation_test.py
+R100	menu_debug.txt	_attic/menu_debug.txt
+R100	polygon_options_validation.py	_attic/polygon_options_validation.py
+R100	resume_after_vanguard.py	_attic/resume_after_vanguard.py
+R100	run_daily_orchestration.sh	_attic/run_daily_orchestration.sh
+R100	section11_tests.py	_attic/section11_tests.py
+R100	section11_tests_v2.py	_attic/section11_tests_v2.py
+R100	setup_config.ps1	_attic/setup_config.ps1
+R100	stability_run_template.ps1	_attic/stability_run_template.ps1
+R100	stability_run_template0.ps1	_attic/stability_run_template0.ps1
+R100	step10_test.py	_attic/step10_test.py
+R100	step4_test.py	_attic/step4_test.py
+R100	step5_graceful_test.py	_attic/step5_graceful_test.py
+R100	step6_test.py	_attic/step6_test.py
+R100	step6_test_v2.py	_attic/step6_test_v2.py
+R100	step6_test_v3.py	_attic/step6_test_v3.py
+R100	step7_test.py	_attic/step7_test.py
+R100	step7_test_v2.py	_attic/step7_test_v2.py
+R100	step8_test.py	_attic/step8_test.py
+R100	step9_verify.py	_attic/step9_verify.py
+A	audit/ops/AVS-OPS-001/02_commit1.txt
+A	audit/ops/AVS-OPS-001/05_commit2.txt
+A	audit/ops/AVS-OPS-001/06_post/item1_compileall.txt
+A	audit/ops/AVS-OPS-001/06_post/item2_intelligence_lab.txt
+A	audit/ops/AVS-OPS-001/06_post/item2_intelligent_orchestrator.txt
+A	audit/ops/AVS-OPS-001/06_post/item2_morning_gate.txt
+A	audit/ops/AVS-OPS-001/06_post/item2_pipeline_interpreter.txt
+A	audit/ops/AVS-OPS-001/06_post/item3_cds_selftest.txt
+A	audit/ops/AVS-OPS-001/06_post/matrix_comparison.txt
+A	audit/ops/AVS-OPS-001/06_post/matrix_console.txt
+A	audit/ops/AVS-OPS-001/06_post/matrix_summary.json
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/qa__test_numeric_fail_closed.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/qa__test_p1_p10_adversarial_probes.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/qa__test_p4_nan_rr_bypass.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/qa__test_s9_live_provider_permission_promotion.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/rca__test_morning_gate_terminal_thesis_ordering.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_actuarial_cache_v7_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_actuarial_v7_cutover_paths.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_actuarial_v7_database_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_audit_remediation_guards.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_big_bang_phase_6_7.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_bond_macro_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_build_macro_json_market_data.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_canonical_data_system.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_cds2_historical_prices.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_cds4_option_chain_store.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_cycle2_governance.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_direction_geometry_semantic_repairs.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_direction_governance_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_directional_bias_fixes.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase0.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase1.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase2.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase3.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase4.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase5.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase6.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase7.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_dynamic_session_phase8.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_empirical_option_ev.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_eod_options_research_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_cache_promotion.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_calibration_report.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_monetisation_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_options_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_orchestrator_order.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_shadow_phase.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev3_stage0.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ev_engine_v3.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_execution_monetisability_gate.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_external_intel_review_lane.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_garch_regime_fix.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_governed_states.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_handoff_conflict_guard.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_handoff_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_handoff_contract_audit.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_intelligence_lab_strict_json.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_interpreter_macro_advisory_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_cache_signature.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_export_mapper_js.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_governed_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_journal_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_monetisation_gate.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_qa_audit_harness.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_ranking_basis_export.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_lab_strangle_direction.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_level1_20260512_regressions.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_long_option_policy.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_low_risk_pipeline_repairs.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_macro_enrichment_delta.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_macro_enrichment_discovery_options.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_macro_layer_fixes.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_macro_quant_packet.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_manual_ticker_upload.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_market_physics.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_gate_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_gate_bond_freshness.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_gate_cds_bootstrap.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_gate_contract_repair.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_handoff_finalizer.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_market_structure_restart.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_morning_thesis_validator.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_agent1_data_foundation.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_handoff_materializer.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_identity_preflight.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_interpreter_handoff.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_market_structure_identity.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_morning_capture.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_options_chain_v2_integration.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_orchestrator_run_meta.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_production_readiness.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_provider_fixtures.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_quote_and_size_lineage.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_runtime.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_msi_stage_worklist.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_normalise_macro_contract_scores.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_olm_execution_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_option_liquidity_lifecycle.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_crossed_quote_integration.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_greek_backfill_unit.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_liquidity_lifecycle.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_liquidity_morning_lab.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_research_contract.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_options_session_exception_quarantine.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_phantom_weekly_maintenance.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_adapter.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_e2e_orchestrator.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_evidence_package.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_lab_batch.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_lab_structured.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_package_publisher.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_package_shadow.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_phase3.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_phase4.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_phase5.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_production_deploy.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_automation_v2_report.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_attended_workflow.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_batch.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_crop.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_dpi.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_market_screen.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_navigation.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_noii_cross.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_ticker.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_ticker_batch.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_capture_v1_ticker_market_screen.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_lab_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pipeline_interpreter_trusted_source.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pre_evening_production_repairs.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_production_readiness_guardrails.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_pse_retired_authority.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_selected_contract_economics.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_trigger_layer_governance.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_vanguard_production_fixes.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_wall_break_missing_pcr.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_ws2_trigger_spine.xml
+A	audit/ops/AVS-OPS-001/06_post/pytest_xml/test_wyckoff_phase_validator.xml
+A	audit/ops/AVS-OPS-001/07_reachability_diff.txt
+A	audit/ops/AVS-OPS-001/AVS-OPS-001_REPORT.md
+M	audit/ops/AVS-OPS-001/scripts/build_deferred.py
+A	audit/ops/AVS-OPS-001/usage_graph_after_20260904.json
+M	audit/pipeline_map/AVS-SD-003_GAP_ELIMINATION_20260904.md
+M	avshunter_discovery_ULTIMATE.py
+M	avshunter_trade_journal.py
+M	canonical_data/__init__.py
+M	canonical_data/contracts.py
+M	canonical_data/decision_outcome_ledger.py
+M	canonical_data/intraday_bars.py
+M	canonical_data/lifecycle.py
+M	canonical_data/marketdata_stock_candles.py
+M	canonical_data/option_liquidity_lifecycle.py
+M	canonical_data/registry.py
+M	canonical_data/request_ledger.py
+M	canonical_data/run_plan.py
+M	contracts/direction_governance.py
+M	contracts/dynamic_session_authority_v1.json
+M	contracts/dynamic_session_contract.py
+M	contracts/lab_control.py
+M	contracts/long_option_policy.py
+M	contracts/market_profile_evidence.py
+M	contracts/options_liquidity_execution_guard.py
+M	contracts/options_liquidity_lifecycle.py
+M	eod_candidate_engine.py
+M	execution_gate.py
+M	execution_intelligence_runner.py
+M	handoff_contract_audit.py
+M	intelligence-lab/intelligence_lab.py
+M	intelligent_orchestrator.py
+M	market_structure/completed_profile.py
+M	market_structure/lifecycle.py
+M	market_structure/service.py
+M	morning_gate.py
+M	morning_handoff_finalizer.py
+M	orchestrator/dynamic_dispatcher.py
+M	orchestrator/dynamic_release.py
+M	orchestrator/dynamic_thesis.py
+M	orchestrator/dynamic_validation.py
+M	scripts/avshunter_options_intelligence.py
+M	scripts/backfill_timeseries_into_packages.py
+M	scripts/build_completed_market_profiles.py
+M	scripts/macro_quant_packet.py
+M	scripts/resolve_run_plan.py
+M	scripts/run_vanguard_from_packages.py
+M	tests/test_cds2_historical_prices.py
+M	tests/test_dynamic_session_phase0.py
+M	tests/test_dynamic_session_phase3.py
+M	tests/test_dynamic_session_phase4.py
+M	tests/test_dynamic_session_phase6.py
+M	tests/test_eod_options_research_handoff.py
+M	tests/test_ev3_options_handoff.py
+M	tests/test_execution_monetisability_gate.py
+M	tests/test_handoff_contract_audit.py
+M	tests/test_lab_governed_handoff.py
+M	tests/test_lab_monetisation_gate.py
+M	tests/test_msi_handoff_materializer.py
+M	tests/test_msi_quote_and_size_lineage.py
+M	tests/test_olm_execution_authority.py
+M	tests/test_options_liquidity_morning_lab.py
+M	tests/test_pse_retired_authority.py
+M	tests/test_ws2_trigger_spine.py
+M	vanguard/integration/orchestrator_adapter.py
+M	vanguard/layer1_auction/auction_synthesizer.py
+M	vanguard/layer2_statistical/edge_detector.py
+M	vanguard/schemas/input_schema.py

@@ -62,6 +62,20 @@ def test_resolver_rejects_mixed_completed_sessions(tmp_path: Path) -> None:
         resolve_accepted_thesis(output)
 
 
+def test_new_evening_thesis_does_not_parse_ambiguous_previous_book(
+    tmp_path: Path,
+) -> None:
+    output = _accepted_run(tmp_path, sessions=("2026-09-03", "2026-09-04"))
+    plan, thesis = resolve_dispatch_plan(
+        output_dir=output,
+        requested_action="BUILD_THESIS",
+        as_of_utc=datetime(2026, 9, 5, 12, tzinfo=timezone.utc),
+    )
+    assert thesis is None
+    assert plan.resolved_action == "BUILD_THESIS"
+    assert plan.last_completed_session == "2026-09-04"
+
+
 def test_resolver_ignores_unaccepted_run(tmp_path: Path) -> None:
     output = _accepted_run(tmp_path)
     meta = output / "runs" / "20260904_220000" / "run_meta.json"
@@ -170,9 +184,14 @@ def test_operator_summary_exposes_action_cost_and_authority(tmp_path: Path) -> N
     assert "ceiling=REVIEW_ONLY" in summary
 
 
-def test_completed_profile_stage_uses_frozen_thesis_flag() -> None:
-    source = (Path(__file__).parents[1] / "intelligent_orchestrator.py").read_text(
-        encoding="utf-8"
-    )
-    assert "AVSHUNTER_COMPLETED_PROFILE_ENABLED" not in source
-    assert 'COMPLETED_PROFILE_ENABLED = os.environ.get(\n        "AVSHUNTER_DYNAMIC_THESIS_ENABLED"' in source
+def test_completed_profile_stage_has_independent_runtime_flag(monkeypatch) -> None:
+    import intelligent_orchestrator as orchestrator
+
+    for value in ("1", "true", "on"):
+        monkeypatch.setenv("AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", value)
+        assert orchestrator.completed_profile_stage_enabled() is True
+    for value in ("0", "", "garbage"):
+        monkeypatch.setenv("AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", value)
+        assert orchestrator.completed_profile_stage_enabled() is False
+    monkeypatch.delenv("AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", raising=False)
+    assert orchestrator.completed_profile_stage_enabled() is True

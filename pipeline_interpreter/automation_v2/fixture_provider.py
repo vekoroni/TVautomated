@@ -1,4 +1,4 @@
-"""Offline provider backed by captured main/story response text."""
+﻿"""Offline provider backed by captured main/story response text."""
 
 from __future__ import annotations
 
@@ -28,3 +28,4 @@ class FixtureResponseProvider:
             raw_response=payload.raw_response,
             raw_story=payload.raw_story,
         )
+

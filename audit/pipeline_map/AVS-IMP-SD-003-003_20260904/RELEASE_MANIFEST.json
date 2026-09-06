@@ -1,0 +1,37 @@
+{
+  "release_id": "AVS-IMP-SD-003-003_20260904",
+  "design_id": "AVS-SD-003",
+  "implemented_at_local": "2026-09-04T11:43:15.5835199+01:00",
+  "baseline_tag": "pre-tidy-20260904",
+  "baseline_commit": "6e834b8",
+  "rollback_package": "backups/avs_sd_003_blockers_prechange_20260904_111946",
+  "activation_status": "OFFLINE_BLOCKERS_CLOSED_CONTROLLED_LIVE_CYCLE_REQUIRED",
+  "feature_flags": {
+    "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED": false
+  },
+  "test_results": {
+    "focused_blocker_suite": {"passed": 40, "failed": 0},
+    "production_regression": {"passed": 938, "skipped": 1, "subtests_passed": 43, "failed": 0},
+    "syntax_compile": "PASS",
+    "diff_check": "PASS",
+    "pre_fix_semantic_replay": {"run_id": "20260904_004338", "fail_records": 16, "expected": true}
+  },
+  "files": [
+    {"path": "contracts/dynamic_session_contract.py", "sha256": "5b3c2774db0806015c0b6d05ba556a1605621a3ee383cb6b4154c204dbf8efea"},
+    {"path": "avshunter_discovery_ULTIMATE.py", "sha256": "dc14c39af043b2cdeb283b71b788473d8f4c5705e1c0c4c8f1e58d299cb857d6"},
+    {"path": "scripts/macro_quant_packet.py", "sha256": "2f7772a078d80935d64de0d339e756193a0d6c255c2fe3019923486b771e9402"},
+    {"path": "eod_candidate_engine.py", "sha256": "bff9361520a7d1f6fddbf45325d6987da8c681621b6e5471f296fd7eac591306"},
+    {"path": "contracts/lab_control.py", "sha256": "289e54a792b15082a2b5c148e6ee922b43c8735ffb191068cef44a637c2b7c3b"},
+    {"path": "handoff_contract_audit.py", "sha256": "aaee812a39cc262290ce94b462b1463b471ad933cbea080c256a93b050c7e533"},
+    {"path": "tests/test_avs_sd003_blocker_closure.py", "sha256": "e1b31e2f1e270dd205f8f91399c90eecb266a57f0f2dccf8bd33920764aaa844"},
+    {"path": "tests/test_eod_options_research_handoff.py", "sha256": "dc975af6c62351fdb690f0163a3ae1d39c4bd1d44bc6f669bc7d631f7259842c"},
+    {"path": "tests/test_handoff_contract_audit.py", "sha256": "a6bde8ff7e0e7dceda8f6a89bac413d5cf824514369c2e6a5e1bf69a3b450de8"}
+  ],
+  "open_acceptance_gates": [
+    "representative acquisition-only MarketData candle probe",
+    "cold completed-profile Evening cycle",
+    "same-session warm replay with zero unnecessary physical provider requests",
+    "Morning Gate completed-to-developing profile continuity validation",
+    "post-cycle handoff and UAT audit with zero FAIL records"
+  ]
+}

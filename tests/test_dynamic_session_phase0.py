@@ -54,7 +54,7 @@ class DynamicSessionContractTests(unittest.TestCase):
     def test_all_new_features_are_disabled_by_default(self) -> None:
         flags = DynamicSessionFeatureFlags.from_environment({})
         self.assertFalse(any(getattr(flags, field) for field in flags.__slots__))
-        self.assertEqual(len(FEATURE_FLAG_ENV_VARS), 8)
+        self.assertEqual(len(FEATURE_FLAG_ENV_VARS), 9)
 
     def test_feature_flags_are_independently_reversible(self) -> None:
         for environment_name in FEATURE_FLAG_ENV_VARS:

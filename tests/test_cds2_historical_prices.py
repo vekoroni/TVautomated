@@ -226,11 +226,13 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
                 start="2018-01-01",
                 allow_polygon=True,
                 api_key="test-key",
+                completed_session=fresh_end,
             )
 
         self.assertTrue(success)
         self.assertEqual(reason, "POLYGON")
         self.assertEqual(fetch.call_args.kwargs["start"], fetched_start.isoformat())
+        self.assertEqual(fetch.call_args.kwargs["end"], fresh_end.isoformat())
         repaired = json.loads(package_path.read_text(encoding="utf-8"))
         self.assertEqual(repaired["bar_data_as_of"], fresh_end.isoformat())
         self.assertGreaterEqual(len(repaired["ohlcv_daily"]), 120)
@@ -266,16 +268,76 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
             success, reason = backfill.backfill_package(
                 package_path, min_bars=120, start="2021-01-01",
                 allow_polygon=True, api_key="test-key",
+                completed_session=date.today() - timedelta(days=1),
             )
 
         self.assertTrue(success)
         self.assertEqual(reason, "POLYGON")
         self.assertEqual(fetch.call_args.kwargs["start"], "2021-01-01")
+        self.assertEqual(
+            fetch.call_args.kwargs["end"],
+            (date.today() - timedelta(days=1)).isoformat(),
+        )
         repaired = json.loads(package_path.read_text(encoding="utf-8"))
         self.assertGreaterEqual(len(repaired["ohlcv_daily"]), 120)
         self.assertEqual(
             repaired["data_contract"]["canonical_freshness_status"],
             "REFRESHED_FROM_PROVIDER_FULL_HISTORY",
+        )
+
+    def test_provider_cannot_persist_bar_after_authorised_completed_session(self) -> None:
+        packages = self.temp_path / "packages"
+        packages.mkdir()
+        package_path = packages / "BP.package.json"
+        package_path.write_text(
+            json.dumps({"ticker": "BP", "run_id": "SESSION_BOUNDARY_TEST"}),
+            encoding="utf-8",
+        )
+        required = date.today() - timedelta(days=1)
+        fetched = recent_bars(130).to_dict(orient="records")
+        fetched.append({
+            "date": date.today().isoformat(),
+            "open": 999.0,
+            "high": 999.0,
+            "low": 999.0,
+            "close": 999.0,
+            "volume": 1.0,
+        })
+        for row in fetched:
+            row["date"] = str(row["date"])[:10]
+        environment = {
+            "AVSHUNTER_CANONICAL_DATA_ENABLED": "1",
+            "AVSHUNTER_CANONICAL_WRITE_THROUGH": "1",
+            "AVSHUNTER_CDS2_OHLCV_MODE": "ACTIVE",
+            "AVSHUNTER_HISTORICAL_PRICE_DB": str(self.path),
+        }
+
+        with patch.dict(os.environ, environment, clear=False), patch.object(
+            backfill, "polygon_fetch_ohlcv_daily", return_value=fetched,
+        ) as fetch:
+            success, reason = backfill.backfill_package(
+                package_path,
+                min_bars=120,
+                start="2021-01-01",
+                allow_polygon=True,
+                api_key="test-key",
+                completed_session=required,
+            )
+
+        self.assertTrue(success)
+        self.assertEqual(reason, "POLYGON")
+        self.assertEqual(fetch.call_args.kwargs["end"], required.isoformat())
+        stored = self.database.read("BP", completed_only=False)
+        self.assertEqual(stored["date"].max().date(), required)
+        repaired = json.loads(package_path.read_text(encoding="utf-8"))
+        self.assertEqual(repaired["bar_data_as_of"], required.isoformat())
+        self.assertEqual(
+            repaired["data_contract"]["evidence_session_date"],
+            required.isoformat(),
+        )
+        self.assertEqual(
+            repaired["data_contract"]["session_authority_version"],
+            "SESSION_AUTHORITY_V1",
         )
 
     def test_shadow_observation_never_replaces_legacy_frame(self) -> None:

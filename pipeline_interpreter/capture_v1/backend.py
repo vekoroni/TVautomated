@@ -1,4 +1,4 @@
-"""Screenshot backend interface and Windows shadow implementation."""
+﻿"""Screenshot backend interface and Windows shadow implementation."""
 
 from __future__ import annotations
 
@@ -105,3 +105,4 @@ class WindowsShadowBackend:
             gdi32.DeleteDC(memory_dc)
             user32.ReleaseDC(window.handle, window_dc)
         return "PRINTWINDOW_HWND"
+

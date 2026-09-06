@@ -1,4 +1,4 @@
-"""Provider-neutral MSI-7b screenshot extraction boundary.
+﻿"""Provider-neutral MSI-7b screenshot extraction boundary.
 
 No model implementation is activated here.  The contract permits only true
 depth/order-book, NOII and broker-only tape evidence and requires explicit
@@ -81,3 +81,4 @@ __all__ = [
     "CaptureTimeProvenance", "ScreenType", "ScreenshotExtractionAdapter",
     "ScreenshotExtractionRequest", "ScreenshotExtractionResult",
 ]
+

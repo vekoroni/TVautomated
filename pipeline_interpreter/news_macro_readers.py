@@ -1,17 +1,17 @@
-"""
+﻿"""
 news_macro_readers.py
-Macro, enrichment delta, and news terminal reader functions — appended to engine.
+Macro, enrichment delta, and news terminal reader functions â€” appended to engine.
 
 Three sources:
-  1. governed macro_quant_packet reference — advisory context only
-  2. avshunter_macro_enrichment_delta.json — session narrative overlay and theme deltas
-  3. News terminal output — CSV rows or pasted plain text brief
+  1. governed macro_quant_packet reference â€” advisory context only
+  2. avshunter_macro_enrichment_delta.json â€” session narrative overlay and theme deltas
+  3. News terminal output â€” CSV rows or pasted plain text brief
 """
 import json, csv, os
 from pathlib import Path
 from datetime import datetime
 
-# ── Standard paths ────────────────────────────────────────────────────────────
+# â”€â”€ Standard paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _DROPBOX_MACRO   = Path(r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\dropbox\macro")
 _MACRO_LATEST    = _DROPBOX_MACRO / "macro_intelligence_latest.json"
 _ENRICHMENT_DELTA = _DROPBOX_MACRO / "avshunter_macro_enrichment_delta.json"
@@ -20,7 +20,7 @@ _ENRICHMENT_DELTA = _DROPBOX_MACRO / "avshunter_macro_enrichment_delta.json"
 _BRIEF_PASTE_FILE = Path(__file__).resolve().parent / "MA_Inputs" / "news_terminal" / "newsroom_brief_latest.txt"
 
 
-# ── 1. Main macro contract ────────────────────────────────────────────────────
+# â”€â”€ 1. Main macro contract â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def read_macro_context(path: str = None, ma_macro_dir: Path = None) -> str:
     """
     Read macro_intelligence_latest.json and return a compact summary string
@@ -29,7 +29,7 @@ def read_macro_context(path: str = None, ma_macro_dir: Path = None) -> str:
     Priority order:
       1. Explicit path argument
       2. Latest file matching 'macro_intelligence_latest' in MA_Inputs/macro/
-      3. Standard dropbox path (hardcoded fallback — always present)
+      3. Standard dropbox path (hardcoded fallback â€” always present)
     """
     resolved = _resolve_path(
         explicit=path,
@@ -43,7 +43,7 @@ def read_macro_context(path: str = None, ma_macro_dir: Path = None) -> str:
 
     try:
         p = Path(resolved)
-        print(f"  ✅ Macro context: {p.name}")
+        print(f"  âœ… Macro context: {p.name}")
         if p.suffix.lower() == ".json":
             data = json.loads(p.read_text(encoding="utf-8"))
             # Actual macro_contract_v1_0 field names used by the pipeline.
@@ -96,11 +96,11 @@ def read_macro_context(path: str = None, ma_macro_dir: Path = None) -> str:
             return "\n".join(lines)
         return f"MACRO CONTEXT:\n{p.read_text(encoding='utf-8')[:2000]}"
     except Exception as e:
-        print(f"  ⚠ Macro read error: {e}")
+        print(f"  âš  Macro read error: {e}")
         return ""
 
 
-# ── 2. Enrichment delta ───────────────────────────────────────────────────────
+# â”€â”€ 2. Enrichment delta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
     """
     Read avshunter_macro_enrichment_delta.json and return a compact summary.
@@ -111,7 +111,7 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
       - macro_json_merge_block: session-specific field overrides
       - macro_exposure_index_build: ticker-level exposure index
 
-    This is the newsroom session layer — it sits ON TOP of the main macro
+    This is the newsroom session layer â€” it sits ON TOP of the main macro
     contract and provides the intraday/session-specific colour.
     """
     resolved = _resolve_path(
@@ -126,7 +126,7 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
 
     try:
         p = Path(resolved)
-        print(f"  ✅ Enrichment delta: {p.name}")
+        print(f"  âœ… Enrichment delta: {p.name}")
         data = json.loads(p.read_text(encoding="utf-8"))
 
         lines = ["MACRO ENRICHMENT DELTA (session overlay):"]
@@ -146,7 +146,7 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
                 alignment = " | ".join(str(a)[:100] for a in alignment[:3])
             lines.append(f"base_macro_alignment: {str(alignment)[:300]}")
 
-        # Macro merge block — session field overrides
+        # Macro merge block â€” session field overrides
         mb = data.get("macro_json_merge_block", {})
         merge_keys = [
             "asia_risk_tone", "global_us_equity_bias", "global_us_options_bias",
@@ -160,7 +160,7 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
                     val = json.dumps(val, separators=(",", ":"))
                 lines.append(f"{k}: {str(val)[:200]}")
 
-        # Theme deltas — the active session themes
+        # Theme deltas â€” the active session themes
         themes = data.get("theme_deltas", [])
         if themes:
             lines.append(f"\nACTIVE SESSION THEMES ({len(themes)}):")
@@ -188,18 +188,18 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
         return "\n".join(lines)
 
     except Exception as e:
-        print(f"  ⚠ Enrichment delta read error: {e}")
+        print(f"  âš  Enrichment delta read error: {e}")
         return ""
 
 
-# ── 3. News terminal output ───────────────────────────────────────────────────
+# â”€â”€ 3. News terminal output â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def read_news_terminal_output(
     path: str = None,
     ticker: str = None,
     ma_news_dir: Path = None,
 ) -> str:
     """
-    Read news terminal output — accepts three formats:
+    Read news terminal output â€” accepts three formats:
       1. CSV file (standard news terminal export)
       2. Plain text brief (pasted via /brief command, saved as .txt)
       3. JSON narrative file
@@ -208,13 +208,13 @@ def read_news_terminal_output(
     The plain text brief is always returned in full (it already contains
     the full session narrative).
     """
-    # Check for pasted brief first — most recent and most complete
+    # Check for pasted brief first â€” most recent and most complete
     if _BRIEF_PASTE_FILE.exists():
         try:
             brief_text = _BRIEF_PASTE_FILE.read_text(encoding="utf-8").strip()
             if brief_text:
-                print(f"  ✅ Newsroom brief (pasted): {_BRIEF_PASTE_FILE.name}")
-                # Filter for ticker if requested — scan for ticker mentions
+                print(f"  âœ… Newsroom brief (pasted): {_BRIEF_PASTE_FILE.name}")
+                # Filter for ticker if requested â€” scan for ticker mentions
                 if ticker:
                     ticker_upper = ticker.upper()
                     lines = brief_text.split("\n")
@@ -227,11 +227,11 @@ def read_news_terminal_output(
                         )
                     ]
                     if relevant:
-                        header = f"NEWS BRIEF — {ticker} MENTIONS:\n"
+                        header = f"NEWS BRIEF â€” {ticker} MENTIONS:\n"
                         return header + "\n".join(relevant[:20])
                 return f"NEWSROOM BRIEF (session):\n{brief_text[:3000]}"
         except Exception as e:
-            print(f"  ⚠ Brief paste read: {e}")
+            print(f"  âš  Brief paste read: {e}")
 
     resolved = _resolve_path(
         explicit=path,
@@ -244,7 +244,7 @@ def read_news_terminal_output(
 
     try:
         p = Path(resolved)
-        print(f"  ✅ News Terminal: {p.name}")
+        print(f"  âœ… News Terminal: {p.name}")
 
         if p.suffix.lower() == ".csv":
             with open(p, "r", encoding="utf-8-sig") as f:
@@ -260,7 +260,7 @@ def read_news_terminal_output(
                 ]
                 rows = filtered if filtered else rows[:5]
                 if filtered:
-                    print(f"  ✅ News rows for {ticker}: {len(filtered)}")
+                    print(f"  âœ… News rows for {ticker}: {len(filtered)}")
 
             key_cols = [
                 "ticker", "narrative", "event_category", "event_status",
@@ -284,11 +284,11 @@ def read_news_terminal_output(
         return f"NEWS TERMINAL:\n{p.read_text(encoding='utf-8')[:2000]}"
 
     except Exception as e:
-        print(f"  ⚠ News terminal read error: {e}")
+        print(f"  âš  News terminal read error: {e}")
         return ""
 
 
-# ── 4. Combined context builder ───────────────────────────────────────────────
+# â”€â”€ 4. Combined context builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def read_all_news_macro_context(
     ticker: str = None,
     ma_macro_dir: Path = None,
@@ -314,12 +314,12 @@ def read_all_news_macro_context(
         parts.append(news)
 
     if not parts:
-        return "MACRO_DATA_MISSING | NEWS_DATA_MISSING — no governed context found."
+        return "MACRO_DATA_MISSING | NEWS_DATA_MISSING â€” no governed context found."
 
     return "\n\n".join(parts)
 
 
-# ── Internal helper ───────────────────────────────────────────────────────────
+# â”€â”€ Internal helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _resolve_path(
     explicit: str,
     search_dir: Path,
@@ -327,7 +327,7 @@ def _resolve_path(
     hardcoded: Path,
     filename_hint: str = None,
 ) -> str:
-    """Resolve a file path from explicit arg → search_dir → hardcoded fallback."""
+    """Resolve a file path from explicit arg â†’ search_dir â†’ hardcoded fallback."""
     if explicit and Path(explicit).exists():
         return explicit
 
@@ -346,7 +346,7 @@ def _resolve_path(
     return None
 
 
-# ── Brief paste writer — called by /brief command ─────────────────────────────
+# â”€â”€ Brief paste writer â€” called by /brief command â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def save_pasted_brief(text: str) -> Path:
     """
     Save a pasted newsroom brief to the standard location so the interpreter
@@ -356,5 +356,6 @@ def save_pasted_brief(text: str) -> Path:
     # Prepend timestamp so the interpreter knows when it was pasted
     stamped = f"[Pasted: {datetime.now().strftime('%Y-%m-%d %H:%M')}]\n\n{text.strip()}"
     _BRIEF_PASTE_FILE.write_text(stamped, encoding="utf-8")
-    print(f"  ✅ Brief saved → {_BRIEF_PASTE_FILE}")
+    print(f"  âœ… Brief saved â†’ {_BRIEF_PASTE_FILE}")
     return _BRIEF_PASTE_FILE
+

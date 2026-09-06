@@ -1,5 +1,5 @@
-"""
-Alternative Contract Selector — AVSHUNTER Pipeline Interpreter
+﻿"""
+Alternative Contract Selector â€” AVSHUNTER Pipeline Interpreter
 When the conflict resolver detects misdiagnosis, selects an alternative
 contract in the dominant direction and fetches its live Greeks.
 """
@@ -153,7 +153,7 @@ def select_alternative_contract(
     occ_symbol = _build_occ_symbol(ticker, expiry_date, dominant_direction, strike)
 
     selection_reason = (
-        f"Pipeline misdiagnosis detected — switching from "
+        f"Pipeline misdiagnosis detected â€” switching from "
         f"{row.get('direction','?')} to {dominant_direction}. "
         f"Strike {strike:.2f} selected from live_price={live_price:.2f}. "
         f"Expiry {expiry_date} via {expiry_source}."
@@ -207,3 +207,4 @@ def select_alternative_contract(
         "alt_contract_status":  status,
         "alt_selection_reason": selection_reason,
     }
+

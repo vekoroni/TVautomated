@@ -1,4 +1,4 @@
-"""Session-aware, underlying-first validation of a frozen thesis.
+﻿"""Session-aware, underlying-first validation of a frozen thesis.
 
 The service owns validation ordering and immutable evidence identity.  It does
 not select direction or contracts and delegates final action/capital to the
@@ -9,55 +9,23 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from enum import Enum
 import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
-from canonical_data.run_plan import RequestedAction, RunPlan, validation_event_identity
+from domain.run_planning import RequestedAction, RunPlan, validation_event_identity
+from domain.market_structure_evidence import profile_evidence_state_for_session
+from domain.execution_authority import assert_no_unauthorised_capital
+from domain.thesis_direction import (
+    DirectionInvariantError,
+    FrozenThesis,
+    ValidationTransition,
+    assert_direction_continuity,
+    evaluate_validation_transition,
+)
 from canonical_data.session_clock import SessionState
-
-
-class ValidationTransition(str, Enum):
-    THESIS_CONFIRMED = "THESIS_CONFIRMED"
-    PENDING_TRIGGER = "PENDING_TRIGGER"
-    ENTRY_RUNWAY_EXHAUSTED = "ENTRY_RUNWAY_EXHAUSTED"
-    TARGET_ALREADY_REACHED = "TARGET_ALREADY_REACHED"
-    THESIS_INVALIDATED = "THESIS_INVALIDATED"
-    DATA_DEFERRED = "DATA_DEFERRED"
-    NOT_EVALUATED_NON_DIRECTIONAL = "NOT_EVALUATED_NON_DIRECTIONAL"
-
-
-@dataclass(frozen=True, slots=True)
-class FrozenThesis:
-    thesis_id: str
-    ticker: str
-    direction: str
-    completed_session: str
-    completed_close: float
-    target: float
-    invalidation: float
-    selected_contract: str
-    trigger: float | None = None
-    maximum_entry: float | None = None
-    completed_profile_evidence_id: str | None = None
-
-    def __post_init__(self) -> None:
-        direction = self.direction.strip().upper()
-        if direction not in {"CALL", "PUT", "NON_DIRECTIONAL"}:
-            raise ValueError("frozen thesis direction must be CALL, PUT or NON_DIRECTIONAL")
-        for name in ("completed_close", "target", "invalidation"):
-            if float(getattr(self, name)) <= 0:
-                raise ValueError(f"{name} must be positive")
-        if direction == "CALL" and not self.invalidation < self.completed_close < self.target:
-            raise ValueError("CALL thesis geometry must be invalidation < close < target")
-        if direction == "PUT" and not self.target < self.completed_close < self.invalidation:
-            raise ValueError("PUT thesis geometry must be target < close < invalidation")
-        object.__setattr__(self, "ticker", self.ticker.strip().upper())
-        object.__setattr__(self, "direction", direction)
-
 
 @dataclass(frozen=True, slots=True)
 class UnderlyingObservation:
@@ -128,39 +96,8 @@ ProfileResolver = Callable[[FrozenThesis, UnderlyingObservation, RunPlan, str], 
 ExecutionGate = Callable[[FrozenThesis, UnderlyingObservation | None, Mapping[str, Any] | None, str, RunPlan], Mapping[str, Any]]
 
 
-def _transition(thesis: FrozenThesis, price: float) -> tuple[ValidationTransition, str]:
-    if thesis.direction == "NON_DIRECTIONAL":
-        return ValidationTransition.NOT_EVALUATED_NON_DIRECTIONAL, "Directional validation is not applicable"
-    if thesis.direction == "CALL":
-        if price <= thesis.invalidation:
-            return ValidationTransition.THESIS_INVALIDATED, "CALL invalidation breached"
-        if price >= thesis.target:
-            return ValidationTransition.TARGET_ALREADY_REACHED, "CALL target already reached"
-        if thesis.maximum_entry is not None and price > thesis.maximum_entry:
-            return ValidationTransition.ENTRY_RUNWAY_EXHAUSTED, "CALL maximum entry exceeded"
-        if thesis.trigger is not None and price < thesis.trigger:
-            return ValidationTransition.PENDING_TRIGGER, "CALL trigger not reached"
-    else:
-        if price >= thesis.invalidation:
-            return ValidationTransition.THESIS_INVALIDATED, "PUT invalidation breached"
-        if price <= thesis.target:
-            return ValidationTransition.TARGET_ALREADY_REACHED, "PUT target already reached"
-        if thesis.maximum_entry is not None and price < thesis.maximum_entry:
-            return ValidationTransition.ENTRY_RUNWAY_EXHAUSTED, "PUT maximum entry exceeded"
-        if thesis.trigger is not None and price > thesis.trigger:
-            return ValidationTransition.PENDING_TRIGGER, "PUT trigger not reached"
-    return ValidationTransition.THESIS_CONFIRMED, "Frozen thesis remains structurally valid"
-
-
 def _profile_state(session_state: str) -> str:
-    state = SessionState(session_state)
-    if state is SessionState.PREMARKET:
-        return "PENDING_MARKET_OPEN"
-    if state is SessionState.REGULAR:
-        return "DEVELOPING_SESSION"
-    if state is SessionState.AFTER_HOURS:
-        return "PARTIAL_SESSION"
-    return "NOT_EVALUATED"
+    return profile_evidence_state_for_session(SessionState(session_state)).value
 
 
 def validate_thesis(
@@ -184,6 +121,7 @@ def validate_thesis(
     except Exception as error:
         transition = ValidationTransition.DATA_DEFERRED
         gate = execution_gate(thesis, None, None, transition.value, plan)
+        assert_no_unauthorised_capital(gate)
         return ThesisValidationEvent(
             validation_event_id=hashlib.sha256(
                 f"{thesis.thesis_id}|{plan.invocation_id}|DATA_DEFERRED".encode()
@@ -203,7 +141,7 @@ def validate_thesis(
     if underlying.ticker != thesis.ticker:
         raise ValueError("underlying observation ticker does not match thesis")
 
-    transition, reason = _transition(thesis, float(underlying.price))
+    transition, reason = evaluate_validation_transition(thesis, float(underlying.price))
     gap_pct = (float(underlying.price) / float(thesis.completed_close) - 1.0) * 100.0
     quote: Mapping[str, Any] | None = None
     profile: Mapping[str, Any] | None = None
@@ -216,6 +154,9 @@ def validate_thesis(
     if not terminal:
         try:
             quote = resolve_option_quote(thesis, underlying, plan)
+            assert_direction_continuity(thesis.direction, quote, stage="OPTION_QUOTE")
+        except DirectionInvariantError:
+            raise
         except Exception as error:
             data_statuses.append(f"OPTION_QUOTE_UNAVAILABLE:{type(error).__name__}")
             reason += f"; option quote unavailable ({type(error).__name__})"
@@ -228,6 +169,8 @@ def validate_thesis(
                 profile_state = "UNAVAILABLE_PROVIDER"
 
     gate = execution_gate(thesis, underlying, quote, transition.value, plan)
+    assert_no_unauthorised_capital(gate)
+    assert_direction_continuity(thesis.direction, gate, stage="EXECUTION_GATE")
     quote_id = str((quote or {}).get("observation_id") or "") or None
     profile_id = str((profile or {}).get("evidence_id") or "") or None
     event_id = validation_event_identity(
@@ -336,3 +279,245 @@ def persist_validation_event(
         )
         DecisionOutcomeLedger(ledger_path).append(ledger_event)
     return path
+
+
+def _row_text(row: Mapping[str, Any], *names: str) -> str:
+    for name in names:
+        value = row.get(name)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text and text.upper() not in {"NAN", "NONE", "NULL", "N/A"}:
+            return text
+    return ""
+
+
+def _row_float(row: Mapping[str, Any], *names: str) -> float | None:
+    for name in names:
+        value = row.get(name)
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            continue
+        if parsed == parsed:
+            return parsed
+    return None
+
+
+def _row_bool(row: Mapping[str, Any], *names: str) -> bool:
+    text = _row_text(row, *names).upper()
+    return text in {"1", "TRUE", "YES", "Y", "ON"}
+
+
+def _utc_instant(value: str) -> datetime:
+    parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("Morning validation evidence cutoff must be timezone-aware")
+    return parsed.astimezone(timezone.utc).replace(microsecond=0)
+
+
+def validation_event_from_morning_row(
+    row: Mapping[str, Any],
+    *,
+    run_id: str,
+    fallback_evidence_cutoff_utc: str,
+) -> ThesisValidationEvent:
+    """Serialise the governed Morning result without re-fetching or re-deciding.
+
+    Morning Gate already owns current-price acquisition, lifecycle evaluation
+    and Execution Gate invocation.  This adapter only expresses that completed
+    result through the dynamic validation contract consumed by the Lab,
+    Interpreter and Decision/Outcome Ledger.
+    """
+    ticker = _row_text(row, "ticker").upper()
+    thesis_id = _row_text(row, "thesis_id")
+    direction = _row_text(
+        row, "governed_direction", "final_direction", "canonical_direction", "direction"
+    ).upper()
+    selected_contract = _row_text(
+        row,
+        "selected_contract_symbol",
+        "morning_selected_contract_symbol",
+        "current_contract_symbol",
+        "contract_symbol",
+        "recommended_contract",
+    ).upper().removeprefix("O:")
+    if not ticker or not thesis_id:
+        raise ValueError("Morning validation row requires ticker and thesis_id")
+
+    cutoff_text = _row_text(
+        row,
+        "current_quote_timestamp_utc",
+        "selected_quote_timestamp_utc",
+        "morning_quote_timestamp_utc",
+        "live_contract_quote_timestamp",
+        "live_contract_provider_updated",
+        "underlying_quote_updated",
+    ) or fallback_evidence_cutoff_utc
+    cutoff = _utc_instant(cutoff_text)
+    cutoff_text = cutoff.isoformat().replace("+00:00", "Z")
+
+    current_price = _row_float(row, "live_price", "current_price", "morning_price")
+    if current_price is not None and current_price <= 0:
+        current_price = None
+    completed_close = _row_float(
+        row, "completed_close", "eod_close", "signal_price", "underlying_price"
+    )
+    gap_pct = (
+        round((current_price / completed_close - 1.0) * 100.0, 6)
+        if current_price is not None and completed_close is not None and completed_close > 0
+        else None
+    )
+
+    morning_state = _row_text(row, "morning_transition_state", "thesis_state").upper()
+    if direction not in {"CALL", "PUT"}:
+        transition = ValidationTransition.NOT_EVALUATED_NON_DIRECTIONAL.value
+    elif current_price is None:
+        transition = ValidationTransition.DATA_DEFERRED.value
+    elif morning_state == "THESIS_INVALIDATED":
+        transition = ValidationTransition.THESIS_INVALIDATED.value
+    elif morning_state == "MOVE_ALREADY_REALIZED":
+        transition = ValidationTransition.ENTRY_RUNWAY_EXHAUSTED.value
+    elif morning_state in {
+        "CONTRACT_REPRICE_REQUIRED",
+        "LIQUIDITY_STILL_PENDING",
+        "WAIT_FOR_PULLBACK",
+        "GAP_CONFIRMATION_EXTENDED",
+        "EOD_PENDING_MORNING_REQUOTE",
+    }:
+        transition = ValidationTransition.PENDING_TRIGGER.value
+    elif morning_state in {
+        "EXECUTABLE_NOW",
+        "GAP_CONFIRMATION_WITH_RUNWAY",
+        "THESIS_CONFIRMED",
+        "ACTIVE",
+    }:
+        transition = ValidationTransition.THESIS_CONFIRMED.value
+    else:
+        transition = ValidationTransition.DATA_DEFERRED.value
+
+    underlying_source_id = _row_text(
+        row,
+        "underlying_observation_id",
+        "underlying_quote_observation_id",
+        "underlying_quote_dataset_id",
+        "underlying_dataset_id",
+    )
+    if not underlying_source_id:
+        underlying_source_id = "morning_underlying_" + hashlib.sha256(
+            f"{ticker}|{cutoff_text}|{current_price}".encode("utf-8")
+        ).hexdigest()[:24]
+    quote_id = _row_text(
+        row,
+        "selected_quote_snapshot_id",
+        "current_quote_snapshot_id",
+        "morning_quote_snapshot_id",
+        "selected_quote_dataset_id",
+        "current_quote_dataset_id",
+        "msi_exact_quote_dataset_id",
+    ) or None
+    profile_id = _row_text(
+        row, "developing_profile_evidence_id", "ms_profile_evidence_id"
+    ) or None
+    profile_state = _row_text(
+        row, "ms_profile_evidence_state", "profile_evidence_state"
+    ).upper() or "NOT_REQUESTED"
+    action = _row_text(row, "final_action", "morning_entry_action", "verdict").upper()
+    data_status = (
+        "UNDERLYING_UNAVAILABLE"
+        if current_price is None
+        else _row_text(row, "morning_data_status", "data_status").upper() or "COMPLETE"
+    )
+    event_id = validation_event_identity(
+        thesis_id=thesis_id,
+        evidence_cutoff_utc=cutoff,
+        underlying_observation_id=underlying_source_id,
+        quote_observation_id=quote_id,
+        developing_profile_evidence_id=profile_id,
+    )
+    return ThesisValidationEvent(
+        validation_event_id=event_id,
+        thesis_id=thesis_id,
+        ticker=ticker,
+        invocation_id=str(run_id),
+        evidence_cutoff_utc=cutoff_text,
+        transition=transition,
+        current_price=current_price,
+        gap_pct=gap_pct,
+        underlying_observation_id=underlying_source_id,
+        option_quote_observation_id=quote_id,
+        developing_profile_evidence_id=profile_id,
+        profile_evidence_state=profile_state,
+        execution_gate_result={
+            "action": action,
+            "final_action": action,
+            "capital_permission": _row_text(
+                row, "final_capital_permission", "capital_permission", "execution_permission"
+            ).upper(),
+            "morning_execution_permission": _row_text(
+                row, "morning_execution_permission"
+            ).upper(),
+            "executable_now": _row_bool(row, "executable_now"),
+            "morning_transition_state": morning_state,
+            "authority": "EXECUTION_GATE",
+        },
+        reason=(
+            _row_text(row, "liquidity_lifecycle_reason", "morning_reason", "flag_reason")
+            or f"MORNING_GATE_RECORDED:{morning_state or 'UNCLASSIFIED'}"
+        ),
+        direction=direction,
+        selected_contract=selected_contract,
+        data_status=data_status,
+    )
+
+
+def persist_morning_validation_events(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    run_id: str,
+    destination_dir: Path,
+    fallback_evidence_cutoff_utc: str,
+) -> dict[str, Any]:
+    """Complete missing Morning validation lineage using immutable event files."""
+    destination = Path(destination_dir)
+    latest_existing: dict[str, str] = {}
+    if destination.is_dir():
+        for path in sorted(destination.glob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+            thesis_id = _row_text(payload, "thesis_id")
+            cutoff = _row_text(payload, "evidence_cutoff_utc")
+            if thesis_id and cutoff > latest_existing.get(thesis_id, ""):
+                latest_existing[thesis_id] = cutoff
+
+    written = reused = skipped = 0
+    event_ids: list[str] = []
+    for row in rows:
+        if not _row_text(row, "ticker") or not _row_text(row, "thesis_id"):
+            skipped += 1
+            continue
+        event = validation_event_from_morning_row(
+            row,
+            run_id=run_id,
+            fallback_evidence_cutoff_utc=fallback_evidence_cutoff_utc,
+        )
+        if latest_existing.get(event.thesis_id, "") >= event.evidence_cutoff_utc:
+            reused += 1
+            continue
+        path = destination / f"{event.validation_event_id}.json"
+        existed = path.is_file()
+        persist_validation_event(event, path)
+        written += 0 if existed else 1
+        reused += 1 if existed else 0
+        latest_existing[event.thesis_id] = event.evidence_cutoff_utc
+        event_ids.append(event.validation_event_id)
+    return {
+        "status": "PASS",
+        "authority": "VALIDATION_ONLY",
+        "input_rows": written + reused + skipped,
+        "written": written,
+        "reused": reused,
+        "skipped_missing_governed_identity": skipped,
+        "event_ids": event_ids,
+        "destination": str(destination),
+    }
+

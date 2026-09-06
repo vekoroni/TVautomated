@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Macro Intelligence Loader v1.1
 ========================================
 
@@ -28,7 +28,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ── Valid values for each field ───────────────────────────────────────────────
+# â”€â”€ Valid values for each field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 VALID_VALUES = {
     # risk_on_switch: AVSHUNTER_GPT produces nuanced values, not just ON/OFF
@@ -130,7 +130,7 @@ class MacroLoader:
         json_path = self._find_latest_json()
 
         if json_path is None:
-            print(f"  [Macro] ❌ No macro_intelligence_*.json found in {self.folder}")
+            print(f"  [Macro] âŒ No macro_intelligence_*.json found in {self.folder}")
             print(f"  [Macro]    Copy template to: {self.folder}/macro_intelligence_YYYY-MM-DD.json")
             return None
 
@@ -140,10 +140,10 @@ class MacroLoader:
             with open(json_path, 'r', encoding='utf-8') as f:
                 raw = json.load(f)
         except json.JSONDecodeError as e:
-            print(f"  [Macro] ❌ JSON parse error in {json_path.name}: {e}")
+            print(f"  [Macro] âŒ JSON parse error in {json_path.name}: {e}")
             return None
         except Exception as e:
-            print(f"  [Macro] ❌ Cannot read {json_path.name}: {e}")
+            print(f"  [Macro] âŒ Cannot read {json_path.name}: {e}")
             return None
 
         # Strip instruction/guide keys (start with _)
@@ -151,27 +151,27 @@ class MacroLoader:
 
         errors = self._validate(data)
         if errors:
-            print(f"  [Macro] ❌ Validation errors in {json_path.name}:")
+            print(f"  [Macro] âŒ Validation errors in {json_path.name}:")
             for err in errors:
-                print(f"  [Macro]    • {err}")
+                print(f"  [Macro]    â€¢ {err}")
             return None
 
         macro_data = self._normalise(data)
         age_hours = self._age_hours(macro_data.get('as_of_utc', ''))
         age_str = f"{age_hours:.1f}h ago" if age_hours is not None else "age unknown"
 
-        print(f"  [Macro] ✓ Loaded {json_path.name} ({age_str})")
-        print(f"  [Macro] ✓ Switch: {macro_data['risk_on_switch']}, "
+        print(f"  [Macro] âœ“ Loaded {json_path.name} ({age_str})")
+        print(f"  [Macro] âœ“ Switch: {macro_data['risk_on_switch']}, "
               f"Conviction: {macro_data['conviction_score']:.0%}, "
               f"Liquidity: {macro_data['liquidity_status']}, "
               f"Regime: {macro_data['regime_state']}")
 
         if age_hours is not None and age_hours > 28:
-            print(f"  [Macro] ⚠️  WARNING: Macro file is {age_hours:.0f}h old — update recommended")
+            print(f"  [Macro] âš ï¸  WARNING: Macro file is {age_hours:.0f}h old â€” update recommended")
 
         return macro_data
 
-    # ── Private ───────────────────────────────────────────────────────────────
+    # â”€â”€ Private â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     def _find_latest_json(self) -> Path | None:
         """Return path of most recently modified macro_intelligence_*.json"""
@@ -192,7 +192,7 @@ class MacroLoader:
                 errors.append(f"Missing required field: '{field}'")
 
         if errors:
-            return errors  # Don't continue — values may be missing
+            return errors  # Don't continue â€” values may be missing
 
         # Enum validation
         for field, valid_set in VALID_VALUES.items():
@@ -212,7 +212,7 @@ class MacroLoader:
             try:
                 cs = float(cs)
                 if not (0.0 <= cs <= 1.0):
-                    errors.append(f"'conviction_score' must be 0.0–1.0, got {cs}")
+                    errors.append(f"'conviction_score' must be 0.0â€“1.0, got {cs}")
             except (TypeError, ValueError):
                 errors.append(f"'conviction_score' must be a number, got {cs!r}")
 
@@ -254,7 +254,7 @@ class MacroLoader:
         """
         cs = float(data['conviction_score'])
 
-        # Map conviction_score → macro_conviction label if not set
+        # Map conviction_score â†’ macro_conviction label if not set
         if 'macro_conviction' not in data:
             if cs >= 0.70:
                 macro_conviction = 'High'
@@ -270,7 +270,7 @@ class MacroLoader:
             'as_of_utc':           data['as_of_utc'],
             'report_date':         data['report_date'],
 
-            # Regime — options_intelligence fields
+            # Regime â€” options_intelligence fields
             'risk_on_switch':      data['risk_on_switch'],
             'conviction_score':    cs,
             'risk_on_prob':        cs,          # alias used by options_intelligence
@@ -278,7 +278,7 @@ class MacroLoader:
             'volatility_mode':     data['volatility_mode'],
             'vix_contango':        float(data['vix_contango']),
 
-            # Regime — VANGUARD fields
+            # Regime â€” VANGUARD fields
             'regime_state':        data['regime_state'],
             'dir_bias':            data['dir_bias'],
             'regime_drift_status': data['regime_drift_status'],
@@ -297,3 +297,4 @@ class MacroLoader:
             return (now - dt).total_seconds() / 3600
         except Exception:
             return None
+

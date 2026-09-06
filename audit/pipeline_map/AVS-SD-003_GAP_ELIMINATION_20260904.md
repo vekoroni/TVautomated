@@ -3,8 +3,9 @@
 **Issued:** 2026-09-04
 **Supersedes nothing.** Extends AVS-SD-002 v1.0 + Rev 1.1 and AVS-AR-003. The accepted architecture is not re-opened.
 **Evidence base:** `audit\pipeline_map\AVS-RCA-002\` — `A_run_validation.md`, `A_counts.csv`, `B_executed_path_review.md`, `B_flag_topology.csv`, `environment.json`.
+**Implementation refinement:** `audit\pipeline_map\AVS-IMP-SD-003-001_CYCLE1_AND_ADAPTER_FIX_20260904.md` and `audit\preflight\AVS-PRE-001_20260904_075820\AVS-PRE-001_RESULT.md`, accepted with the controlling amendments in §C9.
 **Run under remediation:** `20260904_004338`
-**Build model:** AVS-SD-002 §17 — one integration lead plus three bounded specialists.
+**Build model:** maximum two active implementers — one integration lead and one bounded specialist. File ownership and independent boundary verification are mandatory (§C9.8).
 
 Every gap below is `CONFIRMED` in `A_counts.csv` with an artefact citation. Two §3 claims were `REFUTED` in Part A and are **excluded** from this design: `AVSHUNTER_COMPLETED_PROFILE_ENABLED` as a flag (A1-07) and undisclosed monetisability (A4-02).
 
@@ -38,6 +39,7 @@ Three decisions follow.
 4. Quote, viability and macro lineage survive to the Lab book or are explicitly named absent.
 5. The audit layer detects gaps 1–4, and stops failing runs for correct behaviour.
 6. Cache identity is stable enough that a same-session rerun performs zero physical option-chain requests.
+7. Completed-session MarketData stock candles are requested using the provider's verified Eastern wall-clock semantics, classified for completeness, and never promoted as a usable Market Profile when the session is partial.
 
 ### Non-goals
 
@@ -698,3 +700,157 @@ An item is done when **all four** hold:
 - the P0 recertification is re-issued with a **run-artefact evidence column** replacing the test-pack column.
 
 **The explicit closure-standard change.** `AVS-AR-003_P0_RECERTIFICATION_20260903.md` closed P0-01…P0-07 "at the offline/code-contract level" on 1,141 passing tests and no production rows. Every one of those tests was correct and the run reproduced every defect anyway (§B2). From this design forward, a P0 may be recorded `CLOSED OFFLINE` — but **`CLOSED` requires a row count from a run artefact**, and the two states must never be reported in the same column again.
+
+---
+
+## C9. Approved Cycle 1 and MarketData adapter refinement
+
+### C9.1 Architecture decision
+
+`AVS-IMP-SD-003-001_CYCLE1_AND_ADAPTER_FIX_20260904.md` is **APPROVED WITH CHANGES** and is incorporated into this design through this section. Its verified diagnosis is accepted:
+
+- the completed-session candle adapter sends UTC `Z` timestamps even though the MarketData endpoint interprets the request as Eastern wall-clock time;
+- the same session returns the full expected 78 regular-session five-minute bars when expressed as naked Eastern wall-clock bounds, but only 30 bars through the present adapter request;
+- the current transport discards HTTP status and rate-limit headers, does not classify `404/no_data`, and stamps one request-level session segment onto every returned bar;
+- the profile builder lacks a completed-session coverage gate and counts per-ticker absence as a systemic provider failure;
+- the Cycle 1 authority, lineage and audit repairs remain necessary before the profile capability is enabled.
+
+The preflight proves that this is a request-contract defect, not a general MarketData entitlement failure. A `203` response is evidence to record; it is not, without additional provider evidence, a reason to reject otherwise valid bars.
+
+### C9.2 Accepted, amended and deferred content
+
+| Proposal | Decision | Controlling amendment |
+|---|---|---|
+| Protections unconditional; capabilities flagged | **Accept** | No environment flag may restore fabricated POC/VAH/VAL, profile uplift, invalid economics or missing-invalidation capital authority. |
+| Unusable profile retains the ticker but contributes no authority | **Accept** | Emit null levels, `ready_to_trade=False`, zero profile uplift/confidence and an explicit evidence/reason pair. Never turn absence into numeric zero. |
+| Cycle 1 invalidation, target, EOD projection, Lab mapping and audit repairs | **Accept** | Use the canonical mappings in §C9.3 and the two-level evidence bar in §C9.7. |
+| W2-0 MarketData stock-candle adapter repair moves ahead of profile activation | **Accept** | The adapter may be built and fixture-tested before activation; no completed profile is authoritative until §C9.5 passes. |
+| Raw `UNRESOLVED_EXCEPTION`, `INVALIDATION_MISSING` or `STRUCTURAL_TARGET_UNRESOLVED` string literals | **Reject as written** | Output states must use the central enum contract. Reason vocabulary may be extended once, centrally, and then imported everywhere. |
+| All cached replays must issue zero provider requests | **Amend** | Protection replay and fixture replay must issue zero requests. A first profile-live run is a governed cold acquisition and will make recorded requests. Only a same-session warm replay must issue zero physical requests for already-covered identities. |
+| Commit the present working tree as-is | **Reject** | `pre-tidy-20260904` is the immutable reference. Create a scoped release branch/manifest and include only sanctioned files; do not absorb unrelated dirty or untracked artefacts. |
+| Per-change full backup directories | **Amend** | Create one immutable phase baseline plus SHA-256 manifest and database backups before the phase. Add an item-level delta backup only for a shared authority file or schema/database mutation. This preserves rollback without unnecessary disk duplication. |
+| W1-8 monetisability stamp, W1-11 stale-bar fallback and W1-13 documentation deferred | **Accept for this repair unit** | Record them in the open register. They do not block adapter correctness, but none may be silently reported as closed. |
+
+### C9.3 Canonical state and reason contract
+
+The implementation must not create a second lifecycle vocabulary. The following mapping governs all Cycle 1 producers and consumers:
+
+| Condition | Public evidence state | Governed reason/evaluation | Required authority result |
+|---|---|---|---|
+| Profile absent or below completed-session quality | `EvidenceState.NOT_EVALUATED` | existing `INSUFFICIENT_BARS` or `INCOMPLETE_SESSION` | retain row; null POC/VAH/VAL; no readiness or uplift |
+| Directional thesis has no authoritative invalidation | `EvidenceState.DATA_DEFECT` | central reason `INVALIDATION_MISSING`; lifecycle evaluation `MISSING_AUTHORITATIVE_STOP` | `STAND_DOWN`; no capital permission |
+| Directional thesis has null/non-finite structural target | `EvidenceState.DATA_DEFECT` | central reason `STRUCTURAL_TARGET_UNRESOLVED` | economics not evaluated; governed stand-down; no raw exception text |
+| Non-directional thesis | `EvidenceState.NOT_EVALUATED` | existing non-directional lifecycle state | no forced CALL/PUT geometry; no capital permission |
+| Future session requested | `EvidenceState.NOT_EVALUATED` | `NOT_YET_OBSERVABLE` | defer ticker; no systemic provider failure |
+| Known inactive ticker | `EvidenceState.NOT_APPLICABLE` | `TICKER_INACTIVE` | exception-list disclosure; continue run |
+| Provider transport or entitlement failure | `UNAVAILABLE_PROVIDER` or `DATA_DEFECT` as defined by the central contract | `PROVIDER_UNAVAILABLE`, `ENTITLEMENT_DENIED` or `RATE_LIMITED` | per-ticker continuation; systemic threshold evaluates only comparable provider failures |
+
+`INVALIDATION_MISSING` and `STRUCTURAL_TARGET_UNRESOLVED` are approved as **reason codes**, not new top-level states. They must be added to the single `DataExceptionReason` owner before use. Raw copies in Options, EOD, Lab or audit code are forbidden. Existing persisted enum values remain readable.
+
+### C9.4 MarketData response and request contract
+
+The stock-candle transport must return a typed response envelope rather than an unqualified JSON mapping:
+
+```text
+MarketDataCandleResponse
+  payload
+  http_status
+  acquired_at_utc
+  rate_limit_limit
+  rate_limit_remaining
+  rate_limit_reset
+  provider_status
+```
+
+Header fields are nullable because recorded fixtures and injected test transports may not carry them. Existing injected transports may be supported through one explicit compatibility adapter; production code must not infer a successful status from an exception path.
+
+For intraday completed-session requests:
+
+1. Obtain the exchange session bounds from the governed session calendar, including holidays, early closes and daylight-saving transitions.
+2. Convert those bounds to `America/New_York`.
+3. Serialize provider query bounds as naked Eastern wall-clock timestamps, without `Z` or an offset, because that is the behaviour proven by the preflight.
+4. Convert returned epoch-second bar opens back to timezone-aware UTC internally.
+5. Derive `PREMARKET`, `REGULAR` or `AFTER_HOURS` for each bar from its timestamp and the governed session bounds. Never stamp the request's segment onto every bar.
+6. Preserve response status and rate-limit evidence in the request ledger. A successful call consumes the provider-reported amount when available, otherwise a conservative cost of one credit. `404/no_data` consumes the reported amount, which the preflight observed as zero.
+
+The production adapter must never use a bare date as a substitute for exact intraday bounds. Exact exchange-session bounds prevent accidental extended-hours inclusion and make the coverage denominator deterministic.
+
+### C9.5 Completed-session coverage and quality contract
+
+The expected regular-session grid is derived from the governed session calendar and requested interval; it is not hard-coded to 78 bars. A completed-session profile is usable only when all of the following hold:
+
+- session is closed and matches the requested exchange session;
+- unique regular-session bars / expected regular-session bars is at least `0.95`;
+- the first and last expected regular-session regions are represented, so a contiguous missing open or close is not hidden by the ratio;
+- timestamps are ordered and unique after deterministic deduplication;
+- OHLC values are finite and geometrically valid, and volume is non-negative;
+- no bar belongs to another trading session;
+- acquisition identity, provider, response status and coverage diagnostics are persisted.
+
+If any condition fails, publish `PARTIAL_SESSION` diagnostics and the canonical `NOT_EVALUATED`/`INCOMPLETE_SESSION` result. Do not calculate or publish authoritative POC, VAH, VAL, auction alignment, readiness, confidence or Layer-2 uplift from that set. The ticker remains in the pipeline for research and exception review.
+
+The builder's systemic stop ratio includes only comparable transport, authentication, entitlement and rate-limit failures. A per-ticker `no_data`, inactive ticker or future-session deferral is recorded in the exception list and does not stop unrelated tickers. A provider-wide pattern of `no_data` remains observable and can be escalated by a separate threshold; it is not silently ignored.
+
+### C9.6 Cache-first data flow
+
+The completed-profile stage follows this order:
+
+```text
+governed ticker worklist
+  -> resolve exact completed-session candle identity in CDS
+     -> covered and quality-valid: reuse canonical bars
+     -> missing/partial/expired: call MarketData adapter
+        -> validate and register immutable raw response
+        -> normalize bars and publish quality evidence
+  -> build MarketProfileEvidence only from quality-valid regular-session bars
+  -> Vanguard consumes the governed evidence or explicit NOT_EVALUATED state
+  -> Options/EOD/Lab preserve evidence identity and absence reason
+```
+
+Dropped tickers are excluded before cache resolution or provider acquisition. A ticker dropped at an earlier governed stage must not generate a later stock-candle request merely because it existed in the original universe.
+
+### C9.7 Testing and production acceptance
+
+The implementation has four distinct proof modes; they must not be conflated:
+
+| Proof mode | Provider calls | Purpose | Passing evidence |
+|---|---:|---|---|
+| Unit/fixture adapter tests | 0 | Eastern bounds, `404/no_data`, `203`, headers, segment classification, early close, malformed bars | deterministic assertions and real sanitized preflight fixtures |
+| Cached Vanguard-onward protection replay | 0 | Cycle 1 authority, target/invalidation, projection, Lab mapping and semantic audit | AG-01…AG-17 plus unchanged RG-01…RG-09 |
+| First profile-live Evening run | expected and ledgered | Cold acquisition and end-to-end completed-profile production | request count reconciles; coverage states published; no fabricated levels/uplift; run promotable |
+| Same-session warm replay | 0 physical requests for covered identities | CDS reuse and identity correctness | cache-hit ledger reconciles; output identity and material fields are deterministic |
+
+A **representative acquisition-only activation probe** must precede the first profile-authoritative run because the preflight's 1/10 `no_data` observation is statistically inconclusive. The probe samples at least the greater of 100 tickers or 10% of the governed profile worklist, stratified across sector and observed liquidity. It may populate the canonical candle cache and request ledger, but it must not publish Market Profile authority into Vanguard. Transport/authentication/entitlement failures are evaluated against the systemic threshold; valid per-ticker `no_data` exceptions are reported separately by reason and do not enter that ratio. AG-19 may proceed only when the request ledger reconciles, full-session coverage is demonstrated on successful responses, and no provider-wide failure pattern is present.
+
+A no-capital Morning rehearsal may verify unconditional protections and EOD-to-Morning compatibility. It cannot close developing-profile or live quote gates while the market is closed. Production closure requires a subsequent market-session Morning Gate that shows the previous completed profile retained, current price used to validate the thesis, and no mutation of the original EOD thesis.
+
+At both offline and artefact levels, tests must cover CALL, PUT and non-directional rows. The known-bad `20260904_004338` fixtures must fail the semantic audit; remediated fixtures must pass. A test edited to permit missing authority evidence is not an acceptable regression repair.
+
+### C9.8 Two-agent implementation topology
+
+No more than two agents may be active on this repair unit.
+
+| Agent | Exclusive ownership | Independent verification duty |
+|---|---|---|
+| Integration lead | shared contracts/enums, `scripts\avshunter_options_intelligence.py`, `eod_candidate_engine.py`, Lab mapping, release manifest and final promotion | verify adapter/profile artefacts and audit results not authored by the lead |
+| Bounded specialist | `canonical_data\marketdata_stock_candles.py`, `scripts\build_completed_market_profiles.py`, Vanguard fail-closed files and new isolated tests | reproduce CALL/PUT/non-directional authority tests and inspect downstream lineage without editing lead-owned files |
+
+If a file crosses both scopes, the specialist supplies a patch or finding and the lead alone applies it. Neither agent edits a shared file concurrently. Tests run in isolated pytest processes, followed by one clean aggregate suite.
+
+### C9.9 Revised implementation sequence
+
+1. Freeze the `pre-tidy-20260904` reference, create the scoped phase backup/database backup and hash manifest, and record the exact sanctioned file list.
+2. Centralize the two reason codes and add backward-compatible contract tests.
+3. Implement Cycle 1 unconditional Vanguard protection and invalidation/target preconditions.
+4. Implement EOD quote-size/quality/timestamp and macro identity projection, then Lab mapping and the eight semantic audit rules.
+5. Correct the MarketData response envelope, Eastern request serialization, HTTP/no-data classification, per-bar session segments and rate-limit ledger capture.
+6. Add session-aware coverage validation, per-ticker exception handling and cache-first resolution to the completed-profile builder.
+7. Run focused CALL/PUT/non-directional tests, real sanitized adapter fixtures, known-bad audit fixtures and the complete regression suite.
+8. Perform the zero-provider cached protection replay and publish the claim sheet with counts, hashes and regression comparisons.
+9. Run the representative acquisition-only activation probe in §C9.7; populate only canonical candles/ledger evidence and keep profile authority disabled.
+10. Enable only the completed-profile capability for a controlled cold Evening run; reconcile every physical call and profile state.
+11. Repeat the same session to prove zero physical calls for covered candle identities.
+12. Run the next market-session Morning Gate in no-capital validation mode, verify thesis continuity and record gaps/moves separately from the immutable EOD thesis.
+13. Promote only if every acceptance gate passes; otherwise restore the phase backup or disable the profile capability while retaining the unconditional protections.
+
+This refinement does not authorize a build by itself. It defines the approved implementation contract and replaces conflicting Cycle 1/adapter instructions in earlier drafts.

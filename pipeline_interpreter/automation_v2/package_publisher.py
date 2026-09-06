@@ -1,4 +1,4 @@
-"""Fail-closed publication gate for a complete staged evidence package."""
+﻿"""Fail-closed publication gate for a complete staged evidence package."""
 
 from __future__ import annotations
 
@@ -146,3 +146,4 @@ def publish_package(
                 os.replace(backup, target)
         shutil.rmtree(transaction, ignore_errors=True)
         raise
+

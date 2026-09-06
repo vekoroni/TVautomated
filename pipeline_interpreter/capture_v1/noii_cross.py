@@ -1,4 +1,4 @@
-"""Dual Opening/Closing Cross capture from an already verified NOII screen."""
+﻿"""Dual Opening/Closing Cross capture from an already verified NOII screen."""
 
 from __future__ import annotations
 
@@ -108,3 +108,4 @@ def capture_noii_crosses(
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

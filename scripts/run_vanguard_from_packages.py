@@ -758,7 +758,10 @@ def build_orchestrator_like_payload(pkg: Dict[str, Any]) -> Dict[str, Any]:
         "ticker": ticker,
         "current_price": current_price,
         "market_profile_evidence": pkg.get("market_profile_evidence"),
-        "market_profile_contract_required": bool(pkg.get("market_profile_contract_required", False)),
+        # The governed profile contract is a protection, not an optional
+        # capability. Absence means NOT_EVALUATED downstream; it must never
+        # reactivate the legacy daily-bar profile fabrication path.
+        "market_profile_contract_required": True,
         "options_data": {},           # placeholder for later
         "microstructure_data": {},    # placeholder for later
         # Legacy Vanguard schemas require MacroData, but external narrative

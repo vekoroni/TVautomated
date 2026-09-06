@@ -1,13 +1,13 @@
-"""
-AVSHUNTER News Terminal v1.3 — Scheduled Runner
+﻿"""
+AVSHUNTER News Terminal v1.3 â€” Scheduled Runner
 Called by Windows Task Scheduler for automatic daily runs.
 Usage: python news_terminal_scheduler.py [morning|midday|evening]
 """
-# ─────────────────────────────────────────────────────────────────────────────
-# SCHEDULER PAUSED — automatic runs disabled to preserve API credits.
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# SCHEDULER PAUSED â€” automatic runs disabled to preserve API credits.
 # Pipeline is in manual operation mode.
 # Reactivate when monetisation begins: remove or comment the two lines below.
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import sys as _sys
 _sys.exit(0)
 import sys
@@ -32,7 +32,7 @@ def run_scheduled(session_type: str = None):
         h = datetime.now().hour
         session_type = "morning" if h < 10 else ("midday" if h < 14 else "evening")
 
-    log(f"Scheduled run starting — session: {session_type.upper()}")
+    log(f"Scheduled run starting â€” session: {session_type.upper()}")
 
     try:
         from news_terminal_engine import get_run_dir, get_timestamp
@@ -57,3 +57,4 @@ def run_scheduled(session_type: str = None):
 if __name__ == "__main__":
     session_arg = sys.argv[1].lower() if len(sys.argv) > 1 else None
     run_scheduled(session_arg)
+

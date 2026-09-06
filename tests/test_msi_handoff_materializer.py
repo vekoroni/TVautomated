@@ -197,6 +197,21 @@ def test_morning_finalizer_publishes_only_actionable_rows_when_flags_are_active(
     actionable = _row("AAA", "AAA260918C00100000")
     waiting = _row("BBB", "BBB260918C00200000")
     waiting["final_action"] = "BLOCK"
+    validation_dir = run_root / "validation"
+    validation_dir.mkdir()
+    (validation_dir / "AAA.json").write_text(
+        json.dumps({
+            "validation_event_id": "VALIDATION:AAA",
+            "run_id": RUN_ID,
+            "ticker": "AAA",
+            "thesis_id": "THESIS:AAA",
+            "direction": "CALL",
+            "selected_contract": "AAA260918C00100000",
+            "evidence_cutoff_utc": "2026-08-30T12:29:00+00:00",
+            "transition": "THESIS_CONFIRMED",
+        }),
+        encoding="utf-8",
+    )
 
     result = _publish_msi_handoff(
         run_id=RUN_ID,

@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER MA_Inputs Auto-Sync v1.1 FIXED
 =========================================
 Purpose:
@@ -188,7 +188,7 @@ def sync_file(filepath: Path, verbose: bool = True, force: bool = False) -> bool
     dest_dir, label = _route_file(filepath)
     if not dest_dir:
         if verbose:
-            print(f"  [{_ts()}] UNMATCHED {filepath.name} — no routing keyword matched")
+            print(f"  [{_ts()}] UNMATCHED {filepath.name} â€” no routing keyword matched")
         return False
 
     if not force and _already_synced(filepath, dest_dir):
@@ -327,7 +327,7 @@ def on_pipeline_complete(output_csv_path: str, output_dir: Optional[str] = None)
 
 def show_status() -> None:
     print("\n  MA_Inputs Sync Configuration")
-    print(f"  {'─' * 60}")
+    print(f"  {'â”€' * 60}")
     print(f"  Script base:      {INTERPRETER_BASE}")
     print(f"  MA_Inputs base:   {MA_INPUTS_BASE}")
     print(f"  Supported types:  {', '.join(SUPPORTED_EXTENSIONS)}")
@@ -388,3 +388,4 @@ if __name__ == "__main__":
         if not args.sync and not args.path:
             show_status()
         sync_to_ma_inputs(source_dir=args.path, max_age_hours=hours, recursive=recursive, force=args.force)
+

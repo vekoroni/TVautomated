@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Score Integrity Check
 =================================
 Asserts that scs_score values in morning_validated_trades match
@@ -225,3 +225,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     report = check_score_integrity(args.run_id)
     print(json.dumps(report, indent=2))
+

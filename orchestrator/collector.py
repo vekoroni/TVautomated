@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Data Collector
 Collects CSVs, charts, and screenshots from data folder
 """
@@ -115,7 +115,7 @@ class DataCollector:
         summary += f"  CSVs: {len(status['csvs'])} files\n"
         summary += f"  Charts: {len(status['charts'])} files\n"
         summary += f"  Screenshots: {len(status['screenshots'])} files\n"
-        summary += f"  Ready: {'✓ YES' if status['ready'] else '✗ NO'}\n"
+        summary += f"  Ready: {'âœ“ YES' if status['ready'] else 'âœ— NO'}\n"
         
         if status['missing']:
             summary += f"  Missing: {', '.join(status['missing'])}\n"

@@ -377,6 +377,7 @@ def _safe_open_journal_positions():
         return []
 
 _LAB_JOURNAL_COLS = {
+    "thesis_id": "TEXT",
     "trade_idea_id": "TEXT",
     "declared_R": "REAL",
     "premium_risk_total": "REAL",
@@ -636,6 +637,54 @@ def _ensure_lab_journal_columns(conn):
                 except Exception:
                     pass
 
+def _append_trade_entry_ledger(trade_id, sig):
+    """Observe a human entry; never authorize or alter the journal row."""
+
+    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+
+    if not DynamicSessionFeatureFlags.from_environment().decision_outcome_ledger:
+        return None
+    thesis_id = str(sig.get("thesis_id") or sig.get("trade_idea_id") or "").strip()
+    ticker = str(sig.get("ticker") or "").strip().upper()
+    run_id = str(sig.get("run_id") or "").strip()
+    if not thesis_id or not ticker or not run_id:
+        return None
+    from canonical_data.decision_outcome_ledger import (
+        DecisionOutcomeLedger,
+        make_ledger_event,
+    )
+
+    ledger_path = BASE_DIR / "data" / "canonical" / "decision_outcome_ledger.sqlite"
+    ledger = DecisionOutcomeLedger(ledger_path)
+    previous = ledger.latest_event(thesis_id, "EXECUTION_DECISION")
+    event = make_ledger_event(
+        event_type="TRADE_ENTRY",
+        occurred_at_utc=datetime.now(timezone.utc).isoformat(),
+        run_id=run_id,
+        ticker=ticker,
+        thesis_id=thesis_id,
+        previous_event_id=previous.event_id if previous else None,
+        payload={
+            "trade_id": int(trade_id),
+            "entry_source": "INTELLIGENCE_LAB_HUMAN_CONFIRMED",
+            "human_confirmed": True,
+            "direction": sig.get("governed_direction") or sig.get("direction"),
+            "selected_contract_symbol": (
+                sig.get("selected_contract_symbol") or sig.get("contract_symbol")
+            ),
+            "selected_quote_snapshot_id": sig.get("selected_quote_snapshot_id"),
+            "entry_premium": sig.get("premium_mid") or sig.get("premium"),
+            "entry_underlying": (
+                sig.get("current_underlying_price")
+                or sig.get("underlying_price")
+                or sig.get("signal_price")
+            ),
+        },
+    )
+    ledger.append(event)
+    return event.event_id
+
+
 def _update_lab_journal_row(trade_id, sig, body, premium_risk_total):
     try:
         from avshunter_trade_journal import get_db
@@ -697,6 +746,7 @@ def _update_lab_journal_row(trade_id, sig, body, premium_risk_total):
             "vg__behaviour_state_key", "vg__behaviour_state_hash", "vg__catalyst_overlay",
         ]))
         payload = {
+            "thesis_id": sig.get("thesis_id", ""),
             "trade_idea_id": sig.get("trade_idea_id", ""),
             "declared_R": float(body.get("declared_R", premium_risk_total) or premium_risk_total),
             "premium_risk_total": premium_risk_total,
@@ -762,6 +812,7 @@ def _update_lab_journal_row(trade_id, sig, body, premium_risk_total):
         )
         conn.commit()
         conn.close()
+        _append_trade_entry_ledger(trade_id, sig)
     except Exception as exc:
         print(f"  journal lab metadata update failed: {exc}")
 

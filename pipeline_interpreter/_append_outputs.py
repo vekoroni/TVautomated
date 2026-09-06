@@ -1,4 +1,4 @@
-"""One-shot: append write_all_outputs_with_junior + _build_junior_section_cards to outputs file."""
+﻿"""One-shot: append write_all_outputs_with_junior + _build_junior_section_cards to outputs file."""
 import os, sys
 
 TARGET = os.path.join(os.path.dirname(__file__), "pipeline_interpreter_outputs.py")
@@ -178,3 +178,4 @@ with open(TARGET, "wb") as f:
 
 print(f"Appended {len(new_bytes)} bytes to {os.path.basename(TARGET)}")
 print("Done.")
+

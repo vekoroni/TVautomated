@@ -1,5 +1,5 @@
-"""
-AVSHUNTER M&A Cockpit v1.0 — Command Router
+﻿"""
+AVSHUNTER M&A Cockpit v1.0 â€” Command Router
 """
 import time
 from ma_cockpit_engine import (
@@ -11,22 +11,22 @@ from ma_cockpit_engine import (
 from ma_cockpit_outputs import write_all_outputs, _extract_section, _write_csv, TICKER_CSV_FIELDS
 
 MENU = """
-╔══════════════════════════════════════════════════════════════════╗
-║        AVSHUNTER M&A COCKPIT v1.0 — COMMAND MENU                ║
-╠══════════════════════════════════════════════════════════════════╣
-║  /scan              Full M&A and corporate event scan            ║
-║  /deal "text"       Analyse a specific deal or event             ║
-║  /triage "text"     Triage any corporate event headline          ║
-║  /activist          Activist campaign scan                       ║
-║  /arb               Merger arbitrage spread scan                 ║
-║  /sector TEXT       Sector M&A consolidation scan                ║
-║  /events            Corporate event scan (non-M&A)               ║
-║  /validate FILE     Validate a CSV against the schema            ║
-║  /status            Show current session summary                 ║
-║  /reset             Clear session, keep rules active             ║
-║  /menu              Show this menu                               ║
-║  /exit              Close cockpit                                ║
-╚══════════════════════════════════════════════════════════════════╝"""
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘        AVSHUNTER M&A COCKPIT v1.0 â€” COMMAND MENU                â•‘
+â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£
+â•‘  /scan              Full M&A and corporate event scan            â•‘
+â•‘  /deal "text"       Analyse a specific deal or event             â•‘
+â•‘  /triage "text"     Triage any corporate event headline          â•‘
+â•‘  /activist          Activist campaign scan                       â•‘
+â•‘  /arb               Merger arbitrage spread scan                 â•‘
+â•‘  /sector TEXT       Sector M&A consolidation scan                â•‘
+â•‘  /events            Corporate event scan (non-M&A)               â•‘
+â•‘  /validate FILE     Validate a CSV against the schema            â•‘
+â•‘  /status            Show current session summary                 â•‘
+â•‘  /reset             Clear session, keep rules active             â•‘
+â•‘  /menu              Show this menu                               â•‘
+â•‘  /exit              Close cockpit                                â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"""
 
 def _safe_name(v):
     from pathlib import Path
@@ -43,14 +43,14 @@ def _print_results(results:dict, response:str=""):
     for key,label in [("ticker_csv","ma_candidates"),("handoff_csv","ma_handoff")]:
         if key in results:
             n=_safe_name(results[key]); r=results[key].get("rows","?") if isinstance(results[key],dict) else "?"
-            if n: print(f"  ✅ {n:<52} ({r} rows)")
+            if n: print(f"  âœ… {n:<52} ({r} rows)")
     for key in ("full_html","trader_html"):
         if key in results:
             n=_safe_name(results[key])
-            if n: print(f"  ✅ {n}")
+            if n: print(f"  âœ… {n}")
     if "master" in results:
         n=results["master"].get("added",0)
-        print(f"  ✅ ma_catalyst_master.csv                    (+{n} rows)")
+        print(f"  âœ… ma_catalyst_master.csv                    (+{n} rows)")
     print()
     if response:
         verdict=extract_verdict(response)
@@ -61,9 +61,9 @@ def _print_section(response:str, tags:list):
     for tag in tags:
         content=_extract_section(response,tag)
         if content:
-            print(f"\n{'─'*62}")
+            print(f"\n{'â”€'*62}")
             print(f"  {tag.replace('_',' ')}")
-            print('─'*62)
+            print('â”€'*62)
             for line in content.split('\n')[:50]:
                 print(f"  {line}")
 
@@ -152,34 +152,34 @@ def cmd_validate(filepath:str):
     try:
         from ma_csv_schema import validate_ma_manual_review_csv
         report=validate_ma_manual_review_csv(filepath)
-        print(f"\n  Validation: {'✅ VALID' if report.valid else '❌ INVALID'}")
+        print(f"\n  Validation: {'âœ… VALID' if report.valid else 'âŒ INVALID'}")
         print(f"  Rows: {report.row_count}")
         if report.errors:
             print(f"  Errors ({len(report.errors)}):")
-            for e in report.errors[:10]: print(f"    ✗ {e}")
+            for e in report.errors[:10]: print(f"    âœ— {e}")
         if report.warnings:
             print(f"  Warnings ({len(report.warnings)}):")
-            for w in report.warnings[:5]: print(f"    ⚠ {w}")
+            for w in report.warnings[:5]: print(f"    âš  {w}")
     except Exception as e:
-        print(f"  ⚠ Validation error: {e}")
+        print(f"  âš  Validation error: {e}")
 
 def cmd_status():
     s=session.summary()
     print(f"""
-  ─────────────────────────────────────────────
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   M&A COCKPIT SESSION STATUS
-  ─────────────────────────────────────────────
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Date:             {session.session_date}
   M&A Verdict:      {s["desk_verdict"]}
   Total Candidates: {s["total"]}
   P1 Priority:      {s["p1"]}
   P2 Priority:      {s["p2"]}
   GO Verdicts:      {s["go"]}
-  ─────────────────────────────────────────────""")
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€""")
 
 def cmd_reset():
     session.reset()
-    print("\n  ✅ Session cleared. v1.0 rules preserved. Ready.\n")
+    print("\n  âœ… Session cleared. v1.0 rules preserved. Ready.\n")
 
 def route_command(raw:str):
     raw=raw.strip()
@@ -210,3 +210,4 @@ def route_command(raw:str):
     elif cmd in("/exit","/quit"): return "EXIT"
     else: print(f"  Unknown command: {cmd}  (type /menu for help)")
     return None
+

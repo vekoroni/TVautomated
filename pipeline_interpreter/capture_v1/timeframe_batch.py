@@ -1,4 +1,4 @@
-"""Five-timeframe Webull shadow capture with deterministic selection checks."""
+﻿"""Five-timeframe Webull shadow capture with deterministic selection checks."""
 
 from __future__ import annotations
 
@@ -162,3 +162,4 @@ def capture_timeframe_batch(
             shutil.move(str(diagnostic), str(retained))
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

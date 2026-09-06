@@ -1,4 +1,4 @@
-"""Structured Intelligence Lab adapter for the automated ticker workflow."""
+﻿"""Structured Intelligence Lab adapter for the automated ticker workflow."""
 
 from __future__ import annotations
 
@@ -217,3 +217,4 @@ def build_structured_lab_manifest(
         run_id=run_id,
         findings=tuple(findings),
     )
+

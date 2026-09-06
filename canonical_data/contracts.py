@@ -10,6 +10,11 @@ import json
 from typing import Any, Iterable, Mapping
 
 from .errors import DatasetValidationError
+from domain.market_evidence import (
+    MarketEvidenceInvariantError,
+    evaluate_evidence_freshness,
+    evidence_request_identity,
+)
 
 
 def utc_now() -> datetime:
@@ -224,21 +229,18 @@ class DatasetRequest:
 
     @property
     def request_fingerprint(self) -> str:
-        payload = {
-            "run_id": self.run_id,
-            "invocation_id": self.invocation_id,
-            "requesting_stage": self.requesting_stage,
-            "dataset_type": self.dataset_type.value,
-            "instrument_id": self.instrument_id,
-            "session_date": self.session_date.isoformat(),
-            "scope_fingerprint": self.scope.fingerprint,
-            "evidence_cutoff_utc": iso_utc(self.evidence_cutoff_utc),
-            "exchange_calendar": self.exchange_calendar,
-            "evidence_state": self.evidence_state,
-        }
-        return hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        return evidence_request_identity(
+            run_id=self.run_id,
+            invocation_id=str(self.invocation_id),
+            requesting_stage=self.requesting_stage,
+            dataset_type=self.dataset_type.value,
+            instrument_id=self.instrument_id,
+            session_date=self.session_date,
+            scope_fingerprint=self.scope.fingerprint,
+            evidence_cutoff_utc=iso_utc(self.evidence_cutoff_utc),
+            exchange_calendar=self.exchange_calendar,
+            evidence_state=self.evidence_state,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -281,12 +283,15 @@ class DatasetRecord:
         self, freshness_seconds: int | None, *, now: datetime | None = None
     ) -> bool:
         instant = parse_utc(now) or utc_now()
-        if self.expires_at is not None and instant > self.expires_at:
-            return False
-        if freshness_seconds is None:
-            return True
-        age_seconds = (instant - self.as_of).total_seconds()
-        return age_seconds <= freshness_seconds
+        try:
+            return evaluate_evidence_freshness(
+                as_of=self.as_of,
+                now=instant,
+                freshness_seconds=freshness_seconds,
+                expires_at=self.expires_at,
+            ).fresh
+        except MarketEvidenceInvariantError as error:
+            raise DatasetValidationError(str(error)) from error
 
 
 @dataclass(frozen=True, slots=True)

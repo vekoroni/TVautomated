@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from contracts.direction_governance import validate_direction_record
+from contracts.dynamic_session_contract import DataExceptionReason
 from contracts.options_liquidity_execution_guard import (
     action_is_within_guard,
     evaluate_olm_execution_guard,
@@ -33,6 +34,7 @@ from contracts.long_option_policy import (
     LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
     LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT,
 )
+from domain.execution_authority import execution_authority_contract_violations
 
 
 LAB_REQUIRED_FIELDS = [
@@ -77,6 +79,14 @@ FINAL_BOOK_FIELDS = [
     "gate_reason",
     "gate_warnings",
     "gate_version",
+    "execution_eligibility_state",
+    "execution_authority_ceiling",
+    "execution_authority_source",
+    "execution_authority_policy_version",
+    "final_capital_permission",
+    "execution_requires_human_approval",
+    "execution_authorized",
+    "execution_can_grant_capital",
     "eod_candidate_status",
     "execution_category",
     "action_category",
@@ -219,6 +229,12 @@ FINAL_BOOK_FIELDS = [
     "contract_selection_reason",
     "quote_as_of",
     "quote_freshness",
+    "bar_data_source",
+    "bar_data_asof",
+    "bar_data_days_old",
+    "bar_evidence_state",
+    "bar_evidence_reason",
+    "is_stale",
     "option_chain_dataset_id",
     "option_chain_provider",
     "option_chain_resolution",
@@ -362,6 +378,8 @@ FINAL_BOOK_FIELDS = [
     "eil_composite_eod",
     "entry_plan",
     "invalidation_price",
+    "invalidation_state",
+    "invalidation_source",
     "target_price",
     "target_in_play",
     "structural_target",
@@ -978,6 +996,7 @@ def _output_files(run_dir: Path, run_id: str) -> Dict[str, str]:
     core = run_dir / "core_intel"
     macro = run_dir / "macro"
     diagnostics = run_dir / "diagnostics"
+    market_profile = run_dir / "market_profile"
     morning_validated = _glob_latest(morning, f"morning_validated_trades_{run_id}.csv")
     morning_candidates = _glob_latest(morning, f"morning_candidates_{run_id}.csv")
     morning_packet = _glob_latest(morning, f"morning_validation_packet_{run_id}.json")
@@ -1007,6 +1026,9 @@ def _output_files(run_dir: Path, run_id: str) -> Dict[str, str]:
         "summary": str(_glob_latest(superbrain, "superbrain_summary_*.json") or ""),
         "dropoff_audit": str(_glob_latest(diagnostics, f"dropoff_audit_{run_id}.csv") or ""),
         "handoff_contract_audit": str(_glob_latest(diagnostics, f"handoff_contract_audit_{run_id}.csv") or ""),
+        "completed_market_profile": str(
+            _glob_latest(market_profile, f"completed_profile_summary_{run_id}.json") or ""
+        ),
         "macro": str(
             _glob_latest(macro, "*.json")
             or _glob_latest(run_dir, "*macro*.json")
@@ -1079,8 +1101,11 @@ def build_final_run_manifest(
         "options": _read_csv_rows(Path(output_files["options"])) if output_files.get("options") else [],
         "v5": _read_csv_rows(Path(output_files["v5"])) if output_files.get("v5") else [],
         "morning_validation": _read_csv_rows(Path(output_files["morning_validation"])) if output_files.get("morning_validation") else [],
+        "morning_candidates": _read_csv_rows(Path(output_files["morning_candidates"])) if output_files.get("morning_candidates") else [],
     }
     macro_payload = _read_json(Path(output_files["macro"])) if output_files.get("macro") else {}
+    profile_payload = _read_json(Path(output_files["completed_market_profile"])) if output_files.get("completed_market_profile") else {}
+    run_meta = _read_json(run_dir / "run_meta.json")
     ev3_status_path = run_dir / "ev3_shadow" / f"ev3_shadow_phase_status_{run_id}.json"
     ev3_status = _read_json(ev3_status_path) if ev3_status_path.exists() else {}
     system_defects = dict(ev3_status.get("system_defects", {}) or {})
@@ -1119,6 +1144,21 @@ def build_final_run_manifest(
             "morning_validation",
         ]
     }
+    profile_flag = (run_meta.get("resolved_feature_flags") or {}).get(
+        "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", False
+    )
+    profile_required = profile_flag is True or _u(profile_flag) in {"1", "TRUE", "YES", "ON"}
+    if profile_payload:
+        profile_ok = bool(
+            profile_payload.get("reconciled")
+            and not profile_payload.get("systemic_failure")
+            and int(profile_payload.get("completed") or 0) > 0
+        )
+        phase_status["completed_market_profile"] = "PASS" if profile_ok else "FAIL"
+        row_counts["completed_market_profile"] = int(profile_payload.get("completed") or 0)
+    else:
+        phase_status["completed_market_profile"] = "MISSING" if profile_required else "NOT_REQUIRED"
+        row_counts["completed_market_profile"] = 0
 
     stale_flags: List[str] = []
     conflict_flags: List[str] = []
@@ -1128,6 +1168,8 @@ def build_final_run_manifest(
         fatal_flags.append("EIL_OUTPUT_MISSING_OR_INVALID")
     if phase_status["options"] == "MISSING":
         stale_flags.append("OPTIONS_OUTPUT_MISSING_EXECUTION_DOWNGRADED")
+    if profile_required and phase_status["completed_market_profile"] != "PASS":
+        fatal_flags.append("COMPLETED_MARKET_PROFILE_MISSING_OR_UNUSABLE")
     if mode == "EOD" and row_counts.get("eil", 0) > 0 and not output_files.get("morning_candidates"):
         fatal_flags.append("EOD_CANDIDATE_MANIFEST_MISSING")
     morning_validation_pending = (
@@ -1169,10 +1211,41 @@ def build_final_run_manifest(
     # phase already publishes selected-handoff defects; surface them in the run
     # health contract instead of allowing a technically complete run to report
     # 100 while hundreds of rows lack usable thesis geometry.
-    semantic_population = max(
-        row_counts.get("options", 0),
-        row_counts.get("eil", 0),
-        1,
+    # Selected-candidate semantic health must be calculated over the actual
+    # handoff population, not all Options rows. Upstream defects remain visible
+    # in their stage diagnostics but cannot falsely degrade a clean Lab book.
+    selected_rows = rows_by_phase.get("morning_candidates", [])
+    if selected_rows:
+        missing_invalidation = 0
+        for row in selected_rows:
+            direction = _u(
+                row.get("governed_direction")
+                or row.get("canonical_direction")
+                or row.get("direction")
+                or row.get("options_direction")
+            )
+            invalidation = _f(
+                row.get("invalidation_spot")
+                if not _is_missing(row.get("invalidation_spot"))
+                else row.get("invalidation_price"),
+                0.0,
+            )
+            invalidation_state = _u(row.get("invalidation_state"))
+            if direction in {"CALL", "PUT"} and (
+                invalidation <= 0.0
+                or invalidation_state in {
+                    "MISSING", "UNAVAILABLE", "MISSING_AUTHORITATIVE_STOP",
+                    "MISSING_GOVERNED_INVALIDATION",
+                }
+            ):
+                missing_invalidation += 1
+        selected_missing = dict(system_defects.get("missing_selected_handoff", {}) or {})
+        selected_missing["invalidation_spot"] = missing_invalidation
+        system_defects["missing_selected_handoff"] = selected_missing
+    semantic_population = (
+        len(selected_rows)
+        if selected_rows
+        else max(row_counts.get("options", 0), row_counts.get("eil", 0), 1)
     )
     semantic_health = _semantic_handoff_health(system_defects, semantic_population)
     semantic_defect_count = int(semantic_health["semantic_defect_count"])
@@ -1392,6 +1465,16 @@ def _resolve_execution_gate_authority(
     }
     if action not in mapping:
         return None
+
+    authority_violations = execution_authority_contract_violations(sig)
+    if authority_violations:
+        action = "BLOCK"
+        sig = {
+            **sig,
+            "final_action": action,
+            "gate_reason": "EXECUTION_AUTHORITY_CONTRACT_VIOLATION:"
+            + "|".join(authority_violations),
+        }
 
     verdict, tradeable = mapping[action]
     gate_reason = _s(sig.get("gate_reason"))
@@ -1929,6 +2012,38 @@ def _enforce_olm_lab_guard(
     row["execution_lock_reason"] = decision.reason
 
 
+def _enforce_execution_authority_lab_guard(
+    row: Dict[str, Any],
+    provenance: Optional[Dict[str, str]] = None,
+) -> None:
+    """Fail closed if a stamped final-gate baton is altered downstream."""
+
+    violations = execution_authority_contract_violations(row)
+    if not violations:
+        return
+    reason = "EXECUTION_AUTHORITY_CONTRACT_VIOLATION:" + "|".join(violations)
+    row["lab_tradeable"] = False
+    row["lab_verdict"] = "BLOCKED"
+    row["lab_status"] = "BLOCKED"
+    row["lab_execution_status"] = "BLOCK"
+    row["final_action"] = "BLOCK"
+    row["execution_category"] = "BLOCKED"
+    row["action_category"] = "BLOCKED"
+    row["display_execution_mode"] = "NO_TRADE"
+    row["position_size_display"] = "0% - authority contract failed"
+    row["execution_lock_reason"] = reason
+    row["final_capital_permission"] = "NO"
+    row["execution_authorized"] = False
+    row["execution_can_grant_capital"] = False
+    if provenance is not None:
+        for field in (
+            "lab_tradeable", "lab_verdict", "final_action",
+            "execution_lock_reason", "final_capital_permission",
+            "execution_authorized", "execution_can_grant_capital",
+        ):
+            provenance[field] = "governed_materializer:execution_authority_guard"
+
+
 def _trade_idea_id(row: Dict[str, Any], run_id: str) -> str:
     ticker = _s(row.get("ticker")).upper() or "UNKNOWN"
     direction = _u(first(row, "final_direction", "canonical_direction", "resolved_direction", "direction", "options_direction", "selected_contract_side", "option_direction")) or "UNKNOWN"
@@ -1990,6 +2105,14 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "gate_reason": first(sig, "gate_reason"),
         "gate_warnings": first(sig, "gate_warnings"),
         "gate_version": first(sig, "gate_version"),
+        "execution_eligibility_state": first(sig, "execution_eligibility_state"),
+        "execution_authority_ceiling": first(sig, "execution_authority_ceiling"),
+        "execution_authority_source": first(sig, "execution_authority_source"),
+        "execution_authority_policy_version": first(sig, "execution_authority_policy_version"),
+        "final_capital_permission": first(sig, "final_capital_permission"),
+        "execution_requires_human_approval": first(sig, "execution_requires_human_approval"),
+        "execution_authorized": first(sig, "execution_authorized"),
+        "execution_can_grant_capital": first(sig, "execution_can_grant_capital"),
         "eod_candidate_status": first(sig, "eod_candidate_status", "lab_execution_status", "candidate_status"),
         "execution_category": first(sig, "execution_category", "morning_execution_route", "morning_execution_lane", "morning_execution_permission", "execution_permission", "lab_verdict"),
         "action_category": first(sig, "lab_execution_status", "eod_candidate_status", "execution_category", "lab_verdict"),
@@ -2062,7 +2185,13 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "morning_selected_contract_symbol": first(sig, "morning_selected_contract_symbol", "live_selected_contract_symbol"),
         "selected_structure": first(sig, "selected_structure"),
         "selected_quote_snapshot_id": first(sig, "selected_quote_snapshot_id"),
-        "selected_quote_timestamp_utc": first(sig, "selected_quote_timestamp_utc", "contract_quote_timestamp"),
+        "selected_quote_timestamp_utc": first(
+            sig,
+            "selected_quote_timestamp_utc",
+            "contract_quote_timestamp_utc",
+            "quote_timestamp_utc",
+            "contract_quote_timestamp",
+        ),
         "selected_structure_hydration_status": first(sig, "selected_structure_hydration_status"),
         "selected_structure_hydration_reason": first(sig, "selected_structure_hydration_reason"),
         "selected_structure_hydration_schema_version": first(sig, "selected_structure_hydration_schema_version"),
@@ -2143,8 +2272,21 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "previous_contract_symbol": first(sig, "previous_contract_symbol", "contract_symbol_original", "morning_repaired_from_contract"),
         "contract_changed": sig.get("contract_changed", contract_changed),
         "contract_selection_reason": first(sig, "contract_selection_reason", "contract_repair_reason"),
-        "quote_as_of": first(sig, "quote_as_of", "selected_quote_timestamp_utc", "contract_quote_timestamp"),
+        "quote_as_of": first(
+            sig,
+            "quote_as_of",
+            "selected_quote_timestamp_utc",
+            "contract_quote_timestamp_utc",
+            "quote_timestamp_utc",
+            "contract_quote_timestamp",
+        ),
         "quote_freshness": first(sig, "quote_freshness", "contract_quote_freshness"),
+        "bar_data_source": first(sig, "bar_data_source", "data_source"),
+        "bar_data_asof": first(sig, "bar_data_asof", "data_asof"),
+        "bar_data_days_old": first(sig, "bar_data_days_old", "data_days_old"),
+        "bar_evidence_state": first(sig, "bar_evidence_state"),
+        "bar_evidence_reason": first(sig, "bar_evidence_reason"),
+        "is_stale": sig.get("is_stale", False),
         "option_chain_dataset_id": first(sig, "option_chain_dataset_id"),
         "option_chain_provider": first(sig, "option_chain_provider"),
         "option_chain_resolution": first(sig, "option_chain_resolution"),
@@ -2178,6 +2320,16 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "rr_recompute_status": first(sig, "rr_recompute_status"),
         "rr_recompute_reason": first(sig, "rr_recompute_reason"),
         "selected_contract_economics_ready": first(sig, "selected_contract_economics_ready"),
+        "execution_viability_policy_version": first(sig, "execution_viability_policy_version"),
+        "execution_viability_state": first(sig, "execution_viability_state"),
+        "execution_viability_reason": first(sig, "execution_viability_reason"),
+        "execution_viability_eligible": first(sig, "execution_viability_eligible"),
+        "execution_viability_reviewable": first(sig, "execution_viability_reviewable"),
+        "execution_viability_contract_symbol": first(sig, "execution_viability_contract_symbol"),
+        "execution_viability_bid": first(sig, "execution_viability_bid"),
+        "execution_viability_ask": first(sig, "execution_viability_ask"),
+        "execution_viability_spread_pct": first(sig, "execution_viability_spread_pct"),
+        "execution_viability_spread_denominator": first(sig, "execution_viability_spread_denominator"),
         "monetisability_status": first(sig, "monetisability_status"),
         "monetisability_state": first(sig, "monetisability_state"),
         "monetisability_reason": first(sig, "monetisability_reason"),
@@ -2278,7 +2430,16 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "eil_v3_verdict": first(sig, "eil_v3_verdict", "eil_signal_verdict", "fd_advisory_verdict", "fd_verdict"),
         "eil_composite_eod": first(sig, "eil_composite_eod", "eil_composite_score", "eil__composite_score"),
         "entry_plan": first(sig, "entry_plan", "trigger_primary", "scenario_entry_trigger", "wbs__entry_guidance"),
-        "invalidation_price": first(sig, "invalidation_price", "invalidation_eod", "stop_loss"),
+        "invalidation_price": first(
+            sig,
+            "invalidation_spot",
+            "ev3_invalidation_spot",
+            "invalidation_price",
+            "invalidation_eod",
+            "stop_loss",
+        ),
+        "invalidation_state": first(sig, "invalidation_state", "ev3_invalidation_state"),
+        "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
         "target_price": first(sig, "target_price", "wbs__wall_price", "structural_target", "opt__structural_target"),
         "target_in_play": first(sig, "target_in_play", "opt__target_in_play"),
         "structural_target": first(sig, "structural_target", "opt__structural_target", "wbs__wall_price", "target_price"),
@@ -2397,6 +2558,7 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
     }
     _enforce_economics_identity(row, provenance)
     _enforce_olm_lab_guard(row, provenance)
+    _enforce_execution_authority_lab_guard(row, provenance)
     # Liquidity-maturation scores are deterministic monitoring evidence. They
     # must never be reinterpreted as execution or capital authority.
     row["maturation_execution_authority"] = False
@@ -2424,6 +2586,34 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         row["lab_coherence_flags"] = _append_flag(
             row.get("lab_coherence_flags"), direction_reason
         )
+    # A valid directional row may be displayed for research without a
+    # governed invalidation, but it must never be presented as executable.
+    # Direction integrity takes precedence when both contracts are absent.
+    invalidation_state = _u(row.get("invalidation_state"))
+    invalidation_price = _f(row.get("invalidation_price"), default=0.0)
+    directional = _side_from_value(row.get("canonical_direction")) in {"CALL", "PUT"}
+    if direction_valid and directional and (
+        invalidation_state != "AVAILABLE" or invalidation_price <= 0.0
+    ):
+        row["lab_tradeable"] = False
+        row["lab_verdict"] = "BLOCKED"
+        row["lab_status"] = "BLOCKED"
+        row["lab_execution_status"] = DataExceptionReason.INVALIDATION_MISSING.value
+        row["final_action"] = "BLOCK"
+        row["execution_category"] = "BLOCKED"
+        row["action_category"] = "BLOCKED"
+        row["display_execution_mode"] = "NO_TRADE"
+        row["position_size_display"] = "0% - governed invalidation missing"
+        row["options_research_permission"] = "NOT_EXECUTABLE"
+        row["execution_lock_reason"] = _append_flag(
+            row.get("execution_lock_reason"), DataExceptionReason.INVALIDATION_MISSING.value
+        )
+        row["lab_coherence_status"] = DataExceptionReason.INVALIDATION_MISSING.value
+        row["lab_coherence_flags"] = _append_flag(
+            row.get("lab_coherence_flags"), DataExceptionReason.INVALIDATION_MISSING.value
+        )
+        provenance["lab_tradeable"] = "governed_materializer:invalidation_precondition"
+        provenance["final_action"] = "governed_materializer:invalidation_precondition"
     row["field_provenance_json"] = _json_safe(provenance)
     return {key: csv_safe_row(row).get(key, "") for key in FINAL_BOOK_FIELDS}
 

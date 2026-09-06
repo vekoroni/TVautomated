@@ -31,6 +31,7 @@ import argparse
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -778,6 +779,15 @@ def _bar_days_old_safe(df) -> int:
         return max(0, (_date.today() - _date.fromisoformat(data_as_of[:10])).days)
     except Exception:
         return 999
+
+
+def _governed_bar_evidence(data_source: str, bar_days_old: int) -> tuple[bool, str, str]:
+    """Return the governed stale flag, evidence state and reason code."""
+    source = str(data_source or "UNKNOWN").strip().upper()
+    stale = source == "STALE_CACHE" or int(bar_days_old) > 5
+    if stale:
+        return True, "APPROVED_FALLBACK", "STALE_SOURCE_FALLBACK"
+    return False, "COMPLETED_SESSION", "CURRENT_CANONICAL_HISTORY"
 
 
 def _wyckoff_phase_to_broad_bucket(phase: str) -> str:
@@ -1898,7 +1908,9 @@ def scan_ticker_ultimate(
     _bar_days_old_val  = _bar_days_old_safe(df)
     _data_source_attr  = str(getattr(df, 'attrs', {}).get('data_source', 'UNKNOWN') or 'UNKNOWN').upper()
     _data_asof_attr    = str(getattr(df, 'attrs', {}).get('data_as_of', 'UNKNOWN') or 'UNKNOWN')
-    _is_stale          = _data_source_attr == 'STALE_CACHE' or _bar_days_old_val > 5
+    _is_stale, _bar_evidence_state, _bar_evidence_reason = _governed_bar_evidence(
+        _data_source_attr, _bar_days_old_val
+    )
 
     # Candidate lane — computed cleanly outside dict (D2 fix)
     if _is_stale:
@@ -2155,6 +2167,8 @@ def scan_ticker_ultimate(
         'bar_data_source':   _data_source_attr,
         'bar_data_asof':     _data_asof_attr,
         'bar_data_days_old': _bar_days_old_val,
+        'bar_evidence_state': _bar_evidence_state,
+        'bar_evidence_reason': _bar_evidence_reason,
 
         # ── OPTIONS CONTRACT SCAFFOLDING (FIX-DTE-01) ─────────────────────────
         # Discovery does not price options — that is avshunter_options_intelligence.py's job.
@@ -2326,8 +2340,17 @@ def main() -> None:
     # DISC-02: VMS scanner context — written by orchestrator Phase 0
     ap.add_argument("--scanner-context", default="",
                     help="Path to scanner_context_{run_id}.json — injects VMS scores into composite scoring")
+    ap.add_argument(
+        "--run-id",
+        default="",
+        help="Governed pipeline run identity supplied by the orchestrator",
+    )
 
     args = ap.parse_args()
+    if args.run_id and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", args.run_id):
+        ap.error("--run-id must contain only letters, numbers, underscore or hyphen")
+    ts = args.run_id or datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.environ["AVSHUNTER_RUN_ID"] = ts
     logger = setup_logger(args.log_level)
 
     cfg = UltimateConfig()
@@ -2531,8 +2554,6 @@ def main() -> None:
                 f"total={len(all_signals)}"
             )
 
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
     out_candidates = out_dir / f"discovery_candidates_ultimate_{ts}.csv"
     out_early = out_dir / f"early_positions_ultimate_{ts}.csv"
     out_watchlist = out_dir / f"final_watchlist_ultimate_{ts}.csv"

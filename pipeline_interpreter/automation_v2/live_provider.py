@@ -1,4 +1,4 @@
-"""Lazy construction of the existing Claude provider in shadow mode."""
+﻿"""Lazy construction of the existing Claude provider in shadow mode."""
 
 from __future__ import annotations
 
@@ -63,3 +63,4 @@ def create_live_shadow_provider(
         use_web_search=use_web_search,
         stage_recorder=stage_recorder,
     )
+

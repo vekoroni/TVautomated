@@ -1,4 +1,4 @@
-"""
+﻿"""
 AVSHUNTER Options Intelligence v4.1 - JIM SIMONS EDITION + CRABEL PRECOR
 
 RENAISSANCE MEDALLION PRINCIPLES APPLIED:
@@ -34,7 +34,7 @@ Intelligence Sources:
 - PDF Macro Intelligence Report (99% accurate parsing)
 - WyckoffEngine_3101_v2: Phase detection A/B/C/D/E, trade direction, price levels
 - wyckoff_crabel_precor_logic_v2: State machine, NR4/NR7, compression, transition tracking
-- Crabel compression (volatility contraction) — enhanced with NR4/NR7
+- Crabel compression (volatility contraction) â€” enhanced with NR4/NR7
 - Mean reversion detection (oversold/overbought)
 - Macro regime filtering (GREEN/YELLOW/RED)
 
@@ -76,7 +76,7 @@ except ImportError:
     CRABEL_PRECOR_AVAILABLE = False
     logger.warning("wyckoff_crabel_precor_logic_v2 not found - running without state machine")
 
-# JSON macro loader — replaces PDF parsing
+# JSON macro loader â€” replaces PDF parsing
 try:
     from orchestrator.macro_loader import MacroLoader
     MACRO_LOADER_AVAILABLE = True
@@ -253,10 +253,10 @@ class OptionsIntelligence:
         
         page_texts = self._extract_full_pdf_text(pdf_path)
         if not page_texts:
-            print(f"  [Report] ❌ Cannot extract PDF text")
+            print(f"  [Report] âŒ Cannot extract PDF text")
             return None
         
-        print(f"  [Report] ✓ Extracted {len(page_texts)} pages")
+        print(f"  [Report] âœ“ Extracted {len(page_texts)} pages")
         full_text = "\n".join(page_texts.values())
         
         macro_data = {}
@@ -267,7 +267,7 @@ class OptionsIntelligence:
         vol_mode, vix_val, _, _ = self._extract_volatility_mode(full_text, page_texts)
         
         if switch is None or conviction is None or liquidity is None:
-            print(f"  [Report] ❌ Critical fields missing")
+            print(f"  [Report] âŒ Critical fields missing")
             return None
         
         macro_data['risk_on_switch'] = switch
@@ -277,7 +277,7 @@ class OptionsIntelligence:
         macro_data['volatility_mode'] = vol_mode
         macro_data['vix_contango'] = vix_val
         
-        print(f"  [Report] ✓ Switch: {switch}, Conviction: {conviction:.0%}, Liquidity: {liquidity}")
+        print(f"  [Report] âœ“ Switch: {switch}, Conviction: {conviction:.0%}, Liquidity: {liquidity}")
         
         return macro_data
 
@@ -335,22 +335,22 @@ class OptionsIntelligence:
     def _load_macro_data(self):
         """
         Load macro intelligence.
-        Priority: JSON file (macro_loader) → PDF fallback → None
+        Priority: JSON file (macro_loader) â†’ PDF fallback â†’ None
         """
         print(f"\n  [Macro] Loading intelligence...")
 
-        # ── JSON path (primary) ───────────────────────────────────────────────
+        # â”€â”€ JSON path (primary) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if MACRO_LOADER_AVAILABLE:
             loader = MacroLoader(folder=str(self.macro_folder))
             macro_data = loader.load()
             if macro_data is not None:
                 return macro_data
-            print(f"  [Macro] JSON load failed — trying PDF fallback")
+            print(f"  [Macro] JSON load failed â€” trying PDF fallback")
 
-        # ── PDF path (fallback) ───────────────────────────────────────────────
+        # â”€â”€ PDF path (fallback) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         report_path = self._find_intelligence_report()
         if not report_path:
-            print(f"  [Macro] ❌ No macro data found (JSON or PDF)")
+            print(f"  [Macro] âŒ No macro data found (JSON or PDF)")
             print(f"  [Macro]    Add: {self.macro_folder}/macro_intelligence_YYYY-MM-DD.json")
             return None
         return self._parse_intelligence_report(report_path)
@@ -376,7 +376,7 @@ class OptionsIntelligence:
             return 'YELLOW', 0.50, "Mixed conditions"
         
         else:
-            logger.info("  [Macro] RED (Hostile — PUT/SELL_SETUP aligned, CALL reduced)")
+            logger.info("  [Macro] RED (Hostile â€” PUT/SELL_SETUP aligned, CALL reduced)")
             return 'RED', 0.25, "Hostile environment"
 
     # ========================================================================
@@ -752,7 +752,7 @@ class OptionsIntelligence:
                 trans_to = precor.get('transition_to', 'NONE')
                 current_ph = precor.get('wyckoff_phase', '')
                 if trans_to and trans_to != 'NONE' and current_ph:
-                    precor_transition = f"{current_ph}→{trans_to}"
+                    precor_transition = f"{current_ph}â†’{trans_to}"
 
                 # Phase B + CRABEL_READY: high-value pre-breakout setup
                 # WyckoffEngine returns NONE for Phase B but Precor knows better
@@ -766,7 +766,7 @@ class OptionsIntelligence:
                         direction = 'PUT'
                     else:
                         return None  # No clear direction even with compression
-                    # Override — Precor has found a valid pre-breakout setup
+                    # Override â€” Precor has found a valid pre-breakout setup
                 elif wyckoff_result['trade_direction'] == 'NONE':
                     return None  # No direction from either engine
 
@@ -784,7 +784,7 @@ class OptionsIntelligence:
         if not CRABEL_PRECOR_AVAILABLE and wyckoff_result['trade_direction'] == 'NONE':
             return None
 
-        # Tier 1: reject conflicting directions — too risky
+        # Tier 1: reject conflicting directions â€” too risky
         if not direction_confirmed and wyckoff_threshold >= self.wyckoff_tier1:
             return None
 
@@ -836,7 +836,7 @@ class OptionsIntelligence:
                 row = {k: signal.get(k, '') for k in fieldnames}
                 writer.writerow(row)
 
-        print(f"  [Export] TIER {tier_num} → {csv_path.name} ({len(signals)} signals)")
+        print(f"  [Export] TIER {tier_num} â†’ {csv_path.name} ({len(signals)} signals)")
 
     # ========================================================================
     # Universe & data methods (unchanged from v4.0)
@@ -910,7 +910,7 @@ class OptionsIntelligence:
         ]
 
     def _get_price_history(self, ticker, days=90):
-        """Get price history from Polygon — cached to avoid duplicate API calls"""
+        """Get price history from Polygon â€” cached to avoid duplicate API calls"""
         cache_key = f"{ticker}_{days}"
         if cache_key in self._price_cache:
             return self._price_cache[cache_key]
@@ -936,3 +936,4 @@ class OptionsIntelligence:
             pass
         self._price_cache[cache_key] = None
         return None
+

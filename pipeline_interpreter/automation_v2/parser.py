@@ -1,4 +1,4 @@
-"""Strict parser for the existing tagged text response contract."""
+﻿"""Strict parser for the existing tagged text response contract."""
 
 from __future__ import annotations
 
@@ -105,3 +105,4 @@ def parse_legacy_responses(
         raw_response=main_response,
         raw_story=story_response,
     )
+

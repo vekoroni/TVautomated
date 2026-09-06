@@ -14,3 +14,4 @@ class ClaudeIntelligence:
     
     def analyze_futures(self, csvs, images):
         return 'Futures analysis placeholder'
+

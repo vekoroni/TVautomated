@@ -1,4 +1,4 @@
-"""Lab-driven batch launcher for the stateless ticker workflow."""
+﻿"""Lab-driven batch launcher for the stateless ticker workflow."""
 
 from __future__ import annotations
 
@@ -203,3 +203,4 @@ def run_lab_batch(
     )
     _atomic_write(state_path, state)
     return state_path
+

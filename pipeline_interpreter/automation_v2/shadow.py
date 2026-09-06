@@ -1,4 +1,4 @@
-"""Shadow-only adapter and isolated artifact publisher."""
+﻿"""Shadow-only adapter and isolated artifact publisher."""
 
 from __future__ import annotations
 
@@ -57,3 +57,4 @@ def run_shadow(
         raise ValueError("shadow runner accepts shadow-only, execution-disabled requests")
     result = interpret_ticker(request, provider, policy=policy)
     return result, publish_shadow_result(result, shadow_root)
+

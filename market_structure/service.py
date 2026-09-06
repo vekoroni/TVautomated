@@ -11,6 +11,7 @@ import pandas as pd
 from canonical_data.contracts import CompletenessStatus, DataScope, DatasetRecord, DatasetType
 from canonical_data.registry import CanonicalRegistry
 from canonical_data.storage import AtomicPayloadStore
+from domain.market_structure_evidence import pin_market_structure_authority
 from .lifecycle import direction_relationship, transition_lifecycle
 from .params import MSParams, MS_PARAMS_V1
 from .profile import build_market_profile, detect_double_distribution
@@ -60,7 +61,7 @@ def calculate_market_structure_evidence(*, ticker: str, session_date: date, run_
     lineage="|".join([ticker.upper(),session_date.isoformat(),ALGORITHM_VERSION,params.version,*input_dataset_ids])
     evidence_id=hashlib.sha256(lineage.encode("utf-8")).hexdigest()
     reason=("MS_INSUFFICIENT_DATA" if quality=="INSUFFICIENT_DATA" else structure.get("reason","MS_NO_STRUCTURE"))
-    return {"ms_evidence_id":evidence_id,"ms_algorithm_version":ALGORITHM_VERSION,"ms_parameter_set_version":params.version,
+    return pin_market_structure_authority({"ms_evidence_id":evidence_id,"ms_algorithm_version":ALGORITHM_VERSION,"ms_parameter_set_version":params.version,
         "ms_parameter_calibration_status":params.calibration_status,"ticker":ticker.upper(),"session_date":session_date.isoformat(),"run_id":run_id,
         "ms_calculated_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00","Z"),
         "ms_input_dataset_ids":list(input_dataset_ids),"ms_input_hashes":list(input_hashes),"ms_bin_width":profile.bin_width,
@@ -71,8 +72,7 @@ def calculate_market_structure_evidence(*, ticker: str, session_date: date, run_
         "ms_value_area_low":profile.value_area_low,"ms_value_area_high":profile.value_area_high,"ms_separation_low":structure.get("separation_low"),
         "ms_separation_high":structure.get("separation_high"),"ms_repair_pct":metrics["repair_pct"],"ms_acceptance_minutes":metrics["acceptance_minutes"],
         "ms_acceptance_closes":metrics["acceptance_closes"],"ms_acceptance_volume_share":metrics["volume_share"],"ms_vwap_hold_minutes":metrics["vwap_hold_minutes"],
-        "ms_retest_count":metrics["retest_count"],"ms_retest_result":metrics["retest_result"],"ms_reason_code":reason,
-        "ms_authority":"ADVISORY_ONLY","ms_can_grant_capital":False,"ms_can_reverse_direction":False}
+        "ms_retest_count":metrics["retest_count"],"ms_retest_result":metrics["retest_result"],"ms_reason_code":reason})
 
 
 class CanonicalMarketStructureService:

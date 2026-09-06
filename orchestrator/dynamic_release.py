@@ -1,4 +1,4 @@
-"""Acceptance and controlled-promotion contract for dynamic orchestration.
+﻿"""Acceptance and controlled-promotion contract for dynamic orchestration.
 
 The release guard is deliberately independent from signal calculation.  It
 turns the acceptance gates in AVS-SD-002 Rev 1.1 into machine-checkable
@@ -236,6 +236,36 @@ _PROMOTION_FLAGS = {
     PromotionStage.AUTO: FEATURE_FLAG_ENV_VARS,
 }
 
+# The acceptance cycle must exercise every explicit-command service that will
+# participate in the Evening -> Morning handoff. Autonomous resolution remains
+# withheld until the live gates have passed.
+CONTROLLED_LIVE_CYCLE_FLAGS = frozenset(FEATURE_FLAG_ENV_VARS) - {
+    "AVSHUNTER_DYNAMIC_AUTO_ENABLED"
+}
+
+
+def controlled_live_cycle_environment(
+    assessment: ReleaseAssessment,
+) -> dict[str, str]:
+    """Return the governed settings for a supervised live acceptance cycle.
+
+    This is intentionally distinct from promotion. It is available only after
+    all offline gates are clean, enables explicit Evening/Morning commands and
+    refuses autonomous dispatch.
+    """
+
+    if assessment.status not in {
+        ReleaseStatus.READY_FOR_LIVE_CYCLE.value,
+        ReleaseStatus.READY_FOR_CONTROLLED_PROMOTION.value,
+    }:
+        raise RuntimeError(
+            f"dynamic session release is {assessment.status}; live cycle refused"
+        )
+    return {
+        name: "1" if name in CONTROLLED_LIVE_CYCLE_FLAGS else "0"
+        for name in FEATURE_FLAG_ENV_VARS
+    }
+
 
 def promotion_environment(
     assessment: ReleaseAssessment, stage: PromotionStage | str
@@ -260,3 +290,4 @@ def write_assessment_atomic(assessment: ReleaseAssessment, path: Path | str) -> 
     )
     temporary.replace(destination)
     return destination
+

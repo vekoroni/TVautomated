@@ -38,3 +38,4 @@ class EmailSender:
             server.starttls()
             server.login(self.gmail_address, self.gmail_password)
             server.send_message(msg)
+

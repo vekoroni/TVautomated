@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from datetime import date
 
 import pandas as pd
 import scripts.avshunter_options_intelligence as oi
@@ -300,7 +301,9 @@ def test_no_primary_contract_repair_path_accepts_real_series_and_emits_diagnosti
     result = oi.process_ticker(signal_row)
 
     assert "truth value of a Series is ambiguous" not in str(result.get("stand_down_reason", ""))
-    assert result["thesis_id"] == "SERIES:CALL:2026-08-28"
+    assert result["thesis_id"] == "SERIES:CALL:2026-08-28:OLM2"
+    assert result["legacy_thesis_id"] == "SERIES:CALL:2026-08-28"
+    assert result["evidence_session_date"] == "2026-08-28"
     assert result["morning_transition_state"] == "CONTRACT_REPRICE_REQUIRED"
     assert result["contract_repair_status"] == "CONTRACT_REPAIR_REQUIRED"
     assert result["alternative_contracts_count"] == 1
@@ -314,6 +317,21 @@ def test_unsafe_signal_row_truthiness_pattern_cannot_return() -> None:
     source = inspect.getsource(oi)
     assert 'ctx.get("_signal_row") or {}' not in source
     assert "ctx.get('_signal_row') or {}" not in source
+
+
+def test_run_session_governs_contract_and_repair_thesis_identity(monkeypatch) -> None:
+    monkeypatch.setattr(oi, "_CDS_V2_SESSION", date(2026, 9, 4))
+    ctx = _context(direction="CALL", stop=95.0)
+    ctx.update({"ticker": "SESSION", "_signal_row": pd.Series({"asof_date": "2026-09-05"})})
+    contract = {
+        "symbol": "SESSION260918C00100000", "strike": 100.0, "dte": 14,
+        "delta": 0.35, "bid": 1.9, "ask": 2.0,
+        "quote_timestamp_utc": "2026-09-05T12:00:00Z", "mark_synthetic": False,
+    }
+    lifecycle = oi._options_liquidity_lifecycle_fields(ctx, contract, {})
+    assert lifecycle["evidence_session_date"] == "2026-09-04"
+    assert lifecycle["thesis_id"] == "SESSION:CALL:2026-09-04:OLM2"
+    assert lifecycle["evidence_session_source"] == "CDS_RUN_SESSION"
 
 
 def test_offline_replay_disables_auxiliary_provider_calls(monkeypatch) -> None:

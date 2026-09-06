@@ -396,3 +396,4 @@ def build_field_conflict_block(conflicts: list[dict], ticker: str) -> str:
     return "\n".join(lines)
 
 # CONTRACT-REPAIR-ALT-001: Lab reconciliation preserves repair alternatives.
+

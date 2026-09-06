@@ -1,4 +1,4 @@
-"""Run-scoped compatibility artifacts with atomic shadow publication."""
+﻿"""Run-scoped compatibility artifacts with atomic shadow publication."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def _default_html(result: TickerRunResult, row: dict[str, Any]) -> str:
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<title>{html.escape(result.ticker)} Shadow Interpreter</title></head>"
         "<body data-mode='SHADOW'>"
-        f"<h1>{html.escape(result.ticker)} — SHADOW</h1>"
+        f"<h1>{html.escape(result.ticker)} â€” SHADOW</h1>"
         f"<p>Verdict: {html.escape(result.effective_verdict)}</p>"
         f"<p>EIL: {html.escape(result.eil_action)}</p>"
         f"<p>Execution: {html.escape(result.execution_permission)}</p>"
@@ -232,3 +232,4 @@ def publish_complete_shadow_artifacts(
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

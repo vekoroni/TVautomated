@@ -21,7 +21,8 @@
     "AVSHUNTER_LAB_DYNAMIC_VIEW_ENABLED": false,
     "AVSHUNTER_INTERPRETER_DYNAMIC_RESOLVER_ENABLED": false,
     "AVSHUNTER_DECISION_LEDGER_ENABLED": false,
-    "AVSHUNTER_DYNAMIC_AUTO_ENABLED": false
+    "AVSHUNTER_DYNAMIC_AUTO_ENABLED": false,
+    "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED": false
   },
   "fields": [
     {"name": "pipeline_run_id", "type": "string", "owner": "dynamic_orchestrator", "authority": "identity", "consumers": ["all_stages"]},
@@ -48,4 +49,3 @@
     {"name": "capital_permission", "type": "boolean", "owner": "execution_gate", "authority": "capital", "consumers": ["lab", "interpreter", "ledger"]}
   ]
 }
-

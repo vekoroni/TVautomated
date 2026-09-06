@@ -23,6 +23,7 @@ from .contracts import (
     utc_now,
 )
 from .errors import DatasetValidationError
+from domain.market_evidence import EvidenceCandidate, decide_evidence_reuse
 
 
 SCHEMA_VERSION = "cds_control_plane_v2"
@@ -536,51 +537,26 @@ class CanonicalRegistry:
             if record.is_fresh(request.freshness_seconds, now=now)
         )
 
-        exact = next(
-            (
-                record
-                for record in records
-                if record.completeness_status is CompletenessStatus.COMPLETE
-                and record.scope == request.scope
-            ),
-            None,
+        decision = decide_evidence_reuse(
+            EvidenceCandidate(
+                dataset_id=record.dataset_id,
+                complete=record.completeness_status is CompletenessStatus.COMPLETE,
+                exact_scope=record.scope == request.scope,
+                covers_scope=record.scope.covers(request.scope),
+                overlaps_scope=record.scope.overlaps(request.scope),
+            )
+            for record in records
         )
-        if exact:
-            return DatasetResolution(
-                ResolutionKind.EXACT_HIT, request, (exact,), reason="exact fresh dataset"
-            )
-
-        superset = next(
-            (
-                record
-                for record in records
-                if record.completeness_status is CompletenessStatus.COMPLETE
-                and record.scope.covers(request.scope)
-            ),
-            None,
-        )
-        if superset:
-            return DatasetResolution(
-                ResolutionKind.SUPERSET_HIT,
-                request,
-                (superset,),
-                reason="fresh canonical superset",
-            )
-
-        overlaps = tuple(record for record in records if record.scope.overlaps(request.scope))
-        if overlaps:
-            return DatasetResolution(
-                ResolutionKind.PARTIAL_HIT,
-                request,
-                overlaps,
-                missing_scope=request.scope,
-                reason="partial coverage requires gap fetch",
-            )
+        by_id = {record.dataset_id: record for record in records}
+        selected = tuple(by_id[dataset_id] for dataset_id in decision.dataset_ids)
         return DatasetResolution(
-            ResolutionKind.MISS,
+            ResolutionKind(decision.kind.value),
             request,
-            missing_scope=request.scope,
-            reason="no fresh canonical coverage",
+            selected,
+            missing_scope=(
+                request.scope if decision.requires_provider_fetch else None
+            ),
+            reason=decision.reason,
         )
 
     def dataset_count(self) -> int:

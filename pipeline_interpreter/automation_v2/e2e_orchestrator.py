@@ -1,4 +1,4 @@
-"""Resumable post-capture orchestration for one staged ticker."""
+﻿"""Resumable post-capture orchestration for one staged ticker."""
 
 from __future__ import annotations
 
@@ -163,3 +163,4 @@ def run_e2e_workflow(
     state["published"] = False
     _write_state(state_path, state)
     return state_path
+

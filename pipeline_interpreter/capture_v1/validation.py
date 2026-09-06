@@ -1,4 +1,4 @@
-"""Deterministic image checks applied before a capture can be manifested."""
+﻿"""Deterministic image checks applied before a capture can be manifested."""
 
 from __future__ import annotations
 
@@ -48,3 +48,4 @@ def validate_png(
     if all(high - low <= 2 for low, high in extrema):
         findings.append("CAPTURE_APPEARS_BLANK")
     return ImageValidation(width, height, image_format, tuple(findings))
+

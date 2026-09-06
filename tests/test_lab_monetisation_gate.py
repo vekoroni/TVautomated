@@ -34,6 +34,9 @@ def _signal(ev_decision: str, rr: object) -> dict:
         "ev2_decision_hint": ev_decision,
         "rr_options": rr,
         "selected_contract_side": "CALL",
+        "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
+        "invalidation_source": "TEST_GOVERNED_THESIS",
         **direction,
     }
 

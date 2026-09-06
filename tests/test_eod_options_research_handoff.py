@@ -18,6 +18,8 @@ def _row(ticker: str, *, route: str, vetoes: str = "") -> dict:
         "options_direction": "CALL",
         "signal_price": 100.0,
         "target_price": 110.0,
+        "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
         "sector": "Health Care",
         "eil_v3_verdict": "EXECUTE",
         "effective_execution_verdict": "MORNING_VALIDATION_REQUIRED",
@@ -48,6 +50,23 @@ def _row(ticker: str, *, route: str, vetoes: str = "") -> dict:
         "contract_delta": 0.42,
         "contract_oi": 900,
         "contract_volume": 150,
+        "contract_bid_size": 25,
+        "contract_ask_size": 40,
+        "contract_quote_quality": "TWO_SIDED",
+        "contract_quote_timestamp_utc": "2026-09-04T20:00:00Z",
+        "bar_data_source": "STALE_CACHE",
+        "bar_data_asof": "2026-09-01",
+        "bar_data_days_old": 6,
+        "bar_evidence_state": "APPROVED_FALLBACK",
+        "bar_evidence_reason": "STALE_SOURCE_FALLBACK",
+        "is_stale": True,
+        "macro_packet_id": "MACRO:2026-09-04:fixture",
+        "macro_packet_sha256": "a" * 64,
+        "macro_source_fingerprint": "b" * 64,
+        "macro_as_of_utc": "2026-09-04T20:00:00Z",
+        "macro_session_date": "2026-09-04",
+        "macro_plain_language_advisory": "Rotation context only.",
+        "macro_authority": "ADVISORY_ONLY",
         "contract_spread_pct": 5.0 if not vetoes else 30.0,
         "execution_permission": "NONE_OPTIONS_RESEARCH_ONLY",
         "final_route": route,
@@ -90,6 +109,19 @@ def test_eod_manifest_preserves_options_research_contract_and_blocks_vetoes() ->
     assert by_ticker["GOOD"]["authority_source_stage"] == "FINAL_EXECUTION"
     assert bool(by_ticker["GOOD"]["eod_candidate_authorized"]) is True
     assert by_ticker["GOOD"]["ev3_authority_state"] == "NEGATIVE"
+    assert float(by_ticker["GOOD"]["contract_bid_size"]) == 25.0
+    assert float(by_ticker["GOOD"]["contract_ask_size"]) == 40.0
+    assert by_ticker["GOOD"]["contract_quote_quality"] == "TWO_SIDED"
+    assert by_ticker["GOOD"]["selected_quote_timestamp_utc"] == "2026-09-04T20:00:00Z"
+    assert by_ticker["GOOD"]["bar_data_source"] == "STALE_CACHE"
+    assert by_ticker["GOOD"]["bar_data_asof"] == "2026-09-01"
+    assert float(by_ticker["GOOD"]["bar_data_days_old"]) == 6.0
+    assert by_ticker["GOOD"]["bar_evidence_state"] == "APPROVED_FALLBACK"
+    assert by_ticker["GOOD"]["bar_evidence_reason"] == "STALE_SOURCE_FALLBACK"
+    assert bool(by_ticker["GOOD"]["is_stale"]) is True
+    assert by_ticker["GOOD"]["invalidation_state"] == "AVAILABLE"
+    assert by_ticker["GOOD"]["macro_packet_id"] == "MACRO:2026-09-04:fixture"
+    assert by_ticker["GOOD"]["macro_authority"] == "ADVISORY_ONLY"
 
     assert "BAD" not in by_ticker
     assert audit_by_ticker["BAD"]["final_route"] == "OPTIONS_BLOCKED"
@@ -131,6 +163,33 @@ def test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developin
     assert row["thesis_id"] == "PENDING:CALL:2026-08-29"
     assert float(row["maturation_score_2d"]) == 58.0
     assert bool(row["maturation_execution_authority"]) is False
+
+
+def test_eod_manifest_excludes_directional_thesis_without_governed_invalidation() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        eil_path = root / "execution_v3_5_TEST.csv"
+        output_path = root / "morning_candidates_TEST.csv"
+        missing_stop = _row("NOSTOP", route="OPTIONS_PROBE_ONLY")
+        missing_stop.update({
+            "invalidation_spot": None,
+            "invalidation_state": "MISSING",
+            "invalidation_source": "MISSING_AUTHORITATIVE_STOP",
+            "contract_repair_required": True,
+        })
+        pd.DataFrame([missing_stop]).to_csv(eil_path, index=False)
+
+        out = build_candidate_manifest(
+            eil_path=eil_path,
+            output_path=output_path,
+            run_id="TEST",
+            max_candidates=10,
+        )
+        audit = pd.read_csv(root / "eod_dropoff_audit_TEST.csv")
+
+    assert out.empty
+    assert audit.iloc[0]["eod_candidate_status"] == "EOD_STRUCTURAL_BLOCK"
+    assert "MISSING_GOVERNED_INVALIDATION" in audit.iloc[0]["eod_dropoff_reason"]
 
 
 def test_trigger_authority_overlay_drives_status_and_preserves_exact_categories() -> None:

@@ -1,4 +1,4 @@
-"""Immutable domain contracts for Pipeline Interpreter automation v2."""
+﻿"""Immutable domain contracts for Pipeline Interpreter automation v2."""
 
 from __future__ import annotations
 
@@ -172,3 +172,4 @@ class TickerRunResult:
             raise ValueError("interpreter execution permission must remain NONE")
         if self.capital_permission != CAPITAL_DENIED:
             raise ValueError("interpreter capital permission must remain denied")
+

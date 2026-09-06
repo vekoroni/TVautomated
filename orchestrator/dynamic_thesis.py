@@ -1,4 +1,4 @@
-"""Reusable completed-session thesis coordinator.
+﻿"""Reusable completed-session thesis coordinator.
 
 This module coordinates already-owned pipeline stages.  It does not contain
 trading calculations and cannot grant capital.  Its receipt is immutable and
@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from canonical_data.run_plan import AuthorityCeiling, RequestedAction, RunPlan
+from domain.run_planning import AuthorityCeiling, RequestedAction, RunPlan
 
 
 BUILD_THESIS_STAGES = (
@@ -171,3 +171,57 @@ def build_thesis(
     )
     _write_receipt_immutable(receipt, receipt_path)
     return receipt
+
+
+def record_completed_thesis(
+    plan: RunPlan,
+    *,
+    stage_results: Mapping[str, ThesisStageResult],
+    receipt_root: Path,
+) -> ThesisBuildReceipt:
+    """Record an already-executed legacy-adapter build as a governed receipt.
+
+    This is the production integration seam while the monolithic orchestrator
+    is being decomposed. It performs no calculations and grants no authority;
+    it only accepts a complete, reconciled set of domain stage results whose
+    identity matches the immutable run plan.
+    """
+    if plan.resolved_action != RequestedAction.BUILD_THESIS.value:
+        raise ValueError("record_completed_thesis requires a BUILD_THESIS plan")
+    if tuple(plan.stages_to_run) != BUILD_THESIS_STAGES:
+        raise ValueError("BUILD_THESIS stage order does not match the governed contract")
+    if plan.execution_authority_ceiling != AuthorityCeiling.EOD_PREPARED.value:
+        raise ValueError("completed thesis may only have EOD_PREPARED authority")
+    missing = [stage for stage in BUILD_THESIS_STAGES if stage not in stage_results]
+    if missing:
+        raise ValueError("missing BUILD_THESIS results: " + ",".join(missing))
+    ordered = tuple(stage_results[stage] for stage in BUILD_THESIS_STAGES)
+    for expected, result in zip(BUILD_THESIS_STAGES, ordered, strict=True):
+        if result.stage != expected:
+            raise ValueError(f"result for {expected} returned {result.stage}")
+        if result.status != "COMPLETED":
+            raise RuntimeError(f"BUILD_THESIS did not complete {expected}: {result.reason}")
+
+    receipt = ThesisBuildReceipt(
+        pipeline_run_id=plan.pipeline_run_id,
+        invocation_id=plan.invocation_id,
+        plan_hash=plan.plan_hash,
+        evidence_cutoff_utc=plan.evidence_cutoff_utc,
+        completed_session=plan.last_completed_session,
+        status="COMPLETED",
+        authority_ceiling=AuthorityCeiling.EOD_PREPARED.value,
+        stages=ordered,
+    )
+    receipt_path = Path(receipt_root) / plan.pipeline_run_id / (
+        f"completed_thesis_receipt_{plan.invocation_id}.json"
+    )
+    if receipt_path.exists():
+        existing = _load_receipt(receipt_path)
+        if existing.plan_hash != plan.plan_hash:
+            raise RuntimeError("existing thesis receipt belongs to a different plan")
+        if existing.receipt_hash != receipt.receipt_hash:
+            raise RuntimeError("same plan produced a different completed thesis receipt")
+        return existing
+    _write_receipt_immutable(receipt, receipt_path)
+    return receipt
+

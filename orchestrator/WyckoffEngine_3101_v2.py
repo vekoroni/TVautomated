@@ -1,15 +1,15 @@
-"""
+﻿"""
 AVSHUNTER WyckoffEngine_3101 v2.0 - FORCED OUTPUT ARCHITECTURE
 ================================================================================
 Complete rewrite per specification:
-- ALWAYS outputs current_phase ∈ {A, B, C, D, E}
+- ALWAYS outputs current_phase âˆˆ {A, B, C, D, E}
 - ALWAYS outputs dominant_event (never NONE)
-- phase_confidence ≥ 70 (ensemble agreement)
-- event_confidence ≥ 70 (ensemble agreement)
+- phase_confidence â‰¥ 70 (ensemble agreement)
+- event_confidence â‰¥ 70 (ensemble agreement)
 - phase_evidence_strength (0-100) - the TRUTH metric for execution gates
 - event_evidence_strength (0-100) - the TRUTH metric for execution gates
 - No Phase B prerequisite for Phase C/D/E
-- Contradictions → flags, not vetoes
+- Contradictions â†’ flags, not vetoes
 - Scoring-based, not gating-based
 ================================================================================
 """
@@ -28,11 +28,11 @@ class WyckoffOutput:
     
     # Forced outputs (ALWAYS present)
     current_phase: str  # A/B/C/D/E (never ABSENT)
-    phase_confidence: float  # ≥70
+    phase_confidence: float  # â‰¥70
     phase_evidence_strength: float  # 0-100 (truth)
     
     dominant_event: str  # Never NONE
-    event_confidence: float  # ≥70
+    event_confidence: float  # â‰¥70
     event_evidence_strength: float  # 0-100 (truth)
     
     # Control
@@ -652,7 +652,7 @@ class WyckoffEngine_3101_v2:
     # ==================== CONFIDENCE CALCULATIONS ====================
     
     def _calculate_phase_confidence(self, scores: Dict, chosen_phase: str) -> float:
-        """Calculate phase confidence (≥70 always)"""
+        """Calculate phase confidence (â‰¥70 always)"""
         chosen_score = scores[chosen_phase]
         other_scores = [s for p, s in scores.items() if p != chosen_phase]
         
@@ -662,12 +662,12 @@ class WyckoffEngine_3101_v2:
         max_other = max(other_scores)
         separation = chosen_score - max_other
         
-        # Ensure ≥70
+        # Ensure â‰¥70
         confidence = 70 + min(25, separation * 0.5)
         return confidence
     
     def _calculate_event_confidence(self, scores: Dict, chosen_event: str) -> float:
-        """Calculate event confidence (≥70 always)"""
+        """Calculate event confidence (â‰¥70 always)"""
         chosen_score = scores[chosen_event]
         other_scores = [s for e, s in scores.items() if e != chosen_event]
         
@@ -876,3 +876,4 @@ class WyckoffEngine_3101_v2:
     def _error(self, ticker: str, msg: str) -> Dict:
         """Error - still force outputs"""
         return self._insufficient_data(ticker)
+

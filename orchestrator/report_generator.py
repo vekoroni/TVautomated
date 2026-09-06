@@ -89,3 +89,4 @@ class ReportGenerator:
         doc.build(story)
 
         return str(output_path)
+

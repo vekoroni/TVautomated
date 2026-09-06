@@ -1,0 +1,11 @@
+AVS-OPS-001 commit 3 - .gitignore + deliverables
+sha: 6e834b838d35b6a061df12d44cafff6f72bf0dcb
+tag: post-tidy-20260904
+date_utc: 2026-09-04T08:36:53+01:00
+
+--- staged shape ---
+ 146 files changed, 7891 insertions(+), 6 deletions(-)
+
+--- anchored patterns added (each matches 0 tracked paths) ---
+/tmp*/  /pip-*/  /avs_macro_check_*/  /*old0908.py  *.rr_cap.bak
+_attic/ deliberately NOT ignored

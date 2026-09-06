@@ -1,12 +1,12 @@
-"""
+﻿"""
 live_market_reader.py
 =====================
 Fetches the four live data gaps identified in the WFC Interpreter output:
 
-  1. Intraday options volume  — Polygon.io options chain with volume (not OI-only)
-  2. Institutional flow       — Unusual options activity via Polygon/MarketData
-  3. Live bid/ask spread      — Polygon snapshot for specific contract
-  4. Sector peer confirmation — Live quotes for peer tickers (JPM/BAC/C for WFC etc.)
+  1. Intraday options volume  â€” Polygon.io options chain with volume (not OI-only)
+  2. Institutional flow       â€” Unusual options activity via Polygon/MarketData
+  3. Live bid/ask spread      â€” Polygon snapshot for specific contract
+  4. Sector peer confirmation â€” Live quotes for peer tickers (JPM/BAC/C for WFC etc.)
 
 Called by:
   - /intraday TICKER command in pipeline_interpreter_commands.py
@@ -30,21 +30,21 @@ from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
 
-# ── API keys ──────────────────────────────────────────────────────────────────
+# â”€â”€ API keys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Both keys were hardcoded fallback defaults until 2026-08-03 (committed in
-# 79fcfb4, genuinely present in git history — see REGIME_TREND_FIX_REPORT.md
+# 79fcfb4, genuinely present in git history â€” see REGIME_TREND_FIX_REPORT.md
 # Stage D). No fallback now: a missing env var must fail loudly, not silently
 # resume operating on a value that was exposed in source.
 POLYGON_API_KEY    = os.environ.get("POLYGON_API_KEY", "")
 MARKETDATA_API_KEY = os.environ.get("MARKETDATA_API_KEY", "")
 
-# ── Output paths ──────────────────────────────────────────────────────────────
+# â”€â”€ Output paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _INTERP_DIR   = Path(__file__).resolve().parent
 _MA_OPTIONS   = _INTERP_DIR / "MA_Inputs" / "options_data"
 _TODAY        = date.today().strftime("%Y%m%d")
 
-# ── Sector peer map ───────────────────────────────────────────────────────────
-# Maps ticker → sector peers for confirmation analysis
+# â”€â”€ Sector peer map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Maps ticker â†’ sector peers for confirmation analysis
 SECTOR_PEERS = {
     # Financials / Banks
     "WFC":  ["JPM", "BAC", "C", "GS"],
@@ -76,7 +76,7 @@ SECTOR_PEERS = {
     # China
     "BILI": ["SE", "BABA", "JD", "PDD"],
     "SE":   ["BILI", "BABA", "JD", "GRAB"],
-    # Default fallback — SPY/QQQ for macro confirmation
+    # Default fallback â€” SPY/QQQ for macro confirmation
     "_DEFAULT": ["SPY", "QQQ", "IWM", "XLF"],
 }
 
@@ -88,11 +88,11 @@ def _http_get(url: str, timeout: int = 10) -> Optional[dict]:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
-        print(f"  ⚠  HTTP error: {e}")
+        print(f"  âš   HTTP error: {e}")
         return None
 
 
-# ── 1. Intraday options volume (replaces OI_ONLY) ────────────────────────────
+# â”€â”€ 1. Intraday options volume (replaces OI_ONLY) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _marketdata_get(path: str, params: Optional[dict] = None, timeout: int = 12) -> Optional[dict]:
@@ -374,7 +374,7 @@ def fetch_peer_quotes(
     Fetch live quotes for sector peers to confirm or deny thesis direction.
 
     If WFC is a PUT thesis (bearish banks), JPM/BAC/C should also be weak.
-    If they are NOT weak, that is a divergence signal — thesis needs reassessment.
+    If they are NOT weak, that is a divergence signal â€” thesis needs reassessment.
 
     Uses Polygon snapshot endpoint for equity tickers.
     """
@@ -416,15 +416,15 @@ def fetch_peer_quotes(
     peer_alignment_call = round(up_count   / len(quotes), 2) if quotes else 0
 
     if peer_alignment_put >= 0.75:
-        alignment_verdict = "SECTOR_CONFIRMING_BEARISH — majority of peers declining, PUT thesis supported"
+        alignment_verdict = "SECTOR_CONFIRMING_BEARISH â€” majority of peers declining, PUT thesis supported"
     elif peer_alignment_call >= 0.75:
-        alignment_verdict = "SECTOR_CONFIRMING_BULLISH — majority of peers rising, CALL thesis supported"
+        alignment_verdict = "SECTOR_CONFIRMING_BULLISH â€” majority of peers rising, CALL thesis supported"
     elif peer_alignment_put >= 0.5:
-        alignment_verdict = "SECTOR_LEANING_BEARISH — more peers down than up"
+        alignment_verdict = "SECTOR_LEANING_BEARISH â€” more peers down than up"
     elif peer_alignment_call >= 0.5:
-        alignment_verdict = "SECTOR_LEANING_BULLISH — more peers up than down"
+        alignment_verdict = "SECTOR_LEANING_BULLISH â€” more peers up than down"
     else:
-        alignment_verdict = "SECTOR_DIVERGENT — peers mixed, sector thesis unclear"
+        alignment_verdict = "SECTOR_DIVERGENT â€” peers mixed, sector thesis unclear"
 
     result = {
         "status":              "OK",
@@ -439,16 +439,16 @@ def fetch_peer_quotes(
         "peer_alignment_call": peer_alignment_call,
         "alignment_verdict":   alignment_verdict,
         "data_note":           (
-            "SECTOR_PEER_CONFIRMATION — use to confirm or flag divergence. "
+            "SECTOR_PEER_CONFIRMATION â€” use to confirm or flag divergence. "
             "Divergent sector = thesis faces friction, reduce size or wait."
         ),
     }
 
-    print(f"  ✅ Peer quotes: {peers} | down={down_count} up={up_count} | {alignment_verdict[:40]}")
+    print(f"  âœ… Peer quotes: {peers} | down={down_count} up={up_count} | {alignment_verdict[:40]}")
     return result
 
 
-# ── Master fetch — all four gaps in one call ──────────────────────────────────
+# â”€â”€ Master fetch â€” all four gaps in one call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def fetch_all_live_data(
     ticker: str,
@@ -468,7 +468,7 @@ def fetch_all_live_data(
       - morning_thesis_validator.py --live after fetching live prices
     """
     print(f"\n  [LIVE DATA] Fetching all live data: {ticker}")
-    print(f"  {'─' * 50}")
+    print(f"  {'â”€' * 50}")
 
     results = {"ticker": ticker, "fetched_at": datetime.now().strftime("%H:%M ET")}
 
@@ -501,10 +501,10 @@ def fetch_all_live_data(
         _MA_OPTIONS.mkdir(parents=True, exist_ok=True)
         out_path = _MA_OPTIONS / f"{ticker.upper()}_live_data_{_TODAY}.json"
         out_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
-        print(f"\n  ✅ Live data written: {out_path.name}")
+        print(f"\n  âœ… Live data written: {out_path.name}")
         results["_output_path"] = str(out_path)
 
-    print(f"  {'─' * 50}")
+    print(f"  {'â”€' * 50}")
     print(f"  [LIVE DATA] Complete: {ticker}")
 
     return results
@@ -520,7 +520,7 @@ def format_live_data_for_prompt(live_data: dict) -> str:
 
     ticker  = live_data.get("ticker", "")
     fetched = live_data.get("fetched_at", "")
-    lines   = [f"LIVE MARKET DATA — {ticker} (fetched {fetched}):"]
+    lines   = [f"LIVE MARKET DATA â€” {ticker} (fetched {fetched}):"]
 
     # Options volume
     ov = live_data.get("options_volume", {})
@@ -593,7 +593,7 @@ def format_live_data_for_prompt(live_data: dict) -> str:
 
 
 
-# ── Batch fetch for morning validator ─────────────────────────────────────────
+# â”€â”€ Batch fetch for morning validator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def fetch_all_live_data_for_candidates(
     candidates: list,
@@ -614,7 +614,7 @@ def fetch_all_live_data_for_candidates(
         )
 
     Args:
-        candidates:     list of dicts — each must have a "ticker" key.
+        candidates:     list of dicts â€” each must have a "ticker" key.
                         Optionally has "selected_contract", "direction", "expiry".
         write_path:     if supplied, writes consolidated JSON here.
                         prepare_interpreter_session.py --morning then splits
@@ -666,12 +666,12 @@ def fetch_all_live_data_for_candidates(
             )
             result[ticker] = data
         except Exception as e:
-            print(f"  ⚠  Error fetching {ticker}: {e}")
+            print(f"  âš   Error fetching {ticker}: {e}")
             result[ticker] = {"status": "ERROR", "ticker": ticker, "error": str(e)}
 
-        # Polygon rate limit — 12 req/min on free, 100/min on starter
+        # Polygon rate limit â€” 12 req/min on free, 100/min on starter
         # Four calls per ticker at ~0.3s gap = ~1.2s per ticker
-        # For 20 candidates = ~24s total — acceptable for morning window
+        # For 20 candidates = ~24s total â€” acceptable for morning window
         time.sleep(0.2)
 
     # Write consolidated JSON
@@ -687,12 +687,12 @@ def fetch_all_live_data_for_candidates(
         }
         write_path.write_text(_json.dumps(payload, indent=2), encoding="utf-8")
         size_kb = write_path.stat().st_size // 1024
-        print(f"\n  ✅ Live data written: {write_path.name} ({size_kb} KB, {len(result)} tickers)")
+        print(f"\n  âœ… Live data written: {write_path.name} ({size_kb} KB, {len(result)} tickers)")
 
-    print(f"  [LIVE MARKET READER] Complete — {len(result)} tickers fetched")
+    print(f"  [LIVE MARKET READER] Complete â€” {len(result)} tickers fetched")
     return result
 
-# ── CLI helper — run directly to test ────────────────────────────────────────
+# â”€â”€ CLI helper â€” run directly to test â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 if __name__ == "__main__":
     import sys
@@ -701,3 +701,4 @@ if __name__ == "__main__":
     data = fetch_all_live_data(ticker, contract_ticker=contract)
     print("\n" + "=" * 60)
     print(format_live_data_for_prompt(data))
+

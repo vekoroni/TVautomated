@@ -541,7 +541,13 @@ class EdgeDetector:
             and intraday_rows == 0
             and not positional
         )
-        auction_conf = auction.confidence * (0.60 if no_intraday else 1.0)
+        profile = getattr(auction, "profile", None)
+        profile_poc = getattr(profile, "poc", None)
+        profile_usable = profile_poc is not None and float(profile_poc) > 0
+        auction_conf = (
+            auction.confidence * (0.60 if no_intraday else 1.0)
+            if profile_usable else 0.0
+        )
         return (
             state.confidence * 0.25 +
             outcomes.confidence_level * 0.35 +
@@ -550,11 +556,14 @@ class EdgeDetector:
 
     def _calculate_right_side_score(self, state, outcomes, auction):
         score = 50.0
-        if auction.auction_state == "ALIGNED":
+        profile = getattr(auction, "profile", None)
+        profile_poc = getattr(profile, "poc", None)
+        profile_usable = profile_poc is not None and float(profile_poc) > 0
+        if profile_usable and auction.auction_state == "ALIGNED":
             score += 25
-        elif auction.auction_state == "TRANSITIONING":
+        elif profile_usable and auction.auction_state == "TRANSITIONING":
             score += 15
-        elif auction.auction_state == "SEARCHING":
+        elif profile_usable and auction.auction_state == "SEARCHING":
             score += 5
 
         if auction.control.controller in ["BUYERS", "SELLERS"]:

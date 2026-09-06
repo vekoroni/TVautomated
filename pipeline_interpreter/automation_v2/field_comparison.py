@@ -1,4 +1,4 @@
-"""Field-level comparison between legacy and shadow trade briefs."""
+﻿"""Field-level comparison between legacy and shadow trade briefs."""
 
 from __future__ import annotations
 
@@ -81,3 +81,4 @@ def compare_trade_briefs(
         match_rate=matching / total if total else 1.0,
         differences=tuple(differences),
     )
+

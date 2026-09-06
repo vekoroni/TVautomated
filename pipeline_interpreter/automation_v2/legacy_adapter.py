@@ -1,4 +1,4 @@
-"""Explicit-path adapter from legacy Interpreter files to immutable requests.
+﻿"""Explicit-path adapter from legacy Interpreter files to immutable requests.
 
 This module deliberately does not implement "latest file" discovery. Callers
 must select the run and sources before invoking it.
@@ -277,3 +277,4 @@ def build_request_from_legacy(spec: LegacyInputSpec) -> TickerRunRequest:
         shadow=True,
         execution_enabled=False,
     )
+

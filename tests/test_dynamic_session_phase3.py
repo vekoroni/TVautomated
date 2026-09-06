@@ -106,7 +106,7 @@ class CoverageAndPlanningTests(unittest.TestCase):
 
     def test_interval_has_distinct_canonical_schema(self):
         self.assertEqual(intraday_schema_version(1), "underlying_intraday_bar_v1")
-        self.assertEqual(intraday_schema_version(5), "underlying_intraday_bar_v2_5min")
+        self.assertEqual(intraday_schema_version(5), "underlying_intraday_bar_v3_5min")
         self.assertNotEqual(intraday_schema_version(5), intraday_schema_version(15))
 
 

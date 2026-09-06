@@ -23,6 +23,7 @@ from orchestrator.dynamic_thesis import (
     BUILD_THESIS_STAGES,
     ThesisStageResult,
     build_thesis,
+    record_completed_thesis,
 )
 from scripts.build_completed_market_profiles import build_completed_profiles
 from vanguard.layer1_auction.auction_synthesizer import AuctionStateSynthesizer
@@ -58,6 +59,7 @@ def intraday_frame(interval: int = 5, count: int | None = None) -> pd.DataFrame:
             "session_segment": "REGULAR",
             "provider_observed_at_utc": timestamps,
             "observed_at": timestamps,
+            "provider_http_status": 203,
         }
     )
 
@@ -260,6 +262,26 @@ def test_completed_profile_stage_isolates_ticker_and_flags_systemic_failure() ->
         assert summary["systemic_failure"] is True
 
 
+def test_completed_profile_stage_fails_closed_on_systemic_partial_coverage() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        run_id = _create_profile_run(root, ("AAPL", "PARTIAL"))
+
+        def factory(_session, _interval):
+            def fetch(ticker, start, end):
+                return intraday_frame(5) if ticker == "AAPL" else intraday_frame(5, 20)
+            return fetch
+
+        summary = build_completed_profiles(
+            run_id=run_id, session_date=SESSION, base_dir=root,
+            fetch_factory=factory, max_failure_ratio=1.0, min_usable_ratio=0.75,
+        )
+        assert summary["provider_systemic_failure"] is False
+        assert summary["usable_ratio"] == 0.5
+        assert summary["coverage_failure"] is True
+        assert summary["systemic_failure"] is True
+
+
 def test_build_thesis_orders_stages_and_restart_reuses_receipt() -> None:
     plan = resolve_run_plan(
         requested_action=RequestedAction.BUILD_THESIS,
@@ -284,6 +306,29 @@ def test_build_thesis_orders_stages_and_restart_reuses_receipt() -> None:
     assert first == second
     assert calls == list(BUILD_THESIS_STAGES)
     assert first.authority_ceiling == "EOD_PREPARED"
+
+
+def test_record_completed_thesis_is_idempotent_and_plan_bound() -> None:
+    plan = resolve_run_plan(
+        requested_action=RequestedAction.BUILD_THESIS,
+        as_of_utc=datetime(2026, 9, 1, 22, tzinfo=timezone.utc),
+        evidence_cutoff_utc=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
+        authorised_tickers=("AAPL",),
+        pipeline_run_id="PHASE4-RECORDED",
+    )
+    results = {
+        stage: ThesisStageResult(stage, "COMPLETED", 1, 1)
+        for stage in BUILD_THESIS_STAGES
+    }
+    with tempfile.TemporaryDirectory() as directory:
+        first = record_completed_thesis(
+            plan, stage_results=results, receipt_root=Path(directory)
+        )
+        second = record_completed_thesis(
+            plan, stage_results=results, receipt_root=Path(directory)
+        )
+    assert first == second
+    assert first.pipeline_run_id == "PHASE4-RECORDED"
 
 
 def test_build_thesis_rejects_population_gain_and_loss() -> None:

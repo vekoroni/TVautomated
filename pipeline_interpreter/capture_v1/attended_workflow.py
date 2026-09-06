@@ -1,4 +1,4 @@
-"""Attended end-to-end Webull evidence capture for one shadow ticker."""
+﻿"""Attended end-to-end Webull evidence capture for one shadow ticker."""
 
 from __future__ import annotations
 
@@ -126,3 +126,4 @@ def run_attended_capture(
         encoding="utf-8",
     )
     return manifest
+

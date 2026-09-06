@@ -1,4 +1,4 @@
-"""Windows DPI coordination for consistent capture and cursor coordinates."""
+﻿"""Windows DPI coordination for consistent capture and cursor coordinates."""
 
 from __future__ import annotations
 
@@ -29,3 +29,4 @@ def enable_per_monitor_dpi_awareness() -> None:
     if not configured:
         raise RuntimeError("DPI_AWARENESS_CONFIGURATION_FAILED")
     _configured = True
+

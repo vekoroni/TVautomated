@@ -43,7 +43,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import urllib.parse
@@ -198,11 +198,15 @@ def _stamp_actuarial_data_quality(pkg: Dict[str, Any], ohlcv_ok: bool) -> Dict[s
 # -----------------------------
 # Polygon fetch
 # -----------------------------
-def polygon_fetch_ohlcv_daily(ticker: str, start: str, api_key: str) -> List[Dict[str, Any]]:
-    """Fetch adjusted daily OHLCV bars from Polygon.io."""
-    today = datetime.now(timezone.utc).date().isoformat()
+def polygon_fetch_ohlcv_daily(
+    ticker: str,
+    start: str,
+    end: str,
+    api_key: str,
+) -> List[Dict[str, Any]]:
+    """Fetch adjusted daily OHLCV bounded by the authorised session."""
     url = (
-        f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{start}/{today}"
+        f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{start}/{end}"
         f"?adjusted=true&sort=asc&limit=50000&apiKey={api_key}"
     )
     with urllib.request.urlopen(url, timeout=30) as resp:
@@ -410,6 +414,7 @@ def backfill_package(
     marketdata_api_key: str = "",
     intraday_provider: str = "auto",
     data_mode: str = "EOD",
+    completed_session: date | str | None = None,
 ) -> Tuple[bool, str]:
     """
     Backfill OHLCV into a single package file.
@@ -419,7 +424,7 @@ def backfill_package(
       pkg["timeseries"]["ohlcv_daily"]  — internal store / audit
 
     data_mode controls bar source:
-      EOD    — daily bars only, requires post-close data (default)
+      EOD    — daily bars through the authorised completed session (default)
       LATEST — daily bars + today's intraday session bar appended.
                The intraday bar is flagged intraday_partial=True so
                downstream modules apply EOD thresholds correctly.
@@ -434,6 +439,24 @@ def backfill_package(
     ticker = (pkg.get("ticker") or "").strip().upper()
     if not ticker:
         return False, "MISSING_TICKER"
+
+    # DDD-1 Session Authority: daily evidence is bounded by one explicit,
+    # completed exchange session.  The current session may only be appended as
+    # a separately-labelled observation in LATEST mode.
+    if completed_session is None:
+        from canonical_data.session_clock import session_snapshot
+
+        required_completed_session = session_snapshot(
+            datetime.now(timezone.utc)
+        ).last_completed_session
+    else:
+        try:
+            required_completed_session = date.fromisoformat(
+                str(completed_session)[:10]
+            )
+        except ValueError:
+            return False, "INVALID_COMPLETED_SESSION"
+    required_session_text = required_completed_session.isoformat()
 
     # ── Preserve actuarial block before any write ─────────────────────────────
     actuarial_snapshot = _preserve_actuarial_block(pkg)
@@ -451,10 +474,16 @@ def backfill_package(
 
     dc = pkg["data_contract"]
     ts = pkg["timeseries"]
+    dc.update({
+        "evidence_session_date": required_session_text,
+        "evidence_state": "COMPLETED_SESSION",
+        "session_authority_version": "SESSION_AUTHORITY_V1",
+    })
 
     # CDS-2 ACTIVE: a canonical hit may short-circuit only when its final bar
     # satisfies the same freshness contract enforced by Vanguard.
     canonical = None
+    canonical_history_short = False
     _canonical_reader = None
     try:
         from canonical_data.history_bridge import (
@@ -464,9 +493,21 @@ def backfill_package(
             read_canonical_history,
         )
         _canonical_reader = read_canonical_history
-        canonical = read_canonical_history(ticker, max_staleness_days=None)
+        canonical = read_canonical_history(
+            ticker,
+            end_date=required_completed_session,
+            max_staleness_days=None,
+        )
         canonical_history_short = canonical is not None and len(canonical) < min_bars
-        canonical_fresh = canonical_history_is_fresh(canonical)
+        canonical_last = (
+            pd.to_datetime(canonical["date"], errors="coerce").max()
+            if canonical is not None and not canonical.empty
+            else pd.NaT
+        )
+        canonical_fresh = canonical_history_is_fresh(canonical) and (
+            pd.notna(canonical_last)
+            and canonical_last.date() == required_completed_session
+        )
         if canonical is not None and len(canonical) >= min_bars and canonical_fresh:
             canonical = canonical.copy()
             canonical["date"] = pd.to_datetime(canonical["date"]).dt.strftime("%Y-%m-%d")
@@ -547,10 +588,9 @@ def backfill_package(
             last_date_str = existing[-1].get("date", "")
             if last_date_str:
                 last_dt = datetime.strptime(last_date_str, "%Y-%m-%d").date()
-                days_old = (datetime.now(timezone.utc).date() - last_dt).days
-                data_is_fresh = days_old <= 1
+                data_is_fresh = last_dt == required_completed_session
         except Exception:
-            data_is_fresh = True
+            data_is_fresh = False
         if data_is_fresh:
             dc.update({"has_ohlcv_daily": True, "timeseries_source": ts.get("source") or "CACHED"})
             # SPRINT 1: stamp staleness fields even on cached-fresh path
@@ -569,7 +609,14 @@ def backfill_package(
 
     # ── Promote from timeseries sub-dict ─────────────────────────────────────
     existing_ts = ts.get("ohlcv_daily")
-    if isinstance(existing_ts, list) and len(existing_ts) >= min_bars:
+    existing_ts_last = ""
+    if isinstance(existing_ts, list) and existing_ts:
+        existing_ts_last = str(existing_ts[-1].get("date") or "")[:10]
+    if (
+        isinstance(existing_ts, list)
+        and len(existing_ts) >= min_bars
+        and existing_ts_last == required_session_text
+    ):
         pkg["ohlcv_daily"] = existing_ts
         pkg["daily_df"]    = existing_ts
         pkg["ohlcv"]       = existing_ts
@@ -610,8 +657,18 @@ def backfill_package(
                     canonical_last.date() + timedelta(days=1)
                 ).isoformat()
         rows = polygon_fetch_ohlcv_daily(
-            ticker, start=provider_start, api_key=api_key
+            ticker,
+            start=provider_start,
+            end=required_session_text,
+            api_key=api_key,
         )
+        # Treat provider boundaries as an input assertion, not a guarantee.
+        # A provider that includes a developing bar despite the requested end
+        # must never promote that bar into completed canonical history.
+        rows = [
+            row for row in rows
+            if str(row.get("date") or "")[:10] <= required_session_text
+        ]
 
         # Persist the completed daily series before adding any intraday partial
         # bar to the package. This is a no-op unless CDS write-through is on.
@@ -623,13 +680,15 @@ def backfill_package(
                 provider="POLYGON",
                 source_kind="PACKAGE_BACKFILL",
                 source_run_id=str(pkg.get("run_id") or "") or None,
-                partial_current_session=(data_mode == "LATEST"),
+                partial_current_session=False,
             )
 
             # Re-read the governed full series after the missing tail commits.
             # Validating the delta alone would incorrectly fail MIN_BARS.
             if _canonical_reader is not None:
-                refreshed = _canonical_reader(ticker)
+                refreshed = _canonical_reader(
+                    ticker, end_date=required_completed_session
+                )
                 if refreshed is not None and not refreshed.empty:
                     refreshed = refreshed.copy()
                     refreshed["date"] = pd.to_datetime(
@@ -665,6 +724,28 @@ def backfill_package(
                     rows.append(_intraday_bar)
                     _intraday_appended = True
                     _intraday_source = str(_intraday_bar.get("intraday_source") or "UNKNOWN")
+
+        completed_rows = [
+            row for row in rows
+            if str(row.get("date") or "")[:10] <= required_session_text
+        ]
+        completed_last = (
+            str(completed_rows[-1].get("date") or "")[:10]
+            if completed_rows
+            else ""
+        )
+        if completed_last != required_session_text:
+            dc.update({
+                "has_ohlcv_daily": False,
+                "canonical_freshness_status": "REQUIRED_SESSION_MISSING",
+                "required_completed_session": required_session_text,
+                "available_completed_session": completed_last or None,
+            })
+            if actuarial_snapshot is not None:
+                pkg["actuarial"] = actuarial_snapshot
+            pkg = _stamp_actuarial_data_quality(pkg, ohlcv_ok=False)
+            write_json(pkg_path, pkg)
+            return False, "REQUIRED_COMPLETED_SESSION_MISSING"
 
         ok, reason = validate_series(rows, min_bars=min_bars, data_mode=data_mode)
         if not ok:
@@ -776,10 +857,18 @@ def main() -> int:
         default="EOD",
         help=(
             "Bar data mode. "
-            "EOD (default): daily bars only — use after 16:15 ET for complete bars. "
+            "EOD (default): daily bars through --completed-session. "
             "LATEST: daily bars + today's intraday session bar from minute aggregates "
             "(Polygon Stocks Starter). Safe to run at any time. Partial session bar "
             "is appended and flagged intraday_partial=True for downstream modules."
+        ),
+    )
+    ap.add_argument(
+        "--completed-session",
+        default="",
+        help=(
+            "Authoritative completed XNYS session (YYYY-MM-DD). Provider daily "
+            "requests and canonical reads are bounded by this date."
         ),
     )
     ap.add_argument("--limit", type=int, default=0,
@@ -865,6 +954,7 @@ def main() -> int:
             marketdata_api_key=marketdata_api_key,
             intraday_provider=args.intraday_provider,
             data_mode=args.data_mode,
+            completed_session=args.completed_session or None,
         )
 
         stats[reason] = stats.get(reason, 0) + 1

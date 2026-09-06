@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "quote_date": "2026-09-04",
+  "chain_rows": 245448,
+  "tickers_with_chains": 2869,
+  "greek_coverage": {
+    "iv": 241739,
+    "delta": 241739,
+    "gamma": 241739,
+    "theta": 241739,
+    "vega": 241739
+  },
+  "full_greek_rows": 241739,
+  "surface_rows": 11988,
+  "iv_cache_rows": 2846,
+  "executed": false,
+  "built_at_utc": "2026-09-05T10:32:10.565267+00:00"
+}

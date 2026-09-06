@@ -14,7 +14,12 @@ from canonical_data.contracts import CompletenessStatus, DataScope, DatasetRecor
 from canonical_data.registry import CanonicalRegistry
 from canonical_data.storage import AtomicPayloadStore
 from canonical_data.run_plan import evidence_identity
-from contracts.market_profile_evidence import MarketProfileEvidence, PROFILE_EVIDENCE_VERSION
+from domain.market_structure_evidence import (
+    MarketProfileEvidence,
+    PROFILE_EVIDENCE_VERSION,
+    profile_levels_are_usable,
+    profile_reason_code,
+)
 from .profile import build_market_profile, detect_double_distribution
 
 
@@ -88,8 +93,14 @@ def build_profile_evidence(
     calculated_iso = calculated.astimezone(timezone.utc).replace(
         microsecond=0
     ).isoformat().replace("+00:00", "Z")
-    reason = "PROFILE_COMPLETE" if profile.poc is not None and completeness == "COMPLETE" else (
-        "PROFILE_INPUT_PARTIAL" if completeness != "COMPLETE" else "PROFILE_INSUFFICIENT_DATA"
+    reason = profile_reason_code(
+        evidence_state=evidence_state,
+        completeness_status=completeness,
+        levels_available=profile_levels_are_usable(
+            poc=profile.poc,
+            value_area_low=profile.value_area_low,
+            value_area_high=profile.value_area_high,
+        ),
     )
     observed = pd.to_datetime(bars.get("observed_at", bars.get("timestamp_utc")), utc=True, errors="coerce").max()
     observed_at = calculated_iso if pd.isna(observed) else observed.isoformat().replace("+00:00", "Z")

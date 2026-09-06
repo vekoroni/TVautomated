@@ -1,5 +1,5 @@
-"""
-AVSHUNTER News Terminal v1.3 — Command Router
+﻿"""
+AVSHUNTER News Terminal v1.3 â€” Command Router
 Maps /commands to prompts, API calls and output writers
 """
 from news_terminal_engine import (
@@ -13,29 +13,29 @@ from news_terminal_outputs import write_all_outputs, write_ticker_csv_only
 from news_terminal_engine import session as _session
 
 MENU = """
-╔══════════════════════════════════════════════════════════════════╗
-║         AVSHUNTER NEWS TERMINAL v1.3 — COMMAND MENU             ║
-╠══════════════════════════════════════════════════════════════════╣
-║  /brief          Full global session intelligence brief          ║
-║  /event "text"   Analyse a specific news event                   ║
-║  /map            Beneficiaries, losers and companies             ║
-║  /forward        Forward-looking impact view with FIPS           ║
-║  /ticker-csv     Create curated ticker candidate CSV             ║
-║  /handoff-csv    Create full narrative/event handoff CSV         ║
-║  /watchlist      Watchlist-only candidates                       ║
-║  /mna            M&A, strategic reviews and activist signals     ║
-║  /sector TEXT    Sector narrative brief (e.g. /sector semis)     ║
-║  /risk           Stale, crowded, source, options, thesis risks   ║
-║  /sources        Confirmed / assumption / missing data           ║
-║  /refine         Reduce to highest-quality names only            ║
-║  /reset          Clear session, keep rules active                ║
-║  /status         Show current session summary                    ║
-║  /menu           Show this menu                                  ║
-║  /exit           Close terminal                                  ║
-╚══════════════════════════════════════════════════════════════════╝"""
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘         AVSHUNTER NEWS TERMINAL v1.3 â€” COMMAND MENU             â•‘
+â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£
+â•‘  /brief          Full global session intelligence brief          â•‘
+â•‘  /event "text"   Analyse a specific news event                   â•‘
+â•‘  /map            Beneficiaries, losers and companies             â•‘
+â•‘  /forward        Forward-looking impact view with FIPS           â•‘
+â•‘  /ticker-csv     Create curated ticker candidate CSV             â•‘
+â•‘  /handoff-csv    Create full narrative/event handoff CSV         â•‘
+â•‘  /watchlist      Watchlist-only candidates                       â•‘
+â•‘  /mna            M&A, strategic reviews and activist signals     â•‘
+â•‘  /sector TEXT    Sector narrative brief (e.g. /sector semis)     â•‘
+â•‘  /risk           Stale, crowded, source, options, thesis risks   â•‘
+â•‘  /sources        Confirmed / assumption / missing data           â•‘
+â•‘  /refine         Reduce to highest-quality names only            â•‘
+â•‘  /reset          Clear session, keep rules active                â•‘
+â•‘  /status         Show current session summary                    â•‘
+â•‘  /menu           Show this menu                                  â•‘
+â•‘  /exit           Close terminal                                  â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"""
 
 def print_results(results: dict, raw_response: str = ""):
-    """Print file write summary — handles any return structure."""
+    """Print file write summary â€” handles any return structure."""
     from pathlib import Path
     print()
     def safe_name(v):
@@ -51,35 +51,35 @@ def print_results(results: dict, raw_response: str = ""):
     for key in ("ticker_csv",):
         if key in results:
             n = safe_name(results[key]); r = safe_rows(results[key])
-            if n: print(f"  ✅ {n:<50} ({r} rows)")
+            if n: print(f"  âœ… {n:<50} ({r} rows)")
     for key in ("handoff_csv",):
         if key in results:
             n = safe_name(results[key]); r = safe_rows(results[key])
-            if n: print(f"  ✅ {n:<50} ({r} rows)")
+            if n: print(f"  âœ… {n:<50} ({r} rows)")
     for key in ("macro_json",):
         if key in results:
             n = safe_name(results[key])
-            if n: print(f"  ✅ {n}")
+            if n: print(f"  âœ… {n}")
     for key in ("master_calendar", "master_new_rows"):
         if key in results:
             v = results[key]
             cnt = v.get("added", v) if isinstance(v, dict) else v
-            print(f"  ✅ catalyst_calendar_master.csv  (+{cnt} rows)")
+            print(f"  âœ… catalyst_calendar_master.csv  (+{cnt} rows)")
             break
     for key in ("full_html", "full_brief"):
         if key in results:
             n = safe_name(results[key])
-            if n: print(f"  ✅ {n}")
+            if n: print(f"  âœ… {n}")
             break
     for key in ("trader_html", "trader_brief"):
         if key in results:
             n = safe_name(results[key])
-            if n: print(f"  ✅ {n}")
+            if n: print(f"  âœ… {n}")
             break
     for key in ("summary_txt", "summary_text"):
         if key in results:
             n = safe_name(results[key])
-            if n: print(f"  ✅ {n}")
+            if n: print(f"  âœ… {n}")
             break
     print()
     from news_terminal_engine import extract_desk_verdict, extract_options_regime
@@ -97,13 +97,13 @@ def print_text_response(response: str, sections: list):
     for sec in sections:
         content = extract_section(response, sec)
         if content:
-            print(f"\n{'─'*60}")
+            print(f"\n{'â”€'*60}")
             print(f"  {sec.replace('_',' ')}")
-            print('─'*60)
+            print('â”€'*60)
             for line in content.split('\n')[:40]:
                 print(f"  {line}")
 
-# ── COMMAND HANDLERS ──────────────────────────────────────────────────────────
+# â”€â”€ COMMAND HANDLERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def cmd_brief():
     import time
     print("\n  Running global session brief...")
@@ -122,9 +122,9 @@ def cmd_brief():
     # Print summary to console
     exec_sum = extract_section(response, "EXECUTIVE_SUMMARY")
     if exec_sum:
-        print(f"\n{'─'*60}")
+        print(f"\n{'â”€'*60}")
         print("  EXECUTIVE SUMMARY")
-        print('─'*60)
+        print('â”€'*60)
         for line in exec_sum.split('\n')[:8]:
             print(f"  {line}")
     return response
@@ -250,7 +250,7 @@ def cmd_ticker_csv():
     import time
     print("\n  Creating curated ticker candidate CSV from current session...")
     if not session.candidates:
-        print("  ⚠  No candidates in current session. Run /brief first.")
+        print("  âš   No candidates in current session. Run /brief first.")
         return None
     t0 = time.time()
     run_dir, ts = get_run_dir()
@@ -264,29 +264,29 @@ def cmd_handoff_csv():
     import time
     print("\n  Creating full narrative/event handoff CSV from current session...")
     if not session.last_handoff_csv:
-        print("  ⚠  No handoff data in current session. Run /brief or /event first.")
+        print("  âš   No handoff data in current session. Run /brief or /event first.")
         return None
     t0 = time.time()
     from news_terminal_outputs import write_csv, HANDOFF_CSV_FIELDS
     run_dir, ts = get_run_dir()
     path = run_dir / f"handoff_{ts}.csv"
     n = write_csv(session.last_handoff_csv, path, HANDOFF_CSV_FIELDS)
-    print(f"\n  ✅ {path.name} ({n} rows)")
+    print(f"\n  âœ… {path.name} ({n} rows)")
     return None
 
 def cmd_status():
     s = session.summary()
     print(f"""
-  ─────────────────────────────────────────
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   SESSION STATUS
-  ─────────────────────────────────────────
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Date:           {session.session_date}
   Desk Verdict:   {s['desk_verdict']}
   Options Regime: {s['options_regime']}
   Narratives:     {s['narratives']}
   Candidates:     {s['total']} total  |  HIGH: {s['high']}  MED: {s['medium']}  LOW: {s['low']}
   Runs this session: {session.run_count}
-  ─────────────────────────────────────────""")
+  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€""")
 
 def deploy_news_terminal_outputs():
     """
@@ -317,7 +317,7 @@ def deploy_news_terminal_outputs():
             src = src_dir / fname
             if src.exists():
                 shutil.copy2(src, target / fname)
-                print(f"  [DEPLOY] {fname} → {target.name}")
+                print(f"  [DEPLOY] {fname} â†’ {target.name}")
 
     inputs_dir = BASE / "dropbox" / "inputs"
     inputs_dir.mkdir(parents=True, exist_ok=True)
@@ -326,7 +326,7 @@ def deploy_news_terminal_outputs():
         src = src_dir / fname
         if src.exists():
             shutil.copy2(src, inputs_dir / fname)
-            print(f"  [DEPLOY] {fname} → dropbox\\inputs")
+            print(f"  [DEPLOY] {fname} â†’ dropbox\\inputs")
 
     print("  [DEPLOY] Complete")
 
@@ -340,12 +340,12 @@ def _run_combiner():
         print("\n  Running combiner...")
         subprocess.run([sys.executable, str(combiner)], check=False)
     else:
-        print(f"  ⚠ Combiner not found: {combiner}")
+        print(f"  âš  Combiner not found: {combiner}")
 
 
 def cmd_reset():
     session.reset()
-    print("\n  ✅ Session cleared. v1.3 rules and system prompt preserved.")
+    print("\n  âœ… Session cleared. v1.3 rules and system prompt preserved.")
     print("  Ready for new analysis.\n")
 
 def route_command(raw_input: str):
@@ -379,3 +379,4 @@ def route_command(raw_input: str):
     elif cmd in ("/exit", "/quit"): return "EXIT"
     else: print(f"  Unknown command: {cmd}  (type /menu for help)")
     return None
+

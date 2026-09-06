@@ -1,4 +1,4 @@
-"""Allowlisted Webull navigation primitives for interactive shadow mapping."""
+﻿"""Allowlisted Webull navigation primitives for interactive shadow mapping."""
 
 from __future__ import annotations
 
@@ -291,7 +291,7 @@ class WindowsNavigationDriver:
         if not positioned:
             # Webull/Windows can reject SetCursorPos after the application takes
             # foreground.  SendInput remains valid, but it must receive the same
-            # physical target used to derive the control—not a DPI-scaled point.
+            # physical target used to derive the controlâ€”not a DPI-scaled point.
             self._send_input_move(user32, x, y)
             positioned = self._cursor_at(user32, x, y)
         if not positioned:
@@ -531,3 +531,4 @@ def switch_ticker_for_visual_review(
         except OSError:
             pass
         raise
+

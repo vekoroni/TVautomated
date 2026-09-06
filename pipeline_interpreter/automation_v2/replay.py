@@ -1,4 +1,4 @@
-"""Stable JSON serialization for immutable request replay."""
+﻿"""Stable JSON serialization for immutable request replay."""
 
 from __future__ import annotations
 
@@ -117,3 +117,4 @@ def read_request_fixture(path: str | Path) -> TickerRunRequest:
     if not isinstance(value, dict):
         raise ValueError("request fixture must contain an object")
     return request_from_dict(value)
+

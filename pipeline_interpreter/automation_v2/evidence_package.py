@@ -1,4 +1,4 @@
-"""Assemble verified capture and Lab artifacts into one staged ticker package."""
+﻿"""Assemble verified capture and Lab artifacts into one staged ticker package."""
 
 from __future__ import annotations
 
@@ -195,3 +195,4 @@ def assemble_evidence_package(
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

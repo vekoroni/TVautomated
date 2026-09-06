@@ -1,4 +1,4 @@
-"""Allowlisted Webull market-screen navigation for shadow calibration."""
+﻿"""Allowlisted Webull market-screen navigation for shadow calibration."""
 
 from __future__ import annotations
 
@@ -136,3 +136,4 @@ def map_market_screen(
     except Exception:
         shutil.rmtree(output_directory, ignore_errors=True)
         raise
+

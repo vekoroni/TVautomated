@@ -1,5 +1,5 @@
-"""
-AVSHUNTER News Terminal v1.3 — Output Writers
+﻿"""
+AVSHUNTER News Terminal v1.3 â€” Output Writers
 CSV, JSON, HTML brief, newsletter
 """
 
@@ -86,20 +86,20 @@ def write_all_outputs(response, session, run_dir, ts, prefix=""):
         written['ticker_csv'] = ticker_csv
         written['master_new_rows'] = update_catalyst_master(ticker_csv)
     else:
-        print("  ⚠ No ticker CSV extracted — check raw_response_{ts}.txt")
+        print("  âš  No ticker CSV extracted â€” check raw_response_{ts}.txt")
 
     handoff = write_handoff_csv(response, run_dir, ts, prefix=prefix)
     if handoff:
         written['handoff_csv'] = handoff
     else:
-        print("  ⚠ No handoff CSV extracted")
+        print("  âš  No handoff CSV extracted")
 
     written['macro_json'] = write_macro_json(response, run_dir, ts)
     written['full_brief'] = write_full_brief(response, session, run_dir, ts)
     written['trader_brief'] = write_trader_brief(response, session, run_dir, ts)
     written['summary_text'] = write_summary_text(response, session, run_dir, ts)
 
-    # Integration outputs — flat news_terminal/outputs/
+    # Integration outputs â€” flat news_terminal/outputs/
     cat_path = write_catalyst_csv_v2(response, ts)
     if cat_path:
         written['catalyst_csv_v2'] = cat_path
@@ -148,7 +148,7 @@ def update_catalyst_master(ticker_csv_path):
     return len(new_rows)
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# â”€â”€ Internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _extract_section(response, tag):
     """Extract content between [TAG] and next [TAG] or end of string."""
@@ -267,7 +267,7 @@ def _minimal_macro_json(response, ts):
         "final_desk_verdict": desk_verdict,
         "global_us_options_bias": options_bias,
         "manual_review_required": True,
-        "missing_data": ["Full macro JSON not extracted — review brief manually"],
+        "missing_data": ["Full macro JSON not extracted â€” review brief manually"],
     }
 
 
@@ -440,8 +440,8 @@ def _build_html(response, session, ts, mode="full"):
     date_str = datetime.now().strftime("%A %d %B %Y")
     time_str = datetime.now().strftime("%H:%M ET")
     desk_verdict = session.desk_verdict or "PENDING"
-    options_regime = session.options_regime or "—"
-    dte = session.dte_preference or "—"
+    options_regime = session.options_regime or "â€”"
+    dte = session.dte_preference or "â€”"
     vc = _verdict_color(desk_verdict)
     rc = "#ef4444" if "PUT" in options_regime else "#22c55e" if "CALL" in options_regime else "#f59e0b"
 
@@ -476,7 +476,7 @@ def _build_html(response, session, ts, mode="full"):
         brand  = "AVSHUNTER NEWS TERMINAL v1.3"
         footer = f"Execution Permission: {EXECUTION_PERMISSION} | Capital Grade: {CAPITAL_GRADE}"
 
-    def sec(title, body, icon="▶"):
+    def sec(title, body, icon="â–¶"):
         if not body or not body.strip():
             return ""
         return f'''<div class="section">
@@ -485,20 +485,20 @@ def _build_html(response, session, ts, mode="full"):
         </div>'''
 
     # Build sections based on mode
-    sections = sec("Executive Summary", exec_summary, "◈")
+    sections = sec("Executive Summary", exec_summary, "â—ˆ")
     sections += sec("Global Session Snapshot", global_session)
     sections += sec("Top Narratives", narratives)
     sections += sec("Macro Transmission", transmission)
     sections += sec("US Index Impact", index_impact)
 
-    # Candidate table — rendered from CSV, not raw text
+    # Candidate table â€” rendered from CSV, not raw text
     if candidates_table:
         sections += f'''<div class="section">
-          <div class="sec-hdr">◈ Companies Worth Watching</div>
+          <div class="sec-hdr">â—ˆ Companies Worth Watching</div>
           <div class="sec-body">{candidates_table}</div>
         </div>'''
     elif companies:
-        sections += sec("Companies Worth Analysing", companies, "◈")
+        sections += sec("Companies Worth Analysing", companies, "â—ˆ")
 
     sections += sec("Sector Rotation", sector_rot)
     sections += sec("Options Regime", options_imp)
@@ -513,7 +513,7 @@ def _build_html(response, session, ts, mode="full"):
     return f"""<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AVSHUNTER News Terminal — {date_str}</title>
+<title>AVSHUNTER News Terminal â€” {date_str}</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 :root{{
@@ -570,7 +570,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1
     <div class="rbadge">{options_regime} &nbsp;|&nbsp; DTE {dte}</div>
   </div>
 </div>
-<div class="banner">⚠&nbsp; EXECUTION PERMISSION: {EXECUTION_PERMISSION} &nbsp;—&nbsp; ANALYSIS ONLY &nbsp;—&nbsp; CAPITAL GRADE: {CAPITAL_GRADE}</div>
+<div class="banner">âš &nbsp; EXECUTION PERMISSION: {EXECUTION_PERMISSION} &nbsp;â€”&nbsp; ANALYSIS ONLY &nbsp;â€”&nbsp; CAPITAL GRADE: {CAPITAL_GRADE}</div>
 <div class="stats">
   <div class="stat"><div class="slbl">Desk Verdict</div><div class="sval" style="font-size:9px;color:{vc}">{desk_verdict.replace("_"," ")}</div></div>
   <div class="stat"><div class="slbl">Options Regime</div><div class="sval" style="color:{rc}">{options_regime}</div></div>
@@ -582,7 +582,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1
 {sections}
 </div>
 <div class="footer">
-  <div class="ftr-l">⚠ {footer}</div>
+  <div class="ftr-l">âš  {footer}</div>
   <div class="ftr-r">AVSHUNTER News Terminal v1.3 &nbsp;|&nbsp; Generated {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
 </div>
 </body></html>"""
@@ -591,14 +591,14 @@ body{{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1
 def _build_summary(response, session, ts):
     date_str = datetime.now().strftime("%A %d %B %Y")
     desk_verdict = session.desk_verdict or "PENDING"
-    options_regime = session.options_regime or "—"
-    dte = session.dte_preference or "—"
+    options_regime = session.options_regime or "â€”"
+    dte = session.dte_preference or "â€”"
     clean = re.sub(r'```.*?```', '', response, flags=re.DOTALL)
     clean = re.sub(r'#+\s', '', clean)
     clean = re.sub(r'\*\*(.+?)\*\*', r'\1', clean)
     clean = re.sub(r'\n{3,}', '\n\n', clean).strip()
     summary = clean[:1200] + "..." if len(clean) > 1200 else clean
-    return f"""AVSHUNTER INTELLIGENCE — Daily Brief
+    return f"""AVSHUNTER INTELLIGENCE â€” Daily Brief
 {date_str} | {ts[-4:] if len(ts)>=4 else ts} ET
 {'='*60}
 
@@ -616,7 +616,7 @@ Analysis only. Not investment advice.
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
 
-# ── STEP 2: INTEGRATION OUTPUTS (flat news_terminal/outputs/) ─────────────────
+# â”€â”€ STEP 2: INTEGRATION OUTPUTS (flat news_terminal/outputs/) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 _CATALYST_OUTPUT_COLS = [
     "ticker", "catalyst_type", "catalyst_status", "catalyst_date",
@@ -645,7 +645,7 @@ def write_catalyst_csv_v2(response: str, ts: str) -> "Path | None":
     try:
         rows = list(_csv.DictReader(_io.StringIO(clean)))
     except Exception as e:
-        print(f"  ⚠ Catalyst CSV parse: {e}")
+        print(f"  âš  Catalyst CSV parse: {e}")
         return None
     if not rows:
         return None
@@ -737,13 +737,13 @@ def write_tickers_file(response: str, ts: str, catalyst_path=None) -> "Path | No
         return None
 
     out.write_text("\n".join(sorted(set(tickers))), encoding="utf-8")
-    print(f"  [TICKERS]      {len(tickers)} tickers → {out.name}")
+    print(f"  [TICKERS]      {len(tickers)} tickers â†’ {out.name}")
     return out
 
 
-# ── ALIAS for backward compatibility ─────────────────────────────────────────
+# â”€â”€ ALIAS for backward compatibility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def write_ticker_csv_only(rows: list, run_dir, ts: str, prefix: str = ""):
-    """Alias — write ticker CSV from a pre-parsed row list."""
+    """Alias â€” write ticker CSV from a pre-parsed row list."""
     from pathlib import Path
     from news_terminal_engine import TICKER_CSV_FIELDS
     pfx = f"{prefix}_" if prefix else ""
@@ -768,3 +768,4 @@ def _write_csv_rows(rows: list, filepath) -> int:
             row["capital_grade"] = "NO"
             writer.writerow(row)
     return len(rows)
+

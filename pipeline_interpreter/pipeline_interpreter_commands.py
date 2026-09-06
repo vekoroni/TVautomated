@@ -1,4 +1,4 @@
-
+﻿
 def cmd_inputs():
     try:
         from msi_runtime import active_flags as _active_flags
@@ -26,7 +26,7 @@ def cmd_inputs():
             print(f"  {'':25} latest: {newest.name}")
     print()
 """
-AVSHUNTER Pipeline Interpreter v1.0 Ã¢â‚¬â€ Command Router
+AVSHUNTER Pipeline Interpreter v1.0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Command Router
 """
 import hashlib
 import json
@@ -69,29 +69,29 @@ except ImportError:
 
 
 MENU = """
-Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢â€”
-Ã¢â€¢â€˜     AVSHUNTER PIPELINE INTERPRETER v1.0 Ã¢â‚¬â€ COMMAND MENU          Ã¢â€¢â€˜
-Ã¢â€¢Â Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â£
-Ã¢â€¢â€˜  /triage [FILE]               Fast priority scan Ã¢â‚¬â€ rank all candidates  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Research-only loose-file analysis  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /morning FILE                RETIRED — use governed handoff      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /ticker TICKER FILE          Deep dive single ticker            Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /intraday TICKER [IMG...]    15m/30m chart + live price analysis Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /live TICKER [contract]     RETIRED — CDS owns provider access Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /price TICKER PRICE [chg%]  Register live price for analysis   Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /auto                        Auto-detect pipeline files         Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /load FILE                   Load a pipeline CSV into session   Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /options FILE                Add options data file              Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /sync                        Sync AVSHUNTER outputs to MA_Inputs     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /macro FILE                  Load macro intelligence JSON/file       Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /news FILE [TICKER]          Load News Terminal CSV/output           Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /inputs                      Show MA_Inputs folder status          Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /status                      Show session summary               Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /reset                       Clear session                      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /menu                        Show this menu                     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /exit                        Close interpreter                  Ã¢â€¢â€˜
-Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â"""
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬â€
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ     AVSHUNTER PIPELINE INTERPRETER v1.0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â COMMAND MENU          ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â£
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /triage [FILE]               Fast priority scan ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rank all candidates  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /interpret FILE [FILE2...]   Research-only loose-file analysis  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /morning FILE                RETIRED â€” use governed handoff      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /ticker TICKER FILE          Deep dive single ticker            ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /intraday TICKER [IMG...]    15m/30m chart + live price analysis ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /live TICKER [contract]     RETIRED â€” CDS owns provider access ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /price TICKER PRICE [chg%]  Register live price for analysis   ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /auto                        Auto-detect pipeline files         ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /load FILE                   Load a pipeline CSV into session   ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /options FILE                Add options data file              ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /sync                        Sync AVSHUNTER outputs to MA_Inputs     ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /macro FILE                  Load macro intelligence JSON/file       ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /news FILE [TICKER]          Load News Terminal CSV/output           ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /inputs                      Show MA_Inputs folder status          ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /status                      Show session summary               ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /reset                       Clear session                      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /menu                        Show this menu                     ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /exit                        Close interpreter                  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã…Â¡ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â"""
 
 # Loaded data store
 _loaded_pipeline = {}   # name -> rows
@@ -124,10 +124,10 @@ def _print_results(results:dict, response:str=""):
     print()
     if "brief_csv" in results:
         n=_safe_name(results["brief_csv"]); r=results["brief_csv"].get("rows","?") if isinstance(results["brief_csv"],dict) else "?"
-        if n: print(f"  Ã¢Å“â€¦ {n:<52} ({r} rows)")
+        if n: print(f"  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ {n:<52} ({r} rows)")
     if "html" in results:
         n=_safe_name(results["html"])
-        if n: print(f"  Ã¢Å“â€¦ {n}")
+        if n: print(f"  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ {n}")
     print()
     # Print verdicts
     s=session.summary()
@@ -434,7 +434,7 @@ This is the continuation layer: it ranks the battlefield using whole-run context
 Jointly approved Lab + morning action-review names: {len(groups.get('DEEP_DIVE_NOW', []))}. Lab-unconfirmed, repair, and wait names stay in review. Rejected or blocked names are skipped today."""
 
     order_lines = [
-        f"/ticker {ticker} — jointly approved by Intelligence Lab and morning validator; use full battlefield context for final human review."
+        f"/ticker {ticker} â€” jointly approved by Intelligence Lab and morning validator; use full battlefield context for final human review."
         for ticker in groups.get("DEEP_DIVE_NOW", [])[:10]
     ]
     if not order_lines:
@@ -625,7 +625,7 @@ def _msi_cmd_ticker(ticker: str, intended_use: IntendedUse = IntendedUse.EXECUTA
 
 def cmd_triage(file_path:str=None):
     """
-    Fast triage pass Ã¢â‚¬â€ rank and prioritise the whole candidate list.
+    Fast triage pass ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rank and prioritise the whole candidate list.
     No deep dive. One API call. Produces ranked HTML + CSV.
     Run this BEFORE /ticker to know who gets the deep dive today.
     """
@@ -654,7 +654,7 @@ def cmd_triage(file_path:str=None):
                 "  See: data/output/TRIAGE_DECOMMISSION_NOTICE.json\n"
             )
     except Exception:
-        pass  # integrity check is informational — never blocks triage
+        pass  # integrity check is informational â€” never blocks triage
 
     print("\n  Running triage priority scan...")
 
@@ -754,7 +754,7 @@ def cmd_triage(file_path:str=None):
         if best:
             rows=read_pipeline_csv(best)
             source_name=Path(best).name
-            print(f"  âœ… Auto-loaded: {source_name}")
+            print(f"  Ã¢Å“â€¦ Auto-loaded: {source_name}")
 
     # Fix A -- lock source CSV into SESSION for /ticker auto-load
     from datetime import datetime as _dt
@@ -777,7 +777,7 @@ def cmd_triage(file_path:str=None):
             1 for r in rows if str(r.get("eil_v3_verdict", "")).upper() == "BLOCKED"
         )
         if _blocked_in_triage > 0:
-            print(f"  âš   B2 GUARD: {_blocked_in_triage} BLOCKED tickers excluded from triage ranking")
+            print(f"  Ã¢Å¡Â   B2 GUARD: {_blocked_in_triage} BLOCKED tickers excluded from triage ranking")
             rows = [r for r in rows if str(r.get("eil_v3_verdict", "")).upper() != "BLOCKED"]
 
     # Get MA_Inputs availability for completeness scoring
@@ -786,7 +786,7 @@ def cmd_triage(file_path:str=None):
     if chart_tickers or opt_tickers:
         print(f"  MA_Inputs data: charts for {sorted(chart_tickers)}, options for {sorted(opt_tickers)}")
 
-    # â”€â”€ Component 9: Lab reconciliation pre-triage gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Ã¢â€â‚¬Ã¢â€â‚¬ Component 9: Lab reconciliation pre-triage gate Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     from lab_reconciliation import (
         load_lab_export, reconcile_universes, check_run_id_alignment,
         build_lab_alignment_block,
@@ -832,7 +832,7 @@ def cmd_triage(file_path:str=None):
         if not run_id_check["match"]:
             print(f"  [LAB] STALE_LAB_DATA: Lab Run_ID {run_id_check['lab_run_id']} "
                   f"does not match pipeline Run_ID {run_id_check['pipeline_run_id']}")
-            print(f"  [LAB] Lab export may be from a different session â€” reconciliation will proceed with warning.")
+            print(f"  [LAB] Lab export may be from a different session Ã¢â‚¬â€ reconciliation will proceed with warning.")
         lab_block = build_lab_alignment_block(reconciliation, lab_filename, run_id_check)
         SESSION["lab_rows"]           = lab_rows
         SESSION["lab_reconciliation"] = reconciliation
@@ -840,9 +840,9 @@ def cmd_triage(file_path:str=None):
         SESSION["lab_run_id_check"]   = run_id_check
         print(f"  [LAB] Lab export: {lab_filename}")
         if "LAB_TRIAGE_VIEW_FALLBACK" in lab_filename:
-            print(f"  [LAB] ⚠  WARNING: avshunter_signals_*.csv not found in pipeline_outputs/")
-            print(f"  [LAB] ⚠  Falling back to lab_triage_view — CONFIRMED count is UNRELIABLE (same file as pipeline source)")
-            print(f"  [LAB] ⚠  Place avshunter_signals_*.csv in pipeline_outputs/ to fix reconciliation")
+            print(f"  [LAB] âš   WARNING: avshunter_signals_*.csv not found in pipeline_outputs/")
+            print(f"  [LAB] âš   Falling back to lab_triage_view â€” CONFIRMED count is UNRELIABLE (same file as pipeline source)")
+            print(f"  [LAB] âš   Place avshunter_signals_*.csv in pipeline_outputs/ to fix reconciliation")
         print(f"  [LAB] Confirmed: {reconciliation['confirmed_count']} | "
               f"Lab only: {reconciliation['lab_only_count']} | "
               f"Interpreter only: {reconciliation['interp_only_count']} <- review required")
@@ -853,8 +853,8 @@ def cmd_triage(file_path:str=None):
         SESSION["lab_rows"]           = []
         SESSION["lab_reconciliation"] = {}
         SESSION["lab_filename"]       = ""
-        print("  [LAB] No lab export â€” place avshunter_signals_*.csv in MA_Inputs/lab_export/")
-    # â”€â”€ End lab reconciliation gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        print("  [LAB] No lab export Ã¢â‚¬â€ place avshunter_signals_*.csv in MA_Inputs/lab_export/")
+    # Ã¢â€â‚¬Ã¢â€â‚¬ End lab reconciliation gate Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     # -- Entry timing engine - pre-trade probability layer
     from entry_timing_engine import load_garch_rows, build_pre_trade_probability_block
     from lab_reconciliation import get_lab_row as _get_lab_row_ete
@@ -880,7 +880,7 @@ def cmd_triage(file_path:str=None):
         print("  [BATTLEFIELD] Deterministic run-level triage built from prepared outputs")
     else:
         prompt = build_triage_prompt(rows, ma_summary, lab_alignment_block=lab_block, pre_trade_prob_block=_ete_summary)
-        response = call_api(prompt, model=MODEL_TRIAGE)  # Sonnet 4.6 â€” fast triage
+        response = call_api(prompt, model=MODEL_TRIAGE)  # Sonnet 4.6 Ã¢â‚¬â€ fast triage
 
     run_dir, ts = get_run_dir()
     results = write_triage_outputs(
@@ -901,8 +901,8 @@ def cmd_triage(file_path:str=None):
     n = tc.get("rows", 0) if isinstance(tc, dict) else "?"
     tc_name = _safe_name(tc)
     th_name = _safe_name(th)
-    if tc_name: print(f"  Ã¢Å“â€¦ {tc_name:<52} ({n} ranked)")
-    if th_name: print(f"  Ã¢Å“â€¦ {th_name}")
+    if tc_name: print(f"  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ {tc_name:<52} ({n} ranked)")
+    if th_name: print(f"  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ {th_name}")
     print()
 
     # Print execution order to console
@@ -911,16 +911,16 @@ def cmd_triage(file_path:str=None):
     summary = _es(response, "TRIAGE_SUMMARY")
 
     if summary:
-        print(f"{'Ã¢â€â‚¬'*60}")
+        print(f"{'ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬'*60}")
         print("  SESSION PICTURE")
-        print('Ã¢â€â‚¬'*60)
+        print('ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬'*60)
         for line in summary.split('\n')[:15]:
             if line.strip(): print(f"  {line}")
 
     if order:
-        print(f"\n{'Ã¢â€â‚¬'*60}")
+        print(f"\n{'ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬'*60}")
         print("  TODAY'S EXECUTION ORDER")
-        print('Ã¢â€â‚¬'*60)
+        print('ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬'*60)
         for line in order.split('\n')[:12]:
             if line.strip(): print(f"  {line}")
         print()
@@ -940,7 +940,7 @@ def cmd_triage(file_path:str=None):
                 _approved_rows.append(_row)
         print()
         print(f"  {'ACTION':<8}  {'DIR':<4}  CONTRACT")
-        print(f"  {'─'*8}  {'─'*4}  {'─'*25}")
+        print(f"  {'â”€'*8}  {'â”€'*4}  {'â”€'*25}")
         for row in _approved_rows[:30]:
             try:
                 from trade_brief_builder import build_trade_brief
@@ -951,7 +951,7 @@ def cmd_triage(file_path:str=None):
                     "NO_EDGE":            "[SKIP]",
                 }.get(brief.get("action", ""), "[?]   ")
                 direction = brief.get("direction", "?")
-                contract  = brief.get("contract", "—")
+                contract  = brief.get("contract", "â€”")
                 _tkr      = str(row.get("ticker", "?")).upper()
                 print(f"  {action_tag}  {_tkr:<6}  {direction:<4}  {contract}")
             except Exception:
@@ -989,7 +989,7 @@ def cmd_interpret(file_paths:list):
                 t=row.get("ticker") or row.get("underlying") or row.get("symbol","")
                 if t and t not in tickers: tickers.append(t.strip())
     if not pipeline_data:
-        print("  Ã¢Å¡Â  No pipeline data loaded."); return
+        print("  ÃƒÂ¢Ã…Â¡Ã‚Â  No pipeline data loaded."); return
 
     print(f"  Tickers found: {', '.join(tickers[:20])}")
 
@@ -1004,7 +1004,7 @@ def cmd_interpret(file_paths:list):
                 _loaded_options[opt_name] = content
                 ma_options_loaded += 1
     if ma_options_loaded > 0:
-        print(f"  Ã¢Å“â€¦ Auto-loaded {ma_options_loaded} options file(s) from MA_Inputs")
+        print(f"  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Auto-loaded {ma_options_loaded} options file(s) from MA_Inputs")
 
     print(f"  Running Dr. Magnus Vale + Soul of the Chart analysis...")
     t0=time.time()
@@ -1051,7 +1051,7 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
     if not row:
         row = next((r for r in rows if ticker.upper() in str(r.get("underlying","")).upper()), None)
     if not row:
-        print(f"  âš  Ticker {ticker} not found in {Path(file_path).name}")
+        print(f"  Ã¢Å¡Â  Ticker {ticker} not found in {Path(file_path).name}")
         if rows: print(f"  Available: {[r.get('ticker','?') for r in rows[:10]]}")
         return
     _NON_LIVE = {"NONE_NEWS_TERMINAL_ONLY","WATCHLIST_ONLY","PIPELINE_BLOCKED"}
@@ -1071,7 +1071,7 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
             print(f"  [OK] Auto-loaded options context: {opt_name}")
     ticker_charts = ma_files["charts"] + ma_files["screenshots"]
     if ticker_charts:
-        print(f"  âœ… Found {len(ticker_charts)} chart(s) in MA_Inputs for {ticker}")
+        print(f"  Ã¢Å“â€¦ Found {len(ticker_charts)} chart(s) in MA_Inputs for {ticker}")
     # Load trader note
     import json as _json
     _notes_path  = MA_INPUTS / "news_terminal" / "trader_notes.json"
@@ -1085,12 +1085,12 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
             pass
     if _ticker_note:
         _preview = _ticker_note[:60] + ("..." if len(_ticker_note)>60 else "")
-        print(f"  âœ… Trader note loaded for {ticker}: '{_preview}'")
+        print(f"  Ã¢Å“â€¦ Trader note loaded for {ticker}: '{_preview}'")
     _sector_key = _sector_key_for_row(row)
     _context_block = build_context_block(ticker, _ticker_note, _sector_key)
     if _sector_key and _sector_key in _sector_notes:
         print(f"  [SECTOR] Sector note loaded for {_sector_key}")
-    # â”€â”€ Component 9: Lab context injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Ã¢â€â‚¬Ã¢â€â‚¬ Component 9: Lab context injection Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     from lab_reconciliation import (
         get_lab_row, validate_lab_field_alignment,
         build_lab_context_block, build_field_conflict_block,
@@ -1099,7 +1099,7 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
     lab_context_block  = ""
     lab_conflict_block = ""
     if not _lab_rows:
-        print(f"  [LAB] {ticker}: LAB_NOT_LOADED â€” run /triage or /lab to load export")
+        print(f"  [LAB] {ticker}: LAB_NOT_LOADED Ã¢â‚¬â€ run /triage or /lab to load export")
     else:
         _lab_row       = get_lab_row(_lab_rows, ticker)
         _reconciliation = SESSION.get("lab_reconciliation", {})
@@ -1108,13 +1108,13 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
         _conflicts         = validate_lab_field_alignment(_lab_row or {}, row, ticker) if _lab_row else []
         lab_conflict_block = build_field_conflict_block(_conflicts, ticker)
         if not _is_confirmed:
-            print(f"  [LAB] {ticker}: LAB_NOT_CONFIRMED â€” not present in Lab export")
+            print(f"  [LAB] {ticker}: LAB_NOT_CONFIRMED Ã¢â‚¬â€ not present in Lab export")
         elif _conflicts:
             _flag_count = sum(1 for c in _conflicts if c["severity"] == "FLAG")
             print(f"  [LAB] {ticker}: {len(_conflicts)} field conflict(s) ({_flag_count} FLAG-level)")
         else:
-            print(f"  [LAB] {ticker}: Lab aligned â€” no field conflicts")
-    # â”€â”€ End lab context injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            print(f"  [LAB] {ticker}: Lab aligned Ã¢â‚¬â€ no field conflicts")
+    # Ã¢â€â‚¬Ã¢â€â‚¬ End lab context injection Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     # -- Entry timing engine - single ticker
     from entry_timing_engine import load_garch_rows, build_pre_trade_probability_block
     _garch_rows_t = load_garch_rows(MA_PIPELINE)
@@ -1173,7 +1173,7 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
             ticker=ticker,
             pre_trade_prob_block=_ete_block_t,
         )
-        print("  ✅ Junior Briefing merged into ticker output")
+        print("  âœ… Junior Briefing merged into ticker output")
         # -- Phantom 1: Write interpreter sidecar JSON for morning validator
         try:
             from pipeline_interpreter_outputs import write_interpreter_sidecar
@@ -1186,9 +1186,9 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
                 story_response=_story_response,
             )
             if _sidecar_path:
-                print(f"  ✅ Interpreter sidecar: {_sidecar_path.name}")
+                print(f"  âœ… Interpreter sidecar: {_sidecar_path.name}")
         except Exception as _se:
-            print(f"  ⚠  Sidecar write skipped: {_se}")
+            print(f"  âš   Sidecar write skipped: {_se}")
             # Phantom 4: Save evening baseline if in EVENING session mode
         try:
             import json as _json4
@@ -1202,17 +1202,17 @@ def cmd_ticker(ticker:str, file_path:str=None, skip_triage_check: bool=False):
                 _sc_data = _json4.loads(_sidecar_path.read_text(encoding="utf-8"))
                 _saved = save_evening_baseline(ticker, _sc_data)
                 if _saved:
-                    print(f"  ✅ Evening baseline saved for {ticker}")
+                    print(f"  âœ… Evening baseline saved for {ticker}")
         except Exception as _be:
-            print(f"  ⚠  Baseline save skipped: {_be}")
+            print(f"  âš   Baseline save skipped: {_be}")
     except Exception as _je:
-        print(f"  ⚠  Junior Briefing merge skipped: {_je}")
+        print(f"  âš   Junior Briefing merge skipped: {_je}")
     # -- End Junior Briefing merge
 
     print(f"\n  Deep dive complete ({int(time.time()-t0)}s)")
     _print_results(results, response)
 
-    # ── Trade brief — always the final output ──────────────────────
+    # â”€â”€ Trade brief â€” always the final output â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
         from trade_brief_builder import build_trade_brief, format_trade_brief
         brief = build_trade_brief(row)
@@ -1400,10 +1400,10 @@ def cmd_live(args: str = ""):
     Automatically injected into /ticker and /intraday prompts.
 
     Usage:
-      /live WFC                          â€” all four data points, auto-detect contract
-      /live WFC WFC260618P00072500        â€” include specific contract for spread fetch
-      /live WFC WFC260618P00072500 put    â€” filter options volume to puts only
-      /live                              â€” show all fetched tickers in LIVE_DATA store
+      /live WFC                          Ã¢â‚¬â€ all four data points, auto-detect contract
+      /live WFC WFC260618P00072500        Ã¢â‚¬â€ include specific contract for spread fetch
+      /live WFC WFC260618P00072500 put    Ã¢â‚¬â€ filter options volume to puts only
+      /live                              Ã¢â‚¬â€ show all fetched tickers in LIVE_DATA store
 
     Data fetched:
       1. Intraday options volume (replaces OI_ONLY pipeline flag)
@@ -1435,7 +1435,7 @@ def cmd_price(args: str = ""):
     """
     args = args.strip()
 
-    # No args â€” show all registered prices
+    # No args Ã¢â‚¬â€ show all registered prices
     if not args:
         if not LIVE_PRICES:
             print("  No live prices registered. Use: /price TICKER PRICE [change%] [vwap] [vol_ratio] [spread]")
@@ -1459,7 +1459,7 @@ def cmd_price(args: str = ""):
     if len(tokens) == 2 and tokens[1].lower() == "clear":
         if ticker in LIVE_PRICES:
             del LIVE_PRICES[ticker]
-            print(f"  âœ… Live price for {ticker} cleared.")
+            print(f"  Ã¢Å“â€¦ Live price for {ticker} cleared.")
         else:
             print(f"  {ticker} not in price store.")
         return
@@ -1472,7 +1472,7 @@ def cmd_price(args: str = ""):
     try:
         price = float(tokens[1])
     except ValueError:
-        print(f"  âš   Invalid price: {tokens[1]}")
+        print(f"  Ã¢Å¡Â   Invalid price: {tokens[1]}")
         return
 
     entry = {
@@ -1497,18 +1497,18 @@ def cmd_price(args: str = ""):
     # Print confirmation
     chg  = f"  change={entry['change_pct']}%" if entry.get("change_pct") is not None else ""
     vwap = f"  VWAP={entry['vwap']}" if entry.get("vwap") else ""
-    print(f"  âœ… Live price registered: {ticker} = ${price}{chg}{vwap}  [{entry['timestamp']}]")
+    print(f"  Ã¢Å“â€¦ Live price registered: {ticker} = ${price}{chg}{vwap}  [{entry['timestamp']}]")
     print(f"  Will be injected into /ticker {ticker} and /intraday {ticker} automatically.")
 
 
 def cmd_intraday(args: str = ""):
     """
-    Intraday chart analysis â€” 15m/30m charts + live price context.
+    Intraday chart analysis Ã¢â‚¬â€ 15m/30m charts + live price context.
 
     Usage:
-      /intraday WFC                           (no charts â€” price-only update)
+      /intraday WFC                           (no charts Ã¢â‚¬â€ price-only update)
       /intraday WFC 15m_chart.png             (single chart)
-      /intraday WFC chart1.png chart2.png     (multiple charts â€” e.g. 15m + 30m)
+      /intraday WFC chart1.png chart2.png     (multiple charts Ã¢â‚¬â€ e.g. 15m + 30m)
 
     Drops chart images into MA_Inputs/charts/ named TICKER_15m.png / TICKER_30m.png
     and they will be auto-detected. Or supply paths directly.
@@ -1538,7 +1538,7 @@ def cmd_intraday(args: str = ""):
         if p.exists():
             explicit_images.append(str(p))
         else:
-            print(f"  âš   Image not found: {tok} â€” skipping")
+            print(f"  Ã¢Å¡Â   Image not found: {tok} Ã¢â‚¬â€ skipping")
 
     # Auto-scan MA_Inputs/charts for intraday files for this ticker
     ma_files = scan_ma_inputs_for_ticker(ticker)
@@ -1574,8 +1574,8 @@ def cmd_intraday(args: str = ""):
     if not row:
         row = next((r for r in rows if ticker in str(r.get("underlying","")).upper()), None)
     if not row:
-        print(f"  âš   {ticker} not found in session CSV. Analysis will use live price only.")
-        row = {"ticker": ticker, "note": "Not found in pipeline CSV â€” live price analysis only"}
+        print(f"  Ã¢Å¡Â   {ticker} not found in session CSV. Analysis will use live price only.")
+        row = {"ticker": ticker, "note": "Not found in pipeline CSV Ã¢â‚¬â€ live price analysis only"}
 
     # Load options data
     ticker_options = dict(_loaded_options)
@@ -1599,13 +1599,13 @@ def cmd_intraday(args: str = ""):
     # Build live price block
     live_price_block = format_live_price_block(ticker, LIVE_PRICES)
     if not live_price_block:
-        print(f"  âš   No live price registered for {ticker}.")
+        print(f"  Ã¢Å¡Â   No live price registered for {ticker}.")
         print(f"  Run: /price {ticker} PRICE [change%] [vwap]")
         print(f"  Continuing with pipeline EOD price only.")
 
     # Report what we are feeding
     print(f"\n  Running intraday analysis: {ticker}")
-    print(f"  Charts: {len(all_images)} image(s) â€” timeframes: {', '.join(chart_timeframes)}")
+    print(f"  Charts: {len(all_images)} image(s) Ã¢â‚¬â€ timeframes: {', '.join(chart_timeframes)}")
     if live_price_block:
         p = LIVE_PRICES[ticker]
         print(f"  Live price: ${p.get('price')}  [{p.get('timestamp','')}]")
@@ -1970,7 +1970,7 @@ def cmd_quick(args: str = ""):
 def cmd_brief(text:str=""):
     """Paste newsroom brief. /brief then paste, type END to finish."""
     if text.strip():
-        print(f"  âš   Only captured one line. Type /brief alone, paste, then END")
+        print(f"  Ã¢Å¡Â   Only captured one line. Type /brief alone, paste, then END")
         lines=[text.strip()]
     else:
         lines=[]
@@ -1991,10 +1991,10 @@ def cmd_brief(text:str=""):
     except (EOFError,KeyboardInterrupt): pass
     brief_text="\n".join(lines).strip()
     if not brief_text:
-        print("  âš   No text received."); return
+        print("  Ã¢Å¡Â   No text received."); return
     saved_path=save_pasted_brief(brief_text)
     lines_count=brief_text.count("\n")+1
-    print(f"\n  âœ… Brief saved ({lines_count} lines)")
+    print(f"\n  Ã¢Å“â€¦ Brief saved ({lines_count} lines)")
     print(f"  Newsroom context included in /triage and /ticker automatically.")
     print(f"  Run /triage now.")
 
@@ -2028,7 +2028,7 @@ def cmd_note(args:str=""):
     else:
         note_text=remainder
     if not note_text:
-        print(f"  âš   No note entered for {ticker}."); return
+        print(f"  Ã¢Å¡Â   No note entered for {ticker}."); return
     notes_path=MA_INPUTS/"news_terminal"/"trader_notes.json"
     notes_path.parent.mkdir(parents=True,exist_ok=True)
     notes={}
@@ -2040,7 +2040,7 @@ def cmd_note(args:str=""):
     notes_path.write_text(_json.dumps(notes,indent=2),encoding="utf-8")
     SESSION[f"note_{ticker}"]=note_text
     _preview=note_text[:80]+("..." if len(note_text)>80 else "")
-    print(f"\n  âœ… Note saved for {ticker}: '{_preview}'")
+    print(f"\n  Ã¢Å“â€¦ Note saved for {ticker}: '{_preview}'")
     print(f"  Will be injected into /ticker {ticker} automatically.")
 
 
@@ -2090,35 +2090,35 @@ def cmd_news(file_path: str, ticker: str = None):
 
 
 MENU = """
-Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢â€”
-Ã¢â€¢â€˜     AVSHUNTER PIPELINE INTERPRETER v1.0 Ã¢â‚¬â€ COMMAND MENU          Ã¢â€¢â€˜
-Ã¢â€¢Â Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â£
-Ã¢â€¢â€˜  /triage [FILE]               Fast priority scan Ã¢â‚¬â€ rank all candidates  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /interpret FILE [FILE2...]   Research-only loose-file analysis  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /morning FILE                RETIRED — use governed handoff      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /ticker TICKER FILE          Deep dive single ticker            Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /auto                        Auto-detect pipeline files         Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /load FILE                   Load a pipeline CSV into session   Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /options FILE                Add options data file              Ã¢â€¢â€˜
-â•‘  /brief                        Paste newsroom brief into session         â•‘
-â•‘  /sector_note SECTOR            Add sector context for deep dives           â•‘
-â•‘  /notes                        Show active sector/ticker notes             â•‘
-â•‘  /quick TICKER                  Deep dive directly, no triage prerequisite  â•‘
-â•‘  /note TICKER [obs]             Add trader narrative for deep dive          â•‘
-Ã¢â€¢â€˜  /sync                        Sync AVSHUNTER outputs to MA_Inputs     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /macro FILE                  Load macro intelligence JSON/file       Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /news FILE [TICKER]          Load News Terminal CSV/output           Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /inputs                      Show MA_Inputs folder status          Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /lab [FILE]                    Load Lab export + reconcile universe     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /story TICKER [--fresh]       Story of the Trade â€” junior briefing  Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /update TICKER [chart IMG...] Update story with new chart or options Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /status                      Show session summary               Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /reset                       Clear session                      Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /menu                        Show this menu                     Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /ete TICKER                  Entry timing probability report                       Ã¢â€¢â€˜
-Ã¢â€¢â€˜  /exit                        Close interpreter                  Ã¢â€¢â€˜
-Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â"""
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬â€
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ     AVSHUNTER PIPELINE INTERPRETER v1.0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â COMMAND MENU          ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â£
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /triage [FILE]               Fast priority scan ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rank all candidates  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /interpret FILE [FILE2...]   Research-only loose-file analysis  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /morning FILE                RETIRED â€” use governed handoff      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /ticker TICKER FILE          Deep dive single ticker            ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /auto                        Auto-detect pipeline files         ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /load FILE                   Load a pipeline CSV into session   ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /options FILE                Add options data file              ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+Ã¢â€¢â€˜  /brief                        Paste newsroom brief into session         Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /sector_note SECTOR            Add sector context for deep dives           Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /notes                        Show active sector/ticker notes             Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /quick TICKER                  Deep dive directly, no triage prerequisite  Ã¢â€¢â€˜
+Ã¢â€¢â€˜  /note TICKER [obs]             Add trader narrative for deep dive          Ã¢â€¢â€˜
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /sync                        Sync AVSHUNTER outputs to MA_Inputs     ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /macro FILE                  Load macro intelligence JSON/file       ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /news FILE [TICKER]          Load News Terminal CSV/output           ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /inputs                      Show MA_Inputs folder status          ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /lab [FILE]                    Load Lab export + reconcile universe     ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /story TICKER [--fresh]       Story of the Trade Ã¢â‚¬â€ junior briefing  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /update TICKER [chart IMG...] Update story with new chart or options ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /status                      Show session summary               ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /reset                       Clear session                      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /menu                        Show this menu                     ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /ete TICKER                  Entry timing probability report                       ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /exit                        Close interpreter                  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã…Â¡ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â"""
 
 
 def route_command(raw:str):
@@ -2227,7 +2227,7 @@ def route_command(raw:str):
     return None
 
 
-# â”€â”€ STORY OF THE TRADE â€” additions only, appended at bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ STORY OF THE TRADE Ã¢â‚¬â€ additions only, appended at bottom Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 def cmd_story(args: str = ""):
     if active_flags().interpreter_resolver:
@@ -2285,19 +2285,19 @@ def cmd_story(args: str = ""):
     thesis_id     = ""
 
     if active_thesis and not is_fresh:
-        # Carry forward â€” load previous story HTML
+        # Carry forward Ã¢â‚¬â€ load previous story HTML
         previous_html = get_latest_story_for_thesis(ticker)
         if previous_html:
             update_type = "OVERNIGHT"
             previous_ts = active_thesis.get("latest_story_ts", "")
             thesis_id   = active_thesis["thesis_id"]
-            print(f"  [CARRY-FORWARD] Active thesis {thesis_id} â€” using OVERNIGHT update")
+            print(f"  [CARRY-FORWARD] Active thesis {thesis_id} Ã¢â‚¬â€ using OVERNIGHT update")
         else:
             update_type = "FULL"
     else:
         if is_fresh and active_thesis:
             _tr.close_thesis(ticker, active_thesis["thesis_id"], reason="trader_fresh_reset")
-            print(f"  [FRESH] Previous thesis closed â€” starting new FULL story")
+            print(f"  [FRESH] Previous thesis closed Ã¢â‚¬â€ starting new FULL story")
 
     # 5. Build story prompt
     import time as _time
@@ -2368,7 +2368,7 @@ def cmd_story(args: str = ""):
         try:
             from interpreter_qa import check_story_qa
             qa = check_story_qa(ticker, results.get("html_path", ""))
-            print(f"  [QA] Story: {qa.get('overall', 'UNKNOWN')} â€” "
+            print(f"  [QA] Story: {qa.get('overall', 'UNKNOWN')} Ã¢â‚¬â€ "
                   f"{qa.get('pass_count', 0)}/{qa.get('total_checks', 0)} checks passed")
         except Exception:
             pass
@@ -2435,7 +2435,7 @@ def cmd_update(args: str = ""):
         print("  Usage: /update TICKER chart IMG1 [IMG2...]")
         return
 
-    # 3. Load previous story â€” try registry first (Option B), then scan outputs
+    # 3. Load previous story Ã¢â‚¬â€ try registry first (Option B), then scan outputs
     active_thesis = _tr.get_active_thesis(ticker)
     previous_html = ""
     previous_ts   = ""
@@ -2533,7 +2533,7 @@ def cmd_update(args: str = ""):
     return response
 
 
-# â”€â”€ COMPONENT 9 â€” cmd_lab â€” appended at bottom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ COMPONENT 9 Ã¢â‚¬â€ cmd_lab Ã¢â‚¬â€ appended at bottom Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 def cmd_lab(args: str = ""):
     """
@@ -2591,3 +2591,4 @@ def cmd_lab(args: str = ""):
 # PI-CHART-RESTORE-20260527
 
 # PI-ANY-TICKER-20260527
+

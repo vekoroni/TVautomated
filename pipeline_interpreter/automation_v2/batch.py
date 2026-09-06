@@ -1,4 +1,4 @@
-"""Bounded, stateless multi-ticker shadow coordination."""
+﻿"""Bounded, stateless multi-ticker shadow coordination."""
 
 from __future__ import annotations
 
@@ -137,3 +137,4 @@ def run_batch(
         items=tuple(items),
         manifest_path=str(manifest_path),
     )
+

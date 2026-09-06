@@ -12,12 +12,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from canonical_data.run_plan import (
-    RequestedAction,
-    RunPlanStore,
-    resolve_run_plan,
-    write_plan_atomic,
-)
+from domain.run_planning import RequestedAction
+from canonical_data.run_plan import resolve_run_plan
+from canonical_data.run_plan_store import RunPlanStore, write_plan_atomic
 
 
 def _instant(value: str) -> datetime:

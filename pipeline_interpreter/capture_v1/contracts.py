@@ -1,4 +1,4 @@
-"""Immutable contracts for the screenshot capture boundary."""
+﻿"""Immutable contracts for the screenshot capture boundary."""
 
 from __future__ import annotations
 
@@ -84,3 +84,4 @@ class CaptureResult:
     manifest_path: str = ""
     assets: tuple[str, ...] = ()
     published: bool = False
+

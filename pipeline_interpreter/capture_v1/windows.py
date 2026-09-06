@@ -1,4 +1,4 @@
-"""Minimal Windows window discovery with no input or trading capability."""
+﻿"""Minimal Windows window discovery with no input or trading capability."""
 
 from __future__ import annotations
 
@@ -57,3 +57,4 @@ def discover_windows(title_pattern: str) -> tuple[WindowInfo, ...]:
 
     user32.EnumWindows(callback_type(callback), 0)
     return tuple(matches)
+

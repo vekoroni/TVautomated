@@ -1,0 +1,26 @@
+{
+  "user_scope": {
+    "present": true,
+    "length": 108,
+    "prefix_ok": true,
+    "has_ws": false,
+    "has_crlf": false,
+    "has_quotes": false
+  },
+  "machine_scope": {
+    "present": false
+  },
+  "process_scope": {
+    "present": true,
+    "length": 108,
+    "prefix_ok": true,
+    "has_ws": false,
+    "has_crlf": false,
+    "has_quotes": false
+  },
+  "dotenv_has_line": false,
+  "dotenv_txt_exists": false,
+  "process_equals_user": true,
+  "models_status": 400,
+  "error_type": "invalid_request_error"
+}

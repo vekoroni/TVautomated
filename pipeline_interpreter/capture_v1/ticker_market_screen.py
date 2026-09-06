@@ -1,4 +1,4 @@
-"""Integrated ticker switch and verified market-screen shadow workflow."""
+﻿"""Integrated ticker switch and verified market-screen shadow workflow."""
 
 from __future__ import annotations
 
@@ -170,3 +170,4 @@ def capture_ticker_market_screen(
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
+

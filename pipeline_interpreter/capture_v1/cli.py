@@ -1,4 +1,4 @@
-"""Command-line entry point for attended dry-run and shadow capture."""
+﻿"""Command-line entry point for attended dry-run and shadow capture."""
 
 from __future__ import annotations
 
@@ -48,3 +48,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

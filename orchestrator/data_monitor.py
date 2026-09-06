@@ -40,3 +40,4 @@ class DataMonitor:
             'has_charts': has_charts,
             'has_screenshots': has_screenshots
         }
+

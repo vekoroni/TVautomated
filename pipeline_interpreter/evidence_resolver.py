@@ -1,4 +1,4 @@
-"""Single governed evidence resolver for all production Interpreter commands.
+﻿"""Single governed evidence resolver for all production Interpreter commands.
 
 The resolver performs filesystem validation only.  It never imports provider
 clients and never makes API calls.  When current evidence is unavailable it
@@ -271,3 +271,4 @@ __all__ = [
     "ResolvedInterpreterEvidence", "ResolvedInterpreterRun", "handoff_status",
     "resolve_interpreter_evidence", "resolve_interpreter_run",
 ]
+

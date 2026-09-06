@@ -1,4 +1,4 @@
-"""One-time live calibration for the Webull NOII Closing Cross control."""
+﻿"""One-time live calibration for the Webull NOII Closing Cross control."""
 
 from __future__ import annotations
 
@@ -85,3 +85,4 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

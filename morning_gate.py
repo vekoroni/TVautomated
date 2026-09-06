@@ -2613,12 +2613,8 @@ def run_gate(
         row.get("capital_permission") or row.get("live_capital_permission")
     )
     out["morning_validation_result"] = verdict
-    out["final_capital_permission"] = (
-        "HUMAN_APPROVAL_REQUIRED" if verdict == "GO"
-        else "REVIEW_ONLY" if verdict == "FLAG"
-        else "NO"
-    )
-    out["execution_authorized"] = False
+    from domain.execution_authority import morning_validation_authority_fields
+    out.update(morning_validation_authority_fields(verdict))
 
     live_mid = _f(out.get("live_contract_mid"))
     live_spread = _f(out.get("live_contract_spread_pct"))
@@ -3385,6 +3381,7 @@ def _enrich_msi_market_structure(
         session_bounds,
         session_snapshot,
     )
+    from domain.market_structure_evidence import profile_evidence_state_for_session
     from market_structure import calculate_market_structure_evidence
     from market_structure.service import CanonicalMarketStructureService
 
@@ -3392,15 +3389,7 @@ def _enrich_msi_market_structure(
     snapshot = session_snapshot(validation_cutoff_utc)
     session_date = snapshot.session_date or snapshot.last_completed_session
     regular_open, regular_close = session_bounds(session_date)
-    profile_evidence_state = (
-        "PENDING_MARKET_OPEN"
-        if snapshot.state.value == "PREMARKET"
-        else "DEVELOPING_SESSION"
-        if snapshot.state.value == "REGULAR"
-        else "PARTIAL_SESSION"
-        if snapshot.state.value == "AFTER_HOURS"
-        else "NOT_EVALUATED"
-    )
+    profile_evidence_state = profile_evidence_state_for_session(snapshot.state).value
     rows_by_ticker = {_u(row.get("ticker")): row for row in candidates}
     if profile_evidence_state == "PENDING_MARKET_OPEN":
         for ticker, row in rows_by_ticker.items():

@@ -109,7 +109,15 @@ from .decision_outcome_ledger import (
     DecisionOutcomeLedger,
     LedgerEvent,
     candidate_events_from_rows,
+    execution_events_from_rows,
     make_ledger_event,
+    outcome_event_from_candidate,
+    outcome_event_from_trade,
+)
+from .outcome_maturation import (
+    DEFAULT_OUTCOME_HORIZONS,
+    OutcomeMaturationSummary,
+    mature_candidate_outcomes,
 )
 
 __all__ = [
@@ -175,17 +183,31 @@ __all__ = [
     "IntradayQuality", "IntradayRequestPlan", "INTRADAY_BAR_SCHEMA_VERSION",
     "assess_intraday_quality", "expected_intraday_timestamps", "intraday_schema_version",
     "missing_intraday_ranges", "normalise_intraday_bars", "normalise_minute_bars",
-    "MARKETDATA_PROVIDER", "MarketDataStockCandleAdapter", "parse_marketdata_stock_candles",
+    "MARKETDATA_PROVIDER", "MarketDataCandleResponse", "MarketDataCandleNoData",
+    "MarketDataCandleTransportError", "MarketDataStockCandleAdapter",
+    "parse_marketdata_stock_candles",
     "FreshnessState", "SessionSnapshot", "SessionState",
     "evaluate_freshness", "is_early_close", "is_xnys_session", "previous_xnys_session",
     "session_bounds", "session_snapshot",
     "DecisionOutcomeLedger", "LedgerEvent", "candidate_events_from_rows",
-    "make_ledger_event",
+    "execution_events_from_rows", "make_ledger_event", "outcome_event_from_candidate",
+    "outcome_event_from_trade",
+    "DEFAULT_OUTCOME_HORIZONS", "OutcomeMaturationSummary",
+    "mature_candidate_outcomes",
 ]
 
 
 _LAZY_PROVIDER_EXPORTS = {
     "MARKETDATA_PROVIDER": (".marketdata_stock_candles", "MARKETDATA_PROVIDER"),
+    "MarketDataCandleResponse": (
+        ".marketdata_stock_candles", "MarketDataCandleResponse"
+    ),
+    "MarketDataCandleNoData": (
+        ".marketdata_stock_candles", "MarketDataCandleNoData"
+    ),
+    "MarketDataCandleTransportError": (
+        ".marketdata_stock_candles", "MarketDataCandleTransportError"
+    ),
     "MarketDataStockCandleAdapter": (
         ".marketdata_stock_candles", "MarketDataStockCandleAdapter"
     ),

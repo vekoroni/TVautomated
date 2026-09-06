@@ -10,13 +10,15 @@ from pathlib import Path
 from contracts.direction_governance import validate_direction_record
 from contracts.options_liquidity_execution_guard import evaluate_olm_execution_guard
 from contracts.selected_contract_economics import contract_symbols
+from contracts.dynamic_session_contract import DataExceptionReason
 from contracts.long_option_policy import (
     LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
     quote_spread_fraction,
 )
+from domain.execution_authority import govern_execution_result
 
 log = logging.getLogger("avshunter.execution_gate")
-GATE_VERSION = "1.4.0"
+GATE_VERSION = "1.5.0"
 
 class ExecutionGateConfig:
     SPREAD_FULL: float = 0.08
@@ -59,9 +61,12 @@ def _s(row, key, default=""):
     except: return default
 
 def _skip(row, reason, warnings=None):
-    return {**row, "final_action":"SKIP","gate_reason":reason,"gate_warnings":",".join(warnings or []),
-            "gate_size_penalty":0.0,"gate_conviction_override":False,
-            "gate_version":GATE_VERSION,"gate_timestamp_utc":datetime.now(timezone.utc).isoformat()}
+    return govern_execution_result(
+        {**row, "gate_warnings":",".join(warnings or []),
+         "gate_size_penalty":0.0,"gate_conviction_override":False,
+         "gate_version":GATE_VERSION,"gate_timestamp_utc":datetime.now(timezone.utc).isoformat()},
+        action="SKIP", reason=reason,
+    )
 
 def _is_conviction_override(row):
     return (_s(row,"campaign_verdict")=="READY_EXECUTE"
@@ -99,6 +104,48 @@ def _normalise_ratio(value):
     return value
 
 
+def _governed_invalidation_valid(row: dict) -> bool:
+    """Return True only for a complete, direction-correct governed stop.
+
+    The execution gate is the final capital-authority boundary.  It must not
+    trust a numeric legacy stop without the upstream availability state and
+    cannot repair thesis geometry locally.
+    """
+    direction = str(
+        _first_value(
+            row,
+            "governed_direction",
+            "final_direction",
+            "canonical_direction",
+            "direction",
+        )
+    ).strip().upper()
+    if direction not in {"CALL", "PUT"}:
+        return True
+    state = str(
+        _first_value(row, "invalidation_state", "ev3_invalidation_state")
+    ).strip().upper()
+    if state != "AVAILABLE":
+        return False
+    invalidation = _num_value(
+        _first_value(row, "invalidation_spot", "ev3_invalidation_spot"),
+        0.0,
+    )
+    origin = _num_value(
+        _first_value(
+            row,
+            "thesis_origin_spot",
+            "entry_spot",
+            "signal_price",
+            "underlying_price",
+        ),
+        0.0,
+    )
+    if invalidation <= 0.0 or origin <= 0.0:
+        return False
+    return invalidation < origin if direction == "CALL" else invalidation > origin
+
+
 def _live_option_data_from_row(row: dict) -> dict:
     bid = _num_value(_first_value(row, "live_contract_bid", "live_bid", "contract_bid"), 0.0)
     ask = _num_value(_first_value(row, "live_contract_ask", "live_ask", "contract_ask"), 0.0)
@@ -134,17 +181,15 @@ def _morning_permission(row: dict) -> str:
 
 
 def _preserve(row, action, reason, warnings=None):
-    return {
+    return govern_execution_result({
         **row,
-        "final_action": action,
-        "gate_reason": reason,
         "gate_warnings": ",".join(warnings or []),
         "gate_size_penalty": 0.0,
         "gate_conviction_override": False,
         "gate_version": GATE_VERSION,
         "gate_timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "preservation_gate": True,
-    }
+    }, action=action, reason=reason)
 
 
 def _has_contract_alternative(row: dict) -> bool:
@@ -181,6 +226,12 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             "check_direction_integrity_reason": direction_reason,
             "direction_integrity_status": "PASS",
         }
+        if not _governed_invalidation_valid(row):
+            return _preserve(
+                row,
+                "BLOCK",
+                DataExceptionReason.INVALIDATION_MISSING.value,
+            )
         if olm_guard.disposition != "CONTINUE":
             return _preserve(row, olm_guard.disposition, olm_guard.reason)
         morning_perm = _morning_permission(row)
@@ -404,10 +455,8 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             warnings or ["NONE"],
         )
 
-        return {
+        return govern_execution_result({
             **row,
-            "final_action": final_action,
-            "gate_reason": "OK",
             "gate_warnings": ",".join(warnings) if warnings else "",
             "gate_size_penalty": penalty,
             "gate_conviction_override": conviction_override,
@@ -425,7 +474,7 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             "gate_version": GATE_VERSION,
             "gate_timestamp_utc": ts,
             "preservation_gate": True,
-        }
+        }, action=final_action, reason="OK")
     except Exception as exc:
         log.exception("[%s] execution_gate raised: %s", ticker, exc)
         return _preserve(row, "MANUAL_REVIEW", f"GATE_EXCEPTION:{type(exc).__name__}")

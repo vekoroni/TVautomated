@@ -18,7 +18,7 @@ from ..schemas.auction_schema import (
     MigrationState,
 )
 from contracts.market_profile_evidence import MarketProfileEvidence
-from ..schemas.input_schema import VanguardInput
+from ..schemas.input_schema import VanguardInput, VanguardInputError
 from .market_profile import MarketProfileCalculator
 from .value_acceptance import ValueAcceptanceDetector
 from .control_identifier import ControlIdentifier
@@ -56,12 +56,15 @@ class AuctionStateSynthesizer:
         # Governed path: profile evidence is calculated once from canonical
         # intraday bars before Vanguard. Vanguard consumes it; it must not
         # reconstruct an "intraday" profile from daily OHLCV.
-        if getattr(vanguard_input, "market_profile_contract_required", False):
-            return self._governed_profile_verdict(
-                ticker=ticker,
-                current_price=current_price,
-                raw_evidence=getattr(vanguard_input, "market_profile_evidence", None),
+        if not getattr(vanguard_input, "market_profile_contract_required", True):
+            raise VanguardInputError(
+                "market_profile_contract_required cannot be disabled on the production Vanguard path"
             )
+        return self._governed_profile_verdict(
+            ticker=ticker,
+            current_price=current_price,
+            raw_evidence=getattr(vanguard_input, "market_profile_evidence", None),
+        )
         
         # === RUN ALL AUCTION MODULES ===
         

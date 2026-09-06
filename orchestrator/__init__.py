@@ -1,4 +1,4 @@
-"""AVSHUNTER orchestration services.
+﻿"""AVSHUNTER orchestration services.
 
 Core dynamic-session contracts are safe to import without initialising legacy
 API, report or email clients.  Those compatibility exports remain available
@@ -107,3 +107,4 @@ def __getattr__(name: str):
     value = getattr(import_module(module_name, __name__), attribute)
     globals()[name] = value
     return value
+

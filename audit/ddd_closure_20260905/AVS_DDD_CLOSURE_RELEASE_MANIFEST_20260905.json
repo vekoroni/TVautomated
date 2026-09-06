@@ -1,0 +1,49 @@
+{
+  "release_id": "AVS-DDD-CLOSURE-20260905",
+  "status": "READY_FOR_CONTROLLED_EVENING_CYCLE",
+  "authority_ceiling": "EOD_PREPARED",
+  "autonomous_dispatch_enabled": false,
+  "backup_root": "backups/ddd_closure_prechange_20260905",
+  "production_files": {
+    "avshunter_discovery_ULTIMATE.py": "3abdfbe128855670d6c1e765e2bf89d0152475efe777cb9bce43c2b3b3ab90e5",
+    "canonical_data/marketdata_stock_candles.py": "b83f0fbda18807890bd7024bff4f49e3aabb651b08c01dec4e2391e1cae8dd0b",
+    "contracts/dynamic_session_runtime_v1.json": "054a76be89b071140911e977ad911432ad46d49433724f52000224b37876bb9d",
+    "contracts/lab_control.py": "1677f8f52763d446a05c420009105ac3b0a66a23ce1b1943ea780a0d7b86e274",
+    "execution_intelligence_runner.py": "ed3a4a160c94986e7741f54541f5c3a3376eece085522647665ac73c9946bc1f",
+    "intelligent_orchestrator.py": "e5e1d133f096421aa7f95fc9b40abf355eadcf99cbbed76ad5d50943590b542a",
+    "orchestrator/dynamic_thesis.py": "3028923a890dc92c9752db1f899bc03b7ba38cb7423c025ee9c0a1fe8020e730",
+    "scripts/avshunter_options_intelligence.py": "43b9e3ce7e532fc762ac1fde8414e27f0e989566a14c79e0a0867926c63b579a",
+    "scripts/build_completed_market_profiles.py": "f81185fa2f49c785e592011854f57b4dffe7ca9261c56937efd7e93724d80aea"
+  },
+  "test_files": {
+    "tests/test_avs_sd003_marketdata_adapter.py": "54a39f3e81317f7818776b65adb8c746cdbfff5362c6a66280d77512062317b6",
+    "tests/test_dynamic_session_phase4.py": "ce4e423fac0cca758f74eab92b8970c611822afadd1963f86c69d3802daddf16",
+    "tests/test_ev3_options_handoff.py": "5c5187e87abb1939f06498cd863f235f44241a27a96dc7c00a68a474245914fb",
+    "tests/test_pse_retired_authority.py": "d44a8f1d349e545b19cd09a5271be36353558678a3d30a26a6041d4a99a63539"
+  },
+  "verification": {
+    "production_modules_compiled": 9,
+    "focused_tests_passed": 91,
+    "isolated_release_tests_passed": 396,
+    "isolated_release_subtests_passed": 16,
+    "intentional_module_skips": 1,
+    "closure_assertion_failures": 0,
+    "read_only_dynamic_plan_preflight": "PASS",
+    "dynamic_plan_hash": "06a1c5c83e715146b2e7864f4540f723312996e84a90b3700a52fe29d0564df7"
+  },
+  "latest_run_reassessment": {
+    "run_id": "20260905_151448",
+    "status": "PRE_FIX_RUN_NOT_ACCEPTABLE_AS_CLOSURE_EVIDENCE",
+    "completed_profile_status": "FAIL",
+    "completed_profiles": 0,
+    "selected_handoff_semantic_coverage_score": 100,
+    "selected_handoff_missing_invalidation": 0,
+    "reason": "The run predates the exclusive-end adapter and coverage-gate fixes; its 1491 partial profiles cannot be promoted as completed evidence."
+  },
+  "live_acceptance_remaining": [
+    "Run one controlled evening BUILD_THESIS cycle and verify its immutable completed-thesis receipt.",
+    "Verify completed-profile usable_ratio is at least 0.90 and systemic_failure is false.",
+    "Verify Discovery, profile, Vanguard, Options and final book use one pipeline_run_id and one completed session.",
+    "Run Morning Gate for the accepted run during the next trading session and verify lifecycle, Lab and Interpreter parity."
+  ]
+}

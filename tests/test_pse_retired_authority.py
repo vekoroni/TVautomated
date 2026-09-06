@@ -121,6 +121,31 @@ def test_data_missing_remains_not_authorized():
     assert row["effective_execution_verdict"] == "DATA_REPAIR_REQUIRED"
 
 
+def test_directional_candidate_without_invalidation_is_not_authorized():
+    row = _candidate_row()
+    row.update({"governed_direction": "PUT", "invalidation_state": "MISSING"})
+    row = eil._apply_retired_sizing_overlay(row, _ev())
+    row = eil._apply_signal_authority_policy(row)
+    row = eil._finalize_execution_authority(row)
+    assert row["capital_permission"] == "NO"
+    assert row["eod_candidate_authorized"] is False
+    assert row["effective_execution_verdict"] == "DATA_REPAIR_REQUIRED"
+    assert row["execution_authority_reason"] == "MISSING_GOVERNED_INVALIDATION"
+
+
+def test_directional_candidate_with_governed_invalidation_remains_eligible():
+    row = _candidate_row()
+    row.update({
+        "governed_direction": "CALL", "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
+    })
+    row = eil._apply_retired_sizing_overlay(row, _ev())
+    row = eil._apply_signal_authority_policy(row)
+    row = eil._finalize_execution_authority(row)
+    assert row["capital_permission"] == "EOD_CANDIDATE_ONLY"
+    assert row["eod_candidate_authorized"] is True
+
+
 def test_direct_pse_call_is_retired_by_default():
     result = compute_position_size(_candidate_row(), _ev())
 

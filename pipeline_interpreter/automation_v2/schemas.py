@@ -1,4 +1,4 @@
-"""Validated structured contracts recovered from legacy model responses."""
+﻿"""Validated structured contracts recovered from legacy model responses."""
 
 from __future__ import annotations
 
@@ -136,3 +136,4 @@ class JuniorBriefing:
             raise SchemaValidationError(
                 tuple(f"JUNIOR_MISSING:{tag}" for tag in missing)
             )
+

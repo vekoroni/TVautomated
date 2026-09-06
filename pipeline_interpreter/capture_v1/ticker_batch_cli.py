@@ -1,4 +1,4 @@
-"""Interactive CLI for the combined Webull ticker workflow."""
+﻿"""Interactive CLI for the combined Webull ticker workflow."""
 
 from __future__ import annotations
 
@@ -64,3 +64,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

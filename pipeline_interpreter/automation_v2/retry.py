@@ -1,4 +1,4 @@
-"""Retry policy for transient analysis-provider failures."""
+﻿"""Retry policy for transient analysis-provider failures."""
 
 from __future__ import annotations
 
@@ -65,3 +65,4 @@ class RetryingProvider:
                 self.sleep(min(delay, self.policy.max_backoff_seconds))
                 delay *= self.policy.multiplier
         raise AssertionError("retry loop exited unexpectedly")
+

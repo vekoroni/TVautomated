@@ -1,0 +1,37 @@
+{
+  "contract_id": "AVS-DDD-RUNTIME-ACTIVATION",
+  "version": "1.0.1",
+  "release_id": "AVS-DDD-CLOSURE-20260905",
+  "status": "CONTROLLED_LIVE_CYCLE",
+  "authority_contract": "AVS-DYNAMIC-SESSION-AUTHORITY/1.0.0",
+  "purpose": "Enable the governed closure cycle with one run identity, completed-profile coverage, immutable thesis receipts and selected-handoff validation while withholding autonomous dispatch.",
+  "feature_flags": {
+    "AVSHUNTER_DYNAMIC_PLAN_ENABLED": true,
+    "AVSHUNTER_DYNAMIC_THESIS_ENABLED": true,
+    "AVSHUNTER_DYNAMIC_VALIDATION_ENABLED": true,
+    "AVSHUNTER_PROFILE_LIFECYCLE_ENABLED": true,
+    "AVSHUNTER_LAB_DYNAMIC_VIEW_ENABLED": true,
+    "AVSHUNTER_INTERPRETER_DYNAMIC_RESOLVER_ENABLED": true,
+    "AVSHUNTER_DECISION_LEDGER_ENABLED": true,
+    "AVSHUNTER_DYNAMIC_AUTO_ENABLED": false,
+    "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED": true
+  },
+  "rollback_feature_flags": {
+    "AVSHUNTER_DYNAMIC_PLAN_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_THESIS_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_VALIDATION_ENABLED": false,
+    "AVSHUNTER_PROFILE_LIFECYCLE_ENABLED": false,
+    "AVSHUNTER_LAB_DYNAMIC_VIEW_ENABLED": false,
+    "AVSHUNTER_INTERPRETER_DYNAMIC_RESOLVER_ENABLED": false,
+    "AVSHUNTER_DECISION_LEDGER_ENABLED": false,
+    "AVSHUNTER_DYNAMIC_AUTO_ENABLED": false,
+    "AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED": false
+  },
+  "capital_authority_owner": "execution_gate",
+  "acceptance_required": [
+    "completed evening thesis run",
+    "linked morning validation run",
+    "population and evidence reconciliation",
+    "Lab and Interpreter manifest parity"
+  ]
+}

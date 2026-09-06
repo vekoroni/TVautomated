@@ -149,9 +149,12 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone, time as dtime
+from datetime import date, datetime, timezone, time as dtime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from domain.run_planning import RunPlan
 from zoneinfo import ZoneInfo
 
 try:
@@ -433,14 +436,6 @@ class OrchestratorConfig:
     BACKFILL_TIMESERIES = SCRIPTS_DIR / "backfill_timeseries_into_packages.py"
     BUILD_COMPLETED_PROFILES = SCRIPTS_DIR / "build_completed_market_profiles.py"
     RUN_VANGUARD        = SCRIPTS_DIR / "run_vanguard_from_packages.py"
-    # AVS-SD-002: completed-session profile construction is part of the
-    # governed thesis build.  Do not introduce a second, orphaned switch for
-    # the same capability; controlled promotion owns this through the frozen
-    # dynamic-session flag contract.
-    COMPLETED_PROFILE_ENABLED = os.environ.get(
-        "AVSHUNTER_DYNAMIC_THESIS_ENABLED", "0"
-    ).strip().lower() in {"1", "true", "yes", "on"}
-
     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
     PHANTOM_RUNNER      = SCRIPTS_DIR / "run_phantom.py"
@@ -592,6 +587,13 @@ class OrchestratorConfig:
 
 
 cfg = OrchestratorConfig()
+
+
+def completed_profile_stage_enabled() -> bool:
+    """Resolve the independent acquisition capability at invocation time."""
+    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+
+    return DynamicSessionFeatureFlags.from_environment().completed_profile_stage
 
 
 # ============================================================ PHASE 0: UNIVERSE SCANNER CONSUMER
@@ -970,7 +972,7 @@ def check_scripts() -> Tuple[bool, List[str]]:
         "Backfill Timeseries": cfg.BACKFILL_TIMESERIES,
         "Run VANGUARD":        cfg.RUN_VANGUARD,
     }
-    if cfg.COMPLETED_PROFILE_ENABLED:
+    if completed_profile_stage_enabled():
         required["Completed Market Profile"] = cfg.BUILD_COMPLETED_PROFILES
     optional = {
         "Position Tracker":          cfg.POSITION_TRACKER,
@@ -1607,12 +1609,25 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
             "macro_conviction": float(_macro.get("macro_conviction", 0)),
             "macro_momentum_score": float(_macro.get("macro_momentum_score", 0)),
             "horizon_counts": _counts,
+            # The production router is direction-agnostic and applies a 1.0
+            # core multiplier. Macro probabilities remain useful context but
+            # are not the values actually applied to candidate authority.
             "horizon_biases": {
+                bucket: {
+                    "direction": "DIRECTION_AGNOSTIC",
+                    "action": "GO_SELECTIVE",
+                    "size_multiplier": 1.0,
+                    "authority": "CORE_HORIZON_ROUTING",
+                }
+                for bucket in _biases
+            },
+            "macro_advisory_horizon_biases": {
                 k: {
                     "direction":        v.direction,
                     "bullish_prob_pct": v.bullish_prob_pct,
                     "action":           v.action.value,
                     "size_multiplier":  v.size_multiplier,
+                    "authority":        "ADVISORY_ONLY_NOT_APPLIED",
                 }
                 for k, v in _biases.items()
             },
@@ -1623,6 +1638,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
             # CALL and PUT are both surfaced in all regimes.
             "macro_direction_sizing": cfg.MACRO_DIRECTION_SIZING,
             "macro_direction_sizing_default": cfg.MACRO_DIRECTION_SIZING_DEFAULT,
+            "macro_direction_sizing_authority": "ADVISORY_ONLY_NOT_APPLIED",
         }
         _summary_path = _out_dir / f"horizon_summary_{run_id}.json"
         with open(_summary_path, "w", encoding="utf-8") as _f:
@@ -1651,6 +1667,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
 def run_discovery(
     augmented_universe_path: Optional[Path] = None,
     scanner_context_path: Optional[Path] = None,
+    run_id: Optional[str] = None,
 ) -> Tuple[bool, Optional[dict], Optional[str]]:
     """Run ULTIMATE discovery script. Returns (ok, summary, discovery_run_id)."""
     logger.info("=" * 80)
@@ -1669,6 +1686,8 @@ def run_discovery(
         "--progress-every", "100",
         "--force-update",
     ]
+    if run_id:
+        cmd += ["--run-id", run_id]
 
     # DISC-02: Pass scanner context so discovery can inject VMS scores into composite scoring.
     if scanner_context_path and scanner_context_path.exists():
@@ -1679,7 +1698,12 @@ def run_discovery(
     if not ok:
         return False, None, None
 
-    summaries = sorted(cfg.OUTPUT_DIR.glob("discovery_summary_ultimate_*.json"))
+    summaries = (
+        [cfg.OUTPUT_DIR / f"discovery_summary_ultimate_{run_id}.json"]
+        if run_id
+        else sorted(cfg.OUTPUT_DIR.glob("discovery_summary_ultimate_*.json"))
+    )
+    summaries = [path for path in summaries if path.exists()]
     if not summaries:
         logger.error("❌ No discovery summary file found after run\n")
         return False, None, None
@@ -1691,6 +1715,13 @@ def run_discovery(
     stem = latest_summary.stem
     parts = stem.split("_")
     discovery_run_id = "_".join(parts[-2:])
+    if run_id and discovery_run_id != run_id:
+        logger.error(
+            "Discovery violated governed run identity: planned=%s emitted=%s",
+            run_id,
+            discovery_run_id,
+        )
+        return False, None, None
     logger.info(f"📁 Discovery output timestamp: {discovery_run_id}")
 
     return True, summary, discovery_run_id
@@ -1969,12 +2000,28 @@ def _update_run_meta_status(
     if pipeline_mode:
         payload["pipeline_mode"] = str(pipeline_mode).strip().upper()
     payload["status_updated_at_utc"] = datetime.now(timezone.utc).isoformat()
+    from dataclasses import asdict as _asdict
+    from contracts.dynamic_session_contract import (
+        DynamicSessionFeatureFlags as _DynamicSessionFeatureFlags,
+        FEATURE_FLAG_ENV_VARS as _FEATURE_FLAG_ENV_VARS,
+        governed_runtime_profile_summary as _governed_runtime_profile_summary,
+    )
+    _resolved_flags = _asdict(_DynamicSessionFeatureFlags.from_environment())
+    payload["feature_flag_contract_version"] = "AVS-DYNAMIC-SESSION-AUTHORITY/1.0.0"
+    payload["ddd_runtime_profile"] = _governed_runtime_profile_summary()
+    payload["resolved_feature_flags"] = dict(
+        zip(_FEATURE_FLAG_ENV_VARS, _resolved_flags.values(), strict=True)
+    )
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.parent.mkdir(parents=True, exist_ok=True)
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
 
-def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
+def pin_run_directory(
+    discovery_run_id: str,
+    macro_path: Path,
+    run_plan: Optional["RunPlan"] = None,
+) -> bool:
     """Create per-run structure and stage macro_snapshot + discovery CSV."""
     logger.info("=" * 80)
     logger.info("PHASE 4.5: PIN RUN DIRECTORY")
@@ -2128,6 +2175,19 @@ def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
         "contract_version": contract,
         "pinned_at_utc": datetime.now(timezone.utc).isoformat(),
     }
+    if run_plan is not None:
+        if str(getattr(run_plan, "pipeline_run_id", "")) != discovery_run_id:
+            logger.error("Run plan identity does not match pinned run directory")
+            return False
+        meta["dynamic_plan"] = {
+            "pipeline_run_id": run_plan.pipeline_run_id,
+            "invocation_id": run_plan.invocation_id,
+            "plan_hash": run_plan.plan_hash,
+            "evidence_cutoff_utc": run_plan.evidence_cutoff_utc,
+            "last_completed_session": run_plan.last_completed_session,
+            "resolved_action": run_plan.resolved_action,
+            "execution_authority_ceiling": run_plan.execution_authority_ceiling,
+        }
     try:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
@@ -2147,7 +2207,10 @@ def pin_run_directory(discovery_run_id: str, macro_path: Path) -> bool:
 
 # ============================================================ PHASES 5–8: VANGUARD PIPELINE
 
-def publish_cds3_discovery_worklist(run_id: str) -> bool:
+def publish_cds3_discovery_worklist(
+    run_id: str,
+    session_date: Optional[date] = None,
+) -> bool:
     """Publish the reconciled Discovery ledger and Packages worklist."""
     outcome_path = (
         cfg.RUNS_DIR / run_id / "discovery" / f"discovery_lifecycle_{run_id}.csv"
@@ -2167,7 +2230,7 @@ def publish_cds3_discovery_worklist(run_id: str) -> bool:
             registry_path,
             outcome_path,
             run_id=run_id,
-            session_date=datetime.now().date(),
+            session_date=session_date or datetime.now().date(),
         )
         report_dir = cfg.RUNS_DIR / run_id / "canonical"
         report_dir.mkdir(parents=True, exist_ok=True)
@@ -2313,7 +2376,13 @@ def _backfill_failure_is_systemic(
     return failure_ratio > max_failure_ratio, ok_count, fail_count, failure_ratio
 
 
-def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD") -> bool:
+def run_vanguard_pipeline(
+    run_id: str,
+    macro_path: Path,
+    data_mode: str = "EOD",
+    evidence_session_date: str | None = None,
+    run_plan: Optional["RunPlan"] = None,
+) -> bool:
     """Build packages, inject macro, backfill bars, run Vanguard."""
     logger.info("=" * 80)
     logger.info("PHASES 5–8: VANGUARD PIPELINE")
@@ -2321,12 +2390,17 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
     logger.info(f"   Using discovery run ID: {run_id}")
     logger.info(f"   Using macro path      : {macro_path}")
 
-    if not pin_run_directory(run_id, macro_path):
+    if not pin_run_directory(run_id, macro_path, run_plan=run_plan):
         logger.error("❌ VANGUARD pipeline aborted — could not pin run directory\n")
         return False
 
     # CDS-3 shadow: persist the authority set, but do not alter production flow.
-    publication_ok = publish_cds3_discovery_worklist(run_id)
+    publication_session = (
+        date.fromisoformat(evidence_session_date) if evidence_session_date else None
+    )
+    publication_ok = publish_cds3_discovery_worklist(
+        run_id, session_date=publication_session
+    )
     stage_gating = os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower()
     stage_gating_enabled = stage_gating in {"1", "true", "yes", "on"}
     if stage_gating_enabled and not publication_ok:
@@ -2362,6 +2436,8 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
     backfill_args = ["--run-id", run_id, "--allow-polygon",
                      "--allow-marketdata", "--intraday-provider", "auto",
                      "--data-mode", data_mode]  # pass through LATEST/EOD
+    if evidence_session_date:
+        backfill_args += ["--completed-session", evidence_session_date]
     logger.info(f"▶  {backfill_label} (data-mode={data_mode})")
     logger.info(f"   CMD: {sys.executable} {cfg.BACKFILL_TIMESERIES} {' '.join(backfill_args)}")
     _backfill_proc = subprocess.run(
@@ -2414,18 +2490,33 @@ def run_vanguard_pipeline(run_id: str, macro_path: Path, data_mode: str = "EOD")
     # intraday bars before Vanguard. Disabled until controlled promotion; when
     # enabled, every package is explicitly marked governed so Vanguard cannot
     # fall back to daily-as-intraday profile fabrication.
-    if cfg.COMPLETED_PROFILE_ENABLED:
+    if completed_profile_stage_enabled():
         from canonical_data import session_snapshot as _profile_session_snapshot
-        _profile_session = _profile_session_snapshot(datetime.now(timezone.utc)).last_completed_session
+        _profile_session = (
+            datetime.fromisoformat(evidence_session_date).date()
+            if evidence_session_date
+            else _profile_session_snapshot(datetime.now(timezone.utc)).last_completed_session
+        )
         _profile_cmd = [
             sys.executable, str(cfg.BUILD_COMPLETED_PROFILES),
             "--run-id", run_id,
             "--session-date", _profile_session.isoformat(),
             "--interval-minutes", "5",
         ]
-        if not _run("Build Completed Market Profiles", _profile_cmd, critical=True):
-            logger.error("VANGUARD pipeline aborted: governed completed-profile stage failed")
-            return False
+        if not _run("Build Completed Market Profiles", _profile_cmd, critical=False):
+            logger.error("PROFILE_STAGE_FAILED: governed completed-profile acquisition degraded")
+            _profile_status = {
+                "run_id": run_id,
+                "status": "PROFILE_STAGE_FAILED",
+                "authority_result": "VANGUARD_FAILS_CLOSED",
+                "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+            _profile_status_path = cfg.RUNS_DIR / run_id / "market_profile" / "profile_stage_status.json"
+            _profile_status_path.parent.mkdir(parents=True, exist_ok=True)
+            _profile_status_tmp = _profile_status_path.with_suffix(".json.tmp")
+            _profile_status_tmp.write_text(json.dumps(_profile_status, indent=2), encoding="utf-8")
+            _profile_status_tmp.replace(_profile_status_path)
+            logger.warning("Continuing: Vanguard will receive no usable profile and return NOT_EVALUATED")
     else:
         logger.info("Phase 4 completed Market Profile integration is built but not yet promoted")
 
@@ -3864,6 +3955,100 @@ def run_phase_9c(cfg: OrchestratorConfig, run_id: str) -> dict:
 
 # ============================================================ WORKFLOWS ======
 
+def _record_dynamic_thesis_receipt(run_plan: "RunPlan") -> Path:
+    """Validate legacy-stage artefacts and publish one immutable DDD receipt."""
+    from orchestrator.dynamic_thesis import (
+        ThesisStageResult,
+        record_completed_thesis,
+    )
+
+    run_id = str(run_plan.pipeline_run_id)
+    run_dir = cfg.RUNS_DIR / run_id
+    paths = {
+        "discovery": cfg.OUTPUT_DIR / f"discovery_summary_ultimate_{run_id}.json",
+        "profile": run_dir / "market_profile" / f"completed_profile_summary_{run_id}.json",
+        "vanguard": run_dir / "vanguard" / "vanguard_run_summary.json",
+        "options": run_dir / "options" / f"options_intelligence_summary_{run_id}.json",
+        "publish": run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json",
+    }
+    missing = [str(path) for path in paths.values() if not path.exists()]
+    if missing:
+        raise RuntimeError("dynamic thesis receipt missing artefacts: " + ",".join(missing))
+
+    payloads = {
+        name: json.loads(path.read_text(encoding="utf-8-sig"))
+        for name, path in paths.items()
+    }
+    identities = {
+        str(payloads["discovery"].get("timestamp") or ""),
+        str(payloads["profile"].get("run_id") or ""),
+        str(payloads["vanguard"].get("run_id") or ""),
+        str(payloads["options"].get("run_id") or ""),
+        str(payloads["publish"].get("run_id") or ""),
+    }
+    if identities != {run_id}:
+        raise RuntimeError(f"dynamic thesis artefact run identities disagree: {sorted(identities)}")
+    if str(payloads["profile"].get("session_date") or "") != str(run_plan.last_completed_session):
+        raise RuntimeError("completed profile session does not match the run plan")
+    if not payloads["profile"].get("reconciled") or payloads["profile"].get("systemic_failure"):
+        raise RuntimeError("completed market profile stage is not healthy")
+
+    discovery_input = int(payloads["discovery"].get("universe_size") or 0)
+    discovery_output = int(payloads["discovery"].get("total_candidates") or 0)
+    discovery_errors = int(payloads["discovery"].get("lifecycle_errors") or 0)
+    discovery_excluded = discovery_input - discovery_output - discovery_errors
+
+    profile_input = int(payloads["profile"].get("input_count") or 0)
+    profile_output = int(payloads["profile"].get("completed") or 0)
+    profile_deferred = int(payloads["profile"].get("deferred") or 0)
+    profile_exceptions = int(payloads["profile"].get("hard_exception_count") or 0)
+
+    vanguard_input = int(payloads["vanguard"].get("packages_total") or 0)
+    vanguard_output = int(payloads["vanguard"].get("passed") or 0)
+    vanguard_excluded = int(payloads["vanguard"].get("rejected") or 0)
+
+    options_input = int(payloads["options"].get("signals_scoped") or 0)
+    options_output = int(payloads["options"].get("signals_processed") or 0)
+    final_output = int(payloads["publish"].get("candidate_count") or 0)
+    if final_output > options_output:
+        raise RuntimeError("published thesis population exceeds Options population")
+
+    stage_results = {
+        "DISCOVERY": ThesisStageResult(
+            stage="DISCOVERY", status="COMPLETED", input_count=discovery_input,
+            output_count=discovery_output, excluded_count=discovery_excluded,
+            exception_count=discovery_errors, artifact_paths=(str(paths["discovery"]),),
+        ),
+        "COMPLETED_MARKET_PROFILE": ThesisStageResult(
+            stage="COMPLETED_MARKET_PROFILE", status="COMPLETED", input_count=profile_input,
+            output_count=profile_output, deferred_count=profile_deferred,
+            exception_count=profile_exceptions, artifact_paths=(str(paths["profile"]),),
+        ),
+        "VANGUARD": ThesisStageResult(
+            stage="VANGUARD", status="COMPLETED", input_count=vanguard_input,
+            output_count=vanguard_output, excluded_count=vanguard_excluded,
+            artifact_paths=(str(paths["vanguard"]),),
+        ),
+        "OPTIONS": ThesisStageResult(
+            stage="OPTIONS", status="COMPLETED", input_count=options_input,
+            output_count=options_output, excluded_count=options_input - options_output,
+            artifact_paths=(str(paths["options"]),),
+        ),
+        "PUBLISH_THESIS": ThesisStageResult(
+            stage="PUBLISH_THESIS", status="COMPLETED", input_count=options_output,
+            output_count=final_output, excluded_count=options_output - final_output,
+            artifact_paths=(str(paths["publish"]),),
+        ),
+    }
+    receipt = record_completed_thesis(
+        run_plan,
+        stage_results=stage_results,
+        receipt_root=cfg.RUNS_DIR,
+    )
+    receipt_path = run_dir / f"completed_thesis_receipt_{run_plan.invocation_id}.json"
+    logger.info("DDD completed-thesis receipt: %s hash=%s", receipt_path, receipt.receipt_hash)
+    return receipt_path
+
 def evening_workflow(
     run_id: Optional[str] = None,
     min_universe: int = 1000,
@@ -3871,74 +4056,57 @@ def evening_workflow(
     universe_gate_mode: str = "AUTO",
     force: bool = False,
     universe_override: Optional[Path] = None,
-    data_mode: str = "EOD",
+    data_mode: str = "AUTO",
+    as_of_utc: datetime | None = None,
+    evidence_session_date: str | None = None,
+    run_plan: Optional["RunPlan"] = None,
 ) -> bool:
     """
     Evening workflow: preflight → discovery → validate → vanguard → post-process → archive.
 
-    data_mode controls how bar data is sourced:
-      EOD    — uses yesterday's completed daily bars (default, requires post-16:15 ET)
-      LATEST — uses the most recent Polygon snapshot bars (safe to run at any time)
-               Intraday bars will be incomplete if run during market hours.
-               TCE confirmation will use whatever bars are available.
-               All output rows are stamped data_mode=LATEST so MVE applies
-               EOD thresholds (lower MVS requirement, PARTIAL trigger accepted).
+    Session Authority controls how bar data is sourced:
+      AUTO/EOD — use the last completed XNYS session, at any invocation time.
+      LATEST   — append explicitly-labelled current-session evidence for review.
+                 It never acquires completed-session thesis authority.
     """
     session_id = run_id or datetime.now().strftime("%Y%m%d_%H%M%S")
-    _data_mode = str(data_mode).upper().strip()
-    if _data_mode not in ("EOD", "LATEST"):
-        logger.warning("⚠️  Unknown data_mode '%s' — defaulting to EOD", _data_mode)
-        _data_mode = "EOD"
+    from orchestrator.session_authority_adapter import (
+        resolve_pipeline_session_authority,
+    )
 
-    # ── MARKET HOURS GUARD ────────────────────────────────────────────────────
-    # EOD mode: pipeline must run after market close (16:15 ET) to ensure
-    # complete daily bars and valid TCE confirmation.
-    # LATEST mode: pipeline runs at any time using the most recent snapshot.
-    # TCE will apply PARTIAL trigger logic (same as EOD synthetic mode).
-    _now_utc = datetime.now(timezone.utc)
-    _now_et = _now_utc.astimezone(ZoneInfo("America/New_York"))
-    _now_et_hour = _now_et.hour
-    _now_et_min  = _now_et.minute
-    _now_et_time = _now_et_hour * 60 + _now_et_min
-    _market_open  = 9 * 60 + 30
-    _market_close = 16 * 60 + 15
-    _et_date     = _now_et.date()
-    _is_weekend  = _et_date.weekday() >= 5
-    _in_market_hours = (_market_open <= _now_et_time < _market_close) and not _is_weekend
-
-    if _data_mode == "LATEST":
-        # LATEST mode: always allowed regardless of time
-        if _in_market_hours:
-            logger.info("=" * 70)
-            logger.info("📊  EVENING PIPELINE — DATA MODE: LATEST (intraday)")
-            logger.info(f"   Running at {_now_et_hour:02d}:{_now_et_min:02d} ET — market is OPEN.")
-            logger.info("   Polygon snapshot bars will be used (may be incomplete).")
-            logger.info("   All signals stamped data_mode=LATEST → MVE uses EOD thresholds.")
-            logger.info("   Output is valid for review. Trade decisions should confirm")
-            logger.info("   at morning validation once market closes.")
-            logger.info("=" * 70)
-        else:
-            logger.info("📊  DATA MODE: LATEST — post-close snapshot bars")
-    elif _in_market_hours and not force:
-        _et_str = f"{_now_et_hour:02d}:{_now_et_min:02d} ET"
-        logger.error("=" * 70)
-        logger.error("⛔  MARKET HOURS GUARD — EVENING PIPELINE BLOCKED")
-        logger.error(f"    Current time : {_et_str} (market open 09:30–16:15 ET)")
-        logger.error("    EOD mode requires completed daily bars after 16:15 ET.")
-        logger.error("    Options:")
-        logger.error("      1. Wait until 16:15 ET then run normally")
-        logger.error("      2. Run now with latest snapshot: --data-mode LATEST")
-        logger.error("      3. Override (research only): --force")
-        logger.error("=" * 70)
+    try:
+        _session_authority = resolve_pipeline_session_authority(
+            requested_mode=data_mode,
+            as_of_utc=as_of_utc,
+        )
+    except (TypeError, ValueError) as authority_error:
+        logger.error("SESSION_AUTHORITY_REJECTED: %s", authority_error)
         return False
-    elif _in_market_hours and force:
-        logger.warning("=" * 70)
-        logger.warning("⚠️  MARKET HOURS GUARD BYPASSED (--force)")
-        logger.warning(f"   Running at {_now_et_hour:02d}:{_now_et_min:02d} ET — market is OPEN.")
-        logger.warning("   EOD candidates will use incomplete intraday bars.")
-        logger.warning("   Use --data-mode LATEST instead for a cleaner run.")
-        logger.warning("=" * 70)
-    # ── END MARKET HOURS GUARD ────────────────────────────────────────────────
+    if (
+        evidence_session_date
+        and evidence_session_date != _session_authority.provider_query_end.isoformat()
+    ):
+        logger.error(
+            "SESSION_AUTHORITY_CONFLICT: planned=%s resolved=%s",
+            evidence_session_date,
+            _session_authority.provider_query_end.isoformat(),
+        )
+        return False
+    _evidence_session_date = _session_authority.provider_query_end.isoformat()
+    _data_mode = _session_authority.legacy_data_mode
+    logger.info(
+        "SESSION AUTHORITY: requested=%s resolved=%s state=%s "
+        "evidence_session=%s provider_end=%s authority=%s reason=%s",
+        _session_authority.requested_mode.value,
+        _session_authority.resolved_mode.value,
+        _session_authority.evidence_state.value,
+        _session_authority.evidence_session.isoformat(),
+        _evidence_session_date,
+        _session_authority.authority_ceiling.value,
+        _session_authority.reason_code,
+    )
+    if force:
+        logger.warning("--force is deprecated; Session Authority still enforces evidence boundaries")
 
     logger.info("\n" + "=" * 80)
     logger.info("🌆  EVENING WORKFLOW — DISCOVERY & VANGUARD")
@@ -4274,6 +4442,7 @@ def evening_workflow(
     success, summary, discovery_run_id = run_discovery(
         augmented_universe_path = _effective_universe,
         scanner_context_path    = _scanner_ctx_latest,
+        run_id                  = session_id,
     )
     if not success or not summary or not discovery_run_id:
         return False
@@ -4339,7 +4508,13 @@ def evening_workflow(
             logger.warning("⚠️  Phase 4.7 (Regime Screener) failed — pipeline continues. Error: %s", _rs_err)
     # ─────────────────────────────────────────────────────────────────────────
 
-    if not run_vanguard_pipeline(canonical_run_id, macro_path, data_mode=_data_mode):
+    if not run_vanguard_pipeline(
+        canonical_run_id,
+        macro_path,
+        data_mode=_data_mode,
+        evidence_session_date=_evidence_session_date,
+        run_plan=run_plan,
+    ):
         logger.error("❌ EVENING WORKFLOW ABORTED — VANGUARD pipeline failed\n")
         return False
 
@@ -5700,6 +5875,122 @@ def evening_workflow(
         logger.warning("⚠️  Drop-off audit failed (non-critical): %s", _dropoff_err)
 
     try:
+        from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book
+        # Build a provisional manifest for Lab rendering.  The authoritative
+        # manifest is regenerated after the Lab, handoff audit and UAT report
+        # exist so it cannot certify an incomplete artefact set.
+        _manifest = write_final_run_manifest(canonical_run_id, cfg.RUNS_DIR, pipeline_mode="EOD")
+        logger.info(
+            "Provisional run manifest: health=%s next_action=%s tradeable=%s",
+            _manifest.get("run_health_score"),
+            _manifest.get("next_action"),
+            _manifest.get("run_tradeable"),
+        )
+        try:
+            import pandas as _pd_lab_sync
+            _mv_dir = cfg.RUNS_DIR / canonical_run_id / "morning_validation"
+            _lab_source = _mv_dir / f"morning_candidates_{canonical_run_id}.csv"
+            if not _lab_source.exists():
+                _lab_source = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"eil_enriched_{canonical_run_id}.csv"
+            if _lab_source.exists():
+                _lab_rows = _pd_lab_sync.read_csv(_lab_source, low_memory=False).to_dict("records")
+                _lab_book = write_final_opportunity_book(
+                    canonical_run_id,
+                    _lab_rows,
+                    _manifest,
+                    cfg.RUNS_DIR,
+                    sync_interpreter=False,
+                )
+                try:
+                    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+                    if DynamicSessionFeatureFlags.from_environment().decision_outcome_ledger:
+                        from canonical_data.decision_outcome_ledger import (
+                            DecisionOutcomeLedger,
+                            candidate_events_from_rows,
+                        )
+
+                        _decision_rows = [
+                            dict(_row)
+                            for _row in (_lab_book.get("rows") or [])
+                            if str(_row.get("ticker") or "").strip()
+                            and str(_row.get("thesis_id") or "").strip()
+                        ]
+                        _decision_ledger_path = (
+                            cfg.RUNS_DIR.parent.parent
+                            / "canonical"
+                            / "decision_outcome_ledger.sqlite"
+                        )
+                        _decision_events = candidate_events_from_rows(
+                            _decision_rows,
+                            run_id=canonical_run_id,
+                            occurred_at_utc=datetime.now(timezone.utc).isoformat(),
+                            decision_stage="EOD_THESIS",
+                        )
+                        _decision_ledger = DecisionOutcomeLedger(
+                            _decision_ledger_path
+                        )
+                        _decision_appended = _decision_ledger.append_many(
+                            _decision_events
+                        )
+                        logger.info(
+                            "DDD Phase 8 decision ledger: EOD=%d appended=%d missing_identity=%d authority=OBSERVATION_ONLY",
+                            len(_decision_events),
+                            _decision_appended,
+                            len(_lab_book.get("rows") or []) - len(_decision_rows),
+                        )
+                        _price_database_path = (
+                            cfg.RUNS_DIR.parent.parent
+                            / "canonical"
+                            / "historical_prices.sqlite"
+                        )
+                        if _price_database_path.is_file():
+                            from canonical_data.historical_prices import (
+                                HistoricalPriceDatabase,
+                            )
+                            from canonical_data.outcome_maturation import (
+                                mature_candidate_outcomes,
+                            )
+
+                            _price_database = HistoricalPriceDatabase(
+                                _price_database_path
+                            )
+
+                            def _read_outcome_history(_ticker, _start_date):
+                                return _price_database.read(
+                                    _ticker,
+                                    start_date=_start_date,
+                                    completed_only=True,
+                                )
+
+                            _maturation = mature_candidate_outcomes(
+                                _decision_ledger,
+                                read_completed_history=_read_outcome_history,
+                                as_of_utc=datetime.now(timezone.utc).isoformat(),
+                            )
+                            logger.info(
+                                "DDD Phase 8 outcome maturation: evaluated=%d appended=%d deferred=%d ineligible=%d API_requests=0",
+                                _maturation.outcomes_evaluated,
+                                _maturation.outcomes_appended,
+                                _maturation.deferred_horizons,
+                                _maturation.ineligible_candidates,
+                            )
+                except Exception as _ledger_err:
+                    logger.warning(
+                        "Decision ledger observation failed without changing EOD authority: %s",
+                        _ledger_err,
+                    )
+                logger.info(
+                    "EOD Lab compatibility view written -> %s (Interpreter publication waits for Morning Gate)",
+                    _lab_book.get("triage_csv_path"),
+                )
+        except Exception as _lab_sync_err:
+            logger.warning("Lab/Interpreter shared triage view failed (non-critical): %s", _lab_sync_err)
+    except Exception as _manifest_err:
+        logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
+
+    # The contract audit must run after the Lab book is materialised.  Its Lab
+    # checks and the UAT summary otherwise observe a transient missing artefact.
+    try:
         from handoff_contract_audit import audit_run as _audit_handoff_contract
 
         _handoff_audit = _audit_handoff_contract(canonical_run_id, runs_dir=cfg.RUNS_DIR)
@@ -5725,37 +6016,19 @@ def evening_workflow(
         logger.warning("UAT audit report failed (non-critical): %s", _uat_report_err)
 
     try:
-        from contracts.lab_control import write_final_run_manifest, write_final_opportunity_book
-        _manifest = write_final_run_manifest(canonical_run_id, cfg.RUNS_DIR, pipeline_mode="EOD")
+        from contracts.lab_control import write_final_run_manifest as _refresh_final_run_manifest
+
+        _manifest = _refresh_final_run_manifest(
+            canonical_run_id, cfg.RUNS_DIR, pipeline_mode="EOD"
+        )
         logger.info(
-            "Final run manifest: health=%s next_action=%s tradeable=%s",
+            "Final run manifest refreshed after governance audit: health=%s next_action=%s tradeable=%s",
             _manifest.get("run_health_score"),
             _manifest.get("next_action"),
             _manifest.get("run_tradeable"),
         )
-        try:
-            import pandas as _pd_lab_sync
-            _mv_dir = cfg.RUNS_DIR / canonical_run_id / "morning_validation"
-            _lab_source = _mv_dir / f"morning_candidates_{canonical_run_id}.csv"
-            if not _lab_source.exists():
-                _lab_source = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"eil_enriched_{canonical_run_id}.csv"
-            if _lab_source.exists():
-                _lab_rows = _pd_lab_sync.read_csv(_lab_source, low_memory=False).to_dict("records")
-                _lab_book = write_final_opportunity_book(
-                    canonical_run_id,
-                    _lab_rows,
-                    _manifest,
-                    cfg.RUNS_DIR,
-                    sync_interpreter=False,
-                )
-                logger.info(
-                    "EOD Lab compatibility view written -> %s (Interpreter publication waits for Morning Gate)",
-                    _lab_book.get("triage_csv_path"),
-                )
-        except Exception as _lab_sync_err:
-            logger.warning("Lab/Interpreter shared triage view failed (non-critical): %s", _lab_sync_err)
-    except Exception as _manifest_err:
-        logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
+    except Exception as _manifest_refresh_err:
+        logger.warning("Final run manifest refresh failed (non-critical): %s", _manifest_refresh_err)
 
     archive_outputs(canonical_run_id)
     prune_old_runs()
@@ -6243,7 +6516,7 @@ def main() -> None:
         default=None,
         help="Optional run identifier e.g. 20260215_120000. Auto-generated if omitted.",
     )
-    parser.add_argument("--evening",   action="store_true", help="Run evening workflow (discovery → VANGUARD → EIL → Kelly → EOD candidate manifest)")
+    parser.add_argument("--evening",   action="store_true", help="Build a thesis from the last completed XNYS session (safe to invoke at any time)")
     parser.add_argument("--morning",   action="store_true", help="Run morning validation at 09:45 ET (live data scoring against EOD candidates)")
     parser.add_argument("--premarket", action="store_true", help="[DEPRECATED] Use --morning instead")
     parser.add_argument("--auto", action="store_true", help="Resolve and execute the governed run-anytime action (feature-flagged)")
@@ -6252,18 +6525,16 @@ def main() -> None:
     parser.add_argument("--plan-only", action="store_true", help="Print the dynamic RunPlan without provider calls or filesystem changes")
     parser.add_argument("--as-of-utc", default=None, help="Timezone-aware ISO-8601 dispatcher clock; intended for deterministic replay/testing")
     parser.add_argument("--provider-session-finalised", action="store_true", help="Confirm the provider has published the completed current session")
-    parser.add_argument("--force",     action="store_true", help="Bypass market hours guard -- allow --evening during market hours (CAUTION: intraday data produces corrupted EOD candidates)")
+    parser.add_argument("--force",     action="store_true", help="[DEPRECATED] Retained for CLI compatibility; cannot override Session Authority")
     parser.add_argument(
         "--data-mode",
-        choices=["EOD", "LATEST"],
-        default="EOD",
+        choices=["AUTO", "EOD", "LATEST"],
+        default="AUTO",
         help=(
-            "Bar data source for the evening pipeline. "
-            "EOD (default): uses completed daily bars — requires running after 16:15 ET. "
-            "LATEST: uses the most recent Polygon snapshot — safe to run at any time. "
-            "In LATEST mode all signals are stamped data_mode=LATEST and MVE applies "
-            "EOD thresholds (lower MVS, PARTIAL trigger accepted for EXECUTE). "
-            "Use LATEST when you need to run the pipeline mid-session or for research."
+            "Evidence policy for thesis preparation. AUTO (default) and EOD use the "
+            "last completed XNYS session at any invocation time. LATEST appends a "
+            "labelled current-session snapshot for review and cannot acquire completed "
+            "thesis authority."
         ),
     )
 
@@ -6290,6 +6561,21 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    from contracts.dynamic_session_contract import (
+        DynamicSessionFeatureFlags,
+        governed_runtime_profile_summary,
+    )
+
+    runtime_profile = governed_runtime_profile_summary()
+    runtime_flags = DynamicSessionFeatureFlags.from_environment()
+    logger.info(
+        "DDD runtime profile: release=%s status=%s sha256=%s auto=%s",
+        runtime_profile.get("release_id"),
+        runtime_profile.get("status"),
+        str(runtime_profile.get("sha256") or "")[:16],
+        runtime_flags.auto_dispatcher,
+    )
 
     dynamic_requested = args.auto or args.finalise or args.replay or args.plan_only
     if args.evening or args.morning or args.premarket or args.auto or args.finalise:
@@ -6343,8 +6629,7 @@ def main() -> None:
             logger.info("CDS-2 orchestrator startup self-test: PASS")
             sys.exit(0)
 
-    if dynamic_requested or os.environ.get("AVSHUNTER_DYNAMIC_PLAN_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}:
-        from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+    if dynamic_requested or runtime_flags.plan_engine:
         from orchestrator.dynamic_dispatcher import (
             execute_dispatch_plan,
             operator_summary,
@@ -6370,7 +6655,7 @@ def main() -> None:
                 as_of_utc = as_of_utc.astimezone(timezone.utc)
             else:
                 as_of_utc = datetime.now(timezone.utc)
-            if requested_action.value == "AUTO" and args.data_mode != "EOD":
+            if requested_action.value == "AUTO" and args.data_mode == "LATEST":
                 raise ValueError("AUTO production dispatch cannot use research-only LATEST data mode")
             plan, selected_thesis = resolve_dispatch_plan(
                 output_dir=cfg.OUTPUT_DIR,
@@ -6384,7 +6669,7 @@ def main() -> None:
                 print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))
                 success = True
             else:
-                flags = DynamicSessionFeatureFlags.from_environment()
+                flags = runtime_flags
                 if not flags.plan_engine:
                     raise RuntimeError("dynamic plan execution requires AVSHUNTER_DYNAMIC_PLAN_ENABLED=1")
                 if requested_action.value == "AUTO" and not flags.auto_dispatcher:
@@ -6412,15 +6697,25 @@ def main() -> None:
                 )
 
                 def _build(planned):
-                    return evening_workflow(
+                    built = evening_workflow(
                         run_id=planned.pipeline_run_id,
                         min_universe=args.min_universe,
                         target_universe=args.target_universe,
                         universe_gate_mode=args.universe_gate_mode,
                         force=args.force,
                         universe_override=Path(args.universe).resolve() if args.universe else None,
-                        data_mode="EOD",
+                        data_mode="AUTO",
+                        as_of_utc=datetime.fromisoformat(
+                            planned.as_of_utc.replace("Z", "+00:00")
+                        ),
+                        evidence_session_date=planned.last_completed_session,
+                        run_plan=planned,
                     )
+                    if not built:
+                        return False
+                    if planned.resolved_action == "BUILD_THESIS":
+                        _record_dynamic_thesis_receipt(planned)
+                    return True
 
                 callbacks = {
                     "BUILD_THESIS": _build,

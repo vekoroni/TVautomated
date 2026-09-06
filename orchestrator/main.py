@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import time
 from pathlib import Path
@@ -151,11 +151,11 @@ class AVSHUNTEROrchestrator:
                 continue
 
             # Data is ready!
-            print(f"\n✅ All data ready! Processing...")
+            print(f"\nâœ… All data ready! Processing...")
             self._process_data(status)
             return
 
-        print(f"\n⏰ Timeout reached ({self.config['monitoring']['timeout_minutes']} minutes)")
+        print(f"\nâ° Timeout reached ({self.config['monitoring']['timeout_minutes']} minutes)")
 
     def _run_immediate_mode(self):
         """Process data immediately, but honour governance gates."""
@@ -176,7 +176,7 @@ class AVSHUNTEROrchestrator:
         # Zero-input runs are epistemically worthless for execution-grade processing.
         if csvs_n == 0 and charts_n == 0 and shots_n == 0:
             if discovery_only:
-                print("⚠️ Zero inputs detected — DISCOVERY_ONLY (immediate mode). No execution-grade outputs should be trusted.")
+                print("âš ï¸ Zero inputs detected â€” DISCOVERY_ONLY (immediate mode). No execution-grade outputs should be trusted.")
             else:
                 raise RuntimeError("BLOCKED: Zero inputs (CSVs=0, Charts=0, Screenshots=0). Run refresh + monitor mode, or enable orchestrator.immediate_discovery_only intentionally.")
 
@@ -193,7 +193,7 @@ class AVSHUNTEROrchestrator:
                                ". Use monitor mode or set orchestrator.immediate_allow_incomplete=true.")
 
         if not status.get('ready', False) and allow_incomplete:
-            print("⚠️ Data incomplete, processing anyway (immediate mode, allow_incomplete=true)")
+            print("âš ï¸ Data incomplete, processing anyway (immediate mode, allow_incomplete=true)")
 
         self._process_data(status)
 
@@ -208,21 +208,21 @@ class AVSHUNTEROrchestrator:
         charts = status['charts']
         screenshots = status['screenshots']
 
-        print(f"\n📊 Analyzing with Claude API...")
+        print(f"\nðŸ“Š Analyzing with Claude API...")
         print(f"  - CSVs: {len(csvs)}")
         print(f"  - Charts: {len(charts)}")
         print(f"  - Screenshots: {len(screenshots)}")
 
         # Call Claude for Macro Analysis
-        print("\n🔍 Running Macro Module...")
+        print("\nðŸ” Running Macro Module...")
         macro_analysis = self.claude.analyze_macro(csvs, charts + screenshots)
 
         # Call Claude for Futures Bias
-        print("🔍 Running Futures Bias Module...")
+        print("ðŸ” Running Futures Bias Module...")
         futures_analysis = self.claude.analyze_futures(csvs, charts + screenshots)
 
         # NEW: Call Options Intelligence
-        print("\n🔍 Running Options Intelligence Module...")
+        print("\nðŸ” Running Options Intelligence Module...")
         options_analysis = None
         if getattr(self, "options", None) is not None:
             options_analysis = self.options.scan_options()
@@ -230,7 +230,7 @@ class AVSHUNTEROrchestrator:
             logger.info("Options Intelligence: skipped (not loaded).")
 
         # Generate Report
-        print("\n📄 Generating PDF report...")
+        print("\nðŸ“„ Generating PDF report...")
         session_label = f" - {self.session.upper()}" if self.session else ""
         report_path = self.report_gen.generate(
             macro_analysis=macro_analysis,
@@ -240,19 +240,19 @@ class AVSHUNTEROrchestrator:
             session=self.session
         )
 
-        print(f"✅ Report saved: {report_path}")
+        print(f"âœ… Report saved: {report_path}")
 
         # Send Email
         if self.config['email']['enabled']:
-            print("\n📧 Sending email...")
+            print("\nðŸ“§ Sending email...")
             subject = self.config['email']['subject_template'].format(date=self.today) + session_label
             self.email.send(
                 subject=subject,
                 body=f"AVSHUNTER Intelligence Report{session_label}\nDate: {self.today}",
                 attachments=[report_path]
             )
-            print("✅ Email sent!")
+            print("âœ… Email sent!")
 
         print("\n" + "="*60)
-        print("✅ PROCESSING COMPLETE")
+        print("âœ… PROCESSING COMPLETE")
         print("="*60)

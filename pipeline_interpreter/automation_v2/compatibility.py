@@ -1,4 +1,4 @@
-"""Compatibility contracts for legacy ticker artifacts."""
+﻿"""Compatibility contracts for legacy ticker artifacts."""
 
 from __future__ import annotations
 
@@ -72,3 +72,4 @@ def profile_legacy_artifacts(
         hashes=tuple(hashes),
         complete=not missing,
     )
+

@@ -74,6 +74,9 @@ def _signal(**overrides) -> dict:
         "lifecycle_contract_version": "options-liquidity-lifecycle-v1",
         "thesis_state": "ACTIVE",
         "remaining_runway_state": "THESIS_ACTIVE",
+        "invalidation_spot": 95.0,
+        "invalidation_state": "AVAILABLE",
+        "invalidation_source": "TEST_GOVERNED_THESIS",
         **_direction_record(),
     }
     row.update(overrides)

@@ -1,0 +1,96 @@
+ M audit/pipeline_map/AVS-SD-003_GAP_ELIMINATION_20260904.md
+ M avshunter_discovery_ULTIMATE.py
+ M avshunter_trade_journal.py
+ M canonical_data/__init__.py
+ M canonical_data/contracts.py
+ M canonical_data/decision_outcome_ledger.py
+ M canonical_data/intraday_bars.py
+ M canonical_data/lifecycle.py
+ M canonical_data/marketdata_stock_candles.py
+ M canonical_data/option_liquidity_lifecycle.py
+ M canonical_data/registry.py
+ M canonical_data/request_ledger.py
+ M canonical_data/run_plan.py
+ M contracts/direction_governance.py
+ M contracts/dynamic_session_authority_v1.json
+ M contracts/dynamic_session_contract.py
+ M contracts/lab_control.py
+ M contracts/long_option_policy.py
+ M contracts/market_profile_evidence.py
+ M contracts/options_liquidity_execution_guard.py
+ M contracts/options_liquidity_lifecycle.py
+ M eod_candidate_engine.py
+ M execution_gate.py
+ M execution_intelligence_runner.py
+ M handoff_contract_audit.py
+ M intelligence-lab/intelligence_lab.py
+ M intelligent_orchestrator.py
+ M market_structure/completed_profile.py
+ M market_structure/lifecycle.py
+ M market_structure/service.py
+ M morning_gate.py
+ M morning_handoff_finalizer.py
+ M orchestrator/dynamic_dispatcher.py
+ M orchestrator/dynamic_release.py
+ M orchestrator/dynamic_thesis.py
+ M orchestrator/dynamic_validation.py
+ M scripts/avshunter_options_intelligence.py
+ M scripts/backfill_timeseries_into_packages.py
+ M scripts/build_completed_market_profiles.py
+ M scripts/macro_quant_packet.py
+ M scripts/resolve_run_plan.py
+ M scripts/run_vanguard_from_packages.py
+ M tests/test_cds2_historical_prices.py
+ M tests/test_dynamic_session_phase0.py
+ M tests/test_dynamic_session_phase3.py
+ M tests/test_dynamic_session_phase4.py
+ M tests/test_dynamic_session_phase6.py
+ M tests/test_eod_options_research_handoff.py
+ M tests/test_ev3_options_handoff.py
+ M tests/test_execution_monetisability_gate.py
+ M tests/test_handoff_contract_audit.py
+ M tests/test_lab_governed_handoff.py
+ M tests/test_lab_monetisation_gate.py
+ M tests/test_msi_handoff_materializer.py
+ M tests/test_msi_quote_and_size_lineage.py
+ M tests/test_olm_execution_authority.py
+ M tests/test_options_liquidity_morning_lab.py
+ M tests/test_pse_retired_authority.py
+ M tests/test_ws2_trigger_spine.py
+ M vanguard/integration/orchestrator_adapter.py
+ M vanguard/layer1_auction/auction_synthesizer.py
+ M vanguard/layer2_statistical/edge_detector.py
+ M vanguard/schemas/input_schema.py
+?? audit/ddd_closure_20260905/
+?? audit/ddd_closure_testdeps/
+?? audit/ddd_readiness_tmp/
+?? audit/ops/AVS-OPS-001/05_commit3.txt
+?? audit/pipeline_map/AVS-DDD-PRODUCTION-INTEGRATION-20260905/
+?? audit/pipeline_map/AVS-IMP-SD-003-001_CYCLE1_AND_ADAPTER_FIX_20260904.md
+?? audit/pipeline_map/AVS-IMP-SD-003-002_20260904/
+?? audit/pipeline_map/AVS-IMP-SD-003-003_20260904/
+?? audit/pipeline_map/AVS-IMP-SD-003-004_20260904/
+?? audit/pipeline_map/AVS-PRE-001_MARKETDATA_CANDLE_ENTITLEMENT_PREFLIGHT_20260904.md
+?? audit/pipeline_map/AVS-TST-QT-001/
+?? audit/pipeline_map/AVS-TST-QT-001_QUANT_TESTER_PROMPT_20260906.md
+?? audit/preflight/
+?? canonical_data/outcome_maturation.py
+?? canonical_data/run_plan_store.py
+?? contracts/dynamic_session_runtime_v1.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260905_maintenance.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260905_preflight.json
+?? domain/
+?? orchestrator/session_authority_adapter.py
+?? tests/test_avs_sd003_authority_boundaries.py
+?? tests/test_avs_sd003_blocker_closure.py
+?? tests/test_avs_sd003_marketdata_adapter.py
+?? tests/test_ddd_decision_outcome.py
+?? tests/test_ddd_execution_authority.py
+?? tests/test_ddd_market_evidence.py
+?? tests/test_ddd_market_structure_evidence.py
+?? tests/test_ddd_morning_validation_integration.py
+?? tests/test_ddd_option_contract_liquidity.py
+?? tests/test_ddd_production_integration.py
+?? tests/test_ddd_run_planning.py
+?? tests/test_ddd_session_authority.py
+?? tests/test_ddd_thesis_direction.py

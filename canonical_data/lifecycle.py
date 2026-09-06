@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
 import json
 import sqlite3
 from typing import Iterable
@@ -12,102 +11,22 @@ from typing import Iterable
 from .contracts import DatasetType, iso_utc, parse_utc, utc_now
 from .errors import IllegalLifecycleTransition, LifecycleConcurrencyError
 from .registry import CanonicalRegistry
+from domain.market_evidence import (
+    ACTIVE_LIFECYCLE_STATES,
+    LEGAL_LIFECYCLE_TRANSITIONS,
+    TERMINAL_LIFECYCLE_STATES,
+    DropClass,
+    MarketEvidenceInvariantError,
+    TickerLifecycleState,
+    decide_ticker_acquisition_authority,
+    validate_lifecycle_transition,
+)
 
 
-class LifecycleState(str, Enum):
-    ACTIVE_DISCOVERY = "ACTIVE_DISCOVERY"
-    ACTIVE_CORE = "ACTIVE_CORE"
-    ACTIVE_OPTIONS = "ACTIVE_OPTIONS"
-    ACTIVE_EQUITY_ONLY = "ACTIVE_EQUITY_ONLY"
-    ACTIVE_MORNING = "ACTIVE_MORNING"
-    DEFERRED_CURRENT_RUN = "DEFERRED_CURRENT_RUN"
-    DROPPED_STAGE = "DROPPED_STAGE"
-    DROPPED_TERMINAL_DATA = "DROPPED_TERMINAL_DATA"
-    DROPPED_TERMINAL_LOGIC = "DROPPED_TERMINAL_LOGIC"
-    COMPLETED = "COMPLETED"
-
-
-class DropClass(str, Enum):
-    NONE = "NONE"
-    STAGE = "STAGE"
-    TERMINAL_DATA = "TERMINAL_DATA"
-    TERMINAL_LOGIC = "TERMINAL_LOGIC"
-    DEFERRED = "DEFERRED"
-
-
-ACTIVE_STATES = {
-    LifecycleState.ACTIVE_DISCOVERY,
-    LifecycleState.ACTIVE_CORE,
-    LifecycleState.ACTIVE_OPTIONS,
-    LifecycleState.ACTIVE_EQUITY_ONLY,
-    LifecycleState.ACTIVE_MORNING,
-}
-TERMINAL_STATES = {
-    LifecycleState.DROPPED_TERMINAL_DATA,
-    LifecycleState.DROPPED_TERMINAL_LOGIC,
-    LifecycleState.COMPLETED,
-}
-
-LEGAL_TRANSITIONS: dict[LifecycleState, set[LifecycleState]] = {
-    LifecycleState.ACTIVE_DISCOVERY: {
-        LifecycleState.ACTIVE_DISCOVERY,
-        LifecycleState.ACTIVE_CORE,
-        LifecycleState.DROPPED_STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.DEFERRED_CURRENT_RUN,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.ACTIVE_CORE: {
-        LifecycleState.ACTIVE_CORE,
-        LifecycleState.ACTIVE_OPTIONS,
-        LifecycleState.ACTIVE_EQUITY_ONLY,
-        LifecycleState.ACTIVE_MORNING,
-        LifecycleState.DROPPED_STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.DEFERRED_CURRENT_RUN,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.ACTIVE_OPTIONS: {
-        LifecycleState.ACTIVE_OPTIONS,
-        LifecycleState.ACTIVE_MORNING,
-        LifecycleState.DROPPED_STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.DEFERRED_CURRENT_RUN,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.ACTIVE_EQUITY_ONLY: {
-        LifecycleState.ACTIVE_EQUITY_ONLY,
-        LifecycleState.ACTIVE_MORNING,
-        LifecycleState.DROPPED_STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.DEFERRED_CURRENT_RUN,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.ACTIVE_MORNING: {
-        LifecycleState.ACTIVE_MORNING,
-        LifecycleState.DROPPED_STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.DROPPED_STAGE: {
-        LifecycleState.ACTIVE_CORE,
-        LifecycleState.ACTIVE_OPTIONS,
-        LifecycleState.ACTIVE_EQUITY_ONLY,
-        LifecycleState.ACTIVE_MORNING,
-        LifecycleState.DROPPED_TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC,
-        LifecycleState.COMPLETED,
-    },
-    LifecycleState.DEFERRED_CURRENT_RUN: set(),
-    LifecycleState.DROPPED_TERMINAL_DATA: set(),
-    LifecycleState.DROPPED_TERMINAL_LOGIC: set(),
-    LifecycleState.COMPLETED: set(),
-}
+LifecycleState = TickerLifecycleState
+ACTIVE_STATES = ACTIVE_LIFECYCLE_STATES
+TERMINAL_STATES = TERMINAL_LIFECYCLE_STATES
+LEGAL_TRANSITIONS = LEGAL_LIFECYCLE_TRANSITIONS
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,15 +61,6 @@ class WorklistReconciliation:
     @property
     def reconciled(self) -> bool:
         return not self.missing and not self.unexpected
-
-
-def _default_drop_class(state: LifecycleState) -> DropClass:
-    return {
-        LifecycleState.DROPPED_STAGE: DropClass.STAGE,
-        LifecycleState.DROPPED_TERMINAL_DATA: DropClass.TERMINAL_DATA,
-        LifecycleState.DROPPED_TERMINAL_LOGIC: DropClass.TERMINAL_LOGIC,
-        LifecycleState.DEFERRED_CURRENT_RUN: DropClass.DEFERRED,
-    }.get(state, DropClass.NONE)
 
 
 class LifecycleManager:
@@ -227,21 +137,15 @@ class LifecycleManager:
                 f"expected lifecycle version {expected_version}, found {previous.version}"
             )
 
-        if new_state == LifecycleState.ACTIVE_DISCOVERY and previous.state in (
-            TERMINAL_STATES | {LifecycleState.DEFERRED_CURRENT_RUN}
-        ):
-            if not explicit_reactivation or not reason_code.strip():
-                raise IllegalLifecycleTransition(
-                    "terminal/deferred ticker requires explicit, reasoned reactivation"
-                )
-        elif new_state not in LEGAL_TRANSITIONS[previous.state]:
-            raise IllegalLifecycleTransition(
-                f"illegal transition {previous.state.value} -> {new_state.value}"
+        try:
+            drop_class = validate_lifecycle_transition(
+                previous_state=previous.state,
+                new_state=new_state,
+                explicit_reactivation=explicit_reactivation,
+                reason_code=reason_code,
             )
-
-        drop_class = _default_drop_class(new_state)
-        if drop_class is not DropClass.NONE and not reason_code.strip():
-            raise IllegalLifecycleTransition("drop/defer transition requires reason_code")
+        except (MarketEvidenceInvariantError, ValueError) as error:
+            raise IllegalLifecycleTransition(str(error)) from error
         capabilities = (
             tuple(allowed_capabilities)
             if allowed_capabilities is not None
@@ -300,23 +204,15 @@ class LifecycleManager:
         self, run_id: str, stage: str, ticker: str, dataset_type: DatasetType
     ) -> AuthorisationDecision:
         event = self.latest(run_id, ticker)
-        if event is None:
-            return AuthorisationDecision(False, "TICKER_NOT_REGISTERED", None)
-        if event.state not in ACTIVE_STATES:
-            return AuthorisationDecision(
-                False, f"STATE_{event.state.value}_BLOCKS_FETCH", event
-            )
-        requested_stage = stage.strip().upper()
-        if event.stage != requested_stage:
-            return AuthorisationDecision(
-                False, f"STAGE_MISMATCH_CURRENT_{event.stage}", event
-            )
-        if (
-            event.allowed_capabilities
-            and dataset_type not in event.allowed_capabilities
-        ):
-            return AuthorisationDecision(False, "CAPABILITY_NOT_AUTHORISED", event)
-        return AuthorisationDecision(True, "AUTHORISED", event)
+        decision = decide_ticker_acquisition_authority(
+            lifecycle_state=event.state if event else "",
+            lifecycle_stage=event.stage if event else "",
+            allowed_capabilities=event.allowed_capabilities if event else (),
+            requested_stage=stage,
+            requested_dataset_type=dataset_type,
+            registered=event is not None,
+        )
+        return AuthorisationDecision(decision.authorised, decision.reason, event)
 
     def create_worklist(
         self,
@@ -443,16 +339,18 @@ class LifecycleManager:
         dataset_type: DatasetType,
     ) -> AuthorisationDecision:
         """Require both current lifecycle authority and persisted membership."""
-        decision = self.authorise(run_id, stage, ticker, dataset_type)
-        if not decision.authorised:
-            return decision
-        if not self.is_worklisted(run_id, stage, ticker, dataset_type):
-            return AuthorisationDecision(
-                False,
-                "TICKER_NOT_IN_STAGE_WORKLIST",
-                decision.event,
-            )
-        return decision
+        event = self.latest(run_id, ticker)
+        decision = decide_ticker_acquisition_authority(
+            lifecycle_state=event.state if event else "",
+            lifecycle_stage=event.stage if event else "",
+            allowed_capabilities=event.allowed_capabilities if event else (),
+            requested_stage=stage,
+            requested_dataset_type=dataset_type,
+            registered=event is not None,
+            require_worklist=True,
+            worklisted=self.is_worklisted(run_id, stage, ticker, dataset_type),
+        )
+        return AuthorisationDecision(decision.authorised, decision.reason, event)
 
     def worklist_counts(self, run_id: str) -> dict[str, int]:
         with self.registry.connection() as connection:

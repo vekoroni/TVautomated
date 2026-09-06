@@ -40,14 +40,14 @@ log = logging.getLogger("orchestrator_adapter")
 try:
     from ..schemas.input_schema import (
         VanguardInput, TechnicalData, MacroData,
-        OptionsData, CalendarData, MicrostructureData,
+        OptionsData, CalendarData, MicrostructureData, VanguardInputError,
     )
     _SCHEMAS_OK = True
 except ImportError:
     try:
         from vanguard.schemas.input_schema import (
             VanguardInput, TechnicalData, MacroData,
-            OptionsData, CalendarData, MicrostructureData,
+            OptionsData, CalendarData, MicrostructureData, VanguardInputError,
         )
         _SCHEMAS_OK = True
     except ImportError:
@@ -147,6 +147,13 @@ class OrchestratorAdapter:
         if not ticker:
             raise _Reject(["MISSING_TICKER"], "payload.ticker is empty")
 
+        profile_required_raw = payload.get("market_profile_contract_required", True)
+        profile_required_text = str(profile_required_raw).strip().lower()
+        if profile_required_raw is False or profile_required_text in {"0", "false", "no", "off"}:
+            raise VanguardInputError(
+                "market_profile_contract_required cannot be disabled on the production Vanguard path"
+            )
+
         price = _f(payload.get("current_price"), 0.0)
         if price <= 0:
             disc  = payload.get("discovery") or {}
@@ -177,7 +184,7 @@ class OrchestratorAdapter:
             compression_ratio   = tech.compression_ratio,
             wyckoff_phase       = tech.wyckoff_phase,
             market_profile_evidence = payload.get("market_profile_evidence"),
-            market_profile_contract_required = bool(payload.get("market_profile_contract_required", False)),
+            market_profile_contract_required = True,
         )
 
     def _tech(self, payload: dict, ticker: str) -> "TechnicalData":

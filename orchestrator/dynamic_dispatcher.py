@@ -1,4 +1,4 @@
-"""Plan-first dynamic dispatcher for the AVSHUNTER production entry point.
+﻿"""Plan-first dynamic dispatcher for the AVSHUNTER production entry point.
 
 This module owns orchestration only.  It does not calculate a trading signal,
 change a frozen thesis, or grant capital authority.  Preview resolution is
@@ -15,13 +15,9 @@ import json
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
-from canonical_data.run_plan import (
-    RequestedAction,
-    RunPlan,
-    RunPlanStore,
-    resolve_run_plan,
-    write_plan_atomic,
-)
+from domain.run_planning import RequestedAction, RunPlan
+from canonical_data.run_plan import resolve_run_plan
+from canonical_data.run_plan_store import RunPlanStore, write_plan_atomic
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,7 +170,15 @@ def resolve_dispatch_plan(
     action = RequestedAction(
         str(getattr(requested_action, "value", requested_action)).strip().upper()
     )
-    thesis = resolve_accepted_thesis(output_dir, run_id=run_id)
+    # A fresh thesis is defined solely by the requested completed-session
+    # evidence. Parsing a previous accepted book here can incorrectly block a
+    # new Evening run because of historical/migrated session labels. Existing
+    # thesis identity remains mandatory for validation, finalisation and AUTO.
+    thesis = (
+        None
+        if action is RequestedAction.BUILD_THESIS
+        else resolve_accepted_thesis(output_dir, run_id=run_id)
+    )
     tickers = tuple(authorised_tickers) or (
         thesis.authorised_tickers if thesis is not None else ()
     )
@@ -302,3 +306,4 @@ def execute_dispatch_plan(
         success,
         "DISPATCH_COMPLETE" if success else "DISPATCH_FAILED",
     )
+

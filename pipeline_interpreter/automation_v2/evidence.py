@@ -1,4 +1,4 @@
-"""Read-only evidence discovery with exact ticker identity."""
+﻿"""Read-only evidence discovery with exact ticker identity."""
 
 from __future__ import annotations
 
@@ -117,3 +117,4 @@ def build_chart_manifest(
         items=tuple(items),
         findings=tuple(findings),
     )
+

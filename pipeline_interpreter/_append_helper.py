@@ -1,4 +1,4 @@
-"""Append new functions to pipeline_interpreter_outputs.py"""
+﻿"""Append new functions to pipeline_interpreter_outputs.py"""
 
 NEW_CODE = '''
 
@@ -326,3 +326,4 @@ with open("_new_functions_content.py", "w", encoding="utf-8") as f:
 
 print("Wrote new_functions_content.py")
 print(f"Length: {len(new_functions)} chars")
+

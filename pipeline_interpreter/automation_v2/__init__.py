@@ -1,4 +1,4 @@
-"""Stateless, shadow-mode Pipeline Interpreter automation.
+﻿"""Stateless, shadow-mode Pipeline Interpreter automation.
 
 This package is intentionally not wired into the production command router.
 """
@@ -54,3 +54,4 @@ __all__ = [
     "publish_complete_shadow_artifacts",
     "run_batch",
 ]
+

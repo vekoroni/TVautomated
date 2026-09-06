@@ -1,4 +1,4 @@
-"""Hash-bound, advisory-only macro packet adapter for the Interpreter."""
+﻿"""Hash-bound, advisory-only macro packet adapter for the Interpreter."""
 
 from __future__ import annotations
 
@@ -205,3 +205,4 @@ __all__ = [
     "MacroContextState", "MacroPacketError", "assert_macro_did_not_change_authority",
     "load_macro_packet", "missing_macro_context",
 ]
+

@@ -9,6 +9,10 @@ from datetime import datetime
 import pandas as pd
 
 
+class VanguardInputError(ValueError):
+    """Raised when a required governed input contract is explicitly disabled."""
+
+
 @dataclass
 class CalendarData:
     """
@@ -208,7 +212,7 @@ class VanguardInput:
     # must never reconstruct a profile from daily OHLCV or treat absence as
     # zero-valued evidence.
     market_profile_evidence: Optional[Dict] = None
-    market_profile_contract_required: bool = False
+    market_profile_contract_required: bool = True
 
     # === PASS-THROUGH: Discovery enrichment flags ===
     # main.py checks hasattr(vanguard_input, 'macro_regime'),

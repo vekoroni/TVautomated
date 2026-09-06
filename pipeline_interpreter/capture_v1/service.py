@@ -1,4 +1,4 @@
-"""Fail-closed orchestration for isolated screenshot capture."""
+﻿"""Fail-closed orchestration for isolated screenshot capture."""
 
 from __future__ import annotations
 
@@ -135,3 +135,4 @@ def run_capture(request: CaptureRequest, backend: CaptureBackend | None = None) 
             request.ticker, request.run_id, request.invocation_id,
             request.mode, CaptureStatus.FAILED, (str(exc),), published=False,
         )
+

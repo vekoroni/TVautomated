@@ -1,4 +1,4 @@
-"""Stable result serialization shared by CLI and batch manifests."""
+﻿"""Stable result serialization shared by CLI and batch manifests."""
 
 from __future__ import annotations
 
@@ -23,3 +23,4 @@ def to_plain(value: Any) -> Any:
     if isinstance(value, (tuple, list)):
         return [to_plain(item) for item in value]
     return value
+

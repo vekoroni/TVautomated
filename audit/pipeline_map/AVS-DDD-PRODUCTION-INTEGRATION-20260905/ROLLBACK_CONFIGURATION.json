@@ -1,0 +1,48 @@
+{
+  "schema_version": "avs_ddd_rollback_v1",
+  "release_id": "AVS-DDD-PRODUCTION-INTEGRATION-20260905",
+  "master_kill_switch": {
+    "name": "AVSHUNTER_DYNAMIC_RELEASE_DISABLE_ALL",
+    "value": "1",
+    "effect": "Disables every DDD runtime capability before the next invocation without granting legacy or AUTO authority."
+  },
+  "rollback_package": "backups/ddd_production_integration_prechange_20260905_120000",
+  "restore_files": [
+    "contracts/dynamic_session_contract.py",
+    "intelligent_orchestrator.py",
+    "orchestrator/dynamic_release.py",
+    "orchestrator/dynamic_dispatcher.py",
+    "orchestrator/dynamic_validation.py",
+    "intelligence-lab/intelligence_lab.py",
+    "avshunter_trade_journal.py",
+    "morning_handoff_finalizer.py"
+  ],
+  "remove_release_owned_files": [
+    "contracts/dynamic_session_runtime_v1.json",
+    "tests/test_ddd_production_integration.py",
+    "tests/test_ddd_morning_validation_integration.py"
+  ],
+  "database_restore": {
+    "automatic": false,
+    "reason": "This slice performs no schema migration. Append-only live-cycle observations are evidence and must not be erased unless corruption is proven.",
+    "available_backups": [
+      "data/canonical/control_plane.sqlite",
+      "data/canonical/historical_prices.sqlite",
+      "data/journal/trade_journal.db"
+    ]
+  },
+  "rollback_triggers": [
+    "runtime profile hash or contract validation failure",
+    "normal --evening resolves to anything other than BUILD_THESIS",
+    "direction or selected-contract identity changes in a downstream resolver",
+    "Morning actionable row lacks exact validation lineage",
+    "Execution Gate and Intelligence Lab authority mismatch",
+    "Interpreter reconciliation or ledger population invariant fails"
+  ],
+  "verification_after_rollback": [
+    "compile restored production modules",
+    "run dynamic Phase 0 safety tests",
+    "run plan-only evening dispatch",
+    "compare restored file hashes with backup MANIFEST.json"
+  ]
+}

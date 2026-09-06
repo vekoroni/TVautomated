@@ -62,7 +62,7 @@ import logging
 import os
 import sqlite3
 import sys
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -81,6 +81,9 @@ DEFAULT_PIPELINE_ROOT = Path(
 )
 DEFAULT_DB_PATH  = DEFAULT_PIPELINE_ROOT / 'data' / 'journal' / 'trade_journal.db'
 DEFAULT_RUNS_DIR = DEFAULT_PIPELINE_ROOT / 'runs'
+DEFAULT_DECISION_LEDGER_PATH = (
+    DEFAULT_PIPELINE_ROOT / 'data' / 'canonical' / 'decision_outcome_ledger.sqlite'
+)
 
 # Common output locations to search when runs_dir is not explicit
 _SEARCH_ROOTS = [
@@ -812,6 +815,7 @@ def log_exit(
     ct_proximity_at_exit: float = None,
     outcome_class: str  = '',   # TRUE_WINNER / TRUE_LOSER / PROCESS_WIN / OUTCOME_LOSS
     notes:         str  = '',
+    decision_ledger_path: Path | None = None,
 ) -> dict:
     """
     Log a trade exit. Computes realised metrics and moves record to closed_trades.
@@ -966,6 +970,57 @@ def log_exit(
         'wall_breached': wall_breached,
         'time_stop_respected': time_stop_ok,
     }
+    from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+
+    ledger_enabled = (
+        decision_ledger_path is not None
+        or DynamicSessionFeatureFlags.from_environment().decision_outcome_ledger
+    )
+    if ledger_enabled:
+        try:
+            from canonical_data.decision_outcome_ledger import (
+                DecisionOutcomeLedger,
+                outcome_event_from_trade,
+            )
+
+            ledger = DecisionOutcomeLedger(
+                decision_ledger_path or DEFAULT_DECISION_LEDGER_PATH
+            )
+            thesis_id = str(
+                t.get('thesis_id') or t.get('trade_idea_id') or ''
+            ).strip()
+            previous = None
+            if thesis_id:
+                previous = (
+                    ledger.latest_event(thesis_id, 'TRADE_ENTRY')
+                    or ledger.latest_event(thesis_id, 'EXECUTION_DECISION')
+                )
+            ledger_event = outcome_event_from_trade(
+                {
+                    **t,
+                    **outcome,
+                    'exit_date': exit_date,
+                    'exit_time': exit_time,
+                    'exit_premium': exit_premium,
+                    'exit_reason': exit_reason,
+                    'outcome_class': outcome_class or (
+                        'TRUE_WINNER' if pnl_usd > 0 and wall_breached else
+                        'PROCESS_WIN' if pnl_usd > 0 else
+                        'TRUE_LOSER'
+                    ),
+                    'data_status': 'OBSERVED_TRADE_EXIT',
+                },
+                occurred_at_utc=datetime.now(timezone.utc).isoformat(),
+                previous_event_id=previous.event_id if previous else None,
+            )
+            ledger.append(ledger_event)
+            outcome['decision_ledger_event_id'] = ledger_event.event_id
+            outcome['decision_ledger_authority'] = 'OBSERVATION_ONLY'
+        except Exception as ledger_error:
+            log.warning(
+                'Decision ledger outcome observation failed without changing trade exit: %s',
+                ledger_error,
+            )
     result_str = '✓ WINNER' if pnl_usd > 0 else '✗ LOSER'
     log.info(f'Trade closed: {result_str}  {t["ticker"]}  '
              f'P&L=${pnl_usd:+.2f}  ({pnl_pct:+.1f}%)  '

@@ -1,0 +1,54 @@
+{
+ "report": "AVS-RCA-003",
+ "generated_utc": "2026-09-06T10:13:51+00:00",
+ "repository": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+ "git_head": "6e834b838d35b6a061df12d44cafff6f72bf0dcb",
+ "interpreter": "C:\\Python314\\python.exe (3.14) for analysis; venv 3.13.14 not required this task",
+ "part1": {
+  "network_requests_used": 2,
+  "budget": 3,
+  "endpoints": [
+   "GET api.anthropic.com/v1/models",
+   "POST api.anthropic.com/v1/messages"
+  ],
+  "request_B_skipped": "ANTHROPIC_WORKSPACE_ID unset in Process/User/Machine scopes; the transport would not send the header",
+  "secrets_disclosure": "Both ANTHROPIC_API_KEY values were echoed into the session transcript by a PowerShell alias collision (function named H vs Get-History alias h). Both keys require rotation. No key value was written to any file in this output root.",
+  "in_process_env_mutation": "Request C set os.environ['ANTHROPIC_API_KEY'] within its own Python process only; User and Machine scopes untouched"
+ },
+ "part2": {
+  "network_requests": 0,
+  "pipeline_executed": false,
+  "primary_run": "20260905_151448",
+  "contrast_runs": [
+   "20260904_122358",
+   "20260904_004338"
+  ],
+  "artefacts_read_only": [
+   "data/output/runs/*",
+   "data/canonical/control_plane.sqlite (mode=ro)",
+   "data/canonical/payloads (OPTION_CHAIN json)",
+   "data/journal/trade_journal.db (mode=ro)",
+   "data/canonical/decision_outcome_ledger.sqlite (mode=ro)"
+  ],
+  "funnel_reconciles": "1293 lost + 294 survived = 1587 discovery-selected"
+ },
+ "constraints": {
+  "pipeline_executed": "NO",
+  "production_files_modified": "NO",
+  "worker3_package_modified": "NO",
+  "writes_confined_to": "audit/rca/AVS-RCA-003/"
+ },
+ "deliverable_sha256": {
+  "02_cohort_20260905_151448.csv": "b3a0f29689803cc2f42019324c125dab194f9d2a9ce49ab5ca8ab851ba9a7e1b",
+  "03_funnel_20260905_151448.csv": "0da1050fb774c03db57ca457fef2a64fece1d90417417d2b204bf7fc9cbf581f",
+  "04_reason_classification.csv": "6c3ad19e3618f72c16966bb3006241862009380bbcbb5b94292eaf61fba88943",
+  "05_s1_timevalue_revaluation.csv": "1777e54211ec75b76c89f9e06587b9cddf453c8bddc6553ab395fb6c21af55c4",
+  "05_s2_contract_selection.csv": "172b982092eede305eabd68bf4e7665db407a75981e0216df1c02b4292aff9e2",
+  "05_s2b_band_sensitivity.csv": "6d4e714ffcc28e734412face3330ea5f80b127cbe94d6044c2f160c0a309e4c9",
+  "05_s3_target_asymmetry.csv": "99e5549fc3eebe8a6477e4235c99704ac937f46eaac38e4b15ba76ddfbaee5e7",
+  "DEFECTS.csv": "9a2d8ffd78ca64857a892ce4268a893452f2a93db56874cdf182b705dd249c6f",
+  "PART1_AUTH_RCA.md": "d385c6986ecb017e3550b11c0de647bc68f0796dd0699c1dc4fc338c66269d59",
+  "part1_requests_redacted.jsonl": "8923c9427f48bc24074b3e889d6f55c093940ad5f2adf6d5c1cb20ec0f4c0a7e",
+  "PART2_MONETISABILITY_RCA.md": "ceff73357a588813e358a6e7bdf8793b3e7826f6ab8e265a3ce4eed732826e06"
+ }
+}

@@ -8,6 +8,7 @@ macro_contract_v1_0 JSON without replacing the raw macro narrative.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,13 @@ EXPIRED_HOURS = 72.0
 MISSING_TOKENS = {"", "NONE", "NULL", "NAN", "N/A", "UNKNOWN", "MISSING"}
 
 MACRO_QUANT_CSV_FIELDS = [
+    "macro_packet_id",
+    "macro_packet_sha256",
+    "macro_source_fingerprint",
+    "macro_as_of_utc",
+    "macro_session_date",
+    "macro_plain_language_advisory",
+    "macro_authority",
     "macro_source_path",
     "macro_contract_version",
     "macro_generated_at_utc",
@@ -87,6 +95,23 @@ def utc_now() -> datetime:
 def utc_iso(dt: Optional[datetime] = None) -> str:
     value = dt or utc_now()
     return value.isoformat().replace("+00:00", "Z")
+
+
+def _canonical_sha256(value: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _source_fingerprint(source_path: str, macro: Mapping[str, Any]) -> str:
+    source = Path(source_path) if source_path else None
+    try:
+        if source is not None and source.is_file():
+            return hashlib.sha256(source.read_bytes()).hexdigest()
+    except OSError:
+        pass
+    return _canonical_sha256(macro)
 
 
 def read_json(path: Path) -> Dict[str, Any]:
@@ -699,11 +724,52 @@ def build_macro_quant_packet(
         "credit_warning": bond_credit_warning,
         "breakeven_adjustment_pct": breakeven_adjustment_pct,
     }
+    macro_as_of = str(generated_at or "")
+    report_date = str(find_field(macro, "report_date", default="") or "")
+    session_date = report_date[:10] if report_date else macro_as_of[:10]
+    advisory = str(
+        find_field(
+            macro,
+            "macro_plain_language_advisory",
+            "notes",
+            "summary",
+            "macro_notes",
+            default=(
+                "Macro is advisory context only and does not authorize or veto "
+                "a ticker trade."
+            ),
+        )
+        or ""
+    )
+    source_fingerprint = _source_fingerprint(source, macro)
+    packet.update({
+        "macro_source_fingerprint": source_fingerprint,
+        "macro_as_of_utc": macro_as_of,
+        "macro_session_date": session_date,
+        "macro_plain_language_advisory": advisory,
+        "macro_authority": "ADVISORY_ONLY",
+    })
+    identity_payload = {
+        key: value for key, value in packet.items()
+        if key != "macro_normalised_at_utc"
+    }
+    packet_sha256 = _canonical_sha256(identity_payload)
+    packet["macro_packet_sha256"] = packet_sha256
+    packet["macro_packet_id"] = f"MACRO:{session_date or 'UNKNOWN'}:{packet_sha256[:16]}"
     return packet
 
 
 def missing_macro_quant_packet(source_path: str | Path | None = None) -> Dict[str, Any]:
     return {
+        "macro_packet_id": "MACRO_NOT_AVAILABLE",
+        "macro_packet_sha256": "",
+        "macro_source_fingerprint": "",
+        "macro_as_of_utc": "",
+        "macro_session_date": "",
+        "macro_plain_language_advisory": (
+            "Macro advisory unavailable; core ticker analysis remains independent."
+        ),
+        "macro_authority": "ADVISORY_ONLY",
         "macro_quant_contract_version": MACRO_QUANT_CONTRACT_VERSION,
         "macro_source_path": str(source_path or ""),
         "macro_contract_version": "UNKNOWN",

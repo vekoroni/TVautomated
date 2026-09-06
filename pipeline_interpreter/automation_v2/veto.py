@@ -1,4 +1,4 @@
-"""Deterministic sovereign permission lattice.
+﻿"""Deterministic sovereign permission lattice.
 
 Provider analysis may preserve or reduce permission, but never promote it.
 """
@@ -144,3 +144,4 @@ def apply_sovereign_overlay(
         effective_verdict="WAIT",
         eil_action="STOP",
     )
+

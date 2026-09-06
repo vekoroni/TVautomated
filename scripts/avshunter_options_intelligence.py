@@ -129,6 +129,7 @@ from contracts.options_liquidity_lifecycle import (
     evaluate_options_liquidity_lifecycle,
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
+from contracts.dynamic_session_contract import DataExceptionReason
 from contracts.thesis_geometry import select_directional_invalidation
 from msi_runtime import active_flags as active_msi_flags
 
@@ -4674,6 +4675,25 @@ def _context_signal_row(ctx: Dict[str, Any]) -> Any:
     return raw_row if hasattr(raw_row, "get") else {}
 
 
+def _governed_options_evidence_session(ctx: Dict[str, Any], contract: Optional[Dict[str, Any]] = None) -> str:
+    """Return the single session authorised for this Options run.
+
+    The run-level CDS session is authoritative. Quote and signal timestamps are
+    evidence about individual records, not permission to mint a second thesis
+    session inside the same run.
+    """
+    if _CDS_V2_SESSION is not None:
+        return _CDS_V2_SESSION.isoformat()
+    contract = contract or {}
+    quote_as_of = str(contract.get("quote_timestamp_utc") or contract.get("quote_as_of") or "").strip()
+    if quote_as_of:
+        try:
+            return pd.Timestamp(quote_as_of).date().isoformat()
+        except (TypeError, ValueError):
+            pass
+    return _resolve_asof_date(_context_signal_row(ctx)) or ""
+
+
 def _options_liquidity_lifecycle_fields(
     ctx: Dict[str, Any],
     contract: Dict[str, Any],
@@ -4688,17 +4708,9 @@ def _options_liquidity_lifecycle_fields(
     side = str(ctx.get("direction") or "").strip().upper()
     signal_row = _context_signal_row(ctx)
     quote_as_of = str(
-        contract.get("quote_timestamp_utc")
-        or contract.get("quote_as_of")
-        or ""
+        contract.get("quote_timestamp_utc") or contract.get("quote_as_of") or ""
     ).strip()
-    quote_session = None
-    if quote_as_of:
-        try:
-            quote_session = pd.Timestamp(quote_as_of).date().isoformat()
-        except (TypeError, ValueError):
-            quote_session = None
-    evidence_session = quote_session or _resolve_asof_date(signal_row)
+    evidence_session = _governed_options_evidence_session(ctx, contract)
     legacy_thesis_id = f"{ticker}:{side}:{evidence_session or 'UNKNOWN_SESSION'}"
     # v1 persisted terminal states were calculated with a different stop and
     # hold convention.  A versioned identity preserves that immutable history
@@ -4712,8 +4724,9 @@ def _options_liquidity_lifecycle_fields(
         "thesis_calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
         "evidence_session_date": evidence_session or "",
         "evidence_session_source": (
-            "SELECTED_CONTRACT_QUOTE_TIMESTAMP"
-            if quote_session else "SIGNAL_ASOF_FALLBACK"
+            "CDS_RUN_SESSION"
+            if _CDS_V2_SESSION is not None
+            else ("SELECTED_CONTRACT_QUOTE_TIMESTAMP" if quote_as_of else "SIGNAL_ASOF_FALLBACK")
         ),
         "thesis_state": "ACTIVE",
         "morning_transition_state": "EOD_PENDING_MORNING_REQUOTE",
@@ -5432,9 +5445,34 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     """
     spot   = ctx['spot']
     entry  = ctx['entry']
-    target = ctx['structural_target']
+    target = _repair_alt_float(ctx.get('structural_target'))
     hold   = ctx['hold_days']
-    direction = ctx['direction']
+    direction = str(ctx.get('direction') or '').upper()
+
+    if direction not in GOVERNED_DIRECTED_SIDES:
+        return {
+            'economics_state': 'NOT_EVALUATED',
+            'economics_reason': LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value,
+            'premium_total': None, 'breakeven_price': None, 'breakeven_pct': None,
+            'target_gain_underlying': None, 'option_value_at_target': None,
+            'option_gain': None, 'rr_options': None, 'rr_premium_expected': None,
+            'max_convex_r_multiple': None, 'ev_structural': None,
+            'ev_ratio': None, 'ev_adjusted': None, 'theta_total_cost': None,
+            'theta_drag_pct': None, 'vega_risk_pct': None, 'iv_factor': None,
+            'iv_alignment': iv_ctx.get('ivp_label', 'UNKNOWN'),
+        }
+    if target is None or target <= 0 or not math.isfinite(target):
+        return {
+            'economics_state': 'NOT_EVALUATED',
+            'economics_reason': DataExceptionReason.STRUCTURAL_TARGET_UNRESOLVED.value,
+            'premium_total': None, 'breakeven_price': None, 'breakeven_pct': None,
+            'target_gain_underlying': None, 'option_value_at_target': None,
+            'option_gain': None, 'rr_options': None, 'rr_premium_expected': None,
+            'max_convex_r_multiple': None, 'ev_structural': None,
+            'ev_ratio': None, 'ev_adjusted': None, 'theta_total_cost': None,
+            'theta_drag_pct': None, 'vega_risk_pct': None, 'iv_factor': None,
+            'iv_alignment': iv_ctx.get('ivp_label', 'UNKNOWN'),
+        }
 
     mark    = contract.get('mark', 0)
     strike  = contract.get('strike', entry)
@@ -5508,6 +5546,8 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     ev_adjusted = ev_ratio * iv_factor
 
     return {
+        'economics_state'        : 'EVALUATED',
+        'economics_reason'       : 'OK',
         'premium_total'        : round(premium_total, 2),
         'breakeven_price'      : round(breakeven_price, 2),
         'breakeven_pct'        : round(breakeven_pct, 2),
@@ -6866,6 +6906,12 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             _repair_alt_fields.update(
                 _repair_selector_diagnostic_fields(_repair_selector_diagnostics)
             )
+            _evidence_session = _governed_options_evidence_session(ctx)
+            _legacy_thesis_id = (
+                f"{str(ctx.get('ticker') or '').upper()}:"
+                f"{str(ctx.get('direction') or '').upper()}:"
+                f"{_evidence_session or 'UNKNOWN_SESSION'}"
+            )
             _base_no_contract.update({
                 'execution_permission': OPTIONS_RESEARCH_PERMISSION,
                 'final_route': OPTIONS_PROBE_ROUTE,
@@ -6883,10 +6929,13 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'block_family': 'SCORE',
                 'block_severity': 'SOFT',
                 'block_detail': 'No contract passed quality gates',
-                'thesis_id': (
-                    f"{str(ctx.get('ticker') or '').upper()}:"
-                    f"{str(ctx.get('direction') or '').upper()}:"
-                    f"{_resolve_asof_date(_context_signal_row(ctx)) or 'UNKNOWN_SESSION'}"
+                'thesis_id': f"{_legacy_thesis_id}:OLM2",
+                'legacy_thesis_id': _legacy_thesis_id,
+                'supersedes_calculation_version': 'options-liquidity-lifecycle-v1',
+                'thesis_calculation_version': OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+                'evidence_session_date': _evidence_session,
+                'evidence_session_source': (
+                    'CDS_RUN_SESSION' if _CDS_V2_SESSION is not None else 'SIGNAL_ASOF_FALLBACK'
                 ),
                 'thesis_state': 'ACTIVE',
                 'liquidity_state': 'CONTRACT_FAMILY_REPAIR_REQUIRED',
@@ -7007,10 +7056,16 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     econ = compute_trade_economics(contract, ctx, iv_ctx)
 
     # ── 6. OIS + verdict ──────────────────────────────────────────────────
-    ois, pos_factors, neg_factors = compute_ois(
-        ctx, iv_ctx, econ, gamma_flip, walls, pcr_signal, contract,
-        dw_data=dw_data, gamma_vel=gamma_vel,
-        vol_confirm=vol_confirm, sector_data=sector_data)
+    economics_evaluated = econ.get('economics_state') == 'EVALUATED'
+    if economics_evaluated:
+        ois, pos_factors, neg_factors = compute_ois(
+            ctx, iv_ctx, econ, gamma_flip, walls, pcr_signal, contract,
+            dw_data=dw_data, gamma_vel=gamma_vel,
+            vol_confirm=vol_confirm, sector_data=sector_data)
+    else:
+        ois, pos_factors, neg_factors = 0.0, [], [
+            f"Economics not evaluated: {econ.get('economics_reason') or 'UNKNOWN'}"
+        ]
     ois_pre_macro = ois
     macro_adj = options_macro_alignment_adjustment(ctx, macro_context, signal_row)
     macro_adj["options_macro_authority"] = "ADVISORY_ONLY"
@@ -7027,9 +7082,13 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 f"Macro enrichment contradicts options direction "
                 f"(advisory score {macro_bonus:+.1f}; no OIS effect)"
             )
-    verdict, stand_down_reason = derive_verdict(
-        ois, ctx, iv_ctx, econ, neg_factors, sector_data=sector_data,
-        contract=contract)
+    if economics_evaluated:
+        verdict, stand_down_reason = derive_verdict(
+            ois, ctx, iv_ctx, econ, neg_factors, sector_data=sector_data,
+            contract=contract)
+    else:
+        verdict = 'STAND_DOWN'
+        stand_down_reason = str(econ.get('economics_reason') or 'ECONOMICS_NOT_EVALUATED')
 
     # ── 7. Target in play check ────────────────────────────────────────────
     target_in_play = False
@@ -7114,7 +7173,21 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     authoritative_route = str(research_contract.get('final_route', '') or '').upper()
     resolved_options_verdict = verdict
     resolved_stand_down_reason = stand_down_reason
-    if authoritative_route == OPTIONS_BLOCKED_ROUTE:
+    invalidation_fields = _ev3_handoff_fields(ctx)
+    if (
+        str(ctx.get('direction') or '').upper() in GOVERNED_DIRECTED_SIDES
+        and invalidation_fields.get('invalidation_state') != 'AVAILABLE'
+    ):
+        resolved_options_verdict = 'STAND_DOWN'
+        resolved_stand_down_reason = DataExceptionReason.INVALIDATION_MISSING.value
+        authoritative_route = OPTIONS_BLOCKED_ROUTE
+        research_contract['final_route'] = OPTIONS_BLOCKED_ROUTE
+        research_contract['options_route_verdict'] = OPTIONS_BLOCKED_ROUTE
+        research_contract['execution_permission'] = 'NO_CAPITAL'
+    if (
+        authoritative_route == OPTIONS_BLOCKED_ROUTE
+        and resolved_stand_down_reason != DataExceptionReason.INVALIDATION_MISSING.value
+    ):
         resolved_options_verdict = 'STAND_DOWN'
         resolved_stand_down_reason = (
             research_contract.get('research_route_reason')
@@ -7377,6 +7450,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
         # Trade economics
         'structural_target'       : ctx['structural_target'],
+        'economics_state'         : econ.get('economics_state'),
+        'economics_reason'        : econ.get('economics_reason'),
         'target_in_play'          : target_in_play,
         'premium_total'           : econ.get('premium_total'),
         'breakeven_price'         : econ.get('breakeven_price'),
@@ -8645,7 +8720,8 @@ def run_options_layer(
                     # Fallback context when parse itself fails (e.g. NaN fields on days_to_trigger)
                     _fb_tier = row.get("tier", 2)
                     ctx = {"ticker": str(row.get("ticker", "UNKNOWN")), "tier": _safe_int(_fb_tier, 2)}
-                result = _stand_down(ctx, f"Unhandled exception: {e}")
+                result = _stand_down(ctx, 'PIPELINE_EXCEPTION_GOVERNED')
+                result['pipeline_exception_type'] = type(e).__name__
                 for _baton_col in [c for c in row.index if str(c).startswith("layer2__")]:
                     result.setdefault(_baton_col, row.get(_baton_col))
                 results.append(result)
@@ -9017,7 +9093,13 @@ def run_options_layer(
         else (_CDS_CHAIN_SERVICE.ledger if _CDS_CHAIN_SERVICE is not None else None)
     )
     if _cds_ledger is not None:
-        _cds_entries = _cds_ledger.entries(run_id)
+        _all_cds_entries = _cds_ledger.entries(run_id)
+        _cds_entries = [
+            entry for entry in _all_cds_entries
+            if str(entry.get("stage") or "").upper() == "OPTIONS"
+            and str(entry.get("dataset_type") or "").upper() == "OPTION_CHAIN"
+        ]
+        _cds_chain_telemetry["non_options_entries_ignored"] = len(_all_cds_entries) - len(_cds_entries)
         _cds_chain_telemetry["physical_requests"] = sum(
             int(entry.get("physical_request_count") or 0) for entry in _cds_entries
         )

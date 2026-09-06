@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Callable, Iterable
@@ -24,13 +25,14 @@ from .session_clock import is_xnys_session, session_bounds
 
 INTRADAY_BAR_SCHEMA_VERSION = "underlying_intraday_bar_v1"
 INTRADAY_BAR_SCHEMA_V2 = "underlying_intraday_bar_v2"
+INTRADAY_BAR_SCHEMA_V3 = "underlying_intraday_bar_v3"
 INTRADAY_ADJUSTMENT = "UNADJUSTED"
 SUPPORTED_INTERVALS = (1, 5, 15, 30)
 
 
 def intraday_schema_version(interval_minutes: int) -> str:
     interval = int(interval_minutes)
-    return INTRADAY_BAR_SCHEMA_VERSION if interval == 1 else f"{INTRADAY_BAR_SCHEMA_V2}_{interval}min"
+    return INTRADAY_BAR_SCHEMA_VERSION if interval == 1 else f"{INTRADAY_BAR_SCHEMA_V3}_{interval}min"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,7 +120,13 @@ def normalise_intraday_bars(
     first_date = result["timestamp_utc"].iloc[0].date().isoformat() if len(result) else None
     result["session_date"] = session_date.isoformat() if session_date else first_date
     result["interval_minutes"] = interval
-    result["session_segment"] = session_segment.strip().upper()
+    if "session_segment" not in result:
+        result["session_segment"] = session_segment.strip().upper()
+    else:
+        result["session_segment"] = result["session_segment"].astype(str).str.strip().str.upper()
+        invalid_segments = ~result["session_segment"].isin({"PREMARKET", "REGULAR", "AFTER_HOURS"})
+        if invalid_segments.any():
+            raise ValueError("intraday bars contain an invalid session_segment")
     result["adjustment_convention"] = adjustment_convention.strip().upper()
     result["provider"] = provider.strip().upper()
     result["corporate_action_on_session"] = result.get("corporate_action_on_session", False)
@@ -349,7 +357,13 @@ class CanonicalMinuteBarResolver:
                                          exchange_calendar=self.exchange_calendar, evidence_state=evidence_state)
             ledger_id = self.ledger.start(gap_request, provider=provider)
             try:
-                fetched = normalise_intraday_bars(fetch_missing(ticker, gap_start, gap_end), ticker=ticker,
+                raw_fetched = fetch_missing(ticker, gap_start, gap_end)
+                response_evidence = {
+                    key: raw_fetched.attrs.get(key)
+                    for key in ("provider_http_status", "provider_headers", "provider_status")
+                    if raw_fetched.attrs.get(key) not in (None, "", {})
+                }
+                fetched = normalise_intraday_bars(raw_fetched, ticker=ticker,
                                                   interval_minutes=interval, session_date=session_date,
                                                   session_segment=session_segment,
                                                   adjustment_convention=adjustment_convention, provider=provider)
@@ -358,17 +372,46 @@ class CanonicalMinuteBarResolver:
                 quality = assess_intraday_quality(fetched, gap_expected, interval_minutes=interval)
                 if quality.duplicate_count:
                     raise ValueError("provider returned duplicate intraday timestamps")
-                if quality.missing_count:
-                    raise ValueError(f"provider omitted {quality.missing_count} requested intraday intervals")
+                # A partial response is persisted as PARTIAL evidence so the
+                # next invocation can request only the remaining gaps.  It is
+                # not eligible for a completed Market Profile until the
+                # profile-stage quality contract accepts it.
                 record = self._persist(gap_request, fetched, provider, quality)
                 fetched["dataset_id"] = record.dataset_id
                 fetched["content_hash"] = record.content_hash
                 fetched["completeness_status"] = record.completeness_status.value
                 new_records.append(record); frames.append(fetched); physical_fetches += 1
-                self.ledger.finish(ledger_id, RequestResolution.PROVIDER_FETCH, dataset_id=record.dataset_id, physical_request_count=1)
+                self.ledger.finish(
+                    ledger_id,
+                    RequestResolution.PROVIDER_FETCH,
+                    dataset_id=record.dataset_id,
+                    physical_request_count=1,
+                    reason=json.dumps(response_evidence, sort_keys=True, default=str),
+                )
             except Exception as error:
-                self.ledger.finish(ledger_id, RequestResolution.PROVIDER_ERROR, physical_request_count=1,
-                                   reason=f"{type(error).__name__}:{error}")
+                response = getattr(error, "response", None)
+                response_evidence = {
+                    "error_type": type(error).__name__,
+                    "reason_code": getattr(error, "reason_code", "PROVIDER_ERROR"),
+                    "message": str(error),
+                }
+                if response is not None:
+                    response_evidence.update({
+                        "provider_http_status": getattr(response, "http_status", None),
+                        "provider_headers": dict(getattr(response, "headers", {}) or {}),
+                        "provider_status": getattr(response, "provider_status", ""),
+                        "rate_limit_limit": getattr(response, "rate_limit_limit", None),
+                        "rate_limit_remaining": getattr(response, "rate_limit_remaining", None),
+                        "rate_limit_reset": getattr(response, "rate_limit_reset", None),
+                        "rate_limit_consumed": getattr(response, "rate_limit_consumed", None),
+                    })
+                resolution = (
+                    RequestResolution.PROVIDER_NO_DATA
+                    if getattr(error, "reason_code", "") == "PROVIDER_NO_DATA"
+                    else RequestResolution.PROVIDER_ERROR
+                )
+                self.ledger.finish(ledger_id, resolution, physical_request_count=1,
+                                   reason=json.dumps(response_evidence, sort_keys=True, default=str))
                 raise
         combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
         if not combined.empty:
@@ -376,8 +419,6 @@ class CanonicalMinuteBarResolver:
             combined = combined[combined["timestamp_utc"].isin(observable)].sort_values("timestamp_utc", kind="stable")
             combined = combined.drop_duplicates("timestamp_utc", keep="last").reset_index(drop=True)
         quality = assess_intraday_quality(combined, observable, interval_minutes=interval)
-        if quality.missing_count:
-            raise ValueError(f"canonical intraday assembly is missing {quality.missing_count} intervals")
         ids = tuple(r.dataset_id for r in records + new_records)
         return IntradayBarResult(combined, "PROVIDER_FETCH" if physical_fetches else "CACHE_ASSEMBLED",
                                  ids, physical_fetches, plan, quality)

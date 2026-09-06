@@ -1,0 +1,97 @@
+{
+ "report": "AVS-TST-QT-001",
+ "generated_utc": "2026-09-06T08:55:51+00:00",
+ "repository": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+ "git_head": "6e834b838d35b6a061df12d44cafff6f72bf0dcb",
+ "git_commits_since_pre_tidy_tag": 2,
+ "interpreters": {
+  "analysis": "C:\\Python314\\python.exe (3.14) - no pytest installed",
+  "tests": "venv\\Scripts\\python.exe (Python 3.13.14, pytest 9.1.1) - every test file run in its own process"
+ },
+ "constraint_compliance": {
+  "pipeline_executed": "NO - no --evening/--morning/--auto/--finalise/--replay; no stage script; no Lab server; no provider call",
+  "plan_only_exception_used": "NO - the single permitted --plan-only invocation was NOT used, so no filesystem snapshot/diff was required",
+  "feature_flag_set": "NO",
+  "runtime_profile_edited": "NO",
+  "production_files_modified": "NO - all writes confined to audit/pipeline_map/AVS-TST-QT-001/",
+  "worker3_live_transport_attempted": "NO",
+  "defects_fixed": "NO - filed only"
+ },
+ "tests_written_and_run": [
+  {
+   "file": "A_logic_tests/test_a1_profile_coverage.py",
+   "result": "8 passed",
+   "covers": "PROF-COV-01..07"
+  },
+  {
+   "file": "A_logic_tests/test_a2_profile_arithmetic.py",
+   "result": "7 passed (1 informational mismatch QT-D05)",
+   "covers": "PROF-BIN-01..03, PROF-POC-03, PROF-VA-01, A1 truncation error"
+  },
+  {
+   "file": "A_logic_tests/test_a3_a4_geometry.py",
+   "result": "5 passed 1 expectation-wrong",
+   "covers": "L2-01/03, GEO-01..07"
+  },
+  {
+   "file": "A_logic_tests/test_a6_audit.py",
+   "result": "executed - audit replay on two runs",
+   "covers": "AUD-01/AG-16, AUD-03, latest-run audit"
+  },
+  {
+   "file": "A_worker3/test_a8_worker3.py",
+   "result": "6 passed",
+   "covers": "W3-01,02,03,06,07,authority"
+  }
+ ],
+ "external_suites_run": [
+  {
+   "suite": "worker3_foundation/tests",
+   "cmd": "venv python -m pytest tests -q",
+   "result": "263 passed, 183 subtests passed in 21.98s"
+  },
+  {
+   "suite": "tests/msi/test_computation.py",
+   "cmd": "venv python -m pytest -q",
+   "result": "2 failed, 27 passed, 3 subtests passed"
+  },
+  {
+   "suite": "tests/msi/test_logic.py",
+   "cmd": "venv python -m pytest -q",
+   "result": "BLOCKED - exceeded time budget"
+  }
+ ],
+ "artefacts_read_only": {
+  "runs": [
+   "20260904_004338",
+   "20260904_122358",
+   "20260905_151448"
+  ],
+  "canonical_payloads": "data/canonical/payloads/intraday_bar (1491 INTRADAY_BAR parquet, read-only)",
+  "control_plane": "data/canonical/control_plane.sqlite opened with mode=ro"
+ },
+ "key_hashes": {
+  "contracts/dynamic_session_runtime_v1.json": "054a76be89b071140911e977ad911432ad46d49433724f52000224b37876bb9d",
+  "contracts/dynamic_session_contract.py": "d63b1d090159022bfd0f2424110ca7f671f7b5463e5f99ebdcded778d9b7f2b4",
+  "vanguard/layer1_auction/auction_synthesizer.py": "d52d36d1522a85eea917da484ce0f73b730b95cd4c8a87d0f3b71bc567cd5185",
+  "vanguard/layer2_statistical/edge_detector.py": "2cf25ae3f561d066b60420dbf03fc499da468c5ca01a754b9f0943680c37819b",
+  "scripts/build_completed_market_profiles.py": "f81185fa2f49c785e592011854f57b4dffe7ca9261c56937efd7e93724d80aea",
+  "canonical_data/marketdata_stock_candles.py": "b83f0fbda18807890bd7024bff4f49e3aabb651b08c01dec4e2391e1cae8dd0b",
+  "handoff_contract_audit.py": "0dde0e431130074073876b21d422c3ce447f0a9a0190e18e304008d1e63ebe41",
+  "scripts/avshunter_options_intelligence.py": "43b9e3ce7e532fc762ac1fde8414e27f0e989566a14c79e0a0867926c63b579a"
+ },
+ "deliverable_hashes": {
+  "00_BUILD_ARCHAEOLOGY.md": "e757292d90b7332e30a0c83129a633d6192f48b43b8a624891bbfbc337d86695",
+  "01_SYSTEM_MODEL.md": "08113d1adb3964ba99b6d638ef062d9a177f2d2521780b4d3a8e389c84331603",
+  "C_DEVIATIONS.md": "fa3fb42c555990ec506dc30b41777dac764d3ba2533660648891665f9f7619ad",
+  "D_MVP_READINESS.md": "0f387f5d74d864e4385e907377d0793db511ec2a99690658e44b0933d7c6cf30",
+  "00_built_vs_claimed.csv": "ff5c53e2583321bf54bca9ae30d0aaf6e0546139d334c46548d69ad4b5f34b88",
+  "00_changed_files.csv": "c654b556ad46e771decf22942f750f9534c6b43881379c94f61e9c1642069cf6",
+  "02_CLAIMS_INVENTORY.csv": "263adda3dc522bff40463d15c31b8684bd29ae2bb902fb51fe5c53d876e9a3dc",
+  "03_PREREGISTERED_EXPECTATIONS.csv": "c94c0bced7bfca2a9775bd4f0a42878ecf7aaf323b517eea4f256f5425ea5d55",
+  "A_results.csv": "ce6ce0b386dbf8f00b648a01c7d288b8ffe1750ce997ca952a6019e8e24689a1",
+  "AVS-TST-QT-001_DEFECTS.csv": "f3cb64ccb867b905f55b9c6a1004c0007150034fd46bd4b860514868ebc19d87",
+  "B_20260904_122358.csv": "485fa613fb19beb78087a3d958efa2eb8ae30968a4ecdbc240126b62e35349fe",
+  "B_20260905_151448.csv": "88437710718f07c3ca66f9af4abe96e2a0457ebdc38db70ce39f83724fc23c1d"
+ }
+}

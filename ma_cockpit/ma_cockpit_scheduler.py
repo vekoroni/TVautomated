@@ -1,5 +1,5 @@
-"""
-AVSHUNTER M&A Cockpit v1.0 — Scheduled Runner
+﻿"""
+AVSHUNTER M&A Cockpit v1.0 â€” Scheduled Runner
 Usage: python ma_cockpit_scheduler.py [morning|midday|evening]
 """
 import sys
@@ -19,7 +19,7 @@ def run_scheduled(session_type:str=None):
     if session_type is None:
         h=datetime.now().hour
         session_type="morning" if h<10 else ("midday" if h<14 else "evening")
-    log(f"Scheduled M&A scan starting — {session_type.upper()}")
+    log(f"Scheduled M&A scan starting â€” {session_type.upper()}")
     try:
         from ma_cockpit_commands import cmd_scan, cmd_activist
         cmd_scan()
@@ -32,3 +32,4 @@ def run_scheduled(session_type:str=None):
 
 if __name__=="__main__":
     run_scheduled(sys.argv[1].lower() if len(sys.argv)>1 else None)
+
