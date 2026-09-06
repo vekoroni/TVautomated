@@ -219,3 +219,13 @@ data/canonical/
 /audit/pipeline_logic_review/pytest_tmp_ws2*/
 /audit/pipeline_map/.design_validation_tmp/
 /audit/pipeline_map/AVS-TST-SD-002-001/tmp/codex_remediation/*/
+
+# ============================================================
+# AVS-FIX-001 W0.4 (2026-09-06). The blanket *.csv rule above also swallows
+# audit EVIDENCE — AVS-TST-QT-001's own B_<run>.csv gate tables are untracked
+# for this reason. A register that is not in the repository cannot be cited by
+# a commit or reviewed in a diff, so the AVS-IMP-FIX-001 evidence directory is
+# negated. Scoped to that one directory: run outputs elsewhere stay ignored,
+# and these files are small, hand-reviewable classification tables, not data.
+# ============================================================
+!audit/pipeline_map/AVS-IMP-FIX-001/*.csv
