@@ -4705,6 +4705,134 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
     return None
 
 
+#: Run identity for the W3.3 sidecar. `process_ticker` has no access to the
+#: run's output directory, which is a local of the run entry point, so the
+#: entry point publishes it here once. Left None outside a run, in which case
+#: the sidecar is simply not written -- instrumentation never invents a
+#: location.
+_ACTIVE_RUN_ID: Optional[str] = None
+_ACTIVE_OUTPUT_DIR: Optional[str] = None
+
+
+def set_active_run_context(run_id: Optional[str], output_dir: Optional[str]) -> None:
+    """Publish the run identity the W3.3 sidecar writes under."""
+    global _ACTIVE_RUN_ID, _ACTIVE_OUTPUT_DIR
+    _ACTIVE_RUN_ID = str(run_id).strip() if run_id else None
+    _ACTIVE_OUTPUT_DIR = str(output_dir).strip() if output_dir else None
+
+
+def _contracts_tested_sidecar_path(ctx: Dict) -> Optional[Path]:
+    """Where the per-ticker `contracts_tested` list is persisted.
+
+    Beside the run's other options artefacts. Returns None when the run
+    directory is unknown, in which case the sidecar is simply not written.
+    """
+    run_id = (
+        str(ctx.get('run_id') or ctx.get('pipeline_run_id') or '').strip()
+        or (_ACTIVE_RUN_ID or '')
+    )
+    if not run_id or not _ACTIVE_OUTPUT_DIR:
+        return None
+    return Path(_ACTIVE_OUTPUT_DIR) / f"contracts_tested_{run_id}.jsonl"
+
+
+def _record_contracts_tested(
+    ticker: str, ctx: Dict, taxonomy: Dict[str, Any], *, selected: Optional[Dict] = None
+) -> None:
+    """Append one ticker's contract-evaluation record to the JSONL sidecar.
+
+    Append-only, one line per ticker per run. A write failure is logged and
+    swallowed: this is instrumentation and must never stop a ticker.
+    """
+    path = _contracts_tested_sidecar_path(ctx)
+    if path is None:
+        return
+    record = {
+        "ticker": str(ticker or "").upper(),
+        "run_id": str(ctx.get('run_id') or ctx.get('pipeline_run_id') or ''),
+        "direction": str(ctx.get('direction') or '').upper(),
+        "horizon_bucket": ctx.get('horizon_bucket'),
+        "selected_contract_symbol": (selected or {}).get('symbol', ''),
+        **{key: value for key, value in taxonomy.items() if key != "contracts_tested"},
+        "contracts_tested": taxonomy.get("contracts_tested", []),
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, default=str) + chr(10))
+    except OSError as error:
+        print(f"  [{ticker}] contracts_tested sidecar not written: {error}")
+
+
+def contract_rejection_taxonomy(df: pd.DataFrame, ctx: Dict) -> Dict[str, Any]:
+    """Classify every contract in the chain against the selection gates.
+
+    AVS-FIX-001 W3.3 (THS-001 §3.1, RCA-003 §2). `select_best_contract` returns
+    None the moment a stage empties, so the artefact records that no contract
+    was selected and nothing about why. RCA-003 had to reconstruct the funnel
+    from stored chains to establish that the median blocked ticker had exactly
+    one contract inside its delta band.
+
+    INSTRUMENTATION ONLY. It selects nothing and changes no gate: it runs the
+    same bands the selector runs, over the same chain, and reports. It is
+    deliberately a separate pass rather than an edit to `_score_leg`, so an
+    error here can never change which contract is chosen.
+    """
+
+    from contracts.contract_rejection import classify_chain
+
+    config = ctx.get('dte_config') or {}
+    horizon = ctx.get('horizon_bucket') or ctx.get('macro_preferred_horizon')
+    dte_window = ctx.get('dte_window') or (None, None, None)
+    try:
+        dte_min = float(config.get('dte_min', dte_window[0]))
+        dte_max = float(config.get('dte_max', dte_window[2]))
+    except (TypeError, ValueError, IndexError):
+        dte_min, dte_max = 1.0, 365.0
+
+    try:
+        rows = df.to_dict('records') if df is not None and not df.empty else []
+    except Exception:
+        rows = []
+
+    return classify_chain(
+        rows,
+        direction=str(ctx.get('direction') or '').upper(),
+        dte_min=dte_min,
+        dte_max=dte_max,
+        delta_min=float(config.get('delta_min', 0.15)),
+        delta_max=float(config.get('delta_max', 0.35)),
+        spread_limit=horizon_spread_limit(horizon),
+    )
+
+
+#: Flat, CSV-safe columns from the taxonomy. `contracts_tested` itself is a
+#: list and goes to the JSONL sidecar, not into a CSV cell.
+CONTRACT_TAXONOMY_ROW_FIELDS = (
+    "contracts_tested_count",
+    "contracts_side_correct_count",
+    "primary_rejection_reason",
+    "secondary_rejection_reason",
+    "best_alternative_symbol",
+    "best_alternative_spread_pct",
+    "best_alternative_dte",
+    "best_alternative_delta",
+    "repair_attempted",
+    "repair_result",
+    "taxonomy_version",
+)
+
+
+def contract_taxonomy_row_fields(taxonomy: Dict[str, Any]) -> Dict[str, Any]:
+    """The taxonomy's flat fields, for the Options row."""
+    fields = {name: taxonomy.get(name) for name in CONTRACT_TAXONOMY_ROW_FIELDS}
+    funnel = taxonomy.get("funnel") or {}
+    for key in ("chain_rows", "side_correct", "in_dte_band", "in_delta_band",
+                "quote_usable", "passing_spread"):
+        fields[f"contracts_funnel_{key}"] = funnel.get(key)
+    return fields
+
+
 def _normalise_forecast_vol_decimal(*values: Any) -> Optional[float]:
     """Return the first usable annualised volatility as a decimal."""
     for value in values:
@@ -6913,6 +7041,21 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     # ── 4. Contract selection ──────────────────────────────────────────────
     contract = select_best_contract(chain, ctx)
+
+    # AVS-FIX-001 W3.3: record the whole selection funnel, whether or not a
+    # contract was chosen. A separate pass over the same chain with the same
+    # bands, so it can never change which contract is selected. The flat
+    # summary rides on the Options row; the per-contract list goes to a JSONL
+    # sidecar, since a list is not a CSV cell.
+    try:
+        _contract_taxonomy = contract_rejection_taxonomy(chain, ctx)
+        _contract_taxonomy_fields = contract_taxonomy_row_fields(_contract_taxonomy)
+        _record_contracts_tested(ticker, ctx, _contract_taxonomy, selected=contract)
+    except Exception as _taxonomy_error:
+        # Instrumentation must never take a ticker down.
+        print(f"  [{ticker}] contract taxonomy skipped: {_taxonomy_error}")
+        _contract_taxonomy = {}
+        _contract_taxonomy_fields = {}
     # FIX 4: Tiered contract review — replaces binary STAND_DOWN gate.
     # Write contract rejection log entry for diagnostics.
     _contract_tier = CONTRACT_TIER_CLEAN
@@ -6946,7 +7089,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                     'NO_CONTRACT_PASSED_QUALITY_GATES',
                     'CONTRACT_SELECTION',
                     len(chain),
-                )}
+                ),
+                **_contract_taxonomy_fields}
         if _chain_has_data:
             _repair_selector_diagnostics = _new_repair_selector_diagnostics()
             _no_contract_singles = select_repair_alternative_contracts(
@@ -8715,6 +8859,10 @@ def run_options_layer(
         print(f"[CDS-3/4] Shadow setup unavailable — legacy primary/fallback path retained: {_cds_error}")
 
     print(f"\n[START] Processing {len(eligible)} signals...\n")
+
+    # AVS-FIX-001 W3.3: publish the run identity the contracts_tested sidecar
+    # writes under. process_ticker cannot reach these locals otherwise.
+    set_active_run_context(run_id, output_dir)
 
     macro_contexts = load_package_macro_contexts(run_id, output_dir)
     if macro_contexts:
