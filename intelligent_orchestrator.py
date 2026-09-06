@@ -2017,6 +2017,39 @@ def _update_run_meta_status(
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
 
+def assert_finalise_preconditions(
+    planned,
+    *,
+    accepted_thesis,
+    provider_session_finalised: bool,
+) -> None:
+    """Guard the two conditions a FINALISE dispatch must satisfy.
+
+    AVS-FIX-001 W0.6 (QT-D13). FINALISE and BUILD_THESIS shared one callback
+    object, so nothing at the dispatch boundary distinguished them. The
+    conditions below are also enforced upstream; this is defence in depth at
+    the point of execution, not a second authority — it can only refuse, never
+    permit, and it grants no capital authority of any kind.
+
+    1. Provider-finalised evidence. Rev 1.1 §8.3 allows a current session to be
+       finalised only once the provider reports it closed.
+    2. A new run identity. `resolve_dispatch_plan` mints a fresh run id for
+       FINALISE — but only when the operator did not pass one. `--finalise
+       --run-id <the accepted thesis's run>` resolves `selected_run_id` to that
+       very run, and the evening workflow would then write into the accepted
+       thesis's own run directory. That is the overwrite this refuses.
+    """
+
+    if not provider_session_finalised:
+        raise RuntimeError("FINALISE requires provider-finalised session evidence")
+    accepted_run_id = getattr(accepted_thesis, "pipeline_run_id", None)
+    if accepted_run_id and planned.pipeline_run_id == accepted_run_id:
+        raise RuntimeError(
+            "FINALISE must mint a new run identity; refusing to overwrite "
+            f"accepted thesis run {accepted_run_id}"
+        )
+
+
 def _git_baseline_identity() -> dict[str, str]:
     """Return the code identity a run is reproducible from.
 
@@ -6682,6 +6715,20 @@ def main() -> None:
                 as_of_utc = datetime.now(timezone.utc)
             if requested_action.value == "AUTO" and args.data_mode == "LATEST":
                 raise ValueError("AUTO production dispatch cannot use research-only LATEST data mode")
+            # AVS-FIX-001 W0.6 (QT-D12). On the dynamic path the data mode is
+            # not the operator's to choose: the resolved plan pins the evidence
+            # cutoff and the completed session, and the evening callback below
+            # always passes data_mode="AUTO". A --data-mode the operator typed
+            # was silently discarded, which reads as "honoured" in a log. Say
+            # plainly that it is ignored, and why.
+            if args.data_mode and str(args.data_mode).upper() != "AUTO":
+                logger.warning(
+                    "--data-mode=%s is ignored on the dynamic dispatch path: the "
+                    "resolved run plan pins the evidence cutoff and completed "
+                    "session, so the data mode is derived (AUTO), never chosen. "
+                    "It still applies to the legacy --evening path.",
+                    args.data_mode,
+                )
             plan, selected_thesis = resolve_dispatch_plan(
                 output_dir=cfg.OUTPUT_DIR,
                 requested_action=requested_action,
@@ -6721,7 +6768,7 @@ def main() -> None:
                     "new" if inserted else "idempotent reuse",
                 )
 
-                def _build(planned):
+                def _run_evening(planned):
                     built = evening_workflow(
                         run_id=planned.pipeline_run_id,
                         min_universe=args.min_universe,
@@ -6742,9 +6789,20 @@ def main() -> None:
                         _record_dynamic_thesis_receipt(planned)
                     return True
 
+                def _build_thesis(planned):
+                    return _run_evening(planned)
+
+                def _finalise(planned):
+                    assert_finalise_preconditions(
+                        planned,
+                        accepted_thesis=selected_thesis,
+                        provider_session_finalised=args.provider_session_finalised,
+                    )
+                    return _run_evening(planned)
+
                 callbacks = {
-                    "BUILD_THESIS": _build,
-                    "FINALISE": _build,
+                    "BUILD_THESIS": _build_thesis,
+                    "FINALISE": _finalise,
                     "VALIDATE": lambda planned: premarket_workflow(
                         run_id=planned.pipeline_run_id
                     ),
