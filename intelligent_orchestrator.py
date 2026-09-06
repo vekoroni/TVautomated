@@ -2050,6 +2050,127 @@ def assert_finalise_preconditions(
         )
 
 
+def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
+    """Mature 1/5/10/20-session outcomes for every ledger candidate. Nightly.
+
+    AVS-FIX-001 W3.9 (RCA-003 section 9, SD-002 section 10). This is the item
+    that makes calibration possible: without matured outcomes every tier
+    boundary and every threshold in the system is an assertion. Nothing reads
+    the outcomes yet, which is exactly why they have to start accumulating now.
+
+    It matures EVERY CANDIDATE_DECISION in the ledger, including rejected and
+    deferred ones, so the counterfactual arm exists. It makes no provider call:
+    outcomes come from the canonical completed-session price history.
+
+    NON-CRITICAL and OBSERVATION_ONLY. Every failure degrades to a named status
+    and a warning; none can abort a run or change any authority. The summary is
+    written into the run directory so the stage can be evidenced from an
+    artefact rather than a log line, and so a skipped stage is visible: the
+    previous nesting made an absent price database indistinguishable from a
+    stage that ran and found nothing.
+    """
+
+    summary: dict[str, object] = {
+        "run_id": run_id,
+        "stage": "OUTCOME_MATURATION",
+        "authority": "OBSERVATION_ONLY",
+        "can_grant_capital": False,
+        "status": "NOT_RUN",
+        "reason": "",
+        "evaluated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+    def _publish() -> dict[str, object]:
+        try:
+            destination = (
+                cfg.RUNS_DIR / str(run_id) / "diagnostics"
+                / f"outcome_maturation_{run_id}.json"
+            )
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(
+                json.dumps(summary, indent=2, default=str), encoding="utf-8"
+            )
+            summary["artefact"] = str(destination)
+        except Exception as write_error:
+            logger.warning(
+                "Outcome maturation summary not written (non-critical): %s",
+                write_error,
+            )
+        return summary
+
+    try:
+        from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
+
+        if not DynamicSessionFeatureFlags.from_environment().decision_outcome_ledger:
+            summary["status"] = "SKIPPED"
+            summary["reason"] = "DECISION_LEDGER_FLAG_DISABLED"
+            logger.info("Outcome maturation: SKIPPED (decision ledger flag disabled)")
+            return _publish()
+
+        ledger_path = (
+            cfg.RUNS_DIR.parent.parent / "canonical" / "decision_outcome_ledger.sqlite"
+        )
+        price_path = (
+            cfg.RUNS_DIR.parent.parent / "canonical" / "historical_prices.sqlite"
+        )
+        summary["ledger_path"] = str(ledger_path)
+        summary["price_database_path"] = str(price_path)
+
+        if not price_path.is_file():
+            # A named absence, not silence. Outcomes cannot be computed without
+            # completed-session prices, and the operator needs to know the
+            # calibration record did not advance tonight.
+            summary["status"] = "DEFERRED"
+            summary["reason"] = "CANONICAL_PRICE_HISTORY_UNAVAILABLE"
+            logger.warning(
+                "Outcome maturation DEFERRED: canonical price history not found "
+                "at %s; no outcomes matured this run",
+                price_path,
+            )
+            return _publish()
+
+        from canonical_data.decision_outcome_ledger import DecisionOutcomeLedger
+        from canonical_data.historical_prices import HistoricalPriceDatabase
+        from canonical_data.outcome_maturation import mature_candidate_outcomes
+
+        price_database = HistoricalPriceDatabase(price_path)
+
+        def _read_completed_history(ticker: str, start_date: str):
+            return price_database.read(
+                ticker, start_date=start_date, completed_only=True
+            )
+
+        result = mature_candidate_outcomes(
+            DecisionOutcomeLedger(ledger_path),
+            read_completed_history=_read_completed_history,
+            as_of_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        summary["status"] = "COMPLETE"
+        summary.update(result.to_dict())
+        logger.info(
+            "Outcome maturation: candidates=%d eligible=%d evaluated=%d "
+            "appended=%d already=%d deferred=%d ineligible=%d exceptions=%d "
+            "API_requests=0 authority=OBSERVATION_ONLY",
+            result.candidate_events,
+            result.eligible_candidates,
+            result.outcomes_evaluated,
+            result.outcomes_appended,
+            result.outcomes_already_present,
+            result.deferred_horizons,
+            result.ineligible_candidates,
+            result.data_exceptions,
+        )
+    except Exception as error:
+        # Governed degradation: an observation stage never aborts a run.
+        summary["status"] = "FAILED"
+        summary["reason"] = f"{type(error).__name__}: {error}"
+        logger.warning(
+            "Outcome maturation failed (non-critical, no authority changed): %s",
+            error,
+        )
+    return _publish()
+
+
 def _git_baseline_identity() -> dict[str, str]:
     """Return the code identity a run is reproducible from.
 
@@ -5996,42 +6117,6 @@ def evening_workflow(
                             _decision_appended,
                             len(_lab_book.get("rows") or []) - len(_decision_rows),
                         )
-                        _price_database_path = (
-                            cfg.RUNS_DIR.parent.parent
-                            / "canonical"
-                            / "historical_prices.sqlite"
-                        )
-                        if _price_database_path.is_file():
-                            from canonical_data.historical_prices import (
-                                HistoricalPriceDatabase,
-                            )
-                            from canonical_data.outcome_maturation import (
-                                mature_candidate_outcomes,
-                            )
-
-                            _price_database = HistoricalPriceDatabase(
-                                _price_database_path
-                            )
-
-                            def _read_outcome_history(_ticker, _start_date):
-                                return _price_database.read(
-                                    _ticker,
-                                    start_date=_start_date,
-                                    completed_only=True,
-                                )
-
-                            _maturation = mature_candidate_outcomes(
-                                _decision_ledger,
-                                read_completed_history=_read_outcome_history,
-                                as_of_utc=datetime.now(timezone.utc).isoformat(),
-                            )
-                            logger.info(
-                                "DDD Phase 8 outcome maturation: evaluated=%d appended=%d deferred=%d ineligible=%d API_requests=0",
-                                _maturation.outcomes_evaluated,
-                                _maturation.outcomes_appended,
-                                _maturation.deferred_horizons,
-                                _maturation.ineligible_candidates,
-                            )
                 except Exception as _ledger_err:
                     logger.warning(
                         "Decision ledger observation failed without changing EOD authority: %s",
@@ -6045,6 +6130,13 @@ def evening_workflow(
             logger.warning("Lab/Interpreter shared triage view failed (non-critical): %s", _lab_sync_err)
     except Exception as _manifest_err:
         logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
+
+    # AVS-FIX-001 W3.9: outcome maturation, as its own non-critical stage. It
+    # was nested inside the decision-ledger APPEND block, so a failure appending
+    # THIS run's candidates also skipped maturation of every candidate from
+    # every previous run, which it does not depend on. It also skipped silently
+    # whenever the canonical price database was absent.
+    run_outcome_maturation_stage(canonical_run_id)
 
     # The contract audit must run after the Lab book is materialised.  Its Lab
     # checks and the UAT summary otherwise observe a transient missing artefact.
