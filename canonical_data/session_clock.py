@@ -120,6 +120,31 @@ def previous_xnys_session(value: date) -> date:
     return candidate
 
 
+def xnys_sessions_between(start: date, end: date) -> int:
+    """Count XNYS trading sessions strictly after `start` up to and including `end`.
+
+    AVS-FIX-001 W1.5. AVS-MVP-001 §4 states its holding rule as "DTE >= 2 x
+    hold", where the hold is measured in trading sessions -- so the DTE beside
+    it has to be measured the same way. Calendar days would make a Friday
+    expiry look like three days of life over a long weekend when it has one
+    session left.
+
+    Returns 0 when `end` is on or before `start`, and never a negative number:
+    an already-expired contract has no sessions left, it does not have minus
+    two of them.
+    """
+
+    if end <= start:
+        return 0
+    sessions = 0
+    candidate = start + timedelta(days=1)
+    while candidate <= end:
+        if is_xnys_session(candidate):
+            sessions += 1
+        candidate += timedelta(days=1)
+    return sessions
+
+
 def session_bounds(value: date) -> tuple[datetime, datetime]:
     if not is_xnys_session(value):
         raise ValueError(f"{value} is not an XNYS session")

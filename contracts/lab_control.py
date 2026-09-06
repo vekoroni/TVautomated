@@ -385,6 +385,10 @@ FINAL_BOOK_FIELDS = [
     "target_price",
     "target_in_play",
     "structural_target",
+    # AVS-FIX-001 W1.5: MVP §4 "DTE >= 2 x hold" evaluable from the book.
+    "contract_dte",
+    "contract_dte_state",
+    "contract_dte_basis",
     # AVS-FIX-001 W1.1: an absent target is null and says why, rather than 0.0.
     "target_state",
     "target_unresolved_reason",
@@ -2384,6 +2388,15 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "monetisability_status": first(sig, "monetisability_status"),
         "monetisability_state": first(sig, "monetisability_state"),
         "monetisability_reason": first(sig, "monetisability_reason"),
+        # AVS-FIX-001 W1.5: the governed trading-session DTE, with its absence
+        # named rather than published as a zero.
+        "contract_dte": first(sig, "contract_dte", "opt__contract_dte"),
+        "contract_dte_state": first(
+            sig, "contract_dte_state", default="NOT_APPLICABLE_NO_SELECTED_CONTRACT"
+        ),
+        "contract_dte_basis": first(
+            sig, "contract_dte_basis", default="XNYS_TRADING_SESSIONS_TO_OCC_EXPIRY"
+        ),
         "monetisability_eligible": first(sig, "monetisability_eligible"),
         # AVS-FIX-001 W1.3 (QT-D07). monetisability_authority was allow-listed
         # in FINAL_BOOK_FIELDS but never assigned here -- the F29 shape -- so it

@@ -86,6 +86,8 @@ from contracts.direction_governance import (
     resolve_governed_direction,
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
+from datetime import date, datetime, timezone
+from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from contracts.selected_contract_economics import (
     MONETISABILITY_AUTHORITY,
     MONETISABILITY_CALCULATION_VERSION,
@@ -837,6 +839,53 @@ def _load_trigger_authority_overlay(path: Optional[str | Path]) -> dict[str, dic
         values["trigger_quality"] = quality
         result[ticker] = values
     return result
+
+
+# ---------------------------------------------------------------------------
+# AVS-FIX-001 W1.5 — contract_dte in the Lab book.
+# ---------------------------------------------------------------------------
+#: Named absence, so a blank DTE is never read as "zero days left".
+CONTRACT_DTE_NOT_APPLICABLE = "NOT_APPLICABLE_NO_SELECTED_CONTRACT"
+
+
+def _governed_contract_dte(row: dict) -> tuple[float | None, str]:
+    """Trading sessions from the run's completed session to contract expiry.
+
+    AVS-MVP-001 §4 evaluates "DTE >= 2 x hold" from the Lab book, and the hold
+    is counted in trading sessions -- so the DTE beside it must be too. The
+    existing `dte` column is a provider calendar figure that defaults to 30
+    when absent, which cannot support that comparison.
+
+    The expiry is read from the selected contract's own OCC symbol rather than
+    from a separate column, so the number can never describe a different
+    contract from the one selected.
+
+    Returns (sessions, state). No selected contract yields (None,
+    NOT_APPLICABLE_NO_SELECTED_CONTRACT) -- never 0, which would read as
+    "expires today".
+    """
+
+    symbol = _first_str(
+        row, "recommended_contract", "contract_occ_symbol", "contract_symbol"
+    )
+    if not symbol:
+        return None, CONTRACT_DTE_NOT_APPLICABLE
+    try:
+        expiry = date.fromisoformat(parse_occ_symbol(symbol)["expiry"])
+    except (ValueError, KeyError, TypeError):
+        return None, DataExceptionReason.SCHEMA_INVALID.value
+
+    session_text = _first_str(
+        row, "evidence_session_date", "completed_session", "session_date"
+    )
+    try:
+        session = date.fromisoformat(session_text[:10]) if session_text else None
+    except ValueError:
+        session = None
+    if session is None:
+        session = session_snapshot(datetime.now(timezone.utc)).last_completed_session
+
+    return float(xnys_sessions_between(session, expiry)), "AVAILABLE"
 
 
 def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
@@ -2214,6 +2263,7 @@ def build_candidate_manifest(
 
         # Derived fields
         dte            = _flt(row, "dte", 30)
+        _contract_dte_value, _contract_dte_state = _governed_contract_dte(row)
         move_window    = _expected_move_window(dte)
         setup_type     = _setup_type(row)
         invalidation   = _invalidation_level(row)
@@ -2554,6 +2604,13 @@ def build_candidate_manifest(
             "contract_ask":          _flt(row, "contract_ask"),
             "contract_mid":          _flt(row, "contract_mid"),
             "contract_spread_pct":   _flt(row, "contract_spread_pct"),
+            # AVS-FIX-001 W1.5: trading-session DTE derived from the selected
+            # contract's own OCC expiry, so MVP §4 (DTE >= 2 x hold) is
+            # evaluable straight from the book. `dte` above stays as the
+            # provider calendar figure it has always been.
+            "contract_dte":          _contract_dte_value,
+            "contract_dte_state":    _contract_dte_state,
+            "contract_dte_basis":    "XNYS_TRADING_SESSIONS_TO_OCC_EXPIRY",
 
             # ── Structural Metrics ────────────────────────────────────────────
             "options_score":        _flt(row, "options_score"),
