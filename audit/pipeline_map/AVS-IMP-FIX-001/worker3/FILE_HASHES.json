@@ -1,0 +1,8 @@
+{
+  "package_root": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\worker3_foundation",
+  "sha256": {
+    "worker3\\adapters\\anthropic_http.py": "8368a6eb5943d47cb9e7d37b1a73b0d291e7c0d36e0c87fce1dcc03391a44d99",
+    "tests\\test_live_semantic.py": "e8a8df9c9445110d94b865a0a13c8acc8f1acc8cf1912851951c08eae4e76272",
+    "tests\\test_avs_fix_001_w42_transport.py": "2cced9f281f6e8a6dee77322ed941e0e77a08f35a35e354a9549a75b4471f619"
+  }
+}
