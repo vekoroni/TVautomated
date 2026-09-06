@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="1" tests="83" time="75.633" timestamp="2026-09-06T15:36:41.905426+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.msi.test_functionality.F01ChainParserSizes" name="test_bid_ask_size_retained_from_chain_fixture" time="0.015" /><testcase classname="tests.msi.test_functionality.F01ChainParserSizes" name="test_compatible_parallel_arrays_parse" time="0.008" /><testcase classname="tests.msi.test_functionality.F01ChainParserSizes" name="test_incompatible_parallel_array_length_is_rejected" time="0.003" /><testcase classname="tests.msi.test_functionality.F02ExactQuoteParserSizes" name="test_exact_quote_retains_sizes" time="0.009" /><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_error_category_BLOCKED" time="0.004"><skipped type="pytest.skip" message="BLOCKED - MSI-0 fixture missing: none of the 5 recorded fixtures under tests/fixtures/marketdata/ represents a provider ERROR response shape (e.g. s='error'). Per design §16.1 this category is required before provider-adapter activation. Reported as a finding against MSI-0, not faked with a fabricated fixture.">C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\msi\test_functionality.py:207: BLOCKED - MSI-0 fixture missing: none of the 5 recorded fixtures under tests/fixtures/marketdata/ represents a provider ERROR response shape (e.g. s='error'). Per design §16.1 this category is required before provider-adapter activation. Reported as a finding against MSI-0, not faked with a fabricated fixture.</skipped></testcase><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_missing_field_category_key_entirely_absent" time="0.007" /><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_missing_field_category_null_within_array" time="0.012" /><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_no_data_category" time="0.014" /><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_ok_and_parallel_array_category" time="0.009" /><testcase classname="tests.msi.test_functionality.F03ProviderFixtureCategories" name="test_scalar_category" time="0.007" /><testcase classname="tests.msi.test_functionality.F04SizeQuality" name="test_negative_size_never_surfaces_INVALID_SIZE_label" time="0.005" /><testcase classname="tests.msi.test_functionality.F04SizeQuality" name="test_negative_size_rejects_the_observation" time="0.003" /><testcase classname="tests.msi.test_functionality.F04SizeQuality" name="test_null_size_is_missing" time="0.009" /><testcase classname="tests.msi.test_functionality.F04SizeQuality" name="test_positive_size_label_matches_design_enum_OBSERVED" time="0.010"><failure message="AssertionError: 'OBSERVED_POSITIVE' != 'OBSERVED'&#10;- OBSERVED_POSITIVE&#10;+ OBSERVED">self = &lt;test_functionality.F04SizeQuality testMethod=test_positive_size_label_matches_design_enum_OBSERVED&gt;
+
+    def test_positive_size_label_matches_design_enum_OBSERVED(self):
+        """Design §24 defines the positive-size enum value as literally
+        'OBSERVED'. The actual code (canonical_data/marketdata_response.py:51
+        and canonical_data/market_observation_resolver.py:75) emits
+        'OBSERVED_POSITIVE' instead, in every call site repo-wide (also
+        scripts/avshunter_options_intelligence.py:1492,1501,2530,2531). This
+        assertion is written against the design's literal value and is
+        expected to fail for real, which is itself the evidence."""
+        frame = parse_marketdata_option_response(
+            fixture("option_chain_list_sizes.json"), ticker="AAPL"
+        )
+&gt;       self.assertEqual(frame.iloc[0]["bid_size_quality"], "OBSERVED")
+E       AssertionError: 'OBSERVED_POSITIVE' != 'OBSERVED'
+E       - OBSERVED_POSITIVE
+E       + OBSERVED
+
+tests\msi\test_functionality.py:269: AssertionError</failure></testcase><testcase classname="tests.msi.test_functionality.F04SizeQuality" name="test_zero_size_is_observed_zero" time="0.009" /><testcase classname="tests.msi.test_functionality.F05CrossedAndZeroBidQuotes" name="test_crossed_quote_is_flagged_not_accepted_as_normal" time="0.017" /><testcase classname="tests.msi.test_functionality.F05CrossedAndZeroBidQuotes" name="test_crossed_quote_quality_label_matches_design_enum_CROSSED" time="0.006"><failure message="AssertionError: 'INVALID' != 'CROSSED'&#10;- INVALID&#10;+ CROSSED">self = &lt;test_functionality.F05CrossedAndZeroBidQuotes testMethod=test_crossed_quote_quality_label_matches_design_enum_CROSSED&gt;
+
+    def test_crossed_quote_quality_label_matches_design_enum_CROSSED(self):
+        """Design §24 Quote-quality enum names CROSSED as the value for this
+        case (and the assignment's own F-05 instruction states this
+        literally). The actual code
+        (canonical_data/marketdata_response.py:_quote, line 79) sets
+        quality = 'INVALID' for bid &gt; ask, never 'CROSSED'. The implementer's
+        own regression suite codifies 'INVALID' as the expected value
+        (tests/test_msi_agent1_data_foundation.py:52), corroborating that
+        this is a real, intentional deviation from the design's literal enum
+        value, not a copy/paste slip. This assertion is written against the
+        design and is expected to fail for real."""
+        frame = parse_marketdata_option_response(
+            fixture("option_quote_crossed.json"), ticker="AAPL"
+        )
+&gt;       self.assertEqual(frame.iloc[0]["quote_quality"], "CROSSED")
+E       AssertionError: 'INVALID' != 'CROSSED'
+E       - INVALID
+E       + CROSSED
+
+tests\msi\test_functionality.py:332: AssertionError</failure></testcase><testcase classname="tests.msi.test_functionality.F05CrossedAndZeroBidQuotes" name="test_design_sections_8_2_and_18_are_not_actually_contradictory" time="0.011" /><testcase classname="tests.msi.test_functionality.F05CrossedAndZeroBidQuotes" name="test_zero_bid_positive_ask_is_one_sided_and_non_executable" time="0.008" /><testcase classname="tests.msi.test_functionality.F06OccNormaliser" name="test_adjusted_root_remains_distinct" time="0.002" /><testcase classname="tests.msi.test_functionality.F06OccNormaliser" name="test_all_vectors_normalise_to_themselves" time="0.007" /><testcase classname="tests.msi.test_functionality.F06OccNormaliser" name="test_provider_prefixed_and_space_padded_match" time="0.006" /><testcase classname="tests.msi.test_functionality.F07SingleOccNormaliserOwner" name="test_contract_reference_aliases_option_identity" time="0.003" /><testcase classname="tests.msi.test_functionality.F07SingleOccNormaliserOwner" name="test_selected_contract_economics_REIMPLEMENTS_rather_than_aliases" time="0.001" /><testcase classname="tests.msi.test_functionality.F07SingleOccNormaliserOwner" name="test_two_normalisers_can_behave_differently_on_the_same_input" time="0.002" /><testcase classname="tests.msi.test_functionality.F08UnderlyingNbboSizeFields" name="test_morning_gate_extraction_drops_the_computed_sizes" time="0.525" /><testcase classname="tests.msi.test_functionality.F08UnderlyingNbboSizeFields" name="test_no_producer_anywhere_writes_the_canonical_field_names" time="15.275"><failure message="AssertionError: Lists differ: ['morning_gate.py', 'contracts/lab_control.[141 chars].py'] != ['contracts/lab_evidence_overlay.py']&#10;&#10;First differing element 0:&#10;'morning_gate.py'&#10;'contracts/lab_evidence_overlay.py'&#10;&#10;First list contains 4 additional elements.&#10;First extra element 1:&#10;'contracts/lab_control.py'&#10;&#10;- ['morning_gate.py',&#10;-  'contracts/lab_control.py',&#10;-  'contracts/lab_evidence_overlay.py',&#10;? ^                                   ^&#10;&#10;+ ['contracts/lab_evidence_overlay.py']&#10;? ^                                   ^&#10;&#10;-  'tools/msi_production_readiness.py',&#10;-  'audit/pipeline_map/AVS-RCA-002/A_scripts/a3b_lineage_boundary.py'] : expected the canonical underlying_nbbo_bid[_size] name to appear only in the overlay allow-list; found in: ['morning_gate.py', 'contracts/lab_control.py', 'contracts/lab_evidence_overlay.py', 'tools/msi_production_readiness.py', 'audit/pipeline_map/AVS-RCA-002/A_scripts/a3b_lineage_boundary.py']">self = &lt;test_functionality.F08UnderlyingNbboSizeFields testMethod=test_no_producer_anywhere_writes_the_canonical_field_names&gt;
+
+    def test_no_producer_anywhere_writes_the_canonical_field_names(self):
+        """Repo-wide check: 'underlying_nbbo_bid_size'/'underlying_nbbo_ask_size'
+        (and even 'underlying_nbbo_bid'/'underlying_nbbo_ask' without size)
+        appear in exactly one place in the entire non-backup .py tree: the
+        ALLOW-LIST in contracts/lab_evidence_overlay.py (lines 22-27) which
+        only declares the name as a field an overlay COULD legally carry.
+        No producer anywhere actually sets that key on any dict, row or
+        overlay. This walks every non-backup .py file directly (no shell
+        grep) so the result is reproducible in-process."""
+        needle_size = "underlying_nbbo_bid_size"
+        needle_bid = "underlying_nbbo_bid"
+        hits = []
+        for path in REPO_ROOT.rglob("*.py"):
+            text_parts = path.parts
+            if "backups" in text_parts or "venv" in text_parts or "__pycache__" in text_parts:
+                continue
+            if "_cleanup_holding" in text_parts:
+                continue
+            if "tests" in text_parts:
+                # This is a PRODUCTION-code check. Test files (this one
+                # included, and sibling MSI test packs written by other
+                # agents in the same audit) legitimately discuss the
+                # canonical field name in prose/docstrings and assertions;
+                # they are not producers.
+                continue
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if needle_size in content or needle_bid in content:
+                hits.append(str(path.relative_to(REPO_ROOT)).replace("\\", "/"))
+&gt;       self.assertEqual(
+            hits,
+            ["contracts/lab_evidence_overlay.py"],
+            f"expected the canonical underlying_nbbo_bid[_size] name to appear "
+            f"only in the overlay allow-list; found in: {hits}",
+        )
+E       AssertionError: Lists differ: ['morning_gate.py', 'contracts/lab_control.[141 chars].py'] != ['contracts/lab_evidence_overlay.py']
+E       
+E       First differing element 0:
+E       'morning_gate.py'
+E       'contracts/lab_evidence_overlay.py'
+E       
+E       First list contains 4 additional elements.
+E       First extra element 1:
+E       'contracts/lab_control.py'
+E       
+E       - ['morning_gate.py',
+E       -  'contracts/lab_control.py',
+E       -  'contracts/lab_evidence_overlay.py',
+E       ? ^                                   ^
+E       
+E       + ['contracts/lab_evidence_overlay.py']
+E       ? ^                                   ^
+E       
+E       -  'tools/msi_production_readiness.py',
+E       -  'audit/pipeline_map/AVS-RCA-002/A_scripts/a3b_lineage_boundary.py'] : expected the canonical underlying_nbbo_bid[_size] name to appear only in the overlay allow-list; found in: ['morning_gate.py', 'contracts/lab_control.py', 'contracts/lab_evidence_overlay.py', 'tools/msi_production_readiness.py', 'audit/pipeline_map/AVS-RCA-002/A_scripts/a3b_lineage_boundary.py']
+
+tests\msi\test_functionality.py:540: AssertionError</failure></testcase><testcase classname="tests.msi.test_functionality.F08UnderlyingNbboSizeFields" name="test_resolver_normaliser_computes_sizes_but_under_generic_names" time="0.002" /><testcase classname="tests.msi.test_functionality.F08UnderlyingNbboSizeFields" name="test_resolver_normaliser_rejects_raw_epoch_seconds_updated_field" time="0.002" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_all_outputs_are_utc" time="0.002" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_dst_transition_shifts_utc_open_by_one_hour" time="0.002" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_early_close_day_1300_et" time="0.002" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_known_nyse_holiday" time="0.004" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_last_completed_session_on_holiday" time="0.003" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_last_completed_session_on_weekend" time="0.002" /><testcase classname="tests.msi.test_functionality.F09SessionClock" name="test_premarket_regular_after_hours_boundaries" time="0.005" /><testcase classname="tests.msi.test_functionality.F10FreshnessBySessionState" name="test_eod_current_when_market_closed_covers_last_completed_session" time="0.002" /><testcase classname="tests.msi.test_functionality.F10FreshnessBySessionState" name="test_evaluate_freshness_has_zero_production_callers" time="15.992"><failure message="AssertionError: Lists differ: ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py'] != []&#10;&#10;First list contains 2 additional elements.&#10;First extra element 0:&#10;'canonical_data\\bundle_freshness.py'&#10;&#10;- ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py']&#10;+ [] : expected zero production callers of evaluate_freshness(); found: ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py']">self = &lt;test_functionality.F10FreshnessBySessionState testMethod=test_evaluate_freshness_has_zero_production_callers&gt;
+
+    def test_evaluate_freshness_has_zero_production_callers(self):
+        """Integration-gap finding, verified by direct in-process file scan
+        (not shell grep): evaluate_freshness is only referenced by its own
+        definition, canonical_data/__init__.py's re-export, and the
+        implementer's own test file. No production consumer
+        (morning_gate.py, pipeline_interpreter/evidence_resolver.py,
+        contracts/interpreter_handoff_materializer.py, etc.) calls it, and no
+        production code anywhere assigns a 'freshness_map' key (the field
+        design §8.7 requires on every bundle) -- evidence_resolver.py only
+        ever READS bundle.get('freshness_map'). This means §7's session-aware
+        freshness policy exists as a correct, independently-testable
+        function (see the three tests above) but is not wired into the
+        pipeline that actually produces bundles."""
+        callers = []
+        for path in REPO_ROOT.rglob("*.py"):
+            parts = path.parts
+            if "backups" in parts or "venv" in parts or "__pycache__" in parts or "_cleanup_holding" in parts:
+                continue
+            if path.name in {"session_clock.py", "__init__.py"} and path.parent.name == "canonical_data":
+                continue
+            if path.parts[-2:] == ("tests", "test_msi_agent1_data_foundation.py")[:1] + (path.name,):
+                pass
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if "evaluate_freshness(" in content:
+                callers.append(str(path.relative_to(REPO_ROOT)))
+        self_path = Path(__file__).resolve()
+        non_test_callers = [
+            c for c in callers
+            if not c.replace("\\", "/").startswith("tests/")
+            and (REPO_ROOT / c).resolve() != self_path
+        ]
+&gt;       self.assertEqual(
+            non_test_callers, [],
+            f"expected zero production callers of evaluate_freshness(); found: {non_test_callers}",
+        )
+E       AssertionError: Lists differ: ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py'] != []
+E       
+E       First list contains 2 additional elements.
+E       First extra element 0:
+E       'canonical_data\\bundle_freshness.py'
+E       
+E       - ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py']
+E       + [] : expected zero production callers of evaluate_freshness(); found: ['canonical_data\\bundle_freshness.py', 'contracts\\quote_change_evidence.py']
+
+tests\msi\test_functionality.py:781: AssertionError</failure></testcase><testcase classname="tests.msi.test_functionality.F10FreshnessBySessionState" name="test_live_domain_becomes_stale_beyond_seed_ttl_during_market_hours" time="0.004" /><testcase classname="tests.msi.test_functionality.F10FreshnessBySessionState" name="test_live_domain_is_fresh_within_seed_ttl" time="0.003" /><testcase classname="tests.msi.test_functionality.F10FreshnessBySessionState" name="test_missing_observation_is_missing" time="0.002" /><testcase classname="tests.msi.test_functionality.F11IdempotentRegistration" name="test_chain_registration_is_idempotent_for_identical_content" time="0.670" /><testcase classname="tests.msi.test_functionality.F11IdempotentRegistration" name="test_changed_content_creates_new_id_and_does_not_overwrite" time="0.185" /><testcase classname="tests.msi.test_functionality.F11IdempotentRegistration" name="test_exact_quote_content_hash_embeds_run_id_breaking_cross_run_idempotency" time="1.221" /><testcase classname="tests.msi.test_functionality.F11IdempotentRegistration" name="test_resolver_reuses_chain_without_refetch_for_same_scope" time="0.721" /><testcase classname="tests.msi.test_functionality.F12WorklistBlocking" name="test_unregistered_ticker_is_blocked_ledger_records_it_no_fetch" time="0.272" /><testcase classname="tests.msi.test_functionality.F12WorklistBlocking" name="test_worklisted_ticker_not_in_stage_worklist_table_is_blocked" time="0.436" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_assessment_matches_exactly" time="0.002" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_freshness_matches_exactly" time="0.002" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_handoff_matches_exactly" time="0.002" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_quote_quality_values_deviate_from_design_enum" time="0.007" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_run_kind_matches_exactly" time="0.003" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_run_status_matches_exactly" time="0.002" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_size_quality_has_NO_owning_enum_module" time="18.682" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_structure_lifecycle_and_relationship_have_no_owning_enum_class" time="17.232" /><testcase classname="tests.msi.test_functionality.F13EnumAudit" name="test_structure_lifecycle_introduces_undeclared_MS_NONE_value" time="0.005" /><testcase classname="tests.msi.test_functionality.F14MsPrefixDiscipline" name="test_every_field_is_ms_prefixed_or_identity_lineage" time="0.138" /><testcase classname="tests.msi.test_functionality.F14MsPrefixDiscipline" name="test_no_unqualified_forbidden_field_names" time="0.105" /><testcase classname="tests.msi.test_functionality.F15PersistedPrecision" name="test_mid_price_is_NOT_rounded_to_four_decimal_places" time="0.012" /><testcase classname="tests.msi.test_functionality.F15PersistedPrecision" name="test_repair_pct_ratio_is_bounded_0_to_1" time="0.106" /><testcase classname="tests.msi.test_functionality.F15PersistedPrecision" name="test_sizes_are_python_int" time="0.011" /><testcase classname="tests.msi.test_functionality.F15PersistedPrecision" name="test_timestamps_are_iso8601_utc_to_the_second" time="0.013" /><testcase classname="tests.msi.test_functionality.F15PersistedPrecision" name="test_underlying_nbbo_normaliser_DOES_round_to_four_decimals" time="0.005" /></testsuite></testsuites>

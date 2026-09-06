@@ -1,11 +1,22 @@
 """AVS-OPS-001 verification matrix. Runs items 1-5 of section 6.
 Never runs the pipeline: the only orchestrator call is --cds-startup-self-test.
-Usage: run_matrix.py <outdir>
+Usage: run_matrix.py <outdir> [--skip-orchestrator]
+
+AVS-FIX-001 W0.3 (QT-001 D-04) added tests/msi/ to items 4/5. Those five files
+sat outside the acceptance matrix, which is how a live Market Profile
+volume-allocation failure (c07) went unseen.
+
+--skip-orchestrator omits item 3. AVS-IMP-FIX-001 binding rule 1 forbids the
+implementing session from invoking `--evening` in any form, self-test flag
+included, so that session runs the matrix with this flag and the tester runs it
+without.
 """
 import json, os, pathlib, subprocess, sys, time, glob, xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(".").resolve()
-OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+SKIP_ORCHESTRATOR = "--skip-orchestrator" in sys.argv
+OUT = pathlib.Path(ARGS[0]); OUT.mkdir(parents=True, exist_ok=True)
 VENV = str(ROOT / "venv" / "Scripts" / "python.exe")
 PY314 = r"C:\Python314\python.exe"
 
@@ -62,18 +73,27 @@ for name, (kind, target) in ENTRIES.items():
 results["item2_entrypoint_imports"] = item2
 
 # ---- Item 3: CDS startup self-test ----------------------------------------
-print("[3] CDS startup self-test", flush=True)
-rc, so, se, dt = run([VENV, "intelligent_orchestrator.py", "--evening",
-                      "--cds-startup-self-test"], timeout=600)
-(OUT / "item3_cds_selftest.txt").write_text(f"rc={rc}\n--stdout--\n{so}\n--stderr--\n{se}", encoding="utf-8")
-passed = ("PASS" in so or "PASS" in se)
-results["item3_cds_selftest"] = {"rc": rc, "reports_pass": passed, "seconds": round(dt, 1),
-                                 "tail": (so + se).strip().splitlines()[-6:]}
-print(f"    rc={rc} reports_pass={passed} ({dt:.0f}s)", flush=True)
+if SKIP_ORCHESTRATOR:
+    print("[3] CDS startup self-test  SKIPPED (--skip-orchestrator)", flush=True)
+    results["item3_cds_selftest"] = {
+        "skipped": True,
+        "reason": "AVS-IMP-FIX-001 binding rule 1 forbids the implementing "
+                  "session from invoking --evening in any form, self-test "
+                  "flag included; the tester runs the matrix without this flag.",
+    }
+else:
+    print("[3] CDS startup self-test", flush=True)
+    rc, so, se, dt = run([VENV, "intelligent_orchestrator.py", "--evening",
+                          "--cds-startup-self-test"], timeout=600)
+    (OUT / "item3_cds_selftest.txt").write_text(f"rc={rc}\n--stdout--\n{so}\n--stderr--\n{se}", encoding="utf-8")
+    passed = ("PASS" in so or "PASS" in se)
+    results["item3_cds_selftest"] = {"rc": rc, "reports_pass": passed, "seconds": round(dt, 1),
+                                     "tail": (so + se).strip().splitlines()[-6:]}
+    print(f"    rc={rc} reports_pass={passed} ({dt:.0f}s)", flush=True)
 
 # ---- Items 4/5: pytest, one file per process ------------------------------
 files = sorted(glob.glob("tests/test_*.py")) + sorted(glob.glob("tests/qa/test_*.py")) \
-        + sorted(glob.glob("tests/rca/test_*.py"))
+        + sorted(glob.glob("tests/rca/test_*.py")) + sorted(glob.glob("tests/msi/test_*.py"))
 print(f"[4/5] pytest: {len(files)} files, one process each", flush=True)
 xmldir = OUT / "pytest_xml"; xmldir.mkdir(exist_ok=True)
 per_file, tot = {}, {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "passed": 0}
@@ -111,4 +131,4 @@ print("\n==== TOTALS ====")
 print(json.dumps(tot, indent=1))
 print("compileall error_lines:", results["item1_compileall"]["error_lines"])
 print("entry imports ok:", {k: v["import_ok"] for k, v in item2.items()})
-print("cds selftest pass:", results["item3_cds_selftest"]["reports_pass"])
+print("cds selftest pass:", results["item3_cds_selftest"].get("reports_pass", "SKIPPED"))

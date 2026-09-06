@@ -98,7 +98,14 @@ def _make_resolver(tmp_path: Path, run_id: str, ticker: str, dataset_types, stag
     root = tmp_path / "cds"
     registry = CanonicalRegistry(root / "control.sqlite")
     registry.initialise()
-    session = date(2026, 8, 30)
+    # AVS-FIX-001 W0.3 (QT-001 D-04), T2: FIXTURE_CORRECTED.
+    # The session fixtures below said date(2026, 8, 30) -- a Sunday. session_bounds()
+    # rejects a non-XNYS date, so six tests died with "2026-08-30 is not an XNYS
+    # session" before asserting anything they were written to assert. Friday
+    # 2026-08-28 is a real session. The deliberately-Sunday instant used to prove
+    # the CLOSED session state (test_functionality.py, session_snapshot) is a
+    # datetime, not a session date, and is left untouched.
+    session = date(2026, 8, 28)
     registry.register_run(run_id, "EVENING", session)
     lifecycle = LifecycleManager(registry)
     event = lifecycle.register(run_id, ticker, allowed_capabilities=tuple(dataset_types))

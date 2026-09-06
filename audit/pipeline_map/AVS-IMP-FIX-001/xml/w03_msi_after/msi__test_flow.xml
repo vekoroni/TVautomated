@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="1" tests="20" time="14.990" timestamp="2026-09-06T15:04:31.256873+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.msi.test_flow" name="test_w01_option_sizes_propagation_chain" time="0.869"><failure message="AssertionError: if this fails, hydrate_selected_structure now propagates size fields and the W-01 finding below is stale&#10;assert ['live_contra...act_ask_size'] == []&#10;  &#10;  Left contains 2 more items, first extra item: 'live_contract_bid_size'&#10;  Use -v to get more diff">tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-161/test_w01_option_sizes_propagat0')
+
+    def test_w01_option_sizes_propagation_chain(tmp_path: Path) -&gt; None:
+        """W-01 (SS9.1, SS18): bid_size/ask_size must survive EOD chain -&gt; CDS -&gt;
+        selected contract/alternatives -&gt; persisted exact-contract observation -&gt;
+        Lab book row (SS3.2 propagation list).
+    
+        This test walks the real propagation chain end to end and asserts at each
+        stage whether the size fields are still present, so a break is caught by
+        execution rather than inferred from a code read.
+        """
+        ticker = "MSIA"
+    
+        # Stage 1: MarketData chain parsing retains bid_size/ask_size (SS3.2 bullet 1-2).
+        from canonical_data.marketdata_response import parse_marketdata_option_response
+        chain = parse_marketdata_option_response(fixture("option_chain_list_sizes.json"), ticker=ticker)
+        assert chain.iloc[0].bid_size == 12
+        assert chain.iloc[0].ask_size == 9
+    
+        # Stage 2: CDS exact-contract observation persists sizes with lineage (SS3.2
+        # "persist them in exact-contract observations").
+        resolver, _lifecycle, session = _make_resolver(
+            tmp_path, RUN_ID + "_W01", ticker, (DatasetType.EXACT_OPTION_QUOTE,), stage="MORNING_GATE",
+        )
+        symbol = "AAPL260918C00200000"  # must match the fixture's own optionSymbol
+        observation = resolver.exact_option_quote(
+            ticker=ticker, symbol=symbol, session_date=session, freshness_seconds=10**9,
+            fetch=lambda t, occ: fixture("option_quote_scalar_ok.json"),
+        )
+        assert observation.payload["bid_size"] == 12
+        assert observation.payload["ask_size"] == 9
+        assert observation.dataset_id  # persisted, immutable dataset identity
+    
+        # Stage 3: morning_gate's own CDS capture round-trip (mirrors
+        # morning_gate.py:_capture_msi_market_observations) keeps sizes on the
+        # in-memory `live` record it builds for the trade row.
+        class _Resolver:
+            def exact_option_quote(self, **kwargs):
+                raw = kwargs["fetch"](kwargs["ticker"], kwargs["symbol"])
+                assert raw["bidSize"] == [7]
+                assert raw["askSize"] == [4]
+                return type("R", (), {
+                    "payload": {"bid_size": 7, "ask_size": 4,
+                                "bid_size_quality": "OBSERVED_POSITIVE",
+                                "ask_size_quality": "OBSERVED_POSITIVE",
+                                "quote_quality": "TWO_SIDED"},
+                    "dataset_id": "MSIA-DATASET", "resolution": "PROVIDER_FETCH",
+                })()
+    
+            def underlying_nbbo(self, **kwargs):
+                raw = kwargs["fetch"](kwargs["ticker"])
+                return type("R", (), {"payload": {"mid": 50.0, "depth_level": "NBBO_ONLY"},
+                                       "dataset_id": "MSIA-NBBO", "resolution": "PROVIDER_FETCH"})()
+    
+        live = {
+            "live_contract_symbol": symbol, "live_contract_bid": 1.0, "live_contract_ask": 1.2,
+            "live_contract_mid": 1.1, "live_contract_bid_size": 7, "live_contract_ask_size": 4,
+            "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
+            "underlying_bid": 49.9, "underlying_ask": 50.1,
+            "underlying_bid_size": 100, "underlying_ask_size": 120,
+            "underlying_quote_updated": "2026-08-30T13:00:00+00:00",
+        }
+        morning_gate._capture_msi_market_observations(
+            {"ticker": ticker, "thesis_id": "T1", "trade_idea_id": "I1", "selected_structure_id": "S1"},
+            live, _Resolver(), session,
+        )
+        assert live["live_contract_bid_size"] == 7
+        assert live["contract_bid_size_quality"] == "OBSERVED_POSITIVE"
+    
+        # Stage 4: selected-contract economics hydration (contracts/selected_contract_economics.py
+        # ::hydrate_selected_structure, lines ~212-241 _quote_record / ~254-385) --
+        # this is the "selected contract" and "alternatives" step in SS3.2.
+        def fetch_contract(_symbol: str):
+            return {
+                "live_contract_bid": 1.0, "live_contract_ask": 1.2, "live_contract_mid": 1.1,
+                "live_contract_bid_size": 7, "live_contract_ask_size": 4,  # as morning_gate would pass
+                "live_options_source": "MARKETDATA",
+                "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
+            }
+        hydrated = sce.hydrate_selected_structure(
+            symbol, fetch_contract, ticker=ticker, direction="CALL",
+        )
+        assert hydrated["selected_structure_hydration_status"] == "COMPLETE"
+        size_bearing_keys = [k for k in hydrated if "bid_size" in k or "ask_size" in k]
+        # FINDING: hydrate_selected_structure's _quote_record only extracts a fixed
+        # set of named fields (bid/ask/mid/iv/delta/gamma/theta/vega/oi/volume/...)
+        # and never reads live_contract_bid_size / live_contract_ask_size, so the
+        # size fields that reached `live` in Stage 3 are dropped at this exact step.
+&gt;       assert size_bearing_keys == [], (
+            "if this fails, hydrate_selected_structure now propagates size fields "
+            "and the W-01 finding below is stale"
+        )
+E       AssertionError: if this fails, hydrate_selected_structure now propagates size fields and the W-01 finding below is stale
+E       assert ['live_contra...act_ask_size'] == []
+E         
+E         Left contains 2 more items, first extra item: 'live_contract_bid_size'
+E         Use -v to get more diff
+
+tests\msi\test_flow.py:226: AssertionError</failure></testcase><testcase classname="tests.msi.test_flow" name="test_w02_cached_rerun_zero_physical_calls" time="0.852" /><testcase classname="tests.msi.test_flow" name="test_w03_morning_gate_cds_then_atomic_handoff" time="1.475" /><testcase classname="tests.msi.test_flow" name="test_w04_contract_replacement_refetches_every_leg" time="0.016" /><testcase classname="tests.msi.test_flow" name="test_w05_stale_interpreter_request_fails_closed_no_refresh_executed" time="0.357" /><testcase classname="tests.msi.test_flow" name="test_w06_fresh_bundle_within_ttl_makes_no_provider_request" time="0.244" /><testcase classname="tests.msi.test_flow" name="test_w07_overlay_and_bundle_quote_change_fields_are_contract_symmetric" time="0.386"><failure message="AssertionError: assert 'current_contract_bid' in {'ask_change': None, 'ask_change_pct': None, 'ask_size_change': None, 'bid_change': None, ...}">tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-161/test_w07_overlay_and_bundle_qu0')
+
+    def test_w07_overlay_and_bundle_quote_change_fields_are_contract_symmetric(tmp_path: Path) -&gt; None:
+        """W-07 (SS11, SS18): refreshed bid/ask/spread changes must be identical
+        in the Lab overlay and the Interpreter bundle for the same bundle_id.
+    
+        No code computes a live quote-change refresh (see W-05 finding), so this
+        test verifies the data-contract symmetry that any future refresh
+        implementation is constrained to: the same allow-listed field names,
+        written through the overlay applier, appear byte-identical in the
+        bundle's quote_change_evidence when the underlying row carries them. This
+        is PARTIAL evidence -- contract-level only, not a live refresh.
+        """
+        run_id = RUN_ID + "_W07"
+        quote_change_fields = {
+            "morning_contract_bid": 1.10, "morning_contract_ask": 1.30, "morning_contract_mid": 1.20,
+            "current_contract_bid": 1.25, "current_contract_ask": 1.45, "current_contract_mid": 1.35,
+            "contract_bid_change": 0.15, "contract_ask_change": 0.15, "contract_mid_change": 0.15,
+            "contract_spread_change_pp": 0.0, "comparison_status": "SAME_CONTRACT",
+        }
+        governed_row = {
+            "run_id": run_id, "pipeline_mode": "MORNING_VALIDATION", "ticker": "MSIG",
+            "thesis_id": "T-MSIG", "trade_idea_id": "I-MSIG", "selected_structure_id": "S-MSIG",
+            "selected_contract_symbol": "MSIG260918C00100000", "selected_quote_snapshot_id": "Q-MSIG",
+            "governed_direction": "CALL", "thesis_state": "TRADEABLE_NOW",
+            "olm_guard_disposition": "ELIGIBLE", "final_action": "BUY_NOW",
+            "capital_permission": "CAPITAL_ALLOWED",
+            **quote_change_fields,
+        }
+        result = materialize_interpreter_handoff(
+            run_id=run_id, rows=[governed_row], run_root=tmp_path / run_id,
+            pipeline_mode="MORNING_VALIDATION", session_date="2026-08-30",
+            run_kind="PRODUCTION", run_status="ACCEPTED",
+            required_stage_status={"MORNING_GATE": "COMPLETED"},
+            morning_gate_completed_utc="2026-08-30T13:45:00+00:00",
+        )
+        validated = validate_handoff_manifest(result["handoff_manifest_path"])
+        bundle = validated.bundles[0]
+    
+        overlay = build_overlay(
+            run_id=run_id, ticker="MSIG", bundle_id=bundle["bundle_id"],
+            fields={k: v for k, v in quote_change_fields.items() if k in OVERLAY_ALLOWED_FIELDS},
+            source="test",
+        )
+        lab_row = {**governed_row, "bundle_id": bundle["bundle_id"]}
+        merged = apply_latest_compatible_overlays([lab_row], [overlay])[0]
+    
+        for field in ("current_contract_bid", "current_contract_ask", "contract_bid_change"):
+&gt;           assert field in bundle["quote_change_evidence"]
+E           AssertionError: assert 'current_contract_bid' in {'ask_change': None, 'ask_change_pct': None, 'ask_size_change': None, 'bid_change': None, ...}
+
+tests\msi\test_flow.py:554: AssertionError</failure></testcase><testcase classname="tests.msi.test_flow" name="test_w08_atomic_handoff_publication_and_rejections" time="0.456" /><testcase classname="tests.msi.test_flow" name="test_w09_resolve_interpreter_evidence_identity_and_required_fields" time="0.332" /><testcase classname="tests.msi.test_flow" name="test_w10_loose_files_and_recency_scans_cannot_override_manifest" time="0.407" /><testcase classname="tests.msi.test_flow" name="test_w11_session_run_id_from_manifest_and_independent_reconciliation" time="0.250" /><testcase classname="tests.msi.test_flow" name="test_w12_overlay_allow_list_rejects_authority_fields" time="0.022" /><testcase classname="tests.msi.test_flow" name="test_w13_msi_reconcile_blocks_publication_on_mismatch_and_is_invoked" time="0.852" /><testcase classname="tests.msi.test_flow" name="test_w14_no_production_interpreter_path_reaches_a_provider" time="1.064" /><testcase classname="tests.msi.test_flow" name="test_w15_ticker_command_does_not_rerun_direction_or_contract_selection" time="0.006" /><testcase classname="tests.msi.test_flow" name="test_w16_command_disposition" time="0.403" /><testcase classname="tests.msi.test_flow" name="test_w17_screenshot_lane_not_activated" time="0.003"><skipped type="pytest.skip" message="NOT_ACTIVATED: MSI_SCREEN_ADAPTER=false in config/msi_runtime.json; screenshot lane is not live in this deployment state per SS19 MSI-7b phasing.">C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\msi\test_flow.py:990: NOT_ACTIVATED: MSI_SCREEN_ADAPTER=false in config/msi_runtime.json; screenshot lane is not live in this deployment state per SS19 MSI-7b phasing.</skipped></testcase><testcase classname="tests.msi.test_flow" name="test_w18_macro_consumed_only_via_bundle_reference" time="0.043" /><testcase classname="tests.msi.test_flow" name="test_w19_request_coalescing_lock_and_budget_config_not_implemented" time="1.027" /><testcase classname="tests.msi.test_flow" name="test_w20_dropped_ticker_generates_zero_downstream_calls" time="0.701" /></testsuite></testsuites>

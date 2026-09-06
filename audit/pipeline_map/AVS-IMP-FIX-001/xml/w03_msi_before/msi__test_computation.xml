@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="32" time="4.209" timestamp="2026-09-06T14:49:42.353078+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_both_sides_positive_mid_and_spread_pct" time="0.003" /><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_mid_null_when_bid_and_ask_both_absent" time="0.003" /><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_quote_change_code_does_not_exist_FINDING" time="0.092" /><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_shared_helper_used_by_chain_and_exact_quote_paths" time="0.021" /><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_spread_value_field_is_absent_from_the_schema_FINDING" time="0.002" /><testcase classname="tests.msi.test_computation.C01_QuoteArithmetic" name="test_zero_bid_positive_ask_is_one_sided_half_ask_mid" time="0.012" /><testcase classname="tests.msi.test_computation.C02_QuoteChangeEvidence" name="test_quote_change_computation_is_not_implemented_anywhere_NOT_IMPLEMENTED" time="0.030"><failure message="AssertionError: '&quot;quote_change_evidence&quot;: {' not found in 'def _bundle(\n    row: Mapping[str, Any],\n    *,\n    identity: Mapping[str, str],\n    macro_reference: Mapping[str, Any] | None,\n    session_date: str,\n    validation_event: Mapping[str, Any] | Any | None = None,\n) -&gt; dict[str, Any]:\n    governed = _apply_execution_quote_governance(row, session_date=session_date)\n    governed.update(identity)\n    validation = _normalise_validation_event(\n        validation_event,\n        identity={\n            **identity,\n            &quot;governed_direction&quot;: _upper(\n                row.get(&quot;governed_direction&quot;) or row.get(&quot;direction&quot;)\n            ),\n        },\n    )\n    frozen_axis = _frozen_axis(row, identity)\n    if validation:\n        governed.update({\n            &quot;validation_event_id&quot;: validation.get(&quot;validation_event_id&quot;),\n            &quot;validation_transition&quot;: validation.get(&quot;transition&quot;),\n            &quot;validation_reason&quot;: validation.get(&quot;reason&quot;),\n            &quot;validation_evidence_cutoff_utc&quot;: validation.get(&quot;evidence_cutoff_utc&quot;),\n            &quot;validation_current_price&quot;: validation.get(&quot;current_price&quot;),\n            &quot;validation_gap_pct&quot;: validation.get(&quot;gap_pct&quot;),\n            &quot;validation_data_status&quot;: validation.get(&quot;data_status&quot;),\n            &quot;validation_profile_evidence_state&quot;: validation.get(&quot;profile_evidence_state&quot;),\n        })\n    governed[&quot;lab_status_banner&quot;] = _status_banner(validation)\n    morning_quote = quote_snapshot_from_row(governed, role=&quot;MORNING&quot;)\n    current_quote = quote_snapshot_from_row(governed, role=&quot;CURRENT&quot;)\n    quote_change = compare_exact_option_quotes(\n        ticker=identity[&quot;ticker&quot;],\n        thesis_id=identity[&quot;thesis_id&quot;],\n        trade_idea_id=identity[&quot;trade_idea_id&quot;],\n        selected_structure_id=identity[&quot;selected_structure_id&quot;],\n        morning=morning_quote,\n        current=current_quote,\n    )\n    governed.update(quote_change_overlay_fields(quote_change))\n    bundle_id = str(\n        uuid.uuid5(\n            uuid.NAMESPACE_URL,\n            canonical_json(\n                {\n                    **identity,\n                    &quot;validation_event_id&quot;: _text(\n                        (validation or {}).get(&quot;validation_event_id&quot;)\n                    ),\n                    &quot;authority_map_version&quot;: AUTHORITY_MAP_VERSION,\n                }\n            ),\n        )\n    )\n    governed[&quot;bundle_id&quot;] = bundle_id\n    bundle = {\n        &quot;bundle_schema_version&quot;: BUNDLE_SCHEMA_VERSION,\n        &quot;authority_map_version&quot;: AUTHORITY_MAP_VERSION,\n        &quot;bundle_id&quot;: bundle_id,\n        &quot;bundle_created_utc&quot;: utc_now(),\n        **identity,\n        &quot;authority_map&quot;: _authority_map(),\n        &quot;freshness_map&quot;: _freshness_map(governed),\n        &quot;governed_record&quot;: governed,\n        &quot;market_structure&quot;: {\n            key: value\n            for key, value in row.items()\n            if key.startswith(&quot;ms_&quot;) or key.startswith(&quot;market_structure_&quot;)\n        },\n        &quot;frozen_thesis&quot;: frozen_axis,\n        &quot;current_validation&quot;: validation or {},\n        &quot;quote_change_evidence&quot;: quote_change,\n    }\n    if macro_reference:\n        expected_packet_id = _text(macro_reference.get(&quot;packet_id&quot;))\n        expected_hash = _text(macro_reference.get(&quot;sha256&quot;)).lower()\n        row_packet_id = _text(row.get(&quot;macro_packet_id&quot;))\n        row_hash = _text(row.get(&quot;macro_packet_sha256&quot;)).lower()\n        if row_packet_id and row_packet_id != expected_packet_id:\n            raise HandoffValidationError(&quot;MACRO_PACKET_ID_LAB_BUNDLE_MISMATCH&quot;)\n        if row_hash and row_hash != expected_hash:\n            raise HandoffValidationError(&quot;MACRO_PACKET_HASH_LAB_BUNDLE_MISMATCH&quot;)\n        bundle[&quot;macro_quant_packet&quot;] = dict(macro_reference)\n    return validate_evidence_bundle(bundle)\n' : expected the passthrough block whose presence is the finding">self = &lt;test_computation.C02_QuoteChangeEvidence testMethod=test_quote_change_computation_is_not_implemented_anywhere_NOT_IMPLEMENTED&gt;
+
+    def test_quote_change_computation_is_not_implemented_anywhere_NOT_IMPLEMENTED(self):
+        """Exhaustive search for the §8.8 arithmetic.
+    
+        Searched (Grep, *.py, whole repo, this session):
+          - `contract_bid_change`, `contract_mid_change`,
+            `contract_spread_change_pp` -&gt; matches ONLY in
+            contracts/lab_evidence_overlay.py (an allow-listed field-name
+            set, CURRENT_QUOTE_FIELDS, lines 15-21) and
+            contracts/interpreter_handoff_materializer.py (a dict
+            comprehension that copies whatever value is already present on
+            `row`, lines 208-224). Neither file subtracts, divides, or
+            otherwise derives these values from `morning_*` and
+            `current_*` quote fields.
+          - `BASELINE_ZERO`, `CONTRACT_CHANGED`, `BASELINE_MISSING`,
+            `CURRENT_MISSING` (the design's §24 `Comparison` enum) -&gt; the
+            only non-backup hits are in morning_gate.py, and inspection
+            shows they belong to an unrelated pre-existing EV3
+            monetisability-recompute code path
+            (`NOT_EVALUATED_CONTRACT_CHANGED` /
+            `MORNING_CONTRACT_CHANGED_RECOMPUTE_REQUIRED`), not the MSI
+            quote-change comparison_status enum. `BASELINE_ZERO`,
+            `BASELINE_MISSING`, `CURRENT_MISSING` do not appear in
+            morning_gate.py at all.
+          - No module named anywhere in §22 (evidence_resolver.py,
+            interpreter_handoff.py, interpreter_handoff_materializer.py,
+            lab_evidence_overlay.py, morning_gate.py) contains a function
+            that takes two quote snapshots and returns a change record.
+    
+        Per rule 5 (no vacuous passes) and rule 6 (two-level closure), this
+        cannot be marked PASS on the strength of the allow-listed field
+        names alone — that is a schema declaration, not a calculation.
+        Verdict recorded in the test-card report: NOT_IMPLEMENTED.
+        """
+        import contracts.interpreter_handoff_materializer as materializer
+        import contracts.lab_evidence_overlay as overlay
+    
+        # The declared field names exist (schema is present)...
+        for field in (
+            "contract_bid_change", "contract_ask_change", "contract_mid_change",
+            "contract_spread_change_pp", "comparison_status",
+        ):
+            self.assertIn(field, overlay.CURRENT_QUOTE_FIELDS)
+    
+        # ...but no function in either module performs the subtraction/division
+        # arithmetic the design requires. This is verified by source
+        # inspection: the only place these names appear in
+        # interpreter_handoff_materializer.py is a passthrough dict
+        # comprehension `{key: row.get(key) for key in (...)}` with no
+        # arithmetic operators over morning_/current_ pairs.
+        bundle_source = inspect.getsource(materializer._bundle)
+&gt;       self.assertIn(
+            '"quote_change_evidence": {', bundle_source,
+            "expected the passthrough block whose presence is the finding",
+        )
+E       AssertionError: '"quote_change_evidence": {' not found in 'def _bundle(\n    row: Mapping[str, Any],\n    *,\n    identity: Mapping[str, str],\n    macro_reference: Mapping[str, Any] | None,\n    session_date: str,\n    validation_event: Mapping[str, Any] | Any | None = None,\n) -&gt; dict[str, Any]:\n    governed = _apply_execution_quote_governance(row, session_date=session_date)\n    governed.update(identity)\n    validation = _normalise_validation_event(\n        validation_event,\n        identity={\n            **identity,\n            "governed_direction": _upper(\n                row.get("governed_direction") or row.get("direction")\n            ),\n        },\n    )\n    frozen_axis = _frozen_axis(row, identity)\n    if validation:\n        governed.update({\n            "validation_event_id": validation.get("validation_event_id"),\n            "validation_transition": validation.get("transition"),\n            "validation_reason": validation.get("reason"),\n            "validation_evidence_cutoff_utc": validation.get("evidence_cutoff_utc"),\n            "validation_current_price": validation.get("current_price"),\n            "validation_gap_pct": validation.get("gap_pct"),\n            "validation_data_status": validation.get("data_status"),\n            "validation_profile_evidence_state": validation.get("profile_evidence_state"),\n        })\n    governed["lab_status_banner"] = _status_banner(validation)\n    morning_quote = quote_snapshot_from_row(governed, role="MORNING")\n    current_quote = quote_snapshot_from_row(governed, role="CURRENT")\n    quote_change = compare_exact_option_quotes(\n        ticker=identity["ticker"],\n        thesis_id=identity["thesis_id"],\n        trade_idea_id=identity["trade_idea_id"],\n        selected_structure_id=identity["selected_structure_id"],\n        morning=morning_quote,\n        current=current_quote,\n    )\n    governed.update(quote_change_overlay_fields(quote_change))\n    bundle_id = str(\n        uuid.uuid5(\n            uuid.NAMESPACE_URL,\n            canonical_json(\n                {\n                    **identity,\n                    "validation_event_id": _text(\n                        (validation or {}).get("validation_event_id")\n                    ),\n                    "authority_map_version": AUTHORITY_MAP_VERSION,\n                }\n            ),\n        )\n    )\n    governed["bundle_id"] = bundle_id\n    bundle = {\n        "bundle_schema_version": BUNDLE_SCHEMA_VERSION,\n        "authority_map_version": AUTHORITY_MAP_VERSION,\n        "bundle_id": bundle_id,\n        "bundle_created_utc": utc_now(),\n        **identity,\n        "authority_map": _authority_map(),\n        "freshness_map": _freshness_map(governed),\n        "governed_record": governed,\n        "market_structure": {\n            key: value\n            for key, value in row.items()\n            if key.startswith("ms_") or key.startswith("market_structure_")\n        },\n        "frozen_thesis": frozen_axis,\n        "current_validation": validation or {},\n        "quote_change_evidence": quote_change,\n    }\n    if macro_reference:\n        expected_packet_id = _text(macro_reference.get("packet_id"))\n        expected_hash = _text(macro_reference.get("sha256")).lower()\n        row_packet_id = _text(row.get("macro_packet_id"))\n        row_hash = _text(row.get("macro_packet_sha256")).lower()\n        if row_packet_id and row_packet_id != expected_packet_id:\n            raise HandoffValidationError("MACRO_PACKET_ID_LAB_BUNDLE_MISMATCH")\n        if row_hash and row_hash != expected_hash:\n            raise HandoffValidationError("MACRO_PACKET_HASH_LAB_BUNDLE_MISMATCH")\n        bundle["macro_quant_packet"] = dict(macro_reference)\n    return validate_evidence_bundle(bundle)\n' : expected the passthrough block whose presence is the finding
+
+tests\msi\test_computation.py:235: AssertionError</failure></testcase><testcase classname="tests.msi.test_computation.C03_VwapCanonical" name="test_premarket_excluded_and_regular_session_cumulative_vwap" time="0.109" /><testcase classname="tests.msi.test_computation.C03_VwapCanonical" name="test_vwap_provider_stored_separately_never_substitutes_canonical" time="0.036" /><testcase classname="tests.msi.test_computation.C04_BinWidth" name="test_hand_computed_atr14_two_tick_sizes" time="0.002" /><testcase classname="tests.msi.test_computation.C04_BinWidth" name="test_round_to_tick_rounds_to_nearest_not_floor" time="0.002" /><testcase classname="tests.msi.test_computation.C05C07_TpoAndVolumeAllocation" name="test_c05_tpo_participation_counts_one_per_period_per_bin" time="0.022" /><testcase classname="tests.msi.test_computation.C05C07_TpoAndVolumeAllocation" name="test_c06_value_area_expands_from_poc_to_next_higher_adjacent_count" time="0.015" /><testcase classname="tests.msi.test_computation.C05C07_TpoAndVolumeAllocation" name="test_c07_one_minute_volume_uniformly_allocated_and_labelled" time="0.014"><failure message="AssertionError: 'COARSE_DATA_LOW_CONFIDENCE' != 'ONE_MINUTE_ESTIMATED'&#10;- COARSE_DATA_LOW_CONFIDENCE&#10;+ ONE_MINUTE_ESTIMATED">self = &lt;test_computation.C05C07_TpoAndVolumeAllocation testMethod=test_c07_one_minute_volume_uniformly_allocated_and_labelled&gt;
+
+    def test_c07_one_minute_volume_uniformly_allocated_and_labelled(self):
+        """C-07: each bar's volume is split evenly across every bin it
+        intersects; label ONE_MINUTE_ESTIMATED; total allocated volume ==
+        sum of bar volumes.
+    
+        Hand computation:
+          bar1 vol=300 over 3 bins [100,101,102] -&gt; 100 each
+          bar2 vol=300 over 3 bins [101,102,103] -&gt; 100 each
+          bar3 vol=100 over 1 bin  [102]          -&gt; 100
+    
+          bin100 = 100                              = 100
+          bin101 = 100(bar1) + 100(bar2)            = 200
+          bin102 = 100(bar1) + 100(bar2) + 100(bar3)= 300
+          bin103 = 100(bar2)                        = 100
+          total  = 100+200+300+100 = 700 == 300+300+100 (sum of bar volumes)
+        """
+        profile = self._profile()
+        bins = profile.bins.set_index("price")
+        self.assertAlmostEqual(bins.loc[100.0, "volume_estimated"], 100.0)
+        self.assertAlmostEqual(bins.loc[101.0, "volume_estimated"], 200.0)
+        self.assertAlmostEqual(bins.loc[102.0, "volume_estimated"], 300.0)
+        self.assertAlmostEqual(bins.loc[103.0, "volume_estimated"], 100.0)
+        self.assertAlmostEqual(profile.bins["volume_estimated"].sum(), 700.0)
+        self.assertAlmostEqual(profile.regular_volume, 300.0 + 300.0 + 100.0)
+&gt;       self.assertEqual(profile.data_quality, "ONE_MINUTE_ESTIMATED")
+E       AssertionError: 'COARSE_DATA_LOW_CONFIDENCE' != 'ONE_MINUTE_ESTIMATED'
+E       - COARSE_DATA_LOW_CONFIDENCE
+E       + ONE_MINUTE_ESTIMATED
+
+tests\msi\test_computation.py:467: AssertionError</failure></testcase><testcase classname="tests.msi.test_computation.C08C09_AcceptanceAndRepair" name="test_c08_repair_pct_bands_intact_repairing_failed" time="0.044" /><testcase classname="tests.msi.test_computation.C08C09_AcceptanceAndRepair" name="test_c09_all_four_thresholds_pass_and_accepted_is_true" time="0.019" /><testcase classname="tests.msi.test_computation.C08C09_AcceptanceAndRepair" name="test_c09_one_threshold_failing_blocks_acceptance" time="0.018" /><testcase classname="tests.msi.test_computation.C10_EvidenceId" name="test_algorithm_matches_literal_sha256_design" time="0.015" /><testcase classname="tests.msi.test_computation.C10_EvidenceId" name="test_changed_parameter_set_version_changes_the_id" time="0.026" /><testcase classname="tests.msi.test_computation.C10_EvidenceId" name="test_dataset_id_order_matters_ordered_not_sorted" time="0.025" /><testcase classname="tests.msi.test_computation.C10_EvidenceId" name="test_identical_inputs_reproduce_the_same_id" time="0.029" /><testcase classname="tests.msi.test_computation.C11_Determinism" name="test_two_runs_are_identical_except_calculated_timestamp" time="0.025" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_acceptance_minutes_within_20_to_60" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_bin_divisor_within_25_to_60" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_parameter_set_is_versioned" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_peak_percentile_within_55_to_75_percent" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_region_share_within_15_to_30_percent" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_separation_within_020_to_050_atr" time="0.002" /><testcase classname="tests.msi.test_computation.C12_ParamsWithinCalibrationRange" name="test_valley_ratio_within_35_to_65_percent" time="0.002" /></testsuite></testsuites>

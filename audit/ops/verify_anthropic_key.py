@@ -87,7 +87,7 @@ report["models_probe_count_before"] = _probe_count()
 if OFFLINE:
     report["models_status"] = "SKIPPED_OFFLINE"
 elif _probe_count() >= 1 and not AUTHORISED:
-    report["models_status"] = "SKIPPED_PROBE_BUDGET_EXHAUSTED"
+    report["models_status"] = "SKIPPED_PROBE_ALREADY_SPENT"
     report["note"] = ("binding rule 1 allows one GET /v1/models in Part A; it has "
                       "been spent. Re-run with --authorised-reprobe only on ACK's "
                       "explicit instruction.")

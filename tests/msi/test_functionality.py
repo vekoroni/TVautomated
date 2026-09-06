@@ -559,7 +559,14 @@ class F08UnderlyingNbboSizeFields(unittest.TestCase):
             root = Path(tmp)
             registry = CanonicalRegistry(root / "control.sqlite")
             registry.initialise()
-            session = date(2026, 8, 30)
+            # AVS-FIX-001 W0.3 (QT-001 D-04), T2: FIXTURE_CORRECTED.
+            # The session fixtures below said date(2026, 8, 30) -- a Sunday. session_bounds()
+            # rejects a non-XNYS date, so six tests died with "2026-08-30 is not an XNYS
+            # session" before asserting anything they were written to assert. Friday
+            # 2026-08-28 is a real session. The deliberately-Sunday instant used to prove
+            # the CLOSED session state (test_functionality.py, session_snapshot) is a
+            # datetime, not a session date, and is left untouched.
+            session = date(2026, 8, 28)
             registry.register_run("R1", "MORNING", session)
             lifecycle = LifecycleManager(registry)
             event = lifecycle.register(
@@ -800,7 +807,7 @@ class F10FreshnessBySessionState(unittest.TestCase):
 def _make_resolver(tmp_root: Path, run_id: str, dataset_types, stage: str, ticker: str = "AAPL"):
     registry = CanonicalRegistry(tmp_root / f"{run_id}.sqlite")
     registry.initialise()
-    session = date(2026, 8, 30)
+    session = date(2026, 8, 28)
     registry.register_run(run_id, "MORNING", session)
     lifecycle = LifecycleManager(registry)
     event = lifecycle.register(run_id, ticker, allowed_capabilities=dataset_types)
@@ -927,14 +934,14 @@ class F11IdempotentRegistration(unittest.TestCase):
             root = Path(tmp)
             registry = CanonicalRegistry(root / "control.sqlite")
             registry.initialise()
-            registry.register_run("RREG", "MORNING", date(2026, 8, 30))
+            registry.register_run("RREG", "MORNING", date(2026, 8, 28))
             as_of = datetime(2026, 8, 30, 20, 0, tzinfo=timezone.utc)
-            scope = DataScope(start_date=date(2026, 8, 30), end_date=date(2026, 8, 30))
+            scope = DataScope(start_date=date(2026, 8, 28), end_date=date(2026, 8, 28))
 
             def record(content_hash: str, dataset_id: str) -> "DatasetRecord":
                 return DatasetRecord(
                     dataset_id=dataset_id, dataset_type=DT.OPTION_CHAIN,
-                    instrument_id="AAPL", session_date=date(2026, 8, 30), scope=scope,
+                    instrument_id="AAPL", session_date=date(2026, 8, 28), scope=scope,
                     provider="MARKETDATA", content_hash=content_hash,
                     completeness_status=CompletenessStatus.COMPLETE,
                     storage_uri=f"/tmp/{dataset_id}.json", observed_at=as_of, as_of=as_of,
@@ -1010,7 +1017,7 @@ class F12WorklistBlocking(unittest.TestCase):
             root = Path(tmp)
             registry = CanonicalRegistry(root / "control.sqlite")
             registry.initialise()
-            session = date(2026, 8, 30)
+            session = date(2026, 8, 28)
             registry.register_run("R1", "OPTIONS", session)
             # deliberately do NOT register/worklist "DROP"
             flags = CanonicalFeatureFlags(
@@ -1048,7 +1055,7 @@ class F12WorklistBlocking(unittest.TestCase):
             root = Path(tmp)
             registry = CanonicalRegistry(root / "control.sqlite")
             registry.initialise()
-            session = date(2026, 8, 30)
+            session = date(2026, 8, 28)
             registry.register_run("R1", "OPTIONS", session)
             lifecycle = LifecycleManager(registry)
             event = lifecycle.register(

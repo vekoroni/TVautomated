@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="95" time="172.837" timestamp="2026-09-06T15:08:05.072743+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.msi.test_logic.TestL01QuoteChangeComparison" name="test_no_active_module_computes_comparison_status" time="0.008" /><testcase classname="tests.msi.test_logic.TestL01QuoteChangeComparison" name="test_bundle_pass_through_does_not_compute_anything" time="0.315"><failure message="AssertionError: Expected S8.8 to always populate comparison_status as one of the five enumerated states even with no upstream quote-change data (BASELINE_MISSING at minimum). Found an empty dict: no active module computes quote_change_evidence at all.&#10;assert {'ask_change'...e': None, ...} == {}&#10;  &#10;  Left contains 36 more items:&#10;  {'ask_change': None,&#10;   'ask_change_pct': None,&#10;   'ask_size_change': None,&#10;   'bid_change': None,&#10;   'bid_change_pct': None,...&#10;  &#10;  ...Full output truncated (32 lines hidden), use '-vv' to show">self = &lt;test_logic.TestL01QuoteChangeComparison object at 0x000001CB4EB8DD10&gt;
+tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-167/test_bundle_pass_through_does_0')
+
+    def test_bundle_pass_through_does_not_compute_anything(self, tmp_path: Path) -&gt; None:
+        """L-01 / S8.8, executed. A row with NO quote-change fields at all
+        produces bundle['quote_change_evidence'] == {} -- not `comparison_status:
+        null` (BASELINE_MISSING) and not any of the five required states.
+        This contradicts S8.8's requirement that comparison_status is always
+        one of SAME_CONTRACT/CONTRACT_CHANGED/BASELINE_MISSING/CURRENT_MISSING
+        /STALE. Verdict: NOT_IMPLEMENTED -- no active module derives this
+        field; interpreter_handoff_materializer.py's _bundle() only forwards
+        pre-existing keys (`if key in row`), never computes them.
+        """
+        row = _governed_row()  # no morning_contract_bid / comparison_status / etc.
+        result = _publish_handoff(tmp_path, rows=[row])
+        bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
+&gt;       assert bundle["quote_change_evidence"] == {}, (
+            "Expected S8.8 to always populate comparison_status as one of the "
+            "five enumerated states even with no upstream quote-change data "
+            "(BASELINE_MISSING at minimum). Found an empty dict: no active "
+            "module computes quote_change_evidence at all."
+        )
+E       AssertionError: Expected S8.8 to always populate comparison_status as one of the five enumerated states even with no upstream quote-change data (BASELINE_MISSING at minimum). Found an empty dict: no active module computes quote_change_evidence at all.
+E       assert {'ask_change'...e': None, ...} == {}
+E         
+E         Left contains 36 more items:
+E         {'ask_change': None,
+E          'ask_change_pct': None,
+E          'ask_size_change': None,
+E          'bid_change': None,
+E          'bid_change_pct': None,...
+E         
+E         ...Full output truncated (32 lines hidden), use '-vv' to show
+
+tests\msi\test_logic.py:210: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL01QuoteChangeComparison" name="test_bundle_forwards_precomputed_fields_verbatim_no_recomputation" time="0.277"><failure message="AssertionError: assert 'BASELINE_MISSING' == 'SAME_CONTRACT'&#10;  &#10;  - SAME_CONTRACT&#10;  + BASELINE_MISSING">self = &lt;test_logic.TestL01QuoteChangeComparison object at 0x000001CB4EBB02B0&gt;
+tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-167/test_bundle_forwards_precomput0')
+
+    def test_bundle_forwards_precomputed_fields_verbatim_no_recomputation(self, tmp_path: Path) -&gt; None:
+        """L-01 / S8.8, executed. Even when a row *does* carry quote-change
+        fields, the materializer forwards them byte-for-byte without
+        validating comparison_status against the actual contract-identity/
+        baseline state (e.g. a `current_contract_bid == 0.0` here should, per
+        S8.8, force `change_status = BASELINE_ZERO` on percentage fields --
+        nothing in the bundle enforces or recomputes that). This shows the
+        field is trusted input, not a governed calculation.
+        """
+        row = _governed_row(
+            run_id="RUN1B",
+            ticker="DDD",
+            selected_contract_symbol="DDD260918C00100000",
+            morning_contract_bid=1.20,
+            morning_contract_ask=1.40,
+            morning_contract_mid=1.30,
+            current_contract_bid=0.0,
+            current_contract_ask=0.10,
+            current_contract_mid=0.05,
+            contract_bid_change=-1.20,
+            contract_mid_change=-1.25,
+            comparison_status="SAME_CONTRACT",
+        )
+        result = _publish_handoff(tmp_path, run_id="RUN1B", rows=[row])
+        bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
+        evidence = bundle["quote_change_evidence"]
+&gt;       assert evidence["comparison_status"] == "SAME_CONTRACT"
+E       AssertionError: assert 'BASELINE_MISSING' == 'SAME_CONTRACT'
+E         
+E         - SAME_CONTRACT
+E         + BASELINE_MISSING
+
+tests\msi\test_logic.py:243: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL02BaselineZero" name="test_baseline_zero_is_never_derived" time="0.275"><failure message="AssertionError: assert 'change_status' not in {'ask_change': None, 'ask_change_pct': None, 'ask_size_change': None, 'bid_change': None, ...}">self = &lt;test_logic.TestL02BaselineZero object at 0x000001CB4EB8DBD0&gt;
+tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-167/test_baseline_zero_is_never_de0')
+
+    def test_baseline_zero_is_never_derived(self, tmp_path: Path) -&gt; None:
+        """L-02 / S8.8, executed. A row whose *morning* (baseline) bid is
+        0.0 is published through the same pass-through path as L-01. No
+        `change_status` field, BASELINE_ZERO or otherwise, is ever added.
+        Verdict: NOT_IMPLEMENTED -- the same absent-computation gap as L-01
+        (there is exactly one code path, _bundle() in
+        contracts/interpreter_handoff_materializer.py:174-228, and it has no
+        arithmetic on bid/ask/mid at all).
+        """
+        row = _governed_row(
+            run_id="RUN1C",
+            ticker="EEE",
+            selected_contract_symbol="EEE260918C00100000",
+            morning_contract_bid=0.0,
+            morning_contract_ask=0.05,
+            current_contract_bid=0.10,
+            current_contract_ask=0.20,
+        )
+        result = _publish_handoff(tmp_path, run_id="RUN1C", rows=[row])
+        bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
+        evidence = bundle["quote_change_evidence"]
+&gt;       assert "change_status" not in evidence
+E       AssertionError: assert 'change_status' not in {'ask_change': None, 'ask_change_pct': None, 'ask_size_change': None, 'bid_change': None, ...}
+
+tests\msi\test_logic.py:277: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_none_to_developing_on_second_qualifying_region" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_developing_to_accepted_when_all_rules_pass" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_developing_stays_developing_when_not_yet_accepted" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_accepted_to_continuing_when_still_accepted_and_repair_below_020" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_accepted_to_repairing_when_repair_in_020_060_band" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_continuing_to_repairing_when_acceptance_temporarily_lost" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_repairing_to_continuing_on_restoration" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_on_repair_above_060[MS_ACCEPTED]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_on_repair_above_060[MS_CONTINUING]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_on_repair_above_060[MS_DEVELOPING]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_on_repair_above_060[MS_REPAIRING]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_on_invalidation_close" time="0.001" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_any_to_failed_when_regions_cease_to_qualify" time="0.001" /><testcase classname="tests.msi.test_logic.TestL03LifecycleTransitions" name="test_DEFECT_none_prior_can_skip_developing_straight_to_accepted" time="0.001" /><testcase classname="tests.msi.test_logic.TestL04FailedTerminalAndIntervalEvaluation" name="test_failed_is_terminal_regardless_of_new_inputs" time="0.001" /><testcase classname="tests.msi.test_logic.TestL04FailedTerminalAndIntervalEvaluation" name="test_new_session_produces_a_new_evidence_id" time="0.006" /><testcase classname="tests.msi.test_logic.TestL04FailedTerminalAndIntervalEvaluation" name="test_DEFECT_transitions_are_not_evaluated_per_five_minute_interval" time="26.563" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_baseline_is_detected" time="0.026" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_region_share_rule_alone_rejects" time="0.039" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_peak_percentile_rule_alone_rejects" time="0.004" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_valley_rule_alone_rejects" time="0.004" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_separation_rule_alone_rejects" time="0.008" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_chronology_rule_alone_rejects" time="0.015" /><testcase classname="tests.msi.test_logic.TestL05DoubleDistributionQualificationRules" name="test_isolated_single_bin_spike_is_rejected" time="0.005" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_call_second_above_first_accepted_or_continuing_is_aligned[MS_ACCEPTED]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_call_second_above_first_accepted_or_continuing_is_aligned[MS_CONTINUING]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_call_second_below_first_is_conflicting[MS_ACCEPTED]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_call_second_below_first_is_conflicting[MS_CONTINUING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_put_second_below_first_is_aligned[MS_ACCEPTED]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_put_second_below_first_is_aligned[MS_CONTINUING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_put_second_above_first_is_conflicting[MS_ACCEPTED]" time="0.005" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_put_second_above_first_is_conflicting[MS_CONTINUING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_DEVELOPING-CALL]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_DEVELOPING-PUT]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_REPAIRING-CALL]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_REPAIRING-PUT]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_FAILED-CALL]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[ABOVE-MS_FAILED-PUT]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_DEVELOPING-CALL]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_DEVELOPING-PUT]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_REPAIRING-CALL]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_REPAIRING-PUT]" time="0.005" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_FAILED-CALL]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_developing_repairing_failed_is_always_neutral[BELOW-MS_FAILED-PUT]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[ABOVE-MS_ACCEPTED]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[ABOVE-MS_CONTINUING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[ABOVE-MS_DEVELOPING]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[ABOVE-MS_FAILED]" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[BELOW-MS_ACCEPTED]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[BELOW-MS_CONTINUING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[BELOW-MS_DEVELOPING]" time="0.003" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_unresolved_direction_is_always_neutral[BELOW-MS_FAILED]" time="0.004" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_absent_structure_direction_is_insufficient_data" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_insufficient_quality_is_insufficient_data" time="0.002" /><testcase classname="tests.msi.test_logic.TestL06DirectionRelationshipMapping" name="test_NEEDS_CLARIFICATION_coarse_quality_mapped_to_insufficient_data" time="0.002" /><testcase classname="tests.msi.test_logic.TestL07QualityClassification" name="test_one_minute_bars_only_yields_one_minute_estimated" time="0.024" /><testcase classname="tests.msi.test_logic.TestL07QualityClassification" name="test_missing_bars_yields_insufficient_data_no_fabricated_profile" time="0.003" /><testcase classname="tests.msi.test_logic.TestL07QualityClassification" name="test_corporate_action_on_session_forces_coarse_quality" time="0.004" /><testcase classname="tests.msi.test_logic.TestL07QualityClassification" name="test_DEFECT_trade_level_confirmed_is_never_produced" time="22.017" /><testcase classname="tests.msi.test_logic.TestL07QualityClassification" name="test_DEFECT_coarse_bars_only_has_no_independent_detection_path" time="0.045"><failure message="AssertionError: confirms 15-minute bars are silently treated identically to true one-minute bars; no coarse-bar detection exists&#10;assert 'COARSE_15_MINUTE' == 'ONE_MINUTE_ESTIMATED'&#10;  &#10;  - ONE_MINUTE_ESTIMATED&#10;  + COARSE_15_MINUTE">self = &lt;test_logic.TestL07QualityClassification object at 0x000001CB4EBB5130&gt;
+
+    def test_DEFECT_coarse_bars_only_has_no_independent_detection_path(self) -&gt; None:
+        """L-07 DEFECT / S14 ('Coarse bars only | COARSE_DATA_LOW_CONFIDENCE
+        | supporting evidence only'). The only mechanism that can ever
+        produce COARSE_DATA_LOW_CONFIDENCE is the caller-supplied
+        `corporate_action_on_session` boolean (S8.4); there is no bar-
+        interval/granularity check anywhere in market_structure/profile.py
+        that would classify e.g. 5-minute or 15-minute bars as 'coarse' on
+        their own. Feeding 5-minute-interval bars (timestamps 5 minutes
+        apart) produces ONE_MINUTE_ESTIMATED, not COARSE_DATA_LOW_CONFIDENCE,
+        because the code never inspects bar cadence. FAIL --
+        NOT_IMPLEMENTED for the 'coarse bars' condition independent of
+        corporate actions.
+        """
+        coarse_bars = pd.DataFrame({
+            "timestamp_utc": pd.date_range("2026-06-01T13:30:00Z", periods=5, freq="15min"),
+            "high": [100.5, 101.0, 100.8, 101.2, 100.9],
+            "low": [100.0, 100.4, 100.3, 100.6, 100.4],
+            "close": [100.2, 100.8, 100.5, 101.0, 100.6],
+            "volume": [50000, 48000, 51000, 47000, 49000],
+            "session_segment": ["REGULAR"] * 5,
+        })
+        profile = build_market_profile(
+            coarse_bars, exchange_tick=0.01, atr14=4.0,
+            regular_open_utc=datetime(2026, 6, 1, 13, 30, tzinfo=timezone.utc),
+        )
+&gt;       assert profile.data_quality == "ONE_MINUTE_ESTIMATED", (
+            "confirms 15-minute bars are silently treated identically to "
+            "true one-minute bars; no coarse-bar detection exists"
+        )
+E       AssertionError: confirms 15-minute bars are silently treated identically to true one-minute bars; no coarse-bar detection exists
+E       assert 'COARSE_15_MINUTE' == 'ONE_MINUTE_ESTIMATED'
+E         
+E         - ONE_MINUTE_ESTIMATED
+E         + COARSE_15_MINUTE
+
+tests\msi\test_logic.py:836: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_file_presence_never_implies_acceptance_bad_status_rejected" time="0.044" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_test_run_kind_rejected_even_with_accepted_status" time="0.040" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_replay_repair_aborted_run_kinds_rejected[REPLAY]" time="0.045" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_replay_repair_aborted_run_kinds_rejected[REPAIR]" time="0.019" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_replay_repair_aborted_run_kinds_rejected[ABORTED]" time="0.020" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_DEFECT_research_labelled_run_is_not_actually_reachable" time="0.022" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_executable_session_requires_morning_gate_completed" time="0.252" /><testcase classname="tests.msi.test_logic.TestL08ResolverAcceptanceRules" name="test_trajectory_use_bypasses_morning_gate_requirement" time="0.274" /><testcase classname="tests.msi.test_logic.TestL09TrajectoryComparisonNormalisation" name="test_DEFECT_no_trajectory_normalisation_logic_exists" time="28.527" /><testcase classname="tests.msi.test_logic.TestL09TrajectoryComparisonNormalisation" name="test_contract_change_produces_no_flagged_normalised_comparison" time="0.256"><failure message="AssertionError: assert 'BASELINE_MISSING' == 'CONTRACT_CHANGED'&#10;  &#10;  - CONTRACT_CHANGED&#10;  + BASELINE_MISSING">self = &lt;test_logic.TestL09TrajectoryComparisonNormalisation object at 0x000001CB4EB8F250&gt;
+tmp_path = WindowsPath('C:/Users/ACKVerissimo/AppData/Local/Temp/pytest-of-ACKVerissimo/pytest-167/test_contract_change_produces_0')
+
+    def test_contract_change_produces_no_flagged_normalised_comparison(self, tmp_path: Path) -&gt; None:
+        """L-09 / S13, executed: publish a row where the current contract
+        differs from the originally-selected one is out of scope for the
+        materializer (identity must match at publish time -- see
+        contracts/interpreter_handoff.py:BUNDLE_GOVERNED_IDENTITY_MISMATCH),
+        so there is no governed artefact anywhere that could even carry a
+        'normalised' label. This executes the same pass-through path as
+        L-01 to show that even a row explicitly marked
+        comparison_status=CONTRACT_CHANGED is forwarded verbatim with no
+        added `comparison_basis` / `normalised` marker of any kind.
+        """
+        row = _governed_row(
+            run_id="RUN1D", ticker="GGG", selected_contract_symbol="GGG260918C00100000",
+            comparison_status="CONTRACT_CHANGED",
+            morning_contract_bid=1.0, current_contract_bid=None,
+        )
+        result = _publish_handoff(tmp_path, run_id="RUN1D", rows=[row])
+        bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
+        evidence = bundle["quote_change_evidence"]
+&gt;       assert evidence.get("comparison_status") == "CONTRACT_CHANGED"
+E       AssertionError: assert 'BASELINE_MISSING' == 'CONTRACT_CHANGED'
+E         
+E         - CONTRACT_CHANGED
+E         + BASELINE_MISSING
+
+tests\msi\test_logic.py:1002: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_governed_fields_are_copied_from_bundle_not_model" time="0.003" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_structured_field_override_attempt_is_rejected_as_schema_violation" time="0.003" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_narrative_direction_override_is_rejected" time="0.003" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_narrative_contract_override_is_rejected" time="0.002" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_DEFECT_narrative_lifecycle_override_is_not_detected" time="0.002" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_missing_model_field_is_rejected_as_schema_violation" time="0.003" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_nonzero_temperature_is_rejected" time="0.003" /><testcase classname="tests.msi.test_logic.TestL10PostGenerationValidator" name="test_rejected_assessment_is_preserved_not_dropped" time="0.065" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_enum_matches_exactly_the_six_named_states" time="0.003" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_missing_macro_context_is_data_missing" time="0.003" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_forbidden_authority_keys_never_reach_the_advisory_payload" time="0.052" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_stale_freshness_forces_stale_context_regardless_of_declared_state" time="0.029" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_unrecognised_declared_state_becomes_conflicting_sources" time="0.029" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_macro_reference_path_escape_is_rejected" time="0.046" /><testcase classname="tests.msi.test_logic.TestL11MacroAdapter" name="test_macro_authority_mutation_guard" time="0.003" /><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_DEFECT_morning_evidence_missing_literal_code_absent" time="24.087" /><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_DEFECT_contract_requote_required_literal_code_absent" time="22.002" /><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_DEFECT_budget_exhausted_literal_code_and_ceiling_absent" time="20.879"><failure message="assert 'BUDGET_EXHAUSTED' not in '# audit/ops...ok else 1)\n'&#10;  &#10;  'BUDGET_EXHAUSTED' is contained here:&#10;    PED_PROBE_BUDGET_EXHAUSTED&quot;&#10;        report[&quot;note&quot;] = (&quot;binding rule 1 allows one GET /v1/models in Part A; it has &quot;&#10;                          &quot;been spent. Re-run with --authorised-reprobe only on ACK's &quot;&#10;                          &quot;explicit instruction.&quot;)&#10;    else:...&#10;  &#10;  ...Full output truncated (40 lines hidden), use '-vv' to show">self = &lt;test_logic.TestL12FailureBehaviourTable object at 0x000001CB4EBB2520&gt;
+
+    def test_DEFECT_budget_exhausted_literal_code_and_ceiling_absent(self) -&gt; None:
+        """L-12 row 9 DEFECT / S14 + S16.2: 'BUDGET_EXHAUSTED when the
+        global ceiling is hit with cache still served.' No configurable
+        global daily ceiling, and no BUDGET_EXHAUSTED result code, exist
+        anywhere in canonical_data/ or elsewhere in the active tree.
+        Per the binding NO-HARD-CODED-THRESHOLDS rule this cannot even be
+        SEED_VALUE-tested since S16.2's proposed limits (one chain fetch/
+        ticker/session, six exact-quote refreshes/ticker/session, twelve
+        underlying refreshes/ticker/session, a global daily ceiling) are
+        not present in config/msi_runtime.json or any canonical_data module.
+        Verdict: NOT_IMPLEMENTED.
+        """
+        for path in ROOT.rglob("*.py"):
+            text = str(path)
+            if "\\backups\\" in text or "\\.codex_test_temp\\" in text or "\\tests\\" in text:
+                continue
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+&gt;           assert "BUDGET_EXHAUSTED" not in content
+E           assert 'BUDGET_EXHAUSTED' not in '# audit/ops...ok else 1)\n'
+E             
+E             'BUDGET_EXHAUSTED' is contained here:
+E               PED_PROBE_BUDGET_EXHAUSTED"
+E                   report["note"] = ("binding rule 1 allows one GET /v1/models in Part A; it has "
+E                                     "been spent. Re-run with --authorised-reprobe only on ACK's "
+E                                     "explicit instruction.")
+E               else:...
+E             
+E             ...Full output truncated (40 lines hidden), use '-vv' to show
+
+tests\msi\test_logic.py:1368: AssertionError</failure></testcase><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_DEFECT_refresh_conflict_literal_code_and_lock_timeout_absent" time="22.477" /><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_option_sizes_absent_size_quality_enum_exists" time="0.003" /><testcase classname="tests.msi.test_logic.TestL12FailureBehaviourTable" name="test_ticker_dropped_blocks_provider_request_worklist_gate_exists" time="0.002" /></testsuite></testsuites>

@@ -182,6 +182,15 @@ class C02_QuoteChangeEvidence(unittest.TestCase):
     only when both snapshots carry sizes.
     """
 
+    # AVS-FIX-001 W0.3 (QT-001 D-04): RETIRED 2026-09-06. This test asserted an
+    # absence that is now false — contracts/quote_change_evidence.py implements
+    # `compare_exact_option_quotes`, and materializer._bundle calls it, so the
+    # §8.8 arithmetic exists. An absence test cannot be updated, only retired.
+    # T2 classification: OBSOLETE_ASSERTION_CORRECTED.
+    @unittest.skip(
+        "RETIRED (AVS-FIX-001 W0.3): asserted an absence now contradicted by "
+        "contracts/quote_change_evidence.compare_exact_option_quotes"
+    )
     def test_quote_change_computation_is_not_implemented_anywhere_NOT_IMPLEMENTED(self):
         """Exhaustive search for the §8.8 arithmetic.
 
@@ -440,10 +449,33 @@ class C05C07_TpoAndVolumeAllocation(unittest.TestCase):
         self.assertEqual(profile.value_area_low, 101.0)
         self.assertEqual(profile.value_area_high, 103.0)
 
-    def test_c07_one_minute_volume_uniformly_allocated_and_labelled(self):
+    def test_c07_volume_uniformly_allocated_across_touched_bins(self):
         """C-07: each bar's volume is split evenly across every bin it
-        intersects; label ONE_MINUTE_ESTIMATED; total allocated volume ==
-        sum of bar volumes.
+        intersects, and the estimation method is disclosed by the cadence
+        label; total allocated volume == sum of bar volumes.
+
+        AVS-FIX-001 W0.3 (QT-001 D-04) — arbitrated in favour of the code.
+        This test previously asserted `data_quality == "ONE_MINUTE_ESTIMATED"`
+        on a fixture whose three bars are spaced +0, +5 and +31 minutes apart.
+        `_profile_cadence` derives the interval from the median timestamp delta
+        (median of 5 and 26 minutes -> 16), which is not a recognised cadence,
+        so it correctly reports COARSE_DATA_LOW_CONFIDENCE. The fixture never
+        contained one-minute bars; the label assertion was the defect, not the
+        allocation.
+
+        Against AVS-SD-002 §9.1 ("estimate volume across touched bins only
+        when the method is disclosed") the production code is right on both
+        counts: it allocates uniformly across touched bins, and it discloses
+        the estimation basis through `data_quality` and `cadence_source`. The
+        C-07 property is therefore asserted here on this fixture's real
+        cadence, and the ONE_MINUTE_ESTIMATED label is covered by
+        `test_c07_one_minute_cadence_is_labelled_one_minute_estimated` below,
+        which supplies actual one-minute bars.
+
+        The bar geometry is left untouched because C-05 and C-06 share this
+        fixture and depend on the +31-minute bar falling in TPO period 1.
+
+        T2 classification: FIXTURE_CORRECTED.
 
         Hand computation:
           bar1 vol=300 over 3 bins [100,101,102] -> 100 each
@@ -464,7 +496,45 @@ class C05C07_TpoAndVolumeAllocation(unittest.TestCase):
         self.assertAlmostEqual(bins.loc[103.0, "volume_estimated"], 100.0)
         self.assertAlmostEqual(profile.bins["volume_estimated"].sum(), 700.0)
         self.assertAlmostEqual(profile.regular_volume, 300.0 + 300.0 + 100.0)
+        # The estimation method is disclosed, and honestly: a 16-minute median
+        # cadence is not one-minute data and must not be labelled as such.
+        self.assertEqual(profile.data_quality, "COARSE_DATA_LOW_CONFIDENCE")
+        self.assertEqual(profile.cadence_source, "TIMESTAMP_DERIVED")
+        self.assertEqual(profile.interval_minutes, 16)
+
+    def test_c07_one_minute_cadence_is_labelled_one_minute_estimated(self):
+        """The half of C-07 the shared fixture cannot express: genuine
+        one-minute bars are labelled ONE_MINUTE_ESTIMATED, and their volume is
+        still allocated uniformly across every touched bin.
+
+        Added by AVS-FIX-001 W0.3 so correcting the fixture above does not lose
+        coverage of the ONE_MINUTE_ESTIMATED label.
+        """
+        params = MS_PARAMS_V1
+        tick = 1.0
+        atr14 = tick * params.bin_divisor
+        open_ts = datetime(2026, 1, 2, 14, 30, tzinfo=timezone.utc)
+        # 20 consecutive one-minute bars, each spanning the two bins [100, 101]
+        # with volume 200 -> 100 to each bin per bar.
+        bars = pd.DataFrame([
+            {"timestamp_utc": open_ts + pd.Timedelta(minutes=i),
+             "high": 101.0, "low": 100.0, "close": 100.5,
+             "volume": 200.0, "session_segment": "REGULAR"}
+            for i in range(20)
+        ])
+        profile = build_market_profile(
+            bars, exchange_tick=tick, atr14=atr14,
+            regular_open_utc=open_ts, params=params,
+        )
         self.assertEqual(profile.data_quality, "ONE_MINUTE_ESTIMATED")
+        self.assertEqual(profile.interval_minutes, 1)
+        bins = profile.bins.set_index("price")
+        self.assertAlmostEqual(bins.loc[100.0, "volume_estimated"], 20 * 100.0)
+        self.assertAlmostEqual(bins.loc[101.0, "volume_estimated"], 20 * 100.0)
+        # Nothing is created or lost by the allocation.
+        self.assertAlmostEqual(
+            profile.bins["volume_estimated"].sum(), 20 * 200.0
+        )
 
 
 # ---------------------------------------------------------------------------
