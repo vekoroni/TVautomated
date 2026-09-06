@@ -1217,6 +1217,61 @@ DTE_CONFIG = {
     "11_20d": {"dte_min": 35, "dte_max": 60, "spread_max": 0.35, "delta_min": 0.30, "delta_max": 0.50},
 }
 
+
+# ---------------------------------------------------------------------------
+# AVS-FIX-001 W1.6 (RCA3-D07, DEC-3) — one spread authority.
+#
+# Two limits governed the same decision. Contract SELECTION used the
+# per-horizon `spread_max` above (15% for 1_5d), while the terminal verdict
+# gate in `derive_verdict` used the flat MAX_SPREAD_PCT
+# (LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT, 25%). A 1_5d contract at 18%
+# therefore failed selection's band but passed the gate that actually decides
+# STAND_DOWN -- which is how RCA-003 and QT-001 found rows leaking through.
+#
+# The per-horizon band is the authority. The flat reviewable limit is retained
+# as a ceiling that no horizon may exceed, so the effective limit is
+# min(band, flat) and neither can be loosened by editing only one of them.
+# ---------------------------------------------------------------------------
+
+def normalise_horizon_key(value: object) -> str:
+    """Map any horizon spelling to a DTE_CONFIG key, defaulting to 1_5d.
+
+    The same normalisation was written out twice (contract selection and chain
+    access); a third copy inside the verdict gate would have been the point at
+    which the three could silently diverge.
+    """
+
+    text = str(value or "").lower().replace("-", "_").replace(" ", "")
+    if "1_5" in text:
+        return "1_5d"
+    if "6_10" in text:
+        return "6_10d"
+    if "11_20" in text:
+        return "11_20d"
+    return text if text in DTE_CONFIG else "1_5d"
+
+
+def clamp_spread_limit(band: object) -> float:
+    """min(per-horizon band, flat reviewable ceiling).
+
+    Tightening either tightens the gate; loosening one alone cannot loosen it.
+    A missing or unreadable band falls back to the flat ceiling.
+    """
+
+    try:
+        return min(float(band), float(MAX_SPREAD_PCT))
+    except (TypeError, ValueError):
+        return float(MAX_SPREAD_PCT)
+
+
+def horizon_spread_limit(horizon: object) -> float:
+    """The one spread limit that governs a contract on this horizon."""
+
+    return clamp_spread_limit(
+        DTE_CONFIG.get(normalise_horizon_key(horizon), {}).get("spread_max")
+    )
+
+
 # EV-2 bounded long-single search. Two expiries x three delta-nearest strikes.
 # Vertical debit spreads are a separate EV-2B structure because their quotes,
 # multipliers, and two-leg exit valuation require a distinct input contract.
@@ -4446,7 +4501,9 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         _dte_cfg = ctx.get('dte_config') or {}
         delta_min = float(_dte_cfg.get('delta_min', 0.15))
         delta_max = float(_dte_cfg.get('delta_max', 0.35))
-        spread_limit = float(_dte_cfg.get('spread_max', MAX_SPREAD_PCT))
+        # AVS-FIX-001 W1.6: one authority, so selection and the terminal gate
+        # can never disagree about the same contract.
+        spread_limit = clamp_spread_limit(_dte_cfg.get('spread_max'))
         target_delta = (delta_min + delta_max) / 2.0
 
         # DTE filter — try strict window first, then relax ±15 days if empty
@@ -4982,7 +5039,8 @@ def select_repair_alternative_contracts(
     delta_min = _repair_alt_float(dte_cfg.get("delta_min"), 0.15) or 0.15
     delta_max = _repair_alt_float(dte_cfg.get("delta_max"), 0.35) or 0.35
     target_delta = (delta_min + delta_max) / 2.0
-    spread_limit = _repair_alt_float(dte_cfg.get("spread_max"), MAX_SPREAD_PCT) or MAX_SPREAD_PCT
+    # AVS-FIX-001 W1.6: same authority for the repair-alternative search.
+    spread_limit = clamp_spread_limit(dte_cfg.get("spread_max"))
     spot = _repair_alt_float(ctx.get("spot"))
     structural_target = _repair_alt_float(ctx.get("structural_target"))
     hold_sessions = _repair_alt_float(_ev3_handoff_fields(ctx).get("planned_hold_sessions"))
@@ -6009,16 +6067,24 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
                 'BLOCK_INVALID_QUOTE: Selected contract has a crossed, negative, '
                 'or otherwise malformed top-of-book quote.'
             )
+        # AVS-FIX-001 W1.6 (RCA3-D07, DEC-3): the per-horizon band is the
+        # authority here, not the flat reviewable ceiling. This gate used
+        # MAX_SPREAD_PCT (25%) while contract selection used the band (15% on
+        # 1_5d), so 1_5d contracts between the two limits reached STAND_DOWN's
+        # gate and passed it.
+        _spread_limit = horizon_spread_limit(
+            (ctx or {}).get('horizon_bucket') or (ctx or {}).get('macro_preferred_horizon')
+        )
         spread_pct_val = contract.get('spread_pct')
         if spread_pct_val is not None and not bool(contract.get('mark_synthetic', False)):
             try:
                 spread_pct_direct = float(spread_pct_val)
             except Exception:
                 spread_pct_direct = None
-            if spread_pct_direct is not None and spread_pct_direct > MAX_SPREAD_PCT:
+            if spread_pct_direct is not None and spread_pct_direct > _spread_limit:
                 return 'STAND_DOWN', (
                     f'BLOCK_SPREAD: Spread {spread_pct_direct:.0%} exceeds '
-                    f'{MAX_SPREAD_PCT:.0%} liquidity threshold. Execution cost destroys edge.'
+                    f'{_spread_limit:.0%} liquidity threshold. Execution cost destroys edge.'
                 )
         bid_val  = contract.get('bid')
         ask_val  = contract.get('ask')
@@ -6028,10 +6094,10 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
             spread_pct = quote_spread_fraction(bid_val, ask_val)
             if spread_pct is None:
                 spread_pct = math.inf
-            if spread_pct > MAX_SPREAD_PCT:
+            if spread_pct > _spread_limit:
                 return 'STAND_DOWN', (
                     f'BLOCK_SPREAD: Spread {spread_pct:.0%} of mark ${mark_val:.2f} '
-                    f'(bid={float(bid_val):.2f} ask={float(ask_val):.2f}) exceeds {MAX_SPREAD_PCT:.0%} threshold. '
+                    f'(bid={float(bid_val):.2f} ask={float(ask_val):.2f}) exceeds {_spread_limit:.0%} threshold. '
                     f'Execution cost destroys edge.'
                 )
 
