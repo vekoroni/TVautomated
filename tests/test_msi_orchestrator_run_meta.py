@@ -45,3 +45,50 @@ def test_run_meta_rejects_unknown_status(tmp_path: Path, monkeypatch) -> None:
         assert "invalid run status" in str(error)
     else:
         raise AssertionError("unknown run status must fail closed")
+
+
+# ---------------------------------------------------------------------------
+# AVS-FIX-001 W0.1 — every run records the released baseline it came from.
+# ---------------------------------------------------------------------------
+
+
+def test_git_baseline_identity_reports_hash_and_describe() -> None:
+    identity = orchestrator._git_baseline_identity()
+    assert set(identity) == {"baseline_commit_hash", "git_describe"}
+    # In this repository both resolve; the point of the test is that neither is
+    # silently dropped and neither is empty.
+    assert identity["baseline_commit_hash"]
+    assert identity["git_describe"]
+
+
+def test_git_baseline_identity_degrades_without_git(monkeypatch) -> None:
+    def _explode(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(orchestrator.subprocess, "run", _explode)
+    identity = orchestrator._git_baseline_identity()
+    # A missing git must never abort a run — it degrades, visibly.
+    assert identity == {
+        "baseline_commit_hash": "UNAVAILABLE",
+        "git_describe": "UNAVAILABLE",
+    }
+
+
+def test_pin_run_directory_writes_both_code_identity_fields() -> None:
+    """The run-meta writer must carry `git_describe` beside the commit hash.
+
+    Asserted structurally against the source of `pin_run_directory` because
+    calling it end to end would require the whole Discovery/macro fixture set,
+    which is exactly the pipeline execution AVS-IMP-FIX-001 forbids here.
+    """
+    import ast
+    import inspect
+
+    tree = ast.parse(inspect.getsource(orchestrator.pin_run_directory))
+    keys = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assert "baseline_commit_hash" in keys
+    assert "git_describe" in keys

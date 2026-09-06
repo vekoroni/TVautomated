@@ -2017,6 +2017,38 @@ def _update_run_meta_status(
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
 
+def _git_baseline_identity() -> dict[str, str]:
+    """Return the code identity a run is reproducible from.
+
+    AVS-FIX-001 W0.1. `baseline_commit_hash` alone says which SHA a run used
+    but not which *released baseline* it belongs to, and nothing about whether
+    the working tree was dirty when the run started. `git describe --tags
+    --always --dirty` answers both, so every run traces back to a tag
+    (avs-baseline-20260906 and its successors), not just to a SHA.
+
+    Never raises: an unavailable git is recorded as "UNAVAILABLE" rather than
+    aborting a run, consistent with the pre-existing behaviour of the hash.
+    """
+
+    def _git(*args: str) -> str:
+        try:
+            return subprocess.run(
+                ["git", *args],
+                cwd=cfg.BASE_DIR,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            ).stdout.strip() or "UNAVAILABLE"
+        except Exception:
+            return "UNAVAILABLE"
+
+    return {
+        "baseline_commit_hash": _git("rev-parse", "HEAD"),
+        "git_describe": _git("describe", "--tags", "--always", "--dirty"),
+    }
+
+
 def pin_run_directory(
     discovery_run_id: str,
     macro_path: Path,
@@ -2140,17 +2172,9 @@ def pin_run_directory(
     if run_kind not in allowed_run_kinds:
         logger.warning("Unknown AVSHUNTER_RUN_KIND=%s; recording RESEARCH", run_kind)
         run_kind = "RESEARCH"
-    try:
-        baseline_commit_hash = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=cfg.BASE_DIR,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        ).stdout.strip()
-    except Exception:
-        baseline_commit_hash = "UNAVAILABLE"
+    git_identity = _git_baseline_identity()
+    baseline_commit_hash = git_identity["baseline_commit_hash"]
+    git_describe = git_identity["git_describe"]
     msi_flags = _active_msi_flags()
     meta = {
         "run_meta_schema_version": "run_meta_v2",
@@ -2162,6 +2186,7 @@ def pin_run_directory(
         "operator_accepted_by": None,
         "operator_accepted_at_utc": None,
         "baseline_commit_hash": baseline_commit_hash,
+        "git_describe": git_describe,
         "msi_config_version": MSI_CONFIG_VERSION,
         "msi_config_hash": msi_flags.fingerprint,
         "msi_feature_flags": msi_flags.to_dict(),
