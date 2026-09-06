@@ -225,8 +225,26 @@ def build_completed_profiles(
         evidence_cutoff_utc=close_utc, requesting_stage="COMPLETED_MARKET_PROFILE", flags=flags,
     )
     store = CanonicalProfileEvidenceStore(registry_path=registry_path, payload_root=payload_root)
-    completed = 0; deferred = 0; exceptions: list[dict[str, Any]] = []
+    # AVS-FIX-001 W1.4 (QT-D03). Four disjoint outcomes, so the population
+    # identity input = processed + excluded + deferred + exceptions holds by
+    # construction and each ratio has an honest denominator:
+    #   processed  a governed profile was published
+    #   excluded   bars arrived but could not represent the session (PARTIAL)
+    #   deferred   there was nothing to observe (future session, inactive
+    #              ticker) -- not a failure of this pipeline, so removed from
+    #              the coverage denominator
+    #   exceptions the provider or the calculation failed (transport, auth,
+    #              rate limit, ATR/data defect)
+    completed = 0; deferred = 0; excluded = 0; exceptions: list[dict[str, Any]] = []
     partial_session_count = 0; no_data_count = 0; provider_failure_count = 0
+    deferred_reasons: dict[str, int] = {}
+    exception_reasons: dict[str, int] = {}
+
+    def _count_deferral(reason: str) -> None:
+        deferred_reasons[reason] = deferred_reasons.get(reason, 0) + 1
+
+    def _count_exception(reason: str) -> None:
+        exception_reasons[reason] = exception_reasons.get(reason, 0) + 1
     package_by_ticker = {path.name.removesuffix(".package.json").upper(): path for path in packages}
     future_session = session_date > session_snapshot(datetime.now(timezone.utc)).last_completed_session
     for ticker in tickers:
@@ -236,6 +254,7 @@ def build_completed_profiles(
         try:
             if future_session:
                 deferred += 1
+                _count_deferral(DataExceptionReason.NOT_YET_OBSERVABLE.value)
                 _atomic_patch(path, {
                     "market_profile_contract_required": True,
                     "market_profile_evidence": None,
@@ -268,8 +287,14 @@ def build_completed_profiles(
                 "physical_fetches": bars_result.physical_fetches,
             })
             if not usable:
+                # AVS-FIX-001 W1.4: an exclusion, not a deferral. The provider
+                # returned bars; they were not good enough to represent the
+                # session. Counting that as a deferral would take it out of the
+                # coverage denominator, so a run in which every ticker returned
+                # half a session would report a healthy usable_ratio alongside
+                # zero published profiles.
                 partial_session_count += 1
-                deferred += 1
+                excluded += 1
                 _atomic_patch(path, {
                     "market_profile_contract_required": True,
                     "market_profile_evidence": None,
@@ -310,7 +335,12 @@ def build_completed_profiles(
             })
             completed += 1
         except MarketDataCandleNoData as error:
+            # AVS-FIX-001 W1.4 (QT-D03, AVS-PRE-001 EBC): the provider answering
+            # "this ticker did not trade" is a deferral, not a failure. It was
+            # already counted as one, but under the reason INSUFFICIENT_BARS,
+            # which describes a data defect. TICKER_INACTIVE says what happened.
             deferred += 1; no_data_count += 1
+            _count_deferral(DataExceptionReason.TICKER_INACTIVE.value)
             response = error.response
             diagnostics = {
                 "provider_http_status": response.http_status,
@@ -321,13 +351,13 @@ def build_completed_profiles(
                 "market_profile_contract_required": True,
                 "market_profile_evidence": None,
                 "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
-                "market_profile_exception": DataExceptionReason.INSUFFICIENT_BARS.value,
+                "market_profile_exception": DataExceptionReason.TICKER_INACTIVE.value,
                 "market_profile_quality": diagnostics,
             })
             exceptions.append({
                 "ticker": ticker,
                 "classification": "PROVIDER_NO_DATA",
-                "reason": DataExceptionReason.INSUFFICIENT_BARS.value,
+                "reason": DataExceptionReason.TICKER_INACTIVE.value,
                 "diagnostics": diagnostics,
             })
         except MarketDataCandleTransportError as error:
@@ -345,6 +375,7 @@ def build_completed_profiles(
                 "market_profile_exception": reason,
                 "market_profile_quality": {"provider_http_status": response.http_status},
             })
+            _count_exception(reason)
             exceptions.append({"ticker": ticker, "classification": "PROVIDER_FAILURE", "reason": reason})
         except Exception as error:
             _atomic_patch(path, {
@@ -352,28 +383,73 @@ def build_completed_profiles(
                 "market_profile_evidence": None,
                 "market_profile_exception": f"{type(error).__name__}:{error}",
             })
+            _count_exception(DataExceptionReason.SCHEMA_INVALID.value)
             exceptions.append({
                 "ticker": ticker,
                 "classification": "DATA_DEFECT",
                 "reason": f"{type(error).__name__}:{error}",
             })
+    # ------------------------------------------------------------------
+    # AVS-FIX-001 W1.4 (QT-D03) — guard semantics.
+    #
+    # `exception_count` is the length of the exceptions LIST, which also
+    # carries deferral records for operator diagnosis. The number of things
+    # that actually went wrong is counted separately, so neither ratio is
+    # computed from a list whose membership is a reporting convenience.
+    # ------------------------------------------------------------------
+    input_count = len(tickers)
     exception_count = len(exceptions)
-    hard_exception_count = exception_count - deferred
-    failure_ratio = provider_failure_count / len(tickers) if tickers else 0.0
-    usable_ratio = completed / len(tickers) if tickers else 1.0
-    provider_systemic_failure = bool(tickers) and failure_ratio > float(max_failure_ratio)
-    coverage_failure = bool(tickers) and usable_ratio < float(min_usable_ratio)
-    systemic_failure = provider_systemic_failure or coverage_failure
+    hard_exception_count = sum(exception_reasons.values())
+
+    # failure_ratio: things that failed, over everything we were asked to do.
+    # Previously provider_failure_count only, which silently excluded ATR and
+    # other data defects from the systemic-failure guard.
+    failure_ratio = hard_exception_count / input_count if input_count else 0.0
+
+    # usable_ratio: profiles published, over everything that was OBSERVABLE.
+    # Previously divided by the whole input, so a session with many inactive
+    # tickers looked like a coverage failure even when every observable ticker
+    # produced a profile. Deferrals are not this pipeline's failures and are
+    # therefore out of the denominator; exclusions and exceptions stay in.
+    observable_count = input_count - deferred
+    usable_ratio = (completed / observable_count) if observable_count else 1.0
+
+    provider_systemic_failure = bool(input_count) and failure_ratio > float(max_failure_ratio)
+    coverage_failure = bool(observable_count) and usable_ratio < float(min_usable_ratio)
+    reconciled = input_count == completed + excluded + deferred + hard_exception_count
+    systemic_failure = provider_systemic_failure or coverage_failure or not reconciled
+
+    # One decision, named, so the operator never has to infer why the stage
+    # stopped from a combination of booleans.
+    if not reconciled:
+        guard_decision = "POPULATION_RECONCILIATION_FAILED"
+    elif coverage_failure:
+        guard_decision = "MIN_USABLE_RATIO"
+    elif provider_systemic_failure:
+        guard_decision = "MAX_FAILURE_RATIO"
+    else:
+        guard_decision = "PASS"
+    stage_status = "PASS" if guard_decision == "PASS" else "FAIL"
+
     summary = {
         "run_id": run_id, "session_date": session_date.isoformat(), "interval_minutes": interval_minutes,
-        "input_count": len(tickers), "completed": completed, "deferred": deferred,
+        # Population, as four disjoint buckets that must sum to the input.
+        "input_count": input_count,
+        "processed": completed,
+        "completed": completed,
+        "excluded": excluded,
+        "deferred": deferred,
+        "observable_count": observable_count,
         "exception_count": exception_count,
         "hard_exception_count": hard_exception_count,
         "partial_session_count": partial_session_count,
         "provider_no_data_count": no_data_count,
         "provider_failure_count": provider_failure_count,
+        "deferred_by_reason": dict(sorted(deferred_reasons.items())),
+        "exceptions_by_reason": dict(sorted(exception_reasons.items())),
         "physical_provider_requests": provider_calls[0],
-        "reconciled": len(tickers) == completed + deferred + hard_exception_count,
+        "population_identity": "input = processed + excluded + deferred + exceptions",
+        "reconciled": reconciled,
         "failure_ratio": round(failure_ratio, 8),
         "max_failure_ratio": float(max_failure_ratio),
         "usable_ratio": round(usable_ratio, 8),
@@ -381,6 +457,8 @@ def build_completed_profiles(
         "provider_systemic_failure": provider_systemic_failure,
         "coverage_failure": coverage_failure,
         "systemic_failure": systemic_failure,
+        "guard_decision": guard_decision,
+        "stage_status": stage_status,
         "exceptions": exceptions,
         "published_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -416,7 +494,23 @@ def main() -> int:
         min_usable_ratio=args.min_usable_ratio,
     )
     print(json.dumps({key: value for key, value in summary.items() if key != "exceptions"}, indent=2))
-    return 0 if summary["reconciled"] and not summary["systemic_failure"] else 1
+    # AVS-FIX-001 W1.4: an operator reading the console must see the whole
+    # population and the one decision, without opening the JSON.
+    print(
+        "completed_profile_summary: "
+        f"input={summary['input_count']} "
+        f"processed={summary['processed']} "
+        f"usable_ratio={summary['usable_ratio']:.4f} "
+        f"partial={summary['partial_session_count']} "
+        f"excluded={summary['excluded']} "
+        f"deferred={summary['deferred']}{summary['deferred_by_reason'] or ''} "
+        f"exceptions={summary['hard_exception_count']}{summary['exceptions_by_reason'] or ''} "
+        f"failure_ratio={summary['failure_ratio']:.4f} "
+        f"reconciled={summary['reconciled']} "
+        f"guard_decision={summary['guard_decision']} "
+        f"stage_status={summary['stage_status']}"
+    )
+    return 0 if summary["stage_status"] == "PASS" else 1
 
 
 if __name__ == "__main__":
