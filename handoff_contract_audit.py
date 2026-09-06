@@ -665,6 +665,62 @@ def _semantic_contract_audit(stage_frames: dict[str, pd.DataFrame], paths: dict[
                 recommendation="Represent missing POC/VAH/VAL as null, never as a fabricated zero.",
             ))
 
+    # ------------------------------------------------------------------
+    # AVS-FIX-001 W1.1 (QT-D04) — PRICE_FIELD_ZERO_AS_MISSING.
+    #
+    # The generic form of MISSING_PROFILE_LEVEL_PUBLISHED_AS_ZERO above. No
+    # instrument this pipeline trades is worth nothing, so a literal 0.0 in a
+    # price-bearing decision field is a fabricated value standing in for
+    # "absent" — and a fabricated zero is worse than a null, because every
+    # downstream comparison silently succeeds against it. Run 20260905_151448
+    # published structural_target == 0.0 on 19 Lab rows (13 CALL, 6 PUT).
+    #
+    # The one legitimate zero is a 0.0 contract bid, which is a real market
+    # state when nobody is bidding — recognised by contract_bid_size == 0. That
+    # exception is encoded below and applies to contract_bid alone; a 0.0 ask
+    # has no such reading.
+    # ------------------------------------------------------------------
+    price_bearing_fields = {
+        "structural_target": ["structural_target", "opt__structural_target", "target_spot"],
+        "target_price": ["target_price"],
+        "invalidation_price": ["invalidation_price", "invalidation_spot"],
+        "underlying_price": ["underlying_price", "opt__underlying_price", "live_underlying_price"],
+        "contract_bid": ["contract_bid", "live_contract_bid"],
+        "contract_ask": ["contract_ask", "live_contract_ask"],
+    }
+    for stage in ("options_intelligence", "eil_enriched", "execution", "eod_candidates", "lab"):
+        df = stage_frames.get(stage, pd.DataFrame())
+        if df.empty:
+            continue
+        for field_name, aliases in price_bearing_fields.items():
+            if not any(alias in df.columns for alias in aliases):
+                continue
+            values = _first_nullable_numeric_series(df, aliases)
+            fabricated = values.notna() & values.eq(0.0)
+            if field_name == "contract_bid":
+                # A 0.0 bid is legitimate exactly when the book is empty on the
+                # bid side. Only an unexplained zero is a defect.
+                bid_size = _first_nullable_numeric_series(
+                    df, ["contract_bid_size", "live_contract_bid_size", "bid_size"]
+                )
+                fabricated = fabricated & ~(bid_size.notna() & bid_size.eq(0.0))
+            if not fabricated.any():
+                continue
+            records.append(_semantic_record(
+                stage=stage,
+                path=paths.get(stage, ""),
+                row_count=len(df),
+                field_contract="price_fields_are_null_when_absent",
+                severity="FAIL",
+                status="PRICE_FIELD_ZERO_AS_MISSING",
+                matched_rows=int(fabricated.sum()),
+                sample_tickers=_sample_tickers(df, fabricated),
+                recommendation=(
+                    f"{field_name} is a price: publish null when it is unknown, never 0.0. "
+                    "A fabricated zero passes every downstream comparison silently."
+                ),
+            ))
+
     # Detect a universally lost field when an upstream artefact demonstrably
     # contains it.  Named absence remains valid; silent disappearance does not.
     lineage_contracts = {

@@ -737,15 +737,29 @@ def _normalise_current_contract(row: dict) -> dict:
             "price",
             default=0.0,
         )
-    if _flt(row, "target_price") == 0.0:
-        row["target_price"] = _first_flt(
-            row,
-            "structural_target",
-            "target",
-            "take_profit",
-            "expected_target",
-            default=0.0,
-        )
+    # AVS-FIX-001 W1.1 (QT-D04). This block used to write a literal 0.0 when no
+    # target could be found, and 0.0 is not a price -- it is a fabricated one.
+    # Run 20260905_151448 published `structural_target == 0.0` on 19 Lab rows
+    # (13 CALL, 6 PUT) because this default flowed into `target_price`, and the
+    # Lab's `first()` treats "0.0" as present and copied it into
+    # `structural_target`. A missing target is now null, and the absence is
+    # named in `target_state` so it can never be read as "target of zero".
+    if _optional_flt(row, "target_price") in (None, 0.0):
+        resolved_target = None
+        for key in ("structural_target", "target", "take_profit", "expected_target"):
+            candidate = _optional_flt(row, key)
+            if candidate is not None and candidate > 0.0:
+                resolved_target = candidate
+                break
+        row["target_price"] = resolved_target
+    if _optional_flt(row, "target_price") is None:
+        # STRUCTURAL_TARGET_UNRESOLVED is an existing DataExceptionReason
+        # member; no new state name is introduced.
+        row["target_state"] = "UNRESOLVED"
+        row["target_unresolved_reason"] = "STRUCTURAL_TARGET_UNRESOLVED"
+    else:
+        row["target_state"] = "AVAILABLE"
+        row["target_unresolved_reason"] = ""
     if not _str(row, "sb_campaign"):
         row["sb_campaign"] = _first_str(
             row,
@@ -2258,7 +2272,10 @@ def build_candidate_manifest(
             "direction_contract_reselection_required": direction_info.get("direction_contract_reselection_required", "FALSE"),
             "direction_invalidated_contract_symbol": _str(row, "direction_invalidated_contract_symbol"),
             "signal_price":         _flt(row, "signal_price"),
-            "target_price":         _flt(row, "target_price"),
+            # AVS-FIX-001 W1.1: a missing target publishes as null, never 0.0.
+            "target_price":         _optional_flt(row, "target_price"),
+            "target_state":         _str(row, "target_state") or "UNRESOLVED",
+            "target_unresolved_reason": _str(row, "target_unresolved_reason"),
             "sector":               _str(row, "sector"),
             "sector_etf":           _str(row, "sector_etf"),
             "behaviour_state_key":   _str(row, "behaviour_state_key"),

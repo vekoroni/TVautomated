@@ -383,6 +383,9 @@ FINAL_BOOK_FIELDS = [
     "target_price",
     "target_in_play",
     "structural_target",
+    # AVS-FIX-001 W1.1: an absent target is null and says why, rather than 0.0.
+    "target_state",
+    "target_unresolved_reason",
     "underlying_price",
     "signal_price",
     "scanner_price",
@@ -596,6 +599,52 @@ def first(sig: Dict[str, Any], *keys: str, default: Any = "") -> Any:
     for key in keys:
         value = sig.get(key)
         if not _is_missing(value):
+            return value
+    return default
+
+
+#: Fields whose value is a price. AVS-FIX-001 W1.1 (QT-D04): for these, a
+#: literal zero is not a value — no instrument this pipeline trades is worth
+#: nothing — so a 0.0 is an upstream fabrication standing in for "absent" and
+#: must not be propagated as though it were observed. The one legitimate zero,
+#: a 0.0 bid on a contract with `contract_bid_size == 0`, is handled where the
+#: bid is read, not here.
+PRICE_BEARING_LAB_FIELDS = frozenset({
+    "structural_target",
+    "target_price",
+    "invalidation_price",
+    "invalidation_spot",
+    "underlying_price",
+    "signal_price",
+    "scanner_price",
+    "contract_ask",
+    "breakeven_price",
+})
+
+
+def _is_missing_price(value: Any) -> bool:
+    """Missing, or a fabricated zero standing in for missing."""
+    if _is_missing(value):
+        return True
+    try:
+        return float(str(value).strip()) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
+def first_price(sig: Dict[str, Any], *keys: str, default: Any = "") -> Any:
+    """`first`, but a 0.0 never satisfies a price field.
+
+    AVS-FIX-001 W1.1. Run 20260905_151448 published `structural_target == 0.0`
+    on 19 Lab rows because the EOD engine defaulted a missing target to 0.0 and
+    `first()` accepted "0.0" as present. The producer no longer writes that
+    zero; this is the second line of defence, so a fabricated zero arriving
+    from any other source is still read as absent rather than published as a
+    price of nothing.
+    """
+    for key in keys:
+        value = sig.get(key)
+        if not _is_missing_price(value):
             return value
     return default
 
@@ -2440,12 +2489,16 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         ),
         "invalidation_state": first(sig, "invalidation_state", "ev3_invalidation_state"),
         "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
-        "target_price": first(sig, "target_price", "wbs__wall_price", "structural_target", "opt__structural_target"),
+        # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
+        # so a fabricated 0.0 is treated as absent rather than as a price.
+        "target_price": first_price(sig, "target_price", "wbs__wall_price", "structural_target", "opt__structural_target", "target_spot"),
         "target_in_play": first(sig, "target_in_play", "opt__target_in_play"),
-        "structural_target": first(sig, "structural_target", "opt__structural_target", "wbs__wall_price", "target_price"),
-        "underlying_price": first(sig, "underlying_price", "opt__underlying_price", "live_underlying_price", "current_price", "last_price", "scanner_price", "signal_price"),
-        "signal_price": first(sig, "signal_price", "scanner_price", "underlying_price", "opt__underlying_price"),
-        "scanner_price": first(sig, "scanner_price", "signal_price", "underlying_price", "opt__underlying_price"),
+        "structural_target": first_price(sig, "structural_target", "opt__structural_target", "wbs__wall_price", "target_price", "target_spot"),
+        "target_state": first(sig, "target_state"),
+        "target_unresolved_reason": first(sig, "target_unresolved_reason"),
+        "underlying_price": first_price(sig, "underlying_price", "opt__underlying_price", "live_underlying_price", "current_price", "last_price", "scanner_price", "signal_price"),
+        "signal_price": first_price(sig, "signal_price", "scanner_price", "underlying_price", "opt__underlying_price"),
+        "scanner_price": first_price(sig, "scanner_price", "signal_price", "underlying_price", "opt__underlying_price"),
         "target_zone": first(sig, "target_zone", "wbs__target_zone"),
         "runway_to_target": first(sig, "runway_to_target", "runway_to_wall", "runway_to_wall_pct"),
         "runway_to_wall_pct": first(sig, "runway_to_wall_pct", "runway_to_wall", "runway_to_target"),
@@ -3079,8 +3132,20 @@ def _enrich_lab_extract_rows_from_run_sources(rows: List[Dict[str, Any]], runs_d
                         row["rr_contract_symbol"] = source_contract
                         provenance["rr_contract_symbol"] = source_name
                     break
-        if _is_missing(row.get("structural_target")) and not _is_missing(row.get("target_price")):
+        # AVS-FIX-001 W1.1: a zero target_price must not be copied across as a
+        # structural target; and once the target is known absent, say so.
+        if _is_missing_price(row.get("structural_target")) and not _is_missing_price(
+            row.get("target_price")
+        ):
             row["structural_target"] = row.get("target_price")
+        if _is_missing_price(row.get("structural_target")):
+            row["structural_target"] = ""
+            if _is_missing(row.get("target_state")):
+                row["target_state"] = "UNRESOLVED"
+            if _is_missing(row.get("target_unresolved_reason")):
+                row["target_unresolved_reason"] = "STRUCTURAL_TARGET_UNRESOLVED"
+        if _is_missing_price(row.get("target_price")):
+            row["target_price"] = ""
         if not _is_missing(row.get("ev3_status")):
             row["ev3_data_state"] = "AVAILABLE"
         if not _is_missing(first(row, "trigger_primary", "trigger_codes")):
