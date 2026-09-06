@@ -28,6 +28,42 @@ MONETISABILITY_CALCULATION_VERSION = "expiry-intrinsic-floor-v2-advisory"
 #: rule 9 forbids introducing a second name for one state.
 MONETISABILITY_AUTHORITY = "ADVISORY_SCENARIO_ONLY"
 MONETISABILITY_MIN_PROFIT_PCT = 20.0
+
+# ---------------------------------------------------------------------------
+# AVS-FIX-001 W3.4 (RCA3-D05, DEC-1) — the second, ADVISORY-ONLY valuation.
+#
+# `monetisability_state` values the contract at its EXPIRY INTRINSIC floor:
+# max(target - strike, 0) for a call. That is deliberately conservative and
+# deliberately biased in one direction -- it can only ever understate a
+# position, because it prices away every day of remaining time value. RCA-003
+# D-05 measured the cost of that bias: rows that reach their target with
+# real time value left are labelled NOT_MONETISABLE.
+#
+# This adds a SECOND record beside the intrinsic one. It never replaces it and
+# never touches it. `monetisability_state` remains the floor and remains what
+# every existing consumer reads; `monetisability_state_timevalue` is the
+# Black-Scholes value of the same contract at `structural_target` on the final
+# session of the hold, against the same 20% profit floor.
+#
+# The model is named on every row rather than assumed:
+#   sigma = contract_iv held constant from selection
+#   r = 0, q = 0
+#   T = max(dte - hold_days, 0) / 365
+# Holding IV constant is the assumption most likely to be wrong, and it is
+# stated in `monetisability_timevalue_assumptions` on every row so a reader
+# never has to infer it.
+#
+# AUTHORITY: ADVISORY_ONLY. It changes nothing downstream. It grants no
+# permission, removes none, and the Execution Gate remains the sole writer of
+# `final_action`.
+# ---------------------------------------------------------------------------
+MONETISABILITY_TIMEVALUE_MODEL = "BS_CONST_IV_R0_Q0"
+MONETISABILITY_TIMEVALUE_AUTHORITY = "ADVISORY_ONLY"
+MONETISABILITY_TIMEVALUE_ASSUMPTIONS = (
+    "sigma=contract_iv held constant from selection; r=0; q=0; "
+    "T=max(dte-hold_days,0)/365; European exercise; "
+    "no dividend, no early exercise, no IV path"
+)
 HYDRATION_SCHEMA_VERSION = "selected-contract-hydration-v1"
 
 _OCC_RE = re.compile(
@@ -510,6 +546,139 @@ def recompute_premium_rr(
         "rr_options": round(rr, 6),
         "rr_predicted": round(rr, 6),
         "option_gain_at_target": round(option_gain, 6),
+    }
+
+
+def _black_scholes_value(
+    side: str, spot: float, strike: float, years: float, vol: float
+) -> float | None:
+    """BS value with r = q = 0, degrading to intrinsic at the boundaries.
+
+    At T = 0 or sigma = 0 the formula is undefined and the answer is intrinsic
+    value, which is also the correct lower bound. Reuses the repository's own
+    pricer (scripts/compute_greeks_bs.py) so there is one implementation.
+    """
+
+    intrinsic = max(spot - strike, 0.0) if side == "CALL" else max(strike - spot, 0.0)
+    if years <= 0 or vol <= 0 or spot <= 0 or strike <= 0:
+        return intrinsic
+    try:
+        from scripts.compute_greeks_bs import black_scholes_price
+    except ImportError:                                   # pragma: no cover
+        try:
+            from compute_greeks_bs import black_scholes_price
+        except ImportError:
+            return None
+    try:
+        value = black_scholes_price(
+            side.lower(), spot, strike, years, 0.0, vol
+        )
+    except (ValueError, ZeroDivisionError, OverflowError):
+        return None
+    if value is None or value != value:
+        return None
+    # A European option with r = q = 0 is never worth less than intrinsic.
+    # Enforced rather than assumed, so a pricer edge case cannot produce a
+    # time-value record weaker than the floor it is meant to sit above.
+    return max(float(value), intrinsic)
+
+
+def evaluate_timevalue_monetisability(
+    row: Mapping[str, Any],
+    hydrated: Mapping[str, Any],
+    intrinsic: Mapping[str, Any],
+    *,
+    minimum_profit_pct: float = MONETISABILITY_MIN_PROFIT_PCT,
+) -> Dict[str, Any]:
+    """The advisory time-value companion to `evaluate_long_option_monetisability`.
+
+    AVS-FIX-001 W3.4 (RCA3-D05, DEC-1). Returns only `*_timevalue*` fields, so
+    it can never overwrite the intrinsic record it is handed. If anything
+    needed is missing the state is NOT_EVALUATED with a named reason -- never a
+    guess, and never a fallback to the intrinsic answer, which would make the
+    second column silently duplicate the first.
+    """
+
+    base = {
+        "monetisability_state_timevalue": "NOT_EVALUATED",
+        "monetisability_timevalue_profit_pct": None,
+        "monetisability_timevalue_value_per_share": None,
+        "monetisability_timevalue_model": MONETISABILITY_TIMEVALUE_MODEL,
+        "monetisability_timevalue_authority": MONETISABILITY_TIMEVALUE_AUTHORITY,
+        "monetisability_timevalue_assumptions": MONETISABILITY_TIMEVALUE_ASSUMPTIONS,
+        "monetisability_timevalue_reason": "",
+    }
+
+    if str(intrinsic.get("monetisability_status") or "").upper() != "COMPLETE":
+        return {**base, "monetisability_timevalue_reason": "INTRINSIC_RECORD_INCOMPLETE"}
+
+    direction = _text(intrinsic.get("monetisability_direction")).upper()
+    if direction not in {"CALL", "PUT"}:
+        return {**base, "monetisability_timevalue_reason": "NON_DIRECTIONAL"}
+
+    entry_ask = _number(intrinsic.get("monetisability_entry_ask"))
+    strike = _number(intrinsic.get("monetisability_strike"))
+    target_spot = _number(intrinsic.get("monetisability_structural_target_spot"))
+    if not entry_ask or entry_ask <= 0 or not strike or not target_spot:
+        return {**base, "monetisability_timevalue_reason": "ENTRY_STRIKE_OR_TARGET_MISSING"}
+
+    def _first_present(*sources_and_keys):
+        """First key that is present and numeric.
+
+        An `or` chain cannot be used here: a legitimate hold of 0 sessions and
+        a legitimate DTE of 0 are both falsy, and would fall through to the
+        next candidate or to None.
+        """
+        for source, key in sources_and_keys:
+            value = _number(source.get(key))
+            if value is not None:
+                return value
+        return None
+
+    vol = _first_present(
+        (row, "contract_iv"), (row, "implied_vol"), (hydrated, "contract_iv")
+    )
+    if vol is None or vol <= 0:
+        return {**base, "monetisability_timevalue_reason": "CONTRACT_IV_UNAVAILABLE"}
+    # A percentage-form IV (18.7) is normalised to a decimal (0.187). A real
+    # volatility above 5.0 is not plausible for a listed single name.
+    if vol > 5.0:
+        vol = vol / 100.0
+
+    dte = _first_present((row, "contract_dte"), (row, "dte"), (hydrated, "dte"))
+    if dte is None or dte < 0:
+        return {**base, "monetisability_timevalue_reason": "CONTRACT_DTE_UNAVAILABLE"}
+    hold_days = _first_present(
+        (row, "planned_hold_sessions"), (row, "hold_days"), (row, "hold_sessions")
+    )
+    if hold_days is None or hold_days < 0:
+        return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_UNAVAILABLE"}
+
+    years = max(dte - hold_days, 0.0) / 365.0
+    value = _black_scholes_value(direction, target_spot, strike, years, vol)
+    if value is None:
+        return {**base, "monetisability_timevalue_reason": "PRICER_UNAVAILABLE"}
+
+    profit = value - entry_ask
+    profit_pct = (profit / entry_ask) * 100.0
+    if profit <= 0:
+        state = "NOT_MONETISABLE"
+        reason = "TIMEVALUE_AT_TARGET_BELOW_ENTRY_COST"
+    elif profit_pct < float(minimum_profit_pct):
+        state = "LIMITED"
+        reason = "POSITIVE_TIMEVALUE_PROFIT_BELOW_MINIMUM"
+    else:
+        state = "MONETISABLE"
+        reason = "TIMEVALUE_AT_TARGET_CLEARS_PROFIT_FLOOR"
+
+    return {
+        **base,
+        "monetisability_state_timevalue": state,
+        "monetisability_timevalue_profit_pct": round(profit_pct, 4),
+        "monetisability_timevalue_value_per_share": round(float(value), 6),
+        "monetisability_timevalue_years_to_expiry": round(years, 8),
+        "monetisability_timevalue_iv_used": round(vol, 6),
+        "monetisability_timevalue_reason": reason,
     }
 
 

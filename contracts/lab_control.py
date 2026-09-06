@@ -25,6 +25,9 @@ from contracts.options_liquidity_execution_guard import (
 from contracts.selected_contract_economics import (
     MONETISABILITY_AUTHORITY,
     MONETISABILITY_CALCULATION_VERSION,
+    MONETISABILITY_TIMEVALUE_ASSUMPTIONS,
+    MONETISABILITY_TIMEVALUE_AUTHORITY,
+    MONETISABILITY_TIMEVALUE_MODEL,
     canonical_structure as canonical_selected_structure,
     contract_symbols as selected_contract_symbols_from_value,
     economics_evaluation_id as selected_economics_evaluation_id,
@@ -297,6 +300,15 @@ FINAL_BOOK_FIELDS = [
     "monetisability_target_profit_pct",
     "monetisability_minimum_profit_pct",
     "monetisability_authority",
+    # AVS-FIX-001 W3.4: the advisory time-value companion to the intrinsic
+    # floor. Two columns, never one replacing the other.
+    "monetisability_state_timevalue",
+    "monetisability_timevalue_profit_pct",
+    "monetisability_timevalue_value_per_share",
+    "monetisability_timevalue_model",
+    "monetisability_timevalue_authority",
+    "monetisability_timevalue_assumptions",
+    "monetisability_timevalue_reason",
     "monetisability_valuation_basis",
     "monetisability_hard_execution_authority",
     "ev3_selected_contract_aligned",
@@ -2398,6 +2410,28 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
             sig, "contract_dte_basis", default="XNYS_TRADING_SESSIONS_TO_OCC_EXPIRY"
         ),
         "monetisability_eligible": first(sig, "monetisability_eligible"),
+        # AVS-FIX-001 W3.4 (advisory second valuation; never a permission).
+        "monetisability_state_timevalue": first(
+            sig, "monetisability_state_timevalue", default="NOT_EVALUATED"
+        ),
+        "monetisability_timevalue_profit_pct": first(
+            sig, "monetisability_timevalue_profit_pct"
+        ),
+        "monetisability_timevalue_value_per_share": first(
+            sig, "monetisability_timevalue_value_per_share"
+        ),
+        "monetisability_timevalue_model": first(
+            sig, "monetisability_timevalue_model", default=MONETISABILITY_TIMEVALUE_MODEL
+        ),
+        "monetisability_timevalue_authority": first(
+            sig, "monetisability_timevalue_authority",
+            default=MONETISABILITY_TIMEVALUE_AUTHORITY,
+        ),
+        "monetisability_timevalue_assumptions": first(
+            sig, "monetisability_timevalue_assumptions",
+            default=MONETISABILITY_TIMEVALUE_ASSUMPTIONS,
+        ),
+        "monetisability_timevalue_reason": first(sig, "monetisability_timevalue_reason"),
         # AVS-FIX-001 W1.3 (QT-D07). monetisability_authority was allow-listed
         # in FINAL_BOOK_FIELDS but never assigned here -- the F29 shape -- so it
         # was 0/294 non-null on run 20260905_151448 while the producers were

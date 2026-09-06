@@ -93,6 +93,7 @@ from contracts.selected_contract_economics import (
     MONETISABILITY_CALCULATION_VERSION,
     economics_evaluation_id,
     evaluate_long_option_monetisability,
+    evaluate_timevalue_monetisability,
     parse_occ_symbol,
 )
 from contracts.long_option_policy import evaluate_execution_viability
@@ -988,15 +989,28 @@ def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
             "strike": strike,
         },
     }
-    result = evaluate_long_option_monetisability(
+    economics_row = {
+        "canonical_direction": direction,
+        "target_spot": target,
+    }
+    result = evaluate_long_option_monetisability(economics_row, hydrated)
+    # AVS-FIX-001 W3.4: the advisory time-value companion. It reads the
+    # intrinsic record and returns only *_timevalue* fields, so it cannot
+    # overwrite it. ADVISORY_ONLY -- nothing downstream reads it.
+    timevalue = evaluate_timevalue_monetisability(
         {
-            "canonical_direction": direction,
-            "target_spot": target,
+            **economics_row,
+            "contract_iv": _first_flt(row, "contract_iv", "implied_vol", default=0.0),
+            "contract_dte": _first_flt(row, "contract_dte", "dte", default=-1.0),
+            "planned_hold_sessions": _first_flt(
+                row, "planned_hold_sessions", "hold_days", "hold_sessions", default=-1.0
+            ),
         },
         hydrated,
+        result,
     )
     viability = evaluate_execution_viability(row, hydrated)
-    return {**base, **result, **viability}
+    return {**base, **result, **timevalue, **viability}
 
 def _audit_raw_blank(value) -> bool:
     if value is None:
