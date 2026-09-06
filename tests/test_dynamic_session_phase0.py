@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -29,6 +31,13 @@ from scripts.release_baseline import (
 
 REPO = Path(__file__).resolve().parents[1]
 AUTHORITY_MANIFEST = REPO / "contracts" / "dynamic_session_authority_v1.json"
+RUNTIME_PROFILE = REPO / "contracts" / "dynamic_session_runtime_v1.json"
+RELEASE_MANIFEST = (
+    REPO
+    / "audit"
+    / "ddd_closure_20260905"
+    / "AVS_DDD_CLOSURE_RELEASE_MANIFEST_20260905.json"
+)
 
 
 class DynamicSessionContractTests(unittest.TestCase):
@@ -51,10 +60,78 @@ class DynamicSessionContractTests(unittest.TestCase):
             self.assertTrue(values)
             self.assertEqual(len(values), len(set(values)))
 
-    def test_all_new_features_are_disabled_by_default(self) -> None:
+    # ------------------------------------------------------------------
+    # AVS-FIX-001 W0.2 (QT-D01).
+    #
+    # This block replaced `test_all_new_features_are_disabled_by_default`.
+    # That test called `from_environment({})` — the explicit-mapping branch,
+    # which hard-codes every flag to False — and then claimed the result was
+    # the production default. Production calls `from_environment()` with no
+    # argument and loads the governed runtime profile, where 8 of 9 flags are
+    # on. The assertion itself was true of the branch it exercised, so it is
+    # preserved verbatim below under a name that describes what it actually
+    # proves; the three tests after it pin what production really does.
+    #
+    # T2 classification: OBSOLETE_ASSERTION_CORRECTED (renamed, not weakened —
+    # the original assertion is unchanged and three stronger ones are added).
+    # ------------------------------------------------------------------
+
+    #: The controlled-live-cycle set, pinned by name rather than by count so a
+    #: swap of one capability for another cannot pass silently.
+    _CONTROLLED_LIVE_CYCLE_ENABLED = frozenset({
+        "plan_engine",
+        "completed_thesis_builder",
+        "validation_gate",
+        "profile_lifecycle",
+        "lab_dynamic_view",
+        "interpreter_dynamic_resolver",
+        "decision_outcome_ledger",
+        "completed_profile_stage",
+    })
+
+    def test_explicit_empty_mapping_yields_all_disabled(self) -> None:
         flags = DynamicSessionFeatureFlags.from_environment({})
         self.assertFalse(any(getattr(flags, field) for field in flags.__slots__))
         self.assertEqual(len(FEATURE_FLAG_ENV_VARS), 9)
+
+    def test_production_profile_enables_controlled_set_and_withholds_auto(self) -> None:
+        # An empty environment, so a stray override in the operator's shell
+        # cannot make the profile look like something it is not:
+        # `from_environment()` lets a set variable override the profile, so a
+        # test *of the profile* must start from nothing.
+        with patch.dict(os.environ, {}, clear=True):
+            flags = DynamicSessionFeatureFlags.from_environment()
+        enabled = {field for field in flags.__slots__ if getattr(flags, field)}
+        self.assertEqual(enabled, self._CONTROLLED_LIVE_CYCLE_ENABLED)
+        self.assertEqual(len(enabled), 8)
+        # Autonomous dispatch is the one capability the release withholds.
+        self.assertFalse(flags.auto_dispatcher)
+
+    def test_master_kill_switch_disables_everything(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"AVSHUNTER_DYNAMIC_RELEASE_DISABLE_ALL": "1"},
+            clear=True,
+        ):
+            flags = DynamicSessionFeatureFlags.from_environment()
+        self.assertFalse(any(getattr(flags, field) for field in flags.__slots__))
+
+    def test_runtime_profile_hash_is_pinned_by_release_manifest(self) -> None:
+        """The guard that makes a silent runtime-profile change impossible.
+
+        The profile decides which capabilities are live. Changing it without
+        re-issuing the release manifest would change production behaviour with
+        no reviewable artefact, so the two must move together.
+        """
+        live = hashlib.sha256(RUNTIME_PROFILE.read_bytes()).hexdigest()
+        pinned = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))[
+            "production_files"
+        ]["contracts/dynamic_session_runtime_v1.json"]
+        self.assertEqual(
+            live,
+            pinned,
+            "runtime profile changed without a release manifest update",
+        )
 
     def test_feature_flags_are_independently_reversible(self) -> None:
         for environment_name in FEATURE_FLAG_ENV_VARS:
