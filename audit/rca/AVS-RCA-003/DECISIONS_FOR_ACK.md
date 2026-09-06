@@ -59,3 +59,56 @@ I would take (a): a 5-session hold cannot absorb a 25% round trip, so the tighte
 **Options.** (a) Environment only: matches the transport, keeps the credential out of the repo tree entirely. (b) `.env` only, with the transport changed to load it: single file, but contradicts the transport's explicit isolation property and puts a secret next to the code. (c) Both, with documented precedence: keeps the failure mode alive.
 
 I recommend (a) and have written it into the Part 1 fix. The decision for ACK is whether any *production* component (as opposed to Worker 3) needs `ANTHROPIC_API_KEY` from `.env` — if none does, the line should simply be deleted after rotation.
+
+---
+
+# Answers measured under AVS-FIX-001 (2026-09-06)
+
+## DEC-2 — ANSWERED: widening recovers 128 candidates, of which 127 clear the monetisability floor
+
+DEC-2 asked for a shadow replay before deciding. It has been run:
+`audit/pipeline_map/AVS-IMP-FIX-001/w31_shadow_replay.py`, offline, against the
+stored `OPTION_CHAIN` payloads of run `20260905_151448`. Delta band widened by
+±0.10, DTE band by ±7 days, **spread gate unchanged**. Every recovered contract
+went through the production `compute_trade_economics` and
+`evaluate_long_option_monetisability` — not a reimplementation.
+
+| | Total | CALL | PUT | OTHER |
+|---|---|---|---|---|
+| `BLOCK_SPREAD` rows replayed | 774 | 494 | 280 | 0 |
+| stored chain available | 774 | 494 | 280 | 0 |
+| no candidate even after widening | 646 | 423 | 223 | 0 |
+| **recovered by widening** | **128** | **71** | **57** | 0 |
+| of which pass economics | 128 | 71 | 57 | 0 |
+| of which `MONETISABLE` | 125 | 70 | 55 | 0 |
+| of which `LIMITED` | 2 | 1 | 1 | 0 |
+| of which `NOT_MONETISABLE` | 1 | 0 | 1 | 0 |
+
+**What settles DEC-2.** The concern recorded against widening was that the
+recovered candidates would be *available* but not *good* — S2b measured only a
+contract clearing the spread gate, not one that would pass economics or the
+profit floor. That concern is not borne out: **128 of 128 pass economics and
+127 of 128 clear the monetisability floor**, 125 of them outright
+`MONETISABLE`. On a 294-row book that is a **+43% increase in monetisable
+candidates**, split near-evenly between CALL and PUT, with no OTHER-direction
+row recovered (RG-07 holds — those stand down and never select a contract).
+
+**Two notes on the number.**
+
+* RCA-003 S2b estimated **121** recovered candidates against the flat 25%
+  spread gate. This replay measures **128** against the *tighter* per-horizon
+  band that AVS-FIX-001 W1.6 made authoritative (15% on `1_5d`). The two are
+  consistent: the widening recovers slightly more than S2b projected even under
+  a stricter liquidity rule, because the ±7-day DTE widening reaches expiries
+  S2b's delta-only sensitivity did not.
+* AVS-IMP-FIX-001 anticipated "~195". That figure does not reproduce here.
+  128 is what the stored chains yield under the stated parameters; the
+  discrepancy is recorded rather than reconciled by adjusting the parameters.
+
+**Recommendation.** Proceed with W3.2 and size it for ~128 recovered candidates
+per run, not 195. The remaining 646 blocked tickers are blocked by genuine
+illiquidity, not band tightness — widening does not reach them, and no further
+widening should be attempted on their account.
+
+**This changes nothing on its own.** The replay is a measurement; no band was
+altered and no production path was touched by it.
