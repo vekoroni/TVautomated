@@ -302,6 +302,11 @@ FINAL_BOOK_FIELDS = [
     "monetisability_authority",
     # AVS-FIX-001 W3.4: the advisory time-value companion to the intrinsic
     # floor. Two columns, never one replacing the other.
+    # AVS-FIX-001 W3.5 (THS-001 §4): advisory ranking, never permission.
+    "opportunity_tier",
+    "opportunity_tier_reason",
+    "opportunity_tier_authority",
+    "opportunity_tier_policy_version",
     "monetisability_state_timevalue",
     "monetisability_timevalue_profit_pct",
     "monetisability_timevalue_value_per_share",
@@ -2959,6 +2964,27 @@ def _lab_field_source_priority(field: str) -> List[str]:
     ]
 
 
+def _derive_opportunity_tier(row: Dict[str, Any]) -> Dict[str, Any]:
+    """AVS-FIX-001 W3.5 — the two advisory tier columns.
+
+    Never raises: a tier is a display aid, and a row that cannot be tiered is
+    shown untiered rather than dropped from the book.
+    """
+    try:
+        from contracts.opportunity_tier import tier_fields
+
+        return tier_fields(row)
+    except Exception:
+        from contracts.opportunity_tier import TIER_POLICY_VERSION
+
+        return {
+            "opportunity_tier": "",
+            "opportunity_tier_reason": "TIER_DERIVATION_UNAVAILABLE",
+            "opportunity_tier_authority": "ADVISORY_ONLY",
+            "opportunity_tier_policy_version": TIER_POLICY_VERSION,
+        }
+
+
 def _recompute_governed_lab_fields(row: Dict[str, Any], provenance: Dict[str, str]) -> None:
     """Recompute display-facing derivatives only after all owned sources merge.
 
@@ -3218,6 +3244,9 @@ def _enrich_lab_extract_rows_from_run_sources(rows: List[Dict[str, Any]], runs_d
         if not _is_missing(row.get("garch_method")):
             row["garch_data_state"] = "AVAILABLE"
         _recompute_governed_lab_fields(row, provenance)
+        # AVS-FIX-001 W3.5: derived last, from the governed columns as they
+        # finally stand. Advisory: it orders the book and grants nothing.
+        row.update(_derive_opportunity_tier(row))
         row.pop("_wbs_authoritative_source_present", None)
         row["field_provenance_json"] = _json_safe(provenance)
         row["data_quality_flags"] = _json_safe(row.pop("_lab_data_quality_flags", []))
