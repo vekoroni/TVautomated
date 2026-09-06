@@ -1,0 +1,85 @@
+2026-09-06 16:26:48,420 - INFO - DDD runtime profile: release=AVS-DDD-CLOSURE-20260905 status=CONTROLLED_LIVE_CYCLE sha256=054a76be89b07114 auto=False
+2026-09-06 16:26:50,615 - INFO - Dynamic plan df651c1698ad: requested=BUILD_THESIS; resolved=BUILD_THESIS; session=CLOSED; last_completed=2026-09-04; thesis=none; run=[DISCOVERY, COMPLETED_MARKET_PROFILE, VANGUARD, OPTIONS, PUBLISH_THESIS]; reuse=[CANONICAL_COMPLETED_DATA]; requests<=0; ceiling=EOD_PREPARED
+[ENV] Loaded .env from C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\.env
+[ENV] ✅ POLYGON_API_KEY: set (32 chars)
+[ENV] ✅ MARKETDATA_API_KEY: set (60 chars)
+{
+  "as_of_utc": "2026-09-06T15:26:47Z",
+  "authorised_ticker_worklists": {
+    "COMPLETED_MARKET_PROFILE": [],
+    "DISCOVERY": [],
+    "OPTIONS": [],
+    "PUBLISH_THESIS": [],
+    "VANGUARD": []
+  },
+  "current_session": null,
+  "datasets_required": [
+    {
+      "authorised_tickers": [],
+      "cache_exact_hits": 0,
+      "cache_partial_hits": 0,
+      "dataset_type": "DAILY_OHLCV",
+      "estimate_kind": "EXACT",
+      "estimated_physical_requests": 0,
+      "evidence_state": "COMPLETED_SESSION",
+      "interval_minutes": null,
+      "session_date": "2026-09-04",
+      "worklist_source": "PLAN_INPUT"
+    },
+    {
+      "authorised_tickers": [],
+      "cache_exact_hits": 0,
+      "cache_partial_hits": 0,
+      "dataset_type": "INTRADAY_BAR",
+      "estimate_kind": "CEILING",
+      "estimated_physical_requests": 0,
+      "evidence_state": "COMPLETED_SESSION",
+      "interval_minutes": 5,
+      "session_date": "2026-09-04",
+      "worklist_source": "DISCOVERY_SURVIVORS"
+    },
+    {
+      "authorised_tickers": [],
+      "cache_exact_hits": 0,
+      "cache_partial_hits": 0,
+      "dataset_type": "OPTION_CHAIN",
+      "estimate_kind": "CEILING",
+      "estimated_physical_requests": 0,
+      "evidence_state": "COMPLETED_SESSION",
+      "interval_minutes": null,
+      "session_date": "2026-09-04",
+      "worklist_source": "DISCOVERY_SURVIVORS"
+    }
+  ],
+  "estimated_physical_requests": 0,
+  "estimated_provider_credits": 0,
+  "evidence_cutoff_utc": "2026-09-06T15:26:47Z",
+  "exchange_calendar": "XNYS",
+  "execution_authority_ceiling": "EOD_PREPARED",
+  "existing_thesis_id": null,
+  "expected_outputs": [
+    "completed_thesis",
+    "eod_opportunity_book",
+    "decision_events"
+  ],
+  "invocation_id": "inv_0ed77fd11c75c597d0767408",
+  "last_completed_session": "2026-09-04",
+  "operational_context": "NO_VALID_THESIS",
+  "pipeline_run_id": "20260906_152647",
+  "plan_hash": "df651c1698ad6f87080f4b441acc39a67d6f234e912e9f3a83bbcce2fe319f3f",
+  "requested_action": "BUILD_THESIS",
+  "resolved_action": "BUILD_THESIS",
+  "retry_of_invocation_id": null,
+  "session_state": "CLOSED",
+  "stages_to_reuse": [
+    "CANONICAL_COMPLETED_DATA"
+  ],
+  "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+  ],
+  "supersedes_invocation_id": null
+}

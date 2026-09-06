@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="15" time="25.060" timestamp="2026-09-06T16:25:53.262849+01:00" hostname="DESKTOP-H1QMFF2"><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_active_read_rejects_stale_history_but_refresh_code_can_inspect_it" time="0.207" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_backfill_direct_script_launch_can_import_canonical_data" time="3.492"><failure message="AssertionError: 2 != 0 : [DONE]&#10;Packages dir    : C:\Users\ACKVerissimo\AppData\Local\Temp\tmpjyea8waq\packages&#10;Backfilled OK   : 0&#10;Failed          : 1&#10;Actuarial stamp : OHLCV_OK=0 | OHLCV_FAIL=1&#10;Reasons:&#10;  - NO_SOURCE_ALLOWED: 1">self = &lt;test_cds2_historical_prices.HistoricalPriceDatabaseTests testMethod=test_backfill_direct_script_launch_can_import_canonical_data&gt;
+
+    def test_backfill_direct_script_launch_can_import_canonical_data(self) -&gt; None:
+        self.database.ingest(
+            "BP", recent_bars(), provider="POLYGON", source_kind="PROVIDER_FETCH"
+        )
+        packages = self.temp_path / "packages"
+        packages.mkdir()
+        package_path = packages / "BP.package.json"
+        package_path.write_text(
+            json.dumps({"ticker": "BP", "run_id": "CDS2_IMPORT_TEST"}),
+            encoding="utf-8",
+        )
+        (packages / "index.json").write_text(
+            json.dumps({
+                "packages": [{
+                    "ticker": "BP",
+                    "status": "BUILT",
+                    "package_path": str(package_path),
+                }]
+            }),
+            encoding="utf-8",
+        )
+    
+        environment = os.environ.copy()
+        environment.pop("PYTHONPATH", None)
+        environment.update({
+            "AVSHUNTER_CANONICAL_DATA_ENABLED": "1",
+            "AVSHUNTER_CANONICAL_WRITE_THROUGH": "1",
+            "AVSHUNTER_CDS2_OHLCV_MODE": "ACTIVE",
+            "AVSHUNTER_HISTORICAL_PRICE_DB": str(self.path),
+        })
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "backfill_timeseries_into_packages.py"),
+                "--packages-dir", str(packages),
+                "--min-bars", "2",
+            ],
+            cwd=self.temp_path,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    
+&gt;       self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+E       AssertionError: 2 != 0 : [DONE]
+E       Packages dir    : C:\Users\ACKVerissimo\AppData\Local\Temp\tmpjyea8waq\packages
+E       Backfilled OK   : 0
+E       Failed          : 1
+E       Actuarial stamp : OHLCV_OK=0 | OHLCV_FAIL=1
+E       Reasons:
+E         - NO_SOURCE_ALLOWED: 1
+
+tests\test_cds2_historical_prices.py:498: AssertionError</failure></testcase><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_direct_orchestrator_evening_command_activates_cds_runtime" time="6.636" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_incremental_adapter_fetches_tail_once_then_reuses_database" time="0.295" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_initial_fetch_inserts_and_replay_does_not_duplicate" time="0.222" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_new_tail_is_appended_and_price_revision_is_audited" time="0.273" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_partial_session_is_stored_but_excluded_from_default_reads" time="0.193" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_production_launchers_enable_write_through_and_active_reads" time="0.068" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_production_launchers_fall_back_to_a_usable_python_and_validate_flags" time="6.939" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_provider_cannot_persist_bar_after_authorised_completed_session" time="0.703" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_schema_and_health_are_valid" time="0.252" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_shadow_observation_never_replaces_legacy_frame" time="0.325" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_short_canonical_history_fetches_full_range_not_empty_tail" time="0.684" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_stale_canonical_backfill_fetches_only_tail_then_reuses_full_database" time="0.564" /><testcase classname="tests.test_cds2_historical_prices.HistoricalPriceDatabaseTests" name="test_write_through_is_off_by_default_and_active_when_explicit" time="0.207" /></testsuite></testsuites>

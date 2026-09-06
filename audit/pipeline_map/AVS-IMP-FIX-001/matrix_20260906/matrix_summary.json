@@ -1,0 +1,1486 @@
+{
+ "item1_compileall": {
+  "rc": 1,
+  "error_lines": 4,
+  "errors": [
+   "*** Error compiling '.\\\\audit\\\\ddd_closure_testdeps\\\\py.py'...",
+   "PermissionError: [Errno 13] Permission denied: '.\\\\audit\\\\ddd_closure_testdeps\\\\py.py'",
+   "*** Error compiling '.\\\\audit\\\\ddd_readiness_tmp\\\\pydeps\\\\py.py'...",
+   "PermissionError: [Errno 13] Permission denied: '.\\\\audit\\\\ddd_readiness_tmp\\\\pydeps\\\\py.py'"
+  ],
+  "seconds": 128.0
+ },
+ "item2_entrypoint_imports": {
+  "intelligent_orchestrator": {
+   "rc": 0,
+   "import_ok": true,
+   "seconds": 0.7,
+   "last_stderr": ""
+  },
+  "morning_gate": {
+   "rc": 0,
+   "import_ok": true,
+   "seconds": 0.7,
+   "last_stderr": ""
+  },
+  "intelligence_lab": {
+   "rc": 0,
+   "import_ok": true,
+   "seconds": 1.4,
+   "last_stderr": ""
+  },
+  "pipeline_interpreter": {
+   "rc": 0,
+   "import_ok": true,
+   "seconds": 0.3,
+   "last_stderr": ""
+  }
+ },
+ "item3_cds_selftest": {
+  "skipped": true,
+  "reason": "AVS-IMP-FIX-001 binding rule 1 forbids the implementing session from invoking --evening in any form, self-test flag included; the tester runs the matrix without this flag."
+ },
+ "items45_pytest": {
+  "file_count": 159,
+  "totals": {
+   "tests": 1762,
+   "failures": 25,
+   "errors": 0,
+   "skipped": 4,
+   "passed": 1733
+  },
+  "per_file": {
+   "test_actuarial_cache_v7_contract": {
+    "rc": 0,
+    "seconds": 5.2,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_actuarial_v7_cutover_paths": {
+    "rc": 0,
+    "seconds": 7.1,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_actuarial_v7_database_contract": {
+    "rc": 0,
+    "seconds": 5.2,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_audit_remediation_guards": {
+    "rc": 0,
+    "seconds": 2.3,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_avs_fix_001_cli_hygiene": {
+    "rc": 0,
+    "seconds": 2.9,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_avs_fix_001_w11_price_null_never_zero": {
+    "rc": 0,
+    "seconds": 6.0,
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 31
+   },
+   "test_avs_fix_001_w12_eil_telemetry": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 12
+   },
+   "test_avs_fix_001_w13_monetisability_authority": {
+    "rc": 0,
+    "seconds": 4.6,
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 18
+   },
+   "test_avs_fix_001_w14_profile_guard": {
+    "rc": 0,
+    "seconds": 179.2,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_avs_fix_001_w15_contract_dte": {
+    "rc": 0,
+    "seconds": 4.8,
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 19
+   },
+   "test_avs_fix_001_w16_spread_authority": {
+    "rc": 0,
+    "seconds": 8.1,
+    "tests": 56,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 56
+   },
+   "test_avs_fix_001_w33_contract_rejection_taxonomy": {
+    "rc": 0,
+    "seconds": 7.5,
+    "tests": 33,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 33
+   },
+   "test_avs_fix_001_w34_timevalue_monetisability": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 37
+   },
+   "test_avs_fix_001_w35_opportunity_tier": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 95,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 95
+   },
+   "test_avs_fix_001_w39_outcome_maturation_stage": {
+    "rc": 0,
+    "seconds": 8.8,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 16
+   },
+   "test_avs_sd003_authority_boundaries": {
+    "rc": 0,
+    "seconds": 8.7,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_avs_sd003_blocker_closure": {
+    "rc": 0,
+    "seconds": 5.9,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_avs_sd003_marketdata_adapter": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_big_bang_phase_6_7": {
+    "rc": 0,
+    "seconds": 6.9,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_bond_macro_contract": {
+    "rc": 0,
+    "seconds": 3.1,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_build_macro_json_market_data": {
+    "rc": 0,
+    "seconds": 18.1,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_canonical_data_system": {
+    "rc": 0,
+    "seconds": 13.3,
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 21
+   },
+   "test_cds2_historical_prices": {
+    "rc": 1,
+    "seconds": 27.6,
+    "tests": 15,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_cds4_option_chain_store": {
+    "rc": 0,
+    "seconds": 10.6,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_cycle2_governance": {
+    "rc": 0,
+    "seconds": 6.2,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_ddd_decision_outcome": {
+    "rc": 0,
+    "seconds": 6.9,
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 18
+   },
+   "test_ddd_execution_authority": {
+    "rc": 0,
+    "seconds": 6.0,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 16
+   },
+   "test_ddd_market_evidence": {
+    "rc": 0,
+    "seconds": 5.1,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_ddd_market_structure_evidence": {
+    "rc": 0,
+    "seconds": 4.7,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_ddd_morning_validation_integration": {
+    "rc": 0,
+    "seconds": 6.0,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_ddd_option_contract_liquidity": {
+    "rc": 0,
+    "seconds": 5.7,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_ddd_production_integration": {
+    "rc": 0,
+    "seconds": 5.9,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_ddd_run_planning": {
+    "rc": 0,
+    "seconds": 5.7,
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10
+   },
+   "test_ddd_session_authority": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_ddd_thesis_direction": {
+    "rc": 0,
+    "seconds": 5.5,
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 11
+   },
+   "test_direction_geometry_semantic_repairs": {
+    "rc": 0,
+    "seconds": 11.9,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_direction_governance_contract": {
+    "rc": 0,
+    "seconds": 18.1,
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 17
+   },
+   "test_directional_bias_fixes": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 19
+   },
+   "test_dynamic_session_phase0": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 16
+   },
+   "test_dynamic_session_phase1": {
+    "rc": 0,
+    "seconds": 8.0,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_dynamic_session_phase2": {
+    "rc": 0,
+    "seconds": 13.3,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_dynamic_session_phase3": {
+    "rc": 0,
+    "seconds": 11.4,
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10
+   },
+   "test_dynamic_session_phase4": {
+    "rc": 0,
+    "seconds": 11.6,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_dynamic_session_phase5": {
+    "rc": 0,
+    "seconds": 5.9,
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 19
+   },
+   "test_dynamic_session_phase6": {
+    "rc": 0,
+    "seconds": 7.9,
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 12
+   },
+   "test_dynamic_session_phase7": {
+    "rc": 0,
+    "seconds": 9.1,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_dynamic_session_phase8": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_empirical_option_ev": {
+    "rc": 0,
+    "seconds": 2.9,
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 20
+   },
+   "test_eod_options_research_handoff": {
+    "rc": 0,
+    "seconds": 8.1,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_ev3_authority": {
+    "rc": 0,
+    "seconds": 7.5,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_ev3_cache_promotion": {
+    "rc": 0,
+    "seconds": 4.7,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_ev3_calibration_report": {
+    "rc": 0,
+    "seconds": 4.8,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_ev3_monetisation_authority": {
+    "rc": 0,
+    "seconds": 4.1,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_ev3_options_handoff": {
+    "rc": 0,
+    "seconds": 12.3,
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 38
+   },
+   "test_ev3_orchestrator_order": {
+    "rc": 0,
+    "seconds": 2.6,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_ev3_shadow_phase": {
+    "rc": 0,
+    "seconds": 9.5,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_ev3_stage0": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 13
+   },
+   "test_ev_engine_v3": {
+    "rc": 0,
+    "seconds": 6.3,
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 20
+   },
+   "test_execution_monetisability_gate": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_external_intel_review_lane": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_garch_regime_fix": {
+    "rc": 0,
+    "seconds": 4.9,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_governed_states": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_handoff_conflict_guard": {
+    "rc": 0,
+    "seconds": 4.4,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_handoff_contract": {
+    "rc": 0,
+    "seconds": 5.1,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_handoff_contract_audit": {
+    "rc": 0,
+    "seconds": 6.7,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_intelligence_lab_strict_json": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_interpreter_macro_advisory_handoff": {
+    "rc": 0,
+    "seconds": 5.2,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_lab_cache_signature": {
+    "rc": 0,
+    "seconds": 5.8,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_lab_export_mapper_js": {
+    "rc": 0,
+    "seconds": 5.9,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_lab_governed_handoff": {
+    "rc": 0,
+    "seconds": 4.6,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_lab_journal_handoff": {
+    "rc": 0,
+    "seconds": 7.8,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_lab_monetisation_gate": {
+    "rc": 0,
+    "seconds": 3.5,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_lab_qa_audit_harness": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_lab_ranking_basis_export": {
+    "rc": 0,
+    "seconds": 82.0,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_lab_strangle_direction": {
+    "rc": 0,
+    "seconds": 11.7,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_level1_20260512_regressions": {
+    "rc": 0,
+    "seconds": 10.7,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_long_option_policy": {
+    "rc": 0,
+    "seconds": 4.7,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_low_risk_pipeline_repairs": {
+    "rc": 0,
+    "seconds": 3.3,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_macro_enrichment_delta": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 15
+   },
+   "test_macro_enrichment_discovery_options": {
+    "rc": 0,
+    "seconds": 8.1,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_macro_layer_fixes": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_macro_quant_packet": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 14
+   },
+   "test_manual_ticker_upload": {
+    "rc": 0,
+    "seconds": 4.3,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_market_physics": {
+    "rc": 0,
+    "seconds": 5.0,
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10
+   },
+   "test_morning_gate_authority": {
+    "rc": 0,
+    "seconds": 2.7,
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 20
+   },
+   "test_morning_gate_bond_freshness": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_morning_gate_cds_bootstrap": {
+    "rc": 0,
+    "seconds": 5.0,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_morning_gate_contract_repair": {
+    "rc": 0,
+    "seconds": 6.7,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_morning_handoff_finalizer": {
+    "rc": 0,
+    "seconds": 6.4,
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 12
+   },
+   "test_morning_market_structure_restart": {
+    "rc": 0,
+    "seconds": 2.3,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_morning_thesis_validator": {
+    "rc": 5,
+    "seconds": 2.2,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 0
+   },
+   "test_msi_agent1_data_foundation": {
+    "rc": 0,
+    "seconds": 6.5,
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 12
+   },
+   "test_msi_handoff_materializer": {
+    "rc": 0,
+    "seconds": 6.0,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_msi_identity_preflight": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_msi_interpreter_handoff": {
+    "rc": 0,
+    "seconds": 5.7,
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10
+   },
+   "test_msi_market_structure_identity": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_msi_morning_capture": {
+    "rc": 0,
+    "seconds": 2.3,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_msi_options_chain_v2_integration": {
+    "rc": 0,
+    "seconds": 7.2,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_msi_orchestrator_run_meta": {
+    "rc": 0,
+    "seconds": 2.7,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_msi_production_readiness": {
+    "rc": 0,
+    "seconds": 2.8,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_msi_provider_fixtures": {
+    "rc": 0,
+    "seconds": 4.3,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_msi_quote_and_size_lineage": {
+    "rc": 0,
+    "seconds": 5.0,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_msi_runtime": {
+    "rc": 0,
+    "seconds": 2.2,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_msi_stage_worklist": {
+    "rc": 0,
+    "seconds": 6.1,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_normalise_macro_contract_scores": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_olm_execution_authority": {
+    "rc": 0,
+    "seconds": 3.3,
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 27
+   },
+   "test_option_liquidity_lifecycle": {
+    "rc": 0,
+    "seconds": 14.7,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 16
+   },
+   "test_options_crossed_quote_integration": {
+    "rc": 0,
+    "seconds": 7.2,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_options_greek_backfill_unit": {
+    "rc": 0,
+    "seconds": 5.8,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_options_liquidity_lifecycle": {
+    "rc": 0,
+    "seconds": 2.3,
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 36
+   },
+   "test_options_liquidity_morning_lab": {
+    "rc": 0,
+    "seconds": 3.1,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_options_research_contract": {
+    "rc": 0,
+    "seconds": 8.9,
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 11
+   },
+   "test_options_session_exception_quarantine": {
+    "rc": 0,
+    "seconds": 7.5,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_phantom_weekly_maintenance": {
+    "rc": 0,
+    "seconds": 3.9,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_pipeline_interpreter_automation_v2": {
+    "rc": 0,
+    "seconds": 3.0,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_pipeline_interpreter_automation_v2_adapter": {
+    "rc": 0,
+    "seconds": 3.1,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_pipeline_interpreter_automation_v2_e2e_orchestrator": {
+    "rc": 0,
+    "seconds": 2.7,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_automation_v2_evidence_package": {
+    "rc": 0,
+    "seconds": 3.8,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_automation_v2_lab_batch": {
+    "rc": 0,
+    "seconds": 2.8,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_pipeline_interpreter_automation_v2_lab_structured": {
+    "rc": 0,
+    "seconds": 2.5,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_automation_v2_package_publisher": {
+    "rc": 0,
+    "seconds": 2.7,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_pipeline_interpreter_automation_v2_package_shadow": {
+    "rc": 0,
+    "seconds": 2.8,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_pipeline_interpreter_automation_v2_phase3": {
+    "rc": 0,
+    "seconds": 2.8,
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 9
+   },
+   "test_pipeline_interpreter_automation_v2_phase4": {
+    "rc": 0,
+    "seconds": 4.0,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_pipeline_interpreter_automation_v2_phase5": {
+    "rc": 0,
+    "seconds": 2.9,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_pipeline_interpreter_automation_v2_production_deploy": {
+    "rc": 0,
+    "seconds": 2.7,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_automation_v2_report": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_pipeline_interpreter_capture_v1": {
+    "rc": 0,
+    "seconds": 3.0,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_pipeline_interpreter_capture_v1_attended_workflow": {
+    "rc": 0,
+    "seconds": 3.0,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_capture_v1_batch": {
+    "rc": 0,
+    "seconds": 24.7,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "test_pipeline_interpreter_capture_v1_crop": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_pipeline_interpreter_capture_v1_dpi": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_pipeline_interpreter_capture_v1_market_screen": {
+    "rc": 0,
+    "seconds": 25.0,
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 11
+   },
+   "test_pipeline_interpreter_capture_v1_navigation": {
+    "rc": 0,
+    "seconds": 4.7,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 7
+   },
+   "test_pipeline_interpreter_capture_v1_noii_cross": {
+    "rc": 0,
+    "seconds": 6.5,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_pipeline_interpreter_capture_v1_ticker": {
+    "rc": 0,
+    "seconds": 13.2,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_pipeline_interpreter_capture_v1_ticker_batch": {
+    "rc": 0,
+    "seconds": 49.1,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_pipeline_interpreter_capture_v1_ticker_market_screen": {
+    "rc": 0,
+    "seconds": 61.2,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 8
+   },
+   "test_pipeline_interpreter_lab_authority": {
+    "rc": 0,
+    "seconds": 4.1,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_pipeline_interpreter_trusted_source": {
+    "rc": 0,
+    "seconds": 5.0,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "test_pre_evening_production_repairs": {
+    "rc": 0,
+    "seconds": 7.0,
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 23
+   },
+   "test_production_readiness_guardrails": {
+    "rc": 0,
+    "seconds": 5.2,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "test_pse_retired_authority": {
+    "rc": 0,
+    "seconds": 4.3,
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10
+   },
+   "test_selected_contract_economics": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 13
+   },
+   "test_trigger_layer_governance": {
+    "rc": 0,
+    "seconds": 2.4,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 5
+   },
+   "test_vanguard_production_fixes": {
+    "rc": 0,
+    "seconds": 5.5,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_wall_break_missing_pcr": {
+    "rc": 0,
+    "seconds": 2.8,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1
+   },
+   "test_ws2_trigger_spine": {
+    "rc": 0,
+    "seconds": 6.3,
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 6
+   },
+   "test_wyckoff_phase_validator": {
+    "rc": 0,
+    "seconds": 6.3,
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4
+   },
+   "qa__test_numeric_fail_closed": {
+    "rc": 0,
+    "seconds": 3.1,
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 25
+   },
+   "qa__test_p1_p10_adversarial_probes": {
+    "rc": 0,
+    "seconds": 4.8,
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 12
+   },
+   "qa__test_p4_nan_rr_bypass": {
+    "rc": 0,
+    "seconds": 3.4,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+   },
+   "qa__test_s9_live_provider_permission_promotion": {
+    "rc": 0,
+    "seconds": 3.3,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "rca__test_morning_gate_terminal_thesis_ordering": {
+    "rc": 0,
+    "seconds": 7.2,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+   },
+   "msi__test_computation": {
+    "rc": 0,
+    "seconds": 6.5,
+    "tests": 33,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 32
+   },
+   "msi__test_flow": {
+    "rc": 1,
+    "seconds": 19.0,
+    "tests": 20,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 17
+   },
+   "msi__test_functionality": {
+    "rc": 1,
+    "seconds": 86.2,
+    "tests": 83,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 78
+   },
+   "msi__test_logic": {
+    "rc": 1,
+    "seconds": 140.8,
+    "tests": 95,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 90
+   },
+   "msi__test_regression": {
+    "rc": 1,
+    "seconds": 193.7,
+    "tests": 81,
+    "failures": 13,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 68
+   }
+  }
+ }
+}

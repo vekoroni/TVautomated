@@ -1,0 +1,1 @@
+note: per-file JUnit XMLs live at ../xml/matrix/ (moved there per AVS-IMP-FIX-001 Part G, which specifies audit/pipeline_map/AVS-IMP-FIX-001/xml/)

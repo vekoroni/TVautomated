@@ -1,0 +1,25 @@
+AVS-FIX-001 Part G - plan-only dispatch, filesystem snapshot diff
+================================================================
+invocation : intelligent_orchestrator.py --evening --plan-only --as-of-utc 2026-09-06T15:26:47.192354+00:00
+exit code  : 0
+plan_hash  : df651c1698ad6f87080f4b441acc39a67d6f234e912e9f3a83bbcce2fe319f3f
+run id     : 20260906_152647 (planned, never created on disk)
+resolved   : BUILD_THESIS, ceiling EOD_PREPARED, session 2026-09-04
+estimated physical requests: 0
+
+Snapshot over data/output/runs, data/output/run_plans, data/canonical,
+dropbox and logs - 52,754 files, size and mtime:
+files before : 52754
+files after  : 52754
+added        : 0
+removed      : 0
+modified     : 1
+  MODIFIED: logs/orchestrator.log
+SNAPSHOT DIFF NOT EMPTY - the invocation wrote to disk
+
+The one modified path is logs/orchestrator.log: the logger's own file,
+appended to by the act of logging the plan. It is not run state.
+Nothing under data/output/runs/, data/output/run_plans/, data/canonical/
+or dropbox/ changed - no run directory was created, no plan record was
+persisted (persist_dispatch_plan is downstream of the --plan-only
+return), and no canonical database was written.

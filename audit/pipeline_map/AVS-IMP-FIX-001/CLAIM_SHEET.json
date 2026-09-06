@@ -1,0 +1,416 @@
+{
+  "document": "AVS-IMP-FIX-001 claim sheet",
+  "generated_utc": "2026-09-06T15:38:38.105031+00:00",
+  "branch": "avs-fix-001",
+  "baseline_tag": "avs-baseline-20260906",
+  "branch_head": "0498df73cc83d2ec9cca6f7523f80975334c2c7d",
+  "self_certified": false,
+  "note": "Nothing here is CLOSED. Per AVS-IMP-FIX-001 \u00a70 rule 10 that status is assigned by the tester after a run artefact shows the item firing.",
+  "status_counts": {
+    "BLOCKED": 1,
+    "IMPLEMENTED \u2014 OFFLINE VERIFIED": 9,
+    "DEFERRED \u2014 operator": 1,
+    "IMPLEMENTED \u2014 AWAITING RUN": 10
+  },
+  "items": [
+    {
+      "item": "W4.1",
+      "status": "BLOCKED",
+      "commit": "dcbb73d",
+      "files_changed": [
+        "audit/ops/verify_anthropic_key.py",
+        ".env"
+      ],
+      "backup": "backups/avs_fix_001_PartA_dotenv_prechange_20260906_143528",
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "verify_anthropic_key_result_probe1_20260906.json: local facts all pass (user scope present len=108 prefix_ok, machine scope absent, process==user, dotenv line removed, .env.txt absent); models_status=400 invalid_request_error; script exit 1",
+      "blocked_reason": "GET /v1/models returned HTTP 400 invalid_request_error, not 401. The script as specified discarded error.message, so the single request permitted by binding rule 1 produced a status with no explanation. The message-capture defect is fixed but the probe budget is spent. ACK must authorise one further probe (--authorised-reprobe). This gates Monday's macro build, which reads the same variable."
+    },
+    {
+      "item": "W0.1",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": [
+        "dcbb73d",
+        "5e68aca",
+        "f6b6ab4"
+      ],
+      "files_changed": [
+        ".gitignore",
+        "intelligent_orchestrator.py",
+        "tests/test_msi_orchestrator_run_meta.py"
+      ],
+      "backup": "backups/avs_fix_001_W0.1_prechange_20260906_134210",
+      "tests_added": 3,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "AWAITING RUN. check_run_gates on 20260905_151448 reports DDD-RUN-META-GIT-DESCRIBE=ABSENT (the pre-fix state). git status --porcelain empty; tag avs-baseline-20260906; runtime profile 054a76be\u2026 matches the release manifest."
+    },
+    {
+      "item": "W0.2",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "5465790",
+      "files_changed": [
+        "tests/test_dynamic_session_phase0.py"
+      ],
+      "backup": "backups/avs_fix_001_W0.2_prechange_20260906_134733",
+      "tests_added": 3,
+      "existing_tests_edited": [
+        {
+          "file": "tests/test_dynamic_session_phase0.py",
+          "classification": "OBSOLETE_ASSERTION_CORRECTED",
+          "note": "test_all_new_features_are_disabled_by_default renamed; original assertion preserved verbatim"
+        }
+      ],
+      "run_artefact_evidence": "16 passed offline; no run artefact needed (test integrity)"
+    },
+    {
+      "item": "W0.3",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "1c8429a",
+      "files_changed": [
+        "audit/ops/AVS-OPS-001/scripts/run_matrix.py",
+        "tests/msi/test_computation.py",
+        "tests/msi/test_flow.py",
+        "tests/msi/test_functionality.py",
+        "tests/fixtures/marketdata/*.json (5)",
+        "audit/ops/verify_anthropic_key.py"
+      ],
+      "backup": [
+        "backups/avs_fix_001_W0.3_prechange_20260906_135228",
+        "backups/avs_fix_001_W0.3b_prechange_20260906_135630",
+        "backups/avs_fix_001_W0.3c_prechange_20260906_140250"
+      ],
+      "tests_added": 1,
+      "existing_tests_edited": [
+        {
+          "file": "tests/msi/test_computation.py",
+          "classification": "FIXTURE_CORRECTED + OBSOLETE_ASSERTION_CORRECTED",
+          "note": "c07 label assertion corrected to the fixture's real cadence; the NOT_IMPLEMENTED absence test retired"
+        },
+        {
+          "file": "tests/msi/test_flow.py",
+          "classification": "FIXTURE_CORRECTED",
+          "note": "Sunday session date 2026-08-30 -> Friday 2026-08-28"
+        },
+        {
+          "file": "tests/msi/test_functionality.py",
+          "classification": "FIXTURE_CORRECTED",
+          "note": "same; the deliberately-Sunday CLOSED-state instant untouched"
+        }
+      ],
+      "run_artefact_evidence": "tests/msi 34 failures -> 24, all 24 filed with root cause in W0.3_msi_matrix_defects.md. test_logic.py ran to completion (95 tests, 7m17s), budget-blocked in QT-001. XMLs under xml/w03_msi_{before,final}/"
+    },
+    {
+      "item": "W0.4",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": [
+        "6757893",
+        "0498df7"
+      ],
+      "files_changed": [
+        "audit/ddd_closure_20260905/AVS_DDD_CLOSURE_CLAIM_SHEET_20260905.md",
+        "audit/pipeline_map/AVS-IMP-FIX-001/test_edits_register.csv",
+        "audit/pipeline_map/AVS-AR-003_P0_RECERTIFICATION_v2_20260906.md",
+        ".gitignore"
+      ],
+      "backup": [
+        "backups/avs_fix_001_W0.4_prechange_20260906_152201",
+        "backups/avs_fix_001_QT-D10_retroactive_pre-tidy-20260904_20260906_152146"
+      ],
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "17/17 test files classified: 12 UNRELATED, 4 OBSOLETE_ASSERTION_CORRECTED, 1 FIXTURE_CORRECTED, 0 PROTECTION_WEAKENED. P0 recertification v2 issued with a run_artefact_evidence column; P0-02 and P0-05 DOWNGRADED, P0-08 OPEN. QT-D10 mitigated, not closed."
+    },
+    {
+      "item": "W0.5",
+      "status": "DEFERRED \u2014 operator",
+      "commit": null,
+      "files_changed": [],
+      "backup": null,
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "ACK's item (pin the venv base interpreter)"
+    },
+    {
+      "item": "W0.6+W0.7",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "38232a8",
+      "files_changed": [
+        "intelligent_orchestrator.py",
+        "audit/pipeline_map/AVS-IMP-FIX-001/QT-D05_arbitration.md"
+      ],
+      "backup": "backups/avs_fix_001_W0.6_prechange_20260906_140537",
+      "tests_added": 7,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "QT-D05 closed NOT_A_DEFECT: tests/msi test_c06 executed (1 passed), pinning the disputed tie-break. --data-mode warning verified not to fire on the plan-only dispatch (which passes no --data-mode; default is AUTO)."
+    },
+    {
+      "item": "W1.1",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "4a774e7",
+      "files_changed": [
+        "eod_candidate_engine.py",
+        "contracts/lab_control.py",
+        "handoff_contract_audit.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.1_prechange_20260906_141101",
+      "tests_added": 14,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "PARTIAL. New rule PRICE_FIELD_ZERO_AS_MISSING fires on the unremediated 20260905_151448 Lab book: severity FAIL, 19 rows (13 CALL, 6 PUT), fields structural_target and target_price, sample tickers AEE,AVA,BEPC,CPRI,CWEN,EXK,G,GIII,LZB,MASS,MD,NI. The producer fix awaits a run - no replay harness exists."
+    },
+    {
+      "item": "W1.2",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "c72f312",
+      "files_changed": [
+        "execution_intelligence_runner.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.2_prechange_20260906_141601",
+      "tests_added": 12,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "PARTIAL. Applying the suppression to 20260905_151448 eil_enriched (1,461 rows): contradictions 187 -> 0; 1,121 BLOCKED preserved; 153 legitimate EXECUTE untouched; TTEK suppressed with both reasons. Clears MVP \u00a76 kill criterion 6 on the next run."
+    },
+    {
+      "item": "W1.3",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "a062ef0",
+      "files_changed": [
+        "contracts/selected_contract_economics.py",
+        "contracts/lab_control.py",
+        "eod_candidate_engine.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.3_prechange_20260906_141949",
+      "tests_added": 7,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "check_run_gates AG-12/13:monetisability_authority = 0/294 FAIL on 20260905_151448. Target 294/294 on Monday's run.",
+      "deviation": "Register asks for ADVISORY_ONLY; value stays ADVISORY_SCENARIO_ONLY (AVS-SD-002 Phase 2 member). Rule 9 forbids a second name for one state."
+    },
+    {
+      "item": "W1.4",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "ab52833",
+      "files_changed": [
+        "scripts/build_completed_market_profiles.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.4_prechange_20260906_142207",
+      "tests_added": 7,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "check_run_gates reports DDD-PROFILE-USABLE-RATIO and DDD-PROFILE-GUARD NOT_EVALUATED (pre-W1.4 summary format) on 20260905_151448 - the fields did not exist. tests/test_dynamic_session_phase4.py 14 passed unchanged."
+    },
+    {
+      "item": "W1.5",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "d52461e",
+      "files_changed": [
+        "canonical_data/session_clock.py",
+        "eod_candidate_engine.py",
+        "contracts/lab_control.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.5_prechange_20260906_142752",
+      "tests_added": 14,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "Column absent from 20260905_151448 (did not exist). check_run_gates carries a FIX-W1.5:contract_dte row for Monday."
+    },
+    {
+      "item": "W1.6",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "800c03b",
+      "files_changed": [
+        "scripts/avshunter_options_intelligence.py"
+      ],
+      "backup": "backups/avs_fix_001_W1.6_prechange_20260906_143206",
+      "tests_added": 15,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "Leak measured on 20260905_151448 (filter: spread_pct present, <= flat 25%, > the row's horizon band, all 1_5d): Lab book 36 rows, 24 EXECUTABLE_QUOTE, 23 also MONETISABLE; Options 151 rows, 118 non-STAND_DOWN (97 ARMED, 21 EXECUTE). Baseline 20260904_004338: 28 rows, 0 EXECUTABLE_QUOTE.",
+      "deviation": "AVS-IMP-FIX-001 says 3 leaking rows. Three does not reproduce under any filter constructed here. For arbitration."
+    },
+    {
+      "item": "PartD",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "a3f06b1",
+      "files_changed": [
+        "audit/ops/check_run_gates.py",
+        "audit/ops/check_warm_rerun.py"
+      ],
+      "backup": null,
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "check_run_gates reproduces all 20 rows of B_20260905_151448.csv exactly, including three-direction splits (AG-10 191 CALL=133/PUT=58; RG-07 0 over STRANGLE=129/UNRESOLVED=40; RG-02 294 CALL=190/PUT=104). On 20260904_004338 it shows the baseline failures (AG-01 1068, AG-02 1551, AG-05 43, AG-08 23, AG-08b 24, AG-09 36, AG-07 13). Exit 1 on both. Read-only verified: the run's diagnostics/ is untouched."
+    },
+    {
+      "item": "W3.1",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "c12ce01",
+      "files_changed": [
+        "audit/pipeline_map/AVS-IMP-FIX-001/w31_shadow_replay.py",
+        "audit/rca/AVS-RCA-003/DECISIONS_FOR_ACK.md"
+      ],
+      "backup": "backups/avs_fix_001_W3.1_prechange_20260906_145506",
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "w31_shadow_replay_20260905_151448.json: 774 BLOCK_SPREAD rows (494 CALL, 280 PUT, 0 OTHER), 774 with a stored chain, 646 recover nothing, 128 recovered (71 CALL, 57 PUT), 128 pass economics, 127 clear the floor (125 MONETISABLE, 2 LIMITED, 1 NOT_MONETISABLE).",
+      "deviation": "AVS-IMP-FIX-001 anticipated ~195. Measured 128; recorded, not fitted."
+    },
+    {
+      "item": "W3.3",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "1177a2b",
+      "files_changed": [
+        "contracts/contract_rejection.py",
+        "scripts/avshunter_options_intelligence.py"
+      ],
+      "backup": "backups/avs_fix_001_W3.3_prechange_20260906_150028",
+      "tests_added": 24,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "AWAITING RUN - the sidecar options/contracts_tested_<run_id>.jsonl is written by the Options stage, which this session may not execute. The funnel AVS-IMP-FIX-001 specifies (74 side-correct, 20 in DTE band, 1 in delta band, 0 passing spread) is asserted exactly in tests."
+    },
+    {
+      "item": "W3.4",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "a547692",
+      "files_changed": [
+        "contracts/selected_contract_economics.py",
+        "eod_candidate_engine.py",
+        "contracts/lab_control.py"
+      ],
+      "backup": "backups/avs_fix_001_W3.4_prechange_20260906_145617",
+      "tests_added": 19,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "AWAITING RUN. Fixture results match the specification: PNW CALL -> intrinsic NOT_MONETISABLE, time-value MONETISABLE at +84.3%; deep ITM -> both MONETISABLE; PUT mirror identical. Lower-bound property asserted across 8 fixtures and enforced in code."
+    },
+    {
+      "item": "W3.5",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "58da85c",
+      "files_changed": [
+        "contracts/opportunity_tier.py",
+        "contracts/lab_control.py"
+      ],
+      "backup": "backups/avs_fix_001_W3.5_prechange_20260906_150448",
+      "tests_added": 26,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "Derived over 20260905_151448's 294 rows: TIER_1 0, TIER_3 149, ARMED 3, WATCH 1, BLOCK 141. final_action identical within every tier (MANUAL_REVIEW throughout, plus CONTRACT_REPAIR in BLOCK). The first implementation returned 115 TIER_1 because three required columns were absent from that pre-fix book; an unevaluable criterion is now itself a named weakness."
+    },
+    {
+      "item": "W3.6",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "fc6521b",
+      "files_changed": [
+        "audit/pipeline_map/AVS-IMP-FIX-001/w36_iv_at_selection.py",
+        "audit/rca/AVS-RCA-003/DECISIONS_FOR_ACK.md"
+      ],
+      "backup": "backups/avs_fix_001_W3.6_prechange_RECONSTRUCTED_20260906_153417",
+      "tests_added": 0,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "w36_iv_at_selection_20260905_151448.json: 232 MONETISABLE rows, 232 with a contract and an IV. Five sessions back unavailable (only four stored chain sessions precede the run). Three sessions back (2026-08-31), 148 matched: median -1.9%, p25 -8.7%, p75 +3.7%, 12.2% at or above +20%. RECOMMENDATION: do not build the early lane.",
+      "deviation": "Backup reconstructed after the fact - see deviations."
+    },
+    {
+      "item": "W3.9",
+      "status": "IMPLEMENTED \u2014 AWAITING RUN",
+      "commit": "f8a0528",
+      "files_changed": [
+        "intelligent_orchestrator.py"
+      ],
+      "backup": "backups/avs_fix_001_W3.9_prechange_RECONSTRUCTED_20260906_153417",
+      "tests_added": 14,
+      "existing_tests_edited": [],
+      "run_artefact_evidence": "AWAITING RUN - diagnostics/outcome_maturation_<run_id>.json is published by the Evening path. Correction to the item as written: maturation was already invoked, but nested inside the ledger APPEND block and silent when the price database was absent. Both gaps closed.",
+      "deviation": "Backup reconstructed after the fact - see deviations."
+    },
+    {
+      "item": "W4.2",
+      "status": "IMPLEMENTED \u2014 OFFLINE VERIFIED",
+      "commit": "5683028",
+      "files_changed": [
+        "worker3/adapters/anthropic_http.py (external package)",
+        "tests/test_live_semantic.py (external package)",
+        "tests/test_avs_fix_001_w42_transport.py (external package, new)"
+      ],
+      "backup": "backups/avs_fix_001_W4.2_prechange_20260906_151501",
+      "tests_added": 16,
+      "existing_tests_edited": [
+        {
+          "file": "worker3_foundation/tests/test_live_semantic.py",
+          "classification": "OBSOLETE_ASSERTION_CORRECTED",
+          "note": "transport.calls == 1 after a non-2xx encoded the policy RCA3-D02 retires; inverted to calls == 0 and budget_consumed False. The property under test (errors never followed) is unchanged."
+        }
+      ],
+      "run_artefact_evidence": "Package suite 263 passed before, 279 passed after (16 added), 188 subtests. NO LIVE CALL. XML at xml/worker3_w42.xml. The package is not a git repository, so the commit carries the adapter, the new tests, a unified diff and SHA-256s."
+    }
+  ],
+  "headline_measurements": {
+    "DEC-2_shadow_replay_recovered": 128,
+    "DEC-2_pass_economics": 128,
+    "DEC-2_monetisable_or_limited": 127,
+    "DEC-2_split": {
+      "CALL": 71,
+      "PUT": 57,
+      "OTHER": 0
+    },
+    "DEC-2_anticipated_by_prompt": 195,
+    "W3.6_median_iv_change_pct_3_sessions": -1.9,
+    "W3.6_share_at_or_above_20pct": 0.122,
+    "W3.6_recommendation": "DO_NOT_BUILD_EARLY_LANE_ON_AVAILABLE_EVIDENCE"
+  },
+  "deviations": [
+    "W3.6 and W3.9 backups were not taken before the item; reconstructed byte-exactly from git show <commit>^:<path>. Self-reported.",
+    ".env backed up redacted, not plaintext: rule 2 outranks rule 4.",
+    "W1.3 keeps ADVISORY_SCENARIO_ONLY where the register asks for ADVISORY_ONLY.",
+    "Part A is BLOCKED on HTTP 400, not passed.",
+    "W1.6's '3 leaking rows' does not reproduce; 36/24 measured in the Lab book.",
+    "W3.1 measured 128 recovered, not the anticipated ~195.",
+    ".gitignore edited twice (W0.1 to make git add -A possible, W0.4 to track the register); both anchored, scoped, verified against tracked paths.",
+    "One failure this session introduced (tests/msi L12, the BUDGET_EXHAUSTED literal in verify_anthropic_key.py) was found and fixed."
+  ],
+  "verification": {
+    "git_diff_check_source": "clean",
+    "py_compile_changed_modules": 36,
+    "plan_only_dispatch": {
+      "exit": 0,
+      "plan_hash": "df651c1698ad6f87080f4b441acc39a67d6f234e912e9f3a83bbcce2fe319f3f",
+      "snapshot_files": 52754,
+      "added": 0,
+      "removed": 0,
+      "modified": 1,
+      "modified_paths": [
+        "logs/orchestrator.log"
+      ],
+      "note": "the logger's own file; no run state, no plan record, no canonical database, no dropbox artefact"
+    },
+    "build_macro_json_dry_run": {
+      "exit": 0,
+      "api_call": false,
+      "files_written": 0
+    },
+    "replay_harness": "DOES NOT EXIST. tools/cds2_replay_lifecycle_shadow.py reconciles stage membership; pipeline_interpreter/automation_v2/replay.py is request serialisation. Neither re-executes a stage. This is why W1.1-W1.6, W3.3, W3.4, W3.5 and W3.9 are AWAITING RUN.",
+    "full_matrix": {
+      "files": 159,
+      "scope": [
+        "tests/",
+        "tests/qa/",
+        "tests/rca/",
+        "tests/msi/ (added by W0.3)"
+      ],
+      "tests": 1762,
+      "passed": 1733,
+      "failures": 25,
+      "errors": 0,
+      "skipped": 4,
+      "unexplained_failures": 0,
+      "failures_by_file": {
+        "msi__test_regression": 13,
+        "msi__test_logic": 5,
+        "msi__test_functionality": 4,
+        "msi__test_flow": 2,
+        "test_cds2_historical_prices": 1
+      },
+      "explanation": "24 are the tests/msi failures W0.3 filed with root cause in W0.3_msi_matrix_defects.md; none is a regression. 1 is pre-existing and environmental (NO_SOURCE_ALLOWED); the file has 2 failures at the avs-baseline-20260906 tag and 1 on this branch.",
+      "entry_point_imports_ok": true,
+      "compileall_error_lines": 4,
+      "compileall_note": "Two PermissionError pairs on audit/ddd_closure_testdeps/py.py and audit/ddd_readiness_tmp/pydeps/py.py - the ACL-locked vendored-testdep trees gitignored in W0.1. No source defect.",
+      "item3_cds_selftest": "SKIPPED (--skip-orchestrator; binding rule 1)",
+      "artefacts": "audit/pipeline_map/AVS-IMP-FIX-001/matrix_20260906/"
+    }
+  }
+}
