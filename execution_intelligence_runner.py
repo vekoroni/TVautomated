@@ -2745,6 +2745,90 @@ def _ensure_eil_audit_contract(df: pd.DataFrame) -> pd.DataFrame:
     out["contract_repair_required"] = out["contract_repair_status"].astype(str).str.upper().isin(
         {"CONTRACT_REPAIR_REQUIRED", "NO_CONTRACT_TO_REPAIR"}
     )
+    out = _suppress_retired_eil_verdict_against_governed_stand_down(out)
+    return out
+
+
+#: EIL verdict values that read as permission to trade.
+_EIL_EXECUTE_VERDICTS_PREFIX = "EXECUTE"
+#: Columns carrying the retired EIL verdict into eil_enriched / execution_v3_5.
+_EIL_VERDICT_COLUMNS = ("eil_v3_verdict", "eil_signal_verdict", "fd_verdict")
+
+
+def _suppress_retired_eil_verdict_against_governed_stand_down(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """A retired advisory verdict may not contradict a governed stand-down.
+
+    AVS-FIX-001 W1.2 (QT-D06); clears AVS-MVP-001 §6 kill criterion 6.
+
+    Run 20260905_151448 published `eil_v3_verdict = EXECUTE_WITH_CAUTION`
+    beside `options_verdict = STAND_DOWN` on 187 rows (127 CALL, 60 PUT, 0
+    OTHER) -- TTEK being the row the tester named, which also carried
+    `invalidation_state = MISSING`. EIL v3 no longer holds any authority, but a
+    column that says EXECUTE next to a governed STAND_DOWN is read by a human
+    as a second opinion, and the semantic audit correctly reports it as a
+    contradiction.
+
+    Where the governed decision is STAND_DOWN, or the governed invalidation is
+    not AVAILABLE, the retired verdict is written as NOT_EVALUATED -- an
+    existing EvidenceState member, not a new state name -- and the reason is
+    named in `eil_verdict_suppression_reason`. Nothing else about the row
+    changes: this removes a contradictory claim, it does not grant, remove or
+    alter any permission, and the Execution Gate remains the sole writer of
+    `final_action`.
+
+    The same suppression is deliberately NOT applied to BLOCKED/WATCHLIST
+    verdicts: those agree with a stand-down, and preserving them keeps the
+    telemetry useful for diagnosing why a row stood down.
+    """
+    if df is None or df.empty:
+        return df
+    present = [column for column in _EIL_VERDICT_COLUMNS if column in df.columns]
+    if not present:
+        return df
+    out = df
+
+    governed_verdict = (
+        out.get("options_verdict", pd.Series([""] * len(out), index=out.index))
+        .fillna("").astype(str).str.strip().str.upper()
+    )
+    invalidation_state = (
+        out.get("invalidation_state", pd.Series([""] * len(out), index=out.index))
+        .fillna("").astype(str).str.strip().str.upper()
+    )
+    stood_down = governed_verdict.eq("STAND_DOWN")
+    # An absent invalidation_state column must not manufacture a suppression:
+    # only a state that is present and not AVAILABLE counts.
+    invalidation_unavailable = invalidation_state.ne("") & invalidation_state.ne("AVAILABLE")
+    governed_refusal = stood_down | invalidation_unavailable
+
+    if "eil_verdict_suppression_reason" not in out.columns:
+        out["eil_verdict_suppression_reason"] = ""
+
+    reason = pd.Series([""] * len(out), index=out.index)
+    reason = reason.mask(stood_down, "GOVERNED_OPTIONS_VERDICT_STAND_DOWN")
+    reason = reason.mask(
+        invalidation_unavailable & ~stood_down, "GOVERNED_INVALIDATION_NOT_AVAILABLE"
+    )
+    reason = reason.mask(
+        stood_down & invalidation_unavailable,
+        "GOVERNED_OPTIONS_VERDICT_STAND_DOWN;GOVERNED_INVALIDATION_NOT_AVAILABLE",
+    )
+
+    contradicts_any = pd.Series([False] * len(out), index=out.index)
+    for column in present:
+        claims_execute = (
+            out[column].fillna("").astype(str).str.strip().str.upper()
+            .str.startswith(_EIL_EXECUTE_VERDICTS_PREFIX)
+        )
+        contradiction = claims_execute & governed_refusal
+        if contradiction.any():
+            out.loc[contradiction, column] = "NOT_EVALUATED"
+        contradicts_any = contradicts_any | contradiction
+
+    if contradicts_any.any():
+        out.loc[contradicts_any, "eil_verdict_suppression_reason"] = reason[contradicts_any]
     return out
 
 
