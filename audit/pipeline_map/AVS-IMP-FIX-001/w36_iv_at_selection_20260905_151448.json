@@ -1,0 +1,2362 @@
+{
+  "run_id": "20260905_151448",
+  "run_session": "2026-09-04",
+  "chain_sessions_available": [
+    "2026-08-28",
+    "2026-08-31",
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04"
+  ],
+  "lookback_sessions_used": {
+    "3": "2026-08-31",
+    "5": null
+  },
+  "monetisable_rows": 232,
+  "rows_with_contract_and_iv": 232,
+  "unmatched_in_earlier_chain": {
+    "3": 84,
+    "5": 232
+  },
+  "distribution": {
+    "3": {
+      "n": 148,
+      "median_pct": -1.908,
+      "mean_pct": 3295.742,
+      "mean_is_outlier_sensitive": true,
+      "p25_pct": -8.728,
+      "p75_pct": 3.738,
+      "min_pct": -63.736,
+      "max_pct": 487600.0,
+      "share_above_20pct": 0.1216
+    },
+    "5": {
+      "n": 0
+    }
+  },
+  "threshold_pct": 20.0,
+  "recommendation": "DO_NOT_BUILD_EARLY_LANE_ON_AVAILABLE_EVIDENCE",
+  "rationale": "No chain is stored five sessions back, so the threshold could not be applied as specified. On the longest lookback that does exist (2026-08-31, three sessions, n=148), the median monetisable row is buying IV -1.9% against its earlier level and only 12.2% of rows are 20% or more above it. That does not support the premise that the pipeline systematically buys elevated volatility, and a shorter lookback biases toward finding a rise, not against it. Recommend against building the early lane; re-run once five sessions of chains exist.",
+  "rows": [
+    {
+      "ticker": "BABA",
+      "symbol": "BABA260925C00115000",
+      "iv_at_selection": 0.4245,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GDS",
+      "symbol": "GDS260918C00031000",
+      "iv_at_selection": 0.5762,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5903,
+      "iv_change_pct_3": -2.3886,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SRRK",
+      "symbol": "SRRK260918P00055000",
+      "iv_at_selection": 0.3156,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3978,
+      "iv_change_pct_3": -20.6637,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LEGN",
+      "symbol": "LEGN260918P00022500",
+      "iv_at_selection": 0.7365,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.337,
+      "iv_change_pct_3": 118.546,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VIK",
+      "symbol": "VIK260918P00085000",
+      "iv_at_selection": 0.3328,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3265,
+      "iv_change_pct_3": 1.9296,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CRWV",
+      "symbol": "CRWV260925C00090000",
+      "iv_at_selection": 0.7145,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6773,
+      "iv_change_pct_3": 5.4924,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "JD",
+      "symbol": "JD260918C00028500",
+      "iv_at_selection": 0.28,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3093,
+      "iv_change_pct_3": -9.473,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HROW",
+      "symbol": "HROW260918C00039000",
+      "iv_at_selection": 0.6513,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AAOI",
+      "symbol": "AAOI260918C00110000",
+      "iv_at_selection": 0.839,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.8356,
+      "iv_change_pct_3": 0.4069,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CSCO",
+      "symbol": "CSCO260918C00110000",
+      "iv_at_selection": 0.274,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2877,
+      "iv_change_pct_3": -4.7619,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AS",
+      "symbol": "AS260918C00030000",
+      "iv_at_selection": 0.4845,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5185,
+      "iv_change_pct_3": -6.5574,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BBNX",
+      "symbol": "BBNX260918P00020000",
+      "iv_at_selection": 0.8523,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.9864,
+      "iv_change_pct_3": -13.5949,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "QUBT",
+      "symbol": "QUBT260918P00008000",
+      "iv_at_selection": 0.6541,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BIDU",
+      "symbol": "BIDU260918P00100000",
+      "iv_at_selection": 0.4231,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MEC",
+      "symbol": "MEC260918C00020000",
+      "iv_at_selection": 0.5391,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6759,
+      "iv_change_pct_3": -20.2397,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NBIS",
+      "symbol": "NBIS260918P00230000",
+      "iv_at_selection": 0.8037,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.7852,
+      "iv_change_pct_3": 2.3561,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BTSG",
+      "symbol": "BTSG260918C00060000",
+      "iv_at_selection": 0.3551,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3975,
+      "iv_change_pct_3": -10.6667,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HALO",
+      "symbol": "HALO260918C00110000",
+      "iv_at_selection": 0.2675,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3851,
+      "iv_change_pct_3": -30.5375,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CHPT",
+      "symbol": "CHPT260918C00010000",
+      "iv_at_selection": 1.1116,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "APA",
+      "symbol": "APA260918P00043000",
+      "iv_at_selection": 0.3916,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SVM",
+      "symbol": "SVM260918P00012500",
+      "iv_at_selection": 0.5994,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.6171,
+      "iv_change_pct_3": -2.8683,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CRM",
+      "symbol": "CRM260918P00260000",
+      "iv_at_selection": 0.3888,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IREN",
+      "symbol": "IREN260925C00045000",
+      "iv_at_selection": 0.841,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.8008,
+      "iv_change_pct_3": 5.02,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PLTR",
+      "symbol": "PLTR260918P00175000",
+      "iv_at_selection": 0.4425,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.467,
+      "iv_change_pct_3": -5.2463,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NG",
+      "symbol": "NG260918P00008000",
+      "iv_at_selection": 0.6469,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.6402,
+      "iv_change_pct_3": 1.0465,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PENN",
+      "symbol": "PENN260918C00017000",
+      "iv_at_selection": 0.3392,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3823,
+      "iv_change_pct_3": -11.2739,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XP",
+      "symbol": "XP260925P00020000",
+      "iv_at_selection": 0.3504,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4382,
+      "iv_change_pct_3": -20.0365,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "OKTA",
+      "symbol": "OKTA260918C00170000",
+      "iv_at_selection": 0.4955,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5278,
+      "iv_change_pct_3": -6.1197,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "QNST",
+      "symbol": "QNST260918C00020000",
+      "iv_at_selection": 0.7312,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4482,
+      "iv_change_pct_3": 63.1415,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NOW",
+      "symbol": "NOW260918P00140000",
+      "iv_at_selection": 0.4972,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.514,
+      "iv_change_pct_3": -3.2685,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IONQ",
+      "symbol": "IONQ260918C00040000",
+      "iv_at_selection": 0.7055,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7322,
+      "iv_change_pct_3": -3.6465,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "JACK",
+      "symbol": "JACK260918C00015000",
+      "iv_at_selection": 0.6578,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7165,
+      "iv_change_pct_3": -8.1926,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "FIGS",
+      "symbol": "FIGS260918C00015000",
+      "iv_at_selection": 0.4848,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CVNA",
+      "symbol": "CVNA260918C00075000",
+      "iv_at_selection": 0.5351,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5263,
+      "iv_change_pct_3": 1.6721,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UAMY",
+      "symbol": "UAMY260925C00005500",
+      "iv_at_selection": 0.7976,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MKSI",
+      "symbol": "MKSI260918C00260000",
+      "iv_at_selection": 0.5586,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5726,
+      "iv_change_pct_3": -2.445,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ALK",
+      "symbol": "ALK260918C00042500",
+      "iv_at_selection": 0.47,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4605,
+      "iv_change_pct_3": 2.063,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BJ",
+      "symbol": "BJ260918C00095000",
+      "iv_at_selection": 0.2219,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2737,
+      "iv_change_pct_3": -18.9258,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DTM",
+      "symbol": "DTM260918C00130000",
+      "iv_at_selection": 0.2227,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2401,
+      "iv_change_pct_3": -7.247,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "INOD",
+      "symbol": "INOD260925C00056000",
+      "iv_at_selection": 0.6044,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6622,
+      "iv_change_pct_3": -8.7285,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LIND",
+      "symbol": "LIND260918C00025000",
+      "iv_at_selection": 0.7653,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CORZ",
+      "symbol": "CORZ260918C00018000",
+      "iv_at_selection": 0.6508,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6619,
+      "iv_change_pct_3": -1.677,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BULL",
+      "symbol": "BULL260925P00010000",
+      "iv_at_selection": 0.5854,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GDX",
+      "symbol": "GDX260918P00100000",
+      "iv_at_selection": 0.4356,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4182,
+      "iv_change_pct_3": 4.1607,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "EIX",
+      "symbol": "EIX260918C00055000",
+      "iv_at_selection": 0.4996,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4889,
+      "iv_change_pct_3": 2.1886,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PLAY",
+      "symbol": "PLAY260918C00009000",
+      "iv_at_selection": 1.2514,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 1.1138,
+      "iv_change_pct_3": 12.3541,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IAG",
+      "symbol": "IAG260918P00021000",
+      "iv_at_selection": 0.8777,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5058,
+      "iv_change_pct_3": 73.5271,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CRCL",
+      "symbol": "CRCL260918C00105000",
+      "iv_at_selection": 0.8137,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.8165,
+      "iv_change_pct_3": -0.3429,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "B",
+      "symbol": "B260918P00045000",
+      "iv_at_selection": 0.4026,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4123,
+      "iv_change_pct_3": -2.3527,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SDGR",
+      "symbol": "SDGR260918P00020000",
+      "iv_at_selection": 0.5748,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4265,
+      "iv_change_pct_3": 34.7714,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UUUU",
+      "symbol": "UUUU260925P00015000",
+      "iv_at_selection": 0.6689,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.6945,
+      "iv_change_pct_3": -3.6861,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AU",
+      "symbol": "AU260918P00110000",
+      "iv_at_selection": 0.4755,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5157,
+      "iv_change_pct_3": -7.7952,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ARKK",
+      "symbol": "ARKK260925P00087000",
+      "iv_at_selection": 0.3396,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3718,
+      "iv_change_pct_3": -8.6606,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BMNR",
+      "symbol": "BMNR260918P00025000",
+      "iv_at_selection": 0.7311,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.8068,
+      "iv_change_pct_3": -9.3827,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IBIT",
+      "symbol": "IBIT260925P00045500",
+      "iv_at_selection": 0.3768,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3607,
+      "iv_change_pct_3": 4.4635,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "COIN",
+      "symbol": "COIN260918P00185000",
+      "iv_at_selection": 0.641,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.631,
+      "iv_change_pct_3": 1.5848,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HOOD",
+      "symbol": "HOOD260918P00123000",
+      "iv_at_selection": 0.6109,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5908,
+      "iv_change_pct_3": 3.4022,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HTLD",
+      "symbol": "HTLD260918C00012500",
+      "iv_at_selection": 0.5881,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4852,
+      "iv_change_pct_3": 21.2077,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ADC",
+      "symbol": "ADC260918C00075000",
+      "iv_at_selection": 0.1408,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.164,
+      "iv_change_pct_3": -14.1463,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "KVYO",
+      "symbol": "KVYO260918C00017500",
+      "iv_at_selection": 0.6614,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ACAD",
+      "symbol": "ACAD260918C00028000",
+      "iv_at_selection": 0.8137,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AEHR",
+      "symbol": "AEHR260918C00090000",
+      "iv_at_selection": 1.0516,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.9934,
+      "iv_change_pct_3": 5.8587,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "QBTS",
+      "symbol": "QBTS260918C00017000",
+      "iv_at_selection": 0.6665,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AM",
+      "symbol": "AM260918C00023000",
+      "iv_at_selection": 0.2212,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DQ",
+      "symbol": "DQ260918P00013000",
+      "iv_at_selection": 0.5138,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5874,
+      "iv_change_pct_3": -12.5298,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "COP",
+      "symbol": "COP260925P00135000",
+      "iv_at_selection": 0.2713,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "WHD",
+      "symbol": "WHD260918C00070000",
+      "iv_at_selection": 0.3479,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4158,
+      "iv_change_pct_3": -16.33,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DNOW",
+      "symbol": "DNOW260918C00017000",
+      "iv_at_selection": 0.4081,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NVDA",
+      "symbol": "NVDA260918P00230000",
+      "iv_at_selection": 0.3182,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BLBD",
+      "symbol": "BLBD260918C00065000",
+      "iv_at_selection": 0.3653,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4749,
+      "iv_change_pct_3": -23.0785,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NVCR",
+      "symbol": "NVCR260918C00018000",
+      "iv_at_selection": 0.8901,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SLB",
+      "symbol": "SLB260918P00057500",
+      "iv_at_selection": 0.319,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3704,
+      "iv_change_pct_3": -13.8769,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PFE",
+      "symbol": "PFE260918P00028500",
+      "iv_at_selection": 0.2013,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2015,
+      "iv_change_pct_3": -0.0993,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CNQ",
+      "symbol": "CNQ260918P00050000",
+      "iv_at_selection": 0.3208,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XHR",
+      "symbol": "XHR260918P00017500",
+      "iv_at_selection": 0.4772,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DAL",
+      "symbol": "DAL260918C00080000",
+      "iv_at_selection": 0.3192,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MRVL",
+      "symbol": "MRVL260918P00230000",
+      "iv_at_selection": 0.5719,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5758,
+      "iv_change_pct_3": -0.6773,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "KRE",
+      "symbol": "KRE260918C00075000",
+      "iv_at_selection": 0.1498,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2394,
+      "iv_change_pct_3": -37.4269,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VIPS",
+      "symbol": "VIPS260918P00013000",
+      "iv_at_selection": 0.3762,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2917,
+      "iv_change_pct_3": 28.9681,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NVS",
+      "symbol": "NVS260918P00160000",
+      "iv_at_selection": 0.2631,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HLF",
+      "symbol": "HLF260918C00012500",
+      "iv_at_selection": 0.2985,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "TTWO",
+      "symbol": "TTWO260925P00215000",
+      "iv_at_selection": 0.3578,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4124,
+      "iv_change_pct_3": -13.2396,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RIOT",
+      "symbol": "RIOT260918C00022000",
+      "iv_at_selection": 0.7859,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7853,
+      "iv_change_pct_3": 0.0764,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "APTV",
+      "symbol": "APTV260918C00047500",
+      "iv_at_selection": 0.438,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4711,
+      "iv_change_pct_3": -7.0261,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AVNT",
+      "symbol": "AVNT260918C00045000",
+      "iv_at_selection": 0.315,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2583,
+      "iv_change_pct_3": 21.9512,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "JETS",
+      "symbol": "JETS260918C00029000",
+      "iv_at_selection": 0.2793,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LUV",
+      "symbol": "LUV260918C00040000",
+      "iv_at_selection": 0.3747,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3661,
+      "iv_change_pct_3": 2.3491,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "INGM",
+      "symbol": "INGM260918C00030000",
+      "iv_at_selection": 0.4308,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3845,
+      "iv_change_pct_3": 12.0416,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "WULF",
+      "symbol": "WULF260918C00017000",
+      "iv_at_selection": 0.7929,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.8061,
+      "iv_change_pct_3": -1.6375,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "APLD",
+      "symbol": "APLD260918C00027000",
+      "iv_at_selection": 0.718,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "OKLO",
+      "symbol": "OKLO260918C00042000",
+      "iv_at_selection": 0.6932,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GFS",
+      "symbol": "GFS260918C00045000",
+      "iv_at_selection": 0.4917,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4978,
+      "iv_change_pct_3": -1.2254,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NNE",
+      "symbol": "NNE260918C00018000",
+      "iv_at_selection": 0.7344,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7487,
+      "iv_change_pct_3": -1.91,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RGTI",
+      "symbol": "RGTI260918C00015500",
+      "iv_at_selection": 0.6645,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RKLB",
+      "symbol": "RKLB260918C00065000",
+      "iv_at_selection": 0.6186,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "COLD",
+      "symbol": "COLD260918C00015000",
+      "iv_at_selection": 0.3837,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GM",
+      "symbol": "GM260918C00087500",
+      "iv_at_selection": 0.2982,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RLAY",
+      "symbol": "RLAY260918P00019000",
+      "iv_at_selection": 0.6121,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AMKR",
+      "symbol": "AMKR260918C00048000",
+      "iv_at_selection": 0.5804,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5926,
+      "iv_change_pct_3": -2.0587,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "WRBY",
+      "symbol": "WRBY260918C00025000",
+      "iv_at_selection": 0.627,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "STEP",
+      "symbol": "STEP260918C00050000",
+      "iv_at_selection": 0.4814,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RMBS",
+      "symbol": "RMBS260918C00085000",
+      "iv_at_selection": 0.6224,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6206,
+      "iv_change_pct_3": 0.29,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "OMER",
+      "symbol": "OMER260918P00019000",
+      "iv_at_selection": 0.5124,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5982,
+      "iv_change_pct_3": -14.343,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "INVX",
+      "symbol": "INVX260918C00030000",
+      "iv_at_selection": 0.3339,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3626,
+      "iv_change_pct_3": -7.9151,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SLV",
+      "symbol": "SLV260918P00060000",
+      "iv_at_selection": 0.3911,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4032,
+      "iv_change_pct_3": -3.001,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PYPL",
+      "symbol": "PYPL260918C00055000",
+      "iv_at_selection": 0.361,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "TSLA",
+      "symbol": "TSLA260925P00355000",
+      "iv_at_selection": 0.38,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4193,
+      "iv_change_pct_3": -9.3728,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CTSH",
+      "symbol": "CTSH260918P00062500",
+      "iv_at_selection": 0.3754,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4013,
+      "iv_change_pct_3": -6.454,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SWKS",
+      "symbol": "SWKS260918C00075000",
+      "iv_at_selection": 0.48,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SHOP",
+      "symbol": "SHOP260918C00145000",
+      "iv_at_selection": 0.5241,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4338,
+      "iv_change_pct_3": 20.816,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VG",
+      "symbol": "VG260918P00014500",
+      "iv_at_selection": 0.5461,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HON",
+      "symbol": "HON260925C00205000",
+      "iv_at_selection": 0.4571,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5395,
+      "iv_change_pct_3": -15.2734,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AXS",
+      "symbol": "AXS260918C00100000",
+      "iv_at_selection": 0.1862,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ALGN",
+      "symbol": "ALGN260918C00160000",
+      "iv_at_selection": 0.4384,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4089,
+      "iv_change_pct_3": 7.2145,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HESM",
+      "symbol": "HESM260918C00040000",
+      "iv_at_selection": 0.1718,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ALLY",
+      "symbol": "ALLY260918C00044000",
+      "iv_at_selection": 0.277,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CIFR",
+      "symbol": "CIFR260925C00018000",
+      "iv_at_selection": 0.9441,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.8769,
+      "iv_change_pct_3": 7.6634,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LOGI",
+      "symbol": "LOGI260918C00100000",
+      "iv_at_selection": 0.291,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3297,
+      "iv_change_pct_3": -11.7379,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BA",
+      "symbol": "BA260918C00215000",
+      "iv_at_selection": 0.2878,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GLW",
+      "symbol": "GLW260918C00155000",
+      "iv_at_selection": 0.5283,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5432,
+      "iv_change_pct_3": -2.743,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NVTS",
+      "symbol": "NVTS260918C00012000",
+      "iv_at_selection": 0.7993,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7705,
+      "iv_change_pct_3": 3.7378,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XLI",
+      "symbol": "XLI260918C00176000",
+      "iv_at_selection": 0.2086,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "STNE",
+      "symbol": "STNE261016C00010470",
+      "iv_at_selection": 0.5947,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.603,
+      "iv_change_pct_3": -1.3765,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "EWJ",
+      "symbol": "EWJ261009C00099000",
+      "iv_at_selection": 0.168,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.1938,
+      "iv_change_pct_3": -13.3127,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DRVN",
+      "symbol": "DRVN261016P00015000",
+      "iv_at_selection": 0.4877,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.0001,
+      "iv_change_pct_3": 487600.0,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "USAR",
+      "symbol": "USAR260918P00018000",
+      "iv_at_selection": 0.7362,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.7801,
+      "iv_change_pct_3": -5.6275,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BHF",
+      "symbol": "BHF260918C00055000",
+      "iv_at_selection": 0.675,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6392,
+      "iv_change_pct_3": 5.6008,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VYX",
+      "symbol": "VYX261016C00010000",
+      "iv_at_selection": 0.7708,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AA",
+      "symbol": "AA260918P00050000",
+      "iv_at_selection": 0.4637,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4673,
+      "iv_change_pct_3": -0.7704,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RIVN",
+      "symbol": "RIVN260918C00016000",
+      "iv_at_selection": 0.5161,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5351,
+      "iv_change_pct_3": -3.5507,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UCTT",
+      "symbol": "UCTT260918C00075000",
+      "iv_at_selection": 0.7594,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.9281,
+      "iv_change_pct_3": -18.1769,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AVGO",
+      "symbol": "AVGO260918C00360000",
+      "iv_at_selection": 0.3586,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5644,
+      "iv_change_pct_3": -36.4635,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ZTS",
+      "symbol": "ZTS261016C00080000",
+      "iv_at_selection": 0.3724,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3671,
+      "iv_change_pct_3": 1.4437,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ALLE",
+      "symbol": "ALLE261016C00160000",
+      "iv_at_selection": 0.2359,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "V",
+      "symbol": "V260918C00375000",
+      "iv_at_selection": 0.1777,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.1971,
+      "iv_change_pct_3": -9.8427,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SU",
+      "symbol": "SU261009P00067000",
+      "iv_at_selection": 0.2901,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SNDX",
+      "symbol": "SNDX260918P00021000",
+      "iv_at_selection": 0.45,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5959,
+      "iv_change_pct_3": -24.484,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PRKS",
+      "symbol": "PRKS260918C00040000",
+      "iv_at_selection": 0.4802,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HST",
+      "symbol": "HST260918C00022000",
+      "iv_at_selection": 0.2306,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6359,
+      "iv_change_pct_3": -63.7364,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IBM",
+      "symbol": "IBM260918P00235000",
+      "iv_at_selection": 0.2848,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2903,
+      "iv_change_pct_3": -1.8946,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ELVN",
+      "symbol": "ELVN260918C00060000",
+      "iv_at_selection": 0.55,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XLY",
+      "symbol": "XLY261009C00116500",
+      "iv_at_selection": 0.2168,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AKR",
+      "symbol": "AKR260918P00020000",
+      "iv_at_selection": 1.2379,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AWK",
+      "symbol": "AWK260918C00140000",
+      "iv_at_selection": 0.2067,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2342,
+      "iv_change_pct_3": -11.7421,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ZD",
+      "symbol": "ZD260918C00055000",
+      "iv_at_selection": 0.4831,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CLF",
+      "symbol": "CLF260918C00012500",
+      "iv_at_selection": 0.5391,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5848,
+      "iv_change_pct_3": -7.8146,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ZWS",
+      "symbol": "ZWS260918C00047500",
+      "iv_at_selection": 0.3805,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LTH",
+      "symbol": "LTH261016C00045000",
+      "iv_at_selection": 0.414,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4024,
+      "iv_change_pct_3": 2.8827,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SPNT",
+      "symbol": "SPNT260918P00025000",
+      "iv_at_selection": 0.5652,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CLSK",
+      "symbol": "CLSK260918C00012500",
+      "iv_at_selection": 0.7655,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7076,
+      "iv_change_pct_3": 8.1826,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AVY",
+      "symbol": "AVY261016C00175000",
+      "iv_at_selection": 0.268,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XHB",
+      "symbol": "XHB260918C00104000",
+      "iv_at_selection": 0.4291,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3089,
+      "iv_change_pct_3": 38.9123,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "EBC",
+      "symbol": "EBC261016C00022500",
+      "iv_at_selection": 0.3611,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.37,
+      "iv_change_pct_3": -2.4054,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "EWBC",
+      "symbol": "EWBC261016C00135000",
+      "iv_at_selection": 0.2131,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PARR",
+      "symbol": "PARR260918C00080000",
+      "iv_at_selection": 0.5746,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.6365,
+      "iv_change_pct_3": -9.7251,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HUBS",
+      "symbol": "HUBS260918P00250000",
+      "iv_at_selection": 0.6775,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ANET",
+      "symbol": "ANET260918C00195000",
+      "iv_at_selection": 0.4428,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PCAR",
+      "symbol": "PCAR260918P00125000",
+      "iv_at_selection": 0.2864,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.1881,
+      "iv_change_pct_3": 52.2594,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GBCI",
+      "symbol": "GBCI260918C00045000",
+      "iv_at_selection": 0.3629,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.37,
+      "iv_change_pct_3": -1.9189,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "JCI",
+      "symbol": "JCI260918C00145000",
+      "iv_at_selection": 0.2719,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2876,
+      "iv_change_pct_3": -5.459,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MCHP",
+      "symbol": "MCHP260918C00075000",
+      "iv_at_selection": 0.4626,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4605,
+      "iv_change_pct_3": 0.456,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GME",
+      "symbol": "GME261002C00020000",
+      "iv_at_selection": 0.5616,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5441,
+      "iv_change_pct_3": 3.2163,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CTVA",
+      "symbol": "CTVA261016C00090000",
+      "iv_at_selection": 0.2755,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UNH",
+      "symbol": "UNH260918C00395000",
+      "iv_at_selection": 0.232,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2526,
+      "iv_change_pct_3": -8.1552,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MSFT",
+      "symbol": "MSFT260918P00500000",
+      "iv_at_selection": 0.2254,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RAL",
+      "symbol": "RAL260918C00065000",
+      "iv_at_selection": 0.4623,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.5224,
+      "iv_change_pct_3": -11.5046,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VOYA",
+      "symbol": "VOYA260918C00105000",
+      "iv_at_selection": 0.2353,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UNM",
+      "symbol": "UNM260918C00095000",
+      "iv_at_selection": 0.3135,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3222,
+      "iv_change_pct_3": -2.7002,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LAZ",
+      "symbol": "LAZ261016C00046000",
+      "iv_at_selection": 0.3805,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PODD",
+      "symbol": "PODD261016P00145000",
+      "iv_at_selection": 0.3997,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "FBP",
+      "symbol": "FBP261016C00030000",
+      "iv_at_selection": 0.3983,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2828,
+      "iv_change_pct_3": 40.8416,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AMD",
+      "symbol": "AMD260918C00480000",
+      "iv_at_selection": 0.4857,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SIRI",
+      "symbol": "SIRI261009C00029000",
+      "iv_at_selection": 0.3302,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3024,
+      "iv_change_pct_3": 9.1931,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SHOO",
+      "symbol": "SHOO261016C00045000",
+      "iv_at_selection": 0.3586,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3586,
+      "iv_change_pct_3": 0.0,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "TFC",
+      "symbol": "TFC261016C00052500",
+      "iv_at_selection": 0.2603,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2711,
+      "iv_change_pct_3": -3.9838,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CSX",
+      "symbol": "CSX261009P00049000",
+      "iv_at_selection": 0.2227,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SWK",
+      "symbol": "SWK261016C00097500",
+      "iv_at_selection": 0.298,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RCUS",
+      "symbol": "RCUS261016P00030000",
+      "iv_at_selection": 0.6565,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.7064,
+      "iv_change_pct_3": -7.064,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HOMB",
+      "symbol": "HOMB261016C00030000",
+      "iv_at_selection": 0.4587,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GEHC",
+      "symbol": "GEHC261009P00069000",
+      "iv_at_selection": 0.2805,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2651,
+      "iv_change_pct_3": 5.8091,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SONO",
+      "symbol": "SONO261016C00015000",
+      "iv_at_selection": 0.4502,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3928,
+      "iv_change_pct_3": 14.613,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "LINE",
+      "symbol": "LINE260918P00035000",
+      "iv_at_selection": 0.7279,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4456,
+      "iv_change_pct_3": 63.3528,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MMM",
+      "symbol": "MMM260925C00170000",
+      "iv_at_selection": 0.2303,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2409,
+      "iv_change_pct_3": -4.4002,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ARE",
+      "symbol": "ARE261016C00052500",
+      "iv_at_selection": 0.3839,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3853,
+      "iv_change_pct_3": -0.3634,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SSB",
+      "symbol": "SSB261016C00110000",
+      "iv_at_selection": 0.2321,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AGIO",
+      "symbol": "AGIO260918P00035000",
+      "iv_at_selection": 0.6732,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3643,
+      "iv_change_pct_3": 84.7928,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ONDS",
+      "symbol": "ONDS260918P00007500",
+      "iv_at_selection": 0.656,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BBT",
+      "symbol": "BBT261016C00035000",
+      "iv_at_selection": 0.7882,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BKR",
+      "symbol": "BKR261016C00065000",
+      "iv_at_selection": 0.3257,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3298,
+      "iv_change_pct_3": -1.2432,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "IWM",
+      "symbol": "IWM261002C00297000",
+      "iv_at_selection": 0.1483,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CCI",
+      "symbol": "CCI261016P00075000",
+      "iv_at_selection": 0.3077,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BG",
+      "symbol": "BG261016P00120000",
+      "iv_at_selection": 0.3389,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CHD",
+      "symbol": "CHD260918C00100000",
+      "iv_at_selection": 0.1861,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2301,
+      "iv_change_pct_3": -19.1221,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RYN",
+      "symbol": "RYN261016C00020000",
+      "iv_at_selection": 0.1701,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.1712,
+      "iv_change_pct_3": -0.6425,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BAC",
+      "symbol": "BAC261002C00063000",
+      "iv_at_selection": 0.2113,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.1896,
+      "iv_change_pct_3": 11.4451,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "OMC",
+      "symbol": "OMC261016C00082500",
+      "iv_at_selection": 0.2831,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2886,
+      "iv_change_pct_3": -1.9058,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "HPE",
+      "symbol": "HPE261002C00052000",
+      "iv_at_selection": 0.5637,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.7319,
+      "iv_change_pct_3": -22.9813,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BILL",
+      "symbol": "BILL261009C00051000",
+      "iv_at_selection": 0.4921,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4842,
+      "iv_change_pct_3": 1.6316,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "KMPR",
+      "symbol": "KMPR260918P00030000",
+      "iv_at_selection": 0.6207,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.8478,
+      "iv_change_pct_3": -26.787,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "XEL",
+      "symbol": "XEL260918C00075000",
+      "iv_at_selection": 0.2041,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "WHR",
+      "symbol": "WHR260918C00040000",
+      "iv_at_selection": 0.4713,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "DUK",
+      "symbol": "DUK260918C00120000",
+      "iv_at_selection": 0.1608,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.1709,
+      "iv_change_pct_3": -5.9099,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AZN",
+      "symbol": "AZN261016P00160000",
+      "iv_at_selection": 0.2867,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2774,
+      "iv_change_pct_3": 3.3526,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RIO",
+      "symbol": "RIO261016P00100000",
+      "iv_at_selection": 0.2904,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2936,
+      "iv_change_pct_3": -1.0899,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "UBSI",
+      "symbol": "UBSI261016C00050000",
+      "iv_at_selection": 0.3083,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3431,
+      "iv_change_pct_3": -10.1428,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "OKE",
+      "symbol": "OKE261016P00095000",
+      "iv_at_selection": 0.2489,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2626,
+      "iv_change_pct_3": -5.2171,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AOS",
+      "symbol": "AOS261016C00060000",
+      "iv_at_selection": 0.2909,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NFLX",
+      "symbol": "NFLX261002P00078000",
+      "iv_at_selection": 0.3225,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3018,
+      "iv_change_pct_3": 6.8588,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AMZN",
+      "symbol": "AMZN261002C00260000",
+      "iv_at_selection": 0.2924,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "FLYW",
+      "symbol": "FLYW261016C00017500",
+      "iv_at_selection": 0.53,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2623,
+      "iv_change_pct_3": 102.0587,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ATI",
+      "symbol": "ATI261016C00220000",
+      "iv_at_selection": 0.4229,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.4607,
+      "iv_change_pct_3": -8.2049,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RSI",
+      "symbol": "RSI261016P00030000",
+      "iv_at_selection": 0.4718,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4197,
+      "iv_change_pct_3": 12.4136,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "AAPL",
+      "symbol": "AAPL261002P00320000",
+      "iv_at_selection": 0.2456,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2385,
+      "iv_change_pct_3": 2.9769,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SNY",
+      "symbol": "SNY261016P00045000",
+      "iv_at_selection": 0.2034,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2047,
+      "iv_change_pct_3": -0.6351,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GOOGL",
+      "symbol": "GOOGL261002C00340000",
+      "iv_at_selection": 0.2792,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RLI",
+      "symbol": "RLI261016C00065000",
+      "iv_at_selection": 0.4234,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.3523,
+      "iv_change_pct_3": 20.1817,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "GIS",
+      "symbol": "GIS261016P00037500",
+      "iv_at_selection": 0.3472,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.3252,
+      "iv_change_pct_3": 6.7651,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "PBI",
+      "symbol": "PBI261016C00018000",
+      "iv_at_selection": 0.3467,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SOFI",
+      "symbol": "SOFI261002C00018500",
+      "iv_at_selection": 0.4749,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "MET",
+      "symbol": "MET261016C00097500",
+      "iv_at_selection": 0.2386,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "TRV",
+      "symbol": "TRV260918C00370000",
+      "iv_at_selection": 0.1756,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2034,
+      "iv_change_pct_3": -13.6676,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "BHP",
+      "symbol": "BHP261016P00090000",
+      "iv_at_selection": 0.3196,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.4109,
+      "iv_change_pct_3": -22.2195,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "VNO",
+      "symbol": "VNO260918P00037000",
+      "iv_at_selection": 0.4348,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2682,
+      "iv_change_pct_3": 62.1178,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NRG",
+      "symbol": "NRG260918C00120000",
+      "iv_at_selection": 0.4409,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.428,
+      "iv_change_pct_3": 3.014,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "NPKI",
+      "symbol": "NPKI261016C00012500",
+      "iv_at_selection": 0.8339,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "QCOM",
+      "symbol": "QCOM260918P00167500",
+      "iv_at_selection": 0.4025,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CMCSA",
+      "symbol": "CMCSA260918P00026500",
+      "iv_at_selection": 0.2883,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.2288,
+      "iv_change_pct_3": 26.0052,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "RDN",
+      "symbol": "RDN261016P00037000",
+      "iv_at_selection": 0.3088,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "CFG",
+      "symbol": "CFG261016C00072500",
+      "iv_at_selection": 0.2679,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": 0.2674,
+      "iv_change_pct_3": 0.187,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "SCI",
+      "symbol": "SCI260918C00082500",
+      "iv_at_selection": 0.1333,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "WAY",
+      "symbol": "WAY260918P00025000",
+      "iv_at_selection": 0.4047,
+      "direction": "PUT",
+      "iv_3_sessions_earlier": 0.5618,
+      "iv_change_pct_3": -27.9637,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    },
+    {
+      "ticker": "ASH",
+      "symbol": "ASH261016C00075000",
+      "iv_at_selection": 0.3624,
+      "direction": "CALL",
+      "iv_3_sessions_earlier": null,
+      "iv_change_pct_3": null,
+      "iv_5_sessions_earlier": null,
+      "iv_change_pct_5": null
+    }
+  ]
+}

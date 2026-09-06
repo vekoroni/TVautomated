@@ -112,3 +112,51 @@ widening should be attempted on their account.
 
 **This changes nothing on its own.** The replay is a measurement; no band was
 altered and no production path was touched by it.
+
+---
+
+## W3.6 (THS-001 §3.2 "early lane") — ANSWERED: the evidence does not support it
+
+`audit/pipeline_map/AVS-IMP-FIX-001/w36_iv_at_selection.py`, offline, over run
+`20260905_151448`. For each of the 232 `MONETISABLE` rows it reads the IV of
+**the same OCC contract** from the stored chain of an earlier session and
+reports the change. The decision rule was fixed before the measurement: build
+the early lane only if the median row is buying IV ≥ 20% above its
+five-session-earlier level.
+
+**Five sessions back could not be evaluated.** Chains are stored for five
+sessions in total (2026-08-28, 08-31, 09-02, 09-03, 09-04), so from the run's
+session there are only four earlier ones. That limitation is the answer to
+"why not", not a result.
+
+**Three sessions back (2026-08-31), the longest lookback that exists:**
+
+| | |
+|---|---|
+| rows matched to the same contract | 148 of 232 |
+| median IV change | **−1.9%** |
+| p25 / p75 | −8.7% / +3.7% |
+| share ≥ +20% | **12.2%** |
+
+(The mean, +3,296%, is discarded: a contract whose IV rose from near zero
+produces an unbounded percentage, and a handful of those dominate it. The rule
+uses the median, as specified.)
+
+**Recommendation: do not build the early lane.** The median monetisable row is
+buying volatility *slightly below* where the same contract was priced three
+sessions earlier, and only one row in eight is 20% or more above. The premise —
+that the pipeline systematically enters after volatility has been bid up — is
+not visible in this run.
+
+Two honest caveats, neither of which changes the direction of the answer:
+
+* A shorter lookback biases **toward** finding a rise, not against it, because
+  it has less time to mean-revert. The three-session window failing to find one
+  is therefore stronger evidence against than a five-session window would need
+  to be.
+* 84 of 232 rows had no matching contract three sessions back — mostly newly
+  listed strikes. Re-run once five sessions of chains exist; the script takes
+  the lookback from whatever is stored.
+
+**This changes nothing on its own.** No code path was altered by the
+measurement.
