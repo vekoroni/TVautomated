@@ -41,6 +41,33 @@ class RunStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
 
 
+SUCCESSFUL_TERMINAL_RUN_STATUSES = frozenset({
+    RunStatus.COMPLETED,
+    RunStatus.ACCEPTED,
+})
+
+
+def is_successful_terminal_run_status(value: Any) -> bool:
+    """Return whether a run is immutable enough for downstream evidence use.
+
+    ``COMPLETED`` is the successful terminal state produced by the pipeline
+    before production acceptance. ``ACCEPTED`` is the stronger terminal state
+    applied after the governed Lab/Interpreter handoff has reconciled. Both are
+    eligible evidence sources; in-progress, aborted and unknown states are not.
+    Consumers must still validate technical health, fatal flags and artifact
+    identity independently.
+    """
+
+    if isinstance(value, RunStatus):
+        status = value
+    else:
+        try:
+            status = RunStatus(str(value or "").strip().upper())
+        except ValueError:
+            return False
+    return status in SUCCESSFUL_TERMINAL_RUN_STATUSES
+
+
 class HandoffStatus(str, Enum):
     READY = "READY"
     BLOCKED_MISSING_STAGE = "BLOCKED_MISSING_STAGE"
@@ -174,6 +201,20 @@ def validate_evidence_bundle(bundle: Mapping[str, Any]) -> dict[str, Any]:
     )
     if governed_contract != value["selected_contract_symbol"]:
         raise HandoffValidationError("BUNDLE_GOVERNED_IDENTITY_MISMATCH:selected_contract_symbol")
+    doi_state = _text(governed.get("doi_projection_state")).upper()
+    if doi_state:
+        if _text(governed.get("doi_authority")).upper() != "ADVISORY_ONLY":
+            raise HandoffValidationError("BUNDLE_DOI_AUTHORITY_INVALID")
+        # `_text` deliberately treats the token NONE as missing for ordinary
+        # identity fields; here NONE is the required authority value.
+        if str(governed.get("doi_decision_authority") or "").strip().upper() != "NONE":
+            raise HandoffValidationError("BUNDLE_DOI_DECISION_AUTHORITY_INVALID")
+        if _text(governed.get("doi_execution_authority")).upper() != "HUMAN_ONLY":
+            raise HandoffValidationError("BUNDLE_DOI_EXECUTION_AUTHORITY_INVALID")
+        if doi_state in {"CALIBRATED", "DETERMINISTIC_UNCALIBRATED"}:
+            for field in ("doi_family_id", "doi_ranking_id", "doi_evidence_cutoff_utc"):
+                if not _text(governed.get(field)):
+                    raise HandoffValidationError(f"BUNDLE_DOI_LINEAGE_MISSING:{field}")
     return value
 
 

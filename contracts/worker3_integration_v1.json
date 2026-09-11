@@ -1,0 +1,39 @@
+{
+  "contract_id": "AVS-W3-INTEGRATION",
+  "version": "1.3.0",
+  "status": "ACTIVE_PREPARE_ONLY",
+  "enabled": true,
+  "runtime_mode": "PREPARE_ONLY",
+  "source_bridge_enabled": true,
+  "job_intake_enabled": true,
+  "provider_dispatch_enabled": false,
+  "lab_projection_enabled": false,
+  "pipeline_production_writer_enabled": false,
+  "authority": "ADVISORY_ONLY",
+  "can_grant_capital": false,
+  "can_reverse_direction": false,
+  "required_run_status": "COMPLETED",
+  "allowed_resolved_actions": [
+    "BUILD_THESIS",
+    "VALIDATE_THESIS"
+  ],
+  "source_contracts": {
+    "run_meta": "run_meta_v2",
+    "intelligence_lab": "lab_signal_book_v2",
+    "option_chain": "option_chain_v2",
+    "selected_option_quote": "selected_option_quote_v1",
+    "market_profile": "market_profile_evidence_v1",
+    "interpreter_macro_context": "interpreter_macro_context_v1",
+    "market_environment": "market_environment_v1",
+    "macro_ticker_context": "macro_ticker_context_v1",
+    "trade_plan": "trade_plan_snapshot_v1",
+    "worker_evidence": "analyst_evidence_v1",
+    "prepared_job": "worker3_prepared_job_v1",
+    "intake_exception": "worker3_intake_exception_v1"
+  },
+  "failure_policy": {
+    "run_contract_failure": "BLOCK_RUN_PREPARATION",
+    "ticker_evidence_failure": "ISOLATE_DATA_EXCEPTION",
+    "provider_failure": "NOT_APPLICABLE_PROVIDER_DISABLED"
+  }
+}
