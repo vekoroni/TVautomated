@@ -149,8 +149,8 @@ def _authority_map() -> dict[str, str]:
         "thesis_state": "OPTIONS_LIQUIDITY_LIFECYCLE",
         "olm_guard_disposition": "OLM_EXECUTION_GUARD",
         "model_final_action": "MORNING_EXECUTION_GATE",
-        "final_action": "MORNING_HANDOFF_QUOTE_GOVERNANCE",
-        "execution_quote_status": "MORNING_HANDOFF_QUOTE_GOVERNANCE",
+        "final_action": "MORNING_EXECUTION_GATE",
+        "execution_quote_status": "QUOTE_EVIDENCE_METADATA_ONLY",
         "capital_permission": "MORNING_EXECUTION_GATE",
         "validation_transition": "DYNAMIC_VALIDATION_GATE",
         "validation_event_id": "DYNAMIC_VALIDATION_GATE",
@@ -158,6 +158,13 @@ def _authority_map() -> dict[str, str]:
         "current_validation": "DYNAMIC_VALIDATION_GATE",
         "macro_quant_packet": "ADVISORY_ONLY",
         "interpreter_assessment": "ADVISORY_ONLY",
+        "doi_projection_state": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_preferred_contract_symbol": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_p_liquidity_3d": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_p_positive_return": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_p_target_before_invalidation": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_model_uncertainty": "DYNAMIC_OPTIONS_INTELLIGENCE_ADVISORY",
+        "doi_authority": "ADVISORY_ONLY",
     }
 
 
@@ -180,7 +187,7 @@ def _status_banner(validation: Mapping[str, Any] | None) -> str:
     if profile_state == "DEVELOPING_SESSION":
         return "RTH DEVELOPING PROFILE — ADVISORY"
     if profile_state == "PENDING_MARKET_OPEN":
-        return "PREMARKET VALIDATED — OPTION REQUOTE MAY BE REQUIRED"
+        return "PREMARKET THESIS VALIDATED — RTH EVIDENCE PENDING"
     return "THESIS VALIDATED — REVIEW EXECUTION GATE"
 
 
@@ -253,7 +260,13 @@ def _freshness_map(row: Mapping[str, Any]) -> dict[str, str]:
 def _apply_execution_quote_governance(
     row: Mapping[str, Any], *, session_date: str
 ) -> dict[str, Any]:
-    """Separate swing-trade thesis validity from entry-price freshness."""
+    """Annotate quote timing without altering the governed Morning decision.
+
+    Morning Gate owns thesis validation, action and capital permission. A
+    quote timestamp is useful lineage, but ordinary ageing across a 1-20
+    session holding horizon is not a thesis transition and cannot create a
+    refresh requirement at this handoff boundary.
+    """
     governed = dict(row)
     governed["model_final_action"] = _upper(governed.get("final_action"))
     governed["contract_size_quality"] = (
@@ -276,19 +289,16 @@ def _apply_execution_quote_governance(
         quote_date = None
         governed_session = None
     if quote_date is None or governed_session is None:
-        governed["execution_quote_status"] = "MANUAL_REQUOTE_REQUIRED"
+        governed["execution_quote_status"] = "TIMESTAMP_UNAVAILABLE"
     elif quote_date < governed_session:
-        governed["execution_quote_status"] = "PRIOR_SESSION_MANUAL_REQUOTE"
+        governed["execution_quote_status"] = "PRIOR_SESSION_EVIDENCE"
     else:
-        governed["execution_quote_status"] = "SAME_SESSION_INDICATIVE"
-    if governed["execution_quote_status"] != "SAME_SESSION_INDICATIVE":
-        governed["final_action"] = "MANUAL_REQUOTE_REQUIRED"
-        governed["morning_entry_action"] = "MANUAL_REQUOTE_REQUIRED"
-        governed["morning_execution_permission"] = "HUMAN_REQUOTE_REQUIRED"
-        governed["execution_permission"] = "HUMAN_APPROVAL_REQUIRED"
-        governed["final_capital_permission"] = "HUMAN_APPROVAL_REQUIRED"
+        governed["execution_quote_status"] = "SAME_SESSION_EVIDENCE"
     governed["execution_quote_timestamp_utc"] = timestamp
-    governed["execution_quote_human_confirmation_required"] = True
+    governed["execution_quote_advisory_only"] = True
+    governed["execution_quote_affects_thesis"] = False
+    governed["execution_quote_refresh_required"] = False
+    governed["execution_quote_human_confirmation_required"] = False
     return governed
 
 

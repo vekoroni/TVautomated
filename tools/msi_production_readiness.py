@@ -170,11 +170,13 @@ def assess_run(
         comparison = _text(row.get("comparison_status")).upper()
         if comparison not in COMPARISON_STATES:
             invalid_rows.append(f"{ticker}:COMPARISON_STATUS:{comparison or 'MISSING'}")
-        if comparison in {"CURRENT_MISSING", "STALE"}:
+        if comparison == "CURRENT_MISSING":
             warnings.append(f"{ticker}:EXECUTION_QUOTE_{comparison}")
         freshness = _text(row.get("quote_freshness")).upper()
-        if freshness != "FRESH":
-            warnings.append(f"{ticker}:QUOTE_FRESHNESS:{freshness or 'MISSING'}")
+        if freshness in {"MISSING", "INVALID", ""}:
+            warnings.append(
+                f"{ticker}:VALIDATION_QUOTE_UNAVAILABLE:{freshness or 'MISSING'}"
+            )
         size_quality = _text(row.get("contract_size_quality")).upper()
         if not size_quality:
             warnings.append(f"{ticker}:CONTRACT_SIZE_QUALITY_MISSING")

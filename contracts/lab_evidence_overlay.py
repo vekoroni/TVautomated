@@ -19,8 +19,8 @@ CURRENT_QUOTE_FIELDS = {
     "contract_mid_change_pct", "contract_spread_change_pp", "contract_bid_size",
     "contract_ask_size", "contract_bid_size_change", "contract_ask_size_change",
     "contract_size_quality", "current_quote_snapshot_id", "quote_timestamp_utc",
-    "quote_age_seconds", "quote_freshness", "quote_source", "comparison_status",
-    "change_status",
+    "quote_age_seconds", "quote_freshness", "quote_age_affects_thesis",
+    "quote_source", "comparison_status", "change_status",
 }
 UNDERLYING_FIELDS = {
     "underlying_last", "underlying_nbbo_bid", "underlying_nbbo_ask",

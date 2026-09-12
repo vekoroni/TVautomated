@@ -174,20 +174,16 @@ def compare_exact_option_quotes(
         status = ComparisonStatus.CURRENT_MISSING
     elif morning.contract_symbol != current.contract_symbol:
         status = ComparisonStatus.CONTRACT_CHANGED
+    elif any(value == 0 for value in (morning.bid, morning.ask, morning.mid)):
+        status = ComparisonStatus.BASELINE_ZERO
     else:
-        freshness = evaluate_freshness(
-            as_of=current.timestamp_utc,
-            dataset_session=current.session_date,
-            domain="LIVE_OPTION",
-            now=instant,
-            live_ttl_seconds=live_ttl_seconds,
-        )
-        if freshness is not FreshnessState.FRESH:
-            status = ComparisonStatus.STALE
-        elif any(value == 0 for value in (morning.bid, morning.ask, morning.mid)):
-            status = ComparisonStatus.BASELINE_ZERO
-        else:
-            status = ComparisonStatus.SAME_CONTRACT
+        # Contract comparability and quote recency are separate domain facts.
+        # A quote ageing while the governed Morning handoff is materialised
+        # must not turn a 1-20 session swing thesis into a stale trade.  The
+        # age remains timestamped evidence only; it creates no refresh or
+        # thesis-staleness requirement. Exact-contract changes remain
+        # computable and auditable.
+        status = ComparisonStatus.SAME_CONTRACT
     freshness = evaluate_freshness(
         as_of=current.timestamp_utc,
         dataset_session=current.session_date,
@@ -250,6 +246,7 @@ def compare_exact_option_quotes(
             if current.timestamp_utc else None
         ),
         "quote_freshness": freshness.value,
+        "quote_age_affects_thesis": False,
         "quote_source": current.source,
     }
 
@@ -265,7 +262,8 @@ def quote_change_overlay_fields(evidence: Mapping[str, Any]) -> dict[str, Any]:
         "contract_ask_size": "current_ask_size", "contract_bid_size_change": "bid_size_change",
         "contract_ask_size_change": "ask_size_change", "current_quote_snapshot_id": "current_quote_dataset_id",
         "quote_timestamp_utc": "current_quote_timestamp_utc", "quote_age_seconds": "quote_age_seconds",
-        "quote_freshness": "quote_freshness", "quote_source": "quote_source",
+        "quote_freshness": "quote_freshness",
+        "quote_age_affects_thesis": "quote_age_affects_thesis", "quote_source": "quote_source",
         "comparison_status": "comparison_status", "change_status": "change_status",
     }
     return {target: evidence.get(source) for target, source in mapping.items()}

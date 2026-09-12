@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import json
 
 import pytest
@@ -55,6 +55,21 @@ def test_contract_change_never_emits_misleading_price_delta() -> None:
     )
     assert result["comparison_status"] == ComparisonStatus.CONTRACT_CHANGED.value
     assert result["bid_change"] is None
+
+
+def test_aged_quote_does_not_make_swing_thesis_or_contract_comparison_stale() -> None:
+    observed = datetime(2026, 8, 30, 12, tzinfo=timezone.utc)
+    result = compare_exact_option_quotes(
+        ticker="AAA", thesis_id="T", trade_idea_id="I", selected_structure_id="S",
+        morning=_snapshot(bid=4.0, ask=4.4, bid_size=10, ask_size=12, now=observed),
+        current=_snapshot(bid=4.5, ask=4.9, bid_size=16, ask_size=20, now=observed),
+        now=observed + timedelta(minutes=5),
+    )
+    assert result["comparison_status"] == ComparisonStatus.SAME_CONTRACT.value
+    assert result["change_status"] == ComparisonStatus.SAME_CONTRACT.value
+    assert result["bid_change"] == 0.5
+    assert result["quote_freshness"] == "STALE"
+    assert result["quote_age_affects_thesis"] is False
 
 
 def test_selected_contract_hydration_preserves_displayed_sizes() -> None:

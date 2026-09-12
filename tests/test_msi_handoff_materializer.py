@@ -228,7 +228,9 @@ def test_morning_finalizer_publishes_only_actionable_rows_when_flags_are_active(
     assert run_meta["operator_accepted_by"] == "MORNING_HANDOFF_FINALIZER"
 
 
-def test_prior_session_quote_is_published_as_manual_requote(tmp_path: Path) -> None:
+def test_prior_session_quote_is_metadata_and_does_not_override_morning_authority(
+    tmp_path: Path,
+) -> None:
     row = _row("AAA", "AAA260918C00100000")
     row["current_quote_timestamp_utc"] = "2026-08-29T20:00:00Z"
     row["contract_size_quality"] = ""
@@ -242,8 +244,11 @@ def test_prior_session_quote_is_published_as_manual_requote(tmp_path: Path) -> N
     with open(result["book_path"], encoding="utf-8-sig", newline="") as handle:
         published = next(csv.DictReader(handle))
     assert published["model_final_action"] == "BUY_NOW"
-    assert published["final_action"] == "MANUAL_REQUOTE_REQUIRED"
-    assert published["execution_quote_status"] == "PRIOR_SESSION_MANUAL_REQUOTE"
+    assert published["final_action"] == "BUY_NOW"
+    assert published["execution_quote_status"] == "PRIOR_SESSION_EVIDENCE"
+    assert published["execution_quote_advisory_only"] == "True"
+    assert published["execution_quote_affects_thesis"] == "False"
+    assert published["execution_quote_refresh_required"] == "False"
     assert published["contract_size_quality"] == "MISSING"
 
 
@@ -261,5 +266,5 @@ def test_same_session_quote_retains_swing_candidate_action(tmp_path: Path) -> No
     with open(result["book_path"], encoding="utf-8-sig", newline="") as handle:
         published = next(csv.DictReader(handle))
     assert published["final_action"] == "BUY_SMALL"
-    assert published["execution_quote_status"] == "SAME_SESSION_INDICATIVE"
-    assert published["execution_quote_human_confirmation_required"] == "True"
+    assert published["execution_quote_status"] == "SAME_SESSION_EVIDENCE"
+    assert published["execution_quote_human_confirmation_required"] == "False"
