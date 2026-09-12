@@ -2078,13 +2078,20 @@ def _integrate_provider_completeness_into_run_meta(
     dirty = git_describe.lower().endswith("-dirty") or baseline_commit == "UNAVAILABLE"
     mode = str(operator_mode or "STANDARD").strip().upper()
     provider_eligible = bool(evidence.get("normal_completed_session_eligible"))
-    if dirty:
-        run_condition = "TEST"
-    elif mode == "FORCE":
-        run_condition = "FORCED_INTRASESSION"
-    elif provider_eligible:
-        run_condition = "NORMAL_COMPLETED_SESSION"
-    else:
+    from domain.run_planning import resolve_run_condition
+    from domain.session_authority import SessionPhase
+
+    planned_condition = str((payload.get("dynamic_plan") or {}).get("run_condition") or "")
+    try:
+        run_condition = resolve_run_condition(
+            requested_action=(payload.get("dynamic_plan") or {}).get("resolved_action") or "BUILD_THESIS",
+            session_phase=(payload.get("dynamic_plan") or {}).get("session_state") or SessionPhase.AFTER_HOURS.value,
+            operator_mode="TEST" if dirty else mode,
+            code_dirty=dirty,
+        ).value
+    except (TypeError, ValueError):
+        run_condition = planned_condition or "TEST"
+    if run_condition == "NORMAL_COMPLETED_SESSION" and not provider_eligible:
         run_condition = "TEST"
 
     dynamic_plan = payload.get("dynamic_plan") or {}
@@ -2464,8 +2471,22 @@ def pin_run_directory(
             "evidence_cutoff_utc": run_plan.evidence_cutoff_utc,
             "last_completed_session": run_plan.last_completed_session,
             "resolved_action": run_plan.resolved_action,
+            "session_state": run_plan.session_state,
+            "run_condition": run_plan.run_condition,
+            "operator_mode": run_plan.operator_mode,
+            "baseline_eligible": run_plan.baseline_eligible,
             "execution_authority_ceiling": run_plan.execution_authority_ceiling,
         }
+    meta["macro_packet_id"] = macro_quant_packet.get("macro_packet_id")
+    meta["macro_packet_sha256"] = macro_quant_packet.get("macro_packet_sha256")
+    try:
+        from canonical_data.macro_packet_archive import archive_macro_packet
+        meta["macro_packet_archive"] = archive_macro_packet(
+            macro_quant_packet, cfg.BASE_DIR / "data" / "macro" / "archive"
+        )
+    except Exception as error:
+        logger.error("Cannot bind immutable macro packet archive: %s", error)
+        return False
     try:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
@@ -6629,7 +6650,10 @@ def evening_workflow(
     return True
 
 
-def premarket_workflow(run_id: Optional[str] = None) -> bool:
+def premarket_workflow(
+    run_id: Optional[str] = None,
+    run_condition: str = "POSTOPEN_CONTRACT_REFRESH",
+) -> bool:
     """
     Morning validation workflow — runs at 09:45 ET after market open.
 
@@ -6698,6 +6722,11 @@ def premarket_workflow(run_id: Optional[str] = None) -> bool:
         results = run_morning_gate(
             run_id=_run_id,
             spread_threshold=25.0,
+            execution_mode=(
+                "PREOPEN_THESIS_CHECK"
+                if str(run_condition).upper() == "PREOPEN_THESIS_CHECK"
+                else "POSTOPEN_CONTRACT_REFRESH"
+            ),
         )
         go_count    = sum(1 for r in results if r.get("verdict") == "GO")
         flag_count  = sum(1 for r in results if r.get("verdict") == "FLAG")
@@ -7207,6 +7236,7 @@ def main() -> None:
                 as_of_utc=as_of_utc,
                 run_id=args.run_id,
                 provider_session_finalised=args.provider_session_finalised,
+                operator_mode="FORCE" if args.force else ("REPLAY" if args.replay else "STANDARD"),
             )
             logger.info(operator_summary(plan, selected_thesis))
             if args.plan_only:
@@ -7276,7 +7306,8 @@ def main() -> None:
                     "BUILD_THESIS": _build_thesis,
                     "FINALISE": _finalise,
                     "VALIDATE": lambda planned: premarket_workflow(
-                        run_id=planned.pipeline_run_id
+                        run_id=planned.pipeline_run_id,
+                        run_condition=planned.run_condition,
                     ),
                 }
                 dispatch = execute_dispatch_plan(plan, callbacks=callbacks)

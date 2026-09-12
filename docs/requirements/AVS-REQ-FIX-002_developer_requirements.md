@@ -2,7 +2,7 @@
 
 **Derived from:** `AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md` v1.2 (sole development authority), `AVS-QA-SD-FIX-002_v1.1_verification.md` (historical review evidence), `AVS-VAL-THESIS-001` (code-level evidence)
 **Audience:** the implementer (Codex / Claude Code) and the independent tester
-**Status:** v1.2, 2026-09-12 — corrected implementation requirements. Implementation status is evidenced only by stage claim sheets: Stage 0 is complete and Stage 1 Slice 1 is an unintegrated provider-finality domain foundation; no other requirement is implied complete by this document.
+**Status:** v1.2, 2026-09-12 — corrected implementation requirements. Implementation status is evidenced only by stage claim sheets: Stage 0 and the offline Stage 1 closure are complete; the controlled completed-session cycle remains Stage 1 production-acceptance evidence. No later-stage requirement is implied complete by this document.
 **Annex A:** `AVS-REQ-FIX-002_Annex_A_algorithms_and_models.md` — the formulas, models, grids, calibration method, friction model, freshness rules and worked examples that these requirements depend on. A requirement that names an algorithm (ALG-nn) is not complete without it; the developer reads both.
 **Precedence:** where a requirement here conflicts with the design, the design governs and the requirement is defective — raise it, do not resolve it silently
 
@@ -267,4 +267,3 @@ This revision rebases the requirements on the sole v1.2 solution-design authorit
 ## 13. Glossary (developer subset)
 
 **Vol budget** — the 1σ cumulative expected move for the governed hold. **Reachable target** — spot ± k × vol budget; a scenario boundary. **Reach ratio** — structural distance ÷ vol budget; > 1.5 means the structural target is beyond one comfortable budget. **Time stop** — end of the governed hold in XNYS sessions. **Scenario payoff** — option value at the scenario spot at the time stop, remaining calendar time to expiry, constant IV. **Deterministic utility** — DOI's uncalibrated ranking score; a relative ordering, not a probability. **Calibrated p** — P(target before invalidation within hold) from stored history, with lineage. **Provider timestamp** — when the provider observed the quote; the only timestamp that determines freshness. **Fill** — a broker-confirmed execution. **Counterfactual** — what a presented-but-not-taken candidate did afterwards.
-

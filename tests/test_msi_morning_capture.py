@@ -61,6 +61,7 @@ def test_morning_capture_reuses_fetched_values_without_another_provider_client()
         "live_contract_mid": 2.1,
         "live_contract_bid_size": 12,
         "live_contract_ask_size": 18,
+        "live_contract_provider_updated": "2026-08-30T12:00:00+00:00",
         "live_options_fetched_at": "2026-08-30T12:00:00+00:00",
         "underlying_bid": 99.9,
         "underlying_ask": 100.1,

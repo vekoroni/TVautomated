@@ -1,7 +1,7 @@
 # AVS-FIX-002 Stage 1 — Provider Finality
 
-**Status:** IMPLEMENTED AND OFFLINE VERIFIED; LIVE RUN AND GIT GOVERNANCE PENDING
-**Design controls:** FINAL v1.2 Sections 0.1 and 9; REQ-WP0-01, REQ-WP0-02; ALG-15
+**Status:** STAGE 1 COMPLETE — CONTROLLED PIPELINE CYCLE AUTHORISED
+**Design controls:** FINAL v1.2 Sections 0.1 and 9; REQ-WP0-01 through REQ-WP0-08; ALG-15
 
 ## Requirement-to-code claim
 
@@ -18,6 +18,11 @@
 | Partial chains remain visible but cannot be valued or ranked by normal DOI | `canonical_data/dynamic_options_production.py` | Production bridge partial-retention test |
 | Incomplete cached current-session evidence is refreshed once | both option-chain resolvers | v2 and legacy cache behavior tests |
 | ALG-15 thresholds are governed and included in configuration identity | `config/governed_constants_v1.json` and policy loader | Config validation/hash test and run-meta assertion |
+| Run condition has one domain vocabulary | `domain/run_planning.py` | Six-state enumeration and precedence tests |
+| Morning has distinct pre-open and post-open semantics | domain plan plus `morning_gate.py` | Pre-open adversarial test proves zero option/skew calls |
+| Provider and acquisition timestamps remain separate | Morning fetch/capture adapters | Missing timestamp cannot publish exact quote or executable state |
+| Morning reports quote timestamp coverage | `morning_gate.py` summary | Session/hour distributions and missing/present counts |
+| Macro replay binds by immutable packet id/hash | `canonical_data/macro_packet_archive.py` | Idempotent archive and replay-by-id test |
 
 ## Outputs added
 
@@ -31,14 +36,18 @@
 
 - Production-module compilation: PASS.
 - `git diff --check`: PASS.
-- Stage 1 focused/integration pack: **66 passed, 0 failed**.
-- The earlier wider MSI audit failures were reviewed. Most are historical defect-detector assertions that deliberately expect repaired functionality to be absent; they are not Stage 1 regressions. One genuine resolver compatibility regression was identified and corrected.
+- Original Provider Finality focused/integration pack: **66 passed, 0 failed**.
+- Consolidated Stage 1 regression pack: **138 passed, 0 failed**.
+- Two-session canonical replay: **2,549/2,549 chains COMPLETE**; both sessions meet the governed per-chain and run thresholds.
+- Full governed repository suite: **1,783 passed, 39 failed, 4 skipped, 281 subtests passed**. The Stage 1-related failures were obsolete fixtures/assertions; they were corrected and the 138-test Stage 1 pack was rerun clean. The remaining failures are recorded pre-existing audit/baseline tests and are not promoted as Stage 1 passes.
+- The wider MSI audit failures were reviewed. Most are historical defect-detector assertions that deliberately expect repaired functionality to be absent; they are not Stage 1 regressions. One genuine resolver compatibility regression was identified and corrected.
 - No provider calls and no production pipeline run were made by the offline tests.
 
-## Promotion conditions still open
+## Controlled-cycle acceptance still open
 
-1. Track the two new production modules and Stage 1 tests/evidence in Git. The Stage 0 import-governance test correctly rejects untracked production imports.
-2. Run a controlled pipeline cycle to produce and validate the two finality artefacts and `run_meta_v2` evidence against real canonical chains.
-3. Confirm normal eligibility is granted only when the observed 95%/99% thresholds pass; otherwise confirm the run remains non-baseline with named ticker exceptions.
-
-The code is integrated but must not be described as production-promoted until these conditions are satisfied.
+Stage 1 is complete offline and ready to commit as one bounded release. A controlled completed-session
+pipeline cycle remains the production acceptance test. It must produce the
+finality artefacts, immutable macro binding, named Morning execution state and
+timestamp diagnostics. A subsequent pre-open or post-open Morning invocation
+must follow the mode selected by the persisted plan. Until that evidence exists,
+the implementation is shipped code but not a proven live-cycle baseline.

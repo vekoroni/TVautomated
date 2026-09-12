@@ -15,6 +15,8 @@ from domain.run_planning import (
     AuthorityCeiling,
     DatasetRequirement,
     RequestedAction,
+    OperatorMode,
+    RunCondition,
     RunPlan,
     RunPlanningContext,
     contract_episode_identity,
@@ -50,6 +52,8 @@ def resolve_run_plan(
     pipeline_run_id: str | None = None,
     retry_of_invocation_id: str | None = None,
     supersedes_invocation_id: str | None = None,
+    operator_mode: OperatorMode | str = OperatorMode.STANDARD,
+    code_dirty: bool = False,
 ) -> RunPlan:
     """Translate infrastructure time into facts and invoke the pure domain."""
 
@@ -75,6 +79,8 @@ def resolve_run_plan(
             pipeline_run_id=pipeline_run_id,
             retry_of_invocation_id=retry_of_invocation_id,
             supersedes_invocation_id=supersedes_invocation_id,
+            operator_mode=str(getattr(operator_mode, "value", operator_mode)).upper(),
+            code_dirty=code_dirty,
         ),
     )
 
@@ -83,6 +89,8 @@ __all__ = [
     "AuthorityCeiling",
     "DatasetRequirement",
     "RequestedAction",
+    "OperatorMode",
+    "RunCondition",
     "RunPlan",
     "RunPlanStore",
     "contract_episode_identity",

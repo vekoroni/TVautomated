@@ -30,6 +30,24 @@ class RequestedAction(str, Enum):
     REPLAY = "REPLAY"
 
 
+class RunCondition(str, Enum):
+    """Governed operating condition shared by orchestration and consumers."""
+
+    NORMAL_COMPLETED_SESSION = "NORMAL_COMPLETED_SESSION"
+    FORCED_INTRASESSION = "FORCED_INTRASESSION"
+    PREOPEN_THESIS_CHECK = "PREOPEN_THESIS_CHECK"
+    POSTOPEN_CONTRACT_REFRESH = "POSTOPEN_CONTRACT_REFRESH"
+    REPLAY = "REPLAY"
+    TEST = "TEST"
+
+
+class OperatorMode(str, Enum):
+    STANDARD = "STANDARD"
+    FORCE = "FORCE"
+    REPLAY = "REPLAY"
+    TEST = "TEST"
+
+
 class AuthorityCeiling(str, Enum):
     EOD_PREPARED = "EOD_PREPARED"
     VALIDATION_ONLY = "VALIDATION_ONLY"
@@ -103,6 +121,9 @@ class RunPlan:
     estimated_provider_credits: int
     expected_outputs: tuple[str, ...]
     execution_authority_ceiling: str
+    run_condition: str = RunCondition.TEST.value
+    operator_mode: str = OperatorMode.STANDARD.value
+    baseline_eligible: bool = False
     retry_of_invocation_id: str | None = None
     supersedes_invocation_id: str | None = None
     plan_hash: str = ""
@@ -161,6 +182,33 @@ class RunPlanningContext:
     pipeline_run_id: str | None = None
     retry_of_invocation_id: str | None = None
     supersedes_invocation_id: str | None = None
+    operator_mode: str = OperatorMode.STANDARD.value
+    code_dirty: bool = False
+
+
+def resolve_run_condition(
+    *,
+    requested_action: RequestedAction | str,
+    session_phase: SessionPhase | str,
+    operator_mode: OperatorMode | str = OperatorMode.STANDARD,
+    code_dirty: bool = False,
+) -> RunCondition:
+    """Classify a run without consulting wall-clock or infrastructure state."""
+
+    action = RequestedAction(str(getattr(requested_action, "value", requested_action)).upper())
+    phase = SessionPhase(str(getattr(session_phase, "value", session_phase)).upper())
+    mode = OperatorMode(str(getattr(operator_mode, "value", operator_mode)).upper())
+    if code_dirty or mode is OperatorMode.TEST:
+        return RunCondition.TEST
+    if action is RequestedAction.REPLAY or mode is OperatorMode.REPLAY:
+        return RunCondition.REPLAY
+    if mode is OperatorMode.FORCE:
+        return RunCondition.FORCED_INTRASESSION
+    if action is RequestedAction.VALIDATE:
+        if phase is SessionPhase.PREMARKET:
+            return RunCondition.PREOPEN_THESIS_CHECK
+        return RunCondition.POSTOPEN_CONTRACT_REFRESH
+    return RunCondition.NORMAL_COMPLETED_SESSION
 
 
 def _iso_utc(value: datetime) -> str:
@@ -292,6 +340,12 @@ def resolve_plan(
     )
     completed_session = completed_authority.provider_query_end
     resolved, operational_context = _resolve_action(action, context)
+    run_condition = resolve_run_condition(
+        requested_action=resolved,
+        session_phase=context.session_facts.phase,
+        operator_mode=context.operator_mode,
+        code_dirty=context.code_dirty,
+    )
     tickers = tuple(sorted({ticker.strip().upper() for ticker in context.authorised_tickers if ticker.strip()}))
     cache = {
         str(key).upper(): max(0, int(value))
@@ -311,16 +365,18 @@ def resolve_plan(
         outputs = ("completed_thesis", "eod_opportunity_book", "decision_events")
         ceiling = AuthorityCeiling.EOD_PREPARED
     elif resolved is RequestedAction.VALIDATE:
-        stages_run = ("UNDERLYING_VALIDATION", "SURVIVOR_OPTION_REFRESH")
+        preopen = run_condition is RunCondition.PREOPEN_THESIS_CHECK
+        stages_run = ("UNDERLYING_VALIDATION",)
+        if not preopen:
+            stages_run += ("SURVIVOR_OPTION_REFRESH",)
         if context.session_facts.phase is SessionPhase.REGULAR:
             stages_run += ("DEVELOPING_MARKET_PROFILE",)
         stages_run += ("EXECUTION_GATE", "PUBLISH_VALIDATION")
         stages_reuse = ("COMPLETED_THESIS", "COMPLETED_MARKET_PROFILE")
         session_date = context.session_facts.current_session or completed_session
-        requirements = [
-            DatasetRequirement("UNDERLYING_NBBO", session_date.isoformat(), PlanningEvidenceState.CURRENT_QUOTE.value, tickers, estimated_physical_requests=max(0, len(tickers) - cache.get("UNDERLYING_NBBO", 0))),
-            DatasetRequirement("EXACT_OPTION_QUOTE", session_date.isoformat(), PlanningEvidenceState.CURRENT_QUOTE.value, (), estimated_physical_requests=max(0, len(tickers) - cache.get("EXACT_OPTION_QUOTE", 0)), worklist_source="UNDERLYING_VALIDATION_SURVIVORS", estimate_kind="CEILING"),
-        ]
+        requirements = [DatasetRequirement("UNDERLYING_NBBO", session_date.isoformat(), PlanningEvidenceState.CURRENT_QUOTE.value, tickers, estimated_physical_requests=max(0, len(tickers) - cache.get("UNDERLYING_NBBO", 0)))]
+        if not preopen:
+            requirements.append(DatasetRequirement("EXACT_OPTION_QUOTE", session_date.isoformat(), PlanningEvidenceState.CURRENT_QUOTE.value, (), estimated_physical_requests=max(0, len(tickers) - cache.get("EXACT_OPTION_QUOTE", 0)), worklist_source="UNDERLYING_VALIDATION_SURVIVORS", estimate_kind="CEILING"))
         if context.session_facts.phase is SessionPhase.REGULAR:
             requirements.append(DatasetRequirement("INTRADAY_BAR", session_date.isoformat(), PlanningEvidenceState.DEVELOPING_SESSION.value, (), interval_minutes=5, estimated_physical_requests=max(0, len(tickers) - cache.get("INTRADAY_BAR", 0)), worklist_source="UNDERLYING_VALIDATION_SURVIVORS", estimate_kind="CEILING"))
         outputs = ("validation_event", "execution_gate_result", "governed_handoff")
@@ -384,6 +440,11 @@ def resolve_plan(
         estimated_provider_credits=estimated_requests,
         expected_outputs=outputs,
         execution_authority_ceiling=ceiling.value,
+        run_condition=run_condition.value,
+        operator_mode=OperatorMode(
+            str(getattr(context.operator_mode, "value", context.operator_mode)).upper()
+        ).value,
+        baseline_eligible=(run_condition is RunCondition.NORMAL_COMPLETED_SESSION),
         retry_of_invocation_id=context.retry_of_invocation_id,
         supersedes_invocation_id=context.supersedes_invocation_id,
     )

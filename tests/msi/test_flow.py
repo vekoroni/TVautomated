@@ -192,6 +192,7 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
     live = {
         "live_contract_symbol": symbol, "live_contract_bid": 1.0, "live_contract_ask": 1.2,
         "live_contract_mid": 1.1, "live_contract_bid_size": 7, "live_contract_ask_size": 4,
+        "live_contract_provider_updated": "2026-08-30T13:00:00+00:00",
         "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
         "underlying_bid": 49.9, "underlying_ask": 50.1,
         "underlying_bid_size": 100, "underlying_ask_size": 120,
@@ -212,6 +213,7 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
             "live_contract_bid": 1.0, "live_contract_ask": 1.2, "live_contract_mid": 1.1,
             "live_contract_bid_size": 7, "live_contract_ask_size": 4,  # as morning_gate would pass
             "live_options_source": "MARKETDATA",
+            "live_contract_provider_updated": "2026-08-30T13:00:00+00:00",
             "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
         }
     hydrated = sce.hydrate_selected_structure(
@@ -346,6 +348,7 @@ def test_w03_morning_gate_cds_then_atomic_handoff(tmp_path: Path) -> None:
     live = {
         "live_contract_symbol": symbol, "live_contract_bid": 2.0, "live_contract_ask": 2.2,
         "live_contract_mid": 2.1, "live_contract_bid_size": 15, "live_contract_ask_size": 20,
+        "live_contract_provider_updated": now_iso,
         "live_options_fetched_at": now_iso,
         "underlying_bid": 99.0, "underlying_ask": 99.2,
         "underlying_bid_size": 300, "underlying_ask_size": 400,

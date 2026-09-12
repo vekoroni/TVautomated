@@ -53,14 +53,12 @@ class RunPlanResolutionTests(unittest.TestCase):
             "DEVELOPING_SESSION",
             {item.evidence_state for item in plan.datasets_required},
         )
-        option_quote = next(
-            item for item in plan.datasets_required if item.dataset_type == "EXACT_OPTION_QUOTE"
+        self.assertEqual(plan.run_condition, "PREOPEN_THESIS_CHECK")
+        self.assertNotIn("SURVIVOR_OPTION_REFRESH", plan.stages_to_run)
+        self.assertNotIn(
+            "EXACT_OPTION_QUOTE",
+            {item.dataset_type for item in plan.datasets_required},
         )
-        self.assertEqual(option_quote.authorised_tickers, ())
-        self.assertEqual(
-            option_quote.worklist_source, "UNDERLYING_VALIDATION_SURVIVORS"
-        )
-        self.assertEqual(plan.authorised_ticker_worklists["SURVIVOR_OPTION_REFRESH"], ())
 
     def test_regular_session_adds_developing_profile(self) -> None:
         plan = resolve_run_plan(

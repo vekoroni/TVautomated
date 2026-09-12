@@ -1,0 +1,56 @@
+{
+  "schema_version": "provider_finality_replay_v1",
+  "sessions": [
+    {
+      "provider_completeness_evidence": {
+        "threshold_version": "provider_completeness_v1",
+        "governed_constants_sha256": "c615d18e41d85e74fc9713b660c521de6eeacc41a7a4812d673128a1d3a33a95",
+        "checked_at_utc": "2026-09-05T01:00:00+00:00",
+        "chains_expected": 1289,
+        "complete_chains": 1289,
+        "normal_chain_fraction": 1.0,
+        "minimum_normal_chain_fraction": 0.95,
+        "underlying_tickers_expected": 1289,
+        "closes_present": 1289,
+        "official_close_fraction": 1.0,
+        "minimum_official_close_fraction": 0.99,
+        "state_counts": {
+          "PROVIDER_SESSION_COMPLETE": 1289
+        },
+        "ticker_exceptions": [],
+        "normal_completed_session_eligible": true
+      },
+      "ticker_assessment_count": 1289,
+      "ticker_exception_count": 0,
+      "ticker_exception_examples": [],
+      "session_date": "2026-09-04",
+      "source": "CANONICAL_REPLAY_NO_PROVIDER_CALLS"
+    },
+    {
+      "provider_completeness_evidence": {
+        "threshold_version": "provider_completeness_v1",
+        "governed_constants_sha256": "c615d18e41d85e74fc9713b660c521de6eeacc41a7a4812d673128a1d3a33a95",
+        "checked_at_utc": "2026-09-09T01:00:00+00:00",
+        "chains_expected": 1260,
+        "complete_chains": 1260,
+        "normal_chain_fraction": 1.0,
+        "minimum_normal_chain_fraction": 0.95,
+        "underlying_tickers_expected": 1260,
+        "closes_present": 1260,
+        "official_close_fraction": 1.0,
+        "minimum_official_close_fraction": 0.99,
+        "state_counts": {
+          "PROVIDER_SESSION_COMPLETE": 1260
+        },
+        "ticker_exceptions": [],
+        "normal_completed_session_eligible": true
+      },
+      "ticker_assessment_count": 1260,
+      "ticker_exception_count": 0,
+      "ticker_exception_examples": [],
+      "session_date": "2026-09-08",
+      "source": "CANONICAL_REPLAY_NO_PROVIDER_CALLS"
+    }
+  ],
+  "threshold_decision": "ACCEPTED_FOR_STAGE1"
+}

@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
-from domain.run_planning import RequestedAction, RunPlan
+from domain.run_planning import OperatorMode, RequestedAction, RunPlan
 from canonical_data.run_plan import resolve_run_plan
 from canonical_data.run_plan_store import RunPlanStore, write_plan_atomic
 
@@ -164,6 +164,7 @@ def resolve_dispatch_plan(
     run_id: str | None = None,
     authorised_tickers: Iterable[str] = (),
     provider_session_finalised: bool = False,
+    operator_mode: OperatorMode | str = OperatorMode.STANDARD,
 ) -> tuple[RunPlan, AcceptedThesis | None]:
     """Return an operator-previewable plan without filesystem mutation."""
 
@@ -198,6 +199,7 @@ def resolve_dispatch_plan(
             existing_thesis_session=thesis.completed_session,
             authorised_tickers=tickers,
             provider_session_finalised=provider_session_finalised,
+            operator_mode=operator_mode,
             pipeline_run_id=thesis.pipeline_run_id,
         )
         selected_run_id = (
@@ -215,6 +217,7 @@ def resolve_dispatch_plan(
         existing_thesis_session=thesis.completed_session if thesis else None,
         authorised_tickers=tickers,
         provider_session_finalised=provider_session_finalised,
+        operator_mode=operator_mode,
         pipeline_run_id=selected_run_id,
     )
     return plan, thesis

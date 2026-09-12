@@ -47,6 +47,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from contracts.direction_governance import (
     DIRECTED as GOVERNED_DIRECTED_SIDES,
@@ -818,7 +819,7 @@ def _fetch_live_price(ticker: str) -> Dict[str, Any]:
             "underlying_ask":  _f(last_quote.get("P")),
             "underlying_bid_size": _f(last_quote.get("s")),
             "underlying_ask_size": _f(last_quote.get("S")),
-            "underlying_quote_updated": last_quote.get("t") or _utc_now(),
+            "underlying_quote_updated": _normalise_provider_timestamp(last_quote.get("t")),
             "live_data_source": "POLYGON_SNAPSHOT",
             "live_fetched_at": _utc_now(),
             # AG-01: earnings announcement date from snapshot (no extra API call)
@@ -868,13 +869,35 @@ def _fetch_live_contract(occ_symbol: str) -> Dict[str, Any]:
                 "live_contract_oi":         _f(api_value("openInterest", "open_interest")),
                 "live_contract_volume":     _f(api_value("volume")),
                 "live_contract_multiplier": _f(api_value("contractMultiplier", "multiplier")),
-                "live_contract_provider_updated": api_value("updated", "quoteTimestamp", "timestamp"),
+                "live_contract_provider_updated": _normalise_provider_timestamp(
+                    api_value("updated", "quoteTimestamp", "timestamp")
+                ),
                 "live_options_source":      "MARKETDATA",
                 "live_options_fetched_at":  _utc_now(),
             }
         return {"live_options_source": "MARKETDATA_NO_QUOTE"}
     except Exception as exc:
         return {"live_options_source": "MARKETDATA_FAILED", "live_options_error": str(exc)}
+
+
+def _normalise_provider_timestamp(value: Any) -> Optional[str]:
+    """Return an observed provider instant; never substitute acquisition time."""
+    if value in (None, ""):
+        return None
+    try:
+        if isinstance(value, (int, float)) or str(value).strip().isdigit():
+            numeric = float(value)
+            while numeric > 10_000_000_000:
+                numeric /= 1000.0
+            parsed = datetime.fromtimestamp(numeric, tz=timezone.utc)
+        else:
+            parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                return None
+            parsed = parsed.astimezone(timezone.utc)
+        return parsed.isoformat().replace("+00:00", "Z")
+    except (TypeError, ValueError, OSError, OverflowError):
+        return None
 
 
 def _capture_msi_market_observations(
@@ -900,7 +923,12 @@ def _capture_msi_market_observations(
     )
     bid = _f(live.get("live_contract_bid"))
     ask = _f(live.get("live_contract_ask"))
-    if contract and bid is not None and ask is not None:
+    option_provider_timestamp = _normalise_provider_timestamp(
+        live.get("live_contract_provider_updated")
+    )
+    live["quote_provider_timestamp_utc"] = option_provider_timestamp or ""
+    live["quote_fetch_timestamp_utc"] = _s(live.get("live_options_fetched_at"))
+    if contract and bid is not None and ask is not None and option_provider_timestamp:
         raw_quote = {
             "s": "ok",
             "optionSymbol": [contract],
@@ -917,11 +945,7 @@ def _capture_msi_market_observations(
             "theta": [live.get("live_contract_theta")],
             "vega": [live.get("live_contract_vega")],
             "contractMultiplier": [live.get("live_contract_multiplier")],
-            "updated": [
-                live.get("live_contract_provider_updated")
-                or live.get("live_options_fetched_at")
-                or _utc_now()
-            ],
+            "updated": [option_provider_timestamp],
         }
         observation = resolver.exact_option_quote(
             ticker=ticker,
@@ -935,6 +959,7 @@ def _capture_msi_market_observations(
             provider="MARKETDATA",
         )
         live["msi_exact_quote_dataset_id"] = observation.dataset_id
+        live["quote_source_dataset_id"] = observation.dataset_id
         live["msi_exact_quote_resolution"] = observation.resolution
         if isinstance(observation.payload, dict):
             quote = observation.payload
@@ -962,22 +987,31 @@ def _capture_msi_market_observations(
             quote_source = getattr(observation, "provider", None) or quote.get("quote_source") or "MARKETDATA"
             live["current_quote_source"] = quote_source
             live["morning_quote_source"] = quote_source
+    elif contract and bid is not None and ask is not None:
+        live["msi_exact_quote_resolution"] = "CONTRACT_QUOTE_UNAVAILABLE"
+        live["contract_quote_quality"] = "MISSING_PROVIDER_TIMESTAMP"
+        live["execution_viability_state"] = "CONTRACT_QUOTE_UNAVAILABLE"
+        live["execution_viability_eligible"] = False
 
     underlying_bid = _f(live.get("underlying_bid"))
     underlying_ask = _f(live.get("underlying_ask"))
+    underlying_provider_timestamp = _normalise_provider_timestamp(
+        live.get("underlying_quote_updated")
+    )
     if (
         underlying_bid is not None
         and underlying_ask is not None
         and underlying_bid >= 0
         and underlying_ask > 0
         and underlying_bid <= underlying_ask
+        and underlying_provider_timestamp
     ):
         raw_underlying = {
             "bid": underlying_bid,
             "ask": underlying_ask,
             "bidSize": live.get("underlying_bid_size"),
             "askSize": live.get("underlying_ask_size"),
-            "updated": live.get("underlying_quote_updated") or _utc_now(),
+            "updated": underlying_provider_timestamp,
         }
         observation = resolver.underlying_nbbo(
             ticker=ticker,
@@ -1080,6 +1114,7 @@ def _fetch_all_live(
     liquidity_freshness_seconds: int = 60,
     msi_observation_resolver: Any = None,
     msi_session_date: Optional[date] = None,
+    execution_mode: str = "POSTOPEN_CONTRACT_REFRESH",
 ) -> Dict[str, Dict[str, Any]]:
     """Fetch live equity/options data and try EOD repair alternatives when the primary contract fails."""
     results: Dict[str, Dict[str, Any]] = {}
@@ -1087,14 +1122,31 @@ def _fetch_all_live(
     def fetch_one(row: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         ticker = _u(row.get("ticker", ""))
         live   = _fetch_live_price(ticker)
+        live["morning_execution_mode"] = _u(execution_mode)
         time.sleep(0.1)
+        preopen = _u(execution_mode) == "PREOPEN_THESIS_CHECK"
         occ = _s(
             row.get("evening_contract_symbol")
             or row.get("contract_symbol")
             or row.get("recommended_contract")
             or row.get("preferred_contract")
         )
-        if occ:
+        if preopen:
+            live.update({
+                "morning_execution_mode": "PREOPEN_THESIS_CHECK",
+                "morning_quote_evidence_state": "HISTORICAL",
+                "live_options_source": "CANONICAL_PRIOR_SESSION",
+                "quote_source_dataset_id": _s(
+                    row.get("quote_source_dataset_id") or row.get("option_chain_dataset_id")
+                ),
+                "quote_provider_timestamp_utc": _s(
+                    row.get("quote_provider_timestamp_utc")
+                    or row.get("contract_quote_timestamp")
+                    or row.get("selected_quote_timestamp_utc")
+                ),
+                "quote_fetch_timestamp_utc": "",
+            })
+        elif occ:
             cached_quote: Optional[Dict[str, Any]] = None
             thesis_id = _s(row.get("thesis_id"))
             if liquidity_store is not None and thesis_id:
@@ -1124,7 +1176,7 @@ def _fetch_all_live(
                             "live_contract_volume": observation.volume,
                             "live_contract_provider_updated": observation.quote_as_of.isoformat(),
                             "live_options_source": "MARKETDATA",
-                            "live_options_fetched_at": observation.quote_as_of.isoformat(),
+                            "live_options_fetched_at": _utc_now(),
                             "live_options_resolution": "CDS_FRESH_QUOTE_HIT",
                         }
                         source_record = liquidity_store.registry.get_dataset(
@@ -1180,7 +1232,7 @@ def _fetch_all_live(
                     live.update(repair_live)
                 elif repair_live.get("morning_repair_attempts"):
                     live.update(repair_live)
-        else:
+        elif not preopen:
             # EOD may provide repair alternatives without promoting one into
             # contract_symbol. Try those alternatives before the row reaches the
             # gate as a blank-contract CONTRACT_REPAIR.
@@ -1188,8 +1240,9 @@ def _fetch_all_live(
             if repair_live:
                 live.update(repair_live)
         # AG-03: Options skew fetch (call IV / put IV ratio)
-        skew_data = _fetch_options_skew(ticker)
-        live.update(skew_data)
+        if not preopen:
+            skew_data = _fetch_options_skew(ticker)
+            live.update(skew_data)
         if msi_observation_resolver is not None and msi_session_date is not None:
             _capture_msi_market_observations(
                 row,
@@ -1888,7 +1941,7 @@ def _morning_liquidity_lifecycle(
             "MORNING_REPAIR_ALTERNATIVE_SELECTED" if contract_changed
             else "MORNING_EXACT_CONTRACT_REQUOTE"
         ),
-        "quote_as_of": live_data.get("live_contract_provider_updated") or live_data.get("live_options_fetched_at") or _utc_now(),
+        "quote_as_of": live_data.get("live_contract_provider_updated"),
         "maturation_score_is_probability": False,
         "maturation_execution_authority": False,
     }
@@ -2063,13 +2116,13 @@ def run_gate(
         repaired_dte = live_data.get("selected_contract_dte")
         if repaired_dte in (None, ""):
             quote_day = _s(
-                live_data.get("live_options_fetched_at")
+                live_data.get("live_contract_provider_updated")
                 or live_data.get("selected_quote_timestamp_utc")
-                or _utc_now()
             )[:10]
-            repaired_dte = (
-                date.fromisoformat(repaired_expiry) - date.fromisoformat(quote_day)
-            ).days
+            if quote_day:
+                repaired_dte = (
+                    date.fromisoformat(repaired_expiry) - date.fromisoformat(quote_day)
+                ).days
         for field in ("strike", "contract_strike", "live_contract_strike"):
             out[field] = repaired_strike
         for field in ("expiry", "contract_expiry", "live_contract_expiry"):
@@ -2148,6 +2201,17 @@ def run_gate(
     # through the same policy.  Recompute on every Morning Gate invocation so
     # an EOD viability label can never masquerade as current quote evidence.
     out.update(evaluate_execution_viability(out, live_data))
+    if (
+        _u(live_data.get("morning_execution_mode")) == "POSTOPEN_CONTRACT_REFRESH"
+        and not _normalise_provider_timestamp(
+            live_data.get("live_contract_provider_updated")
+            or live_data.get("selected_quote_timestamp_utc")
+        )
+    ):
+        out["execution_viability_state"] = "CONTRACT_QUOTE_UNAVAILABLE"
+        out["execution_viability_reason"] = "PROVIDER_TIMESTAMP_MISSING"
+        out["execution_viability_eligible"] = False
+        out["executable_now"] = False
 
     previous_contract_symbol = _s(
         out.get("contract_symbol_original")
@@ -2945,7 +3009,21 @@ def _persist_morning_liquidity_result(
 def run_morning_gate(
     run_id: str,
     spread_threshold: float = DEFAULT_SPREAD_THRESHOLD,
+    execution_mode: str = "POSTOPEN_CONTRACT_REFRESH",
 ) -> List[Dict[str, Any]]:
+
+    execution_mode = _u(execution_mode)
+    if execution_mode not in {"PREOPEN_THESIS_CHECK", "POSTOPEN_CONTRACT_REFRESH"}:
+        raise ValueError(f"unsupported Morning execution_mode: {execution_mode}")
+    now_et = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
+    minute_of_day = now_et.hour * 60 + now_et.minute
+    refresh_window_state = (
+        "NOT_APPLICABLE_PREOPEN"
+        if execution_mode == "PREOPEN_THESIS_CHECK"
+        else "DEFAULT_WINDOW"
+        if 9 * 60 + 35 <= minute_of_day <= 9 * 60 + 45
+        else "PERMITTED_LATE_REFRESH"
+    )
 
     run_dir    = RUNS_DIR / run_id
     mv_dir     = run_dir / "morning_validation"
@@ -3025,7 +3103,11 @@ def run_morning_gate(
             run_id=run_id,
             stage="MORNING_GATE",
             tickers=(_u(row.get("ticker")) for row in candidates),
-            dataset_types=(DatasetType.EXACT_OPTION_QUOTE, DatasetType.UNDERLYING_NBBO),
+            dataset_types=(
+                (DatasetType.UNDERLYING_NBBO,)
+                if execution_mode == "PREOPEN_THESIS_CHECK"
+                else (DatasetType.EXACT_OPTION_QUOTE, DatasetType.UNDERLYING_NBBO)
+            ),
         )
         if not publication.reconciled:
             raise RuntimeError("MSI Morning observation worklist did not reconcile")
@@ -3116,6 +3198,7 @@ def run_morning_gate(
         liquidity_store=liquidity_store,
         msi_observation_resolver=msi_observation_resolver,
         msi_session_date=msi_session_date,
+        execution_mode=execution_mode,
     )
     if msi_flags.structure and not msi_flags.minute_bars:
         raise RuntimeError("MSI_STRUCTURE requires MSI_MINUTE_BARS")
@@ -3135,7 +3218,17 @@ def run_morning_gate(
             china_risk_active=china_risk_active,
             china_exposure=china_exposure,
         )
-        if liquidity_registry is not None and liquidity_store is not None:
+        result["morning_execution_mode"] = execution_mode
+        if execution_mode == "PREOPEN_THESIS_CHECK":
+            result["morning_quote_evidence_state"] = "HISTORICAL"
+            result["execution_viability_state"] = "NOT_EVALUATED_PREOPEN"
+            result["execution_viability_eligible"] = False
+            result["capital_permission"] = "NONE"
+        if (
+            execution_mode == "POSTOPEN_CONTRACT_REFRESH"
+            and liquidity_registry is not None
+            and liquidity_store is not None
+        ):
             try:
                 _persist_morning_liquidity_result(
                     result, run_id, liquidity_registry, liquidity_store
@@ -3208,9 +3301,33 @@ def run_morning_gate(
 
     _sl_summary = macro_state.get("sector_lead",  [])
     _sa_summary = macro_state.get("sector_avoid", [])
+    quote_timestamp_distribution: Dict[str, int] = {}
+    quote_timestamp_hour_distribution: Dict[str, int] = {}
+    quote_timestamp_missing = 0
+    for observed in results:
+        provider_timestamp = _normalise_provider_timestamp(
+            observed.get("quote_provider_timestamp_utc")
+            or observed.get("live_contract_provider_updated")
+            or observed.get("morning_quote_timestamp_utc")
+        )
+        if not provider_timestamp:
+            quote_timestamp_missing += 1
+            continue
+        session_key = provider_timestamp[:10]
+        hour_key = provider_timestamp[:13] + ":00Z"
+        quote_timestamp_distribution[session_key] = quote_timestamp_distribution.get(session_key, 0) + 1
+        quote_timestamp_hour_distribution[hour_key] = quote_timestamp_hour_distribution.get(hour_key, 0) + 1
+
     summary = {
         "run_id":           run_id,
         "validated_at_utc": _utc_now(),
+        "morning_execution_mode": execution_mode,
+        "postopen_contract_refresh_window_state": refresh_window_state,
+        "postopen_contract_refresh_observed_at_et": now_et.isoformat(),
+        "quote_provider_timestamp_session_distribution": quote_timestamp_distribution,
+        "quote_provider_timestamp_hour_distribution": quote_timestamp_hour_distribution,
+        "quote_provider_timestamp_missing_count": quote_timestamp_missing,
+        "quote_provider_timestamp_present_count": len(results) - quote_timestamp_missing,
         "input_candidates": len(candidates),
         "go_count":         len(go_list),
         "flag_count":       len(flag_list),
@@ -3865,6 +3982,17 @@ def main() -> int:
             f"{LONG_OPTION_EXECUTION_POLICY['executable_spread_max_pct']:.0f}%%."
         ),
     )
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--preopen-thesis-check",
+        action="store_true",
+        help="Validate the underlying thesis without requesting option quotes.",
+    )
+    mode_group.add_argument(
+        "--postopen-contract-refresh",
+        action="store_true",
+        help="Refresh the selected option contract using observed provider timestamps.",
+    )
     args = parser.parse_args()
 
     cds_runtime = configure_cds_runtime_for_morning_gate()
@@ -3896,7 +4024,25 @@ def main() -> int:
         return 1
 
     log.info("Morning Gate starting â€” run_id=%s", run_id)
-    results = run_morning_gate(run_id=run_id, spread_threshold=args.spread_threshold)
+    if args.preopen_thesis_check:
+        execution_mode = "PREOPEN_THESIS_CHECK"
+    elif args.postopen_contract_refresh:
+        execution_mode = "POSTOPEN_CONTRACT_REFRESH"
+    else:
+        try:
+            from canonical_data import session_snapshot
+            execution_mode = (
+                "PREOPEN_THESIS_CHECK"
+                if session_snapshot().state.value == "PREMARKET"
+                else "POSTOPEN_CONTRACT_REFRESH"
+            )
+        except Exception:
+            execution_mode = "POSTOPEN_CONTRACT_REFRESH"
+    results = run_morning_gate(
+        run_id=run_id,
+        spread_threshold=args.spread_threshold,
+        execution_mode=execution_mode,
+    )
     try:
         from morning_handoff_finalizer import (
             finalize_morning_handoff,

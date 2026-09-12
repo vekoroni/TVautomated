@@ -1,0 +1,59 @@
+{
+  "schema_version": "avs_fix_002_stage_release_v1",
+  "release_id": "AVS-FIX-002-STAGE1",
+  "release_state": "OFFLINE_COMPLETE_CONTROLLED_CYCLE_PENDING",
+  "branch": "avs-fix-001",
+  "base_commit": "63537f37e6be78cad7913e40c273f31389a419dc",
+  "scope": [
+    "provider finality",
+    "central run-condition truth",
+    "pre-open thesis check",
+    "post-open contract refresh",
+    "provider/acquisition timestamp separation",
+    "Morning timestamp coverage diagnostics",
+    "immutable macro packet binding",
+    "two-session canonical replay"
+  ],
+  "production_files": [
+    {"path": "build_macro_json.py", "sha256": "f8091207e739a6e6f66542b031912531774aeeeab8ecf3dadb7e38a9b17353f2"},
+    {"path": "canonical_data/macro_packet_archive.py", "sha256": "dc03c363b13eb2c341a4b45f4527daed7b2c829e2c0af3aa23ce2990330a7b1d"},
+    {"path": "canonical_data/run_plan.py", "sha256": "50f3ac1c99f7f007d0af699ab158985c5c15654412225231c9ae9641a0bb10b2"},
+    {"path": "domain/__init__.py", "sha256": "37a53232df7b9ab10a2ff482eb406d4cb17a8f109bb6d90358e1402033bd4aff"},
+    {"path": "domain/run_planning.py", "sha256": "6dc678b2aed21e92fe746ba90e202bb57bb0205a4c5021595d71281f0c38f683"},
+    {"path": "intelligent_orchestrator.py", "sha256": "4d35542ffb3331e91c71361d798369d2dedca52ef4a5e027c804a127598de3b5"},
+    {"path": "morning_gate.py", "sha256": "e23825b527ace2baafe32a886087b9fa28a88741da8257b492aa1c1ae97cf4b6"},
+    {"path": "orchestrator/dynamic_dispatcher.py", "sha256": "a1f2bd7199702bdf96f80412dc80f6fcd164a62cc01f13791ac4348d1dbfbb97"}
+  ],
+  "test_and_tool_files": [
+    {"path": "pytest.ini", "sha256": "749ec024e2994a0a091179f459d53376e10f2398c8412db7b3408fc21c326597"},
+    {"path": "tests/msi/test_flow.py", "sha256": "433e7cc2602b542fd111b00d138ce21b2900ff8b6836ac31af28fef2630106ab"},
+    {"path": "tests/test_avs_fix_002_stage1_closure.py", "sha256": "8a6558594ee589e9b67effe278245cc100c1f0d21a6c8fc4f71310a8b435765f"},
+    {"path": "tests/test_dynamic_session_phase1.py", "sha256": "e1b532e26edb59802c17000051b1f775a4c559666dde897b6cff10ce9657ba5b"},
+    {"path": "tests/test_msi_morning_capture.py", "sha256": "47a812b54ccaaebad230e693117e8782424838e81847ea56ab67905e4842d6d4"},
+    {"path": "tools/avs_fix_002_provider_replay.py", "sha256": "6a614ec548d033e0dfcda6d985e6988e4111ff4d96c245685a6ff582f6026f36"}
+  ],
+  "governance_files": [
+    {"path": "docs/requirements/AVS-REQ-FIX-002_developer_requirements.md", "sha256": "a9ca347db8873bd49a7a9545ee4c4f814ed86dc396ec666b0f571380e58590b9"},
+    {"path": "audit/avs_fix_002/stage1/SLICE1_PROVIDER_FINALITY_CLAIM.md", "sha256": "ffa774871e283c1fc5a0ec550247b78981e387ca562f35040b4c78569c8368a8"},
+    {"path": "audit/avs_fix_002/stage1/STAGE1_CLOSURE_REPORT.md", "sha256": "b83b93462b9ac8d443940cf38f849a5ddb49954812e1959356e4069e0366640b"},
+    {"path": "audit/avs_fix_002/stage1/PROVIDER_FINALITY_TWO_SESSION_REPLAY.json", "sha256": "e1e720d2c790f52c572dbba88fca8e1e9d85f080b0be39b64d297d4f61fe2a06"}
+  ],
+  "verification": {
+    "stage1_regression": {"passed": 138, "failed": 0},
+    "full_repository_regression": {"passed": 1783, "failed": 39, "skipped": 4, "subtests_passed": 281},
+    "replayed_sessions": ["2026-09-04", "2026-09-08"],
+    "replayed_chains": 2549,
+    "complete_replayed_chains": 2549,
+    "provider_calls": 0,
+    "production_pipeline_runs": 0
+  },
+  "acceptance_pending": [
+    "controlled completed-session pipeline cycle",
+    "persisted finality and macro-binding artefact reconciliation",
+    "planned pre-open or post-open Morning-mode verification"
+  ],
+  "rollback": {
+    "code_base_commit": "63537f37e6be78cad7913e40c273f31389a419dc",
+    "database_migration_in_this_slice": false
+  }
+}

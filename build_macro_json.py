@@ -60,6 +60,8 @@ from contracts.macro_file_contract import (
     GEX_PROXY_FILENAME,
     market_data_directory_from_dropbox,
 )
+from canonical_data.macro_packet_archive import archive_macro_packet
+from scripts.macro_quant_packet import build_macro_quant_packet
 
 # ============================================================
 # CONFIG
@@ -1823,6 +1825,17 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(macro_json, f, indent=2)
     log.info("Written: %s (%.1f KB)", output_path, output_path.stat().st_size / 1024)
+
+    # WP0-06: archive the deterministic advisory packet before publishing a
+    # mutable latest pointer. Replays bind to this packet id and hash.
+    macro_packet = build_macro_quant_packet(macro_json, output_path)
+    archive_receipt = archive_macro_packet(
+        macro_packet, PIPELINE_MACRO_DIR / "archive"
+    )
+    log.info(
+        "Archived macro packet: %s (%s)",
+        archive_receipt["packet_id"], archive_receipt["sha256"][:16],
+    )
 
     # Copy to pipeline data/macro/
     try:
