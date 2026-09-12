@@ -1,0 +1,79 @@
+{
+  "release_id": "DOI-6-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "result": "OFFLINE_ACCEPTED",
+  "domain_version": "doi-dynamic-lifecycle-v1",
+  "service_version": "doi-dynamic-lifecycle-service-v1",
+  "schema_version": "doi_dynamic_lifecycle_v1",
+  "material_policy_version": "doi-material-change-policy-v1",
+  "hysteresis_policy_version": "doi-hysteresis-policy-uncalibrated-v1",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_change_direction": false,
+    "can_invalidate_or_delete_thesis": false,
+    "can_grant_capital": false,
+    "can_close_position": false
+  },
+  "lifecycle_policy": {
+    "evaluation_points": [
+      "COMPLETED_SESSION",
+      "MORNING_GATE",
+      "INTRADAY_MATERIAL",
+      "MANUAL_REFRESH"
+    ],
+    "condition_states": [
+      "THESIS_DEVELOPING",
+      "THESIS_CONFIRMED",
+      "THESIS_CONDITION_BREACHED",
+      "THESIS_RECOVERING",
+      "TARGET_TOUCHED",
+      "HORIZON_ELAPSED_REASSESS",
+      "DATA_INSUFFICIENT"
+    ],
+    "entry_or_exit_condition_discards_opportunity": false,
+    "morning_requires_new_option_quote_for_thesis_condition": false,
+    "morning_reselects_contract_without_refreshed_option_economics": false,
+    "replacement_requires_exact_contract_economics": true,
+    "histories_append_only": true,
+    "utility_is_probability": false
+  },
+  "files": {
+    "domain/dynamic_options_lifecycle.py": "AEA6F76A4DFABF19F1CFBBB0FC2967CE98FD9152A643D3E52C28A01FA07D8A7B",
+    "canonical_data/dynamic_options_lifecycle.py": "1D45EAE388658D93B6FBD99656AD7E4979E78C0F811E3453622E10D517154464",
+    "canonical_data/option_liquidity_lifecycle.py": "461B439549218C70230A280F7A87D4D2E534ABA1AF2F2AB52650E240F132421D",
+    "canonical_data/__init__.py": "A21506DB15365ABA2EB713C3F206BBF81BD6B9D340E7EFD569522A98416BA337",
+    "tests/test_dynamic_options_lifecycle.py": "FFD2CA4B4A9AD569287C6EBB9B9B8FB0A99F851332CC62E36E4F375AB6ACBB7A",
+    "audit/doi/doi6_real_chain_rehearsal.py": "68ACA14B4777EBEBEBBBD1FCC76A1FD8FB9CD701421141EBB965D28828D1719D",
+    "audit/doi/DOI_PHASE6_IMPLEMENTATION_20260910.md": "E95833A49D48B224AB98CDB643984F446452B4E92F3F70DFCB5092C1C20C0D93",
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "C955D6770FAAED30470725AA321A997DC1C5E7BFA72D38FA57B50BCBAFB1FD3A"
+  },
+  "verification": {
+    "phase6_focused": {"passed": 16, "failed": 0},
+    "doi_1_through_6_selected": {"passed": 65, "failed": 0},
+    "existing_lifecycle_and_morning_authority": {"passed": 16, "failed": 0},
+    "compile": "PASS",
+    "pytest_environment_gap": {
+      "modules_unavailable": 2,
+      "reason": "pytest is not installed in active Python 3.14 runtime",
+      "qualification": "NOT_REPRESENTED_AS_PASS"
+    },
+    "real_rehearsal": {
+      "ticker": "A",
+      "session_date": "2026-09-08",
+      "source_rows": 242,
+      "family_candidates": 89,
+      "assessed_contracts": 89,
+      "selected_contract": "A261016C00170000",
+      "event_replay_reused": true,
+      "decision_replay_reused": true,
+      "morning_breach_without_option_refresh": true,
+      "opportunity_retained": true,
+      "authority_violations": 0,
+      "provider_fetch_count": 0,
+      "production_database_modified_by_verification": false
+    }
+  },
+  "backup_directory": "backups/doi_phase6_20260910",
+  "next_phase": "DOI-7_OUTCOME_LABEL_CAPTURE"
+}

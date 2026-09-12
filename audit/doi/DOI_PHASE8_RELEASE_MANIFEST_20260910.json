@@ -1,0 +1,45 @@
+{
+  "release_id": "DOI-PHASE8-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "status": "OFFLINE_ACCEPTED_PRODUCTION_MODEL_NOT_TRAINED",
+  "files": {
+    "domain/dynamic_options_probability.py": "b1efd625c72b996911c2b725d9182b24f32af87509a674fcad4cdfd3bb51abd7",
+    "canonical_data/dynamic_options_probability.py": "9b5f2076a70bf5e5c3c6b3916438c6660b892da90c3b929e45bdfd842f1f35a9",
+    "canonical_data/__init__.py": "e8f00b223e2d3b2aac1e8557f0dd68f3c2eeb4e20deccf3aebf868cf667c721f",
+    "tests/test_dynamic_options_probability.py": "afe3d09feb0a2fcdfc2ff215481001fbfe86941989fe41b5adee2a2f60611da5",
+    "audit/doi/doi8_production_readiness.py": "b4c718e03a444622022497f1b77bd0e7646893200ab9e1c9924259f9d0ca7824",
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "cc834ff8ef6eb8b7312a385a4f8eb9e4dc77f0d2ca26c611e5493a3410d31453"
+  },
+  "tests": {
+    "doi8_focused": {"passed": 13, "failed": 0},
+    "selected_end_to_end_regression": {"passed": 94, "failed": 0},
+    "pytest_only_suites": "NOT_EXECUTED_PYTEST_NOT_INSTALLED"
+  },
+  "production_evidence": {
+    "doi7_labels": 0,
+    "accepted_models": 0,
+    "probability_publication_enabled": false,
+    "fallback": "DOI5_DETERMINISTIC_ASSESSMENT",
+    "control_plane_hash": "0f725c01208a427818ebf49c6f964de12610ed3a21010ddde4081d564629cfdc",
+    "control_plane_modified": false
+  },
+  "authority": {
+    "decision_authority": "NONE",
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "rollback": {
+    "remove_new_files": [
+      "domain/dynamic_options_probability.py",
+      "canonical_data/dynamic_options_probability.py",
+      "tests/test_dynamic_options_probability.py",
+      "audit/doi/doi8_production_readiness.py"
+    ],
+    "revert_existing_file_sections": [
+      "canonical_data/__init__.py DOI-8 imports/exports",
+      "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md DOI-8 acceptance note"
+    ],
+    "database_rollback_required": false
+  }
+}

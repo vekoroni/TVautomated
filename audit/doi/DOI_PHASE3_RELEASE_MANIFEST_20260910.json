@@ -1,0 +1,34 @@
+{
+  "release_id": "DOI-3-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "bridge_version": "doi-observation-bridge-v1",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "files": {
+    "domain/dynamic_options_intelligence.py": "A25EBDF353CFAF15D237DA090F67827411883FB56956E1A53F0C74800FDE6570",
+    "canonical_data/dynamic_options_bridge.py": "F4CFE744677C8BB603881D6B651B379E3CBA014F41F14942AAF413B41B73B6FC",
+    "canonical_data/__init__.py": "6455AE50BDC3C65B7B5C9D290E54A1CCB7BEC18A975E53610269E45081DE6730",
+    "tests/test_dynamic_options_observation_bridge.py": "D959F9651588C9111D890352128F87355912C44930D6DBD4E8D7DF99D0198D3A"
+  },
+  "verification": {
+    "doi3_tests": {"passed": 13, "failed": 0},
+    "doi2_persistence_tests": {"passed": 11, "failed": 0},
+    "existing_lifecycle_tests": {"passed": 16, "failed": 0},
+    "expanded_unittest_selection": {"passed": 69, "failed": 0},
+    "direct_pytest_style_checks": {"passed": 73, "failed": 0, "fixture_skipped": 5},
+    "real_canonical_rows": 242,
+    "real_phantom_history_rows": 230,
+    "real_provider_fetch_count": 0,
+    "production_database_modified": false
+  },
+  "backups": {
+    "domain_before_sha256": "D8343F4A2135F2CFDC6B74F9C53A33637BE070E87CF71AAB2E2B4BDA48F95D67",
+    "canonical_init_before_sha256": "CF970D16B2F86EA4DD7303A0766912249E6DA6AE48C76938AFD270EA1065CEA9"
+  },
+  "next_phase": "DOI-4_GOVERNED_CONTRACT_FAMILY_GENERATION"
+}

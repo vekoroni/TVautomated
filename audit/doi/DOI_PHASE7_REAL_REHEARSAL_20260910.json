@@ -1,0 +1,26 @@
+{
+  "ticker": "A",
+  "origin_session": "2026-09-03",
+  "future_sessions": ["2026-09-04", "2026-09-08"],
+  "origin_dataset_id": "936877a39f705fdcbde51fdf67a6fd9c00e52dab8fa161f1831005867c4a1ef2",
+  "future_dataset_ids": [
+    "a75ca40958c8d6a56b7e176bf147b523cd9bdaca35b1725cffe46a37ad2bf07f",
+    "778fe0d37a39194098d0039a0aab3deae7f3a9a5e1a8b41a3b0b5ad18a50b05e"
+  ],
+  "family_candidates": 89,
+  "assessments": 89,
+  "contracts_with_future_exact_observation": 89,
+  "underlying_completed_sessions": 2,
+  "expected_labels": 178,
+  "labels_built": 178,
+  "labels_appended": 178,
+  "complete_one_session_labels": 89,
+  "deferred_five_session_labels": 89,
+  "option_path_partial_labels": 0,
+  "data_exceptions": 0,
+  "population_reconciled": true,
+  "authority_violations": 0,
+  "provider_fetch_count": 0,
+  "production_database_modified": false,
+  "execution_time_utc": "2026-09-10T08:21:48.138402Z"
+}

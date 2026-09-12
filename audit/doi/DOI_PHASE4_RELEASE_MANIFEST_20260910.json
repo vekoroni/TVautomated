@@ -1,0 +1,60 @@
+{
+  "release_id": "DOI-4-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "result": "OFFLINE_ACCEPTED",
+  "family_policy_version": "doi-thesis-conditioned-family-v1",
+  "generator_version": "doi-contract-family-generator-v1",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "policy": {
+    "supported_structures": ["LONG_CALL", "LONG_PUT"],
+    "expiry_buffer_sessions": 8,
+    "ordinary_spread_is_hard_gate": false,
+    "open_interest_is_hard_gate": false,
+    "volume_is_hard_gate": false,
+    "one_sided_quote_is_hard_gate": false,
+    "complete_taxonomy_persisted": true,
+    "display_is_ranking": false
+  },
+  "files": {
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "2BFA0484C192185178F09D055D50E3054710691128A87DF40FFA10DCC0B7F75F",
+    "domain/dynamic_options_intelligence.py": "A25EBDF353CFAF15D237DA090F67827411883FB56956E1A53F0C74800FDE6570",
+    "domain/contract_family_generation.py": "0BFE488D854F9A2479CECE5931CC7C8A02985ACDE7AF6205B0288A1363C668A7",
+    "canonical_data/dynamic_options_family.py": "15ED89D99ED5665E5F36FC9485A5119E4EFCB6E57282A0BF8503CED5B60A0812",
+    "canonical_data/dynamic_options_bridge.py": "A88CACDF93B804C4F824F878D8157526222B8E3374365E75B2D24CA96429D05F",
+    "canonical_data/__init__.py": "B1C33B3858525E7305DD0C79FB9FD675E4B6C4F730D7AB4BCFD2072E47BB0E76",
+    "intelligent_orchestrator.py": "2B553F701D5C2E685CA6978655028CF3989186FBD8A2BEEACF87D64EDDABB9CB",
+    "tests/test_dynamic_options_contract_family.py": "25C7ED89B4AD04B1BA20211A52637A6185BB710D60F081393EED6A5F387C2EC5",
+    "tests/test_dynamic_options_observation_bridge.py": "7B0A73EE52A64EAC10C32A8DD3D6529C55442BAE59D7E77A6BE34218D3194BE9",
+    "tests/test_doi_phase_quality_assurance.py": "765BFEE115DB0ECB8503ABF73AAA152E8A4B0FF6B160E533E333904E3A650944"
+  },
+  "verification": {
+    "phase1_to_phase4_focused": {"passed": 51, "failed": 0},
+    "phase4_tests": {"passed": 7, "failed": 0},
+    "direct_non_discard_checks": {"passed": 4, "failed": 0},
+    "expanded_selected_tests": {"passed": 72, "failed": 0},
+    "test_environment_limitation": "pytest-only modules were not counted because pytest is absent from the available Python 3.14 runtime",
+    "real_rehearsal": {
+      "ticker": "A",
+      "session_date": "2026-09-08",
+      "source_rows": 242,
+      "family_candidates": 89,
+      "structural_exclusions": 153,
+      "two_sided": 77,
+      "one_sided_monitor": 12,
+      "retained_low_open_interest": 73,
+      "retained_zero_volume": 76,
+      "displayed": 12,
+      "persisted_taxonomy": 242,
+      "provider_fetch_count": 0,
+      "production_database_modified": false
+    }
+  },
+  "backup_directory": "backups/doi_phase4_20260910",
+  "next_phase": "DOI-5_DETERMINISTIC_SCENARIO_AND_VALUATION"
+}

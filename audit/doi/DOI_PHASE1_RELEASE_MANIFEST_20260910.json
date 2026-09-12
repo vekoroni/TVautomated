@@ -1,0 +1,28 @@
+{
+  "release_id": "AVS-DOI-1-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "scope": "authority_decoupling_and_non_discard",
+  "production_acceptance": "OFFLINE_ACCEPTED_PENDING_PIPELINE_RUN",
+  "policy": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "opportunity_retention": "PRESERVE_AND_DISCLOSE"
+  },
+  "verification": {
+    "focused_tests_passed": 94,
+    "focused_subtests_passed": 69,
+    "full_suite_passed": 1571,
+    "full_suite_skipped": 4,
+    "full_suite_failed_unrelated": 30
+  },
+  "files": {
+    "contracts/dynamic_options_policy.py": "B9572DDA6AEF5DDB51993E93BE874C53CE65EF11BAE736A73A20CDAFD4B5E76D",
+    "contracts/handoff_contract.py": "AACF47D3198165A9B9BE7DC112514739E7050872F5D221BB3DDEA79FC05F2C24",
+    "contracts/lab_control.py": "C0437E3903D73E77FD486D01E048640B1F4190ED0490CB7298A04C34AA3D56B1",
+    "pipeline_interpreter/pipeline_interpreter_commands.py": "F52BFA0B886C243DBACCCAADF7930EEC89353A317B632DB167F4542633FBD553",
+    "intelligent_orchestrator.py": "9984282B88983CBCAB65B1E83B5AEEF0B54170915C324653EC0660A898D5AA46",
+    "execution_intelligence_runner.py": "B5A54753924FDCDB2421FE4BB632BA5EC3F6C987881531D802D149C5E7E3FD1D",
+    "eod_candidate_engine.py": "FFD5AED82ACA28EA66B29875885C4FEFE9DEECF161726FADF8F9B057F45993FD"
+  },
+  "rollback_database_sha256": "0F725C01208A427818EBF49C6F964DE12610ED3A21010DDDE4081D564629CFDC"
+}

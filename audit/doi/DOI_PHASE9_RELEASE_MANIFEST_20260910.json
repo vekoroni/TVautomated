@@ -1,0 +1,59 @@
+{
+  "release_id": "DOI-PHASE9-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "status": "OFFLINE_ACCEPTED_CALIBRATED_POLICY_NOT_ACTIVE",
+  "files": {
+    "domain/dynamic_options_ranking.py": "e85baff908c9580c45b04c481402132c68985f8c7d8aa6e359b90c2b1fb00b83",
+    "canonical_data/dynamic_options_ranking.py": "8f31351bd4ec338d5112f3d149d19822098e14da4fc19529bdf186e7cce6787b",
+    "domain/__init__.py": "03473f93df5912c5410bb838ef42d708dfea046b5a6ac9b54a299928b1401e1c",
+    "canonical_data/__init__.py": "3a1ddce8a8dddd0a3f1e3c3fde3564c1dd47e1407cd1c32cb5c625e6bd3c8d63",
+    "tests/test_dynamic_options_ranking.py": "e03d906a88e5a974ceca9bdd1d490add60fca3371702de8e3f54e134aeb5c273",
+    "audit/doi/doi9_production_readiness.py": "15ce5184b2fdd0d6b81917fa1c77707565601849445ab94b00c52f94b70353af",
+    "audit/doi/DOI_PHASE9_PRODUCTION_READINESS_20260910.json": "cb5753652810c82b12d1ca573f9fdb46077ae00c16e9df973a894c1f860f2cf4",
+    "audit/doi/DOI_PHASE9_IMPLEMENTATION_20260910.md": "9712d79adb5b384b1396b22d5459453bf3261005f643574d0ba7b5ceba893c00",
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "0e66cb07188415df1ec1732f840ade5ed82f4f1d05084da49867892e507c79c8"
+  },
+  "tests": {
+    "doi9_focused": {"passed": 13, "failed": 0},
+    "doi1_to_doi9_selected_regression": {"passed": 104, "failed": 0},
+    "compile_and_public_import": "PASS",
+    "pytest": "NOT_INSTALLED_NOT_REQUIRED_FOR_UNITTEST_SUITES"
+  },
+  "production_evidence": {
+    "doi_assessments": 0,
+    "doi7_labels": 0,
+    "accepted_probability_models": 0,
+    "accepted_ranking_policies": 0,
+    "calibrated_ranking_active": false,
+    "fallback": "DOI5_DETERMINISTIC_ASSESSMENT",
+    "control_plane_hash": "0f725c01208a427818ebf49c6f964de12610ed3a21010ddde4081d564629cfdc",
+    "control_plane_modified": false
+  },
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_discard_candidate": false,
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "integration": {
+    "intelligence_lab": "DEFERRED_TO_DOI10",
+    "pipeline_interpreter": "DEFERRED_TO_DOI10",
+    "production_orchestrator": "DEFERRED_TO_DOI10"
+  },
+  "rollback": {
+    "remove_new_files": [
+      "domain/dynamic_options_ranking.py",
+      "canonical_data/dynamic_options_ranking.py",
+      "tests/test_dynamic_options_ranking.py",
+      "audit/doi/doi9_production_readiness.py"
+    ],
+    "revert_existing_file_sections": [
+      "domain/__init__.py DOI-9 exports",
+      "canonical_data/__init__.py DOI-9 exports",
+      "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md DOI-9 acceptance note"
+    ],
+    "database_rollback_required": false
+  }
+}

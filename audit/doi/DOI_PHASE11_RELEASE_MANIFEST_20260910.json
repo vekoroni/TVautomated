@@ -1,0 +1,55 @@
+{
+  "release_id": "DOI-11-20260910",
+  "phase": "DOI-11",
+  "status": "IMPLEMENTED_OFFLINE_ACCEPTED_LIVE_CYCLE_PENDING",
+  "runtime_mode": "ACTIVE_ADVISORY",
+  "authority": {
+    "decision": "NONE",
+    "execution": "HUMAN_ONLY",
+    "can_remove_opportunity": false,
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false,
+    "provider_fetch_allowed": false
+  },
+  "tests": {
+    "focused_doi11": {"passed": 5, "failed": 0},
+    "doi_regression": {"passed": 120, "failed": 0},
+    "python_compile": "PASS",
+    "same_run_restart": "PASS",
+    "real_data_rehearsal": {
+      "source_run_id": "20260909_071646",
+      "isolated_database_copy": true,
+      "tickers": 20,
+      "call_tickers": 10,
+      "put_tickers": 10,
+      "retained_tickers": 20,
+      "family_candidates_audited": 6740,
+      "bounded_candidates_valued_ranked": 240,
+      "canonical_reuse": 20,
+      "physical_provider_calls": 0,
+      "exceptions": 0,
+      "elapsed_seconds": 48.268
+    }
+  },
+  "rollback": {
+    "configuration": "set config/doi_runtime.json enabled=false",
+    "database_backup": "backups/doi_phase11_20260910/control_plane.pre_doi11.sqlite",
+    "database_sha256": "0f725c01208a427818ebf49c6f964de12610ed3a21010ddde4081d564629cfdc",
+    "database_bytes": 129794048
+  },
+  "files_sha256": {
+    "canonical_data/dynamic_options_production.py": "54d77bbbc6db64831968453b615f400e1f4b2de313134b1f519c26402e5af6b0",
+    "canonical_data/dynamic_options_valuation.py": "be6a4b2dfc6b08d9a8b94e0dc56ba6ad1b5db6365b6f42b5eb75a9df7cce2185",
+    "config/doi_runtime.json": "3b28d0d3c0dbd3b76d8e1a61af49c36c32e0ada24293a45a2d1c2049e20eae77",
+    "intelligent_orchestrator.py": "06ebecca08fe26184cf353a23f301793febe429c27c8b73574ae77599d63ff8f",
+    "tools/doi11_production_readiness.py": "09a8e6e19aa845830267f23dfe8df94c08957017ebb072d7ea7a883d0374afdb",
+    "tests/test_doi11_production_integration.py": "34a02ad5e0883fbadf8c801f0b7ae88d04cc3cdfb963d06a9bd03388dadf5bdd",
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "98d0e484aa1b00b7d334803bebaf4c34ad5407bfe5b61b71ff2c24a234a050db",
+    "audit/doi/DOI_PHASE11_IMPLEMENTATION_20260910.md": "df49b9b2a3def9a8ad711171f8f8b68e9c3cde6c504e6047277a549a18130bd8",
+    "audit/doi/DOI_PHASE11_REAL_REHEARSAL_20260910.json": "5566ebdac6ca1a7012bea5af2d81d1b69f46f0ec17c71375610b154788f7a051",
+    "audit/doi/DOI_PHASE11_PRODUCTION_READINESS_20260910.json": "6a42f4d3505ac9bff7148e97e63d8eb321e3489f33c3448c6bf02569fe3a950c"
+  },
+  "production_data_mutated": false,
+  "next_acceptance_step": "fresh evening run followed by DOI-11 assessor; Morning Gate when session permits"
+}

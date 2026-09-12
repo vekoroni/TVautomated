@@ -1,0 +1,24 @@
+{
+  "run_id": "20260909_071646",
+  "input_rows": 20,
+  "unique_tickers": 20,
+  "retained_opportunities": 20,
+  "family_rows": 20,
+  "family_candidates_total": 6740,
+  "bounded_candidates_total": 240,
+  "retained_low_open_interest": 4102,
+  "retained_zero_volume": 3876,
+  "assessed_families": 20,
+  "ranked_families": 20,
+  "lifecycle_families": 20,
+  "canonical_reuse": 20,
+  "physical_fetch_count": 0,
+  "exception_count": 0,
+  "counts_by_state": {
+    "RANKED_DETERMINISTIC": 20
+  },
+  "exceptions": [],
+  "authority": "ADVISORY_ONLY",
+  "deleted_opportunities": 0,
+  "integration_version": "doi-production-integration-v1"
+}

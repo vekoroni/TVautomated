@@ -1,0 +1,41 @@
+{
+  "release_id": "DOI-10-20260910",
+  "phase": "DOI-10",
+  "status": "OFFLINE_ACCEPTED",
+  "authority": {
+    "decision": "NONE",
+    "execution": "HUMAN_ONLY",
+    "can_remove_opportunity": false,
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "tests": {
+    "focused": {"passed": 8, "failed": 0},
+    "doi_regression": {"passed": 115, "failed": 0},
+    "python_compile": "PASS",
+    "javascript_syntax": "PASS",
+    "live_read_only_rehearsal": {
+      "run_id": "20260909_071646",
+      "full_opportunities": 235,
+      "actionable_handoff_rows": 4,
+      "overlaid": 4,
+      "population_preserved": true,
+      "database_unchanged": true
+    }
+  },
+  "files_sha256": {
+    "domain/dynamic_options_projection.py": "6354f7f0fa95d0f3254de75f611db874dd9e2a8591ed9c5ff8e58bf5931a83d8",
+    "canonical_data/dynamic_options_projection.py": "8e68ba04d62a1183968058bea0feb1457ef104cec98ebfe13358b5e8df6b5950",
+    "contracts/lab_control.py": "e75a7cbab3e51e78fe2666732337c29da249861de39baed2c0782a2865b5217c",
+    "contracts/interpreter_handoff.py": "f3e92d81a035b43fa9fca930002ec7a671928f2f21c2d8e68c8d929151ab4822",
+    "contracts/interpreter_handoff_materializer.py": "7ec84d4effbdc1f825ce4569c9d59016fe918b156ad6b4fec3fffca7e4dd4153",
+    "pipeline_interpreter/evidence_resolver.py": "b7b326a2cb6d16c77268cfda15017742356469a2934fa6cfbdbfc2ae381bf6a4",
+    "intelligence-lab/intelligence_lab.py": "5edf6f77382b2187e2fd8d6e940f2952049fefb97a813106cc853d1818b83c59",
+    "intelligence-lab/static/index.html": "133c16a84a92391fcf26ebdb886756efa792560be6ace07d2947a59e99caf88a",
+    "tests/test_doi10_projection_integration.py": "439a20802b625a6bd1e2ca29470f789a28fd491673c21466d3b6821d2648c5af"
+  },
+  "canonical_database_sha256": "0f725c01208a427818ebf49c6f964de12610ed3a21010ddde4081d564629cfdc",
+  "production_data_mutated": false,
+  "next_phase": "DOI-11_CONTROLLED_PRODUCTION_ACCEPTANCE"
+}

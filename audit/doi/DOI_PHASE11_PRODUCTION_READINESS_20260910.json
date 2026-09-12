@@ -1,0 +1,43 @@
+{
+  "schema_version": "doi11_production_acceptance_v1",
+  "run_id": "20260909_071646",
+  "status": "NOT_READY",
+  "decision_authority": "NONE",
+  "execution_authority": "HUMAN_ONLY",
+  "require_morning": true,
+  "checks": [
+    {
+      "name": "governed_runtime",
+      "status": "PASS",
+      "detail": "active, reuse-only, provider-free and advisory"
+    },
+    {
+      "name": "completed_session_report",
+      "status": "AWAITING",
+      "detail": "no DOI-11 report for run 20260909_071646"
+    },
+    {
+      "name": "canonical_persistence",
+      "status": "AWAITING",
+      "detail": "doi_contract_assessments,doi_contract_families,doi_family_rankings,doi_lifecycle_events,doi_preferred_contract_decisions"
+    },
+    {
+      "name": "authority_separation",
+      "status": "AWAITING",
+      "detail": "violations=0"
+    },
+    {
+      "name": "lab_projection",
+      "status": "FAIL",
+      "detail": "schema=lab_signal_book_v2 candidate_count=235 rows=235"
+    },
+    {
+      "name": "morning_cycle",
+      "status": "PASS",
+      "detail": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260909_071646\\morning_validation\\morning_validated_trades_20260909_071646.csv"
+    }
+  ],
+  "database_counts": {},
+  "report_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260909_071646\\options\\dynamic_options_intelligence_20260909_071646.json",
+  "book_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260909_071646\\intelligence_lab\\final_opportunity_book_20260909_071646.json"
+}

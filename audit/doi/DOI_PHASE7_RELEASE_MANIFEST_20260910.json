@@ -1,0 +1,69 @@
+{
+  "release_id": "DOI-7-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "result": "OFFLINE_ACCEPTED",
+  "domain_version": "doi-outcome-label-v1",
+  "service_version": "doi-outcome-capture-service-v1",
+  "schema_version": "doi_outcome_labels_v1",
+  "calculation_version": "doi-outcome-calculation-v1",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "outcome_kind": "HYPOTHETICAL_MARKET_PATH",
+    "uses_realised_fills": false,
+    "can_change_direction": false,
+    "can_invalidate_or_delete_thesis": false,
+    "can_grant_capital": false,
+    "can_close_position": false
+  },
+  "label_policy": {
+    "horizons_sessions": [1, 5, 10, 20],
+    "spread_milestones": [0.15, 0.25, 0.35],
+    "return_hurdle": 0.1,
+    "missing_values_are_zero": false,
+    "low_oi_or_zero_volume_discards_label": false,
+    "path_evidence_must_follow_assessment_cutoff": true,
+    "path_evidence_must_be_available_by_evaluation_cutoff": true,
+    "cross_split_outcome_windows_are_excluded": true,
+    "histories_append_only": true
+  },
+  "files": {
+    "domain/dynamic_options_outcomes.py": "3FF7009A775F8BA8B69FF12CB23A89999309771197086AF0A4755D13D57E1CFE",
+    "canonical_data/dynamic_options_outcomes.py": "5E0C43B6FCF4EC9254A63D3F31E7A65909B06146B60B482F467BB3C4D9331CA8",
+    "canonical_data/option_liquidity_lifecycle.py": "10801E13B617CFF3196D91A204F933E29B9BE1E27F44C9B67A8307F149ABEE3A",
+    "canonical_data/__init__.py": "CAD6AE97944C3FDAE1E3FE32B9BBEB051FE53EED33FBD7FD8A3242CC7242ED15",
+    "tests/test_dynamic_options_outcomes.py": "559DBAC0658ACE1A8CCB231D5D8EE1C1A5065FECDABA1001BBAC3B92D6E87BCB",
+    "audit/doi/doi7_real_outcome_rehearsal.py": "85A0A5040B1102C4DCA45AC8D44244774A78FCFD7140CAE30E794466B3303081",
+    "audit/doi/DOI_PHASE7_REAL_REHEARSAL_20260910.json": "35782401F64C87FC726A379F0AA87067FD151BE4A77A0065F071F8136304C530",
+    "audit/doi/DOI_PHASE7_IMPLEMENTATION_20260910.md": "D1612E3DD64437F6E7C48F414F32C591F030FF1A819BA8EBDB717AAF90D2BA34",
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "A0BEE11D369891E7446580E37193E60B2B69A025B482B73E0D702FE3935D836C"
+  },
+  "verification": {
+    "phase7_focused": {"passed": 16, "failed": 0},
+    "doi_1_through_7_selected": {"passed": 81, "failed": 0},
+    "existing_lifecycle_and_morning_authority": {"passed": 16, "failed": 0},
+    "compile_and_import": "PASS",
+    "network_authority_scan": "PASS",
+    "pytest_environment_gap": {
+      "reason": "pytest is not installed in active Python 3.14 runtime",
+      "qualification": "NO_PYTEST_ONLY_SUITE_REPRESENTED_AS_PASS"
+    },
+    "real_rehearsal": {
+      "ticker": "A",
+      "origin_session": "2026-09-03",
+      "future_sessions": ["2026-09-04", "2026-09-08"],
+      "assessments": 89,
+      "exact_contracts_observed_later": 89,
+      "expected_labels": 178,
+      "labels_reconciled": 178,
+      "complete_one_session": 89,
+      "deferred_five_session": 89,
+      "data_exceptions": 0,
+      "authority_violations": 0,
+      "provider_fetch_count": 0,
+      "production_database_modified_by_verification": false
+    }
+  },
+  "backup_directory": "backups/doi_phase7_20260910",
+  "next_phase": "DOI-8_PROBABILITY_MODELS"
+}

@@ -1,0 +1,69 @@
+{
+  "release_id": "DOI-5-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "result": "OFFLINE_ACCEPTED",
+  "engine_version": "doi-deterministic-scenario-v1",
+  "model_version": "DIVIDEND_ADJUSTED_EUROPEAN_BS_V1",
+  "utility_version": "doi-scenario-utility-uncalibrated-v1",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false,
+    "probability_outputs_enabled": false
+  },
+  "scenario_policy": {
+    "paths": ["FAVOURABLE_TARGET", "ADVERSE_INVALIDATION"],
+    "timings": ["EARLY", "MID", "LATE"],
+    "iv_stresses": ["CONTRACTED", "BASE", "EXPANDED"],
+    "scenario_count_per_evaluable_contract": 18,
+    "calendar": "XNYS",
+    "utility_formula": "MEDIAN_FAVOURABLE_RETURN_PLUS_WORST_ADVERSE_RETURN",
+    "utility_is_probability": false,
+    "scenario_weighting": "NONE",
+    "missing_ask_discards_contract": false,
+    "american_exercise_modelled": false
+  },
+  "files": {
+    "docs/AVS-SD-DOI-001_DYNAMIC_OPTIONS_INTELLIGENCE.md": "7B031225BE232A709BC568BA76F8357A2FDD18558F60198BF0FB94756A81274D",
+    "domain/deterministic_option_valuation.py": "A46844D3BDB70130503A3313E089E02863E1D98CF06F1ECAEAE630B7A6B9042C",
+    "canonical_data/dynamic_options_valuation.py": "717AA68258659E6C0D737E53ECEF2AA7131FBCF2CCB3FF093799F8DDFF448C07",
+    "canonical_data/option_liquidity_lifecycle.py": "89EF9957CE7B32F5A95E4CEC8FF602D3B57041383A9B7633D90B05C6844CD26F",
+    "canonical_data/__init__.py": "04AC778C834F2EAB5E608384C6724BAB414E352D60512C43A5256CAB082199EF",
+    "tests/test_dynamic_options_deterministic_valuation.py": "F9EB6754F78E218B7C39E165C818BE517484CF32D10B586B6DEEB00ECCF41FC7",
+    "audit/doi/doi5_real_chain_rehearsal.py": "684FBDD341640AA329BCEFC439B4C0309174390CD3C094E7106109650DFB7CDB"
+  },
+  "verification": {
+    "phase5_focused": {"passed": 14, "failed": 0},
+    "doi_and_lifecycle_selected": {"passed": 62, "failed": 0},
+    "authority_selected": {"passed": 17, "failed": 0},
+    "isolated_cds_history": {"passed": 3, "failed": 0},
+    "compile": "PASS",
+    "global_unittest_discovery": {
+      "executed": 581,
+      "passed": 547,
+      "failed": 3,
+      "import_errors": 31,
+      "qualification": "NOT_CLEAN; pytest absent and three order-dependent CDS failures pass in isolation"
+    },
+    "real_rehearsal": {
+      "ticker": "A",
+      "session_date": "2026-09-08",
+      "source_rows": 242,
+      "family_candidates": 89,
+      "assessed_contracts": 89,
+      "scenario_values": 1602,
+      "two_sided": 77,
+      "one_sided": 12,
+      "utility_available": 89,
+      "probability_fields_populated": 0,
+      "authority_violations": 0,
+      "provider_fetch_count": 0,
+      "production_database_modified": false,
+      "idempotent_replay": true
+    }
+  },
+  "backup_directory": "backups/doi_phase5_20260910",
+  "next_phase": "DOI-6_DYNAMIC_LIFECYCLE_AND_RE_RANKING"
+}

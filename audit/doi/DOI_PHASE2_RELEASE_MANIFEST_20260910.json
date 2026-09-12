@@ -1,0 +1,28 @@
+{
+  "release_id": "DOI-2-20260910",
+  "design": "AVS-SD-DOI-001-v1.1",
+  "schema_version": "option_liquidity_lifecycle_v3",
+  "authority": {
+    "decision_authority": "NONE",
+    "execution_authority": "HUMAN_ONLY",
+    "can_change_direction": false,
+    "can_invalidate_thesis": false,
+    "can_grant_capital": false
+  },
+  "files": {
+    "domain/dynamic_options_intelligence.py": "D8343F4A2135F2CFDC6B74F9C53A33637BE070E87CF71AAB2E2B4BDA48F95D67",
+    "canonical_data/option_liquidity_lifecycle.py": "D9201AA44663DFC8402C3A2B8FA197D582120914427F1A9C9634483103B45DBD",
+    "canonical_data/__init__.py": "CF970D16B2F86EA4DD7303A0766912249E6DA6AE48C76938AFD270EA1065CEA9",
+    "tests/test_dynamic_options_domain_persistence.py": "F54783EADF7E6353D121AEAD46DF2D58BBF64BA22A80B7AFD5C2E33F18F7591F"
+  },
+  "verification": {
+    "doi2_tests": {"passed": 11, "failed": 0},
+    "existing_lifecycle_tests": {"passed": 16, "failed": 0},
+    "authority_handoff_checks": {"passed": 22, "failed": 0},
+    "expanded_unittest_regression": {"passed": 71, "failed": 0},
+    "production_database_modified": false,
+    "migration_rehearsal": "PASS"
+  },
+  "rollback_database_sha256": "0F725C01208A427818EBF49C6F964DE12610ED3A21010DDDE4081D564629CFDC",
+  "next_phase": "DOI-3_GOVERNED_OBSERVATION_BRIDGE"
+}

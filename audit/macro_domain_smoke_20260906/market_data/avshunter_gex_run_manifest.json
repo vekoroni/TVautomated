@@ -1,0 +1,21 @@
+{
+  "by_strike_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\macro_domain_smoke_20260906\\market_data\\avshunter_gex_by_strike.csv",
+  "by_strike_sha256": "3b9d0cd8f2598adac30ca97f1526aa8b2d983809f1f8efd2684b0fb94d838cab",
+  "contract_version": "avshunter_local_gex_manifest_v1",
+  "dataset_ids": [
+    "dcdabb1e6552a0a76f3d3cfe2f264148f9ba1e3af81e0699c5fb51264d9b1b63",
+    "7ce8bf46e0cc5b3a1a8ce33d341f81fdeea42fb45b4ced7f83e72687f246a8e3"
+  ],
+  "provider_requests": 0,
+  "proxy_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\macro_domain_smoke_20260906\\market_data\\avshunter_gex_proxy.csv",
+  "proxy_sha256": "a4485b6c1275a75772a4b68ac04f448256991e3be1895018a0e0fa9e925bb25a",
+  "run_id": "LOCAL_GEX_20260906_201555",
+  "scope": "SWING_GEX_7_56D",
+  "session_date": "2026-09-04",
+  "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\phantom\\phantom_history.db",
+  "status": "COMPLETE",
+  "tickers": [
+    "SPY",
+    "QQQ"
+  ]
+}
