@@ -16,7 +16,11 @@ the bottom of this file are the ones that matter most.
 
 from __future__ import annotations
 
+from datetime import date
 import unittest
+
+from canonical_data.option_identity import build_occ_symbol
+from canonical_data.session_clock import advance_xnys_sessions
 
 from contracts.selected_contract_economics import (
     MONETISABILITY_TIMEVALUE_ASSUMPTIONS,
@@ -40,8 +44,15 @@ def hydrated(*, symbol="AAA260918C00100000", bid=0.80, ask=0.85, strike=100.0):
 
 
 def evaluate(*, direction, target, ask, strike, iv, dte, hold, bid=0.0):
-    hyd = hydrated(bid=bid, ask=ask, strike=strike)
-    row = {"canonical_direction": direction, "target_spot": target}
+    start_session = date(2026, 9, 1)
+    expiry = advance_xnys_sessions(start_session, int(dte))
+    symbol = build_occ_symbol("AAA", expiry, direction, strike)
+    hyd = hydrated(symbol=symbol, bid=bid, ask=ask, strike=strike)
+    row = {
+        "canonical_direction": direction,
+        "target_spot": target,
+        "selected_quote_timestamp_utc": "2026-09-01T20:00:00Z",
+    }
     intrinsic = evaluate_long_option_monetisability(row, hyd)
     timevalue = evaluate_timevalue_monetisability(
         {**row, "contract_iv": iv, "contract_dte": dte, "planned_hold_sessions": hold},
@@ -163,7 +174,10 @@ class NamedAbsences(unittest.TestCase):
 
     def _reason(self, **overrides):
         hyd = hydrated()
-        row = {"canonical_direction": "CALL", "target_spot": 100.82}
+        row = {
+            "canonical_direction": "CALL", "target_spot": 100.82,
+            "selected_quote_timestamp_utc": "2026-09-01T20:00:00Z",
+        }
         intrinsic = evaluate_long_option_monetisability(row, hyd)
         inputs = {"contract_iv": 0.187, "contract_dte": 8, "planned_hold_sessions": 0}
         inputs.update(overrides)

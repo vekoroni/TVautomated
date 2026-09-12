@@ -2047,6 +2047,7 @@ def run_gate(
 
     repaired_contract = _s(live_data.get("morning_repair_contract_symbol"))
     if repaired_contract:
+        repaired_identity = parse_occ_symbol(repaired_contract)
         out["contract_symbol_original"] = _s(
             row.get("contract_symbol")
             or row.get("recommended_contract")
@@ -2057,6 +2058,39 @@ def run_gate(
         out["morning_selected_contract_symbol"] = repaired_contract
         repaired_side = _contract_side_from_row(out)
         out["selected_contract_side"] = repaired_side
+        repaired_strike = repaired_identity["strike"]
+        repaired_expiry = repaired_identity["expiry"]
+        repaired_dte = live_data.get("selected_contract_dte")
+        if repaired_dte in (None, ""):
+            quote_day = _s(
+                live_data.get("live_options_fetched_at")
+                or live_data.get("selected_quote_timestamp_utc")
+                or _utc_now()
+            )[:10]
+            repaired_dte = (
+                date.fromisoformat(repaired_expiry) - date.fromisoformat(quote_day)
+            ).days
+        for field in ("strike", "contract_strike", "live_contract_strike"):
+            out[field] = repaired_strike
+        for field in ("expiry", "contract_expiry", "live_contract_expiry"):
+            out[field] = repaired_expiry
+        for field in ("dte", "contract_dte", "live_contract_dte"):
+            out[field] = repaired_dte
+        prior_trade_idea_id = _s(out.get("trade_idea_id"))
+        run_token = _s(out.get("run_id")) or "UNKNOWN_RUN"
+        ticker_token = _u(out.get("ticker")) or "UNKNOWN"
+        direction_token = _u(
+            out.get("governed_direction") or out.get("canonical_direction")
+            or out.get("direction") or repaired_identity["side"]
+        )
+        instrument_token = _u(out.get("instrument")) or f"LONG_{repaired_identity['side']}"
+        out["trade_idea_id"] = (
+            f"{run_token}:{ticker_token}:{direction_token}:{instrument_token}:"
+            f"{repaired_strike}:{repaired_expiry}"
+        )
+        if prior_trade_idea_id and prior_trade_idea_id != out["trade_idea_id"]:
+            out["trade_idea_supersedes_id"] = prior_trade_idea_id
+            out["trade_idea_supersession_reason"] = "MORNING_CONTRACT_REPAIR"
         out["contract_repair_resolved_at_open"] = "TRUE"
         # A replacement contract is a new economic object. Hydrate its quote
         # fields immediately, then invalidate all R:R/EV values calculated for

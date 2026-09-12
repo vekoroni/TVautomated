@@ -68,6 +68,9 @@ def test_single_call_hydration_and_rr_use_the_exact_selected_quote() -> None:
     assert hydrated["selected_structure_hydration_status"] == "COMPLETE"
     assert hydrated["selected_structure"] == "LONG_SINGLE"
     assert json.loads(hydrated["selected_contract_symbols"]) == [symbol]
+    assert hydrated["selected_contract_strike"] == 100.0
+    assert hydrated["selected_contract_expiry"] == "2026-09-18"
+    assert isinstance(hydrated["selected_contract_dte"], int)
     assert hydrated["live_contract_ask"] == 5.0
     assert rr["rr_recompute_status"] == "COMPLETE"
     assert rr["rr_contract_symbol"] == symbol

@@ -120,6 +120,22 @@ def previous_xnys_session(value: date) -> date:
     return candidate
 
 
+def advance_xnys_sessions(value: date, count: int) -> date:
+    """Advance an XNYS session by an exact non-negative session count."""
+
+    sessions = int(count)
+    if sessions != count or sessions < 0:
+        raise ValueError("session count must be a non-negative integer")
+    if not is_xnys_session(value):
+        raise ValueError(f"{value} is not an XNYS session")
+    result = value
+    for _ in range(sessions):
+        result += timedelta(days=1)
+        while not is_xnys_session(result):
+            result += timedelta(days=1)
+    return result
+
+
 def xnys_sessions_between(start: date, end: date) -> int:
     """Count XNYS trading sessions strictly after `start` up to and including `end`.
 

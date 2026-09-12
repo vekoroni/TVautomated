@@ -16,6 +16,9 @@ import re
 from typing import Any, Callable, Dict, Iterable, List, Mapping
 
 from contracts.long_option_policy import quote_spread_fraction
+from canonical_data.session_clock import (
+    advance_xnys_sessions, is_xnys_session, previous_xnys_session,
+)
 
 
 RR_CALCULATION_VERSION = "selected-contract-rr-v1"
@@ -439,6 +442,11 @@ def hydrate_selected_structure(
         "selected_structure_id": evaluation_id,
         "selected_contract_symbol": selected_symbol,
         "selected_contract_symbols": json.dumps([leg["symbol"] for leg in legs]),
+        # Identity is one atomic object.  Consumers must never combine the new
+        # OCC symbol with strike/expiry/DTE left over from a prior contract.
+        "selected_contract_strike": aggregate["strike"],
+        "selected_contract_expiry": aggregate["expiry"],
+        "selected_contract_dte": aggregate["dte"],
         "selected_quote_snapshot_id": _snapshot_id(structure, legs),
         "selected_quote_timestamp_utc": aggregate["quote_timestamp_utc"],
         "selected_legs_json": json.dumps(legs, sort_keys=True, separators=(",", ":")),
@@ -653,8 +661,36 @@ def evaluate_timevalue_monetisability(
     )
     if hold_days is None or hold_days < 0:
         return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_UNAVAILABLE"}
+    if int(hold_days) != hold_days or hold_days > 20:
+        return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_SESSIONS_INVALID"}
 
-    years = max(dte - hold_days, 0.0) / 365.0
+    symbol = _text(
+        intrinsic.get("monetisability_contract_symbol")
+        or hydrated.get("selected_contract_symbol")
+    )
+    try:
+        expiry_date = date.fromisoformat(parse_occ_symbol(symbol)["expiry"])
+    except (TypeError, ValueError):
+        expiry_raw = _first_present((row, "expiry"), (row, "contract_expiry"), (hydrated, "expiry"))
+        try:
+            expiry_date = date.fromisoformat(str(expiry_raw)[:10])
+        except (TypeError, ValueError):
+            return {**base, "monetisability_timevalue_reason": "CONTRACT_EXPIRY_UNAVAILABLE"}
+
+    as_of_raw = next((value for value in (
+        row.get("selected_quote_timestamp_utc"), row.get("current_quote_timestamp_utc"),
+        row.get("quote_timestamp_utc"), row.get("quote_as_of"), row.get("bar_data_asof"),
+        hydrated.get("selected_quote_timestamp_utc"), hydrated.get("quote_timestamp_utc"),
+    ) if _text(value)), None)
+    try:
+        as_of_session = date.fromisoformat(str(as_of_raw)[:10])
+    except (TypeError, ValueError):
+        return {**base, "monetisability_timevalue_reason": "VALUATION_SESSION_UNAVAILABLE"}
+    if not is_xnys_session(as_of_session):
+        as_of_session = previous_xnys_session(as_of_session)
+    target_session = advance_xnys_sessions(as_of_session, int(hold_days))
+    remaining_calendar_days = max((expiry_date - target_session).days, 0)
+    years = remaining_calendar_days / 365.0
     value = _black_scholes_value(direction, target_spot, strike, years, vol)
     if value is None:
         return {**base, "monetisability_timevalue_reason": "PRICER_UNAVAILABLE"}
@@ -678,6 +714,11 @@ def evaluate_timevalue_monetisability(
         "monetisability_timevalue_value_per_share": round(float(value), 6),
         "monetisability_timevalue_years_to_expiry": round(years, 8),
         "monetisability_timevalue_iv_used": round(vol, 6),
+        "monetisability_timevalue_as_of_session": as_of_session.isoformat(),
+        "monetisability_timevalue_target_session": target_session.isoformat(),
+        "monetisability_timevalue_expiry_date": expiry_date.isoformat(),
+        "monetisability_timevalue_calendar_days_remaining": remaining_calendar_days,
+        "monetisability_timevalue_time_basis": "XNYS_HOLD_SESSIONS_TO_CALENDAR_EXPIRY",
         "monetisability_timevalue_reason": reason,
     }
 

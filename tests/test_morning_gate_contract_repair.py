@@ -72,6 +72,11 @@ def test_blank_primary_contract_promotes_live_repair_alternative(monkeypatch) ->
     assert gated["contract_symbol"] == "AAA260116C00100000"
     assert gated["recommended_contract"] == "AAA260116C00100000"
     assert gated["morning_selected_contract_symbol"] == "AAA260116C00100000"
+    assert gated["strike"] == 100.0
+    assert gated["expiry"] == "2026-01-16"
+    assert gated["contract_strike"] == 100.0
+    assert gated["contract_expiry"] == "2026-01-16"
+    assert gated["trade_idea_id"].endswith(":100.0:2026-01-16")
     assert gated["contract_repair_resolved_at_open"] == "TRUE"
     assert gated["contract_bid"] == 1.0
     assert gated["contract_ask"] == 1.1
