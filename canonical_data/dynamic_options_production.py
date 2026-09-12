@@ -133,6 +133,19 @@ def run_completed_session_doi(
     if max_tickers is not None:
         frame = frame.head(max(0, int(max_tickers)))
 
+    finality_path = source.parent / f"provider_finality_{run_id}.json"
+    if not finality_path.is_file():
+        raise ValueError("DOI completed-session input has no provider-finality evidence")
+    finality_payload = json.loads(finality_path.read_text(encoding="utf-8-sig"))
+    finality_rows = finality_payload.get("ticker_assessments")
+    if not isinstance(finality_rows, list):
+        raise ValueError("provider-finality evidence has no ticker assessments")
+    finality_by_ticker = {
+        str(item.get("ticker") or "").strip().upper(): item
+        for item in finality_rows
+        if isinstance(item, Mapping) and str(item.get("ticker") or "").strip()
+    }
+
     registry = CanonicalRegistry(registry_path)
     store = OptionLiquidityLifecycleStore(registry)
     store.initialise()
@@ -207,11 +220,26 @@ def run_completed_session_doi(
                 ticker=ticker, session_date=cutoff.date(),
                 observation_kind=OptionObservationKind.COMPLETED_SESSION,
                 evidence_cutoff_utc=cutoff, acquire_missing=None,
+                provider_finality=finality_by_ticker.get(ticker),
             )
             if observation.physical_fetch_count:
                 raise ValueError("UNEXPECTED_PROVIDER_FETCH")
             if observation.available:
                 reused += 1
+            if not observation.normal_completed_session_eligible:
+                finality = observation.provider_finality or {}
+                states["PROVIDER_FINALITY_EXCEPTION_RETAINED"] += 1
+                exceptions.append({
+                    "ticker": ticker,
+                    "error_type": "ProviderFinalityException",
+                    "reason": str(
+                        finality.get("finality_state")
+                        or "PROVIDER_SESSION_EVIDENCE_INSUFFICIENT"
+                    ),
+                    "finality_reasons": list(finality.get("reasons") or ()),
+                    "retained": True,
+                })
+                continue
             generated = generator.generate(
                 thesis=thesis, observation=observation, run_id=run_id,
                 current_spot=spot, evaluation_cutoff_utc=cutoff,

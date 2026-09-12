@@ -27,6 +27,9 @@ from .registry import CanonicalRegistry
 from .request_ledger import RequestLedger, RequestResolution
 from .storage import AtomicPayloadStore
 from .session_clock import session_bounds
+from .provider_finality import assess_canonical_option_chain
+from domain.provider_finality import ProviderRequestMode
+from .session_clock import session_snapshot
 
 
 OPTION_CHAIN_V2 = "option_chain_v2"
@@ -40,6 +43,7 @@ class ObservationResult:
     resolution: str
     dataset_id: str | None
     provider: str
+    provider_finality: Mapping[str, Any] | None = None
 
 
 def _json_safe(value: Any) -> Any:
@@ -198,7 +202,95 @@ class CanonicalMarketObservationResolver:
                 raise ValueError("option-chain quote/session mismatch")
             flags = ("CONTAINS_CROSSED_QUOTES",) if frame["quality_flags"].str.contains("CROSSED_QUOTE").any() else ()
             return frame.to_dict("records"), timestamps.max().to_pydatetime(), flags
-        return self._resolve(request, provider=provider, fetch=lambda: fetch(ticker), normalise=normalise)
+        result = self._resolve(
+            request, provider=provider, fetch=lambda: fetch(ticker), normalise=normalise
+        )
+
+        def assessed(value: ObservationResult) -> ObservationResult:
+            record = self.registry.get_dataset(str(value.dataset_id)) if value.dataset_id else None
+            finality = assess_canonical_option_chain(
+                ticker=ticker,
+                requested_session=session_date,
+                last_completed_session=session_snapshot().last_completed_session,
+                request_mode=ProviderRequestMode.HISTORICAL_COMPLETED,
+                assessed_at_utc=datetime.now(timezone.utc),
+                chain_record=record,
+                historical_price_database_path=(
+                    self.registry.database_path.parent / "historical_prices.sqlite"
+                ),
+            )
+            return ObservationResult(
+                value.payload, value.resolution, value.dataset_id, value.provider,
+                finality.to_dict(),
+            )
+
+        result = assessed(result)
+        reasons = set((result.provider_finality or {}).get("reasons") or ())
+        refreshable = bool(reasons & {
+            "CHAIN_TIMESTAMP_DISTRIBUTION_MISSING",
+            "SESSION_DATE_COVERAGE_BELOW_THRESHOLD",
+            "PROVIDER_TIMESTAMP_COVERAGE_BELOW_THRESHOLD",
+            "LATE_SESSION_WATERMARK_COVERAGE_BELOW_THRESHOLD",
+        })
+        cache_hit = result.resolution in {
+            ResolutionKind.EXACT_HIT.value,
+            ResolutionKind.SUPERSET_HIT.value,
+        }
+        # A forced intraday payload can be structurally valid yet fail finality.
+        # Refresh that cache hit once the same session is the last completed
+        # session. Missing official-close evidence is not repairable by another
+        # option request and remains a named exception.
+        if (
+            cache_hit
+            and refreshable
+            and not self.flags.offline_replay
+            and session_date == session_snapshot().last_completed_session
+        ):
+            ledger_id = self.ledger.start(request, provider=provider)
+            try:
+                payload, as_of, flags = normalise(fetch(ticker))
+                record = self._persist_json(
+                    request=request,
+                    payload=payload,
+                    provider=provider,
+                    as_of=as_of,
+                    quality_flags=flags,
+                )
+                self.ledger.finish(
+                    ledger_id,
+                    RequestResolution.PROVIDER_FETCH,
+                    dataset_id=record.dataset_id,
+                    physical_request_count=1,
+                    reason="REFRESH_PROVIDER_FINALITY_PARTIAL_CACHE",
+                )
+                result = assessed(ObservationResult(
+                    payload, "PROVIDER_FETCH", record.dataset_id, provider
+                ))
+                finality = dict(result.provider_finality or {})
+                finality.update({"refresh_attempted": True, "refresh_status": "SUCCEEDED"})
+                result = ObservationResult(
+                    result.payload, result.resolution, result.dataset_id,
+                    result.provider, finality,
+                )
+            except Exception as error:
+                self.ledger.finish(
+                    ledger_id,
+                    RequestResolution.PROVIDER_ERROR,
+                    physical_request_count=1,
+                    reason=f"{type(error).__name__}:{error}",
+                )
+                # Preserve the cache evidence as a named non-normal exception.
+                finality = dict(result.provider_finality or {})
+                finality.update({
+                    "refresh_attempted": True,
+                    "refresh_status": "FAILED",
+                    "refresh_error": f"{type(error).__name__}:{error}",
+                })
+                result = ObservationResult(
+                    result.payload, result.resolution, result.dataset_id,
+                    result.provider, finality,
+                )
+        return result
 
     def exact_option_quote(
         self, *, ticker: str, symbol: str, session_date: date, freshness_seconds: int,

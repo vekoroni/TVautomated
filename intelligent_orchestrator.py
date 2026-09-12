@@ -2040,6 +2040,82 @@ def _update_run_meta_status(
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
 
+
+def _integrate_provider_completeness_into_run_meta(
+    run_id: str,
+    *,
+    options_summary_path: Path,
+    operator_mode: str,
+) -> dict:
+    """Merge the governed Stage-1 provider-finality result into run_meta_v2.
+
+    Ticker exceptions are already retained by Options Intelligence. This
+    boundary only decides whether the complete run may represent a normal
+    completed-session baseline.
+    """
+
+    summary = json.loads(options_summary_path.read_text(encoding="utf-8-sig"))
+    evidence = summary.get("provider_completeness_evidence")
+    if not isinstance(evidence, dict):
+        raise ValueError("Options summary has no provider_completeness_evidence")
+    if evidence.get("threshold_version") != "provider_completeness_v1":
+        raise ValueError("Options summary has an unsupported provider completeness contract")
+    if str(evidence.get("status") or "").upper() != "ASSESSED":
+        raise ValueError(
+            "provider completeness was not assessed: "
+            + str(evidence.get("reason") or evidence.get("status") or "UNKNOWN")
+        )
+
+    path = cfg.RUNS_DIR / str(run_id) / "run_meta.json"
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    if payload.get("run_meta_schema_version") != "run_meta_v2":
+        raise ValueError("provider completeness requires run_meta_v2")
+
+    git_describe = str(payload.get("git_describe") or "UNAVAILABLE")
+    baseline_commit = str(payload.get("baseline_commit_hash") or "UNAVAILABLE")
+    dirty = git_describe.lower().endswith("-dirty") or baseline_commit == "UNAVAILABLE"
+    mode = str(operator_mode or "STANDARD").strip().upper()
+    provider_eligible = bool(evidence.get("normal_completed_session_eligible"))
+    if dirty:
+        run_condition = "TEST"
+    elif mode == "FORCE":
+        run_condition = "FORCED_INTRASESSION"
+    elif provider_eligible:
+        run_condition = "NORMAL_COMPLETED_SESSION"
+    else:
+        run_condition = "TEST"
+
+    dynamic_plan = payload.get("dynamic_plan") or {}
+    runtime_profile = payload.get("ddd_runtime_profile") or {}
+    payload.update(
+        {
+            "run_condition": run_condition,
+            "baseline_eligible": run_condition == "NORMAL_COMPLETED_SESSION",
+            "code_identity": {
+                "commit_hash": baseline_commit,
+                "dirty": dirty,
+                "git_describe": git_describe,
+            },
+            "config_identity": {
+                "profile_hash": runtime_profile.get("sha256"),
+                "release_id": runtime_profile.get("release_id"),
+                "governed_constants_sha256": evidence.get(
+                    "governed_constants_sha256"
+                ),
+            },
+            "session_date": dynamic_plan.get("last_completed_session"),
+            "evidence_cutoff_utc": dynamic_plan.get("evidence_cutoff_utc"),
+            "operator_mode": mode,
+            "provider_completeness_evidence": evidence,
+        }
+    )
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    temporary.replace(path)
+    return payload
+
 def assert_finalise_preconditions(
     planned,
     *,
@@ -2951,7 +3027,12 @@ def run_dynamic_options_intelligence(run_id: str) -> bool:
         logger.error("DOI-11 advisory integration failed: %s", error)
         return False
 
-def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
+def run_options_intelligence(
+    run_id: str,
+    premarket_mode: bool = False,
+    *,
+    operator_mode: str = "STANDARD",
+) -> bool:
     """Options Intelligence Layer (non-critical)."""
     logger.info("=" * 80)
     logger.info("PHASE 8b: OPTIONS INTELLIGENCE LAYER")
@@ -3057,6 +3138,33 @@ def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
                     _empty_message
                     + "\n   Pipeline continues — morning validation will show 0 actionable signals."
                 )
+        if ok and not premarket_mode:
+            try:
+                _provider_meta = _integrate_provider_completeness_into_run_meta(
+                    run_id,
+                    options_summary_path=(
+                        output_dir / f"options_intelligence_summary_{run_id}.json"
+                    ),
+                    operator_mode=operator_mode,
+                )
+                _provider_evidence = _provider_meta["provider_completeness_evidence"]
+                logger.info(
+                    "Provider finality integrated: condition=%s baseline_eligible=%s "
+                    "complete=%s/%s closes=%s/%s",
+                    _provider_meta.get("run_condition"),
+                    _provider_meta.get("baseline_eligible"),
+                    _provider_evidence.get("complete_chains"),
+                    _provider_evidence.get("chains_expected"),
+                    _provider_evidence.get("closes_present"),
+                    _provider_evidence.get("underlying_tickers_expected"),
+                )
+            except Exception as _provider_meta_error:
+                logger.error(
+                    "Provider finality integration failed closed at run level: %s",
+                    _provider_meta_error,
+                )
+                if _cds_stage_enforced:
+                    ok = False
     run_dropoff_audit_checkpoint(run_id, "post_options")
     return ok
 
@@ -4942,7 +5050,10 @@ def evening_workflow(
     run_catalyst_truth_layer(canonical_run_id, stage="pre_options")
 
     run_position_lock_check(canonical_run_id)
-    if not run_options_intelligence(canonical_run_id):     # MUST precede Phase 8.5
+    if not run_options_intelligence(
+        canonical_run_id,
+        operator_mode="FORCE" if force else "STANDARD",
+    ):     # MUST precede Phase 8.5
         logger.error(
             "Evening workflow aborted: governed Options acquisition did not complete"
         )

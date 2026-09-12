@@ -52,11 +52,19 @@ class GovernedOptionObservation:
     acquisition: ObservationAcquisitionDecision
     physical_fetch_count: int
     quality_flags: tuple[str, ...] = ()
+    provider_finality: Mapping[str, Any] | None = None
     decision_authority: str = DOI_DECISION_AUTHORITY
 
     @property
     def available(self) -> bool:
         return self.dataset_id is not None and not self.frame.empty
+
+    @property
+    def normal_completed_session_eligible(self) -> bool:
+        return bool(
+            self.provider_finality
+            and self.provider_finality.get("normal_completed_session_eligible") is True
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -555,6 +563,7 @@ class CanonicalDOIObservationBridge:
         underlying_reactivated: bool = False,
         manual_refresh: bool = False,
         acquire_missing: Callable[[], Any] | None = None,
+        provider_finality: Mapping[str, Any] | None = None,
     ) -> GovernedOptionObservation:
         symbol = str(ticker).strip().upper()
         kind = (
@@ -641,6 +650,7 @@ class CanonicalDOIObservationBridge:
                 provider="CANONICAL", as_of_utc=None, frame=pd.DataFrame(),
                 resolution=resolution, acquisition=acquisition,
                 physical_fetch_count=physical_fetch_count,
+                provider_finality=provider_finality,
             )
         return GovernedOptionObservation(
             ticker=symbol, observation_kind=kind, dataset_id=record.dataset_id,
@@ -649,6 +659,7 @@ class CanonicalDOIObservationBridge:
                 "PROVIDER_FETCH" if physical_fetch_count else "CANONICAL_REUSE"
             ), acquisition=acquisition, physical_fetch_count=physical_fetch_count,
             quality_flags=record.quality_flags,
+            provider_finality=provider_finality,
         )
 
     def build_bundle(

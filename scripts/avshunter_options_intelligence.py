@@ -2958,6 +2958,11 @@ def fetch_chain(ticker: str) -> pd.DataFrame:
         frame.attrs["canonical_provider"] = result.provider
         frame.attrs["canonical_resolution"] = result.resolution
         frame.attrs["canonical_schema_version"] = "option_chain_v2"
+        # Resolver test doubles and older compatible resolver implementations
+        # predate the additive Stage-1 finality field.  Treat its absence as
+        # unassessed here; the governed run-level assessment below remains the
+        # authority and will fail normal-baseline eligibility if it is absent.
+        frame.attrs["provider_finality"] = getattr(result, "provider_finality", None) or {}
         print(
             f"  [{ticker}] CDS v2 chain {result.resolution}: "
             f"{len(frame)} contracts provider={result.provider}"
@@ -2975,6 +2980,7 @@ def fetch_chain(ticker: str) -> pd.DataFrame:
         result.frame.attrs["canonical_dataset_id"] = result.dataset_id
         result.frame.attrs["canonical_provider"] = result.provider
         result.frame.attrs["canonical_resolution"] = result.resolution
+        result.frame.attrs["provider_finality"] = getattr(result, "provider_finality", None) or {}
         return result.frame
 
     # CDS rollback path remains MarketData-only. Missing contract multipliers
@@ -6993,6 +6999,14 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'option_chain_dataset_id': chain.attrs.get('canonical_dataset_id', ''),
         'option_chain_provider': chain.attrs.get('canonical_provider', 'MARKETDATA'),
         'option_chain_resolution': chain.attrs.get('canonical_resolution', ''),
+        'option_chain_provider_finality': (
+            chain.attrs.get('provider_finality', {}).get('finality_state', '')
+            if isinstance(chain.attrs.get('provider_finality'), dict) else ''
+        ),
+        'option_chain_provider_finality_reasons_json': json.dumps(
+            chain.attrs.get('provider_finality', {}).get('reasons', [])
+            if isinstance(chain.attrs.get('provider_finality'), dict) else []
+        ),
     }
 
     if chain.empty:
@@ -8802,6 +8816,8 @@ def run_options_layer(
     # before any chain request, then resolve/write-through one canonical chain
     # per ticker/session. In enforced mode any publication defect fails closed.
     _cds_options_publication = None
+    _chain_authorised_tickers: List[str] = []
+    _run_session: Optional[date] = None
     _options_session_exception_by_ticker: Dict[str, Dict[str, Any]] = {}
     try:
         from canonical_data import (
@@ -9253,6 +9269,7 @@ def run_options_layer(
         'quote_as_of','quote_freshness','liquidity_persistence_status',
         'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',
         'option_chain_provider','option_chain_resolution',
+        'option_chain_provider_finality','option_chain_provider_finality_reasons_json',
         # EIL S4 OBI: real equity NBBO when available, explicit fallback otherwise.
         'l2_bid_size','l2_ask_size','l2_quote_source','l2_quote_timestamp_utc',
         'ev3_selected_handoff_status','ev3_selected_handoff_missing_fields_json',
@@ -9398,6 +9415,81 @@ def run_options_layer(
             for entry in _cds_entries
         )
 
+    # AVS-FIX-002 Stage 1: assess provider finality at ticker and run grain.
+    # This controls evidence eligibility, not pipeline membership. A partial
+    # chain remains a named exception and never aborts unrelated candidates.
+    _provider_finality = {
+        "threshold_version": "provider_completeness_v1",
+        "status": "NOT_ASSESSED",
+        "normal_completed_session_eligible": False,
+        "chains_expected": len(_chain_authorised_tickers),
+    }
+    if _run_session is not None and _cds_options_publication is not None:
+        try:
+            from canonical_data.provider_finality import assess_completed_option_worklist
+            from canonical_data.registry import CanonicalRegistry
+            from canonical_data.session_clock import session_snapshot
+
+            _checked_at = datetime.now(timezone.utc)
+            _dataset_by_ticker = {
+                str(item.get("ticker") or "").strip().upper(): str(
+                    item.get("option_chain_dataset_id") or ""
+                ).strip()
+                for item in results
+                if str(item.get("ticker") or "").strip()
+            }
+            _provider_result = assess_completed_option_worklist(
+                registry=CanonicalRegistry(
+                    _REPO_ROOT / "data" / "canonical" / "control_plane.sqlite"
+                ),
+                expected_tickers=_chain_authorised_tickers,
+                chain_dataset_ids=_dataset_by_ticker,
+                requested_session=_run_session,
+                last_completed_session=session_snapshot(_checked_at).last_completed_session,
+                assessed_at_utc=_checked_at,
+                historical_price_database_path=(
+                    _REPO_ROOT / "data" / "canonical" / "historical_prices.sqlite"
+                ),
+            )
+            _provider_finality = _provider_result.aggregate.to_dict()
+            _provider_finality["status"] = "ASSESSED"
+            _provider_detail_path = Path(output_dir) / f"provider_finality_{run_id}.json"
+            _provider_detail_path.write_text(
+                json.dumps(_provider_result.to_dict(), indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+            _provider_exception_path = (
+                Path(output_dir) / f"provider_finality_exceptions_{run_id}.csv"
+            )
+            pd.DataFrame(
+                [
+                    item.to_dict()
+                    for item in _provider_result.assessments
+                    if not item.normal_completed_session_eligible
+                ]
+            ).to_csv(_provider_exception_path, index=False)
+            _provider_finality["detail_path"] = str(_provider_detail_path.resolve())
+            _provider_finality["exception_path"] = str(_provider_exception_path.resolve())
+            print(
+                "[PROVIDER-FINALITY] "
+                f"complete={_provider_finality['complete_chains']}/"
+                f"{_provider_finality['chains_expected']} "
+                f"closes={_provider_finality['closes_present']}/"
+                f"{_provider_finality['underlying_tickers_expected']} "
+                f"normal={_provider_finality['normal_completed_session_eligible']}"
+            )
+        except Exception as _provider_error:
+            _provider_finality.update(
+                {
+                    "status": "ASSESSMENT_ERROR",
+                    "reason": f"{type(_provider_error).__name__}: {_provider_error}",
+                }
+            )
+            print(
+                "[PROVIDER-FINALITY] assessment unavailable; run is non-baseline: "
+                f"{_provider_error}"
+            )
+
     # Summary JSON
     summary = {
         'run_id'            : run_id,
@@ -9412,6 +9504,7 @@ def run_options_layer(
         'execution_permission': OPTIONS_RESEARCH_PERMISSION,
         'elapsed_seconds'   : round(elapsed, 1),
         'cds_chain_telemetry': _cds_chain_telemetry,
+        'provider_completeness_evidence': _provider_finality,
         'repair_selector_diagnostics': _aggregate_repair_selector_diagnostics(results),
         'top_execute'       : (
             out_df[out_df['options_verdict']=='EXECUTE']

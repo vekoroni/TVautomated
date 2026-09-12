@@ -27,6 +27,9 @@ from .lifecycle import LifecycleManager
 from .registry import CanonicalRegistry
 from .request_ledger import RequestLedger, RequestResolution
 from .session_clock import session_bounds
+from .provider_finality import assess_canonical_option_chain
+from domain.provider_finality import ProviderRequestMode
+from .session_clock import session_snapshot
 
 
 CHAIN_SCHEMA_VERSION = "option_chain_v1"
@@ -42,6 +45,7 @@ class OptionChainResult:
     resolution: str
     provider: str
     dataset_id: str | None
+    provider_finality: dict[str, object] | None = None
 
 
 def resolve_completed_session_date(values: Iterable[Any]) -> date:
@@ -215,9 +219,33 @@ class CanonicalOptionChainService:
         if resolution.kind in {ResolutionKind.EXACT_HIT, ResolutionKind.SUPERSET_HIT}:
             record = resolution.records[0]
             try:
-                return OptionChainResult(
-                    self._read(record), resolution.kind.value, record.provider, record.dataset_id
+                frame = self._read(record)
+                finality = assess_canonical_option_chain(
+                    ticker=ticker,
+                    requested_session=self.session_date,
+                    last_completed_session=session_snapshot().last_completed_session,
+                    request_mode=ProviderRequestMode.HISTORICAL_COMPLETED,
+                    assessed_at_utc=datetime.now(timezone.utc),
+                    chain_record=record,
+                    historical_price_database_path=(
+                        self.registry.database_path.parent / "historical_prices.sqlite"
+                    ),
                 )
+                refreshable = bool(set(finality.reasons) & {
+                    "CHAIN_TIMESTAMP_DISTRIBUTION_MISSING",
+                    "SESSION_DATE_COVERAGE_BELOW_THRESHOLD",
+                    "PROVIDER_TIMESTAMP_COVERAGE_BELOW_THRESHOLD",
+                    "LATE_SESSION_WATERMARK_COVERAGE_BELOW_THRESHOLD",
+                })
+                if not (
+                    refreshable
+                    and not self.flags.offline_replay
+                    and self.session_date == session_snapshot().last_completed_session
+                ):
+                    return OptionChainResult(
+                        frame, resolution.kind.value, record.provider,
+                        record.dataset_id, finality.to_dict(),
+                    )
             except ValueError as error:
                 # Legacy CDS-4 records used the run date and fetch time.  Reject
                 # any cache hit whose payload does not prove the requested
@@ -236,7 +264,7 @@ class CanonicalOptionChainService:
                 self.session_date.isoformat(),
             )
             return OptionChainResult(
-                pd.DataFrame(), "OFFLINE_CACHE_MISS", "CANONICAL", None
+                pd.DataFrame(), "OFFLINE_CACHE_MISS", "CANONICAL", None, None
             )
 
         provider = "MARKETDATA"
@@ -252,7 +280,21 @@ class CanonicalOptionChainService:
                     physical_request_count=1,
                     reason="MARKETDATA_PRIMARY",
                 )
-                return OptionChainResult(frame, "PROVIDER_FETCH", provider, record.dataset_id)
+                finality = assess_canonical_option_chain(
+                    ticker=ticker,
+                    requested_session=self.session_date,
+                    last_completed_session=session_snapshot().last_completed_session,
+                    request_mode=ProviderRequestMode.HISTORICAL_COMPLETED,
+                    assessed_at_utc=datetime.now(timezone.utc),
+                    chain_record=record,
+                    historical_price_database_path=(
+                        self.registry.database_path.parent / "historical_prices.sqlite"
+                    ),
+                )
+                return OptionChainResult(
+                    frame, "PROVIDER_FETCH", provider, record.dataset_id,
+                    finality.to_dict(),
+                )
 
             self.ledger.finish(
                 ledger_id,
@@ -260,7 +302,7 @@ class CanonicalOptionChainService:
                 physical_request_count=1,
                 reason="MARKETDATA_PRIMARY_EMPTY",
             )
-            return OptionChainResult(frame, "PROVIDER_EMPTY", provider, None)
+            return OptionChainResult(frame, "PROVIDER_EMPTY", provider, None, None)
         except Exception as error:
             self.ledger.finish(
                 ledger_id,

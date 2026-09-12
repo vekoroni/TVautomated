@@ -92,3 +92,78 @@ def test_pin_run_directory_writes_both_code_identity_fields() -> None:
     }
     assert "baseline_commit_hash" in keys
     assert "git_describe" in keys
+
+
+def test_provider_finality_marks_clean_standard_run_baseline_eligible(
+    tmp_path: Path, monkeypatch
+) -> None:
+    run_id = "20260912_200000"
+    run_dir = tmp_path / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "run_meta.json").write_text(json.dumps({
+        "run_meta_schema_version": "run_meta_v2",
+        "git_describe": "avs-release-1-gabc123",
+        "baseline_commit_hash": "abc123",
+        "run_kind": "PRODUCTION",
+        "dynamic_plan": {
+            "last_completed_session": "2026-09-11",
+            "evidence_cutoff_utc": "2026-09-12T20:00:00Z",
+        },
+        "ddd_runtime_profile": {"sha256": "profile-hash", "release_id": "R1"},
+    }), encoding="utf-8")
+    summary = tmp_path / "summary.json"
+    summary.write_text(json.dumps({
+        "provider_completeness_evidence": {
+            "threshold_version": "provider_completeness_v1",
+            "status": "ASSESSED",
+            "normal_completed_session_eligible": True,
+            "complete_chains": 95,
+            "chains_expected": 100,
+            "closes_present": 100,
+            "underlying_tickers_expected": 100,
+            "governed_constants_sha256": "constants-hash",
+        }
+    }), encoding="utf-8")
+    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", tmp_path)
+
+    result = orchestrator._integrate_provider_completeness_into_run_meta(
+        run_id, options_summary_path=summary, operator_mode="STANDARD"
+    )
+
+    assert result["run_condition"] == "NORMAL_COMPLETED_SESSION"
+    assert result["baseline_eligible"] is True
+    assert result["code_identity"]["dirty"] is False
+    assert result["config_identity"]["profile_hash"] == "profile-hash"
+    assert result["config_identity"]["governed_constants_sha256"] == "constants-hash"
+
+
+def test_provider_finality_never_promotes_dirty_or_forced_run(
+    tmp_path: Path, monkeypatch
+) -> None:
+    run_id = "20260912_150000"
+    run_dir = tmp_path / run_id
+    run_dir.mkdir(parents=True)
+    meta = {
+        "run_meta_schema_version": "run_meta_v2",
+        "git_describe": "abc123-dirty",
+        "baseline_commit_hash": "abc123",
+        "dynamic_plan": {},
+        "ddd_runtime_profile": {},
+    }
+    (run_dir / "run_meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    summary = tmp_path / "summary.json"
+    summary.write_text(json.dumps({
+        "provider_completeness_evidence": {
+            "threshold_version": "provider_completeness_v1",
+            "status": "ASSESSED",
+            "normal_completed_session_eligible": True,
+        }
+    }), encoding="utf-8")
+    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", tmp_path)
+
+    result = orchestrator._integrate_provider_completeness_into_run_meta(
+        run_id, options_summary_path=summary, operator_mode="FORCE"
+    )
+
+    assert result["run_condition"] == "TEST"
+    assert result["baseline_eligible"] is False

@@ -37,6 +37,26 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def _write_finality(self, source: Path, tickers: tuple[str, ...]) -> None:
+        (source.parent / f"provider_finality_{RUN_ID}.json").write_text(
+            json.dumps({
+                "provider_completeness_evidence": {
+                    "threshold_version": "provider_completeness_v1",
+                    "normal_completed_session_eligible": True,
+                },
+                "ticker_assessments": [
+                    {
+                        "ticker": ticker,
+                        "finality_state": "PROVIDER_SESSION_COMPLETE",
+                        "normal_completed_session_eligible": True,
+                        "reasons": [],
+                    }
+                    for ticker in tickers
+                ],
+            }),
+            encoding="utf-8",
+        )
+
     def _register_chain(self, ticker: str, direction: str, strike: float):
         symbol = f"{ticker}261016{'C' if direction == 'CALL' else 'P'}{int(strike*1000):08d}"
         rows = [{
@@ -110,6 +130,7 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
              "planned_hold_sessions": 5, "planned_hold_source": "HORIZON_ROUTER",
              "quote_timestamp_utc": CUTOFF.isoformat(), "ev3_rate_used": .045},
         ]).to_csv(source, index=False)
+        self._write_finality(source, ("AAA", "BBB"))
         result = run_completed_session_doi(
             run_id=RUN_ID, options_csv=source, registry_path=self.database,
             report_path=self.root / "report.json",
@@ -144,6 +165,7 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
              "planned_hold_sessions": 5, "quote_timestamp_utc": CUTOFF.isoformat()},
             {"ticker": "ND", "governed_direction": "STRANGLE", "underlying_price": 50},
         ]).to_csv(source, index=False)
+        self._write_finality(source, ())
         result = run_completed_session_doi(
             run_id=RUN_ID, options_csv=source, registry_path=self.database,
             report_path=self.root / "report.json",
@@ -164,6 +186,7 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
             "planned_hold_sessions": 5, "planned_hold_source": "HORIZON_ROUTER",
             "quote_timestamp_utc": CUTOFF.isoformat(), "ev3_rate_used": .045,
         }]).to_csv(source, index=False)
+        self._write_finality(source, ("WIDE",))
         result = run_completed_session_doi(
             run_id=RUN_ID, options_csv=source, registry_path=self.database,
             report_path=self.root / "wide-report.json",
@@ -173,6 +196,38 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
         self.assertEqual(result.assessed_families, 1)
         with closing(sqlite3.connect(self.database)) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM doi_contract_assessments").fetchone()[0], 12)
+
+    def test_partial_provider_chain_is_retained_but_not_valued(self):
+        self._register_chain("PART", "CALL", 100.0)
+        source = self.root / "partial-options.csv"
+        pd.DataFrame([{
+            "ticker": "PART", "thesis_id": "PART:CALL:1",
+            "governed_direction": "CALL", "underlying_price": 100,
+            "target_spot": 110, "invalidation_spot": 95,
+            "planned_hold_sessions": 5,
+            "planned_hold_source": "HORIZON_ROUTER",
+            "quote_timestamp_utc": CUTOFF.isoformat(), "ev3_rate_used": .045,
+        }]).to_csv(source, index=False)
+        (source.parent / f"provider_finality_{RUN_ID}.json").write_text(
+            json.dumps({
+                "ticker_assessments": [{
+                    "ticker": "PART",
+                    "finality_state": "PROVIDER_SESSION_PARTIAL",
+                    "normal_completed_session_eligible": False,
+                    "reasons": ["LATE_SESSION_WATERMARK_COVERAGE_BELOW_THRESHOLD"],
+                }]
+            }),
+            encoding="utf-8",
+        )
+
+        result = run_completed_session_doi(
+            run_id=RUN_ID, options_csv=source, registry_path=self.database,
+            report_path=self.root / "partial-report.json",
+        )
+
+        self.assertEqual(result.retained_opportunities, 1)
+        self.assertEqual(result.assessed_families, 0)
+        self.assertEqual(result.counts_by_state["PROVIDER_FINALITY_EXCEPTION_RETAINED"], 1)
 
     def test_runtime_is_reuse_only_and_orchestration_order_is_governed(self):
         root = Path(__file__).resolve().parents[1]
@@ -201,6 +256,7 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
             "planned_hold_sessions": 5, "planned_hold_source": "HORIZON_ROUTER",
             "quote_timestamp_utc": CUTOFF.isoformat(), "ev3_rate_used": .045,
         }]).to_csv(source, index=False)
+        self._write_finality(source, ("AAA",))
         report = source.parent / f"dynamic_options_intelligence_{RUN_ID}.json"
         run_completed_session_doi(
             run_id=RUN_ID, options_csv=source, registry_path=self.database,

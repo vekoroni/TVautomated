@@ -1,0 +1,13 @@
+{
+  "provider_completeness": {
+    "late_session_window_minutes": 15,
+    "minimum_late_watermark_coverage": 0.1,
+    "minimum_provider_timestamp_coverage": 0.8,
+    "minimum_session_date_coverage": 0.8,
+    "normal_chain_fraction": 0.95,
+    "official_close_fraction": 0.99,
+    "provider_settlement_delay_minutes": 15,
+    "threshold_version": "provider_completeness_v1"
+  },
+  "schema_version": "governed_constants_v1"
+}
