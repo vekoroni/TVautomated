@@ -1,0 +1,10 @@
+{
+  "schema_version": "doi_runtime_v1",
+  "enabled": true,
+  "mode": "ACTIVE_ADVISORY",
+  "canonical_reuse_only": true,
+  "provider_fetch_allowed": false,
+  "decision_authority": "NONE",
+  "execution_authority": "HUMAN_ONLY",
+  "failure_policy": "TICKER_EXCEPTION_RETAIN_PIPELINE"
+}
