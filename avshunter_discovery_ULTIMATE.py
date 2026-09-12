@@ -2441,7 +2441,6 @@ def main() -> None:
     _build_universe_sector_lookup(universe_path)
     logger.info(f"Universe sector lookup: {len(_universe_sector_lookup)} tickers with sector data")
 
-    import os
     POLYGON_API_KEY = (
         os.environ.get("POLYGON_API_KEY") or
         os.environ.get("MARKETDATA_API_KEY") or
