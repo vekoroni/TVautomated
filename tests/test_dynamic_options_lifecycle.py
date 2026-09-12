@@ -184,6 +184,23 @@ class DynamicLifecycleDomainTests(unittest.TestCase):
         self.assertTrue(result.economics_recomputed)
         self.assertEqual(result.execution_authority, "HUMAN_ONLY")
 
+    def test_hysteresis_uses_greater_absolute_or_relative_margin(self) -> None:
+        current = _assessment("ABC261016C00100000", 2.00, -0.40)
+        close = _assessment("ABC261016C00105000", 2.15, -0.35)
+        better = _assessment("ABC261016C00110000", 2.21, -0.30)
+        retained = choose_preferred_contract(
+            assessments=(current, close),
+            previous_contract_symbol=current.contract_symbol,
+        )
+        switched = choose_preferred_contract(
+            assessments=(current, better),
+            previous_contract_symbol=current.contract_symbol,
+        )
+        self.assertEqual(retained.selected_assessment.contract_symbol, current.contract_symbol)
+        self.assertTrue(retained.hysteresis_suppressed_switch)
+        self.assertEqual(switched.selected_assessment.contract_symbol, better.contract_symbol)
+        self.assertTrue(switched.switched_contract)
+
     def test_better_utility_with_worse_stress_is_retained_for_human_review(self) -> None:
         current = _assessment("ABC261016P00100000", 0.40, -0.30)
         alternative = _assessment("ABC261016P00095000", 0.80, -0.60)

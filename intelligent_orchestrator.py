@@ -2157,9 +2157,9 @@ def assert_finalise_preconditions(
 
 
 def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
-    """Mature 1/5/10/20-session outcomes for every ledger candidate. Nightly.
+    """Mature 1/2/3/5/10/20-session outcomes for every ledger candidate.
 
-    AVS-FIX-001 W3.9 (RCA-003 section 9, SD-002 section 10). This is the item
+    AVS-FIX-001 W3.9 extended by AVS-FIX-002 Stage 6. This is the item
     that makes calibration possible: without matured outcomes every tier
     boundary and every threshold in the system is an assertion. Nothing reads
     the outcomes yet, which is exactly why they have to start accumulating now.
@@ -2238,8 +2238,25 @@ def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
         from canonical_data.decision_outcome_ledger import DecisionOutcomeLedger
         from canonical_data.historical_prices import HistoricalPriceDatabase
         from canonical_data.outcome_maturation import mature_candidate_outcomes
+        from canonical_data.outcome_learning import (
+            STAGE6_OUTCOME_HORIZONS,
+            build_outcome_learning_snapshot,
+            learning_policy_from_config,
+            write_outcome_learning_snapshot,
+        )
 
         price_database = HistoricalPriceDatabase(price_path)
+        price_health = price_database.health()
+        summary["price_database_health"] = price_health
+        if not bool((price_health.get("schema") or {}).get("valid")) or (
+            price_health.get("integrity_check") != "ok"
+        ):
+            summary["status"] = "DEFERRED"
+            summary["reason"] = "CANONICAL_PRICE_HISTORY_HEALTH_FAILED"
+            logger.warning(
+                "Outcome maturation DEFERRED: canonical price history failed health check"
+            )
+            return _publish()
 
         def _read_completed_history(ticker: str, start_date: str):
             return price_database.read(
@@ -2250,9 +2267,26 @@ def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
             DecisionOutcomeLedger(ledger_path),
             read_completed_history=_read_completed_history,
             as_of_utc=datetime.now(timezone.utc).isoformat(),
+            horizons=STAGE6_OUTCOME_HORIZONS,
         )
         summary["status"] = "COMPLETE"
         summary.update(result.to_dict())
+        governed_constants = cfg.BASE_DIR / "config" / "governed_constants_v1.json"
+        learning_snapshot = build_outcome_learning_snapshot(
+            DecisionOutcomeLedger(ledger_path),
+            policy=learning_policy_from_config(governed_constants),
+            control_plane_path=(
+                cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
+            ),
+        )
+        learning_path = (
+            cfg.RUNS_DIR / str(run_id) / "diagnostics"
+            / f"outcome_learning_{run_id}.json"
+        )
+        write_outcome_learning_snapshot(learning_path, learning_snapshot)
+        summary["learning_snapshot_path"] = str(learning_path)
+        summary["learning_summary"] = learning_snapshot["summary"]
+        summary["model_activation"] = learning_snapshot["model_activation"]
         logger.info(
             "Outcome maturation: candidates=%d eligible=%d evaluated=%d "
             "appended=%d already=%d deferred=%d ineligible=%d exceptions=%d "
@@ -2265,6 +2299,14 @@ def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
             result.deferred_horizons,
             result.ineligible_candidates,
             result.data_exceptions,
+        )
+        logger.info(
+            "Stage 6 learning: records=%d eligible=%d state=%s can_activate=%s "
+            "authority=OBSERVATION_ONLY",
+            learning_snapshot["summary"]["complete_outcomes"],
+            learning_snapshot["summary"]["fit_eligible_records"],
+            learning_snapshot["model_activation"]["state"],
+            learning_snapshot["model_activation"]["can_activate"],
         )
     except Exception as error:
         # Governed degradation: an observation stage never aborts a run.
@@ -3033,6 +3075,8 @@ def run_dynamic_options_intelligence(run_id: str) -> bool:
             run_id=run_id, options_csv=options_csv,
             registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
             report_path=report_path,
+            macro_path=cfg.RUNS_DIR / run_id / "macro_snapshot.json",
+            governed_constants_path=cfg.BASE_DIR / "config" / "governed_constants_v1.json",
         )
         logger.info(
             "✅ DOI-11 advisory integration — opportunities=%d families=%d "
@@ -4043,6 +4087,22 @@ def merge_garch_into_enriched(run_id: str) -> bool:
                 "(EIL runs after this). l3_ fields will be absent from EIL for this run. "
                 "Ensure Phase 10b runs AFTER Phase 9 (EIL) for full GARCH enrichment."
             )
+        # DOI reads the Options boundary. Commute the same forecast evidence
+        # there before DOI runs; this is a deterministic join, not a refetch.
+        options_path = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+        if options_path.exists():
+            options = pd.read_csv(options_path, low_memory=False)
+            options = options.drop(
+                columns=[c for c in options.columns if c.startswith("l3_")],
+                errors="ignore",
+            )
+            options_merged = options.merge(garch_slim, on="ticker", how="left")
+            options_merged.to_csv(options_path, index=False)
+            logger.info(
+                "✅  GARCH merge complete (options DOI boundary): %d l3_ fields added",
+                len(l3_cols),
+            )
+
         execution_path = cfg.RUNS_DIR / run_id / "execution" / f"execution_v3_5_{run_id}.csv"
         if execution_path.exists():
             try:
@@ -5106,12 +5166,6 @@ def evening_workflow(
             "the production pipeline remains non-authoritative for EV3."
         )
 
-    if not run_dynamic_options_intelligence(canonical_run_id):
-        logger.warning(
-            "DOI-11 advisory integration unavailable; pipeline membership is "
-            "preserved and the Lab will disclose DATA_UNAVAILABLE"
-        )
-
     # EV3 must evaluate the final governed horizon, never the provisional
     # Options Intelligence horizon. Running this before the router created a
     # split-brain contract where downstream sizing and EV used different hold
@@ -5599,6 +5653,14 @@ def evening_workflow(
         # eil_enriched — EVEngineV2 then reads l3_iv_tailwind_score correctly.
         run_garch_layer(canonical_run_id)              # Phase 10a
         merge_garch_into_enriched(canonical_run_id)   # Phase 10b — now patches eil_enriched too
+
+        # DOI consumes the v2 cumulative-vol evidence produced above. It is
+        # advisory and cannot change EIL population or capital authority.
+        if not run_dynamic_options_intelligence(canonical_run_id):
+            logger.warning(
+                "DOI advisory integration unavailable; pipeline membership is "
+                "preserved and the Lab will disclose DATA_UNAVAILABLE"
+            )
 
         # WS2 post-EIL boundary: verify only. Trigger evidence was already
         # calculated on the EIL input spine and must not be recomputed here.
@@ -6467,6 +6529,33 @@ def evening_workflow(
                             if str(_row.get("ticker") or "").strip()
                             and str(_row.get("thesis_id") or "").strip()
                         ]
+                        _run_meta_payload = {}
+                        _run_meta_path = cfg.RUNS_DIR / canonical_run_id / "run_meta.json"
+                        if _run_meta_path.is_file():
+                            _run_meta_payload = json.loads(
+                                _run_meta_path.read_text(encoding="utf-8-sig")
+                            )
+                        _dynamic_plan_meta = dict(
+                            _run_meta_payload.get("dynamic_plan") or {}
+                        )
+                        _decision_run_metadata = {
+                            "run_condition": (
+                                _run_meta_payload.get("run_condition")
+                                or _dynamic_plan_meta.get("run_condition")
+                            ),
+                            "baseline_eligible": _run_meta_payload.get(
+                                "baseline_eligible", False
+                            ),
+                            "baseline_ineligibility_reason": _run_meta_payload.get(
+                                "baseline_ineligibility_reason"
+                            ),
+                            "completed_session": _dynamic_plan_meta.get(
+                                "last_completed_session"
+                            ),
+                            "evidence_cutoff_utc": _dynamic_plan_meta.get(
+                                "evidence_cutoff_utc"
+                            ),
+                        }
                         _decision_ledger_path = (
                             cfg.RUNS_DIR.parent.parent
                             / "canonical"
@@ -6477,6 +6566,7 @@ def evening_workflow(
                             run_id=canonical_run_id,
                             occurred_at_utc=datetime.now(timezone.utc).isoformat(),
                             decision_stage="EOD_THESIS",
+                            run_metadata=_decision_run_metadata,
                         )
                         _decision_ledger = DecisionOutcomeLedger(
                             _decision_ledger_path

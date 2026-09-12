@@ -170,18 +170,18 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
     )
     row = book["rows"][0]
 
-    assert row["lab_schema_version"] == "lab_signal_book_v2"
+    assert row["lab_schema_version"] == "lab_signal_book_v4"
     assert row["pipeline_mode"] == "EOD"
     assert row["contract_data_state"] == "AVAILABLE"
     assert row["spread_pct"] == "0.07"
-    assert row["rr_premium_expected"] == "1.8"
-    assert row["rr_predicted"] == "1.8"
+    assert "rr_premium_expected" not in row
+    assert "rr_predicted" not in row
     assert row["ev3_status"] == "EVALUATED_SHADOW"
     assert row["ev3_ev_conservative_return"] == "0.12"
     assert row["economics_comparable"] is True
     assert row["selected_structure_id"] == row["monetisability_evaluation_id"]
     assert row["selected_structure_id"] == row["ev3_evaluation_id"]
-    assert row["rr_contract_symbol"] == OCC
+    assert "rr_contract_symbol" not in row
     assert row["ev3_data_state"] == "AVAILABLE"
     assert row["trigger_primary"] == "BREAKOUT"
     assert row["trigger_data_state"] == "AVAILABLE"
@@ -340,8 +340,8 @@ def test_post_merge_rejects_rr_and_quote_fields_from_a_different_contract(tmp_pa
     row = book["rows"][0]
 
     assert row["contract_mid"] == ""
-    assert row["rr_premium_expected"] == ""
-    assert row["rr_contract_symbol"] == ""
+    assert "rr_premium_expected" not in row
+    assert "rr_contract_symbol" not in row
     assert row["economics_comparable"] is False
     assert row["economics_mismatch_reason"] == "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT"
     assert row["lab_tradeable"] is False
@@ -432,7 +432,7 @@ def test_governed_projection_supplies_display_aliases_without_granting_eod_entry
     assert projected["garch__l3_vol_forecast"] == "0.938"
     assert projected["sb_enter_now_stages"] == ""
     assert projected["sb_alert_stages"] == "3"
-    assert projected["position_size_display"] == "0% - MORNING VALIDATION REQUIRED"
+    assert projected["position_size_display"] == "HUMAN DETERMINED"
 
 
 def test_post_merge_materialization_recovers_owned_lab_fields(tmp_path):

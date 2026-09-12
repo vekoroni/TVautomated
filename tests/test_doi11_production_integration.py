@@ -240,10 +240,12 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
 
         source = (root / "intelligent_orchestrator.py").read_text(encoding="utf-8")
         horizon = source.index("_oi_horizon_patched = patch_horizon_fields_into_csv")
-        doi = source.index("run_dynamic_options_intelligence(canonical_run_id)", horizon)
-        ev3 = source.index("_ev3_shadow_ok = run_ev3_governed_shadow", doi)
-        self.assertLess(horizon, doi)
-        self.assertLess(doi, ev3)
+        ev3 = source.index("_ev3_shadow_ok = run_ev3_governed_shadow", horizon)
+        garch = source.index("run_garch_layer(canonical_run_id)", ev3)
+        doi = source.index("run_dynamic_options_intelligence(canonical_run_id)", garch)
+        self.assertLess(horizon, ev3)
+        self.assertLess(ev3, garch)
+        self.assertLess(garch, doi)
 
     def test_acceptance_assessor_distinguishes_evening_from_morning_acceptance(self):
         self._register_chain("AAA", "CALL", 100.0)

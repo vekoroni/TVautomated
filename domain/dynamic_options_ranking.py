@@ -373,7 +373,8 @@ def rank_contract_family(
     *, family_id: str, direction: str, candidates: Sequence[RankingCandidateEvidence],
     previous_contract_symbol: str | None = None,
     policy: ContractRankingPolicy | None = None,
-    deterministic_fallback_margin: float = 0.10,
+    deterministic_fallback_margin: float = 0.05,
+    deterministic_fallback_relative_margin: float = 0.10,
 ) -> FamilyRankingResult:
     """Rank all candidates; incomplete models trigger a whole-family fallback."""
 
@@ -418,6 +419,12 @@ def rank_contract_family(
         threshold = float(policy.minimum_switch_margin) if enhanced else float(deterministic_fallback_margin)  # type: ignore[arg-type]
         if previous is not None and previous[0].contract_symbol != selected[0].contract_symbol:
             margin = float(selected[1]) - float(previous[1])
+            if not enhanced:
+                threshold = max(
+                    threshold,
+                    float(deterministic_fallback_relative_margin)
+                    * abs(float(previous[1])),
+                )
             if margin < threshold:
                 selected = previous
                 suppressed = True

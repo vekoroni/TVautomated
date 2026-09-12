@@ -26,7 +26,7 @@ from .dynamic_options_intelligence import (
 
 DOI_LIFECYCLE_DOMAIN_VERSION = "doi-dynamic-lifecycle-v1"
 DOI_MATERIAL_CHANGE_POLICY_VERSION = "doi-material-change-policy-v1"
-DOI_HYSTERESIS_POLICY_VERSION = "doi-hysteresis-policy-uncalibrated-v1"
+DOI_HYSTERESIS_POLICY_VERSION = "hysteresis_v1"
 
 
 class _ValueEnum(str, Enum):
@@ -70,16 +70,19 @@ class DynamicLifecyclePolicy:
     volume_growth_multiple: float = 1.50
     volume_growth_minimum: float = 10.0
     iv_change_points: float = 0.05
-    minimum_utility_margin: float = 0.10
+    minimum_utility_margin: float = 0.05
+    relative_utility_margin: float = 0.10
     dte_boundaries: tuple[int, ...] = (8, 13, 21, 35, 60)
     material_policy_version: str = DOI_MATERIAL_CHANGE_POLICY_VERSION
     hysteresis_policy_version: str = DOI_HYSTERESIS_POLICY_VERSION
+    hysteresis_approval_id: str | None = None
 
     def __post_init__(self) -> None:
         for name in (
             "spot_move_fraction", "proximity_change_fraction",
             "spread_change_fraction_points", "volume_growth_minimum",
             "iv_change_points", "minimum_utility_margin",
+            "relative_utility_margin",
         ):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value < 0:
@@ -534,7 +537,12 @@ def choose_preferred_contract(
                 and _adverse(current) is not None
                 and float(_adverse(best)) >= float(_adverse(current))
             )
-            if margin >= policy.minimum_utility_margin and _adequate_for_switch(best) and stress_preferable:
+            threshold = max(
+                policy.minimum_utility_margin,
+                policy.relative_utility_margin
+                * abs(float(current.ranking_score_uncalibrated)),
+            )
+            if margin >= threshold and _adequate_for_switch(best) and stress_preferable:
                 reason = "SUPERSEDE_UTILITY_MARGIN_AND_STRESS"
                 switched = True
             else:

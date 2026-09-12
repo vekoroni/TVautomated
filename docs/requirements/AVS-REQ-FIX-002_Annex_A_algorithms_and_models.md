@@ -126,7 +126,7 @@ The structural scenario's +332% is exactly the number the old pipeline headlined
 
 ## ALG-05 Monetisability policy — `scenario-monetisability-policy-v1`
 
-**Inputs.** `payoff_reachable_net_return_fraction` (LATE, BASE IV), assessment applicability, `profit_floor` f (governed config; suggested candidate 0.25, not active until ACK approves it), data availability.
+**Inputs.** `payoff_reachable_net_return_fraction` (LATE, BASE IV), assessment applicability, `profit_floor` f (governed config; 0.25 approved by ACK on 2026-09-12 under `ACK-20260912-AVS-FIX-002`), data availability.
 
 ```
 if any required input missing or IV_UNAVAILABLE       → NOT_EVALUATED_DATA_MISSING
@@ -260,7 +260,7 @@ switch if  U_c − U_i ≥ max( margin_abs, margin_rel × |U_i| )
 immediate switch regardless of margin if incumbent is EXPIRED, identity MALFORMED, or DATA_DEFECT
 ```
 
-Emit `PreferredContractSuperseded{prior, new, reason ∈ {MARGIN_EXCEEDED, EXPIRED, MALFORMED, DEFECT}, U_i, U_c}`. The canonical absolute margin is `0.05` net-return utility units; the earlier phrase "5 deterministic-utility points" is deprecated because it is unit-ambiguous. ACK must approve the value in the governed config manifest before activation.
+Emit `PreferredContractSuperseded{prior, new, reason ∈ {MARGIN_EXCEEDED, EXPIRED, MALFORMED, DEFECT}, U_i, U_c}`. The canonical absolute margin is `0.05` net-return utility units; the earlier phrase "5 deterministic-utility points" is deprecated because it is unit-ambiguous. ACK approved the absolute and relative margins on 2026-09-12 under `ACK-20260912-AVS-FIX-002`.
 
 ---
 
@@ -292,21 +292,13 @@ Order of evaluation: malformed/negative/crossed/future defect → unavailable �
 
 ---
 
-## ALG-13 Capacity suggestion — `capacity_v1`
+## ALG-13 Retired — capital-allocation exclusion
 
-```
-contract_cost_at_ask = ask × contract_multiplier
-contracts_at_budget  = floor( desk_budget_amount / contract_cost_at_ask )
-size_state = CONFIG_UNAVAILABLE if budget or multiplier missing/invalid
-           = QUOTE_UNAVAILABLE  if ask missing or ≤ 0
-           = BELOW_ONE_CONTRACT if contracts_at_budget == 0
-           = AFFORDABLE otherwise
-contracts_at_budget_if_capped (optional display) = floor( desk_budget_amount × horizon_cap_advisory × direction_factor_advisory / contract_cost_at_ask )
-```
-
-`horizon_cap_advisory` (from `horizon_routing`, 0.50/0.55/0.60) and `direction_factor_advisory` (0.5 when direction opposes the USMI sector list, else 1.0) are displayed and used **only** in the optional capped figure, never in `contracts_at_budget`. Property test: mutate every macro input → `contracts_at_budget` unchanged.
-
-**Worked example.** Budget $1,500; ask $2.10 and governed multiplier 100 → cost $210 → 7 contracts, AFFORDABLE. Ask $16.00 → 0, BELOW_ONE_CONTRACT. A missing multiplier is never silently replaced by 100; it produces `CONFIG_UNAVAILABLE` with `config_missing_field = contract_multiplier`.
+`capacity_v1` is retired by owner decision dated 2026-09-12. AVSHUNTER does
+not calculate affordability or position size. No account balance, desk budget,
+capital cap or suggested contract count may affect or appear in thesis,
+monetisability, ranking, execution evidence or the Intelligence Lab read model.
+Contract ask and multiplier remain inputs to contract economics and friction only.
 
 ---
 
@@ -367,14 +359,14 @@ run code identity = git commit hash + "-dirty" if the tree is dirty
 | ALG-10 | `vol_validation_v1` | — | `bias_multiplier`, `validation_state` |
 | ALG-11 | `hysteresis_v1` | none (flips freely) | `preferred_contract_decision_v2` |
 | ALG-12 | `execution_quality_v1` | OLM classifier with `_utc_now()` fallback | `execution_state`, lifecycle |
-| ALG-13 | `capacity_v1` | router size 1.0 / caps NOT_APPLIED | `capacity_suggestion_v1` |
+| ALG-13 | RETIRED | capital allocation excluded from AVSHUNTER | none |
 | ALG-14 | `usmi_routing_v1`, `usmi_scenario_v1` | empty-sector join, no evaluator | `macro_ticker_context_v2` |
 | ALG-15 | `provider_completeness_v1` | wall clock | `run_meta_v2` |
 | ALG-16 | `identity_v1` | — | all contracts |
 
 ## Config keys introduced (all into `config/governed_constants_v1.json`)
 
-`sigma_multiple` 1.5 · `bias_multiplier` 1.0 · `friction.s_cap` 0.15 (candidate; replay approval required) · `friction.model` `friction_model_v1` · `profit_floor` 0.25 (candidate; ACK approval required) · `utility.w_flat` 0.5 · `iv_stress` {0.8, 1.0, 1.2} · `hysteresis.margin_abs` 0.05 · `hysteresis.margin_rel` 0.10 · `freshness_minutes` 15 · `clock_skew_tolerance_minutes` 5 · `spread_executable_limit` 0.18 · `calibration.kappa` 50 · `calibration.n_min` 200 · `calibration.embargo_sessions` 20 · `calibration.gate` {coverage 0.60, ece 0.10, ece_stratum 0.15, n_stratum 100, brier_skill_min_exclusive 0.0, roc_auc_min_exclusive 0.50, top_quintile_lift_min_exclusive 1.0} · `vol_validation.minimum_validation_n` 200 · `vol_validation.pass` {ratio [0.90, 1.10], coverage [0.60, 0.76]} · `provider_completeness` {normal_chain_fraction 0.95, official_close_fraction 0.99, per_chain thresholds replay-approved} · `desk_budget_amount` (ACK) · `refresh_window` 09:35–09:45 ET.
+`sigma_multiple` 1.5 · `bias_multiplier` 1.0 (unapplied pending held-out validation) · `friction.s_cap` 0.15 (candidate; replay approval required) · `friction.model` `friction_model_v1` · `profit_floor` 0.25 (ACK-approved) · `utility.w_flat` 0.5 · `iv_stress` {0.8, 1.0, 1.2} · `hysteresis.margin_abs` 0.05 (ACK-approved) · `hysteresis.margin_rel` 0.10 (ACK-approved) · `freshness_minutes` 15 · `clock_skew_tolerance_minutes` 5 · `spread_executable_limit` 0.18 · `calibration.kappa` 50 · `calibration.n_min` 200 · `calibration.embargo_sessions` 20 · `calibration.gate` {coverage 0.60, ece 0.10, ece_stratum 0.15, n_stratum 100, brier_skill_min_exclusive 0.0, roc_auc_min_exclusive 0.50, top_quintile_lift_min_exclusive 1.0} · `vol_validation.minimum_validation_n` 200 · `vol_validation.pass` {ratio [0.90, 1.10], coverage [0.60, 0.76]} · `provider_completeness` {normal_chain_fraction 0.95, official_close_fraction 0.99, per_chain thresholds replay-approved} · `refresh_window` 09:35–09:45 ET. Capital-allocation keys are prohibited.
 
 ## Confidence
 
@@ -389,4 +381,3 @@ run code identity = git commit hash + "-dirty" if the tree is dirty
 ## v1.2 correction record
 
 This revision aligns the annex with solution design v1.2. It removes the unsupported matched-horizon forecast branch; fixes calendar duration arithmetic; prevents expiry-inside-hold from becoming a false non-monetisable conclusion; separates dollar and return units; makes same-session target/stop order explicit; strengthens calibration skill gates; completes quote-defect states; uses the governed contract multiplier; replaces latest-quote provider finality with chain-wide and run-level evidence; and hashes normalized observations rather than transport formatting.
-

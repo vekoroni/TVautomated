@@ -159,6 +159,29 @@ class RankingDomainTests(unittest.TestCase):
         self.assertTrue(switched.switched_contract)
         self.assertEqual(len(switched.ranked_contracts), 2)
 
+    def test_deterministic_hysteresis_uses_relative_margin(self) -> None:
+        current = _candidate("A", 2.00)
+        close = _candidate("B", 2.15)
+        better = _candidate("C", 2.21)
+        retained = rank_contract_family(
+            family_id="FAMILY", direction="CALL",
+            candidates=(current, close),
+            previous_contract_symbol=current.contract_symbol,
+            deterministic_fallback_margin=.05,
+            deterministic_fallback_relative_margin=.10,
+        )
+        switched = rank_contract_family(
+            family_id="FAMILY", direction="CALL",
+            candidates=(current, better),
+            previous_contract_symbol=current.contract_symbol,
+            deterministic_fallback_margin=.05,
+            deterministic_fallback_relative_margin=.10,
+        )
+        self.assertEqual(retained.selected_assessment_id, current.assessment_id)
+        self.assertTrue(retained.hysteresis_suppressed_switch)
+        self.assertEqual(switched.selected_assessment_id, better.assessment_id)
+        self.assertTrue(switched.switched_contract)
+
     def test_call_put_ranking_is_symmetric(self) -> None:
         call = rank_contract_family(
             family_id="CALL-FAMILY", direction="CALL",

@@ -1,0 +1,25 @@
+{
+  "release_id": "AVS-FIX-002-STAGES2-5-20260912",
+  "baseline_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca",
+  "status": "OFFLINE_BUILD_COMPLETE_AWAITING_CONTROLLED_CYCLE",
+  "test_classes": ["unit", "property", "integration", "stored_run_replay", "compatibility_regression"],
+  "stored_run_ids": ["20260910_150045", "20260911_115904"],
+  "authority": {
+    "doi": "ADVISORY_ONLY",
+    "macro": "ADVISORY_ONLY",
+    "capital_allocation": "OUT_OF_SCOPE_RETIRED",
+    "lab_v4": "DISPLAY_ONLY",
+    "execution": "UNCHANGED"
+  },
+  "activation_gates": {
+    "profit_floor_approved": true,
+    "preferred_contract_hysteresis_approved": true,
+    "capital_agnostic_boundary_enforced": true,
+    "forecast_vol_validated": false,
+    "controlled_completed_session_run": false,
+    "morning_cycle": false
+  },
+  "rollback": "Revert this slice commit; append-only production evidence is not deleted. Restore only code/config, never ledger or DOI event rows.",
+  "owner_decision": "ACK-20260912-CAPITAL-AGNOSTIC",
+  "manifest_version": "avs_fix_002_release_manifest_v2"
+}

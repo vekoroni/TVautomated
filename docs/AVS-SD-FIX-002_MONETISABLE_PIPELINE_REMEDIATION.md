@@ -192,35 +192,18 @@ TEST
 **Aggregate:** `ExecutionEvidence`.  
 **Authority:** descriptive only; the human trader owns the decision.
 
-### 5.8 Capacity and Risk Presentation context
+### 5.8 Capital-allocation boundary
 
-**Owns:** advisory affordability calculations from the operator's governed desk budget and the exact contract ask.  
-**Aggregate:** `CapacitySuggestion`.  
-**Must not own:** capital permission, applied position size, order creation or macro authority.
+AVSHUNTER is capital-agnostic. It owns thesis evidence, contract monetisability,
+current execution evidence and uncertainty; it does not own account balances,
+desk budgets, position sizing, contract counts, capital permission or orders.
+The contract ask and multiplier remain evidence about the selected contract, but
+they are never combined with operator capital inside this pipeline.
 
-Required fields:
-
-```text
-desk_budget_id
-desk_budget_currency
-desk_budget_amount
-contract_cost_at_ask
-contracts_at_budget
-macro_alignment_context
-horizon_risk_context
-size_state = AFFORDABLE | BELOW_ONE_CONTRACT | QUOTE_UNAVAILABLE | CONFIG_UNAVAILABLE
-calculation_version
-authority = ADVISORY_ONLY
-```
-
-The first-release arithmetic is exact and macro-free:
-
-```text
-contract_cost_at_ask = ask_dollars_per_share * contract_multiplier
-contracts_at_budget = floor(desk_budget_amount / contract_cost_at_ask)
-```
-
-The calculation is valid only when the ask, multiplier, budget currency and budget amount are governed and positive. Macro alignment and horizon risk are displayed beside the result as qualitative context; they cannot change the budget or number of contracts. If a future desk policy needs a capped scenario, it must publish a separately named `contracts_at_budget_if_capped` with its policy ID and must not overwrite `contracts_at_budget`. Any automated risk limit requires a separately approved bounded-context design.
+Any future portfolio-allocation capability must be a separately designed bounded
+context downstream of the Intelligence Lab and human decision. It may consume a
+governed opportunity, but it must not write back into thesis validity,
+monetisability, preferred-contract ranking or execution-evidence state.
 
 ### 5.9 Decision and Outcome context
 
@@ -274,7 +257,6 @@ Integration between contexts uses versioned contracts and anti-corruption adapte
 | Contract scenario monetisability | DOI | Lab and human |
 | Current quote/execution quality | Execution Evidence | Lab and human |
 | Macro/sector alignment | Macro Advisory | Lab, Worker 3, human |
-| Affordability/position-size suggestion | Capacity and Risk Presentation | Human; never applied automatically |
 | Final order and capital | Human/broker workflow | Ledger |
 | Actual realised outcome | Decision and Outcome context | Calibration and reporting |
 
@@ -734,18 +716,15 @@ Stored evidence for the current blocker is `data/output/runs/20260911_115904/opt
 - Consume the governed nested US Money Index routing and scenario contracts.
 - Evaluate scenarios against timestamped observed metrics.
 - Publish macro and structure evidence as advisory context.
-- Publish affordability and suggested size separately from any applied capital decision.
 - Carry `hidden_state_label`, `phase` and `trigger_primary` into `structure_evidence_state` with their source versions.
-- Implement `CapacitySuggestion` from governed desk-budget configuration and exact contract ask; keep macro outside its arithmetic.
-- Compute `contract_cost_at_ask = ask * contract_multiplier` and `contracts_at_budget = floor(desk_budget_amount / contract_cost_at_ask)`; publish macro alignment and horizon risk only as adjacent qualitative context.
+- Enforce the capital-allocation boundary: no budget, account-size, affordability or contract-count calculation may enter the pipeline or Lab read model.
 
 **Acceptance**
 
 - Mapped GICS rows do not become `SECTOR_UNMAPPED` because of join order.
 - Scenario conditions name the observed value, timestamp and failed clause.
 - Macro cannot change population, direction, contract identity or capital authority.
-- Suggested size cannot appear as an actual order or fill.
-- Capacity calculations expose budget ID, contract cost, integer affordability, size state and advisory authority.
+- No capital-allocation field appears in a governed pipeline or Lab contract.
 
 ### WP6 — Intelligence Lab and coaching projection
 
@@ -816,7 +795,6 @@ preferred_contract_decision_v2
 morning_thesis_observation_v2
 contract_refresh_result_v1
 macro_ticker_context_v2
-capacity_suggestion_v1
 lab_signal_book_v4
 decision_record_v2
 fill_record_v1
@@ -987,7 +965,7 @@ The remediation is formally production-ready when all of the following hold:
 15. Execution spread limits, refresh windows, profit floor, friction model and preferred-contract hysteresis are named, versioned configuration with a domain owner.
 16. Calibrated ranking meets WP4's coverage, reliability, positive skill, discrimination and ranking-lift gates; otherwise calibrated fields remain disabled while deterministic DOI continues.
 17. Every normal completed-session DOI input carries `PROVIDER_SESSION_COMPLETE` evidence; partial chains are retained only as named non-normal evidence.
-18. Capacity arithmetic exactly reconciles to governed budget divided by exact ask-based contract cost and is invariant to macro changes.
+18. The governed pipeline and Lab read model are capital-agnostic: no account size, desk budget, affordability state or suggested contract count is consumed or projected.
 
 There is deliberately no minimum number of daily trades or positive-EV rows. The system succeeds by accurately identifying opportunities and uncertainty, including valid no-trade conditions.
 
@@ -1004,7 +982,7 @@ Every stage has an entry gate, bounded implementation scope, mandatory tests, ev
 **Build activities**
 
 1. Freeze canonical vocabulary for provider finality, contract identity, current execution, activity maturation, monetisability and Morning refresh.
-2. Freeze the provider-finality algorithm, exact capacity formula, rate-selection policy, trading-session convention and calibration-skill gates.
+2. Freeze the provider-finality algorithm, capital-allocation boundary, rate-selection policy, trading-session convention and calibration-skill gates.
 3. Enumerate the complete production import/dependency graph; fail baseline creation if an imported production file is untracked, unhashed or outside the manifest.
 4. Freeze code, configuration, calendar and database hashes. The USMI contract, `macro_domain` and Worker 3 are currently tracked; the rule protects all future additions.
 5. Create the claim sheet, design-to-code traceability matrix, affected-file manifest, database migration plan and rollback procedure.
@@ -1098,21 +1076,20 @@ Every stage has an entry gate, bounded implementation scope, mandatory tests, ev
 
 **Exit:** every directed input is assessed, monitored or recorded as a named exception; DOI deletes no valid thesis and produces no identity/economics mismatch.
 
-### Stage 5 — Capacity, macro context and trader-facing projection
+### Stage 5 — Macro context and trader-facing projection
 
 **Build activities**
 
-1. Implement pure affordability using the governed desk budget, exact ask and multiplier.
-2. Publish `macro_alignment_context` and `horizon_risk_context` beside—but outside—the affordability arithmetic.
-3. Complete sector/industry-first macro applicability and structure evidence projection.
-4. Build or migrate to `lab_signal_book_v4` from the bounded-context contracts.
-5. Project thesis, monetisability, current execution, activity maturation, capacity and macro as separate conclusions.
-6. Regenerate coaching from the same read model and retire duplicate overlays only after field-level parity.
+1. Complete sector/industry-first macro applicability and structure evidence projection.
+2. Build or migrate to `lab_signal_book_v4` from the bounded-context contracts.
+3. Project thesis, monetisability, current execution, activity maturation and macro as separate conclusions.
+4. Enforce the capital-agnostic boundary in configuration, contracts and presentation.
+5. Regenerate coaching from the same read model and retire duplicate overlays only after field-level parity.
 
 **Tests and evidence**
 
-- Affordability arithmetic and currency/multiplier/quote failure tests.
-- Metamorphic test proving any macro change leaves direction, population, contract identity and `contracts_at_budget` unchanged.
+- Static and projection tests proving budgets, account sizes and suggested contract counts cannot enter the governed read model.
+- Metamorphic test proving any macro change leaves direction, population and contract identity unchanged.
 - Lab/coaching lineage, null, identity and contradiction tests.
 - Two stored-run and two normal-cycle overlay parity reports before archive.
 
@@ -1218,11 +1195,11 @@ This section preserves the disposition of every required recommendation in `AVS-
 | R2 move ledger work earlier | **Accepted with decomposition** | WP7A candidate/decision/manual-fill capture moves to Stage 1. WP7B maturation and counterfactuals remain later because they depend on stable assessment identities and historical paths. |
 | R3 validate volatility earlier | **Accepted with safety constraint** | Validation begins in Stage 1 and completes in Stage 2. An observed bias multiplier is not applied until its temporal validation and release gate pass; dependent fields disclose `UNVALIDATED` beforehand. |
 | R4 baseline untracked production files | **Principle accepted; factual premise superseded** | Current inspection shows the USMI contract and 41 `macro_domain`/Worker 3 files are tracked. Stage 0 now enumerates the full import graph and fails on any future untracked production dependency, which is stronger than hashing a fixed path list. |
-| R5 Risk presentation bounded context | **Accepted and renamed** | Added Capacity and Risk Presentation, its aggregate, fields and WP5 ownership. It has advisory calculation responsibility, not capital or sizing authority. |
+| R5 Risk presentation bounded context | **Superseded by owner decision 2026-09-12** | AVSHUNTER is capital-agnostic. Capacity and sizing are excluded and require a separate future portfolio-allocation bounded context. |
 | R6 governed defaults | **Accepted** | Invariant 4 now permits explicit governed defaults while preserving raw missingness, source, value and applicability. WP1 inventories and removes silent-zero behaviour. |
 | R7 refresh window and pre-open source | **Partially accepted** | The 09:35–09:45 ET primary refresh window and timestamp fields are adopted. The proposed futures-implied ticker-price fallback is rejected because index beta and idiosyncratic overnight events make it fabricated ticker evidence. Futures remain separate context; unavailable ticker price defers the thesis refresh. |
 | R8 remove `_utc_now()` quote fallback | **Accepted** | WP0 explicitly removes fetch/current-time substitution for a missing provider quote timestamp. Missing timestamp means unavailable for execution classification. |
-| R9 time basis, arbitrary hold, scenario rule and hysteresis | **Accepted with a better hold rule** | Scenarios use governed time-stop valuation and an explicit XNYS/calendar bridge. Arbitrary 1–20 session expected move is calculated directly from annual volatility rather than interpolated from rounded 5/10/20 checkpoints. Scenario policy and initial hysteresis configuration are versioned and require replay approval. |
+| R9 time basis, arbitrary hold, scenario rule and hysteresis | **Accepted with a better hold rule** | Scenarios use governed time-stop valuation and an explicit XNYS/calendar bridge. Arbitrary 1–20 session expected move is calculated directly from annual volatility rather than interpolated from rounded 5/10/20 checkpoints. The scenario profit floor and hysteresis thresholds are versioned and were approved by ACK on 2026-09-12 under `ACK-20260912-AVS-FIX-002`; both remain advisory. |
 | R10 vocabulary and transition table | **Accepted** | Thesis and contract state names are now domain-prefixed; the contract transition table is explicit; run conditions extend `domain.run_planning`. |
 | R11 numerical calibration acceptance | **Accepted and strengthened in v1.2** | WP4 specifies coverage, held-out sample, ECE, positive Brier skill, discrimination and ranking-lift gates plus hierarchical backoff disclosure. Failing strata remain uncalibrated. |
 | R12 Black–Scholes time monotonicity | **Accepted** | The invalid universal assertion is replaced with a total-variance property under `r=q=0` and formula/arbitrage-bound tests under non-zero rates or dividends. |
@@ -1253,7 +1230,7 @@ This section records the independent validation of `AVS-QA-SD-FIX-002_v1.1_verif
 | Verification item | v1.2 disposition | Design change |
 |---|---|---|
 | 3.1 provider completeness | **Accepted with corrected mechanism** | Added the auditable `ProviderSessionFinality` contract. A chain-wide evidence bundle replaces the insufficient “latest quote at 16:00” test. |
-| 3.2 capacity arithmetic | **Accepted** | Defined exact ask-based integer affordability; renamed macro/direction inputs as adjacent context and prohibited them from the arithmetic. |
+| 3.2 capacity arithmetic | **Superseded by owner decision 2026-09-12** | Capital-allocation arithmetic is outside AVSHUNTER's monetisability domain and has been removed from configuration, contracts and Lab projection. |
 | 3.3 horizon-specific forecast ambiguity | **Rejected as a current-code claim** | Current Layer 3 uses one annualised forecast. The 1–20 session rule therefore scales that value directly. A future term structure requires a new contract and model version. |
 | 3.4 transition gaps | **Accepted and strengthened** | Split contract identity, current execution evidence and activity maturation into independent state machines; added repair and missing canonical states. |
 | 3.5 Stage 6 wording | **Accepted** | Release plan now requires one controlled technical cycle and five consecutive normal cycles explicitly. |

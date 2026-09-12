@@ -27,6 +27,8 @@ from canonical_data.option_liquidity_lifecycle import (
 )
 from canonical_data.registry import CanonicalRegistry
 from domain.dynamic_options_intelligence import OptionObservationKind, UnderlyingThesisRef
+from canonical_data.market_rate_observation import load_market_rate, MarketRateObservation
+from domain.dynamic_options_lifecycle import DynamicLifecyclePolicy
 
 
 DOI_PRODUCTION_INTEGRATION_VERSION = "doi-production-integration-v1"
@@ -120,11 +122,17 @@ class DOIProductionSummary:
 def run_completed_session_doi(
     *, run_id: str, options_csv: Path | str, registry_path: Path | str,
     report_path: Path | str, max_tickers: int | None = None,
+    macro_path: Path | str | None = None,
+    governed_constants_path: Path | str | None = None,
 ) -> DOIProductionSummary:
     source = Path(options_csv)
     if not source.is_file():
         raise FileNotFoundError(source)
     frame = pd.read_csv(source, low_memory=False)
+    market_rate = load_market_rate(macro_path) if macro_path else MarketRateObservation(None, "NONE", None, None, "RATE_UNAVAILABLE")
+    constants: dict[str, Any] = {}
+    if governed_constants_path and Path(governed_constants_path).is_file():
+        constants = json.loads(Path(governed_constants_path).read_text(encoding="utf-8-sig"))
     if "ticker" not in frame.columns:
         raise ValueError("DOI source has no ticker column")
     frame["ticker"] = frame["ticker"].astype(str).str.strip().str.upper()
@@ -151,8 +159,29 @@ def run_completed_session_doi(
     store.initialise()
     bridge = CanonicalDOIObservationBridge(registry_path=registry_path)
     generator = ThesisConditionedContractFamilyGenerator(store)
-    lifecycle_service = DynamicOptionsLifecycleService(store)
-    ranker = DynamicOptionsContractRankingService(store)
+    preferred_cfg = dict(constants.get("preferred_contract") or {})
+    if preferred_cfg and not bool(preferred_cfg.get("approved", False)):
+        raise ValueError("preferred-contract hysteresis configuration is not approved")
+    margin_abs = float(preferred_cfg.get("margin_abs", 0.05))
+    margin_relative = float(preferred_cfg.get("margin_relative", 0.10))
+    lifecycle_service = DynamicOptionsLifecycleService(
+        store,
+        policy=DynamicLifecyclePolicy(
+            minimum_utility_margin=margin_abs,
+            relative_utility_margin=margin_relative,
+            hysteresis_policy_version=str(
+                preferred_cfg.get("version") or "hysteresis_v1"
+            ),
+            hysteresis_approval_id=(
+                str(preferred_cfg.get("approval_id") or "").strip() or None
+            ),
+        ),
+    )
+    ranker = DynamicOptionsContractRankingService(
+        store,
+        deterministic_fallback_margin=margin_abs,
+        deterministic_fallback_relative_margin=margin_relative,
+    )
 
     states: Counter[str] = Counter()
     exceptions: list[dict[str, Any]] = []
@@ -252,7 +281,9 @@ def run_completed_session_doi(
             if not observation.available or not generated.family.candidate_symbols:
                 states["FAMILY_DATA_INSUFFICIENT"] += 1
                 continue
-            rate = _number(_first(raw, "ev3_rate_used", "risk_free_rate"))
+            rate = market_rate.rate_annual_fraction
+            if rate is None:
+                rate = _number(_first(raw, "ev3_rate_used", "risk_free_rate"))
             if rate is None or not -0.05 <= rate <= 0.25:
                 states["FAMILY_NOT_VALUED_RATE_UNAVAILABLE"] += 1
                 continue
@@ -262,6 +293,8 @@ def run_completed_session_doi(
             valuation = DeterministicContractValuationService(
                 store, risk_free_rate=rate, dividend_yield=max(0.0, dividend),
                 dividend_yield_available=dividend_available,
+                market_rate_observation=market_rate,
+                governed_constants=constants,
             ).evaluate_family(
                 generated_family=generated, observation=observation,
                 # The full structural taxonomy remains immutable in the
@@ -274,6 +307,10 @@ def run_completed_session_doi(
                 )),
                 corporate_action_flag=_flag(_first(
                     raw, "corporate_action_flag", "corporate_action_within_horizon"
+                )),
+                annual_forecast_vol=_number(_first(
+                    raw, "l3_forward_realised_vol", "forecast_vol_annual_fraction",
+                    "forward_realised_vol"
                 )),
             )
             assessed += 1

@@ -27,6 +27,10 @@ from domain.deterministic_option_valuation import (
     ScenarioTiming,
     evaluate_deterministic_scenarios,
 )
+from domain.contract_economics_v2 import evaluate_contract_economics_v2
+from domain.volatility_budget import calculate_volatility_budget
+from domain.reachability import assess_reachability
+from canonical_data.market_rate_observation import MarketRateObservation
 from domain.dynamic_options_intelligence import (
     ContractAssessment,
     ContractEntryState,
@@ -212,6 +216,8 @@ class DeterministicContractValuationService:
         dividend_yield_available: bool = True,
         entry_friction_bps: float = 25.0,
         exit_friction_bps: float = 25.0,
+        market_rate_observation: MarketRateObservation | None = None,
+        governed_constants: dict[str, Any] | None = None,
     ) -> None:
         self.store = store
         self.risk_free_rate = float(risk_free_rate)
@@ -219,6 +225,8 @@ class DeterministicContractValuationService:
         self.dividend_yield_available = bool(dividend_yield_available)
         self.entry_friction_bps = float(entry_friction_bps)
         self.exit_friction_bps = float(exit_friction_bps)
+        self.market_rate_observation = market_rate_observation
+        self.governed_constants = dict(governed_constants or {})
         for value, name in (
             (self.risk_free_rate, "risk_free_rate"),
             (self.dividend_yield, "dividend_yield"),
@@ -257,6 +265,7 @@ class DeterministicContractValuationService:
         contract_symbols: Sequence[str] | None = None,
         ex_dividend_within_horizon: bool = False,
         corporate_action_flag: bool = False,
+        annual_forecast_vol: float | None = None,
     ) -> ContractFamilyValuationResult:
         family = generated_family.family
         thesis = family.thesis
@@ -318,7 +327,9 @@ class DeterministicContractValuationService:
             spot = _number(_value(row, "underlying_price", "spot", "underlyingPrice")) or thesis.origin_spot
             quote_time = _utc(_value(
                 row, "quote_timestamp_utc", "quote_as_of", "updated", "last_updated"
-            )) or observation.as_of_utc
+            ))
+            if quote_time is None:
+                raise ValueError(f"MISSING_PROVIDER_QUOTE_TIMESTAMP:{symbol}")
             cutoff = max(family.evidence_cutoff_utc, quote_time)
             quote_state = _quote_state(bid, ask)
             quote_counts[quote_state] += 1
@@ -353,6 +364,42 @@ class DeterministicContractValuationService:
                 corporate_action_flag=corporate_action_flag,
                 dividend_yield_available=self.dividend_yield_available,
             )
+            vol_cfg = dict(self.governed_constants.get("volatility_budget") or {})
+            econ_cfg = dict(self.governed_constants.get("contract_economics") or {})
+            budget = calculate_volatility_budget(
+                annual_forecast_vol, thesis.planned_hold_sessions,
+                bias_multiplier=float(vol_cfg.get("bias_multiplier", 1.0)),
+                validation_state=str(vol_cfg.get("validation_state", "UNVALIDATED")),
+                multiplier_approved=bool(vol_cfg.get("bias_multiplier_approved", False)),
+                validation_report_id=vol_cfg.get("validation_report_id"),
+                held_out_validation_passed=bool(
+                    vol_cfg.get("held_out_validation_passed", False)
+                ),
+            )
+            reachability = assess_reachability(
+                direction=identity.side, origin_spot=thesis.origin_spot,
+                structural_target_spot=thesis.target_spot, budget=budget,
+                sigma_multiple=float(econ_cfg.get("sigma_multiple", 1.5)),
+            )
+            sign = 1.0 if identity.side == "CALL" else -1.0
+            move = budget.expected_move_fraction
+            economics_v2 = evaluate_contract_economics_v2(
+                option_side=identity.side, origin_spot=thesis.origin_spot,
+                strike=identity.strike, expiration_utc=_expiration_close(identity.expiry),
+                base_iv=iv, entry_bid=bid, entry_ask=ask,
+                risk_free_rate=self.risk_free_rate, dividend_yield=self.dividend_yield,
+                scenario_points=points,
+                favourable_1sigma=None if move is None else thesis.origin_spot * (1 + sign * move),
+                favourable_2sigma=None if move is None else thesis.origin_spot * (1 + sign * 2 * move),
+                reachable_spot=reachability.reachable_target_spot,
+                structural_target=thesis.target_spot, invalidation_spot=thesis.invalidation_spot,
+                spread_cap=float(econ_cfg.get("friction_spread_cap", .15)),
+                max_model_spread=float(econ_cfg.get("friction_max_model_spread", .30)),
+                profit_floor=econ_cfg.get("profit_floor"),
+                profit_floor_approved=bool(econ_cfg.get("profit_floor_approved", False)),
+                profit_floor_approval_id=econ_cfg.get("profit_floor_approval_id"),
+                w_flat=float(econ_cfg.get("utility_flat_weight", .5)),
+            )
             metadata = {
                 "valuation": valuation.to_dict(),
                 "quote_state": quote_state,
@@ -370,6 +417,12 @@ class DeterministicContractValuationService:
                 "upstream_physical_fetch_count": observation.physical_fetch_count,
                 "valuation_service_physical_fetch_count": 0,
                 "contract_symbol_exact": symbol,
+                "volatility_budget_v2": budget.to_dict(),
+                "reachability_assessment_v1": reachability.to_dict(),
+                "contract_assessment_v2": economics_v2.to_dict(),
+                "market_rate_observation": self.market_rate_observation.to_dict() if self.market_rate_observation else None,
+                "ranking_score_kind": "DETERMINISTIC_UTILITY",
+                "calibration_state": "NOT_AVAILABLE",
             }
             assessment = ContractAssessment.create(
                 family_id=family.family_id, thesis_id=thesis.thesis_id,
@@ -382,7 +435,11 @@ class DeterministicContractValuationService:
                 calculation_version=calculation_version,
                 feature_version=DOI_DETERMINISTIC_FEATURE_VERSION,
                 model_version=DOI_VALUATION_MODEL_VERSION,
-                ranking_score_uncalibrated=valuation.ranking_score_uncalibrated,
+                ranking_score_uncalibrated=(
+                    economics_v2.deterministic_utility
+                    if economics_v2.deterministic_utility is not None
+                    else valuation.ranking_score_uncalibrated
+                ),
                 probabilities_calibrated=False,
                 metadata=metadata,
             )

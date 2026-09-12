@@ -25,7 +25,10 @@ class LedgerEventType(str, Enum):
     CANDIDATE_DECISION = "CANDIDATE_DECISION"
     VALIDATION = "VALIDATION"
     EXECUTION_DECISION = "EXECUTION_DECISION"
+    PRESENTATION_DECISION = "PRESENTATION_DECISION"
+    FILL_RECORDED = "FILL_RECORDED"
     TRADE_ENTRY = "TRADE_ENTRY"
+    OUTCOME_OBSERVATION = "OUTCOME_OBSERVATION"
     OUTCOME = "OUTCOME"
     DATA_EXCEPTION = "DATA_EXCEPTION"
 
@@ -169,7 +172,12 @@ def make_ledger_event(
         LedgerEventType.CANDIDATE_DECISION.value: ("decision_stage",),
         LedgerEventType.VALIDATION.value: ("validation_event_id", "invocation_id"),
         LedgerEventType.EXECUTION_DECISION.value: ("decision_stage",),
+        LedgerEventType.PRESENTATION_DECISION.value: ("preferred_assessment_id", "human_response"),
+        LedgerEventType.FILL_RECORDED.value: ("occ_symbol", "fill_timestamp_utc", "side"),
         LedgerEventType.TRADE_ENTRY.value: ("trade_id",),
+        LedgerEventType.OUTCOME_OBSERVATION.value: (
+            "horizon_sessions", "data_status", "evaluation_session",
+        ),
         LedgerEventType.OUTCOME.value: (
             "trade_id", "horizon_sessions", "outcome_horizon_sessions",
             "is_counterfactual",
@@ -214,27 +222,47 @@ _ALLOWED_TRANSITIONS = {
         LedgerEventType.DATA_EXCEPTION.value,
     },
     LedgerEventType.CANDIDATE_DECISION.value: {
+        LedgerEventType.PRESENTATION_DECISION.value,
         LedgerEventType.VALIDATION.value,
         LedgerEventType.EXECUTION_DECISION.value,
         LedgerEventType.OUTCOME.value,
+        LedgerEventType.OUTCOME_OBSERVATION.value,
         LedgerEventType.DATA_EXCEPTION.value,
     },
     LedgerEventType.VALIDATION.value: {
         LedgerEventType.VALIDATION.value,
         LedgerEventType.EXECUTION_DECISION.value,
         LedgerEventType.OUTCOME.value,
+        LedgerEventType.OUTCOME_OBSERVATION.value,
         LedgerEventType.DATA_EXCEPTION.value,
     },
     LedgerEventType.EXECUTION_DECISION.value: {
+        LedgerEventType.PRESENTATION_DECISION.value,
         LedgerEventType.TRADE_ENTRY.value,
         LedgerEventType.OUTCOME.value,
+        LedgerEventType.OUTCOME_OBSERVATION.value,
         LedgerEventType.DATA_EXCEPTION.value,
     },
     LedgerEventType.TRADE_ENTRY.value: {
         LedgerEventType.OUTCOME.value,
+        LedgerEventType.OUTCOME_OBSERVATION.value,
+        LedgerEventType.DATA_EXCEPTION.value,
+    },
+    LedgerEventType.PRESENTATION_DECISION.value: {
+        LedgerEventType.FILL_RECORDED.value,
+        LedgerEventType.OUTCOME.value,
+        LedgerEventType.OUTCOME_OBSERVATION.value,
+        LedgerEventType.DATA_EXCEPTION.value,
+    },
+    LedgerEventType.FILL_RECORDED.value: {
+        LedgerEventType.OUTCOME.value,
         LedgerEventType.DATA_EXCEPTION.value,
     },
     LedgerEventType.OUTCOME.value: {LedgerEventType.OUTCOME.value},
+    LedgerEventType.OUTCOME_OBSERVATION.value: {
+        LedgerEventType.OUTCOME_OBSERVATION.value,
+        LedgerEventType.OUTCOME.value,
+    },
     LedgerEventType.DATA_EXCEPTION.value: {
         LedgerEventType.CANDIDATE_DECISION.value,
         LedgerEventType.VALIDATION.value,

@@ -389,8 +389,8 @@ def hydrate_selected_structure(
             "bid": exit_credit,
             "ask": entry_debit,
             "mid": mid,
-            # For a debit-spread entry the displayed capacity is constrained by
-            # the long-leg ask and short-leg bid.  Exit capacity is the inverse.
+            # For a debit-spread entry the displayed executable size is bounded
+            # by the long-leg ask and short-leg bid. Exit size is the inverse.
             "ask_size": min(
                 value for value in (long_leg["ask_size"], short_leg["bid_size"])
                 if value is not None

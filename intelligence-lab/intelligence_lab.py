@@ -2464,12 +2464,11 @@ def _governed_ui_projection(sig):
     out["sb_alert_stages"] = "3" if not enter_now and readiness_stage == "3" else ""
     out["sb_stages_missed"] = 0
 
-    if not str(out.get("position_size_display", "") or "").strip():
-        if str(out.get("morning_data_state", "")).upper() == "NOT_RUN_EOD":
-            out["position_size_display"] = "0% - MORNING VALIDATION REQUIRED"
-        elif not enter_now:
-            out["position_size_display"] = "0% - MANUAL REVIEW"
-    out["sb_position_size_display"] = out.get("position_size_display", "")
+    # Capital allocation is outside the AVSHUNTER bounded context. Preserve
+    # compatibility names without leaking a legacy sizing percentage into UI.
+    out["position_size_display"] = "HUMAN DETERMINED"
+    out["sb_position_size_display"] = "HUMAN DETERMINED"
+    out["sb_position_size_pct"] = None
     return out
 
 

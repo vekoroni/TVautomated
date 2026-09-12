@@ -334,11 +334,12 @@ def test_maturation_reuses_canonical_history_and_is_idempotent(tmp_path: Path) -
         ledger, read_completed_history=read_history,
         as_of_utc="2026-09-12T23:59:59Z",
     )
-    assert first.outcomes_appended == 2
+    # Stage 6 adds the 2- and 3-session learning milestones.
+    assert first.outcomes_appended == 4
     assert first.deferred_horizons == 2
     assert calls == [("AAA", "2026-09-04")]
     outcomes = ledger.events_by_type("OUTCOME")
-    assert {item.payload["horizon_sessions"] for item in outcomes} == {1, 5}
+    assert {item.payload["horizon_sessions"] for item in outcomes} == {1, 2, 3, 5}
     assert all(item.payload["is_counterfactual"] is True for item in outcomes)
 
     calls.clear()
@@ -347,8 +348,8 @@ def test_maturation_reuses_canonical_history_and_is_idempotent(tmp_path: Path) -
         as_of_utc="2026-09-12T23:59:59Z",
     )
     assert second.outcomes_appended == 0
-    assert second.outcomes_already_present == 2
-    assert len(ledger.events_by_type("OUTCOME")) == 2
+    assert second.outcomes_already_present == 4
+    assert len(ledger.events_by_type("OUTCOME")) == 4
 
 
 def test_morning_recorder_records_non_actionable_rows_and_missing_identity(tmp_path: Path) -> None:

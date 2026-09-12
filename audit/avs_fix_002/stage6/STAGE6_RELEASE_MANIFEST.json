@@ -1,0 +1,73 @@
+{
+  "schema_version": "avs_fix_002_stage_release_v1",
+  "release_id": "AVS-FIX-002-STAGE6",
+  "release_state": "OFFLINE_COMPLETE_MODEL_ACTIVATION_GATED",
+  "branch": "avs-fix-001",
+  "base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca",
+  "scope": [
+    "all-presented candidate outcome capture",
+    "six-horizon counterfactual maturation",
+    "named deferred and data-exception observations",
+    "point-in-time option outcome joins",
+    "competing-event labels and attribution",
+    "temporal purge and embargo planning",
+    "model evidence and calibration gates",
+    "read-only learning readiness reporting"
+  ],
+  "production_files": [
+    {"path": "avshunter_trade_journal.py", "sha256": "a1da2fd7b2908b56d418b60cd6b39246a04a41e0ca5629d665ad57b5ebafa2f3"},
+    {"path": "canonical_data/decision_outcome_ledger.py", "sha256": "bed9ca82f636a6dc28404309b56898e263b25357e3b65ae06ad864af0c041cbf"},
+    {"path": "canonical_data/outcome_learning.py", "sha256": "866d01a4b379a52a6e4df944e26bc5387f012a9b56e2e71c0a0f5ae2800cbb3e"},
+    {"path": "canonical_data/outcome_maturation.py", "sha256": "0806c786719b256d1e6b5dac510c6695d5522362cddaf39aec5630f18bb62ffc"},
+    {"path": "config/governed_constants_v1.json", "sha256": "19c02afa634b28c054892774043ee745d05ae0a94b53d6c8d53a3a85f42b509e"},
+    {"path": "domain/decision_outcome.py", "sha256": "b818d9cb5d816a353a1519cff916025c752f9a99ed1f3ea1ce7d3648c8898cbd"},
+    {"path": "domain/outcome_learning.py", "sha256": "a9be61cb82e3595293777aa8c2dc7469f07b150822f12ae4ecd5b5650fa5d754"},
+    {"path": "intelligent_orchestrator.py", "sha256": "61fb7a1f64c596e32210749ea625d519095649da7678f992177a5f8e33e3f60d"}
+  ],
+  "test_and_tool_files": [
+    {"path": "tests/test_avs_fix_002_stage6_outcome_learning.py", "sha256": "efa80e16ef499b3604e38e5869b6957565c391d56c32435c68a92c7c84ef9ea3"},
+    {"path": "tests/test_ddd_decision_outcome.py", "sha256": "76e25f3571ab525e588fa8abb95b930ec0fc910e62746717b5f7bcf7038e2542"},
+    {"path": "tools/build_outcome_learning_snapshot.py", "sha256": "f4034dba9f81f388e3696bf11e52f79fb8c53bf407e450ad8a77a3f2140fbcd2"}
+  ],
+  "governance_files": [
+    {"path": "audit/avs_fix_002/stage6/CURRENT_LEARNING_READINESS.json", "sha256": "cbf788b43346b6b7776c55f1781323903bedcc5023e85d35220cf06c4c0b5231"},
+    {"path": "audit/avs_fix_002/stage6/STAGE6_REGRESSION.xml", "sha256": "ced63bf49046f7b5a66cf5f221836907c7ed757709b7219710e2225a110a2f80"},
+    {"path": "audit/avs_fix_002/stage6/STAGE6_CLAIM_SHEET.md", "sha256": "1640bc534217741e7b8cc5a2895d49939170df599076b86dd4bfa78859813811"},
+    {"path": "audit/avs_fix_002/stage6/STAGE6_CLOSURE_REPORT.md", "sha256": "d9072e812aa3d9672c90425fb45499662e19d27162762cf009660a3e1c1348c7"}
+  ],
+  "verification": {
+    "focused_stage6": {"passed": 22, "failed": 0},
+    "consolidated_regression": {"tests": 425, "failed": 0, "errors": 0, "skipped": 0, "ordinary_passed": 351, "subtests_passed": 74},
+    "stored_run_ids": ["20260910_150045", "20260911_115904"],
+    "provider_calls": 0,
+    "production_pipeline_runs": 0,
+    "database_migrations": 0
+  },
+  "current_model_readiness": {
+    "state": "INSUFFICIENT_OUTCOMES",
+    "can_activate": false,
+    "fit_eligible_records": 0,
+    "presented_candidates": 3252,
+    "expected_candidate_horizons": 19512,
+    "accounted_candidate_horizons": 0
+  },
+  "activation_control": {
+    "configuration_enabled": false,
+    "authority": "OBSERVATION_ONLY",
+    "can_grant_capital": false,
+    "maximum_pre_release_state": "ELIGIBLE_FOR_OPERATOR_REVIEW"
+  },
+  "acceptance_pending": [
+    "normal completed-session capture cycle",
+    "new-run candidate-horizon population reconciliation",
+    "future completed-session label maturation",
+    "sufficient stratified outcome support",
+    "held-out calibration and stability acceptance",
+    "separate governed operator activation decision"
+  ],
+  "rollback": {
+    "code_base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca",
+    "database_migration_in_this_slice": false,
+    "append_only_evidence_must_not_be_deleted": true
+  }
+}

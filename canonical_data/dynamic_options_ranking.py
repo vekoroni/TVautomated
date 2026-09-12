@@ -233,10 +233,20 @@ class RankingServiceResult:
 
 
 class DynamicOptionsContractRankingService:
-    def __init__(self, store: OptionLiquidityLifecycleStore):
+    def __init__(
+        self,
+        store: OptionLiquidityLifecycleStore,
+        *,
+        deterministic_fallback_margin: float = 0.05,
+        deterministic_fallback_relative_margin: float = 0.10,
+    ):
         self.store = store
         self.probabilities = DynamicOptionsProbabilityRepository(store.registry)
         self.repository = DynamicOptionsRankingRepository(store.registry)
+        self.deterministic_fallback_margin = float(deterministic_fallback_margin)
+        self.deterministic_fallback_relative_margin = float(
+            deterministic_fallback_relative_margin
+        )
 
     def rank_family(
         self, *, family_id: str, previous_contract_symbol: str | None = None,
@@ -293,6 +303,10 @@ class DynamicOptionsContractRankingService:
             family_id=family.family_id, direction=family.thesis.governed_direction,
             candidates=tuple(candidates), previous_contract_symbol=previous_contract_symbol,
             policy=policy,
+            deterministic_fallback_margin=self.deterministic_fallback_margin,
+            deterministic_fallback_relative_margin=(
+                self.deterministic_fallback_relative_margin
+            ),
         )
         persisted, reused = self.repository.record_ranking(ranking)
         deterministic = sum(item.deterministic_score is not None for item in candidates)

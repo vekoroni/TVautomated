@@ -312,6 +312,7 @@ class DynamicOptionsLifecycleService:
                 "lifecycle_domain_version": DOI_LIFECYCLE_DOMAIN_VERSION,
                 "material_policy_version": self.policy.material_policy_version,
                 "hysteresis_policy_version": self.policy.hysteresis_policy_version,
+                "hysteresis_approval_id": self.policy.hysteresis_approval_id,
                 "options_observation_refreshed": bool(options_observation_refreshed),
                 "assessed_contracts": len(current_assessments),
                 "direction_immutable": thesis.governed_direction,

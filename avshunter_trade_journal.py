@@ -992,7 +992,8 @@ def log_exit(
             previous = None
             if thesis_id:
                 previous = (
-                    ledger.latest_event(thesis_id, 'TRADE_ENTRY')
+                    ledger.latest_event(thesis_id, 'FILL_RECORDED')
+                    or ledger.latest_event(thesis_id, 'TRADE_ENTRY')
                     or ledger.latest_event(thesis_id, 'EXECUTION_DECISION')
                 )
             ledger_event = outcome_event_from_trade(

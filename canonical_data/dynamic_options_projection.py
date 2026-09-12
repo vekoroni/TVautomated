@@ -83,6 +83,14 @@ class DynamicOptionsProjectionResolver:
         selected = connection.execute(
             "SELECT * FROM doi_contract_assessments WHERE assessment_id=?", (selected_id,)
         ).fetchone() if selected_id else None
+        selected_keys = set(selected.keys()) if selected is not None else set()
+        selected_metadata = (
+            json.loads(selected["metadata_json"])
+            if selected is not None and "metadata_json" in selected_keys and selected["metadata_json"]
+            else {}
+        )
+        economics_v2 = selected_metadata.get("contract_assessment_v2", {}) if isinstance(selected_metadata, Mapping) else {}
+        reachability = selected_metadata.get("reachability_assessment_v1", {}) if isinstance(selected_metadata, Mapping) else {}
         preferred = str(ranking.get("selected_contract_symbol") or "").strip().upper().replace("O:", "").replace(" ", "")
         alignment = "NO_CURRENT_CONTRACT" if not governed else ("MATCH" if governed == preferred else "DIFFERENT_ADVISORY")
         alternatives = tuple({
@@ -107,6 +115,26 @@ class DynamicOptionsProjectionResolver:
             input_dataset_ids=tuple(ranking.get("input_dataset_ids") or ()), alternatives=alternatives,
         )
         row.update(projection.to_fields())
+        row.update({
+            "doi_ranking_score": (
+                selected["ranking_score_uncalibrated"]
+                if selected is not None and "ranking_score_uncalibrated" in selected_keys else None
+            ),
+            "doi_ranking_score_kind": selected_metadata.get("ranking_score_kind", "DETERMINISTIC_UTILITY") if selected else "",
+            "doi_calibration_state": selected_metadata.get("calibration_state", "NOT_AVAILABLE") if selected else "NOT_AVAILABLE",
+            "doi_monetisability_state": economics_v2.get("monetisability_state"),
+            "doi_monetisability_reason": economics_v2.get("monetisability_reason"),
+            "doi_convexity_score": economics_v2.get("convexity_score"),
+            "doi_convexity_label": economics_v2.get("convexity_label"),
+            "doi_spread_fraction_mid": economics_v2.get("spread_fraction_mid"),
+            "doi_scenarios_json": json.dumps(economics_v2.get("scenarios") or [], separators=(",", ":")),
+            "doi_reach_ratio": reachability.get("reach_ratio"),
+            "doi_reachable_target_spot": reachability.get("reachable_target_spot"),
+            "doi_assessment_calculation_version": (
+                selected["calculation_version"]
+                if selected is not None and "calculation_version" in selected_keys else ""
+            ),
+        })
         row.update(identity)
         return row
 

@@ -176,6 +176,44 @@ FINAL_BOOK_FIELDS = [
     "doi_authority",
     "doi_decision_authority",
     "doi_execution_authority",
+    "doi_ranking_score",
+    "doi_ranking_score_kind",
+    "doi_calibration_state",
+    "doi_monetisability_state",
+    "doi_monetisability_reason",
+    "doi_convexity_score",
+    "doi_convexity_label",
+    "doi_spread_fraction_mid",
+    "doi_reach_ratio",
+    "doi_reachable_target_spot",
+    "doi_scenarios_json",
+    "doi_assessment_calculation_version",
+    "structure_evidence_state",
+    "structure_evidence_reason",
+    "structure_evidence_inputs",
+    "structure_evidence_version",
+    "structure_evidence_authority",
+    "usmi_sector_alignment",
+    "usmi_alignment_priority",
+    "usmi_alignment_reason",
+    "usmi_scenario",
+    "usmi_scenario_failed_clause",
+    "usmi_authority",
+    "usmi_calculation_version",
+    "lab_v4_thesis_state",
+    "lab_v4_structure_evidence_state",
+    "lab_v4_reach_ratio",
+    "lab_v4_contract_state",
+    "lab_v4_ranking_score",
+    "lab_v4_ranking_score_kind",
+    "lab_v4_execution_state",
+    "lab_v4_quote_provider_timestamp_utc",
+    "lab_v4_macro_alignment",
+    "lab_v4_macro_scenario",
+    "lab_v4_summary_state",
+    "lab_v4_summary_reason",
+    "lab_v4_authority",
+    "lab_v4_calculation_version",
     "lab_actionable_handoff_member",
     "selected_structure_hydration_status",
     "selected_structure_hydration_reason",
@@ -2969,6 +3007,13 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         )
         provenance["lab_tradeable"] = "governed_materializer:invalidation_precondition"
         provenance["final_action"] = "governed_materializer:invalidation_precondition"
+    # AVSHUNTER assesses monetisability and execution evidence; allocation is
+    # owned by the human trader (or a future downstream portfolio context).
+    # Keep the legacy display column schema-stable without publishing a size.
+    row["position_size_display"] = "HUMAN DETERMINED"
+    provenance["position_size_display"] = (
+        "governed_materializer:capital_agnostic_boundary"
+    )
     row["field_provenance_json"] = _json_safe(provenance)
     return {key: csv_safe_row(row).get(key, "") for key in FINAL_BOOK_FIELDS}
 
@@ -3543,12 +3588,40 @@ def write_final_opportunity_book(
     doi_population_before = len(rows)
     doi_database = Path(runs_dir).parent.parent / "canonical" / "control_plane.sqlite"
     rows[:] = DynamicOptionsProjectionResolver(doi_database).project_rows(rows)
+    from domain.structure_evidence import derive_structure_evidence
+    from domain.macro_advisory_context import project_usmi_context
+    macro_path = Path(runs_dir) / run_id / "macro_snapshot.json"
+    try:
+        macro_packet_for_v4 = json.loads(macro_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        macro_packet_for_v4 = {}
+    for row in rows:
+        row.update(derive_structure_evidence(
+            hidden_state_label=row.get("hidden_state_label"), phase=row.get("phase"),
+            trigger_primary=row.get("trigger_primary"),
+        ))
+        if macro_packet_for_v4:
+            row.update(project_usmi_context(
+                packet=macro_packet_for_v4,
+                sector=str(first(row, "gics_sector", "sector", default="")),
+                industry=str(first(row, "industry", "industry_group", default="")),
+                direction=str(first(row, "governed_direction", "direction", default="")),
+            ))
+    from domain.lab_signal_book_v4 import project_lab_signal_v4
+    rows[:] = [{**row, **project_lab_signal_v4(row)} for row in rows]
     for row in rows:
         provenance = json.loads(row.get("field_provenance_json") or "{}")
         for field in FINAL_BOOK_FIELDS:
             if field.startswith("doi_") and not _is_missing(row.get(field)):
                 provenance[field] = "canonical_doi_projection_read_only"
         row["field_provenance_json"] = _json_safe(provenance)
+
+    # R:R is retained in upstream research artefacts only.  It is neither a
+    # v4 ranking input nor a required/displayed Lab field.
+    for row in rows:
+        for field in tuple(row):
+            if field.startswith("rr_"):
+                row.pop(field, None)
 
     # The Lab book is the governed JSON boundary consumed by Worker 3 and
     # other non-Python clients.  Canonicalise the returned rows themselves,
@@ -3566,13 +3639,21 @@ def write_final_opportunity_book(
     csv_path = out_dir / f"final_opportunity_book_{run_id}.csv"
     json_path = out_dir / f"final_opportunity_book_{run_id}.json"
     with csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=FINAL_BOOK_FIELDS, extrasaction="ignore")
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=[field for field in FINAL_BOOK_FIELDS if not field.startswith("rr_")],
+            extrasaction="ignore",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
     triage_csv_path = out_dir / f"lab_triage_view_{run_id}.csv"
     with triage_csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=LAB_TRIAGE_VIEW_FIELDS, extrasaction="ignore")
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=[field for field in LAB_TRIAGE_VIEW_FIELDS if not field.startswith("rr_")],
+            extrasaction="ignore",
+        )
         writer.writeheader()
         writer.writerows([{k: row.get(k, "") for k in LAB_TRIAGE_VIEW_FIELDS} for row in rows])
 
@@ -3588,7 +3669,7 @@ def write_final_opportunity_book(
             pass
 
     payload = {
-        "lab_schema_version": "lab_signal_book_v2",
+        "lab_schema_version": "lab_signal_book_v4",
         "run_id": run_id,
         "created_at_utc": utc_now(),
         "candidate_count": len(rows),

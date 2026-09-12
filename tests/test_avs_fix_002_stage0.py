@@ -27,7 +27,7 @@ def test_design_authority_contains_v12_mandatory_controls() -> None:
     required = (
         "FINAL v1.2",
         "ProviderSessionFinality",
-        "contracts_at_budget = floor(desk_budget_amount / contract_cost_at_ask)",
+        "capital-agnostic",
         "MarketRateObservation",
         "Current execution-evidence state",
         "Activity-maturation state",

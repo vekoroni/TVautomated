@@ -1,0 +1,76 @@
+{
+  "schema_version": "avs_fix_002_policy_release_v1",
+  "release_id": "AVS-FIX-002-POLICY-20260912",
+  "release_state": "GOVERNED_OFFLINE_COMPLETE_AWAITING_CONTROLLED_CYCLE",
+  "branch": "avs-fix-001",
+  "base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca",
+  "approval_id": "ACK-20260912-AVS-FIX-002",
+  "resolved": {
+    "profit_floor": {
+      "value": 0.25,
+      "approved": true,
+      "authority": "ADVISORY_ONLY"
+    },
+    "preferred_contract_hysteresis": {
+      "margin_abs": 0.05,
+      "margin_relative": 0.10,
+      "rule": "MAX_ABSOLUTE_OR_RELATIVE",
+      "approved": true,
+      "authority": "ADVISORY_ONLY"
+    },
+    "forecast_volatility_bias": {
+      "value": 1.0,
+      "applied": false,
+      "gate": "OWNER_APPROVAL_AND_VALIDATED_AND_REPORT_ID_AND_HELD_OUT_PASS"
+    },
+    "capital_allocation_boundary": {
+      "state": "OUT_OF_SCOPE",
+      "capacity_contract": "RETIRED",
+      "configuration": "REMOVED",
+      "intelligence_lab_projection": "REMOVED",
+      "owner_decision": "ACK-20260912-CAPITAL-AGNOSTIC"
+    }
+  },
+  "pending": {},
+  "production_files": [
+    {"path": "config/governed_constants_v1.json", "sha256": "19c02afa634b28c054892774043ee745d05ae0a94b53d6c8d53a3a85f42b509e"},
+    {"path": "domain/volatility_budget.py", "sha256": "716edcec16365892053733ba3dbdc3d83c59c8d21e93fb44aa700285d077610d"},
+    {"path": "domain/contract_economics_v2.py", "sha256": "b4aec8a449049d3ddec8b1c034f5913d9b506a2fe765938e9218a1cb68cfd316"},
+    {"path": "domain/dynamic_options_lifecycle.py", "sha256": "2db6a394f1b1912f99127225d47d61ce773400d91a6bbc7b4d1c086c98ae689f"},
+    {"path": "domain/dynamic_options_ranking.py", "sha256": "e377a0ce270f238f62eee6406f085ceea78bf4a7c73f613db127123b313cce94"},
+    {"path": "domain/lab_signal_book_v4.py", "sha256": "e8f3278b46f2107a0aab5ed979b337050eca370af983cd29716519886d27b2c7"},
+    {"path": "canonical_data/dynamic_options_valuation.py", "sha256": "b4b6de8205fb8f519129a2898ca634b937c8428c9ff379bd08c445c1685f5427"},
+    {"path": "canonical_data/dynamic_options_lifecycle.py", "sha256": "b3f5bebc6c40625c1f244680f8d9280387e8eee42d653f96c4d693ccb6252b76"},
+    {"path": "canonical_data/dynamic_options_ranking.py", "sha256": "255d051bcb50f1daf8004ba90bd7942ce4bc4c9fec09c1da856415cafd0017a0"},
+    {"path": "canonical_data/dynamic_options_production.py", "sha256": "5e6176630403593c1fb55c9b53b91170df41ca663303dbb1a2f7800abeb6842a"},
+    {"path": "contracts/lab_control.py", "sha256": "76a28f81f65b5618f606190c53aee0671c4f3c387b0f876781813b8b27b695ea"},
+    {"path": "contracts/selected_contract_economics.py", "sha256": "7d5ea820321e1ef5828304b24280d98f549b4877d7cf4351d8550eb2f5436617"},
+    {"path": "intelligence-lab/intelligence_lab.py", "sha256": "486487d90a47eaec17dcfc5efa485a116c50b3f0559d94718319d22a6623893e"}
+  ],
+  "verification": {
+    "focused_regression": {"passed": 110, "failed": 0},
+    "governance_preflight": {
+      "stage0_passed": 4,
+      "lab_handoff_passed": 15,
+      "release_path_count": 55,
+      "pathset_reconciled": true,
+      "diff_check_passed": true,
+      "release_diff_secret_scan_passed": true
+    },
+    "consolidated_regression": {
+      "tests": 430,
+      "ordinary_passed": 356,
+      "subtests_passed": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "provider_calls": 0,
+    "production_pipeline_runs": 0,
+    "database_migrations": 0
+  },
+  "test_evidence": {
+    "path": "audit/avs_fix_002/policy/POLICY_REGRESSION_20260912.xml",
+    "sha256": "afd5430c0000011d37c672af8a9bf83e9960b8317a00aa3b3d9374d6d6f6a1ae"
+  }
+}
