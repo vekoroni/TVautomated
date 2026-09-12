@@ -97,9 +97,16 @@ def test_all_canonical_sources_are_snapshotted_and_authority_is_removed(tmp_path
     )
     packet = result["packet"]
     assert set(packet["source_manifest"]) == {
-        "core_macro", "bond_macro", "auction_calendar", "enrichment_delta"
+        "core_macro", "bond_macro", "auction_calendar", "enrichment_delta",
+        "us_money_index",
     }
-    assert all(item["status"] == "VALID" for item in packet["source_manifest"].values())
+    assert packet["source_manifest"]["us_money_index"]["status"] == "MISSING"
+    assert packet["us_money_index"] == {}
+    assert all(
+        item["status"] == "VALID"
+        for name, item in packet["source_manifest"].items()
+        if name != "us_money_index"
+    )
     assert "avshunter_macro_enrichment_delta808.json" not in json.dumps(packet)
     assert not (set(_keys(packet)) & FORBIDDEN_AUTHORITY_KEYS)
     assert packet["authority_statement"] == AUTHORITY_STATEMENT
@@ -134,6 +141,43 @@ def test_updated_macro_changes_the_source_fingerprint(tmp_path: Path) -> None:
     )
     assert first["reference"]["source_fingerprint"] != second["reference"]["source_fingerprint"]
     assert first["reference"]["packet_id"] != second["reference"]["packet_id"]
+
+
+def test_production_mode_uses_only_the_run_frozen_macro_snapshot(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "20260831_070000"
+    macro = tmp_path / "macro"
+    run.mkdir(parents=True)
+    macro.mkdir()
+    _sources(macro)
+    live = json.loads((macro / "macro_intelligence_latest.json").read_text(encoding="utf-8"))
+    live["regime_state"] = "LATE_MUTABLE_DROPBOX_VALUE"
+    _write_json(macro / "macro_intelligence_latest.json", live)
+    frozen = {
+        **live,
+        "regime_state": "RUN_FROZEN_VALUE",
+        "extras": {
+            **live.get("extras", {}),
+            "bond_macro": {
+                "generated_at": "2026-08-31T07:01:00Z",
+                "yield_curve": {"curve_state": "FLAT"},
+                "auction": {"calendar_rows": []},
+                "zn_futures": {}, "credit_stress": {}, "composite": {},
+            },
+        },
+    }
+    _write_json(run / "macro_snapshot.json", frozen)
+    result = materialize_interpreter_macro_context(
+        run_dir=run,
+        session_date="2026-08-31",
+        macro_dir=macro,
+        prefer_run_snapshot=True,
+    )
+    packet = result["packet"]
+    assert packet["regime_state"] == "RUN_FROZEN_VALUE"
+    assert "LATE_MUTABLE_DROPBOX_VALUE" not in json.dumps(packet)
+    assert packet["source_manifest"]["core_macro"]["status"] == "RUN_SNAPSHOT"
+    assert packet["source_manifest"]["bond_macro"]["status"] == "EMBEDDED_RUN_SNAPSHOT"
+    assert packet["source_manifest"]["us_money_index"]["status"] == "MISSING_IN_RUN_SNAPSHOT"
 
 
 def test_current_enrichment_contract_builds_ticker_advisories(tmp_path: Path) -> None:

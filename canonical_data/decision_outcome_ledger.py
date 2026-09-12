@@ -268,6 +268,13 @@ def candidate_events_from_rows(
             "planned_hold_sessions": row.get("planned_hold_sessions"),
             "evidence_dataset_ids": row.get("evidence_dataset_ids"),
             "formula_version": row.get("calculation_version"),
+            "usmi_packet_id": row.get("usmi_packet_id"),
+            "usmi_packet_sha256": row.get("usmi_packet_sha256"),
+            "usmi_quality_status": row.get("usmi_quality_status"),
+            "usmi_state": row.get("usmi_state"),
+            "usmi_sector_alignment": row.get("usmi_sector_alignment"),
+            "usmi_scenario": row.get("usmi_scenario"),
+            "usmi_authority": row.get("usmi_authority"),
         }
         events.append(make_ledger_event(
             event_type=LedgerEventType.CANDIDATE_DECISION.value,
@@ -329,6 +336,12 @@ def execution_events_from_rows(
             ),
             "execution_authorized": row.get("execution_authorized"),
             "decision_reason": row.get("gate_reason") or row.get("rejection_reason"),
+            "usmi_packet_id": row.get("usmi_packet_id"),
+            "usmi_packet_sha256": row.get("usmi_packet_sha256"),
+            "usmi_state": row.get("usmi_state"),
+            "usmi_sector_alignment": row.get("usmi_sector_alignment"),
+            "usmi_scenario": row.get("usmi_scenario"),
+            "usmi_authority": row.get("usmi_authority"),
         }
         events.append(make_ledger_event(
             event_type=LedgerEventType.EXECUTION_DECISION.value,

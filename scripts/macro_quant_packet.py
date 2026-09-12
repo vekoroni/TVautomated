@@ -85,6 +85,11 @@ MACRO_QUANT_CSV_FIELDS = [
     "auction_spread_risk",
     "credit_warning",
     "breakeven_adjustment_pct",
+    "usmi_packet_id",
+    "usmi_packet_sha256",
+    "usmi_quality_status",
+    "usmi_state",
+    "usmi_gamma_position",
 ]
 
 
@@ -654,6 +659,21 @@ def build_macro_quant_packet(
     breakeven_adjustment_pct = _safe_float(
         bond_macro.get("breakeven_adjustment_pct"), 0.0
     ) or 0.0
+    usmi = extras.get("us_money_index") if isinstance(extras, Mapping) else None
+    if not isinstance(usmi, Mapping) or str(usmi.get("authority") or "").upper() != "ADVISORY_ONLY":
+        usmi = {}
+    usmi_state_block = usmi.get("state") if isinstance(usmi.get("state"), Mapping) else {}
+    usmi_state = str(
+        usmi_state_block.get("US_MONEY_INDEX_STATE")
+        or usmi_state_block.get("us_money_index_state")
+        or usmi_state_block.get("primary_state")
+        or "UNAVAILABLE"
+    )
+    usmi_gamma_position = str(
+        usmi_state_block.get("GAMMA_POSITION")
+        or usmi_state_block.get("gamma_position")
+        or "UNAVAILABLE"
+    )
 
     has_conflict = detect_core_conflict(macro)
     flags, active_flags, resolved_flags = _split_macro_conflict_flags(macro)
@@ -723,6 +743,12 @@ def build_macro_quant_packet(
         "auction_spread_risk": auction_spread_risk,
         "credit_warning": bond_credit_warning,
         "breakeven_adjustment_pct": breakeven_adjustment_pct,
+        "usmi_packet_id": usmi.get("packet_id", ""),
+        "usmi_packet_sha256": usmi.get("packet_sha256", ""),
+        "usmi_quality_status": usmi.get("quality_status", "UNAVAILABLE"),
+        "usmi_state": usmi_state,
+        "usmi_gamma_position": usmi_gamma_position,
+        "us_money_index": dict(usmi),
     }
     macro_as_of = str(generated_at or "")
     report_date = str(find_field(macro, "report_date", default="") or "")
@@ -777,6 +803,12 @@ def missing_macro_quant_packet(source_path: str | Path | None = None) -> Dict[st
         "macro_normalised_at_utc": "",
         "macro_age_hours": None,
         "macro_freshness_status": "MISSING",
+        "usmi_packet_id": "",
+        "usmi_packet_sha256": "",
+        "usmi_quality_status": "UNAVAILABLE",
+        "usmi_state": "UNAVAILABLE",
+        "usmi_gamma_position": "UNAVAILABLE",
+        "us_money_index": {},
         "macro_confidence": 0.0,
         "macro_data_quality": "MISSING",
         "macro_regime_label": "UNKNOWN",

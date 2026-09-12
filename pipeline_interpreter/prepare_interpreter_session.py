@@ -92,6 +92,7 @@ MORNING_ONLY_FILES = [
 MACRO_FILES = [
     (DROPBOX_MACRO / "macro_intelligence_latest.json",        "macro_intelligence_latest.json"),
     (DROPBOX_MACRO / "avshunter_macro_enrichment_delta.json", "avshunter_macro_enrichment_delta.json"),
+    (DROPBOX_MACRO / "avshunter_us_money_index.json", "avshunter_us_money_index.json"),
 ]
 
 

@@ -49,13 +49,24 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 import anthropic
+from anthropic_runtime_config import workspace_id as configured_workspace_id
+
+from contracts.us_money_index_contract import (
+    attach_us_money_index,
+    load_us_money_index_sidecar,
+)
+from contracts.macro_file_contract import (
+    GEX_BY_STRIKE_FILENAME,
+    GEX_PROXY_FILENAME,
+    market_data_directory_from_dropbox,
+)
 
 # ============================================================
 # CONFIG
 # ============================================================
 BASE_DIR    = Path(__file__).resolve().parent
 DROPBOX_DIR = BASE_DIR / "dropbox"
-MARKET_DIR  = DROPBOX_DIR / "market_data"
+MARKET_DIR  = market_data_directory_from_dropbox(DROPBOX_DIR)
 MACRO_DIR   = DROPBOX_DIR / "macro"
 PIPELINE_MACRO_DIR = BASE_DIR / "data" / "macro"
 
@@ -65,6 +76,7 @@ MODEL           = "claude-sonnet-4-6"
 MSG1_TOKENS = 2000
 MSG2_TOKENS = 4000
 MSG3_TOKENS = 8000
+MSG3_REPAIR_TOKENS = 10000
 
 FRESH_HOURS = 6  # skip rebuild if JSON is less than N hours old
 USSLIND_MAX_AGE_DAYS = 180  # monthly leading index; older observations are unusable
@@ -143,13 +155,12 @@ FILE_SPECS = [
     ("vix_engine_csv",     "avshunter_vix_engine*.csv",          False),
     ("macro_master_csv",   "avsh_macro_master.csv",              False),
     ("fred_master_csv",    "avshunter_fred_master.csv",          False),
-    ("gex_proxy_csv",      "avshunter_gex_proxy.csv",            False),
     # M-05 (P1): avshunter_gex_by_strike.csv is written ONLY on success, so it
     # VANISHES on failure — the builder saw absence and imputed, while
     # avshunter_gex_proxy.csv sat there stating Regime: MISSING explicitly.
     # The proxy summary is the canonical feed and is always written.
-    ("gex_proxy_csv",      "avshunter_gex_proxy.csv",            False),
-    ("gex_by_strike_csv",  "avshunter_gex_by_strike.csv",        False),
+    ("gex_proxy_csv",      GEX_PROXY_FILENAME,                    False),
+    ("gex_by_strike_csv",  GEX_BY_STRIKE_FILENAME,                False),
     ("threshold_flags_csv","macro_series_threshold_flags.csv",   False),
     ("regime_json",        "avshunter_regime.json",              False),
     ("us_indices_csv",     "us_indices_cash_*.csv",              False),
@@ -284,6 +295,22 @@ def format_data_for_prompt(payload: dict) -> str:
             "PARTIAL UPDATE INSTRUCTION: Preserve prior macro fields unless the newly loaded update files "
             "provide fresher contradictory evidence. Recompute affected fields and keep contract completeness."
         )
+
+    if "us_money_index_advisory" in data:
+        parts.append("=== US MONEY INDEX CONSOLIDATED ADVISORY ===")
+        parts.append(
+            "AUTHORITY: ADVISORY_ONLY. Use this packet to augment the macro picture, "
+            "sector rotation, cross-asset context, event guards and uncertainty disclosures. "
+            "It must not replace canonical market-data values, determine ticker direction, "
+            "select a contract, grant capital permission or produce an execution verdict. "
+            "Where it conflicts with confirmed CSV/JSON market data, retain the canonical "
+            "value and disclose the conflict."
+        )
+        advisory = dict(data["us_money_index_advisory"])
+        # The normalised view already retains every validated v2 domain block.
+        # Do not duplicate the verbatim source payload in the model context.
+        advisory.pop("source_payload", None)
+        parts.append(json.dumps(advisory, indent=2, default=str)[:18000])
 
     if "report_json" in data:
         report = data["report_json"]
@@ -548,6 +575,63 @@ Output the JSON now. Raw object only."""
 # API CALLER — 3-prompt sequence
 # ============================================================
 
+def _anthropic_client() -> anthropic.Anthropic:
+    """Create a workspace-scoped Anthropic client from explicit configuration.
+
+    Anthropic requires ``anthropic-workspace-id`` for API keys that are not
+    themselves workspace-scoped.  The workspace identity is configuration and
+    must never be guessed, discovered through an extra request, or hard-coded
+    into production source.
+    """
+    workspace_id = configured_workspace_id()
+
+    log.info("Anthropic workspace scope: configured")
+    return anthropic.Anthropic(
+        default_headers={"anthropic-workspace-id": workspace_id}
+    )
+
+
+def _response_text(response) -> str:
+    """Join every Anthropic text block instead of assuming block zero."""
+    return "".join(
+        str(getattr(block, "text", ""))
+        for block in getattr(response, "content", ())
+        if getattr(block, "text", None) is not None
+    )
+
+
+def _clean_json_response(raw: str) -> str:
+    """Remove transport decoration without changing JSON field content."""
+    cleaned = str(raw or "").lstrip("\ufeff").strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    # Accept harmless provider prose outside one complete object.  Never try
+    # to manufacture a missing brace or repair field values locally.
+    if not cleaned.startswith("{") or not cleaned.endswith("}"):
+        first, last = cleaned.find("{"), cleaned.rfind("}")
+        if first >= 0 and last > first:
+            cleaned = cleaned[first:last + 1]
+    return cleaned
+
+
+def _parse_macro_response(raw: str) -> dict:
+    parsed = json.loads(_clean_json_response(raw))
+    if not isinstance(parsed, dict):
+        raise ValueError("macro API response must be one JSON object")
+    return parsed
+
+
+def _json_error_context(raw: str, error: json.JSONDecodeError, radius: int = 180) -> str:
+    cleaned = _clean_json_response(raw)
+    start, end = max(0, error.pos - radius), min(len(cleaned), error.pos + radius)
+    excerpt = cleaned[start:end].replace("\r", "\\r").replace("\n", "\\n")
+    return f"chars[{start}:{end}]={excerpt}"
+
 def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
     if dry_run:
         log.info("[DRY RUN] 3-prompt sequence would be called")
@@ -556,14 +640,14 @@ def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
         log.info("[DRY RUN] Prompt 3: %d chars", len(PROMPT_3))
         return {}
 
-    client       = anthropic.Anthropic()
+    client       = _anthropic_client()
     conversation = []
 
     # Message 1
     log.info("Message 1: system identity...")
     conversation.append({"role": "user", "content": PROMPT_1_SYSTEM})
     r1 = client.messages.create(model=MODEL, max_tokens=MSG1_TOKENS, messages=conversation)
-    reply1 = r1.content[0].text
+    reply1 = _response_text(r1)
     log.info("  Response: %d chars", len(reply1))
     conversation.append({"role": "assistant", "content": reply1})
 
@@ -571,7 +655,7 @@ def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
     log.info("Message 2: full analysis (Blocks 0-8)...")
     conversation.append({"role": "user", "content": build_prompt_2(data_str)})
     r2 = client.messages.create(model=MODEL, max_tokens=MSG2_TOKENS, messages=conversation)
-    reply2 = r2.content[0].text
+    reply2 = _response_text(r2)
     log.info("  Response: %d chars", len(reply2))
     conversation.append({"role": "assistant", "content": reply2})
 
@@ -579,23 +663,54 @@ def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
     log.info("Message 3: JSON finalisation...")
     conversation.append({"role": "user", "content": PROMPT_3})
     r3 = client.messages.create(model=MODEL, max_tokens=MSG3_TOKENS, messages=conversation)
-    raw_json = r3.content[0].text
-    log.info("  Response: %d chars", len(raw_json))
-
-    # Parse — strip markdown fences if model added them
-    cleaned = raw_json.strip()
-    if cleaned.startswith("```"):
-        cleaned = "\n".join(
-            l for l in cleaned.split("\n")
-            if not l.strip().startswith("```")
-        ).strip()
+    raw_json = _response_text(r3)
+    stop_reason = str(getattr(r3, "stop_reason", "") or "UNKNOWN")
+    log.info("  Response: %d chars | stop_reason=%s", len(raw_json), stop_reason)
 
     try:
-        return json.loads(cleaned)
+        return _parse_macro_response(raw_json)
     except json.JSONDecodeError as e:
         log.error("JSON parse failed: %s", e)
-        log.error("Raw (first 500): %s", raw_json[:500])
-        raise RuntimeError(f"API returned invalid JSON: {e}")
+        log.error("JSON failure context: %s", _json_error_context(raw_json, e))
+        log.warning("Requesting one syntax-only JSON repair from Anthropic")
+        conversation.append({"role": "assistant", "content": raw_json})
+        conversation.append({
+            "role": "user",
+            "content": (
+                "Your previous response was not valid JSON. It failed at "
+                f"line {e.lineno}, column {e.colno}: {e.msg}. Return the same "
+                "complete macro object with JSON syntax corrected only. Do not "
+                "change, omit, add, reinterpret, or recalculate any field. Use "
+                "double-quoted keys and strings, JSON true/false/null, escaped "
+                "newlines, and no comments, markdown fences, or trailing prose."
+            ),
+        })
+        repair = client.messages.create(
+            model=MODEL,
+            max_tokens=MSG3_REPAIR_TOKENS,
+            messages=conversation,
+        )
+        repaired_json = _response_text(repair)
+        repair_stop = str(getattr(repair, "stop_reason", "") or "UNKNOWN")
+        log.info(
+            "  Repair response: %d chars | stop_reason=%s",
+            len(repaired_json), repair_stop,
+        )
+        try:
+            return _parse_macro_response(repaired_json)
+        except (json.JSONDecodeError, ValueError) as repair_error:
+            if isinstance(repair_error, json.JSONDecodeError):
+                log.error(
+                    "JSON repair failure context: %s",
+                    _json_error_context(repaired_json, repair_error),
+                )
+            raise RuntimeError(
+                "API returned invalid JSON after one bounded repair attempt: "
+                f"initial_stop={stop_reason}; repair_stop={repair_stop}; "
+                f"initial_error={e}; repair_error={repair_error}"
+            ) from repair_error
+    except ValueError as e:
+        raise RuntimeError(f"API returned invalid macro object: {e}") from e
 
 
 # ============================================================
@@ -1357,6 +1472,14 @@ def any_input_newer_than_output(market_dir: Path, output_path: Path) -> bool:
     return False
 
 
+def optional_input_newer_than_output(input_path: Path | None, output_path: Path) -> bool:
+    """Return True only for a present optional input newer than the output."""
+
+    if input_path is None or not input_path.is_file():
+        return False
+    return not output_path.is_file() or input_path.stat().st_mtime > output_path.stat().st_mtime
+
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -1366,6 +1489,11 @@ def main():
     parser.add_argument("--dropbox",  default=str(DROPBOX_DIR))
     parser.add_argument("--force",   action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--us-money-index",
+        default=str(MACRO_DIR / "avshunter_us_money_index.json"),
+        help="Optional advisory US Money Index sidecar; invalid/absent input never aborts the macro build.",
+    )
     parser.add_argument(
         "--update",
         default="",
@@ -1379,9 +1507,12 @@ def main():
     args = parser.parse_args()
 
     dropbox_path = Path(args.dropbox)
-    market_path  = dropbox_path / "market_data"
+    market_path  = market_data_directory_from_dropbox(dropbox_path)
     macro_path   = dropbox_path / "macro"
     output_path  = macro_path / OUTPUT_FILENAME
+    _usmi_path = Path(args.us_money_index).resolve() if args.us_money_index else None
+    _usmi = None
+    _usmi_error = None
     macro_path.mkdir(parents=True, exist_ok=True)
     update_keys = []
     if args.update_all:
@@ -1405,10 +1536,23 @@ def main():
     update_keys : {','.join(update_keys) if update_keys else 'FULL'}
     """)
 
+    # Validate the optional advisory before freshness decides whether a build
+    # is needed.  An invalid/newer sidecar must not trigger a paid rebuild.
+    if _usmi_path is not None and _usmi_path.is_file():
+        try:
+            _usmi = load_us_money_index_sidecar(_usmi_path)
+        except Exception as error:
+            _usmi_error = error
+            log.warning("US Money Index rejected before macro synthesis: %s", error)
+
     # Freshness check
     if not args.force and not args.dry_run and not update_keys and is_fresh(output_path, FRESH_HOURS):
         age = (datetime.now().timestamp() - output_path.stat().st_mtime) / 3600
-        if any_input_newer_than_output(market_path, output_path):
+        _usmi_is_newer = bool(
+            _usmi is not None
+            and optional_input_newer_than_output(_usmi_path, output_path)
+        )
+        if any_input_newer_than_output(market_path, output_path) or _usmi_is_newer:
             log.info("Input files updated since last build - triggering rebuild.")
         else:
             log.info("JSON is %.1fh old (< %dh) and no newer inputs. Use --force to rebuild.", age, FRESH_HOURS)
@@ -1419,6 +1563,17 @@ def main():
     try:
         prior_macro = _load_existing_macro(output_path) if update_keys and not args.update_all else {}
         payload  = load_data_payload(market_path, update_keys=update_keys if not args.update_all else None, prior_macro=prior_macro)
+        if _usmi is not None and _usmi_path is not None:
+            payload["data"]["us_money_index_advisory"] = _usmi
+            payload["files_found"].append(_usmi_path.name)
+            payload.setdefault("files_found_by_key", {})["us_money_index_advisory"] = str(_usmi_path)
+            log.info(
+                "  Loaded US Money Index: packet=%s source=%s quality=%s authority=%s",
+                _usmi.get("packet_id"),
+                _usmi.get("source_contract_version"),
+                _usmi.get("quality_status"),
+                _usmi.get("authority"),
+            )
         data_str = format_data_for_prompt(payload)
         log.info("Formatted data payload: %d chars", len(data_str))
     except RuntimeError as e:
@@ -1612,6 +1767,34 @@ def main():
     # This prevents fresh VIX9D/VIX3M/VVIX/credit/GEX/sector data from being
     # lost when the model omits a field or the report JSON used a proxy.
     macro_json = apply_market_data_overrides(macro_json, payload)
+
+    # Governed advisory sidecar.  Its policy section remains explicitly
+    # disabled and it cannot overwrite any core macro or execution field.
+    if _usmi is not None:
+        try:
+            macro_json = attach_us_money_index(macro_json, _usmi)
+            log.info(
+                "US Money Index attached: packet=%s quality=%s authority=%s",
+                _usmi.get("packet_id"),
+                _usmi.get("quality_status"),
+                _usmi.get("authority"),
+            )
+        except Exception as _attach_error:
+            macro_json["us_money_index_available"] = False
+            macro_json["us_money_index_authority"] = "ADVISORY_ONLY"
+            macro_json.setdefault("extras", {})["us_money_index_status"] = {
+                "status": "INVALID_UNAVAILABLE",
+                "error": str(_attach_error),
+            }
+            log.warning("US Money Index rejected; continuing without it: %s", _attach_error)
+    else:
+        macro_json["us_money_index_available"] = False
+        macro_json["us_money_index_authority"] = "ADVISORY_ONLY"
+        if _usmi_error is not None:
+            macro_json.setdefault("extras", {})["us_money_index_status"] = {
+                "status": "INVALID_UNAVAILABLE",
+                "error": str(_usmi_error),
+            }
 
     # Normalise horizon routing before validation (ensures 11_20d always present)
     macro_json = normalise_horizon_routing(macro_json)

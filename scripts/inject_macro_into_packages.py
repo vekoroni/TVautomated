@@ -212,6 +212,7 @@ def main() -> int:
             "ingested_utc": ingested_utc,
             "payload": macro,
             "quant_packet": macro_quant_packet,
+            "us_money_index": macro_quant_packet.get("us_money_index", {}),
         }
         pkg["macro_quant_packet"] = macro_quant_packet
         # PERMANENT FIX: write flat 6-field dict, not raw nested macro blob

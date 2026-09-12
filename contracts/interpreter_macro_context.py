@@ -16,6 +16,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from contracts.us_money_index_contract import normalise_us_money_index_sidecar
+from macro_domain.us_money_index import evaluate_scenarios, sector_advisory
+
 
 SCHEMA_VERSION = "interpreter_macro_context_v1"
 AUTHORITY_STATEMENT = (
@@ -28,6 +31,7 @@ CANONICAL_SOURCES = {
     "bond_macro": ("bond_macro_state.json", "json"),
     "auction_calendar": ("auction_calendar.csv", "csv"),
     "enrichment_delta": ("avshunter_macro_enrichment_delta.json", "json"),
+    "us_money_index": ("avshunter_us_money_index.json", "json"),
 }
 FORBIDDEN_AUTHORITY_KEYS = frozenset({
     "direction", "governed_direction", "selected_contract_symbol",
@@ -215,6 +219,9 @@ def _embedded(core: Mapping[str, Any], name: str) -> Any:
         auction = bond.get("auction") if isinstance(bond.get("auction"), Mapping) else {}
         rows = auction.get("calendar_rows")
         return rows if isinstance(rows, list) else []
+    if name == "us_money_index":
+        value = extras.get("us_money_index")
+        return value if isinstance(value, Mapping) else {}
     return {}
 
 
@@ -248,38 +255,89 @@ def materialize_interpreter_macro_context(
     run_dir: Path | str,
     session_date: str,
     macro_dir: Path | str,
+    prefer_run_snapshot: bool = False,
 ) -> dict[str, Any]:
-    """Snapshot the latest valid canonical macro inputs into one run packet."""
+    """Materialize one advisory packet from canonical or run-frozen inputs.
+
+    ``prefer_run_snapshot`` is the production orchestration mode. It consumes
+    only ``macro_snapshot.json`` and sidecars already embedded in that frozen
+    snapshot; later Dropbox changes cannot alter an in-progress run.
+    """
 
     root = Path(run_dir).resolve()
     source_root = Path(macro_dir).resolve()
+    if type(prefer_run_snapshot) is not bool:
+        raise TypeError("prefer_run_snapshot must be boolean")
     loaded: dict[str, Any] = {}
     manifest: dict[str, dict[str, Any]] = {}
-    for name, (filename, kind) in CANONICAL_SOURCES.items():
-        loaded[name], manifest[name] = _load(source_root / filename, kind)
+    if prefer_run_snapshot:
+        core, snapshot_path = _run_snapshot(root)
+        snapshot_hash = _sha256(snapshot_path) if snapshot_path is not None else ""
+        loaded["core_macro"] = core
+        manifest["core_macro"] = {
+            "filename": "macro_snapshot.json",
+            "path": str(snapshot_path.resolve()) if snapshot_path is not None else "",
+            "status": "RUN_SNAPSHOT" if core else "MISSING_RUN_SNAPSHOT",
+            "sha256": snapshot_hash,
+            "as_of_utc": _text(core.get("as_of_utc")) if core else "",
+        }
+        for name in ("bond_macro", "auction_calendar", "enrichment_delta", "us_money_index"):
+            filename, _kind = CANONICAL_SOURCES[name]
+            embedded = _embedded(core, name) if core else {}
+            loaded[name] = embedded
+            manifest[name] = {
+                "filename": filename,
+                "path": str(snapshot_path.resolve()) if snapshot_path is not None else "",
+                "status": "EMBEDDED_RUN_SNAPSHOT" if embedded else "MISSING_IN_RUN_SNAPSHOT",
+                "sha256": snapshot_hash,
+                "embedded_sha256": _canonical_hash(embedded) if embedded else "",
+                "as_of_utc": _text(core.get("as_of_utc")) if core else "",
+            }
+    else:
+        for name, (filename, kind) in CANONICAL_SOURCES.items():
+            loaded[name], manifest[name] = _load(source_root / filename, kind)
+
+        core = _mapping(loaded["core_macro"])
+        if not core:
+            core, fallback_path = _run_snapshot(root)
+            if core and fallback_path is not None:
+                manifest["core_macro"].update({
+                    "status": "RUN_SNAPSHOT_FALLBACK",
+                    "path": str(fallback_path.resolve()),
+                    "sha256": _sha256(fallback_path),
+                })
+
+        for name in ("bond_macro", "auction_calendar", "enrichment_delta", "us_money_index"):
+            if loaded[name]:
+                continue
+            fallback = _embedded(core, name)
+            if fallback:
+                loaded[name] = fallback
+                manifest[name]["status"] = "EMBEDDED_FALLBACK"
+                manifest[name]["embedded_sha256"] = _canonical_hash(fallback)
 
     core = _mapping(loaded["core_macro"])
-    if not core:
-        core, fallback_path = _run_snapshot(root)
-        if core and fallback_path is not None:
-            manifest["core_macro"].update({
-                "status": "RUN_SNAPSHOT_FALLBACK",
-                "path": str(fallback_path.resolve()),
-                "sha256": _sha256(fallback_path),
-            })
-
-    for name in ("bond_macro", "auction_calendar", "enrichment_delta"):
-        if loaded[name]:
-            continue
-        fallback = _embedded(core, name)
-        if fallback:
-            loaded[name] = fallback
-            manifest[name]["status"] = "EMBEDDED_FALLBACK"
-            manifest[name]["embedded_sha256"] = _canonical_hash(fallback)
 
     quant = _quant_packet(core, root)
     bond = _mapping(loaded["bond_macro"])
     enrichment = _mapping(loaded["enrichment_delta"])
+    usmi_raw = _mapping(loaded["us_money_index"])
+    usmi: dict[str, Any] = {}
+    if usmi_raw:
+        try:
+            usmi = (
+                dict(usmi_raw)
+                if usmi_raw.get("contract_version") == "us_money_index_v1_0"
+                and usmi_raw.get("authority") == "ADVISORY_ONLY"
+                else normalise_us_money_index_sidecar(usmi_raw)
+            )
+        except Exception as error:
+            manifest["us_money_index"]["status"] = "INVALID_UNAVAILABLE"
+            manifest["us_money_index"]["error"] = str(error)
+    usmi_scenario = evaluate_scenarios(
+        usmi.get("scenarios") if isinstance(usmi, Mapping) else {},
+        {},
+    )
     auction_rows = (
         loaded["auction_calendar"]
         if isinstance(loaded["auction_calendar"], list)
@@ -337,6 +395,8 @@ def materialize_interpreter_macro_context(
             "rows": auction_rows,
         },
         "enrichment": enrichment,
+        "us_money_index": usmi,
+        "us_money_index_scenario": usmi_scenario,
         "ticker_advisories": _ticker_advisory_index(enrichment),
         "sector_rotation": _mapping(core.get("sector_rotation")),
         "rates": _mapping(extras.get("rates")),
@@ -410,6 +470,13 @@ def advisory_fields_for_row(
     bond = _mapping(packet.get("bond"))
     bond_composite = _mapping(bond.get("composite"))
     auction = _mapping(packet.get("auction_calendar"))
+    usmi = _mapping(packet.get("us_money_index"))
+    usmi_advisory = sector_advisory(
+        usmi,
+        sector=sector,
+        direction=_text(row.get("governed_direction") or row.get("direction")),
+        industry=_text(row.get("industry") or row.get("industry_group")),
+    )
     return {
         "macro_packet_id": packet.get("packet_id", ""),
         "macro_packet_sha256": packet_sha256,
@@ -439,6 +506,15 @@ def advisory_fields_for_row(
         "macro_plain_language_advisory": packet.get("plain_language_advisory", ""),
         "macro_authority": AUTHORITY_STATEMENT,
         "macro_data_role": "ADVISORY_ONLY",
+        "usmi_packet_id": usmi.get("packet_id", ""),
+        "usmi_packet_sha256": usmi.get("packet_sha256", ""),
+        "usmi_quality_status": usmi.get("quality_status", "UNAVAILABLE"),
+        "usmi_state": _text(_mapping(usmi.get("state")).get("US_MONEY_INDEX_STATE")),
+        "usmi_sector_alignment": usmi_advisory["alignment"],
+        "usmi_alignment_priority": usmi_advisory["priority"],
+        "usmi_alignment_reason": usmi_advisory["reason"],
+        "usmi_authority": "ADVISORY_ONLY",
+        "usmi_scenario": _mapping(packet.get("us_money_index_scenario")).get("scenario", "UNRESOLVED"),
     }
 
 
