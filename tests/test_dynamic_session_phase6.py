@@ -195,3 +195,84 @@ def test_completed_profile_stage_has_independent_runtime_flag(monkeypatch) -> No
         assert orchestrator.completed_profile_stage_enabled() is False
     monkeypatch.delenv("AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", raising=False)
     assert orchestrator.completed_profile_stage_enabled() is True
+
+
+def test_dynamic_thesis_receipt_accounts_for_completed_profile_exclusions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Excluded partial sessions must survive the legacy-to-DDD receipt adapter."""
+    import intelligent_orchestrator as orchestrator
+
+    run_id = "20260909_071646"
+    output_dir = tmp_path / "output"
+    runs_dir = output_dir / "runs"
+    run_dir = runs_dir / run_id
+    plan = resolve_run_plan(
+        requested_action="BUILD_THESIS",
+        as_of_utc=datetime(2026, 9, 9, 12, tzinfo=timezone.utc),
+        pipeline_run_id=run_id,
+    )
+
+    artifacts = {
+        output_dir / f"discovery_summary_ultimate_{run_id}.json": {
+            "timestamp": run_id,
+            "universe_size": 1585,
+            "total_candidates": 1585,
+            "lifecycle_errors": 0,
+        },
+        run_dir / "market_profile" / f"completed_profile_summary_{run_id}.json": {
+            "run_id": run_id,
+            "session_date": str(plan.last_completed_session),
+            "input_count": 1585,
+            "completed": 1501,
+            "excluded": 34,
+            "deferred": 0,
+            "hard_exception_count": 50,
+            "reconciled": True,
+            "systemic_failure": False,
+        },
+        run_dir / "vanguard" / "vanguard_run_summary.json": {
+            "run_id": run_id,
+            "packages_total": 1585,
+            "passed": 1535,
+            "rejected": 50,
+        },
+        run_dir / "options" / f"options_intelligence_summary_{run_id}.json": {
+            "run_id": run_id,
+            "signals_scoped": 1448,
+            "signals_processed": 1448,
+        },
+        run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json": {
+            "run_id": run_id,
+            "candidate_count": 1448,
+        },
+    }
+    for path, payload in artifacts.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+
+    monkeypatch.setattr(orchestrator.cfg, "OUTPUT_DIR", output_dir)
+    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", runs_dir)
+
+    receipt_path = orchestrator._record_dynamic_thesis_receipt(plan)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    profile = next(
+        stage
+        for stage in receipt["stages"]
+        if stage["stage"] == "COMPLETED_MARKET_PROFILE"
+    )
+
+    assert profile["input_count"] == 1585
+    assert profile["output_count"] == 1501
+    assert profile["excluded_count"] == 34
+    assert profile["deferred_count"] == 0
+    assert profile["exception_count"] == 50
+    assert sum(
+        profile[field]
+        for field in (
+            "output_count",
+            "excluded_count",
+            "deferred_count",
+            "exception_count",
+        )
+    ) == profile["input_count"]
