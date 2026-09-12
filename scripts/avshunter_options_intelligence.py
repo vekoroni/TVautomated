@@ -126,6 +126,7 @@ from contracts.long_option_policy import (
 from contracts.options_liquidity_lifecycle import (
     LifecycleInputs,
     OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+    calculate_dte_requirement,
     evaluate_options_liquidity_lifecycle,
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
@@ -1249,6 +1250,57 @@ def normalise_horizon_key(value: object) -> str:
     if "11_20" in text:
         return "11_20d"
     return text if text in DTE_CONFIG else "1_5d"
+
+
+HORIZON_PLANNED_HOLD_SESSIONS = {
+    "1_5d": 5,
+    "6_10d": 10,
+    "11_20d": 20,
+}
+DTE_SELECTION_POLICY_VERSION = "governed-dte-alignment-v1"
+
+
+def governed_dte_config(horizon: object) -> Dict[str, Any]:
+    """Return the one DTE policy consumed by selection and lifecycle repair.
+
+    The legacy selector admitted contracts using only the broad horizon band
+    (7 DTE for a 1-5 session thesis), while the lifecycle required enough time
+    for the routed hold, monitoring allowance and exit buffer (13 DTE).  That
+    allowed the selector to choose a contract which the very next domain step
+    had to reject.  The lifecycle calculation is now the minimum-floor
+    authority; the existing horizon band can remain more conservative.
+    """
+
+    key = normalise_horizon_key(horizon)
+    config = dict(DTE_CONFIG[key])
+    planned_hold = HORIZON_PLANNED_HOLD_SESSIONS[key]
+    requirement = calculate_dte_requirement(planned_hold)
+    lifecycle_minimum = int(requirement["minimum_required_dte"])
+    configured_minimum = int(config.get("dte_min", lifecycle_minimum))
+    configured_maximum = int(config.get("dte_max", lifecycle_minimum))
+    effective_minimum = max(configured_minimum, lifecycle_minimum)
+    if configured_maximum < effective_minimum:
+        raise ValueError(
+            f"DTE policy has no selectable range for {key}: "
+            f"minimum={effective_minimum}, maximum={configured_maximum}"
+        )
+    config.update({
+        "dte_min": effective_minimum,
+        "planned_hold_sessions": planned_hold,
+        "lifecycle_minimum_dte": lifecycle_minimum,
+        "dte_policy_version": DTE_SELECTION_POLICY_VERSION,
+    })
+    return config
+
+
+def governed_dte_window(horizon: object) -> Tuple[int, int, int]:
+    """Return min/target/max DTE without permitting a sub-lifecycle target."""
+
+    config = governed_dte_config(horizon)
+    minimum = int(config["dte_min"])
+    maximum = int(config["dte_max"])
+    target = max(minimum, int(round((minimum + maximum) / 2.0)))
+    return minimum, target, maximum
 
 
 def clamp_spread_limit(band: object) -> float:
@@ -4124,11 +4176,9 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         '11_20d' if '11_20' in _horizon_key else
         _horizon_key
     )
-    _horizon_dte_cfg = DTE_CONFIG.get(_horizon_key, {})
+    _horizon_dte_cfg = governed_dte_config(_horizon_key)
     if _horizon_dte_cfg:
-        _dmin = int(_horizon_dte_cfg.get('dte_min', dte_window[0]))
-        _dmax = int(_horizon_dte_cfg.get('dte_max', dte_window[2]))
-        dte_window = (_dmin, int(round((_dmin + _dmax) / 2.0)), _dmax)
+        dte_window = governed_dte_window(_horizon_key)
 
     # Expected hold days — use L2 if available, else DTE target
     hold_days = l2_hold_days if l2_hold_days > 0 else dte_window[1]
@@ -5172,7 +5222,10 @@ def select_repair_alternative_contracts(
     spot = _repair_alt_float(ctx.get("spot"))
     structural_target = _repair_alt_float(ctx.get("structural_target"))
     hold_sessions = _repair_alt_float(_ev3_handoff_fields(ctx).get("planned_hold_sessions"))
-    minimum_dte = math.ceil(hold_sessions * 7 / 5) + 3 if hold_sessions else 1
+    if hold_sessions is None:
+        minimum_dte = 1
+    else:
+        minimum_dte = int(calculate_dte_requirement(hold_sessions)["minimum_required_dte"])
 
     excluded = set()
     if selected_contract:
@@ -6911,8 +6964,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     # Resolve the governed horizon before chain access so failures retain the
     # DTE window that was actually requested.
-    _horizon_key = str(signal_row.get('horizon_bucket') or ctx.get('horizon_bucket') or '1_5d').lower()
-    _dte_cfg = DTE_CONFIG.get(_horizon_key, DTE_CONFIG.get('1_5d', {}))
+    _horizon_key = normalise_horizon_key(
+        signal_row.get('horizon_bucket') or ctx.get('horizon_bucket') or '1_5d'
+    )
+    _dte_cfg = governed_dte_config(_horizon_key)
 
     def _contract_rejection_fields(reason: str, stage: str, chain_rows: int = 0) -> Dict[str, Any]:
         return {
@@ -8242,7 +8297,14 @@ def _build_contract_rejection_log_rows(out_df: pd.DataFrame) -> List[Dict[str, A
             or _text(row.get('horizon_bucket'))
             or '1_5d'
         ).lower()
-        dte_cfg = DTE_CONFIG.get(horizon, DTE_CONFIG.get('1_5d', {}))
+        # Keep this audit serializer independently executable for repair tools
+        # that load only this function, while production uses the governed DTE
+        # policy rather than the legacy raw band.
+        policy_resolver = globals().get('governed_dte_config')
+        if callable(policy_resolver):
+            dte_cfg = policy_resolver(horizon)
+        else:
+            dte_cfg = DTE_CONFIG.get(horizon, DTE_CONFIG.get('1_5d', {}))
         rows.append({
             'ticker': row.get('ticker', ''),
             'contract': (
