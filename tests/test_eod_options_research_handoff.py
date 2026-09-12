@@ -123,11 +123,14 @@ def test_eod_manifest_preserves_options_research_contract_and_blocks_vetoes() ->
     assert by_ticker["GOOD"]["macro_packet_id"] == "MACRO:2026-09-04:fixture"
     assert by_ticker["GOOD"]["macro_authority"] == "ADVISORY_ONLY"
 
-    assert "BAD" not in by_ticker
+    assert "BAD" in by_ticker
+    assert by_ticker["BAD"]["eod_candidate_status"] == "EOD_THESIS_READY_REPAIR_AT_OPEN"
+    assert by_ticker["BAD"]["doi_decision_authority"] == "NONE"
+    assert by_ticker["BAD"]["execution_authority"] == "HUMAN_ONLY"
     assert audit_by_ticker["BAD"]["final_route"] == "OPTIONS_BLOCKED"
     assert audit_by_ticker["BAD"]["hard_vetoes"] == "SPREAD_GT_15PCT"
-    assert audit_by_ticker["BAD"]["eod_candidate_status"] == "EOD_BLOCK"
-    assert "OPTIONS_RESEARCH_BLOCKED" in audit_by_ticker["BAD"]["eod_dropoff_reason"]
+    assert audit_by_ticker["BAD"]["eod_candidate_status"] == "EOD_THESIS_READY_REPAIR_AT_OPEN"
+    assert audit_by_ticker["BAD"]["eod_dropoff_reason"] == "SPREAD_REPAIR_NEEDED"
 
 
 def test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developing() -> None:
@@ -165,7 +168,7 @@ def test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developin
     assert bool(row["maturation_execution_authority"]) is False
 
 
-def test_eod_manifest_excludes_directional_thesis_without_governed_invalidation() -> None:
+def test_eod_manifest_retains_directional_thesis_without_governed_invalidation() -> None:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         eil_path = root / "execution_v3_5_TEST.csv"
@@ -187,8 +190,10 @@ def test_eod_manifest_excludes_directional_thesis_without_governed_invalidation(
         )
         audit = pd.read_csv(root / "eod_dropoff_audit_TEST.csv")
 
-    assert out.empty
-    assert audit.iloc[0]["eod_candidate_status"] == "EOD_STRUCTURAL_BLOCK"
+    assert len(out) == 1
+    assert out.iloc[0]["ticker"] == "NOSTOP"
+    assert out.iloc[0]["execution_authority"] == "HUMAN_ONLY"
+    assert audit.iloc[0]["eod_candidate_status"] == "EOD_DATA_INSUFFICIENT_REVIEW"
     assert "MISSING_GOVERNED_INVALIDATION" in audit.iloc[0]["eod_dropoff_reason"]
 
 

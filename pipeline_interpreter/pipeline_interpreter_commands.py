@@ -44,6 +44,7 @@ from evidence_resolver import (
     IntendedUse,
     handoff_status,
     resolve_interpreter_evidence,
+    resolve_interpreter_opportunity,
     resolve_interpreter_run,
 )
 from pipeline_interpreter_engine import (
@@ -623,6 +624,58 @@ def _msi_cmd_ticker(ticker: str, intended_use: IntendedUse = IntendedUse.EXECUTA
     return response
 
 
+def _msi_cmd_review(ticker: str, run_id: str | None = None):
+    """Review any governed opportunity without implying execution eligibility."""
+    try:
+        evidence = resolve_interpreter_opportunity(
+            ticker, run_id=run_id, intended_use=IntendedUse.EOD_REVIEW
+        )
+    except EvidenceResolutionError as error:
+        print(f"  [REVIEW UNAVAILABLE] {ticker.upper()}: {error}")
+        return None
+    row = dict(evidence.book_row)
+    SESSION["run_id"] = evidence.run_id
+    SESSION["pipeline_run_id"] = evidence.run_id
+    SESSION["review_authority"] = evidence.authority
+    doi_fields = {
+        key: value for key, value in row.items()
+        if str(key).startswith("doi_")
+    }
+    prompt = build_single_ticker_prompt(
+        ticker=evidence.ticker,
+        pipeline_row=row,
+        options_data={
+            "governed_full_book_review": json.dumps(
+                {
+                    "authority": evidence.authority,
+                    "provider_calls_during_resolution": evidence.provider_calls,
+                    "book_path": str(evidence.book_path),
+                    "doi_projection": doi_fields,
+                },
+                sort_keys=True,
+                default=str,
+            )
+        },
+        chart_images_present=False,
+        governed_macro_context=(
+            "Advisory review of the governed final opportunity record. "
+            "No separate macro packet is attached by this command."
+        ),
+    )
+    response = call_api(prompt, images=None, use_web_search=False)
+    run_dir, stamp = get_run_dir()
+    results = write_all_outputs(
+        response, session, run_dir, stamp, tickers=[evidence.ticker],
+        prefix=f"review_{evidence.ticker.lower()}_advisory",
+    )
+    print(
+        f"  [ADVISORY REVIEW] run={evidence.run_id} ticker={evidence.ticker} "
+        "authority=ADVISORY_ONLY"
+    )
+    _print_results(results, response)
+    return response
+
+
 def cmd_triage(file_path:str=None):
     """
     Fast triage pass ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rank and prioritise the whole candidate list.
@@ -770,15 +823,14 @@ def cmd_triage(file_path:str=None):
         print(f"  [SESSION] /ticker <TICKER> ready")
 
     print(f"  Candidates: {len(rows)} rows from {source_name}")
-    # B2 FIX: Filter BLOCKED tickers from triage session
-    # These should not have reached morning_candidates but filter defensively
+    # DOI-1: EIL is advisory. Preserve every ticker for interpretation and
+    # disclose the count instead of silently changing the source population.
     if rows and "eil_v3_verdict" in rows[0]:
         _blocked_in_triage = sum(
             1 for r in rows if str(r.get("eil_v3_verdict", "")).upper() == "BLOCKED"
         )
         if _blocked_in_triage > 0:
-            print(f"  Ã¢Å¡Â   B2 GUARD: {_blocked_in_triage} BLOCKED tickers excluded from triage ranking")
-            rows = [r for r in rows if str(r.get("eil_v3_verdict", "")).upper() != "BLOCKED"]
+            print(f"  DOI ADVISORY: {_blocked_in_triage} EIL BLOCKED observations retained for human review")
 
     # Get MA_Inputs availability for completeness scoring
     chart_tickers = set(ma_summary.get("chart_files", {}).keys())
@@ -2097,6 +2149,7 @@ MENU = """
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /interpret FILE [FILE2...]   Research-only loose-file analysis  ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /morning FILE                RETIRED â€” use governed handoff      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /ticker TICKER FILE          Deep dive single ticker            ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
+ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /review TICKER [RUN_ID]       Advisory review of any opportunity ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /chart TICKER IMG [IMG2...]  Chart image analysis (vision)      ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /auto                        Auto-detect pipeline files         ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
 ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ  /load FILE                   Load a pipeline CSV into session   ÃƒÂ¢Ã¢â‚¬Â¢Ã¢â‚¬Ëœ
@@ -2154,6 +2207,14 @@ def route_command(raw:str):
             return cmd_ticker(tokens[0].upper())
         else:
             return cmd_ticker(tokens[0].upper(), tokens[1].strip('"').strip("'"))
+    elif cmd=="/review":
+        tokens = arg.split()
+        if not tokens:
+            print('  Usage: /review TICKER [RUN_ID]')
+        else:
+            return _msi_cmd_review(
+                tokens[0].upper(), tokens[1] if len(tokens) > 1 else None
+            )
     elif cmd=="/chart":
         tokens = arg.split()
         if len(tokens) >= 2:

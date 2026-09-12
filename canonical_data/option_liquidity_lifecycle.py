@@ -26,10 +26,30 @@ from domain.option_contract_liquidity import (
     decide_contract_quote_fetch,
     validate_contract_replacement,
 )
+from domain.dynamic_options_intelligence import (
+    ContractAssessment,
+    ContractEntryState,
+    ContractFamily,
+    ModelApplicabilityState,
+    PreferredContractDecision,
+    UnderlyingThesisRef,
+)
+from domain.dynamic_options_lifecycle import (
+    DOIEvaluationPoint,
+    DOILifecycleEvent,
+    DOIThesisConditionState,
+)
+from domain.dynamic_options_outcomes import (
+    DOIOutcomeLabel,
+    OutcomeDataStatus,
+    outcome_label_identity,
+)
 
 
-OPTION_LIQUIDITY_SCHEMA_VERSION = "option_liquidity_lifecycle_v2"
+OPTION_LIQUIDITY_SCHEMA_VERSION = "option_liquidity_lifecycle_v3"
 LEGACY_OPTION_LIQUIDITY_SCHEMA_VERSION = "option_liquidity_lifecycle_v1"
+DOI_LIFECYCLE_SCHEMA_VERSION = "doi_dynamic_lifecycle_v1"
+DOI_OUTCOME_SCHEMA_VERSION = "doi_outcome_labels_v1"
 MARKETDATA_PROVIDER = "MARKETDATA"
 
 
@@ -155,7 +175,16 @@ class ContractSelectionEvent:
 
 @dataclass(frozen=True, slots=True)
 class PersistResult:
-    record: ThesisLifecycleEvent | ContractObservation | ContractSelectionEvent
+    record: (
+        ThesisLifecycleEvent
+        | ContractObservation
+        | ContractSelectionEvent
+        | ContractFamily
+        | ContractAssessment
+        | PreferredContractDecision
+        | DOILifecycleEvent
+        | DOIOutcomeLabel
+    )
     reused_existing: bool
 
 
@@ -390,6 +419,205 @@ class OptionLiquidityLifecycleStore:
                         thesis_id, selection_version DESC
                     );
 
+                CREATE TABLE IF NOT EXISTS doi_contract_families (
+                    family_id TEXT PRIMARY KEY,
+                    thesis_id TEXT NOT NULL,
+                    thesis_version INTEGER NOT NULL CHECK(thesis_version >= 1),
+                    run_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    governed_direction TEXT NOT NULL
+                        CHECK(governed_direction IN ('CALL','PUT')),
+                    origin_spot REAL NOT NULL CHECK(origin_spot > 0),
+                    origin_timestamp_utc TEXT NOT NULL,
+                    target_spot REAL,
+                    invalidation_spot REAL,
+                    planned_hold_sessions INTEGER NOT NULL
+                        CHECK(planned_hold_sessions BETWEEN 1 AND 20),
+                    planned_hold_source TEXT NOT NULL,
+                    thesis_evidence_cutoff_utc TEXT NOT NULL,
+                    family_policy_version TEXT NOT NULL,
+                    evidence_cutoff_utc TEXT NOT NULL,
+                    candidate_symbols_json TEXT NOT NULL DEFAULT '[]',
+                    source_dataset_ids_json TEXT NOT NULL DEFAULT '[]',
+                    family_state TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    decision_authority TEXT NOT NULL CHECK(decision_authority = 'NONE'),
+                    can_change_direction INTEGER NOT NULL CHECK(can_change_direction = 0),
+                    can_invalidate_thesis INTEGER NOT NULL CHECK(can_invalidate_thesis = 0),
+                    can_grant_capital INTEGER NOT NULL CHECK(can_grant_capital = 0),
+                    payload_hash TEXT NOT NULL,
+                    FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                    UNIQUE(thesis_id, run_id, family_policy_version, evidence_cutoff_utc)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_doi_family_latest
+                    ON doi_contract_families(thesis_id, evidence_cutoff_utc DESC);
+
+                CREATE TABLE IF NOT EXISTS doi_contract_assessments (
+                    assessment_id TEXT PRIMARY KEY,
+                    family_id TEXT NOT NULL,
+                    thesis_id TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    contract_symbol TEXT NOT NULL,
+                    observation_id TEXT NOT NULL,
+                    entry_state TEXT NOT NULL,
+                    applicability_state TEXT NOT NULL,
+                    evidence_cutoff_utc TEXT NOT NULL,
+                    input_dataset_ids_json TEXT NOT NULL,
+                    calculation_version TEXT NOT NULL,
+                    feature_version TEXT NOT NULL,
+                    model_version TEXT NOT NULL,
+                    ranking_score_uncalibrated REAL,
+                    p_liquidity_1d REAL,
+                    p_liquidity_2d REAL,
+                    p_liquidity_3d REAL,
+                    p_positive_return_before_horizon REAL,
+                    p_return_hurdle_before_horizon REAL,
+                    p_target_before_invalidation REAL,
+                    expected_net_return REAL,
+                    expected_downside REAL,
+                    expected_time_to_monetisation REAL,
+                    model_uncertainty REAL,
+                    probabilities_calibrated INTEGER NOT NULL
+                        CHECK(probabilities_calibrated IN (0,1)),
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    decision_authority TEXT NOT NULL CHECK(decision_authority = 'NONE'),
+                    can_change_direction INTEGER NOT NULL CHECK(can_change_direction = 0),
+                    can_invalidate_thesis INTEGER NOT NULL CHECK(can_invalidate_thesis = 0),
+                    can_grant_capital INTEGER NOT NULL CHECK(can_grant_capital = 0),
+                    payload_hash TEXT NOT NULL,
+                    FOREIGN KEY(family_id) REFERENCES doi_contract_families(family_id),
+                    FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                    FOREIGN KEY(observation_id)
+                        REFERENCES option_contract_observations(observation_id),
+                    UNIQUE(family_id, contract_symbol, observation_id, calculation_version)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_doi_assessment_family
+                    ON doi_contract_assessments(family_id, contract_symbol);
+                CREATE INDEX IF NOT EXISTS idx_doi_assessment_thesis
+                    ON doi_contract_assessments(thesis_id, evidence_cutoff_utc DESC);
+
+                CREATE TABLE IF NOT EXISTS doi_preferred_contract_decisions (
+                    decision_id TEXT PRIMARY KEY,
+                    event_key TEXT NOT NULL,
+                    family_id TEXT NOT NULL,
+                    thesis_id TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    selected_contract_symbol TEXT NOT NULL,
+                    selected_assessment_id TEXT NOT NULL,
+                    selection_reason TEXT NOT NULL,
+                    selected_at TEXT NOT NULL,
+                    alternative_contract_symbols_json TEXT NOT NULL DEFAULT '[]',
+                    previous_contract_symbol TEXT,
+                    prior_decision_id TEXT,
+                    utility_margin REAL,
+                    hysteresis_applied INTEGER NOT NULL CHECK(hysteresis_applied IN (0,1)),
+                    economics_recomputed INTEGER NOT NULL CHECK(economics_recomputed IN (0,1)),
+                    decision_version INTEGER NOT NULL CHECK(decision_version >= 1),
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    decision_authority TEXT NOT NULL CHECK(decision_authority = 'NONE'),
+                    execution_authority TEXT NOT NULL CHECK(execution_authority = 'HUMAN_ONLY'),
+                    payload_hash TEXT NOT NULL,
+                    FOREIGN KEY(family_id) REFERENCES doi_contract_families(family_id),
+                    FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                    FOREIGN KEY(selected_assessment_id)
+                        REFERENCES doi_contract_assessments(assessment_id),
+                    FOREIGN KEY(prior_decision_id)
+                        REFERENCES doi_preferred_contract_decisions(decision_id),
+                    UNIQUE(thesis_id, event_key),
+                    UNIQUE(thesis_id, decision_version)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_doi_preferred_latest
+                    ON doi_preferred_contract_decisions(
+                        thesis_id, decision_version DESC
+                    );
+
+                CREATE TABLE IF NOT EXISTS doi_lifecycle_events (
+                    event_id TEXT PRIMARY KEY,
+                    event_key TEXT NOT NULL,
+                    thesis_id TEXT NOT NULL,
+                    thesis_version INTEGER NOT NULL CHECK(thesis_version >= 1),
+                    family_id TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    evaluation_point TEXT NOT NULL,
+                    condition_state TEXT NOT NULL,
+                    previous_condition_state TEXT,
+                    evidence_cutoff_utc TEXT NOT NULL,
+                    current_spot REAL,
+                    target_spot REAL,
+                    invalidation_spot REAL,
+                    horizon_end_date TEXT,
+                    material_change INTEGER NOT NULL CHECK(material_change IN (0,1)),
+                    material_reasons_json TEXT NOT NULL DEFAULT '[]',
+                    recorded_at TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}',
+                    retain_opportunity INTEGER NOT NULL CHECK(retain_opportunity = 1),
+                    decision_authority TEXT NOT NULL CHECK(decision_authority = 'NONE'),
+                    can_change_direction INTEGER NOT NULL CHECK(can_change_direction = 0),
+                    can_grant_capital INTEGER NOT NULL CHECK(can_grant_capital = 0),
+                    payload_hash TEXT NOT NULL,
+                    FOREIGN KEY(family_id) REFERENCES doi_contract_families(family_id),
+                    FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                    UNIQUE(thesis_id, event_key)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_doi_lifecycle_latest
+                    ON doi_lifecycle_events(thesis_id, evidence_cutoff_utc DESC, recorded_at DESC);
+
+                CREATE TABLE IF NOT EXISTS doi_outcome_labels (
+                    label_id TEXT PRIMARY KEY,
+                    assessment_id TEXT NOT NULL,
+                    family_id TEXT NOT NULL,
+                    thesis_id TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    contract_symbol TEXT NOT NULL,
+                    original_observation_id TEXT NOT NULL,
+                    direction TEXT NOT NULL CHECK(direction IN ('CALL','PUT')),
+                    horizon_sessions INTEGER NOT NULL CHECK(horizon_sessions > 0),
+                    assessment_cutoff_utc TEXT NOT NULL,
+                    outcome_cutoff_utc TEXT NOT NULL,
+                    horizon_end_session TEXT,
+                    data_status TEXT NOT NULL CHECK(data_status IN (
+                        'COMPLETE',
+                        'COMPLETE_OPTION_PATH_PARTIAL',
+                        'COMPLETE_OPTION_RETURN_UNAVAILABLE',
+                        'DEFERRED_NOT_YET_OBSERVABLE',
+                        'DATA_EXCEPTION'
+                    )),
+                    calculation_version TEXT NOT NULL,
+                    outcome_kind TEXT NOT NULL CHECK(outcome_kind = 'HYPOTHETICAL_MARKET_PATH'),
+                    is_counterfactual INTEGER NOT NULL CHECK(is_counterfactual = 1),
+                    uses_realised_fills INTEGER NOT NULL CHECK(uses_realised_fills = 0),
+                    decision_authority TEXT NOT NULL CHECK(decision_authority = 'NONE'),
+                    can_change_direction INTEGER NOT NULL CHECK(can_change_direction = 0),
+                    can_grant_capital INTEGER NOT NULL CHECK(can_grant_capital = 0),
+                    can_close_position INTEGER NOT NULL CHECK(can_close_position = 0),
+                    payload_json TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    FOREIGN KEY(assessment_id) REFERENCES doi_contract_assessments(assessment_id),
+                    FOREIGN KEY(family_id) REFERENCES doi_contract_families(family_id),
+                    FOREIGN KEY(run_id) REFERENCES run_registry(run_id),
+                    FOREIGN KEY(original_observation_id)
+                        REFERENCES option_contract_observations(observation_id),
+                    UNIQUE(
+                        assessment_id, horizon_sessions, outcome_cutoff_utc,
+                        calculation_version, data_status
+                    )
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_doi_outcome_assessment
+                    ON doi_outcome_labels(
+                        assessment_id, horizon_sessions, outcome_cutoff_utc DESC
+                    );
+                CREATE INDEX IF NOT EXISTS idx_doi_outcome_cohort
+                    ON doi_outcome_labels(
+                        data_status, assessment_cutoff_utc, outcome_cutoff_utc
+                    );
+
                 CREATE TRIGGER IF NOT EXISTS trg_option_thesis_no_update
                 BEFORE UPDATE ON option_thesis_events
                 BEGIN
@@ -419,6 +647,56 @@ class OptionLiquidityLifecycleStore:
                 BEFORE DELETE ON option_contract_selection_events
                 BEGIN
                     SELECT RAISE(ABORT, 'option selections are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_family_no_update
+                BEFORE UPDATE ON doi_contract_families
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI contract families are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_family_no_delete
+                BEFORE DELETE ON doi_contract_families
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI contract families are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_assessment_no_update
+                BEFORE UPDATE ON doi_contract_assessments
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI contract assessments are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_assessment_no_delete
+                BEFORE DELETE ON doi_contract_assessments
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI contract assessments are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_preferred_no_update
+                BEFORE UPDATE ON doi_preferred_contract_decisions
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI preferred decisions are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_preferred_no_delete
+                BEFORE DELETE ON doi_preferred_contract_decisions
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI preferred decisions are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_lifecycle_no_update
+                BEFORE UPDATE ON doi_lifecycle_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI lifecycle events are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_lifecycle_no_delete
+                BEFORE DELETE ON doi_lifecycle_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI lifecycle events are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_outcome_no_update
+                BEFORE UPDATE ON doi_outcome_labels
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI outcome labels are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_outcome_no_delete
+                BEFORE DELETE ON doi_outcome_labels
+                BEGIN
+                    SELECT RAISE(ABORT, 'DOI outcome labels are append-only');
                 END;
                 """
             )
@@ -451,6 +729,16 @@ class OptionLiquidityLifecycleStore:
                 "INSERT OR IGNORE INTO schema_metadata(schema_version, installed_at) "
                 "VALUES (?, ?)",
                 (OPTION_LIQUIDITY_SCHEMA_VERSION, iso_utc(utc_now())),
+            )
+            connection.execute(
+                "INSERT OR IGNORE INTO schema_metadata(schema_version, installed_at) "
+                "VALUES (?, ?)",
+                (DOI_LIFECYCLE_SCHEMA_VERSION, iso_utc(utc_now())),
+            )
+            connection.execute(
+                "INSERT OR IGNORE INTO schema_metadata(schema_version, installed_at) "
+                "VALUES (?, ?)",
+                (DOI_OUTCOME_SCHEMA_VERSION, iso_utc(utc_now())),
             )
 
     @staticmethod
@@ -548,6 +836,143 @@ class OptionLiquidityLifecycleStore:
             correction_state=row["correction_state"],
         )
 
+    @staticmethod
+    def _doi_family_from_row(row: sqlite3.Row) -> ContractFamily:
+        thesis = UnderlyingThesisRef(
+            thesis_id=row["thesis_id"],
+            thesis_version=int(row["thesis_version"]),
+            ticker=row["ticker"],
+            governed_direction=row["governed_direction"],
+            origin_spot=float(row["origin_spot"]),
+            origin_timestamp_utc=parse_utc(row["origin_timestamp_utc"]),
+            target_spot=row["target_spot"],
+            invalidation_spot=row["invalidation_spot"],
+            planned_hold_sessions=int(row["planned_hold_sessions"]),
+            planned_hold_source=row["planned_hold_source"],
+            evidence_cutoff_utc=parse_utc(row["thesis_evidence_cutoff_utc"]),
+        )
+        return ContractFamily(
+            family_id=row["family_id"],
+            thesis=thesis,
+            run_id=row["run_id"],
+            family_policy_version=row["family_policy_version"],
+            evidence_cutoff_utc=parse_utc(row["evidence_cutoff_utc"]),
+            candidate_symbols=tuple(json.loads(row["candidate_symbols_json"])),
+            source_dataset_ids=tuple(json.loads(row["source_dataset_ids_json"])),
+            family_state=ModelApplicabilityState(row["family_state"]),
+            created_at=parse_utc(row["created_at"]),
+            metadata=json.loads(row["metadata_json"]),
+            decision_authority=row["decision_authority"],
+            can_change_direction=bool(row["can_change_direction"]),
+            can_invalidate_thesis=bool(row["can_invalidate_thesis"]),
+            can_grant_capital=bool(row["can_grant_capital"]),
+        )
+
+    @staticmethod
+    def _doi_assessment_from_row(row: sqlite3.Row) -> ContractAssessment:
+        return ContractAssessment(
+            assessment_id=row["assessment_id"],
+            family_id=row["family_id"],
+            thesis_id=row["thesis_id"],
+            run_id=row["run_id"],
+            contract_symbol=row["contract_symbol"],
+            observation_id=row["observation_id"],
+            entry_state=ContractEntryState(row["entry_state"]),
+            applicability_state=ModelApplicabilityState(row["applicability_state"]),
+            evidence_cutoff_utc=parse_utc(row["evidence_cutoff_utc"]),
+            input_dataset_ids=tuple(json.loads(row["input_dataset_ids_json"])),
+            calculation_version=row["calculation_version"],
+            feature_version=row["feature_version"],
+            model_version=row["model_version"],
+            ranking_score_uncalibrated=row["ranking_score_uncalibrated"],
+            p_liquidity_1d=row["p_liquidity_1d"],
+            p_liquidity_2d=row["p_liquidity_2d"],
+            p_liquidity_3d=row["p_liquidity_3d"],
+            p_positive_return_before_horizon=row[
+                "p_positive_return_before_horizon"
+            ],
+            p_return_hurdle_before_horizon=row[
+                "p_return_hurdle_before_horizon"
+            ],
+            p_target_before_invalidation=row["p_target_before_invalidation"],
+            expected_net_return=row["expected_net_return"],
+            expected_downside=row["expected_downside"],
+            expected_time_to_monetisation=row["expected_time_to_monetisation"],
+            model_uncertainty=row["model_uncertainty"],
+            probabilities_calibrated=bool(row["probabilities_calibrated"]),
+            metadata=json.loads(row["metadata_json"]),
+            decision_authority=row["decision_authority"],
+            can_change_direction=bool(row["can_change_direction"]),
+            can_invalidate_thesis=bool(row["can_invalidate_thesis"]),
+            can_grant_capital=bool(row["can_grant_capital"]),
+        )
+
+    @staticmethod
+    def _doi_preferred_from_row(row: sqlite3.Row) -> PreferredContractDecision:
+        return PreferredContractDecision(
+            decision_id=row["decision_id"],
+            event_key=row["event_key"],
+            family_id=row["family_id"],
+            thesis_id=row["thesis_id"],
+            run_id=row["run_id"],
+            selected_contract_symbol=row["selected_contract_symbol"],
+            selected_assessment_id=row["selected_assessment_id"],
+            selection_reason=row["selection_reason"],
+            selected_at=parse_utc(row["selected_at"]),
+            alternative_contract_symbols=tuple(
+                json.loads(row["alternative_contract_symbols_json"])
+            ),
+            previous_contract_symbol=row["previous_contract_symbol"],
+            prior_decision_id=row["prior_decision_id"],
+            utility_margin=row["utility_margin"],
+            hysteresis_applied=bool(row["hysteresis_applied"]),
+            economics_recomputed=bool(row["economics_recomputed"]),
+            decision_version=int(row["decision_version"]),
+            metadata=json.loads(row["metadata_json"]),
+            decision_authority=row["decision_authority"],
+            execution_authority=row["execution_authority"],
+        )
+
+    @staticmethod
+    def _doi_lifecycle_from_row(row: sqlite3.Row) -> DOILifecycleEvent:
+        return DOILifecycleEvent(
+            event_id=row["event_id"],
+            event_key=row["event_key"],
+            thesis_id=row["thesis_id"],
+            thesis_version=int(row["thesis_version"]),
+            family_id=row["family_id"],
+            run_id=row["run_id"],
+            evaluation_point=DOIEvaluationPoint(row["evaluation_point"]),
+            condition_state=DOIThesisConditionState(row["condition_state"]),
+            previous_condition_state=(
+                DOIThesisConditionState(row["previous_condition_state"])
+                if row["previous_condition_state"] else None
+            ),
+            evidence_cutoff_utc=parse_utc(row["evidence_cutoff_utc"]),
+            current_spot=row["current_spot"],
+            target_spot=row["target_spot"],
+            invalidation_spot=row["invalidation_spot"],
+            horizon_end_date=(
+                date.fromisoformat(row["horizon_end_date"])
+                if row["horizon_end_date"] else None
+            ),
+            material_change=bool(row["material_change"]),
+            material_reasons=tuple(json.loads(row["material_reasons_json"])),
+            recorded_at=parse_utc(row["recorded_at"]),
+            metadata=json.loads(row["metadata_json"]),
+            retain_opportunity=bool(row["retain_opportunity"]),
+            decision_authority=row["decision_authority"],
+            can_change_direction=bool(row["can_change_direction"]),
+            can_grant_capital=bool(row["can_grant_capital"]),
+        )
+
+    @staticmethod
+    def _doi_outcome_from_row(row: sqlite3.Row) -> DOIOutcomeLabel:
+        label = DOIOutcomeLabel.from_dict(json.loads(row["payload_json"]))
+        if label.label_id != row["label_id"]:
+            raise OptionLifecycleConflict("DOI outcome row identity conflicts with payload")
+        return label
+
     def latest_thesis(self, thesis_id: str) -> ThesisLifecycleEvent | None:
         with self.registry.connection() as connection:
             row = connection.execute(
@@ -571,6 +996,18 @@ class OptionLiquidityLifecycleStore:
             ).fetchone()
         return self._observation_from_row(row) if row else None
 
+    def contract_observation(
+        self, observation_id: str
+    ) -> ContractObservation | None:
+        """Return one immutable exact-contract observation by natural identity."""
+
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM option_contract_observations WHERE observation_id = ?",
+                (_required_text(observation_id, "observation_id"),),
+            ).fetchone()
+        return self._observation_from_row(row) if row else None
+
     def latest_selection(self, thesis_id: str) -> ContractSelectionEvent | None:
         with self.registry.connection() as connection:
             row = connection.execute(
@@ -581,6 +1018,879 @@ class OptionLiquidityLifecycleStore:
                 (_normalise_token(thesis_id, "thesis_id"),),
             ).fetchone()
         return self._selection_from_row(row) if row else None
+
+    def contract_family(self, family_id: str) -> ContractFamily | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (_required_text(family_id, "family_id"),),
+            ).fetchone()
+        return self._doi_family_from_row(row) if row else None
+
+    def latest_contract_family(self, thesis_id: str) -> ContractFamily | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_contract_families
+                WHERE thesis_id = ? ORDER BY evidence_cutoff_utc DESC LIMIT 1
+                """,
+                (_normalise_token(thesis_id, "thesis_id"),),
+            ).fetchone()
+        return self._doi_family_from_row(row) if row else None
+
+    def contract_assessment(self, assessment_id: str) -> ContractAssessment | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM doi_contract_assessments WHERE assessment_id = ?",
+                (_required_text(assessment_id, "assessment_id"),),
+            ).fetchone()
+        return self._doi_assessment_from_row(row) if row else None
+
+    def previous_contract_assessment(
+        self,
+        *,
+        thesis_id: str,
+        contract_symbol: str,
+        exclude_assessment_id: str | None = None,
+    ) -> ContractAssessment | None:
+        query = """
+            SELECT * FROM doi_contract_assessments
+            WHERE thesis_id = ? AND contract_symbol = ?
+        """
+        parameters: list[Any] = [
+            _normalise_token(thesis_id, "thesis_id"),
+            _normalise_token(contract_symbol, "contract_symbol"),
+        ]
+        if exclude_assessment_id:
+            query += " AND assessment_id <> ?"
+            parameters.append(_required_text(exclude_assessment_id, "exclude_assessment_id"))
+        query += " ORDER BY evidence_cutoff_utc DESC, assessment_id DESC LIMIT 1"
+        with self.registry.connection() as connection:
+            row = connection.execute(query, parameters).fetchone()
+        return self._doi_assessment_from_row(row) if row else None
+
+    def assessments_for_family(self, family_id: str) -> tuple[ContractAssessment, ...]:
+        with self.registry.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM doi_contract_assessments
+                WHERE family_id = ? ORDER BY contract_symbol, assessment_id
+                """,
+                (_required_text(family_id, "family_id"),),
+            ).fetchall()
+        return tuple(self._doi_assessment_from_row(row) for row in rows)
+
+    def latest_preferred_contract(
+        self, thesis_id: str
+    ) -> PreferredContractDecision | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_preferred_contract_decisions
+                WHERE thesis_id = ? ORDER BY decision_version DESC LIMIT 1
+                """,
+                (_normalise_token(thesis_id, "thesis_id"),),
+            ).fetchone()
+        return self._doi_preferred_from_row(row) if row else None
+
+    def preferred_contract_decision(
+        self, *, thesis_id: str, event_key: str
+    ) -> PreferredContractDecision | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_preferred_contract_decisions
+                WHERE thesis_id = ? AND event_key = ?
+                """,
+                (
+                    _normalise_token(thesis_id, "thesis_id"),
+                    _normalise_token(event_key, "event_key"),
+                ),
+            ).fetchone()
+        return self._doi_preferred_from_row(row) if row else None
+
+    def doi_lifecycle_event(
+        self, *, thesis_id: str, event_key: str
+    ) -> DOILifecycleEvent | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_lifecycle_events
+                WHERE thesis_id = ? AND event_key = ?
+                """,
+                (
+                    _normalise_token(thesis_id, "thesis_id"),
+                    _normalise_token(event_key, "event_key"),
+                ),
+            ).fetchone()
+        return self._doi_lifecycle_from_row(row) if row else None
+
+    def latest_doi_lifecycle_event(
+        self, thesis_id: str
+    ) -> DOILifecycleEvent | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_lifecycle_events
+                WHERE thesis_id = ?
+                ORDER BY evidence_cutoff_utc DESC, recorded_at DESC LIMIT 1
+                """,
+                (_normalise_token(thesis_id, "thesis_id"),),
+            ).fetchone()
+        return self._doi_lifecycle_from_row(row) if row else None
+
+    def doi_lifecycle_events(
+        self, thesis_id: str
+    ) -> tuple[DOILifecycleEvent, ...]:
+        with self.registry.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM doi_lifecycle_events
+                WHERE thesis_id = ?
+                ORDER BY evidence_cutoff_utc, recorded_at, event_id
+                """,
+                (_normalise_token(thesis_id, "thesis_id"),),
+            ).fetchall()
+        return tuple(self._doi_lifecycle_from_row(row) for row in rows)
+
+    def doi_outcome_label(self, label_id: str) -> DOIOutcomeLabel | None:
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM doi_outcome_labels WHERE label_id = ?",
+                (_required_text(label_id, "label_id"),),
+            ).fetchone()
+        return self._doi_outcome_from_row(row) if row else None
+
+    def outcome_labels_for_assessment(
+        self, assessment_id: str
+    ) -> tuple[DOIOutcomeLabel, ...]:
+        with self.registry.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM doi_outcome_labels
+                WHERE assessment_id = ?
+                ORDER BY horizon_sessions, outcome_cutoff_utc, label_id
+                """,
+                (_required_text(assessment_id, "assessment_id"),),
+            ).fetchall()
+        return tuple(self._doi_outcome_from_row(row) for row in rows)
+
+    def latest_outcome_label(
+        self, *, assessment_id: str, horizon_sessions: int
+    ) -> DOIOutcomeLabel | None:
+        if int(horizon_sessions) <= 0:
+            raise DatasetValidationError("horizon_sessions must be positive")
+        with self.registry.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM doi_outcome_labels
+                WHERE assessment_id = ? AND horizon_sessions = ?
+                ORDER BY outcome_cutoff_utc DESC, label_id DESC LIMIT 1
+                """,
+                (_required_text(assessment_id, "assessment_id"), int(horizon_sessions)),
+            ).fetchone()
+        return self._doi_outcome_from_row(row) if row else None
+
+    def doi_outcome_labels(
+        self,
+        *,
+        data_statuses: tuple[OutcomeDataStatus | str, ...] | None = None,
+        horizon_sessions: int | None = None,
+    ) -> tuple[DOIOutcomeLabel, ...]:
+        predicates: list[str] = []
+        parameters: list[Any] = []
+        if data_statuses:
+            values = tuple(
+                item.value if isinstance(item, OutcomeDataStatus) else OutcomeDataStatus(str(item)).value
+                for item in data_statuses
+            )
+            predicates.append("data_status IN (" + ",".join("?" for _ in values) + ")")
+            parameters.extend(values)
+        if horizon_sessions is not None:
+            if int(horizon_sessions) <= 0:
+                raise DatasetValidationError("horizon_sessions must be positive")
+            predicates.append("horizon_sessions = ?")
+            parameters.append(int(horizon_sessions))
+        where = " WHERE " + " AND ".join(predicates) if predicates else ""
+        with self.registry.connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM doi_outcome_labels" + where
+                + " ORDER BY assessment_cutoff_utc, assessment_id, horizon_sessions, outcome_cutoff_utc",
+                parameters,
+            ).fetchall()
+        return tuple(self._doi_outcome_from_row(row) for row in rows)
+
+    def record_doi_outcome_label(self, label: DOIOutcomeLabel) -> PersistResult:
+        expected_id = outcome_label_identity(
+            assessment_id=label.assessment_id,
+            horizon_sessions=label.horizon_sessions,
+            outcome_cutoff_utc=label.outcome_cutoff_utc,
+            calculation_version=label.calculation_version,
+            data_status=label.data_status,
+        )
+        if label.label_id != expected_id:
+            raise DatasetValidationError("label_id does not match DOI outcome identity")
+        payload_json = _canonical_json(label.to_dict())
+        payload_hash = _hash("DOI_OUTCOME_LABEL_PAYLOAD_V1", payload_json)
+        values = {
+            "label_id": label.label_id,
+            "assessment_id": label.assessment_id,
+            "family_id": label.family_id,
+            "thesis_id": label.thesis_id,
+            "run_id": label.run_id,
+            "ticker": label.ticker,
+            "contract_symbol": label.contract_symbol,
+            "original_observation_id": label.original_observation_id,
+            "direction": label.direction,
+            "horizon_sessions": label.horizon_sessions,
+            "assessment_cutoff_utc": iso_utc(label.assessment_cutoff_utc),
+            "outcome_cutoff_utc": iso_utc(label.outcome_cutoff_utc),
+            "horizon_end_session": (
+                label.horizon_end_session.isoformat()
+                if label.horizon_end_session else None
+            ),
+            "data_status": label.data_status.value,
+            "calculation_version": label.calculation_version,
+            "outcome_kind": label.outcome_kind,
+            "is_counterfactual": int(label.is_counterfactual),
+            "uses_realised_fills": int(label.uses_realised_fills),
+            "decision_authority": label.decision_authority,
+            "can_change_direction": int(label.can_change_direction),
+            "can_grant_capital": int(label.can_grant_capital),
+            "can_close_position": int(label.can_close_position),
+            "payload_json": payload_json,
+            "payload_hash": payload_hash,
+        }
+        with self.registry.connection() as connection:
+            assessment_row = connection.execute(
+                "SELECT * FROM doi_contract_assessments WHERE assessment_id = ?",
+                (label.assessment_id,),
+            ).fetchone()
+            if assessment_row is None:
+                raise DatasetValidationError("DOI outcome assessment does not exist")
+            assessment = self._doi_assessment_from_row(assessment_row)
+            if (
+                assessment.family_id != label.family_id
+                or assessment.thesis_id != label.thesis_id
+                or assessment.run_id != label.run_id
+                or assessment.contract_symbol != label.contract_symbol
+                or assessment.observation_id != label.original_observation_id
+                or assessment.evidence_cutoff_utc != label.assessment_cutoff_utc
+            ):
+                raise DatasetValidationError(
+                    "DOI outcome conflicts with immutable contract assessment"
+                )
+            family_row = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (label.family_id,),
+            ).fetchone()
+            if family_row is None:
+                raise DatasetValidationError("DOI outcome family does not exist")
+            family = self._doi_family_from_row(family_row)
+            if family.thesis.ticker != label.ticker or family.thesis.governed_direction != label.direction:
+                raise DatasetValidationError("DOI outcome conflicts with governed thesis")
+            observation_row = connection.execute(
+                "SELECT * FROM option_contract_observations WHERE observation_id = ?",
+                (label.original_observation_id,),
+            ).fetchone()
+            if observation_row is None:
+                raise DatasetValidationError("DOI outcome origin observation does not exist")
+            for observation_id in label.source_option_observation_ids:
+                future_row = connection.execute(
+                    "SELECT contract_symbol, quote_as_of FROM option_contract_observations WHERE observation_id = ?",
+                    (observation_id,),
+                ).fetchone()
+                if future_row is None:
+                    raise DatasetValidationError(
+                        f"DOI outcome source observation does not exist: {observation_id}"
+                    )
+                if future_row["contract_symbol"] != label.contract_symbol:
+                    raise DatasetValidationError("DOI outcome source changed exact contract")
+                if parse_utc(future_row["quote_as_of"]) <= label.assessment_cutoff_utc:
+                    raise DatasetValidationError("DOI outcome source is not future evidence")
+            existing = connection.execute(
+                "SELECT * FROM doi_outcome_labels WHERE label_id = ?",
+                (label.label_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != payload_hash:
+                    raise OptionLifecycleConflict(
+                        "DOI outcome identity already has different immutable content"
+                    )
+                return PersistResult(self._doi_outcome_from_row(existing), True)
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO doi_outcome_labels(
+                        label_id, assessment_id, family_id, thesis_id, run_id,
+                        ticker, contract_symbol, original_observation_id,
+                        direction, horizon_sessions, assessment_cutoff_utc,
+                        outcome_cutoff_utc, horizon_end_session, data_status,
+                        calculation_version, outcome_kind, is_counterfactual,
+                        uses_realised_fills, decision_authority,
+                        can_change_direction, can_grant_capital,
+                        can_close_position, payload_json, payload_hash
+                    ) VALUES (
+                        :label_id, :assessment_id, :family_id, :thesis_id,
+                        :run_id, :ticker, :contract_symbol,
+                        :original_observation_id, :direction,
+                        :horizon_sessions, :assessment_cutoff_utc,
+                        :outcome_cutoff_utc, :horizon_end_session,
+                        :data_status, :calculation_version, :outcome_kind,
+                        :is_counterfactual, :uses_realised_fills,
+                        :decision_authority, :can_change_direction,
+                        :can_grant_capital, :can_close_position,
+                        :payload_json, :payload_hash
+                    )
+                    """,
+                    values,
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
+        return PersistResult(label, False)
+
+    def record_doi_lifecycle_event(
+        self, event: DOILifecycleEvent
+    ) -> PersistResult:
+        expected_id = DOILifecycleEvent.create(
+            event_key=event.event_key,
+            thesis_id=event.thesis_id,
+            thesis_version=event.thesis_version,
+            family_id=event.family_id,
+            run_id=event.run_id,
+            evaluation_point=event.evaluation_point,
+            condition_state=event.condition_state,
+            previous_condition_state=event.previous_condition_state,
+            evidence_cutoff_utc=event.evidence_cutoff_utc,
+            current_spot=event.current_spot,
+            target_spot=event.target_spot,
+            invalidation_spot=event.invalidation_spot,
+            horizon_end_date=event.horizon_end_date,
+            material_change=event.material_change,
+            material_reasons=event.material_reasons,
+            recorded_at=event.recorded_at,
+            metadata=event.metadata,
+        ).event_id
+        if event.event_id != expected_id:
+            raise DatasetValidationError("event_id does not match DOI lifecycle identity")
+        values = {
+            "event_id": event.event_id,
+            "event_key": event.event_key,
+            "thesis_id": event.thesis_id,
+            "thesis_version": event.thesis_version,
+            "family_id": event.family_id,
+            "run_id": event.run_id,
+            "evaluation_point": event.evaluation_point.value,
+            "condition_state": event.condition_state.value,
+            "previous_condition_state": (
+                event.previous_condition_state.value
+                if event.previous_condition_state else None
+            ),
+            "evidence_cutoff_utc": iso_utc(event.evidence_cutoff_utc),
+            "current_spot": event.current_spot,
+            "target_spot": event.target_spot,
+            "invalidation_spot": event.invalidation_spot,
+            "horizon_end_date": (
+                event.horizon_end_date.isoformat()
+                if event.horizon_end_date else None
+            ),
+            "material_change": int(event.material_change),
+            "material_reasons_json": json.dumps(list(event.material_reasons)),
+            "recorded_at": iso_utc(event.recorded_at),
+            "metadata_json": _canonical_json(dict(event.metadata)),
+            "retain_opportunity": int(event.retain_opportunity),
+            "decision_authority": event.decision_authority,
+            "can_change_direction": int(event.can_change_direction),
+            "can_grant_capital": int(event.can_grant_capital),
+        }
+        hash_values = dict(values)
+        hash_values.pop("recorded_at")
+        values["payload_hash"] = _hash(
+            "DOI_LIFECYCLE_EVENT_PAYLOAD_V1", _canonical_json(hash_values)
+        )
+        with self.registry.connection() as connection:
+            family_row = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (event.family_id,),
+            ).fetchone()
+            if family_row is None:
+                raise DatasetValidationError("DOI lifecycle family does not exist")
+            family = self._doi_family_from_row(family_row)
+            if (
+                family.thesis.thesis_id != event.thesis_id
+                or family.thesis.thesis_version != event.thesis_version
+                or family.run_id != event.run_id
+            ):
+                raise DatasetValidationError(
+                    "DOI lifecycle event conflicts with governed family"
+                )
+            existing = connection.execute(
+                "SELECT * FROM doi_lifecycle_events WHERE event_id = ?",
+                (event.event_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != values["payload_hash"]:
+                    raise OptionLifecycleConflict(
+                        "DOI lifecycle identity already has different immutable content"
+                    )
+                return PersistResult(self._doi_lifecycle_from_row(existing), True)
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO doi_lifecycle_events(
+                        event_id, event_key, thesis_id, thesis_version, family_id,
+                        run_id, evaluation_point, condition_state,
+                        previous_condition_state, evidence_cutoff_utc,
+                        current_spot, target_spot, invalidation_spot,
+                        horizon_end_date, material_change, material_reasons_json,
+                        recorded_at, metadata_json, retain_opportunity,
+                        decision_authority, can_change_direction,
+                        can_grant_capital, payload_hash
+                    ) VALUES (
+                        :event_id, :event_key, :thesis_id, :thesis_version,
+                        :family_id, :run_id, :evaluation_point, :condition_state,
+                        :previous_condition_state, :evidence_cutoff_utc,
+                        :current_spot, :target_spot, :invalidation_spot,
+                        :horizon_end_date, :material_change,
+                        :material_reasons_json, :recorded_at, :metadata_json,
+                        :retain_opportunity, :decision_authority,
+                        :can_change_direction, :can_grant_capital, :payload_hash
+                    )
+                    """,
+                    values,
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
+        return PersistResult(event, False)
+
+    def record_contract_family(self, family: ContractFamily) -> PersistResult:
+        expected_identity = ContractFamily.create(
+            thesis=family.thesis,
+            run_id=family.run_id,
+            family_policy_version=family.family_policy_version,
+            evidence_cutoff_utc=family.evidence_cutoff_utc,
+            candidate_symbols=family.candidate_symbols,
+            source_dataset_ids=family.source_dataset_ids,
+            family_state=family.family_state,
+            created_at=family.created_at,
+            metadata=family.metadata,
+        ).family_id
+        if family.family_id != expected_identity:
+            raise DatasetValidationError("family_id does not match DOI family identity")
+
+        values = {
+            "family_id": family.family_id,
+            "thesis_id": family.thesis.thesis_id,
+            "thesis_version": family.thesis.thesis_version,
+            "run_id": family.run_id,
+            "ticker": family.thesis.ticker,
+            "governed_direction": family.thesis.governed_direction,
+            "origin_spot": family.thesis.origin_spot,
+            "origin_timestamp_utc": iso_utc(family.thesis.origin_timestamp_utc),
+            "target_spot": family.thesis.target_spot,
+            "invalidation_spot": family.thesis.invalidation_spot,
+            "planned_hold_sessions": family.thesis.planned_hold_sessions,
+            "planned_hold_source": family.thesis.planned_hold_source,
+            "thesis_evidence_cutoff_utc": iso_utc(
+                family.thesis.evidence_cutoff_utc
+            ),
+            "family_policy_version": family.family_policy_version,
+            "evidence_cutoff_utc": iso_utc(family.evidence_cutoff_utc),
+            "candidate_symbols_json": json.dumps(list(family.candidate_symbols)),
+            "source_dataset_ids_json": json.dumps(list(family.source_dataset_ids)),
+            "family_state": family.family_state.value,
+            "created_at": iso_utc(family.created_at),
+            "metadata_json": _canonical_json(dict(family.metadata)),
+            "decision_authority": family.decision_authority,
+            "can_change_direction": int(family.can_change_direction),
+            "can_invalidate_thesis": int(family.can_invalidate_thesis),
+            "can_grant_capital": int(family.can_grant_capital),
+        }
+        hash_values = dict(values)
+        hash_values.pop("created_at")
+        values["payload_hash"] = _hash(
+            "DOI_CONTRACT_FAMILY_PAYLOAD_V1", _canonical_json(hash_values)
+        )
+
+        with self.registry.connection() as connection:
+            thesis_row = connection.execute(
+                """
+                SELECT * FROM option_thesis_events
+                WHERE thesis_id = ? AND version = ?
+                """,
+                (family.thesis.thesis_id, family.thesis.thesis_version),
+            ).fetchone()
+            if thesis_row is None:
+                raise DatasetValidationError("referenced thesis version does not exist")
+            thesis = self._thesis_from_row(thesis_row)
+            if (
+                thesis.ticker != family.thesis.ticker
+                or thesis.direction != family.thesis.governed_direction
+            ):
+                raise DatasetValidationError(
+                    "contract family conflicts with governed thesis identity"
+                )
+            for dataset_id in family.source_dataset_ids:
+                exists = connection.execute(
+                    "SELECT 1 FROM dataset_registry WHERE dataset_id = ?",
+                    (dataset_id,),
+                ).fetchone()
+                if exists is None:
+                    raise DatasetValidationError(
+                        f"family source dataset does not exist: {dataset_id}"
+                    )
+            existing = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (family.family_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != values["payload_hash"]:
+                    raise OptionLifecycleConflict(
+                        "contract family identity already has different immutable content"
+                    )
+                return PersistResult(self._doi_family_from_row(existing), True)
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO doi_contract_families(
+                        family_id, thesis_id, thesis_version, run_id, ticker,
+                        governed_direction, origin_spot, origin_timestamp_utc,
+                        target_spot, invalidation_spot, planned_hold_sessions,
+                        planned_hold_source, thesis_evidence_cutoff_utc,
+                        family_policy_version, evidence_cutoff_utc,
+                        candidate_symbols_json, source_dataset_ids_json,
+                        family_state, created_at, metadata_json,
+                        decision_authority, can_change_direction,
+                        can_invalidate_thesis, can_grant_capital, payload_hash
+                    ) VALUES (
+                        :family_id, :thesis_id, :thesis_version, :run_id, :ticker,
+                        :governed_direction, :origin_spot, :origin_timestamp_utc,
+                        :target_spot, :invalidation_spot, :planned_hold_sessions,
+                        :planned_hold_source, :thesis_evidence_cutoff_utc,
+                        :family_policy_version, :evidence_cutoff_utc,
+                        :candidate_symbols_json, :source_dataset_ids_json,
+                        :family_state, :created_at, :metadata_json,
+                        :decision_authority, :can_change_direction,
+                        :can_invalidate_thesis, :can_grant_capital, :payload_hash
+                    )
+                    """,
+                    values,
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
+        return PersistResult(family, False)
+
+    def record_contract_assessment(
+        self, assessment: ContractAssessment
+    ) -> PersistResult:
+        expected_identity = ContractAssessment.create(
+            family_id=assessment.family_id,
+            thesis_id=assessment.thesis_id,
+            run_id=assessment.run_id,
+            contract_symbol=assessment.contract_symbol,
+            observation_id=assessment.observation_id,
+            entry_state=assessment.entry_state,
+            applicability_state=assessment.applicability_state,
+            evidence_cutoff_utc=assessment.evidence_cutoff_utc,
+            input_dataset_ids=assessment.input_dataset_ids,
+            calculation_version=assessment.calculation_version,
+            feature_version=assessment.feature_version,
+            model_version=assessment.model_version,
+            ranking_score_uncalibrated=assessment.ranking_score_uncalibrated,
+            p_liquidity_1d=assessment.p_liquidity_1d,
+            p_liquidity_2d=assessment.p_liquidity_2d,
+            p_liquidity_3d=assessment.p_liquidity_3d,
+            p_positive_return_before_horizon=(
+                assessment.p_positive_return_before_horizon
+            ),
+            p_return_hurdle_before_horizon=(
+                assessment.p_return_hurdle_before_horizon
+            ),
+            p_target_before_invalidation=assessment.p_target_before_invalidation,
+            expected_net_return=assessment.expected_net_return,
+            expected_downside=assessment.expected_downside,
+            expected_time_to_monetisation=assessment.expected_time_to_monetisation,
+            model_uncertainty=assessment.model_uncertainty,
+            probabilities_calibrated=assessment.probabilities_calibrated,
+            metadata=assessment.metadata,
+        ).assessment_id
+        if assessment.assessment_id != expected_identity:
+            raise DatasetValidationError(
+                "assessment_id does not match DOI assessment identity"
+            )
+        values = assessment.to_dict()
+        values["entry_state"] = assessment.entry_state.value
+        values["applicability_state"] = assessment.applicability_state.value
+        values["evidence_cutoff_utc"] = iso_utc(assessment.evidence_cutoff_utc)
+        values["input_dataset_ids_json"] = json.dumps(
+            list(assessment.input_dataset_ids)
+        )
+        values["probabilities_calibrated"] = int(
+            assessment.probabilities_calibrated
+        )
+        values["metadata_json"] = _canonical_json(dict(assessment.metadata))
+        for unused in (
+            "input_dataset_ids", "metadata", "domain_version",
+        ):
+            values.pop(unused, None)
+        values["can_change_direction"] = int(assessment.can_change_direction)
+        values["can_invalidate_thesis"] = int(assessment.can_invalidate_thesis)
+        values["can_grant_capital"] = int(assessment.can_grant_capital)
+        hash_values = dict(values)
+        values["payload_hash"] = _hash(
+            "DOI_CONTRACT_ASSESSMENT_PAYLOAD_V1", _canonical_json(hash_values)
+        )
+
+        with self.registry.connection() as connection:
+            family_row = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (assessment.family_id,),
+            ).fetchone()
+            if family_row is None:
+                raise DatasetValidationError("assessment family does not exist")
+            family = self._doi_family_from_row(family_row)
+            if (
+                family.thesis.thesis_id != assessment.thesis_id
+                or family.run_id != assessment.run_id
+                or assessment.contract_symbol not in family.candidate_symbols
+            ):
+                raise DatasetValidationError(
+                    "assessment conflicts with its contract family"
+                )
+            observation_row = connection.execute(
+                "SELECT * FROM option_contract_observations WHERE observation_id = ?",
+                (assessment.observation_id,),
+            ).fetchone()
+            if observation_row is None:
+                raise DatasetValidationError("assessment observation does not exist")
+            observation = self._observation_from_row(observation_row)
+            if (
+                observation.thesis_id != assessment.thesis_id
+                or observation.contract_symbol != assessment.contract_symbol
+            ):
+                raise DatasetValidationError(
+                    "assessment does not match the exact contract observation"
+                )
+            if assessment.evidence_cutoff_utc < observation.quote_as_of:
+                raise DatasetValidationError(
+                    "assessment evidence cutoff predates its contract quote"
+                )
+            if observation.source_dataset_id not in assessment.input_dataset_ids:
+                raise DatasetValidationError(
+                    "assessment lineage omits its observation dataset"
+                )
+            if not set(assessment.input_dataset_ids) <= set(
+                family.source_dataset_ids
+            ):
+                raise DatasetValidationError(
+                    "assessment input datasets are outside its family lineage"
+                )
+            for dataset_id in assessment.input_dataset_ids:
+                exists = connection.execute(
+                    "SELECT 1 FROM dataset_registry WHERE dataset_id = ?",
+                    (dataset_id,),
+                ).fetchone()
+                if exists is None:
+                    raise DatasetValidationError(
+                        f"assessment input dataset does not exist: {dataset_id}"
+                    )
+            existing = connection.execute(
+                "SELECT * FROM doi_contract_assessments WHERE assessment_id = ?",
+                (assessment.assessment_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != values["payload_hash"]:
+                    raise OptionLifecycleConflict(
+                        "contract assessment identity has different immutable content"
+                    )
+                return PersistResult(self._doi_assessment_from_row(existing), True)
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO doi_contract_assessments(
+                        assessment_id, family_id, thesis_id, run_id,
+                        contract_symbol, observation_id, entry_state,
+                        applicability_state, evidence_cutoff_utc,
+                        input_dataset_ids_json, calculation_version,
+                        feature_version, model_version,
+                        ranking_score_uncalibrated, p_liquidity_1d,
+                        p_liquidity_2d, p_liquidity_3d,
+                        p_positive_return_before_horizon,
+                        p_return_hurdle_before_horizon,
+                        p_target_before_invalidation, expected_net_return,
+                        expected_downside, expected_time_to_monetisation,
+                        model_uncertainty, probabilities_calibrated,
+                        metadata_json, decision_authority,
+                        can_change_direction, can_invalidate_thesis,
+                        can_grant_capital, payload_hash
+                    ) VALUES (
+                        :assessment_id, :family_id, :thesis_id, :run_id,
+                        :contract_symbol, :observation_id, :entry_state,
+                        :applicability_state, :evidence_cutoff_utc,
+                        :input_dataset_ids_json, :calculation_version,
+                        :feature_version, :model_version,
+                        :ranking_score_uncalibrated, :p_liquidity_1d,
+                        :p_liquidity_2d, :p_liquidity_3d,
+                        :p_positive_return_before_horizon,
+                        :p_return_hurdle_before_horizon,
+                        :p_target_before_invalidation, :expected_net_return,
+                        :expected_downside, :expected_time_to_monetisation,
+                        :model_uncertainty, :probabilities_calibrated,
+                        :metadata_json, :decision_authority,
+                        :can_change_direction, :can_invalidate_thesis,
+                        :can_grant_capital, :payload_hash
+                    )
+                    """,
+                    values,
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
+        return PersistResult(assessment, False)
+
+    def record_preferred_contract_decision(
+        self,
+        decision: PreferredContractDecision,
+        *,
+        expected_version: int | None = None,
+    ) -> PersistResult:
+        base_values = decision.to_dict()
+        for unused in ("selected_at", "decision_version", "domain_version"):
+            base_values.pop(unused, None)
+        payload_hash = _hash(
+            "DOI_PREFERRED_CONTRACT_PAYLOAD_V1", _canonical_json(base_values)
+        )
+        with self.registry.connection() as connection:
+            existing = connection.execute(
+                "SELECT * FROM doi_preferred_contract_decisions WHERE decision_id = ?",
+                (decision.decision_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != payload_hash:
+                    raise OptionLifecycleConflict(
+                        "preferred decision identity has different immutable content"
+                    )
+                return PersistResult(self._doi_preferred_from_row(existing), True)
+            family_row = connection.execute(
+                "SELECT * FROM doi_contract_families WHERE family_id = ?",
+                (decision.family_id,),
+            ).fetchone()
+            if family_row is None:
+                raise DatasetValidationError("preferred decision family does not exist")
+            family = self._doi_family_from_row(family_row)
+            assessment_row = connection.execute(
+                "SELECT * FROM doi_contract_assessments WHERE assessment_id = ?",
+                (decision.selected_assessment_id,),
+            ).fetchone()
+            if assessment_row is None:
+                raise DatasetValidationError(
+                    "preferred decision assessment does not exist"
+                )
+            assessment = self._doi_assessment_from_row(assessment_row)
+            if (
+                family.thesis.thesis_id != decision.thesis_id
+                or family.run_id != decision.run_id
+                or assessment.family_id != decision.family_id
+                or assessment.contract_symbol != decision.selected_contract_symbol
+            ):
+                raise DatasetValidationError(
+                    "preferred decision conflicts with family or assessment"
+                )
+            assessed_symbols = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT contract_symbol FROM doi_contract_assessments "
+                    "WHERE family_id = ?",
+                    (decision.family_id,),
+                ).fetchall()
+            }
+            if not set(decision.alternative_contract_symbols) <= assessed_symbols:
+                raise DatasetValidationError(
+                    "preferred alternatives must be assessed family members"
+                )
+            latest_row = connection.execute(
+                "SELECT * FROM doi_preferred_contract_decisions "
+                "WHERE thesis_id = ? ORDER BY decision_version DESC LIMIT 1",
+                (decision.thesis_id,),
+            ).fetchone()
+            if latest_row:
+                latest = self._doi_preferred_from_row(latest_row)
+                if expected_version != latest.decision_version:
+                    raise OptionLifecycleConcurrencyError(
+                        f"expected preferred version {expected_version}, "
+                        f"found {latest.decision_version}"
+                    )
+                if decision.prior_decision_id != latest.decision_id:
+                    raise DatasetValidationError(
+                        "preferred decision must link the latest prior decision"
+                    )
+                if decision.previous_contract_symbol != latest.selected_contract_symbol:
+                    raise DatasetValidationError(
+                        "previous contract must match the latest preferred contract"
+                    )
+                version = latest.decision_version + 1
+            else:
+                if expected_version not in {None, 0}:
+                    raise OptionLifecycleConcurrencyError(
+                        f"expected preferred version {expected_version}, found 0"
+                    )
+                if decision.prior_decision_id or decision.previous_contract_symbol:
+                    raise DatasetValidationError(
+                        "first preferred decision cannot reference a prior decision"
+                    )
+                version = 1
+            persisted = decision.with_version(version)
+            values = {
+                "decision_id": persisted.decision_id,
+                "event_key": persisted.event_key,
+                "family_id": persisted.family_id,
+                "thesis_id": persisted.thesis_id,
+                "run_id": persisted.run_id,
+                "selected_contract_symbol": persisted.selected_contract_symbol,
+                "selected_assessment_id": persisted.selected_assessment_id,
+                "selection_reason": persisted.selection_reason,
+                "selected_at": iso_utc(persisted.selected_at),
+                "alternative_contract_symbols_json": json.dumps(
+                    list(persisted.alternative_contract_symbols)
+                ),
+                "previous_contract_symbol": persisted.previous_contract_symbol,
+                "prior_decision_id": persisted.prior_decision_id,
+                "utility_margin": persisted.utility_margin,
+                "hysteresis_applied": int(persisted.hysteresis_applied),
+                "economics_recomputed": int(persisted.economics_recomputed),
+                "decision_version": version,
+                "metadata_json": _canonical_json(dict(persisted.metadata)),
+                "decision_authority": persisted.decision_authority,
+                "execution_authority": persisted.execution_authority,
+                "payload_hash": payload_hash,
+            }
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO doi_preferred_contract_decisions(
+                        decision_id, event_key, family_id, thesis_id, run_id,
+                        selected_contract_symbol, selected_assessment_id,
+                        selection_reason, selected_at,
+                        alternative_contract_symbols_json,
+                        previous_contract_symbol, prior_decision_id,
+                        utility_margin, hysteresis_applied,
+                        economics_recomputed, decision_version, metadata_json,
+                        decision_authority, execution_authority, payload_hash
+                    ) VALUES (
+                        :decision_id, :event_key, :family_id, :thesis_id, :run_id,
+                        :selected_contract_symbol, :selected_assessment_id,
+                        :selection_reason, :selected_at,
+                        :alternative_contract_symbols_json,
+                        :previous_contract_symbol, :prior_decision_id,
+                        :utility_margin, :hysteresis_applied,
+                        :economics_recomputed, :decision_version, :metadata_json,
+                        :decision_authority, :execution_authority, :payload_hash
+                    )
+                    """,
+                    values,
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
+        return PersistResult(persisted, False)
 
     def record_thesis_event(
         self,
@@ -1007,7 +2317,11 @@ class OptionLiquidityLifecycleStore:
             except sqlite3.IntegrityError as error:
                 raise OptionLifecycleConflict(str(error)) from error
 
-        result = self.latest_observation(thesis)
+        # Several contracts commonly share the same provider quote timestamp.
+        # Returning latest_observation(thesis) is therefore order-dependent and
+        # can hand the caller a different contract from the one just inserted.
+        # Resolve by the immutable natural identity minted above instead.
+        result = self.contract_observation(observation_id)
         assert result is not None
         return PersistResult(result, False)
 

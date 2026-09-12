@@ -179,6 +179,7 @@ import numpy as np
 import pandas as pd
 
 from execution_schema import TRIGGER_HANDOFF_FIELDS, validate_trigger_handoff_row
+from contracts.dynamic_options_policy import apply_advisory_authority
 
 try:
     from scripts.macro_quant_packet import MACRO_QUANT_CSV_FIELDS, resolve_macro_suffix_columns
@@ -429,10 +430,9 @@ logger.info(
 )
 
 # â”€â”€ Live mode governance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# LIVE_MODE = True  â†’ EIL is binding, stubs are disabled, fail-closed paths active
-# LIVE_MODE = False â†’ research / backtest mode (advisory only)
-# Change this at the top of the file, not inline â€” one place, one truth.
-LIVE_MODE = True
+# DOI-1: EIL is always an advisory evidence producer.  The human owns entry,
+# exit and timing decisions; no EIL value may suppress the ticker thesis.
+LIVE_MODE = False
 
 # â”€â”€ Engine singleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # EV is computed and preserved for advisory ranking/outcome analysis only.
@@ -1148,8 +1148,8 @@ def _process_row(
     row["capital_permission"] = "MANUAL"
     row["size_note"] = (
         "Manual sizing required. PSE retired 2026-04. "
-        "Apply 0.5x standard size per current macro regime. "
-        "Trader must confirm size before entry."
+        "Macro, EIL, EV, entry, exit and timing are advisory only. "
+        "Trader determines size and execution."
     )
     row["pse_final_size"] = 0.0
     row["fd_size"] = 0.0
@@ -1179,37 +1179,22 @@ def _process_row(
     # Blocking on _hb == "11_20d" was preventing 13+ valid signals per run
     # (CRWD, COIN, LCID, IWM, AVGO, PANW, ABNB, AMD, ARM, ORCL, DDOG, ROKU,
     # BAC) from ever reaching EIL scoring â€” all had real OIS/R:R/Wyckoff data.
-    if _ha == "MONITOR_ONLY":
-        # Only fires if router explicitly emits MONITOR_ONLY â€” it no longer does
-        # (router now always emits GO_SELECTIVE). Guard retained for safety.
-        row["eil_v3_verdict"]       = "MONITOR_ONLY"
-        row["eil_raw_verdict"]      = "MONITOR_ONLY"
-        row["eil_composite_score"]  = 0.0
-        row["eil_size_multiplier"]  = 0.0
-        row["eil_defer_reason"]     = "HORIZON_GATE: explicit MONITOR_ONLY action from router"
-        row["eil_data_mode"]        = "HORIZON_GATED"
-        row["pse_execution_mode"]   = "MONITOR_ONLY"
-        row["pse_final_size"]       = 0.0
-        row["pse_block_reason"]     = "ROUTER_MONITOR_ONLY"
-        row["fd_verdict"]           = "MONITOR_ONLY"
-        row["horizon_size_multiplier"] = 0.0
-        logger.info(f"  [{ticker}] HORIZON GATE: explicit MONITOR_ONLY from router (no EIL scoring)")
-        return row
-
-    if _hb == "blocked":
-        row["eil_v3_verdict"]       = "BLOCKED"
-        row["eil_raw_verdict"]      = "BLOCKED"
-        row["eil_composite_score"]  = 0.0
-        row["eil_size_multiplier"]  = 0.0
-        row["eil_defer_reason"]     = f"HORIZON_GATE: BLOCKED â€” {row.get('horizon_block_reason','')}"
-        row["eil_data_mode"]        = "HORIZON_GATED"
-        row["pse_execution_mode"]   = "FATAL_BLOCK"
-        row["pse_final_size"]       = 0.0
-        row["pse_block_reason"]     = f"HORIZON_BLOCKED: {row.get('horizon_block_reason','')}"
-        row["fd_verdict"]           = "BLOCKED"
-        row["horizon_size_multiplier"] = 0.0
-        logger.info(f"  [{ticker}] HORIZON GATE: BLOCKED â€” {row.get('horizon_block_reason','')}")
-        return row
+    if _ha == "MONITOR_ONLY" or _hb == "blocked":
+        # DOI-1: horizon/timing is advisory.  Preserve the observation and run
+        # the normal enrichment path so an elapsed or temporarily unattractive
+        # setup cannot disappear from the governed opportunity population.
+        row["horizon_advisory_state"] = (
+            "HORIZON_MONITOR_ONLY" if _ha == "MONITOR_ONLY" else "HORIZON_ELAPSED_REASSESS"
+        )
+        row["horizon_advisory_reason"] = (
+            row.get("horizon_block_reason") or "Router requested monitoring"
+        )
+        row["horizon_size_multiplier"] = 1.0
+        logger.info(
+            "  [%s] HORIZON ADVISORY: %s — opportunity retained",
+            ticker,
+            row["horizon_advisory_state"],
+        )
 
     # 1-5D and 6-10D proceed through normal EIL scoring.
     # horizon_size_multiplier (1.0 for 1-5D, 0.70 for 6-10D) will be applied
@@ -1357,7 +1342,7 @@ def _process_row(
             row["eil_ev_v2"]             = eil_result.eil_ev_v2
             row["eil_ev_net"]            = eil_result.eil_ev_net
             row["eil_ev_score"]          = eil_result.eil_ev_score
-            row["eil_advisory_only"]     = eil_result.eil_advisory_only
+            row["eil_advisory_only"]     = True
             row["eil_schema_version"]    = eil_result.eil_schema_version
             # â”€â”€ OTT-04: write eil_spread_pct_live from live eil_ctx â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             # The quote fallback may have already set this from contract columns.
@@ -1382,17 +1367,14 @@ def _process_row(
                 logger.debug("eil_spread_pct_live compute failed for %s: %s", ticker, _sprd_err)
             # â”€â”€ end OTT-04 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         except Exception as _eil_err:
-            # PSE-04: EIL failure = PENALTY (0.60x per OTT-02), not a kill switch.
-            # PSE will read eil_v3_verdict=BLOCKED and apply 0.60x multiplier.
-            # We do not block here â€” we flag and let the sizing chain decide.
-            logger.warning(f"EIL evaluate() FAILED for {ticker}: {_eil_err} â€” applying 0.60x EIL penalty (OTT-02)")
+            # DOI-1: retain the failure as telemetry.  It is not authority.
+            logger.warning(f"EIL evaluate() FAILED for {ticker}: {_eil_err} â€” retained as advisory evidence")
             row["eil_v3_verdict"]       = "BLOCKED"
             row["eil_failure_reason"]   = f"EIL_EVALUATION_FAILED: {_eil_err}"
             row["eil_composite_score"]  = 0.0
             row["eil_size_multiplier"]  = 0.0
     else:
-        # PSE-04: EIL unavailable = 0.70x penalty (unknown, not fatal).
-        logger.warning(f"EIL engine unavailable for {ticker} â€” applying 0.70x EIL penalty")
+        logger.warning(f"EIL engine unavailable for {ticker} â€” retained as advisory evidence")
         row["eil_v3_verdict"]       = "BLOCKED"
         row["eil_failure_reason"]   = "EIL_UNAVAILABLE"
         row["eil_composite_score"]  = 0.0
@@ -1455,20 +1437,17 @@ def _process_row(
             if _mp and "DATA" in _mp:
                 _exe_mode = "SKIP"
                 _exe_why  = "FD_BLOCK_CONTRACT_ECONOMICS_MISSING"
-            elif _eil_fail.startswith("EIL_") or _eil == "BLOCKED":
-                _exe_mode = "SKIP"
-                _exe_why  = "FD_BLOCK_EIL_CONFLICT"
             elif _contract <= 0:
-                _exe_mode = "SKIP"
-                _exe_why  = "FD_BLOCK_CONTRACT_ECONOMICS_MISSING"
+                _exe_mode = "CONTRACT_MONITOR"
+                _exe_why  = "CONTRACT_ECONOMICS_MISSING_ADVISORY"
             elif _spread > 30.0:
-                _exe_mode = "SKIP"
-                _exe_why  = "FD_BLOCK_LIQUIDITY_OR_SPREAD"
+                _exe_mode = "CONTRACT_MONITOR"
+                _exe_why  = "LIQUIDITY_OR_SPREAD_ADVISORY"
             else:
                 _exe_mode = f"{_sig}_REVIEW"
                 _exe_why  = f"{_sig}_MANUAL_REVIEW_REQUIRED_SIZING_RETIRED"
             _cap_perm = "EOD_CANDIDATE_ONLY"
-            _fsa      = "OPTIONS_REPAIR_REQUIRED" if _exe_mode == "SKIP" else "MORNING_VALIDATION_REQUIRED"
+            _fsa      = "MORNING_VALIDATION_REQUIRED"
 
         else:
             # Genuine campaign-level REJECT with unknown signal or other state
@@ -1529,6 +1508,7 @@ def _process_row(
     # PSE/FDE no longer allocate or suppress capital. Keep size at zero and
     # route through signal authority + morning validation.
     row = _apply_retired_sizing_overlay(row, ev_result, percentile_override)
+    apply_advisory_authority(row)
 
     # â”€â”€ v4.1: Ensure horizon fields always present in output row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Even 1-5D signals that completed full EIL scoring must carry these fields
@@ -2003,7 +1983,6 @@ def _eod_candidate_profile(row: dict, signal: str, tier: str) -> dict:
     volume = _authority_float(row, "contract_volume")
 
     options_ok = bool(options_contract.get("review_ok"))
-    eil_ok = eil_verdict in {"EXECUTE", "EXECUTE_WITH_CAUTION"}
     if options_contract.get("present"):
         economics_ok = options_ok
     else:
@@ -2019,21 +1998,15 @@ def _eod_candidate_profile(row: dict, signal: str, tier: str) -> dict:
     options_research_blocked = bool(options_contract.get("present") and options_contract.get("blocked"))
 
     support_ok = options_ok or trigger_ok or catalyst_ok
-    allowed = (
-        signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"}
-        and eil_ok
-        and economics_ok
-        and support_ok
-        and contract_seen
-        and liquidity_ok
-        and not direction_conflict_unresolved
-        and not options_research_blocked
-    )
+    # DOI-1: this profile controls preservation, not capital.  Entry economics,
+    # liquidity, EIL and timing remain visible evidence and cannot remove the
+    # governed ticker opportunity.
+    allowed = signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"}
 
     reasons = []
     if options_ok: reasons.append(f"OPTIONS_RESEARCH_{options_contract.get('route')}")
     if options_research_blocked: reasons.append(f"OPTIONS_RESEARCH_BLOCKED:{options_contract.get('reason')}")
-    if eil_ok: reasons.append(f"EIL_{eil_verdict}")
+    if eil_verdict: reasons.append(f"EIL_ADVISORY_{eil_verdict}")
     if economics_ok: reasons.append("RR_AND_OPTIONS_SCORE_OK")
     if trigger_ok: reasons.append("TRIGGER_SUPPORT")
     if catalyst_ok: reasons.append("CATALYST_SUPPORT")
@@ -2079,12 +2052,13 @@ def _apply_retired_sizing_overlay(row: dict, ev_result, percentile_override: boo
     row["pse_eil_mult"] = 1.0
     row["pse_options_mult"] = 1.0
     row["pse_regime_mult"] = 1.0
-    # B3 FIX: FinalDecision passes eil_v3_verdict through when PSE is retired
-    # PSE retirement means manual sizing only — it does not collapse all verdicts to WATCHLIST
+    # DOI-1: expose the EIL verdict in its own advisory field.  Do not copy it
+    # into FinalDecision where legacy consumers can mistake it for authority.
     _eil_v = str(row.get("eil_v3_verdict", "") or "").upper().strip()
-    row["fd_verdict"] = _eil_v if _eil_v in ("EXECUTE", "EXECUTE_WITH_CAUTION", "BLOCKED", "WATCHLIST") else "WATCHLIST"
+    row["fd_advisory_verdict"] = _eil_v or "NOT_EVALUATED"
+    row["fd_verdict"] = "WATCHLIST"
     row["fd_size"] = 0.0
-    row["fd_reason"] = f"PSE_RETIRED_MANUAL_SIZING — eil_v3_verdict={_eil_v} passed through"
+    row["fd_reason"] = f"PSE_RETIRED_MANUAL_SIZING — EIL={_eil_v or 'NOT_EVALUATED'} advisory only"
     row["fd_confidence"] = 0.0
     row["fd_ev_used"] = getattr(ev_result, "ev_conf_adj", row.get("ev_conf_adj", 0.0))
     row["fd_percentile_override"] = percentile_override
@@ -2118,7 +2092,7 @@ def _apply_eod_candidate_or_watch(
     row["pse_execution_mode"] = watch_mode
     row["pse_final_size"] = 0.0
     row["fd_advisory_verdict"] = advisory_verdict
-    row["fd_verdict"] = advisory_verdict if profile["allowed"] else "WATCHLIST"
+    row["fd_verdict"] = "WATCHLIST"
     row["fd_size"] = 0.0
     row["eod_candidate_size"] = profile["candidate_size"] if profile["allowed"] else 0.0
     row["candidate_size"] = row["eod_candidate_size"]

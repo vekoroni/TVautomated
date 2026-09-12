@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from contracts.direction_governance import validate_direction_record
+from contracts.dynamic_options_policy import eil_advisory_flags
 from contracts.dynamic_session_contract import DataExceptionReason
 from contracts.options_liquidity_execution_guard import (
     action_is_within_guard,
@@ -40,6 +41,7 @@ from contracts.long_option_policy import (
     LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT,
 )
 from domain.execution_authority import execution_authority_contract_violations
+from canonical_data.dynamic_options_projection import DynamicOptionsProjectionResolver
 
 
 LAB_REQUIRED_FIELDS = [
@@ -152,6 +154,29 @@ FINAL_BOOK_FIELDS = [
     "selected_contract_symbols",
     "selected_quote_snapshot_id",
     "selected_quote_timestamp_utc",
+    "doi_projection_version",
+    "doi_projection_state",
+    "doi_projection_reason",
+    "doi_family_id",
+    "doi_ranking_id",
+    "doi_ranking_mode",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_governed_contract_symbol",
+    "doi_contract_alignment",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_model_uncertainty",
+    "doi_probability_model_id",
+    "doi_evidence_cutoff_utc",
+    "doi_input_dataset_ids_json",
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_decision_authority",
+    "doi_execution_authority",
+    "lab_actionable_handoff_member",
     "selected_structure_hydration_status",
     "selected_structure_hydration_reason",
     "selected_structure_hydration_schema_version",
@@ -392,6 +417,15 @@ FINAL_BOOK_FIELDS = [
     "macro_conflicts",
     "macro_plain_language_advisory",
     "macro_authority",
+    "usmi_packet_id",
+    "usmi_packet_sha256",
+    "usmi_quality_status",
+    "usmi_state",
+    "usmi_sector_alignment",
+    "usmi_alignment_priority",
+    "usmi_alignment_reason",
+    "usmi_authority",
+    "usmi_scenario",
     "eil_signal_verdict",
     "eil_v3_verdict",
     "eil_composite_eod",
@@ -611,11 +645,49 @@ def _is_missing(value: Any) -> bool:
     return text in {"", "NONE", "UNKNOWN", "MISSING", "N/A", "NA", "NAN", "NULL"}
 
 
+def _canonical_json_value(value: Any) -> Any:
+    """Return a deterministic, standards-compliant JSON value.
+
+    Pipeline CSVs are commonly loaded through pandas, which represents blank
+    cells as floating-point NaN.  Python's JSON encoder accepts NaN by default,
+    but NaN is not valid JSON and downstream strict contracts correctly reject
+    it.  Normalise missing/non-finite scalars to ``None`` at the Lab publication
+    boundary and convert numpy-like scalar values to their native equivalents.
+    """
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {
+            str(key): _canonical_json_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_json_value(item) for item in value]
+
+    # numpy scalar types expose item(); pandas NA/NaT do not provide a usable
+    # native value and are explicit missingness rather than text evidence.
+    if type(value).__name__ in {"NAType", "NaTType"}:
+        return None
+    item_method = getattr(value, "item", None)
+    if callable(item_method):
+        try:
+            native = item_method()
+            if native is not value:
+                return _canonical_json_value(native)
+        except (TypeError, ValueError):
+            pass
+    return str(value)
+
+
 def _json_safe(value: Any) -> str:
-    try:
-        return json.dumps(value, ensure_ascii=True, sort_keys=True, default=str)
-    except Exception:
-        return json.dumps(str(value), ensure_ascii=True)
+    return json.dumps(
+        _canonical_json_value(value),
+        ensure_ascii=True,
+        sort_keys=True,
+        allow_nan=False,
+    )
 
 
 def first(sig: Dict[str, Any], *keys: str, default: Any = "") -> Any:
@@ -1029,7 +1101,7 @@ def csv_safe_row(row: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(value, (dict, list, tuple)):
             out[key] = _json_safe(value)
         else:
-            out[key] = value
+            out[key] = _canonical_json_value(value)
     return out
 
 
@@ -1069,6 +1141,7 @@ def _output_files(run_dir: Path, run_id: str) -> Dict[str, str]:
     macro = run_dir / "macro"
     diagnostics = run_dir / "diagnostics"
     market_profile = run_dir / "market_profile"
+    interpreter = run_dir / "interpreter"
     morning_validated = _glob_latest(morning, f"morning_validated_trades_{run_id}.csv")
     morning_candidates = _glob_latest(morning, f"morning_candidates_{run_id}.csv")
     morning_packet = _glob_latest(morning, f"morning_validation_packet_{run_id}.json")
@@ -1100,6 +1173,16 @@ def _output_files(run_dir: Path, run_id: str) -> Dict[str, str]:
         "handoff_contract_audit": str(_glob_latest(diagnostics, f"handoff_contract_audit_{run_id}.csv") or ""),
         "completed_market_profile": str(
             _glob_latest(market_profile, f"completed_profile_summary_{run_id}.json") or ""
+        ),
+        "interpreter_macro_context": str(
+            interpreter / "interpreter_macro_context.json"
+            if (interpreter / "interpreter_macro_context.json").is_file()
+            else ""
+        ),
+        "worker3_macro_ticker_context_manifest": str(
+            interpreter / "macro_ticker_context_manifest.json"
+            if (interpreter / "macro_ticker_context_manifest.json").is_file()
+            else ""
         ),
         "macro": str(
             _glob_latest(macro, "*.json")
@@ -1178,6 +1261,125 @@ def build_final_run_manifest(
     macro_payload = _read_json(Path(output_files["macro"])) if output_files.get("macro") else {}
     profile_payload = _read_json(Path(output_files["completed_market_profile"])) if output_files.get("completed_market_profile") else {}
     run_meta = _read_json(run_dir / "run_meta.json")
+    worker3_macro_path = Path(output_files["interpreter_macro_context"]) if output_files.get(
+        "interpreter_macro_context"
+    ) else None
+    worker3_macro_payload = _read_json(worker3_macro_path) if worker3_macro_path else {}
+    expected_macro_session = _s(
+        (run_meta.get("dynamic_plan") or {}).get("last_completed_session")
+    )
+    worker3_macro_status = "MISSING"
+    worker3_macro_error = "RUN_FROZEN_MACRO_PACKET_NOT_AVAILABLE"
+    worker3_macro_sha256 = ""
+    if worker3_macro_path is not None:
+        try:
+            worker3_macro_sha256 = hashlib.sha256(worker3_macro_path.read_bytes()).hexdigest()
+            if worker3_macro_payload.get("schema_version") != "interpreter_macro_context_v1":
+                raise ValueError("unsupported packet schema")
+            if expected_macro_session and _s(worker3_macro_payload.get("session_date")) != expected_macro_session:
+                raise ValueError("packet session differs from governed run session")
+            if "ADVISORY_ONLY" not in _u(worker3_macro_payload.get("authority_statement")):
+                raise ValueError("packet is not advisory-only")
+            worker3_macro_status = "AVAILABLE"
+            worker3_macro_error = ""
+        except (OSError, ValueError) as error:
+            worker3_macro_status = "INVALID"
+            worker3_macro_error = str(error)
+    worker3_context_path = Path(output_files["worker3_macro_ticker_context_manifest"]) if output_files.get(
+        "worker3_macro_ticker_context_manifest"
+    ) else None
+    worker3_context_payload = _read_json(worker3_context_path) if worker3_context_path else {}
+    worker3_context_status = "MISSING"
+    worker3_context_error = "MACRO_TICKER_CONTEXT_MANIFEST_NOT_AVAILABLE"
+    worker3_context_sha256 = ""
+    worker3_context_diagnostics: Dict[str, Any] = {}
+    if worker3_context_path is not None:
+        try:
+            worker3_context_sha256 = hashlib.sha256(worker3_context_path.read_bytes()).hexdigest()
+            if worker3_context_payload.get("schema_version") != "worker3_macro_ticker_context_manifest_v1":
+                raise ValueError("unsupported macro ticker context manifest schema")
+            if worker3_context_payload.get("context_contract") != "macro_ticker_context_v1":
+                raise ValueError("unsupported macro ticker context contract")
+            if _s(worker3_context_payload.get("run_id")) != run_id:
+                raise ValueError("macro ticker context run differs")
+            if expected_macro_session and _s(worker3_context_payload.get("session_date")) != expected_macro_session:
+                raise ValueError("macro ticker context session differs")
+            if worker3_context_payload.get("authority") != "ADVISORY_ONLY" or worker3_context_payload.get(
+                "trading_authority"
+            ) is not False:
+                raise ValueError("macro ticker context manifest is not advisory-only")
+            if worker3_macro_sha256 and worker3_context_payload.get(
+                "source_packet_sha256"
+            ) != worker3_macro_sha256:
+                raise ValueError("macro ticker context packet hash differs")
+            declared_lab_sha256 = _s(
+                worker3_context_payload.get("lab_book_sha256")
+            ).lower()
+            if re.fullmatch(r"[0-9a-f]{64}", declared_lab_sha256) is None:
+                raise ValueError("macro ticker context Lab hash is invalid")
+            lab_book_path = (
+                run_dir / "intelligence_lab" /
+                f"final_opportunity_book_{run_id}.json"
+            )
+            if not lab_book_path.is_file():
+                raise ValueError("macro ticker context Lab book is unavailable")
+            actual_lab_sha256 = hashlib.sha256(lab_book_path.read_bytes()).hexdigest()
+            if declared_lab_sha256 != actual_lab_sha256:
+                raise ValueError("macro ticker context Lab hash differs")
+            worker3_context_diagnostics = dict(worker3_context_payload.get("diagnostics") or {})
+            required_diagnostics = {
+                "macro_ticker_context_requested",
+                "macro_ticker_context_available",
+                "macro_ticker_context_partial",
+                "macro_ticker_context_stale",
+                "macro_ticker_context_conflicting",
+                "macro_ticker_context_unmapped",
+                "macro_ticker_context_invalid",
+                "macro_ticker_context_bytes_total",
+                "macro_ticker_context_omitted_items_total",
+                "macro_ticker_context_exact_ticker",
+                "macro_ticker_context_sector_only",
+                "macro_ticker_context_applicability_unmapped",
+                "macro_ticker_context_reconciled",
+            }
+            if not required_diagnostics.issubset(worker3_context_diagnostics):
+                raise ValueError("macro ticker context diagnostics are incomplete")
+            numeric_diagnostics = required_diagnostics - {"macro_ticker_context_reconciled"}
+            if any(type(worker3_context_diagnostics[key]) is not int for key in numeric_diagnostics):
+                raise ValueError("macro ticker context diagnostics are not integers")
+            if any(worker3_context_diagnostics[key] < 0 for key in numeric_diagnostics):
+                raise ValueError("macro ticker context diagnostics cannot be negative")
+            accounted = sum(worker3_context_diagnostics[key] for key in (
+                "macro_ticker_context_available",
+                "macro_ticker_context_partial",
+                "macro_ticker_context_stale",
+                "macro_ticker_context_conflicting",
+                "macro_ticker_context_unmapped",
+                "macro_ticker_context_invalid",
+            ))
+            if (
+                worker3_context_diagnostics["macro_ticker_context_reconciled"] is not True
+                or worker3_context_diagnostics["macro_ticker_context_requested"] != accounted
+            ):
+                raise ValueError("macro ticker context diagnostics do not reconcile")
+            applicability_accounted = sum(worker3_context_diagnostics[key] for key in (
+                "macro_ticker_context_exact_ticker",
+                "macro_ticker_context_sector_only",
+                "macro_ticker_context_applicability_unmapped",
+            ))
+            valid_contexts = (
+                worker3_context_diagnostics["macro_ticker_context_requested"]
+                - worker3_context_diagnostics["macro_ticker_context_invalid"]
+            )
+            if applicability_accounted != valid_contexts:
+                raise ValueError(
+                    "macro ticker context applicability diagnostics do not reconcile"
+                )
+            worker3_context_status = "AVAILABLE"
+            worker3_context_error = ""
+        except (OSError, TypeError, ValueError) as error:
+            worker3_context_status = "INVALID"
+            worker3_context_error = str(error)
     ev3_status_path = run_dir / "ev3_shadow" / f"ev3_shadow_phase_status_{run_id}.json"
     ev3_status = _read_json(ev3_status_path) if ev3_status_path.exists() else {}
     system_defects = dict(ev3_status.get("system_defects", {}) or {})
@@ -1237,7 +1439,9 @@ def build_final_run_manifest(
     fatal_flags: List[str] = []
 
     if phase_status["eil"] in {"MISSING", "FAIL"}:
-        fatal_flags.append("EIL_OUTPUT_MISSING_OR_INVALID")
+        # DOI-1: missing EIL reduces explanatory coverage but cannot make the
+        # governed run or ticker thesis invalid.
+        stale_flags.append("EIL_ADVISORY_OUTPUT_MISSING_OR_INVALID")
     if phase_status["options"] == "MISSING":
         stale_flags.append("OPTIONS_OUTPUT_MISSING_EXECUTION_DOWNGRADED")
     if profile_required and phase_status["completed_market_profile"] != "PASS":
@@ -1262,8 +1466,6 @@ def build_final_run_manifest(
 
     eil_rows = rows_by_phase["eil"]
     for row in eil_rows:
-        if _u(row.get("eil_v3_verdict")) == "BLOCKED" and _u(row.get("thesis_decision")) == "GO":
-            conflict_flags.append(f"EIL_BLOCKED_GO:{row.get('ticker', '')}")
         if _u(row.get("pse_execution_mode")) == "FATAL_BLOCK" and _u(row.get("execution_mode")) in {
             "FULL_EXECUTE",
             "REDUCED_EXECUTE",
@@ -1400,6 +1602,28 @@ def build_final_run_manifest(
         "run_prep_permission": run_prep_permission,
         "manual_review_enabled": manual_review_enabled,
         "pipeline_interpreter_prep_enabled": pipeline_interpreter_prep_enabled,
+        "worker3_market_environment": {
+            "status": worker3_macro_status,
+            "error": worker3_macro_error,
+            "packet_id": _s(worker3_macro_payload.get("packet_id")),
+            "packet_sha256": worker3_macro_sha256,
+            "session_date": _s(worker3_macro_payload.get("session_date")),
+            "authority": "ADVISORY_ONLY",
+            "trading_authority": False,
+        },
+        "worker3_macro_ticker_context": {
+            "status": worker3_context_status,
+            "error": worker3_context_error,
+            "contract_version": "macro_ticker_context_v1",
+            "manifest_sha256": worker3_context_sha256,
+            "source_packet_sha256": _s(
+                worker3_context_payload.get("source_packet_sha256")
+            ),
+            "session_date": _s(worker3_context_payload.get("session_date")),
+            "diagnostics": worker3_context_diagnostics,
+            "authority": "ADVISORY_ONLY",
+            "trading_authority": False,
+        },
         "run_health_score": health,
         "semantic_coverage_score": semantic_coverage_score,
         "pipeline_semantic_health": pipeline_semantic_health,
@@ -1555,6 +1779,8 @@ def _resolve_execution_gate_authority(
         for item in _s(sig.get("gate_warnings")).split(",")
         if item.strip()
     ]
+    if source.get("eil_v3_verdict"):
+        warnings.extend(eil_advisory_flags(source.get("eil_v3_verdict")))
     monetisability_state = _u(sig.get("monetisability_state"))
     if monetisability_state and monetisability_state != "MONETISABLE":
         warnings.append(f"MONETISABILITY:{monetisability_state}")
@@ -1769,9 +1995,8 @@ def resolve_lab_tradeability(
     if source["mv_live_validation_state"] in {"NO_LIVE_DATA", "STALE"}:
         soft.append(f"MORNING_VALIDATION_{source['mv_live_validation_state']}")
 
-    if "BLOCKED" in source["eil_v3_verdict"]:
-        flags.append("EIL_BLOCKED")
-        veto_flags.append("EIL_BLOCKED")
+    if source["eil_v3_verdict"]:
+        advisory.extend(eil_advisory_flags(source["eil_v3_verdict"]))
     if source["execution_verdict"] in HARD_EXECUTION_STATES:
         flags.append(f"EXECUTION_{source['execution_verdict']}")
         veto_flags.append(f"EXECUTION_{source['execution_verdict']}")
@@ -2543,6 +2768,15 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "macro_conflicts": first(sig, "macro_conflicts"),
         "macro_plain_language_advisory": first(sig, "macro_plain_language_advisory"),
         "macro_authority": first(sig, "macro_authority") or "MACRO_ADVISORY_ONLY",
+        "usmi_packet_id": first(sig, "usmi_packet_id"),
+        "usmi_packet_sha256": first(sig, "usmi_packet_sha256"),
+        "usmi_quality_status": first(sig, "usmi_quality_status") or "UNAVAILABLE",
+        "usmi_state": first(sig, "usmi_state"),
+        "usmi_sector_alignment": first(sig, "usmi_sector_alignment") or "UNAVAILABLE",
+        "usmi_alignment_priority": first(sig, "usmi_alignment_priority"),
+        "usmi_alignment_reason": first(sig, "usmi_alignment_reason"),
+        "usmi_authority": first(sig, "usmi_authority") or "ADVISORY_ONLY",
+        "usmi_scenario": first(sig, "usmi_scenario") or "UNRESOLVED",
         "eil_signal_verdict": first(sig, "eil_signal_verdict", "eil_v3_verdict", "fd_advisory_verdict", "fd_verdict"),
         "eil_v3_verdict": first(sig, "eil_v3_verdict", "eil_signal_verdict", "fd_advisory_verdict", "fd_verdict"),
         "eil_composite_eod": first(sig, "eil_composite_eod", "eil_composite_score", "eil__composite_score"),
@@ -3303,6 +3537,30 @@ def write_final_opportunity_book(
                 )
         row["field_provenance_json"] = _json_safe(provenance)
     assembly = _enrich_lab_extract_rows_from_run_sources(rows, runs_dir, run_id)
+    # DOI-10 is a read-only trader projection.  It preserves the opportunity
+    # population and all governed authority fields.  An inactive/missing DOI
+    # store is represented explicitly rather than producing blank UI cells.
+    doi_population_before = len(rows)
+    doi_database = Path(runs_dir).parent.parent / "canonical" / "control_plane.sqlite"
+    rows[:] = DynamicOptionsProjectionResolver(doi_database).project_rows(rows)
+    for row in rows:
+        provenance = json.loads(row.get("field_provenance_json") or "{}")
+        for field in FINAL_BOOK_FIELDS:
+            if field.startswith("doi_") and not _is_missing(row.get(field)):
+                provenance[field] = "canonical_doi_projection_read_only"
+        row["field_provenance_json"] = _json_safe(provenance)
+
+    # The Lab book is the governed JSON boundary consumed by Worker 3 and
+    # other non-Python clients.  Canonicalise the returned rows themselves,
+    # not only the JSON text, so the in-memory handoff and persisted artifact
+    # are byte-semantically identical.  Missing evidence remains JSON null and
+    # never becomes a favourable numeric default.
+    canonical_rows = _canonical_json_value(rows)
+    if not isinstance(canonical_rows, list) or any(
+        not isinstance(row, dict) for row in canonical_rows
+    ):
+        raise RuntimeError("Intelligence Lab rows could not be canonicalised")
+    rows[:] = canonical_rows
     out_dir = Path(runs_dir) / run_id / "intelligence_lab"
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / f"final_opportunity_book_{run_id}.csv"
@@ -3350,6 +3608,15 @@ def write_final_opportunity_book(
             "ev3_state_rows": sum(1 for row in rows if row.get("ev3_data_state") == "AVAILABLE"),
             "trigger_rows": sum(1 for row in rows if row.get("trigger_data_state") == "AVAILABLE"),
             "garch_rows": sum(1 for row in rows if row.get("garch_data_state") == "AVAILABLE"),
+            "doi_projected_rows": sum(
+                1 for row in rows
+                if row.get("doi_projection_state") in {"CALIBRATED", "DETERMINISTIC_UNCALIBRATED"}
+            ),
+            "doi_not_evaluated_rows": sum(
+                1 for row in rows
+                if row.get("doi_projection_state") not in {"CALIBRATED", "DETERMINISTIC_UNCALIBRATED"}
+            ),
+            "doi_population_preserved": len(rows) == doi_population_before,
             "economics_comparable_rows": sum(
                 1 for row in rows if row.get("economics_comparable") is True
             ),

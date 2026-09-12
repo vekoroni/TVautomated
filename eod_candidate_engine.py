@@ -77,6 +77,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from contracts.dynamic_session_contract import DataExceptionReason
+from contracts.dynamic_options_policy import advisory_authority_fields
 
 from contracts.direction_governance import (
     DIRECTED as GOVERNED_DIRECTED_SIDES,
@@ -702,12 +703,9 @@ def _true_fatal_block(row: dict) -> bool:
     if any(token in reason_blob for token in true_fatal_tokens):
         return True
 
-    signal = _resolved_signal_type(row).upper()
-    eil = _str(row, "eil_v3_verdict").upper()
-    ois = _flt(row, "options_score")
-    if signal in {"CURRENT_EDGE", "FUTURE_EDGE", "STRUCTURAL_MATCH", "TRANSITION"} and eil in {"EXECUTE", "EXECUTE_WITH_CAUTION"} and ois >= MIN_OPTIONS_SCORE:
-        return False
-    return has_fatal_label and fd_verdict == "BLOCK"
+    # EIL/FDE/PSE labels cannot create a fatal thesis state.  Only an explicit
+    # market/data failure identified above is a true fatal condition.
+    return False
 
 def _resolved_signal_type(row: dict) -> str:
     final_signal = _str(row, "signal_type").upper()
@@ -1231,16 +1229,16 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     if direction in GOVERNED_DIRECTED_SIDES and (
         invalidation_state != "AVAILABLE" or _invalidation_level(row) is None
     ):
-        return "EOD_STRUCTURAL_BLOCK", "MISSING_GOVERNED_INVALIDATION"
+        return "EOD_DATA_INSUFFICIENT_REVIEW", "MISSING_GOVERNED_INVALIDATION"
 
     if options_block_reason:
         failure_class = _eod_failure_class(row, options_block_reason)
         if failure_class == "NO_OPTIONS_ROUTE":
-            return "EOD_NO_OPTIONS_ROUTE", f"NO_OPTIONS_ROUTE:{options_block_reason}"
+            return "EOD_DATA_INSUFFICIENT_REVIEW", f"NO_OPTIONS_ROUTE:{options_block_reason}"
         if failure_class == "STRUCTURAL_BLOCK":
-            return "EOD_STRUCTURAL_BLOCK", f"STRUCTURAL_BLOCK:{options_block_reason}"
+            return "EOD_DATA_INSUFFICIENT_REVIEW", f"STRUCTURAL_REVIEW:{options_block_reason}"
         if _options_research_route(row) in OPTIONS_BLOCKED_ROUTES:
-            return "EOD_BLOCK", f"OPTIONS_RESEARCH_BLOCKED:{options_block_reason}"
+            return "EOD_THESIS_READY_REPAIR_AT_OPEN", f"OPTIONS_ADVISORY:{options_block_reason}"
         # Under the v4 signal-first policy, options economics/score vetoes are
         # repairable unless the options layer explicitly blocks the route.
 
@@ -1248,9 +1246,9 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
         reason = _str(row, "signal_authority_reason") or _str(row, "pse_block_reason") or "HARD_BLOCK"
         failure_class = _eod_failure_class(row, reason)
         if failure_class == "NO_OPTIONS_ROUTE":
-            return "EOD_NO_OPTIONS_ROUTE", reason
+            return "EOD_DATA_INSUFFICIENT_REVIEW", f"NO_OPTIONS_ROUTE:{reason}"
         if failure_class == "STRUCTURAL_BLOCK":
-            return "EOD_STRUCTURAL_BLOCK", reason
+            return "EOD_DATA_INSUFFICIENT_REVIEW", f"STRUCTURAL_REVIEW:{reason}"
         return "EOD_DATA_INSUFFICIENT_REVIEW", reason
 
     if direction_conflict_status == "UNRESOLVED":
@@ -1553,12 +1551,11 @@ def _monetisation_fit(row: dict, tier: str, contract_profile: dict, direction_in
     ois = min(20.0, _flt(row, "options_score") / 2.5)
     rr = min(20.0, max(0.0, (_flt(row, "rr_underlying") or _flt(row, "rr") or _flt(row, "rr_options")) * 8.0))
     trigger = 15.0 if _str(row, "trigger_quality").upper() == "STRONG" else 8.0 if _str(row, "trigger_quality").upper() == "SINGLE" else 0.0
-    eil = 20.0 if _str(row, "eil_v3_verdict").upper() == "EXECUTE" else 12.0 if _str(row, "eil_v3_verdict").upper() == "EXECUTE_WITH_CAUTION" else 0.0
     catalyst = min(15.0, _flt(row, "catalyst_truth_score") / 3.0)
     contract = min(20.0, float(contract_profile.get("contract_quality_score", 0.0)) / 2.25)
     direction_margin = abs(float(direction_info.get("direction_call_score", 0.0)) - float(direction_info.get("direction_put_score", 0.0)))
     direction = min(10.0, direction_margin * 2.0)
-    score = ois + rr + trigger + eil + catalyst + contract + direction
+    score = ois + rr + trigger + catalyst + contract + direction
     if tier == "A":
         score += 5
     elif tier == "WATCH":
@@ -1630,8 +1627,10 @@ def _eod_dropoff_reason(
         return "PRESERVED_TO_MORNING_VALIDATION"
     if eod_status == "EOD_THESIS_READY_REPAIR_AT_OPEN":
         return str(contract_profile.get("contract_repair_reason") or "REPAIR_AT_OPEN")
-    if eod_status in {"EOD_PROBE_CANDIDATE", "EOD_WATCHLIST_MONETISABLE", "EOD_DATA_INSUFFICIENT_REVIEW"}:
+    if eod_status in {"EOD_PROBE_CANDIDATE", "EOD_WATCHLIST_MONETISABLE"}:
         return eod_status
+    if eod_status == "EOD_DATA_INSUFFICIENT_REVIEW":
+        return f"{eod_status}:{eod_reason}" if eod_reason else eod_status
     if eod_status in {"EOD_NO_OPTIONS_ROUTE", "EOD_STRUCTURAL_BLOCK"}:
         return f"{eod_status}:{eod_reason}" if eod_reason else eod_status
     if eod_status == "EOD_BLOCK":
@@ -1662,8 +1661,6 @@ def _eod_dropoff_reason(
         return ";".join(gaps) or "QUALITY_FLOOR_NOT_MET"
     if contract_profile.get("contract_repair_required"):
         return str(contract_profile.get("contract_repair_reason") or "CONTRACT_REPAIR_REQUIRED")
-    if _str(row, "eil_v3_verdict").upper() in {"BLOCKED", "WATCHLIST"}:
-        return f"EIL_{_str(row, 'eil_v3_verdict').upper()}"
     if _str(row, "trigger_quality").upper() in {"", "NONE"}:
         return "NO_TRIGGER_CONFIRMATION"
     return "VALID_THESIS_NOT_TOP_SLATE"
@@ -1697,12 +1694,8 @@ def _shadow_opportunity_score(row: dict) -> tuple[float, str, str]:
         reasons.append("POSITIVE_RR")
 
     eil = _str(row, "eil_v3_verdict").upper()
-    if eil == "EXECUTE":
-        score += 22
-        reasons.append("EIL_EXECUTE")
-    elif eil == "EXECUTE_WITH_CAUTION":
-        score += 14
-        reasons.append("EIL_CAUTION")
+    if eil:
+        reasons.append(f"EIL_ADVISORY_{eil}")
 
     trigger = _str(row, "trigger_quality").upper()
     if trigger == "STRONG":
@@ -1959,7 +1952,6 @@ def classify_tier(row: dict) -> str:
     # EOD-01: use rr_underlying (structural price R:R, from FIX-01) — not rr_options
     conv    = _flt(row, "sb_conv_score")
     comp    = _flt(row, "composite")
-    eil_verdict = _str(row, "eil_v3_verdict").upper()
     trigger_quality = _str(row, "trigger_quality").upper()
     trigger_go = _str(row, "trigger_go_eligible").upper() in {"TRUE", "1", "YES"}
     catalyst_class = _str(row, "catalyst_trade_class").upper()
@@ -1982,7 +1974,6 @@ def classify_tier(row: dict) -> str:
     if _true_fatal_block(row):
         return "WATCH"
 
-    execute_like = eil_verdict in {"EXECUTE", "EXECUTE_WITH_CAUTION"}
     trigger_ready = trigger_quality == "STRONG" or trigger_go
     trigger_present = trigger_ready or trigger_quality == "SINGLE"
     catalyst_ready = (
@@ -1997,7 +1988,7 @@ def classify_tier(row: dict) -> str:
     if (
         ois >= TIER_A["options_score"]
         and comp >= 55
-        and (eil_verdict == "EXECUTE" or catalyst_ready)
+        and (trigger_ready or catalyst_ready or campaign_ready or options_power)
         and (trigger_ready or campaign_ready or options_power)
     ):
         return "A"
@@ -2008,7 +1999,7 @@ def classify_tier(row: dict) -> str:
     if (
         ois >= TIER_B["options_score"]
         and comp >= 50
-        and (execute_like or trigger_present or catalyst_ready or campaign_ready or options_power)
+        and (trigger_present or catalyst_ready or campaign_ready or options_power)
     ):
         return "B"
 
@@ -2513,7 +2504,7 @@ def build_candidate_manifest(
             "candidate_size_source": permission_fields["candidate_size_source"],
             "manual_sizing_required": permission_fields["manual_sizing_required"],
             "effective_execution_verdict": _str(row, "effective_execution_verdict"),
-            "fd_verdict": _str(row, "fd_verdict") or _str(row, "eil_v3_verdict"),
+            "fd_verdict": _str(row, "fd_verdict") or "WATCHLIST",
             "fd_advisory_verdict": (
                 _str(row, "fd_advisory_verdict")
                 or _str(row, "fd_verdict")
@@ -2868,7 +2859,6 @@ def build_candidate_manifest(
     )
     manifest_mask = (
         ~hard_block_mask
-        & ~options_blocked_mask
         & (
             trigger_go_series
             | status_series_all.isin(EOD_CARRY_FORWARD_STATUSES)
@@ -2891,9 +2881,8 @@ def build_candidate_manifest(
         pass
     full_out_df["phase10_manifest_exclusion_reason"] = ""
     full_out_df.loc[hard_block_mask, "phase10_manifest_exclusion_reason"] = "HARD_BLOCK"
-    full_out_df.loc[~hard_block_mask & options_blocked_mask, "phase10_manifest_exclusion_reason"] = "OPTIONS_CONTRACT_BLOCK_REPAIR_OR_SHADOW"
     full_out_df.loc[
-        ~hard_block_mask & ~options_blocked_mask & ~manifest_mask,
+        ~hard_block_mask & ~manifest_mask,
         "phase10_manifest_exclusion_reason",
     ] = "NO_TRIGGER_OR_EXECUTE_SIGNAL"
 
@@ -3109,24 +3098,18 @@ def build_candidate_manifest(
         out_df = manifest_df.head(max_candidates).reset_index(drop=True)
     else:
         out_df = manifest_df.reset_index(drop=True)
-    # B2 FIX: Remove EIL BLOCKED rows from morning candidates manifest
-    # BLOCKED tickers are written to a separate audit file for review
+    # DOI-1: EIL is advisory.  Preserve its evidence without altering the
+    # candidate population.
     if "eil_v3_verdict" in out_df.columns:
         _blocked_mask = out_df["eil_v3_verdict"].fillna("").str.upper() == "BLOCKED"
         _blocked_count = int(_blocked_mask.sum())
         if _blocked_count > 0:
-            _blocked_path = (
-                Path(output_path).with_name(f"morning_blocked_review_{run_id}.csv")
-                if output_path else None
-            )
-            if _blocked_path:
-                out_df[_blocked_mask].to_csv(_blocked_path, index=False)
             log.info(
-                "B2 FILTER: %d BLOCKED tickers removed from candidates "
-                "-> morning_blocked_review_%s.csv",
-                _blocked_count, run_id,
+                "DOI ADVISORY: %d EIL BLOCKED observations retained in candidates",
+                _blocked_count,
             )
-        out_df = out_df[~_blocked_mask].copy()
+    for _doi_field, _doi_value in advisory_authority_fields().items():
+        out_df[_doi_field] = _doi_value
     out_df = ensure_physics_fields(out_df)
     if not out_df.empty:
         out_df = enrich_dataframe_with_truth_packets(

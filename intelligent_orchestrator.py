@@ -122,7 +122,7 @@ Change (2026-03-08):
   Runs after Wall Break Scorer (Phase 8e) in both evening and premarket workflows.
   Non-critical — pipeline continues unaffected if EIL errors.
   Output: eil_enriched_{run_id}.csv in data/output/runs/{run_id}/superbrain/
-  Advisory mode by default (set EIL_ADVISORY_ONLY=false env var to enable live gating).
+  EIL is permanently advisory under DOI-1; no environment variable can restore gating.
   Deploy execution_intelligence_runner.py + vanguard/execution/ alongside this file.
 
 Change (2026-03-02):
@@ -142,6 +142,7 @@ Usage examples:
 
 import argparse
 import csv
+import hashlib
 import json
 import logging
 import os
@@ -219,6 +220,17 @@ try:
     from contracts.bond_macro_contract import normalise_bond_macro_sidecar
 except Exception:
     from bond_macro_contract import normalise_bond_macro_sidecar  # type: ignore
+
+try:
+    from contracts.us_money_index_contract import (
+        attach_us_money_index,
+        load_us_money_index_sidecar,
+    )
+except Exception:
+    from us_money_index_contract import (  # type: ignore
+        attach_us_money_index,
+        load_us_money_index_sidecar,
+    )
 
 
 def _strict_actuarial_v6_enabled() -> bool:
@@ -1072,6 +1084,17 @@ def _derive_regime_distribution(regime_state: str, regime_drift_status: str = ""
         }.get(rs, {"bull": 0.33, "neutral": 0.34, "bear": 0.33})
 
 
+def _parse_utc_timestamp(value: Any) -> datetime:
+    """Parse an ISO timestamp, treating a timezone-less ``*_utc`` value as UTC."""
+    text = str(value or "").strip()
+    if not text:
+        raise ValueError("timestamp is empty")
+    parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
 def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     """Verify macro_intelligence_latest.json exists, is valid, and contains required fields."""
     if not cfg.MACRO_DIR.exists():
@@ -1120,7 +1143,7 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     try:
         # Prefer generated_at if present (more explicit than as_of_utc)
         _ts_field = flat.get("generated_at") or flat.get("as_of_utc")
-        as_of = datetime.fromisoformat(str(_ts_field).replace("Z", "+00:00"))
+        as_of = _parse_utc_timestamp(_ts_field)
         age_h = (datetime.now(timezone.utc) - as_of).total_seconds() / 3600
         if age_h > cfg.MACRO_STALE_HOURS:
             return (
@@ -1595,7 +1618,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
         _macro_ts = str(_macro.get("generated_at") or _macro.get("as_of_utc") or "")
         _macro_age_h = -1.0
         try:
-            _macro_dt = datetime.fromisoformat(_macro_ts.replace("Z", "+00:00"))
+            _macro_dt = _parse_utc_timestamp(_macro_ts)
             _macro_age_h = round((datetime.now(timezone.utc) - _macro_dt).total_seconds() / 3600, 1)
         except Exception:
             pass
@@ -2383,6 +2406,154 @@ def pin_run_directory(
     return True
 
 
+def materialize_worker3_market_environment(
+    run_id: str,
+    *,
+    lab_rows: Optional[list[dict]] = None,
+) -> dict:
+    """Create and validate Worker 3's run-frozen advisory macro packet.
+
+    This is an evidence handoff only. Failure is reported to the final manifest
+    and cannot change ticker direction, contract selection or capital authority.
+    """
+    run_dir = cfg.RUNS_DIR / str(run_id)
+    meta_path = run_dir / "run_meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8-sig"))
+    dynamic_plan = meta.get("dynamic_plan") or {}
+    session_date = str(dynamic_plan.get("last_completed_session") or "").strip()
+    if not session_date:
+        raise RuntimeError("Worker 3 macro handoff requires governed run session")
+    from contracts.interpreter_macro_context import materialize_interpreter_macro_context
+    from worker3.macro_ticker_context import (
+        macro_ticker_context_diagnostics,
+        project_macro_ticker_context,
+    )
+    from worker3.market_environment import project_market_environment
+
+    result = materialize_interpreter_macro_context(
+        run_dir=run_dir,
+        session_date=session_date,
+        macro_dir=cfg.MACRO_DIR,
+        prefer_run_snapshot=True,
+    )
+    reference = result["reference"]
+    # Use the frozen packet time so replaying the same run is idempotent.
+    # A missing or malformed packet time is a contract failure; wall-clock
+    # time must not silently create a different evidence identity on restart.
+    from worker3.domain import utc as worker3_utc
+    evidence_cutoff = worker3_utc(str(result["packet"].get("created_at_utc") or ""))
+    snapshot = project_market_environment(
+        packet=result["packet"],
+        packet_sha256=reference["sha256"],
+        run_id=str(run_id),
+        evidence_cutoff_utc=evidence_cutoff,
+    )
+    lab_dir = run_dir / "intelligence_lab"
+    lab_path = lab_dir / f"final_opportunity_book_{run_id}.json"
+    if not lab_path.is_file():
+        raise RuntimeError("Worker 3 macro ticker context requires the exact Lab book")
+    lab_bytes = lab_path.read_bytes()
+    lab_hash = hashlib.sha256(lab_bytes).hexdigest()
+    lab_document = json.loads(lab_bytes.decode("utf-8-sig"))
+    if (
+        not isinstance(lab_document, dict)
+        or lab_document.get("lab_schema_version") != "lab_signal_book_v2"
+        or lab_document.get("run_id") != str(run_id)
+        or not isinstance(lab_document.get("rows"), list)
+        or lab_document.get("candidate_count") != len(lab_document["rows"])
+    ):
+        raise RuntimeError("Worker 3 macro ticker context Lab contract is invalid")
+    persisted_lab_rows = lab_document["rows"]
+    if lab_rows is None:
+        lab_rows = persisted_lab_rows
+    if not isinstance(lab_rows, list) or any(not isinstance(row, dict) for row in lab_rows):
+        raise RuntimeError("Worker 3 macro ticker context rows are invalid")
+    try:
+        supplied_rows_canonical = json.dumps(
+            lab_rows, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False, allow_nan=False,
+        )
+        persisted_rows_canonical = json.dumps(
+            persisted_lab_rows, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False, allow_nan=False,
+        )
+    except (TypeError, ValueError) as error:
+        raise RuntimeError(
+            "Worker 3 macro ticker context Lab rows are not canonical JSON"
+        ) from error
+    if supplied_rows_canonical != persisted_rows_canonical:
+        raise RuntimeError(
+            "Worker 3 macro ticker context rows differ from the hashed Lab book"
+        )
+    # Projection authority belongs to the exact persisted, hash-bound Lab
+    # artifact.  The supplied rows are checked only to prove that the writer's
+    # in-memory result did not diverge from what was published.
+    lab_rows = persisted_lab_rows
+    context_payloads: list[dict] = []
+    invalid_contexts: list[dict] = []
+    cutoff = evidence_cutoff
+    for row in lab_rows:
+        try:
+            context = project_macro_ticker_context(
+                packet=result["packet"],
+                packet_sha256=reference["sha256"],
+                market_environment=snapshot,
+                lab_row=row,
+                run_id=str(run_id),
+                session_date=session_date,
+                evidence_cutoff_utc=cutoff,
+            )
+            context_payloads.append(context.to_payload())
+        except Exception as error:
+            invalid_contexts.append({
+                "ticker": str(row.get("ticker") or "").strip().upper() or "UNAVAILABLE",
+                "reason": f"{type(error).__name__}:{error}",
+            })
+    diagnostics = macro_ticker_context_diagnostics(
+        tuple(context_payloads),
+        requested=len(lab_rows),
+        invalid=len(invalid_contexts),
+    )
+    context_manifest = {
+        "schema_version": "worker3_macro_ticker_context_manifest_v1",
+        "context_contract": "macro_ticker_context_v1",
+        "run_id": str(run_id),
+        "session_date": session_date,
+        "created_at_utc": cutoff,
+        "source_packet_id": reference["packet_id"],
+        "source_packet_sha256": reference["sha256"],
+        "lab_book_sha256": lab_hash,
+        "authority": "ADVISORY_ONLY",
+        "trading_authority": False,
+        "diagnostics": diagnostics,
+        "invalid_context_examples": invalid_contexts[:50],
+        "invalid_context_examples_omitted": max(0, len(invalid_contexts) - 50),
+    }
+    context_path = run_dir / "interpreter" / "macro_ticker_context_manifest.json"
+    context_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = context_path.with_suffix(".json.tmp")
+    temporary_path.write_text(
+        json.dumps(context_manifest, indent=2, allow_nan=False),
+        encoding="utf-8",
+    )
+    temporary_path.replace(context_path)
+    context_manifest_hash = hashlib.sha256(context_path.read_bytes()).hexdigest()
+    return {
+        "status": "AVAILABLE",
+        "packet_id": reference["packet_id"],
+        "packet_path": reference["path"],
+        "packet_sha256": reference["sha256"],
+        "market_environment_hash": snapshot.snapshot_hash,
+        "session_date": session_date,
+        "payload_bytes": len(json.dumps(snapshot.to_payload()).encode("utf-8")),
+        "macro_ticker_context_manifest_path": str(context_path),
+        "macro_ticker_context_manifest_sha256": context_manifest_hash,
+        "macro_ticker_context_diagnostics": diagnostics,
+        "authority": "ADVISORY_ONLY",
+        "trading_authority": False,
+    }
+
+
 
 # ============================================================ PHASES 5–8: VANGUARD PIPELINE
 
@@ -2742,6 +2913,43 @@ def run_vanguard_pipeline(
 
 
 # ============================================================ PHASE 8b: OPTIONS INTELLIGENCE
+
+def run_dynamic_options_intelligence(run_id: str) -> bool:
+    """Persist advisory DOI evidence from canonical completed-session chains."""
+    runtime_path = cfg.BASE_DIR / "config" / "doi_runtime.json"
+    try:
+        runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        logger.error("DOI-11 runtime configuration is unavailable: %s", error)
+        return False
+    if runtime.get("enabled") is not True:
+        logger.info("DOI-11 production integration disabled by governed configuration")
+        return True
+    if runtime.get("provider_fetch_allowed") is not False or runtime.get("canonical_reuse_only") is not True:
+        logger.error("DOI-11 refuses runtime configuration with provider acquisition authority")
+        return False
+    options_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+    report_path = cfg.RUNS_DIR / run_id / "options" / f"dynamic_options_intelligence_{run_id}.json"
+    try:
+        from canonical_data.dynamic_options_production import run_completed_session_doi
+        result = run_completed_session_doi(
+            run_id=run_id, options_csv=options_csv,
+            registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
+            report_path=report_path,
+        )
+        logger.info(
+            "✅ DOI-11 advisory integration — opportunities=%d families=%d "
+            "assessed=%d ranked=%d exceptions=%d canonical_reuse=%d provider_fetches=%d",
+            result.unique_tickers, result.family_rows, result.assessed_families,
+            result.ranked_families, result.exception_count,
+            result.canonical_reuse, result.physical_fetch_count,
+        )
+        return True
+    except Exception as error:
+        # DOI owns no trade authority. Infrastructure failure remains visible
+        # but cannot remove an otherwise governed pipeline opportunity.
+        logger.error("DOI-11 advisory integration failed: %s", error)
+        return False
 
 def run_options_intelligence(run_id: str, premarket_mode: bool = False) -> bool:
     """Options Intelligence Layer (non-critical)."""
@@ -3460,7 +3668,8 @@ def run_execution_intelligence_layer(run_id: str) -> bool:
     microstructure analysis: liquidity gating, IV distortion, GEX flip,
     OBI, and POC timing. Non-critical — pipeline continues if EIL fails.
 
-    Advisory mode is active by default (EIL_ADVISORY_ONLY env var).
+    DOI-1 fixes EIL as advisory telemetry. It cannot be promoted to a gate by
+    environment configuration.
     Output: eil_enriched_{run_id}.csv alongside superbrain_enriched CSV.
     """
     logger.info("=" * 80)
@@ -3495,14 +3704,13 @@ def run_execution_intelligence_layer(run_id: str) -> bool:
     except Exception as _guard_err:
         logger.warning("⚠️  EIL column guard check failed (%s) — proceeding anyway.", _guard_err)
 
-    import os as _os
-    advisory_only = _os.environ.get("EIL_ADVISORY_ONLY", "true").lower() != "false"
-    logger.info("   Advisory mode : %s", advisory_only)
+    advisory_only = True
+    logger.info("   Advisory mode : %s (DOI-1 governed invariant)", advisory_only)
     logger.info("   Input CSV     : %s", sb_csv.name)
 
     cmd = [sys.executable, str(cfg.EIL_RUNNER), "--run_id", run_id]
-    if not advisory_only:
-        cmd.append("--live")
+    # Deliberately never append ``--live``. EIL output remains explanatory
+    # evidence regardless of environment variables or operator shell state.
 
     ok = _run("Execution Intelligence Layer", cmd, critical=False)
     if not ok:
@@ -4179,6 +4387,7 @@ def _record_dynamic_thesis_receipt(run_plan: "RunPlan") -> Path:
 
     profile_input = int(payloads["profile"].get("input_count") or 0)
     profile_output = int(payloads["profile"].get("completed") or 0)
+    profile_excluded = int(payloads["profile"].get("excluded") or 0)
     profile_deferred = int(payloads["profile"].get("deferred") or 0)
     profile_exceptions = int(payloads["profile"].get("hard_exception_count") or 0)
 
@@ -4200,7 +4409,8 @@ def _record_dynamic_thesis_receipt(run_plan: "RunPlan") -> Path:
         ),
         "COMPLETED_MARKET_PROFILE": ThesisStageResult(
             stage="COMPLETED_MARKET_PROFILE", status="COMPLETED", input_count=profile_input,
-            output_count=profile_output, deferred_count=profile_deferred,
+            output_count=profile_output, excluded_count=profile_excluded,
+            deferred_count=profile_deferred,
             exception_count=profile_exceptions, artifact_paths=(str(paths["profile"]),),
         ),
         "VANGUARD": ThesisStageResult(
@@ -4455,6 +4665,31 @@ def evening_workflow(
             logger.warning("⚠️  Bond macro sidecar merge failed: %s — continuing without bond context", _bm_err)
     else:
         logger.info("ℹ️  bond_macro_state.json not found — run bond_macro_intelligence.py before evening run for bond context")
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # ── US MONEY INDEX SIDECAR: advisory context only ───────────────────────
+    _usmi_path = cfg.MACRO_DIR / "avshunter_us_money_index.json"
+    if _usmi_path.exists():
+        try:
+            _usmi = load_us_money_index_sidecar(_usmi_path)
+            with open(macro_path, "r", encoding="utf-8") as _mf:
+                _macro_live = json.load(_mf)
+            _macro_live = attach_us_money_index(_macro_live, _usmi)
+            _macro_quant_packet = build_macro_quant_packet(_macro_live, macro_path)
+            _macro_live["macro_quant_packet"] = _macro_quant_packet
+            write_json(macro_path, _macro_live)
+            logger.info(
+                "✅ US Money Index advisory attached: packet=%s quality=%s",
+                _usmi.get("packet_id", "UNAVAILABLE"),
+                _usmi.get("quality_status", "UNAVAILABLE"),
+            )
+        except Exception as _usmi_error:
+            logger.warning(
+                "⚠️  US Money Index rejected: %s — core pipeline continues without it",
+                _usmi_error,
+            )
+    else:
+        logger.info("ℹ️  US Money Index sidecar not found — advisory context unavailable")
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── PHASE 4.6: Actuarial Cache Build ─────────────────────────────────────
@@ -4737,6 +4972,12 @@ def evening_workflow(
         logger.warning(
             "EV-1.5 will fail closed for rows without a governed horizon; "
             "the production pipeline remains non-authoritative for EV3."
+        )
+
+    if not run_dynamic_options_intelligence(canonical_run_id):
+        logger.warning(
+            "DOI-11 advisory integration unavailable; pipeline membership is "
+            "preserved and the Lab will disclose DATA_UNAVAILABLE"
         )
 
     # EV3 must evaluate the final governed horizon, never the provisional
@@ -6131,6 +6372,37 @@ def evening_workflow(
     except Exception as _manifest_err:
         logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
 
+    # W3-ME2: freeze the advisory macro packet after the Lab book exists and
+    # before the authoritative manifest is refreshed. Worker 3 reads only this
+    # run-bound packet; it never reopens mutable Dropbox "latest" files.
+    try:
+        _worker3_rows = (
+            _lab_book.get("rows")
+            if isinstance(locals().get("_lab_book"), dict)
+            else None
+        )
+        _worker3_macro = materialize_worker3_market_environment(
+            canonical_run_id,
+            lab_rows=_worker3_rows,
+        )
+        logger.info(
+            "Worker 3 market environment: status=%s packet=%s bytes=%d contexts=%d invalid=%d authority=ADVISORY_ONLY",
+            _worker3_macro.get("status"),
+            _worker3_macro.get("packet_id"),
+            _worker3_macro.get("payload_bytes", 0),
+            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
+                "macro_ticker_context_requested", 0
+            ),
+            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
+                "macro_ticker_context_invalid", 0
+            ),
+        )
+    except Exception as _worker3_macro_error:
+        logger.warning(
+            "Worker 3 advisory handoff unavailable without changing pipeline authority: %s",
+            _worker3_macro_error,
+        )
+
     # AVS-FIX-001 W3.9: outcome maturation, as its own non-critical stage. It
     # was nested inside the decision-ledger APPEND block, so a failure appending
     # THIS run's candidates also skipped maturation of every candidate from
@@ -6383,7 +6655,6 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
         final = _series("thesis_decision").fillna("").astype(str).str.upper()
         exec_mask = mode.isin(execution_like) | fd.isin({"EXECUTE", "EXECUTE_WITH_CAUTION", "GO"}) | final.eq("GO")
 
-        eil_blocked = _series("eil_v3_verdict").fillna("").astype(str).str.upper().isin({"BLOCKED", "BLOCK"})
         trigger_primary = _series("trigger_primary").fillna("").astype(str).str.upper()
         trigger_quality = _series("trigger_quality").fillna("").astype(str).str.upper()
         # Trigger freshness is actual source-data age.  Structural context such
@@ -6416,8 +6687,6 @@ def enforce_handoff_conflict_guard(run_id: str) -> bool:
         conflict_reasons = []
         for idx in df.index:
             reasons = []
-            if bool(exec_mask.loc[idx] and eil_blocked.loc[idx]):
-                reasons.append("EIL_BLOCKED_WITH_EXECUTION_MODE")
             if bool(exec_mask.loc[idx] and trigger_stale.loc[idx]):
                 reasons.append("TRIGGER_DATA_STALE_WITH_EXECUTION_MODE")
             if bool(exec_mask.loc[idx] and trigger_missing.loc[idx]):
