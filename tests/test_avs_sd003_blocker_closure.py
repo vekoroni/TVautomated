@@ -153,7 +153,10 @@ def test_eod_finalisation_materialises_lab_before_audit_and_manifest_refresh() -
         "_uat_report = write_uat_audit_report(canonical_run_id"
     )
     manifest_refresh = source.index("_manifest = _refresh_final_run_manifest(")
-    assert lab_write < audit_write < uat_write < manifest_refresh
+    worker3_macro = source.index(
+        "_worker3_macro = materialize_worker3_market_environment("
+    )
+    assert lab_write < worker3_macro < audit_write < uat_write < manifest_refresh
 
 
 def _write_empty_shadow_fixture(root: Path, *, eligible: bool) -> tuple[Path, str]:

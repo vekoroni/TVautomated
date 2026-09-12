@@ -200,6 +200,43 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
     assert book["reconciliation"]["economics_mismatch_rows"] == 0
 
 
+def test_lab_publication_converts_pandas_style_nan_to_json_null(tmp_path):
+    book = write_final_opportunity_book(
+        RUN_ID,
+        [_base_signal(
+            catalyst_date=float("nan"),
+            catalyst_direction_bias=float("nan"),
+            catalyst_event_status=float("nan"),
+            contract_changed=float("nan"),
+            executable_now=float("nan"),
+            legacy_nested={"missing": float("nan")},
+        )],
+        {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
+        tmp_path,
+        sync_interpreter=False,
+    )
+
+    raw = Path(book["json_path"]).read_text(encoding="utf-8")
+
+    def reject_non_standard_constant(value: str):
+        raise AssertionError(f"non-standard JSON constant: {value}")
+
+    payload = json.loads(raw, parse_constant=reject_non_standard_constant)
+    row = payload["rows"][0]
+    assert row["catalyst_date"] is None
+    assert row["catalyst_direction_bias"] is None
+    assert row["catalyst_event_status"] is None
+    assert row["contract_changed"] is None
+    assert row["executable_now"] is None
+    assert json.loads(row["source_payload_json"])["legacy_nested"]["missing"] is None
+    assert book["rows"][0] == row
+
+    with Path(book["csv_path"]).open("r", encoding="utf-8", newline="") as fh:
+        csv_row = next(csv.DictReader(fh))
+    assert csv_row["catalyst_date"] == ""
+    assert csv_row["contract_changed"] == ""
+
+
 def test_cross_contract_ev_is_fail_closed_and_never_populates_selected_contract_ev():
     row = opportunity_book_row(
         _base_signal(

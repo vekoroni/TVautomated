@@ -144,6 +144,20 @@ from contracts.lab_evidence_overlay import (
     load_overlays,
 )
 from msi_runtime import active_flags
+from worker3.domain import ContractError as Worker3ContractError
+from worker3.integration.lab_mount import install_worker3_lab_projection
+from worker3.integration.browser_launch import install_worker3_browser
+
+# Worker 3 is an optional advisory surface.  The checked-in provider release is
+# disabled, so this is a no-op in production until a reviewed release enables
+# both provider execution and projection.  A broken advisory release must not
+# take the governed signal book offline.
+try:
+    WORKER3_ANALYST_REPORTS = install_worker3_lab_projection(app, BASE_DIR)
+    WORKER3_BROWSER = install_worker3_browser(app, BASE_DIR)
+except (Worker3ContractError, OSError) as worker3_mount_error:
+    WORKER3_ANALYST_REPORTS = None
+    print(f"  WARNING Worker 3 advisory reports unavailable: {worker3_mount_error}")
 
 _run_cache: dict = {}
 
@@ -271,25 +285,34 @@ def _lab_cache_signature(run_id):
     return {name: _file_signature(path) for name, path in paths.items()}
 
 def _governed_lab_book(run_id):
-    """Return the highest accepted writer-owned Lab signal book.
+    """Return the complete opportunity book with accepted evidence overlaid.
 
-    With MSI active, an accepted atomic v3 handoff is the only executable
-    display source.  Before Morning publication (or with MSI disabled), the
-    immutable v2 EOD book remains the review-only source.
+    The atomic v3 handoff intentionally contains only actionable rows.  It is
+    therefore an authority source, not a population source.  DOI-10 keeps the
+    complete v2 population and overlays v3 rows after exact identity checks.
     """
+    payload = read_final_opportunity_book(run_id, RUNS_DIR)
+    if not isinstance(payload, dict) or payload.get("lab_schema_version") != "lab_signal_book_v2":
+        payload = {}
+    full_rows = payload.get("rows") if isinstance(payload.get("rows"), list) else []
+    if payload and payload.get("candidate_count") not in (None, len(full_rows)):
+        return {}
     if active_flags().lab_v3_view:
         handoff_path = RUNS_DIR / run_id / "interpreter" / "handoff_manifest.json"
         if handoff_path.is_file():
             try:
                 from contracts.interpreter_handoff import validate_handoff_manifest
+                from domain.dynamic_options_projection import merge_all_opportunities
                 handoff = validate_handoff_manifest(handoff_path, require_accepted=True)
-                rows = [dict(row) for row in handoff.book_rows]
-                if str(handoff.manifest.get("run_id")) == str(run_id):
+                actionable_rows = [dict(row) for row in handoff.book_rows]
+                if str(handoff.manifest.get("run_id")) == str(run_id) and full_rows:
+                    rows, reconciliation = merge_all_opportunities(full_rows, actionable_rows)
                     return {
-                        "lab_schema_version": "lab_signal_book_v3",
+                        "lab_schema_version": "lab_signal_book_v4_projection",
                         "candidate_count": len(rows),
                         "rows": rows,
                         "reconciliation": {
+                            **reconciliation,
                             "status": handoff.manifest.get("reconciliation_status"),
                             "handoff_manifest": str(handoff_path),
                             "hashes_verified": True,
@@ -299,16 +322,6 @@ def _governed_lab_book(run_id):
                 # An invalid or unaccepted v3 baton must never be displayed.
                 # The v2 book below remains review-only and grants no new action.
                 pass
-    payload = read_final_opportunity_book(run_id, RUNS_DIR)
-    if not isinstance(payload, dict):
-        return {}
-    if payload.get("lab_schema_version") != "lab_signal_book_v2":
-        return {}
-    rows = payload.get("rows")
-    if not isinstance(rows, list):
-        return {}
-    if payload.get("candidate_count") not in (None, len(rows)):
-        return {}
     return payload
 
 def _utc_iso():
@@ -891,6 +904,17 @@ def _normalise_macro(m):
         "macro_caution": macro_quant.get("macro_execution_caution") or "",
         "preferred_horizon": source.get("macro_preferred_horizon") or macro_quant.get("macro_preferred_horizon") or "",
     }
+    usmi = (
+        governed_packet.get("us_money_index")
+        if isinstance(governed_packet.get("us_money_index"), dict)
+        else macro_quant.get("us_money_index")
+        if isinstance(macro_quant.get("us_money_index"), dict)
+        else source.get("extras", {}).get("us_money_index")
+        if isinstance(source.get("extras"), dict)
+        and isinstance(source.get("extras", {}).get("us_money_index"), dict)
+        else {}
+    )
+    usmi_state = usmi.get("state") if isinstance(usmi.get("state"), dict) else {}
     return {
         "packet_id": governed_packet.get("packet_id", ""),
         "source_fingerprint": governed_packet.get("source_fingerprint", ""),
@@ -926,6 +950,12 @@ def _normalise_macro(m):
         "auction_calendar": governed_packet.get("auction_calendar", {}),
         "conflicts": governed_packet.get("conflicts", []),
         "source_manifest": governed_packet.get("source_manifest", {}),
+        "us_money_index": usmi,
+        "usmi_packet_id": usmi.get("packet_id", ""),
+        "usmi_quality_status": usmi.get("quality_status", "UNAVAILABLE"),
+        "usmi_state": usmi_state.get("US_MONEY_INDEX_STATE") or usmi_state.get("us_money_index_state") or "UNAVAILABLE",
+        "usmi_gamma_position": usmi_state.get("GAMMA_POSITION") or usmi_state.get("gamma_position") or "UNAVAILABLE",
+        "usmi_authority": usmi.get("authority", "ADVISORY_ONLY"),
     }
 
 # ─── PRIORITY SCORING (pipeline-native fields) ──────────────────────────────
@@ -1636,8 +1666,8 @@ def _load_run(run_id, force_reload=False):
             "CONTRACT_REPAIR": "REPAIR_CONTRACT",
             "WAIT": "WAIT",
             "WATCHLIST": "WATCH_ONLY",
-            "BLOCKED": "NO_TRADE",
-            "NEGATIVE_RR": "NO_TRADE",
+            "BLOCKED": "REVIEW_BLOCK_REASON",
+            "NEGATIVE_RR": "REVIEW_ECONOMICS",
         }.get(verdict, verdict or "WAIT")
 
     def _display_campaign_for(verdict, sig):
@@ -1651,8 +1681,8 @@ def _load_run(run_id, force_reload=False):
             "CONTRACT_REPAIR": "CONTRACT_REPAIR",
             "WAIT": "WATCHLIST",
             "WATCHLIST": "WATCHLIST",
-            "BLOCKED": "BLOCKED",
-            "NEGATIVE_RR": "BLOCKED",
+            "BLOCKED": "BLOCKED_REVIEW",
+            "NEGATIVE_RR": "WATCHLIST",
         }.get(verdict, str(_first_nonempty(sig.get("sb_campaign"), sig.get("campaign_verdict")) or "WATCHLIST").upper())
 
     def _sync_lab_display_fields(sig):
@@ -2081,8 +2111,8 @@ def _load_run(run_id, force_reload=False):
         result["signals"] = [dict(row) for row in governed_book.get("rows", [])]
         _book_schema = governed_book.get("lab_schema_version", "lab_signal_book_v2")
         result["lab_signal_source"] = (
-            "GOVERNED_ACCEPTED_LAB_SIGNAL_BOOK_V3"
-            if _book_schema == "lab_signal_book_v3"
+            "GOVERNED_ALL_OPPORTUNITIES_WITH_ACCEPTED_HANDOFF_V4"
+            if _book_schema == "lab_signal_book_v4_projection"
             else "GOVERNED_FINAL_OPPORTUNITY_BOOK_V2"
         )
         result["lab_reconciliation"] = dict(governed_book.get("reconciliation") or {})
@@ -2315,7 +2345,7 @@ _LAB_COMPACT_BASE_FIELDS.update(field for field in FINAL_BOOK_FIELDS if field !=
 _LAB_COMPACT_PREFIXES = (
     "opt__", "wbs__", "garch__", "mv__", "doss__", "display_", "lab_", "sb_",
     "ev2_", "ev3_", "mv_", "tce_", "qomega_", "eil_", "eod__", "exe__",
-    "trigger_", "catalyst_", "actuarial_", "contract_",
+    "trigger_", "catalyst_", "actuarial_", "contract_", "doi_",
 )
 _LAB_COMPACT_VG_FIELDS = {
     "vg__physics_state_id", "vg__hidden_state_label", "vg__state_transition_label",
@@ -2340,7 +2370,9 @@ def _governed_ui_projection(sig):
     This is deliberately a name-only projection.  It must not rescore, rerank,
     infer execution permission, or otherwise reinterpret the governed row.
     """
-    if not isinstance(sig, dict) or sig.get("lab_schema_version") != "lab_signal_book_v2":
+    if not isinstance(sig, dict) or sig.get("lab_schema_version") not in {
+        "lab_signal_book_v2", "lab_signal_book_v4_projection"
+    }:
         return sig
 
     out = dict(sig)

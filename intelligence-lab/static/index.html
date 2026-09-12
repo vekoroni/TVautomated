@@ -335,15 +335,17 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <span class="fb-lbl">Quick</span>
     <button class="fb" id="btn-monetisable" onclick="toggleQuick('monetisable',this)" title="Show only contracts classified as monetisable">Monetisable</button>
     <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals">EV &gt; 0</button>
-    <button class="fb" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Show morning-blocked, rejected, and stand-down names for audit">Show blocked</button>
+    <button class="fb active" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Toggle between the complete governed opportunity population and the actionable subset">All Opportunities</button>
     <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by conservative target profit descending">⬇ Target Profit</button>
     <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending">⬇ EV</button>
     <div class="f-sep"></div>
     <input class="search-inp" type="text" placeholder="Search ticker…" oninput="doSearch(this.value)">
     <div class="f-sep"></div>
     <button class="fb" onclick="exportCSV()" title="Export current filtered view to CSV" style="border-color:rgba(0,229,160,.4);color:var(--green)">⬇ CSV</button>
+    <button class="fb" id="worker3-launch" onclick="previewWorker3()">Worker 3: preview selected (0/5)</button>
     <span id="export-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)"></span>
   </div>
+  <div id="worker3-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
   <div class="sig-list-zone">
     <div class="sig-list-head">
       <div class="slh priority-col sorted" onclick="sortBy(0)">⬆ Rank</div>
@@ -357,7 +359,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(8)">Strike</div>
       <div class="slh" onclick="sortBy(9)">Premium</div>
       <div class="slh" onclick="sortBy(10)">Horizon</div>
-      <div class="slh" onclick="sortBy(11)">Trigger</div>
+      <div class="slh" onclick="sortBy(11)" title="Underlying trigger price, when supplied; not trigger strength or days to trigger">Trigger price</div>
       <div class="slh" onclick="sortBy(12)">Trig Evidence</div>
       <div class="slh" onclick="sortBy(13)">Monetisable</div>
       <div class="slh" onclick="sortBy(14)">EV</div>
@@ -366,11 +368,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(17)">Hold</div>
       <div class="slh">WBS</div>
       <div class="slh">MV</div>
-      <div class="slh">Drift</div>
+      <div class="slh" title="Morning price drift; separate from regime drift status">AM Drift</div>
       <div class="slh" onclick="sortBy(21)">Sector</div>
-      <div class="slh" onclick="sortBy(22)">EIL</div>
+      <div class="slh" onclick="sortBy(22)">Entry Telemetry</div>
       <div class="slh" onclick="sortBy(23)">Quote</div>
-      <div class="slh" onclick="sortBy(24)">Fresh</div>
+      <div class="slh" onclick="sortBy(24)" title="Morning Gate verdict: whether the governed swing thesis survived current-price validation">AM Thesis</div>
       <div class="slh" onclick="sortBy(25)">MS Life</div>
       <div class="slh" onclick="sortBy(26)">MS Dir</div>
       <div class="slh" onclick="sortBy(27)">Assess</div>
@@ -560,7 +562,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <button class="mtab" onclick="switchMTab('convexity',this)">Convexity</button>
     <button class="mtab" onclick="switchMTab('ladder',this)">Stage Ladder</button>
     <button class="mtab" onclick="switchMTab('morning',this)">Morning Val</button>
-    <button class="mtab" onclick="switchMTab('eil',this)">EIL</button>
+    <button class="mtab" onclick="switchMTab('doi',this)">DOI Ranking</button>
+    <button class="mtab" onclick="switchMTab('eil',this)">Entry Telemetry</button>
     <button class="mtab" onclick="switchMTab('qomega',this)">Q-OMEGA</button>
     <button class="mtab" onclick="switchMTab('msi',this)">MSI Evidence</button>
   </div>
@@ -571,12 +574,14 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="mpane" id="mp-convexity"></div>
     <div class="mpane" id="mp-ladder"></div>
     <div class="mpane" id="mp-morning"></div>
+    <div class="mpane" id="mp-doi"></div>
     <div class="mpane" id="mp-eil"></div>
     <div class="mpane" id="mp-qomega"></div>
     <div class="mpane" id="mp-msi"></div>
   </div>
 </div>
 
+<script src="/static/worker3-controls.js"></script>
 <script>
 // ═══ STATE ═══════════════════════════════════════════════════════════════
 const API = 'http://localhost:5002/api';
@@ -591,7 +596,7 @@ const quickFilters = {monetisable: false, ev: false};
 let searchTerm = '', sortCol = 0, sortDir = 1, selectedTicker = null;  // default: priority rank ascending
 let activeCardId = null;
 let campaignViewMode = false;  // when true, table shows all CORE_CAMPAIGN signals
-let showAuditRows = false;     // blocked/rejected rows are audit-only by default
+let showAuditRows = true;      // DOI-10 defaults to the complete governed opportunity population
 const discFilters = {tier:'ALL', phase:'ALL'};
 let discSearch = '', discPage_ = 0;
 const DISC_PAGE_SIZE = 100;
@@ -664,11 +669,40 @@ function showLoaderError(msg) {
   document.getElementById('loader-err').textContent = msg;
 }
 
+function populateGovernedDisplayFields(signal) {
+  if (!signal || signal.lab_schema_version !== 'lab_signal_book_v2') return signal;
+  const out = {...signal};
+  const present = value => value !== null && value !== undefined && String(value).trim() !== '';
+  const alias = (target, sources) => {
+    if (present(out[target])) return;
+    const source = sources.find(key => present(signal[key]));
+    if (source) out[target] = signal[source];
+  };
+  // Display compatibility only. Never infer prices, scores or trading permission.
+  alias('sb_campaign', ['campaign_verdict']);
+  alias('sb_execution_mode', ['display_execution_mode']);
+  alias('sector_name', ['gics_sector', 'sector']);
+  if (!present(out.sb_vetoes) && present(signal.hard_vetoes)) {
+    let vetoes = signal.hard_vetoes;
+    if (typeof vetoes === 'string') {
+      try { vetoes = JSON.parse(vetoes); } catch (_) { vetoes = null; }
+    }
+    if (Array.isArray(vetoes) && vetoes.every(item => typeof item === 'string')) {
+      out.sb_vetoes = vetoes.join(' | ');
+      if (!present(out.sb_vetoes_count)) out.sb_vetoes_count = vetoes.length;
+    }
+  }
+  return out;
+}
+
 async function loadRun(runId) {
   const data = await fetch(`${API}/run/${runId}`).then(r => r.json());
   if (data.error) throw new Error(data.error);
+  data.signals = (data.signals || []).map(populateGovernedDisplayFields);
+  if (!RUN_DATA || RUN_DATA.run_id !== data.run_id) WORKER3_SELECTED.clear();
   RUN_DATA = data;
-  ALL_SIGS = data.signals || [];
+  updateWorker3Selection();
+  ALL_SIGS = data.signals;
   if(!SHOW_INVALID){ ALL_SIGS = ALL_SIGS.filter(s => s.sb_schema_ok !== 'N'); }
   SIGNALS  = ALL_SIGS.filter(isActionSignal);
   DISCOVERY = data.discovery || [];
@@ -1327,7 +1361,8 @@ function displayExecutionMode(s) {
     CONTRACT_REPAIR: 'REPAIR_CONTRACT',
     WAIT: 'WAIT',
     WATCHLIST: 'WATCH_ONLY',
-    BLOCKED: 'NO_TRADE'
+    BLOCKED: 'REVIEW_BLOCK_REASON',
+    NEGATIVE_RR: 'REVIEW_ECONOMICS'
   }[finalLabVerdict(s)]) || s.sb_execution_mode || s.execution_mode || 'WAIT';
 }
 
@@ -1558,6 +1593,37 @@ function formatPriceLevel(value) {
   return `$${n.toFixed(2)}`;
 }
 
+function getMorningDrift(s) {
+  const raw = firstSignalValue(s, ['mv__drift_pct', 'mv_drift_pct']);
+  const value = raw === '' ? NaN : Number(raw);
+  if (Number.isFinite(value)) return {value, label: `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, reason: 'Morning validation price drift'};
+  const notRun = s.morning_data_state === 'NOT_RUN_EOD';
+  return {value: null, label: notRun ? 'Not run' : 'Unavailable', reason: notRun ? 'Morning validation has not run; regime drift is a different measure.' : 'No morning drift measurement supplied.'};
+}
+
+function getMorningThesisDisplay(s) {
+  const transition = String(s.validation_transition || '').toUpperCase();
+  const governedReason = String(s.validation_reason || '').trim();
+  const reason = fallback => governedReason || fallback;
+  if (transition === 'THESIS_CONFIRMED') return {label: 'CONFIRMED', valid: true, reason: reason('Frozen thesis remains structurally valid.')};
+  if (transition === 'PENDING_TRIGGER') return {label: 'PENDING', valid: false, reason: reason('The thesis remains governed but its trigger or lifecycle condition is pending.')};
+  if (transition === 'THESIS_INVALIDATED') return {label: 'INVALID', valid: false, reason: reason('Morning price invalidated the governed thesis.')};
+  if (['TARGET_ALREADY_REACHED','ENTRY_RUNWAY_EXHAUSTED'].includes(transition)) return {label: 'DEVELOPED', valid: false, reason: reason('The thesis developed, but the planned entry runway has been consumed.')};
+  if (transition === 'DATA_DEFERRED') return {label: 'DEFERRED', valid: false, reason: reason('Morning evidence was not sufficient to validate the thesis.')};
+  if (transition === 'NOT_EVALUATED_NON_DIRECTIONAL') return {label: 'N/A', valid: false, reason: reason('Directional Morning validation is not applicable to this thesis.')};
+  if (transition) return {label: 'UNKNOWN', valid: false, reason: reason(`Unrecognised governed transition: ${transition}`)};
+  return {label: 'NOT RUN', valid: false, reason: 'Morning Gate has not validated this thesis.'};
+}
+
+function getWbsDisplay(s) {
+  const grade = firstSignalValue(s, ['wbs_grade', 'wbs__wbs_grade', 'wbs__grade']);
+  const raw = firstSignalValue(s, ['wbs', 'wbs__wbs_score', 'wbs__wbs', 'wbs__score']);
+  const score = raw === '' ? NaN : Number(raw);
+  const state = s.wbs_data_state || 'UNAVAILABLE';
+  if (!grade) return {grade: '', label: state === 'NOT_APPLICABLE_NOT_SCORED' ? 'Not scored' : 'Unavailable', reason: state};
+  return {grade, label: `${String(grade).slice(0,4)} ${Number.isFinite(score) ? score.toFixed(1) : 'N/A'}`, reason: `${grade}; ${state}. WBS is evidence, not execution permission.`};
+}
+
 function getTriggerPriceRaw(s) {
   return firstSignalValue(s, [
     'trigger_price',
@@ -1590,7 +1656,7 @@ function getTriggerDisplay(s) {
     'eod__scenario_entry_trigger',
     'vg__scenario_entry_trigger'
   ]);
-  if (explicitTrigger) return formatPriceLevel(explicitTrigger);
+  if (explicitTrigger !== '') return formatPriceLevel(explicitTrigger);
   const phaseB = firstSignalValue(s, ['wbs_phase_b_trigger', 'eod__wbs_phase_b_trigger', 'vg__wbs_phase_b_trigger']);
   const phaseC = firstSignalValue(s, ['wbs_phase_c_trigger', 'eod__wbs_phase_c_trigger', 'vg__wbs_phase_c_trigger']);
   if (phaseB || phaseC) {
@@ -1599,14 +1665,18 @@ function getTriggerDisplay(s) {
     if (phaseC) parts.push(`C ${formatPriceLevel(phaseC)}`);
     return parts.join(' / ');
   }
-  const trgRaw = firstSignalValue(s, ['opt__days_to_trigger', 'days_to_trigger', 'opt__trigger_days', 'trigger_days']);
-  const trg = parseFloat(trgRaw);
-  return Number.isNaN(trg) ? '-' : `${Math.round(trg)}d`;
+  return 'No price';
 }
 
 function getTriggerEvidenceDisplay(s) {
   const evidence = firstSignalValue(s, ['trigger_evidence', 'eod__trigger_evidence', 'vg__trigger_evidence', 'opt__trigger_evidence']);
-  if (evidence) return String(evidence).replace(/_/g, ' ').slice(0, 18);
+  if (evidence) {
+    const rawScore = firstSignalValue(s, ['trigger_score', 'eod__trigger_score', 'vg__trigger_score', 'opt__trigger_score']);
+    const name = firstSignalValue(s, ['trigger_primary', 'eod__trigger_primary', 'vg__trigger_primary', 'opt__trigger_primary']);
+    const quality = firstSignalValue(s, ['trigger_quality', 'eod__trigger_quality', 'vg__trigger_quality', 'opt__trigger_quality']);
+    if (rawScore !== '' && Number.isFinite(Number(rawScore))) return `${rawScore} · ${String(name || evidence).replace(/_/g, ' ')} ${quality || ''}`.trim();
+    return String(evidence).replace(/_/g, ' ');
+  }
   const primary = firstSignalValue(s, ['trigger_primary', 'eod__trigger_primary', 'vg__trigger_primary', 'opt__trigger_primary']);
   const quality = firstSignalValue(s, ['trigger_quality', 'eod__trigger_quality', 'vg__trigger_quality', 'opt__trigger_quality']);
   const codes = firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']);
@@ -1617,7 +1687,7 @@ function getTriggerEvidenceDisplay(s) {
   if (primary || hasQuality || codes || hasScore) {
     const shortPrimary = String(primary || codes || 'TRIGGER').replace(/_/g, ' ').slice(0, 14);
     const shortQuality = hasQuality ? ` ${String(quality).replace(/_/g, ' ').slice(0, 6)}` : '';
-    const scoreLabel = hasScore ? ` ${Math.round(score)}` : '';
+    const scoreLabel = hasScore ? ` ${score}` : '';
     return `${shortPrimary}${shortQuality}${scoreLabel}`.trim();
   }
   const catalyst = firstSignalValue(s, ['catalyst_type', 'eod__catalyst_type', 'vg__catalyst_type']);
@@ -1687,10 +1757,7 @@ function getEilDisplay(s) {
     'eil__verdict',
     'eil__eil_verdict',
     'eil_signal_verdict',
-    'eil_v3_verdict',
-    'final_decision_advisory_verdict',
-    'fd_advisory_verdict',
-    'fd_verdict'
+    'eil_v3_verdict'
   ]);
   if (display && display !== 'ADVISORY_ONLY') return display;
   const sc = parseFloat(firstSignalValue(s, ['eil__composite_score', 'eil__composite', 'eil_composite_eod']));
@@ -1883,7 +1950,7 @@ const sortKeys = [
   s => getSectorDisplay(s),                         // 21 Sector
   s => getEilDisplay(s),                            // 22 EIL
   s => parseFloat(s.current_contract_mid||0),       // 23 Current quote
-  s => s.quote_freshness||'',                       // 24 Quote freshness
+  s => getMorningThesisDisplay(s).label,             // 24 Morning thesis status
   s => s.ms_lifecycle||'',                          // 25 Structure lifecycle
   s => s.ms_direction_relationship||'',             // 26 Structure relationship
   s => s.interpreter_assessment_status||'',         // 27 Interpreter assessment
@@ -1992,7 +2059,7 @@ function buildTable() {
         <span class="prank ${prCls}">${prLbl}</span>
         <div style="width:28px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div style="height:100%;width:${ps}%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:1px"></div></div>
       </div>
-      <div class="sc"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}</div>
+      <div class="sc"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Worker 3" data-worker3-ticker="${attrSafe(s.ticker)}" ${WORKER3_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectWorker3(this)"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}</div>
       <div class="sc"><span class="pill ${vClass}">${labV}</span></div>
       <div class="sc"><span class="pill ${campClass}">${camp.replace('_CAMPAIGN','')}</span></div>
       <div class="sc"><div class="conv-dots">${dots}</div></div>
@@ -2005,19 +2072,17 @@ function buildTable() {
       <div class="sc" style="color:var(--cyan)">$${strike}</div>
       <div class="sc" style="color:var(--text2)">${premDisplay}</div>
       <div class="sc" title="${attrSafe(horizonMeta)}" style="font-size:10px;color:var(--amber)">${horizon}</div>
-      <div class="sc" title="${attrSafe(getTriggerPriceRaw(s))}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
-      <div class="sc" title="${attrSafe(firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes']) || trgEvidence)}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
+      <div class="sc" title="${attrSafe(getTriggerPriceRaw(s) !== '' ? [getTriggerPriceRaw(s), s.trigger_price_source || 'Supplied trigger price'].join(' · ') : 'No numeric trigger price supplied; trigger evidence or strength does not establish a price level.')}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
+      <div class="sc" title="${attrSafe([trgEvidence, firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])].filter(Boolean).join(' · '))}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
       <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.monetisability_reason||'')}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
       <div class="sc ${evC}">${formatEv(ev)}</div>
       <div class="sc" ${ivpC}>${ivpLbl}</div>
       <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">⚡</span>':''}` : '<span style="color:var(--text3)">—</span>'}</div>
       <div class="sc" style="font-size:10px;color:var(--cyan)">${hold}</div>
       <div class="sc">${(() => {
-        const g = s['wbs__wbs_grade'] || s['wbs__grade'] || s.wbs_grade || '';
-        if (!g) return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--text3)">—</span>';
-        const cls = g==='IMMINENT'?'p-wbs-im':g==='PROBABLE'?'p-wbs-pr':g==='POSSIBLE'?'p-wbs-po':'p-wbs-un';
-        const sc = parseFloat(s['wbs__wbs_score']||s['wbs__wbs']||s['wbs__score']||s.wbs||0).toFixed(0);
-        return `<span class="pill ${cls}">${g.slice(0,4)} ${sc}</span>`;
+        const wbs = getWbsDisplay(s);
+        const cls = wbs.grade==='IMMINENT'?'p-wbs-im':wbs.grade==='PROBABLE'?'p-wbs-pr':wbs.grade==='POSSIBLE'?'p-wbs-po':'p-wbs-un';
+        return `<span class="pill ${cls}" title="${attrSafe(wbs.reason)}">${htmlSafe(wbs.label)}</span>`;
       })()}</div>
       <div class="sc">${(() => {
         const mv = firstSignalValue(s, ['mv__verdict', 'verdict', 'morning_gate_verdict']);
@@ -2030,10 +2095,9 @@ function buildTable() {
         return `<span class="pill ${mc}" style="font-size:8px">${mv}</span>`;
       })()}</div>
       <div class="sc" style="font-size:10px">${(() => {
-        const d = parseFloat(s['mv__drift_pct'] || '');
-        if (isNaN(d)) return '<span style="color:var(--text3)">—</span>';
-        const col = Math.abs(d) < 1 ? 'var(--green)' : Math.abs(d) < 2.5 ? 'var(--amber)' : 'var(--red)';
-        return `<span style="color:${col}">${d >= 0 ? '+' : ''}${d.toFixed(2)}%</span>`;
+        const drift = getMorningDrift(s);
+        const col = drift.value === null ? 'var(--text3)' : Math.abs(drift.value) < 1 ? 'var(--green)' : Math.abs(drift.value) < 2.5 ? 'var(--amber)' : 'var(--red)';
+        return `<span title="${attrSafe(drift.reason)}" style="color:${col}">${drift.label}</span>`;
       })()}</div>
       <div class="sc" style="font-size:9px;font-family:'Share Tech Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)" title="${attrSafe(getSectorDisplay(s))}">${(()=>{
         const sec = getSectorDisplay(s);
@@ -2047,11 +2111,11 @@ function buildTable() {
           return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">${parseFloat(display).toFixed(0)}</span>`;
         }
         const cls = display==='EXECUTE_NOW'||display==='EXECUTE'?'p-exec':display==='EXECUTE_WITH_CAUTION'?'p-armed':display==='EXECUTE_DEFER'?'p-risk':'p-stand';
-        const lbl = display==='EXECUTE_NOW'?'NOW':display==='EXECUTE_WITH_CAUTION'?'CAUT':display==='EXECUTE_DEFER'?'DEFR':display==='EXECUTE'?'EXEC':'STOP';
+        const lbl = display==='EXECUTE_NOW'?'NOW':display==='EXECUTE_WITH_CAUTION'?'CAUT':display==='EXECUTE_DEFER'?'DEFR':display==='EXECUTE'?'EXEC':display==='NOT_EVALUATED'?'N/A':'OBS';
         return `<span class="pill ${cls}" style="font-size:7px;padding:2px 5px">${lbl}</span>`;
       })()}</div>
       <div class="sc" title="Current exact-contract bid / ask" style="font-size:9px;color:var(--cyan)">${s.current_contract_bid ?? 'MISSING'} / ${s.current_contract_ask ?? 'MISSING'}</div>
-      <div class="sc" style="font-size:8px;color:${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${s.quote_freshness || 'MISSING'}</div>
+      <div class="sc" title="${attrSafe(getMorningThesisDisplay(s).reason)}" style="font-size:8px;color:${getMorningThesisDisplay(s).valid?'var(--green)':'var(--amber)'}">${getMorningThesisDisplay(s).label}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_lifecycle || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_direction_relationship || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.interpreter_assessment_status || 'NOT_APPLICABLE'}</div>
@@ -2081,7 +2145,7 @@ function toggleQuick(key, btn) {
 function toggleAuditRows(btn) {
   showAuditRows = !showAuditRows;
   btn.classList.toggle('active', showAuditRows);
-  btn.textContent = showAuditRows ? 'Hide blocked' : 'Show blocked';
+  btn.textContent = showAuditRows ? 'All Opportunities' : 'Actionable Only';
   buildTable();
 }
 
@@ -2167,7 +2231,7 @@ function buildExportColumns() {
     ['EIL_Raw_Verdict', s => s['eil_raw_verdict'] || ''],
     ['EIL_Composite',   s => s['eil_composite_score'] || s['composite'] || ''],
     ['MV_Verdict',      s => s['mv__verdict'] || ''],
-    ['MV_Drift_Pct',    s => s['mv__drift_pct'] || ''],
+    ['MV_Drift_Pct',    s => getMorningDrift(s).value ?? ''],
     ['Verdict_Reason',  s => (s.sb_verdict_reason||'').replace(/,/g, ';')],
     ['Run_ID',          _ => RUN_DATA?.run_id || ''],
   ];
@@ -2300,7 +2364,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Transition</div><div class="mf-v a">${htmlSafe(s.validation_transition||'NOT RUN')}</div></div>
       <div class="m-field"><div class="mf-k">Evidence Cutoff</div><div class="mf-v sm">${htmlSafe(s.validation_evidence_cutoff_utc||'—')}</div></div>
       <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v c">${htmlSafe(s.validation_current_price||s['mv__current_price']||'—')}</div></div>
-      <div class="m-field"><div class="mf-k">Gap / Drift</div><div class="mf-v a">${htmlSafe(s.validation_gap_pct||s['mv__drift_pct']||'—')}%</div></div>
+      <div class="m-field"><div class="mf-k">Morning Drift</div><div class="mf-v a">${htmlSafe(getMorningDrift(s).label)}</div></div>
       <div class="m-field"><div class="mf-k">Profile State</div><div class="mf-v a">${htmlSafe(s.validation_profile_evidence_state||s.ms_profile_evidence_state||'NOT EVALUATED')}</div></div>
       <div class="m-field"><div class="mf-k">Data Status</div><div class="mf-v sm">${htmlSafe(s.validation_data_status||'—')}</div></div>
       <div class="m-field"><div class="mf-k">Execution Permission</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${htmlSafe(s.final_action||'—')}</div></div>
@@ -2354,6 +2418,10 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Macro Observation</div><div class="mf-v sm">${htmlSafe(s.macro_as_of_utc||'UNKNOWN')}</div></div>
       <div class="m-field"><div class="mf-k">Themes</div><div class="mf-v sm">${htmlSafe(s.macro_active_themes||'[]')}</div></div>
       <div class="m-field"><div class="mf-k">Event Guards</div><div class="mf-v sm">${htmlSafe(s.macro_event_guards||'[]')}</div></div>
+      <div class="m-field"><div class="mf-k">US Money Index</div><div class="mf-v a">${displayCategory(s.usmi_state||'UNAVAILABLE')}</div></div>
+      <div class="m-field"><div class="mf-k">USMI Alignment</div><div class="mf-v c">${displayCategory(s.usmi_sector_alignment||'UNAVAILABLE')} · ${htmlSafe(String(s.usmi_alignment_priority||'—'))}</div></div>
+      <div class="m-field"><div class="mf-k">USMI Evidence</div><div class="mf-v sm">${displayCategory(s.usmi_quality_status||'UNAVAILABLE')}</div></div>
+      <div class="m-field"><div class="mf-k">USMI Morning Scenario</div><div class="mf-v a">${displayCategory(s.usmi_scenario||'UNRESOLVED')}</div></div>
     </div>
     <div class="m-reason"><strong>Macro advisory:</strong> ${htmlSafe(s.macro_plain_language_advisory||'No current governed macro narrative is available.')}</div>
     <div class="meta-note">Macro is advisory only and cannot change direction, contract, lifecycle, final action, capital permission or position size. Packet ${htmlSafe(String(s.macro_packet_id||'UNAVAILABLE'))}.</div>
@@ -2396,7 +2464,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Morning Transition</div><div class="mf-v a">${displayCategory(s.morning_transition_state||'NOT RUN')}</div></div>
       <div class="m-field"><div class="mf-k">Distance to ATM</div><div class="mf-v">${Number.isFinite(parseFloat(s.atm_distance_sigma))?parseFloat(s.atm_distance_sigma).toFixed(2)+' sigma':'—'}</div></div>
       <div class="m-field"><div class="mf-k">Remaining Runway</div><div class="mf-v ${String(s.remaining_runway_state||'').includes('REALIZED')?'r':'a'}">${Number.isFinite(parseFloat(s.remaining_runway_pct))?parseFloat(s.remaining_runway_pct).toFixed(1)+'%':'—'} · ${displayCategory(s.remaining_runway_state||'NOT EVALUATED')}</div></div>
-      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v ${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${displayCategory(s.quote_freshness||'UNKNOWN')} ${s.quote_as_of?'· '+htmlSafe(s.quote_as_of):''}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Thesis Check</div><div class="mf-v ${getMorningThesisDisplay(s).valid?'g':'a'}">${getMorningThesisDisplay(s).label}<br><span class="dim">${htmlSafe(getMorningThesisDisplay(s).reason)}</span></div></div>
       <div class="m-field"><div class="mf-k">Canonical Quote Lineage</div><div class="mf-v sm">${htmlSafe(s.option_chain_provider||'MARKETDATA')} · ${htmlSafe(s.option_chain_resolution||s.live_options_resolution||'DIRECT')}<br><span class="dim">chain ${htmlSafe(String(s.option_chain_dataset_id||'unavailable').slice(0,16))} · exact ${htmlSafe(String(s.selected_quote_dataset_id||'unavailable').slice(0,16))}</span></div></div>
       <div class="m-field"><div class="mf-k">Contract Changed</div><div class="mf-v ${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'a':'g'}">${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'YES':'NO'}${s.contract_selection_reason?' · '+htmlSafe(s.contract_selection_reason):''}</div></div>
       <div class="m-field"><div class="mf-k">Maturation 1 / 2 / 3 Sessions</div><div class="mf-v sm">${s.maturation_score_1d??'—'} / ${s.maturation_score_2d??'—'} / ${s.maturation_score_3d??'—'} · monitoring estimate only — not a probability and cannot authorize entry</div></div>
@@ -2532,7 +2600,7 @@ function openModal(ticker) {
   // TAB 6: MORNING VALIDATION
   const mvVerdict  = s['mv__verdict'] || '';
   const mvPrice    = s['mv__current_price'] || '';
-  const mvDrift    = s['mv__drift_pct'] !== undefined ? parseFloat(s['mv__drift_pct']) : null;
+  const mvDrift    = getMorningDrift(s).value;
   const mvBid      = s['mv__bid'] || '';
   const mvAsk      = s['mv__ask'] || '';
   const mvSpread   = s['mv__spread_pct'] || '';
@@ -2569,7 +2637,7 @@ function openModal(ticker) {
     </div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Current Price</div><div class="mf-v a">${mvPrice ? '$' + parseFloat(mvPrice).toFixed(2) : '—'}</div></div>
-      <div class="m-field"><div class="mf-k">Drift %</div><div class="mf-v" style="color:${driftCol}">${mvDrift!==null ? (mvDrift>=0?'+':'')+mvDrift.toFixed(2)+'%' : '—'}</div></div>
+      <div class="m-field"><div class="mf-k">Drift %</div><div class="mf-v" style="color:${driftCol}">${getMorningDrift(s).label}</div></div>
       <div class="m-field"><div class="mf-k">Bid</div><div class="mf-v">${mvBid ? '$'+parseFloat(mvBid).toFixed(2) : '—'}</div></div>
       <div class="m-field"><div class="mf-k">Ask</div><div class="mf-v">${mvAsk ? '$'+parseFloat(mvAsk).toFixed(2) : '—'}</div></div>
       <div class="m-field"><div class="mf-k">Spread %</div><div class="mf-v ${parseFloat(mvSpread||0)>5?'r':''}">${mvSpread ? parseFloat(mvSpread).toFixed(2)+'%' : '—'}</div></div>
@@ -2605,20 +2673,60 @@ function openModal(ticker) {
     ` :
     '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No morning validation data for this signal. Run morning_validation.py to populate.</div>';
 
-  // TAB 7: EIL
+  // DOI-10: dynamic contract-family ranking.  This is evidence for the human
+  // trader and never changes the governed thesis or capital permission.
+  // An absent projection is different from a projection that ran but could
+  // not evaluate a family.  Preserve that distinction for the trader.
+  const doiState = s['doi_projection_state'] || 'DATA_UNAVAILABLE';
+  const doiReason = s['doi_projection_reason'] || 'DOI_NOT_RUN_OR_FIELDS_ABSENT';
+  const doiPreferred = s['doi_preferred_contract_symbol'] || '—';
+  const doiGoverned = s['doi_governed_contract_symbol'] || '—';
+  const doiAlignment = s['doi_contract_alignment'] || 'NOT_COMPARABLE';
+  const doiPct = key => {
+    const value = parseFloat(s[key]);
+    return Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : 'NOT EVALUATED';
+  };
+  let doiAlternatives = [];
+  try { doiAlternatives = JSON.parse(s['doi_alternatives_json'] || '[]'); } catch (_) { doiAlternatives = []; }
+  document.getElementById('mp-doi').innerHTML = `
+    <div class="m-sec-hdr" style="margin-top:0">Dynamic Options Intelligence — Advisory Contract Ranking</div>
+    <div class="m-reason" style="color:var(--amber);margin-bottom:14px">Human execution only. This ranking cannot change direction, invalidate the thesis, remove the opportunity, size the position, or grant capital.</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Projection State</div><div class="mf-v">${doiState.replace(/_/g,' ')}</div></div>
+      <div class="m-field"><div class="mf-k">Ranking Mode</div><div class="mf-v">${s['doi_ranking_mode'] || 'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">Governed Contract</div><div class="mf-v">${doiGoverned}</div></div>
+      <div class="m-field"><div class="mf-k">DOI Preferred Contract</div><div class="mf-v a">${doiPreferred}</div></div>
+      <div class="m-field"><div class="mf-k">Contract Alignment</div><div class="mf-v">${doiAlignment}</div></div>
+      <div class="m-field"><div class="mf-k">Executable in 3 Sessions</div><div class="mf-v">${doiPct('doi_p_liquidity_3d')}</div></div>
+      <div class="m-field"><div class="mf-k">Positive Return</div><div class="mf-v">${doiPct('doi_p_positive_return')}</div></div>
+      <div class="m-field"><div class="mf-k">Target Before Invalidation</div><div class="mf-v">${doiPct('doi_p_target_before_invalidation')}</div></div>
+      <div class="m-field"><div class="mf-k">Model Uncertainty</div><div class="mf-v">${doiPct('doi_model_uncertainty')}</div></div>
+      <div class="m-field"><div class="mf-k">Evidence Cutoff</div><div class="mf-v">${s['doi_evidence_cutoff_utc'] || 'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">Model</div><div class="mf-v">${s['doi_probability_model_id'] || 'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">Projection Version</div><div class="mf-v">${s['doi_projection_version'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Family ID</div><div class="mf-v">${s['doi_family_id'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Ranking ID</div><div class="mf-v">${s['doi_ranking_id'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Assessment ID</div><div class="mf-v">${s['doi_preferred_assessment_id'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Policy ID</div><div class="mf-v">${s['doi_policy_id'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Input Dataset IDs</div><div class="mf-v">${s['doi_input_dataset_ids_json'] || 'NOT AVAILABLE'}</div></div>
+      <div class="m-field"><div class="mf-k">Contract Identity</div><div class="mf-v">${s['doi_governed_contract_identity_state'] || 'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">Identity Reason</div><div class="mf-v">${s['doi_governed_contract_identity_reason'] || 'NOT EVALUATED'}</div></div>
+      <div class="m-field"><div class="mf-k">Authority</div><div class="mf-v a">${s['doi_authority'] || 'ADVISORY ONLY'}</div></div>
+    </div>
+    <div class="m-sec-hdr">Reason</div><div class="m-reason">${doiReason}</div>
+    <div class="m-sec-hdr">Ranked Contract Family</div>
+    <div class="m-reason">${doiAlternatives.length ? doiAlternatives.map(x => `#${x.rank} ${x.contract_symbol} — ${x.score ?? 'N/A'} (${x.score_kind || 'NO SCORE'})`).join('<br>') : 'No ranked alternatives available.'}</div>`;
+
+  // Legacy entry telemetry: advisory diagnostics, never an execution command.
   const eilV    = s['eil__raw_verdict'] || s['eil__verdict'] || '';
   const eilDisp = eilV && eilV !== 'ADVISORY_ONLY' ? eilV : (s['eil__verdict'] || '');
   const eilScore= parseFloat(s['eil__composite_score'] || s['eil__composite'] || '');
-  const eilAdv  = s['eil__advisory_only'] === 'True' || s['eil__advisory_only'] === 'true';
-  const eilColor= eilDisp==='EXECUTE_NOW'?'var(--green)':eilDisp==='EXECUTE_WITH_CAUTION'?'var(--cyan)':eilDisp==='EXECUTE_DEFER'?'var(--amber)':'var(--red)';
+  const eilAdv  = true; // Governed policy: EIL is telemetry and never trade authority.
+  const eilColor= eilDisp==='EXECUTE_NOW'?'var(--green)':eilDisp==='EXECUTE_WITH_CAUTION'?'var(--cyan)':'var(--amber)';
   const eilPill = eilDisp==='EXECUTE_NOW'?'p-exec':eilDisp==='EXECUTE_WITH_CAUTION'?'p-armed':eilDisp==='EXECUTE_DEFER'?'p-risk':'p-stand';
-  const eilInterpret = eilDisp==='EXECUTE_NOW'?'All five microstructure checks passed. Optimal entry conditions.':
-    eilDisp==='EXECUTE_WITH_CAUTION'?'Minor friction detected. Proceed with noted conditions — consider 70% size.':
-    eilDisp==='EXECUTE_DEFER'?'Microstructure unfavourable right now. Wait for conditions to improve before entering.':
-    eilDisp==='STAND_DOWN_MICROSTRUCTURE'?'One or more checks failed outright. Do not enter without documented override reason.':
-    'Advisory mode active — EIL scored but not blocking.';
+  const eilInterpret = 'Historical microstructure classification only. It does not validate the thesis, select a contract, size a position, remove an opportunity, or grant capital.';
   document.getElementById('mp-eil').innerHTML = eilScore || eilDisp ? `
-    <div class="m-sec-hdr" style="margin-top:0">Execution Intelligence Layer</div>
+    <div class="m-sec-hdr" style="margin-top:0">Legacy Entry Telemetry — Advisory Only</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:4px">
       ${eilDisp && eilDisp !== 'ADVISORY_ONLY' ? `<span class="pill ${eilPill}" style="font-size:12px;padding:5px 14px">${eilDisp.replace(/_/g,' ')}</span>` : '<span style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text2)">ADVISORY MODE</span>'}
       ${!isNaN(eilScore) ? `<span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--amber)">${eilScore.toFixed(1)} / 100</span>` : ''}
@@ -2634,7 +2742,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">OBI Score</div><div class="mf-v">${parseFloat(s['eil__obi_score']||0).toFixed(1)}</div></div>
       <div class="m-field"><div class="mf-k">POC Position</div><div class="mf-v">${s['eil__poc_position']||'—'}</div></div>
       <div class="m-field"><div class="mf-k">POC Proximity</div><div class="mf-v">${parseFloat(s['eil__poc_proximity_pct']||0).toFixed(2)}%</div></div>
-      <div class="m-field"><div class="mf-k">Size Multiplier</div><div class="mf-v ${parseFloat(s['eil__size_multiplier']||1)<1?'r':'g'}">${parseFloat(s['eil__size_multiplier']||1).toFixed(2)}×</div></div>
+      <div class="m-field"><div class="mf-k">Legacy Size Diagnostic (Non-authoritative)</div><div class="mf-v">${parseFloat(s['eil__size_multiplier']||1).toFixed(2)}×</div></div>
       <div class="m-field"><div class="mf-k">Advisory Only</div><div class="mf-v">${eilAdv?'YES':'NO'}</div></div>
     </div>
     ${s['eil__defer_reason']?`<div class="m-sec-hdr">Defer Reason</div><div class="m-reason" style="color:var(--amber)">${s['eil__defer_reason']}</div>`:''}
@@ -2723,7 +2831,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Mid</div><div class="mf-v">${msiNum(s.current_contract_mid)}</div></div>
       <div class="m-field"><div class="mf-k">Spread</div><div class="mf-v">${msiNum(s.current_contract_spread_pct,2,'%')}</div></div>
       <div class="m-field"><div class="mf-k">Bid / Ask Size</div><div class="mf-v">${msiVal(s.contract_bid_size)} / ${msiVal(s.contract_ask_size)}</div></div>
-      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v ${String(s.quote_freshness||'').toUpperCase()==='FRESH'?'g':'a'}">${msiVal(s.quote_freshness,'MISSING')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Thesis Check</div><div class="mf-v ${getMorningThesisDisplay(s).valid?'g':'a'}">${getMorningThesisDisplay(s).label}<br><span class="dim">${htmlSafe(getMorningThesisDisplay(s).reason)}</span></div></div>
       <div class="m-field"><div class="mf-k">Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.quote_timestamp_utc,'MISSING')}</div></div>
       <div class="m-field"><div class="mf-k">Comparison State</div><div class="mf-v a">${msiVal(s.comparison_status,'NOT_APPLICABLE')}</div></div>
     </div>
@@ -3038,6 +3146,10 @@ function renderMacroPage(m) {
     ['Sector Tilt', m.sector_tilt||'—'],
     ['VIX Contango', m.vix_contango!=null ? (parseFloat(m.vix_contango)*100).toFixed(2)+'%' : '—'],
     ['Macro Conviction', m.conviction_score||m.conviction||'—'],
+    ['US Money Index', m.usmi_state||'UNAVAILABLE'],
+    ['USMI Gamma Position', m.usmi_gamma_position||'UNAVAILABLE'],
+    ['USMI Quality', m.usmi_quality_status||'UNAVAILABLE'],
+    ['USMI Authority', m.usmi_authority||'ADVISORY_ONLY'],
   ];
   document.getElementById('macro-cards').innerHTML = cleanUiHtml(fields.map(([k,v]) =>
     `<div class="mc"><div class="mc-k">${k}</div><div class="mc-v">${v}</div></div>`
