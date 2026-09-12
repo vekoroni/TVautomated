@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Mapping
+import json
 
 import sys
 
@@ -25,7 +26,10 @@ from contracts.interpreter_handoff import (  # noqa: E402
     validate_handoff_manifest,
 )
 from canonical_data.bundle_freshness import derive_bundle_freshness  # noqa: E402
-from macro_context import MacroContext, load_macro_packet, missing_macro_context  # noqa: E402
+try:  # Support both package imports and direct script execution.
+    from .macro_context import MacroContext, load_macro_packet, missing_macro_context  # type: ignore
+except ImportError:  # pragma: no cover - direct CLI compatibility
+    from macro_context import MacroContext, load_macro_packet, missing_macro_context  # noqa: E402
 
 
 DEFAULT_RUNS_DIR = REPO_ROOT / "data" / "output" / "runs"
@@ -86,6 +90,18 @@ class ResolvedInterpreterEvidence:
     @property
     def current_validation(self) -> Mapping[str, Any]:
         return dict(self.bundle.get("current_validation") or {})
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedOpportunityEvidence:
+    """Non-executable full-book evidence for review and trajectory analysis."""
+    run_id: str
+    ticker: str
+    book_path: Path
+    book_row: Mapping[str, Any]
+    intended_use: IntendedUse
+    authority: str = "ADVISORY_ONLY"
+    provider_calls: int = 0
 
 
 def _text(value: Any) -> str:
@@ -187,15 +203,30 @@ def _refresh_requirement(
         for domain, state in freshness_map.items()
         if str(domain).lower() not in ADVISORY_FRESHNESS_DOMAINS
         and str(state).upper() not in allowed
+        and not (
+            str(domain) in {"exact_option_quote", "underlying_quote"}
+            and str(state).upper() == "STALE"
+        )
     ]
     if not stale_domains:
         return None
+    # A successfully validated Morning thesis remains valid for its governed
+    # 1-20 session holding horizon. Ordinary ageing of the option/underlying
+    # snapshots is ignored here: Morning Gate answers whether the thesis
+    # survived, while the captured prices remain timestamped evidence.
+    # Missing/invalid evidence still fails closed because it was never safely
+    # observed during validation.
+    blocking_domains = sorted(stale_domains)
     return {
         "request_type": "CDS_NARROW_REFRESH_REQUIRED",
         "run_id": bundle["run_id"],
         "ticker": bundle["ticker"],
         "selected_contract_symbol": bundle["selected_contract_symbol"],
         "domains": sorted(stale_domains),
+        "advisory_domains": [],
+        "blocking_domains": blocking_domains,
+        "disposition": "BLOCKING_EVIDENCE_REFRESH",
+        "trade_thesis_affected": False,
         "intended_use": intended_use.value,
         "provider_calls_made": 0,
     }
@@ -225,9 +256,9 @@ def resolve_interpreter_evidence(
         if morning not in {"PASS", "COMPLETED", "ACCEPTED"}:
             raise EvidenceResolutionError("MORNING_GATE_NOT_COMPLETED")
     refresh = _refresh_requirement(bundle, use)
-    if refresh and require_current:
+    if refresh and refresh.get("blocking_domains") and require_current:
         raise EvidenceResolutionError(
-            "EVIDENCE_REFRESH_REQUIRED", ",".join(refresh["domains"])
+            "EVIDENCE_REFRESH_REQUIRED", ",".join(refresh["blocking_domains"])
         )
     macro = missing_macro_context()
     macro_reference = bundle.get("macro_quant_packet")
@@ -246,6 +277,50 @@ def resolve_interpreter_evidence(
         intended_use=use,
         refresh_required=refresh,
     )
+
+
+def resolve_interpreter_opportunity(
+    ticker: str,
+    *,
+    run_id: str | None = None,
+    intended_use: IntendedUse | str = IntendedUse.EOD_REVIEW,
+    runs_dir: Path | str = DEFAULT_RUNS_DIR,
+) -> ResolvedOpportunityEvidence:
+    """Resolve any governed opportunity without pretending it is executable."""
+    symbol = _text(ticker).upper()
+    if not symbol:
+        raise EvidenceResolutionError("TICKER_REQUIRED")
+    use = intended_use if isinstance(intended_use, IntendedUse) else IntendedUse(str(intended_use).upper())
+    if use not in {IntendedUse.EOD_REVIEW, IntendedUse.TRAJECTORY}:
+        raise EvidenceResolutionError("FULL_BOOK_USE_NOT_ADVISORY", use.value)
+    root = Path(runs_dir)
+    candidates = [root / run_id] if run_id else sorted(
+        (path for path in root.iterdir() if path.is_dir() and path.name.lower() != "latest"),
+        key=lambda path: path.name, reverse=True,
+    )
+    for run_root in candidates:
+        rid = run_root.name
+        book = run_root / "intelligence_lab" / f"final_opportunity_book_{rid}.json"
+        if not book.is_file():
+            continue
+        try:
+            payload = json.loads(book.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise EvidenceResolutionError("FINAL_BOOK_INVALID", str(error)) from error
+        rows = payload.get("rows") if isinstance(payload, Mapping) else None
+        if not isinstance(rows, list) or payload.get("candidate_count") not in (None, len(rows)):
+            raise EvidenceResolutionError("FINAL_BOOK_RECONCILIATION_FAILED", rid)
+        matches = [dict(row) for row in rows if _text(row.get("ticker")).upper() == symbol]
+        if len(matches) > 1:
+            raise EvidenceResolutionError("FINAL_BOOK_TICKER_DUPLICATE", symbol)
+        if matches:
+            row = matches[0]
+            if _text(row.get("run_id")) != rid:
+                raise EvidenceResolutionError("FINAL_BOOK_RUN_ID_MISMATCH", rid)
+            return ResolvedOpportunityEvidence(rid, symbol, book, row, use)
+        if run_id:
+            break
+    raise EvidenceResolutionError("TICKER_NOT_IN_FULL_OPPORTUNITY_BOOK", symbol)
 
 
 def handoff_status(
@@ -268,7 +343,8 @@ def handoff_status(
 
 __all__ = [
     "ADVISORY_FRESHNESS_DOMAINS", "DEFAULT_RUNS_DIR", "EvidenceResolutionError", "IntendedUse",
-    "ResolvedInterpreterEvidence", "ResolvedInterpreterRun", "handoff_status",
-    "resolve_interpreter_evidence", "resolve_interpreter_run",
+    "ResolvedInterpreterEvidence", "ResolvedInterpreterRun", "ResolvedOpportunityEvidence",
+    "handoff_status", "resolve_interpreter_evidence", "resolve_interpreter_opportunity",
+    "resolve_interpreter_run",
 ]
 
