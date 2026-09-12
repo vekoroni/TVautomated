@@ -298,7 +298,9 @@ def _is_eligible(row: dict[str, Any]) -> tuple[bool, str]:
         # FIX-09: In EOD/advisory mode Kelly has no live options pricing — NO_TRADE is a
         # data-gap artefact, not a genuine no-edge signal. PSE has already sized down.
         # Only apply the Kelly gate in live mode with real options data.
-        _is_advisory = _b(row, "eil_advisory_only", False)
+        # EIL is governed advisory telemetry. Missing legacy disclosure must
+        # fail to advisory, never re-arm EIL as a trade-book gate.
+        _is_advisory = _b(row, "eil_advisory_only", True)
         _is_eod = _s(row, "data_source").upper() in ("EOD_PACKAGE", "EOD", "VANGUARD", "BACKFILL") \
                   or _s(row, "eil_data_mode").upper() in ("EOD_SYNTHETIC", "EOD_FALLBACK")
         if _is_advisory or _is_eod:

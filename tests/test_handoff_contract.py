@@ -86,11 +86,12 @@ def test_merge_preserves_stronger_packet_fields() -> None:
     assert weak.get("state_v2") == "STATE_A"
 
 
-def test_sovereign_blocked_gate_marks_packet_blocked() -> None:
+def test_eil_blocked_gate_is_advisory() -> None:
     pkt = HandoffTruthPacket(run_id="R1", ticker="AAPL")
     pkt.apply_sovereign_gate("EIL_BLOCKED", "BLOCKED", "test block", "EIL")
-    assert pkt.finalise().packet_status == "BLOCKED"
-    assert pkt.errors
+    assert pkt.finalise().packet_status == "PARTIAL"
+    assert not pkt.errors
+    assert "EIL_BLOCKED" in " ".join(pkt.warnings)
 
 
 def test_validate_required_returns_missing_fields() -> None:
@@ -119,7 +120,7 @@ def test_build_packet_from_sample_candidate_row() -> None:
     assert flat["eil_v3_verdict"] == "PASS"
 
 
-def test_eil_blocked_plus_go_is_blocked_or_degraded() -> None:
+def test_eil_blocked_plus_go_is_retained_as_advisory() -> None:
     row = {
         "run_id": "R1",
         "ticker": "AAPL",
@@ -127,8 +128,9 @@ def test_eil_blocked_plus_go_is_blocked_or_degraded() -> None:
         "thesis_decision": "GO",
     }
     pkt = build_truth_packet_from_row(row, "EIL", PRIORITY_EIL_PSE, run_id="R1", run_mode="EVENING")
-    assert pkt.packet_status == "BLOCKED"
-    assert "EIL_BLOCKED" in " ".join(pkt.errors)
+    assert pkt.packet_status == "PARTIAL"
+    assert not pkt.errors
+    assert "EIL_ADVISORY_BLOCKED" in " ".join(pkt.warnings)
 
 
 def test_final_csv_writer_includes_truth_packet_status_fields() -> None:

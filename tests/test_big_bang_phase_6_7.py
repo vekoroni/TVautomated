@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import sys
 import tempfile
@@ -26,6 +27,11 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
         writer = csv.DictWriter(fh, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def _make_run(root: Path, run_id: str, include_eil: bool = True) -> Path:
@@ -58,7 +64,7 @@ def test_manifest_and_resolver() -> None:
     with tempfile.TemporaryDirectory() as td:
         runs = Path(td)
         run_id = "20990101_000000"
-        _make_run(runs, run_id, include_eil=True)
+        run_dir = _make_run(runs, run_id, include_eil=True)
         manifest = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
         assert manifest["phase_status"]["eil"] == "PASS"
         assert manifest["phase_status"]["morning_validation"] == "PENDING"
@@ -66,6 +72,97 @@ def test_manifest_and_resolver() -> None:
         assert manifest["v5_colab_decommissioned"] is True
         assert "v5" not in manifest["missing_columns"]
         assert "v5" not in manifest["required_columns_present"]
+        assert manifest["worker3_market_environment"]["status"] == "MISSING"
+        assert manifest["worker3_macro_ticker_context"]["status"] == "MISSING"
+        assert manifest["fatal_flags"] == []
+        assert manifest["next_action"] == "NEEDS_MORNING_VALIDATION"
+
+        packet_path = run_dir / "interpreter" / "interpreter_macro_context.json"
+        _write_json(packet_path, {
+            "schema_version": "interpreter_macro_context_v1",
+            "packet_id": "MACRO:fixture",
+            "session_date": "2099-01-01",
+            "authority_statement": "MACRO_ADVISORY_ONLY",
+        })
+        (run_dir / "run_meta.json").write_text(json.dumps({
+            "dynamic_plan": {"last_completed_session": "2099-01-01"}
+        }), encoding="utf-8")
+        with_worker3 = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
+        assert with_worker3["worker3_market_environment"]["status"] == "AVAILABLE"
+        assert with_worker3["worker3_market_environment"]["packet_sha256"]
+        assert with_worker3["worker3_market_environment"]["trading_authority"] is False
+
+        packet_sha256 = hashlib.sha256(packet_path.read_bytes()).hexdigest()
+        lab_book_path = (
+            run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json"
+        )
+        _write_json(lab_book_path, {
+            "lab_schema_version": "lab_signal_book_v2",
+            "run_id": run_id,
+            "candidate_count": 1,
+            "rows": [{"ticker": "AAA"}],
+        })
+        lab_book_sha256 = hashlib.sha256(lab_book_path.read_bytes()).hexdigest()
+        context_path = run_dir / "interpreter" / "macro_ticker_context_manifest.json"
+        _write_json(
+            context_path,
+            {
+                "schema_version": "worker3_macro_ticker_context_manifest_v1",
+                "context_contract": "macro_ticker_context_v1",
+                "run_id": run_id,
+                "session_date": "2099-01-01",
+                "authority": "ADVISORY_ONLY",
+                "trading_authority": False,
+                "source_packet_sha256": packet_sha256,
+                "lab_book_sha256": lab_book_sha256,
+                "diagnostics": {
+                    "macro_ticker_context_requested": 1,
+                    "macro_ticker_context_available": 1,
+                    "macro_ticker_context_partial": 0,
+                    "macro_ticker_context_stale": 0,
+                    "macro_ticker_context_conflicting": 0,
+                    "macro_ticker_context_unmapped": 0,
+                    "macro_ticker_context_invalid": 0,
+                    "macro_ticker_context_bytes_total": 1024,
+                    "macro_ticker_context_omitted_items_total": 0,
+                    "macro_ticker_context_exact_ticker": 1,
+                    "macro_ticker_context_sector_only": 0,
+                    "macro_ticker_context_applicability_unmapped": 0,
+                    "macro_ticker_context_reconciled": True,
+                },
+            },
+        )
+        with_context = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
+        self_context = with_context["worker3_macro_ticker_context"]
+        assert self_context["status"] == "AVAILABLE"
+        assert self_context["contract_version"] == "macro_ticker_context_v1"
+        assert self_context["diagnostics"]["macro_ticker_context_requested"] == 1
+        assert self_context["trading_authority"] is False
+
+        context_payload = json.loads(context_path.read_text(encoding="utf-8"))
+        context_payload["lab_book_sha256"] = "0" * 64
+        _write_json(context_path, context_payload)
+        wrong_lab_hash = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
+        assert wrong_lab_hash["worker3_macro_ticker_context"]["status"] == "INVALID"
+        assert "Lab hash differs" in wrong_lab_hash["worker3_macro_ticker_context"]["error"]
+
+        context_payload["lab_book_sha256"] = lab_book_sha256
+        context_payload["diagnostics"].update({
+            "macro_ticker_context_available": -1,
+            "macro_ticker_context_partial": 2,
+            "macro_ticker_context_bytes_total": -1,
+        })
+        _write_json(context_path, context_payload)
+        negative_counts = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
+        assert negative_counts["worker3_macro_ticker_context"]["status"] == "INVALID"
+        assert "cannot be negative" in negative_counts["worker3_macro_ticker_context"]["error"]
+
+        context_payload["diagnostics"].update({
+            "macro_ticker_context_available": 1,
+            "macro_ticker_context_partial": 0,
+            "macro_ticker_context_bytes_total": 1024,
+        })
+        _write_json(context_path, context_payload)
 
         live_manifest = build_final_run_manifest(run_id, runs, pipeline_mode="LIVE")
         assert "LIVE_VALIDATION_MISSING" in live_manifest["fatal_flags"]
@@ -73,15 +170,16 @@ def test_manifest_and_resolver() -> None:
         missing_run = "20990101_000001"
         _make_run(runs, missing_run, include_eil=False)
         missing_manifest = build_final_run_manifest(missing_run, runs)
-        assert "EIL_OUTPUT_MISSING_OR_INVALID" in missing_manifest["fatal_flags"]
-        assert missing_manifest["run_tradeable"] is False
+        assert "EIL_ADVISORY_OUTPUT_MISSING_OR_INVALID" in missing_manifest["stale_flags"]
+        assert "EIL_OUTPUT_MISSING_OR_INVALID" not in missing_manifest["fatal_flags"]
 
         blocked = resolve_lab_tradeability(
             {"ticker": "AAA", "eil_v3_verdict": "BLOCKED", "thesis_decision": "GO"},
             manifest,
         )
-        assert blocked["lab_verdict"] == "BLOCKED"
-        assert blocked["conflict_state"] == "HARD_CONFLICT"
+        assert blocked["lab_verdict"] == "MORNING_VALIDATION_REQUIRED"
+        assert blocked["conflict_state"] != "HARD_CONFLICT"
+        assert "EIL_ADVISORY_BLOCKED" in blocked["advisory_flags"]
 
         sb_conflict = resolve_lab_tradeability(
             {"ticker": "AAA", "sb_final_verdict": "EXECUTE", "options_verdict": "STAND_DOWN"},
@@ -180,7 +278,9 @@ def test_opportunity_book_and_learning_feedback() -> None:
             "macro_regime_label": "RISK_ON",
             "legacy_column": "must_survive_in_payload",
         }
-        book = write_final_opportunity_book(run_id, [signal], manifest, runs)
+        book = write_final_opportunity_book(
+            run_id, [signal], manifest, runs, sync_interpreter=False
+        )
         assert Path(book["csv_path"]).exists()
         assert Path(book["json_path"]).exists()
         assert all(field in book["rows"][0] for field in FINAL_BOOK_FIELDS)

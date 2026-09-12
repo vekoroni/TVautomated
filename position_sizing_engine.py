@@ -281,25 +281,7 @@ def _macro_conviction(row: dict) -> float:
 
 
 def _binding_eil_block_reason(row: dict) -> str:
-    eil_token = _s(row.get("eil_v3_verdict", "")).upper()
-    if eil_token != "BLOCKED":
-        return ""
-    if not _is_false(row.get("eil_advisory_only", True)):
-        return ""
-
-    liquidity_failed = _is_false(row.get("eil_liquidity_passed"))
-    defer_reason = _s(row.get("eil_defer_reason") or row.get("eil_block_reason")).upper()
-    hard_reason = any(
-        token in defer_reason
-        for token in (
-            "NO_EXECUTABLE_MARKET",
-            "LIQUIDITY_GATE_FAILED",
-            "NO EXECUTABLE MARKET",
-            "LIQUIDITY GATE FAILED",
-        )
-    )
-    if liquidity_failed or hard_reason:
-        return "FATAL_EIL_BINDING_LIQUIDITY"
+    """Retained compatibility hook: governed EIL is never a sizing gate."""
     return ""
 
 
@@ -377,47 +359,13 @@ def _mp_multiplier(row: dict) -> tuple[float, bool, str]:
 
 
 def _eil_multiplier(row: dict) -> float:
+    """Return the neutral multiplier: EIL is display telemetry only.
+
+    The PSE is retired, but keeping this replay path neutral prevents a missing
+    column or historical EIL verdict from silently re-acquiring capital or
+    opportunity-suppression authority.
     """
-    Convert EIL verdict to a size penalty.
-    EIL is ADVISORY — it adjusts size, never blocks.
-
-    Blocked/failed EIL = 0.60x (EOD mode) (not 0.0x).
-    Unavailable EIL    = 0.70x (unknown is not fatal, but we're cautious).
-    """
-    eil_token    = _s(row.get("eil_v3_verdict", "")).upper()
-    eil_score    = _safe(row.get("eil_composite_score"), 0.0)
-    eil_size     = _safe(row.get("eil_size_multiplier"), 1.0)
-    eil_advisory = row.get("eil_advisory_only", True)
-
-    # EIL not run or unavailable
-    if not eil_token:
-        return 0.70
-
-    _TOKEN_MULT = {
-        "EXECUTE":                   1.00,
-        "HIGH_CONVICTION":           1.00,
-        "EXECUTE_NOW":               1.00,
-        "EXECUTE_WITH_CAUTION":      0.65,
-        "EXECUTE_DEFER":             0.45,
-        "WATCHLIST":                 0.45,
-        "BLOCKED":                   0.60,  # EOD data absence — not a structural block
-        "STAND_DOWN_MICROSTRUCTURE": 0.60,  # Active microstructure warning — cautious not fatal
-    }
-    # DESIGN NOTE (v1.1.0): BLOCKED raised from 0.30 → 0.60.
-    # In EOD/evening mode EIL BLOCKED = synthetic data unavailable, not active
-    # tape deterioration. 0.30× crushed structurally valid CONTINUATION signals
-    # below MIN_EXEC before V2 edge quality was assessed. 0.60× = "cautious entry"
-    # which is correct for EOD. Revisit if live intraday tape shows systematic
-    # abuse of the BLOCKED path for genuinely deteriorating setups.
-
-    token_mult = _TOKEN_MULT.get(eil_token, 0.60)
-
-    # Blend with score-based mult for smoother signal
-    # eil_size from the engine's own _dynamic_size() is informative
-    score_mult = max(0.30, min(1.00, eil_score / 100.0))
-    blended    = (token_mult * 0.60) + (score_mult * 0.40)
-
-    return round(max(0.30, min(1.00, blended)), 4)
+    return 1.0
 
 
 def _options_multiplier(row: dict) -> float:

@@ -31,7 +31,6 @@ PRIORITY_INFERRED = 40
 PRIORITY_FALLBACK = 10
 
 SOVEREIGN_GATES = {
-    "EIL_BLOCKED",
     "PSE_FATAL_BLOCK",
     "EXECUTION_INVALID",
     "MACRO_CONFLICTED",
@@ -532,8 +531,10 @@ class HandoffTruthPacket:
         pse_mode = str(row.get("pse_execution_mode") or "").upper()
         live_validated = str(row.get("is_live_execution_validated") or "").upper() in {"TRUE", "1", "YES"}
 
-        if eil == "BLOCKED" and thesis in {"GO", "EXECUTE", "FULL_EXECUTE"}:
-            self.apply_sovereign_gate("EIL_BLOCKED", "BLOCKED", "EIL BLOCKED cannot become GO", source)
+        if eil in {"BLOCKED", "BLOCK"}:
+            # DOI authority contract: EIL is preserved as evidence but may not
+            # invalidate or suppress the governed ticker thesis.
+            self.warnings.append("EIL_ADVISORY_BLOCKED: retained for human review")
         if pse_mode == "FATAL_BLOCK" and exec_mode in {"FULL_EXECUTE", "REDUCED_EXECUTE", "LIVE_EXECUTE"}:
             self.apply_sovereign_gate("PSE_FATAL_BLOCK", "FATAL_BLOCK", "PSE FATAL_BLOCK cannot execute", source)
         if exec_mode == "FULL_EXECUTE" and trigger in {"", "NONE", "NAN", "UNKNOWN", "MISSING"}:
