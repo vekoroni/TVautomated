@@ -1,0 +1,11 @@
+stage,work_package,design_control,primary_code_targets,mandatory_test_target,status
+0,Governance,"FINAL v1.2 design plus corrected algorithm/developer requirements and import graph","docs/AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md;docs/requirements/AVS-REQ-FIX-002_Annex_A_algorithms_and_models.md;docs/requirements/AVS-REQ-FIX-002_developer_requirements.md;tools/avs_fix_002_stage0.py","tests/test_avs_fix_002_stage0.py",PASS
+0,Recovery,"SQLite backup integrity and isolated restoration","tools/avs_fix_002_stage0.py","tests/test_avs_fix_002_stage0.py::test_sqlite_snapshot_is_integral_and_restorable",PASS
+0,Test harness,"Governed collection and production runtime","pytest.ini;tools/run_governed_pytest.py","complete governed suite",PASS_WITH_BASELINE_DEFECTS
+1,WP0,"ProviderSessionFinality and run-condition truth","domain/provider_finality.py;domain/run_planning.py;canonical_data/option_chain_store.py;canonical_data/dynamic_options_bridge.py;morning_gate.py","tests/test_avs_fix_002_provider_finality.py plus integration tests",IN_PROGRESS_DOMAIN_CONTRACT_VERIFIED
+2,WP1_WP7A,"Trading-session units and evidence capture","layer3_forward_variance.py;decision/outcome contracts","unit/property and append-only persistence tests",PLANNED
+3,WP2,"MarketRateObservation and deterministic economics","canonical_data;contracts;DOI valuation services","rate/payoff/exact-contract recomputation tests",PLANNED
+4,WP3,"Independent contract/execution/activity states","dynamic options domain;Morning refresh adapters","transition/adversarial/population reconciliation tests",PLANNED
+5,WP5_WP6,"Capacity macro context and Lab v4","macro projection;contracts/lab_control.py;intelligence-lab","metamorphic/lineage/parity tests",PLANNED
+6,WP4_WP7B,"Outcome maturation and calibrated learning","decision outcome services;probability models","leakage/skill/discrimination/lift tests",PLANNED
+7,WP8,"Release and operational acceptance","governed release profile and manifests","full regression;replay;1 controlled + 5 normal cycles",PLANNED

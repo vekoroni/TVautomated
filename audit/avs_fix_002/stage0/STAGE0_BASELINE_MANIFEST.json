@@ -1,0 +1,1433 @@
+{
+  "release_id": "AVS-FIX-002",
+  "stage": "STAGE_0",
+  "generated_at_utc": "2026-09-12T12:23:57.548228+00:00",
+  "git_head": "cfa1a254459adb5150865cdbb36b6f5ba4c5beae",
+  "git_branch": "avs-fix-001",
+  "git_status_lines": [
+    "?? .claude/settings.local.json",
+    "?? audit/worker3_current_state_canary/ATTEMPT_2_REPORT.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_3_REPORT.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_4_OFFLINE_FIX.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_4_REPORT.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_5_REPORT.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_6_REPORT.md",
+    "?? audit/worker3_current_state_canary/ATTEMPT_7_REPORT.md",
+    "?? audit/worker3_current_state_canary/CONFIGURATION_FOLLOWUP.md",
+    "?? audit/worker3_current_state_canary/EVIDENCE_COVERAGE_REPORT.md",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_1_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_2_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_3_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_4_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_5_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_6_LATCH.json",
+    "?? audit/worker3_current_state_canary/LIVE_ATTEMPT_LATCH.json",
+    "?? audit/worker3_current_state_canary/PRODUCTION_PROMOTION_REPORT.md",
+    "?? audit/worker3_current_state_canary/REPORT.md",
+    "?? audit/worker3_current_state_canary/STRUCTURED_OUTPUT_REPORT.md",
+    "?? audit/worker3_current_state_canary/TIMEOUT_SOLUTION.md",
+    "?? audit/worker3_current_state_canary/artifact_hashes.json",
+    "?? audit/worker3_current_state_canary/attempt_2_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_2_preservation.json",
+    "?? audit/worker3_current_state_canary/attempt_2_summary.json",
+    "?? audit/worker3_current_state_canary/attempt_3_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_3_partial_response_analysis.json",
+    "?? audit/worker3_current_state_canary/attempt_3_preflight.json",
+    "?? audit/worker3_current_state_canary/attempt_3_preservation.json",
+    "?? audit/worker3_current_state_canary/attempt_3_prompt_fix_source_hashes.json",
+    "?? audit/worker3_current_state_canary/attempt_3_summary.json",
+    "?? audit/worker3_current_state_canary/attempt_4_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_4_numeric_diagnosis.json",
+    "?? audit/worker3_current_state_canary/attempt_4_preservation_before.json",
+    "?? audit/worker3_current_state_canary/attempt_4_slot_diagnosis.json",
+    "?? audit/worker3_current_state_canary/attempt_4_summary.json",
+    "?? audit/worker3_current_state_canary/attempt_4_validation_analysis.json",
+    "?? audit/worker3_current_state_canary/attempt_5_all_render_failures.json",
+    "?? audit/worker3_current_state_canary/attempt_5_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_5_preservation_before.json",
+    "?? audit/worker3_current_state_canary/attempt_5_summary.json",
+    "?? audit/worker3_current_state_canary/attempt_5_validation_analysis.json",
+    "?? audit/worker3_current_state_canary/attempt_6_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_6_preservation_before.json",
+    "?? audit/worker3_current_state_canary/attempt_6_summary.json",
+    "?? audit/worker3_current_state_canary/attempt_7_authorization.json",
+    "?? audit/worker3_current_state_canary/attempt_7_preservation_before.json",
+    "?? audit/worker3_current_state_canary/attempt_7_summary.json",
+    "?? audit/worker3_current_state_canary/authentication_rca.json",
+    "?? audit/worker3_current_state_canary/baseline_dirty_hashes.json",
+    "?? audit/worker3_current_state_canary/browser_batch5_promotion.json",
+    "?? audit/worker3_current_state_canary/changed_source_hashes.json",
+    "?? audit/worker3_current_state_canary/evidence_coverage_diagnostic.json",
+    "?? audit/worker3_current_state_canary/evidence_coverage_diagnostic_payload.json",
+    "?? audit/worker3_current_state_canary/evidence_coverage_verification.json",
+    "?? audit/worker3_current_state_canary/intake.json",
+    "?? audit/worker3_current_state_canary/integration_tests.json",
+    "?? audit/worker3_current_state_canary/live.json",
+    "?? audit/worker3_current_state_canary/live_attempt_2.json",
+    "?? audit/worker3_current_state_canary/live_attempt_3.json",
+    "?? audit/worker3_current_state_canary/live_attempt_4.json",
+    "?? audit/worker3_current_state_canary/live_attempt_5.json",
+    "?? audit/worker3_current_state_canary/live_attempt_6.json",
+    "?? audit/worker3_current_state_canary/live_attempt_7.json",
+    "?? audit/worker3_current_state_canary/offline.json",
+    "?? audit/worker3_current_state_canary/original_tests.json",
+    "?? audit/worker3_current_state_canary/preservation.json",
+    "?? audit/worker3_current_state_canary/production_promotion_manifest.json",
+    "?? audit/worker3_current_state_canary/production_release_before.json",
+    "?? audit/worker3_current_state_canary/production_release_before_batch5.json",
+    "?? audit/worker3_current_state_canary/production_release_candidate.json",
+    "?? audit/worker3_current_state_canary/protected_after.json",
+    "?? audit/worker3_current_state_canary/protected_before.json",
+    "?? audit/worker3_current_state_canary/structured_output_offline.json",
+    "?? audit/worker3_current_state_canary/structured_output_verification.json",
+    "?? audit/worker3_current_state_canary/summary.json",
+    "?? audit/worker3_current_state_canary/timeout_solution_source_hashes.json",
+    "?? docs/AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md",
+    "?? pipeline_interpreter/.claude/settings.local.json",
+    "?? tools/avs_fix_002_stage0.py"
+  ],
+  "design": {
+    "path": "docs/AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md",
+    "sha256": "561bae0d44cdd7bf4ced5a1f907154ca8c43825d7551da6feb205465b6fac53f",
+    "status": "FINAL v1.2"
+  },
+  "requirements": [
+    {
+      "path": "docs/requirements/AVS-REQ-FIX-002_Annex_A_algorithms_and_models.md",
+      "sha256": "68cc2898a5901289b4961dd2a64437e5a6cfff4f914a9b484b26fba9af6db0a1",
+      "status": "FINAL v1.2"
+    },
+    {
+      "path": "docs/requirements/AVS-REQ-FIX-002_developer_requirements.md",
+      "sha256": "8f4667a861bab21be51d0f549304969614c8cab3c3cce51f5bc778c999549a9c",
+      "status": "FINAL v1.2"
+    }
+  ],
+  "missing_requirements": [],
+  "import_graph": {
+    "entrypoints": [
+      "intelligent_orchestrator.py",
+      "morning_gate.py",
+      "scripts/avshunter_options_intelligence.py",
+      "intelligence-lab/intelligence_lab.py",
+      "pipeline_interpreter/pipeline_interpreter.py",
+      "worker3/integration/runner.py"
+    ],
+    "node_count": 138,
+    "edge_count": 356,
+    "nodes": [
+      {
+        "path": "anthropic_runtime_config.py",
+        "sha256": "a14a259976f98a59d33b729c7862a64aecb27baf7a484512adfa4685d69610fb",
+        "tracked": true
+      },
+      {
+        "path": "avshunter_trade_journal.py",
+        "sha256": "5def1282162f0902ec84d78eda743e126f4b28b4970623f170eae766f4adcf38",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/__init__.py",
+        "sha256": "806ad0dce5106690cd9e7b06b4f18b8f7ba9a596a20089443a0ae9d79360898c",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/bundle_freshness.py",
+        "sha256": "998b79dbf4d1588be25136b19f27fb803935971c526f8f15f5c739ea1704bd54",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/contract_reference.py",
+        "sha256": "dbb3eded30bd3a521f30b403dee928a030b288f6d87d20019251dfd45dced994",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/contracts.py",
+        "sha256": "eeee71c910acbc5930f90944839c6bf4d2df98181d02322724c8cbcb5178ec57",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/decision_outcome_ledger.py",
+        "sha256": "f0bf32e47a4d5996249cdfde8761efe9332472523a8e38049e771f31c87fff60",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_bridge.py",
+        "sha256": "a88cacdf93b804c4f824f878d8157526222b8e3374365e75b2d24ca96429d05f",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_family.py",
+        "sha256": "15ed89d99ed5665e5f36fc9485a5119e4efcb6e57282a0bf8503ced5b60a0812",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_lifecycle.py",
+        "sha256": "1d45eae388658d93b6fbd99656ad7e4979e78c0f811e3453622e10d517154464",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_probability.py",
+        "sha256": "01daa6bb6887069b0fdbe6f3b60ba104ceb351ac70f33e595929051265c388e8",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_production.py",
+        "sha256": "63b2bcb49ce335f07cf1c817e131a6b7f3dfc9c355efdc273b099a8b17d19b80",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_projection.py",
+        "sha256": "78ddc87c71348cea622956bad2e412d6f1f102cffade4d810d92cd4ba1886538",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_ranking.py",
+        "sha256": "8f31351bd4ec338d5112f3d149d19822098e14da4fc19529bdf186e7cce6787b",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/dynamic_options_valuation.py",
+        "sha256": "b350e5dfffef32e328a32aa738bf923f866061eac119b7111757952c86c68c56",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/errors.py",
+        "sha256": "b74f23b97b34223626f0f1c0bd09758003fb32515d1c62a1a91ff1fadd9cc64e",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/feature_flags.py",
+        "sha256": "ffd2fa93b45f0a50bdbd4ca2ee03f25a85769b7d44136342afae0913285a9b39",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/historical_prices.py",
+        "sha256": "f6b2c65d417e7a30b5286029b4cd23b6021ddf5b3a14f5722d05b279d9a02f5b",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/history_bridge.py",
+        "sha256": "3eba08b0b07b921418a2b06d19cccbe7e38bc110fc984606ba6f55d9877c44c1",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/option_identity.py",
+        "sha256": "6f07c23f6d2cef22cac81417f45634394bb30281fe69cceb709054644516e8a8",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/option_liquidity_lifecycle.py",
+        "sha256": "10801e13b617cff3196d91a204f933e29b9be1e27f44c9b67a8307f149abee3a",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/outcome_maturation.py",
+        "sha256": "f732f13f2a7451dcfec96911b860d5db9e77f2ac402898f845cc7a86d8bb6c3d",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/registry.py",
+        "sha256": "6f3dae5e0e1f2e558bdf1b498f081e836b640d3923aee729e9b266c6ddd5868e",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/run_plan.py",
+        "sha256": "3605b8f635671955bff9dd5f7fdbe58939b135609cb06748e20731b6cf56ef30",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/run_plan_store.py",
+        "sha256": "ca2e81f6caae38d52364ca291b10b325151f4ce562fd0dd4f6daedf030cb5cc0",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/session_clock.py",
+        "sha256": "34e1cb9523cb893a23c1274b0080ba6a68e195aaa99826f23d472082e071f078",
+        "tracked": true
+      },
+      {
+        "path": "canonical_data/storage.py",
+        "sha256": "251eae0013c29dd5d2d7056d4c8576741eafd0e290ce9471ba12f1056cec8f1a",
+        "tracked": true
+      },
+      {
+        "path": "catalyst_truth_engine.py",
+        "sha256": "3f36cd216321d819a7b4ea06b0103eff5edba2d26430dd119684e42ef9bbc052",
+        "tracked": true
+      },
+      {
+        "path": "contracts/bond_macro_contract.py",
+        "sha256": "8ec280ea2865b0db0364ef1d464a6822ab009222bf0b82b751649c2889cd5a3f",
+        "tracked": true
+      },
+      {
+        "path": "contracts/contract_rejection.py",
+        "sha256": "6862e1548ca771725beb663c813ddb983aa5b9cd05ab7aafd97f86f6d24fb631",
+        "tracked": true
+      },
+      {
+        "path": "contracts/core_authority_policy.py",
+        "sha256": "25966f6e5a5c67797d027e0a07e8931a87e2b2ff33ef6ec702072e5a1aedfd80",
+        "tracked": true
+      },
+      {
+        "path": "contracts/direction_governance.py",
+        "sha256": "1d3db900aefcc472120a0dd9219f4a01285d96aa346717b997c197b0bb5f23cd",
+        "tracked": true
+      },
+      {
+        "path": "contracts/dynamic_options_policy.py",
+        "sha256": "b9572dda6aef5ddb51993e93be874c53ce65ef11bae736a73a20cdafd4b5e76d",
+        "tracked": true
+      },
+      {
+        "path": "contracts/dynamic_session_contract.py",
+        "sha256": "d63b1d090159022bfd0f2424110ca7f671f7b5463e5f99ebdcded778d9b7f2b4",
+        "tracked": true
+      },
+      {
+        "path": "contracts/governed_states.py",
+        "sha256": "438218bb324b170420aecd70274ea4d0dc449890079cfbc5834b36bedff91e8a",
+        "tracked": true
+      },
+      {
+        "path": "contracts/handoff_contract.py",
+        "sha256": "aacf47d3198165a9b9be7dc112514739e7050872f5d221bb3ddea79fc05f2c24",
+        "tracked": true
+      },
+      {
+        "path": "contracts/interpreter_handoff.py",
+        "sha256": "dd56352f742e8395bbe1b2aef35d7120432ab76a2a1e38e07a30bec9cfe276f7",
+        "tracked": true
+      },
+      {
+        "path": "contracts/interpreter_handoff_materializer.py",
+        "sha256": "7ec84d4effbdc1f825ce4569c9d59016fe918b156ad6b4fec3fffca7e4dd4153",
+        "tracked": true
+      },
+      {
+        "path": "contracts/interpreter_macro_context.py",
+        "sha256": "d094cb783db81b33a7e0089c829506c3c1b77c81bbb4bc059ca3344ac684bc92",
+        "tracked": true
+      },
+      {
+        "path": "contracts/lab_control.py",
+        "sha256": "e7f9e8d42aeee57b24fba0218114a8b43fa4adf5de399311c9d4dcb572d36927",
+        "tracked": true
+      },
+      {
+        "path": "contracts/lab_evidence_overlay.py",
+        "sha256": "69b2c0cfae5d3c30c1f896c57db842b4fe9b24dcc303eb516ca07e1a4f5f1c00",
+        "tracked": true
+      },
+      {
+        "path": "contracts/long_option_policy.py",
+        "sha256": "53ace99078e9fa1b479869a8a56e5e8452c2c1ae1191ba8cac529036ee50a8c3",
+        "tracked": true
+      },
+      {
+        "path": "contracts/macro_enrichment_delta.py",
+        "sha256": "241b4f7e33b77bd97dfaba26667bb7530b3a70f7a0e5519ed75f7dd03f889d88",
+        "tracked": true
+      },
+      {
+        "path": "contracts/macro_regime_safety.py",
+        "sha256": "1384867157a0498495f2f5f597e974ff9ea9b11e4f0e9d89de1a9ba3debcb929",
+        "tracked": true
+      },
+      {
+        "path": "contracts/opportunity_tier.py",
+        "sha256": "ce4419990fbb98ef0b7a28e6bc7d281010f9832b6b1b78b9efbcb3e56038f354",
+        "tracked": true
+      },
+      {
+        "path": "contracts/options_liquidity_execution_guard.py",
+        "sha256": "fd290ddb5f7cc4a410ffaf21d9e589c24fd2aa649596c725d94e70fa63501102",
+        "tracked": true
+      },
+      {
+        "path": "contracts/options_liquidity_lifecycle.py",
+        "sha256": "84ae4bb3aafd08332bdb8c4f24ad0e7871f16ccffa03cdfed2e1c221ca6eb641",
+        "tracked": true
+      },
+      {
+        "path": "contracts/quote_change_evidence.py",
+        "sha256": "206f2acb714d5f3d37dd01b1153cda38c170a93ffa6ff201556d5b5c15f1fc0d",
+        "tracked": true
+      },
+      {
+        "path": "contracts/selected_contract_economics.py",
+        "sha256": "ae29df4f76b7a5b816576b9a778fa57b412ad3126b88d0fd03103809dc402c38",
+        "tracked": true
+      },
+      {
+        "path": "contracts/thesis_geometry.py",
+        "sha256": "6f05549be207a888cbf95e09f604d0e6da6a661bd4454a1c09d2446de7451112",
+        "tracked": true
+      },
+      {
+        "path": "contracts/us_money_index_contract.py",
+        "sha256": "b8098383ad159487f01146f8e4d23b579d73a48a674379517ff9499b48415ca9",
+        "tracked": true
+      },
+      {
+        "path": "domain/contract_family_generation.py",
+        "sha256": "0bfe488d854f9a2479cece5931cc7c8a02985acde7af6205b0288a1363c668a7",
+        "tracked": true
+      },
+      {
+        "path": "domain/decision_outcome.py",
+        "sha256": "1bc541443cc6781346629c1a413336ad6b10e3bafc4c2fdc773309882647a293",
+        "tracked": true
+      },
+      {
+        "path": "domain/deterministic_option_valuation.py",
+        "sha256": "f06fa4a9318ca7a40b0c6595fc7d74cc21bb235d8669af962d8937602795677f",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_intelligence.py",
+        "sha256": "a25ebdf353cfaf15d237da090f67827411883fb56956e1a53f0c74800fde6570",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_lifecycle.py",
+        "sha256": "aea6f76a4dfabf19f1cfbbb0fc2967ce98fd9152a643d3e52c28a01fa07d8a7b",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_outcomes.py",
+        "sha256": "3ff7009a775f8ba8b69ff12cb23a89999309771197086af0a4755d13d57e1cfe",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_probability.py",
+        "sha256": "b1efd625c72b996911c2b725d9182b24f32af87509a674fcad4cdfd3bb51abd7",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_projection.py",
+        "sha256": "e1dba36863490b0a30bf7af89ae1bac37308faa4de41e11a3320d33802a0eccc",
+        "tracked": true
+      },
+      {
+        "path": "domain/dynamic_options_ranking.py",
+        "sha256": "e85baff908c9580c45b04c481402132c68985f8c7d8aa6e359b90c2b1fb00b83",
+        "tracked": true
+      },
+      {
+        "path": "domain/execution_authority.py",
+        "sha256": "f73d9034307fb634210b2ef4ac0843f299f49a671a4a51081f7d8494d51e52b9",
+        "tracked": true
+      },
+      {
+        "path": "domain/long_option_execution.py",
+        "sha256": "9ccf16152fde14f57aded295d513decdcd0c814701beaff770a33bcf49279b29",
+        "tracked": true
+      },
+      {
+        "path": "domain/market_evidence.py",
+        "sha256": "b69871dd9a086588cd04761f22a0782658d1ec7d2c7374b7daa9c4fc563936ce",
+        "tracked": true
+      },
+      {
+        "path": "domain/market_structure_evidence.py",
+        "sha256": "f5b24e6f0b868f832d1fae93bf8c1bc98af92c74e14edeb040a805e2c8fa1478",
+        "tracked": true
+      },
+      {
+        "path": "domain/option_contract_liquidity.py",
+        "sha256": "9a70c7c1d672d90cc3de627dbdf70136bc4cee80e810a3bd6a05cb38bdf50b6f",
+        "tracked": true
+      },
+      {
+        "path": "domain/option_liquidity_execution_guard.py",
+        "sha256": "1df04c0e266bbb187620d3871d1ca51cd60d3e520a3a794b1f8cdb5b751518fe",
+        "tracked": true
+      },
+      {
+        "path": "domain/run_planning.py",
+        "sha256": "d00c5f445455118e632b87800e9da5d012b2b3407e7d21a7856924b616b5e99d",
+        "tracked": true
+      },
+      {
+        "path": "domain/session_authority.py",
+        "sha256": "fda35f65402713fba06bf45bd4ac4ab7cb73056547e513939d4cbba19946a105",
+        "tracked": true
+      },
+      {
+        "path": "domain/thesis_direction.py",
+        "sha256": "4b4a6b1d42d9ec54e9a4cfde17625b9e20765b7d9c2a166ded652a863ee040a6",
+        "tracked": true
+      },
+      {
+        "path": "dropoff_audit.py",
+        "sha256": "505d9e1410811e4fd88cb8aab657f5811fc863196cd0f8a01f09820a01fef02a",
+        "tracked": true
+      },
+      {
+        "path": "earnings_calendar_enricher.py",
+        "sha256": "21005cbe17ab21ea326935dbbe9c9a4aaf0438b57bbe16eb186b9e123343f48e",
+        "tracked": true
+      },
+      {
+        "path": "eod_candidate_engine.py",
+        "sha256": "ffd5aed82aca28ea66b29875885c4fefe9deecf161726fadf8f9b057f45993fd",
+        "tracked": true
+      },
+      {
+        "path": "execution_gate.py",
+        "sha256": "419829bdda0f81a0da617474e04418ecf0b918003132bc2b6bf90c3d6d587047",
+        "tracked": true
+      },
+      {
+        "path": "execution_schema.py",
+        "sha256": "a984f8ad8493c84568ad77906b45289d4731c6ee010ba40ed16c1fea5916e80b",
+        "tracked": true
+      },
+      {
+        "path": "handoff_contract_audit.py",
+        "sha256": "1ae9b0aa9fb594b31bf1af9a3cd1be7ed44971435dfdf3fa49150a51f176a353",
+        "tracked": true
+      },
+      {
+        "path": "intelligence-lab/intelligence_lab.py",
+        "sha256": "40c1b17253cfd0caef246d064f855317eb9ca24428adf58f4c0322807098d4c3",
+        "tracked": true
+      },
+      {
+        "path": "intelligent_orchestrator.py",
+        "sha256": "811531e038e6350f188dffaccc89b08e247c4c0c307f189c240fe121e178d35a",
+        "tracked": true
+      },
+      {
+        "path": "iv_engine.py",
+        "sha256": "d7fb1b3128feaf9d7912e0cb53af4f6617c41b640b3c6109f98eeff0866dfc1b",
+        "tracked": true
+      },
+      {
+        "path": "macro_domain/us_money_index.py",
+        "sha256": "efb1fdc089b082cc9c3cdca85fa4525f6de713b5df030f11838bb79785b36cf0",
+        "tracked": true
+      },
+      {
+        "path": "market_context_diagnostics.py",
+        "sha256": "d1d2e8996315b72ea9878ef4463813cff27dc884deba16504e554ddb1593bdfe",
+        "tracked": true
+      },
+      {
+        "path": "market_structure/__init__.py",
+        "sha256": "529f4dc1c5c9dfcc03568760158efb45f69f90f3f619f24419b13c1d7f66ff91",
+        "tracked": true
+      },
+      {
+        "path": "market_structure/lifecycle.py",
+        "sha256": "e88009006e6c39f6958eae4d99799d86e100ccae2ec12edb1396a63b6057d0d1",
+        "tracked": true
+      },
+      {
+        "path": "market_structure/params.py",
+        "sha256": "9a6ab8b7b59da1a27b444e45d7f9d48ce923d70574757f649730bdb2d6005f92",
+        "tracked": true
+      },
+      {
+        "path": "market_structure/profile.py",
+        "sha256": "f65e5f17be226f4ab6b3a7a6fbe5334984e83572d1f0f53835b9568ada31627e",
+        "tracked": true
+      },
+      {
+        "path": "market_structure/service.py",
+        "sha256": "5fadf142a6a1e601d4818adb4dc92844bf611766eeaa2c3193fd841c98dfd8c8",
+        "tracked": true
+      },
+      {
+        "path": "mcmillan_advisory_layer.py",
+        "sha256": "c8e43cf28fb97ba96cf9488ecc11b5344fd33073880c94c93ef87e7d7e082c75",
+        "tracked": true
+      },
+      {
+        "path": "morning_gate.py",
+        "sha256": "dd79af2de48fa91e8fa5ccc63ec6d30911bbb567c37fe2892a54c712355f41ec",
+        "tracked": true
+      },
+      {
+        "path": "morning_handoff_finalizer.py",
+        "sha256": "e8014a0ec48fde35a26e26f289fd1958261285600328fc790badb23a24cf889e",
+        "tracked": true
+      },
+      {
+        "path": "msi_runtime.py",
+        "sha256": "09518afb472fc381ea579dca72228ef78e8bf65b246e7e2cdab7063fedaf1cba",
+        "tracked": true
+      },
+      {
+        "path": "orchestrator/dynamic_dispatcher.py",
+        "sha256": "c960c6e5b88d44cabb6ce8f257485663a6d4ad632516d6dfe6099bc0f7094f26",
+        "tracked": true
+      },
+      {
+        "path": "orchestrator/dynamic_thesis.py",
+        "sha256": "b4fd5b74b91b397ed9b1cdf4f11b8bc214c38fc5f7ae773119186c068fa77197",
+        "tracked": true
+      },
+      {
+        "path": "orchestrator/dynamic_validation.py",
+        "sha256": "26e2e2065b13ceeaf2341c329b11ffeebd1895298eacc8d0b06c55d3d01f4951",
+        "tracked": true
+      },
+      {
+        "path": "orchestrator/session_authority_adapter.py",
+        "sha256": "eb2f8cd6b0d4f2300e320806c3c431d817cedd99ea6c2ac259a9fda20cbb5dc8",
+        "tracked": true
+      },
+      {
+        "path": "outcome_capture.py",
+        "sha256": "6015931e506677cba7302130c587b0de48f0f529ca6234730b2f08f6a8a13519",
+        "tracked": true
+      },
+      {
+        "path": "pipeline_interpreter/ma_inputs_sync.py",
+        "sha256": "7965fe98a54305221654db1831074a0b21a1cb3e7575111ac64b87e69e5709ac",
+        "tracked": true
+      },
+      {
+        "path": "pipeline_interpreter/pipeline_interpreter.py",
+        "sha256": "78e57ca54dae62a3add7222646935eebcdf59fe93615ec49125958f9f8f390c2",
+        "tracked": true
+      },
+      {
+        "path": "scripts/avshunter_options_intelligence.py",
+        "sha256": "63172dce4798cb2e99ee692d3b30545fc24f2cbe8feb881616439385fe051f82",
+        "tracked": true
+      },
+      {
+        "path": "scripts/compute_greeks_bs.py",
+        "sha256": "f72d3c05f47fc45a790214f84d017813e524f539cab9c70f38d46725db75d877",
+        "tracked": true
+      },
+      {
+        "path": "scripts/macro_quant_packet.py",
+        "sha256": "b2b94dcc34c799115ee53e53b36b9e2ee52d04c245657de4f4217dc7f51c3976",
+        "tracked": true
+      },
+      {
+        "path": "tools/msi_production_readiness.py",
+        "sha256": "a8a24d83e7a4fe33883fc47745548cd4756ca63b27273fc0feb2e9463a5982fc",
+        "tracked": true
+      },
+      {
+        "path": "tools/msi_reconcile.py",
+        "sha256": "55c37efd71cf669c9d1e6ac8b00cb36531d105986f9c72d9b4dff4c965a93ba6",
+        "tracked": true
+      },
+      {
+        "path": "trade_book_builder.py",
+        "sha256": "4d8b5075c82274809b7d39f41fce586d17531ecd461f5d8810410324549725d3",
+        "tracked": true
+      },
+      {
+        "path": "trigger_layer.py",
+        "sha256": "b22886f5621808061b5e7712b042ed98de43e9e8469acc262897ae8a45021b28",
+        "tracked": true
+      },
+      {
+        "path": "uat_audit_report.py",
+        "sha256": "a8b1e4693e62084c264e1ef244dfc1992aec899c2d4371cca87a7e61f1df35e6",
+        "tracked": true
+      },
+      {
+        "path": "vanguard/ev3_stage0.py",
+        "sha256": "d6eb31ac59ed1cb443b014d9c17959a0267ce1911f2415d47f48c8879c5a7af1",
+        "tracked": true
+      },
+      {
+        "path": "vanguard/ev_engine_v3.py",
+        "sha256": "cd92902a8dc76479d5f75a79ecd69ac32ddb9178261c9cfb952215c756d42c8e",
+        "tracked": true
+      },
+      {
+        "path": "vanguard/physics_state_engine.py",
+        "sha256": "20d5d2c969ee4ed56738edc98c0251f3106684971c065b7720b84f7709737757",
+        "tracked": true
+      },
+      {
+        "path": "vanguard/trade_contract.py",
+        "sha256": "ef4db68d746e3f40e3b198540858c49f34aa1a971c793e53f127b0936664ee34",
+        "tracked": true
+      },
+      {
+        "path": "weekly_intelligence_report.py",
+        "sha256": "7b08bf8ff260b3f005469739d8e7516b082a7b11a67adeb9911818d146d79feb",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/anthropic_http.py",
+        "sha256": "43c1f640ea6f51562e7a30f5be343f77f545b75c8462381cabe62e78c277369e",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/artifacts.py",
+        "sha256": "e31f7c417f9bd82073bc11be4d17a09a7b789ca0d3949870f081824cfe51c30b",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/bound_output.py",
+        "sha256": "55cb6710b3d13a8b4aae197791bd119fb0dfce9ebd778afc849fd819d6735815",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/claude.py",
+        "sha256": "7281f1c91591fc0b1c88f6b575064d5ce7799a19376bf0205b25a1d259a2510f",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/claude_v2.py",
+        "sha256": "cc4b734c76c05c8f385a9fb245d1cc1f87d33cf3fde926a11acde76aa4fe0e5b",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/jobs.py",
+        "sha256": "3dde5feed1f612a8a32d7f5abb5a6c957b657d10f646429cc1d6d4ac06b471a5",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/lab_reports.py",
+        "sha256": "3a71deb55ab580f4cf0c84b9ab7d9c8dcd5fde46719110da8a0aa321a6ad7c0f",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/native.py",
+        "sha256": "3f18ef960b4ede849c671f4c41b783d293581e9d7c56ba677fe504530bf2f009",
+        "tracked": true
+      },
+      {
+        "path": "worker3/adapters/workflow.py",
+        "sha256": "e27a79be158ce2fce40346a56bb41674771ad74c681eaa028f9e5cd98742ae99",
+        "tracked": true
+      },
+      {
+        "path": "worker3/application.py",
+        "sha256": "ac776db36cc545bdce4c812f48aa1d9324f9d5c703fdc6614698804c0b944187",
+        "tracked": true
+      },
+      {
+        "path": "worker3/context.py",
+        "sha256": "052a067436f68c2550a9af77c5f80660d056c1e05cbbd44c8a42e6d2ea873fbe",
+        "tracked": true
+      },
+      {
+        "path": "worker3/domain.py",
+        "sha256": "ec4042cfae46c49889ec618e44d53bac9e39984a76281c5d402bb86d16d0a9d8",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/activation.py",
+        "sha256": "621274a7ce6264deb21bdb62efa742e4dd98def68b2db5847b1cbe8612f97d9a",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/avshunter_source.py",
+        "sha256": "07ebd921e387a18a540319ccba5215ac8470e26a119c50ac2f091026e4dfba27",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/batch_pages.py",
+        "sha256": "2f8333f502e91ef81f4c1ddc6eec10e0d4e8dfbb3191506402c34dec8c3dbd4e",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/browser_launch.py",
+        "sha256": "7c6238f6e7b3390a8dc30b44eff791a796dbc57858023bec2ca70adcac729dc6",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/coordinator.py",
+        "sha256": "0307fc2f96332462c97c9a6372f1cb785781cd669f7a2f20987ede63f7bc3fda",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/current_canary.py",
+        "sha256": "14f4f6c67911b778f5f87c52a4d3d7f68dd52b0498256f73fb87dbde9952939d",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/lab_mount.py",
+        "sha256": "b35439ab3c31c7a92aaa0382fd747afcb79147f6d4b7ebd6f43e7407ba45def0",
+        "tracked": true
+      },
+      {
+        "path": "worker3/integration/runner.py",
+        "sha256": "20ccf667e7f2f3365dea9c4d1b2ce0227892e492d621efd518bf8def0dac8b04",
+        "tracked": true
+      },
+      {
+        "path": "worker3/macro_ticker_context.py",
+        "sha256": "5aa256341f3176ff623911c37488b1b161d3d3d35ac52494d2f7cce6ca811755",
+        "tracked": true
+      },
+      {
+        "path": "worker3/market_environment.py",
+        "sha256": "6c1efacdcd72b02653fc0cb97e42d69bd2fea1fb2e5ef094f10b49c86e4ebe3c",
+        "tracked": true
+      },
+      {
+        "path": "worker3/narrative.py",
+        "sha256": "fd26620fe0420a1ab459a6677b4a7bfb6376d2740dc6b6c0f0a7caff8c3a520f",
+        "tracked": true
+      },
+      {
+        "path": "worker3/refresh.py",
+        "sha256": "cec6c3d3a0065b1c1b3e896fc27561eb6bbd68f8f91934d730520af782d8807b",
+        "tracked": true
+      },
+      {
+        "path": "worker3/report_detail.py",
+        "sha256": "f78a6b940e6c1d4712e1d682fc057cf8933b8463d4021f8ca4295777a2743477",
+        "tracked": true
+      },
+      {
+        "path": "worker3/report_html.py",
+        "sha256": "70f85d2f65923b91f92d776d82885e188c8d16ddf740a488d4d36e32cf46ef42",
+        "tracked": true
+      },
+      {
+        "path": "worker3/scenarios.py",
+        "sha256": "fab964e74c3decbba29b204a274765309b1183f4f51bf625601ef275b5f4ec44",
+        "tracked": true
+      },
+      {
+        "path": "worker3/semantic.py",
+        "sha256": "58da344e4585de5add38e13ae9a436523ffd5c03967c086057e46549a0c18415",
+        "tracked": true
+      },
+      {
+        "path": "worker3/v2/assessment.py",
+        "sha256": "e3188285e9cbfdff8536f1735beed28e1dc65e8bd3d5b08b9d92e7285b1115e0",
+        "tracked": true
+      }
+    ],
+    "edges": {
+      "worker3/integration/runner.py": [
+        "worker3/adapters/jobs.py",
+        "worker3/domain.py",
+        "worker3/integration/avshunter_source.py",
+        "worker3/integration/coordinator.py"
+      ],
+      "worker3/domain.py": [],
+      "worker3/integration/coordinator.py": [
+        "worker3/adapters/claude_v2.py",
+        "worker3/adapters/jobs.py",
+        "worker3/application.py",
+        "worker3/domain.py",
+        "worker3/integration/avshunter_source.py",
+        "worker3/v2/assessment.py"
+      ],
+      "worker3/adapters/jobs.py": [
+        "worker3/domain.py"
+      ],
+      "worker3/adapters/claude_v2.py": [
+        "worker3/adapters/bound_output.py",
+        "worker3/adapters/claude.py",
+        "worker3/domain.py",
+        "worker3/report_detail.py",
+        "worker3/v2/assessment.py"
+      ],
+      "worker3/adapters/claude.py": [
+        "worker3/application.py",
+        "worker3/domain.py"
+      ],
+      "worker3/application.py": [
+        "worker3/domain.py"
+      ],
+      "worker3/report_detail.py": [],
+      "worker3/adapters/bound_output.py": [],
+      "worker3/v2/assessment.py": [
+        "worker3/application.py",
+        "worker3/domain.py",
+        "worker3/narrative.py",
+        "worker3/refresh.py",
+        "worker3/scenarios.py"
+      ],
+      "worker3/scenarios.py": [
+        "worker3/domain.py"
+      ],
+      "worker3/narrative.py": [
+        "worker3/application.py",
+        "worker3/domain.py"
+      ],
+      "worker3/refresh.py": [
+        "worker3/application.py",
+        "worker3/domain.py"
+      ],
+      "worker3/integration/avshunter_source.py": [
+        "contracts/interpreter_handoff.py",
+        "worker3/adapters/artifacts.py",
+        "worker3/adapters/native.py",
+        "worker3/application.py",
+        "worker3/domain.py",
+        "worker3/macro_ticker_context.py",
+        "worker3/market_environment.py"
+      ],
+      "contracts/interpreter_handoff.py": [],
+      "worker3/market_environment.py": [
+        "worker3/domain.py"
+      ],
+      "worker3/adapters/native.py": [
+        "worker3/adapters/artifacts.py",
+        "worker3/application.py",
+        "worker3/domain.py"
+      ],
+      "worker3/adapters/artifacts.py": [
+        "worker3/application.py",
+        "worker3/context.py",
+        "worker3/domain.py"
+      ],
+      "worker3/context.py": [
+        "worker3/domain.py"
+      ],
+      "worker3/macro_ticker_context.py": [
+        "worker3/domain.py",
+        "worker3/market_environment.py"
+      ],
+      "pipeline_interpreter/pipeline_interpreter.py": [],
+      "intelligence-lab/intelligence_lab.py": [
+        "avshunter_trade_journal.py",
+        "canonical_data/decision_outcome_ledger.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/interpreter_handoff.py",
+        "contracts/lab_control.py",
+        "contracts/lab_evidence_overlay.py",
+        "domain/dynamic_options_projection.py",
+        "msi_runtime.py",
+        "outcome_capture.py",
+        "vanguard/trade_contract.py",
+        "worker3/domain.py",
+        "worker3/integration/browser_launch.py",
+        "worker3/integration/lab_mount.py"
+      ],
+      "contracts/lab_control.py": [
+        "canonical_data/dynamic_options_projection.py",
+        "contracts/direction_governance.py",
+        "contracts/dynamic_options_policy.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/long_option_policy.py",
+        "contracts/opportunity_tier.py",
+        "contracts/options_liquidity_execution_guard.py",
+        "contracts/selected_contract_economics.py",
+        "domain/execution_authority.py"
+      ],
+      "domain/execution_authority.py": [],
+      "canonical_data/dynamic_options_projection.py": [
+        "domain/dynamic_options_projection.py"
+      ],
+      "domain/dynamic_options_projection.py": [
+        "contracts/lab_evidence_overlay.py"
+      ],
+      "contracts/lab_evidence_overlay.py": [],
+      "contracts/dynamic_options_policy.py": [],
+      "contracts/direction_governance.py": [
+        "domain/thesis_direction.py"
+      ],
+      "domain/thesis_direction.py": [],
+      "contracts/long_option_policy.py": [
+        "domain/long_option_execution.py"
+      ],
+      "domain/long_option_execution.py": [],
+      "contracts/selected_contract_economics.py": [
+        "canonical_data/session_clock.py",
+        "contracts/long_option_policy.py",
+        "scripts/compute_greeks_bs.py"
+      ],
+      "scripts/compute_greeks_bs.py": [],
+      "canonical_data/session_clock.py": [],
+      "contracts/dynamic_session_contract.py": [],
+      "contracts/options_liquidity_execution_guard.py": [
+        "domain/option_liquidity_execution_guard.py"
+      ],
+      "domain/option_liquidity_execution_guard.py": [],
+      "contracts/opportunity_tier.py": [],
+      "canonical_data/decision_outcome_ledger.py": [
+        "domain/decision_outcome.py"
+      ],
+      "domain/decision_outcome.py": [],
+      "avshunter_trade_journal.py": [
+        "canonical_data/decision_outcome_ledger.py",
+        "contracts/dynamic_session_contract.py"
+      ],
+      "outcome_capture.py": [
+        "avshunter_trade_journal.py"
+      ],
+      "msi_runtime.py": [],
+      "vanguard/trade_contract.py": [],
+      "worker3/integration/browser_launch.py": [
+        "worker3/adapters/anthropic_http.py",
+        "worker3/adapters/claude_v2.py",
+        "worker3/adapters/jobs.py",
+        "worker3/adapters/lab_reports.py",
+        "worker3/domain.py",
+        "worker3/integration/activation.py",
+        "worker3/integration/avshunter_source.py",
+        "worker3/integration/batch_pages.py",
+        "worker3/integration/coordinator.py",
+        "worker3/integration/current_canary.py",
+        "worker3/report_detail.py"
+      ],
+      "worker3/integration/current_canary.py": [
+        "anthropic_runtime_config.py",
+        "worker3/adapters/anthropic_http.py",
+        "worker3/adapters/claude_v2.py",
+        "worker3/adapters/jobs.py",
+        "worker3/adapters/lab_reports.py",
+        "worker3/domain.py",
+        "worker3/integration/activation.py",
+        "worker3/integration/avshunter_source.py",
+        "worker3/integration/coordinator.py",
+        "worker3/integration/lab_mount.py",
+        "worker3/v2/assessment.py"
+      ],
+      "anthropic_runtime_config.py": [],
+      "worker3/adapters/lab_reports.py": [
+        "worker3/domain.py",
+        "worker3/report_detail.py",
+        "worker3/report_html.py",
+        "worker3/semantic.py",
+        "worker3/v2/assessment.py"
+      ],
+      "worker3/report_html.py": [
+        "worker3/report_detail.py"
+      ],
+      "worker3/semantic.py": [
+        "worker3/domain.py",
+        "worker3/v2/assessment.py"
+      ],
+      "worker3/adapters/anthropic_http.py": [
+        "anthropic_runtime_config.py",
+        "worker3/application.py",
+        "worker3/domain.py"
+      ],
+      "worker3/integration/activation.py": [
+        "worker3/adapters/claude_v2.py",
+        "worker3/adapters/jobs.py",
+        "worker3/adapters/lab_reports.py",
+        "worker3/adapters/workflow.py",
+        "worker3/application.py",
+        "worker3/domain.py",
+        "worker3/integration/coordinator.py",
+        "worker3/semantic.py"
+      ],
+      "worker3/adapters/workflow.py": [
+        "worker3/application.py",
+        "worker3/domain.py",
+        "worker3/semantic.py"
+      ],
+      "worker3/integration/lab_mount.py": [
+        "worker3/adapters/lab_reports.py",
+        "worker3/domain.py",
+        "worker3/integration/activation.py"
+      ],
+      "worker3/integration/batch_pages.py": [
+        "worker3/adapters/lab_reports.py",
+        "worker3/domain.py",
+        "worker3/report_html.py"
+      ],
+      "scripts/avshunter_options_intelligence.py": [
+        "canonical_data/__init__.py",
+        "canonical_data/contract_reference.py",
+        "canonical_data/history_bridge.py",
+        "contracts/contract_rejection.py",
+        "contracts/direction_governance.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/governed_states.py",
+        "contracts/long_option_policy.py",
+        "contracts/macro_enrichment_delta.py",
+        "contracts/options_liquidity_lifecycle.py",
+        "contracts/thesis_geometry.py",
+        "iv_engine.py",
+        "msi_runtime.py",
+        "scripts/macro_quant_packet.py"
+      ],
+      "scripts/macro_quant_packet.py": [],
+      "contracts/thesis_geometry.py": [
+        "contracts/governed_states.py"
+      ],
+      "contracts/governed_states.py": [],
+      "iv_engine.py": [],
+      "contracts/options_liquidity_lifecycle.py": [
+        "domain/option_contract_liquidity.py"
+      ],
+      "domain/option_contract_liquidity.py": [
+        "domain/long_option_execution.py"
+      ],
+      "canonical_data/history_bridge.py": [
+        "canonical_data/feature_flags.py",
+        "canonical_data/historical_prices.py"
+      ],
+      "canonical_data/historical_prices.py": [
+        "canonical_data/errors.py"
+      ],
+      "canonical_data/errors.py": [],
+      "canonical_data/feature_flags.py": [],
+      "canonical_data/contract_reference.py": [
+        "canonical_data/option_identity.py"
+      ],
+      "canonical_data/option_identity.py": [],
+      "canonical_data/__init__.py": [
+        "canonical_data/__init__.py",
+        "domain/contract_family_generation.py",
+        "domain/deterministic_option_valuation.py",
+        "domain/dynamic_options_intelligence.py",
+        "domain/dynamic_options_lifecycle.py",
+        "domain/dynamic_options_outcomes.py",
+        "domain/dynamic_options_probability.py",
+        "domain/dynamic_options_ranking.py"
+      ],
+      "domain/dynamic_options_ranking.py": [
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "domain/dynamic_options_intelligence.py": [],
+      "domain/contract_family_generation.py": [
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "domain/dynamic_options_outcomes.py": [
+        "domain/decision_outcome.py",
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "domain/dynamic_options_probability.py": [
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "domain/dynamic_options_lifecycle.py": [
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "domain/deterministic_option_valuation.py": [
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "contracts/macro_enrichment_delta.py": [],
+      "contracts/contract_rejection.py": [],
+      "morning_gate.py": [
+        "canonical_data/__init__.py",
+        "canonical_data/feature_flags.py",
+        "contracts/core_authority_policy.py",
+        "contracts/direction_governance.py",
+        "contracts/governed_states.py",
+        "contracts/long_option_policy.py",
+        "contracts/options_liquidity_lifecycle.py",
+        "contracts/selected_contract_economics.py",
+        "domain/execution_authority.py",
+        "domain/market_structure_evidence.py",
+        "earnings_calendar_enricher.py",
+        "market_structure/__init__.py",
+        "market_structure/service.py",
+        "morning_handoff_finalizer.py",
+        "msi_runtime.py",
+        "vanguard/ev_engine_v3.py"
+      ],
+      "market_structure/__init__.py": [
+        "market_structure/__init__.py"
+      ],
+      "contracts/core_authority_policy.py": [],
+      "earnings_calendar_enricher.py": [],
+      "market_structure/service.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/registry.py",
+        "canonical_data/storage.py",
+        "domain/market_structure_evidence.py",
+        "market_structure/lifecycle.py",
+        "market_structure/params.py",
+        "market_structure/profile.py"
+      ],
+      "market_structure/lifecycle.py": [
+        "domain/market_structure_evidence.py",
+        "market_structure/params.py"
+      ],
+      "domain/market_structure_evidence.py": [],
+      "market_structure/params.py": [],
+      "canonical_data/contracts.py": [
+        "canonical_data/errors.py",
+        "domain/market_evidence.py"
+      ],
+      "domain/market_evidence.py": [],
+      "canonical_data/registry.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/errors.py",
+        "domain/market_evidence.py"
+      ],
+      "market_structure/profile.py": [
+        "market_structure/params.py"
+      ],
+      "canonical_data/storage.py": [
+        "canonical_data/errors.py"
+      ],
+      "vanguard/ev_engine_v3.py": [
+        "vanguard/ev3_stage0.py"
+      ],
+      "vanguard/ev3_stage0.py": [],
+      "morning_handoff_finalizer.py": [
+        "canonical_data/decision_outcome_ledger.py",
+        "contracts/direction_governance.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/interpreter_handoff_materializer.py",
+        "contracts/interpreter_macro_context.py",
+        "contracts/lab_control.py",
+        "contracts/options_liquidity_execution_guard.py",
+        "execution_gate.py",
+        "msi_runtime.py",
+        "orchestrator/dynamic_validation.py",
+        "pipeline_interpreter/ma_inputs_sync.py",
+        "tools/msi_production_readiness.py",
+        "tools/msi_reconcile.py"
+      ],
+      "pipeline_interpreter/ma_inputs_sync.py": [],
+      "contracts/interpreter_macro_context.py": [
+        "contracts/us_money_index_contract.py",
+        "macro_domain/us_money_index.py"
+      ],
+      "macro_domain/us_money_index.py": [],
+      "contracts/us_money_index_contract.py": [],
+      "execution_gate.py": [
+        "contracts/direction_governance.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/long_option_policy.py",
+        "contracts/options_liquidity_execution_guard.py",
+        "contracts/selected_contract_economics.py",
+        "domain/execution_authority.py"
+      ],
+      "contracts/interpreter_handoff_materializer.py": [
+        "canonical_data/bundle_freshness.py",
+        "contracts/interpreter_handoff.py",
+        "contracts/quote_change_evidence.py"
+      ],
+      "canonical_data/bundle_freshness.py": [
+        "canonical_data/session_clock.py"
+      ],
+      "contracts/quote_change_evidence.py": [
+        "canonical_data/option_identity.py",
+        "canonical_data/session_clock.py",
+        "contracts/long_option_policy.py"
+      ],
+      "orchestrator/dynamic_validation.py": [
+        "canonical_data/decision_outcome_ledger.py",
+        "canonical_data/session_clock.py",
+        "domain/execution_authority.py",
+        "domain/market_structure_evidence.py",
+        "domain/run_planning.py",
+        "domain/thesis_direction.py"
+      ],
+      "domain/run_planning.py": [
+        "domain/session_authority.py"
+      ],
+      "domain/session_authority.py": [],
+      "tools/msi_production_readiness.py": [
+        "contracts/interpreter_handoff.py",
+        "msi_runtime.py",
+        "tools/msi_reconcile.py"
+      ],
+      "tools/msi_reconcile.py": [
+        "contracts/interpreter_handoff.py"
+      ],
+      "intelligent_orchestrator.py": [
+        "canonical_data/__init__.py",
+        "canonical_data/decision_outcome_ledger.py",
+        "canonical_data/dynamic_options_production.py",
+        "canonical_data/errors.py",
+        "canonical_data/feature_flags.py",
+        "canonical_data/historical_prices.py",
+        "canonical_data/outcome_maturation.py",
+        "catalyst_truth_engine.py",
+        "contracts/bond_macro_contract.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/handoff_contract.py",
+        "contracts/interpreter_macro_context.py",
+        "contracts/lab_control.py",
+        "contracts/macro_enrichment_delta.py",
+        "contracts/macro_regime_safety.py",
+        "contracts/us_money_index_contract.py",
+        "domain/run_planning.py",
+        "dropoff_audit.py",
+        "eod_candidate_engine.py",
+        "execution_schema.py",
+        "handoff_contract_audit.py",
+        "market_context_diagnostics.py",
+        "mcmillan_advisory_layer.py",
+        "morning_gate.py",
+        "morning_handoff_finalizer.py",
+        "msi_runtime.py",
+        "orchestrator/dynamic_dispatcher.py",
+        "orchestrator/dynamic_thesis.py",
+        "orchestrator/session_authority_adapter.py",
+        "outcome_capture.py",
+        "scripts/macro_quant_packet.py",
+        "trade_book_builder.py",
+        "trigger_layer.py",
+        "uat_audit_report.py",
+        "weekly_intelligence_report.py",
+        "worker3/domain.py",
+        "worker3/macro_ticker_context.py",
+        "worker3/market_environment.py"
+      ],
+      "weekly_intelligence_report.py": [
+        "avshunter_trade_journal.py"
+      ],
+      "trigger_layer.py": [],
+      "execution_schema.py": [],
+      "canonical_data/outcome_maturation.py": [
+        "canonical_data/decision_outcome_ledger.py",
+        "domain/decision_outcome.py"
+      ],
+      "canonical_data/dynamic_options_production.py": [
+        "canonical_data/dynamic_options_bridge.py",
+        "canonical_data/dynamic_options_family.py",
+        "canonical_data/dynamic_options_lifecycle.py",
+        "canonical_data/dynamic_options_ranking.py",
+        "canonical_data/dynamic_options_valuation.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "canonical_data/registry.py",
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "canonical_data/dynamic_options_ranking.py": [
+        "canonical_data/dynamic_options_probability.py",
+        "canonical_data/errors.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "canonical_data/registry.py",
+        "domain/dynamic_options_intelligence.py",
+        "domain/dynamic_options_probability.py",
+        "domain/dynamic_options_ranking.py"
+      ],
+      "canonical_data/option_liquidity_lifecycle.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/errors.py",
+        "canonical_data/registry.py",
+        "domain/dynamic_options_intelligence.py",
+        "domain/dynamic_options_lifecycle.py",
+        "domain/dynamic_options_outcomes.py",
+        "domain/option_contract_liquidity.py",
+        "domain/thesis_direction.py"
+      ],
+      "canonical_data/dynamic_options_probability.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/errors.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "canonical_data/registry.py",
+        "domain/dynamic_options_intelligence.py",
+        "domain/dynamic_options_outcomes.py",
+        "domain/dynamic_options_probability.py"
+      ],
+      "canonical_data/dynamic_options_bridge.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/option_identity.py",
+        "canonical_data/registry.py",
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "canonical_data/dynamic_options_valuation.py": [
+        "canonical_data/dynamic_options_bridge.py",
+        "canonical_data/option_identity.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "canonical_data/session_clock.py",
+        "domain/contract_family_generation.py",
+        "domain/deterministic_option_valuation.py",
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "canonical_data/dynamic_options_family.py": [
+        "canonical_data/contracts.py",
+        "canonical_data/dynamic_options_bridge.py",
+        "canonical_data/option_identity.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "canonical_data/session_clock.py",
+        "domain/contract_family_generation.py",
+        "domain/dynamic_options_intelligence.py"
+      ],
+      "canonical_data/dynamic_options_lifecycle.py": [
+        "canonical_data/dynamic_options_valuation.py",
+        "canonical_data/option_liquidity_lifecycle.py",
+        "domain/contract_family_generation.py",
+        "domain/dynamic_options_intelligence.py",
+        "domain/dynamic_options_lifecycle.py"
+      ],
+      "mcmillan_advisory_layer.py": [],
+      "contracts/bond_macro_contract.py": [],
+      "orchestrator/dynamic_dispatcher.py": [
+        "canonical_data/run_plan.py",
+        "canonical_data/run_plan_store.py",
+        "domain/run_planning.py"
+      ],
+      "canonical_data/run_plan_store.py": [
+        "domain/run_planning.py"
+      ],
+      "canonical_data/run_plan.py": [
+        "canonical_data/run_plan_store.py",
+        "canonical_data/session_clock.py",
+        "domain/run_planning.py",
+        "domain/session_authority.py"
+      ],
+      "orchestrator/session_authority_adapter.py": [
+        "canonical_data/session_clock.py",
+        "domain/session_authority.py"
+      ],
+      "handoff_contract_audit.py": [],
+      "market_context_diagnostics.py": [],
+      "contracts/handoff_contract.py": [],
+      "orchestrator/dynamic_thesis.py": [
+        "domain/run_planning.py"
+      ],
+      "eod_candidate_engine.py": [
+        "canonical_data/session_clock.py",
+        "contracts/direction_governance.py",
+        "contracts/dynamic_options_policy.py",
+        "contracts/dynamic_session_contract.py",
+        "contracts/governed_states.py",
+        "contracts/handoff_contract.py",
+        "contracts/long_option_policy.py",
+        "contracts/selected_contract_economics.py",
+        "execution_schema.py",
+        "scripts/macro_quant_packet.py",
+        "vanguard/physics_state_engine.py"
+      ],
+      "vanguard/physics_state_engine.py": [],
+      "catalyst_truth_engine.py": [],
+      "uat_audit_report.py": [
+        "scripts/macro_quant_packet.py"
+      ],
+      "trade_book_builder.py": [],
+      "dropoff_audit.py": [],
+      "contracts/macro_regime_safety.py": []
+    },
+    "untracked_reachable_dependencies": [],
+    "missing_entrypoints": [],
+    "unresolved_dynamic_import_sites": [],
+    "passed": true
+  },
+  "database_snapshots": [
+    {
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\control_plane.sqlite",
+      "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\control_plane.sqlite",
+      "bytes": 762093568,
+      "sha256": "fb505ac10960c84519246bd9d4be331ca347e16006e6b15a355320df22b70cf6",
+      "source_integrity": "ok",
+      "snapshot_integrity": "ok",
+      "table_counts_match_source": true,
+      "isolated_restore_verified": true
+    },
+    {
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite",
+      "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\historical_prices.sqlite",
+      "bytes": 1013129216,
+      "sha256": "516a25ba34940dc0a4bf741e2473cd03bc98aeec0eaf338ca56246273b2735c6",
+      "source_integrity": "ok",
+      "snapshot_integrity": "ok",
+      "table_counts_match_source": true,
+      "isolated_restore_verified": true
+    },
+    {
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\decision_outcome_ledger.sqlite",
+      "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\decision_outcome_ledger.sqlite",
+      "bytes": 17498112,
+      "sha256": "1b9ecbcbeee39d91f2bfec8db6728fee9d03c51fcc9a47bbd1a68f56bb2f4960",
+      "source_integrity": "ok",
+      "snapshot_integrity": "ok",
+      "table_counts_match_source": true,
+      "isolated_restore_verified": true
+    }
+  ],
+  "missing_databases": [],
+  "passed": true
+}
