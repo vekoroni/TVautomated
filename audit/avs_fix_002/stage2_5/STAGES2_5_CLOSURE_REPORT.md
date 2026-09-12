@@ -6,6 +6,7 @@ Scope: numeric truth, deterministic economics, DOI lifecycle integration, macro 
 ## Delivered
 
 - Stage 2: `vol_budget_v2`, cumulative 5/10/20-session fractions, arbitrary 1–20 session budgets, explicit spread units, silent-default inventory, and append-only `decision_record_v2` / `fill_record_v1` with operator CLI.
+- Runtime adapters: Opportunity Tier and Execution Gate consume and publish explicit spread units; Layer 3 publishes canonical cumulative volatility budgets; Trigger EV prefers the canonical 10-session fraction while retaining the declared legacy fallback.
 - Stage 3: one macro-derived `MarketRateObservation` per run; `reachability_v1`; 54-cell CALL/PUT scenario grid; XNYS/calendar bridge reuse; half-spread friction; scenario monetisability; payoff-shape convexity; deterministic utility; forecast-validation instrument.
 - Stage 4: DOI now runs after Q-Omega evidence is commuted to its Options boundary; ticker exceptions remain retained; existing append-only family/ranking/lifecycle stores remain authoritative only for advisory contract intelligence; `hysteresis_v1` is implemented behind approval.
 - Stage 5: USMI routing/scenario and structure evidence are advisory; canonical DOI metadata is projected into `lab_signal_book_v4`; the presentation projector cannot grant execution.

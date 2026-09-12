@@ -332,6 +332,10 @@ def _compute_ev(row: Dict) -> float:
     if not wr:
         return 0.0
 
+    em_10_fraction = _flt(row, "expected_move_10d_fraction")
+    if em_10_fraction:
+        return round(wr * em_10_fraction, 8)
+
     em_6_10 = _flt(row, "l3_expected_move_6_10d")
     if em_6_10:
         return round(wr * (em_6_10 / 100.0), 8)

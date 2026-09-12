@@ -115,6 +115,10 @@ class ForwardVarianceResult:
         return flags
 
     def to_dict(self) -> dict:
+        from domain.volatility_budget import checkpoint_fields
+        budget_v2 = checkpoint_fields(
+            None if self.error else float(self.forward_realised_vol)
+        )
         raw_tailwind = float(self.iv_tailwind_score or 0.0)
         capped_tailwind = float(np.clip(
             raw_tailwind,
@@ -148,6 +152,9 @@ class ForwardVarianceResult:
             'l3_model_risk_flag_count':       len(model_risk_flags),
             'l3_model_risk_capital_guard':    bool(model_risk_flags),
             'l3_error':                       self.error,
+            **budget_v2,
+            'l3_expected_move_legacy_deprecated': True,
+            'l3_expected_move_legacy_unit': 'PERCENT',
         }
 
 

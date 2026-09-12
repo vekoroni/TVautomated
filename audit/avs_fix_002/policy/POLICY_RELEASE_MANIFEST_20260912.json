@@ -44,22 +44,31 @@
     {"path": "canonical_data/dynamic_options_ranking.py", "sha256": "255d051bcb50f1daf8004ba90bd7942ce4bc4c9fec09c1da856415cafd0017a0"},
     {"path": "canonical_data/dynamic_options_production.py", "sha256": "5e6176630403593c1fb55c9b53b91170df41ca663303dbb1a2f7800abeb6842a"},
     {"path": "contracts/lab_control.py", "sha256": "76a28f81f65b5618f606190c53aee0671c4f3c387b0f876781813b8b27b695ea"},
+    {"path": "contracts/opportunity_tier.py", "sha256": "dc1f9845bd5b04fe7a6c3d9b9653bdbbe06f804fff666f3ccb4eb89115b479b3"},
     {"path": "contracts/selected_contract_economics.py", "sha256": "7d5ea820321e1ef5828304b24280d98f549b4877d7cf4351d8550eb2f5436617"},
-    {"path": "intelligence-lab/intelligence_lab.py", "sha256": "486487d90a47eaec17dcfc5efa485a116c50b3f0559d94718319d22a6623893e"}
+    {"path": "execution_gate.py", "sha256": "c86a4fd792c4113fea031d3b446315f6b24f94d4bfea07629bd89a282e9d4249"},
+    {"path": "intelligence-lab/intelligence_lab.py", "sha256": "486487d90a47eaec17dcfc5efa485a116c50b3f0559d94718319d22a6623893e"},
+    {"path": "layer3_forward_variance.py", "sha256": "4da6ae05a5f58bce30ea64a3703aca437e1bb970b4df7a80dbf6f5afd52812ad"},
+    {"path": "trigger_layer.py", "sha256": "12b71db977ff29f5ce755a7b5a4db7e471f818fdfb264657594ac53c4a330974"}
   ],
   "verification": {
     "focused_regression": {"passed": 110, "failed": 0},
+    "runtime_adapter_regression": {
+      "ordinary_passed": 123,
+      "subtests_passed": 69,
+      "failed": 0
+    },
     "governance_preflight": {
       "stage0_passed": 4,
       "lab_handoff_passed": 15,
-      "release_path_count": 55,
+      "release_path_count": 60,
       "pathset_reconciled": true,
       "diff_check_passed": true,
       "release_diff_secret_scan_passed": true
     },
     "consolidated_regression": {
-      "tests": 430,
-      "ordinary_passed": 356,
+      "tests": 434,
+      "ordinary_passed": 360,
       "subtests_passed": 74,
       "failures": 0,
       "errors": 0,
@@ -71,6 +80,6 @@
   },
   "test_evidence": {
     "path": "audit/avs_fix_002/policy/POLICY_REGRESSION_20260912.xml",
-    "sha256": "afd5430c0000011d37c672af8a9bf83e9960b8317a00aa3b3d9374d6d6f6a1ae"
+    "sha256": "8d15b991425d9b7f3d37fd166681047cf15a5ed739da676a43ab3e299df09aab"
   }
 }

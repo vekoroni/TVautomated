@@ -22,6 +22,8 @@ from __future__ import annotations
 import math
 from typing import Any, Mapping
 
+from domain.quote_units import resolve_spread
+
 TIER_POLICY_VERSION = "opportunity-tier-v1-ths001-s4"
 
 TIER_1 = "TIER_1"
@@ -78,6 +80,24 @@ def _first(row: Mapping[str, Any], *keys: str) -> Any:
     return None
 
 
+def _tier_spread_fraction(row: Mapping[str, Any]) -> float | None:
+    """Adapt the frozen opportunity-tier-v1 `spread_pct` contract.
+
+    Despite its name, v1 documented this field as a fraction.  Supplying the
+    unit here makes that historical contract explicit; all new writers use
+    spread_fraction_mid and never rely on this adapter.
+    """
+    canonical = resolve_spread(row)
+    if canonical.spread_fraction_mid is not None:
+        return canonical.spread_fraction_mid
+    if _text(row.get("spread_pct")):
+        return resolve_spread({
+            "spread_pct": row.get("spread_pct"),
+            "spread_unit": "FRACTION_OF_MID",
+        }).spread_fraction_mid
+    return None
+
+
 def _hard_veto(row: Mapping[str, Any]) -> str:
     """THS-001 §4's BLOCK list, unchanged. Returns the reason, or "".
 
@@ -114,7 +134,7 @@ def _hard_veto(row: Mapping[str, Any]) -> str:
                      "EXPIRED_CONTRACT", "STALE_DATA"}:
         return f"EXECUTION_VIABILITY_{viability}"
 
-    spread = _number(_first(row, "spread_pct", "contract_spread_pct"))
+    spread = _tier_spread_fraction(row)
     if spread is not None and spread > SPREAD_TIER_2_MAX:
         return "SPREAD_ABOVE_REVIEWABLE_CEILING"
 
@@ -154,7 +174,7 @@ def _tier_2_weaknesses(row: Mapping[str, Any]) -> list[str]:
         # THS-001 Tier 1 requires MONETISABLE under BOTH valuations.
         weaknesses.append("UNEVALUABLE_TIMEVALUE_MONETISABILITY")
 
-    spread = _number(_first(row, "spread_pct", "contract_spread_pct"))
+    spread = _tier_spread_fraction(row)
     horizon_band = _number(row.get("horizon_spread_limit"))
     if horizon_band is None:
         horizon = _upper(_first(row, "time_horizon", "horizon_bucket"))

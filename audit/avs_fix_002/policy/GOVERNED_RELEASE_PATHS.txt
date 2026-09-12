@@ -23,6 +23,7 @@ canonical_data/outcome_learning.py
 canonical_data/outcome_maturation.py
 config/governed_constants_v1.json
 contracts/lab_control.py
+contracts/opportunity_tier.py
 contracts/selected_contract_economics.py
 docs/AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md
 docs/requirements/AVS-REQ-FIX-002_Annex_A_algorithms_and_models.md
@@ -40,11 +41,14 @@ domain/quote_units.py
 domain/reachability.py
 domain/structure_evidence.py
 domain/volatility_budget.py
+execution_gate.py
 intelligence-lab/intelligence_lab.py
 intelligent_orchestrator.py
+layer3_forward_variance.py
 tests/test_avs_fix_002_stage0.py
 tests/test_avs_fix_002_stage6_outcome_learning.py
 tests/test_avs_fix_002_stages2_5.py
+tests/test_avs_fix_002_runtime_adapters.py
 tests/test_ddd_decision_outcome.py
 tests/test_doi11_production_integration.py
 tests/test_dynamic_options_lifecycle.py
@@ -53,3 +57,4 @@ tests/test_lab_governed_handoff.py
 tools/build_outcome_learning_snapshot.py
 tools/record_manual_decision.py
 tools/validate_forecast_vol.py
+trigger_layer.py
