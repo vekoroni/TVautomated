@@ -57,6 +57,7 @@ class DatasetType(str, Enum):
     UNDERLYING_NBBO = "UNDERLYING_NBBO"
     INTRADAY_BAR = "INTRADAY_BAR"
     MARKET_STRUCTURE = "MARKET_STRUCTURE"
+    GAMMA_EXPOSURE = "GAMMA_EXPOSURE"
 
 
 class CompletenessStatus(str, Enum):
