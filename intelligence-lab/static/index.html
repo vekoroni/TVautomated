@@ -107,11 +107,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 
 /* SIGNAL TABLE */
 .sig-list-zone{padding:0 20px 20px;overflow-x:auto}
-.sig-list-head{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 76px 76px 72px;min-width:1874px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
+.sig-list-head{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 64px 76px 76px 72px;min-width:1938px;gap:0;background:var(--bg4);border:1px solid var(--border);border-bottom:none;border-radius:4px 4px 0 0}
 .slh{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:7px 9px;cursor:pointer;user-select:none;border-right:1px solid var(--border);white-space:nowrap}
 .slh:hover{color:var(--cyan)}.slh.sorted{color:var(--cyan)}.slh:last-child{border-right:none}
 .sig-list-body{border:1px solid var(--border);border-radius:0 0 4px 4px;overflow:hidden}
-.sig-row{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 76px 76px 72px;min-width:1874px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
+.sig-row{display:grid;grid-template-columns:54px 68px 66px 72px 58px 82px 56px 92px 64px 64px 72px 92px 80px 62px 66px 78px 72px 74px 58px 58px 58px 62px 54px 76px 64px 64px 76px 76px 72px;min-width:1938px;gap:0;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;position:relative}
 .sig-row:last-child{border-bottom:none}.sig-row:hover{background:rgba(255,255,255,.025)}.sig-row.exec-row{background:rgba(0,229,160,.015)}.sig-row.exec-row:hover{background:rgba(0,229,160,.04)}
 .sig-row.selected-row{background:rgba(0,200,255,.05)!important}.sig-row.selected-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan)}
 .sig-row.audit-row{opacity:.62;background:rgba(255,61,90,.018)}.sig-row.audit-row::after{content:'';position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,61,90,.45)}
@@ -372,10 +372,11 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(21)">Sector</div>
       <div class="slh" onclick="sortBy(22)">Entry Telemetry</div>
       <div class="slh" onclick="sortBy(23)">Quote</div>
-      <div class="slh" onclick="sortBy(24)" title="Morning Gate verdict: whether the governed swing thesis survived current-price validation">AM Thesis</div>
-      <div class="slh" onclick="sortBy(25)">MS Life</div>
-      <div class="slh" onclick="sortBy(26)">MS Dir</div>
-      <div class="slh" onclick="sortBy(27)">Assess</div>
+      <div class="slh" onclick="sortBy(24)">Fresh</div>
+      <div class="slh" onclick="sortBy(25)" title="Morning Gate verdict: whether the governed swing thesis survived current-price validation">AM Thesis</div>
+      <div class="slh" onclick="sortBy(26)">MS Life</div>
+      <div class="slh" onclick="sortBy(27)">MS Dir</div>
+      <div class="slh" onclick="sortBy(28)">Assess</div>
     </div>
     <div class="sig-list-body" id="sig-body"></div>
   </div>
@@ -1950,10 +1951,11 @@ const sortKeys = [
   s => getSectorDisplay(s),                         // 21 Sector
   s => getEilDisplay(s),                            // 22 EIL
   s => parseFloat(s.current_contract_mid||0),       // 23 Current quote
-  s => getMorningThesisDisplay(s).label,             // 24 Morning thesis status
-  s => s.ms_lifecycle||'',                          // 25 Structure lifecycle
-  s => s.ms_direction_relationship||'',             // 26 Structure relationship
-  s => s.interpreter_assessment_status||'',         // 27 Interpreter assessment
+  s => s.quote_freshness||s.lab_v4_quote_freshness||'', // 24 Quote freshness
+  s => getMorningThesisDisplay(s).label,             // 25 Morning thesis status
+  s => s.ms_lifecycle||'',                          // 26 Structure lifecycle
+  s => s.ms_direction_relationship||'',             // 27 Structure relationship
+  s => s.interpreter_assessment_status||'',         // 28 Interpreter assessment
 ];
 
 function sortBy(col) {
@@ -2115,6 +2117,7 @@ function buildTable() {
         return `<span class="pill ${cls}" style="font-size:7px;padding:2px 5px">${lbl}</span>`;
       })()}</div>
       <div class="sc" title="Current exact-contract bid / ask" style="font-size:9px;color:var(--cyan)">${s.current_contract_bid ?? 'MISSING'} / ${s.current_contract_ask ?? 'MISSING'}</div>
+      <div class="sc" title="Provider quote freshness; does not alter thesis validity" style="font-size:8px;color:${String(s.quote_freshness||s.lab_v4_quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${s.quote_freshness || s.lab_v4_quote_freshness || 'UNKNOWN'}</div>
       <div class="sc" title="${attrSafe(getMorningThesisDisplay(s).reason)}" style="font-size:8px;color:${getMorningThesisDisplay(s).valid?'var(--green)':'var(--amber)'}">${getMorningThesisDisplay(s).label}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_lifecycle || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_direction_relationship || 'INSUFFICIENT_DATA'}</div>

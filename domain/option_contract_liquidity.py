@@ -48,6 +48,7 @@ class ContractLiquidityState(_ValueEnum):
     REVIEWABLE_SPREAD = "REVIEWABLE_SPREAD"
     LIQUIDITY_PENDING = "LIQUIDITY_PENDING"
     QUOTE_STALE = "QUOTE_STALE"
+    QUOTE_TIMESTAMP_UNAVAILABLE = "QUOTE_TIMESTAMP_UNAVAILABLE"
     ZERO_BID = "ZERO_BID"
     NO_DISPLAYED_SIZE = "NO_DISPLAYED_SIZE"
     NO_CURRENT_MARKET = "NO_CURRENT_MARKET"
@@ -446,7 +447,13 @@ def classify_current_executability(
     # monitorable QUOTE_STALE state.
     if freshness_limit is None or freshness_limit < 0:
         raise ValueError("quote_freshness_max_seconds must be non-negative")
-    if age is not None and age > freshness_limit:
+    if age is None:
+        return _liquidity_result(
+            "QUOTE_TIMESTAMP_UNAVAILABLE",
+            "MONITOR",
+            reasons=("PROVIDER_QUOTE_TIMESTAMP_REQUIRED",),
+        )
+    if age > freshness_limit:
         return _liquidity_result(
             "QUOTE_STALE",
             "MONITOR",
@@ -767,4 +774,3 @@ def evaluate_options_liquidity_lifecycle(
         **runway,
         **maturation,
     }
-

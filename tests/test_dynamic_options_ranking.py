@@ -305,7 +305,10 @@ class RankingPersistenceTests(unittest.TestCase):
                 evidence_cutoff_utc=START, input_dataset_ids=(dataset_id,),
                 calculation_version="ASSESS-V1", feature_version="FEATURE-V1",
                 model_version="NOT_EVALUATED", ranking_score_uncalibrated=0.2 + index * 0.2,
-                metadata={"valuation": {"adverse_worst_return": -0.5}},
+                metadata={
+                    "valuation": {"adverse_worst_return": -0.5},
+                    "ranking_score_kind": "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY",
+                },
             ))
 
     def tearDown(self) -> None:

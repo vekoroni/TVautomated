@@ -403,7 +403,10 @@ def rank_contract_family(
                 "DOI-5 deterministic fallback; calibrated family coverage or accepted "
                 "DOI-9 policy unavailable"
             )
-            kind = "RANKING_SCORE_UNCALIBRATED" if score is not None else "NO_COMPARABLE_SCORE"
+            kind = (
+                "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY"
+                if score is not None else "NO_COMPARABLE_SCORE"
+            )
         scored.append((item, score, kind, explanation))
     ordered = sorted(scored, key=lambda row: (row[1] is None, -(row[1] or 0.0), row[0].contract_symbol))
     comparable = [row for row in ordered if row[1] is not None]

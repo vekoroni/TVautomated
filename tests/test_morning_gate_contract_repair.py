@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,9 +153,9 @@ def test_missing_live_price_can_never_produce_go() -> None:
     )
 
     assert gated["check_invalidation_pass"] == "FALSE"
-    assert gated["verdict"] == "BLOCK"
-    assert gated["execution_permission"] == "BLOCKED"
-    assert gated["morning_execution_route"] == "STAND_DOWN_ECONOMICS"
+    assert gated["verdict"] == "FLAG"
+    assert gated["execution_permission"] == "WAIT"
+    assert gated["morning_execution_route"] == "THESIS_REFRESH_DEFERRED_PRICE_UNAVAILABLE"
     assert gated["morning_entry_action"] == "NO_TRADE"
 
 
@@ -192,7 +193,8 @@ def _quote(*, bid: float, ask: float, delta: float) -> dict:
         "live_contract_volume": 50,
         "live_contract_multiplier": 100,
         "live_options_source": "TEST_MARKETDATA",
-        "live_options_fetched_at": "2026-08-25T08:30:00+00:00",
+        "live_options_fetched_at": datetime.now(timezone.utc).isoformat(),
+        "live_contract_provider_updated": datetime.now(timezone.utc).isoformat(),
     }
 
 

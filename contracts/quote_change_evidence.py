@@ -10,7 +10,7 @@ from typing import Any, Mapping
 
 from canonical_data.option_identity import normalise_occ_symbol
 from canonical_data.session_clock import FreshnessState, evaluate_freshness
-from contracts.long_option_policy import quote_spread_fraction
+from domain.quote_units import resolve_spread
 
 
 class ComparisonStatus(str, Enum):
@@ -31,7 +31,7 @@ class QuoteSnapshot:
     bid: float | None
     ask: float | None
     mid: float | None
-    spread_pct: float | None
+    spread_fraction_mid: float | None
     bid_size: int | None
     ask_size: int | None
     source: str
@@ -98,13 +98,10 @@ def quote_snapshot_from_row(row: Mapping[str, Any], *, role: str) -> QuoteSnapsh
         dataset_id = _first(row, "current_quote_snapshot_id", "current_quote_dataset_id",
                             "msi_exact_quote_dataset_id", "selected_quote_snapshot_id")
         timestamp = _first(row, "current_quote_timestamp_utc", "quote_timestamp_utc",
-                           "contract_quote_timestamp", "live_contract_provider_updated",
-                           "live_options_fetched_at")
+                           "contract_quote_timestamp", "live_contract_provider_updated")
         bid = _first(row, "current_contract_bid", "live_contract_bid", "contract_bid")
         ask = _first(row, "current_contract_ask", "live_contract_ask", "contract_ask")
         mid = _first(row, "current_contract_mid", "live_contract_mid", "contract_mid")
-        spread = _first(row, "current_contract_spread_pct", "live_contract_spread_fraction",
-                        "contract_spread_pct")
         bid_size = _first(row, "current_contract_bid_size", "live_contract_bid_size", "contract_bid_size")
         ask_size = _first(row, "current_contract_ask_size", "live_contract_ask_size", "contract_ask_size")
         source = _first(row, "current_quote_source", "quote_source", "live_options_source")
@@ -115,21 +112,26 @@ def quote_snapshot_from_row(row: Mapping[str, Any], *, role: str) -> QuoteSnapsh
                             "selected_quote_snapshot_id")
         timestamp = _first(row, "morning_quote_timestamp_utc", "morning_contract_quote_timestamp_utc",
                            "selected_quote_timestamp_utc", "quote_timestamp_utc",
-                           "contract_quote_timestamp", "live_options_fetched_at")
+                           "contract_quote_timestamp")
         bid = _first(row, "morning_contract_bid", "contract_bid", "live_contract_bid")
         ask = _first(row, "morning_contract_ask", "contract_ask", "live_contract_ask")
         mid = _first(row, "morning_contract_mid", "contract_mid", "live_contract_mid")
-        spread = _first(row, "morning_contract_spread_pct", "contract_spread_pct",
-                        "live_contract_spread_fraction")
         bid_size = _first(row, "morning_contract_bid_size", "contract_bid_size", "live_contract_bid_size")
         ask_size = _first(row, "morning_contract_ask_size", "contract_ask_size", "live_contract_ask_size")
         source = _first(row, "morning_quote_source", "quote_source", "live_options_source")
     bid_number, ask_number, mid_number = _number(bid), _number(ask), _number(mid)
     if mid_number is None and bid_number is not None and ask_number is not None:
         mid_number = (bid_number + ask_number) / 2.0
-    spread_number = _number(spread)
-    if spread_number is None:
-        spread_number = quote_spread_fraction(bid_number, ask_number)
+    spread_observation = resolve_spread({
+        "bid": bid_number,
+        "ask": ask_number,
+        "spread_fraction_mid": row.get(
+            "current_spread_fraction_mid" if current else "morning_spread_fraction_mid"
+        ) or row.get("spread_fraction_mid") or row.get("live_contract_spread_fraction"),
+        "spread_pct_of_mid": row.get(
+            "current_spread_pct_of_mid" if current else "morning_spread_pct_of_mid"
+        ) or row.get("spread_pct_of_mid"),
+    })
     return QuoteSnapshot(
         contract_symbol=_contract(symbol),
         dataset_id=str(dataset_id or "").strip(),
@@ -138,7 +140,7 @@ def quote_snapshot_from_row(row: Mapping[str, Any], *, role: str) -> QuoteSnapsh
         bid=bid_number,
         ask=ask_number,
         mid=mid_number,
-        spread_pct=spread_number,
+        spread_fraction_mid=spread_observation.spread_fraction_mid,
         bid_size=_size(bid_size),
         ask_size=_size(ask_size),
         source=str(source or "").strip().upper(),
@@ -213,8 +215,8 @@ def compare_exact_option_quotes(
         else None
     )
     spread_change = (
-        (current.spread_pct - morning.spread_pct) * 100.0
-        if comparable and current.spread_pct is not None and morning.spread_pct is not None
+        (current.spread_fraction_mid - morning.spread_fraction_mid) * 100.0
+        if comparable and current.spread_fraction_mid is not None and morning.spread_fraction_mid is not None
         else None
     )
     return {
@@ -231,9 +233,17 @@ def compare_exact_option_quotes(
         "morning_quote_timestamp_utc": morning.timestamp_utc.isoformat() if morning.timestamp_utc else None,
         "current_quote_timestamp_utc": current.timestamp_utc.isoformat() if current.timestamp_utc else None,
         "morning_bid": morning.bid, "morning_ask": morning.ask, "morning_mid": morning.mid,
-        "morning_spread_pct": morning.spread_pct,
+        "morning_spread_fraction_mid": morning.spread_fraction_mid,
+        "morning_spread_pct_of_mid": (
+            morning.spread_fraction_mid * 100.0
+            if morning.spread_fraction_mid is not None else None
+        ),
         "current_bid": current.bid, "current_ask": current.ask, "current_mid": current.mid,
-        "current_spread_pct": current.spread_pct,
+        "current_spread_fraction_mid": current.spread_fraction_mid,
+        "current_spread_pct_of_mid": (
+            current.spread_fraction_mid * 100.0
+            if current.spread_fraction_mid is not None else None
+        ),
         "bid_change": bid_change, "bid_change_pct": bid_change_pct,
         "ask_change": ask_change, "ask_change_pct": ask_change_pct,
         "mid_change": mid_change, "mid_change_pct": mid_change_pct,
@@ -254,7 +264,9 @@ def compare_exact_option_quotes(
 def quote_change_overlay_fields(evidence: Mapping[str, Any]) -> dict[str, Any]:
     mapping = {
         "current_contract_bid": "current_bid", "current_contract_ask": "current_ask",
-        "current_contract_mid": "current_mid", "current_contract_spread_pct": "current_spread_pct",
+        "current_contract_mid": "current_mid",
+        "current_spread_fraction_mid": "current_spread_fraction_mid",
+        "current_spread_pct_of_mid": "current_spread_pct_of_mid",
         "contract_bid_change": "bid_change", "contract_bid_change_pct": "bid_change_pct",
         "contract_ask_change": "ask_change", "contract_ask_change_pct": "ask_change_pct",
         "contract_mid_change": "mid_change", "contract_mid_change_pct": "mid_change_pct",

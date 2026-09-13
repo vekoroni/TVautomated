@@ -203,19 +203,13 @@ def _refresh_requirement(
         for domain, state in freshness_map.items()
         if str(domain).lower() not in ADVISORY_FRESHNESS_DOMAINS
         and str(state).upper() not in allowed
-        and not (
-            str(domain) in {"exact_option_quote", "underlying_quote"}
-            and str(state).upper() == "STALE"
-        )
     ]
     if not stale_domains:
         return None
     # A successfully validated Morning thesis remains valid for its governed
-    # 1-20 session holding horizon. Ordinary ageing of the option/underlying
-    # snapshots is ignored here: Morning Gate answers whether the thesis
-    # survived, while the captured prices remain timestamped evidence.
-    # Missing/invalid evidence still fails closed because it was never safely
-    # observed during validation.
+    # 1-20 session holding horizon, but execution evidence has a much shorter
+    # lifetime.  Stale/missing quotes therefore request a narrow refresh while
+    # trade_thesis_affected remains false.
     blocking_domains = sorted(stale_domains)
     return {
         "request_type": "CDS_NARROW_REFRESH_REQUIRED",

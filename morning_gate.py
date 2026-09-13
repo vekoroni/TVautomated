@@ -69,6 +69,7 @@ from contracts.long_option_policy import (
     quote_age_seconds,
     quote_spread_percent,
 )
+from domain.quote_units import resolve_spread
 from contracts.core_authority_policy import assert_frozen_thesis_fields
 from contracts.options_liquidity_lifecycle import (
     LifecycleInputs,
@@ -2015,9 +2016,8 @@ def _morning_liquidity_lifecycle(
             invalidation_spot=float(required["invalidation"]),
             quote_age_seconds=quote_age_seconds(
                 live_data.get("live_contract_provider_updated")
-                or live_data.get("live_contract_quote_timestamp")
+                or live_data.get("quote_provider_timestamp_utc")
                 or live_data.get("selected_quote_timestamp_utc")
-                or live_data.get("live_options_fetched_at")
             ),
             listed_market=True,
         ))
@@ -2062,7 +2062,11 @@ def _morning_liquidity_lifecycle(
         "dte_buffer_sessions": round(float(required["dte"]) - float(assessment.get("minimum_required_dte") or 0), 2),
         "atm_distance_sigma": assessment.get("atm_distance_sigma_1d"),
         "remaining_runway_pct": round(runway_factor * 100.0, 2),
-        "quote_freshness": "FRESH",
+        "quote_freshness": (
+            "UNKNOWN" if assessment.get("quote_age_seconds") is None
+            else "STALE" if liquidity_state == "QUOTE_STALE"
+            else "FRESH"
+        ),
         "maturation_score_is_probability": False,
         "maturation_execution_authority": False,
     })
@@ -2528,7 +2532,10 @@ def run_gate(
     if not direction_pass:
         block_reasons.append(direction_reason)
     if not economics_pass and not repaired_contract:
-        block_reasons.append(economics_reason)
+        # Quote/execution economics describe present executability, not the
+        # validity of the underlying thesis.  Preserve the opportunity and
+        # route it for monitoring or contract repair.
+        flag_reasons.append(economics_reason)
     if not inv_pass:
         if invalidation_unverified:
             flag_reasons.append(inv_reason)
@@ -2537,7 +2544,7 @@ def run_gate(
     if not strategy_pass:
         block_reasons.append(strategy_reason)
     elif spread_policy_state == "BLOCKED_SPREAD":
-        block_reasons.append(spread_policy_reason)
+        flag_reasons.append(spread_policy_reason)
     elif not contract_pass:
         flag_reasons.append(contract_reason)
     if not model_risk["passed"]:
@@ -2601,22 +2608,22 @@ def run_gate(
             out.get("liquidity_lifecycle_reason") or contract_reason
             or "Exact selected-contract economics must be recomputed"
         )
-    elif not economics_pass:
-        verdict = "BLOCK"
-        permission = "BLOCKED"
-        morning_permission = "NO_GO_ECONOMICS"
-        route = "STAND_DOWN_ECONOMICS"
-        lane = "NON_MONETISABLE"
-        entry_action = "NO_TRADE"
-        unlock_condition = economics_reason
     elif invalidation_unverified:
         verdict = "FLAG"
         permission = "WAIT"
         morning_permission = "WAIT"
-        route = "WAIT_LIVE_PRICE"
+        route = "THESIS_REFRESH_DEFERRED_PRICE_UNAVAILABLE"
         lane = "LIVE_PRICE_UNAVAILABLE"
         entry_action = "NO_TRADE"
         unlock_condition = inv_reason
+    elif not economics_pass:
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "CONTRACT_MONITOR"
+        route = "MONITOR_OR_REPAIR_CONTRACT"
+        lane = "CURRENT_EXECUTION_EVIDENCE_UNAVAILABLE"
+        entry_action = "NO_TRADE"
+        unlock_condition = economics_reason
     elif not inv_pass:
         verdict = "BLOCK"
         permission = "BLOCKED"
@@ -2642,11 +2649,11 @@ def run_gate(
         entry_action = "NO_TRADE"
         unlock_condition = "Wait for a fresh executable two-sided quote on the exact contract"
     elif spread_policy_state == "BLOCKED_SPREAD":
-        verdict = "BLOCK"
-        permission = "BLOCKED"
-        morning_permission = "NO_GO_LIQUIDITY"
-        route = "STAND_DOWN_LIQUIDITY"
-        lane = "SPREAD_ABOVE_HARD_MAXIMUM"
+        verdict = "FLAG"
+        permission = "MANUAL_LIQUIDITY_REVIEW"
+        morning_permission = "CONTRACT_MONITOR"
+        route = "MONITOR_CONTRACT_LIQUIDITY"
+        lane = "SPREAD_ABOVE_REVIEW_MAXIMUM"
         entry_action = "NO_TRADE"
         unlock_condition = spread_policy_reason
     elif spread_policy_state == "MANUAL_LIQUIDITY_REVIEW":
@@ -2715,13 +2722,23 @@ def run_gate(
     out.update(morning_validation_authority_fields(verdict))
 
     live_mid = _f(out.get("live_contract_mid"))
-    live_spread = _f(out.get("live_contract_spread_pct"))
+    spread_observation = resolve_spread({
+        "bid": out.get("live_contract_bid"),
+        "ask": out.get("live_contract_ask"),
+        "spread_fraction_mid": out.get("spread_fraction_mid"),
+        "spread_pct_of_mid": out.get("spread_pct_of_mid"),
+        "spread_pct": out.get("live_contract_spread_pct"),
+        "spread_unit": out.get("live_contract_spread_unit"),
+    })
     if live_mid is not None and live_mid > 0:
         out["premium_mid"] = live_mid
         out["contract_mid"] = live_mid
-    if live_spread is not None:
-        out["spread_pct"] = live_spread / 100.0 if live_spread > 1 else live_spread
-        out["contract_spread_pct"] = out["spread_pct"]
+    if spread_observation.spread_fraction_mid is not None:
+        out["spread_fraction_mid"] = spread_observation.spread_fraction_mid
+        out["spread_pct_of_mid"] = spread_observation.spread_pct_of_mid
+        out["spread_unit"] = "FRACTION_OF_MID"
+        out["spread_pct"] = spread_observation.spread_fraction_mid
+        out["contract_spread_pct"] = spread_observation.spread_fraction_mid
 
     # Nested leg dictionaries are internal calculation objects. The governed
     # JSON representation remains in selected_legs_json for CSV consumers.
@@ -2858,8 +2875,8 @@ def _persist_morning_liquidity_result(
     )
     quote_as_of = _parse_utc_datetime(
         result.get("live_contract_provider_updated")
-        or result.get("live_options_fetched_at")
-        or result.get("quote_as_of")
+        or result.get("quote_provider_timestamp_utc")
+        or result.get("selected_quote_timestamp_utc")
     )
     if not contract_symbol or quote_as_of is None or _u(result.get("live_options_source")) != "MARKETDATA":
         close_terminal_transition()
@@ -2934,7 +2951,14 @@ def _persist_morning_liquidity_result(
     result["selected_quote_dataset_id"] = dataset_id
     expiration = date.fromisoformat(occ["expiry"])
     dte = max(0, (expiration - quote_as_of.date()).days)
-    spread_pct = _f(result.get("live_contract_spread_pct"))
+    spread_observation = resolve_spread({
+        "bid": result.get("live_contract_bid"),
+        "ask": result.get("live_contract_ask"),
+        "spread_fraction_mid": result.get("spread_fraction_mid"),
+        "spread_pct_of_mid": result.get("spread_pct_of_mid"),
+        "spread_pct": result.get("live_contract_spread_pct"),
+        "spread_unit": result.get("live_contract_spread_unit"),
+    })
     live_spot = _f(result.get("live_price"))
     if live_spot is None or live_spot <= 0:
         close_terminal_transition()
@@ -2955,7 +2979,7 @@ def _persist_morning_liquidity_result(
         delta=_f(result.get("live_contract_delta")),
         bid=_f(result.get("live_contract_bid")),
         ask=_f(result.get("live_contract_ask")),
-        spread_pct=(spread_pct / 100.0 if spread_pct is not None and spread_pct > 1 else spread_pct),
+        spread_pct=spread_observation.spread_fraction_mid,
         volume=_f(result.get("live_contract_volume")),
         open_interest=_f(result.get("live_contract_oi")),
         iv=_f(result.get("live_contract_iv")),

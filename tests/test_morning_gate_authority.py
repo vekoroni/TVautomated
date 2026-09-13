@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -42,6 +43,7 @@ def _live():
         "live_contract_spread_pct": 9.52,
         "live_contract_delta": 0.45,
         "live_contract_iv": 0.32,
+        "live_contract_provider_updated": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -237,7 +239,7 @@ def test_zero_score_comparisons_are_not_integrity_pass(tmp_path) -> None:
     assert (tmp_path / "score_integrity_TEST.json").exists()
 
 
-def test_governed_spread_policy_separates_execute_review_and_block() -> None:
+def test_governed_spread_policy_separates_execute_and_review_without_discard() -> None:
     executable_live = _live()
     executable_live["live_contract_spread_pct"] = 18.0
     executable = morning_gate.run_gate(
@@ -262,8 +264,9 @@ def test_governed_spread_policy_separates_execute_review_and_block() -> None:
     assert review["morning_execution_permission"] == "MANUAL_LIQUIDITY_REVIEW"
     assert review["morning_execution_route"] == "MANUAL_LIQUIDITY_REVIEW"
     assert review["morning_entry_action"] == "NO_TRADE_UNTIL_LIQUIDITY_APPROVED"
-    assert blocked["verdict"] == "BLOCK"
-    assert blocked["morning_execution_permission"] == "NO_GO_LIQUIDITY"
+    assert blocked["verdict"] == "FLAG"
+    assert blocked["morning_execution_permission"] == "CONTRACT_MONITOR"
+    assert blocked["morning_execution_route"] == "MONITOR_CONTRACT_LIQUIDITY"
     assert blocked["contract_spread_review_max_pct"] == 25.0
 
 

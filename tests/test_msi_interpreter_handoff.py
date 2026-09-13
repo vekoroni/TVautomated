@@ -188,12 +188,15 @@ def test_handoff_rejects_same_ticker_with_different_contract_identity(
         validate_handoff_manifest(manifest)
 
 
-def test_aged_validation_quote_does_not_invalidate_swing_thesis_or_request_refresh(tmp_path: Path) -> None:
+def test_aged_validation_quote_requires_refresh_without_invalidating_swing_thesis(tmp_path: Path) -> None:
     manifest, _, _ = _fixture(tmp_path, freshness="STALE")
+    with pytest.raises(EvidenceResolutionError, match="EVIDENCE_REFRESH_REQUIRED"):
+        resolve_interpreter_evidence(TICKER, manifest_path=manifest)
     evidence = resolve_interpreter_evidence(
-        TICKER, manifest_path=manifest
+        TICKER, manifest_path=manifest, require_current=False
     )
-    assert evidence.refresh_required is None
+    assert evidence.refresh_required is not None
+    assert evidence.refresh_required["trade_thesis_affected"] is False
 
 
 def test_assessment_copies_authority_and_rejects_override(tmp_path: Path) -> None:

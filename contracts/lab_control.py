@@ -41,6 +41,7 @@ from contracts.long_option_policy import (
     LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT,
 )
 from domain.execution_authority import execution_authority_contract_violations
+from domain.quote_units import resolve_spread
 from canonical_data.dynamic_options_projection import DynamicOptionsProjectionResolver
 
 
@@ -184,6 +185,9 @@ FINAL_BOOK_FIELDS = [
     "doi_convexity_score",
     "doi_convexity_label",
     "doi_spread_fraction_mid",
+    "spread_fraction_mid",
+    "spread_pct_of_mid",
+    "spread_unit",
     "doi_reach_ratio",
     "doi_reachable_target_spot",
     "doi_scenarios_json",
@@ -195,6 +199,7 @@ FINAL_BOOK_FIELDS = [
     "structure_evidence_authority",
     "usmi_sector_alignment",
     "usmi_alignment_priority",
+    "usmi_routing_key",
     "usmi_alignment_reason",
     "usmi_scenario",
     "usmi_scenario_failed_clause",
@@ -208,6 +213,7 @@ FINAL_BOOK_FIELDS = [
     "lab_v4_ranking_score_kind",
     "lab_v4_execution_state",
     "lab_v4_quote_provider_timestamp_utc",
+    "lab_v4_quote_freshness",
     "lab_v4_macro_alignment",
     "lab_v4_macro_scenario",
     "lab_v4_summary_state",
@@ -676,6 +682,18 @@ def _f(value: Any, default: float = 0.0) -> float:
         return float(text)
     except Exception:
         return default
+
+
+def _canonical_spread_observation(sig: Dict[str, Any]):
+    """Resolve one spread meaning from exact quote or explicit unit fields."""
+    return resolve_spread({
+        "bid": first(sig, "live_contract_bid", "current_contract_bid", "contract_bid", "bid"),
+        "ask": first(sig, "live_contract_ask", "current_contract_ask", "contract_ask", "ask"),
+        "spread_fraction_mid": first(sig, "spread_fraction_mid", "doi_spread_fraction_mid"),
+        "spread_pct_of_mid": first(sig, "spread_pct_of_mid"),
+        "spread_pct": first(sig, "live_contract_spread_pct", "contract_spread_pct", "spread_pct"),
+        "spread_unit": first(sig, "live_contract_spread_unit", "spread_unit"),
+    })
 
 
 def _is_missing(value: Any) -> bool:
@@ -2001,14 +2019,18 @@ def resolve_lab_tradeability(
         else:
             flags.append("OPTIONS_CONTRACT_SYMBOL_MISSING")
 
-    spread = _f(first(sig, "live_contract_spread_pct", "live_spread_pct", "contract_spread_pct", "spread_pct", "final_option_spread_pct", "opt__spread_pct_mid", "opt__spread_pct"), -1.0)
+    spread_observation = _canonical_spread_observation(sig)
+    spread = spread_observation.spread_pct_of_mid
     spread_policy_state = "UNAVAILABLE"
-    if spread > 0:
-        pct = spread * 100 if spread <= 1 else spread
+    if spread is not None and spread > 0:
+        pct = spread
         if pct > LAB_ABSOLUTE_SPREAD_MAX_PCT:
-            spread_policy_state = "BLOCKED_ABOVE_ABSOLUTE_MAX"
-            flags.append("SPREAD_TOO_WIDE")
-            veto_flags.append("SPREAD_TOO_WIDE")
+            # A wide market is an execution condition, not a reason to delete
+            # or invalidate the ticker thesis.  Keep the row visible for the
+            # human trader and require a later quote/review.
+            spread_policy_state = "EXECUTION_WIDE_SPREAD_MONITOR"
+            soft.append("MANUAL_LIQUIDITY_REVIEW")
+            soft.append("SPREAD_ABOVE_REVIEW_CEILING")
         elif pct > LAB_EXECUTABLE_SPREAD_MAX_PCT:
             spread_policy_state = "MANUAL_LIQUIDITY_REVIEW"
             soft.append("MANUAL_LIQUIDITY_REVIEW")
@@ -2211,14 +2233,23 @@ def resolve_lab_tradeability(
         tradeable = False
         conflict_state = "SOFT_CONFLICT"
         lock_reason = structure_policy_reason
-    elif not veto_flags and spread_policy_state == "MANUAL_LIQUIDITY_REVIEW":
+    elif not veto_flags and spread_policy_state in {
+        "MANUAL_LIQUIDITY_REVIEW",
+        "EXECUTION_WIDE_SPREAD_MONITOR",
+    }:
         verdict = "MANUAL_LIQUIDITY_REVIEW"
         tradeable = False
         conflict_state = "SOFT_CONFLICT"
-        lock_reason = (
-            f"Spread exceeds {LAB_EXECUTABLE_SPREAD_MAX_PCT:.0f}% executable ceiling "
-            f"but is within {LAB_ABSOLUTE_SPREAD_MAX_PCT:.0f}% review ceiling."
-        )
+        if spread_policy_state == "EXECUTION_WIDE_SPREAD_MONITOR":
+            lock_reason = (
+                f"Spread exceeds {LAB_ABSOLUTE_SPREAD_MAX_PCT:.0f}% review ceiling; "
+                "thesis retained and execution requires a better quote or human review."
+            )
+        else:
+            lock_reason = (
+                f"Spread exceeds {LAB_EXECUTABLE_SPREAD_MAX_PCT:.0f}% executable ceiling "
+                f"but is within {LAB_ABSOLUTE_SPREAD_MAX_PCT:.0f}% review ceiling."
+            )
 
     requires_live = any(flag in soft for flag in ("EOD_MISSING_MORNING_VALIDATION", "EOD_MISSING_LIVE_SPREAD")) or (
         "LIVE_VALIDATION_MISSING" in veto_flags
@@ -2423,6 +2454,7 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
     trigger_present = not _is_missing(first(sig, "trigger_primary", "trigger_codes"))
     garch_method = first(sig, "garch_method", "l3_method", "garch__l3_method")
     provenance = dict(sig.get("_lab_field_provenance") or {})
+    spread_observation = _canonical_spread_observation(sig)
     row = {
         "lab_schema_version": "lab_signal_book_v2",
         "pipeline_mode": pipeline_mode,
@@ -2636,7 +2668,10 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "expiry": first(sig, "expiry", "contract_expiry", "opt__contract_expiry") if contract_selected else "",
         "dte": first(sig, "dte", "contract_dte", "opt__contract_dte") if contract_selected else "",
         "premium_mid": first(sig, "premium_mid", "contract_mid", "premium_eod", "premium", "entry_premium", "contract_premium", "opt__premium_mid", "opt__contract_premium") if contract_selected else "",
-        "spread_pct": first(sig, "live_contract_spread_pct", "live_spread_pct", "contract_spread_pct", "spread_pct", "final_option_spread_pct", "opt__contract_spread_pct", "opt__spread_pct_mid", "opt__spread_pct") if contract_selected else "",
+        "spread_fraction_mid": spread_observation.spread_fraction_mid if contract_selected else "",
+        "spread_pct_of_mid": spread_observation.spread_pct_of_mid if contract_selected else "",
+        "spread_unit": "PCT_OF_MID" if contract_selected and spread_observation.spread_pct_of_mid is not None else "",
+        "spread_pct": spread_observation.spread_pct_of_mid if contract_selected else "",
         "liquidity_score": first(sig, "liquidity_score", "eil_liquidity_score", "opt__liquidity_score") if contract_selected else "",
         "priority_score": first(sig, "priority_score", "research_priority_score", "options_research_score", "options_research_confidence"),
         "options_research_route": first(sig, "options_research_route", "final_route", "options_route_verdict"),

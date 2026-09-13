@@ -216,9 +216,21 @@ class TestStage4And5Integration:
 
     def test_structure_and_macro_are_advisory(self):
         assert derive_structure_evidence(hidden_state_label="LOW_ENERGY",phase="C",trigger_primary="X")["structure_evidence_state"] == "NO_EDGE"
-        result = project_usmi_context(packet={"routing":{"FINANCIALS_CALL":{"alignment":"ALIGNED"}}},
+        result = project_usmi_context(packet={
+                                      "contract_version": "us_money_index_v1_0",
+                                      "sector_routing": {
+                                          "CALL": {"FINANCIALS": {
+                                              "alignment": "ALIGNED", "priority": 1,
+                                              "reason": "TEST_ROUTE",
+                                          }},
+                                          "PUT": {},
+                                      },
+                                      "scenarios": {}, "metrics": {},
+                                      },
                                       sector="Financials",industry="Banks",direction="CALL")
-        assert result["usmi_sector_alignment"] == "SUPPORTIVE"
+        assert result["usmi_sector_alignment"] == "ALIGNED"
+        assert result["usmi_alignment_priority"] == 1
+        assert result["usmi_routing_key"] == "FINANCIALS_CALL"
         assert result["usmi_authority"] == "ADVISORY_ONLY"
 
 

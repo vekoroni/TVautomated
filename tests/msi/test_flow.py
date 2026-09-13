@@ -220,15 +220,8 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
         symbol, fetch_contract, ticker=ticker, direction="CALL",
     )
     assert hydrated["selected_structure_hydration_status"] == "COMPLETE"
-    size_bearing_keys = [k for k in hydrated if "bid_size" in k or "ask_size" in k]
-    # FINDING: hydrate_selected_structure's _quote_record only extracts a fixed
-    # set of named fields (bid/ask/mid/iv/delta/gamma/theta/vega/oi/volume/...)
-    # and never reads live_contract_bid_size / live_contract_ask_size, so the
-    # size fields that reached `live` in Stage 3 are dropped at this exact step.
-    assert size_bearing_keys == [], (
-        "if this fails, hydrate_selected_structure now propagates size fields "
-        "and the W-01 finding below is stale"
-    )
+    assert hydrated["live_contract_bid_size"] == 7
+    assert hydrated["live_contract_ask_size"] == 4
 
     # Stage 5: Lab book row materialisation (contracts/lab_control.py::opportunity_book_row,
     # governed by the fixed FINAL_BOOK_FIELDS schema) -- the literal "Lab book row" in W-01.
@@ -239,13 +232,10 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
         "contract_bid_size_quality": "OBSERVED_POSITIVE",
     }
     row = lab_control.opportunity_book_row(sig, RUN_ID + "_W01", 1)
-    size_fields_in_schema = [f for f in lab_control.FINAL_BOOK_FIELDS if "bid_size" in f or "ask_size" in f]
-    size_fields_in_row = [k for k, v in row.items() if "bid_size" in k or "ask_size" in k]
-    assert size_fields_in_schema == [], (
-        "FINAL_BOOK_FIELDS now defines a bid_size/ask_size column -- the Lab "
-        "book row finding below is stale and should be re-verified"
-    )
-    assert size_fields_in_row == []
+    assert "contract_bid_size" in lab_control.FINAL_BOOK_FIELDS
+    assert "contract_ask_size" in lab_control.FINAL_BOOK_FIELDS
+    assert row["contract_bid_size"] == 7
+    assert row["contract_ask_size"] == 4
 
 
 # ===========================================================================
@@ -530,6 +520,10 @@ def test_w07_overlay_and_bundle_quote_change_fields_are_contract_symmetric(tmp_p
         "run_id": run_id, "pipeline_mode": "MORNING_VALIDATION", "ticker": "MSIG",
         "thesis_id": "T-MSIG", "trade_idea_id": "I-MSIG", "selected_structure_id": "S-MSIG",
         "selected_contract_symbol": "MSIG260918C00100000", "selected_quote_snapshot_id": "Q-MSIG",
+        "morning_quote_dataset_id": "Q-MSIG-MORNING",
+        "morning_quote_timestamp_utc": "2026-08-30T13:40:00+00:00",
+        "current_quote_dataset_id": "Q-MSIG-CURRENT",
+        "current_quote_timestamp_utc": "2026-08-30T13:45:00+00:00",
         "governed_direction": "CALL", "thesis_state": "TRADEABLE_NOW",
         "olm_guard_disposition": "ELIGIBLE", "final_action": "BUY_NOW",
         "capital_permission": "CAPITAL_ALLOWED",
@@ -555,7 +549,7 @@ def test_w07_overlay_and_bundle_quote_change_fields_are_contract_symmetric(tmp_p
 
     for field in ("current_contract_bid", "current_contract_ask", "contract_bid_change"):
         assert field in bundle["quote_change_evidence"]
-        assert bundle["quote_change_evidence"][field] == merged[field]
+        assert bundle["quote_change_evidence"][field] == pytest.approx(merged[field])
 
 
 # ===========================================================================

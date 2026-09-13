@@ -65,6 +65,7 @@ class ContractFamilyValuationSummary:
     assessed_contracts: int
     scenario_values: int
     utility_available: int
+    ranking_utility_v2_available: int
     deterministic_only: int
     out_of_distribution: int
     data_insufficient: int
@@ -421,7 +422,15 @@ class DeterministicContractValuationService:
                 "reachability_assessment_v1": reachability.to_dict(),
                 "contract_assessment_v2": economics_v2.to_dict(),
                 "market_rate_observation": self.market_rate_observation.to_dict() if self.market_rate_observation else None,
-                "ranking_score_kind": "DETERMINISTIC_UTILITY",
+                "ranking_score_v2": economics_v2.deterministic_utility,
+                "ranking_score_v2_kind": "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY",
+                "legacy_ranking_score_disclosure": valuation.ranking_score_uncalibrated,
+                "legacy_ranking_score_authority": "DISCLOSURE_ONLY_NOT_COMPARABLE",
+                "ranking_score_kind": (
+                    "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY"
+                    if economics_v2.deterministic_utility is not None
+                    else "NO_COMPARABLE_SCORE"
+                ),
                 "calibration_state": "NOT_AVAILABLE",
             }
             assessment = ContractAssessment.create(
@@ -435,11 +444,7 @@ class DeterministicContractValuationService:
                 calculation_version=calculation_version,
                 feature_version=DOI_DETERMINISTIC_FEATURE_VERSION,
                 model_version=DOI_VALUATION_MODEL_VERSION,
-                ranking_score_uncalibrated=(
-                    economics_v2.deterministic_utility
-                    if economics_v2.deterministic_utility is not None
-                    else valuation.ranking_score_uncalibrated
-                ),
+                ranking_score_uncalibrated=economics_v2.deterministic_utility,
                 probabilities_calibrated=False,
                 metadata=metadata,
             )
@@ -456,7 +461,13 @@ class DeterministicContractValuationService:
             family_candidates=len(evaluation_symbols),
             assessed_contracts=len(results),
             scenario_values=sum(len(item.valuation.scenarios) for item in results),
-            utility_available=sum(item.assessment.ranking_score_uncalibrated is not None for item in results),
+            # Compatibility observation only: v1 utility remains measurable
+            # but cannot participate in v2 ranking comparisons.
+            utility_available=sum(item.valuation.ranking_score_uncalibrated is not None for item in results),
+            ranking_utility_v2_available=sum(
+                item.assessment.ranking_score_uncalibrated is not None
+                for item in results
+            ),
             deterministic_only=sum(item is ModelApplicabilityState.DETERMINISTIC_ONLY for item in applicability),
             out_of_distribution=sum(item is ModelApplicabilityState.OUT_OF_DISTRIBUTION for item in applicability),
             data_insufficient=sum(item is ModelApplicabilityState.DATA_INSUFFICIENT for item in applicability),

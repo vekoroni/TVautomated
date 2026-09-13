@@ -266,8 +266,18 @@ def _quote_record(symbol: str, live: Mapping[str, Any], fetched_at_utc: str) -> 
         mid = (bid + ask) / 2.0
     if bid is None or ask is None or mid is None or bid < 0 or ask <= 0 or bid > ask or mid <= 0:
         raise ValueError(f"invalid two-sided quote for {symbol}: bid={bid}, ask={ask}, mid={mid}")
-    quote_time = _text(live.get("live_options_fetched_at")) or fetched_at_utc
-    dte = (date.fromisoformat(meta["expiry"]) - date.fromisoformat(quote_time[:10])).days
+    # Provider observation time and acquisition time are different facts.  A
+    # fetch timestamp must never make a timestamp-less quote executable.
+    provider_quote_time = _text(
+        live.get("live_contract_provider_updated")
+        or live.get("quote_provider_timestamp_utc")
+        or live.get("quote_timestamp_utc")
+    )
+    session_reference_time = provider_quote_time or fetched_at_utc
+    dte = (
+        date.fromisoformat(meta["expiry"])
+        - date.fromisoformat(session_reference_time[:10])
+    ).days
     bid_size = _number(live.get("live_contract_bid_size"))
     ask_size = _number(live.get("live_contract_ask_size"))
     size_quality = (
@@ -295,8 +305,9 @@ def _quote_record(symbol: str, live: Mapping[str, Any], fetched_at_utc: str) -> 
         "oi": _number(live.get("live_contract_oi")),
         "volume": _number(live.get("live_contract_volume")),
         "contract_multiplier": _number(live.get("live_contract_multiplier")) or 100.0,
-        "quote_timestamp_utc": quote_time,
-        "provider_updated": live.get("live_contract_provider_updated", ""),
+        "quote_timestamp_utc": provider_quote_time or None,
+        "quote_fetch_timestamp_utc": fetched_at_utc,
+        "provider_updated": provider_quote_time or None,
         "source": _text(live.get("live_options_source")),
         "dte": dte,
     }
@@ -425,7 +436,22 @@ def hydrate_selected_structure(
             "oi": min(x for x in (long_leg["oi"], short_leg["oi"]) if x is not None) if any(x is not None for x in (long_leg["oi"], short_leg["oi"])) else None,
             "volume": min(x for x in (long_leg["volume"], short_leg["volume"]) if x is not None) if any(x is not None for x in (long_leg["volume"], short_leg["volume"])) else None,
             "contract_multiplier": long_leg["contract_multiplier"],
-            "quote_timestamp_utc": max(long_leg["quote_timestamp_utc"], short_leg["quote_timestamp_utc"]),
+            "quote_timestamp_utc": (
+                max(
+                    value for value in (
+                        long_leg["quote_timestamp_utc"],
+                        short_leg["quote_timestamp_utc"],
+                    )
+                    if value
+                )
+                if any(
+                    value for value in (
+                        long_leg["quote_timestamp_utc"],
+                        short_leg["quote_timestamp_utc"],
+                    )
+                )
+                else None
+            ),
             "source": long_leg["source"],
             "dte": long_leg["dte"],
             "strike": long_leg["strike"],
@@ -460,7 +486,12 @@ def hydrate_selected_structure(
         "live_contract_ask_size": aggregate.get("ask_size"),
         "contract_size_quality": aggregate.get("contract_size_quality", "MISSING"),
         "contract_quote_quality": aggregate.get("quote_quality", ""),
+        "spread_fraction_mid": aggregate["spread_fraction_mid"],
+        "spread_pct_of_mid": aggregate["spread_fraction_mid"] * 100.0,
+        # Compatibility display alias.  It is explicitly percentage points;
+        # governed consumers use the two canonical fields above.
         "live_contract_spread_pct": aggregate["spread_fraction_mid"] * 100.0,
+        "live_contract_spread_unit": "PCT_OF_MID",
         "selected_max_leg_spread_pct": (
             aggregate.get("max_leg_spread_fraction_mid", aggregate["spread_fraction_mid"])
             * 100.0

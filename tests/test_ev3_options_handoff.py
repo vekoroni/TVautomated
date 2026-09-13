@@ -237,7 +237,10 @@ def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
     assert lifecycle["invalidation_source"] == "stop_loss"
     assert lifecycle["planned_hold_sessions"] == 5.0
     assert lifecycle["minimum_required_dte"] == 13
-    assert lifecycle["liquidity_state"] == "EXECUTABLE_NOW"
+    # Completed-session evidence can prepare and rank the thesis, but cannot
+    # claim current executability.  That state is minted only by the governed
+    # post-open contract refresh.
+    assert lifecycle["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
     assert lifecycle["remaining_runway_state"] == "THESIS_ACTIVE"
     assert lifecycle["thesis_state"] == "ACTIVE"
 

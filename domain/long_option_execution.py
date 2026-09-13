@@ -32,6 +32,7 @@ LONG_OPTION_EXECUTION_POLICY = MappingProxyType(
 
 QUOTE_POLICY_VERSION = "long-options-quote-policy-v2"
 QUOTE_SPREAD_DENOMINATOR = "MID"
+EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS = 15 * 60
 
 
 def _finite(value: Any) -> float | None:
@@ -125,6 +126,8 @@ def quote_age_seconds(
 def evaluate_execution_viability(
     row: Mapping[str, Any],
     hydrated: Mapping[str, Any],
+    *,
+    as_of_utc: datetime | str | None = None,
 ) -> dict[str, Any]:
     """Evaluate observable execution quality without forecasting profitability.
 
@@ -203,13 +206,39 @@ def evaluate_execution_viability(
             "execution_viability_state": "INVALID_QUOTE",
             "execution_viability_reason": "NEGATIVE_CROSSED_OR_NON_POSITIVE_ASK",
         }
+    provider_timestamp = (
+        hydrated.get("selected_quote_timestamp_utc")
+        or hydrated.get("quote_provider_timestamp_utc")
+        or hydrated.get("live_contract_provider_updated")
+        or row.get("quote_provider_timestamp_utc")
+        or row.get("selected_quote_timestamp_utc")
+    )
+    age = quote_age_seconds(provider_timestamp, as_of_utc=as_of_utc)
+    if age is None:
+        return {
+            **base,
+            "execution_viability_state": "CURRENT_QUOTE_UNAVAILABLE",
+            "execution_viability_reason": "PROVIDER_QUOTE_TIMESTAMP_REQUIRED",
+            "execution_viability_quote_age_seconds": None,
+        }
     spread_pct = quote_spread_percent(bid, ask)
     details = {
         **base,
         "execution_viability_bid": bid,
         "execution_viability_ask": ask,
         "execution_viability_spread_pct": spread_pct,
+        "execution_viability_spread_fraction_mid": (
+            spread_pct / 100.0 if spread_pct is not None else None
+        ),
+        "execution_viability_quote_provider_timestamp_utc": str(provider_timestamp),
+        "execution_viability_quote_age_seconds": age,
     }
+    if age > EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS:
+        return {
+            **details,
+            "execution_viability_state": "REQUOTE_REQUIRED",
+            "execution_viability_reason": "PROVIDER_QUOTE_OUTSIDE_FRESHNESS_WINDOW",
+        }
     if bid == 0:
         return {
             **details,
@@ -242,5 +271,3 @@ def evaluate_execution_viability(
         "execution_viability_eligible": True,
         "execution_viability_reviewable": True,
     }
-
-

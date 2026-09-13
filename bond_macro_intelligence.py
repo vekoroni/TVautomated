@@ -128,10 +128,7 @@ log = logging.getLogger("bond_macro_intelligence")
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-POLYGON_API_KEY = os.environ.get(
-    "POLYGON_API_KEY",
-    "***REDACTED_POLYGON_API_KEY***"
-)
+POLYGON_API_KEY = os.environ.get("POLYGON_API_KEY", "").strip()
 
 FRED_CSV_URL    = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 POLYGON_AGG_URL = "https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{from_date}/{to_date}"

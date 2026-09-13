@@ -175,15 +175,21 @@ class DynamicOptionsContractFamilyTests(unittest.TestCase):
             run_id=RUN_ID,
         )
         self.assertEqual(result.summary.source_observations, len(rows))
-        self.assertEqual(result.summary.family_candidates, 3)
-        self.assertEqual(result.summary.two_sided_candidates, 1)
+        self.assertEqual(result.summary.family_candidates, 4)
+        self.assertEqual(result.summary.two_sided_candidates, 2)
         self.assertEqual(result.summary.monitor_one_sided, 1)
         self.assertEqual(result.summary.monitor_no_quote, 1)
         self.assertEqual(result.summary.retained_low_open_interest, 2)
         self.assertEqual(result.summary.retained_zero_volume, 1)
         self.assertEqual(set(result.family.candidate_symbols), {
-            _symbol("CALL", 100.0), _symbol("CALL", 105.0), _symbol("CALL", 110.0)
+            _symbol("CALL", 100.0), _symbol("CALL", 105.0),
+            _symbol("CALL", 110.0), _symbol("CALL", 130.0, "260911"),
         })
+        limited = next(
+            item for item in result.taxonomy
+            if item.contract_symbol == _symbol("CALL", 130.0, "260911")
+        )
+        self.assertIn("HORIZON_LIMITED", limited.monitor_reasons)
         self.assertEqual(len(result.display_symbols), 3)
         self.assertTrue(all(item.option_side != "PUT" or not item.is_family_candidate for item in result.taxonomy))
         excluded_reasons = result.summary.counts_by_exclusion
@@ -192,7 +198,6 @@ class DynamicOptionsContractFamilyTests(unittest.TestCase):
             "INVALID_OCC_IDENTITY",
             "CROSSED_QUOTE",
             "NEGATIVE_QUOTE",
-            "INSUFFICIENT_SESSION_RUNWAY",
             "IDENTITY_FIELD_MISMATCH",
             "DUPLICATE_CONTRACT_AMBIGUOUS",
         ):

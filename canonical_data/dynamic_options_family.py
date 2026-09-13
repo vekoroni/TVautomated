@@ -344,8 +344,6 @@ class ThesisConditionedContractFamilyGenerator:
             remaining = xnys_sessions_between(session_date, expiry) if expiry else None
             if expiry is not None and expiry < session_date:
                 exclusions.append(StructuralExclusionReason.EXPIRED_CONTRACT)
-            if remaining is not None and remaining < required_sessions:
-                exclusions.append(StructuralExclusionReason.INSUFFICIENT_SESSION_RUNWAY)
 
             bid = _number(_value(row, "bid"))
             ask = _number(_value(row, "ask"))
@@ -357,6 +355,11 @@ class ThesisConditionedContractFamilyGenerator:
             volume = _number(_value(row, "volume"))
             open_interest = _number(_value(row, "open_interest"))
             monitor: list[str] = []
+            if remaining is not None and remaining < required_sessions:
+                # Insufficient full-horizon runway is an economic limitation,
+                # not structural invalidity.  Keep the contract available for
+                # comparison/monitoring and let valuation decide scoreability.
+                monitor.append("HORIZON_LIMITED")
             if open_interest is None:
                 monitor.append("OPEN_INTEREST_MISSING")
             elif open_interest < 50:
@@ -462,6 +465,7 @@ class ThesisConditionedContractFamilyGenerator:
             "expected_move_pct": _number(expected_move_pct),
             "structural_exclusions_only": True,
             "low_activity_is_monitorable": True,
+            "horizon_limited_is_monitorable": True,
         }
         family = ContractFamily.create(
             thesis=thesis,

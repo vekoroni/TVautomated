@@ -194,7 +194,7 @@ class TestL01QuoteChangeComparison:
         assert "SAME_CONTRACT" not in morning_gate_src
         assert "CONTRACT_CHANGED" not in morning_gate_src or "MORNING_CONTRACT_CHANGED" in morning_gate_src
 
-    def test_bundle_pass_through_does_not_compute_anything(self, tmp_path: Path) -> None:
+    def test_bundle_computes_explicit_missing_quote_comparison(self, tmp_path: Path) -> None:
         """L-01 / S8.8, executed. A row with NO quote-change fields at all
         produces bundle['quote_change_evidence'] == {} -- not `comparison_status:
         null` (BASELINE_MISSING) and not any of the five required states.
@@ -207,14 +207,12 @@ class TestL01QuoteChangeComparison:
         row = _governed_row()  # no morning_contract_bid / comparison_status / etc.
         result = _publish_handoff(tmp_path, rows=[row])
         bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
-        assert bundle["quote_change_evidence"] == {}, (
-            "Expected S8.8 to always populate comparison_status as one of the "
-            "five enumerated states even with no upstream quote-change data "
-            "(BASELINE_MISSING at minimum). Found an empty dict: no active "
-            "module computes quote_change_evidence at all."
-        )
+        evidence = bundle["quote_change_evidence"]
+        assert evidence["comparison_status"] == "BASELINE_MISSING"
+        assert evidence["current_contract_bid"] is None
+        assert evidence["contract_bid_change"] is None
 
-    def test_bundle_forwards_precomputed_fields_verbatim_no_recomputation(self, tmp_path: Path) -> None:
+    def test_bundle_recomputes_and_rejects_unlineaged_precomputed_fields(self, tmp_path: Path) -> None:
         """L-01 / S8.8, executed. Even when a row *does* carry quote-change
         fields, the materializer forwards them byte-for-byte without
         validating comparison_status against the actual contract-identity/
@@ -240,20 +238,17 @@ class TestL01QuoteChangeComparison:
         result = _publish_handoff(tmp_path, run_id="RUN1B", rows=[row])
         bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
         evidence = bundle["quote_change_evidence"]
-        assert evidence["comparison_status"] == "SAME_CONTRACT"
+        assert evidence["comparison_status"] == "BASELINE_MISSING"
         assert evidence["current_contract_bid"] == 0.0
-        # S8.8: baseline-zero handling is about the *baseline* (morning) side,
-        # not current; this asserts only that no BASELINE_ZERO/derived field
-        # exists anywhere in the bundle to prove nothing was computed.
-        assert "change_status" not in evidence
-        assert "current_bid_pct_change" not in evidence
+        assert evidence["contract_bid_change"] is None
+        assert evidence["change_status"] == "BASELINE_MISSING"
 
 
 class TestL02BaselineZero:
     """L-02 -- design S8.8: a zero baseline value must produce
     `change_status = BASELINE_ZERO` and a null percentage change."""
 
-    def test_baseline_zero_is_never_derived(self, tmp_path: Path) -> None:
+    def test_baseline_zero_is_explicit_and_percentage_is_withheld(self, tmp_path: Path) -> None:
         """L-02 / S8.8, executed. A row whose *morning* (baseline) bid is
         0.0 is published through the same pass-through path as L-01. No
         `change_status` field, BASELINE_ZERO or otherwise, is ever added.
@@ -266,6 +261,10 @@ class TestL02BaselineZero:
             run_id="RUN1C",
             ticker="EEE",
             selected_contract_symbol="EEE260918C00100000",
+            morning_quote_dataset_id="EEE-MORNING",
+            morning_quote_timestamp_utc="2026-08-30T13:40:00+00:00",
+            current_quote_dataset_id="EEE-CURRENT",
+            current_quote_timestamp_utc="2026-08-30T13:45:00+00:00",
             morning_contract_bid=0.0,
             morning_contract_ask=0.05,
             current_contract_bid=0.10,
@@ -274,10 +273,10 @@ class TestL02BaselineZero:
         result = _publish_handoff(tmp_path, run_id="RUN1C", rows=[row])
         bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])
         evidence = bundle["quote_change_evidence"]
-        assert "change_status" not in evidence
-        assert "contract_bid_pct_change" not in evidence
-        # The raw zero value is forwarded untouched; nothing flags it.
-        assert evidence.get("morning_contract_bid") is None or evidence["morning_contract_bid"] == 0.0
+        assert evidence["change_status"] == "BASELINE_ZERO"
+        assert evidence["comparison_status"] == "BASELINE_ZERO"
+        assert evidence["contract_bid_change_pct"] is None
+        assert evidence["morning_bid"] == 0.0
 
 
 # ===========================================================================
@@ -808,7 +807,7 @@ class TestL07QualityClassification:
                 hits.append(text)
         assert hits == [], f"TRADE_LEVEL_CONFIRMED unexpectedly referenced in: {hits}"
 
-    def test_DEFECT_coarse_bars_only_has_no_independent_detection_path(self) -> None:
+    def test_coarse_bars_are_detected_from_observed_cadence(self) -> None:
         """L-07 DEFECT / S14 ('Coarse bars only | COARSE_DATA_LOW_CONFIDENCE
         | supporting evidence only'). The only mechanism that can ever
         produce COARSE_DATA_LOW_CONFIDENCE is the caller-supplied
@@ -833,10 +832,7 @@ class TestL07QualityClassification:
             coarse_bars, exchange_tick=0.01, atr14=4.0,
             regular_open_utc=datetime(2026, 6, 1, 13, 30, tzinfo=timezone.utc),
         )
-        assert profile.data_quality == "ONE_MINUTE_ESTIMATED", (
-            "confirms 15-minute bars are silently treated identically to "
-            "true one-minute bars; no coarse-bar detection exists"
-        )
+        assert profile.data_quality == "COARSE_15_MINUTE"
 
 
 # ===========================================================================
@@ -994,7 +990,14 @@ class TestL09TrajectoryComparisonNormalisation:
         row = _governed_row(
             run_id="RUN1D", ticker="GGG", selected_contract_symbol="GGG260918C00100000",
             comparison_status="CONTRACT_CHANGED",
-            morning_contract_bid=1.0, current_contract_bid=None,
+            morning_contract_symbol="GGG260918C00100000",
+            current_contract_symbol="GGG260918C00105000",
+            morning_quote_dataset_id="GGG-MORNING",
+            current_quote_dataset_id="GGG-CURRENT",
+            morning_quote_timestamp_utc="2026-08-30T13:40:00+00:00",
+            current_quote_timestamp_utc="2026-08-30T13:45:00+00:00",
+            morning_contract_bid=1.0, morning_contract_ask=1.2,
+            current_contract_bid=0.8, current_contract_ask=1.0,
         )
         result = _publish_handoff(tmp_path, run_id="RUN1D", rows=[row])
         bundle = json.loads(Path(result["bundle_path"]).read_text(encoding="utf-8").splitlines()[0])

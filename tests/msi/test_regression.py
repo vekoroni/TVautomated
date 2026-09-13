@@ -31,7 +31,7 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-PY = ROOT / ".codex_python313_runtime" / "python.exe"
+PY = Path(sys.executable)
 
 sys.path.insert(0, str(ROOT))
 
@@ -609,8 +609,9 @@ class R06LabSignalBookV3Schema(unittest.TestCase):
         evidence (lines ~208-224). Confirms its member fields match the
         SS11 'Quote identity and freshness' exact-field list subset that
         the materializer itself declares."""
-        source = (ROOT / "contracts" / "interpreter_handoff_materializer.py").read_text(
-            encoding="utf-8", errors="ignore"
+        source = "\n".join(
+            (ROOT / "contracts" / name).read_text(encoding="utf-8", errors="ignore")
+            for name in ("interpreter_handoff_materializer.py", "quote_change_evidence.py")
         )
         for field in ("morning_contract_bid", "morning_contract_ask", "morning_contract_mid",
                       "current_contract_bid", "current_contract_ask", "current_contract_mid",
@@ -717,13 +718,17 @@ class R07ExistingRegressionSuites(unittest.TestCase):
     }
 
     def _run_group(self, files: tuple[str, ...], label: str) -> dict:
-        with tempfile.TemporaryDirectory() as tmp:
+        test_tmp_root = ROOT / "audit" / "avs_fix_002" / "build_sequence"
+        test_tmp_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=test_tmp_root) as tmp:
             xml_path = Path(tmp) / "result.xml"
+            base_temp = Path(tmp) / "pytest"
             proc = subprocess.run(
                 [str(PY), "-m", "pytest", *files, "-q", "--capture=no",
+                 "-p", "no:cacheprovider", f"--basetemp={base_temp}",
                  f"--junitxml={xml_path}"],
                 cwd=str(ROOT),
-                env={**__import__("os").environ, "PYTHONPATH": "venv/Lib/site-packages",
+                env={**__import__("os").environ, "PYTHONPATH": str(ROOT),
                      "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
                 capture_output=True, text=True, timeout=300,
             )

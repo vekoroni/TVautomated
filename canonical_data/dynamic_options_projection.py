@@ -98,7 +98,32 @@ class DynamicOptionsProjectionResolver:
             "score": item.get("score"), "score_kind": item.get("score_kind"),
             "explanation": item.get("explanation"), "selected": item.get("selected", False),
         } for item in ranking.get("ranked_contracts", []))
-        calibrated = str(ranking.get("mode") or "") == "CALIBRATED_POLICY"
+        calibrated_ranking = str(ranking.get("mode") or "") == "CALIBRATED_POLICY"
+        if selected is None:
+            calibrated = False
+        elif "probabilities_calibrated" in selected_keys:
+            # Current schema: the explicit applicability result is authoritative.
+            calibrated = calibrated_ranking and bool(selected["probabilities_calibrated"])
+        else:
+            # Compatibility for immutable pre-flag assessments.  A calibrated
+            # ranking may project only when the complete probability triplet
+            # and its model identity were persisted; partial legacy evidence
+            # remains deterministic/withheld.
+            calibrated = calibrated_ranking and all(
+                selected[key] is not None
+                for key in (
+                    "p_liquidity_3d",
+                    "p_positive_return_before_horizon",
+                    "p_target_before_invalidation",
+                    "model_version",
+                )
+                if key in selected_keys
+            ) and {
+                "p_liquidity_3d",
+                "p_positive_return_before_horizon",
+                "p_target_before_invalidation",
+                "model_version",
+            } <= selected_keys
         projection = DynamicOptionsProjection(
             state=ProjectionState.CALIBRATED if calibrated else ProjectionState.DETERMINISTIC,
             reason=str(ranking.get("selection_reason") or "DOI_RANKING_AVAILABLE"),
@@ -106,11 +131,11 @@ class DynamicOptionsProjectionResolver:
             ranking_mode=str(ranking.get("mode") or ""), policy_id=str(ranking.get("policy_id") or ""),
             preferred_assessment_id=selected_id, preferred_contract_symbol=preferred,
             governed_contract_symbol=governed, contract_alignment=alignment,
-            p_liquidity_3d=float(selected["p_liquidity_3d"]) if selected and selected["p_liquidity_3d"] is not None else None,
-            p_positive_return=float(selected["p_positive_return_before_horizon"]) if selected and selected["p_positive_return_before_horizon"] is not None else None,
-            p_target_before_invalidation=float(selected["p_target_before_invalidation"]) if selected and selected["p_target_before_invalidation"] is not None else None,
-            model_uncertainty=float(selected["model_uncertainty"]) if selected and selected["model_uncertainty"] is not None else None,
-            probability_model_id=str(selected["model_version"] or "") if selected else "",
+            p_liquidity_3d=float(selected["p_liquidity_3d"]) if calibrated and selected["p_liquidity_3d"] is not None else None,
+            p_positive_return=float(selected["p_positive_return_before_horizon"]) if calibrated and selected["p_positive_return_before_horizon"] is not None else None,
+            p_target_before_invalidation=float(selected["p_target_before_invalidation"]) if calibrated and selected["p_target_before_invalidation"] is not None else None,
+            model_uncertainty=float(selected["model_uncertainty"]) if calibrated and selected["model_uncertainty"] is not None else None,
+            probability_model_id=str(selected["model_version"] or "") if calibrated else "",
             evidence_cutoff_utc=str(ranking["evidence_cutoff_utc"]),
             input_dataset_ids=tuple(ranking.get("input_dataset_ids") or ()), alternatives=alternatives,
         )
@@ -118,12 +143,25 @@ class DynamicOptionsProjectionResolver:
         row.update({
             "doi_ranking_score": (
                 selected["ranking_score_uncalibrated"]
-                if selected is not None and "ranking_score_uncalibrated" in selected_keys else None
+                if selected is not None
+                and "ranking_score_uncalibrated" in selected_keys
+                and selected_metadata.get("ranking_score_kind")
+                == "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY"
+                else None
             ),
-            "doi_ranking_score_kind": selected_metadata.get("ranking_score_kind", "DETERMINISTIC_UTILITY") if selected else "",
+            "doi_ranking_score_kind": (
+                selected_metadata.get("ranking_score_kind")
+                or "NO_COMPARABLE_SCORE"
+            ) if selected else "NO_COMPARABLE_SCORE",
             "doi_calibration_state": selected_metadata.get("calibration_state", "NOT_AVAILABLE") if selected else "NOT_AVAILABLE",
-            "doi_monetisability_state": economics_v2.get("monetisability_state"),
-            "doi_monetisability_reason": economics_v2.get("monetisability_reason"),
+            "doi_monetisability_state": (
+                economics_v2.get("monetisability_state")
+                or "NOT_EVALUATED_DATA_MISSING"
+            ),
+            "doi_monetisability_reason": (
+                economics_v2.get("monetisability_reason")
+                or "CONTRACT_ASSESSMENT_V2_UNAVAILABLE"
+            ),
             "doi_convexity_score": economics_v2.get("convexity_score"),
             "doi_convexity_label": economics_v2.get("convexity_label"),
             "doi_spread_fraction_mid": economics_v2.get("spread_fraction_mid"),

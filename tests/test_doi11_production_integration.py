@@ -176,6 +176,16 @@ class DOI11ProductionIntegrationTests(unittest.TestCase):
         self.assertEqual(result.exception_count, 1)
         self.assertEqual(result.counts_by_state["NOT_APPLICABLE_NON_DIRECTIONAL"], 1)
         self.assertEqual(result.counts_by_state["DATA_EXCEPTION_RETAINED"], 1)
+        self.assertTrue(result.population_reconciled)
+        self.assertEqual(result.accounted_terminal_rows, result.unique_tickers)
+        self.assertEqual(
+            result.family_rows,
+            result.assessed_families + result.unassessed_families,
+        )
+        self.assertEqual(
+            result.assessed_families,
+            result.ranked_families + result.unranked_assessed_families,
+        )
 
     def test_wide_chain_retains_full_taxonomy_but_bounds_production_valuation(self):
         self._register_wide_call_chain("WIDE")

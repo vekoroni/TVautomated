@@ -344,7 +344,12 @@ def _bundle(
         morning=morning_quote,
         current=current_quote,
     )
-    governed.update(quote_change_overlay_fields(quote_change))
+    overlay_quote_change = quote_change_overlay_fields(quote_change)
+    governed.update(overlay_quote_change)
+    # The bundle carries both the domain-native calculation names and the
+    # exact Lab overlay projection names.  This removes a translation gap at
+    # the human/Interpreter boundary while preserving the canonical evidence.
+    quote_change = {**quote_change, **overlay_quote_change}
     bundle_id = str(
         uuid.uuid5(
             uuid.NAMESPACE_URL,

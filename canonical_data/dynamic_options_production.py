@@ -99,6 +99,10 @@ class DOIProductionSummary:
     canonical_reuse: int
     physical_fetch_count: int
     exception_count: int
+    unassessed_families: int
+    unranked_assessed_families: int
+    accounted_terminal_rows: int
+    population_reconciled: bool
     counts_by_state: Mapping[str, int]
     exceptions: tuple[Mapping[str, Any], ...]
     authority: str = "ADVISORY_ONLY"
@@ -110,12 +114,22 @@ class DOIProductionSummary:
             raise ValueError("DOI production integration must preserve every opportunity")
         if self.physical_fetch_count:
             raise ValueError("DOI production integration is canonical-reuse-only")
+        if not self.population_reconciled or self.accounted_terminal_rows != self.unique_tickers:
+            raise ValueError("DOI terminal population does not reconcile")
+        if self.family_rows != self.assessed_families + self.unassessed_families:
+            raise ValueError("DOI family assessment population does not reconcile")
+        if self.assessed_families != self.ranked_families + self.unranked_assessed_families:
+            raise ValueError("DOI assessed/ranked population does not reconcile")
 
     def to_dict(self) -> dict[str, Any]:
         return {
             **{name: getattr(self, name) for name in self.__dataclass_fields__},
             "counts_by_state": dict(self.counts_by_state),
             "exceptions": list(self.exceptions),
+            "population_equation": (
+                f"{self.unique_tickers} input = {self.accounted_terminal_rows} "
+                "terminal retained/exception rows"
+            ),
         }
 
 
@@ -191,6 +205,7 @@ def run_completed_session_doi(
 
     for raw in frame.to_dict(orient="records"):
         ticker = str(raw.get("ticker") or "").strip().upper()
+        pipeline_stage = "THESIS_VALIDATION"
         try:
             direction = str(_first(raw, "governed_direction", "canonical_direction", "direction") or "").strip().upper()
             if direction not in {"CALL", "PUT"}:
@@ -269,6 +284,7 @@ def run_completed_session_doi(
                     "retained": True,
                 })
                 continue
+            pipeline_stage = "FAMILY_GENERATION"
             generated = generator.generate(
                 thesis=thesis, observation=observation, run_id=run_id,
                 current_spot=spot, evaluation_cutoff_utc=cutoff,
@@ -281,6 +297,7 @@ def run_completed_session_doi(
             if not observation.available or not generated.family.candidate_symbols:
                 states["FAMILY_DATA_INSUFFICIENT"] += 1
                 continue
+            pipeline_stage = "DETERMINISTIC_VALUATION"
             rate = market_rate.rate_annual_fraction
             if rate is None:
                 rate = _number(_first(raw, "ev3_rate_used", "risk_free_rate"))
@@ -314,6 +331,7 @@ def run_completed_session_doi(
                 )),
             )
             assessed += 1
+            pipeline_stage = "LIFECYCLE_EVALUATION"
             lifecycle_result = lifecycle_service.evaluate_completed_session(
                 generated_family=generated, valuation_result=valuation,
                 evaluation_session=cutoff.date(), horizon_end_date=None,
@@ -325,6 +343,7 @@ def run_completed_session_doi(
                 lifecycle_result.preferred_decision.selected_contract_symbol
                 if lifecycle_result.preferred_decision else None
             )
+            pipeline_stage = "FAMILY_RANKING"
             ranker.rank_family(family_id=generated.family.family_id, previous_contract_symbol=previous)
             ranked += 1
             states["RANKED_DETERMINISTIC"] += 1
@@ -333,8 +352,10 @@ def run_completed_session_doi(
             exceptions.append({
                 "ticker": ticker, "error_type": type(error).__name__,
                 "reason": str(error), "retained": True,
+                "pipeline_stage": pipeline_stage,
             })
 
+    accounted_terminal_rows = sum(states.values())
     summary = DOIProductionSummary(
         run_id=run_id, input_rows=len(pd.read_csv(source, usecols=["ticker"])),
         unique_tickers=len(frame), retained_opportunities=len(frame),
@@ -346,7 +367,12 @@ def run_completed_session_doi(
         assessed_families=assessed,
         ranked_families=ranked, lifecycle_families=lifecycle,
         canonical_reuse=reused, physical_fetch_count=0,
-        exception_count=len(exceptions), counts_by_state=dict(states),
+        exception_count=len(exceptions),
+        unassessed_families=family_rows - assessed,
+        unranked_assessed_families=assessed - ranked,
+        accounted_terminal_rows=accounted_terminal_rows,
+        population_reconciled=(accounted_terminal_rows == len(frame)),
+        counts_by_state=dict(states),
         exceptions=tuple(exceptions),
     )
     target = Path(report_path)

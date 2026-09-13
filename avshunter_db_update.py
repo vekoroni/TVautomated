@@ -78,7 +78,7 @@ import requests
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-POLYGON_API_KEY     = os.environ.get("POLYGON_API_KEY", "***REDACTED_POLYGON_API_KEY***").strip()
+POLYGON_API_KEY     = os.environ.get("POLYGON_API_KEY", "").strip()
 
 DEFAULT_EXISTING_DB = r"C:\Users\ACKVerissimo\vanguard\data\actuarial_database_v7.parquet"
 DEFAULT_UNIVERSE    = r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\clean_universe__with_sector.csv"

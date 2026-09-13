@@ -512,6 +512,10 @@ def advisory_fields_for_row(
         "usmi_state": _text(_mapping(usmi.get("state")).get("US_MONEY_INDEX_STATE")),
         "usmi_sector_alignment": usmi_advisory["alignment"],
         "usmi_alignment_priority": usmi_advisory["priority"],
+        "usmi_routing_key": (
+            f"{_text(row.get('governed_direction') or row.get('direction')).upper()}:"
+            f"{sector.upper()}"
+        ),
         "usmi_alignment_reason": usmi_advisory["reason"],
         "usmi_authority": "ADVISORY_ONLY",
         "usmi_scenario": _mapping(packet.get("us_money_index_scenario")).get("scenario", "UNRESOLVED"),

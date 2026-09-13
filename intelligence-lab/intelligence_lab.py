@@ -292,7 +292,16 @@ def _governed_lab_book(run_id):
     complete v2 population and overlays v3 rows after exact identity checks.
     """
     payload = read_final_opportunity_book(run_id, RUNS_DIR)
-    if not isinstance(payload, dict) or payload.get("lab_schema_version") != "lab_signal_book_v2":
+    # The governed publisher moved additively from v2 to v4.  The Lab reader
+    # must accept both persisted contracts during the rollout; rejecting the
+    # current v4 contract made a valid opportunity book appear empty.
+    if (
+        not isinstance(payload, dict)
+        or payload.get("lab_schema_version") not in {
+            "lab_signal_book_v2",
+            "lab_signal_book_v4",
+        }
+    ):
         payload = {}
     full_rows = payload.get("rows") if isinstance(payload.get("rows"), list) else []
     if payload and payload.get("candidate_count") not in (None, len(full_rows)):
@@ -1850,14 +1859,12 @@ def _load_run(run_id, force_reload=False):
         _sync_lab_display_fields(sig)
         sig.setdefault("sb_verdict_reason",sig.get("reason",""))
 
-        # Sizing from v5 if available, else derive from eil_composite
+        # Portfolio allocation is outside the AVSHUNTER bounded context.
+        # Legacy fields stay schema-readable but never contain a recommendation.
         v5 = v5_map.get(t, {})
-        if v5.get("size_mult"):
-            sig.setdefault("sb_position_size_pct", float(v5.get("size_mult",0) or 0) * 100)
-        else:
-            eil_c = float(sig.get("eil_composite_score",50) or 50)
-            sig.setdefault("sb_position_size_pct",
-                           100 if eil_c >= 85 else 75 if eil_c >= 70 else 55 if eil_c >= 55 else 35)
+        sig["sb_position_size_pct"] = None
+        sig["position_size_display"] = "HUMAN DETERMINED"
+        sig["sb_position_size_display"] = "HUMAN DETERMINED"
 
         # Contract validity → veto display
         cv_flags = sig.get("contract_validity","")

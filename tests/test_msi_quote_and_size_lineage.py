@@ -24,7 +24,7 @@ def _snapshot(*, bid: float, ask: float, bid_size: int, ask_size: int, now: date
         contract_symbol=SYMBOL, dataset_id=f"D:{bid}:{ask}",
         timestamp_utc=now, session_date=date(2026, 8, 30),
         bid=bid, ask=ask, mid=(bid + ask) / 2,
-        spread_pct=(ask - bid) / ((bid + ask) / 2),
+        spread_fraction_mid=(ask - bid) / ((bid + ask) / 2),
         bid_size=bid_size, ask_size=ask_size, source="MARKETDATA",
     )
 

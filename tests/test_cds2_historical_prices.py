@@ -30,6 +30,12 @@ from canonical_data import (  # noqa: E402
 from scripts import backfill_timeseries_into_packages as backfill  # noqa: E402
 
 
+def last_completed_session() -> date:
+    from canonical_data.session_clock import session_snapshot
+
+    return session_snapshot().last_completed_session
+
+
 def bars(close_two: float = 11.5) -> pd.DataFrame:
     return pd.DataFrame(
         [
@@ -40,7 +46,9 @@ def bars(close_two: float = 11.5) -> pd.DataFrame:
 
 
 def recent_bars(count: int = 2) -> pd.DataFrame:
-    end = date.today() - timedelta(days=1)
+    # Anchor fixtures to the exchange's last completed session.  Calendar
+    # yesterday can be Saturday/Sunday and is not canonical market evidence.
+    end = last_completed_session()
     start = end - timedelta(days=count - 1)
     return pd.DataFrame([
         {
@@ -196,7 +204,7 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
             encoding="utf-8",
         )
         fetched_start = stale_end + timedelta(days=1)
-        fresh_end = date.today() - timedelta(days=1)
+        fresh_end = last_completed_session()
         fetched_rows = [
             {
                 "date": (fetched_start + timedelta(days=index)).isoformat(),
@@ -268,7 +276,7 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
             success, reason = backfill.backfill_package(
                 package_path, min_bars=120, start="2021-01-01",
                 allow_polygon=True, api_key="test-key",
-                completed_session=date.today() - timedelta(days=1),
+                completed_session=last_completed_session(),
             )
 
         self.assertTrue(success)
@@ -276,7 +284,7 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
         self.assertEqual(fetch.call_args.kwargs["start"], "2021-01-01")
         self.assertEqual(
             fetch.call_args.kwargs["end"],
-            (date.today() - timedelta(days=1)).isoformat(),
+            last_completed_session().isoformat(),
         )
         repaired = json.loads(package_path.read_text(encoding="utf-8"))
         self.assertGreaterEqual(len(repaired["ohlcv_daily"]), 120)
@@ -293,7 +301,7 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
             json.dumps({"ticker": "BP", "run_id": "SESSION_BOUNDARY_TEST"}),
             encoding="utf-8",
         )
-        required = date.today() - timedelta(days=1)
+        required = last_completed_session()
         fetched = recent_bars(130).to_dict(orient="records")
         fetched.append({
             "date": date.today().isoformat(),

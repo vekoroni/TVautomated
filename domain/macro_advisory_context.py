@@ -1,6 +1,8 @@
-"""Pure US Money Index routing and scenario context (never authority)."""
+"""Pure US Money Index projection using the canonical macro-domain rules."""
 from __future__ import annotations
 from typing import Any, Mapping
+
+from macro_domain.us_money_index import evaluate_scenarios, sector_advisory
 
 MACRO_ADVISORY_VERSION = "usmi_routing_v1"
 GICS_TO_ETF = {
@@ -10,20 +12,16 @@ GICS_TO_ETF = {
     "UTILITIES":"XLU", "COMMUNICATION SERVICES":"XLC",
 }
 
-def _find(node: Any, key: str):
-    if isinstance(node, Mapping):
-        if key in node:
-            return node[key]
-        for child in node.values():
-            value = _find(child, key)
-            if value is not None:
-                return value
-    elif isinstance(node, list):
-        for child in node:
-            value = _find(child, key)
-            if value is not None:
-                return value
-    return None
+def _packet(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    if value.get("contract_version") == "us_money_index_v1_0":
+        return value
+    direct = value.get("us_money_index")
+    if isinstance(direct, Mapping):
+        return direct
+    extras = value.get("extras")
+    if isinstance(extras, Mapping) and isinstance(extras.get("us_money_index"), Mapping):
+        return extras["us_money_index"]
+    return {}
 
 def _route_key(sector: str, industry: str, direction: str) -> str:
     sec, ind, side = sector.upper(), industry.upper(), direction.upper()
@@ -50,43 +48,24 @@ def _mapping_value(route: Any) -> tuple[str, str]:
     return str(route or "NEUTRAL").upper(), "ROUTE_PRESENT"
 
 def project_usmi_context(*, packet: Mapping[str, Any], sector: str, industry: str, direction: str) -> dict[str, Any]:
-    routing = _find(packet, "routing")
+    canonical = _packet(packet)
     key = _route_key(sector, industry, direction)
-    route = routing.get(key) if isinstance(routing, Mapping) else None
-    if route is None:
-        alignment, reason = "UNAVAILABLE", f"{key}:ROUTE_UNAVAILABLE"
-    else:
-        raw, reason = _mapping_value(route)
-        if raw in {"UNCERTAIN", "UNAVAILABLE"}: alignment = raw
-        elif raw in {"ALIGNED", "SUPPORTIVE", "CALL", "PUT", "BULLISH", "BEARISH"}: alignment = "SUPPORTIVE"
-        elif raw in {"OPPOSED", "HEADWIND"}: alignment = "OPPOSED"
-        else: alignment = "NEUTRAL"
-    scenarios = _find(packet, "scenarios")
-    scenario_state = "UNRESOLVED"
-    failed = "SCENARIOS_UNAVAILABLE"
-    if isinstance(scenarios, list):
-        matches = []
-        for scenario in scenarios:
-            if not isinstance(scenario, Mapping): continue
-            conditions = scenario.get("conditions_all") or []
-            passed = True
-            for clause in conditions:
-                if not isinstance(clause, Mapping): passed = False; continue
-                observed = _find(packet, str(clause.get("metric") or ""))
-                if observed is None: passed = False; failed = f"MISSING_METRIC:{clause.get('metric')}"; break
-                try:
-                    a, b = float(observed), float(clause.get("value"))
-                    op = str(clause.get("op") or "=")
-                    passed = {"<":a<b, "<=":a<=b, "≤":a<=b, ">":a>b, ">=":a>=b, "≥":a>=b, "=":a==b}.get(op, False)
-                except (TypeError, ValueError): passed = False
-                if not passed: failed = f"FAILED:{clause.get('metric')}:{observed}"; break
-            if passed: matches.append(str(scenario.get("id") or scenario.get("scenario_id") or ""))
-        if len(matches) == 1: scenario_state, failed = matches[0], ""
-        elif len(matches) > 1: scenario_state, failed = "MULTIPLE", "|".join(matches)
+    advisory = sector_advisory(
+        canonical, sector=sector, industry=industry, direction=direction
+    )
+    scenario = evaluate_scenarios(
+        canonical.get("scenarios") if isinstance(canonical, Mapping) else {},
+        canonical.get("metrics") if isinstance(canonical, Mapping) else {},
+    )
+    scenario_state = str(scenario.get("scenario") or "UNRESOLVED")
+    failed = "" if scenario_state not in {"UNRESOLVED", "MULTIPLE_MATCH"} else (
+        "SCENARIO_EVIDENCE_UNRESOLVED"
+    )
     return {
-        "usmi_sector_alignment": alignment,
-        "usmi_alignment_priority": key,
-        "usmi_alignment_reason": reason,
+        "usmi_sector_alignment": advisory["alignment"],
+        "usmi_alignment_priority": advisory["priority"],
+        "usmi_routing_key": key,
+        "usmi_alignment_reason": advisory["reason"],
         "usmi_scenario": scenario_state,
         "usmi_scenario_failed_clause": failed,
         "usmi_authority": "ADVISORY_ONLY",

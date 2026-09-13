@@ -297,7 +297,11 @@ class DynamicLifecyclePersistenceTests(unittest.TestCase):
         )
         valuation = DeterministicContractValuationService(
             self.store, risk_free_rate=0.04, dividend_yield=0.01,
-        ).evaluate_family(generated_family=family, observation=observation)
+        ).evaluate_family(
+            generated_family=family,
+            observation=observation,
+            annual_forecast_vol=0.30,
+        )
         return family, valuation
 
     def test_completed_session_persists_event_and_exact_preferred_decision(self) -> None:

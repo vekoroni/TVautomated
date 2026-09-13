@@ -92,9 +92,9 @@ def test_live_spread_cannot_override_execution_gate_buy_action() -> None:
     assert result["lab_tradeable"] is True
 
 
-def test_spread_policy_has_executable_review_and_block_lanes() -> None:
+def test_spread_policy_has_executable_and_review_lanes_without_deleting_thesis() -> None:
     executable = _signal("MODERATE", 1.5)
-    executable["spread_pct"] = 0.18
+    executable["spread_fraction_mid"] = 0.18
     result = resolve_lab_tradeability(
         executable,
         {"pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []},
@@ -103,9 +103,9 @@ def test_spread_policy_has_executable_review_and_block_lanes() -> None:
     assert result["lab_tradeable"] is True
     assert result["spread_policy_state"] == "EXECUTABLE"
 
-    for spread in (0.181, 0.25, 20.0, 25.0):
+    for spread in (0.181, 0.25):
         review = _signal("MODERATE", 1.5)
-        review["spread_pct"] = spread
+        review["spread_fraction_mid"] = spread
         result = resolve_lab_tradeability(
             review,
             {"pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []},
@@ -115,17 +115,18 @@ def test_spread_policy_has_executable_review_and_block_lanes() -> None:
         assert result["spread_policy_state"] == "MANUAL_LIQUIDITY_REVIEW"
         assert any("MANUAL_LIQUIDITY_REVIEW" in flag for flag in result["conflict_flags"])
 
-    for spread in (0.251, 25.1):
+    for spread in (0.251, 0.40):
         blocked = _signal("MODERATE", 1.5)
-        blocked["spread_pct"] = spread
+        blocked["spread_fraction_mid"] = spread
         result = resolve_lab_tradeability(
             blocked,
             {"pipeline_mode": "MORNING_VALIDATION", "fatal_flags": [], "stale_flags": []},
         )
-        assert result["lab_verdict"] == "BLOCKED"
+        assert result["lab_verdict"] == "MANUAL_LIQUIDITY_REVIEW"
         assert result["lab_tradeable"] is False
-        assert result["spread_policy_state"] == "BLOCKED_ABOVE_ABSOLUTE_MAX"
-        assert "SPREAD_TOO_WIDE" in result["veto_flags"]
+        assert result["spread_policy_state"] == "EXECUTION_WIDE_SPREAD_MONITOR"
+        assert not result["veto_flags"]
+        assert any("SPREAD_ABOVE_REVIEW_CEILING" in flag for flag in result["conflict_flags"])
 
 
 def test_only_valid_long_single_contracts_are_executable() -> None:

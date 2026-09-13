@@ -281,13 +281,21 @@ class DynamicOptionsContractRankingService:
             selected_inferences = [item for item in (liquidity, positive, target) if item is not None]
             valuation = assessment.metadata.get("valuation", {})
             adverse = valuation.get("adverse_worst_return") if isinstance(valuation, Mapping) else None
+            score_kind = str(
+                assessment.metadata.get("ranking_score_kind") or ""
+            ).strip().upper()
+            comparable_score = (
+                assessment.ranking_score_uncalibrated
+                if score_kind == "CONTRACT_ECONOMICS_V2_DETERMINISTIC_UTILITY"
+                else None
+            )
             candidates.append(RankingCandidateEvidence(
                 assessment_id=assessment.assessment_id,
                 contract_symbol=assessment.contract_symbol,
                 direction=family.thesis.governed_direction,
                 evidence_cutoff_utc=assessment.evidence_cutoff_utc,
                 input_dataset_ids=assessment.input_dataset_ids,
-                deterministic_score=assessment.ranking_score_uncalibrated,
+                deterministic_score=comparable_score,
                 p_liquidity_3d=liquidity.probability if liquidity else None,
                 p_positive_return=positive.probability if positive else None,
                 p_target_before_invalidation=target.probability if target else None,

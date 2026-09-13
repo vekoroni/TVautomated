@@ -2420,18 +2420,12 @@ def _finalize_execution_authority(row: dict) -> dict:
         row["capital_authorization_state"] = "NOT_AUTHORIZED"
     row["eod_candidate_size"] = round(float(candidate_size), 6) if eod_candidate_authorized else 0.0
     row["candidate_size"] = row["eod_candidate_size"]
-    default_probe_size = 1 if eod_candidate_authorized else 0
-    try:
-        premium = _as_float(row.get("contract_premium", row.get("premium", 0.0)), 0.0)
-        kelly = _as_float(row.get("layer2__kelly_fraction", row.get("kelly_fraction", 0.0)), 0.0)
-        risk_budget = _as_float(os.getenv("AVSHUNTER_ACCOUNT_RISK_BUDGET", "1000"), 1000.0)
-        suggested = max(1, round(kelly * risk_budget / max(premium * 100.0, 1.0))) if eod_candidate_authorized and premium > 0 else default_probe_size
-    except Exception:
-        suggested = default_probe_size
-    row["default_probe_size"] = default_probe_size
-    row["pse_suggested_contracts"] = suggested
+    # AVSHUNTER ends at monetisability and execution evidence.  It never reads
+    # an account budget, applies Kelly sizing, or recommends contract counts.
+    row["default_probe_size"] = None
+    row["pse_suggested_contracts"] = None
     row["reviewer_approval"] = row.get("reviewer_approval", "")
-    row["approved_size_contracts"] = row.get("approved_size_contracts", "")
+    row["approved_size_contracts"] = ""
     row["manual_review_required"] = True if eod_candidate_authorized else bool(row.get("manual_sizing_required", False))
     row.setdefault("sizing_policy", PSE_RETIRED_POLICY)
     row.setdefault("pse_engine_state", "IGNORED_MANUAL_SIZING")

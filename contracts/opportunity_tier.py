@@ -90,11 +90,8 @@ def _tier_spread_fraction(row: Mapping[str, Any]) -> float | None:
     canonical = resolve_spread(row)
     if canonical.spread_fraction_mid is not None:
         return canonical.spread_fraction_mid
-    if _text(row.get("spread_pct")):
-        return resolve_spread({
-            "spread_pct": row.get("spread_pct"),
-            "spread_unit": "FRACTION_OF_MID",
-        }).spread_fraction_mid
+    # Ambiguous legacy fields are intentionally not guessed.  Their producer
+    # must disclose spread_unit or project a canonical spread field.
     return None
 
 
