@@ -14,6 +14,10 @@ from scripts.macro_quant_packet import build_macro_quant_packet  # noqa: E402
 
 def _payload() -> dict:
     return {
+        "files_found_by_key": {
+            "fx_csv": "C:/capture/fx_spot_20260511_201500.csv",
+            "fred_master_csv": "C:/capture/avshunter_fred_master.csv",
+        },
         "data": {
             "report_json": {
                 "vix_term_structure": {"vix_spot": 17.08, "vix9d": None, "vix3m": None},
@@ -34,6 +38,11 @@ def _payload() -> dict:
             "sectors_csv": (
                 "ticker,name,current_price,daily_pct,weekly_pct,monthly_pct,ytd_pct,volume,high_52w,low_52w,pct_from_52w_high\n"
                 "XLC,Communication Services (XLC),100,0.1,1.0,2.75,5.0,123,101,90,-1\n"
+            ),
+            "fx_csv": (
+                "ticker,current_price,daily_pct,weekly_pct,monthly_pct,ytd_pct,name\n"
+                "C:EURUSD,1.10,0.1,0.2,0.3,1.0,EUR/USD\n"
+                "C:USDJPY,154.25,-0.4,-1.6,-2.0,3.0,USD/JPY\n"
             ),
         }
     }
@@ -87,6 +96,11 @@ def test_market_data_overrides_extract_confirmed_macro_feeds() -> None:
     assert overrides["gex_score"] == 0.75
     assert overrides["usslind_quarantined"] is False
     assert overrides["xlc_present"] is True
+    assert overrides["usd_jpy"] == 154.25
+    assert overrides["usd_jpy_change_1d_pct"] == -0.4
+    assert overrides["usd_jpy_change_5d_pct"] == -1.6
+    assert overrides["usd_jpy_as_of"] == "2026-05-11T20:15:00"
+    assert overrides["usd_jpy_evidence_status"] == "OBSERVED_CAPTURE"
 
 
 def test_market_data_overrides_clear_stale_partial_flags() -> None:
@@ -101,6 +115,21 @@ def test_market_data_overrides_clear_stale_partial_flags() -> None:
     assert macro["extras"]["gex"]["regime"] == "POSITIVE"
     assert macro["extras"]["lei_usslind"]["quarantined"] is False
     assert macro["extras"]["sector_etf_coverage"]["xlc_present"] is True
+    assert macro["usd_jpy"] == 154.25
+    assert macro["extras"]["fx"] == {
+        "usd_jpy": 154.25,
+        "usd_jpy_change_1d_pct": -0.4,
+        "usd_jpy_change_5d_pct": -1.6,
+        "as_of": "2026-05-11T20:15:00",
+        "source": "fx_spot_20260511_201500.csv",
+        "source_field": "C:USDJPY.current_price",
+        "evidence_status": "OBSERVED_CAPTURE",
+        "authority": "ADVISORY_ONLY",
+    }
+    assert packet["usd_jpy"] == 154.25
+    assert packet["usd_jpy_change_5d_pct"] == -1.6
+    assert packet["usd_jpy_source"] == "fx_spot_20260511_201500.csv"
+    assert packet["usd_jpy_evidence_status"] == "OBSERVED_CAPTURE"
     assert packet["macro_data_quality"] == "CONFIRMED"
     assert packet["macro_active_conflict_flags"] == []
 
@@ -183,3 +212,43 @@ def test_gex_primary_preserves_spy_diagnostic_when_no_row_is_ok() -> None:
     assert overrides["gex_data_mode"] == "LIVE"
     assert overrides["gex_data_status"] == "MISSING"
     assert overrides["gex_run_id"] == "live-run"
+
+
+def test_usd_jpy_falls_back_to_latest_dated_fred_observation() -> None:
+    payload = _payload()
+    payload["data"]["fx_csv"] = ""
+    payload["data"]["fred_master_csv"] = (
+        ",DEXJPUS\n"
+        "2026-05-04,156.00\n"
+        "2026-05-05,155.50\n"
+        "2026-05-06,155.00\n"
+        "2026-05-07,154.75\n"
+        "2026-05-08,154.50\n"
+        "2026-05-11,154.25\n"
+    )
+
+    overrides = extract_market_data_overrides(payload)
+    macro = apply_market_data_overrides(_macro(), payload)
+
+    assert overrides["usd_jpy"] == 154.25
+    assert overrides["usd_jpy_as_of"] == "2026-05-11"
+    assert overrides["usd_jpy_source"] == "avshunter_fred_master.csv"
+    assert overrides["usd_jpy_source_field"] == "DEXJPUS"
+    assert overrides["usd_jpy_evidence_status"] == "SOURCE_RELEASED"
+    assert overrides["usd_jpy_change_1d_pct"] == round((154.25 / 154.50 - 1) * 100, 6)
+    assert overrides["usd_jpy_change_5d_pct"] == round((154.25 / 156.00 - 1) * 100, 6)
+    assert macro["extras"]["fx"]["usd_jpy"] == 154.25
+
+
+def test_usd_jpy_missing_is_disclosed_not_imputed() -> None:
+    payload = _payload()
+    payload["data"]["fx_csv"] = ""
+    payload["data"]["fred_master_csv"] = ",DEXJPUS\n2026-05-11,\n"
+
+    overrides = extract_market_data_overrides(payload)
+    macro = apply_market_data_overrides(_macro(), payload)
+
+    assert overrides["usd_jpy"] is None
+    assert macro["extras"]["fx"]["usd_jpy"] is None
+    assert macro["extras"]["fx"]["evidence_status"] == "MISSING"
+    assert any("[usd_jpy]" in flag for flag in macro["extras"]["conflict_flags"])

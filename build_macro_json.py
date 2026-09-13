@@ -45,6 +45,7 @@ import csv
 import argparse
 import shutil
 import logging
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -733,6 +734,101 @@ def _latest_row(text: str) -> dict:
     return rows[-1] if rows else {}
 
 
+def _fx_symbol(row: dict) -> str:
+    raw = _first_present(row, "ticker", "Ticker", "symbol", "Symbol", "name", "Name")
+    return re.sub(r"[^A-Z]", "", str(raw or "").upper())
+
+
+def _source_timestamp(payload: dict, key: str) -> str:
+    """Extract a capture timestamp from the governed source filename when needed."""
+    source = str(payload.get("files_found_by_key", {}).get(key) or "")
+    match = re.search(r"(20\d{6})[_-]?(\d{6})", Path(source).name)
+    if not match:
+        return ""
+    try:
+        parsed = datetime.strptime("".join(match.groups()), "%Y%m%d%H%M%S")
+    except ValueError:
+        return ""
+    # The capture filename does not declare a timezone. Preserve its wall-clock
+    # value without inventing a UTC offset; provider/collector metadata can
+    # supply an authoritative offset when the capture contract is extended.
+    return parsed.isoformat()
+
+
+def _pct_change(newer: float | None, older: float | None) -> float | None:
+    if newer is None or older in (None, 0):
+        return None
+    return round((newer / older - 1.0) * 100.0, 6)
+
+
+def _extract_usd_jpy(payload: dict) -> dict:
+    """Resolve USD/JPY deterministically from captured FX, then FRED.
+
+    ``fx_spot_*.csv`` is the primary observation. The FRED ``DEXJPUS`` series
+    is a dated fallback and is already denominated as Japanese yen per US
+    dollar, i.e. the numeric USD/JPY quote used by the desk.
+    """
+    data = payload.get("data", {})
+    for row in reversed(_csv_rows(data.get("fx_csv", ""))):
+        if _fx_symbol(row) not in {"USDJPY", "CUSDJPY"}:
+            continue
+        value = _safe_float(_first_present(
+            row, "current_price", "Current_Price", "price", "Price", "close", "Close", "value", "Value"
+        ))
+        if value is None or value <= 0:
+            continue
+        return {
+            "usd_jpy": value,
+            "change_1d_pct": _safe_float(_first_present(
+                row, "daily_pct", "change_1d_pct", "Change_1D_Pct", "pct_change_1d"
+            )),
+            "change_5d_pct": _safe_float(_first_present(
+                row, "weekly_pct", "change_5d_pct", "Change_5D_Pct", "pct_change_5d"
+            )),
+            "as_of": str(_first_present(
+                row, "as_of", "As_Of", "timestamp", "Timestamp", "Date", "date"
+            ) or _source_timestamp(payload, "fx_csv")),
+            "source": Path(str(payload.get("files_found_by_key", {}).get("fx_csv") or "fx_spot_*.csv")).name,
+            "source_field": "C:USDJPY.current_price",
+            "evidence_status": "OBSERVED_CAPTURE",
+        }
+
+    observations: list[tuple[str, float]] = []
+    for row in _csv_rows(data.get("fred_master_csv", "")):
+        value = _safe_float(_first_present(row, "DEXJPUS", "USDJPY", "USD_JPY"))
+        if value is None or value <= 0:
+            continue
+        source_date = str(_first_present(
+            row, "Date", "DATE", "date", "observation_date", "Unnamed: 0", ""
+        ) or "")
+        observations.append((source_date, value))
+    if observations:
+        source_date, value = observations[-1]
+        prior_1d = observations[-2][1] if len(observations) >= 2 else None
+        prior_5d = observations[-6][1] if len(observations) >= 6 else None
+        return {
+            "usd_jpy": value,
+            "change_1d_pct": _pct_change(value, prior_1d),
+            "change_5d_pct": _pct_change(value, prior_5d),
+            "as_of": source_date,
+            "source": Path(str(payload.get("files_found_by_key", {}).get(
+                "fred_master_csv"
+            ) or "avshunter_fred_master.csv")).name,
+            "source_field": "DEXJPUS",
+            "evidence_status": "SOURCE_RELEASED",
+        }
+
+    return {
+        "usd_jpy": None,
+        "change_1d_pct": None,
+        "change_5d_pct": None,
+        "as_of": "",
+        "source": "",
+        "source_field": "",
+        "evidence_status": "MISSING",
+    }
+
+
 def _safe_float(value, default=None):
     try:
         text = str(value).strip()
@@ -882,6 +978,12 @@ def _clean_resolved_market_flags(macro_json: dict, overrides: dict):
             return True
         if ("YIELD CURVE" in text or "T10Y2Y" in text or "2Y10Y" in text) and overrides.get("curve_2y10y") is not None:
             return True
+        if (
+            ("USD/JPY" in text or "USDJPY" in text)
+            and any(token in text for token in ("MISSING", "ABSENT", "UNAVAILABLE", "MANUAL"))
+            and overrides.get("usd_jpy") is not None
+        ):
+            return True
         return False
 
     for flag in flags:
@@ -1021,6 +1123,7 @@ def extract_market_data_overrides(payload: dict) -> dict:
     gex_rows = _csv_rows(data.get("gex_proxy_csv", ""))
     sectors_rows = _csv_rows(data.get("sectors_csv", ""))
     report = data.get("report_json", {}) if isinstance(data.get("report_json"), dict) else {}
+    usd_jpy = _extract_usd_jpy(payload)
 
     gex_primary = _select_gex_primary(gex_rows)
     sector_tickers = {str(r.get("ticker", "")).upper(): r for r in sectors_rows}
@@ -1073,6 +1176,13 @@ def extract_market_data_overrides(payload: dict) -> dict:
         "ig_oas": ig_oas,
         "credit_state": credit_state,
         "credit_risk_score": credit_risk_score,
+        "usd_jpy": usd_jpy["usd_jpy"],
+        "usd_jpy_change_1d_pct": usd_jpy["change_1d_pct"],
+        "usd_jpy_change_5d_pct": usd_jpy["change_5d_pct"],
+        "usd_jpy_as_of": usd_jpy["as_of"],
+        "usd_jpy_source": usd_jpy["source"],
+        "usd_jpy_source_field": usd_jpy["source_field"],
+        "usd_jpy_evidence_status": usd_jpy["evidence_status"],
         "gex_regime": gex_regime,
         "gex_net_bn": net_gex_bn,
         "gex_score": gex_score,
@@ -1174,6 +1284,36 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
     else:
         _append_unique_flag(macro_json, "ACTIVE: HY/IG credit spreads missing; credit risk carried neutral")
 
+    if overrides["usd_jpy"] is not None:
+        # This is market evidence, not model prose. Publish one canonical
+        # numeric observation and keep its source/as-of lineage beside it.
+        macro_json["usd_jpy"] = overrides["usd_jpy"]
+        macro_json["usd_jpy_change_1d_pct"] = overrides["usd_jpy_change_1d_pct"]
+        macro_json["usd_jpy_change_5d_pct"] = overrides["usd_jpy_change_5d_pct"]
+        macro_json["usd_jpy_as_of"] = overrides["usd_jpy_as_of"]
+        macro_json["usd_jpy_source"] = overrides["usd_jpy_source"]
+        macro_json["usd_jpy_evidence_status"] = overrides["usd_jpy_evidence_status"]
+        extras["fx"] = {
+            "usd_jpy": overrides["usd_jpy"],
+            "usd_jpy_change_1d_pct": overrides["usd_jpy_change_1d_pct"],
+            "usd_jpy_change_5d_pct": overrides["usd_jpy_change_5d_pct"],
+            "as_of": overrides["usd_jpy_as_of"],
+            "source": overrides["usd_jpy_source"],
+            "source_field": overrides["usd_jpy_source_field"],
+            "evidence_status": overrides["usd_jpy_evidence_status"],
+            "authority": "ADVISORY_ONLY",
+        }
+    else:
+        extras["fx"] = {
+            "usd_jpy": None,
+            "evidence_status": "MISSING",
+            "authority": "ADVISORY_ONLY",
+        }
+        _append_unique_flag(
+            macro_json,
+            "DATA_COVERAGE_INCOMPLETE: [usd_jpy] — USD/JPY absent from fx_spot and FRED inputs",
+        )
+
     if overrides["gex_net_bn"] is not None:
         macro_json["gex_regime_score"] = overrides["gex_score"]
         macro_json["gex_available"] = True
@@ -1232,6 +1372,7 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
         "lei_usslind": "QUARANTINED" if overrides["usslind_quarantined"] else "CONFIRMED",
         "xlc_sector": "CONFIRMED" if overrides["xlc_present"] else "MISSING",
         "yield_curve": "CONFIRMED" if overrides["curve_2y10y"] is not None else "MISSING",
+        "usd_jpy": overrides["usd_jpy_evidence_status"],
     }
     return macro_json
 

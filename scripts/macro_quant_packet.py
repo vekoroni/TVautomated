@@ -57,6 +57,12 @@ MACRO_QUANT_CSV_FIELDS = [
     "vol_mode",
     "rates_impulse",
     "usd_state",
+    "usd_jpy",
+    "usd_jpy_change_1d_pct",
+    "usd_jpy_change_5d_pct",
+    "usd_jpy_as_of",
+    "usd_jpy_source",
+    "usd_jpy_evidence_status",
     "credit_state",
     "credit_risk_score",
     "gex_regime_score",
@@ -618,6 +624,19 @@ def build_macro_quant_packet(
 
     rates = _rates_impulse(find_field(macro, "rates_impulse", default=None))
     usd = _usd_state(find_field(macro, "usd_state", "dollar_signal", default=None))
+    usd_jpy = _safe_float(find_field(macro, "usd_jpy", default=None), None)
+    usd_jpy_change_1d_pct = _safe_float(
+        find_field(macro, "usd_jpy_change_1d_pct", default=None), None
+    )
+    usd_jpy_change_5d_pct = _safe_float(
+        find_field(macro, "usd_jpy_change_5d_pct", default=None), None
+    )
+    usd_jpy_as_of = str(find_field(macro, "usd_jpy_as_of", "as_of", default="") or "")
+    usd_jpy_source = str(find_field(macro, "usd_jpy_source", "source", default="") or "")
+    usd_jpy_evidence_status = str(
+        find_field(macro, "usd_jpy_evidence_status", "evidence_status", default="MISSING")
+        or "MISSING"
+    ).upper()
     credit = _credit_state(find_field(macro, "credit_state", "credit_signal", default=None))
     credit_risk_score = 75.0 if credit == "TIGHTENING" else 25.0 if credit == "EASING" else 50.0
 
@@ -715,6 +734,12 @@ def build_macro_quant_packet(
         "vol_mode": vol_mode,
         "rates_impulse": rates,
         "usd_state": usd,
+        "usd_jpy": usd_jpy,
+        "usd_jpy_change_1d_pct": usd_jpy_change_1d_pct,
+        "usd_jpy_change_5d_pct": usd_jpy_change_5d_pct,
+        "usd_jpy_as_of": usd_jpy_as_of,
+        "usd_jpy_source": usd_jpy_source,
+        "usd_jpy_evidence_status": usd_jpy_evidence_status,
         "credit_state": credit,
         "credit_risk_score": credit_risk_score,
         "gex_regime_score": gex_score,
@@ -830,6 +855,12 @@ def missing_macro_quant_packet(source_path: str | Path | None = None) -> Dict[st
         "vol_mode": "UNKNOWN",
         "rates_impulse": "UNKNOWN",
         "usd_state": "UNKNOWN",
+        "usd_jpy": None,
+        "usd_jpy_change_1d_pct": None,
+        "usd_jpy_change_5d_pct": None,
+        "usd_jpy_as_of": "",
+        "usd_jpy_source": "",
+        "usd_jpy_evidence_status": "MISSING",
         "credit_state": "UNKNOWN",
         "credit_risk_score": 50.0,
         "gex_regime_score": None,
