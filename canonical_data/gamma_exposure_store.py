@@ -106,12 +106,43 @@ class CanonicalGammaExposureStore:
             if record.session_date == session_date
         )
 
+    def _validated_parent_ids(
+        self,
+        ticker: str,
+        session_date: date,
+        parent_dataset_ids: Iterable[str] | None,
+    ) -> tuple[str, ...]:
+        if parent_dataset_ids is None:
+            return self._parent_ids(ticker, session_date)
+        resolved = tuple(dict.fromkeys(
+            str(dataset_id).strip()
+            for dataset_id in parent_dataset_ids
+            if str(dataset_id).strip()
+        ))
+        if not resolved:
+            raise ValueError("GEX requires an option-chain parent dataset")
+        for dataset_id in resolved:
+            record = self.registry.get_dataset(dataset_id)
+            if record is None:
+                raise ValueError(f"GEX parent dataset is not registered: {dataset_id}")
+            if (
+                record.dataset_type is not DatasetType.OPTION_CHAIN
+                or record.instrument_id != ticker.upper()
+                or record.session_date != session_date
+                or record.completeness_status is not CompletenessStatus.COMPLETE
+            ):
+                raise ValueError(
+                    f"GEX parent dataset is outside the calculated chain scope: {dataset_id}"
+                )
+        return resolved
+
     def persist(
         self,
         result: GammaExposureResult,
         *,
         run_id: str,
         config: GammaExposureConfig,
+        parent_dataset_ids: Iterable[str] | None = None,
     ) -> DatasetRecord:
         session_date = date.fromisoformat(result.session_date)
         target_dir = self.payload_root / result.session_date / result.ticker
@@ -121,11 +152,16 @@ class CanonicalGammaExposureStore:
         result.by_strike.to_parquet(temporary, index=False)
         os.replace(temporary, by_strike)
         by_strike_hash = _sha256(by_strike)
+        parents = self._validated_parent_ids(
+            result.ticker,
+            session_date,
+            parent_dataset_ids,
+        )
         summary = dict(result.summary)
         summary.update({
             "By_Strike_Path": str(by_strike.resolve()),
             "By_Strike_SHA256": by_strike_hash,
-            "Parent_Dataset_IDs": list(self._parent_ids(result.ticker, session_date)),
+            "Parent_Dataset_IDs": list(parents),
         })
         summary_path = target_dir / f"{config.scope_name.lower()}_summary.json"
         _atomic_json(summary_path, summary)

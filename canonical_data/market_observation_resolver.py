@@ -29,6 +29,7 @@ from .storage import AtomicPayloadStore
 from .session_clock import session_bounds
 from .provider_finality import assess_canonical_option_chain
 from domain.provider_finality import ProviderRequestMode
+from domain.data_projection import PHANTOM_OPTION_CHAIN_PROJECTION
 from .session_clock import session_snapshot
 
 
@@ -157,7 +158,12 @@ class CanonicalMarketObservationResolver:
             schema_version=request.schema_version, quality_flags=quality_flags,
             parent_dataset_ids=parent_dataset_ids, source_run_id=self.run_id,
         )
-        self.registry.register_dataset(record)
+        projections = (
+            (PHANTOM_OPTION_CHAIN_PROJECTION,)
+            if request.dataset_type is DatasetType.OPTION_CHAIN
+            else ()
+        )
+        self.registry.register_dataset(record, projection_names=projections)
         return record
 
     def _resolve(

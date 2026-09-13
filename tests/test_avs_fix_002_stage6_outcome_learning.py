@@ -273,7 +273,38 @@ class TestStage6Integration:
 
     def test_all_presented_candidates_mature_at_six_horizons(self, tmp_path):
         ledger = DecisionOutcomeLedger(tmp_path / "ledger.sqlite")
-        _candidate(ledger)
+        row = _candidate_row()
+        row.update({
+            "layer2__original_state_key": "NORMAL|UPTREND|STRONG",
+            "layer2__matched_state_key": "NORMAL|UPTREND|MODERATE",
+            "layer2__state_match_method": "NEAREST_STATE",
+            "layer2__state_match_quality": "PARTIAL",
+            "layer2__sample_size": 42,
+            "layer2__raw_prob_target_hit": 0.61,
+            "layer2__raw_expected_return": float("nan"),
+            "actuarial_calculation_version": "actuarial-v6",
+        })
+        candidate = candidate_events_from_rows(
+            [row],
+            run_id="RUN1",
+            occurred_at_utc=NOW,
+            decision_stage="EOD_THESIS",
+            run_metadata={
+                "completed_session": "2026-01-02",
+                "evidence_cutoff_utc": NOW,
+                "run_condition": "NORMAL_COMPLETED_SESSION",
+                "baseline_eligible": True,
+            },
+        )[0]
+        ledger.append(candidate)
+        observation = candidate.payload["actuarial_feature_observation"]
+        assert observation["state"] == "CAPTURED"
+        assert observation["features"]["raw_prob_target_hit"] == 0.61
+        assert "raw_expected_return" not in observation["features"]
+        assert observation["authority"] == "OBSERVATION_ONLY"
+        assert observation["can_change_direction"] is False
+        assert observation["can_grant_execution"] is False
+        assert observation["can_allocate_capital"] is False
         summary = mature_candidate_outcomes(
             ledger, read_completed_history=lambda *_: _bars(),
             as_of_utc="2026-02-01T22:00:00Z",
@@ -290,6 +321,8 @@ class TestStage6Integration:
         assert snapshot["summary"]["population_reconciled"] is True
         assert len(snapshot["records"]) == 6
         assert snapshot["model_activation"]["can_activate"] is False
+        learned_observation = snapshot["records"][0]["actuarial_feature_observation"]
+        assert learned_observation == observation
 
     def test_incomplete_and_bad_candidates_receive_named_observations(self, tmp_path):
         ledger = DecisionOutcomeLedger(tmp_path / "ledger.sqlite")

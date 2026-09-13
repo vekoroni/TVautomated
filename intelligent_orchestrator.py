@@ -4691,6 +4691,44 @@ def evening_workflow(
     logger.info(f"    Session ID : {session_id}  (orchestrator start — logging only)")
     logger.info("=" * 80 + "\n")
 
+    # DATA-PROJECTION-001: refresh the two market-reference option chains and
+    # derive exact-session GEX before the advisory macro packet is loaded.  A
+    # GEX failure cannot remove a ticker or change direction; the deterministic
+    # overlay clears any prior-session numeric value and records UNAVAILABLE.
+    if _session_authority.evidence_state.value == "COMPLETED_SESSION":
+        try:
+            from orchestrator.completed_session_gex import (
+                refresh_completed_session_gex,
+            )
+
+            _gex_refresh = refresh_completed_session_gex(
+                repository_root=cfg.BASE_DIR,
+                run_id=session_id,
+                session_date=date.fromisoformat(_evidence_session_date),
+            )
+            _gex_artifact = (
+                cfg.RUNS_DIR / session_id / "macro" /
+                f"completed_session_gex_refresh_{session_id}.json"
+            )
+            _gex_artifact.parent.mkdir(parents=True, exist_ok=True)
+            write_json(_gex_artifact, _gex_refresh)
+            if _gex_refresh.get("status") == "COMPLETE":
+                logger.info(
+                    "✅ Completed-session GEX refreshed: session=%s datasets=%d",
+                    _gex_refresh.get("session_date"),
+                    len(_gex_refresh.get("gex_dataset_ids") or ()),
+                )
+            else:
+                logger.warning(
+                    "⚠️ Completed-session GEX unavailable (advisory only): %s",
+                    _gex_refresh.get("error"),
+                )
+        except Exception as _gex_refresh_error:
+            logger.warning(
+                "⚠️ Completed-session GEX refresh failed before advisory macro load: %s",
+                _gex_refresh_error,
+            )
+
     # ── PHASE 0: Universe Scanner Consumer ───────────────────────────────────
     _scanner = merge_scanner_inputs(load_scanner_manifest(), load_manual_ticker_upload())
     _augmented_universe_path = build_augmented_universe(_scanner, session_id)
@@ -5139,6 +5177,42 @@ def evening_workflow(
             "Evening workflow aborted: governed Options acquisition did not complete"
         )
         return False
+
+    # Every canonical chain acquired for the candidate population becomes
+    # durable Phantom history. Projection is retryable and owns no thesis,
+    # execution, direction, or capital authority, so a delivery problem is
+    # reported without invalidating genuine Options output.
+    try:
+        from canonical_data.phantom_option_projection import (
+            deliver_phantom_option_events,
+        )
+
+        _phantom_projection_results = deliver_phantom_option_events(
+            registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
+            phantom_database_path=cfg.PHANTOM_DB_PATH,
+            limit=100_000,
+        )
+        logger.info(
+            "✅ Canonical→Phantom option projection: delivered=%d",
+            len(_phantom_projection_results),
+        )
+        from canonical_data.projection_outbox import ProjectionOutbox
+        _projection_health = ProjectionOutbox(
+            cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
+        ).health_summary()
+        _projection_counts = _projection_health.get("counts") or {}
+        logger.info(
+            "Canonical projection health: pending=%s processing=%s retryable=%s completed=%s",
+            _projection_counts.get("PENDING", 0),
+            _projection_counts.get("PROCESSING", 0),
+            _projection_counts.get("FAILED_RETRYABLE", 0),
+            _projection_counts.get("COMPLETED", 0),
+        )
+    except Exception as _phantom_projection_error:
+        logger.warning(
+            "⚠️ Canonical→Phantom projection deferred for retry: %s",
+            _phantom_projection_error,
+        )
 
     # ── PHASE 1B: Macro Horizon Router ───────────────────────────────────────
     # NoneType.__dict__ crash (26-Apr) was caused by run_horizon_router()

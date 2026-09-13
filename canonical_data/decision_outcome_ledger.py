@@ -19,6 +19,7 @@ from domain.decision_outcome import (
     make_ledger_event,
     validate_event_link,
 )
+from domain.actuarial_observation import actuarial_feature_observation_from_row
 
 
 def _canonical(value: Mapping[str, Any]) -> str:
@@ -368,6 +369,9 @@ def candidate_events_from_rows(
             ) or metadata.get("baseline_ineligibility_reason"),
             "evidence_dataset_ids": row.get("evidence_dataset_ids"),
             "formula_version": row.get("calculation_version"),
+            "actuarial_feature_observation": (
+                actuarial_feature_observation_from_row(row)
+            ),
             "usmi_packet_id": row.get("usmi_packet_id"),
             "usmi_packet_sha256": row.get("usmi_packet_sha256"),
             "usmi_quality_status": row.get("usmi_quality_status"),

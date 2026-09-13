@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import sys
+from typing import Mapping
 from uuid import uuid4
 
 import pandas as pd
@@ -60,6 +61,7 @@ def build_local_gex(
     session: date | None = None,
     run_id: str | None = None,
     config: GammaExposureConfig | None = None,
+    source_option_dataset_ids: Mapping[str, str] | None = None,
 ) -> dict:
     cfg = config or GammaExposureConfig()
     invocation = run_id or f"LOCAL_GEX_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
@@ -77,7 +79,16 @@ def build_local_gex(
             session_date=session_date.isoformat(),
             config=cfg,
         )
-        record = store.persist(result, run_id=invocation, config=cfg)
+        source_dataset_id = (
+            source_option_dataset_ids.get(ticker)
+            if source_option_dataset_ids is not None else None
+        )
+        record = store.persist(
+            result,
+            run_id=invocation,
+            config=cfg,
+            parent_dataset_ids=(source_dataset_id,) if source_dataset_id else None,
+        )
         summary = dict(result.summary)
         summary["Run_Id"] = invocation
         summary["Dataset_Id"] = record.dataset_id
@@ -102,6 +113,7 @@ def build_local_gex(
         "source": str(database_path.resolve()),
         "provider_requests": 0,
         "dataset_ids": dataset_ids,
+        "source_option_dataset_ids": dict(source_option_dataset_ids or {}),
         "tickers": list(tickers),
         "proxy_path": str(proxy_path.resolve()),
         "proxy_sha256": hashlib.sha256(proxy_path.read_bytes()).hexdigest(),

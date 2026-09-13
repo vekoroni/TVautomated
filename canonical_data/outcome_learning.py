@@ -398,7 +398,17 @@ def build_outcome_learning_snapshot(
             "option_labels_available": len(option_lookup),
             "build_exceptions": build_exceptions,
         },
-        "records": [record.to_dict() for record in records],
+        "records": [
+            {
+                **record.to_dict(),
+                "actuarial_feature_observation": dict(
+                    candidates[record.candidate_event_id].payload.get(
+                        "actuarial_feature_observation"
+                    ) or {}
+                ),
+            }
+            for record in records
+        ],
     }
 
 

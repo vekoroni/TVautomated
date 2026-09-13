@@ -29,6 +29,7 @@ from .request_ledger import RequestLedger, RequestResolution
 from .session_clock import session_bounds
 from .provider_finality import assess_canonical_option_chain
 from domain.provider_finality import ProviderRequestMode
+from domain.data_projection import PHANTOM_OPTION_CHAIN_PROJECTION
 from .session_clock import session_snapshot
 
 
@@ -205,7 +206,10 @@ class CanonicalOptionChainService:
             schema_version=CHAIN_SCHEMA_VERSION,
             source_run_id=self.run_id,
         )
-        self.registry.register_dataset(record)
+        self.registry.register_dataset(
+            record,
+            projection_names=(PHANTOM_OPTION_CHAIN_PROJECTION,),
+        )
         return record
 
     def get(

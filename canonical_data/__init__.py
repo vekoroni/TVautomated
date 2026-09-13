@@ -267,6 +267,17 @@ from .gamma_exposure_store import (
     CanonicalGammaExposureStore,
     PhantomOptionChainRepository,
 )
+from .projection_outbox import (
+    PROJECTION_OUTBOX_SCHEMA_VERSION,
+    ProjectionDeliveryState,
+    ProjectionOutbox,
+)
+from .phantom_option_projection import (
+    PHANTOM_PROJECTION_SCHEMA_VERSION,
+    PhantomOptionChainProjector,
+    PhantomProjectionResult,
+    deliver_phantom_option_events,
+)
 
 __all__ = [
     "AtomicPayloadStore",
@@ -459,6 +470,13 @@ __all__ = [
     "read_discovery_outcomes",
     "CanonicalGammaExposureStore",
     "PhantomOptionChainRepository",
+    "PROJECTION_OUTBOX_SCHEMA_VERSION",
+    "ProjectionDeliveryState",
+    "ProjectionOutbox",
+    "PHANTOM_PROJECTION_SCHEMA_VERSION",
+    "PhantomOptionChainProjector",
+    "PhantomProjectionResult",
+    "deliver_phantom_option_events",
     "OptionIdentity", "build_occ_symbol", "normalise_occ_symbol", "parse_occ_symbol",
     "parse_exact_option_quote", "parse_marketdata_option_response",
     "CanonicalMarketObservationResolver", "ObservationResult", "OPTION_CHAIN_V2",
