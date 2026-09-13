@@ -40,9 +40,9 @@ def _payload() -> dict:
                 "XLC,Communication Services (XLC),100,0.1,1.0,2.75,5.0,123,101,90,-1\n"
             ),
             "fx_csv": (
-                "ticker,current_price,daily_pct,weekly_pct,monthly_pct,ytd_pct,name\n"
-                "C:EURUSD,1.10,0.1,0.2,0.3,1.0,EUR/USD\n"
-                "C:USDJPY,154.25,-0.4,-1.6,-2.0,3.0,USD/JPY\n"
+                "ticker,current_price,daily_pct,weekly_pct,monthly_pct,ytd_pct,name,source,obs_date,data_status\n"
+                "C:EURUSD,1.10,0.1,0.2,0.3,1.0,EUR/USD,POLYGON,2026-05-08,OK\n"
+                "C:USDJPY,154.25,-0.4,-1.6,-2.0,3.0,USD/JPY,POLYGON,2026-05-08,OK\n"
             ),
         }
     }
@@ -99,7 +99,7 @@ def test_market_data_overrides_extract_confirmed_macro_feeds() -> None:
     assert overrides["usd_jpy"] == 154.25
     assert overrides["usd_jpy_change_1d_pct"] == -0.4
     assert overrides["usd_jpy_change_5d_pct"] == -1.6
-    assert overrides["usd_jpy_as_of"] == "2026-05-11T20:15:00"
+    assert overrides["usd_jpy_as_of"] == "2026-05-08"
     assert overrides["usd_jpy_evidence_status"] == "OBSERVED_CAPTURE"
 
 
@@ -120,7 +120,7 @@ def test_market_data_overrides_clear_stale_partial_flags() -> None:
         "usd_jpy": 154.25,
         "usd_jpy_change_1d_pct": -0.4,
         "usd_jpy_change_5d_pct": -1.6,
-        "as_of": "2026-05-11T20:15:00",
+        "as_of": "2026-05-08",
         "source": "fx_spot_20260511_201500.csv",
         "source_field": "C:USDJPY.current_price",
         "evidence_status": "OBSERVED_CAPTURE",
@@ -252,3 +252,18 @@ def test_usd_jpy_missing_is_disclosed_not_imputed() -> None:
     assert macro["extras"]["fx"]["usd_jpy"] is None
     assert macro["extras"]["fx"]["evidence_status"] == "MISSING"
     assert any("[usd_jpy]" in flag for flag in macro["extras"]["conflict_flags"])
+
+
+def test_usd_jpy_rejects_explicitly_invalid_capture_row() -> None:
+    payload = _payload()
+    payload["data"]["fx_csv"] = (
+        "ticker,current_price,daily_pct,weekly_pct,obs_date,data_status\n"
+        "C:USDJPY,999.0,1.0,2.0,2026-05-08,NO_DATA\n"
+    )
+    payload["data"]["fred_master_csv"] = ",DEXJPUS\n2026-05-08,154.50\n"
+
+    overrides = extract_market_data_overrides(payload)
+
+    assert overrides["usd_jpy"] == 154.50
+    assert overrides["usd_jpy_source_field"] == "DEXJPUS"
+    assert overrides["usd_jpy_evidence_status"] == "SOURCE_RELEASED"

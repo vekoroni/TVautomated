@@ -772,6 +772,11 @@ def _extract_usd_jpy(payload: dict) -> dict:
     for row in reversed(_csv_rows(data.get("fx_csv", ""))):
         if _fx_symbol(row) not in {"USDJPY", "CUSDJPY"}:
             continue
+        data_status = str(_first_present(
+            row, "data_status", "Data_Status", "status", "Status"
+        ) or "").strip().upper()
+        if data_status in {"NO_DATA", "ERROR", "UNAVAILABLE", "MISSING", "INVALID"}:
+            continue
         value = _safe_float(_first_present(
             row, "current_price", "Current_Price", "price", "Price", "close", "Close", "value", "Value"
         ))
@@ -786,7 +791,8 @@ def _extract_usd_jpy(payload: dict) -> dict:
                 row, "weekly_pct", "change_5d_pct", "Change_5D_Pct", "pct_change_5d"
             )),
             "as_of": str(_first_present(
-                row, "as_of", "As_Of", "timestamp", "Timestamp", "Date", "date"
+                row, "as_of", "As_Of", "obs_date", "observation_date",
+                "timestamp", "Timestamp", "Date", "date"
             ) or _source_timestamp(payload, "fx_csv")),
             "source": Path(str(payload.get("files_found_by_key", {}).get("fx_csv") or "fx_spot_*.csv")).name,
             "source_field": "C:USDJPY.current_price",
@@ -1993,7 +1999,8 @@ def main():
     print("BUILD COMPLETE")
     print("=" * 60)
     print(f"  Output     : {output_path}")
-    print(f"  Validation : {'✅ PASS' if all_pass else '❌ FAIL'}")
+    # Keep terminal output compatible with the default Windows cp1252 codepage.
+    print(f"  Validation : {'PASS' if all_pass else 'FAIL'}")
     print()
     print("  Key fields:")
     for f in ["regime_state","dir_bias","vol_mode",
