@@ -1,0 +1,136 @@
+.\zero_dte\zero_dte_contract.py:88:        self.api_key = api_key or os.getenv('POLYGON_API_KEY', '')
+.\intelligent_orchestrator.py:237:    return os.environ.get("AVSHUNTER_STRICT_ACTUARIAL_V6", "1").strip().lower() in {
+.\intelligent_orchestrator.py:244:    return os.environ.get("AVSHUNTER_MACRO_CORE_REQUIRED", "0").strip().lower() in {
+.\intelligent_orchestrator.py:342:# ── Load .env FIRST — before any module reads os.environ ─────────────────────
+.\intelligent_orchestrator.py:343:# All child subprocesses inherit os.environ, so loading here propagates
+.\intelligent_orchestrator.py:355:                if os.environ.get(key):
+.\intelligent_orchestrator.py:356:                    print(f"[ENV] ✅ {key}: set ({len(os.environ[key])} chars)")
+.\intelligent_orchestrator.py:460:    EV3_BARRIER_CACHE   = Path(os.environ.get(
+.\intelligent_orchestrator.py:464:    EV3_SHADOW_ENABLED  = os.environ.get("AVSHUNTER_EV3_SHADOW_ENABLED", "1").strip().lower() not in {
+.\intelligent_orchestrator.py:467:    EV3_AUTHORITY_REQUESTED = os.environ.get("AVSHUNTER_EV3_AUTHORITY_ENABLED", "0").strip().lower() in {
+.\intelligent_orchestrator.py:473:    EV3_FUNCTIONAL_TEST_NOW_UTC = os.environ.get(
+.\intelligent_orchestrator.py:1256:        _child_env = _os.environ.copy()
+.\intelligent_orchestrator.py:1262:            if _key in _os.environ and _key not in _child_env:
+.\intelligent_orchestrator.py:1263:                _child_env[_key] = _os.environ[_key]
+.\intelligent_orchestrator.py:2472:    run_kind = str(os.getenv("AVSHUNTER_RUN_KIND", "PRODUCTION")).strip().upper()
+.\intelligent_orchestrator.py:2727:        _enforced = os.environ.get(
+.\intelligent_orchestrator.py:2893:    stage_gating = os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower()
+.\intelligent_orchestrator.py:2946:                os.environ.get("AVSHUNTER_MAX_BACKFILL_FAILURE_RATIO", "0.05")
+.\intelligent_orchestrator.py:3173:    _cds_stage_enforced = os.environ.get(
+.\intelligent_orchestrator.py:4759:            _require_sa = os.environ.get("AVSHUNTER_REQUIRE_SECTOR_ALIGNMENT", "false").lower() == "true"
+.\intelligent_orchestrator.py:7132:    env = os.environ if environment is None else environment
+.\contracts\dynamic_session_contract.py:125:        env = os.environ if environment is None else environment
+.\scripts\smoke_test_live_uat_pipeline.py:58:    env = os.environ.copy()
+.\avshunter_discovery_ULTIMATE.py:973:                                    source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+.\avshunter_discovery_ULTIMATE.py:1013:                            source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+.\avshunter_discovery_ULTIMATE.py:2353:    os.environ["AVSHUNTER_RUN_ID"] = ts
+.\avshunter_discovery_ULTIMATE.py:2445:        os.environ.get("POLYGON_API_KEY") or
+.\avshunter_discovery_ULTIMATE.py:2446:        os.environ.get("MARKETDATA_API_KEY") or
+.\tools\refresh_daily_data_v2.py:76:            os.environ.setdefault(k, v)
+.\tools\refresh_daily_data_v2.py:79:    key = os.environ.get("POLYGON_API_KEY", "").strip()
+.\anthropic_runtime_config.py:15:    value = os.environ.get("ANTHROPIC_WORKSPACE_ID", "").strip()
+.\avshunter_db_update.py:81:POLYGON_API_KEY     = os.environ.get("POLYGON_API_KEY", "<REDACTED_POLYGON_API_KEY>").strip()
+.\scripts\sector_alignment.py:240:        or _os.environ.get("AVSHUNTER_MACRO_REGIME_STATE", "").strip().upper()
+.\tools\enrich_universe_sector_polygon.py:34:    api_key = args.api_key or os.getenv("POLYGON_API_KEY")
+.\scripts\run_phantom_backfill_parallel.py:428:    api_key = os.environ.get("MARKETDATA_API_KEY", "").strip()
+.\scripts\run_phantom_backfill.py:220:    api_key = os.environ.get("MARKETDATA_API_KEY", "").strip()
+.\scripts\run_ev3_shadow_phase.py:32:    os.environ.get(
+.\short_swing\short_swing_monitor.py:78:        self.api_key = api_key or os.getenv('POLYGON_API_KEY', '')
+.\short_swing\short_swing_contract.py:90:        self.api_key = api_key or os.getenv('POLYGON_API_KEY', '')
+.\scripts\release_baseline.py:286:    record["pythonpath"] = os.environ.get("PYTHONPATH", "")
+.\bond_macro_intelligence.py:131:POLYGON_API_KEY = os.environ.get(
+.\avshunter_trade_journal.py:79:    os.environ.get('AVSHUNTER_ROOT',
+.\intelligence-lab\intelligence_lab.py:126:LAB_STRANGLE_POLICY = os.environ.get("LAB_STRANGLE_POLICY", "INCLUDE_LABELLED").strip().upper()
+.\short_swing\run_short_swing.py:102:    api_key = args.api_key or os.getenv('POLYGON_API_KEY')
+.\short_swing\run_short_swing.py:143:    api_key = args.api_key or os.getenv('POLYGON_API_KEY')
+.\short_swing\run_short_swing.py:154:    api_key = args.api_key or os.getenv('POLYGON_API_KEY')
+.\scripts\phantom_marketdata_quote_probe.py:27:        os.environ.get("MARKETDATA_API_KEY")
+.\scripts\phantom_marketdata_quote_probe.py:28:        or os.environ.get("MARKETDATA_TOKEN")
+.\scripts\phantom_marketdata_quote_probe.py:29:        or os.environ.get("MD_API_KEY")
+.\scripts\phantom_marketdata_quote_greek_rehydrate.py:44:        os.environ.get("MARKETDATA_API_KEY")
+.\scripts\phantom_marketdata_quote_greek_rehydrate.py:45:        or os.environ.get("MARKETDATA_TOKEN")
+.\scripts\phantom_marketdata_quote_greek_rehydrate.py:46:        or os.environ.get("MD_API_KEY")
+.\scripts\phantom_marketdata_chain_probe.py:25:        os.environ.get("MARKETDATA_API_KEY")
+.\scripts\phantom_marketdata_chain_probe.py:26:        or os.environ.get("MARKETDATA_TOKEN")
+.\scripts\phantom_marketdata_chain_probe.py:27:        or os.environ.get("MD_API_KEY")
+.\garch_runner.py:65:POLYGON_API_KEY  = os.getenv('POLYGON_API_KEY', '').strip()
+.\garch_runner.py:126:            source_run_id=os.getenv('AVSHUNTER_RUN_ID') or None,
+.\earnings_calendar_enricher.py:25:POLYGON_API_KEY      = os.getenv("POLYGON_API_KEY", "").strip()
+.\execution_intelligence_runner.py:2427:        risk_budget = _as_float(os.getenv("AVSHUNTER_ACCOUNT_RISK_BUDGET", "1000"), 1000.0)
+.\zero_dte\run_0dte.py:105:    api_key = args.api_key or os.getenv('POLYGON_API_KEY')
+.\scripts\phantom_greek_rehydrate.py:56:        os.environ.get("MARKETDATA_API_KEY")
+.\scripts\phantom_greek_rehydrate.py:57:        or os.environ.get("MARKETDATA_TOKEN")
+.\scripts\phantom_greek_rehydrate.py:58:        or os.environ.get("MD_API_KEY")
+.\bridge\tastytrade_client.py:17:        username=os.getenv("TASTYTRADE_USERNAME", ""),
+.\bridge\tastytrade_client.py:18:        password=os.getenv("TASTYTRADE_PASSWORD", ""),
+.\bridge\tastytrade_client.py:19:        account_number=os.getenv("TASTYTRADE_ACCOUNT_NUMBER", ""),
+.\bridge\tastytrade_client.py:20:        paper=os.getenv("TASTYTRADE_PAPER", "1").strip() != "0",
+.\canonical_data\feature_flags.py:35:        env = os.environ if environment is None else environment
+.\zero_dte\intraday_0dte_trigger.py:134:        self.api_key = api_key or os.getenv('POLYGON_API_KEY', '')
+.\canonical_data\history_bridge.py:25:    env = os.environ if environment is None else environment
+.\canonical_data\history_bridge.py:194:        (os.environ if environment is None else environment).get(
+.\outcome_capture.py:117:    username = os.environ.get("TT_USERNAME", "")
+.\outcome_capture.py:118:    password = os.environ.get("TT_PASSWORD", "")
+.\outcome_capture.py:242:        api_key = os.environ.get("POLYGON_API_KEY", "")
+.\run.py:198:        os.environ["AVSHUNTER_CONTEXT_DIR"] = str(Path(args.context_dir))
+.\refresh_daily_data.py:33:POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
+.\vanguard\core\schema_contract_v6.py:71:    return os.environ.get(STRICT_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+.\position_sizing_engine.py:712:    if PSE_PRODUCTION_RETIRED and os.getenv("AVSHUNTER_ENABLE_RETIRED_PSE", "").strip() != "1":
+.\polygon_data_fetcher.py:100:            api_key = os.getenv('POLYGON_API_KEY')
+.\polygon_data_fetcher.py:184:                source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+.\vanguard\core\actuarial_registry.py:20:    return os.environ.get(STRICT_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+.\scripts\build_completed_market_profiles.py:43:    token = os.environ.get("MARKETDATA_API_KEY", "").strip()
+.\scripts\build_completed_market_profiles.py:480:        default=float(os.environ.get("AVSHUNTER_PROFILE_MAX_FAILURE_RATIO", "0.05")),
+.\scripts\build_completed_market_profiles.py:485:        default=float(os.environ.get("AVSHUNTER_PROFILE_MIN_USABLE_RATIO", "0.90")),
+.\worker3\integration\current_canary.py:55:    key = os.environ.get("ANTHROPIC_API_KEY", "")
+.\worker3\integration\current_canary.py:82:                "credential_source": "os.environ",
+.\scripts\backfill_timeseries_into_packages.py:892:    api_key = os.environ.get("POLYGON_API_KEY", "").strip()
+.\scripts\backfill_timeseries_into_packages.py:893:    marketdata_api_key = os.environ.get("MARKETDATA_API_KEY", "").strip()
+.\scripts\backfill_polygon_daily_v7.py:107:    api_key = os.environ.get("POLYGON_API_KEY", "").strip()
+.\scripts\avshunter_universe_scanner.py:96:MARKETDATA_API_KEY  = os.environ.get("MARKETDATA_API_KEY", "YOUR_MARKETDATA_API_KEY")
+.\scripts\avshunter_superbrain_layer.py:2421:        _sbm_raw = _os.environ.get("AVSHUNTER_SECTOR_BIAS_MAP", "")
+.\scripts\avshunter_superbrain_layer.py:2424:        _mc_raw = _os.environ.get("AVSHUNTER_MACRO_CONVICTION", "")
+.\pipeline_interpreter\pipeline_interpreter_engine.py:21:ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+.\pipeline_interpreter\pipeline_interpreter_engine.py:314:    max_dim = min(int(os.environ.get("PI_MAX_IMAGE_DIMENSION", "2000")), 2000)
+.\pipeline_interpreter\pipeline_interpreter_engine.py:315:    target_dim = min(int(os.environ.get("PI_IMAGE_RESIZE_DIMENSION", "1800")), 1800)
+.\scripts\avshunter_options_intelligence.py:268:POLYGON_API_KEY     = os.getenv("POLYGON_API_KEY", "").strip()
+.\scripts\avshunter_options_intelligence.py:269:MARKETDATA_API_KEY  = os.getenv("MARKETDATA_API_KEY", "").strip()  # marketdata.app — real quote enrichment
+.\scripts\avshunter_options_intelligence.py:295:RISK_FREE_RATE      = float(os.getenv("AVS_RFR", "0.045"))
+.\scripts\avshunter_options_intelligence.py:1335:EV3_MIN_OPEN_INTEREST = int(os.environ.get("AVSHUNTER_EV3_MIN_OPEN_INTEREST", "50"))
+.\scripts\avshunter_options_intelligence.py:1336:EV3_MIN_VOLUME = int(os.environ.get("AVSHUNTER_EV3_MIN_VOLUME", "1"))
+.\scripts\avshunter_options_intelligence.py:1533:    return os.environ.get(
+.\scripts\avshunter_options_intelligence.py:8935:        if os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower() in {"1", "true", "yes", "on"}:
+.\scripts\avshunter_options_intelligence.py:9026:            if os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower() in {"1", "true", "yes", "on"}:
+.\scripts\avshunter_options_intelligence.py:9045:        _oi_sbm_raw = _oi_os.environ.get("AVSHUNTER_SECTOR_BIAS_MAP", "")
+.\scripts\avshunter_options_intelligence.py:9046:        _oi_mc_raw  = _oi_os.environ.get("AVSHUNTER_MACRO_CONVICTION", "0.60")
+.\pipeline_interpreter\live_market_reader.py:38:POLYGON_API_KEY    = os.environ.get("POLYGON_API_KEY", "")
+.\pipeline_interpreter\live_market_reader.py:39:MARKETDATA_API_KEY = os.environ.get("MARKETDATA_API_KEY", "")
+.\worker3\adapters\anthropic_http.py:77:        key = os.environ.get("ANTHROPIC_API_KEY", "")
+.\worker3\adapters\anthropic_http.py:87:        credential_source = "os.environ"
+.\orchestrator\main.py:46:        ctx = os.environ.get("AVSHUNTER_CONTEXT_DIR", "").strip()
+.\orchestrator\main.py:55:                    os.environ["AVSHUNTER_MACRO_PATH"] = str(macro)
+.\orchestrator\main.py:58:                    os.environ["AVSHUNTER_UNIVERSE_PATH"] = str(uni)
+.\orchestrator\main.py:96:            env = os.getenv("AVS_ENABLE_OPTIONS", "").strip().lower()
+.\orchestrator\claude_api.py:9:        self.api_key = os.getenv('ANTHROPIC_API_KEY', 'DUMMY')
+.\orchestrator\email_sender.py:14:        self.gmail_address = os.getenv('GMAIL_ADDRESS')
+.\orchestrator\email_sender.py:15:        self.gmail_password = os.getenv('GMAIL_APP_PASSWORD')
+.\orchestrator\email_sender.py:16:        self.recipient = os.getenv('RECIPIENT_EMAIL')
+.\orchestrator\options_intelligence.py:111:        self.polygon_key = os.getenv('POLYGON_API_KEY')
+.\morning_validation_engine.py:103:POLYGON_API_KEY = os.getenv("POLYGON_API_KEY", "").strip()
+.\morning_validation_engine.py:104:MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
+.\news_terminal\news_terminal_engine.py:8:ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+.\morning_validation.py:103:POLYGON_API_KEY = os.getenv("POLYGON_API_KEY", "").strip()
+.\morning_validation.py:104:MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
+.\pipeline_interpreter\automation_v2\rollout.py:30:    source = environment if environment is not None else os.environ
+.\pipeline_interpreter\automation_v2\production_deploy.py:43:        os.environ.get(PUBLISH_FEATURE_FLAG, "").strip() == "1"
+.\pipeline_interpreter\automation_v2\package_publisher.py:97:        os.environ.get(PUBLISH_FEATURE_FLAG, "").strip() == "1"
+.\pipeline_interpreter\automation_v2\live_provider.py:49:    os.environ["ANTHROPIC_API_KEY"] = key
+.\msi_runtime.py:48:        source = os.environ if env is None else env
+.\msi_runtime.py:80:    config_path = Path(os.environ.get("MSI_CONFIG_PATH", DEFAULT_CONFIG_PATH))
+.\msi_runtime.py:96:        if env_name in os.environ:
+.\msi_runtime.py:97:            merged[env_name] = os.environ[env_name]
+.\morning_gate.py:106:POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "").strip()
+.\morning_gate.py:107:MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
+.\morning_gate.py:115:EV3_BARRIER_CACHE_PATH   = Path(os.getenv(
+.\morning_gate.py:156:    env = os.environ if environment is None else environment
+.\ma_cockpit\ma_cockpit_engine.py:9:ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")

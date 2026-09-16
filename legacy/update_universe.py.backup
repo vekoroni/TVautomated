@@ -4,7 +4,7 @@ AVSHUNTER UNIVERSE UPDATER (POLYGON)
 Batch update all tickers in universe from Polygon.io
 Run daily at 4:05 PM (before discovery scan at 4:15 PM)
 
-API Key: ***REDACTED_POLYGON_API_KEY***
+API Key: <REDACTED_POLYGON_API_KEY>
 
 Usage:
     python update_universe.py

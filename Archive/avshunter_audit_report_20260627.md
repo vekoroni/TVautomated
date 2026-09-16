@@ -58,8 +58,8 @@ The Intelligence Lab reads these fields **directly from `macro_intelligence_late
 **Severity:** CRITICAL — IMMEDIATE ACTION REQUIRED  
 
 ```python
-POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "***REDACTED_POLYGON_API_KEY***").strip()
-MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "***REDACTED_MARKETDATA_API_KEY***").strip()
+POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "<REDACTED_POLYGON_API_KEY>").strip()
+MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "<REDACTED_MARKETDATA_API_KEY>").strip()
 ```
 
 Both API keys are hardcoded as fallback strings in the `os.getenv()` calls. This violates the CLAUDE.md rule "never hardcode, never print, never reproduce" and exposes keys in version control.
