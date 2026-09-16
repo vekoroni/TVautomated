@@ -1,6 +1,6 @@
 # AVSHUNTER — Objective Assurance Assessment
 
-Status: **DRAFT — assurance review, no code changed.** Prepared 16 Sep 2026.
+Status: **DRAFT — assurance review, no code changed.** Prepared 16 Sep 2026. Capability definitions O1, O3, O6 and O7 updated later on 16 Sep 2026 to match the governing specification v1.1 (1–20 session window instead of a hold period; long shares in scope; every alternative recorded). The stage verdicts in §3 assess the **legacy** pipeline and remain valid evidence.
 Evidence base: `DECISION_PATH_MAP_20260914_214012.md` (DM-xx), `END_TO_END_PIPELINE_MAP_AND_FIX_DESIGN.md` (S-xx), `BUSINESS_DOMAIN_DESIGN_ADDENDUM.md`, signal-accuracy audit of run `20260914_214012`, and the project's own research records (`audit/td/AVS-TD-001/findings.md`, `outcome_census.md`).
 
 ---
@@ -33,13 +33,13 @@ Decomposed into required capabilities:
 
 | ID | Capability | What "achieved" means |
 |---|---|---|
-| O1 | Directional thesis | Direction, invalidation and hold period that are right more often than chance, with measured confidence |
+| O1 | Directional thesis | Direction, invalidation, structural target (or none) and a 1–20 session window with resolution timing that are right more often than chance, with measured confidence |
 | O2 | Money measurement | Expected profit after costs and uncertainty, per $ at risk |
-| O3 | Expression search | All admissible expressions (long options, debit verticals, short shares for PUT) generated and compared on the same basis |
+| O3 | Expression search | All admissible expressions (long calls/puts, debit verticals, long shares for BULL, short shares for BEAR) generated and compared on the same basis |
 | O4 | Cheap convexity | Options priced below the volatility the evidence/forecast expects, with convex payoff in the thesis direction |
 | O5 | Ranking | Every valid, tradeable opportunity ordered by risk-adjusted EV; nothing silently excluded |
-| O6 | Actionable morning decision | Live revaluation of the ranked expression, one decision, no later overrides |
-| O7 | Learning loop | Every decision recorded with inputs; outcomes matured; evidence and valuation calibrated |
+| O6 | Actionable morning decision | Live revaluation of the ranked expression over the remaining window, one decision, no later overrides |
+| O7 | Learning loop | Every decision and every alternative (non-selected, non-actioned, excluded) recorded with inputs; underlying and expression outcomes matured; evidence timing and valuation calibrated |
 | O8 | Trustworthy operation | Reproducible, point-in-time, missing data never disguised as signal |
 
 ---

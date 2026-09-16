@@ -2017,6 +2017,9 @@ def _load_run(run_id, force_reload=False):
             sig["ev"] = round(float(_ev), 6)
             sig["ev_final"] = sig["ev"]
             sig["ev_net"]   = sig["ev"]
+            # ev/ev_final/ev_net come from the legacy v2.1.0 engine, which is
+            # not a valid expected value (EV3 authority retired).
+            sig["ev_source"] = "LEGACY_V2_NOT_REAL_EV"
 
         # Price fix
         _sp = sig.get("underlying_price") or sig.get("signal_price")

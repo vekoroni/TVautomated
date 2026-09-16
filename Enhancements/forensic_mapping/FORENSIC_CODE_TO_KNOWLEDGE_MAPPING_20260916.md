@@ -2,7 +2,7 @@
 
 Status: **Assurance evidence — read-only, no code changed.** Prepared 16 Sep 2026.
 Scope: tracked production Python in `C:\Users\ACKVerissimo\AVSHUNTER-Intelligence` (534 files, 204,519 lines after excluding tests, audit, archive, backups, legacy and `*old*`/`*dnu*`/`*.bak*`), plus the external `C:\Users\ACKVerissimo\vanguard` repo where production depends on it.
-Mapped against: `docs/knowledge/AVSHUNTER_END_TO_END_DDD_BEHAVIOURAL_SPECIFICATION.md` (governing), method notes 01–07, `REPLICATION_PLAN.md`, and `REVIEW_DDD_BEHAVIOURAL_SPECIFICATION_20260916.md`.
+Mapped against: `Enhancements/knowledge/AVSHUNTER_END_TO_END_DDD_BEHAVIOURAL_SPECIFICATION.md` (governing), method notes 01–07, `REPLICATION_PLAN.md`, and `REVIEW_DDD_BEHAVIOURAL_SPECIFICATION_20260916.md`.
 Method: 122 requirements extracted from the documents, traced to code by six independent read-only reviews with file:line evidence; a seventh review built a reachability graph of production code and mapped modules back to the specification's bounded contexts. Key conflicts between reviews were re-verified directly (§6).
 
 Status definitions: **IMPLEMENTED** — code does what the document requires · **PARTIAL** — some elements present · **CONTRADICTED** — code does the opposite / violates the requirement · **ABSENT** — no implementation.
@@ -291,3 +291,27 @@ These corrections should be applied to `BUSINESS_DOMAIN_DESIGN_ADDENDUM.md` §7.
 2. **The review changes C1–C14 are confirmed by the code:** C5 (ledger records candidates but not expressions, no actioned flag — DL-3), C6 (no expression outcome — OM-4), C7 (universe/eligibility contradicted — UE-1..3), C4 (no supersession — TH-8), C3 (DTE rule currently contradicted in the opposite direction — EX-3), C12 (macro and Lab re-ranking leaks — ADV-1, RK-8).
 3. **Delivery approach:** build the specification's contexts as new, clean domain services (strangler pattern) using the §5 assets, route the pipeline through them one context at a time behind the real-run gate, and retire legacy modules as each context is replaced. Editing the 9.5k/7.5k/4.1k-line legacy modules in place would reproduce the current failure mode.
 4. **First items that unblock everything else:** single decision clock and run context (RC-1, RC-6), immutable stage outputs (OWN-1), ledger lineage contract (DL-2, DL-3), evidence data hygiene and freshness (EV-8, EV-14), and replication R1/R4 on cleaned data.
+
+---
+
+## 8. Validation note — EV engine in production (16 Sep 2026)
+
+Question from ACK: the pipeline is meant to use EV engine v3; is v2 actually running?
+
+| Check | Result | Evidence |
+|---|---|---|
+| Design intent | EV3 was built to be the unified EV authority (NEGATIVE/INDETERMINATE block economics when enabled) | `docs/EV3_FULL_REMEDIATION_IMPLEMENTATION_20260820.md` Phase 7 |
+| EV3 authority today | Permanently disabled: `authority_active = False` ("EV authority is retired"); config `EV3_AUTHORITY_ENABLED = False`; a request to enable is logged as retired. Introduced in commit `667620e` (4 Sep 2026) | `scripts/apply_ev3_authority.py:151-153`; `intelligent_orchestrator.py:467-470, 3280-3287` |
+| Engine loaded by EIL | **`vanguard/ev_engine_v2.py` (v2.1.0)** — verified by importing under the runner's `sys.path` | `execution_intelligence_runner.py:157-168, 216, 440, 933` |
+| Newer v2 not loaded | Root `ev_engine_v2.py` is **v2.2.0** (PATCH-05 actuarial signal integration); 121 differing lines; not imported by EIL | file headers |
+| Where v2 output is used | Final decision engine input; EIL advisory field and composite; EOD candidate `ev_conf_adj`/`ev_status`; Lab EV warning (first choice); Lab priority score (10%); Lab `ev`/`ev_final`/`ev_status` display | `final_decision_engine.py:399`; `execution_intelligence_runner.py:441`; `execution_intelligence.py:565`; `eod_candidate_engine.py:2642-2643`; `contracts/lab_control.py:2104`; `intelligence-lab/intelligence_lab.py:1005, 1840-1844` |
+| Run 20260914_214012: v2 verdicts | 1,449 rows: PASS_SMALL 1,280, WEAK_PASS 169, **no FAIL** | `execution/execution_v3_5_20260914_214012.csv` |
+| Run 20260914_214012: EV3 verdicts | 245 contracts evaluated: **all 245 NEGATIVE_EV**; conservative return max −0.164, median −0.471; lower bound median −0.596 | Lab book `ev3_*` fields |
+| Same contracts compared | Of the 245 EV3-negative contracts, v2 marked 221 PASS_SMALL and 24 WEAK_PASS; 79 are EOD_TRIGGER_READY and 166 THESIS_READY | Join on ticker |
+
+**Conclusion — confirmed major defect (VA-1, VA-13, VA-14, FB-8).** The engine intended to measure money (EV3) is permanently advisory and says every contract it could evaluate has negative expected value; an older, heuristic engine (v2.1.0, not even the patched v2.2.0) runs in the decision path and passes every row, feeding the final decision engine, EOD candidate fields, Lab EV warning, Lab priority and the EV shown to the trader. Note: EV3 itself has known defects (timeout at unchanged spot, grid snapping, proportional exit spread), so its negative verdicts are directionally informative but must be revalidated after the valuation core is rebuilt.
+
+**Owner clarification (16 Sep 2026).** Retiring EV3 authority on 4 Sep was a deliberate and correct decision: EV3 was not working as expected. EV authority stays off until correct EV logic is built and validated. The defect is therefore restated:
+
+- **Not a defect:** EV3 advisory-only.
+- **Defect (VA-1 restated):** retiring EV3 left the legacy v2.1.0 heuristic engine as the de facto EV voice, so the pipeline and Lab still present an "EV" / "PASS" that is not a valid expected value. Interim position: v2 output must not be treated as EV evidence anywhere; the rebuilt valuation core becomes the single EV owner and is switched on only after passing validation (knowledge note 03, replication plan, G3/G4).

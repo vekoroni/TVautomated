@@ -5,8 +5,8 @@ present, null %, zero %, distinct values, dominant-value share, constant flag.
 Also reports defaulted-input evidence (physics_defaulted_fields) at the Vanguard stage.
 
 Usage:
-  venv\\Scripts\\python.exe audit\\decision_map\\decision_map_coverage.py --run-id 20260914_214012 [--compare 20260913_143230 20260911_115904]
-Outputs: audit/decision_map/runs/<run_id>/field_coverage.csv, field_coverage_summary.md
+  venv\\Scripts\\python.exe Enhancements\\decision_map\\decision_map_coverage.py --run-id 20260914_214012 [--compare 20260913_143230 20260911_115904]
+Outputs: Enhancements/decision_map/runs/<run_id>/field_coverage.csv, field_coverage_summary.md
 """
 from __future__ import annotations
 

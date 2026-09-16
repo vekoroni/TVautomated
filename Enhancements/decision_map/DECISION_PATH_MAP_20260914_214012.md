@@ -1,12 +1,14 @@
 # AVSHUNTER Decision-Path Map — draft specification
 
 Run analysed: `20260914_214012` (session 2026-09-14, code `avs-baseline-20260906-48-g0810908-dirty`), cross-checked on `20260913_143230` and `20260911_115904`.
-Status: **DRAFT — read-only investigation, no pipeline code changed.** Prepared 2026-09-15.
+Status: **EVIDENCE DOCUMENT — read-only investigation, no pipeline code changed.** Prepared 2026-09-15. Updated 2026-09-16.
+
+> **Reconciliation note (16 Sep 2026).** This map records how the **legacy** pipeline behaves (field traces, coverage, breaks DM-01..DM-38). Its findings remain valid evidence. Its proposals, test priorities and open decisions are **superseded** where they conflict with the governing documents: `Enhancements/knowledge/AVSHUNTER_END_TO_END_DDD_BEHAVIOURAL_SPECIFICATION.md` v1.1 (signed off) → method notes 01–07 → `BUSINESS_DOMAIN_DESIGN_ADDENDUM.md` v2.0 → `END_TO_END_PIPELINE_MAP_AND_FIX_DESIGN.md` v2.0. See §8 and §11–§12 for the superseded items and their resolutions.
 
 Sources:
 - Code traces of every field (file:line below, all read from the working tree).
-- Measured coverage: `audit/decision_map/runs/20260914_214012/field_coverage.csv` and `field_coverage_summary.md` (script `audit/decision_map/decision_map_coverage.py`).
-- Independent recomputation: `audit/signal_accuracy/runs/20260914_214012/` (script `audit/signal_accuracy/signal_accuracy_audit.py`).
+- Measured coverage: `Enhancements/decision_map/runs/20260914_214012/field_coverage.csv` and `field_coverage_summary.md` (script `Enhancements/decision_map/decision_map_coverage.py`).
+- Independent recomputation: `Enhancements/signal_accuracy/runs/20260914_214012/` (script `Enhancements/signal_accuracy/signal_accuracy_audit.py`).
 
 Abbreviations: **OI** `scripts/avshunter_options_intelligence.py` · **DG** `contracts/direction_governance.py` · **EOD** `eod_candidate_engine.py` · **LAB** `contracts/lab_control.py` · **MG** `morning_gate.py` · **DISC** `avshunter_discovery_ULTIMATE.py` · **RVP** `scripts/run_vanguard_from_packages.py` · **PHYS** `vanguard/physics_state_engine.py` · **EIL** `execution_intelligence_runner.py`.
 
@@ -269,6 +271,8 @@ Advisory only: EV, EIL verdict, R:R, monetisability, EV3, macro, sector.
 **Morning pipeline timing (user, 15 Sep):** `run_premarket.bat` is run manually during the US session, typically ~15 minutes after the open (≈14:45 London) — always after the 08:45 London routine.
 
 **Proposed macro design (DRAFT — not approved, no changes made)**
+
+> **Status 16 Sep 2026:** direction confirmed by the governing specification (macro is display-only context for manual review; no context C0–C13 reads it; spec §14, end-to-end design S4). Item 3's "morning gate" becomes the C14 Presentation read of the dated context file (C10 Execution Readiness never reads macro). Item 4's "event guard inside planned hold" is superseded: there is no planned hold; display the event relative to the thesis window and each expression's `last_exit_session`.
 1. Remove macro plumbing from the evening run (stages, ~60 columns, handoff/health requirements, physics sector-alignment input, horizon-router macro read).
 2. Routine adds one step: write `dropbox/macro/thesis/macro_context_YYYY-MM-DD.json` beside the markdown, **also on skipped runs**. Proposed fields:
    - `status`: `PUBLISHED` | `SKIPPED_STALE_BUILD` | `SKIPPED_INCONSISTENT` | `DEVICE_UNREACHABLE`
@@ -318,11 +322,13 @@ Advisory only: EV, EIL verdict, R:R, monetisability, EV3, macro, sector.
 | E Scores | macro packet, physics (synthetic incl. returns) | none | none | **none** |
 | F Verdict | Lab governed handoff, morning authority | vetoes partly | n/a | **none** (no test of EOD rule order, `classify_tier`, priority) |
 
-Only real-data checks in the repo today: `audit/signal_accuracy/signal_accuracy_audit.py` and `audit/decision_map/decision_map_coverage.py` (both built 15 Sep, uncommitted). `tests/lab_qa_audit.py:172` flags constant columns at INFO only.
+Only real-data checks in the repo today: `Enhancements/signal_accuracy/signal_accuracy_audit.py` and `Enhancements/decision_map/decision_map_coverage.py` (both built 15 Sep, uncommitted). `tests/lab_qa_audit.py:172` flags constant columns at INFO only.
 
 ---
 
 ## 11. Tests to write first (priority order)
+
+> **SUPERSEDED (16 Sep 2026)** as a test plan for the rebuild by `END_TO_END_PIPELINE_MAP_AND_FIX_DESIGN.md` v2.0 S18 (five tiers: context contract/invariant tests, reference algorithm tests, golden replay, real-run gate, shadow comparison). The items below remain valid as **real-run checks on the legacy pipeline** during migration, except: "`CONFIRMED` only where qualified evidence agrees" (vocabulary replaced by descriptive SUPPORTED / UNSUPPORTED / OPPOSED / INSUFFICIENT_EVIDENCE), "no READY status with spread above policy limit" and the EOD decision tables (legacy status ladder replaced by the OpportunityBook), and "target within k × expected move" (targets are structural or `NONE`; no expected-move bound or fallback).
 
 1. **Real-run gate (DF + AL, RR)** — extend the signal audit and run after every evening run; any failure marks run DEGRADED:
    - no decision-path field constant across the book (convexity, friction, campaign);
@@ -351,12 +357,17 @@ Only real-data checks in the repo today: `audit/signal_accuracy/signal_accuracy_
 - Event guards: context-only, manual review; impact to be understood from routine output before any automation.
 - No code changes until root cause and fix design are approved.
 
-**Open — needed before fix design**
-1. Direction conflict (DM-01): block (no contract, not trigger-ready) or keep with a visible CONFLICT / UNCONFIRMED status?
-2. Direction evidence after retirements: which families remain admissible — e.g. rebuild ACTUARIAL from real layer-2 probabilities, keep one price-structure family, add per-ticker `macro_sector_bias`?
-3. Target policy (DM-06/07): bound 3R fallback by expected move, or treat "no structural target" as UNEVALUABLE?
-4. Convexity, physics friction, Heston greeks (DM-14/15/26/27): repair with real inputs, or retire?
-5. `win_prob_predicted` (DM-23): remove from display until calibrated, or relabel as base rate?
-6. Macro residue (DM-35): user direction 15 Sep — macro is owned by the scheduled cloud routine, so the evening-run macro functionality is not needed; approve the draft design in §8 (strip evening plumbing; morning gate reads the routine's dated context file as advisory context). **Decided (user, 15 Sep):** event guards stay context-only and are reviewed manually. Their impact is first to be understood from the scheduled routine's output; any automated rule is deferred until the system is developed further.
-7. What does "tier" mean — one vocabulary across stages (DM-32)?
-8. Horizon (DM-38): which stage owns the thesis hold period (e.g. layer-2 preferred horizon, target distance ÷ expected daily move, or a fixed policy), so that horizon is decided before contract selection rather than read back from the contract?
+**Recorded (ACK, 15–16 Sep 2026)** — additional decisions now in force: rank not gate with hard exclusions for integrity and tradeability; expressions long calls/puts, debit verticals, long shares (BULL), short shares (BEAR, borrow); RAEV ranking with time-normalised tie-break; 1–20 session window; shorter-dated expressions with own `last_exit_session`; superseding thesis inherits the window clock; EV3 authority stays retired until the new valuation core passes validation; specification v1.1 signed off with S1–S5.
+
+**Formerly open — all SUPERSEDED / RESOLVED (16 Sep 2026)**
+
+| # | Former open question | Status | Resolution | Governing source |
+|---|---|---|---|---|
+| 1 | Direction conflict (DM-01): block or keep with CONFLICT / UNCONFIRMED? | **SUPERSEDED** | Neither. Direction state is descriptive (SUPPORTED / UNSUPPORTED / OPPOSED / INSUFFICIENT_EVIDENCE); OPPOSED theses are valued and ranked, weak evidence lowers RAEV; only insufficient evidence → `NOT_VALUED` (recorded, matures) | spec §9 (S1) |
+| 2 | Admissible direction evidence families | **SUPERSEDED** | Evidence is a competing-risks packet per candidate geometry (C4); other features become state dimensions only with measured lift; catalyst and RS20 retired; no `macro_sector_bias` | spec §8; note 01; addendum §6.4 D2 |
+| 3 | Target policy (DM-06/07): bounded 3R or UNEVALUABLE? | **SUPERSEDED** | Structural `LEVEL` or `NONE`; no 3R, reference or expected-move target in evidence or valuation; verticals fixed-width or not applicable without a target | spec §9, §10 (S3) |
+| 4 | Convexity, physics friction, Heston greeks: repair or retire? | **RESOLVED** | Convexity rebuilt as C7 profile (display / `SHADOW` until validated); physics and Heston overwrite retired; provider greeks | spec §11; note 04 |
+| 5 | `win_prob_predicted` (DM-23) | **RESOLVED** | Retired; probabilities only from C4 with intervals | spec §8 |
+| 6 | Macro residue (DM-35) | **RESOLVED** | Macro display-only via the routine's dated context file (C14); strip evening plumbing during migration; event guards display-only for manual review | spec §14; end-to-end design S4 |
+| 7 | Meaning of "tier" (DM-32) | **SUPERSEDED** | Tier retired; RAEV bands for display, one definition | spec §13 |
+| 8 | Horizon owner (DM-38) | **SUPERSEDED** | No hold period. C5 Thesis owns the 1–20 session window and clock (resolution distribution from evidence); C6 Expression owns the immutable `last_exit_session`; time stops are expression exit-policy variants valued by C8. Nothing is read back from a contract. | spec §9, §10 (C3, C13, S5) |

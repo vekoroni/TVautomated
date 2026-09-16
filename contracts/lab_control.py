@@ -2101,14 +2101,17 @@ def resolve_lab_tradeability(
         soft.append("V5_PROBE_WITHOUT_BUY_NOW")
     # R:R is retained only as research telemetry. It does not decide Lab
     # permission; Morning permission comes exclusively from final_action.
+    # These EV fields come from the legacy v2.1.0 heuristic engine. EV3
+    # authority is retired and v2 is not a valid expected value, so the flags
+    # are labelled LEGACY_EV_* and must not be read as real EV evidence.
     if _f(first(sig, "ev2_ev_conf_adj", "eil_ev_net", "ev"), 0.0) < 0:
-        advisory.append("NEGATIVE_EV")
+        advisory.append("LEGACY_EV_NEGATIVE")
     if source["ev_decision_hint"] == "AVOID" or source["ev_status"] in {"AVOID", "FAIL", "NEGATIVE_EV"}:
-        advisory.append("EV_AVOID")
+        advisory.append("LEGACY_EV_AVOID")
     elif source["ev_decision_hint"] == "WEAK":
-        advisory.append("EV_WEAK")
+        advisory.append("LEGACY_EV_WEAK")
     elif source["ev_decision_hint"] not in {"STRONG", "MODERATE"}:
-        advisory.append("EV_NOT_EVALUATED")
+        advisory.append("LEGACY_EV_NOT_EVALUATED")
     for stale in manifest.get("stale_flags") or []:
         if stale not in soft:
             soft.append(stale)

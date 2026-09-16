@@ -226,7 +226,7 @@ def test_manifest_and_resolver() -> None:
         )
         assert weak_ev["lab_verdict"] == "GO"
         assert weak_ev["lab_tradeable"] is True
-        assert "EV_WEAK" in weak_ev["advisory_flags"]
+        assert "LEGACY_EV_WEAK" in weak_ev["advisory_flags"]
 
         legacy_negative_rr = resolve_lab_tradeability(
             {

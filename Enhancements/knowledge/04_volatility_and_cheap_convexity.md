@@ -1,10 +1,10 @@
 # 04 — Volatility and Cheap Convexity
 
-Status: **Draft** · Capability: O4 Cheap convexity · Contexts: C1 Market Data, C7 Valuation
+Status: **Draft v2** (reconciled to specification v1.1, 16 Sep 2026) · Capability: O4 Cheap convexity · Contexts: **C7 Volatility & Convexity** (inputs from C1 Market Data; outputs to C8 Valuation, C9 display, C14) · Governing: spec §11; addendum §5
 
 ## Question this method answers
 
-> Is this option's convexity cheap — is it priced below the volatility we expect over the holding period, and does its payoff magnify the thesis move enough to be worth the premium?
+> What volatility do we expect over the part of the 1–20 session window that matters for this thesis, what volatility is the option market charging, and is this option's convexity cheap — priced below expected volatility with a payoff that magnifies the thesis move?
 
 ## 1. Realised volatility (what actually happened)
 
@@ -16,21 +16,23 @@ Estimators on daily bars, annualised with √252:
 
 Windows: 10, 20, 60 sessions; always computed point-in-time.
 
-## 2. Forecast volatility (what we expect over the hold)
+## 2. Forecast volatility (term structure over sessions 1–20)
 
 - **HAR-RV** (Heterogeneous Autoregressive model of realised volatility): regress future RV on daily, weekly and monthly RV components. Simple, robust, hard to beat (Corsi, 2009 [verify]).
-- **GARCH/EGARCH**: alternative; state which model and store its parameters.
-- Forecast horizon must equal the **thesis hold** (and optionally the option's remaining life), not a fixed bucket.
-- Output: `sigma_forecast_h`, model, fit window, fit error, parameters.
+- **GARCH/EGARCH**: alternative; state which model and store its parameters (the legacy "GARCH" layer is actually HAR_RV).
+- Forecast a **term structure** σ_forecast(n) for n = 1..20 sessions (cumulative variance to session n). Values at 5, 10 and 20 sessions are **forecast checkpoints** for reporting and replication R1 — they are not thesis holding buckets.
+- Valuation uses the forecast matching each path's holding sessions; metrics below use the thesis's median expected resolution session m (or an expression's forced exit F where stated).
+- Output: `sigma_forecast_by_session[1..20]`, model, fit window, fit error, parameters.
 
 ## 3. Implied volatility measures (what the market charges)
 
-- **ATM IV by expiry** from the chain (backed out from mids, placeholder IVs ≤ 0.001 excluded).
-- **Constant-maturity 30-day IV** interpolated in total variance between expiries.
-- **IV percentile (IVP)**: share of the last 252 sessions where 30-day IV was below today's — requires a **daily IV history**; comparing IV with a realised-vol range is not IVP.
+- **ATM IV by expiry** from the chain (backed out from mids; placeholder IVs ≤ 0.001 and zero gamma are quality states, excluded).
+- **Constant-maturity 30-day IV** interpolated in total variance between expiries — stored **daily** per ticker as a point-in-time series.
+- **IV percentile (IVP)**: share of the last 252 sessions where 30-day IV was below today's — requires the **daily IV series**; comparing IV with a realised-vol range is not IVP. Interim: weekly Phantom chain history (per-contract IV, weekly since ~May 2024) may seed a weekly percentile, disclosed as such.
 - **IV rank**: (IV − min)/(max − min) over 252 sessions of IV history.
-- **Term structure**: IV(front expiry ≥ 7 DTE) vs IV(next expiry); contango/backwardation.
+- **Term structure**: IV(front expiry ≥ 7 DTE) vs IV(next expiry) from actually listed expiries.
 - **Skew**: IV at 25-delta put minus IV at 25-delta call per expiry (interpolated in delta), stored in decimal units.
+- **IV dynamics for valuation**: fitted spot-vol slope β_d and stress shifts Δ used by C8 to price exits (note 03).
 
 ## 4. Event variance (earnings)
 
@@ -40,6 +42,8 @@ Earnings add a one-day jump to variance. Separate it before calling IV "rich" or
 - Compare the implied earnings move with the historical distribution of that stock's earnings-day moves.
 (Common practitioner method; see Sinclair; Bennett, *Trading Volatility* [verify].)
 
+Event information is displayed for manual review (spec §14); it is not an automated gate.
+
 ## 5. The variance risk premium (the core fact)
 
 On average implied volatility exceeds subsequently realised volatility — option buyers pay a premium (Carr & Wu, 2009; Bollerslev, Tauchen & Zhou, 2009 [verify]). In the cross-section of stocks, options where IV is high relative to historical/forecast volatility tend to have lower subsequent returns, and vice versa (Goyal & Saretto, 2009 [verify]; related: Cao & Han, 2013 [verify]).
@@ -48,22 +52,26 @@ On average implied volatility exceeds subsequently realised volatility — optio
 
 ## 6. Cheap-convexity profile (per option expression)
 
+m = thesis median expected resolution session; F = the expression's forced exit session.
+
 | Metric | Formula | Cheap when |
 |---|---|---|
-| Model cheapness | (BS(S₀, K, τ₀, σ_forecast_h) − ask) / ask | > 0 |
-| Variance risk premium | IV_ATM,h − σ_forecast_h | < 0 (or low vs peers) |
+| Model cheapness | (V(S₀, K, τ₀, σ_forecast(m)) − ask) / ask | > 0 |
+| Variance risk premium | IV_ATM(matched tenor) − σ_forecast(matched sessions) | < 0 (or low vs peers) |
 | IV / RV | IV_ATM / RV_20 (and RV_60) | low |
-| IV percentile | point-in-time 252-session IVP | low (needs IV history) |
-| Breakeven ÷ expected move | |breakeven − S₀| / S₀ ÷ (σ_forecast_h · √(h/252)) | < 1 |
-| Convexity at target | (π_option(target)/R) ÷ (|target − S₀|/S₀) | high (requires structural target) |
+| IV percentile | point-in-time 252-session IVP from daily IV series | low |
+| Breakeven ÷ expected move | \|breakeven − S₀\| / S₀ ÷ (σ_forecast(m) · √(m/252)) | < 1 |
+| Convexity at target | (π_option(target)/R) ÷ (\|target − S₀\|/S₀); n/a when `target_state = NONE` | high |
 | Gamma per premium $ | Γ · S₀² · 0.01 / ask | high |
-| Theta burden | |Θ| · h ÷ expected option gain from the forecast move | low |
+| Theta burden | \|Θ\| · m ÷ expected option gain from the forecast move | low |
 | Term slope | IV_next − IV_front | positive (front relatively cheap) |
 | Thesis-side skew | BEAR: IV_25Δput − IV_25Δcall; BULL: reverse | low |
-| Event load | earnings inside DTE; implied vs historical event move | flag; separate event from structural cheapness |
+| Event load | earnings before `last_exit_session`; implied vs historical event move | flag; separates event from structural cheapness |
+| Upper-tail share | E[π · 1{top decile}] / R on the path set | high |
 
 Composite: cross-sectional percentile ranks, equal weight until outcome data justifies weights; publish the number of metrics used; missing metric excluded, never neutral.
-Cheap convexity is a **ranking and explanation signal**; money is decided by EV (note 03), which already uses σ_forecast in its pricing assumptions.
+
+**Authority:** cheap convexity is an **explanatory** profile. The money effect of cheap or expensive volatility is already inside EV through σ_forecast and IV dynamics (note 03), so using it again as a ranking key would double-count. It is displayed (composite with authority state `SHADOW`) and becomes a ranking input only if C13 validation shows incremental value beyond RAEV (spec Invariant G).
 
 ## Pitfalls (seen in AVSHUNTER today)
 
@@ -75,13 +83,15 @@ Cheap convexity is a **ranking and explanation signal**; money is decided by EV 
 | Term structure windows that miss listed expiries | `term_ratio` 27% populated |
 | Earnings from a non-existent field | Morning gate `earningsAnnouncement` |
 | Placeholder IVs (≤ 0.001) not filtered | 5.7% of sampled contracts |
-| Named GARCH, actually HAR_RV; horizon not tied to hold | Layer 3 |
+| Named GARCH, actually HAR_RV; horizon not tied to anything | Layer 3 |
+| IV history weekly, stale since session 2026-09-04, never projected daily | Phantom / `iv_history_cache.db` |
 
 ## Validation (gate G4)
 
-1. Forecast accuracy: HAR-RV forecast beats naive RV_20 on out-of-sample QLIKE / MSE of realised variance (replication R1).
+1. Forecast accuracy: HAR-RV term forecast beats naive RV_20 on out-of-sample QLIKE / MSE of realised variance at the 5/10/20 checkpoints (replication R1).
 2. VRP sign: average IV − subsequent RV > 0 across the universe (replication R2).
-3. Cheapness pays: realised option returns (or delta-hedged returns) higher in the cheapest quintile than the richest, controlling for thesis quality.
+3. Cheapness pays **incrementally**: after controlling for RAEV, realised expression returns higher in the cheapest quintile than the richest (required before convexity may become a ranking input).
+4. IV dynamics: realised exit IV vs assumed σ_exit — bias within tolerance.
 
 ## References
 

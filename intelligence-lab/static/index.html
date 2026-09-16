@@ -334,10 +334,10 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="f-sep"></div>
     <span class="fb-lbl">Quick</span>
     <button class="fb" id="btn-monetisable" onclick="toggleQuick('monetisable',this)" title="Show only contracts classified as monetisable">Monetisable</button>
-    <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals">EV &gt; 0</button>
+    <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals. Legacy v2 EV / EV3 advisory — not a validated expected value">EV* &gt; 0</button>
     <button class="fb active" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Toggle between the complete governed opportunity population and the actionable subset">All Opportunities</button>
     <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by conservative target profit descending">⬇ Target Profit</button>
-    <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending">⬇ EV</button>
+    <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending. Legacy v2 EV / EV3 advisory — not a validated expected value">⬇ EV*</button>
     <div class="f-sep"></div>
     <input class="search-inp" type="text" placeholder="Search ticker…" oninput="doSearch(this.value)">
     <div class="f-sep"></div>
@@ -362,7 +362,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(11)" title="Underlying trigger price, when supplied; not trigger strength or days to trigger">Trigger price</div>
       <div class="slh" onclick="sortBy(12)">Trig Evidence</div>
       <div class="slh" onclick="sortBy(13)">Monetisable</div>
-      <div class="slh" onclick="sortBy(14)">EV</div>
+      <div class="slh" onclick="sortBy(14)" title="Legacy v2 EV / EV3 advisory — not a validated expected value">EV*</div>
       <div class="slh" onclick="sortBy(15)">IVP</div>
       <div class="slh" onclick="sortBy(16)">Vol State</div>
       <div class="slh" onclick="sortBy(17)">Hold</div>
@@ -858,8 +858,8 @@ function renderPriorityPanel() {
       <div class="pp-badges">
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${s.sb_conv_score||0}/8</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}">${formatEv(ev)} EV</span>
-        ${hint?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${hintC}">${hint}</span>`:''}
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}" title="${LEGACY_EV_TITLE}">${formatEv(ev)} ${evLabel(s)}</span>
+        ${hint?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${hintC}" title="${LEGACY_EV_TITLE}">LEGACY ${hint}</span>`:''}
         ${qs>0?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">Q:${qs.toFixed(0)}</span>`:''}
       </div>
     </div>`;
@@ -974,7 +974,7 @@ function renderCardPanels(stats, macro, summary) {
           <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_armed_count||0}</span></div>
           <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${stats.staged_armed_count||0}</span></div>
           <div class="mrow"><span class="mr-k">Monetisable (Armed)</span><span class="mr-v g">${monetisableArmed.length} signals</span></div>
-          <div class="mrow"><span class="mr-k">Positive EV</span><span class="mr-v g">${armed.filter(s=>getEv(s)>0).length} signals</span></div>
+          <div class="mrow"><span class="mr-k" title="${LEGACY_EV_TITLE}">Positive EV* (legacy / EV3 advisory)</span><span class="mr-v g">${armed.filter(s=>getEv(s)>0).length} signals</span></div>
           <div class="mrow"><span class="mr-k">PCR Vetoes</span><span class="mr-v a">${armed.filter(s=>s.sb_vetoes&&s.sb_vetoes.includes('V6')).length} signals</span></div>
           <div class="mrow"><span class="mr-k">Zero-entry (size=0)</span><span class="mr-v r">${armed.filter(s=>s.sb_position_size_pct==='0'||s.sb_position_size_pct===0).length} signals</span></div>
           <div class="mrow"><span class="mr-k">CALL direction</span><span class="mr-v c">${armed.filter(s=>s.direction==='CALL').length}</span></div>
@@ -1105,7 +1105,7 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">IVP</span><span class="mr-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</span></div>
     <div class="mrow"><span class="mr-k">Monetisability</span><span class="mr-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
     <div class="mrow"><span class="mr-k">Conservative Target Profit</span><span class="mr-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</span></div>
-    <div class="mrow"><span class="mr-k">EV3 Advisory</span><span class="mr-v ${evDisplayClass(getEv(s))}">${formatEv(getEv(s))}</span></div>
+    <div class="mrow"><span class="mr-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="mr-v ${evDisplayClass(getEv(s))}">${formatEv(getEv(s))}</span></div>
     <div class="mrow"><span class="mr-k">Theta Drag</span><span class="mr-v g">${opt('theta_drag_pct')}%</span></div>
     <div class="mrow"><span class="mr-k">Size</span><span class="mr-v a">${displaySize(s)}</span></div>
     <div class="mrow"><span class="mr-k">Vetoes</span><span class="mr-v g">${s.sb_vetoes_count||0} · ${s.sb_vetoes||'NONE'}</span></div>
@@ -1118,6 +1118,7 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Win Rate Source</span><span class="mr-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</span></div>
     <div class="mrow"><span class="mr-k">Exec Mode</span><span class="mr-v ${canOpenEntry(s)?'g':'a'}">${execMode}</span></div>
     <div class="mrow"><span class="mr-k">EV Role</span><span class="mr-v a">ADVISORY ONLY</span></div>
+    <div class="mrow"><span class="mr-k">EV Source</span><span class="mr-v a" title="${LEGACY_EV_TITLE}">${getEvSource(s)==='EV3'?'EV3 ADVISORY (UNVALIDATED)':getEvSource(s)==='LEGACY'?'LEGACY v2 — NOT A REAL EV':'NONE'}</span></div>
   </div>
   <div class="meta-note"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'—'}</div>`;
 }
@@ -1217,25 +1218,50 @@ function cleanUiHtml(value) {
 // ── EV authority fallback chain ───────────────────────────────────────────
 // Server overwrites s.ev directly (intelligence_lab.py FIX-EV).
 // These helpers are belt-and-suspenders for legacy / uncached payloads.
-function getEv(s) {
-  if (!hasComparableEconomics(s)) return Number.NaN;
-  const values = [
-    s.ev3_ev_conservative_return, s.ev3_ev_lower_bound_return, s.ev_predicted,
-    s.ev2_ev_conf_adj, s['eil__ev2_ev_conf_adj'],
-    s.fd_ev_used, s['eil__fd_ev_used'],
-    s.ev_final, s['eil__ev_final'],
-    s.ev_net, s.ev
+// EV3 authority is retired and the legacy v2.1.0 heuristic engine is not a
+// valid expected value. Every EV shown in the Lab is labelled with its source
+// so a legacy figure is never read as real EV (forensic report §8).
+const EV3_SOURCE_KEYS = ['ev3_ev_conservative_return', 'ev3_ev_lower_bound_return'];
+
+function getEvInfo(s) {
+  if (!hasComparableEconomics(s)) return { value: Number.NaN, source: '' };
+  const keys = [
+    'ev3_ev_conservative_return', 'ev3_ev_lower_bound_return', 'ev_predicted',
+    'ev2_ev_conf_adj', 'eil__ev2_ev_conf_adj',
+    'fd_ev_used', 'eil__fd_ev_used',
+    'ev_final', 'eil__ev_final',
+    'ev_net', 'ev'
   ];
-  let firstValid = 0;
+  let first = { value: 0, source: '' };
   let seen = false;
-  for (const v of values) {
-    const n = parseFloat(v);
+  for (const k of keys) {
+    const n = parseFloat(s[k]);
     if (Number.isNaN(n)) continue;
-    if (!seen) { firstValid = n; seen = true; }
-    if (Math.abs(n) > 0) return n;
+    // ev_predicted is EV3 only when the EV3 conservative return supplied it.
+    const isEv3 = EV3_SOURCE_KEYS.includes(k) ||
+      (k === 'ev_predicted' && Number.isFinite(parseFloat(s.ev3_ev_conservative_return)));
+    const info = { value: n, source: isEv3 ? 'EV3' : 'LEGACY' };
+    if (!seen) { first = info; seen = true; }
+    if (Math.abs(n) > 0) return info;
   }
-  return firstValid;
+  return first;
 }
+
+function getEv(s) {
+  return getEvInfo(s).value;
+}
+
+function getEvSource(s) {
+  return getEvInfo(s).source;
+}
+
+// Short label for badges and table cells.
+function evLabel(s) {
+  const src = getEvSource(s);
+  return src === 'EV3' ? 'EV3 (advisory)' : src === 'LEGACY' ? 'Legacy EV (not real EV)' : 'EV';
+}
+
+const LEGACY_EV_TITLE = 'Legacy v2.1.0 heuristic EV unless an EV3 advisory value exists. Neither is a validated expected value; EV authority is retired until the valuation core is rebuilt.';
 
 function hasComparableEconomics(s) {
   const evAligned = cleanCategory(s.ev3_selected_contract_aligned);
@@ -2207,6 +2233,7 @@ function buildExportColumns() {
     ['Target_Profit_Pct', s => Number.isFinite(getMonetisabilityProfitPct(s)) ? getMonetisabilityProfitPct(s).toFixed(2) : ''],
     ['Monetisability_Reason', s => s.monetisability_reason || ''],
     ['EV',              s => Number.isFinite(getEv(s)) ? getEv(s).toFixed(8) : ''],
+    ['EV_Source',       s => getEvSource(s) === 'LEGACY' ? 'LEGACY_V2_NOT_REAL_EV' : getEvSource(s) === 'EV3' ? 'EV3_ADVISORY' : ''],
     ['EV_Decision',     s => s.ev2_decision_hint || ''],
     ['EV_Quality',      s => s.ev2_quality_score || ''],
     ['Win_Rate_20d',    s => s.win_rate_20d || ''],
@@ -2404,7 +2431,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Regime</div><div class="mf-v a">${s.regime||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Priority Rank</div><div class="mf-v ${parseFloat(s.priority_rank||9999)<=5?'g':parseFloat(s.priority_rank||9999)<=15?'c':'a'}">#${s.priority_rank||'—'} · Score ${parseFloat(s.priority_score||0).toFixed(1)}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Advisory State</div><div class="mf-v a">${s.ev3_absolute_state||s.ev3_status||s.ev3_data_state||'NOT EVALUATED'}</div></div>
-      <div class="m-field"><div class="mf-k">EV3 Conservative EV</div><div class="mf-v a">${formatEv(getEv(s))} (advisory)</div></div>
+      <div class="m-field"><div class="mf-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</div><div class="mf-v a">${formatEv(getEv(s))}</div></div>
       <div class="m-field"><div class="mf-k">Execution Mode</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${execMode||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Win Rate Source</div><div class="mf-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Data State</div><div class="mf-v ${s.ev3_data_state==='AVAILABLE'?'g':'a'}">${s.ev3_data_state||'NOT EVALUATED'}</div></div>
@@ -2954,7 +2981,7 @@ function renderExecutePane() {
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">EV HINT</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)" title="${LEGACY_EV_TITLE}">LEGACY EV HINT</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${hintC}">${hint}</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:3px">Q-SCORE</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">${parseFloat(s.ev2_quality_score||0).toFixed(1)}</div>
@@ -3014,7 +3041,7 @@ function buildArmedList() {
       <div class="ai-stats">
         <div class="aistat"><span class="ais-k">Rank</span><span class="ais-v ${parseInt(s.priority_rank||9999)<=10?'g':'a'}">#${s.priority_rank||'—'} · ${parseFloat(s.priority_score||0).toFixed(0)}</span></div>
         <div class="aistat"><span class="ais-k">Monetisable</span><span class="ais-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
-        <div class="aistat"><span class="ais-k">EV</span><span class="ais-v" style="color:${evC}">${formatEv(ev)}</span></div>
+        <div class="aistat"><span class="ais-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="ais-v" style="color:${evC}">${formatEv(ev)}</span></div>
         <div class="aistat"><span class="ais-k">IVP</span><span class="ais-v g">${ivpLbl} (${parseFloat(ivr||0).toFixed(0)}%)</span></div>
         <div class="aistat"><span class="ais-k">Strike</span><span class="ais-v c">$${opt(s,'contract_strike')}</span></div>
         <div class="aistat"><span class="ais-k">Target</span><span class="ais-v g">$${parseFloat(opt(s,'structural_target')||0).toFixed(2)}</span></div>
@@ -3368,7 +3395,7 @@ function openETModal(ticker) {
   document.getElementById('et-summary').innerHTML = `
     <div><span style="color:#555">Direction</span><br><span style="color:#ff4466;font-size:12px">${(s.direction||'').toUpperCase()}</span></div>
     <div><span style="color:#555">Monetisability</span><br><span class="${monetisabilityClass(s)}" style="font-size:12px">${monetisabilityLabel(s)}</span></div>
-    <div><span style="color:#555">EV Adjusted</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatEv(ev)}</span></div>
+    <div><span style="color:#555" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatEv(ev)}</span></div>
     <div><span style="color:#555">Position Size</span><br><span style="color:#f5a623;font-size:12px">${displaySize(s)}</span></div>
     <div><span style="color:#555">Conviction</span><br><span style="color:#fff;font-size:12px">${s.sb_conv_score||0}/8</span></div>
     <div><span style="color:#555">Vetoes</span><br><span style="color:${parseInt(s.sb_vetoes_count||0)===0?'#00ff88':'#ff4466'};font-size:12px">${parseInt(s.sb_vetoes_count||0)===0?'✓ CLEAN':'⚠ '+s.sb_vetoes_count}</span></div>
@@ -3487,7 +3514,7 @@ async function confirmEnterTrade() {
       btn.style.display = 'none';
       const cs = data.contract_summary || {};
       document.getElementById('et-success-detail').textContent =
-        `${cs.direction||'PUT'} ${cs.instrument||''} · ${cs.horizon||getTimeHorizon(s)} horizon · Hold ${cs.hold_period||getHoldPeriod(s)} · Premium $${premium.toFixed(2)} · Inv $${invalidation.toFixed(2)} · EV ${parseFloat(cs.ev||0).toFixed(4)} · Journal OPEN.`;
+        `${cs.direction||'PUT'} ${cs.instrument||''} · ${cs.horizon||getTimeHorizon(s)} horizon · Hold ${cs.hold_period||getHoldPeriod(s)} · Premium $${premium.toFixed(2)} · Inv $${invalidation.toFixed(2)} · Legacy EV (not real EV) ${parseFloat(cs.ev||0).toFixed(4)} ·Journal OPEN.`;
       document.getElementById('et-success').style.display = 'block';
       // Hide the entry ticket after a successful manual journal capture.
       setTimeout(() => closeETModal(), 4000);

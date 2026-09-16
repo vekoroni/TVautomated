@@ -9,10 +9,10 @@ Raw sources (never written):
 Published sources (never written):
   * data/output/runs/<run_id>/discovery, options, morning_validation, intelligence_lab
 
-Outputs go to audit/signal_accuracy/runs/<run_id>/ only.
+Outputs go to Enhancements/signal_accuracy/runs/<run_id>/ only.
 
 Usage:
-  venv\\Scripts\\python.exe audit\\signal_accuracy\\signal_accuracy_audit.py --run-id 20260914_214012
+  venv\\Scripts\\python.exe Enhancements\\signal_accuracy\\signal_accuracy_audit.py --run-id 20260914_214012
 """
 from __future__ import annotations
 

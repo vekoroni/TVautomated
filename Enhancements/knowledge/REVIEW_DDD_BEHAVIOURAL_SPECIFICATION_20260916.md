@@ -1,7 +1,7 @@
 # Review — AVSHUNTER End-to-End DDD Behavioural Specification
 
-Reviewed document: `docs/knowledge/AVSHUNTER_END_TO_END_DDD_BEHAVIOURAL_SPECIFICATION.md` (1,511 lines)
-Reviewed against: knowledge notes 01–07 and REPLICATION_PLAN, `audit/decision_map/END_TO_END_PIPELINE_MAP_AND_FIX_DESIGN.md`, `BUSINESS_DOMAIN_DESIGN_ADDENDUM.md`, `OBJECTIVE_ASSURANCE_ASSESSMENT.md`, and recorded business decisions (15–16 Sep 2026).
+Reviewed document: `Enhancements/knowledge/AVSHUNTER_END_TO_END_DDD_BEHAVIOURAL_SPECIFICATION.md` (1,511 lines)
+Reviewed against: knowledge notes 01–07 and REPLICATION_PLAN, `Enhancements/decision_map/END_TO_END_PIPELINE_MAP_AND_FIX_DESIGN.md`, `BUSINESS_DOMAIN_DESIGN_ADDENDUM.md`, `OBJECTIVE_ASSURANCE_ASSESSMENT.md`, and recorded business decisions (15–16 Sep 2026).
 Date: 16 Sep 2026 · Reviewer: Claude Code · Status: for ACK decision
 
 ---
@@ -140,3 +140,18 @@ If ACK approves the specification (with the changes above), these documents must
 3. **C9** — Primary ranking measure: RAEV per $ at risk (recommended, with time-normalised tie-break) or time-normalised RAEV?
 4. **Q1** (carried) — Long shares for BULL theses in scope?
 5. Approve updating the existing notes and design documents per §4 once the specification is amended.
+
+---
+
+## 6. Decisions recorded (ACK, 16 Sep 2026)
+
+| # | Decision | Effect on the specification |
+|---|---|---|
+| **C3** | **(b)** Shorter-dated expressions are allowed. Each expression carries its own `last_exit_session` (expiry minus exit buffer); paths unresolved by then exit at that session's bid-side price. The thesis window stays 1–20 sessions. | §9 DTE behaviour; §19 "No expression covers maximum thesis window" becomes a valuation effect, not an exclusion; C6 expression outcomes mature at the earlier of resolution or `last_exit_session`. |
+| **C4** | A superseding thesis version **inherits the original window clock**; it cannot restart the 1–20 session window. `supersedes_thesis_id` is recorded and the superseded thesis still matures and is validated. A new clock only starts after the previous thesis has resolved (target, stop, invalidation or timeout). | New "Thesis identity and supersession" section per C4. |
+| **C9** | Rank on **RAEV per $ at risk**; show the time-normalised figure (expected P&L per $ at risk per expected session held) and use it as the **first tie-break**. | §10 Expected value; §12 ranking. |
+| **Q1** | **Long shares for BULL theses are in scope**, as an expression and as the benchmark that answers "is the money in the option or the ticker". | C8 scope becomes: long calls / long puts, debit verticals, **long shares for BULL theses, short shares for BEAR theses** (short shares subject to borrow tradeability). |
+
+Open: approval of the specification with changes C1–C14 as decided above, and of the document updates in §4.
+
+**Update 16 Sep 2026:** C1–C14, these decisions and refinements R-A to R-H are now incorporated in specification **version 1.1** (see its Appendix A). Remaining open items are listed in spec Appendix A.5.
