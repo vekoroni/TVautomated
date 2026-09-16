@@ -23,4 +23,5 @@ Approved by ACK on 16 Sep 2026.
 ## Environment
 
 - Windows. Tests: `venv\Scripts\python.exe -m pytest` (not `C:\Python314`); run one file per process and use a short `--basetemp` (e.g. `%TEMP%\avs_pt`) to avoid long-path failures.
-- The morning pipeline (`run_premarket.bat`) is run manually ~15 minutes after the US open.
+- Rebuild package tests: `venv\Scripts\python.exe -m pytest tests_rebuild -q -p no:cacheprovider --basetemp=%TEMP%\avs_rb` (isolated; never touch live `data/` or the network).
+- Pipelines are run manually from PowerShell (not the `.bat` files): evening `python intelligent_orchestrator.py --evening`, morning ~15 minutes after the US open `python intelligent_orchestrator.py --morning`. Check a plan first with `--plan-only` (no provider calls, no file changes). Do not run a pipeline while a Phantom backfill is writing.

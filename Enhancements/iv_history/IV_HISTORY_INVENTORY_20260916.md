@@ -15,7 +15,7 @@ Question: before building a daily IV history capture, is IV history already held
 ## Gaps and defects
 
 1. **Weekly, not daily.** Enough for a first IV percentile (~100 weekly observations over two years), but not a daily series.
-2. **Missing weeks in 2026:** 04-03, 06-19, 07-03, 07-24, 08-07, 08-14, 08-21. Between 05-22 and 07-17 only about half the tickers were captured (sample: 27–28 of 57).
+2. **Missing weeks in 2026:** 07-24, 08-07, 08-14, 08-21. Between 05-22 and 07-17 only 1,380 of 3,318 tickers were captured. (Correction 16 Sep: 04-03 Good Friday, 06-19 Juneteenth and 07-03 Independence Day observed are **market holidays**, not gaps — the backfill audit shows `NO_DATA` for every ticker on those dates.) A dry run of the weekly backfill for the 12 months to 2026-09-11 shows 60,245 remaining weekly requests before no-data stops.
 3. **Daily projection only partly working.** The evening run projects canonical chains to Phantom (`intelligent_orchestrator.py` ~L5188, outbox `PHANTOM_OPTION_CHAIN_V1`, added ~13 Sep). Only 2026-09-11 and 09-14 were projected (plus 2 tickers for 09-03). Canonical chains for 08-28 → 09-10 exist on disk but are not in history (recoverable).
 4. **Selection bias.** Daily capture covers only that day's candidates, so a ticker's daily IV series has entries only on days it was a candidate.
 5. **No derived series.** There is no daily constant-maturity (e.g. 30-day) ATM IV per ticker, which IV percentile, variance risk premium and cheap-convexity measures need (knowledge note 04). The current `ivp_252d` compares IV with a realised-vol range, not IV history.

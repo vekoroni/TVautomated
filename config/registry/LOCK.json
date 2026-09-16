@@ -1,0 +1,22 @@
+{
+  "schema_version": "avs-config-lock-v1",
+  "entries": {
+    "legacy.flags.canonical_data_enabled@1": "fa01285777d1de854b010cdd1c83b0ee665a95b84d70c32e467023880393ef6f",
+    "legacy.flags.canonical_write_through@1": "59c0652e46906727c26ab39ee6caa7504da23020c90adbef83470eae37e13dd7",
+    "legacy.flags.cds2_ohlcv_mode@1": "d0c2e48f49fcef0f6bc3538d725e289ae0c728ec5e22e8e9edf42b2d512076fa",
+    "legacy.flags.dynamic_session@1": "b3b342308bcb93bc5c0bd4246cc437674d30589aabb09463ab282e4875e3575d",
+    "market_data.backfill_daily_credit_cap@1": "21b529a0c56372d26793bbba4e0d4c8451359d431a581bd615173584b6f1705f",
+    "market_data.benchmark_tickers@1": "7f666dad357db0c3b7c855a7870be3cbbc840dd62f7d612ebbda8601b2933e7b",
+    "market_data.capture_coverage_threshold@1": "332ce24a7a35ac300f17e3d3455afe9c0a116c1cad4ca993fa3a73e77bb43287",
+    "market_data.capture_panel_source@1": "933c8c03f8e31d797b89a7a5dd53b8f2f1204cbaecb01c49732a0f1e59e62cfb",
+    "market_data.chain.from_offset@1": "3ac0fbca5c08fffce12b96d94325619d0c5f0d86b635ef5eb98a29a4a852ae28",
+    "market_data.chain.min_open_interest@1": "d40038fc6d022474e6335930b0ed810d1617eda078af16dd74c990c724eaf186",
+    "market_data.chain.strike_limit@1": "9c295691bd7403ff152bafc314b57f2cb840b69074d618d4cc8304720aa7b11b",
+    "market_data.chain.to_offset@1": "04d7c304e6abb1811b096f6dfdfb0a540654b21be4ca788438c7cb4c19941cd6",
+    "market_data.daily_credit_budget@1": "3e6c8723b8dbe3d4d385dfcd5130024ebfe8244841af4d4003f5a9333d85163d",
+    "market_data.history_max_staleness@1": "daa37e6cd374b5732d29d969b2f89b3b4d9e1c163f75211d6606343cb983d4b6",
+    "market_data.provider_settlement_delay@1": "baee798110cf3ff22b0636a2ac27c158af1c46d6385da75ed630db0841f3a4c4",
+    "run.production_gate_failure_mode@1": "1c48af69c5a65281f53ef5123be6625c6f70a3004cc56d2171777a5402096fb3",
+    "run.production_requires_clean_tree@1": "24eda3c1d571b79a80ea343a015650ca88105c07b3a4379c9e53ba23b41b66b6"
+  }
+}

@@ -19,6 +19,9 @@ Rules: no pipeline code changes until root cause and fix design are approved; th
 | `signal_accuracy/` | `signal_accuracy_audit.py` + `runs/20260914_214012/` | Signal recomputation audit |
 | `gex/` | [GEX_INVESTIGATION_20260914_214012.md](gex/GEX_INVESTIGATION_20260914_214012.md) + `evidence/` | GEX defects D1–D10 and fix design |
 | `data_freshness/` | [PHANTOM_DATA_FRESHNESS_20260916.md](data_freshness/PHANTOM_DATA_FRESHNESS_20260916.md) | Why Phantom history is 12 days stale; capture and freshness fix design |
+| `phase0/` | [PHASE0_PLAN_AND_BACKFILL_DESIGN.md](phase0/PHASE0_PLAN_AND_BACKFILL_DESIGN.md) | Phase 0 workstreams P0-1..P0-7 and history backfill design (approved; Day 1 running 16 Sep) |
+| | [P0-2_CONFIGURATION_REGISTRY_DESIGN.md](phase0/P0-2_CONFIGURATION_REGISTRY_DESIGN.md) | Versioned, append-only configuration registry (approved) |
+| | [P0-3_RUN_CONTEXT_AND_RELEASE_GATE_DESIGN.md](phase0/P0-3_RUN_CONTEXT_AND_RELEASE_GATE_DESIGN.md) | RunContext, decision clock, release gate, launcher, `avshunter/` package (approved, Option A) |
 | `iv_history/` | [IV_HISTORY_INVENTORY_20260916.md](iv_history/IV_HISTORY_INVENTORY_20260916.md) | What IV history exists, gaps, recommended work |
 
 ## Document status (16 Sep 2026)

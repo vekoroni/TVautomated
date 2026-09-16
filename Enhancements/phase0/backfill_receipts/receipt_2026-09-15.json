@@ -1,0 +1,28 @@
+{
+  "contract": "phase0-backfill-receipt-v1",
+  "session": "2026-09-15",
+  "started_at_utc": "2026-09-16T17:28:52.668162+00:00",
+  "finished_at_utc": "2026-09-16T17:50:02.348039+00:00",
+  "tool_exit_code": 0,
+  "universe": 3320,
+  "present_before": 0,
+  "requested_tickers": 3320,
+  "present_after": 2777,
+  "rows_before": 0,
+  "rows_after": 175042,
+  "audit_before": {
+    "requests": 0,
+    "ok": 0,
+    "no_data": 0,
+    "errors": 0,
+    "credits": 0
+  },
+  "audit_after": {
+    "requests": 3318,
+    "ok": 2777,
+    "no_data": 541,
+    "errors": 0,
+    "credits": 3320
+  },
+  "pre_existing_tickers_preserved": true
+}
