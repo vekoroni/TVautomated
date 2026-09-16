@@ -1,0 +1,15 @@
+domain/deterministic_option_valuation.py:249:    if side == "CALL" and ratio > 1.0 and ex_dividend_within_horizon and dividend_carry >= 0.001:
+domain/dynamic_options_probability.py:197:        if self.expected_calibration_error > 1.0 or self.ood_rate > 1.0:
+domain/long_option_execution.py:70:    return spread * 100.0 if spread is not None else None
+domain/macro_advisory_context.py:85:        elif len(matches) > 1: scenario_state, failed = "MULTIPLE", "|".join(matches)
+domain/option_contract_liquidity.py:250:        ((strike_value / spot_value) - 1.0) * 100.0
+domain/option_contract_liquidity.py:252:        else ((spot_value / strike_value) - 1.0) * 100.0
+domain/option_contract_liquidity.py:336:        "expected_move_pct": round(expected_move_pct * 100.0, 6),
+domain/option_contract_liquidity.py:340:        "strike_reach_score": round(reach_score * 100.0, 2),
+domain/option_contract_liquidity.py:552:    elif consumed_factor >= 1.0 or remaining_factor < minimum_remaining:
+domain/option_contract_liquidity.py:657:            reach_factor = features["strike_reach_score"] / 100.0
+domain/quote_units.py:34:        return SpreadObservation(fraction, fraction * 100.0, "PASS", "BID_ASK")
+domain/quote_units.py:39:        return SpreadObservation(explicit, explicit * 100.0, "PASS", "SPREAD_FRACTION_MID")
+domain/quote_units.py:44:        return SpreadObservation(display / 100.0, display, "PASS", "SPREAD_PCT_OF_MID")
+domain/quote_units.py:48:        return SpreadObservation(legacy, legacy * 100.0, "PASS_LEGACY_ADAPTED", "LEGACY_FRACTION")
+domain/quote_units.py:50:        return SpreadObservation(legacy / 100.0, legacy, "PASS_LEGACY_ADAPTED", "LEGACY_PERCENT")

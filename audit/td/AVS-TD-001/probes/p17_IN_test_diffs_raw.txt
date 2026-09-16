@@ -1,0 +1,1212 @@
+######## tests/fixtures/marketdata/option_chain_list_sizes.json
+diff --git a/tests/fixtures/marketdata/option_chain_list_sizes.json b/tests/fixtures/marketdata/option_chain_list_sizes.json
+index eda88de..ce5fa9e 100644
+--- a/tests/fixtures/marketdata/option_chain_list_sizes.json
++++ b/tests/fixtures/marketdata/option_chain_list_sizes.json
+@@ -1 +1 @@
+-{"s":"ok","optionSymbol":["AAPL260918C00200000","AAPL260918P00200000"],"side":["call","put"],"strike":[200,200],"expiration":[1789689600,1789689600],"dte":[19,19],"bid":[4.0,0],"ask":[4.2,3.0],"mid":[4.1,1.5],"bidSize":[12,0],"askSize":[9,null],"last":[4.05,2.8],"openInterest":[250,120],"volume":[40,22],"iv":[0.32,0.35],"delta":[0.48,-0.44],"gamma":[0.02,0.02],"theta":[-0.08,-0.07],"vega":[0.11,0.10],"underlyingPrice":[201.5,201.5],"contractMultiplier":[100,100],"updated":[1788120000,1788120000]}
++{"s":"ok","optionSymbol":["AAPL260918C00200000","AAPL260918P00200000"],"side":["call","put"],"strike":[200,200],"expiration":[1789689600,1789689600],"dte":[19,19],"bid":[4.0,0],"ask":[4.2,3.0],"mid":[4.1,1.5],"bidSize":[12,0],"askSize":[9,null],"last":[4.05,2.8],"openInterest":[250,120],"volume":[40,22],"iv":[0.32,0.35],"delta":[0.48,-0.44],"gamma":[0.02,0.02],"theta":[-0.08,-0.07],"vega":[0.11,0.10],"underlyingPrice":[201.5,201.5],"contractMultiplier":[100,100],"updated":[1787947200,1787947200]}
+######## tests/fixtures/marketdata/option_quote_crossed.json
+diff --git a/tests/fixtures/marketdata/option_quote_crossed.json b/tests/fixtures/marketdata/option_quote_crossed.json
+index 3567f4c..1b2520a 100644
+--- a/tests/fixtures/marketdata/option_quote_crossed.json
++++ b/tests/fixtures/marketdata/option_quote_crossed.json
+@@ -1 +1 @@
+-{"s":"ok","optionSymbol":["AAPL260918C00200000"],"side":["call"],"bid":[4.3],"ask":[4.2],"bidSize":[1],"askSize":[2],"updated":[1788120000]}
++{"s":"ok","optionSymbol":["AAPL260918C00200000"],"side":["call"],"bid":[4.3],"ask":[4.2],"bidSize":[1],"askSize":[2],"updated":[1787947200]}
+######## tests/fixtures/marketdata/option_quote_missing_fields.json
+diff --git a/tests/fixtures/marketdata/option_quote_missing_fields.json b/tests/fixtures/marketdata/option_quote_missing_fields.json
+index afd7536..02bc14f 100644
+--- a/tests/fixtures/marketdata/option_quote_missing_fields.json
++++ b/tests/fixtures/marketdata/option_quote_missing_fields.json
+@@ -1 +1 @@
+-{"s":"ok","optionSymbol":"AAPL260918C00200000","bid":4.0,"ask":4.2,"updated":1788120000}
++{"s":"ok","optionSymbol":"AAPL260918C00200000","bid":4.0,"ask":4.2,"updated":1787947200}
+######## tests/fixtures/marketdata/option_quote_negative_size.json
+diff --git a/tests/fixtures/marketdata/option_quote_negative_size.json b/tests/fixtures/marketdata/option_quote_negative_size.json
+index 411de1e..7f019a7 100644
+--- a/tests/fixtures/marketdata/option_quote_negative_size.json
++++ b/tests/fixtures/marketdata/option_quote_negative_size.json
+@@ -1 +1 @@
+-{"s":"ok","optionSymbol":["AAPL260918C00200000"],"side":["call"],"bid":[4.0],"ask":[4.2],"bidSize":[-1],"askSize":[9],"updated":[1788120000]}
++{"s":"ok","optionSymbol":["AAPL260918C00200000"],"side":["call"],"bid":[4.0],"ask":[4.2],"bidSize":[-1],"askSize":[9],"updated":[1787947200]}
+######## tests/fixtures/marketdata/option_quote_scalar_ok.json
+diff --git a/tests/fixtures/marketdata/option_quote_scalar_ok.json b/tests/fixtures/marketdata/option_quote_scalar_ok.json
+index 04931bb..9f76bda 100644
+--- a/tests/fixtures/marketdata/option_quote_scalar_ok.json
++++ b/tests/fixtures/marketdata/option_quote_scalar_ok.json
+@@ -1 +1 @@
+-{"s":"ok","optionSymbol":"O:AAPL260918C00200000","side":"call","strike":200,"expiration":1789689600,"dte":19,"bid":4.0,"ask":4.2,"mid":4.1,"bidSize":12,"askSize":9,"last":4.05,"openInterest":250,"volume":40,"iv":0.32,"delta":0.48,"gamma":0.02,"theta":-0.08,"vega":0.11,"underlyingPrice":201.5,"contractMultiplier":100,"updated":1788120000}
++{"s":"ok","optionSymbol":"O:AAPL260918C00200000","side":"call","strike":200,"expiration":1789689600,"dte":19,"bid":4.0,"ask":4.2,"mid":4.1,"bidSize":12,"askSize":9,"last":4.05,"openInterest":250,"volume":40,"iv":0.32,"delta":0.48,"gamma":0.02,"theta":-0.08,"vega":0.11,"underlyingPrice":201.5,"contractMultiplier":100,"updated":1787947200}
+######## tests/msi/test_computation.py
+diff --git a/tests/msi/test_computation.py b/tests/msi/test_computation.py
+index b27cf30..57e690a 100644
+--- a/tests/msi/test_computation.py
++++ b/tests/msi/test_computation.py
+@@ -182,6 +182,15 @@ class C02_QuoteChangeEvidence(unittest.TestCase):
+     only when both snapshots carry sizes.
+     """
+ 
++    # AVS-FIX-001 W0.3 (QT-001 D-04): RETIRED 2026-09-06. This test asserted an
++    # absence that is now false — contracts/quote_change_evidence.py implements
++    # `compare_exact_option_quotes`, and materializer._bundle calls it, so the
++    # §8.8 arithmetic exists. An absence test cannot be updated, only retired.
++    # T2 classification: OBSOLETE_ASSERTION_CORRECTED.
++    @unittest.skip(
++        "RETIRED (AVS-FIX-001 W0.3): asserted an absence now contradicted by "
++        "contracts/quote_change_evidence.compare_exact_option_quotes"
++    )
+     def test_quote_change_computation_is_not_implemented_anywhere_NOT_IMPLEMENTED(self):
+         """Exhaustive search for the §8.8 arithmetic.
+ 
+@@ -440,10 +449,33 @@ class C05C07_TpoAndVolumeAllocation(unittest.TestCase):
+         self.assertEqual(profile.value_area_low, 101.0)
+         self.assertEqual(profile.value_area_high, 103.0)
+ 
+-    def test_c07_one_minute_volume_uniformly_allocated_and_labelled(self):
++    def test_c07_volume_uniformly_allocated_across_touched_bins(self):
+         """C-07: each bar's volume is split evenly across every bin it
+-        intersects; label ONE_MINUTE_ESTIMATED; total allocated volume ==
+-        sum of bar volumes.
++        intersects, and the estimation method is disclosed by the cadence
++        label; total allocated volume == sum of bar volumes.
++
++        AVS-FIX-001 W0.3 (QT-001 D-04) — arbitrated in favour of the code.
++        This test previously asserted `data_quality == "ONE_MINUTE_ESTIMATED"`
++        on a fixture whose three bars are spaced +0, +5 and +31 minutes apart.
++        `_profile_cadence` derives the interval from the median timestamp delta
++        (median of 5 and 26 minutes -> 16), which is not a recognised cadence,
++        so it correctly reports COARSE_DATA_LOW_CONFIDENCE. The fixture never
++        contained one-minute bars; the label assertion was the defect, not the
++        allocation.
++
++        Against AVS-SD-002 §9.1 ("estimate volume across touched bins only
++        when the method is disclosed") the production code is right on both
++        counts: it allocates uniformly across touched bins, and it discloses
++        the estimation basis through `data_quality` and `cadence_source`. The
++        C-07 property is therefore asserted here on this fixture's real
++        cadence, and the ONE_MINUTE_ESTIMATED label is covered by
++        `test_c07_one_minute_cadence_is_labelled_one_minute_estimated` below,
++        which supplies actual one-minute bars.
++
++        The bar geometry is left untouched because C-05 and C-06 share this
++        fixture and depend on the +31-minute bar falling in TPO period 1.
++
++        T2 classification: FIXTURE_CORRECTED.
+ 
+         Hand computation:
+           bar1 vol=300 over 3 bins [100,101,102] -> 100 each
+@@ -464,7 +496,45 @@ class C05C07_TpoAndVolumeAllocation(unittest.TestCase):
+         self.assertAlmostEqual(bins.loc[103.0, "volume_estimated"], 100.0)
+         self.assertAlmostEqual(profile.bins["volume_estimated"].sum(), 700.0)
+         self.assertAlmostEqual(profile.regular_volume, 300.0 + 300.0 + 100.0)
++        # The estimation method is disclosed, and honestly: a 16-minute median
++        # cadence is not one-minute data and must not be labelled as such.
++        self.assertEqual(profile.data_quality, "COARSE_DATA_LOW_CONFIDENCE")
++        self.assertEqual(profile.cadence_source, "TIMESTAMP_DERIVED")
++        self.assertEqual(profile.interval_minutes, 16)
++
++    def test_c07_one_minute_cadence_is_labelled_one_minute_estimated(self):
++        """The half of C-07 the shared fixture cannot express: genuine
++        one-minute bars are labelled ONE_MINUTE_ESTIMATED, and their volume is
++        still allocated uniformly across every touched bin.
++
++        Added by AVS-FIX-001 W0.3 so correcting the fixture above does not lose
++        coverage of the ONE_MINUTE_ESTIMATED label.
++        """
++        params = MS_PARAMS_V1
++        tick = 1.0
++        atr14 = tick * params.bin_divisor
++        open_ts = datetime(2026, 1, 2, 14, 30, tzinfo=timezone.utc)
++        # 20 consecutive one-minute bars, each spanning the two bins [100, 101]
++        # with volume 200 -> 100 to each bin per bar.
++        bars = pd.DataFrame([
++            {"timestamp_utc": open_ts + pd.Timedelta(minutes=i),
++             "high": 101.0, "low": 100.0, "close": 100.5,
++             "volume": 200.0, "session_segment": "REGULAR"}
++            for i in range(20)
++        ])
++        profile = build_market_profile(
++            bars, exchange_tick=tick, atr14=atr14,
++            regular_open_utc=open_ts, params=params,
++        )
+         self.assertEqual(profile.data_quality, "ONE_MINUTE_ESTIMATED")
++        self.assertEqual(profile.interval_minutes, 1)
++        bins = profile.bins.set_index("price")
++        self.assertAlmostEqual(bins.loc[100.0, "volume_estimated"], 20 * 100.0)
++        self.assertAlmostEqual(bins.loc[101.0, "volume_estimated"], 20 * 100.0)
++        # Nothing is created or lost by the allocation.
++        self.assertAlmostEqual(
++            profile.bins["volume_estimated"].sum(), 20 * 200.0
++        )
+ 
+ 
+ # ---------------------------------------------------------------------------
+######## tests/msi/test_flow.py
+diff --git a/tests/msi/test_flow.py b/tests/msi/test_flow.py
+index ab0df02..2382de7 100644
+--- a/tests/msi/test_flow.py
++++ b/tests/msi/test_flow.py
+@@ -98,7 +98,14 @@ def _make_resolver(tmp_path: Path, run_id: str, ticker: str, dataset_types, stag
+     root = tmp_path / "cds"
+     registry = CanonicalRegistry(root / "control.sqlite")
+     registry.initialise()
+-    session = date(2026, 8, 30)
++    # AVS-FIX-001 W0.3 (QT-001 D-04), T2: FIXTURE_CORRECTED.
++    # The session fixtures below said date(2026, 8, 30) -- a Sunday. session_bounds()
++    # rejects a non-XNYS date, so six tests died with "2026-08-30 is not an XNYS
++    # session" before asserting anything they were written to assert. Friday
++    # 2026-08-28 is a real session. The deliberately-Sunday instant used to prove
++    # the CLOSED session state (test_functionality.py, session_snapshot) is a
++    # datetime, not a session date, and is left untouched.
++    session = date(2026, 8, 28)
+     registry.register_run(run_id, "EVENING", session)
+     lifecycle = LifecycleManager(registry)
+     event = lifecycle.register(run_id, ticker, allowed_capabilities=tuple(dataset_types))
+@@ -185,6 +192,7 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
+     live = {
+         "live_contract_symbol": symbol, "live_contract_bid": 1.0, "live_contract_ask": 1.2,
+         "live_contract_mid": 1.1, "live_contract_bid_size": 7, "live_contract_ask_size": 4,
++        "live_contract_provider_updated": "2026-08-30T13:00:00+00:00",
+         "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
+         "underlying_bid": 49.9, "underlying_ask": 50.1,
+         "underlying_bid_size": 100, "underlying_ask_size": 120,
+@@ -205,6 +213,7 @@ def test_w01_option_sizes_propagation_chain(tmp_path: Path) -> None:
+             "live_contract_bid": 1.0, "live_contract_ask": 1.2, "live_contract_mid": 1.1,
+             "live_contract_bid_size": 7, "live_contract_ask_size": 4,  # as morning_gate would pass
+             "live_options_source": "MARKETDATA",
++            "live_contract_provider_updated": "2026-08-30T13:00:00+00:00",
+             "live_options_fetched_at": "2026-08-30T13:00:00+00:00",
+         }
+     hydrated = sce.hydrate_selected_structure(
+@@ -339,6 +348,7 @@ def test_w03_morning_gate_cds_then_atomic_handoff(tmp_path: Path) -> None:
+     live = {
+         "live_contract_symbol": symbol, "live_contract_bid": 2.0, "live_contract_ask": 2.2,
+         "live_contract_mid": 2.1, "live_contract_bid_size": 15, "live_contract_ask_size": 20,
++        "live_contract_provider_updated": now_iso,
+         "live_options_fetched_at": now_iso,
+         "underlying_bid": 99.0, "underlying_ask": 99.2,
+         "underlying_bid_size": 300, "underlying_ask_size": 400,
+######## tests/msi/test_functionality.py
+diff --git a/tests/msi/test_functionality.py b/tests/msi/test_functionality.py
+index 2f12747..b8d7309 100644
+--- a/tests/msi/test_functionality.py
++++ b/tests/msi/test_functionality.py
+@@ -559,7 +559,14 @@ class F08UnderlyingNbboSizeFields(unittest.TestCase):
+             root = Path(tmp)
+             registry = CanonicalRegistry(root / "control.sqlite")
+             registry.initialise()
+-            session = date(2026, 8, 30)
++            # AVS-FIX-001 W0.3 (QT-001 D-04), T2: FIXTURE_CORRECTED.
++            # The session fixtures below said date(2026, 8, 30) -- a Sunday. session_bounds()
++            # rejects a non-XNYS date, so six tests died with "2026-08-30 is not an XNYS
++            # session" before asserting anything they were written to assert. Friday
++            # 2026-08-28 is a real session. The deliberately-Sunday instant used to prove
++            # the CLOSED session state (test_functionality.py, session_snapshot) is a
++            # datetime, not a session date, and is left untouched.
++            session = date(2026, 8, 28)
+             registry.register_run("R1", "MORNING", session)
+             lifecycle = LifecycleManager(registry)
+             event = lifecycle.register(
+@@ -800,7 +807,7 @@ class F10FreshnessBySessionState(unittest.TestCase):
+ def _make_resolver(tmp_root: Path, run_id: str, dataset_types, stage: str, ticker: str = "AAPL"):
+     registry = CanonicalRegistry(tmp_root / f"{run_id}.sqlite")
+     registry.initialise()
+-    session = date(2026, 8, 30)
++    session = date(2026, 8, 28)
+     registry.register_run(run_id, "MORNING", session)
+     lifecycle = LifecycleManager(registry)
+     event = lifecycle.register(run_id, ticker, allowed_capabilities=dataset_types)
+@@ -927,14 +934,14 @@ class F11IdempotentRegistration(unittest.TestCase):
+             root = Path(tmp)
+             registry = CanonicalRegistry(root / "control.sqlite")
+             registry.initialise()
+-            registry.register_run("RREG", "MORNING", date(2026, 8, 30))
++            registry.register_run("RREG", "MORNING", date(2026, 8, 28))
+             as_of = datetime(2026, 8, 30, 20, 0, tzinfo=timezone.utc)
+-            scope = DataScope(start_date=date(2026, 8, 30), end_date=date(2026, 8, 30))
++            scope = DataScope(start_date=date(2026, 8, 28), end_date=date(2026, 8, 28))
+ 
+             def record(content_hash: str, dataset_id: str) -> "DatasetRecord":
+                 return DatasetRecord(
+                     dataset_id=dataset_id, dataset_type=DT.OPTION_CHAIN,
+-                    instrument_id="AAPL", session_date=date(2026, 8, 30), scope=scope,
++                    instrument_id="AAPL", session_date=date(2026, 8, 28), scope=scope,
+                     provider="MARKETDATA", content_hash=content_hash,
+                     completeness_status=CompletenessStatus.COMPLETE,
+                     storage_uri=f"/tmp/{dataset_id}.json", observed_at=as_of, as_of=as_of,
+@@ -1010,7 +1017,7 @@ class F12WorklistBlocking(unittest.TestCase):
+             root = Path(tmp)
+             registry = CanonicalRegistry(root / "control.sqlite")
+             registry.initialise()
+-            session = date(2026, 8, 30)
++            session = date(2026, 8, 28)
+             registry.register_run("R1", "OPTIONS", session)
+             # deliberately do NOT register/worklist "DROP"
+             flags = CanonicalFeatureFlags(
+@@ -1048,7 +1055,7 @@ class F12WorklistBlocking(unittest.TestCase):
+             root = Path(tmp)
+             registry = CanonicalRegistry(root / "control.sqlite")
+             registry.initialise()
+-            session = date(2026, 8, 30)
++            session = date(2026, 8, 28)
+             registry.register_run("R1", "OPTIONS", session)
+             lifecycle = LifecycleManager(registry)
+             event = lifecycle.register(
+######## tests/test_avs_sd003_blocker_closure.py
+diff --git a/tests/test_avs_sd003_blocker_closure.py b/tests/test_avs_sd003_blocker_closure.py
+index 5a39fed..1ff84f0 100644
+--- a/tests/test_avs_sd003_blocker_closure.py
++++ b/tests/test_avs_sd003_blocker_closure.py
+@@ -153,7 +153,10 @@ def test_eod_finalisation_materialises_lab_before_audit_and_manifest_refresh() -
+         "_uat_report = write_uat_audit_report(canonical_run_id"
+     )
+     manifest_refresh = source.index("_manifest = _refresh_final_run_manifest(")
+-    assert lab_write < audit_write < uat_write < manifest_refresh
++    worker3_macro = source.index(
++        "_worker3_macro = materialize_worker3_market_environment("
++    )
++    assert lab_write < worker3_macro < audit_write < uat_write < manifest_refresh
+ 
+ 
+ def _write_empty_shadow_fixture(root: Path, *, eligible: bool) -> tuple[Path, str]:
+######## tests/test_big_bang_phase_6_7.py
+diff --git a/tests/test_big_bang_phase_6_7.py b/tests/test_big_bang_phase_6_7.py
+index ec5ba6f..6d8581b 100644
+--- a/tests/test_big_bang_phase_6_7.py
++++ b/tests/test_big_bang_phase_6_7.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ import csv
++import hashlib
+ import json
+ import sys
+ import tempfile
+@@ -28,6 +29,11 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
+         writer.writerows(rows)
+ 
+ 
++def _write_json(path: Path, payload: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(payload), encoding="utf-8")
++
++
+ def _make_run(root: Path, run_id: str, include_eil: bool = True) -> Path:
+     run_dir = root / run_id
+     _write_csv(run_dir / "discovery" / f"discovery_candidates_{run_id}.csv", [{"ticker": "AAA"}])
+@@ -58,7 +64,7 @@ def test_manifest_and_resolver() -> None:
+     with tempfile.TemporaryDirectory() as td:
+         runs = Path(td)
+         run_id = "20990101_000000"
+-        _make_run(runs, run_id, include_eil=True)
++        run_dir = _make_run(runs, run_id, include_eil=True)
+         manifest = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
+         assert manifest["phase_status"]["eil"] == "PASS"
+         assert manifest["phase_status"]["morning_validation"] == "PENDING"
+@@ -66,6 +72,97 @@ def test_manifest_and_resolver() -> None:
+         assert manifest["v5_colab_decommissioned"] is True
+         assert "v5" not in manifest["missing_columns"]
+         assert "v5" not in manifest["required_columns_present"]
++        assert manifest["worker3_market_environment"]["status"] == "MISSING"
++        assert manifest["worker3_macro_ticker_context"]["status"] == "MISSING"
++        assert manifest["fatal_flags"] == []
++        assert manifest["next_action"] == "NEEDS_MORNING_VALIDATION"
++
++        packet_path = run_dir / "interpreter" / "interpreter_macro_context.json"
++        _write_json(packet_path, {
++            "schema_version": "interpreter_macro_context_v1",
++            "packet_id": "MACRO:fixture",
++            "session_date": "2099-01-01",
++            "authority_statement": "MACRO_ADVISORY_ONLY",
++        })
++        (run_dir / "run_meta.json").write_text(json.dumps({
++            "dynamic_plan": {"last_completed_session": "2099-01-01"}
++        }), encoding="utf-8")
++        with_worker3 = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
++        assert with_worker3["worker3_market_environment"]["status"] == "AVAILABLE"
++        assert with_worker3["worker3_market_environment"]["packet_sha256"]
++        assert with_worker3["worker3_market_environment"]["trading_authority"] is False
++
++        packet_sha256 = hashlib.sha256(packet_path.read_bytes()).hexdigest()
++        lab_book_path = (
++            run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json"
++        )
++        _write_json(lab_book_path, {
++            "lab_schema_version": "lab_signal_book_v2",
++            "run_id": run_id,
++            "candidate_count": 1,
++            "rows": [{"ticker": "AAA"}],
++        })
++        lab_book_sha256 = hashlib.sha256(lab_book_path.read_bytes()).hexdigest()
++        context_path = run_dir / "interpreter" / "macro_ticker_context_manifest.json"
++        _write_json(
++            context_path,
++            {
++                "schema_version": "worker3_macro_ticker_context_manifest_v1",
++                "context_contract": "macro_ticker_context_v1",
++                "run_id": run_id,
++                "session_date": "2099-01-01",
++                "authority": "ADVISORY_ONLY",
++                "trading_authority": False,
++                "source_packet_sha256": packet_sha256,
++                "lab_book_sha256": lab_book_sha256,
++                "diagnostics": {
++                    "macro_ticker_context_requested": 1,
++                    "macro_ticker_context_available": 1,
++                    "macro_ticker_context_partial": 0,
++                    "macro_ticker_context_stale": 0,
++                    "macro_ticker_context_conflicting": 0,
++                    "macro_ticker_context_unmapped": 0,
++                    "macro_ticker_context_invalid": 0,
++                    "macro_ticker_context_bytes_total": 1024,
++                    "macro_ticker_context_omitted_items_total": 0,
++                    "macro_ticker_context_exact_ticker": 1,
++                    "macro_ticker_context_sector_only": 0,
++                    "macro_ticker_context_applicability_unmapped": 0,
++                    "macro_ticker_context_reconciled": True,
++                },
++            },
++        )
++        with_context = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
++        self_context = with_context["worker3_macro_ticker_context"]
++        assert self_context["status"] == "AVAILABLE"
++        assert self_context["contract_version"] == "macro_ticker_context_v1"
++        assert self_context["diagnostics"]["macro_ticker_context_requested"] == 1
++        assert self_context["trading_authority"] is False
++
++        context_payload = json.loads(context_path.read_text(encoding="utf-8"))
++        context_payload["lab_book_sha256"] = "0" * 64
++        _write_json(context_path, context_payload)
++        wrong_lab_hash = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
++        assert wrong_lab_hash["worker3_macro_ticker_context"]["status"] == "INVALID"
++        assert "Lab hash differs" in wrong_lab_hash["worker3_macro_ticker_context"]["error"]
++
++        context_payload["lab_book_sha256"] = lab_book_sha256
++        context_payload["diagnostics"].update({
++            "macro_ticker_context_available": -1,
++            "macro_ticker_context_partial": 2,
++            "macro_ticker_context_bytes_total": -1,
++        })
++        _write_json(context_path, context_payload)
++        negative_counts = build_final_run_manifest(run_id, runs, pipeline_mode="EOD")
++        assert negative_counts["worker3_macro_ticker_context"]["status"] == "INVALID"
++        assert "cannot be negative" in negative_counts["worker3_macro_ticker_context"]["error"]
++
++        context_payload["diagnostics"].update({
++            "macro_ticker_context_available": 1,
++            "macro_ticker_context_partial": 0,
++            "macro_ticker_context_bytes_total": 1024,
++        })
++        _write_json(context_path, context_payload)
+ 
+         live_manifest = build_final_run_manifest(run_id, runs, pipeline_mode="LIVE")
+         assert "LIVE_VALIDATION_MISSING" in live_manifest["fatal_flags"]
+@@ -73,15 +170,16 @@ def test_manifest_and_resolver() -> None:
+         missing_run = "20990101_000001"
+         _make_run(runs, missing_run, include_eil=False)
+         missing_manifest = build_final_run_manifest(missing_run, runs)
+-        assert "EIL_OUTPUT_MISSING_OR_INVALID" in missing_manifest["fatal_flags"]
+-        assert missing_manifest["run_tradeable"] is False
++        assert "EIL_ADVISORY_OUTPUT_MISSING_OR_INVALID" in missing_manifest["stale_flags"]
++        assert "EIL_OUTPUT_MISSING_OR_INVALID" not in missing_manifest["fatal_flags"]
+ 
+         blocked = resolve_lab_tradeability(
+             {"ticker": "AAA", "eil_v3_verdict": "BLOCKED", "thesis_decision": "GO"},
+             manifest,
+         )
+-        assert blocked["lab_verdict"] == "BLOCKED"
+-        assert blocked["conflict_state"] == "HARD_CONFLICT"
++        assert blocked["lab_verdict"] == "MORNING_VALIDATION_REQUIRED"
++        assert blocked["conflict_state"] != "HARD_CONFLICT"
++        assert "EIL_ADVISORY_BLOCKED" in blocked["advisory_flags"]
+ 
+         sb_conflict = resolve_lab_tradeability(
+             {"ticker": "AAA", "sb_final_verdict": "EXECUTE", "options_verdict": "STAND_DOWN"},
+@@ -180,7 +278,9 @@ def test_opportunity_book_and_learning_feedback() -> None:
+             "macro_regime_label": "RISK_ON",
+             "legacy_column": "must_survive_in_payload",
+         }
+-        book = write_final_opportunity_book(run_id, [signal], manifest, runs)
++        book = write_final_opportunity_book(
++            run_id, [signal], manifest, runs, sync_interpreter=False
++        )
+         assert Path(book["csv_path"]).exists()
+         assert Path(book["json_path"]).exists()
+         assert all(field in book["rows"][0] for field in FINAL_BOOK_FIELDS)
+######## tests/test_ddd_decision_outcome.py
+diff --git a/tests/test_ddd_decision_outcome.py b/tests/test_ddd_decision_outcome.py
+index caa015c..cbbd3a1 100644
+--- a/tests/test_ddd_decision_outcome.py
++++ b/tests/test_ddd_decision_outcome.py
+@@ -334,11 +334,12 @@ def test_maturation_reuses_canonical_history_and_is_idempotent(tmp_path: Path) -
+         ledger, read_completed_history=read_history,
+         as_of_utc="2026-09-12T23:59:59Z",
+     )
+-    assert first.outcomes_appended == 2
++    # Stage 6 adds the 2- and 3-session learning milestones.
++    assert first.outcomes_appended == 4
+     assert first.deferred_horizons == 2
+     assert calls == [("AAA", "2026-09-04")]
+     outcomes = ledger.events_by_type("OUTCOME")
+-    assert {item.payload["horizon_sessions"] for item in outcomes} == {1, 5}
++    assert {item.payload["horizon_sessions"] for item in outcomes} == {1, 2, 3, 5}
+     assert all(item.payload["is_counterfactual"] is True for item in outcomes)
+ 
+     calls.clear()
+@@ -347,8 +348,8 @@ def test_maturation_reuses_canonical_history_and_is_idempotent(tmp_path: Path) -
+         as_of_utc="2026-09-12T23:59:59Z",
+     )
+     assert second.outcomes_appended == 0
+-    assert second.outcomes_already_present == 2
+-    assert len(ledger.events_by_type("OUTCOME")) == 2
++    assert second.outcomes_already_present == 4
++    assert len(ledger.events_by_type("OUTCOME")) == 4
+ 
+ 
+ def test_morning_recorder_records_non_actionable_rows_and_missing_identity(tmp_path: Path) -> None:
+######## tests/test_dynamic_session_phase0.py
+diff --git a/tests/test_dynamic_session_phase0.py b/tests/test_dynamic_session_phase0.py
+index 86df4c7..a3c341f 100644
+--- a/tests/test_dynamic_session_phase0.py
++++ b/tests/test_dynamic_session_phase0.py
+@@ -1,6 +1,8 @@
+ from __future__ import annotations
+ 
++import hashlib
+ import json
++import os
+ from pathlib import Path
+ import sqlite3
+ import tempfile
+@@ -29,6 +31,13 @@ from scripts.release_baseline import (
+ 
+ REPO = Path(__file__).resolve().parents[1]
+ AUTHORITY_MANIFEST = REPO / "contracts" / "dynamic_session_authority_v1.json"
++RUNTIME_PROFILE = REPO / "contracts" / "dynamic_session_runtime_v1.json"
++RELEASE_MANIFEST = (
++    REPO
++    / "audit"
++    / "ddd_closure_20260905"
++    / "AVS_DDD_CLOSURE_RELEASE_MANIFEST_20260905.json"
++)
+ 
+ 
+ class DynamicSessionContractTests(unittest.TestCase):
+@@ -51,11 +60,79 @@ class DynamicSessionContractTests(unittest.TestCase):
+             self.assertTrue(values)
+             self.assertEqual(len(values), len(set(values)))
+ 
+-    def test_all_new_features_are_disabled_by_default(self) -> None:
++    # ------------------------------------------------------------------
++    # AVS-FIX-001 W0.2 (QT-D01).
++    #
++    # This block replaced `test_all_new_features_are_disabled_by_default`.
++    # That test called `from_environment({})` — the explicit-mapping branch,
++    # which hard-codes every flag to False — and then claimed the result was
++    # the production default. Production calls `from_environment()` with no
++    # argument and loads the governed runtime profile, where 8 of 9 flags are
++    # on. The assertion itself was true of the branch it exercised, so it is
++    # preserved verbatim below under a name that describes what it actually
++    # proves; the three tests after it pin what production really does.
++    #
++    # T2 classification: OBSOLETE_ASSERTION_CORRECTED (renamed, not weakened —
++    # the original assertion is unchanged and three stronger ones are added).
++    # ------------------------------------------------------------------
++
++    #: The controlled-live-cycle set, pinned by name rather than by count so a
++    #: swap of one capability for another cannot pass silently.
++    _CONTROLLED_LIVE_CYCLE_ENABLED = frozenset({
++        "plan_engine",
++        "completed_thesis_builder",
++        "validation_gate",
++        "profile_lifecycle",
++        "lab_dynamic_view",
++        "interpreter_dynamic_resolver",
++        "decision_outcome_ledger",
++        "completed_profile_stage",
++    })
++
++    def test_explicit_empty_mapping_yields_all_disabled(self) -> None:
+         flags = DynamicSessionFeatureFlags.from_environment({})
+         self.assertFalse(any(getattr(flags, field) for field in flags.__slots__))
+         self.assertEqual(len(FEATURE_FLAG_ENV_VARS), 9)
+ 
++    def test_production_profile_enables_controlled_set_and_withholds_auto(self) -> None:
++        # An empty environment, so a stray override in the operator's shell
++        # cannot make the profile look like something it is not:
++        # `from_environment()` lets a set variable override the profile, so a
++        # test *of the profile* must start from nothing.
++        with patch.dict(os.environ, {}, clear=True):
++            flags = DynamicSessionFeatureFlags.from_environment()
++        enabled = {field for field in flags.__slots__ if getattr(flags, field)}
++        self.assertEqual(enabled, self._CONTROLLED_LIVE_CYCLE_ENABLED)
++        self.assertEqual(len(enabled), 8)
++        # Autonomous dispatch is the one capability the release withholds.
++        self.assertFalse(flags.auto_dispatcher)
++
++    def test_master_kill_switch_disables_everything(self) -> None:
++        with patch.dict(
++            os.environ,
++            {"AVSHUNTER_DYNAMIC_RELEASE_DISABLE_ALL": "1"},
++            clear=True,
++        ):
++            flags = DynamicSessionFeatureFlags.from_environment()
++        self.assertFalse(any(getattr(flags, field) for field in flags.__slots__))
++
++    def test_runtime_profile_hash_is_pinned_by_release_manifest(self) -> None:
++        """The guard that makes a silent runtime-profile change impossible.
++
++        The profile decides which capabilities are live. Changing it without
++        re-issuing the release manifest would change production behaviour with
++        no reviewable artefact, so the two must move together.
++        """
++        live = hashlib.sha256(RUNTIME_PROFILE.read_bytes()).hexdigest()
++        pinned = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))[
++            "production_files"
++        ]["contracts/dynamic_session_runtime_v1.json"]
++        self.assertEqual(
++            live,
++            pinned,
++            "runtime profile changed without a release manifest update",
++        )
++
+     def test_feature_flags_are_independently_reversible(self) -> None:
+         for environment_name in FEATURE_FLAG_ENV_VARS:
+             flags = DynamicSessionFeatureFlags.from_environment(
+######## tests/test_dynamic_session_phase1.py
+diff --git a/tests/test_dynamic_session_phase1.py b/tests/test_dynamic_session_phase1.py
+index f2533ae..68697ce 100644
+--- a/tests/test_dynamic_session_phase1.py
++++ b/tests/test_dynamic_session_phase1.py
+@@ -53,14 +53,12 @@ class RunPlanResolutionTests(unittest.TestCase):
+             "DEVELOPING_SESSION",
+             {item.evidence_state for item in plan.datasets_required},
+         )
+-        option_quote = next(
+-            item for item in plan.datasets_required if item.dataset_type == "EXACT_OPTION_QUOTE"
+-        )
+-        self.assertEqual(option_quote.authorised_tickers, ())
+-        self.assertEqual(
+-            option_quote.worklist_source, "UNDERLYING_VALIDATION_SURVIVORS"
++        self.assertEqual(plan.run_condition, "PREOPEN_THESIS_CHECK")
++        self.assertNotIn("SURVIVOR_OPTION_REFRESH", plan.stages_to_run)
++        self.assertNotIn(
++            "EXACT_OPTION_QUOTE",
++            {item.dataset_type for item in plan.datasets_required},
+         )
+-        self.assertEqual(plan.authorised_ticker_worklists["SURVIVOR_OPTION_REFRESH"], ())
+ 
+     def test_regular_session_adds_developing_profile(self) -> None:
+         plan = resolve_run_plan(
+######## tests/test_dynamic_session_phase6.py
+diff --git a/tests/test_dynamic_session_phase6.py b/tests/test_dynamic_session_phase6.py
+index c7ab6ae..cf4063c 100644
+--- a/tests/test_dynamic_session_phase6.py
++++ b/tests/test_dynamic_session_phase6.py
+@@ -195,3 +195,84 @@ def test_completed_profile_stage_has_independent_runtime_flag(monkeypatch) -> No
+         assert orchestrator.completed_profile_stage_enabled() is False
+     monkeypatch.delenv("AVSHUNTER_COMPLETED_PROFILE_STAGE_ENABLED", raising=False)
+     assert orchestrator.completed_profile_stage_enabled() is True
++
++
++def test_dynamic_thesis_receipt_accounts_for_completed_profile_exclusions(
++    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
++) -> None:
++    """Excluded partial sessions must survive the legacy-to-DDD receipt adapter."""
++    import intelligent_orchestrator as orchestrator
++
++    run_id = "20260909_071646"
++    output_dir = tmp_path / "output"
++    runs_dir = output_dir / "runs"
++    run_dir = runs_dir / run_id
++    plan = resolve_run_plan(
++        requested_action="BUILD_THESIS",
++        as_of_utc=datetime(2026, 9, 9, 12, tzinfo=timezone.utc),
++        pipeline_run_id=run_id,
++    )
++
++    artifacts = {
++        output_dir / f"discovery_summary_ultimate_{run_id}.json": {
++            "timestamp": run_id,
++            "universe_size": 1585,
++            "total_candidates": 1585,
++            "lifecycle_errors": 0,
++        },
++        run_dir / "market_profile" / f"completed_profile_summary_{run_id}.json": {
++            "run_id": run_id,
++            "session_date": str(plan.last_completed_session),
++            "input_count": 1585,
++            "completed": 1501,
++            "excluded": 34,
++            "deferred": 0,
++            "hard_exception_count": 50,
++            "reconciled": True,
++            "systemic_failure": False,
++        },
++        run_dir / "vanguard" / "vanguard_run_summary.json": {
++            "run_id": run_id,
++            "packages_total": 1585,
++            "passed": 1535,
++            "rejected": 50,
++        },
++        run_dir / "options" / f"options_intelligence_summary_{run_id}.json": {
++            "run_id": run_id,
++            "signals_scoped": 1448,
++            "signals_processed": 1448,
++        },
++        run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json": {
++            "run_id": run_id,
++            "candidate_count": 1448,
++        },
++    }
++    for path, payload in artifacts.items():
++        path.parent.mkdir(parents=True, exist_ok=True)
++        path.write_text(json.dumps(payload), encoding="utf-8")
++
++    monkeypatch.setattr(orchestrator.cfg, "OUTPUT_DIR", output_dir)
++    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", runs_dir)
++
++    receipt_path = orchestrator._record_dynamic_thesis_receipt(plan)
++    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
++    profile = next(
++        stage
++        for stage in receipt["stages"]
++        if stage["stage"] == "COMPLETED_MARKET_PROFILE"
++    )
++
++    assert profile["input_count"] == 1585
++    assert profile["output_count"] == 1501
++    assert profile["excluded_count"] == 34
++    assert profile["deferred_count"] == 0
++    assert profile["exception_count"] == 50
++    assert sum(
++        profile[field]
++        for field in (
++            "output_count",
++            "excluded_count",
++            "deferred_count",
++            "exception_count",
++        )
++    ) == profile["input_count"]
+######## tests/test_eod_options_research_handoff.py
+diff --git a/tests/test_eod_options_research_handoff.py b/tests/test_eod_options_research_handoff.py
+index f331176..d0661e9 100644
+--- a/tests/test_eod_options_research_handoff.py
++++ b/tests/test_eod_options_research_handoff.py
+@@ -123,11 +123,14 @@ def test_eod_manifest_preserves_options_research_contract_and_blocks_vetoes() ->
+     assert by_ticker["GOOD"]["macro_packet_id"] == "MACRO:2026-09-04:fixture"
+     assert by_ticker["GOOD"]["macro_authority"] == "ADVISORY_ONLY"
+ 
+-    assert "BAD" not in by_ticker
++    assert "BAD" in by_ticker
++    assert by_ticker["BAD"]["eod_candidate_status"] == "EOD_THESIS_READY_REPAIR_AT_OPEN"
++    assert by_ticker["BAD"]["doi_decision_authority"] == "NONE"
++    assert by_ticker["BAD"]["execution_authority"] == "HUMAN_ONLY"
+     assert audit_by_ticker["BAD"]["final_route"] == "OPTIONS_BLOCKED"
+     assert audit_by_ticker["BAD"]["hard_vetoes"] == "SPREAD_GT_15PCT"
+-    assert audit_by_ticker["BAD"]["eod_candidate_status"] == "EOD_BLOCK"
+-    assert "OPTIONS_RESEARCH_BLOCKED" in audit_by_ticker["BAD"]["eod_dropoff_reason"]
++    assert audit_by_ticker["BAD"]["eod_candidate_status"] == "EOD_THESIS_READY_REPAIR_AT_OPEN"
++    assert audit_by_ticker["BAD"]["eod_dropoff_reason"] == "SPREAD_REPAIR_NEEDED"
+ 
+ 
+ def test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developing() -> None:
+@@ -165,7 +168,7 @@ def test_eod_manifest_preserves_a_valid_thesis_when_liquidity_is_still_developin
+     assert bool(row["maturation_execution_authority"]) is False
+ 
+ 
+-def test_eod_manifest_excludes_directional_thesis_without_governed_invalidation() -> None:
++def test_eod_manifest_retains_directional_thesis_without_governed_invalidation() -> None:
+     with tempfile.TemporaryDirectory() as td:
+         root = Path(td)
+         eil_path = root / "execution_v3_5_TEST.csv"
+@@ -187,8 +190,10 @@ def test_eod_manifest_excludes_directional_thesis_without_governed_invalidation(
+         )
+         audit = pd.read_csv(root / "eod_dropoff_audit_TEST.csv")
+ 
+-    assert out.empty
+-    assert audit.iloc[0]["eod_candidate_status"] == "EOD_STRUCTURAL_BLOCK"
++    assert len(out) == 1
++    assert out.iloc[0]["ticker"] == "NOSTOP"
++    assert out.iloc[0]["execution_authority"] == "HUMAN_ONLY"
++    assert audit.iloc[0]["eod_candidate_status"] == "EOD_DATA_INSUFFICIENT_REVIEW"
+     assert "MISSING_GOVERNED_INVALIDATION" in audit.iloc[0]["eod_dropoff_reason"]
+ 
+ 
+######## tests/test_handoff_contract.py
+diff --git a/tests/test_handoff_contract.py b/tests/test_handoff_contract.py
+index 2743f7d..73c9685 100644
+--- a/tests/test_handoff_contract.py
++++ b/tests/test_handoff_contract.py
+@@ -86,11 +86,12 @@ def test_merge_preserves_stronger_packet_fields() -> None:
+     assert weak.get("state_v2") == "STATE_A"
+ 
+ 
+-def test_sovereign_blocked_gate_marks_packet_blocked() -> None:
++def test_eil_blocked_gate_is_advisory() -> None:
+     pkt = HandoffTruthPacket(run_id="R1", ticker="AAPL")
+     pkt.apply_sovereign_gate("EIL_BLOCKED", "BLOCKED", "test block", "EIL")
+-    assert pkt.finalise().packet_status == "BLOCKED"
+-    assert pkt.errors
++    assert pkt.finalise().packet_status == "PARTIAL"
++    assert not pkt.errors
++    assert "EIL_BLOCKED" in " ".join(pkt.warnings)
+ 
+ 
+ def test_validate_required_returns_missing_fields() -> None:
+@@ -119,7 +120,7 @@ def test_build_packet_from_sample_candidate_row() -> None:
+     assert flat["eil_v3_verdict"] == "PASS"
+ 
+ 
+-def test_eil_blocked_plus_go_is_blocked_or_degraded() -> None:
++def test_eil_blocked_plus_go_is_retained_as_advisory() -> None:
+     row = {
+         "run_id": "R1",
+         "ticker": "AAPL",
+@@ -127,8 +128,9 @@ def test_eil_blocked_plus_go_is_blocked_or_degraded() -> None:
+         "thesis_decision": "GO",
+     }
+     pkt = build_truth_packet_from_row(row, "EIL", PRIORITY_EIL_PSE, run_id="R1", run_mode="EVENING")
+-    assert pkt.packet_status == "BLOCKED"
+-    assert "EIL_BLOCKED" in " ".join(pkt.errors)
++    assert pkt.packet_status == "PARTIAL"
++    assert not pkt.errors
++    assert "EIL_ADVISORY_BLOCKED" in " ".join(pkt.warnings)
+ 
+ 
+ def test_final_csv_writer_includes_truth_packet_status_fields() -> None:
+######## tests/test_interpreter_macro_advisory_handoff.py
+diff --git a/tests/test_interpreter_macro_advisory_handoff.py b/tests/test_interpreter_macro_advisory_handoff.py
+index 3a05cbc..910b830 100644
+--- a/tests/test_interpreter_macro_advisory_handoff.py
++++ b/tests/test_interpreter_macro_advisory_handoff.py
+@@ -97,9 +97,16 @@ def test_all_canonical_sources_are_snapshotted_and_authority_is_removed(tmp_path
+     )
+     packet = result["packet"]
+     assert set(packet["source_manifest"]) == {
+-        "core_macro", "bond_macro", "auction_calendar", "enrichment_delta"
++        "core_macro", "bond_macro", "auction_calendar", "enrichment_delta",
++        "us_money_index",
+     }
+-    assert all(item["status"] == "VALID" for item in packet["source_manifest"].values())
++    assert packet["source_manifest"]["us_money_index"]["status"] == "MISSING"
++    assert packet["us_money_index"] == {}
++    assert all(
++        item["status"] == "VALID"
++        for name, item in packet["source_manifest"].items()
++        if name != "us_money_index"
++    )
+     assert "avshunter_macro_enrichment_delta808.json" not in json.dumps(packet)
+     assert not (set(_keys(packet)) & FORBIDDEN_AUTHORITY_KEYS)
+     assert packet["authority_statement"] == AUTHORITY_STATEMENT
+@@ -136,6 +143,43 @@ def test_updated_macro_changes_the_source_fingerprint(tmp_path: Path) -> None:
+     assert first["reference"]["packet_id"] != second["reference"]["packet_id"]
+ 
+ 
++def test_production_mode_uses_only_the_run_frozen_macro_snapshot(tmp_path: Path) -> None:
++    run = tmp_path / "runs" / "20260831_070000"
++    macro = tmp_path / "macro"
++    run.mkdir(parents=True)
++    macro.mkdir()
++    _sources(macro)
++    live = json.loads((macro / "macro_intelligence_latest.json").read_text(encoding="utf-8"))
++    live["regime_state"] = "LATE_MUTABLE_DROPBOX_VALUE"
++    _write_json(macro / "macro_intelligence_latest.json", live)
++    frozen = {
++        **live,
++        "regime_state": "RUN_FROZEN_VALUE",
++        "extras": {
++            **live.get("extras", {}),
++            "bond_macro": {
++                "generated_at": "2026-08-31T07:01:00Z",
++                "yield_curve": {"curve_state": "FLAT"},
++                "auction": {"calendar_rows": []},
++                "zn_futures": {}, "credit_stress": {}, "composite": {},
++            },
++        },
++    }
++    _write_json(run / "macro_snapshot.json", frozen)
++    result = materialize_interpreter_macro_context(
++        run_dir=run,
++        session_date="2026-08-31",
++        macro_dir=macro,
++        prefer_run_snapshot=True,
++    )
++    packet = result["packet"]
++    assert packet["regime_state"] == "RUN_FROZEN_VALUE"
++    assert "LATE_MUTABLE_DROPBOX_VALUE" not in json.dumps(packet)
++    assert packet["source_manifest"]["core_macro"]["status"] == "RUN_SNAPSHOT"
++    assert packet["source_manifest"]["bond_macro"]["status"] == "EMBEDDED_RUN_SNAPSHOT"
++    assert packet["source_manifest"]["us_money_index"]["status"] == "MISSING_IN_RUN_SNAPSHOT"
++
++
+ def test_current_enrichment_contract_builds_ticker_advisories(tmp_path: Path) -> None:
+     run = tmp_path / "runs" / "20260831_070000"
+     macro = tmp_path / "macro"
+######## tests/test_lab_governed_handoff.py
+diff --git a/tests/test_lab_governed_handoff.py b/tests/test_lab_governed_handoff.py
+index c06a88c..af20d04 100644
+--- a/tests/test_lab_governed_handoff.py
++++ b/tests/test_lab_governed_handoff.py
+@@ -170,18 +170,18 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
+     )
+     row = book["rows"][0]
+ 
+-    assert row["lab_schema_version"] == "lab_signal_book_v2"
++    assert row["lab_schema_version"] == "lab_signal_book_v4"
+     assert row["pipeline_mode"] == "EOD"
+     assert row["contract_data_state"] == "AVAILABLE"
+     assert row["spread_pct"] == "0.07"
+-    assert row["rr_premium_expected"] == "1.8"
+-    assert row["rr_predicted"] == "1.8"
++    assert "rr_premium_expected" not in row
++    assert "rr_predicted" not in row
+     assert row["ev3_status"] == "EVALUATED_SHADOW"
+     assert row["ev3_ev_conservative_return"] == "0.12"
+     assert row["economics_comparable"] is True
+     assert row["selected_structure_id"] == row["monetisability_evaluation_id"]
+     assert row["selected_structure_id"] == row["ev3_evaluation_id"]
+-    assert row["rr_contract_symbol"] == OCC
++    assert "rr_contract_symbol" not in row
+     assert row["ev3_data_state"] == "AVAILABLE"
+     assert row["trigger_primary"] == "BREAKOUT"
+     assert row["trigger_data_state"] == "AVAILABLE"
+@@ -200,6 +200,43 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
+     assert book["reconciliation"]["economics_mismatch_rows"] == 0
+ 
+ 
++def test_lab_publication_converts_pandas_style_nan_to_json_null(tmp_path):
++    book = write_final_opportunity_book(
++        RUN_ID,
++        [_base_signal(
++            catalyst_date=float("nan"),
++            catalyst_direction_bias=float("nan"),
++            catalyst_event_status=float("nan"),
++            contract_changed=float("nan"),
++            executable_now=float("nan"),
++            legacy_nested={"missing": float("nan")},
++        )],
++        {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
++        tmp_path,
++        sync_interpreter=False,
++    )
++
++    raw = Path(book["json_path"]).read_text(encoding="utf-8")
++
++    def reject_non_standard_constant(value: str):
++        raise AssertionError(f"non-standard JSON constant: {value}")
++
++    payload = json.loads(raw, parse_constant=reject_non_standard_constant)
++    row = payload["rows"][0]
++    assert row["catalyst_date"] is None
++    assert row["catalyst_direction_bias"] is None
++    assert row["catalyst_event_status"] is None
++    assert row["contract_changed"] is None
++    assert row["executable_now"] is None
++    assert json.loads(row["source_payload_json"])["legacy_nested"]["missing"] is None
++    assert book["rows"][0] == row
++
++    with Path(book["csv_path"]).open("r", encoding="utf-8", newline="") as fh:
++        csv_row = next(csv.DictReader(fh))
++    assert csv_row["catalyst_date"] == ""
++    assert csv_row["contract_changed"] == ""
++
++
+ def test_cross_contract_ev_is_fail_closed_and_never_populates_selected_contract_ev():
+     row = opportunity_book_row(
+         _base_signal(
+@@ -303,8 +340,8 @@ def test_post_merge_rejects_rr_and_quote_fields_from_a_different_contract(tmp_pa
+     row = book["rows"][0]
+ 
+     assert row["contract_mid"] == ""
+-    assert row["rr_premium_expected"] == ""
+-    assert row["rr_contract_symbol"] == ""
++    assert "rr_premium_expected" not in row
++    assert "rr_contract_symbol" not in row
+     assert row["economics_comparable"] is False
+     assert row["economics_mismatch_reason"] == "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT"
+     assert row["lab_tradeable"] is False
+@@ -395,7 +432,7 @@ def test_governed_projection_supplies_display_aliases_without_granting_eod_entry
+     assert projected["garch__l3_vol_forecast"] == "0.938"
+     assert projected["sb_enter_now_stages"] == ""
+     assert projected["sb_alert_stages"] == "3"
+-    assert projected["position_size_display"] == "0% - MORNING VALIDATION REQUIRED"
++    assert projected["position_size_display"] == "HUMAN DETERMINED"
+ 
+ 
+ def test_post_merge_materialization_recovers_owned_lab_fields(tmp_path):
+######## tests/test_morning_gate_contract_repair.py
+diff --git a/tests/test_morning_gate_contract_repair.py b/tests/test_morning_gate_contract_repair.py
+index 49512eb..f6a8ba7 100644
+--- a/tests/test_morning_gate_contract_repair.py
++++ b/tests/test_morning_gate_contract_repair.py
+@@ -72,6 +72,11 @@ def test_blank_primary_contract_promotes_live_repair_alternative(monkeypatch) ->
+     assert gated["contract_symbol"] == "AAA260116C00100000"
+     assert gated["recommended_contract"] == "AAA260116C00100000"
+     assert gated["morning_selected_contract_symbol"] == "AAA260116C00100000"
++    assert gated["strike"] == 100.0
++    assert gated["expiry"] == "2026-01-16"
++    assert gated["contract_strike"] == 100.0
++    assert gated["contract_expiry"] == "2026-01-16"
++    assert gated["trade_idea_id"].endswith(":100.0:2026-01-16")
+     assert gated["contract_repair_resolved_at_open"] == "TRUE"
+     assert gated["contract_bid"] == 1.0
+     assert gated["contract_ask"] == 1.1
+######## tests/test_msi_handoff_materializer.py
+diff --git a/tests/test_msi_handoff_materializer.py b/tests/test_msi_handoff_materializer.py
+index d92fad4..d06458e 100644
+--- a/tests/test_msi_handoff_materializer.py
++++ b/tests/test_msi_handoff_materializer.py
+@@ -228,7 +228,9 @@ def test_morning_finalizer_publishes_only_actionable_rows_when_flags_are_active(
+     assert run_meta["operator_accepted_by"] == "MORNING_HANDOFF_FINALIZER"
+ 
+ 
+-def test_prior_session_quote_is_published_as_manual_requote(tmp_path: Path) -> None:
++def test_prior_session_quote_is_metadata_and_does_not_override_morning_authority(
++    tmp_path: Path,
++) -> None:
+     row = _row("AAA", "AAA260918C00100000")
+     row["current_quote_timestamp_utc"] = "2026-08-29T20:00:00Z"
+     row["contract_size_quality"] = ""
+@@ -242,8 +244,11 @@ def test_prior_session_quote_is_published_as_manual_requote(tmp_path: Path) -> N
+     with open(result["book_path"], encoding="utf-8-sig", newline="") as handle:
+         published = next(csv.DictReader(handle))
+     assert published["model_final_action"] == "BUY_NOW"
+-    assert published["final_action"] == "MANUAL_REQUOTE_REQUIRED"
+-    assert published["execution_quote_status"] == "PRIOR_SESSION_MANUAL_REQUOTE"
++    assert published["final_action"] == "BUY_NOW"
++    assert published["execution_quote_status"] == "PRIOR_SESSION_EVIDENCE"
++    assert published["execution_quote_advisory_only"] == "True"
++    assert published["execution_quote_affects_thesis"] == "False"
++    assert published["execution_quote_refresh_required"] == "False"
+     assert published["contract_size_quality"] == "MISSING"
+ 
+ 
+@@ -261,5 +266,5 @@ def test_same_session_quote_retains_swing_candidate_action(tmp_path: Path) -> No
+     with open(result["book_path"], encoding="utf-8-sig", newline="") as handle:
+         published = next(csv.DictReader(handle))
+     assert published["final_action"] == "BUY_SMALL"
+-    assert published["execution_quote_status"] == "SAME_SESSION_INDICATIVE"
+-    assert published["execution_quote_human_confirmation_required"] == "True"
++    assert published["execution_quote_status"] == "SAME_SESSION_EVIDENCE"
++    assert published["execution_quote_human_confirmation_required"] == "False"
+######## tests/test_msi_interpreter_handoff.py
+diff --git a/tests/test_msi_interpreter_handoff.py b/tests/test_msi_interpreter_handoff.py
+index fe47d74..1356e2e 100644
+--- a/tests/test_msi_interpreter_handoff.py
++++ b/tests/test_msi_interpreter_handoff.py
+@@ -188,15 +188,12 @@ def test_handoff_rejects_same_ticker_with_different_contract_identity(
+         validate_handoff_manifest(manifest)
+ 
+ 
+-def test_stale_bundle_returns_refresh_requirement_but_makes_no_call(tmp_path: Path) -> None:
++def test_aged_validation_quote_does_not_invalidate_swing_thesis_or_request_refresh(tmp_path: Path) -> None:
+     manifest, _, _ = _fixture(tmp_path, freshness="STALE")
+-    with pytest.raises(EvidenceResolutionError, match="EVIDENCE_REFRESH_REQUIRED"):
+-        resolve_interpreter_evidence(TICKER, manifest_path=manifest)
+     evidence = resolve_interpreter_evidence(
+-        TICKER, manifest_path=manifest, require_current=False
++        TICKER, manifest_path=manifest
+     )
+-    assert evidence.refresh_required["provider_calls_made"] == 0
+-    assert evidence.refresh_required["selected_contract_symbol"] == CONTRACT
++    assert evidence.refresh_required is None
+ 
+ 
+ def test_assessment_copies_authority_and_rejects_override(tmp_path: Path) -> None:
+######## tests/test_msi_morning_capture.py
+diff --git a/tests/test_msi_morning_capture.py b/tests/test_msi_morning_capture.py
+index d9a5fe6..f8980ba 100644
+--- a/tests/test_msi_morning_capture.py
++++ b/tests/test_msi_morning_capture.py
+@@ -61,6 +61,7 @@ def test_morning_capture_reuses_fetched_values_without_another_provider_client()
+         "live_contract_mid": 2.1,
+         "live_contract_bid_size": 12,
+         "live_contract_ask_size": 18,
++        "live_contract_provider_updated": "2026-08-30T12:00:00+00:00",
+         "live_options_fetched_at": "2026-08-30T12:00:00+00:00",
+         "underlying_bid": 99.9,
+         "underlying_ask": 100.1,
+######## tests/test_msi_orchestrator_run_meta.py
+diff --git a/tests/test_msi_orchestrator_run_meta.py b/tests/test_msi_orchestrator_run_meta.py
+index 62f170f..97b2a47 100644
+--- a/tests/test_msi_orchestrator_run_meta.py
++++ b/tests/test_msi_orchestrator_run_meta.py
+@@ -45,3 +45,125 @@ def test_run_meta_rejects_unknown_status(tmp_path: Path, monkeypatch) -> None:
+         assert "invalid run status" in str(error)
+     else:
+         raise AssertionError("unknown run status must fail closed")
++
++
++# ---------------------------------------------------------------------------
++# AVS-FIX-001 W0.1 — every run records the released baseline it came from.
++# ---------------------------------------------------------------------------
++
++
++def test_git_baseline_identity_reports_hash_and_describe() -> None:
++    identity = orchestrator._git_baseline_identity()
++    assert set(identity) == {"baseline_commit_hash", "git_describe"}
++    # In this repository both resolve; the point of the test is that neither is
++    # silently dropped and neither is empty.
++    assert identity["baseline_commit_hash"]
++    assert identity["git_describe"]
++
++
++def test_git_baseline_identity_degrades_without_git(monkeypatch) -> None:
++    def _explode(*args, **kwargs):
++        raise FileNotFoundError("git")
++
++    monkeypatch.setattr(orchestrator.subprocess, "run", _explode)
++    identity = orchestrator._git_baseline_identity()
++    # A missing git must never abort a run — it degrades, visibly.
++    assert identity == {
++        "baseline_commit_hash": "UNAVAILABLE",
++        "git_describe": "UNAVAILABLE",
++    }
++
++
++def test_pin_run_directory_writes_both_code_identity_fields() -> None:
++    """The run-meta writer must carry `git_describe` beside the commit hash.
++
++    Asserted structurally against the source of `pin_run_directory` because
++    calling it end to end would require the whole Discovery/macro fixture set,
++    which is exactly the pipeline execution AVS-IMP-FIX-001 forbids here.
++    """
++    import ast
++    import inspect
++
++    tree = ast.parse(inspect.getsource(orchestrator.pin_run_directory))
++    keys = {
++        node.value
++        for node in ast.walk(tree)
++        if isinstance(node, ast.Constant) and isinstance(node.value, str)
++    }
++    assert "baseline_commit_hash" in keys
++    assert "git_describe" in keys
++
++
++def test_provider_finality_marks_clean_standard_run_baseline_eligible(
++    tmp_path: Path, monkeypatch
++) -> None:
++    run_id = "20260912_200000"
++    run_dir = tmp_path / run_id
++    run_dir.mkdir(parents=True)
++    (run_dir / "run_meta.json").write_text(json.dumps({
++        "run_meta_schema_version": "run_meta_v2",
++        "git_describe": "avs-release-1-gabc123",
++        "baseline_commit_hash": "abc123",
++        "run_kind": "PRODUCTION",
++        "dynamic_plan": {
++            "last_completed_session": "2026-09-11",
++            "evidence_cutoff_utc": "2026-09-12T20:00:00Z",
++        },
++        "ddd_runtime_profile": {"sha256": "profile-hash", "release_id": "R1"},
++    }), encoding="utf-8")
++    summary = tmp_path / "summary.json"
++    summary.write_text(json.dumps({
++        "provider_completeness_evidence": {
++            "threshold_version": "provider_completeness_v1",
++            "status": "ASSESSED",
++            "normal_completed_session_eligible": True,
++            "complete_chains": 95,
++            "chains_expected": 100,
++            "closes_present": 100,
++            "underlying_tickers_expected": 100,
++            "governed_constants_sha256": "constants-hash",
++        }
++    }), encoding="utf-8")
++    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", tmp_path)
++
++    result = orchestrator._integrate_provider_completeness_into_run_meta(
++        run_id, options_summary_path=summary, operator_mode="STANDARD"
++    )
++
++    assert result["run_condition"] == "NORMAL_COMPLETED_SESSION"
++    assert result["baseline_eligible"] is True
++    assert result["code_identity"]["dirty"] is False
++    assert result["config_identity"]["profile_hash"] == "profile-hash"
++    assert result["config_identity"]["governed_constants_sha256"] == "constants-hash"
++
++
++def test_provider_finality_never_promotes_dirty_or_forced_run(
++    tmp_path: Path, monkeypatch
++) -> None:
++    run_id = "20260912_150000"
++    run_dir = tmp_path / run_id
++    run_dir.mkdir(parents=True)
++    meta = {
++        "run_meta_schema_version": "run_meta_v2",
++        "git_describe": "abc123-dirty",
++        "baseline_commit_hash": "abc123",
++        "dynamic_plan": {},
++        "ddd_runtime_profile": {},
++    }
++    (run_dir / "run_meta.json").write_text(json.dumps(meta), encoding="utf-8")
++    summary = tmp_path / "summary.json"
++    summary.write_text(json.dumps({
++        "provider_completeness_evidence": {
++            "threshold_version": "provider_completeness_v1",
++            "status": "ASSESSED",
++            "normal_completed_session_eligible": True,
++        }
++    }), encoding="utf-8")
++    monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", tmp_path)
++
++    result = orchestrator._integrate_provider_completeness_into_run_meta(
++        run_id, options_summary_path=summary, operator_mode="FORCE"
++    )
++
++    assert result["run_condition"] == "TEST"
++    assert result["baseline_eligible"] is False
+######## tests/test_msi_quote_and_size_lineage.py
+diff --git a/tests/test_msi_quote_and_size_lineage.py b/tests/test_msi_quote_and_size_lineage.py
+index 8334d03..e408981 100644
+--- a/tests/test_msi_quote_and_size_lineage.py
++++ b/tests/test_msi_quote_and_size_lineage.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ 
+ from dataclasses import replace
+-from datetime import date, datetime, timezone
++from datetime import date, datetime, timedelta, timezone
+ import json
+ 
+ import pytest
+@@ -57,6 +57,21 @@ def test_contract_change_never_emits_misleading_price_delta() -> None:
+     assert result["bid_change"] is None
+ 
+ 
++def test_aged_quote_does_not_make_swing_thesis_or_contract_comparison_stale() -> None:
++    observed = datetime(2026, 8, 30, 12, tzinfo=timezone.utc)
++    result = compare_exact_option_quotes(
++        ticker="AAA", thesis_id="T", trade_idea_id="I", selected_structure_id="S",
++        morning=_snapshot(bid=4.0, ask=4.4, bid_size=10, ask_size=12, now=observed),
++        current=_snapshot(bid=4.5, ask=4.9, bid_size=16, ask_size=20, now=observed),
++        now=observed + timedelta(minutes=5),
++    )
++    assert result["comparison_status"] == ComparisonStatus.SAME_CONTRACT.value
++    assert result["change_status"] == ComparisonStatus.SAME_CONTRACT.value
++    assert result["bid_change"] == 0.5
++    assert result["quote_freshness"] == "STALE"
++    assert result["quote_age_affects_thesis"] is False
++
++
+ def test_selected_contract_hydration_preserves_displayed_sizes() -> None:
+     quote = {
+         "live_contract_bid": 4.0, "live_contract_ask": 4.4,
+######## tests/test_selected_contract_economics.py
+diff --git a/tests/test_selected_contract_economics.py b/tests/test_selected_contract_economics.py
+index dbfed39..403b292 100644
+--- a/tests/test_selected_contract_economics.py
++++ b/tests/test_selected_contract_economics.py
+@@ -68,6 +68,9 @@ def test_single_call_hydration_and_rr_use_the_exact_selected_quote() -> None:
+     assert hydrated["selected_structure_hydration_status"] == "COMPLETE"
+     assert hydrated["selected_structure"] == "LONG_SINGLE"
+     assert json.loads(hydrated["selected_contract_symbols"]) == [symbol]
++    assert hydrated["selected_contract_strike"] == 100.0
++    assert hydrated["selected_contract_expiry"] == "2026-09-18"
++    assert isinstance(hydrated["selected_contract_dte"], int)
+     assert hydrated["live_contract_ask"] == 5.0
+     assert rr["rr_recompute_status"] == "COMPLETE"
+     assert rr["rr_contract_symbol"] == symbol

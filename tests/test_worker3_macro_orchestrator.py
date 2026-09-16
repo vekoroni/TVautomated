@@ -17,13 +17,15 @@ class Worker3MacroOrchestratorTests(unittest.TestCase):
             runs = root / "runs"
             run_dir = runs / RUN
             rows = [_row(), {**_row("BAD", "CALL"), "governed_direction": ""}]
+            for row in rows:
+                row["lab_schema_version"] = "lab_signal_book_v4"
             (run_dir / "intelligence_lab").mkdir(parents=True)
             (run_dir / "run_meta.json").write_text(json.dumps({
                 "dynamic_plan": {"last_completed_session": SESSION},
             }), encoding="utf-8")
             (run_dir / "intelligence_lab" / f"final_opportunity_book_{RUN}.json").write_text(
                 json.dumps({
-                    "lab_schema_version": "lab_signal_book_v2",
+                    "lab_schema_version": "lab_signal_book_v4",
                     "run_id": RUN,
                     "candidate_count": len(rows),
                     "rows": rows,
@@ -59,6 +61,7 @@ class Worker3MacroOrchestratorTests(unittest.TestCase):
             diagnostics = document["diagnostics"]
             self.assertEqual(document["authority"], "ADVISORY_ONLY")
             self.assertFalse(document["trading_authority"])
+            self.assertEqual(document["source_lab_schema_version"], "lab_signal_book_v4")
             self.assertEqual(diagnostics["macro_ticker_context_requested"], 2)
             self.assertEqual(diagnostics["macro_ticker_context_stale"], 1)
             self.assertEqual(diagnostics["macro_ticker_context_invalid"], 1)

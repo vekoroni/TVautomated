@@ -1,0 +1,111 @@
+{
+ "rows": 1444,
+ "governed_direction_counts": {
+  "CALL": 798,
+  "PUT": 458,
+  "STRANGLE": 138,
+  "UNRESOLVED": 50
+ },
+ "exec_now_total": 69,
+ "exec_now_by_governed_direction": {
+  "CALL": 47,
+  "PUT": 22,
+  "OTHER": 0
+ },
+ "exec_now_by_raw_governed_direction": {
+  "CALL": 47,
+  "PUT": 22
+ },
+ "fob_has_morning_cols": [
+  "morning_execution_permission",
+  "quote_as_of"
+ ],
+ "join_key": "ticker",
+ "exec_now_x_morning_permission": {
+  "CALL": {
+   "GO_LIMIT": 10,
+   "NOT_ELIGIBLE": 36,
+   "WAIT": 1
+  },
+  "PUT": {
+   "GO_LIMIT": 9,
+   "NOT_ELIGIBLE": 12,
+   "WAIT": 1
+  }
+ },
+ "exec_now_x_verdict": {
+  "CALL": {
+   "BLOCK": 36,
+   "FLAG": 1,
+   "GO": 10
+  },
+  "PUT": {
+   "BLOCK": 12,
+   "FLAG": 1,
+   "GO": 9
+  }
+ },
+ "exec_now_quote_as_of_date": {
+  "2026-09-11": 69
+ },
+ "exec_now_quote_age_minutes_at_gate": {
+  "min": 3.2333333333333334,
+  "max": 6.916666666666667
+ },
+ "go_limit_by_direction": {
+  "CALL": 10,
+  "PUT": 9,
+  "OTHER": 0
+ },
+ "go_limit_and_exec_now_by_direction": {
+  "CALL": 10,
+  "PUT": 9,
+  "OTHER": 0
+ },
+ "quote_as_of_range_exec_now": [
+  "2026-09-11 17:00:07+00:00",
+  "2026-09-11 17:05:07+00:00"
+ ],
+ "age_gt_15min_at": {
+  "final_opportunity_book_mtime": {
+   "at": "2026-09-11 17:14:49.015687704+00:00",
+   "exec_now": {
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "go_limit": {
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   }
+  },
+  "lab_signal_book_v3_mtime": {
+   "at": "2026-09-11 17:18:42.296611071+00:00",
+   "exec_now": {
+    "CALL": 40,
+    "PUT": 14,
+    "OTHER": 0
+   },
+   "go_limit": {
+    "CALL": 3,
+    "PUT": 3,
+    "OTHER": 0
+   }
+  },
+  "final_run_manifest_created_at_utc": {
+   "at": "2026-09-11 18:39:10.076768+00:00",
+   "exec_now": {
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "go_limit": {
+    "CALL": 10,
+    "PUT": 9,
+    "OTHER": 0
+   }
+  }
+ },
+ "run_meta_has_postopen_or_condition": []
+}

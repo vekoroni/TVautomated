@@ -1,0 +1,97 @@
+[written] C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_d7_assessment_identity.json
+{
+ "create_signature": "(*, family_id: 'str', thesis_id: 'str', run_id: 'str', contract_symbol: 'str', observation_id: 'str', entry_state: 'ContractEntryState', applicability_state: 'ModelApplicabilityState', evidence_cutoff_utc: 'datetime', input_dataset_ids: 'Sequence[str]', calculation_version: 'str', feature_version: 'str', model_version: 'str' = 'NOT_EVALUATED', **values: 'Any') -> \"'ContractAssessment'\"",
+ "enum_used": [
+  "CONTRACT_MONITOR",
+  "APPLICABLE"
+ ],
+ "samples": [
+  {
+   "assessment_id": "471dc7f0d6d1d378fe129d84c8b61a28ba01962f3d6be7e2eba1a68831f5a607",
+   "recompute_production_formula_equal": true,
+   "alg16_formula_equal": false,
+   "iso_cutoff": "2026-09-10T20:00:00Z",
+   "mutation_changes_id": {
+    "observation_id": true,
+    "calculation_version": true,
+    "evidence_cutoff_utc": true,
+    "contract_symbol": true,
+    "thesis_id": false,
+    "run_id": false,
+    "input_dataset_ids": false,
+    "feature_version": false
+   }
+  },
+  {
+   "assessment_id": "bdc45c2189e56790cb3cbb7ca583164a59057852f03c99ece1b5645fb47a1f5d",
+   "recompute_production_formula_equal": true,
+   "alg16_formula_equal": false,
+   "iso_cutoff": "2026-09-10T20:01:00Z",
+   "mutation_changes_id": {
+    "observation_id": true,
+    "calculation_version": true,
+    "evidence_cutoff_utc": true,
+    "contract_symbol": true,
+    "thesis_id": false,
+    "run_id": false,
+    "input_dataset_ids": false,
+    "feature_version": false
+   }
+  },
+  {
+   "assessment_id": "86ef4d590bc498cf130698cabd275d5697ef603b001522a109830e135d64aa6e",
+   "recompute_production_formula_equal": true,
+   "alg16_formula_equal": false,
+   "iso_cutoff": "2026-09-10T20:02:00Z",
+   "mutation_changes_id": {
+    "observation_id": true,
+    "calculation_version": true,
+    "evidence_cutoff_utc": true,
+    "contract_symbol": true,
+    "thesis_id": false,
+    "run_id": false,
+    "input_dataset_ids": false,
+    "feature_version": false
+   }
+  },
+  {
+   "assessment_id": "57f9d8394a15e7a6eb3884201f35bb36c3d64e232ecb530da600ce3ff3b6eec5",
+   "recompute_production_formula_equal": true,
+   "alg16_formula_equal": false,
+   "iso_cutoff": "2026-09-10T20:03:00Z",
+   "mutation_changes_id": {
+    "observation_id": true,
+    "calculation_version": true,
+    "evidence_cutoff_utc": true,
+    "contract_symbol": true,
+    "thesis_id": false,
+    "run_id": false,
+    "input_dataset_ids": false,
+    "feature_version": false
+   }
+  },
+  {
+   "assessment_id": "fc9aac4ef547d316685ce3316dafb76274b2eedb413fdfff04a92e927da14dd2",
+   "recompute_production_formula_equal": true,
+   "alg16_formula_equal": false,
+   "iso_cutoff": "2026-09-10T20:04:00Z",
+   "mutation_changes_id": {
+    "observation_id": true,
+    "calculation_version": true,
+    "evidence_cutoff_utc": true,
+    "contract_symbol": true,
+    "thesis_id": false,
+    "run_id": false,
+    "input_dataset_ids": false,
+    "feature_version": false
+   }
+  }
+ ],
+ "summary": {
+  "n": 5,
+  "production_recompute_equal": 5,
+  "alg16_equal": 0
+ },
+ "family_identity_source": "\n            \"thesis_id\": _token(thesis.thesis_id, \"thesis_id\"),\n            \"thesis_version\": thesis.thesis_version,\n            \"run_id\": _token(run_id, \"run_id\"),\n            \"family_policy_version\": _required_text(\n                family_policy_version, \"family_policy_version\"\n            ),\n            \"evidence_cutoff_utc\": _iso(cutoff),\n        ",
+ "stored_assessments": 0
+}

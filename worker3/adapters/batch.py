@@ -5,6 +5,7 @@ import re
 from .native import (NativeSnapshot, read_lab_document, lab_snapshot_from_document,
                      attach_native_document)
 from ..domain import ContractError, EvidenceBundle, digest, nonempty, utc
+from ..lab_contract import SUPPORTED_LAB_SCHEMAS
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,12 +54,12 @@ def load_native_batch(root, reference, *, run_id, tickers, captured_at, max_tick
     document, repairs = read_lab_document(root, reference)
     # Shared corruption must not be disguised as hundreds of ticker exceptions.
     rows = document.get("rows")
-    if (document.get("lab_schema_version") != "lab_signal_book_v2" or document.get("run_id") != run_id
+    if (document.get("lab_schema_version") not in SUPPORTED_LAB_SCHEMAS or document.get("run_id") != run_id
             or type(rows) is not list or type(document.get("candidate_count")) is not int
             or len(rows) != document["candidate_count"]):
         raise ContractError("shared native book schema/run/count failure")
     for row in rows:
-        if type(row) is not dict or row.get("run_id") != run_id or row.get("lab_schema_version") != "lab_signal_book_v2":
+        if type(row) is not dict or row.get("run_id") != run_id or row.get("lab_schema_version") != document["lab_schema_version"]:
             raise ContractError("shared native book contains mixed run/schema identities")
     from ..domain import instant
     if instant(document.get("created_at_utc")) > instant(captured_at):

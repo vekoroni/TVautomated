@@ -1,0 +1,125 @@
+pipeline in store 1903 store 3618
+W_recent_2026-07-23_2026-09-10 done 5.6 s
+W_context_2024-01-01_2026-09-10 done 26.1 s
+                              window   universe group   h stat     p10     p50     p90     min     max  n_sessions  n_tickers_median                                                 power
+0     W_recent_2026-07-23_2026-09-10   PIPELINE   ALL   1  std  0.0249  0.0315  0.0439  0.0227  0.0536          34            1852.5  INSUFFICIENT_POWER(n_sessions=34,n_tickers_med=1852)
+3     W_recent_2026-07-23_2026-09-10   PIPELINE   ALL   5  std  0.0506  0.0704  0.0915  0.0498  0.1030          30            1851.5  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=1851)
+6     W_recent_2026-07-23_2026-09-10   PIPELINE   ALL  10  std  0.0757  0.0960  0.1253  0.0709  0.1418          25            1844.0  INSUFFICIENT_POWER(n_sessions=25,n_tickers_med=1844)
+9     W_recent_2026-07-23_2026-09-10   PIPELINE   ALL  20  std  0.1165  0.1444  0.1573  0.1145  0.1593          15            1840.0  INSUFFICIENT_POWER(n_sessions=15,n_tickers_med=1840)
+144   W_recent_2026-07-23_2026-09-10  STORE_ALL   ALL   1  std  0.0277  0.0354  0.0883  0.0240  0.0971          34            3009.0  INSUFFICIENT_POWER(n_sessions=34,n_tickers_med=3009)
+147   W_recent_2026-07-23_2026-09-10  STORE_ALL   ALL   5  std  0.0538  0.0840  0.1039  0.0499  0.1285          30            3005.5  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=3005)
+150   W_recent_2026-07-23_2026-09-10  STORE_ALL   ALL  10  std  0.0791  0.1007  0.1360  0.0746  0.1503          25            2997.0  INSUFFICIENT_POWER(n_sessions=25,n_tickers_med=2997)
+153   W_recent_2026-07-23_2026-09-10  STORE_ALL   ALL  20  std  0.1219  0.1521  0.1587  0.1204  0.1616          15            2994.0  INSUFFICIENT_POWER(n_sessions=15,n_tickers_med=2994)
+156  W_context_2024-01-01_2026-09-10   PIPELINE   ALL   1  std  0.0233  0.0295  0.0400  0.0172  0.0935         674            1723.0                                                    OK
+159  W_context_2024-01-01_2026-09-10   PIPELINE   ALL   5  std  0.0551  0.0678  0.0869  0.0423  0.1138         670            1722.0                                                    OK
+162  W_context_2024-01-01_2026-09-10   PIPELINE   ALL  10  std  0.0786  0.0957  0.1212  0.0645  0.1526         665            1722.0                                                    OK
+165  W_context_2024-01-01_2026-09-10   PIPELINE   ALL  20  std  0.1133  0.1369  0.1688  0.0988  0.1918         655            1721.0                                                    OK
+300  W_context_2024-01-01_2026-09-10  STORE_ALL   ALL   1  std  0.0245  0.0311  0.0452  0.0172  0.1295         674            1783.0                                                    OK
+303  W_context_2024-01-01_2026-09-10  STORE_ALL   ALL   5  std  0.0574  0.0709  0.0977  0.0438  0.1981         670            1782.0                                                    OK
+306  W_context_2024-01-01_2026-09-10  STORE_ALL   ALL  10  std  0.0819  0.0995  0.1345  0.0647  0.2071         665            1780.0                                                    OK
+309  W_context_2024-01-01_2026-09-10  STORE_ALL   ALL  20  std  0.1172  0.1436  0.1762  0.1012  0.2387         655            1776.0                                                    OK
+                              window  universe                   group  h stat     p10     p50     p90     min     max  n_sessions  n_tickers_median                                                power
+15    W_recent_2026-07-23_2026-09-10  PIPELINE  Communication Services  5  std  0.0421  0.0541  0.0895  0.0387  0.0954          30              62.0   INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=62)
+27    W_recent_2026-07-23_2026-09-10  PIPELINE  Consumer Discretionary  5  std  0.0466  0.0571  0.0830  0.0419  0.0879          30             210.0  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=210)
+39    W_recent_2026-07-23_2026-09-10  PIPELINE        Consumer Staples  5  std  0.0383  0.0506  0.0671  0.0311  0.0921          30              74.0   INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=74)
+51    W_recent_2026-07-23_2026-09-10  PIPELINE                  Energy  5  std  0.0441  0.0580  0.0749  0.0340  0.0975          30             136.0  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=136)
+63    W_recent_2026-07-23_2026-09-10  PIPELINE              Financials  5  std  0.0313  0.0469  0.0626  0.0282  0.0679          30             192.5  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=192)
+75    W_recent_2026-07-23_2026-09-10  PIPELINE             Health Care  5  std  0.0573  0.0866  0.1208  0.0494  0.1491          30             291.0  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=291)
+87    W_recent_2026-07-23_2026-09-10  PIPELINE             Industrials  5  std  0.0480  0.0628  0.0918  0.0413  0.1011          30             234.0  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=234)
+99    W_recent_2026-07-23_2026-09-10  PIPELINE  Information Technology  5  std  0.0648  0.0805  0.1147  0.0537  0.1172          30             336.0  INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=336)
+111   W_recent_2026-07-23_2026-09-10  PIPELINE               Materials  5  std  0.0434  0.0587  0.0947  0.0352  0.1046          30              91.0   INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=91)
+123   W_recent_2026-07-23_2026-09-10  PIPELINE             Real Estate  5  std  0.0231  0.0306  0.0519  0.0221  0.0556          30              95.0   INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=95)
+135   W_recent_2026-07-23_2026-09-10  PIPELINE               Utilities  5  std  0.0213  0.0370  0.0536  0.0169  0.0605          30              53.0   INSUFFICIENT_POWER(n_sessions=30,n_tickers_med=53)
+171  W_context_2024-01-01_2026-09-10  PIPELINE  Communication Services  5  std  0.0417  0.0584  0.0917  0.0236  0.1998         670              56.0  INSUFFICIENT_POWER(n_sessions=670,n_tickers_med=56)
+183  W_context_2024-01-01_2026-09-10  PIPELINE  Consumer Discretionary  5  std  0.0426  0.0536  0.0745  0.0285  0.2489         670             194.0                                                   OK
+195  W_context_2024-01-01_2026-09-10  PIPELINE        Consumer Staples  5  std  0.0323  0.0470  0.0692  0.0229  0.2088         670              68.0  INSUFFICIENT_POWER(n_sessions=670,n_tickers_med=68)
+207  W_context_2024-01-01_2026-09-10  PIPELINE                  Energy  5  std  0.0423  0.0583  0.0822  0.0312  0.1339         670             133.0                                                   OK
+219  W_context_2024-01-01_2026-09-10  PIPELINE              Financials  5  std  0.0334  0.0470  0.0690  0.0248  0.1997         670             174.0                                                   OK
+231  W_context_2024-01-01_2026-09-10  PIPELINE             Health Care  5  std  0.0619  0.0805  0.1083  0.0451  0.1744         670             267.0                                                   OK
+243  W_context_2024-01-01_2026-09-10  PIPELINE             Industrials  5  std  0.0431  0.0596  0.0829  0.0297  0.1861         670             214.0                                                   OK
+255  W_context_2024-01-01_2026-09-10  PIPELINE  Information Technology  5  std  0.0597  0.0787  0.1099  0.0385  0.2091         670             325.0                                                   OK
+267  W_context_2024-01-01_2026-09-10  PIPELINE               Materials  5  std  0.0426  0.0619  0.0907  0.0235  0.1571         670              87.0  INSUFFICIENT_POWER(n_sessions=670,n_tickers_med=87)
+279  W_context_2024-01-01_2026-09-10  PIPELINE             Real Estate  5  std  0.0228  0.0322  0.0467  0.0159  0.1036         670              90.0  INSUFFICIENT_POWER(n_sessions=670,n_tickers_med=90)
+291  W_context_2024-01-01_2026-09-10  PIPELINE               Utilities  5  std  0.0214  0.0354  0.0606  0.0143  0.1190         670              46.0  INSUFFICIENT_POWER(n_sessions=670,n_tickers_med=46)
+                run ref_session   direction   h  n_tickers     std     iqr  p90p10    mean                                                             state
+0   20260905_151448  2026-09-04        CALL   1        190  0.0299  0.0305  0.0742 -0.0031                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=190)
+1   20260905_151448  2026-09-04        CALL   5        190     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+2   20260905_151448  2026-09-04        CALL  10        190     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+3   20260905_151448  2026-09-04        CALL  20        190     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+4   20260905_151448  2026-09-04         PUT   1        104  0.0293  0.0297  0.0647 -0.0086                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=104)
+5   20260905_151448  2026-09-04         PUT   5        104     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+6   20260905_151448  2026-09-04         PUT  10        104     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+7   20260905_151448  2026-09-04         PUT  20        104     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+8   20260905_151448  2026-09-04    STRANGLE   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+9   20260905_151448  2026-09-04    STRANGLE   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+10  20260905_151448  2026-09-04    STRANGLE  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+11  20260905_151448  2026-09-04    STRANGLE  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+12  20260905_151448  2026-09-04  UNRESOLVED   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+13  20260905_151448  2026-09-04  UNRESOLVED   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+14  20260905_151448  2026-09-04  UNRESOLVED  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+15  20260905_151448  2026-09-04  UNRESOLVED  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+16  20260906_213931  2026-09-04        CALL   1        170  0.0298  0.0300  0.0765 -0.0033                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=170)
+17  20260906_213931  2026-09-04        CALL   5        170     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+18  20260906_213931  2026-09-04        CALL  10        170     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+19  20260906_213931  2026-09-04        CALL  20        170     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+20  20260906_213931  2026-09-04         PUT   1         94  0.0296  0.0297  0.0649 -0.0103                     INSUFFICIENT_POWER(n_sessions=1,n_tickers=94)
+21  20260906_213931  2026-09-04         PUT   5         94     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+22  20260906_213931  2026-09-04         PUT  10         94     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+23  20260906_213931  2026-09-04         PUT  20         94     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+24  20260906_213931  2026-09-04    STRANGLE   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+25  20260906_213931  2026-09-04    STRANGLE   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+26  20260906_213931  2026-09-04    STRANGLE  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+27  20260906_213931  2026-09-04    STRANGLE  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+28  20260906_213931  2026-09-04  UNRESOLVED   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+29  20260906_213931  2026-09-04  UNRESOLVED   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+30  20260906_213931  2026-09-04  UNRESOLVED  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+31  20260906_213931  2026-09-04  UNRESOLVED  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=3)
+32  20260909_071646  2026-09-08        CALL   1        151  0.0204  0.0179  0.0422 -0.0134                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=151)
+33  20260909_071646  2026-09-08        CALL   5        151     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+34  20260909_071646  2026-09-08        CALL  10        151     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+35  20260909_071646  2026-09-08        CALL  20        151     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+36  20260909_071646  2026-09-08         PUT   1         84  0.0238  0.0232  0.0493 -0.0141                     INSUFFICIENT_POWER(n_sessions=1,n_tickers=84)
+37  20260909_071646  2026-09-08         PUT   5         84     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+38  20260909_071646  2026-09-08         PUT  10         84     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+39  20260909_071646  2026-09-08         PUT  20         84     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+40  20260909_071646  2026-09-08    STRANGLE   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+41  20260909_071646  2026-09-08    STRANGLE   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+42  20260909_071646  2026-09-08    STRANGLE  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+43  20260909_071646  2026-09-08    STRANGLE  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+44  20260909_071646  2026-09-08  UNRESOLVED   1          0     NaN     NaN     NaN     NaN                                                INSUFFICIENT_POWER
+45  20260909_071646  2026-09-08  UNRESOLVED   5          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+46  20260909_071646  2026-09-08  UNRESOLVED  10          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+47  20260909_071646  2026-09-08  UNRESOLVED  20          0     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=2)
+48  20260910_150045  2026-09-09        CALL   1        791  0.0224  0.0234  0.0504 -0.0098                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=791)
+49  20260910_150045  2026-09-09        CALL   5        791     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+50  20260910_150045  2026-09-09        CALL  10        791     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+51  20260910_150045  2026-09-09        CALL  20        791     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+52  20260910_150045  2026-09-09         PUT   1        451  0.0247  0.0293  0.0583 -0.0151                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=451)
+53  20260910_150045  2026-09-09         PUT   5        451     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+54  20260910_150045  2026-09-09         PUT  10        451     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+55  20260910_150045  2026-09-09         PUT  20        451     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+56  20260910_150045  2026-09-09    STRANGLE   1        135  0.0203  0.0183  0.0413 -0.0086                    INSUFFICIENT_POWER(n_sessions=1,n_tickers=135)
+57  20260910_150045  2026-09-09    STRANGLE   5        135     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+58  20260910_150045  2026-09-09    STRANGLE  10        135     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+59  20260910_150045  2026-09-09    STRANGLE  20        135     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+60  20260910_150045  2026-09-09  UNRESOLVED   1         47  0.0251  0.0368  0.0623 -0.0136                     INSUFFICIENT_POWER(n_sessions=1,n_tickers=47)
+61  20260910_150045  2026-09-09  UNRESOLVED   5         47     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+62  20260910_150045  2026-09-09  UNRESOLVED  10         47     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+63  20260910_150045  2026-09-09  UNRESOLVED  20         47     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=1)
+64  20260911_115904  2026-09-10        CALL   1        798     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+65  20260911_115904  2026-09-10        CALL   5        798     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+66  20260911_115904  2026-09-10        CALL  10        798     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+67  20260911_115904  2026-09-10        CALL  20        798     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+68  20260911_115904  2026-09-10         PUT   1        458     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+69  20260911_115904  2026-09-10         PUT   5        458     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+70  20260911_115904  2026-09-10         PUT  10        458     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+71  20260911_115904  2026-09-10         PUT  20        458     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+72  20260911_115904  2026-09-10    STRANGLE   1        138     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+73  20260911_115904  2026-09-10    STRANGLE   5        138     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+74  20260911_115904  2026-09-10    STRANGLE  10        138     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+75  20260911_115904  2026-09-10    STRANGLE  20        138     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+76  20260911_115904  2026-09-10  UNRESOLVED   1         50     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+77  20260911_115904  2026-09-10  UNRESOLVED   5         50     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+78  20260911_115904  2026-09-10  UNRESOLVED  10         50     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+79  20260911_115904  2026-09-10  UNRESOLVED  20         50     NaN     NaN     NaN     NaN  DATA_UNAVAILABLE(store_ends_2026-09-10,fwd_sessions_available=0)
+runtime 28.0

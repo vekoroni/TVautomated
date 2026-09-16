@@ -1,0 +1,53 @@
+{
+ "routing": {
+  "find_path": "$.extras.us_money_index.advisory_context.options_monetisation.sector_routing.routing",
+  "find_value": "{\"IWM_SMALL_CAPS_PUT\": \"NOT_YET_CONFIRMED\", \"AIRLINES_PUT\": \"PRIORITY_UPGRADE\", "
+ },
+ "scenarios": {
+  "find_path": "$.extras.us_money_index.scenarios",
+  "find_value": "{}"
+ },
+ "cpi_core_mom_pct": {
+  "find_path": null,
+  "find_value": null
+ },
+ "cpi_headline_mom_pct": {
+  "find_path": null,
+  "find_value": null
+ },
+ "us_10y_pct": {
+  "find_path": "$.extras.us_money_index.advisory_context.cross_asset.rates.us_10y_pct",
+  "find_value": "4.943"
+ },
+ "vix": {
+  "find_path": "$.extras.us_money_index.advisory_context.risk_off_confirmation_matrix.systemic_escalation_thresholds.vix",
+  "find_value": "20.0"
+ },
+ "hyg_close": {
+  "find_path": "$.extras.us_money_index.advisory_context.cross_asset.credit.hyg_close",
+  "find_value": "78.62"
+ },
+ "hy_oas_pct": {
+  "find_path": "$.extras.us_money_index.metrics.hy_oas_pct",
+  "find_value": "{\"value\": 2.71, \"as_of\": \"2026-09-11T11:35:00+00:00\", \"source\": \"\", \"evidence_st"
+ },
+ "fed_hike_probability_pct": {
+  "find_path": null,
+  "find_value": null
+ },
+ "cash_session_breadth": {
+  "find_path": null,
+  "find_value": null
+ },
+ "observed_values": {
+  "us_10y_pct": 4.943,
+  "vix_spot": 17.7,
+  "hyg_close": 78.62,
+  "hy_oas_pct": 2.71
+ },
+ "usmi_metrics_n": 20,
+ "usmi_metrics_usable_for_calculation_true": 0,
+ "usmi_metrics_evidence_status": [
+  "UNVERIFIED_SOURCE"
+ ]
+}

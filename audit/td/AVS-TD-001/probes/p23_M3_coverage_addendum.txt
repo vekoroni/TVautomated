@@ -1,0 +1,84 @@
+coverage_state by run (unique theses):
+ coverage_state                    CONTRACT_NO_ENTRY_ASK  CONTRACT_NO_SYMBOL  CONTRACT_SIDE_MISMATCH  NO_SNAPSHOT_DATE_IN_WINDOW  PRICED  SYMBOL_ABSENT_FROM_HISTORY   All
+run_id          decision_session                                                                                                                                         
+20260723_072618 2026-07-22                          308                 103                     169                          36     180                           0   796
+20260731_083130 2026-07-30                          302                  54                     215                           0     178                           0   749
+20260804_114554 2026-08-03                          293                  62                     193                          92       0                           0   640
+20260808_103922 2026-08-07                          370                  37                     212                         122       0                           0   741
+20260809_195823 2026-08-07                            1                   0                       0                           9       0                           0    10
+20260814_114553 2026-08-13                          354                  47                     244                         265       0                           0   910
+20260815_091604 2026-08-14                           27                 584                      54                          58     151                           2   876
+20260816_075339 2026-08-14                            1                  37                       0                           0       7                           0    45
+20260818_041214 2026-08-17                           27                 662                      59                          58     139                           1   946
+20260820_225652 2026-08-19                           34                 608                      33                          60     121                           0   856
+20260821_090928 2026-08-20                           37                 632                      32                          25     127                           0   853
+20260824_100301 2026-08-21                           57                 528                      36                           0      85                           0   706
+20260831_010309 2026-08-28                            0                   0                       0                           0     117                          11   128
+20260901_082437 2026-08-31                            0                   0                       0                           0      56                           5    61
+20260902_232526 2026-09-01                            0                   2                       0                           0      89                           9   100
+All                                                1811                3356                    1247                         725    1250                          28  8417
+
+best_bid_date by condition x direction:
+ condition     GOVERNED      UNGOVERNED_PRE        All
+direction         CALL  PUT           CALL  PUT      
+best_bid_date                                        
+2026-07-31           0    0            270   88   358
+2026-08-28           0    0            354  259   613
+2026-09-04         156  106             12    5   279
+All                156  106            636  352  1250
+
+snapshot position in window (fraction of calendar span) quantiles by condition x direction:
+                            0.1   0.5  0.9
+condition      direction                 
+GOVERNED       CALL       0.38  0.50  1.0
+               PUT        0.38  1.00  1.0
+UNGOVERNED_PRE CALL       0.14  0.64  1.0
+               PUT        0.14  0.64  1.0
+
+mass location (unique priced theses):
+ side_correct              False         True        
+mon125                    False  True   False  True 
+condition      direction                            
+GOVERNED       CALL       0.603  0.013  0.288  0.096
+               PUT        0.528  0.000  0.358  0.113
+UNGOVERNED_PRE CALL       0.516  0.005  0.392  0.088
+               PUT        0.443  0.006  0.401  0.151
+
+mass location all conditions by direction:
+ side_correct False       True        All
+mon125       False True False True      
+direction                               
+CALL           422    5   294   71   792
+PUT            212    2   179   65   458
+All            634    7   473  136  1250
+
+priced vs all-labelled side_correct rate (selection check):
+                           priced    all  priced_TF_V  all_TF_V
+condition      direction                                      
+GOVERNED       CALL        0.385  0.372        0.026     0.023
+               PUT         0.472  0.496        0.038     0.034
+UNGOVERNED_PRE CALL        0.480  0.456        0.090     0.067
+               PUT         0.551  0.538        0.028     0.034
+
+side_mismatch rows (CALL with P symbol / PUT with C symbol) by run:
+ run_id           direction
+20260723_072618  CALL         157
+                 PUT           12
+20260731_083130  CALL         205
+                 PUT           10
+20260804_114554  CALL         177
+                 PUT           16
+20260808_103922  CALL         200
+                 PUT           12
+20260809_195823  CALL         180
+                 PUT           12
+20260814_114553  CALL         221
+                 PUT           23
+20260815_091604  CALL          54
+20260816_075339  CALL          45
+20260818_041214  CALL          59
+20260820_225652  CALL          33
+20260821_090928  CALL          31
+                 PUT            1
+20260824_100301  CALL          34
+                 PUT            2

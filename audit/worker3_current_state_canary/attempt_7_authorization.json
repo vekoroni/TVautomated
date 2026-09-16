@@ -1,0 +1,15 @@
+{
+  "authorization": "User approved one evidence-coverage live canary, $1.00 cap, no retries",
+  "at": 1788786169.5711434,
+  "max_generations": 1,
+  "max_count_requests": 1,
+  "max_cost_microusd": 1000000,
+  "retries": 0,
+  "source_hashes": {
+    "worker3/v2/assessment.py": "141c216a59c7faf238a7ebd8708a52a5c7624a06405efcdf2996b0eb6c1531b8",
+    "worker3/adapters/bound_output.py": "c67430fb72966ef36b5699d6a883e13d814b75ef8cb6496deb3bcc70da0df62b",
+    "worker3/adapters/claude_v2.py": "9c050357a9f87c115654e3655fa12b6aa3a83a8bfc8e8f7f82e5ddd8f2244c3f",
+    "tests/test_worker3_evidence_coverage.py": "8d5dafc76ebd8683d256846bc37d1ea697fa6dd81b37333c20ddee5f58326be0"
+  },
+  "prior_list_price_microusd": 1630638
+}

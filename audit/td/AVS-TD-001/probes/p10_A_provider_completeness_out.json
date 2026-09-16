@@ -1,0 +1,688 @@
+{
+ "observations_per_run": [
+  [
+   "20260829_222259",
+   5,
+   5,
+   "2026-08-28T20:00:00Z",
+   "2026-08-28T20:00:00Z",
+   "2026-08-30T00:48:33.593769Z",
+   "2026-08-30T00:48:37.413489Z"
+  ],
+  [
+   "20260830_182402",
+   7,
+   7,
+   "2026-08-28T20:00:00Z",
+   "2026-08-28T20:00:00Z",
+   "2026-08-30T19:17:44.394605Z",
+   "2026-08-30T19:18:01.366581Z"
+  ],
+  [
+   "20260830_225643",
+   82,
+   82,
+   "2026-08-28T20:00:00Z",
+   "2026-08-28T20:00:00Z",
+   "2026-08-30T23:01:48.013883Z",
+   "2026-08-30T23:04:57.338069Z"
+  ],
+  [
+   "20260831_010309",
+   927,
+   927,
+   "2026-08-28T20:00:00Z",
+   "2026-08-28T20:00:00Z",
+   "2026-08-31T00:58:44.223689Z",
+   "2026-08-31T01:31:17.328968Z"
+  ],
+  [
+   "20260901_082437",
+   644,
+   480,
+   "2026-08-31T20:00:00Z",
+   "2026-09-01T17:51:36Z",
+   "2026-09-01T08:18:32.112116Z",
+   "2026-09-01T17:52:25.913015Z"
+  ],
+  [
+   "20260902_232526",
+   861,
+   861,
+   "2026-09-02T20:00:00Z",
+   "2026-09-02T20:00:00Z",
+   "2026-09-02T23:49:48.906641Z",
+   "2026-09-03T00:39:59.601023Z"
+  ],
+  [
+   "20260904_004338",
+   1036,
+   1036,
+   "2026-09-03T20:00:00Z",
+   "2026-09-03T20:00:00Z",
+   "2026-09-04T01:40:49.846071Z",
+   "2026-09-04T02:46:54.342290Z"
+  ],
+  [
+   "20260904_122358",
+   1037,
+   1037,
+   "2026-09-03T20:00:00Z",
+   "2026-09-03T20:00:00Z",
+   "2026-09-04T13:07:25.233288Z",
+   "2026-09-04T13:36:26.424189Z"
+  ],
+  [
+   "20260905_151448",
+   1076,
+   1076,
+   "2026-09-04T20:00:00Z",
+   "2026-09-04T20:00:00Z",
+   "2026-09-05T16:28:10.008522Z",
+   "2026-09-05T17:53:06.684145Z"
+  ],
+  [
+   "20260906_213931",
+   1077,
+   1077,
+   "2026-09-04T20:00:00Z",
+   "2026-09-04T20:00:00Z",
+   "2026-09-06T23:09:49.601085Z",
+   "2026-09-06T23:28:56.022019Z"
+  ],
+  [
+   "20260909_071646",
+   1217,
+   1041,
+   "2026-09-08T20:00:00Z",
+   "2026-09-09T14:00:25Z",
+   "2026-09-09T09:09:49.763714Z",
+   "2026-09-09T14:00:46.741386Z"
+  ],
+  [
+   "20260910_150045",
+   1020,
+   1020,
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:09Z",
+   "2026-09-10T17:09:02.816932Z",
+   "2026-09-10T18:08:09.427521Z"
+  ],
+  [
+   "20260911_115904",
+   1533,
+   993,
+   "2026-09-10T16:54:02Z",
+   "2026-09-11T17:05:15Z",
+   "2026-09-11T14:14:26.072508Z",
+   "2026-09-11T17:08:23.497607Z"
+  ]
+ ],
+ "20260911_115904": {
+  "session_date": "2026-09-10",
+  "n_obs": 1533,
+  "n_tickers": 993,
+  "frac_tickers_max_ts_ge_1600ET_on_session": 0.5438,
+  "frac_tickers_max_ts_on_session_date": 0.4562,
+  "n_tickers_max_ts_on_session_date_and_ge_close": 0,
+  "frac_tickers_max_ts_on_session_date_and_ge_close": 0.0,
+  "quotes_no_provider_ts": 0,
+  "quotes_same_session_frac": 0.6477,
+  "quote_as_of_eq_observed_at_to_second": 0,
+  "quote_ts_min": "2026-09-10T16:54:02+00:00",
+  "quote_ts_median": "2026-09-10T17:40:56+00:00",
+  "quote_ts_p95": "2026-09-11T17:03:37+00:00",
+  "quote_ts_max": "2026-09-11T17:05:15+00:00",
+  "by_side": {
+   "CALL": {
+    "n": 1011,
+    "same_session": 633,
+    "no_ts": 0,
+    "eq_to_second": 0
+   },
+   "PUT": {
+    "n": 522,
+    "same_session": 360,
+    "no_ts": 0,
+    "eq_to_second": 0
+   }
+  },
+  "ticker_max_ts_date_hist": {
+   "2026-09-10 16h UTC": 36,
+   "2026-09-10 17h UTC": 417,
+   "2026-09-11 17h UTC": 540
+  },
+  "distinct_source_dataset_ids": 1533,
+  "source_providers": [
+   "MARKETDATA"
+  ],
+  "dataset_registry_by_type_session_status": [
+   [
+    "EXACT_OPTION_QUOTE",
+    "2026-09-11",
+    "COMPLETE",
+    1218,
+    "2026-09-11T17:00:08.663792Z",
+    "2026-09-11T17:06:59.592830Z",
+    "2026-09-10T16:54:42Z",
+    "2026-09-11T17:06:57Z"
+   ],
+   [
+    "INTRADAY_BAR",
+    "2026-09-10",
+    "COMPLETE",
+    1342,
+    "2026-09-11T12:49:07.176299Z",
+    "2026-09-11T13:26:25.652935Z",
+    "2026-09-10T19:55:00Z",
+    "2026-09-10T19:55:00Z"
+   ],
+   [
+    "INTRADAY_BAR",
+    "2026-09-10",
+    "PARTIAL",
+    171,
+    "2026-09-11T12:49:15.495200Z",
+    "2026-09-11T13:26:26.494154Z",
+    "2026-09-10T19:55:00Z",
+    "2026-09-10T19:55:00Z"
+   ],
+   [
+    "INTRADAY_BAR",
+    "2026-09-11",
+    "PARTIAL",
+    19,
+    "2026-09-11T17:08:29.804210Z",
+    "2026-09-11T17:08:47.904326Z",
+    "2026-09-11T16:50:00Z",
+    "2026-09-11T16:50:00Z"
+   ],
+   [
+    "LIVE_OPTION",
+    "2026-09-10",
+    "COMPLETE",
+    956,
+    "2026-09-10T16:54:02Z",
+    "2026-09-10T17:53:09Z",
+    "2026-09-10T16:54:02Z",
+    "2026-09-10T17:53:09Z"
+   ],
+   [
+    "LIVE_OPTION",
+    "2026-09-10",
+    "PARTIAL",
+    34,
+    "2026-09-10T16:58:31Z",
+    "2026-09-10T17:50:05Z",
+    "2026-09-10T16:58:31Z",
+    "2026-09-10T17:50:05Z"
+   ],
+   [
+    "MARKET_STRUCTURE",
+    "2026-09-10",
+    "COMPLETE",
+    1485,
+    "2026-09-10T19:55:00Z",
+    "2026-09-10T19:55:00Z",
+    "2026-09-10T20:00:00Z",
+    "2026-09-10T20:00:00Z"
+   ],
+   [
+    "MARKET_STRUCTURE",
+    "2026-09-11",
+    "COMPLETE",
+    19,
+    "2026-09-11T17:08:30Z",
+    "2026-09-11T17:08:49Z",
+    "2026-09-11T17:08:30Z",
+    "2026-09-11T17:08:49Z"
+   ]
+  ],
+  "api_request_ledger_by_stage_type_state_res": [
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "CACHE_MISS",
+    1522,
+    0,
+    "2026-09-11T12:49:07.065885Z",
+    "2026-09-11T13:26:26.425418Z"
+   ],
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "PROVIDER_FETCH",
+    1513,
+    1513,
+    "2026-09-11T12:49:07.152217Z",
+    "2026-09-11T13:26:26.477500Z"
+   ],
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "PROVIDER_NO_DATA",
+    9,
+    9,
+    "2026-09-11T12:50:09.978644Z",
+    "2026-09-11T13:25:09.578363Z"
+   ],
+   [
+    "MARKET_STRUCTURE",
+    "INTRADAY_BAR",
+    "DEVELOPING_SESSION",
+    "CACHE_MISS",
+    19,
+    0,
+    "2026-09-11T17:08:29.748267Z",
+    "2026-09-11T17:08:47.865058Z"
+   ],
+   [
+    "MARKET_STRUCTURE",
+    "INTRADAY_BAR",
+    "DEVELOPING_SESSION",
+    "PROVIDER_FETCH",
+    19,
+    19,
+    "2026-09-11T17:08:29.792191Z",
+    "2026-09-11T17:08:47.895271Z"
+   ],
+   [
+    "MORNING_GATE",
+    "EXACT_OPTION_QUOTE",
+    "CURRENT_QUOTE",
+    "CACHE_MISS",
+    1218,
+    0,
+    "2026-09-11T17:00:08.586216Z",
+    "2026-09-11T17:06:59.503872Z"
+   ],
+   [
+    "MORNING_GATE",
+    "EXACT_OPTION_QUOTE",
+    "CURRENT_QUOTE",
+    "PROVIDER_FETCH",
+    1218,
+    1218,
+    "2026-09-11T17:00:08.619940Z",
+    "2026-09-11T17:06:59.540864Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "CACHE_HIT",
+    1218,
+    0,
+    "2026-09-11T14:14:24.557947Z",
+    "2026-09-11T14:41:43.600913Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "CACHE_MISS",
+    37,
+    0,
+    "2026-09-11T14:16:03.772716Z",
+    "2026-09-11T14:41:20.499680Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "PROVIDER_ERROR",
+    37,
+    37,
+    "2026-09-11T14:16:03.805798Z",
+    "2026-09-11T14:41:20.545575Z"
+   ]
+  ],
+  "api_request_ledger_option_quote_physical_total": [
+   1255,
+   3728
+  ]
+ },
+ "20260910_150045": {
+  "session_date": "2026-09-09",
+  "n_obs": 1020,
+  "n_tickers": 1020,
+  "frac_tickers_max_ts_ge_1600ET_on_session": 1.0,
+  "frac_tickers_max_ts_on_session_date": 0.0,
+  "n_tickers_max_ts_on_session_date_and_ge_close": 0,
+  "frac_tickers_max_ts_on_session_date_and_ge_close": 0.0,
+  "quotes_no_provider_ts": 0,
+  "quotes_same_session_frac": 0.0,
+  "quote_as_of_eq_observed_at_to_second": 0,
+  "quote_ts_min": "2026-09-10T16:54:02+00:00",
+  "quote_ts_median": "2026-09-10T17:24:39+00:00",
+  "quote_ts_p95": "2026-09-10T17:50:28+00:00",
+  "quote_ts_max": "2026-09-10T17:53:09+00:00",
+  "by_side": {
+   "CALL": {
+    "n": 653,
+    "same_session": 0,
+    "no_ts": 0,
+    "eq_to_second": 0
+   },
+   "PUT": {
+    "n": 367,
+    "same_session": 0,
+    "no_ts": 0,
+    "eq_to_second": 0
+   }
+  },
+  "ticker_max_ts_date_hist": {
+   "2026-09-10 16h UTC": 90,
+   "2026-09-10 17h UTC": 930
+  },
+  "distinct_source_dataset_ids": 1020,
+  "source_providers": [
+   "MARKETDATA"
+  ],
+  "dataset_registry_by_type_session_status": [
+   [
+    "INTRADAY_BAR",
+    "2026-09-09",
+    "COMPLETE",
+    1354,
+    "2026-09-10T15:45:48.418517Z",
+    "2026-09-10T16:20:54.662483Z",
+    "2026-09-09T19:55:00Z",
+    "2026-09-09T19:55:00Z"
+   ],
+   [
+    "INTRADAY_BAR",
+    "2026-09-09",
+    "PARTIAL",
+    132,
+    "2026-09-10T15:45:52.892332Z",
+    "2026-09-10T16:20:32.814266Z",
+    "2026-09-09T19:55:00Z",
+    "2026-09-09T19:55:00Z"
+   ],
+   [
+    "LIVE_OPTION",
+    "2026-09-10",
+    "COMPLETE",
+    989,
+    "2026-09-10T16:54:02Z",
+    "2026-09-10T17:53:09Z",
+    "2026-09-10T16:54:02Z",
+    "2026-09-10T17:53:09Z"
+   ],
+   [
+    "LIVE_OPTION",
+    "2026-09-10",
+    "PARTIAL",
+    31,
+    "2026-09-10T16:58:31Z",
+    "2026-09-10T17:50:05Z",
+    "2026-09-10T16:58:31Z",
+    "2026-09-10T17:50:05Z"
+   ],
+   [
+    "MARKET_STRUCTURE",
+    "2026-09-09",
+    "COMPLETE",
+    1468,
+    "2026-09-09T19:55:00Z",
+    "2026-09-09T19:55:00Z",
+    "2026-09-09T20:00:00Z",
+    "2026-09-09T20:00:00Z"
+   ],
+   [
+    "OPTION_CHAIN",
+    "2026-09-10",
+    "COMPLETE",
+    1241,
+    "2026-09-10T17:09:01.820201Z",
+    "2026-09-10T18:08:13.117392Z",
+    "2026-09-10T16:54:02Z",
+    "2026-09-10T17:53:13Z"
+   ]
+  ],
+  "api_request_ledger_by_stage_type_state_res": [
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "CACHE_MISS",
+    1490,
+    0,
+    "2026-09-10T15:45:48.352025Z",
+    "2026-09-10T16:20:54.602323Z"
+   ],
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "PARTIAL_HIT",
+    4,
+    0,
+    "2026-09-10T15:47:59.775317Z",
+    "2026-09-10T16:18:29.368290Z"
+   ],
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "PROVIDER_FETCH",
+    1486,
+    1486,
+    "2026-09-10T15:45:48.405570Z",
+    "2026-09-10T16:20:54.648795Z"
+   ],
+   [
+    "COMPLETED_MARKET_PROFILE",
+    "INTRADAY_BAR",
+    "COMPLETED_SESSION",
+    "PROVIDER_NO_DATA",
+    8,
+    8,
+    "2026-09-10T15:46:20.384587Z",
+    "2026-09-10T16:20:31.341753Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "CACHE_MISS",
+    1242,
+    0,
+    "2026-09-10T17:09:01.162858Z",
+    "2026-09-10T18:08:09.603041Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "PROVIDER_ERROR",
+    1,
+    1,
+    "2026-09-10T18:06:43.467202Z",
+    "2026-09-10T18:06:43.467202Z"
+   ],
+   [
+    "OPTIONS",
+    "OPTION_CHAIN",
+    "COMPLETED_SESSION",
+    "PROVIDER_FETCH",
+    1241,
+    1241,
+    "2026-09-10T17:09:01.196123Z",
+    "2026-09-10T18:08:09.641074Z"
+   ]
+  ],
+  "api_request_ledger_option_quote_physical_total": [
+   1242,
+   2484
+  ]
+ },
+ "dataset_registry_vocab": {
+  "dataset_type": [
+   [
+    "EXACT_OPTION_QUOTE",
+    2165
+   ],
+   [
+    "GAMMA_EXPOSURE",
+    2
+   ],
+   [
+    "INTRADAY_BAR",
+    7352
+   ],
+   [
+    "LIVE_OPTION",
+    7562
+   ],
+   [
+    "MARKET_STRUCTURE",
+    5781
+   ],
+   [
+    "OPTION_CHAIN",
+    10901
+   ]
+  ],
+  "completeness_status": [
+   [
+    "COMPLETE",
+    31377
+   ],
+   [
+    "PARTIAL",
+    2386
+   ]
+  ]
+ },
+ "ledger_vocab": {
+  "stage": [
+   [
+    "COMPLETED_MARKET_PROFILE",
+    15250
+   ],
+   [
+    "MARKET_STRUCTURE",
+    118
+   ],
+   [
+    "MORNING_GATE",
+    4618
+   ],
+   [
+    "OPTIONS",
+    29014
+   ]
+  ],
+  "dataset_type": [
+   [
+    "EXACT_OPTION_QUOTE",
+    4618
+   ],
+   [
+    "INTRADAY_BAR",
+    15368
+   ],
+   [
+    "OPTION_CHAIN",
+    29014
+   ]
+  ],
+  "evidence_state": [
+   [
+    "COMPLETED_SESSION",
+    46096
+   ],
+   [
+    "CURRENT_QUOTE",
+    2858
+   ],
+   [
+    "DEVELOPING_SESSION",
+    46
+   ]
+  ],
+  "resolution": [
+   [
+    "CACHE_HIT",
+    7600
+   ],
+   [
+    "CACHE_MISS",
+    17789
+   ],
+   [
+    "PARTIAL_HIT",
+    2458
+   ],
+   [
+    "PROVIDER_ERROR",
+    332
+   ],
+   [
+    "PROVIDER_FETCH",
+    20525
+   ],
+   [
+    "PROVIDER_NO_DATA",
+    296
+   ]
+  ]
+ },
+ "stage1_replay": {
+  "schema_version": "provider_finality_replay_v1",
+  "sessions": [
+   {
+    "provider_completeness_evidence": {
+     "threshold_version": "provider_completeness_v1",
+     "governed_constants_sha256": "c615d18e41d85e74fc9713b660c521de6eeacc41a7a4812d673128a1d3a33a95",
+     "checked_at_utc": "2026-09-05T01:00:00+00:00",
+     "chains_expected": "1289",
+     "complete_chains": "1289",
+     "normal_chain_fraction": "1.0",
+     "minimum_normal_chain_fraction": "0.95",
+     "underlying_tickers_expected": "1289",
+     "closes_present": "1289",
+     "official_close_fraction": "1.0",
+     "minimum_official_close_fraction": "0.99",
+     "state_counts": "{'PROVIDER_SESSION_COMPLETE': 1289}",
+     "ticker_exceptions": "[]",
+     "normal_completed_session_eligible": "True"
+    },
+    "ticker_assessment_count": 1289,
+    "ticker_exception_count": 0,
+    "ticker_exception_examples": [],
+    "session_date": "2026-09-04",
+    "source": "CANONICAL_REPLAY_NO_PROVIDER_CALLS"
+   },
+   {
+    "provider_completeness_evidence": {
+     "threshold_version": "provider_completeness_v1",
+     "governed_constants_sha256": "c615d18e41d85e74fc9713b660c521de6eeacc41a7a4812d673128a1d3a33a95",
+     "checked_at_utc": "2026-09-09T01:00:00+00:00",
+     "chains_expected": "1260",
+     "complete_chains": "1260",
+     "normal_chain_fraction": "1.0",
+     "minimum_normal_chain_fraction": "0.95",
+     "underlying_tickers_expected": "1260",
+     "closes_present": "1260",
+     "official_close_fraction": "1.0",
+     "minimum_official_close_fraction": "0.99",
+     "state_counts": "{'PROVIDER_SESSION_COMPLETE': 1260}",
+     "ticker_exceptions": "[]",
+     "normal_completed_session_eligible": "True"
+    },
+    "ticker_assessment_count": 1260,
+    "ticker_exception_count": 0,
+    "ticker_exception_examples": [],
+    "session_date": "2026-09-08",
+    "source": "CANONICAL_REPLAY_NO_PROVIDER_CALLS"
+   }
+  ],
+  "threshold_decision": "ACCEPTED_FOR_STAGE1"
+ }
+}

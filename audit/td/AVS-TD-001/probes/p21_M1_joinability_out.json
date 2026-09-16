@@ -1,0 +1,981 @@
+{
+ "20260911_115904": {
+  "intelligence_lab\\final_opportunity_book_20260911_115904.csv": {
+   "rows": 1444,
+   "matching_columns": 15,
+   "duplicate_ticker_rows": 0,
+   "sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 281,
+     "Health Care": 224,
+     "Industrials": 172,
+     "Consumer Discretionary": 170
+    }
+   },
+   "gics_sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 278,
+     "Health Care": 224,
+     "Industrials": 176,
+     "Consumer Discretionary": 172
+    }
+   },
+   "gics_sector_norm": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 278,
+     "Health Care": 224,
+     "Industrials": 176,
+     "Consumer Discretionary": 172
+    }
+   },
+   "sector_etf": {
+    "fill_share": 1.0,
+    "n_unique": 42,
+    "top": {
+     "XLK": 278,
+     "XLV": 225,
+     "XLI": 176,
+     "XLY": 172
+    }
+   },
+   "sector_tilt": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "macro_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNMAPPED": 1444
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-11:39c00d46758d115f": 1444
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a": 1444
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1444
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "usmi_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "NEUTRAL": 1444
+    }
+   },
+   "usmi_alignment_priority": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "usmi_alignment_reason": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "SECTOR_UNMAPPED": 1444
+    }
+   },
+   "usmi_authority": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "ADVISORY_ONLY": 1444
+    }
+   },
+   "usmi_scenario": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNRESOLVED": 1444
+    }
+   }
+  },
+  "intelligence_lab\\lab_signal_book_v3.csv": {
+   "rows": 19,
+   "matching_columns": 15,
+   "duplicate_ticker_rows": 0,
+   "gics_sector": {
+    "fill_share": 1.0,
+    "n_unique": 8,
+    "top": {
+     "Financials": 4,
+     "Information Technology": 4,
+     "Health Care": 4,
+     "Energy": 2
+    }
+   },
+   "gics_sector_norm": {
+    "fill_share": 1.0,
+    "n_unique": 8,
+    "top": {
+     "Financials": 4,
+     "Information Technology": 4,
+     "Health Care": 4,
+     "Energy": 2
+    }
+   },
+   "macro_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNMAPPED": 19
+    }
+   },
+   "sector": {
+    "fill_share": 1.0,
+    "n_unique": 8,
+    "top": {
+     "Financials": 4,
+     "Information Technology": 4,
+     "Health Care": 4,
+     "Energy": 2
+    }
+   },
+   "sector_etf": {
+    "fill_share": 1.0,
+    "n_unique": 8,
+    "top": {
+     "XLF": 4,
+     "XLK": 4,
+     "XLV": 4,
+     "XLE": 2
+    }
+   },
+   "sector_tilt": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "DEFENSIVE_ROTATION": 19
+    }
+   },
+   "usmi_alignment_priority": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "usmi_alignment_reason": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "SECTOR_UNMAPPED": 19
+    }
+   },
+   "usmi_authority": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "ADVISORY_ONLY": 19
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-11:39c00d46758d115f": 19
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a": 19
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 19
+    }
+   },
+   "usmi_scenario": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNRESOLVED": 19
+    }
+   },
+   "usmi_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "NEUTRAL": 19
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 19
+    }
+   }
+  },
+  "morning_validation\\morning_validated_trades_20260911_115904.csv": {
+   "rows": 1444,
+   "matching_columns": 20,
+   "duplicate_ticker_rows": 0,
+   "sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector_etf": {
+    "fill_share": 0.8435,
+    "n_unique": 40,
+    "top": {
+     "XLK": 235,
+     "XLV": 176,
+     "XLI": 153,
+     "XLY": 144
+    }
+   },
+   "scanner_sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector_rotation_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "leading_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1444
+    }
+   },
+   "lagging_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1444
+    }
+   },
+   "avoid_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1444
+    }
+   },
+   "preferred_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1444
+    }
+   },
+   "sector_tilt_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "20.0": 1444
+    }
+   },
+   "ticker_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "CONFLICTED": 1064,
+     "ALIGNED": 378,
+     "NEUTRAL": 2
+    }
+   },
+   "ticker_sector_alignment_score": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "0.0": 1064,
+     "100.0": 378,
+     "50.0": 2
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-11:39c00d46758d115f": 1444
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a": 1444
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1444
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "usmi_gamma_position": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNAVAILABLE": 1444
+    }
+   },
+   "macro_sector_rotation_role": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "UNCLASSIFIED": 511,
+     "SECTOR_LEADER": 468,
+     "SECTOR_LAGGARD": 465
+    }
+   },
+   "macro_sector_etf": {
+    "fill_share": 0.8435,
+    "n_unique": 40,
+    "top": {
+     "XLK": 235,
+     "XLV": 176,
+     "XLI": 153,
+     "XLY": 144
+    }
+   },
+   "macro_sector_lead": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "XLE; XLF; XLK": 1444
+    }
+   },
+   "macro_sector_avoid": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "XLI; XLY; XLB; XLRE; XLP": 1444
+    }
+   }
+  },
+  "trades\\execution_gated_20260911_115904.csv": {
+   "rows": 1444,
+   "matching_columns": 20,
+   "duplicate_ticker_rows": 0,
+   "sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector_etf": {
+    "fill_share": 0.8435,
+    "n_unique": 40,
+    "top": {
+     "XLK": 235,
+     "XLV": 176,
+     "XLI": 153,
+     "XLY": 144
+    }
+   },
+   "scanner_sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector_rotation_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "leading_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1444
+    }
+   },
+   "lagging_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1444
+    }
+   },
+   "avoid_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1444
+    }
+   },
+   "preferred_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1444
+    }
+   },
+   "sector_tilt_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "20.0": 1444
+    }
+   },
+   "ticker_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "CONFLICTED": 1064,
+     "ALIGNED": 378,
+     "NEUTRAL": 2
+    }
+   },
+   "ticker_sector_alignment_score": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "0.0": 1064,
+     "100.0": 378,
+     "50.0": 2
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-11:39c00d46758d115f": 1444
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a": 1444
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1444
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 1444
+    }
+   },
+   "usmi_gamma_position": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNAVAILABLE": 1444
+    }
+   },
+   "macro_sector_rotation_role": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "UNCLASSIFIED": 511,
+     "SECTOR_LEADER": 468,
+     "SECTOR_LAGGARD": 465
+    }
+   },
+   "macro_sector_etf": {
+    "fill_share": 0.8435,
+    "n_unique": 40,
+    "top": {
+     "XLK": 235,
+     "XLV": 176,
+     "XLI": 153,
+     "XLY": 144
+    }
+   },
+   "macro_sector_lead": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "XLE; XLF; XLK": 1444
+    }
+   },
+   "macro_sector_avoid": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "XLI; XLY; XLB; XLRE; XLP": 1444
+    }
+   }
+  },
+  "discovery\\discovery_candidates_ultimate_20260911_115904.csv": {
+   "rows": 1572,
+   "matching_columns": 17,
+   "duplicate_ticker_rows": 0,
+   "macro_sector_advisory_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "0.0": 1572
+    }
+   },
+   "scanner_sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 300,
+     "Health Care": 241,
+     "Industrials": 186,
+     "Consumer Discretionary": 181
+    }
+   },
+   "sector_etf": {
+    "fill_share": 1.0,
+    "n_unique": 45,
+    "top": {
+     "XLK": 301,
+     "XLV": 242,
+     "XLI": 187,
+     "XLY": 182
+    }
+   },
+   "sector_rotation_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "DEFENSIVE_ROTATION": 1572
+    }
+   },
+   "leading_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1572
+    }
+   },
+   "lagging_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1572
+    }
+   },
+   "avoid_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]": 1572
+    }
+   },
+   "preferred_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\"]": 1572
+    }
+   },
+   "sector_tilt_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "20.0": 1572
+    }
+   },
+   "ticker_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "NEUTRAL": 912,
+     "CONFLICTED": 526,
+     "ALIGNED": 134
+    }
+   },
+   "ticker_sector_alignment_score": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "50.0": 912,
+     "0.0": 526,
+     "100.0": 134
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-11:39c00d46758d115f": 1572
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a": 1572
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1572
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 1572
+    }
+   },
+   "usmi_gamma_position": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNAVAILABLE": 1572
+    }
+   }
+  }
+ },
+ "20260910_150045": {
+  "intelligence_lab\\final_opportunity_book_20260910_150045.csv": {
+   "rows": 1424,
+   "matching_columns": 15,
+   "duplicate_ticker_rows": 0,
+   "sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 280,
+     "Health Care": 220,
+     "Industrials": 167,
+     "Consumer Discretionary": 165
+    }
+   },
+   "gics_sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 277,
+     "Health Care": 220,
+     "Industrials": 171,
+     "Consumer Discretionary": 167
+    }
+   },
+   "gics_sector_norm": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 277,
+     "Health Care": 220,
+     "Industrials": 171,
+     "Consumer Discretionary": 167
+    }
+   },
+   "sector_etf": {
+    "fill_share": 1.0,
+    "n_unique": 43,
+    "top": {
+     "XLK": 277,
+     "XLV": 221,
+     "XLI": 171,
+     "XLY": 167
+    }
+   },
+   "sector_tilt": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "TECH_LED_RISK_ON": 1424
+    }
+   },
+   "macro_sector_alignment": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-09:eef15c4fc09cb270": 1424
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980": 1424
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1424
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_CONCENTRATION_UNDER_OIL_STRESS": 1424
+    }
+   },
+   "usmi_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNAVAILABLE": 1424
+    }
+   },
+   "usmi_alignment_priority": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "usmi_alignment_reason": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "usmi_authority": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "ADVISORY_ONLY": 1424
+    }
+   },
+   "usmi_scenario": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNRESOLVED": 1424
+    }
+   }
+  },
+  "intelligence_lab\\lab_signal_book_v3.csv": "ABSENT",
+  "morning_validation\\morning_validated_trades_20260910_150045.csv": "ABSENT",
+  "trades\\execution_gated_20260910_150045.csv": "ABSENT",
+  "discovery\\discovery_candidates_ultimate_20260910_150045.csv": {
+   "rows": 1544,
+   "matching_columns": 17,
+   "duplicate_ticker_rows": 0,
+   "macro_sector_advisory_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "0.0": 1544
+    }
+   },
+   "scanner_sector": {
+    "fill_share": 0.0,
+    "n_unique": 0,
+    "top": {}
+   },
+   "sector": {
+    "fill_share": 1.0,
+    "n_unique": 17,
+    "top": {
+     "Information Technology": 298,
+     "Health Care": 237,
+     "Industrials": 180,
+     "Consumer Discretionary": 175
+    }
+   },
+   "sector_etf": {
+    "fill_share": 1.0,
+    "n_unique": 43,
+    "top": {
+     "XLK": 299,
+     "XLV": 238,
+     "XLI": 181,
+     "XLY": 176
+    }
+   },
+   "sector_rotation_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "TECH_LED_RISK_ON": 1544
+    }
+   },
+   "leading_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\", \"Information Technology\"]": 1544
+    }
+   },
+   "lagging_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Health Care\"]": 1544
+    }
+   },
+   "avoid_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Health Care\"]": 1544
+    }
+   },
+   "preferred_sectors": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "[\"Energy\", \"Information Technology\"]": 1544
+    }
+   },
+   "sector_tilt_score": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "30.0": 1544
+    }
+   },
+   "ticker_sector_alignment": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "CONFLICTED": 674,
+     "NEUTRAL": 439,
+     "ALIGNED": 431
+    }
+   },
+   "ticker_sector_alignment_score": {
+    "fill_share": 1.0,
+    "n_unique": 3,
+    "top": {
+     "0.0": 674,
+     "50.0": 439,
+     "100.0": 431
+    }
+   },
+   "usmi_packet_id": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "USMI:2026-09-09:eef15c4fc09cb270": 1544
+    }
+   },
+   "usmi_packet_sha256": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980": 1544
+    }
+   },
+   "usmi_quality_status": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "PARTIAL_UNVERIFIED": 1544
+    }
+   },
+   "usmi_state": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "US_CAPITAL_CONCENTRATION_UNDER_OIL_STRESS": 1544
+    }
+   },
+   "usmi_gamma_position": {
+    "fill_share": 1.0,
+    "n_unique": 1,
+    "top": {
+     "UNAVAILABLE": 1544
+    }
+   }
+  }
+ },
+ "ledger": {
+  "rows": 8290,
+  "event_type": {
+   "CANDIDATE_DECISION": 4931,
+   "VALIDATION": 1679,
+   "EXECUTION_DECISION": 1679,
+   "OUTCOME": 1
+  },
+  "usmi_sector_alignment_by_run": {
+   "20260905_151448": {
+    "NaN": 294
+   },
+   "20260906_213931": {
+    "UNAVAILABLE": 264
+   },
+   "20260909_071646": {
+    "NEUTRAL": 470,
+    "UNAVAILABLE": 235,
+    "NaN": 235
+   },
+   "20260910_150045": {
+    "UNAVAILABLE": 1241
+   },
+   "20260911_115904": {
+    "NEUTRAL": 2888,
+    "NaN": 1444,
+    "UNAVAILABLE": 1218
+   },
+   "run_001": {
+    "NaN": 1
+   }
+  },
+  "usmi_packet_id": {
+   "USMI:2026-09-11:39c00d46758d115f": 4106,
+   "NaN": 1974,
+   "USMI:2026-09-09:eef15c4fc09cb270": 1946,
+   "USMI:2026-09-04:ff7e285c0f707af0": 264
+  },
+  "direction": {
+   "CALL": 4922,
+   "PUT": 2804,
+   "STRANGLE": 414,
+   "UNRESOLVED": 150
+  }
+ },
+ "four_label_vocab_in_primary_run_csvs": {}
+}

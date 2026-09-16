@@ -1,0 +1,270 @@
+{
+  "bridge": {
+    "evidence_session": "2026-09-11",
+    "time_stop_h5": "2026-09-18",
+    "expected": "2026-09-18",
+    "h7_from_2026_09_14": "2026-09-23",
+    "expected_h7": "2026-09-23",
+    "remaining_days_to_2026_10_16_from_h5_stop": 28.0,
+    "expected_remaining_days": 28,
+    "session_close_utc_2026_09_18": "2026-09-18T20:00:00+00:00"
+  },
+  "worked_example_inputs": {
+    "e_h": 0.042257712736425826,
+    "reachable_call": 106.33865691046387,
+    "reachable_put": 93.66134308953613,
+    "late_as_of_utc": "2026-09-18T20:00:00+00:00",
+    "expiry_close_utc": "2026-10-11T20:00:00+00:00",
+    "T_years_at_late": 0.06301369863013699,
+    "expected_T": 0.06301369863013699,
+    "points": [
+      [
+        "EARLY",
+        2,
+        "2026-09-15T20:00:00+00:00"
+      ],
+      [
+        "MID",
+        4,
+        "2026-09-17T20:00:00+00:00"
+      ],
+      [
+        "LATE",
+        5,
+        "2026-09-18T20:00:00+00:00"
+      ]
+    ]
+  },
+  "results": {
+    "CALL": {
+      "entry_theo_mine_T30": 1.6619749100678263,
+      "annex_entry_theo": 1.662,
+      "bid": 1.562,
+      "ask": 1.762,
+      "spread_fraction_mid": 0.12033694344163656,
+      "exit_haircut": 0.06016847172081828,
+      "scenarios_LATE_BASE": {
+        "FLAT": {
+          "spot": 100.0,
+          "theo_prod": 1.2693,
+          "theo_mine": 1.2693,
+          "theo_rel_diff_prod_vs_mine": 2.79898641111826e-15,
+          "net_prod": -0.323,
+          "net_mine": -0.323,
+          "net_abs_diff": 1.887379141862766e-15,
+          "annex_theo": 1.269,
+          "annex_net": -0.323,
+          "theo_vs_annex_rel": 0.00022520904122002948,
+          "net_vs_annex_abs_pp": 0.002315782951878287
+        },
+        "FAVOURABLE_1SIGMA": {
+          "spot": 104.2258,
+          "theo_prod": 2.8898,
+          "theo_mine": 2.8898,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 0.5414,
+          "net_mine": 0.5414,
+          "net_abs_diff": 0.0,
+          "annex_theo": 2.89,
+          "annex_net": 0.541,
+          "theo_vs_annex_rel": 5.36699648732491e-05,
+          "net_vs_annex_abs_pp": 0.04116589280752647
+        },
+        "FAVOURABLE_2SIGMA": {
+          "spot": 108.4515,
+          "theo_prod": 5.3965,
+          "theo_mine": 5.3965,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 1.8784,
+          "net_mine": 1.8784,
+          "net_abs_diff": 0.0,
+          "annex_theo": 5.397,
+          "annex_net": 1.878,
+          "theo_vs_annex_rel": 9.179155794925535e-05,
+          "net_vs_annex_abs_pp": 0.04365303561384426
+        },
+        "REACHABLE": {
+          "spot": 106.3387,
+          "theo_prod": 4.0357,
+          "theo_mine": 4.0357,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 1.1526,
+          "net_mine": 1.1526,
+          "net_abs_diff": 0.0,
+          "annex_theo": 4.036,
+          "annex_net": 1.153,
+          "theo_vs_annex_rel": 8.361889385909988e-05,
+          "net_vs_annex_abs_pp": 0.04217546609981415
+        },
+        "STRUCTURAL_DISCLOSURE": {
+          "spot": 112.0,
+          "theo_prod": 8.0975,
+          "theo_mine": 8.0975,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 3.3191,
+          "net_mine": 3.3191,
+          "net_abs_diff": 0.0,
+          "annex_theo": 8.098,
+          "annex_net": 3.319,
+          "theo_vs_annex_rel": 5.9181423263549475e-05,
+          "net_vs_annex_abs_pp": 0.012900150364947294
+        },
+        "ADVERSE_INVALIDATION": {
+          "spot": 97.0,
+          "theo_prod": 0.6097,
+          "theo_mine": 0.6097,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": -0.6748,
+          "net_mine": -0.6748,
+          "net_abs_diff": 0.0,
+          "annex_theo": 0.61,
+          "annex_net": -0.675,
+          "theo_vs_annex_rel": 0.000443219853912187,
+          "net_vs_annex_abs_pp": 0.022311891871440448
+        }
+      },
+      "production_state": {
+        "applicability": "APPLICABLE",
+        "monetisability_state": "SCENARIO_MONETISABLE",
+        "monetisability_reason": "REACHABLE_LATE_BASE_AT_OR_ABOVE_FLOOR",
+        "utility_v2": 0.1860603401328074,
+        "convexity_score": 0.4726363703295065,
+        "convexity_label": "CONVEX",
+        "profit_floor_applied": 0.25,
+        "friction_version": "friction_model_v1",
+        "calendar_version": "XNYS_BRIDGE_V1",
+        "basis": "AT_GOVERNED_TIME_STOP",
+        "n_scenarios": 54
+      },
+      "monotonic_property_raise_S_raises_call_lowers_put": "True",
+      "property_raising_spread_never_raises_net": "True",
+      "utility_v2_recomputed": 0.1860603401328074,
+      "utility_v2_abs_diff": 0.0,
+      "n_reachable_grid": 9
+    },
+    "PUT": {
+      "entry_theo_mine_T30": 1.3332010657071685,
+      "annex_entry_theo": 1.333,
+      "bid": 1.2332010657071684,
+      "ask": 1.4332010657071685,
+      "spread_fraction_mid": 0.15001488158420753,
+      "exit_haircut": 0.07500744079210377,
+      "scenarios_LATE_BASE": {
+        "FLAT": {
+          "spot": 100.0,
+          "theo_prod": 1.0214,
+          "theo_mine": 1.0214,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": -0.3408,
+          "net_mine": -0.3408,
+          "net_abs_diff": 0.0,
+          "annex_theo": 1.021,
+          "annex_net": null,
+          "theo_vs_annex_rel": 0.0003727137766127759,
+          "net_vs_annex_abs_pp": null
+        },
+        "FAVOURABLE_1SIGMA": {
+          "spot": 95.7742,
+          "theo_prod": 2.3833,
+          "theo_mine": 2.3833,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 0.5382,
+          "net_mine": 0.5382,
+          "net_abs_diff": 0.0,
+          "annex_theo": 2.383,
+          "annex_net": null,
+          "theo_vs_annex_rel": 0.00011667642373571434,
+          "net_vs_annex_abs_pp": null
+        },
+        "FAVOURABLE_2SIGMA": {
+          "spot": 91.5485,
+          "theo_prod": 4.6924,
+          "theo_mine": 4.6924,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 2.0285,
+          "net_mine": 2.0285,
+          "net_abs_diff": 0.0,
+          "annex_theo": null,
+          "annex_net": null,
+          "theo_vs_annex_rel": null,
+          "net_vs_annex_abs_pp": null
+        },
+        "REACHABLE": {
+          "spot": 93.6613,
+          "theo_prod": 3.4134,
+          "theo_mine": 3.4134,
+          "theo_rel_diff_prod_vs_mine": 2.081626618202984e-15,
+          "net_prod": 1.203,
+          "net_mine": 1.203,
+          "net_abs_diff": 4.6629367034256575e-15,
+          "annex_theo": 3.413,
+          "annex_net": null,
+          "theo_vs_annex_rel": 0.00011762951562124292,
+          "net_vs_annex_abs_pp": null
+        },
+        "STRUCTURAL_DISCLOSURE": {
+          "spot": 88.0,
+          "theo_prod": 7.3524,
+          "theo_mine": 7.3524,
+          "theo_rel_diff_prod_vs_mine": 0.0,
+          "net_prod": 3.7453,
+          "net_mine": 3.7453,
+          "net_abs_diff": 0.0,
+          "annex_theo": null,
+          "annex_net": null,
+          "theo_vs_annex_rel": null,
+          "net_vs_annex_abs_pp": null
+        },
+        "ADVERSE_INVALIDATION": {
+          "spot": 103.0,
+          "theo_prod": 0.5032,
+          "theo_mine": 0.5032,
+          "theo_rel_diff_prod_vs_mine": 1.0590927653963293e-14,
+          "net_prod": -0.6753,
+          "net_mine": -0.6753,
+          "net_abs_diff": 3.4416913763379853e-15,
+          "annex_theo": null,
+          "annex_net": null,
+          "theo_vs_annex_rel": null,
+          "net_vs_annex_abs_pp": null
+        }
+      },
+      "production_state": {
+        "applicability": "APPLICABLE",
+        "monetisability_state": "SCENARIO_MONETISABLE",
+        "monetisability_reason": "REACHABLE_LATE_BASE_AT_OR_ABOVE_FLOOR",
+        "utility_v2": 0.21345970943396533,
+        "convexity_score": 0.611362875207067,
+        "convexity_label": "CONVEX",
+        "profit_floor_applied": 0.25,
+        "friction_version": "friction_model_v1",
+        "calendar_version": "XNYS_BRIDGE_V1",
+        "basis": "AT_GOVERNED_TIME_STOP",
+        "n_scenarios": 54
+      },
+      "monotonic_property_raise_S_raises_call_lowers_put": "True",
+      "property_raising_spread_never_raises_net": "True",
+      "utility_v2_recomputed": 0.21345970943396533,
+      "utility_v2_abs_diff": 0.0,
+      "n_reachable_grid": 9
+    },
+    "dte_inside_hold_fixture": {
+      "applicability": "HORIZON_LIMITED",
+      "applicability_reason": "CONTRACT_EXPIRES_WITHIN_HOLD",
+      "monetisability_state": "INDETERMINATE",
+      "monetisability_reason": "HORIZON_LIMITED",
+      "n_scenarios": 0,
+      "utility": null
+    },
+    "friction_out_of_range_fixture": {
+      "spread": 0.5517740767559739,
+      "applicability": "FRICTION_OUT_OF_RANGE",
+      "monetisability_state": "INDETERMINATE",
+      "monetisability_reason": "FRICTION_OUT_OF_RANGE"
+    },
+    "profit_floor_not_approved_fixture": {
+      "monetisability_state": "INDETERMINATE",
+      "reason": "PROFIT_FLOOR_NOT_APPROVED"
+    }
+  }
+}

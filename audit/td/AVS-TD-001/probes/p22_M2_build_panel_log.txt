@@ -1,0 +1,41 @@
+forecast runs: 22
+calendar sessions from 2026-06-01: 71 2026-06-01 -> 2026-09-10
+price rows loaded: 150798 tickers: 3048
+iv_surface quote dates: ['2026-05-22', '2026-05-29', '2026-06-05', '2026-06-12', '2026-06-26', '2026-07-10', '2026-07-17', '2026-07-31', '2026-08-28', '2026-09-04']
+iv_history_cache sample dates >= 2026-06-01: ['2026-06-01', '2026-06-05', '2026-06-08', '2026-06-12', '2026-06-15', '2026-06-22', '2026-06-26', '2026-06-29', '2026-07-06', '2026-07-10', '2026-07-13', '2026-07-17', '2026-07-20', '2026-07-24', '2026-07-27', '2026-07-31', '2026-08-07', '2026-08-14', '2026-08-28', '2026-09-04']
+20260723_072618 session=2026-07-22 (rule:last_session_before_run_date) forecasts=1376 book_rows=1068
+20260731_083130 session=2026-07-30 (rule:last_session_before_run_date) forecasts=1262 book_rows=952
+20260804_114554 session=2026-08-03 (rule:last_session_before_run_date) forecasts=1255 book_rows=795
+20260808_103922 session=2026-08-07 (rule:last_session_before_run_date) forecasts=1303 book_rows=960
+20260809_195823 session=2026-08-07 (rule:last_session_before_run_date) forecasts=1139 book_rows=848
+20260814_114553 session=2026-08-13 (rule:last_session_before_run_date) forecasts=1399 book_rows=1186
+20260815_091604 session=2026-08-14 (rule:last_session_before_run_date) forecasts=1409 book_rows=1123
+20260816_075339 session=2026-08-14 (rule:last_session_before_run_date) forecasts=1347 book_rows=1097
+20260818_041214 session=2026-08-17 (rule:last_session_before_run_date) forecasts=1400 book_rows=1135
+20260820_225652 session=2026-08-19 (rule:last_session_before_run_date) forecasts=1407 book_rows=1130
+20260821_090928 session=2026-08-20 (rule:last_session_before_run_date) forecasts=1374 book_rows=1129
+20260824_100301 session=2026-08-21 (rule:last_session_before_run_date) forecasts=1307 book_rows=934
+20260831_010309 session=2026-08-28 (rule:last_session_before_run_date) forecasts=1248 book_rows=201
+20260901_082437 session=2026-08-31 (rule:last_session_before_run_date) forecasts=1283 book_rows=191
+20260902_232526 session=2026-09-01 (rule:last_session_before_run_date) forecasts=1274 book_rows=179
+20260904_004338 session=2026-09-03 (rule:last_session_before_run_date) forecasts=1454 book_rows=256
+20260904_122358 session=2026-09-03 (rule:last_session_before_run_date) forecasts=1450 book_rows=271
+20260905_151448 session=2026-09-04 (rule:last_session_before_run_date) forecasts=1461 book_rows=294
+20260906_213931 session=2026-09-04 (run_meta.dynamic_plan.last_completed_session) forecasts=1461 book_rows=264
+20260909_071646 session=2026-09-08 (run_meta.dynamic_plan.last_completed_session) forecasts=1448 book_rows=235
+20260910_150045 session=2026-09-09 (run_meta.dynamic_plan.last_completed_session) forecasts=1424 book_rows=1424
+20260911_115904 session=2026-09-10 (run_meta.dynamic_plan.last_completed_session) forecasts=1444 book_rows=1444
+direction counts: {'OTHER': 13218, 'CALL': 13216, 'PUT': 3491}
+direction raw values: {'CALL': 13216, 'nan': 12813, 'PUT': 3491, 'STRANGLE': 308, 'UNRESOLVED': 97}
+direction field used: {'absent': 12813, 'direction': 12353, 'governed_direction': 4759}
+hidden_state values: {'UNKNOWN': 12813, 'LOW_ENERGY_NO_EDGE': 8981, 'COMPRESSED_BALANCED': 6476, 'COMPRESSED_BEARISH_FORCE': 881, 'TRENDING_BULLISH_INERTIA': 513, 'TRENDING_BEARISH_INERTIA': 160, 'COMPRESSED_BULLISH_FORCE': 101}
+forecast rows: 29925 with price column: 29925
+h=5: rows with complete forward window: 19758
+h=10: rows with complete forward window: 15940
+h=20: rows with complete forward window: 6308
+surface match per session: {'2026-07-22': ('2026-07-17', 3), '2026-07-30': (None, None), '2026-08-03': ('2026-07-31', 1), '2026-08-07': ('2026-07-31', 5), '2026-08-13': (None, None), '2026-08-14': (None, None), '2026-08-17': (None, None), '2026-08-19': (None, None), '2026-08-20': (None, None), '2026-08-21': (None, None), '2026-08-28': ('2026-08-28', 0), '2026-08-31': ('2026-08-28', 1), '2026-09-01': ('2026-08-28', 2), '2026-09-03': ('2026-08-28', 4), '2026-09-04': ('2026-09-04', 0), '2026-09-08': ('2026-09-04', 1), '2026-09-09': ('2026-09-04', 2), '2026-09-10': ('2026-09-04', 3)}
+cache match per session: {'2026-07-22': ('2026-07-20', 2), '2026-07-30': ('2026-07-27', 3), '2026-08-03': ('2026-07-31', 1), '2026-08-07': ('2026-08-07', 0), '2026-08-13': ('2026-08-07', 4), '2026-08-14': ('2026-08-14', 0), '2026-08-17': ('2026-08-14', 1), '2026-08-19': ('2026-08-14', 3), '2026-08-20': ('2026-08-14', 4), '2026-08-21': ('2026-08-14', 5), '2026-08-28': ('2026-08-28', 0), '2026-08-31': ('2026-08-28', 1), '2026-09-01': ('2026-08-28', 2), '2026-09-03': ('2026-08-28', 4), '2026-09-04': ('2026-09-04', 0), '2026-09-08': ('2026-09-04', 1), '2026-09-09': ('2026-09-04', 2), '2026-09-10': ('2026-09-04', 3)}
+h=5: surface IV joined & fwd ok: 2748; cache IV joined & fwd ok: 6191
+h=10: surface IV joined & fwd ok: 4079; cache IV joined & fwd ok: 2399
+h=20: surface IV joined & fwd ok: 4074; cache IV joined & fwd ok: 1433
+panel rows: 29925 cols: 90 -> C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p22_M2_panel.csv (88.8s)

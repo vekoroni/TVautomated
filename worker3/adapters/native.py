@@ -10,6 +10,7 @@ import math
 
 from .artifacts import read_artifact, read_verified_bytes
 from ..application import _pairs
+from ..lab_contract import SUPPORTED_LAB_SCHEMAS
 from ..domain import ContractError, Observation, canonical, digest, instant, nonempty, utc
 
 
@@ -137,7 +138,7 @@ def lab_snapshot_from_document(document, repairs, reference, *, run_id, ticker, 
     nonempty(run_id, "run id")
     nonempty(ticker, "ticker")
     captured_at = utc(captured_at)
-    if document.get("lab_schema_version") != "lab_signal_book_v2" or document.get("run_id") != run_id:
+    if document.get("lab_schema_version") not in SUPPORTED_LAB_SCHEMAS or document.get("run_id") != run_id:
         raise ContractError("native Lab schema/run mismatch")
     created = utc(document.get("created_at_utc"))
     if instant(created) > instant(captured_at):
@@ -148,7 +149,7 @@ def lab_snapshot_from_document(document, repairs, reference, *, run_id, ticker, 
     selected = []
     selected_index = None
     for index, row in enumerate(rows):
-        if type(row) is not dict or row.get("run_id") != run_id or row.get("lab_schema_version") != "lab_signal_book_v2":
+        if type(row) is not dict or row.get("run_id") != run_id or row.get("lab_schema_version") != document["lab_schema_version"]:
             raise ContractError("mixed or invalid Lab row identity")
         if row.get("ticker") == ticker:
             selected.append(row)

@@ -1,0 +1,245 @@
+{
+ "mv_columns_found": [
+  "_dir",
+  "check_macro_permission_pass",
+  "check_macro_permission_reason",
+  "contract_ask",
+  "contract_symbol",
+  "governed_direction",
+  "horizon_size_multiplier",
+  "macro_filter_advisory",
+  "macro_size_multiplier_advisory",
+  "morning_execution_permission",
+  "regime_changed",
+  "sb_position_size_pct",
+  "selected_contract_symbol",
+  "ticker",
+  "ticker_sector_alignment"
+ ],
+ "F4_crosstabs_morning_validated": {
+  "macro_size_multiplier_advisory x morning_execution_permission": {
+   "('0.53', 'CONTRACT_REPAIR')": 2,
+   "('0.53', 'GO_LIMIT')": 19,
+   "('0.53', 'LIQUIDITY_STILL_PENDING')": 361,
+   "('0.53', 'NOT_ELIGIBLE')": 918,
+   "('0.53', 'NO_GO_DIRECTION')": 18,
+   "('0.53', 'NO_GO_ECONOMICS')": 76,
+   "('0.53', 'NO_GO_MOVE_ALREADY_REALIZED')": 4,
+   "('0.53', 'WAIT')": 46
+  },
+  "macro_size_multiplier_advisory x _dir": {
+   "('0.53', 'CALL')": 798,
+   "('0.53', 'OTHER')": 188,
+   "('0.53', 'PUT')": 458
+  },
+  "ticker_sector_alignment x morning_execution_permission": {
+   "('ALIGNED', 'CONTRACT_REPAIR')": 0,
+   "('ALIGNED', 'GO_LIMIT')": 2,
+   "('ALIGNED', 'LIQUIDITY_STILL_PENDING')": 73,
+   "('ALIGNED', 'NOT_ELIGIBLE')": 258,
+   "('ALIGNED', 'NO_GO_DIRECTION')": 7,
+   "('ALIGNED', 'NO_GO_ECONOMICS')": 23,
+   "('ALIGNED', 'NO_GO_MOVE_ALREADY_REALIZED')": 1,
+   "('ALIGNED', 'WAIT')": 14,
+   "('CONFLICTED', 'CONTRACT_REPAIR')": 2,
+   "('CONFLICTED', 'GO_LIMIT')": 17,
+   "('CONFLICTED', 'LIQUIDITY_STILL_PENDING')": 288,
+   "('CONFLICTED', 'NOT_ELIGIBLE')": 658,
+   "('CONFLICTED', 'NO_GO_DIRECTION')": 11,
+   "('CONFLICTED', 'NO_GO_ECONOMICS')": 53,
+   "('CONFLICTED', 'NO_GO_MOVE_ALREADY_REALIZED')": 3,
+   "('CONFLICTED', 'WAIT')": 32,
+   "('NEUTRAL', 'CONTRACT_REPAIR')": 0,
+   "('NEUTRAL', 'GO_LIMIT')": 0,
+   "('NEUTRAL', 'LIQUIDITY_STILL_PENDING')": 0,
+   "('NEUTRAL', 'NOT_ELIGIBLE')": 2,
+   "('NEUTRAL', 'NO_GO_DIRECTION')": 0,
+   "('NEUTRAL', 'NO_GO_ECONOMICS')": 0,
+   "('NEUTRAL', 'NO_GO_MOVE_ALREADY_REALIZED')": 0,
+   "('NEUTRAL', 'WAIT')": 0
+  },
+  "ticker_sector_alignment x _dir": {
+   "('ALIGNED', 'CALL')": 216,
+   "('ALIGNED', 'OTHER')": 43,
+   "('ALIGNED', 'PUT')": 119,
+   "('CONFLICTED', 'CALL')": 580,
+   "('CONFLICTED', 'OTHER')": 145,
+   "('CONFLICTED', 'PUT')": 339,
+   "('NEUTRAL', 'CALL')": 2,
+   "('NEUTRAL', 'OTHER')": 0,
+   "('NEUTRAL', 'PUT')": 0
+  },
+  "macro_filter_advisory x morning_execution_permission": {
+   "('NO_GO', 'CONTRACT_REPAIR')": 2,
+   "('NO_GO', 'GO_LIMIT')": 19,
+   "('NO_GO', 'LIQUIDITY_STILL_PENDING')": 361,
+   "('NO_GO', 'NOT_ELIGIBLE')": 918,
+   "('NO_GO', 'NO_GO_DIRECTION')": 18,
+   "('NO_GO', 'NO_GO_ECONOMICS')": 76,
+   "('NO_GO', 'NO_GO_MOVE_ALREADY_REALIZED')": 4,
+   "('NO_GO', 'WAIT')": 46
+  },
+  "macro_filter_advisory x _dir": {
+   "('NO_GO', 'CALL')": 798,
+   "('NO_GO', 'OTHER')": 188,
+   "('NO_GO', 'PUT')": 458
+  },
+  "regime_changed x morning_execution_permission": {
+   "('TRUE', 'CONTRACT_REPAIR')": 2,
+   "('TRUE', 'GO_LIMIT')": 19,
+   "('TRUE', 'LIQUIDITY_STILL_PENDING')": 361,
+   "('TRUE', 'NOT_ELIGIBLE')": 918,
+   "('TRUE', 'NO_GO_DIRECTION')": 18,
+   "('TRUE', 'NO_GO_ECONOMICS')": 76,
+   "('TRUE', 'NO_GO_MOVE_ALREADY_REALIZED')": 4,
+   "('TRUE', 'WAIT')": 46
+  },
+  "regime_changed x _dir": {
+   "('TRUE', 'CALL')": 798,
+   "('TRUE', 'OTHER')": 188,
+   "('TRUE', 'PUT')": 458
+  },
+  "check_macro_permission_pass x morning_execution_permission": {
+   "('TRUE', 'CONTRACT_REPAIR')": 2,
+   "('TRUE', 'GO_LIMIT')": 19,
+   "('TRUE', 'LIQUIDITY_STILL_PENDING')": 361,
+   "('TRUE', 'NOT_ELIGIBLE')": 918,
+   "('TRUE', 'NO_GO_DIRECTION')": 18,
+   "('TRUE', 'NO_GO_ECONOMICS')": 76,
+   "('TRUE', 'NO_GO_MOVE_ALREADY_REALIZED')": 4,
+   "('TRUE', 'WAIT')": 46
+  },
+  "check_macro_permission_pass x _dir": {
+   "('TRUE', 'CALL')": 798,
+   "('TRUE', 'OTHER')": 188,
+   "('TRUE', 'PUT')": 458
+  }
+ },
+ "fb_columns_found": [
+  "_dir",
+  "contract_ask",
+  "governed_direction",
+  "hidden_state_label",
+  "lab_verdict",
+  "macro_sector_alignment",
+  "morning_execution_permission",
+  "phase",
+  "position_size_display",
+  "ticker",
+  "trigger_primary",
+  "usmi_sector_alignment"
+ ],
+ "F4_final_lab_verdict_x_dir": {
+  "('BLOCKED', 'CALL')": 201,
+  "('BLOCKED', 'OTHER')": 188,
+  "('BLOCKED', 'PUT')": 61,
+  "('CONTRACT_REPAIR', 'CALL')": 0,
+  "('CONTRACT_REPAIR', 'OTHER')": 0,
+  "('CONTRACT_REPAIR', 'PUT')": 29,
+  "('GO_LIMIT', 'CALL')": 10,
+  "('GO_LIMIT', 'OTHER')": 0,
+  "('GO_LIMIT', 'PUT')": 9,
+  "('MANUAL_REVIEW', 'CALL')": 587,
+  "('MANUAL_REVIEW', 'OTHER')": 0,
+  "('MANUAL_REVIEW', 'PUT')": 359
+ },
+ "F4_macro_field_cardinality_final": {
+  "usmi_sector_alignment": 1,
+  "macro_sector_alignment": 1
+ },
+ "F5_position_size_display_by_dir": {
+  "CALL": {
+   "0% - OLM monitoring only": 559,
+   "0% - governed invalidation missing": 144,
+   "0% - OLM lifecycle block": 57,
+   "": 38
+  },
+  "PUT": {
+   "0% - OLM monitoring only": 347,
+   "0% - governed invalidation missing": 58,
+   "0% - exact contract economics required": 29,
+   "": 21,
+   "0% - OLM lifecycle block": 3
+  },
+  "OTHER": {
+   "0% - OLM lifecycle block": 188
+  }
+ },
+ "F5_sb_position_size_pct_nonempty_by_dir": {
+  "CALL": 798,
+  "PUT": 458,
+  "OTHER": 188
+ },
+ "F5_sb_position_size_pct_values": {
+  "0.0": 1444
+ },
+ "F5_macro_size_multiplier_advisory_values": {
+  "0.53": 1444
+ },
+ "F5_contracts_at_budget_present": false,
+ "F5_horizon_cap_or_direction_factor_present": [],
+ "F5_execution_v3_5_pse_suggested_contracts_by_dir": {
+  "CALL": {
+   "0.0": 504,
+   "1.0": 286,
+   "2.0": 6,
+   "5.0": 1,
+   "3.0": 1
+  },
+  "PUT": {
+   "0.0": 226,
+   "1.0": 219,
+   "2.0": 10,
+   "5.0": 1,
+   "3.0": 1,
+   "4.0": 1
+  },
+  "OTHER": {
+   "0.0": 188
+  }
+ },
+ "F6_structure_evidence_state_in_final_book": false,
+ "F6_offline_state_by_dir": {
+  "CALL": {
+   "SUPPORTIVE": 457,
+   "DEVELOPING": 196,
+   "NO_EDGE": 145
+  },
+  "PUT": {
+   "SUPPORTIVE": 186,
+   "DEVELOPING": 148,
+   "NO_EDGE": 124
+  },
+  "OTHER": {
+   "SUPPORTIVE": 81,
+   "NO_EDGE": 58,
+   "DEVELOPING": 49
+  }
+ },
+ "F6_low_energy_rows_by_dir": {
+  "CALL": 145,
+  "PUT": 124,
+  "OTHER": 58
+ },
+ "F6_low_energy_offline_NO_EDGE": 327,
+ "F6_go_low_energy": 8,
+ "F6_go_offline_state": {
+  "NO_EDGE": 8,
+  "SUPPORTIVE": 7,
+  "DEVELOPING": 4
+ },
+ "F6_trigger_primary_values_final": {
+  "NONE": 561,
+  "VOL_COMPRESSION": 504,
+  "RANGE_BREAK_EARLY": 355,
+  "RANGE_BREAK": 24
+ },
+ "F6_hidden_state_values_final": {
+  "COMPRESSED_BALANCED": 680,
+  "LOW_ENERGY_NO_EDGE": 327,
+  "COMPRESSED_BEARISH_FORCE": 262,
+  "TRENDING_BULLISH_INERTIA": 112,
+  "TRENDING_BEARISH_INERTIA": 50,
+  "COMPRESSED_BULLISH_FORCE": 13
+ }
+}

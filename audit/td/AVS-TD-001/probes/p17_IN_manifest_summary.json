@@ -1,0 +1,69 @@
+{
+ "STAGE0": {
+  "file_entries_with_hash": 0,
+  "match_head": 0,
+  "match_worktree": 0,
+  "has_rollback_key": false,
+  "rollback": null,
+  "mentions_migration": false,
+  "mentions_backup_or_snapshot": true,
+  "mentions_restore": true,
+  "mentions_expected_diff": false,
+  "base_commit": "cfa1a254459adb5150865cdbb36b6f5ba4c5beae"
+ },
+ "STAGE1": {
+  "file_entries_with_hash": 18,
+  "match_head": 12,
+  "match_worktree": 16,
+  "has_rollback_key": true,
+  "rollback": {
+   "code_base_commit": "63537f37e6be78cad7913e40c273f31389a419dc",
+   "database_migration_in_this_slice": false
+  },
+  "mentions_migration": true,
+  "mentions_backup_or_snapshot": false,
+  "mentions_restore": false,
+  "mentions_expected_diff": false,
+  "base_commit": "63537f37e6be78cad7913e40c273f31389a419dc"
+ },
+ "STAGES2_5": {
+  "file_entries_with_hash": 0,
+  "match_head": 0,
+  "match_worktree": 0,
+  "has_rollback_key": true,
+  "rollback": "Revert this slice commit; append-only production evidence is not deleted. Restore only code/config, never ledger or DOI event rows.",
+  "mentions_migration": false,
+  "mentions_backup_or_snapshot": false,
+  "mentions_restore": true,
+  "mentions_expected_diff": false,
+  "base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca"
+ },
+ "STAGE6": {
+  "file_entries_with_hash": 15,
+  "match_head": 13,
+  "match_worktree": 15,
+  "has_rollback_key": true,
+  "rollback": {
+   "code_base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca",
+   "database_migration_in_this_slice": false,
+   "append_only_evidence_must_not_be_deleted": true
+  },
+  "mentions_migration": true,
+  "mentions_backup_or_snapshot": true,
+  "mentions_restore": false,
+  "mentions_expected_diff": false,
+  "base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca"
+ },
+ "POLICY": {
+  "file_entries_with_hash": 17,
+  "match_head": 13,
+  "match_worktree": 17,
+  "has_rollback_key": false,
+  "rollback": null,
+  "mentions_migration": true,
+  "mentions_backup_or_snapshot": false,
+  "mentions_restore": false,
+  "mentions_expected_diff": false,
+  "base_commit": "3e660bd2483563e092308df7eaac6cbfbb6268ca"
+ }
+}

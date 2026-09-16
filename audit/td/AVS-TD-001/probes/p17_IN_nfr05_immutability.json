@@ -1,0 +1,184 @@
+{
+ "triggers": [
+  {
+   "name": "trg_option_observation_no_update",
+   "tbl_name": "option_contract_observations"
+  },
+  {
+   "name": "trg_option_observation_no_delete",
+   "tbl_name": "option_contract_observations"
+  },
+  {
+   "name": "trg_option_selection_no_update",
+   "tbl_name": "option_contract_selection_events"
+  },
+  {
+   "name": "trg_option_selection_no_delete",
+   "tbl_name": "option_contract_selection_events"
+  },
+  {
+   "name": "trg_doi_assessment_no_update",
+   "tbl_name": "doi_contract_assessments"
+  },
+  {
+   "name": "trg_doi_assessment_no_delete",
+   "tbl_name": "doi_contract_assessments"
+  }
+ ],
+ "rows": {
+  "observations": {
+   "20260910_150045|CALL": 653,
+   "20260910_150045|PUT": 367,
+   "20260911_115904|CALL": 1011,
+   "20260911_115904|PUT": 522
+  },
+  "selection_events": {
+   "20260910_150045|CALL": 653,
+   "20260910_150045|PUT": 367,
+   "20260911_115904|CALL": 1266,
+   "20260911_115904|PUT": 720
+  }
+ },
+ "selection_to_observation": {
+  "CALL|RESOLVES": 1919,
+  "PUT|RESOLVES": 1087
+ },
+ "cross_run": {
+  "CALL|SAME_CONTRACT": 575,
+  "CALL|SAME_CONTRACT_NEW_OBSERVATION_ID": 575,
+  "CALL|SAME_CONTRACT_SAME_QUOTE_AS_OF": 575,
+  "PUT|SAME_CONTRACT": 328,
+  "PUT|SAME_CONTRACT_NEW_OBSERVATION_ID": 328,
+  "PUT|SAME_CONTRACT_SAME_QUOTE_AS_OF": 328,
+  "CALL|CONTRACT_CHANGED": 49,
+  "CALL|CHANGED_PREV_SYMBOL_NULL": 49,
+  "CALL|CHANGED_ECON_RECOMPUTED_FLAG_1": 49,
+  "CALL|CHANGED_THESIS_ID_SAME": 49,
+  "CALL|ONLY_IN_A": 29,
+  "PUT|ONLY_IN_A": 18,
+  "PUT|CONTRACT_CHANGED": 21,
+  "PUT|CHANGED_PREV_SYMBOL_NULL": 21,
+  "PUT|CHANGED_ECON_RECOMPUTED_FLAG_1": 21,
+  "PUT|CHANGED_THESIS_ID_SAME": 21,
+  "CALL|ONLY_IN_B": 9,
+  "PUT|ONLY_IN_B": 11
+ },
+ "cross_run_examples": [
+  {
+   "ticker_side": [
+    "VITL",
+    "CALL"
+   ],
+   "A": [
+    "VITL:CALL:2026-09-10:OLM2",
+    "VITL261016C00010000"
+   ],
+   "B": [
+    "VITL:CALL:2026-09-10:OLM2",
+    "VITL260918C00010000",
+    null,
+    "BEST_MONITORABLE_LONG_OPTION_CONTRACT"
+   ]
+  },
+  {
+   "ticker_side": [
+    "VIK",
+    "CALL"
+   ],
+   "A": [
+    "VIK:CALL:2026-09-10:OLM2",
+    "VIK261016C00085000"
+   ],
+   "B": [
+    "VIK:CALL:2026-09-10:OLM2",
+    "VIK260918C00085000",
+    null,
+    "BEST_MONITORABLE_LONG_OPTION_CONTRACT"
+   ]
+  },
+  {
+   "ticker_side": [
+    "LQDA",
+    "CALL"
+   ],
+   "A": [
+    "LQDA:CALL:2026-09-10:OLM2",
+    "LQDA260925C00068000"
+   ],
+   "B": [
+    "LQDA:CALL:2026-09-10:OLM2",
+    "LQDA260925C00069000",
+    null,
+    "BEST_MONITORABLE_LONG_OPTION_CONTRACT"
+   ]
+  },
+  {
+   "ticker_side": [
+    "CSCO",
+    "CALL"
+   ],
+   "A": [
+    "CSCO:CALL:2026-09-10:OLM2",
+    "CSCO260925C00109000"
+   ],
+   "B": [
+    "CSCO:CALL:2026-09-10:OLM2",
+    "CSCO260925C00108000",
+    null,
+    "BEST_CURRENT_LONG_OPTION_QUOTE"
+   ]
+  },
+  {
+   "ticker_side": [
+    "OLED",
+    "PUT"
+   ],
+   "A": [
+    "OLED:PUT:2026-09-10:OLM2",
+    "OLED261016P00085000"
+   ],
+   "B": [
+    "OLED:PUT:2026-09-10:OLM2",
+    "OLED261016P00080000",
+    null,
+    "BEST_CURRENT_LONG_OPTION_QUOTE"
+   ]
+  }
+ ],
+ "within_B_sequences": {
+  "CALL|events=2": 633,
+  "CALL|SAMECONTRACT_NEWOBS_QUOTEASOF_DIFF": 344,
+  "CALL|reasons:BEST_MONITORABLE_LONG_OPTION_CONTRACT>MORNING_EXACT_CONTRACT_REQUOTE": 339,
+  "PUT|events=2": 360,
+  "PUT|SAMECONTRACT_NEWOBS_QUOTEASOF_DIFF": 144,
+  "PUT|reasons:BEST_MONITORABLE_LONG_OPTION_CONTRACT>MORNING_EXACT_CONTRACT_REQUOTE": 142,
+  "CALL|SAMECONTRACT_SAMEOBS": 255,
+  "CALL|reasons:BEST_CURRENT_LONG_OPTION_QUOTE>MORNING_EXACT_CONTRACT_REQUOTE": 260,
+  "PUT|SAMECONTRACT_SAMEOBS": 198,
+  "PUT|reasons:BEST_CURRENT_LONG_OPTION_QUOTE>MORNING_EXACT_CONTRACT_REQUOTE": 200,
+  "CALL|NEWCONTRACT_NEWOBS_PREVLINK_BROKEN": 28,
+  "CALL|reasons:BEST_MONITORABLE_LONG_OPTION_CONTRACT>MORNING_REPAIR_ALTERNATIVE_SELECTED": 34,
+  "PUT|NEWCONTRACT_NEWOBS_PREVLINK_BROKEN": 16,
+  "PUT|reasons:BEST_MONITORABLE_LONG_OPTION_CONTRACT>MORNING_REPAIR_ALTERNATIVE_SELECTED": 18,
+  "CALL|NEWCONTRACT_NEWOBS_PREVLINK_OK": 6,
+  "PUT|NEWCONTRACT_NEWOBS_PREVLINK_OK": 2
+ },
+ "same_quote_multi_obs": {
+  "CALL|MULTI_OBS_SAME_QUOTE_CROSS_RUN": 575,
+  "CALL|FIELDS_DIFFER:delta": 571,
+  "PUT|MULTI_OBS_SAME_QUOTE_CROSS_RUN": 328,
+  "PUT|FIELDS_DIFFER:delta": 328,
+  "CALL|FIELDS_DIFFER:delta,liquidity_state": 1
+ },
+ "economics_recomputed_values": {
+  "1": 3006
+ },
+ "selection_supersedes_nonnull": 0,
+ "observation_supersedes_nonnull": 0,
+ "observation_calculation_versions": {
+  "options-liquidity-lifecycle-v2": 2013,
+  "options-liquidity-morning-v2": 540
+ },
+ "doi_contract_assessments_rows": 0,
+ "doi_outcome_labels_rows": 0
+}

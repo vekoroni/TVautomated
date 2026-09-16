@@ -1,0 +1,1121 @@
+{
+ "runs_with_macro": [
+  {
+   "run": "20260723_072618",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 800484
+  },
+  {
+   "run": "20260731_083130",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 394806
+  },
+  {
+   "run": "20260804_114554",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 401676
+  },
+  {
+   "run": "20260808_103922",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 396216
+  },
+  {
+   "run": "20260809_195823",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 407687
+  },
+  {
+   "run": "20260814_114553",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 404056
+  },
+  {
+   "run": "20260815_091604",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 404106
+  },
+  {
+   "run": "20260816_075339",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 404309
+  },
+  {
+   "run": "20260818_041214",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 46347
+  },
+  {
+   "run": "20260820_225652",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 411983
+  },
+  {
+   "run": "20260821_090928",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 480433
+  },
+  {
+   "run": "20260824_060146",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 480483
+  },
+  {
+   "run": "20260824_100301",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 480491
+  },
+  {
+   "run": "20260830_071747",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 249032
+  },
+  {
+   "run": "20260830_182402",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 249032
+  },
+  {
+   "run": "20260830_225643",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 249032
+  },
+  {
+   "run": "20260831_010309",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 249032
+  },
+  {
+   "run": "20260901_064425",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 47566
+  },
+  {
+   "run": "20260901_082437",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 47566
+  },
+  {
+   "run": "20260902_232526",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 294530
+  },
+  {
+   "run": "20260904_004338",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 298380
+  },
+  {
+   "run": "20260904_122358",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 300987
+  },
+  {
+   "run": "20260905_151448",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 301035
+  },
+  {
+   "run": "20260906_213931",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 437955
+  },
+  {
+   "run": "20260909_071646",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 460468
+  },
+  {
+   "run": "20260910_150045",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 458146
+  },
+  {
+   "run": "20260911_115904",
+   "macro_snapshot": true,
+   "macro_quant_packet": true,
+   "ms_size": 638642
+  }
+ ],
+ "primary_snapshot_top_keys": [
+  "contract_version",
+  "regime_state",
+  "dir_bias",
+  "trend_energy",
+  "usd_state",
+  "rates_impulse",
+  "liquidity_pulse",
+  "regime_drift_status",
+  "macro_conviction",
+  "vol_mode",
+  "risk_on_off_switch",
+  "notes",
+  "as_of_utc",
+  "report_date",
+  "source",
+  "net_liquidity_score",
+  "vix_regime_score",
+  "gex_regime_score",
+  "macro_momentum_score",
+  "regime_label",
+  "regime_probability",
+  "vix_spot",
+  "macro_filter",
+  "sector_lead",
+  "sector_avoid",
+  "size_multiplier",
+  "trigger_required",
+  "horizon_routing",
+  "sector_rotation",
+  "extras",
+  "credit_state",
+  "credit_risk_score",
+  "gex_available",
+  "us_money_index_available",
+  "us_money_index_packet_id",
+  "us_money_index_authority",
+  "horizon_routing_enforcement",
+  "horizon_routing_complete",
+  "horizon_routing_required_buckets",
+  "_builder_metadata",
+  "rotation_override",
+  "rotation_flag_as_of_utc",
+  "rotation_detail",
+  "regime_sub_state",
+  "macro_regime_sub_state",
+  "regime_distribution",
+  "regime_distribution_source",
+  "regime_drift_interpretation",
+  "normalised_at_utc",
+  "macro_quant_packet",
+  "macro_quant_contract_version",
+  "truth_packet"
+ ],
+ "primary_usmi_keys": [
+  "contract_version",
+  "source_contract_version",
+  "packet_type",
+  "packet_id",
+  "packet_sha256",
+  "authority",
+  "execution_permission",
+  "generated_at_utc",
+  "market_data_as_of_utc",
+  "market_as_of_session",
+  "market_status",
+  "quality_status",
+  "quality_issues",
+  "unverified_metrics",
+  "source_references",
+  "source_path",
+  "state",
+  "metrics",
+  "sector_routing",
+  "scenarios",
+  "risk_flags",
+  "supportive_flags",
+  "proposed_policy",
+  "policy_activation",
+  "advisory_context",
+  "source_payload"
+ ],
+ "primary_source_payload_keys": [
+  "contract_version",
+  "schema_extension",
+  "packet_type",
+  "merge_mode",
+  "packet_revision",
+  "revision_history",
+  "supersedes",
+  "analysis_window",
+  "noise_filter",
+  "current_state",
+  "timeline_since_monday",
+  "cross_asset",
+  "leadership",
+  "options_monetisation",
+  "forward_triggers",
+  "us_macro_events_since_previous_packet",
+  "data_quality",
+  "execution_permission",
+  "manual_review_required",
+  "automatic_execution",
+  "geopolitical_escalation",
+  "hormuz_flow",
+  "risk_off_confirmation_matrix",
+  "china_inflation_transmission",
+  "risk_off_transmission_score"
+ ],
+ "routing_paths_in_source_payload": [
+  [
+   "options_monetisation.long_call_priority",
+   "list",
+   "['PROVEN_AI_CLOUD_INFRASTRUCTURE_WITH_CASH_FLOW_CONVERSION', 'ENERGY_PRODUCERS_IF_XLE_CONFIRMS', 'SELECTIVE_REFINERS', 'OIL_SERVICES', 'FINANCIALS_ON_PRICE_CONFIRMATION']"
+  ],
+  [
+   "options_monetisation.long_put_priority",
+   "list",
+   "['AIRLINES', 'TRANSPORT_LOGISTICS', 'FUEL_SENSITIVE_DISCRETIONARY', 'IMPORT_HEAVY_RETAIL', 'HOMEBUILDERS_REITS']"
+  ],
+  [
+   "options_monetisation.sector_routing",
+   "dict",
+   "['vocabulary', 'lab_field', 'routing', 'routing_changes_rev_2', 'routing_is_advisory', 'routing_never_gates']"
+  ],
+  [
+   "options_monetisation.sector_routing.routing",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AIRLINES_PUT', 'TRANSPORT_LOGISTICS_PUT', 'FUEL_SENSITIVE_DISCRETIONARY_PUT', 'HOMEBUILDERS_REITS_PUT', 'SPY_QQQ_PUT', 'WEAK_TECH_PUT', 'MATERIALS_INDUSTRIALS_PUT', 'ENERGY_PRODUCERS_CALL', 'REFINERS_OIL_SERVICES_CALL', 'DEFENCE_CALL', 'AI_SEMICONDUCTOR_CALL', 'AI_CLOUD_PROVE"
+  ],
+  [
+   "options_monetisation.sector_routing.routing_changes_rev_2",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AI_CLOUD_PROVEN_MONETISATION_CALL', 'FINANCIALS_CALL']"
+  ],
+  [
+   "options_monetisation.sector_routing.routing_is_advisory",
+   "bool",
+   "True"
+  ],
+  [
+   "options_monetisation.sector_routing.routing_never_gates",
+   "list",
+   "['membership', 'direction', 'capital']"
+  ]
+ ],
+ "sector_routing_dump": {
+  "vocabulary": [
+   "PRIORITY_UPGRADE",
+   "ADVERSE_REGIME_RS_REQUIRED",
+   "PRIORITY_WATCH",
+   "NOT_YET_CONFIRMED"
+  ],
+  "lab_field": "regime_alignment",
+  "routing": {
+   "IWM_SMALL_CAPS_PUT": "NOT_YET_CONFIRMED",
+   "AIRLINES_PUT": "PRIORITY_UPGRADE",
+   "TRANSPORT_LOGISTICS_PUT": "PRIORITY_UPGRADE",
+   "FUEL_SENSITIVE_DISCRETIONARY_PUT": "PRIORITY_UPGRADE",
+   "HOMEBUILDERS_REITS_PUT": "PRIORITY_UPGRADE",
+   "SPY_QQQ_PUT": "PRIORITY_WATCH",
+   "WEAK_TECH_PUT": "ADVERSE_REGIME_RS_REQUIRED",
+   "MATERIALS_INDUSTRIALS_PUT": "PRIORITY_WATCH",
+   "ENERGY_PRODUCERS_CALL": "NOT_YET_CONFIRMED",
+   "REFINERS_OIL_SERVICES_CALL": "PRIORITY_WATCH",
+   "DEFENCE_CALL": "PRIORITY_WATCH",
+   "AI_SEMICONDUCTOR_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+   "AI_CLOUD_PROVEN_MONETISATION_CALL": "PRIORITY_WATCH",
+   "AI_SOFTWARE_CLOUD_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+   "FINANCIALS_CALL": "PRIORITY_WATCH",
+   "BROAD_INDEX_CALL": "NOT_YET_CONFIRMED"
+  },
+  "routing_changes_rev_2": {
+   "IWM_SMALL_CAPS_PUT": "PRIORITY_UPGRADE -> NOT_YET_CONFIRMED",
+   "AI_CLOUD_PROVEN_MONETISATION_CALL": "added PRIORITY_WATCH",
+   "FINANCIALS_CALL": "added PRIORITY_WATCH"
+  },
+  "routing_is_advisory": true,
+  "routing_never_gates": [
+   "membership",
+   "direction",
+   "capital"
+  ]
+ },
+ "primary_usmi_meta": {
+  "contract_version": "us_money_index_v1_0",
+  "source_contract_version": "avshunter_us_money_index_v2_0",
+  "packet_type": "US_MONEY_INDEX_STATE",
+  "packet_id": "USMI:2026-09-11:39c00d46758d115f",
+  "packet_sha256": "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a",
+  "authority": "ADVISORY_ONLY",
+  "execution_permission": "NONE_INTELLIGENCE_ONLY",
+  "generated_at_utc": "2026-09-11T11:35:00+00:00",
+  "market_data_as_of_utc": "2026-09-11T11:35:00+00:00",
+  "market_as_of_session": "2026-09-11",
+  "market_status": "PRE_US_CASH_SESSION_PRE_CPI",
+  "quality_status": "PARTIAL_UNVERIFIED",
+  "source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json",
+  "policy_activation": "DISABLED_UNTIL_SEPARATELY_TESTED"
+ },
+ "primary_sp_meta": {
+  "contract_version": "avshunter_us_money_index_v2_0",
+  "schema_extension": "v2_0_superset_2026-09-11 (all v2_0 keys preserved; new keys additive only)",
+  "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+  "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+  "packet_revision": 2,
+  "execution_permission": "NONE_INTELLIGENCE_ONLY",
+  "manual_review_required": true,
+  "automatic_execution": false
+ },
+ "primary_mq_top_keys": [
+  "macro_quant_contract_version",
+  "macro_source_path",
+  "macro_contract_version",
+  "macro_generated_at_utc",
+  "macro_normalised_at_utc",
+  "macro_age_hours",
+  "macro_freshness_status",
+  "macro_confidence",
+  "macro_data_quality",
+  "macro_regime_label",
+  "macro_regime_sub_state",
+  "regime_drift_status",
+  "regime_distribution_bull",
+  "regime_distribution_neutral",
+  "regime_distribution_bear",
+  "risk_on_off_score",
+  "macro_conviction_score",
+  "net_liquidity_score",
+  "liquidity_pulse",
+  "liquidity_risk_flag",
+  "vix_level",
+  "vix_regime_label",
+  "vix_regime_score",
+  "vix_contango",
+  "vix_structure_label",
+  "vol_mode",
+  "rates_impulse",
+  "usd_state",
+  "credit_state",
+  "credit_risk_score",
+  "gex_regime_score",
+  "dealer_gamma_state",
+  "gamma_risk_flag",
+  "sector_rotation_state",
+  "leading_sectors",
+  "lagging_sectors",
+  "avoid_sectors",
+  "preferred_sectors",
+  "sector_tilt_score",
+  "ticker_sector_alignment",
+  "ticker_sector_alignment_score",
+  "macro_preferred_horizon",
+  "horizon_pressure",
+  "primary_bucket",
+  "bucket_clarity_scores",
+  "equity_drawer_active",
+  "macro_execution_caution",
+  "macro_conflict_flags",
+  "macro_active_conflict_flags",
+  "macro_resolved_conflict_flags",
+  "bond_macro_flag",
+  "bond_trade_go",
+  "bond_macro_score",
+  "auction_spread_risk",
+  "credit_warning",
+  "breakeven_adjustment_pct",
+  "usmi_packet_id",
+  "usmi_packet_sha256",
+  "usmi_quality_status",
+  "usmi_state",
+  "usmi_gamma_position",
+  "us_money_index",
+  "macro_source_fingerprint",
+  "macro_as_of_utc",
+  "macro_session_date",
+  "macro_plain_language_advisory",
+  "macro_authority",
+  "macro_packet_sha256",
+  "macro_packet_id"
+ ],
+ "routing_paths_in_mq": [
+  [
+   "us_money_index.sector_routing",
+   "dict",
+   "['CALL', 'PUT']"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.PROVEN_AI_CLOUD_INFRASTRUCTURE_WITH_CASH_FLOW_CONVERSION.priority",
+   "int",
+   "1"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.ENERGY_PRODUCERS_IF_XLE_CONFIRMS.priority",
+   "int",
+   "2"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.SELECTIVE_REFINERS.priority",
+   "int",
+   "3"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.OIL_SERVICES.priority",
+   "int",
+   "4"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.FINANCIALS_ON_PRICE_CONFIRMATION.priority",
+   "int",
+   "5"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.SELECTIVE_SEMICONDUCTORS_WITH_RELATIVE_STRENGTH.priority",
+   "int",
+   "6"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.SELECTED_LNG_EXPORTERS.priority",
+   "int",
+   "7"
+  ],
+  [
+   "us_money_index.sector_routing.CALL.DEFENCE_SELECTED.priority",
+   "int",
+   "8"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.TRANSPORT_TRAVEL.priority",
+   "int",
+   "1"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.INDUSTRIALS.priority",
+   "int",
+   "1"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.FUEL_SENSITIVE_DISCRETIONARY.priority",
+   "int",
+   "3"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.IMPORT_HEAVY_RETAIL.priority",
+   "int",
+   "4"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.HOMEBUILDERS_REITS.priority",
+   "int",
+   "5"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.MATERIALS_SENSITIVE_INDUSTRIALS.priority",
+   "int",
+   "6"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.WEAK_TECH_LOSING_RS.priority",
+   "int",
+   "7"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.FUNDING_SENSITIVE_CYCLICALS.priority",
+   "int",
+   "8"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.SOFTWARE.priority",
+   "int",
+   "9"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.IWM_SMALL_CAPS_ONLY_ON_FRESH_PRICE_BREAKDOWN.priority",
+   "int",
+   "10"
+  ],
+  [
+   "us_money_index.sector_routing.PUT.SPY_QQQ_ONLY_ON_CPI_AND_BREADTH_CONFIRMATION.priority",
+   "int",
+   "11"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.long_call_priority",
+   "list",
+   "['PROVEN_AI_CLOUD_INFRASTRUCTURE_WITH_CASH_FLOW_CONVERSION', 'ENERGY_PRODUCERS_IF_XLE_CONFIRMS', 'SELECTIVE_REFINERS', 'OIL_SERVICES', 'FINANCIALS_ON_PRICE_CONFIRMATION']"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.long_put_priority",
+   "list",
+   "['AIRLINES', 'TRANSPORT_LOGISTICS', 'FUEL_SENSITIVE_DISCRETIONARY', 'IMPORT_HEAVY_RETAIL', 'HOMEBUILDERS_REITS']"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.sector_routing",
+   "dict",
+   "['vocabulary', 'lab_field', 'routing', 'routing_changes_rev_2', 'routing_is_advisory', 'routing_never_gates']"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.sector_routing.routing",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AIRLINES_PUT', 'TRANSPORT_LOGISTICS_PUT', 'FUEL_SENSITIVE_DISCRETIONARY_PUT', 'HOMEBUILDERS_REITS_PUT', 'SPY_QQQ_PUT', 'WEAK_TECH_PUT', 'MATERIALS_INDUSTRIALS_PUT', 'ENERGY_PRODUCERS_CALL', 'REFINERS_OIL_SERVICES_CALL', 'DEFENCE_CALL', 'AI_SEMICONDUCTOR_CALL', 'AI_CLOUD_PROVE"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.sector_routing.routing_changes_rev_2",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AI_CLOUD_PROVEN_MONETISATION_CALL', 'FINANCIALS_CALL']"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.sector_routing.routing_is_advisory",
+   "bool",
+   "True"
+  ],
+  [
+   "us_money_index.advisory_context.options_monetisation.sector_routing.routing_never_gates",
+   "list",
+   "['membership', 'direction', 'capital']"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.long_call_priority",
+   "list",
+   "['PROVEN_AI_CLOUD_INFRASTRUCTURE_WITH_CASH_FLOW_CONVERSION', 'ENERGY_PRODUCERS_IF_XLE_CONFIRMS', 'SELECTIVE_REFINERS', 'OIL_SERVICES', 'FINANCIALS_ON_PRICE_CONFIRMATION']"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.long_put_priority",
+   "list",
+   "['AIRLINES', 'TRANSPORT_LOGISTICS', 'FUEL_SENSITIVE_DISCRETIONARY', 'IMPORT_HEAVY_RETAIL', 'HOMEBUILDERS_REITS']"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.sector_routing",
+   "dict",
+   "['vocabulary', 'lab_field', 'routing', 'routing_changes_rev_2', 'routing_is_advisory', 'routing_never_gates']"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.sector_routing.routing",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AIRLINES_PUT', 'TRANSPORT_LOGISTICS_PUT', 'FUEL_SENSITIVE_DISCRETIONARY_PUT', 'HOMEBUILDERS_REITS_PUT', 'SPY_QQQ_PUT', 'WEAK_TECH_PUT', 'MATERIALS_INDUSTRIALS_PUT', 'ENERGY_PRODUCERS_CALL', 'REFINERS_OIL_SERVICES_CALL', 'DEFENCE_CALL', 'AI_SEMICONDUCTOR_CALL', 'AI_CLOUD_PROVE"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.sector_routing.routing_changes_rev_2",
+   "dict",
+   "['IWM_SMALL_CAPS_PUT', 'AI_CLOUD_PROVEN_MONETISATION_CALL', 'FINANCIALS_CALL']"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.sector_routing.routing_is_advisory",
+   "bool",
+   "True"
+  ],
+  [
+   "us_money_index.source_payload.options_monetisation.sector_routing.routing_never_gates",
+   "list",
+   "['membership', 'direction', 'capital']"
+  ]
+ ],
+ "dropbox_packets": [
+  {
+   "file": "dropbox\\macro\\avshunter_us_money_index.json",
+   "meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "schema_extension": "v2_0_superset_2026-09-11 (all v2_0 keys preserved; new keys additive only)",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "packet_revision": 2,
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "manual_review_required": true,
+    "automatic_execution": false
+   },
+   "top_keys": [
+    "contract_version",
+    "schema_extension",
+    "packet_type",
+    "merge_mode",
+    "packet_revision",
+    "revision_history",
+    "supersedes",
+    "analysis_window",
+    "noise_filter",
+    "current_state",
+    "timeline_since_monday",
+    "cross_asset",
+    "leadership",
+    "options_monetisation",
+    "forward_triggers",
+    "us_macro_events_since_previous_packet",
+    "data_quality",
+    "execution_permission",
+    "manual_review_required",
+    "automatic_execution",
+    "geopolitical_escalation",
+    "hormuz_flow",
+    "risk_off_confirmation_matrix",
+    "china_inflation_transmission",
+    "risk_off_transmission_score"
+   ],
+   "sector_routing_keys": [
+    "vocabulary",
+    "lab_field",
+    "routing",
+    "routing_changes_rev_2",
+    "routing_is_advisory",
+    "routing_never_gates"
+   ],
+   "routing": {
+    "IWM_SMALL_CAPS_PUT": "NOT_YET_CONFIRMED",
+    "AIRLINES_PUT": "PRIORITY_UPGRADE",
+    "TRANSPORT_LOGISTICS_PUT": "PRIORITY_UPGRADE",
+    "FUEL_SENSITIVE_DISCRETIONARY_PUT": "PRIORITY_UPGRADE",
+    "HOMEBUILDERS_REITS_PUT": "PRIORITY_UPGRADE",
+    "SPY_QQQ_PUT": "PRIORITY_WATCH",
+    "WEAK_TECH_PUT": "ADVERSE_REGIME_RS_REQUIRED",
+    "MATERIALS_INDUSTRIALS_PUT": "PRIORITY_WATCH",
+    "ENERGY_PRODUCERS_CALL": "NOT_YET_CONFIRMED",
+    "REFINERS_OIL_SERVICES_CALL": "PRIORITY_WATCH",
+    "DEFENCE_CALL": "PRIORITY_WATCH",
+    "AI_SEMICONDUCTOR_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "AI_CLOUD_PROVEN_MONETISATION_CALL": "PRIORITY_WATCH",
+    "AI_SOFTWARE_CLOUD_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "FINANCIALS_CALL": "PRIORITY_WATCH",
+    "BROAD_INDEX_CALL": "NOT_YET_CONFIRMED"
+   },
+   "mtime": 1789127159.294091
+  },
+  {
+   "file": "dropbox\\macro\\avshunter_us_money_indexold1109pm.json",
+   "meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "schema_extension": "v2_0_superset_2026-09-11 (all v2_0 keys preserved; new keys additive only)",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "manual_review_required": true,
+    "automatic_execution": false
+   },
+   "top_keys": [
+    "contract_version",
+    "schema_extension",
+    "packet_type",
+    "merge_mode",
+    "supersedes",
+    "analysis_window",
+    "noise_filter",
+    "current_state",
+    "timeline_since_monday",
+    "cross_asset",
+    "leadership",
+    "options_monetisation",
+    "forward_triggers",
+    "us_macro_events_since_previous_packet",
+    "data_quality",
+    "execution_permission",
+    "manual_review_required",
+    "automatic_execution",
+    "geopolitical_escalation",
+    "hormuz_flow",
+    "risk_off_confirmation_matrix",
+    "china_inflation_transmission",
+    "risk_off_transmission_score"
+   ],
+   "sector_routing_keys": [
+    "vocabulary",
+    "lab_field",
+    "routing",
+    "routing_is_advisory",
+    "routing_never_gates"
+   ],
+   "routing": {
+    "IWM_SMALL_CAPS_PUT": "PRIORITY_UPGRADE",
+    "AIRLINES_PUT": "PRIORITY_UPGRADE",
+    "TRANSPORT_LOGISTICS_PUT": "PRIORITY_UPGRADE",
+    "FUEL_SENSITIVE_DISCRETIONARY_PUT": "PRIORITY_UPGRADE",
+    "HOMEBUILDERS_REITS_PUT": "PRIORITY_UPGRADE",
+    "SPY_QQQ_PUT": "PRIORITY_WATCH",
+    "WEAK_TECH_PUT": "ADVERSE_REGIME_RS_REQUIRED",
+    "MATERIALS_INDUSTRIALS_PUT": "PRIORITY_WATCH",
+    "ENERGY_PRODUCERS_CALL": "NOT_YET_CONFIRMED",
+    "REFINERS_OIL_SERVICES_CALL": "PRIORITY_WATCH",
+    "DEFENCE_CALL": "PRIORITY_WATCH",
+    "AI_SEMICONDUCTOR_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "AI_SOFTWARE_CLOUD_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "BROAD_INDEX_CALL": "NOT_YET_CONFIRMED"
+   },
+   "mtime": 1789126156.5901616
+  },
+  {
+   "file": "dropbox\\macro\\Archive\\avshunter_us_money_index1109.json",
+   "meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY"
+   },
+   "top_keys": [
+    "contract_version",
+    "packet_type",
+    "merge_mode",
+    "analysis_window",
+    "noise_filter",
+    "current_state",
+    "timeline_since_monday",
+    "cross_asset",
+    "leadership",
+    "options_monetisation",
+    "forward_triggers",
+    "data_quality",
+    "execution_permission",
+    "geopolitical_escalation",
+    "hormuz_flow",
+    "risk_off_confirmation_matrix",
+    "china_inflation_transmission",
+    "risk_off_transmission_score"
+   ],
+   "sector_routing_keys": [],
+   "routing": null,
+   "mtime": 1788936006.3294797
+  },
+  {
+   "file": "dropbox\\macro\\Archive\\avshunter_us_money_indexold0909.json",
+   "meta": {
+    "contract_version": "avshunter_us_money_index_v1_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "generated_at_local": "2026-09-06T20:04:00+01:00",
+    "market_data_as_of": "2026-09-04T16:00:00-04:00",
+    "market_status": "US_CASH_AND_OPTIONS_MARKETS_CLOSED",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY"
+   },
+   "top_keys": [
+    "contract_version",
+    "packet_type",
+    "generated_at_local",
+    "market_data_as_of",
+    "market_status",
+    "state",
+    "core_market_snapshot",
+    "rates_and_fed",
+    "usd_and_liquidity",
+    "oil_and_inflation",
+    "credit",
+    "gamma_gex",
+    "breadth_and_leadership",
+    "sector_rotation",
+    "options_routing",
+    "capital_flow_hierarchy",
+    "decision_tree",
+    "tier1_logic",
+    "risk_flags",
+    "supportive_flags",
+    "final_pipeline_state",
+    "execution_permission",
+    "tier_logic"
+   ],
+   "sector_routing_keys": [],
+   "routing": null,
+   "mtime": 1788723224.5298662
+  }
+ ],
+ "per_run_snapshot": [
+  {
+   "run": "20260723_072618",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260731_083130",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260804_114554",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260808_103922",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260809_195823",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260814_114553",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260815_091604",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260816_075339",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260818_041214",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260820_225652",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260821_090928",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260824_060146",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260824_100301",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260830_071747",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260830_182402",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260830_225643",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260831_010309",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260901_064425",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260901_082437",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260902_232526",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260904_004338",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260904_122358",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260905_151448",
+   "usmi_meta": {},
+   "sp_meta": {},
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260906_213931",
+   "usmi_meta": {
+    "contract_version": "us_money_index_v1_0",
+    "source_contract_version": "avshunter_us_money_index_v1_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "packet_id": "USMI:2026-09-04:ff7e285c0f707af0",
+    "packet_sha256": "ff7e285c0f707af0d607cf82c4d9090c4e560f827ffd02f2b5bdd7035419c029",
+    "authority": "ADVISORY_ONLY",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "generated_at_utc": "2026-09-06T19:04:00+00:00",
+    "market_data_as_of_utc": "2026-09-04T20:00:00+00:00",
+    "market_as_of_session": "2026-09-04",
+    "market_status": "US_CASH_AND_OPTIONS_MARKETS_CLOSED",
+    "quality_status": "PARTIAL_UNVERIFIED",
+    "source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json",
+    "policy_activation": "DISABLED_UNTIL_SEPARATELY_TESTED"
+   },
+   "sp_meta": {
+    "contract_version": "avshunter_us_money_index_v1_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "generated_at_local": "2026-09-06T20:04:00+01:00",
+    "market_data_as_of": "2026-09-04T16:00:00-04:00",
+    "market_status": "US_CASH_AND_OPTIONS_MARKETS_CLOSED",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY"
+   },
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260909_071646",
+   "usmi_meta": {
+    "contract_version": "us_money_index_v1_0",
+    "source_contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "packet_id": "USMI:2026-09-09:eef15c4fc09cb270",
+    "packet_sha256": "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980",
+    "authority": "ADVISORY_ONLY",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "generated_at_utc": "2026-09-09T06:27:00+00:00",
+    "market_data_as_of_utc": "2026-09-09T06:27:00+00:00",
+    "market_as_of_session": "2026-09-09",
+    "market_status": "PRE_US_CASH_SESSION",
+    "quality_status": "PARTIAL_UNVERIFIED",
+    "source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json",
+    "policy_activation": "DISABLED_UNTIL_SEPARATELY_TESTED"
+   },
+   "sp_meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY"
+   },
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260910_150045",
+   "usmi_meta": {
+    "contract_version": "us_money_index_v1_0",
+    "source_contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "packet_id": "USMI:2026-09-09:eef15c4fc09cb270",
+    "packet_sha256": "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980",
+    "authority": "ADVISORY_ONLY",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "generated_at_utc": "2026-09-09T06:27:00+00:00",
+    "market_data_as_of_utc": "2026-09-09T06:27:00+00:00",
+    "market_as_of_session": "2026-09-09",
+    "market_status": "PRE_US_CASH_SESSION",
+    "quality_status": "PARTIAL_UNVERIFIED",
+    "source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json",
+    "policy_activation": "DISABLED_UNTIL_SEPARATELY_TESTED"
+   },
+   "sp_meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY"
+   },
+   "routing": null,
+   "sector_routing_keys": []
+  },
+  {
+   "run": "20260911_115904",
+   "usmi_meta": {
+    "contract_version": "us_money_index_v1_0",
+    "source_contract_version": "avshunter_us_money_index_v2_0",
+    "packet_type": "US_MONEY_INDEX_STATE",
+    "packet_id": "USMI:2026-09-11:39c00d46758d115f",
+    "packet_sha256": "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a",
+    "authority": "ADVISORY_ONLY",
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "generated_at_utc": "2026-09-11T11:35:00+00:00",
+    "market_data_as_of_utc": "2026-09-11T11:35:00+00:00",
+    "market_as_of_session": "2026-09-11",
+    "market_status": "PRE_US_CASH_SESSION_PRE_CPI",
+    "quality_status": "PARTIAL_UNVERIFIED",
+    "source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json",
+    "policy_activation": "DISABLED_UNTIL_SEPARATELY_TESTED"
+   },
+   "sp_meta": {
+    "contract_version": "avshunter_us_money_index_v2_0",
+    "schema_extension": "v2_0_superset_2026-09-11 (all v2_0 keys preserved; new keys additive only)",
+    "packet_type": "US_MONEY_INDEX_CONSOLIDATED",
+    "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+    "packet_revision": 2,
+    "execution_permission": "NONE_INTELLIGENCE_ONLY",
+    "manual_review_required": true,
+    "automatic_execution": false
+   },
+   "routing": {
+    "IWM_SMALL_CAPS_PUT": "NOT_YET_CONFIRMED",
+    "AIRLINES_PUT": "PRIORITY_UPGRADE",
+    "TRANSPORT_LOGISTICS_PUT": "PRIORITY_UPGRADE",
+    "FUEL_SENSITIVE_DISCRETIONARY_PUT": "PRIORITY_UPGRADE",
+    "HOMEBUILDERS_REITS_PUT": "PRIORITY_UPGRADE",
+    "SPY_QQQ_PUT": "PRIORITY_WATCH",
+    "WEAK_TECH_PUT": "ADVERSE_REGIME_RS_REQUIRED",
+    "MATERIALS_INDUSTRIALS_PUT": "PRIORITY_WATCH",
+    "ENERGY_PRODUCERS_CALL": "NOT_YET_CONFIRMED",
+    "REFINERS_OIL_SERVICES_CALL": "PRIORITY_WATCH",
+    "DEFENCE_CALL": "PRIORITY_WATCH",
+    "AI_SEMICONDUCTOR_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "AI_CLOUD_PROVEN_MONETISATION_CALL": "PRIORITY_WATCH",
+    "AI_SOFTWARE_CLOUD_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+    "FINANCIALS_CALL": "PRIORITY_WATCH",
+    "BROAD_INDEX_CALL": "NOT_YET_CONFIRMED"
+   },
+   "sector_routing_keys": [
+    "vocabulary",
+    "lab_field",
+    "routing",
+    "routing_changes_rev_2",
+    "routing_is_advisory",
+    "routing_never_gates"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+{
+  "network_requests": 0,
+  "original": "invalid strict v2 JSON",
+  "fence_removed_diagnostic": "numeric value/unit differs from source",
+  "claim_count": 8,
+  "section_count": 8,
+  "original_response_preserved": true
+}

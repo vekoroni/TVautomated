@@ -150,6 +150,15 @@ def _project(packet: dict, row: dict):
 
 
 class MacroTickerContextTests(unittest.TestCase):
+    def test_current_lab_v4_is_supported_without_accepting_unknown_versions(self):
+        for direction in ("CALL", "PUT"):
+            row = {**_row(direction=direction), "lab_schema_version": "lab_signal_book_v4"}
+            context = _project(_packet(), row)
+            self.assertEqual(context.governed_direction, direction)
+            self.assertTrue(context.candidate_retained)
+        with self.assertRaisesRegex(ContractError, "unsupported Lab row schema"):
+            _project(_packet(), {**_row(), "lab_schema_version": "lab_signal_book_v999"})
+
     def test_exact_call_mapping_is_typed_advisory_and_retains_candidate(self):
         context = _project(_packet(), _row())
         payload = context.to_payload()

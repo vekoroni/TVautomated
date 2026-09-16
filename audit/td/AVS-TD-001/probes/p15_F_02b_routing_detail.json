@@ -1,0 +1,362 @@
+{
+ "by_direction": {
+  "CALL": {
+   "n": 798,
+   "oracle_mapped": 312,
+   "j2_key_equal_on_mapped": 288,
+   "mismatch_pairs": {
+    "('AI_SOFTWARE_CLOUD_CALL', 'AI_SEMICONDUCTOR_CALL')": 24
+   },
+   "mismatch_examples": [
+    [
+     "COMP",
+     "Information Technology",
+     "SERVICES-COMPUTER PROGRAMMING SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "LIF",
+     "Information Technology",
+     "SERVICES-COMPUTER PROCESSING & DATA PREPARATION",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "EXLS",
+     "Information Technology",
+     "SERVICES-BUSINESS SERVICES, NEC",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "JKHY",
+     "Information Technology",
+     "SERVICES-COMPUTER INTEGRATED SYSTEMS DESIGN",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "RIOT",
+     "Information Technology",
+     "FINANCE SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "DOCN",
+     "Information Technology",
+     "SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "IREN",
+     "Information Technology",
+     "FINANCE SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "GOOGL",
+     "Information Technology",
+     "SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "WDAY",
+     "Information Technology",
+     "SERVICES-COMPUTER PROCESSING & DATA PREPARATION",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "VRSN",
+     "Information Technology",
+     "SERVICES-COMPUTER PROGRAMMING SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "APLD",
+     "Information Technology",
+     "SERVICES-COMPUTER PROCESSING & DATA PREPARATION",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "WULF",
+     "Information Technology",
+     "FINANCE SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ]
+   ],
+   "oracle_unmapped_j2_nonroute": 0,
+   "j2_alignment_on_mapped": {
+    "NEUTRAL": 312
+   },
+   "oracle_label_on_mapped": {
+    "ADVERSE_REGIME_RS_REQUIRED": 146,
+    "PRIORITY_WATCH": 121,
+    "NOT_YET_CONFIRMED": 45
+   }
+  },
+  "PUT": {
+   "n": 458,
+   "oracle_mapped": 253,
+   "j2_key_equal_on_mapped": 245,
+   "mismatch_pairs": {
+    "('FUEL_SENSITIVE_DISCRETIONARY_PUT', 'NO_ROUTE')": 4,
+    "('FUEL_SENSITIVE_DISCRETIONARY_PUT', 'WEAK_TECH_PUT')": 3,
+    "('HOMEBUILDERS_REITS_PUT', 'NO_ROUTE')": 1
+   },
+   "mismatch_examples": [
+    [
+     "SBET",
+     "Consumer Discretionary",
+     "SERVICES-PREPACKAGED SOFTWARE",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "WEAK_TECH_PUT"
+    ],
+    [
+     "WMT",
+     "Consumer Staples",
+     "RETAIL-VARIETY STORES",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "NO_ROUTE"
+    ],
+    [
+     "CDW",
+     "Information Technology",
+     "RETAIL-CATALOG & MAIL-ORDER HOUSES",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "WEAK_TECH_PUT"
+    ],
+    [
+     "LINE",
+     "Energy",
+     "REAL ESTATE INVESTMENT TRUSTS",
+     "HOMEBUILDERS_REITS_PUT",
+     "NO_ROUTE"
+    ],
+    [
+     "DG",
+     "Consumer Staples",
+     "RETAIL-VARIETY STORES",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "NO_ROUTE"
+    ],
+    [
+     "SRAD",
+     "Information Technology",
+     "Hotels, Restaurants & Leisure",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "WEAK_TECH_PUT"
+    ],
+    [
+     "KR",
+     "Consumer Staples",
+     "RETAIL-GROCERY STORES",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "NO_ROUTE"
+    ],
+    [
+     "GO",
+     "Consumer Staples",
+     "RETAIL-GROCERY STORES",
+     "FUEL_SENSITIVE_DISCRETIONARY_PUT",
+     "NO_ROUTE"
+    ]
+   ],
+   "oracle_unmapped_j2_nonroute": 0,
+   "j2_alignment_on_mapped": {
+    "NEUTRAL": 248,
+    "UNAVAILABLE": 5
+   },
+   "oracle_label_on_mapped": {
+    "ADVERSE_REGIME_RS_REQUIRED": 92,
+    "PRIORITY_UPGRADE": 81,
+    "PRIORITY_WATCH": 80
+   }
+  },
+  "OTHER": {
+   "n": 188,
+   "oracle_mapped": 0,
+   "j2_key_equal_on_mapped": 0,
+   "mismatch_pairs": {},
+   "mismatch_examples": [],
+   "oracle_unmapped_j2_nonroute": 0,
+   "j2_alignment_on_mapped": {},
+   "oracle_label_on_mapped": {}
+  }
+ },
+ "book_vs_universe_sector": {
+  "CALL": {
+   "n": 798,
+   "disagree": 9
+  },
+  "PUT": {
+   "n": 458,
+   "disagree": 4
+  },
+  "OTHER": {
+   "n": 188,
+   "disagree": 0
+  }
+ },
+ "book_vs_universe_examples": [
+  [
+   "BA",
+   "CALL",
+   "Industrials",
+   "Industrials",
+   "Information Technology",
+   "Information Technology",
+   "AIRCRAFT"
+  ],
+  [
+   "XLI",
+   "CALL",
+   "Industrials",
+   "Industrials",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "XLK",
+   "CALL",
+   "Information Technology",
+   "Information Technology",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "XLRE",
+   "CALL",
+   "Real Estate",
+   "Real Estate",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "TGT",
+   "CALL",
+   "Consumer Discretionary",
+   "Consumer Discretionary",
+   "Consumer Staples",
+   "Consumer Staples",
+   "RETAIL-VARIETY STORES"
+  ],
+  [
+   "XLE",
+   "CALL",
+   "Energy",
+   "Energy",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "NFLX",
+   "PUT",
+   "Communication Services",
+   "Communication Services",
+   "Information Technology",
+   "Information Technology",
+   "SERVICES-VIDEO TAPE RENTAL"
+  ],
+  [
+   "XLB",
+   "PUT",
+   "Materials",
+   "Materials",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "RTX",
+   "PUT",
+   "Industrials",
+   "Industrials",
+   "Information Technology",
+   "Information Technology",
+   "AIRCRAFT ENGINES & ENGINE PARTS"
+  ],
+  [
+   "GE",
+   "PUT",
+   "Industrials",
+   "Industrials",
+   "Information Technology",
+   "Information Technology",
+   "ELECTRONIC & OTHER ELECTRICAL EQUIPMENT (NO COMPUTER EQUIP)"
+  ],
+  [
+   "XLY",
+   "CALL",
+   "Consumer Discretionary",
+   "Consumer Discretionary",
+   "ETF",
+   "ETF",
+   ""
+  ],
+  [
+   "NEE",
+   "CALL",
+   "Utilities",
+   "Utilities",
+   "Power Generation",
+   "Power Generation",
+   "ELECTRIC SERVICES"
+  ],
+  [
+   "XLU",
+   "CALL",
+   "Utilities",
+   "Utilities",
+   "ETF",
+   "ETF",
+   ""
+  ]
+ ],
+ "join2_find_path": "extras.us_money_index.advisory_context.options_monetisation.sector_routing.routing",
+ "join2_routing_equals_alg14_path": true,
+ "routing_label_vocab": [
+  "ADVERSE_REGIME_RS_REQUIRED",
+  "NOT_YET_CONFIRMED",
+  "PRIORITY_UPGRADE",
+  "PRIORITY_WATCH"
+ ],
+ "join1_normalised_routing_categories": {
+  "CALL": [
+   "DEFENCE_SELECTED",
+   "ENERGY_PRODUCERS_IF_XLE_CONFIRMS",
+   "FINANCIALS_ON_PRICE_CONFIRMATION",
+   "OIL_SERVICES",
+   "PROVEN_AI_CLOUD_INFRASTRUCTURE_WITH_CASH_FLOW_CONVERSION",
+   "SELECTED_LNG_EXPORTERS",
+   "SELECTIVE_REFINERS",
+   "SELECTIVE_SEMICONDUCTORS_WITH_RELATIVE_STRENGTH"
+  ],
+  "PUT": [
+   "FUEL_SENSITIVE_DISCRETIONARY",
+   "FUNDING_SENSITIVE_CYCLICALS",
+   "HOMEBUILDERS_REITS",
+   "IMPORT_HEAVY_RETAIL",
+   "INDUSTRIALS",
+   "IWM_SMALL_CAPS_ONLY_ON_FRESH_PRICE_BREAKDOWN",
+   "MATERIALS_SENSITIVE_INDUSTRIALS",
+   "SOFTWARE",
+   "SPY_QQQ_ONLY_ON_CPI_AND_BREADTH_CONFIRMATION",
+   "TRANSPORT_TRAVEL",
+   "WEAK_TECH_LOSING_RS"
+  ]
+ },
+ "join1_sector_aliases_note": "SECTOR_ALIASES maps GICS to TECHNOLOGY/ENERGY/RATE_SENSITIVE_REITS/WEAK_CONSUMER_DISCRETIONARY/INDUSTRIALS/FINANCIALS/HEALTH_CARE/COMMUNICATION_SERVICES"
+}

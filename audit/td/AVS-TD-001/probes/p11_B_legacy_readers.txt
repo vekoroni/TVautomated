@@ -1,0 +1,103 @@
+./contracts/lab_control.py:575:    "garch_expected_move_1_5d",
+./contracts/lab_control.py:576:    "garch_expected_move_6_10d",
+./contracts/lab_control.py:577:    "garch_expected_move_11_20d",
+./contracts/lab_control.py:2936:        "garch_expected_move_1_5d": first(sig, "garch_expected_move_1_5d", "l3_expected_move_1_5d", "garch__l3_expected_move_1_5d"),
+./contracts/lab_control.py:2937:        "garch_expected_move_6_10d": first(sig, "garch_expected_move_6_10d", "l3_expected_move_6_10d", "garch__l3_expected_move_6_10d"),
+./contracts/lab_control.py:2938:        "garch_expected_move_11_20d": first(sig, "garch_expected_move_11_20d", "l3_expected_move_11_20d", "garch__l3_expected_move_11_20d"),
+./contracts/lab_control.py:3118:        "garch_expected_move_1_5d": ["garch_expected_move_1_5d", "l3_expected_move_1_5d"],
+./contracts/lab_control.py:3119:        "garch_expected_move_6_10d": ["garch_expected_move_6_10d", "l3_expected_move_6_10d"],
+./contracts/lab_control.py:3120:        "garch_expected_move_11_20d": ["garch_expected_move_11_20d", "l3_expected_move_11_20d"],
+./eod_candidate_engine.py:1571:        _first_flt(row, "l3_expected_move_1_5d", "l3_expected_move_6_10d", "expected_move_pct", "expected_move")
+./eod_candidate_engine.py:2445:            "expected_move":        _first_flt(row, "expected_move_pct", "expected_move", "l3_expected_move_6_10d", "l3_expected_move_1_5d"),
+./eod_candidate_engine.py:2696:            "expected_move_10d":    _flt(row, "l3_expected_move_6_10d"),
+./ev_engine_v2.py:35:    expected_move_5d:float=0.0; expected_move_10d:float=0.0; expected_move_20d:float=0.0
+./ev_engine_v2.py:193:        expected_move_5d=em5, expected_move_10d=em10, expected_move_20d=em20,
+./ev_engine_v2.py:246:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./ev_engine_v2.py:247:        em=mm.get(h,x.expected_move_10d)
+./ev_engine_v2.py:277:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./ev_engine_v2.py:278:        em=mm.get(h,x.expected_move_10d) or (x.target_price-x.entry_price)/x.entry_price
+./ev_engine_v2.py:410:    assert r1.expected_move_20d>0, "FAIL P02"
+./ev_engine_v2.py:411:    print(f"P02 ✓ expected_move_20d={r1.expected_move_20d:.4f}")
+./execution_decision_engine.py:159:    expected_move_10d:   float = 0.0
+./execution_decision_engine.py:221:    em = float(act.get("expected_move_10d", 0.0) or 0.0)
+./execution_decision_engine.py:416:    result.expected_move_10d  = float(act.get("expected_move_10d")  or 0.0)
+./execution_decision_engine.py:426:    ev_10d = result.win_rate_10d * result.expected_move_10d
+./execution_decision_engine.py:446:                f"wr={result.win_rate_10d:.3f} em={result.expected_move_10d:.5f}"
+./execution_decision_engine.py:457:                f"wr={result.win_rate_10d:.3f} em={result.expected_move_10d:.5f}"
+./execution_decision_engine.py:559:    em_pct = abs(result.expected_move_10d) * 100   # convert to pct
+./execution_decision_engine.py:739:    # ── FIX-EM-FALLBACK (2026-04-29): expected_move_10d is not written to the EIL CSV
+./execution_decision_engine.py:740:    # as a flat column. The GARCH layer (Phase L3) writes l3_expected_move_6_10d and
+./execution_decision_engine.py:743:    # Fallback chain: actuarial_expected_move_10d → expected_move_10d → l3 6-10d → l3 1-5d
+./execution_decision_engine.py:745:        v = _f("actuarial_expected_move_10d") or _f("expected_move_10d")
+./execution_decision_engine.py:749:        l3_6_10 = _f("l3_expected_move_6_10d")
+./execution_decision_engine.py:762:        "expected_move_10d":  _em_10d(),
+./execution_decision_engine.py:772:    if all(v is None for v in [act["win_rate_10d"], act["efficiency_10d"], act["expected_move_10d"]]):
+./execution_intelligence.py:37:        and l3_expected_move_6_10d which ARE present in the pipeline output.
+./execution_intelligence.py:650:        _fnn("l3_expected_move_6_10d") or
+./execution_intelligence.py:651:        _fnn("expected_move_10d")      or
+./execution_intelligence.py:769:        "l3_expected_move_6_10d": 1.4,
+./execution_intelligence_runner.py:19:          actuarial_expected_move_10d, actuarial_risk_10d,
+./execution_intelligence_runner.py:2921:        "layer2__outcomes__median_gain_if_up_10d":"actuarial_expected_move_10d",
+./execution_intelligence_runner.py:3514:                ("actuarial_expected_move_10d", "expected_move_10d"),
+./execution_intelligence_runner.py:3687:                                     "expected_move_10d", "risk_10d",
+./final_decision_engine.py:740:            "expected_move_10d": 0.07,
+./final_decision_engine.py:760:            "expected_move_10d": 0.065,
+./final_decision_engine.py:824:        "win_rate_10d": 0.62, "expected_move_10d": 0.07,
+./final_decision_engine.py:852:        "win_rate_10d": 0.62, "expected_move_10d": 0.07,
+./final_decision_engine.py:905:        "win_rate_10d": 0.62, "expected_move_10d": 0.07,
+./intelligence-lab/intelligence_lab.py:2444:        "garch__l3_expected_move_1_5d": ("garch_expected_move_1_5d",),
+./intelligence-lab/intelligence_lab.py:2445:        "garch__l3_expected_move_6_10d": ("garch_expected_move_6_10d",),
+./intelligence-lab/intelligence_lab.py:2446:        "garch__l3_expected_move_11_20d": ("garch_expected_move_11_20d",),
+./intelligent_orchestrator.py:4007:        l3_expected_move_6_10d      — expected move pct, 6-10 day horizon
+./intelligent_orchestrator.py:4008:        l3_expected_move_11_20d     — expected move pct, 11-20 day horizon
+./intelligent_orchestrator.py:4015:    l3_expected_move_6_10d as the expected_move_10d input to EVEngineV2, and
+./intelligent_orchestrator.py:5466:    # THE FIX: patch actuarial cols (win_rate_10d, expected_move_10d, etc.)
+./intelligent_orchestrator.py:5506:                    ("expected_move_10d",  "expected_move_10d"),
+./intelligent_orchestrator.py:5507:                    ("expected_move_20d",  "expected_move_20d"),
+./intelligent_orchestrator.py:5512:                    ("actuarial_expected_move_10d", "expected_move_10d"),
+./intelligent_orchestrator.py:7055:            ("actuarial_expected_move_10d", "expected_move_10d"),
+./intelligent_orchestrator.py:7065:            ("expected_move_10d",           "expected_move_10d"),
+./layer3_forward_variance.py:134:            'l3_expected_move_6_10d':         round(self.expected_move_6_10d, 2),
+./layer3_forward_variance.py:135:            'l3_expected_move_11_20d':        round(self.expected_move_11_20d, 2),
+./mcmillan_advisory_layer.py:249:            "expected_move_10d",
+./morning_validation.py:425:    garch_10d = _flt(candidate, "l3_expected_move_6_10d", None) or garch_5d
+./pipeline_interpreter/automation_v2/lab_structured.py:47:        "expected_move_5d", "expected_move_10d", "expected_move_20d",
+./regime_audit.py:36:    "expected_move_10d": "mean",
+./regime_audit.py:45:audit["ev_10d"] = audit["win_rate_10d"] * audit["expected_move_10d"]
+./regime_audit.py:76:    "sample_size", "win_rate_10d", "expected_move_10d", "efficiency_10d", "ev_10d"
+./scripts/actuarial_enrichment_pass.py:740:            "expected_move_10d":     _result_get(result, "expected_move_10d",     0.0),
+./scripts/actuarial_enrichment_pass.py:741:            "expected_move_20d":     _result_get(result, "expected_move_20d",     0.0),
+./scripts/build_packages_from_discovery.py:115:    "expected_move_10d":  0.0,
+./scripts/ev_engine.py:42:    expected_move_5d:float=0.0; expected_move_10d:float=0.0; expected_move_20d:float=0.0
+./scripts/ev_engine.py:129:        expected_move_5d=em5, expected_move_10d=em10, expected_move_20d=em20,
+./scripts/ev_engine.py:178:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./scripts/ev_engine.py:179:        em=mm.get(h,x.expected_move_10d)
+./scripts/ev_engine.py:209:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./scripts/ev_engine.py:210:        em=mm.get(h,x.expected_move_10d) or (x.target_price-x.entry_price)/x.entry_price
+./scripts/ev_engine.py:367:    assert r1.expected_move_20d>0, "FAIL P02"
+./scripts/ev_engine.py:368:    print(f"P02 ✓ expected_move_20d={r1.expected_move_20d:.4f}")
+./trigger_layer.py:22:            signals) with l3_expected_move_6_10d / 100 GARCH fallback chain.
+./trigger_layer.py:302:    Correct formula: EV = win_rate_10d × expected_move_10d (as decimal fraction).
+./trigger_layer.py:303:    GARCH layer writes l3_expected_move_6_10d and l3_expected_move_1_5d in % terms
+./trigger_layer.py:307:        1. actuarial.win_rate_10d × actuarial.expected_move_10d  (package JSON path)
+./trigger_layer.py:308:        2. win_rate_10d × l3_expected_move_6_10d / 100           (GARCH 6-10d, preferred)
+./trigger_layer.py:326:        em = _flt(act, "expected_move_10d")
+./trigger_layer.py:339:    em_6_10 = _flt(row, "l3_expected_move_6_10d")
+./vanguard/ev_engine.py:28:    expected_move_5d:float=0.0; expected_move_10d:float=0.0; expected_move_20d:float=0.0
+./vanguard/ev_engine.py:105:        expected_move_5d=em5, expected_move_10d=em10, expected_move_20d=em20,
+./vanguard/ev_engine.py:154:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./vanguard/ev_engine.py:155:        em=mm.get(h,x.expected_move_10d)
+./vanguard/ev_engine.py:185:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./vanguard/ev_engine.py:186:        em=mm.get(h,x.expected_move_10d) or (x.target_price-x.entry_price)/x.entry_price
+./vanguard/ev_engine.py:301:    assert r1.expected_move_20d>0, "FAIL P02"
+./vanguard/ev_engine.py:302:    print(f"P02 ✓ expected_move_20d={r1.expected_move_20d:.4f}")
+./vanguard/ev_engine_v2.py:28:    expected_move_5d:float=0.0; expected_move_10d:float=0.0; expected_move_20d:float=0.0
+./vanguard/ev_engine_v2.py:105:        expected_move_5d=em5, expected_move_10d=em10, expected_move_20d=em20,
+./vanguard/ev_engine_v2.py:154:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./vanguard/ev_engine_v2.py:155:        em=mm.get(h,x.expected_move_10d)
+./vanguard/ev_engine_v2.py:185:        mm={5:x.expected_move_5d,10:x.expected_move_10d,20:x.expected_move_20d}
+./vanguard/ev_engine_v2.py:186:        em=mm.get(h,x.expected_move_10d) or (x.target_price-x.entry_price)/x.entry_price
+./vanguard/ev_engine_v2.py:301:    assert r1.expected_move_20d>0, "FAIL P02"
+./vanguard/ev_engine_v2.py:302:    print(f"P02 ✓ expected_move_20d={r1.expected_move_20d:.4f}")
+./vanguard/layer2_statistical/edge_detector.py:264:                    'expected_move_20d':  outcomes.median_gain_if_up,
+./vanguard/layer2_statistical/edge_detector.py:265:                    'expected_move_10d':  getattr(outcomes, 'median_gain_if_up_10d', 0.0),

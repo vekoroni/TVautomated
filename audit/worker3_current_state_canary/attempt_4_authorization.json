@@ -1,0 +1,12 @@
+{
+  "authorization": "User approved one paid canary and raised cap to $1.00 to understand TCO",
+  "at": 1788776832.4007592,
+  "max_count_requests": 1,
+  "max_generations": 1,
+  "max_cost_microusd": 1000000,
+  "retries": 0,
+  "max_output_tokens": 8192,
+  "timeout_seconds": 300,
+  "prior_attempts_list_price_microusd": 665748,
+  "prior_billed_total": "UNCONFIRMED"
+}

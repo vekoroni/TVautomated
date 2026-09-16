@@ -1,0 +1,115 @@
+{
+ "cmd": [
+  "C:\\Python314\\python.exe",
+  "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\tools\\build_outcome_learning_snapshot.py",
+  "--ledger",
+  "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\td\\AVS-TD-001\\db_copies\\decision_outcome_ledger.sqlite",
+  "--control-plane",
+  "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\td\\AVS-TD-001\\db_copies\\control_plane.sqlite",
+  "--config",
+  "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\config\\governed_constants_v1.json",
+  "--output",
+  "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\td\\AVS-TD-001\\probes\\p14_EH_e4_snapshot_from_copies.json"
+ ],
+ "returncode": 0,
+ "stdout_head": "{\n  \"output\": \"C:\\\\Users\\\\ACKVerissimo\\\\AVSHUNTER-Intelligence\\\\audit\\\\td\\\\AVS-TD-001\\\\probes\\\\p14_EH_e4_snapshot_from_copies.json\",\n  \"summary\": {\n    \"presented_candidates\": 3252,\n    \"horizons\": [\n      1,\n      2,\n      3,\n      5,\n      10,\n      20\n    ],\n    \"expected_candidate_horizons\": 19512,\n    \"accounted_candidate_horizons\": 0,\n    \"complete_outcomes\": 0,\n    \"data_exceptions\": 0,\n    \"deferred_not_yet_observable\": 0,\n    \"unaccounted_candidate_horizons\": 19512,\n    \"population_reconciled\": false,\n    \"fit_eligible_records\": 0,\n    \"label_counts\": {},\n    \"exclusion_counts\": {},\n    \"option_coverage_counts\": {},\n    \"option_labels_available\": 0,\n    \"build_exceptions\": []\n  },\n  \"model_activation\": {\n    \"state\": \"INSUFFICIENT_OUTCOMES\",\n    \"can_activate\": false,\n    \"reason_codes\": [\n      \"MINIMUM_FIT_OUTCOMES_NOT_MET\",\n      \"MINIMUM_OUTCOME_COVERAGE_NOT_MET\",\n      \"MINIMUM_DIRECTION_HORIZON_SUPPORT_NOT_MET\",\n      \"HELD_OUT_METRICS_NOT_AVAILABLE\",\n      \"MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE\"\n    ],\n    \"total_records\": 0,\n    \"fit_eligible_records\": 0,\n    \"ambiguous_records\": 0,\n    \"coverage_fraction\": 0.0,\n    \"stratum_counts\": {},\n    \"deficient_strata\": [\n      \"CALL|1-5\",\n      \"CALL|6-10\",\n      \"CALL|11-20\",\n      \"PUT|1-5\",\n      \"PUT|6-10\",\n      \"PUT|11-20\"\n    ],\n    \"metrics_present\": false,\n    \"policy_version\": \"outcome_learning_gate_v1\",\n    \"authority\": \"OBSERVATION_ONLY\",\n    \"can_grant_capital\": false\n  }\n}\n",
+ "stderr_tail": "",
+ "copies_unchanged": true,
+ "before": {
+  "ledger": "da5a891f0581094faaca6ecf5f6003ecdbb471ba35fff1d6ea18946602425307",
+  "ledger_mtime": 1789242036.103991,
+  "control_plane_mtime": 1789242035.7383974
+ },
+ "after": {
+  "ledger": "da5a891f0581094faaca6ecf5f6003ecdbb471ba35fff1d6ea18946602425307",
+  "ledger_mtime": 1789242036.103991,
+  "control_plane_mtime": 1789242035.7383974
+ },
+ "tool_source_read_only_evidence": "tools/build_outcome_learning_snapshot.py:43 DecisionOutcomeLedger(arguments.ledger, read_only=True); canonical_data/decision_outcome_ledger.py:44-50 mode=ro URI; :114-115 append raises when read_only; control plane read via canonical_data/outcome_learning.py:183 sqlite3.connect(path) SELECT-only",
+ "gate_on_CURRENT_LEARNING_READINESS": {
+  "state": "INSUFFICIENT_OUTCOMES",
+  "can_activate": false,
+  "reason_codes": [
+   "MINIMUM_FIT_OUTCOMES_NOT_MET",
+   "MINIMUM_OUTCOME_COVERAGE_NOT_MET",
+   "MINIMUM_DIRECTION_HORIZON_SUPPORT_NOT_MET",
+   "HELD_OUT_METRICS_NOT_AVAILABLE",
+   "MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE"
+  ],
+  "checks": {
+   "fit_eligible_records>=minimum_fit_outcomes": [
+    0,
+    200,
+    false
+   ],
+   "coverage>=minimum_coverage": [
+    0.0,
+    0.6,
+    false
+   ],
+   "every_stratum>=minimum_stratum_outcomes": [
+    {},
+    100,
+    false
+   ],
+   "held_out_metrics_present": [
+    false,
+    true,
+    false
+   ],
+   "model_activation_enabled": [
+    false,
+    true,
+    false
+   ],
+   "complete_outcomes": 0,
+   "presented_candidates": 3252,
+   "population_reconciled": false
+  },
+  "my_verdict": "FAIL (INSUFFICIENT_OUTCOMES)"
+ },
+ "gate_on_fresh_snapshot_from_copies": {
+  "state": "INSUFFICIENT_OUTCOMES",
+  "can_activate": false,
+  "reason_codes": [
+   "MINIMUM_FIT_OUTCOMES_NOT_MET",
+   "MINIMUM_OUTCOME_COVERAGE_NOT_MET",
+   "MINIMUM_DIRECTION_HORIZON_SUPPORT_NOT_MET",
+   "HELD_OUT_METRICS_NOT_AVAILABLE",
+   "MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE"
+  ],
+  "checks": {
+   "fit_eligible_records>=minimum_fit_outcomes": [
+    0,
+    200,
+    false
+   ],
+   "coverage>=minimum_coverage": [
+    0.0,
+    0.6,
+    false
+   ],
+   "every_stratum>=minimum_stratum_outcomes": [
+    {},
+    100,
+    false
+   ],
+   "held_out_metrics_present": [
+    false,
+    true,
+    false
+   ],
+   "model_activation_enabled": [
+    false,
+    true,
+    false
+   ],
+   "complete_outcomes": 0,
+   "presented_candidates": 3252,
+   "population_reconciled": false
+  },
+  "my_verdict": "FAIL (INSUFFICIENT_OUTCOMES)"
+ },
+ "readiness_equals_fresh_snapshot": true,
+ "calibrated_claim_hits": []
+}

@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import sqlite3
+import pytest
 
 from canonical_data.benchmark_option_chain import CanonicalBenchmarkOptionChainStore
 from canonical_data.marketdata_option_chain import MarketDataOptionChainAdapter
@@ -71,13 +72,23 @@ class _Response:
         return self.payload
 
 
+class _ErrorResponse:
+    status_code = 400
+    ok = False
+    text = '{"s":"error","errmsg":"historical request rejected"}'
+
+    def json(self) -> dict:
+        return {"s": "error", "errmsg": "historical request rejected"}
+
+
 class _Transport:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict]] = []
 
     def get(self, url: str, **kwargs):
         self.calls.append((url, kwargs))
-        return _Response(_payload("SPY"))
+        columns = kwargs["params"]["columns"].split(",")
+        return _Response({k: v for k, v in _payload("SPY").items() if k in columns})
 
 
 def test_marketdata_adapter_requests_exact_completed_session() -> None:
@@ -93,7 +104,43 @@ def test_marketdata_adapter_requests_exact_completed_session() -> None:
     assert request["params"]["from"] == "2026-09-12"
     assert request["params"]["to"] == "2026-11-10"
     assert request["params"]["minOpenInterest"] == 0
+    assert "mode" not in request["params"]
+    assert "s" in request["params"]["columns"].split(",")
     assert request["headers"]["Authorization"] == "Token test-token"
+
+
+def test_marketdata_adapter_preserves_bounded_provider_error_detail() -> None:
+    class ErrorTransport:
+        def get(self, url: str, **kwargs):
+            return _ErrorResponse()
+
+    adapter = MarketDataOptionChainAdapter(
+        api_token="test-token", transport=ErrorTransport()
+    )
+    try:
+        adapter.fetch("spy", session_date=SESSION, dte_max=60)
+    except Exception as error:
+        message = str(error)
+    else:
+        raise AssertionError("expected MarketDataOptionChainError")
+    assert "HTTP 400" in message
+    assert "historical request rejected" in message
+    assert "test-token" not in message
+
+
+def test_provider_echoed_token_is_redacted_before_truncation() -> None:
+    class EchoResponse(_ErrorResponse):
+        def json(self):
+            return {"errmsg": "Token test-token rejected " + "x" * 500}
+    class EchoTransport:
+        def get(self, *args, **kwargs):
+            return EchoResponse()
+    adapter = MarketDataOptionChainAdapter(api_token="test-token", transport=EchoTransport())
+    with pytest.raises(RuntimeError) as caught:
+        adapter.fetch("SPY", session_date=SESSION, dte_max=60)
+    assert "test-token" not in str(caught.value)
+    assert "[REDACTED]" in str(caught.value)
+    assert len(str(caught.value)) < 400
 
 
 def test_benchmark_chain_store_reuses_exact_canonical_dataset(tmp_path: Path) -> None:
@@ -117,8 +164,9 @@ def test_benchmark_chain_store_reuses_exact_canonical_dataset(tmp_path: Path) ->
     assert calls == 1
 
 
+@pytest.mark.parametrize("historical_null_greeks", [False, True])
 def test_end_to_end_completed_session_refresh_updates_phantom_gex_and_macro(
-    tmp_path: Path,
+    tmp_path: Path, historical_null_greeks: bool,
 ) -> None:
     macro_dir = tmp_path / "dropbox" / "macro"
     macro_dir.mkdir(parents=True)
@@ -134,11 +182,24 @@ def test_end_to_end_completed_session_refresh_updates_phantom_gex_and_macro(
         encoding="utf-8",
     )
 
+    calls = []
+    def fetch(ticker):
+        from scripts.compute_greeks_bs import black_scholes_price
+        calls.append(ticker)
+        payload = _payload(ticker)
+        if historical_null_greeks:
+            for i, side in enumerate(payload["side"]):
+                mid = black_scholes_price(side, payload["underlyingPrice"][i], payload["strike"][i], 35 / 365, 0.04, 0.25)
+                payload["mid"][i] = mid
+                payload["bid"][i], payload["ask"][i] = mid - 0.01, mid + 0.01
+            for field in ("iv", "delta", "gamma", "theta", "vega"):
+                payload[field] = [None] * len(payload["optionSymbol"])
+        return payload
     result = refresh_completed_session_gex(
         repository_root=tmp_path,
         run_id="RUN-1",
         session_date=SESSION,
-        fetch_chain=lambda ticker: _payload(ticker),
+        fetch_chain=fetch,
     )
     assert result["status"] == "COMPLETE", result.get("error")
     assert result["session_date"] == SESSION.isoformat()
@@ -186,6 +247,39 @@ def test_end_to_end_completed_session_refresh_updates_phantom_gex_and_macro(
         "SPY": [result["dataset_ids"][0]],
         "QQQ": [result["dataset_ids"][1]],
     }
+    if historical_null_greeks:
+        with sqlite3.connect(tmp_path / "data" / "phantom" / "phantom_history.db") as connection:
+            assert connection.execute("SELECT COUNT(*) FROM chain_snapshots WHERE gamma IS NULL").fetchone()[0] == 60
+        import pandas as pd
+        proxy = pd.read_csv(tmp_path / "dropbox" / "market_data" / "avshunter_gex_proxy.csv")
+        assert set(proxy["Greek_Computed_Contracts"]) == {30}
+        assert set(proxy["Gamma_Coverage"]) == {1.0}
+    # A later mutable projection must not change the explicitly bound revision.
+    with sqlite3.connect(tmp_path / "data" / "phantom" / "phantom_history.db") as connection:
+        connection.execute("UPDATE chain_snapshots SET gamma=999.0")
+    replay = refresh_completed_session_gex(repository_root=tmp_path, run_id="RUN-2", session_date=SESSION, fetch_chain=fetch)
+    assert replay["status"] == "COMPLETE", replay.get("error")
+    assert replay["dataset_ids"] == result["dataset_ids"]
+    assert calls == ["SPY", "QQQ"]
+    assert replay["macro_overlay"]["net_gex_bn"] == result["macro_overlay"]["net_gex_bn"]
+
+
+def test_gex_greek_preparation_does_not_invent_prices_or_mutate_raw_data():
+    import pandas as pd
+    from canonical_data.gamma_exposure_store import prepare_gex_greeks
+    from macro_domain.gamma_exposure import GammaExposureConfig
+    rows = pd.DataFrame([
+        dict(side="call", underlying_price=100, strike=100, dte=30, bid=None, ask=None, mid=5, last=5, gamma=None, iv=None),
+        dict(side="put", underlying_price=100, strike=200, dte=30, bid=0.9, ask=1.1, gamma=None, iv=None),
+        dict(side="call", underlying_price=100, strike=100, dte=30, bid=4.9, ask=5.1, gamma=None, iv=None),
+    ])
+    original = rows.copy(deep=True)
+    calculated, diagnostics = prepare_gex_greeks(rows, GammaExposureConfig())
+    pd.testing.assert_frame_equal(rows, original)
+    assert calculated.loc[:1, "gamma"].isna().all()
+    assert calculated.loc[2, "gamma"] > 0
+    assert diagnostics["Greek_Computed_Contracts"] == 1
+    assert diagnostics["Greek_Unresolved_Contracts"] == 2
 
 
 def test_failed_required_session_refresh_clears_prior_gex_without_blocking_core(

@@ -1,0 +1,1323 @@
+{
+ "canonical_data/macro_packet_archive.py": {
+  "lines": 83,
+  "vocab_hits": [
+   "18: def archive_macro_packet(",
+   "19: packet: Mapping[str, Any], archive_root: Path | str,",
+   "23: packet_id = str(packet.get(\"macro_packet_id\") or \"\").strip()",
+   "24: declared_hash = str(packet.get(\"macro_packet_sha256\") or \"\").strip().lower()",
+   "25: if not packet_id or not declared_hash:",
+   "30: \"macro_packet_sha256\", \"macro_packet_id\", \"macro_normalised_at_utc\"",
+   "33: computed_hash = hashlib.sha256(_canonical_bytes(identity_payload)).hexdigest()",
+   "36: root = Path(archive_root)",
+   "40: \"schema_version\": \"macro_packet_archive_v1\",",
+   "41: \"packet_id\": packet_id,",
+   "42: \"sha256\": declared_hash,",
+   "50: raise ValueError(\"immutable macro packet archive conflict\")",
+   "55: return {\"packet_id\": packet_id, \"sha256\": declared_hash, \"archive_path\": str(path.resolve())}",
+   "59: packet_id: str, archive_root: Path | str,",
+   "61: \"\"\"Resolve a replay packet by immutable id; never consult a latest pointer.\"\"\"",
+   "63: wanted = str(packet_id).strip()",
+   "65: raise ValueError(\"packet_id is required\")",
+   "67: for path in Path(archive_root).glob(\"*.json\"):",
+   "69: if payload.get(\"packet_id\") == wanted:",
+   "72: raise FileNotFoundError(f\"macro packet id resolved {len(matches)} archive entries: {wanted}\")",
+   "76: raise ValueError(\"macro packet archive payload is invalid\")",
+   "77: receipt = archive_macro_packet(packet, path.parent)",
+   "78: if receipt[\"archive_path\"] != str(path.resolve()):",
+   "79: raise ValueError(\"macro packet archive path is inconsistent\")",
+   "83: __all__ = [\"archive_macro_packet\", \"load_macro_packet_by_id\"]"
+  ],
+  "defs": [
+   "11: def _canonical_bytes(payload: Mapping[str, Any]) -> bytes:",
+   "18: def archive_macro_packet(",
+   "58: def load_macro_packet_by_id("
+  ]
+ },
+ "build_macro_json.py": {
+  "lines": 1870,
+  "vocab_hits": [
+   "9: Writes macro_intelligence_latest.json directly to dropbox/macro/.",
+   "24: 1. Scans dropbox/market_data/ for the latest Colab CSVs",
+   "31: 5. Writes macro_intelligence_latest.json to dropbox/macro/",
+   "63: from canonical_data.macro_packet_archive import archive_macro_packet",
+   "69: BASE_DIR    = Path(__file__).resolve().parent",
+   "75: OUTPUT_FILENAME = \"macro_intelligence_latest.json\"",
+   "183: def find_latest_file(directory: Path, pattern: str):",
+   "256: raise RuntimeError(\"--update requires an existing macro_intelligence_latest.json prior\")",
+   "264: path = find_latest_file(market_dir, pattern)",
+   "485: Resolved conflicts must be labelled RESOLVED with the CSV source named. Active gaps must be labelled ACTIVE.",
+   "492: Produce the final macro_intelligence_latest.json. Output ONLY the raw JSON object \u2014 no markdown fences, no preamble, no explanation. The JSON must:",
+   "731: def _latest_row(text: str) -> dict:",
+   "819: latest = None",
+   "822: latest = row",
+   "823: if latest is None:",
+   "827: latest, \"Date\", \"DATE\", \"observation_date\", \"date\", \"\"",
+   "859: def _clean_resolved_market_flags(macro_json: dict, overrides: dict):",
+   "867: def resolved_by_override(flag: str) -> bool:",
+   "888: if resolved_by_override(flag):",
+   "897: f\"RESOLVED: {removed} stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\",",
+   "901: def resolve_conflict(a: dict, b: dict) -> dict:",
+   "903: M-07 (P1): v1 resolved source conflicts by fixed precedence (\"CSV primary\")",
+   "1019: vix_row = _latest_row(data.get(\"vix_engine_csv\", \"\"))",
+   "1020: macro_master = _latest_row(data.get(\"macro_master_csv\", \"\"))",
+   "1103: _clean_resolved_market_flags(macro_json, overrides)",
+   "1125: _append_unique_flag(macro_json, \"RESOLVED: report_json VIX9D missing; vix_engine_csv primary applied\")",
+   "1127: _append_unique_flag(macro_json, \"RESOLVED: report_json VIX3M missing; vix_engine_csv primary applied\")",
+   "1162: _append_unique_flag(macro_json, \"RESOLVED: minor yield curve rounding/date mismatch immaterial; macro_master CSV primary applied\")",
+   "1515: _usmi_path = Path(args.us_money_index).resolve() if args.us_money_index else None",
+   "1574: _usmi.get(\"packet_id\"),",
+   "1780: _usmi.get(\"packet_id\"),",
+   "1829: # WP0-06: archive the deterministic advisory packet before publishing a",
+   "1830: # mutable latest pointer. Replays bind to this packet id and hash.",
+   "1832: archive_receipt = archive_macro_packet(",
+   "1833: macro_packet, PIPELINE_MACRO_DIR / \"archive\"",
+   "1836: \"Archived macro packet: %s (%s)\",",
+   "1837: archive_receipt[\"packet_id\"], archive_receipt[\"sha256\"][:16],"
+  ],
+  "defs": [
+   "183: def find_latest_file(directory: Path, pattern: str):",
+   "192: def _load_existing_macro(output_path: Path) -> dict:",
+   "204: def _load_input_file(path: Path):",
+   "212: def check_date_consistency(payload: dict) -> None:",
+   "240: def load_data_payload(market_dir: Path, update_keys=None, prior_macro: dict | None = None) -> dict:",
+   "289: def format_data_for_prompt(payload: dict) -> str:",
+   "419: def build_prompt_2(data_str: str) -> str:",
+   "580: def _anthropic_client() -> anthropic.Anthropic:",
+   "596: def _response_text(response) -> str:",
+   "605: def _clean_json_response(raw: str) -> str:",
+   "624: def _parse_macro_response(raw: str) -> dict:",
+   "631: def _json_error_context(raw: str, error: json.JSONDecodeError, radius: int = 180) -> str:",
+   "637: def call_macro_api(data_str: str, dry_run: bool = False) -> dict:",
+   "722: def _csv_rows(text: str) -> list[dict]:",
+   "731: def _latest_row(text: str) -> dict:",
+   "736: def _safe_float(value, default=None):",
+   "746: def _first_present(row: dict, *keys: str):",
+   "755: def _select_gex_primary(rows: list[dict]) -> dict:",
+   "779: def _priority(row: dict) -> int:",
+   "788: def _recency(row: dict) -> tuple[str, str, str, str]:",
+   "804: def _parse_date(value):",
+   "817: def _usslind_freshness(fred_csv: str, as_of_value) -> dict:",
+   "838: def _set_nested(target: dict, path: tuple[str, ...], value):",
+   "849: def _append_unique_flag(macro_json: dict, flag: str):",
+   "859: def _clean_resolved_market_flags(macro_json: dict, overrides: dict):",
+   "867: def resolved_by_override(flag: str) -> bool:",
+   "901: def resolve_conflict(a: dict, b: dict) -> dict:",
+   "912: def _d(x):",
+   "927: def _coverage_penalty(macro_json: dict, missing_key: str) -> None:",
+   "947: def _vix_term_regime(vix_spot, vix9d, vix3m) -> dict:",
+   "973: def _vol_mode_from_vix(vix, term_regime, vvix=None) -> str:",
+   "990: def _credit_state_from_spreads(hy_oas, ig_oas) -> tuple[str, float]:",
+   "1002: def _gex_score(regime: str, net_gex_bn) -> float:",
+   "1017: def extract_market_data_overrides(payload: dict) -> dict:",
+   "1099: def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:",
+   "1244: def normalise_horizon_routing(macro_json: dict) -> dict:",
+   "1253: def _safe_float(value, default):",
+   "1259: def _get_forward_bias_bucket(extras: dict, bucket: str) -> dict:",
+   "1278: def _default_bucket(bucket: str, extras: dict) -> dict:",
+   "1399: def validate_macro_json(macro: dict) -> tuple:",
+   "1402: def _walk(node):",
+   "1458: def is_fresh(output_path: Path, max_hours: int) -> bool:",
+   "1465: def any_input_newer_than_output(market_dir: Path, output_path: Path) -> bool:",
+   "1477: def optional_input_newer_than_output(input_path: Path | None, output_path: Path) -> bool:",
+   "1489: def main():"
+  ]
+ },
+ "orchestrator/macro_loader.py": {
+  "lines": 300,
+  "vocab_hits": [
+   "130: json_path = self._find_latest_json()",
+   "176: def _find_latest_json(self) -> Path | None:"
+  ],
+  "defs": [
+   "115: class MacroLoader:",
+   "122: def __init__(self, folder: str = 'reports/daily'):",
+   "125: def load(self) -> dict | None:",
+   "176: def _find_latest_json(self) -> Path | None:",
+   "185: def _validate(self, data: dict) -> list[str]:",
+   "250: def _normalise(self, data: dict) -> dict:",
+   "292: def _age_hours(self, as_of_utc: str) -> float | None:"
+  ]
+ },
+ "dropbox/macro": [
+  [
+   "Archive",
+   "DIR"
+  ],
+  [
+   "auction_calendar.csv",
+   38
+  ],
+  [
+   "avshunter_macro_enrichment_delta.json",
+   81761
+  ],
+  [
+   "avshunter_macro_enrichment_delta1109.json",
+   89784
+  ],
+  [
+   "avshunter_us_money_index.json",
+   54744
+  ],
+  [
+   "avshunter_us_money_indexold1109pm.json",
+   45261
+  ],
+  [
+   "bond_macro_state.json",
+   3263
+  ],
+  [
+   "coaching",
+   "DIR"
+  ],
+  [
+   "macro_intelligence_latest.json",
+   626893
+  ],
+  [
+   "thesis",
+   "DIR"
+  ]
+ ],
+ "dropbox/macro/Archive": [
+  [
+   "avshunter_macro_enrichment_delta0309old.json",
+   71764
+  ],
+  [
+   "avshunter_macro_enrichment_delta0408old.json",
+   79838
+  ],
+  [
+   "avshunter_macro_enrichment_delta0909old.json",
+   87191
+  ],
+  [
+   "avshunter_macro_enrichment_delta1008old.json",
+   83285
+  ],
+  [
+   "avshunter_macro_enrichment_delta2408olddnu.json",
+   95970
+  ],
+  [
+   "avshunter_macro_enrichment_delta2708olddnu.json",
+   96643
+  ],
+  [
+   "avshunter_macro_enrichment_delta3108.json",
+   65870
+  ],
+  [
+   "avshunter_macro_enrichment_delta808.json",
+   91138
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold 1708.json",
+   89357
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold1408.json",
+   84798
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold2508dnu.json",
+   93692
+  ],
+  [
+   "avshunter_macro_enrichment_deltaolddnu2108.json",
+   91590
+  ],
+  [
+   "avshunter_macro_enrichment_deltaolod0808.json",
+   81174
+  ],
+  [
+   "avshunter_us_money_index1109.json",
+   13856
+  ],
+  [
+   "avshunter_us_money_indexold0909.json",
+   16307
+  ]
+ ],
+ "dropbox/macro/archive": [
+  [
+   "avshunter_macro_enrichment_delta0309old.json",
+   71764
+  ],
+  [
+   "avshunter_macro_enrichment_delta0408old.json",
+   79838
+  ],
+  [
+   "avshunter_macro_enrichment_delta0909old.json",
+   87191
+  ],
+  [
+   "avshunter_macro_enrichment_delta1008old.json",
+   83285
+  ],
+  [
+   "avshunter_macro_enrichment_delta2408olddnu.json",
+   95970
+  ],
+  [
+   "avshunter_macro_enrichment_delta2708olddnu.json",
+   96643
+  ],
+  [
+   "avshunter_macro_enrichment_delta3108.json",
+   65870
+  ],
+  [
+   "avshunter_macro_enrichment_delta808.json",
+   91138
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold 1708.json",
+   89357
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold1408.json",
+   84798
+  ],
+  [
+   "avshunter_macro_enrichment_deltaold2508dnu.json",
+   93692
+  ],
+  [
+   "avshunter_macro_enrichment_deltaolddnu2108.json",
+   91590
+  ],
+  [
+   "avshunter_macro_enrichment_deltaolod0808.json",
+   81174
+  ],
+  [
+   "avshunter_us_money_index1109.json",
+   13856
+  ],
+  [
+   "avshunter_us_money_indexold0909.json",
+   16307
+  ]
+ ],
+ "20260910_150045": {
+  "run_meta_macro_fields": {
+   "macro_data_quality": "PARTIAL",
+   "macro_freshness_status": "FRESH",
+   "macro_quant_packet_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\macro_quant_packet.json",
+   "macro_regime_label": "TRANSITIONAL",
+   "macro_snapshot_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\macro_snapshot.json",
+   "macro_source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\macro_intelligence_latest.json"
+  },
+  "run_meta_packet_id_or_hash_keys": [],
+  "manifest_keys": [
+   "conflict_flags",
+   "created_at_utc",
+   "ev3_production_authority",
+   "ev3_production_evidence",
+   "ev_functional_health",
+   "expected_contract_rejections",
+   "expected_market_rejections",
+   "fatal_flags",
+   "manual_review_enabled",
+   "missing_columns",
+   "missing_selected_handoff",
+   "morning_capital_permission",
+   "next_action",
+   "output_files",
+   "phase_status",
+   "pipeline_interpreter_prep_enabled",
+   "pipeline_mode",
+   "pipeline_semantic_health",
+   "pipeline_technical_health",
+   "required_columns_present",
+   "row_counts",
+   "run_execution_permission",
+   "run_health_score",
+   "run_id",
+   "run_prep_permission",
+   "run_tradeable",
+   "run_tradeable_label",
+   "semantic_coverage_score",
+   "semantic_defect_count",
+   "stale_flags",
+   "system_defects",
+   "v5_colab_decommissioned"
+  ],
+  "manifest_worker3_market_environment": "ABSENT",
+  "manifest_packet_keys": [
+   [
+    ".missing_columns.macro",
+    "[]"
+   ],
+   [
+    ".output_files.macro",
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\macro_quant_packet.json"
+   ],
+   [
+    ".phase_status.macro",
+    "PASS"
+   ],
+   [
+    ".required_columns_present.macro",
+    "True"
+   ]
+  ],
+  "macro_quant_packet.json": {
+   "sha256": "3be2239f0654b459ee737c121ea43e04befd43dc09df10bc3e00985de62a7846",
+   "top_keys": [
+    "auction_spread_risk",
+    "avoid_sectors",
+    "bond_macro_flag",
+    "bond_macro_score",
+    "bond_trade_go",
+    "breakeven_adjustment_pct",
+    "bucket_clarity_scores",
+    "credit_risk_score",
+    "credit_state",
+    "credit_warning",
+    "dealer_gamma_state",
+    "equity_drawer_active",
+    "gamma_risk_flag",
+    "gex_regime_score",
+    "horizon_pressure",
+    "lagging_sectors",
+    "leading_sectors",
+    "liquidity_pulse",
+    "liquidity_risk_flag",
+    "macro_active_conflict_flags",
+    "macro_age_hours",
+    "macro_as_of_utc",
+    "macro_authority",
+    "macro_confidence",
+    "macro_conflict_flags",
+    "macro_contract_version",
+    "macro_conviction_score",
+    "macro_data_quality",
+    "macro_execution_caution",
+    "macro_freshness_status",
+    "macro_generated_at_utc",
+    "macro_normalised_at_utc",
+    "macro_packet_id",
+    "macro_packet_sha256",
+    "macro_plain_language_advisory",
+    "macro_preferred_horizon",
+    "macro_quant_contract_version",
+    "macro_regime_label",
+    "macro_regime_sub_state",
+    "macro_resolved_conflict_flags"
+   ],
+   "packet_keys": [
+    [
+     ".macro_quant_contract_version",
+     "macro_quant_contract_v1"
+    ],
+    [
+     ".macro_source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\macro_intelligence_latest.json"
+    ],
+    [
+     ".macro_contract_version",
+     "macro_contract_v1_0"
+    ],
+    [
+     ".macro_generated_at_utc",
+     "2026-09-10T14:19:58.839936Z"
+    ],
+    [
+     ".usmi_packet_id",
+     "USMI:2026-09-09:eef15c4fc09cb270"
+    ],
+    [
+     ".usmi_packet_sha256",
+     "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980"
+    ],
+    [
+     ".us_money_index.contract_version",
+     "us_money_index_v1_0"
+    ],
+    [
+     ".us_money_index.source_contract_version",
+     "avshunter_us_money_index_v2_0"
+    ],
+    [
+     ".us_money_index.packet_id",
+     "USMI:2026-09-09:eef15c4fc09cb270"
+    ],
+    [
+     ".us_money_index.packet_sha256",
+     "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980"
+    ],
+    [
+     ".us_money_index.generated_at_utc",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.market_data_as_of_utc",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.market_as_of_session",
+     "2026-09-09"
+    ],
+    [
+     ".us_money_index.source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json"
+    ],
+    [
+     ".us_money_index.metrics.sp500_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.dow_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.russell2000_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.sp500_decliners_to_advancers.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_new_lows.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_new_highs.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.sp500_futures_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_2y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_10y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_30y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ]
+   ]
+  },
+  "macro_snapshot.json": {
+   "sha256": "790160d8f77b9f769a6ce19d03bce79ebb16899c747625328c317cd7c93bbeb8",
+   "top_keys": [
+    "_builder_metadata",
+    "as_of_utc",
+    "contract_version",
+    "credit_risk_score",
+    "credit_state",
+    "dir_bias",
+    "extras",
+    "gex_available",
+    "gex_regime_score",
+    "horizon_routing",
+    "horizon_routing_complete",
+    "horizon_routing_enforcement",
+    "horizon_routing_required_buckets",
+    "liquidity_pulse",
+    "macro_conviction",
+    "macro_filter",
+    "macro_momentum_score",
+    "macro_quant_contract_version",
+    "macro_quant_packet",
+    "macro_regime_sub_state",
+    "net_liquidity_score",
+    "normalised_at_utc",
+    "notes",
+    "rates_impulse",
+    "regime_distribution",
+    "regime_distribution_source",
+    "regime_drift_interpretation",
+    "regime_drift_status",
+    "regime_label",
+    "regime_probability",
+    "regime_state",
+    "regime_sub_state",
+    "report_date",
+    "risk_on_off_switch",
+    "rotation_detail",
+    "rotation_flag_as_of_utc",
+    "rotation_override",
+    "sector_avoid",
+    "sector_lead",
+    "sector_rotation"
+   ],
+   "packet_keys": [
+    [
+     ".contract_version",
+     "macro_contract_v1_0"
+    ],
+    [
+     ".as_of_utc",
+     "2026-09-10T14:19:58.839936Z"
+    ],
+    [
+     ".extras.as_of_utc",
+     "2026-09-10T14:19:58.839936Z"
+    ],
+    [
+     ".extras.gex.as_of",
+     "2026-09-04T20:00:00Z"
+    ],
+    [
+     ".extras.us_money_index.contract_version",
+     "us_money_index_v1_0"
+    ],
+    [
+     ".extras.us_money_index.source_contract_version",
+     "avshunter_us_money_index_v2_0"
+    ],
+    [
+     ".extras.us_money_index.packet_id",
+     "USMI:2026-09-09:eef15c4fc09cb270"
+    ],
+    [
+     ".extras.us_money_index.packet_sha256",
+     "eef15c4fc09cb270d951db812d34c96a44e0876f28727a1a4e75efb8afb07980"
+    ],
+    [
+     ".extras.us_money_index.generated_at_utc",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.market_data_as_of_utc",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.market_as_of_session",
+     "2026-09-09"
+    ],
+    [
+     ".extras.us_money_index.source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.dow_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.russell2000_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_decliners_to_advancers.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_new_lows.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_new_highs.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_futures_change_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.treasury_2y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.treasury_10y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.treasury_30y_pct.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.curve_2s10s_bp.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.usd_jpy.as_of",
+     "2026-09-09T06:27:00+00:00"
+    ]
+   ]
+  },
+  "interpreter/interpreter_macro_context.json": "ABSENT"
+ },
+ "20260911_115904": {
+  "run_meta_macro_fields": {
+   "macro_data_quality": "PARTIAL",
+   "macro_freshness_status": "FRESH",
+   "macro_quant_packet_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\macro_quant_packet.json",
+   "macro_regime_label": "TRANSITIONAL",
+   "macro_snapshot_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\macro_snapshot.json",
+   "macro_source_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\macro_intelligence_latest.json"
+  },
+  "run_meta_packet_id_or_hash_keys": [],
+  "manifest_keys": [
+   "conflict_flags",
+   "created_at_utc",
+   "ev3_production_authority",
+   "ev3_production_evidence",
+   "ev_functional_health",
+   "expected_contract_rejections",
+   "expected_market_rejections",
+   "fatal_flags",
+   "manual_review_enabled",
+   "missing_columns",
+   "missing_selected_handoff",
+   "morning_capital_permission",
+   "next_action",
+   "output_files",
+   "phase_status",
+   "pipeline_interpreter_prep_enabled",
+   "pipeline_mode",
+   "pipeline_semantic_health",
+   "pipeline_technical_health",
+   "required_columns_present",
+   "row_counts",
+   "run_execution_permission",
+   "run_health_score",
+   "run_id",
+   "run_prep_permission",
+   "run_tradeable",
+   "run_tradeable_label",
+   "semantic_coverage_score",
+   "semantic_defect_count",
+   "stale_flags",
+   "system_defects",
+   "v5_colab_decommissioned",
+   "worker3_macro_ticker_context",
+   "worker3_market_environment"
+  ],
+  "manifest_worker3_market_environment": {
+   "authority": "ADVISORY_ONLY",
+   "error": "",
+   "packet_id": "MACRO:4627892190afab863b245da8",
+   "packet_sha256": "f98fb2e3a52251819c31b9138d24548979ff6bba273755128bd35048b8dbf13b",
+   "session_date": "2026-09-10",
+   "status": "AVAILABLE",
+   "trading_authority": false
+  },
+  "manifest_packet_keys": [
+   [
+    ".missing_columns.macro",
+    "[]"
+   ],
+   [
+    ".output_files.interpreter_macro_context",
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\interpreter\\interpreter_macro_context.json"
+   ],
+   [
+    ".output_files.macro",
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\macro_quant_packet.json"
+   ],
+   [
+    ".output_files.worker3_macro_ticker_context_manifest",
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\interpreter\\macro_ticker_context_manifest."
+   ],
+   [
+    ".phase_status.macro",
+    "PASS"
+   ],
+   [
+    ".required_columns_present.macro",
+    "True"
+   ],
+   [
+    ".worker3_macro_ticker_context",
+    "{'authority': 'ADVISORY_ONLY', 'contract_version': 'macro_ticker_context_v1', 'diagnostics': {'authority': 'ADVISORY_ONL"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_applicability_unmapped",
+    "31"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_available",
+    "0"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_bytes_total",
+    "5294878"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_conflicting",
+    "362"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_contract",
+    "macro_ticker_context_v1"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_exact_ticker",
+    "23"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_invalid",
+    "0"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_omitted_items_total",
+    "42"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_partial",
+    "0"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_reconciled",
+    "True"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_requested",
+    "1444"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_sector_only",
+    "1390"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_stale",
+    "1082"
+   ],
+   [
+    ".worker3_macro_ticker_context.diagnostics.macro_ticker_context_unmapped",
+    "0"
+   ],
+   [
+    ".worker3_macro_ticker_context.source_packet_sha256",
+    "f98fb2e3a52251819c31b9138d24548979ff6bba273755128bd35048b8dbf13b"
+   ],
+   [
+    ".worker3_market_environment.packet_id",
+    "MACRO:4627892190afab863b245da8"
+   ],
+   [
+    ".worker3_market_environment.packet_sha256",
+    "f98fb2e3a52251819c31b9138d24548979ff6bba273755128bd35048b8dbf13b"
+   ]
+  ],
+  "macro_quant_packet.json": {
+   "sha256": "fa036819190c1a56077965375ec7cf620a3c89e235db358a73cd771a1cc7249e",
+   "top_keys": [
+    "auction_spread_risk",
+    "avoid_sectors",
+    "bond_macro_flag",
+    "bond_macro_score",
+    "bond_trade_go",
+    "breakeven_adjustment_pct",
+    "bucket_clarity_scores",
+    "credit_risk_score",
+    "credit_state",
+    "credit_warning",
+    "dealer_gamma_state",
+    "equity_drawer_active",
+    "gamma_risk_flag",
+    "gex_regime_score",
+    "horizon_pressure",
+    "lagging_sectors",
+    "leading_sectors",
+    "liquidity_pulse",
+    "liquidity_risk_flag",
+    "macro_active_conflict_flags",
+    "macro_age_hours",
+    "macro_as_of_utc",
+    "macro_authority",
+    "macro_confidence",
+    "macro_conflict_flags",
+    "macro_contract_version",
+    "macro_conviction_score",
+    "macro_data_quality",
+    "macro_execution_caution",
+    "macro_freshness_status",
+    "macro_generated_at_utc",
+    "macro_normalised_at_utc",
+    "macro_packet_id",
+    "macro_packet_sha256",
+    "macro_plain_language_advisory",
+    "macro_preferred_horizon",
+    "macro_quant_contract_version",
+    "macro_regime_label",
+    "macro_regime_sub_state",
+    "macro_resolved_conflict_flags"
+   ],
+   "packet_keys": [
+    [
+     ".macro_quant_contract_version",
+     "macro_quant_contract_v1"
+    ],
+    [
+     ".macro_source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\macro_intelligence_latest.json"
+    ],
+    [
+     ".macro_contract_version",
+     "macro_contract_v1_0"
+    ],
+    [
+     ".macro_generated_at_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".usmi_packet_id",
+     "USMI:2026-09-11:39c00d46758d115f"
+    ],
+    [
+     ".usmi_packet_sha256",
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a"
+    ],
+    [
+     ".us_money_index.contract_version",
+     "us_money_index_v1_0"
+    ],
+    [
+     ".us_money_index.source_contract_version",
+     "avshunter_us_money_index_v2_0"
+    ],
+    [
+     ".us_money_index.packet_id",
+     "USMI:2026-09-11:39c00d46758d115f"
+    ],
+    [
+     ".us_money_index.packet_sha256",
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a"
+    ],
+    [
+     ".us_money_index.generated_at_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.market_data_as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.market_as_of_session",
+     "2026-09-11"
+    ],
+    [
+     ".us_money_index.source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json"
+    ],
+    [
+     ".us_money_index.metrics.sp500_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.dow_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.russell2000_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.sp500_decliners_to_advancers.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_new_lows.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.nasdaq_new_highs.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.sp500_futures_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_2y_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_10y_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".us_money_index.metrics.treasury_30y_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ]
+   ]
+  },
+  "macro_snapshot.json": {
+   "sha256": "503701fac406354344dc3903c723c8549d5cd72dd48bdb3d57fc5494fe17b541",
+   "top_keys": [
+    "_builder_metadata",
+    "as_of_utc",
+    "contract_version",
+    "credit_risk_score",
+    "credit_state",
+    "dir_bias",
+    "extras",
+    "gex_available",
+    "gex_regime_score",
+    "horizon_routing",
+    "horizon_routing_complete",
+    "horizon_routing_enforcement",
+    "horizon_routing_required_buckets",
+    "liquidity_pulse",
+    "macro_conviction",
+    "macro_filter",
+    "macro_momentum_score",
+    "macro_quant_contract_version",
+    "macro_quant_packet",
+    "macro_regime_sub_state",
+    "net_liquidity_score",
+    "normalised_at_utc",
+    "notes",
+    "rates_impulse",
+    "regime_distribution",
+    "regime_distribution_source",
+    "regime_drift_interpretation",
+    "regime_drift_status",
+    "regime_label",
+    "regime_probability",
+    "regime_state",
+    "regime_sub_state",
+    "report_date",
+    "risk_on_off_switch",
+    "rotation_detail",
+    "rotation_flag_as_of_utc",
+    "rotation_override",
+    "sector_avoid",
+    "sector_lead",
+    "sector_rotation"
+   ],
+   "packet_keys": [
+    [
+     ".contract_version",
+     "macro_contract_v1_0"
+    ],
+    [
+     ".as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.rates.rates_data_as_of",
+     "2026-09-09"
+    ],
+    [
+     ".extras.inflation.data_as_of",
+     "2026-07-01"
+    ],
+    [
+     ".extras.futures_bias.ES_SPY.spot_as_of",
+     "770.19"
+    ],
+    [
+     ".extras.futures_bias.NQ_QQQ.spot_as_of",
+     "718.96"
+    ],
+    [
+     ".extras.futures_bias.RTY_IWM.spot_as_of",
+     "287.7"
+    ],
+    [
+     ".extras.gex.as_of",
+     "2026-09-04T20:00:00Z"
+    ],
+    [
+     ".extras.us_money_index.contract_version",
+     "us_money_index_v1_0"
+    ],
+    [
+     ".extras.us_money_index.source_contract_version",
+     "avshunter_us_money_index_v2_0"
+    ],
+    [
+     ".extras.us_money_index.packet_id",
+     "USMI:2026-09-11:39c00d46758d115f"
+    ],
+    [
+     ".extras.us_money_index.packet_sha256",
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a"
+    ],
+    [
+     ".extras.us_money_index.generated_at_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.market_data_as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.market_as_of_session",
+     "2026-09-11"
+    ],
+    [
+     ".extras.us_money_index.source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.dow_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.russell2000_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_decliners_to_advancers.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_new_lows.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.nasdaq_new_highs.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".extras.us_money_index.metrics.sp500_futures_change_pct.as_of",
+     "2026-09-11T11:35:00+00:00"
+    ]
+   ]
+  },
+  "interpreter/interpreter_macro_context.json": {
+   "sha256": "f98fb2e3a52251819c31b9138d24548979ff6bba273755128bd35048b8dbf13b",
+   "top_keys": [
+    "as_of_utc",
+    "auction_calendar",
+    "authority_statement",
+    "bond",
+    "conflicts",
+    "core_macro",
+    "created_at_utc",
+    "enrichment",
+    "freshness",
+    "liquidity_pulse",
+    "macro_context_state",
+    "macro_conviction",
+    "macro_quant_packet",
+    "notes",
+    "packet_id",
+    "plain_language_advisory",
+    "quality",
+    "rates",
+    "regime_state",
+    "schema_version",
+    "sector_rotation",
+    "session_date",
+    "source_fingerprint",
+    "source_manifest",
+    "ticker_advisories",
+    "us_money_index",
+    "us_money_index_scenario",
+    "usd",
+    "volatility"
+   ],
+   "packet_keys": [
+    [
+     ".schema_version",
+     "interpreter_macro_context_v1"
+    ],
+    [
+     ".packet_id",
+     "MACRO:4627892190afab863b245da8"
+    ],
+    [
+     ".as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".source_manifest.core_macro.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".source_manifest.bond_macro.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".source_manifest.auction_calendar.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".source_manifest.enrichment_delta.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".source_manifest.us_money_index.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".core_macro.contract_version",
+     "macro_contract_v1_0"
+    ],
+    [
+     ".core_macro.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".core_macro.extras.as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".core_macro.extras.rates.rates_data_as_of",
+     "2026-09-09"
+    ],
+    [
+     ".core_macro.extras.inflation.data_as_of",
+     "2026-07-01"
+    ],
+    [
+     ".core_macro.extras.futures_bias.ES_SPY.spot_as_of",
+     "770.19"
+    ],
+    [
+     ".core_macro.extras.futures_bias.NQ_QQQ.spot_as_of",
+     "718.96"
+    ],
+    [
+     ".core_macro.extras.futures_bias.RTY_IWM.spot_as_of",
+     "287.7"
+    ],
+    [
+     ".core_macro.extras.gex.as_of",
+     "2026-09-04T20:00:00Z"
+    ],
+    [
+     ".core_macro.extras.us_money_index.contract_version",
+     "us_money_index_v1_0"
+    ],
+    [
+     ".core_macro.extras.us_money_index.source_contract_version",
+     "avshunter_us_money_index_v2_0"
+    ],
+    [
+     ".core_macro.extras.us_money_index.packet_id",
+     "USMI:2026-09-11:39c00d46758d115f"
+    ],
+    [
+     ".core_macro.extras.us_money_index.packet_sha256",
+     "39c00d46758d115f71af247ae61467f065c75708bf0e8a94874972c11400552a"
+    ],
+    [
+     ".core_macro.extras.us_money_index.generated_at_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".core_macro.extras.us_money_index.market_data_as_of_utc",
+     "2026-09-11T11:35:00+00:00"
+    ],
+    [
+     ".core_macro.extras.us_money_index.market_as_of_session",
+     "2026-09-11"
+    ],
+    [
+     ".core_macro.extras.us_money_index.source_path",
+     "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\avshunter_us_money_index.json"
+    ]
+   ]
+  }
+ },
+ "resolve_attempt": {
+  "module_import": "OK",
+  "callables": [
+   {
+    "name": "_canonical_bytes",
+    "sig": "(payload: 'Mapping[str, Any]') -> 'bytes'",
+    "has_write_ops": false
+   },
+   {
+    "name": "archive_macro_packet",
+    "sig": "(packet: 'Mapping[str, Any]', archive_root: 'Path | str') -> 'dict[str, str]'",
+    "has_write_ops": true
+   },
+   {
+    "name": "load_macro_packet_by_id",
+    "sig": "(packet_id: 'str', archive_root: 'Path | str') -> 'dict[str, Any]'",
+    "has_write_ops": false
+   }
+  ],
+  "calls": [
+   {
+    "fn": "load_macro_packet_by_id",
+    "arg": "USMI:2026-09-09:eef15c4fc09cb270",
+    "root": "data\\macro\\archive",
+    "result": null,
+    "exc": "FileNotFoundError: macro packet id resolved 0 archive entries: USMI:2026-09-09:eef15c4fc09cb270"
+   },
+   {
+    "fn": "load_macro_packet_by_id",
+    "arg": "USMI:2026-09-09:eef15c4fc09cb270",
+    "root": "dropbox\\macro\\Archive",
+    "result": null,
+    "exc": "FileNotFoundError: macro packet id resolved 0 archive entries: USMI:2026-09-09:eef15c4fc09cb270"
+   },
+   {
+    "fn": "load_macro_packet_by_id",
+    "arg": "MACRO:2026-09-10:e86776c975d2f988",
+    "root": "data\\macro\\archive",
+    "result": null,
+    "exc": "FileNotFoundError: macro packet id resolved 0 archive entries: MACRO:2026-09-10:e86776c975d2f988"
+   },
+   {
+    "fn": "load_macro_packet_by_id",
+    "arg": "MACRO:2026-09-10:e86776c975d2f988",
+    "root": "dropbox\\macro\\Archive",
+    "result": null,
+    "exc": "FileNotFoundError: macro packet id resolved 0 archive entries: MACRO:2026-09-10:e86776c975d2f988"
+   }
+  ],
+  "candidate_ids": [
+   "USMI:2026-09-09:eef15c4fc09cb270",
+   "MACRO:2026-09-10:e86776c975d2f988"
+  ],
+  "archive_roots": {
+   "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\macro\\archive": "ABSENT",
+   "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\Archive": "EXISTS"
+  },
+  "hash_recompute": {
+   "20260910_150045": {
+    "declared": "e86776c975d2f988bc34a8506885e4d2a453bf762a6931db0fcf0875f15bd4c3",
+    "recomputed": "e86776c975d2f988bc34a8506885e4d2a453bf762a6931db0fcf0875f15bd4c3",
+    "match": true,
+    "macro_packet_id": "MACRO:2026-09-10:e86776c975d2f988"
+   },
+   "20260911_115904": {
+    "declared": "4788b5259e2db8fe29d9fbf1acb2d0c80759741075a1f669be4bb9b4103c5d31",
+    "recomputed": "4788b5259e2db8fe29d9fbf1acb2d0c80759741075a1f669be4bb9b4103c5d31",
+    "match": true,
+    "macro_packet_id": "MACRO:2026-09-11:4788b5259e2db8fe"
+   }
+  }
+ }
+}

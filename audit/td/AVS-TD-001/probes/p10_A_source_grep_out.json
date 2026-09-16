@@ -1,0 +1,1468 @@
+{
+ "n_prod_files_scanned": 1189,
+ "n_now_hits_total": 489,
+ "now_hits_by_file": {
+  "actuarial_live_updater.py": [
+   "85: datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "avshunter_discovery_ULTIMATE.py": [
+   "961: days_old = (datetime.now() - latest_date).days",
+   "989: end_date = datetime.now().strftime('%Y-%m-%d')",
+   "996: datetime.now() - timedelta(days=lookback_days)",
+   "2097: 'timestamp': datetime.now().isoformat(),",
+   "2352: ts = args.run_id or datetime.now().strftime(\"%Y%m%d_%H%M%S\")"
+  ],
+  "avshunter_exit_engine.py": [
+   "70: return datetime.now(timezone.utc).date()",
+   "432: \"evaluated_at\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\"),",
+   "490: \"evaluated_at\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "avshunter_regime_screener.py": [
+   "446: now = datetime.now(timezone.utc).isoformat()"
+  ],
+  "avshunter_ticker_probe.py": [
+   "1369: 'run_timestamp':        datetime.now().strftime('%Y-%m-%d %H:%M:%S'),",
+   "1747: chart_path = PROBE_OUTPUT_DIR / f'{ticker}_chart_{datetime.now().strftime(\"%Y%m%d_%H%M\")}.png'",
+   "1816: 'run_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),",
+   "1840: print(f'  {datetime.now().strftime(\"%Y-%m-%d %H:%M\")}')",
+   "1897: ts       = datetime.now().strftime('%Y%m%d_%H%M')"
+  ],
+  "avshunter_trade_journal.py": [
+   "666: entry_time = entry_time or datetime.now().strftime('%H:%M')",
+   "835: exit_time = exit_time or datetime.now().strftime('%H:%M')",
+   "1014: occurred_at_utc=datetime.now(timezone.utc).isoformat(),",
+   "1133: 'generated_at':            datetime.now().isoformat(),"
+  ],
+  "bond_macro_intelligence.py": [
+   "1144: \"generated_at\":  datetime.now().strftime(\"%Y-%m-%dT%H:%M:%S\"),"
+  ],
+  "build_macro_json.py": [
+   "245: \"loaded_at\":    datetime.now(timezone.utc).isoformat(),",
+   "829: as_of_date = _parse_date(as_of_value) or datetime.now(timezone.utc).date()",
+   "1461: age = (datetime.now().timestamp() - output_path.stat().st_mtime) / 3600",
+   "1552: age = (datetime.now().timestamp() - output_path.stat().st_mtime) / 3600",
+   "1813: \"built_at\":      datetime.now(timezone.utc).isoformat(),"
+  ],
+  "catalyst_conflict_engine.py": [
+   "204: today  = today or datetime.now(timezone.utc)"
+  ],
+  "catalyst_truth_engine.py": [
+   "197: return datetime.utcnow().date()"
+  ],
+  "catastrophe_gate.py": [
+   "479: run_id   = run_id   or datetime.now().strftime('%Y%m%d_%H%M%S')",
+   "589: 'generated_at':       datetime.now().isoformat(),"
+  ],
+  "desk_card.py": [
+   "198: now = datetime.now(timezone.utc)",
+   "912: if validated_csv is not None and run_id_date(run_id) == datetime.now().date():"
+  ],
+  "dropoff_audit.py": [
+   "785: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "earnings_calendar_enricher.py": [
+   "40: today = datetime.now(timezone.utc).date()"
+  ],
+  "eil_eod_resolver.py": [
+   "42: current = now or datetime.now(timezone.utc)"
+  ],
+  "enhancement_integration.py": [
+   "228: \"started_at\":     datetime.utcnow().isoformat(),",
+   "616: summary[\"completed_at\"]    = datetime.utcnow().isoformat()"
+  ],
+  "eod_candidate_engine.py": [
+   "885: session = session_snapshot(datetime.now(timezone.utc)).last_completed_session",
+   "3044: _regime_watch_df[\"watch_since\"] = pd.Timestamp.now().strftime(\"%Y-%m-%d\")"
+  ],
+  "execution_decision_engine.py": [
+   "1072: \"generated_at\":    datetime.now(timezone.utc).isoformat(),"
+  ],
+  "execution_gate.py": [
+   "67: \"gate_version\":GATE_VERSION,\"gate_timestamp_utc\":datetime.now(timezone.utc).isoformat()},",
+   "190: \"gate_timestamp_utc\": datetime.now(timezone.utc).isoformat(),",
+   "203: ts = datetime.now(timezone.utc).isoformat()",
+   "513: \"completed_at\":datetime.now(timezone.utc).isoformat(),"
+  ],
+  "execution_intelligence.py": [
+   "487: eil_check_timestamp     = datetime.now(timezone.utc).isoformat(),"
+  ],
+  "execution_intelligence_runner.py": [
+   "337: now_utc = datetime.now(timezone.utc)",
+   "1214: check_time = datetime.now(tz=timezone.utc)"
+  ],
+  "handoff_contract_audit.py": [
+   "955: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "intelligent_orchestrator.py": [
+   "251: generated = datetime.now(timezone.utc).isoformat()",
+   "265: \"report_date\": datetime.now(timezone.utc).date().isoformat(),",
+   "628: age_hrs = (datetime.now(timezone.utc).replace(tzinfo=None) - ts.replace(tzinfo=None)).total_seconds() / 3600",
+   "1147: age_h = (datetime.now(timezone.utc) - as_of).total_seconds() / 3600",
+   "1622: _macro_age_h = round((datetime.now(timezone.utc) - _macro_dt).total_seconds() / 3600, 1)",
+   "1929: today = datetime.now().strftime(\"%Y%m%d\")",
+   "2025: payload[\"status_updated_at_utc\"] = datetime.now(timezone.utc).isoformat()",
+   "2186: \"evaluated_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "2269: as_of_utc=datetime.now(timezone.utc).isoformat(),",
+   "2503: \"pinned_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "2722: session_date=session_date or datetime.now().date(),",
+   "2738: \"published_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "2987: else _profile_session_snapshot(datetime.now(timezone.utc)).last_completed_session",
+   "3001: \"recorded_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "4335: \"written_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "4650: session_id = run_id or datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "6232: _scanner_latest_payload[\"pointer_updated_utc\"] = datetime.now(timezone.utc).isoformat()",
+   "6248: \"updated_utc\": datetime.now(timezone.utc).isoformat(),",
+   "6397: \"generated_utc\":                datetime.now(timezone.utc).isoformat(),",
+   "6567: occurred_at_utc=datetime.now(timezone.utc).isoformat(),",
+   "7306: as_of_utc = datetime.now(timezone.utc)"
+  ],
+  "kelly_sizer.py": [
+   "504: \"calibrated_at\":  datetime.utcnow().isoformat(),"
+  ],
+  "market_context_diagnostics.py": [
+   "53: def _now_utc() -> str:",
+   "54: return datetime.now(timezone.utc).isoformat()",
+   "338: \"generated_at_utc\": _now_utc(),",
+   "466: \"generated_at_utc\": _now_utc(),",
+   "506: \"generated_at_utc\": _now_utc(),"
+  ],
+  "mcmillan_advisory_layer.py": [
+   "330: \"updated_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "morning_gate.py": [
+   "179: def _utc_now() -> str:",
+   "180: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "584: \"checked_at_utc\": _utc_now(),",
+   "626: \"checked_at_utc\": _utc_now(),",
+   "684: \"checked_at_utc\": _utc_now(),",
+   "824: \"live_fetched_at\": _utc_now(),",
+   "876: \"live_options_fetched_at\":  _utc_now(),",
+   "1069: fetched_at_utc=_utc_now(),",
+   "1156: now=datetime.now(timezone.utc),",
+   "1179: \"live_options_fetched_at\": _utc_now(),",
+   "1336: age_h = (datetime.now(timezone.utc) - gen_dt).total_seconds() / 3600",
+   "1450: today      = datetime.now(timezone.utc).date()",
+   "2290: out[\"gate_checked_at_utc\"]  = _utc_now()",
+   "2378: _age_h = (datetime.now(timezone.utc) - _gen_dt).total_seconds() / 3600",
+   "3018: now_et = datetime.now(timezone.utc).astimezone(ZoneInfo(\"America/New_York\"))",
+   "3323: \"validated_at_utc\": _utc_now(),",
+   "3539: validation_cutoff_utc = datetime.now(timezone.utc).replace(microsecond=0)",
+   "3812: now_utc=_utc_now(),",
+   "4082: \"validated_at_utc\": _utc_now(),"
+  ],
+  "morning_handoff_finalizer.py": [
+   "52: def _utc_now() -> str:",
+   "53: return datetime.now(timezone.utc).isoformat()",
+   "232: return datetime.now(timezone.utc).date().isoformat()",
+   "290: \"checked_at_utc\": _utc_now(),",
+   "701: updated[\"interpreter_synced_at_utc\"] = _utc_now()",
+   "785: completed_at_utc = _utc_now()"
+  ],
+  "morning_validation.py": [
+   "300: today = datetime.now(tz=timezone.utc).strftime(\"%Y-%m-%d\")",
+   "859: print(f\"  {datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}  |  Run: {run_id}\")",
+   "1169: \"generated_utc\": datetime.now(tz=timezone.utc).isoformat(),"
+  ],
+  "morning_validation_engine.py": [
+   "574: today = datetime.now(tz=timezone.utc).strftime(\"%Y-%m-%d\")",
+   "1086: print(f\"  {datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}  |  Run: {run_id}\")",
+   "1378: \"options_quote_asof\":  datetime.now(tz=timezone.utc).isoformat() if live_option else \"\",",
+   "1471: \"generated_utc\": datetime.now(tz=timezone.utc).isoformat(),"
+  ],
+  "outcome_capture.py": [
+   "580: ts  = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "615: ts      = datetime.now().strftime(\"%Y%m%d_%H%M%S\")"
+  ],
+  "polygon_data_fetcher.py": [
+   "313: end_date = datetime.now()"
+  ],
+  "position_lifecycle_tracker.py": [
+   "120: entry_date = pd.to_datetime(row.get('timestamp', datetime.now().isoformat()))",
+   "121: days_held = (datetime.now() - entry_date).days",
+   "128: 'entry_date': row.get('timestamp', datetime.now().isoformat()),",
+   "148: positions[ticker]['add_date'] = row.get('timestamp', datetime.now().isoformat())",
+   "167: entry_date = pd.to_datetime(row.get('timestamp', datetime.now().isoformat()))",
+   "168: days_held = (datetime.now() - entry_date).days",
+   "175: 'entry_date': row.get('timestamp', datetime.now().isoformat()),",
+   "280: logger.info(f\"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\")",
+   "376: timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')"
+  ],
+  "premarket_intelligence_ULTIMATE.py": [
+   "363: timestamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "415: print(f\"Date: {datetime.now().strftime('%A, %B %d, %Y')}\")",
+   "416: print(f\"Time: {datetime.now().strftime('%H:%M:%S')}\")"
+  ],
+  "rapid_rotation_flag.py": [
+   "235: data[\"rotation_flag_as_of_utc\"] = datetime.now(timezone.utc).isoformat()",
+   "264: print(f\"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC\")"
+  ],
+  "refresh_daily_data.py": [
+   "176: age_min = (datetime.now(tz=last_ts.tzinfo) - last_ts).total_seconds() / 60.0",
+   "228: now = datetime.utcnow()"
+  ],
+  "regime_consensus.py": [
+   "254: _age_h = (datetime.now(timezone.utc) - _norm_dt).total_seconds() / 3600",
+   "343: computed_at=datetime.now(timezone.utc).isoformat(),",
+   "381: computed_at=datetime.now(timezone.utc).isoformat(),"
+  ],
+  "run.py": [
+   "32: return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "267: tmp_path = tmp_dir / f\"settings_override_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json\""
+  ],
+  "sec_activist_monitor.py": [
+   "129: datetime.now(timezone.utc).timestamp() - TICKER_CACHE_PATH.stat().st_mtime",
+   "320: today = datetime.now(timezone.utc).date()",
+   "332: write_signal_file(matches, datetime.now(timezone.utc).isoformat())",
+   "349: today = datetime.now(timezone.utc).date()"
+  ],
+  "sec_form4_monitor.py": [
+   "209: today = datetime.now(timezone.utc).date()",
+   "407: today_str  = datetime.now(timezone.utc).date().isoformat()",
+   "409: poll_time  = datetime.now(timezone.utc).isoformat()",
+   "417: (datetime.now(timezone.utc).date() - timedelta(days=lookback_days)).isoformat(),"
+  ],
+  "short_swing_screener.py": [
+   "366: 'generated_at':      datetime.utcnow().isoformat(),",
+   "441: json.dump({**result, 'generated_at': datetime.utcnow().isoformat()}, f, indent=2)"
+  ],
+  "signal_funnel.py": [
+   "77: self._ts = datetime.utcnow().isoformat()",
+   "282: parser.add_argument(\"--run_id\", type=str, default=\"DEMO_\" + datetime.utcnow().strftime(\"%Y%m%d_%H%M%S\"))"
+  ],
+  "signal_grader.py": [
+   "175: graded_at = datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "290: cutoff = (datetime.now(timezone.utc) - timedelta(days=lookback_days)).isoformat()",
+   "335: \"generated_at\":   datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "349: today_str      = datetime.now(timezone.utc).strftime(\"%Y%m%d\")"
+  ],
+  "trade_book_builder.py": [
+   "500: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "uat_audit_report.py": [
+   "158: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "wall_break_scorer.py": [
+   "369: run_id  = run_id  or datetime.now().strftime('%Y%m%d_%H%M%S')",
+   "489: 'generated_at':               datetime.utcnow().isoformat() + 'Z',"
+  ],
+  "weekly_intelligence_report.py": [
+   "320: \"generated_at\":         datetime.now(timezone.utc).isoformat() + \"Z\","
+  ],
+  "WyckoffEngine_3101_v2.py": [
+   "287: \"timestamp\":               datetime.now().isoformat()",
+   "1091: \"timestamp\": datetime.now().isoformat()"
+  ],
+  "zero_dte_screener.py": [
+   "347: 'generated_at': datetime.utcnow().isoformat(),",
+   "467: result['generated_at'] = datetime.utcnow().isoformat()"
+  ],
+  ".codex_python313_runtime/Lib/plistlib.py": [
+   "40: aDate = dt.datetime.now()"
+  ],
+  ".codex_python313_runtime/Lib/smtplib.py": [
+   "309: print(datetime.datetime.now().time(), *args, file=sys.stderr)"
+  ],
+  ".codex_python313_runtime/Lib/_pydatetime.py": [
+   "1825: def utcnow(cls):",
+   "1828: warnings.warn(\"datetime.datetime.utcnow() is deprecated and scheduled for \"",
+   "1831: \"datetime.datetime.now(datetime.UTC).\","
+  ],
+  ".codex_python313_runtime/Lib/email/utils.py": [
+   "493: dt = datetime.datetime.now()"
+  ],
+  ".codex_python313_runtime/Lib/http/cookiejar.py": [
+   "107: dt = datetime.datetime.now(tz=datetime.UTC)",
+   "125: dt = datetime.datetime.now(tz=datetime.UTC)"
+  ],
+  ".codex_python313_runtime/Lib/turtledemo/clock.py": [
+   "61: now = datetime.now()"
+  ],
+  ".codex_python313_runtime/Lib/xmlrpc/server.py": [
+   "989: return datetime.datetime.now()"
+  ],
+  "bridge/feedback_writer.py": [
+   "30: \"generated_utc\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "canonical_data/bundle_freshness.py": [
+   "62: instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  "canonical_data/contracts.py": [
+   "21: return datetime.now(timezone.utc)"
+  ],
+  "canonical_data/decision_outcome_ledger.py": [
+   "147: datetime.now(timezone.utc).isoformat(),"
+  ],
+  "canonical_data/dynamic_options_bridge.py": [
+   "696: evidence_cutoff_utc=observation.as_of_utc or datetime.now(timezone.utc),"
+  ],
+  "canonical_data/dynamic_options_probability.py": [
+   "595: (DOI_PROBABILITY_SCHEMA_VERSION, datetime.now(timezone.utc).isoformat()),"
+  ],
+  "canonical_data/dynamic_options_ranking.py": [
+   "129: (DOI_RANKING_SCHEMA_VERSION, datetime.now(timezone.utc).isoformat()),"
+  ],
+  "canonical_data/gamma_exposure_store.py": [
+   "156: observed_at=datetime.now(timezone.utc),"
+  ],
+  "canonical_data/historical_prices.py": [
+   "49: def _utc_now() -> datetime:",
+   "50: return datetime.now(timezone.utc)",
+   "54: instant = value or _utc_now()"
+  ],
+  "canonical_data/history_bridge.py": [
+   "47: reference = reference_date or datetime.now(timezone.utc).date()",
+   "140: partial_dates = (datetime.now(timezone.utc).date().isoformat(),)",
+   "171: \"observed_at\": datetime.now(timezone.utc).isoformat(),",
+   "191: \"observed_at\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "canonical_data/intraday_bars.py": [
+   "137: acquired = acquired_at_utc or datetime.now(timezone.utc)"
+  ],
+  "canonical_data/marketdata_stock_candles.py": [
+   "153: acquired = acquired_at_utc or datetime.now(timezone.utc)",
+   "233: acquired = datetime.now(timezone.utc)",
+   "306: acquired_at_utc=datetime.now(timezone.utc),"
+  ],
+  "canonical_data/market_observation_resolver.py": [
+   "103: \"observed_at_utc\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\"),",
+   "129: return session_bounds(session_date)[1] if completed else datetime.now(timezone.utc)",
+   "155: observed_at=datetime.now(timezone.utc), as_of=as_of,",
+   "216: assessed_at_utc=datetime.now(timezone.utc),"
+  ],
+  "canonical_data/option_chain_store.py": [
+   "184: observed_at = datetime.now(timezone.utc)",
+   "228: assessed_at_utc=datetime.now(timezone.utc),",
+   "288: assessed_at_utc=datetime.now(timezone.utc),"
+  ],
+  "canonical_data/provider_finality.py": [
+   "249: checked = assessed_at_utc or datetime.now(timezone.utc)"
+  ],
+  "canonical_data/run_plan_store.py": [
+   "65: _iso_utc(datetime.now(timezone.utc)),"
+  ],
+  "canonical_data/session_clock.py": [
+   "173: instant = now or datetime.now(timezone.utc)",
+   "210: instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  "contracts/direction_governance.py": [
+   "270: decided_at = decided_at_utc or datetime.now(timezone.utc).isoformat()"
+  ],
+  "contracts/handoff_contract.py": [
+   "223: return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "contracts/interpreter_handoff.py": [
+   "107: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "contracts/interpreter_macro_context.py": [
+   "382: \"created_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "contracts/lab_control.py": [
+   "656: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "contracts/lab_evidence_overlay.py": [
+   "123: \"created_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "contracts/quote_change_evidence.py": [
+   "170: instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  "contracts/selected_contract_economics.py": [
+   "333: fetched_at = fetched_at_utc or datetime.now(timezone.utc).replace(microsecond=0).isoformat()"
+  ],
+  "domain/dynamic_options_intelligence.py": [
+   "363: created_at=created_at or datetime.now(timezone.utc),",
+   "583: selected_at=selected_at or datetime.now(timezone.utc), **values,"
+  ],
+  "domain/dynamic_options_lifecycle.py": [
+   "305: recorded_at=(recorded_at or datetime.now(timezone.utc)).astimezone(timezone.utc),"
+  ],
+  "domain/dynamic_options_ranking.py": [
+   "451: cutoff = max((item.evidence_cutoff_utc for item in candidates), default=datetime.now(timezone.utc))"
+  ],
+  "domain/long_option_execution.py": [
+   "118: as_of = datetime.now(timezone.utc)"
+  ],
+  "intelligence-lab/intelligence_lab.py": [
+   "328: return datetime.now(timezone.utc).isoformat()",
+   "675: occurred_at_utc=datetime.now(timezone.utc).isoformat(),"
+  ],
+  "intelligence-lab/intelligence_lab0505.py": [
+   "392: result = {\"run_id\": run_id, \"loaded_at\": datetime.utcnow().isoformat()}",
+   "849: \"server_time\": datetime.utcnow().isoformat(),"
+  ],
+  "intelligence-lab/intelligence_labold.py": [
+   "319: result = {\"run_id\": run_id, \"loaded_at\": datetime.utcnow().isoformat()}",
+   "768: \"server_time\": datetime.utcnow().isoformat(),"
+  ],
+  "intelligence-lab/intelligence_labolddnu0605am.py": [
+   "367: result = {\"run_id\": run_id, \"loaded_at\": datetime.utcnow().isoformat()}",
+   "824: \"server_time\": datetime.utcnow().isoformat(),"
+  ],
+  "market_structure/service.py": [
+   "66: \"ms_calculated_utc\":datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\",\"Z\"),"
+  ],
+  "ma_cockpit/ma_cockpit.py": [
+   "25: date_str=datetime.now().strftime(\"%A %d %B %Y  |  %H:%M ET\")"
+  ],
+  "ma_cockpit/ma_cockpit_engine.py": [
+   "27: self.session_date=datetime.now().strftime(\"%Y-%m-%d\"); self.run_count=0",
+   "97: def get_ts(): return datetime.now().strftime(\"%Y%m%d_%H%M\")",
+   "103: def _date(): return datetime.now().strftime(\"%A %d %B %Y\")"
+  ],
+  "ma_cockpit/ma_cockpit_outputs.py": [
+   "61: if not r.get(\"last_updated\"): r[\"last_updated\"]=datetime.now().strftime(\"%Y-%m-%d %H:%M\")",
+   "211: date_str=datetime.now().strftime(\"%A %d %B %Y\")",
+   "212: time_str=datetime.now().strftime(\"%H:%M ET\")",
+   "315: <div class=\"ftr-r\">AVSHUNTER M&A Cockpit v1.0 | Generated {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")}</div>"
+  ],
+  "ma_cockpit/ma_cockpit_scheduler.py": [
+   "13: ts=datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")",
+   "20: h=datetime.now().hour"
+  ],
+  "ml_confidence_layer/compounding_tracker.py": [
+   "100: trade_id = f\"{ticker}_{direction}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}\"",
+   "105: entry_date     = datetime.utcnow().isoformat(),",
+   "136: trade.exit_date  = datetime.utcnow().isoformat()"
+  ],
+  "ml_confidence_layer/ml_confidence_engine.py": [
+   "294: scored_at      = datetime.utcnow().isoformat()",
+   "378: \"timestamp\": datetime.utcnow().isoformat(),",
+   "421: ts = datetime.utcnow().strftime(\"%Y%m%d\")",
+   "483: ts = datetime.utcnow().strftime(\"%Y%m%d\")",
+   "491: f\"AVSHUNTER ML OUTCOME REGRESSION REPORT \u2014 {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\","
+  ],
+  "news_terminal/build_premarket_candidates.py": [
+   "17: TODAY = datetime.now().strftime(\"%Y%m%d\")"
+  ],
+  "news_terminal/news_terminal.py": [
+   "28: h = datetime.now().hour",
+   "33: date_str = datetime.now().strftime(\"%A %d %B %Y  |  %H:%M ET\")"
+  ],
+  "news_terminal/news_terminal_engine.py": [
+   "25: self.session_date=datetime.now().strftime(\"%Y-%m-%d\")",
+   "112: def get_timestamp(): return datetime.now().strftime(\"%Y%m%d_%H%M\")",
+   "121: h = datetime.now().hour",
+   "127: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "128: h = datetime.now().hour",
+   "151: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "155: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "159: date_str = datetime.now().strftime(\"%A %d %B %Y\")"
+  ],
+  "news_terminal/news_terminal_outputs.py": [
+   "264: \"global_session_date\": datetime.now().strftime(\"%Y-%m-%d\"),",
+   "440: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "441: time_str = datetime.now().strftime(\"%H:%M ET\")",
+   "586: <div class=\"ftr-r\">AVSHUNTER News Terminal v1.3 &nbsp;|&nbsp; Generated {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")}</div>",
+   "592: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "616: Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+  ],
+  "news_terminal/news_terminal_scheduler.py": [
+   "24: ts = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")",
+   "32: h = datetime.now().hour"
+  ],
+  "orchestrator/collector.py": [
+   "17: self.today = datetime.now().strftime(\"%Y-%m-%d\")"
+  ],
+  "orchestrator/dynamic_release.py": [
+   "208: assessed_at_utc=datetime.now(timezone.utc).isoformat(),"
+  ],
+  "orchestrator/macro_loader.py": [
+   "296: now = datetime.now(timezone.utc)"
+  ],
+  "orchestrator/main.py": [
+   "61: self.today = datetime.now().strftime('%Y-%m-%d')",
+   "125: print(f\"[{datetime.now().strftime('%H:%M:%S')}] Waiting for data...\")",
+   "135: print(f\"[{datetime.now().strftime('%H:%M:%S')}] Status:\")"
+  ],
+  "orchestrator/main_archive.py": [
+   "18: self.today = datetime.now().strftime('%Y-%m-%d')",
+   "50: print(f\"[{datetime.now().strftime('%H:%M:%S')}] Waiting for data...\")",
+   "60: print(f\"[{datetime.now().strftime('%H:%M:%S')}] Status:\")"
+  ],
+  "orchestrator/options_intelligence.py": [
+   "555: 'timestamp': datetime.now().isoformat()",
+   "608: 'signal_id': f\"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}\"",
+   "818: timestamp = datetime.now().strftime('%Y-%m-%d_%H%M')",
+   "918: end = datetime.now()"
+  ],
+  "orchestrator/session_authority_adapter.py": [
+   "21: instant = as_of_utc or datetime.now(timezone.utc)"
+  ],
+  "orchestrator/WyckoffEngine_3101_v2.py": [
+   "201: \"timestamp\": datetime.now().isoformat()",
+   "873: \"timestamp\": datetime.now().isoformat()"
+  ],
+  "pipeline_interpreter/assessment_contract.py": [
+   "152: \"created_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "pipeline_interpreter/interpreter_qa.py": [
+   "15: TODAY  = datetime.now().strftime(\"%Y%m%d\")",
+   "58: \"timestamp\": datetime.now().isoformat(),",
+   "80: dated = report_date == datetime.now().strftime(\"%Y-%m-%d\")",
+   "125: \"timestamp\": datetime.now().isoformat(),",
+   "314: \"timestamp\": datetime.now().isoformat(),",
+   "438: \"timestamp\": datetime.now().isoformat(),",
+   "500: \"timestamp\": datetime.now().isoformat(),",
+   "557: \"timestamp\":  datetime.now().isoformat(),"
+  ],
+  "pipeline_interpreter/live_market_reader.py": [
+   "247: \"fetched_at\": datetime.now().strftime(\"%H:%M ET\"),",
+   "308: \"fetched_at\": datetime.now().strftime(\"%H:%M ET\"),",
+   "347: \"fetched_at\": datetime.now().strftime(\"%H:%M ET\"),",
+   "433: \"fetched_at\":          datetime.now().strftime(\"%H:%M ET\"),",
+   "473: results = {\"ticker\": ticker, \"fetched_at\": datetime.now().strftime(\"%H:%M ET\")}",
+   "684: \"fetched_at\":   datetime.now().strftime(\"%Y-%m-%dT%H:%M:%SZ\"),"
+  ],
+  "pipeline_interpreter/ma_inputs_sync.py": [
+   "130: return datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")",
+   "360: print(f\"  [{datetime.now().strftime('%H:%M:%S')}] Watching... synced last pass={total}\", end=\"\\r\")"
+  ],
+  "pipeline_interpreter/news_macro_readers.py": [
+   "357: stamped = f\"[Pasted: {datetime.now().strftime('%Y-%m-%d %H:%M')}]\\n\\n{text.strip()}\""
+  ],
+  "pipeline_interpreter/pipeline_interpreter.py": [
+   "40: date_str=datetime.now().strftime(\"%A %d %B %Y  |  %H:%M ET\")"
+  ],
+  "pipeline_interpreter/pipeline_interpreter_engine.py": [
+   "213: self.session_date=datetime.now().strftime(\"%Y-%m-%d\"); self.run_count=0",
+   "499: TODAY = datetime.now().strftime(\"%Y%m%d\")",
+   "548: age_h = (datetime.now().timestamp()-mf[0].stat().st_mtime)/3600",
+   "555: age_h2=(datetime.now().timestamp()-df[0].stat().st_mtime)/3600",
+   "559: age_h3=(datetime.now().timestamp()-bf.stat().st_mtime)/3600",
+   "571: def _date(): return datetime.now().strftime(\"%A %d %B %Y\")",
+   "794: hour = datetime.now().hour",
+   "1545: def get_timestamp(): return datetime.now().strftime(\"%Y%m%d_%H%M\")"
+  ],
+  "pipeline_interpreter/pipeline_interpreter_outputs.py": [
+   "163: date_str=datetime.now().strftime(\"%A %d %B %Y\")",
+   "164: time_str=datetime.now().strftime(\"%H:%M ET\")",
+   "422: <div class=\"ftr-r\">AVSHUNTER Pipeline Interpreter v1.0 &nbsp;|&nbsp; Generated {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")}</div>",
+   "456: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "457: time_str = datetime.now().strftime(\"%H:%M ET\")",
+   "792: <div class=\"ftr-r\">AVSHUNTER Pipeline Interpreter v1.0 \u2014 Triage | {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")}</div>",
+   "1028: date_str = datetime.now().strftime(\"%A %d %B %Y\")",
+   "1029: time_str = datetime.now().strftime(\"%H:%M ET\")",
+   "1516: \"generated_at\":           datetime.now().isoformat(),"
+  ],
+  "pipeline_interpreter/prepare_interpreter_session.py": [
+   "100: return datetime.now().strftime(\"%H:%M:%S\")",
+   "149: age_h = (datetime.now().timestamp() - src_path.stat().st_mtime) / 3600",
+   "271: \"prepared_at\":   datetime.now().isoformat(),",
+   "360: print(f\"  {datetime.now().strftime('%A %d %B %Y  %H:%M')}\")",
+   "461: \"ts\":                    datetime.now().strftime(\"%Y%m%d_%H%M\"),"
+  ],
+  "pipeline_interpreter/score_integrity_check.py": [
+   "33: def _utc_now() -> str:",
+   "34: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "135: \"checked_at_utc\":   _utc_now(),",
+   "208: \"created_at\":    _utc_now(),"
+  ],
+  "pipeline_interpreter/thesis_registry.py": [
+   "80: ts        = datetime.now().strftime(\"%Y%m%d_%H%M\")",
+   "143: t[\"closure_ts\"]     = datetime.now().strftime(\"%Y%m%d_%H%M\")",
+   "230: \"saved_at\":    datetime.now().isoformat(),",
+   "290: \"morning_ts\":      datetime.now().isoformat(),",
+   "363: \"morning_ts\":       datetime.now().isoformat(),"
+  ],
+  "pipeline_interpreter/automation_v2/models.py": [
+   "169: datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "pipeline_interpreter/automation_v2/production_deploy.py": [
+   "80: \"created_at\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "pipeline_interpreter/capture_v1/service.py": [
+   "22: return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "scripts/actuarial_enrichment_pass.py": [
+   "756: \"enriched_at\":           datetime.now(timezone.utc).isoformat(),",
+   "1061: \"run_at\":                datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/apply_external_intel_review_lane.py": [
+   "60: def _utc_now() -> str:",
+   "61: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "262: row[\"external_intel_created_utc\"] = _utc_now()",
+   "298: \"generated_utc\": _utc_now(),"
+  ],
+  "scripts/apply_macro_enrichment_to_discovery.py": [
+   "285: \"generated_utc\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "scripts/avshunter_options_intelligence.py": [
+   "910: now = datetime.strptime(asof, '%Y-%m-%d') if asof else datetime.now()",
+   "913: now = datetime.now()",
+   "8739: run_id = datetime.now().strftime('%Y%m%d_%H%M%S')",
+   "9433: _checked_at = datetime.now(timezone.utc)",
+   "9496: 'generated_utc'     : datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/avshunter_superbrain_layer.py": [
+   "1230: or datetime.utcnow().strftime(\"%Y-%m-%d\"))",
+   "1231: asof_date = _parse_ymd(asof) or datetime.utcnow().date()",
+   "1247: datetime.now() is used only as a logged fallback when no asof_date exists.",
+   "1269: now = datetime.now()",
+   "2374: run_id  = run_id or datetime.now().strftime('%Y%m%d_%H%M%S')",
+   "2598: 'generated_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),",
+   "2675: f'  {datetime.now().strftime(\"%Y-%m-%d %H:%M\")}  |  Run: {run_id}',"
+  ],
+  "scripts/avshunter_universe_scanner.py": [
+   "458: log_file = LOGS_DIR / f\"universe_scanner_{datetime.now().strftime('%Y%m%d')}.log\"",
+   "2861: vms_df[\"scanner_manifest_at\"] = datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "2881: \"timestamp\":         datetime.now().isoformat(),",
+   "2908: \"scanner_manifest_at\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),",
+   "2931: _detected_at = datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")",
+   "2957: datetime.now(timezone.utc) - timedelta(days=90)",
+   "3103: run_id = datetime.now().strftime(\"%Y%m%d_%H%M\")"
+  ],
+  "scripts/backfill_polygon_daily_v7.py": [
+   "96: \"completed_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/backfill_timeseries_into_packages.py": [
+   "101: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")",
+   "249: today = datetime.now(timezone.utc).date().isoformat()",
+   "302: today = datetime.now(timezone.utc).date().isoformat()",
+   "396: days_old = (datetime.now(timezone.utc).date() - last_date).days",
+   "450: datetime.now(timezone.utc)",
+   "549: datetime.now(timezone.utc).date() - last_date",
+   "599: pkg[\"bar_data_days_old\"] = (datetime.now(timezone.utc).date() - _last_dt).days",
+   "722: _today = datetime.now(timezone.utc).date().isoformat()",
+   "791: pkg[\"bar_data_days_old\"] = (datetime.now(timezone.utc).date() - _last_dt).days if _last_dt else -1"
+  ],
+  "scripts/build_actuarial_v7.py": [
+   "63: build_id = datetime.now(timezone.utc).strftime(\"v7-%Y%m%dT%H%M%SZ\")",
+   "70: built_at = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/build_actuarial_v7_sharded.py": [
+   "83: \"build_id\": datetime.now(timezone.utc).strftime(\"v7-%Y%m%dT%H%M%SZ\"),",
+   "84: \"built_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/build_completed_market_profiles.py": [
+   "214: acquired_at_utc=datetime.now(timezone.utc),",
+   "249: future_session = session_date > session_snapshot(datetime.now(timezone.utc)).last_completed_session",
+   "463: \"published_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "488: session = date.fromisoformat(args.session_date) if args.session_date else session_snapshot(datetime.now(timezone.utc)).last_completed_session"
+  ],
+  "scripts/build_ev3_stage0.py": [
+   "164: built_at = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/build_local_gex.py": [
+   "65: invocation = run_id or f\"LOCAL_GEX_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}\""
+  ],
+  "scripts/build_packages_from_discovery.py": [
+   "151: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "scripts/build_phase_transition_matrix.py": [
+   "158: stamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "296: \"built_at_local\": datetime.now().isoformat(timespec=\"seconds\"),"
+  ],
+  "scripts/build_phase_transition_matrixanother dnu2005.py": [
+   "153: stamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "291: \"built_at_local\": datetime.now().isoformat(timespec=\"seconds\"),"
+  ],
+  "scripts/build_phase_transition_matrixdnumalomo2005.py": [
+   "153: stamp = datetime.now().strftime(\"%Y%m%d_%H%M%S\")",
+   "285: \"built_at_local\": datetime.now().isoformat(timespec=\"seconds\"),"
+  ],
+  "scripts/capture_end_to_end_run.py": [
+   "83: def _utc_now() -> datetime:",
+   "84: return datetime.now(timezone.utc)",
+   "88: return (dt or _utc_now()).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "scripts/core_intel_exporter.py": [
+   "57: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/data_contract_validator.py": [
+   "197: days_old = (datetime.now(timezone.utc).date() - last_dt).days"
+  ],
+  "scripts/ev3_calibration_report.py": [
+   "106: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/finalize_phantom_weekly_snapshot.py": [
+   "95: built_at = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/generate_signal_lab.py": [
+   "122: date_str  = datetime.now().strftime('%d %b %Y')",
+   "585: date_str = datetime.now().strftime('%Y%m%d')"
+  ],
+  "scripts/go_live_uat_audit_watch.py": [
+   "77: return datetime.now(timezone.utc)"
+  ],
+  "scripts/inject_macro_into_packages.py": [
+   "74: return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  "scripts/macro_quant_packet.py": [
+   "97: return datetime.now(timezone.utc)"
+  ],
+  "scripts/monitor_uat_pipeline.py": [
+   "60: return datetime.now(timezone.utc)",
+   "130: local_tz = datetime.now().astimezone().tzinfo"
+  ],
+  "scripts/normalise_macro_contract.py": [
+   "265: macro[\"normalised_at_utc\"] = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/options_db_writer.py": [
+   "16: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/phantom_compute_historical_greeks.py": [
+   "25: return datetime.now(timezone.utc).isoformat()",
+   "260: run_id = datetime.now(timezone.utc).strftime(\"computed_greeks_%Y%m%d_%H%M%S\")"
+  ],
+  "scripts/phantom_database.py": [
+   "24: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/phantom_greek_rehydrate.py": [
+   "47: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/phantom_marketdata_quote_greek_rehydrate.py": [
+   "35: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/promote_actuarial_v7.py": [
+   "49: \"promoted_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/promote_ev3_barrier_cache.py": [
+   "117: stamp = datetime.now(timezone.utc).strftime(\"%Y%m%dT%H%M%SZ\")",
+   "130: promoted_utc = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/publish_latest_run.py": [
+   "113: \"created_utc\": datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+  ],
+  "scripts/qa_baton_integrity.py": [
+   "90: return datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "247: \"timestamp_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/qa_conflict_resolver.py": [
+   "98: \"timestamp_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/qa_live_uat_readiness.py": [
+   "26: return datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "231: \"timestamp\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/qa_macro_enrichment_injection.py": [
+   "38: return datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "125: \"timestamp_utc\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "scripts/qa_market_scenario_simulation.py": [
+   "101: return datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "738: quote_ts = datetime.now(timezone.utc)",
+   "958: \"generated_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/qa_morning_validator.py": [
+   "202: \"timestamp_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/refresh_macro_context.py": [
+   "34: \"started_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "84: report[\"completed_at_utc\"] = datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/release_baseline.py": [
+   "285: record[\"recorded_at_utc\"] = datetime.now(timezone.utc).isoformat()",
+   "308: \"captured_at_utc\": datetime.now(timezone.utc).isoformat(),",
+   "370: \"verified_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/repair_daily_from_polygon.py": [
+   "27: return datetime.now(timezone.utc).isoformat(timespec=\"seconds\").replace(\"+00:00\", \"Z\")"
+  ],
+  "scripts/run_ev3_shadow.py": [
+   "217: \"built_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/run_ev3_shadow_phase.py": [
+   "143: \"generated_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/run_ml_on_vanguard_output.py": [
+   "191: ts           = datetime.utcnow().strftime(\"%Y%m%d_%H%M%S\")"
+  ],
+  "scripts/run_phantom_backfill_parallel.py": [
+   "42: return datetime.now(timezone.utc).isoformat()"
+  ],
+  "scripts/smoke_test_live_uat_pipeline.py": [
+   "218: \"timestamp_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/start_end_to_end_run_capture.py": [
+   "31: stamp = datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "77: \"started_utc\": datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "scripts/start_go_live_uat_audit_watch.py": [
+   "28: stamp = datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "68: \"started_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "scripts/write_manifest.py": [
+   "8: return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")"
+  ],
+  "short_swing/short_swing_contract.py": [
+   "270: 'selected_at':       datetime.now(timezone.utc).isoformat(),",
+   "367: 'selected_at':       datetime.now(timezone.utc).isoformat(),"
+  ],
+  "short_swing/short_swing_outcome_logger.py": [
+   "232: 'recorded_at':   datetime.utcnow().isoformat(),",
+   "243: 'generated_at':     datetime.utcnow().isoformat(),"
+  ],
+  "short_swing/short_swing_screener.py": [
+   "338: 'generated_at':      datetime.utcnow().isoformat(),",
+   "413: json.dump({**result, 'generated_at': datetime.utcnow().isoformat()}, f, indent=2)"
+  ],
+  "tools/avs_fix_002_stage0.py": [
+   "312: \"generated_at_utc\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "tools/cds2_import_historical_prices.py": [
+   "59: stamp = datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")",
+   "88: \"started_at\": datetime.now(timezone.utc).isoformat(),",
+   "195: report[\"completed_at\"] = datetime.now(timezone.utc).isoformat()"
+  ],
+  "tools/cds2_replay_lifecycle_shadow.py": [
+   "168: \"generated_at\": datetime.now(timezone.utc).isoformat(),",
+   "192: + datetime.now(timezone.utc).strftime(\"%H%M%S\")"
+  ],
+  "tools/cds2_validate_historical_prices.py": [
+   "143: \"validated_at\": datetime.now(timezone.utc).isoformat(),"
+  ],
+  "tools/create_cds_baseline.py": [
+   "95: created_at = datetime.now(timezone.utc).isoformat()"
+  ],
+  "tools/record_manual_decision.py": [
+   "15: args=p.parse_args(argv); now=datetime.now(timezone.utc).isoformat()"
+  ],
+  "tools/refresh_daily_data_v2.py": [
+   "60: return datetime.now(timezone.utc)"
+  ],
+  "vanguard/ev3_stage0.py": [
+   "442: now_stamp = pd.Timestamp(now_utc) if now_utc is not None else pd.Timestamp.now(tz=\"UTC\")",
+   "846: built_at = built_at_utc or datetime.now(timezone.utc).isoformat()"
+  ],
+  "vanguard/trade_contract.py": [
+   "72: entry_date = datetime.now().strftime(\"%Y%m%d\")",
+   "131: contract[\"exit_date\"]   = datetime.now().strftime(\"%Y%m%d\")"
+  ],
+  "vanguard/trade_governance.py": [
+   "196: \"date\":          datetime.now().strftime(\"%Y%m%d\"),",
+   "380: date_str  = datetime.now().strftime(\"%Y%m%d\")"
+  ],
+  "vanguard/execution/execution_intelligenceold0803.py": [
+   "220: eil_check_timestamp     = datetime.now(timezone.utc).isoformat(),"
+  ],
+  "vanguard/execution/execution_intelligenceold1004.py": [
+   "221: eil_check_timestamp     = datetime.now(timezone.utc).isoformat(),"
+  ],
+  "vanguard/execution/execution_intelligenceold1104.py": [
+   "221: eil_check_timestamp     = datetime.now(timezone.utc).isoformat(),"
+  ],
+  "vanguard/execution/strategies/liquidity_gate.py": [
+   "94: check_time = ctx.check_time or datetime.now(timezone.utc)"
+  ],
+  "vanguard/integration/orchestrator_adapter.py": [
+   "165: if ts_raw else datetime.now(timezone.utc)",
+   "167: ts = datetime.now(timezone.utc)"
+  ],
+  "vanguard/integration/orchestrator_adapter1704olddnu.py": [
+   "24: now = pd.Timestamp.utcnow()"
+  ],
+  "vanguard/integration/orchestrator_adapter1802dnu.py": [
+   "128: analysis_timestamp=datetime.now(),",
+   "147: days_to_earnings = (earnings_date - pd.Timestamp.now()).days"
+  ],
+  "vanguard/integration/orchestrator_adapter2102dnu.py": [
+   "253: analysis_timestamp=datetime.now(timezone.utc),",
+   "282: days_to_earnings = (earnings_date - pd.Timestamp.utcnow()).days"
+  ],
+  "vanguard/integration/orchestrator_adapterold.py": [
+   "125: analysis_timestamp=datetime.now(),",
+   "144: days_to_earnings = (earnings_date - pd.Timestamp.now()).days"
+  ],
+  "vanguard/integration/orchestrator_adapterolddnu1504.py": [
+   "253: analysis_timestamp=datetime.now(timezone.utc),",
+   "288: days_to_earnings = (earnings_date - pd.Timestamp.utcnow()).days"
+  ],
+  "vanguard/layer1_auction/auction_synthesizer.py": [
+   "213: tpo_distribution={}, timestamp=pd.Timestamp.now(tz=\"UTC\"),"
+  ],
+  "vanguard/layer1_auction/market_profile.py": [
+   "79: timestamp=bars['timestamp'].iloc[-1] if 'timestamp' in bars.columns else pd.Timestamp.now(),",
+   "290: timestamp=pd.Timestamp.now(),"
+  ],
+  "vanguard/layer2_statistical/state_calculator.py": [
+   "425: days_since_high = (pd.Timestamp.now() - tech.date_52w_high).days if tech.date_52w_high else 365",
+   "426: days_since_low = (pd.Timestamp.now() - tech.date_52w_low).days if tech.date_52w_low else 365",
+   "696: days_since = max(0, (pd.Timestamp.now() - pd.Timestamp(calendar.last_earnings_date)).days)"
+  ],
+  "vanguard/layer3_execution/trade_builder.py": [
+   "82: timestamp=datetime.now().isoformat(),"
+  ],
+  "vanguard/layer3_execution/trade_builder2702old dnu.py": [
+   "77: timestamp=datetime.now().isoformat(),"
+  ],
+  "vanguard/layer3_execution/trade_builderadnu.py": [
+   "82: timestamp=datetime.now().isoformat(),"
+  ],
+  "vanguard/schemas/vanguard_contract.py": [
+   "137: def _utcnow() -> datetime:",
+   "138: return datetime.now(timezone.utc)",
+   "211: age = _utcnow() - as_of",
+   "471: \"ts_utc\": _utcnow().isoformat().replace(\"+00:00\", \"Z\"),"
+  ],
+  "zero_dte/intraday_0dte_trigger.py": [
+   "98: utc_hour = datetime.utcnow().hour",
+   "99: utc_min = datetime.utcnow().minute",
+   "123: if datetime.utcnow().weekday() >= 5:  # Weekend",
+   "287: self.entry_time_utc  = datetime.now(timezone.utc)",
+   "305: self.exit_time_utc = datetime.now(timezone.utc)"
+  ],
+  "zero_dte/zero_dte_contract.py": [
+   "309: 'selected_at':      datetime.now(timezone.utc).isoformat(),"
+  ],
+  "zero_dte/zero_dte_outcome_logger.py": [
+   "247: 'recorded_at':      datetime.utcnow().isoformat(),",
+   "267: 'generated_at':       datetime.utcnow().isoformat(),"
+  ],
+  "zero_dte/zero_dte_screener.py": [
+   "311: 'generated_at': datetime.utcnow().isoformat(),",
+   "431: result['generated_at'] = datetime.utcnow().isoformat()"
+  ]
+ },
+ "now_hits_near_quote_timestamp": [
+  {
+   "file": "morning_gate.py",
+   "line": 824,
+   "text": "\"live_fetched_at\": _utc_now(),",
+   "same_line": false,
+   "context": [
+    "821:             \"underlying_ask_size\": _f(last_quote.get(\"S\")),",
+    "822:             \"underlying_quote_updated\": _normalise_provider_timestamp(last_quote.get(\"t\")),",
+    "823:             \"live_data_source\": \"POLYGON_SNAPSHOT\",",
+    "824:             \"live_fetched_at\": _utc_now(),",
+    "825:             # AG-01: earnings announcement date from snapshot (no extra API call)",
+    "826:             \"live_earnings_announcement\": _s(ticker_data.get(\"earningsAnnouncement\", \"\")),",
+    "827:         }"
+   ]
+  },
+  {
+   "file": "morning_gate.py",
+   "line": 1179,
+   "text": "\"live_options_fetched_at\": _utc_now(),",
+   "same_line": false,
+   "context": [
+    "1176:                             \"live_contract_volume\": observation.volume,",
+    "1177:                             \"live_contract_provider_updated\": observation.quote_as_of.isoformat(),",
+    "1178:                             \"live_options_source\": \"MARKETDATA\",",
+    "1179:                             \"live_options_fetched_at\": _utc_now(),",
+    "1180:                             \"live_options_resolution\": \"CDS_FRESH_QUOTE_HIT\",",
+    "1181:                         }",
+    "1182:                         source_record = liquidity_store.registry.get_dataset("
+   ]
+  },
+  {
+   "file": "morning_gate.py",
+   "line": 3323,
+   "text": "\"validated_at_utc\": _utc_now(),",
+   "same_line": false,
+   "context": [
+    "3320: ",
+    "3321:     summary = {",
+    "3322:         \"run_id\":           run_id,",
+    "3323:         \"validated_at_utc\": _utc_now(),",
+    "3324:         \"morning_execution_mode\": execution_mode,",
+    "3325:         \"postopen_contract_refresh_window_state\": refresh_window_state,",
+    "3326:         \"postopen_contract_refresh_observed_at_et\": now_et.isoformat(),"
+   ]
+  },
+  {
+   "file": "canonical_data/gamma_exposure_store.py",
+   "line": 156,
+   "text": "observed_at=datetime.now(timezone.utc),",
+   "same_line": true,
+   "context": [
+    "153:             content_hash=content_hash,",
+    "154:             completeness_status=CompletenessStatus.COMPLETE,",
+    "155:             storage_uri=str(summary_path.resolve()),",
+    "156:             observed_at=datetime.now(timezone.utc),",
+    "157:             as_of=close_utc,",
+    "158:             quality_flags=tuple(filter(None, str(summary.get(\"Quality_Flags\") or \"\").split(\"|\"))),",
+    "159:             parent_dataset_ids=tuple(summary[\"Parent_Dataset_IDs\"]),"
+   ]
+  },
+  {
+   "file": "canonical_data/history_bridge.py",
+   "line": 171,
+   "text": "\"observed_at\": datetime.now(timezone.utc).isoformat(),",
+   "same_line": true,
+   "context": [
+    "168:             \"ticker\": ticker.strip().upper(),",
+    "169:             \"consumer\": consumer,",
+    "170:             \"status\": \"CANONICAL_MISS\",",
+    "171:             \"observed_at\": datetime.now(timezone.utc).isoformat(),",
+    "172:         }",
+    "173:     else:",
+    "174:         left = legacy_frame.copy()"
+   ]
+  },
+  {
+   "file": "canonical_data/history_bridge.py",
+   "line": 191,
+   "text": "\"observed_at\": datetime.now(timezone.utc).isoformat(),",
+   "same_line": true,
+   "context": [
+    "188:             \"canonical_rows\": len(canonical),",
+    "189:             \"overlap_rows\": len(overlap),",
+    "190:             \"max_abs_close_difference\": maximum_close_difference,",
+    "191:             \"observed_at\": datetime.now(timezone.utc).isoformat(),",
+    "192:         }",
+    "193:     metrics_value = str(",
+    "194:         (os.environ if environment is None else environment).get("
+   ]
+  },
+  {
+   "file": "canonical_data/intraday_bars.py",
+   "line": 137,
+   "text": "acquired = acquired_at_utc or datetime.now(timezone.utc)",
+   "same_line": false,
+   "context": [
+    "134:         result[\"provider_observed_at_utc\"] = result[\"timestamp_utc\"]",
+    "135:     result[\"provider_observed_at_utc\"] = pd.to_datetime(result[\"provider_observed_at_utc\"], errors=\"raise\", utc=True)",
+    "136:     result[\"observed_at\"] = result[\"provider_observed_at_utc\"]",
+    "137:     acquired = acquired_at_utc or datetime.now(timezone.utc)",
+    "138:     if acquired.tzinfo is None:",
+    "139:         raise ValueError(\"acquired_at_utc must be timezone-aware\")",
+    "140:     if \"acquired_at_utc\" not in result:"
+   ]
+  },
+  {
+   "file": "canonical_data/marketdata_stock_candles.py",
+   "line": 153,
+   "text": "acquired = acquired_at_utc or datetime.now(timezone.utc)",
+   "same_line": false,
+   "context": [
+    "150: ",
+    "151:     frame = pd.DataFrame({names[key]: values for key, values in arrays.items()})",
+    "152:     frame[\"timestamp_utc\"] = _timestamp_series(arrays[\"t\"])",
+    "153:     acquired = acquired_at_utc or datetime.now(timezone.utc)",
+    "154:     if acquired.tzinfo is None:",
+    "155:         raise ValueError(\"acquired_at_utc must be timezone-aware\")",
+    "156:     observed_raw = payload.get(\"updated\") or payload.get(\"observed_at\")"
+   ]
+  },
+  {
+   "file": "canonical_data/market_observation_resolver.py",
+   "line": 103,
+   "text": "\"observed_at_utc\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\"),",
+   "same_line": true,
+   "context": [
+    "100:         \"mid\": round((bid + ask) / 2.0, 4), \"bid_size\": bid_size, \"ask_size\": ask_size,",
+    "101:         \"bid_size_quality\": bid_quality, \"ask_size_quality\": ask_quality,",
+    "102:         \"provider_updated_utc\": as_of.isoformat().replace(\"+00:00\", \"Z\"),",
+    "103:         \"observed_at_utc\": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\"),",
+    "104:         \"source\": provider.upper(), \"depth_level\": \"NBBO_ONLY\",",
+    "105:     }",
+    "106: "
+   ]
+  },
+  {
+   "file": "canonical_data/market_observation_resolver.py",
+   "line": 155,
+   "text": "observed_at=datetime.now(timezone.utc), as_of=as_of,",
+   "same_line": true,
+   "context": [
+    "152:             instrument_id=request.instrument_id, session_date=request.session_date,",
+    "153:             scope=request.scope, provider=provider, content_hash=stored.content_hash,",
+    "154:             completeness_status=CompletenessStatus.COMPLETE, storage_uri=str(stored.path),",
+    "155:             observed_at=datetime.now(timezone.utc), as_of=as_of,",
+    "156:             adjustment_convention=request.adjustment_convention,",
+    "157:             schema_version=request.schema_version, quality_flags=quality_flags,",
+    "158:             parent_dataset_ids=parent_dataset_ids, source_run_id=self.run_id,"
+   ]
+  },
+  {
+   "file": "canonical_data/option_chain_store.py",
+   "line": 184,
+   "text": "observed_at = datetime.now(timezone.utc)",
+   "same_line": true,
+   "context": [
+    "181:         frame.to_parquet(temporary, index=False)",
+    "182:         content_hash = _sha256(temporary)",
+    "183:         os.replace(temporary, target)",
+    "184:         observed_at = datetime.now(timezone.utc)",
+    "185:         quote_as_of = self._quote_as_of(frame)",
+    "186:         dataset_id = hashlib.sha256(",
+    "187:             ("
+   ]
+  }
+ ],
+ "or_now_fallback_pattern": [
+  [
+   "avshunter_discovery_ULTIMATE.py",
+   2352,
+   "ts = args.run_id or datetime.now().strftime(\"%Y%m%d_%H%M%S\")"
+  ],
+  [
+   "avshunter_trade_journal.py",
+   666,
+   "entry_time = entry_time or datetime.now().strftime('%H:%M')"
+  ],
+  [
+   "avshunter_trade_journal.py",
+   835,
+   "exit_time = exit_time or datetime.now().strftime('%H:%M')"
+  ],
+  [
+   "build_macro_json.py",
+   829,
+   "as_of_date = _parse_date(as_of_value) or datetime.now(timezone.utc).date()"
+  ],
+  [
+   "catalyst_conflict_engine.py",
+   204,
+   "today  = today or datetime.now(timezone.utc)"
+  ],
+  [
+   "catastrophe_gate.py",
+   479,
+   "run_id   = run_id   or datetime.now().strftime('%Y%m%d_%H%M%S')"
+  ],
+  [
+   "eil_eod_resolver.py",
+   42,
+   "current = now or datetime.now(timezone.utc)"
+  ],
+  [
+   "intelligent_orchestrator.py",
+   2722,
+   "session_date=session_date or datetime.now().date(),"
+  ],
+  [
+   "intelligent_orchestrator.py",
+   4650,
+   "session_id = run_id or datetime.now().strftime(\"%Y%m%d_%H%M%S\")"
+  ],
+  [
+   "wall_break_scorer.py",
+   369,
+   "run_id  = run_id  or datetime.now().strftime('%Y%m%d_%H%M%S')"
+  ],
+  [
+   "canonical_data/bundle_freshness.py",
+   62,
+   "instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  [
+   "canonical_data/dynamic_options_bridge.py",
+   696,
+   "evidence_cutoff_utc=observation.as_of_utc or datetime.now(timezone.utc),"
+  ],
+  [
+   "canonical_data/historical_prices.py",
+   54,
+   "instant = value or _utc_now()"
+  ],
+  [
+   "canonical_data/history_bridge.py",
+   47,
+   "reference = reference_date or datetime.now(timezone.utc).date()"
+  ],
+  [
+   "canonical_data/intraday_bars.py",
+   137,
+   "acquired = acquired_at_utc or datetime.now(timezone.utc)"
+  ],
+  [
+   "canonical_data/marketdata_stock_candles.py",
+   153,
+   "acquired = acquired_at_utc or datetime.now(timezone.utc)"
+  ],
+  [
+   "canonical_data/provider_finality.py",
+   249,
+   "checked = assessed_at_utc or datetime.now(timezone.utc)"
+  ],
+  [
+   "canonical_data/session_clock.py",
+   173,
+   "instant = now or datetime.now(timezone.utc)"
+  ],
+  [
+   "canonical_data/session_clock.py",
+   210,
+   "instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  [
+   "contracts/direction_governance.py",
+   270,
+   "decided_at = decided_at_utc or datetime.now(timezone.utc).isoformat()"
+  ],
+  [
+   "contracts/quote_change_evidence.py",
+   170,
+   "instant = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)"
+  ],
+  [
+   "contracts/selected_contract_economics.py",
+   333,
+   "fetched_at = fetched_at_utc or datetime.now(timezone.utc).replace(microsecond=0).isoformat()"
+  ],
+  [
+   "domain/dynamic_options_intelligence.py",
+   363,
+   "created_at=created_at or datetime.now(timezone.utc),"
+  ],
+  [
+   "domain/dynamic_options_intelligence.py",
+   583,
+   "selected_at=selected_at or datetime.now(timezone.utc), **values,"
+  ],
+  [
+   "domain/dynamic_options_lifecycle.py",
+   305,
+   "recorded_at=(recorded_at or datetime.now(timezone.utc)).astimezone(timezone.utc),"
+  ],
+  [
+   "orchestrator/session_authority_adapter.py",
+   21,
+   "instant = as_of_utc or datetime.now(timezone.utc)"
+  ],
+  [
+   "scripts/avshunter_superbrain_layer.py",
+   2374,
+   "run_id  = run_id or datetime.now().strftime('%Y%m%d_%H%M%S')"
+  ],
+  [
+   "scripts/capture_end_to_end_run.py",
+   88,
+   "return (dt or _utc_now()).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")"
+  ],
+  [
+   "vanguard/ev3_stage0.py",
+   846,
+   "built_at = built_at_utc or datetime.now(timezone.utc).isoformat()"
+  ],
+  [
+   "vanguard/execution/strategies/liquidity_gate.py",
+   94,
+   "check_time = ctx.check_time or datetime.now(timezone.utc)"
+  ]
+ ],
+ "vocab_hits": {
+  "operator_mode": [
+   "intelligent_orchestrator.py:2048: operator_mode: str,",
+   "intelligent_orchestrator.py:2079: mode = str(operator_mode or \"STANDARD\").strip().upper()",
+   "intelligent_orchestrator.py:2089: operator_mode=\"TEST\" if dirty else mode,",
+   "intelligent_orchestrator.py:2117: \"operator_mode\": mode,",
+   "intelligent_orchestrator.py:2518: \"operator_mode\": run_plan.operator_mode,",
+   "intelligent_orchestrator.py:2518: \"operator_mode\": run_plan.operator_mode,",
+   "intelligent_orchestrator.py:3099: operator_mode: str = \"STANDARD\",",
+   "intelligent_orchestrator.py:3213: operator_mode=operator_mode,",
+   "intelligent_orchestrator.py:3213: operator_mode=operator_mode,",
+   "intelligent_orchestrator.py:5136: operator_mode=\"FORCE\" if force else \"STANDARD\",",
+   "intelligent_orchestrator.py:7329: operator_mode=\"FORCE\" if args.force else (\"REPLAY\" if args.replay else \"STANDARD\"),",
+   "canonical_data/run_plan.py:55: operator_mode: OperatorMode | str = OperatorMode.STANDARD,",
+   "canonical_data/run_plan.py:82: operator_mode=str(getattr(operator_mode, \"value\", operator_mode)).upper(),",
+   "canonical_data/run_plan.py:82: operator_mode=str(getattr(operator_mode, \"value\", operator_mode)).upper(),",
+   "canonical_data/run_plan.py:82: operator_mode=str(getattr(operator_mode, \"value\", operator_mode)).upper(),",
+   "domain/run_planning.py:125: operator_mode: str = OperatorMode.STANDARD.value",
+   "domain/run_planning.py:185: operator_mode: str = OperatorMode.STANDARD.value",
+   "domain/run_planning.py:193: operator_mode: OperatorMode | str = OperatorMode.STANDARD,",
+   "domain/run_planning.py:200: mode = OperatorMode(str(getattr(operator_mode, \"value\", operator_mode)).upper())",
+   "domain/run_planning.py:200: mode = OperatorMode(str(getattr(operator_mode, \"value\", operator_mode)).upper())",
+   "domain/run_planning.py:346: operator_mode=context.operator_mode,",
+   "domain/run_planning.py:346: operator_mode=context.operator_mode,",
+   "domain/run_planning.py:444: operator_mode=OperatorMode(",
+   "domain/run_planning.py:445: str(getattr(context.operator_mode, \"value\", context.operator_mode)).upper()",
+   "domain/run_planning.py:445: str(getattr(context.operator_mode, \"value\", context.operator_mode)).upper()",
+   "orchestrator/dynamic_dispatcher.py:167: operator_mode: OperatorMode | str = OperatorMode.STANDARD,",
+   "orchestrator/dynamic_dispatcher.py:202: operator_mode=operator_mode,",
+   "orchestrator/dynamic_dispatcher.py:202: operator_mode=operator_mode,",
+   "orchestrator/dynamic_dispatcher.py:220: operator_mode=operator_mode,",
+   "orchestrator/dynamic_dispatcher.py:220: operator_mode=operator_mode,"
+  ],
+  "provider_completeness_evidence": [
+   "intelligent_orchestrator.py:2058: evidence = summary.get(\"provider_completeness_evidence\")",
+   "intelligent_orchestrator.py:2060: raise ValueError(\"Options summary has no provider_completeness_evidence\")",
+   "intelligent_orchestrator.py:2118: \"provider_completeness_evidence\": evidence,",
+   "intelligent_orchestrator.py:3215: _provider_evidence = _provider_meta[\"provider_completeness_evidence\"]",
+   "canonical_data/provider_finality.py:103: \"provider_completeness_evidence\": self.aggregate.to_dict(),"
+  ],
+  "run_condition": [
+   "intelligent_orchestrator.py:2081: from domain.run_planning import resolve_run_condition",
+   "intelligent_orchestrator.py:2084: planned_condition = str((payload.get(\"dynamic_plan\") or {}).get(\"run_condition\") or \"\")",
+   "intelligent_orchestrator.py:2086: run_condition = resolve_run_condition(",
+   "intelligent_orchestrator.py:2086: run_condition = resolve_run_condition(",
+   "intelligent_orchestrator.py:2093: run_condition = planned_condition or \"TEST\"",
+   "intelligent_orchestrator.py:2094: if run_condition == \"NORMAL_COMPLETED_SESSION\" and not provider_eligible:",
+   "intelligent_orchestrator.py:2095: run_condition = \"TEST\"",
+   "intelligent_orchestrator.py:2101: \"run_condition\": run_condition,",
+   "intelligent_orchestrator.py:2101: \"run_condition\": run_condition,",
+   "intelligent_orchestrator.py:2102: \"baseline_eligible\": run_condition == \"NORMAL_COMPLETED_SESSION\",",
+   "intelligent_orchestrator.py:2517: \"run_condition\": run_plan.run_condition,",
+   "intelligent_orchestrator.py:2517: \"run_condition\": run_plan.run_condition,",
+   "intelligent_orchestrator.py:3219: _provider_meta.get(\"run_condition\"),",
+   "intelligent_orchestrator.py:6542: \"run_condition\": (",
+   "intelligent_orchestrator.py:6543: _run_meta_payload.get(\"run_condition\")",
+   "intelligent_orchestrator.py:6544: or _dynamic_plan_meta.get(\"run_condition\")",
+   "intelligent_orchestrator.py:6745: run_condition: str = \"POSTOPEN_CONTRACT_REFRESH\",",
+   "intelligent_orchestrator.py:6817: if str(run_condition).upper() == \"PREOPEN_THESIS_CHECK\"",
+   "intelligent_orchestrator.py:7400: run_condition=planned.run_condition,",
+   "intelligent_orchestrator.py:7400: run_condition=planned.run_condition,",
+   "canonical_data/decision_outcome_ledger.py:362: \"run_condition\": row.get(\"run_condition\") or metadata.get(\"run_condition\"),",
+   "canonical_data/decision_outcome_ledger.py:362: \"run_condition\": row.get(\"run_condition\") or metadata.get(\"run_condition\"),",
+   "canonical_data/decision_outcome_ledger.py:362: \"run_condition\": row.get(\"run_condition\") or metadata.get(\"run_condition\"),",
+   "canonical_data/outcome_learning.py:250: run_condition = str(candidate_payload.get(\"run_condition\") or \"\").upper()",
+   "canonical_data/outcome_learning.py:250: run_condition = str(candidate_payload.get(\"run_condition\") or \"\").upper()",
+   "canonical_data/outcome_learning.py:251: if run_condition and run_condition != \"NORMAL_COMPLETED_SESSION\":",
+   "canonical_data/outcome_learning.py:251: if run_condition and run_condition != \"NORMAL_COMPLETED_SESSION\":",
+   "canonical_data/outcome_learning.py:252: exclusions.append(f\"RUN_CONDITION_{run_condition}\")",
+   "domain/run_planning.py:124: run_condition: str = RunCondition.TEST.value",
+   "domain/run_planning.py:189: def resolve_run_condition(",
+   "domain/run_planning.py:343: run_condition = resolve_run_condition(",
+   "domain/run_planning.py:343: run_condition = resolve_run_condition(",
+   "domain/run_planning.py:368: preopen = run_condition is RunCondition.PREOPEN_THESIS_CHECK",
+   "domain/run_planning.py:443: run_condition=run_condition.value,",
+   "domain/run_planning.py:443: run_condition=run_condition.value,",
+   "domain/run_planning.py:447: baseline_eligible=(run_condition is RunCondition.NORMAL_COMPLETED_SESSION),",
+   "domain/__init__.py:26: resolve_run_condition,",
+   "domain/__init__.py:142: \"resolve_run_condition\","
+  ],
+  "NORMAL_COMPLETED_SESSION": [
+   "intelligent_orchestrator.py:2094: if run_condition == \"NORMAL_COMPLETED_SESSION\" and not provider_eligible:",
+   "intelligent_orchestrator.py:2102: \"baseline_eligible\": run_condition == \"NORMAL_COMPLETED_SESSION\",",
+   "canonical_data/outcome_learning.py:251: if run_condition and run_condition != \"NORMAL_COMPLETED_SESSION\":",
+   "domain/run_planning.py:36: NORMAL_COMPLETED_SESSION = \"NORMAL_COMPLETED_SESSION\"",
+   "domain/run_planning.py:36: NORMAL_COMPLETED_SESSION = \"NORMAL_COMPLETED_SESSION\"",
+   "domain/run_planning.py:211: return RunCondition.NORMAL_COMPLETED_SESSION",
+   "domain/run_planning.py:447: baseline_eligible=(run_condition is RunCondition.NORMAL_COMPLETED_SESSION),"
+  ],
+  "baseline_eligible": [
+   "intelligent_orchestrator.py:2102: \"baseline_eligible\": run_condition == \"NORMAL_COMPLETED_SESSION\",",
+   "intelligent_orchestrator.py:2519: \"baseline_eligible\": run_plan.baseline_eligible,",
+   "intelligent_orchestrator.py:2519: \"baseline_eligible\": run_plan.baseline_eligible,",
+   "intelligent_orchestrator.py:3217: \"Provider finality integrated: condition=%s baseline_eligible=%s \"",
+   "intelligent_orchestrator.py:3220: _provider_meta.get(\"baseline_eligible\"),",
+   "intelligent_orchestrator.py:6546: \"baseline_eligible\": _run_meta_payload.get(",
+   "intelligent_orchestrator.py:6547: \"baseline_eligible\", False",
+   "canonical_data/decision_outcome_ledger.py:363: \"baseline_eligible\": _as_bool(",
+   "canonical_data/decision_outcome_ledger.py:364: row.get(\"baseline_eligible\", metadata.get(\"baseline_eligible\", False))",
+   "canonical_data/decision_outcome_ledger.py:364: row.get(\"baseline_eligible\", metadata.get(\"baseline_eligible\", False))",
+   "canonical_data/outcome_learning.py:239: baseline_eligible = _as_bool(candidate_payload.get(\"baseline_eligible\"))",
+   "canonical_data/outcome_learning.py:239: baseline_eligible = _as_bool(candidate_payload.get(\"baseline_eligible\"))",
+   "canonical_data/outcome_learning.py:242: if not baseline_eligible:",
+   "canonical_data/outcome_learning.py:292: baseline_eligible=baseline_eligible,",
+   "canonical_data/outcome_learning.py:292: baseline_eligible=baseline_eligible,",
+   "domain/outcome_learning.py:187: baseline_eligible: bool",
+   "domain/outcome_learning.py:208: if self.fit_eligible and (not self.baseline_eligible or self.exclusion_reasons):",
+   "domain/run_planning.py:126: baseline_eligible: bool = False",
+   "domain/run_planning.py:447: baseline_eligible=(run_condition is RunCondition.NORMAL_COMPLETED_SESSION),"
+  ],
+  "code_identity": [
+   "intelligent_orchestrator.py:2103: \"code_identity\": {"
+  ],
+  "config_identity": [
+   "intelligent_orchestrator.py:2108: \"config_identity\": {"
+  ],
+  "macro_packet_id": [
+   "intelligent_orchestrator.py:2522: meta[\"macro_packet_id\"] = macro_quant_packet.get(\"macro_packet_id\")",
+   "intelligent_orchestrator.py:2522: meta[\"macro_packet_id\"] = macro_quant_packet.get(\"macro_packet_id\")",
+   "canonical_data/macro_packet_archive.py:23: packet_id = str(packet.get(\"macro_packet_id\") or \"\").strip()",
+   "canonical_data/macro_packet_archive.py:30: \"macro_packet_sha256\", \"macro_packet_id\", \"macro_normalised_at_utc\"",
+   "canonical_data/market_rate_observation.py:50: dataset_id = str(payload.get(\"macro_packet_id\") or payload.get(\"dataset_id\") or hashlib.sha256(material).hexdigest())",
+   "contracts/interpreter_handoff_materializer.py:384: row_packet_id = _text(row.get(\"macro_packet_id\"))",
+   "contracts/interpreter_macro_context.py:481: \"macro_packet_id\": packet.get(\"packet_id\", \"\"),",
+   "contracts/lab_control.py:436: \"macro_packet_id\",",
+   "contracts/lab_control.py:2787: \"macro_packet_id\": first(sig, \"macro_packet_id\"),",
+   "contracts/lab_control.py:2787: \"macro_packet_id\": first(sig, \"macro_packet_id\"),",
+   "contracts/lab_control.py:3561: \"macro_packet_id\", \"macro_packet_sha256\", \"macro_source_fingerprint\","
+  ],
+  "POSTOPEN_CONTRACT_REFRESH": [
+   "intelligent_orchestrator.py:6745: run_condition: str = \"POSTOPEN_CONTRACT_REFRESH\",",
+   "intelligent_orchestrator.py:6818: else \"POSTOPEN_CONTRACT_REFRESH\"",
+   "morning_gate.py:1117: execution_mode: str = \"POSTOPEN_CONTRACT_REFRESH\",",
+   "morning_gate.py:2205: _u(live_data.get(\"morning_execution_mode\")) == \"POSTOPEN_CONTRACT_REFRESH\"",
+   "morning_gate.py:3012: execution_mode: str = \"POSTOPEN_CONTRACT_REFRESH\",",
+   "morning_gate.py:3016: if execution_mode not in {\"PREOPEN_THESIS_CHECK\", \"POSTOPEN_CONTRACT_REFRESH\"}:",
+   "morning_gate.py:3228: execution_mode == \"POSTOPEN_CONTRACT_REFRESH\"",
+   "morning_gate.py:4030: execution_mode = \"POSTOPEN_CONTRACT_REFRESH\"",
+   "morning_gate.py:4037: else \"POSTOPEN_CONTRACT_REFRESH\"",
+   "morning_gate.py:4040: execution_mode = \"POSTOPEN_CONTRACT_REFRESH\"",
+   "domain/run_planning.py:39: POSTOPEN_CONTRACT_REFRESH = \"POSTOPEN_CONTRACT_REFRESH\"",
+   "domain/run_planning.py:39: POSTOPEN_CONTRACT_REFRESH = \"POSTOPEN_CONTRACT_REFRESH\"",
+   "domain/run_planning.py:210: return RunCondition.POSTOPEN_CONTRACT_REFRESH"
+  ],
+  "PREOPEN_THESIS_CHECK": [
+   "intelligent_orchestrator.py:6816: \"PREOPEN_THESIS_CHECK\"",
+   "intelligent_orchestrator.py:6817: if str(run_condition).upper() == \"PREOPEN_THESIS_CHECK\"",
+   "morning_gate.py:1127: preopen = _u(execution_mode) == \"PREOPEN_THESIS_CHECK\"",
+   "morning_gate.py:1136: \"morning_execution_mode\": \"PREOPEN_THESIS_CHECK\",",
+   "morning_gate.py:3016: if execution_mode not in {\"PREOPEN_THESIS_CHECK\", \"POSTOPEN_CONTRACT_REFRESH\"}:",
+   "morning_gate.py:3022: if execution_mode == \"PREOPEN_THESIS_CHECK\"",
+   "morning_gate.py:3108: if execution_mode == \"PREOPEN_THESIS_CHECK\"",
+   "morning_gate.py:3222: if execution_mode == \"PREOPEN_THESIS_CHECK\":",
+   "morning_gate.py:4028: execution_mode = \"PREOPEN_THESIS_CHECK\"",
+   "morning_gate.py:4035: \"PREOPEN_THESIS_CHECK\"",
+   "domain/run_planning.py:38: PREOPEN_THESIS_CHECK = \"PREOPEN_THESIS_CHECK\"",
+   "domain/run_planning.py:38: PREOPEN_THESIS_CHECK = \"PREOPEN_THESIS_CHECK\"",
+   "domain/run_planning.py:209: return RunCondition.PREOPEN_THESIS_CHECK",
+   "domain/run_planning.py:368: preopen = run_condition is RunCondition.PREOPEN_THESIS_CHECK"
+  ],
+  "quote_provider_timestamp_utc": [
+   "morning_gate.py:929: live[\"quote_provider_timestamp_utc\"] = option_provider_timestamp or \"\"",
+   "morning_gate.py:1142: \"quote_provider_timestamp_utc\": _s(",
+   "morning_gate.py:1143: row.get(\"quote_provider_timestamp_utc\")",
+   "morning_gate.py:3309: observed.get(\"quote_provider_timestamp_utc\")",
+   "contracts/lab_control.py:210: \"lab_v4_quote_provider_timestamp_utc\",",
+   "domain/lab_signal_book_v4.py:26: \"lab_v4_quote_provider_timestamp_utc\": row.get(\"quote_provider_timestamp_utc\") or row.get(\"selected_quote_timestamp_utc\"),",
+   "domain/lab_signal_book_v4.py:26: \"lab_v4_quote_provider_timestamp_utc\": row.get(\"quote_provider_timestamp_utc\") or row.get(\"selected_quote_timestamp_utc\"),"
+  ],
+  "quote_fetch_timestamp_utc": [
+   "morning_gate.py:930: live[\"quote_fetch_timestamp_utc\"] = _s(live.get(\"live_options_fetched_at\"))",
+   "morning_gate.py:1147: \"quote_fetch_timestamp_utc\": \"\","
+  ],
+  "quote_source_dataset_id": [
+   "morning_gate.py:962: live[\"quote_source_dataset_id\"] = observation.dataset_id",
+   "morning_gate.py:1139: \"quote_source_dataset_id\": _s(",
+   "morning_gate.py:1140: row.get(\"quote_source_dataset_id\") or row.get(\"option_chain_dataset_id\")"
+  ],
+  "CONTRACT_QUOTE_UNAVAILABLE": [
+   "morning_gate.py:991: live[\"msi_exact_quote_resolution\"] = \"CONTRACT_QUOTE_UNAVAILABLE\"",
+   "morning_gate.py:993: live[\"execution_viability_state\"] = \"CONTRACT_QUOTE_UNAVAILABLE\"",
+   "morning_gate.py:2211: out[\"execution_viability_state\"] = \"CONTRACT_QUOTE_UNAVAILABLE\""
+  ],
+  "FORCED_INTRASESSION": [
+   "domain/run_planning.py:37: FORCED_INTRASESSION = \"FORCED_INTRASESSION\"",
+   "domain/run_planning.py:37: FORCED_INTRASESSION = \"FORCED_INTRASESSION\"",
+   "domain/run_planning.py:206: return RunCondition.FORCED_INTRASESSION"
+  ]
+ },
+ "vocab_counts": {
+  "operator_mode": 30,
+  "provider_completeness_evidence": 5,
+  "run_condition": 38,
+  "NORMAL_COMPLETED_SESSION": 7,
+  "baseline_eligible": 19,
+  "code_identity": 1,
+  "config_identity": 1,
+  "macro_packet_id": 11,
+  "POSTOPEN_CONTRACT_REFRESH": 13,
+  "PREOPEN_THESIS_CHECK": 14,
+  "quote_provider_timestamp_utc": 7,
+  "quote_fetch_timestamp_utc": 2,
+  "quote_source_dataset_id": 3,
+  "CONTRACT_QUOTE_UNAVAILABLE": 3,
+  "FORCED_INTRASESSION": 3
+ },
+ "key_files": {
+  "morning_gate.py": "PRESENT",
+  "domain/option_contract_liquidity.py": "PRESENT",
+  "canonical_data/dynamic_options_bridge.py": "PRESENT",
+  "canonical_data/dynamic_options_valuation.py": "PRESENT",
+  "domain/run_planning.py": "PRESENT",
+  "orchestrator/dynamic_dispatcher.py": "PRESENT",
+  "intelligent_orchestrator.py": "PRESENT",
+  "domain/provider_finality.py": "PRESENT",
+  "canonical_data/option_liquidity_lifecycle.py": "PRESENT",
+  "canonical_data/dynamic_options_production.py": "PRESENT",
+  "contracts/lab_control.py": "PRESENT",
+  "execution_gate.py": "PRESENT"
+ },
+ "backups_quote_as_of_or_utc_now_hits": [
+  "backups/avs_sd_002_rev1_1_phase2_prechange_20260903_145500/morning_gate.py:1883",
+  "backups/avs_sd_002_rev1_1_phase5_prechange_20260903_163000/morning_gate.py:1891",
+  "backups/cycle2_prechange_20260831_221858/morning_gate.py:1839",
+  "backups/ddd_execution_authority_20260905/morning_gate.py:1891",
+  "backups/ddd_market_structure_20260905/morning_gate.py:1891",
+  "backups/morning_cds_bootstrap_prechange_20260901_150540/morning_gate.py:1848",
+  "backups/morning_market_structure_restart_prechange_20260901_171500/morning_gate.py:1883",
+  "backups/morning_quote_identity_prechange_20260901_152956/morning_gate.py:1883",
+  "backups/morning_replay_terminal_prechange_20260901_161201/morning_gate.py:1883",
+  "backups/msi_critical_repairs_prechange_20260830_153219/morning_gate.py:1800",
+  "backups/msi_v11_prechange_20260830_110913/morning_gate.py:1684"
+ ],
+ "backups_git_tracked_files": 3
+}

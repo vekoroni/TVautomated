@@ -1,0 +1,295 @@
+{
+ "options_csv_flip": {
+  "ALL": {
+   "common_tickers": 1410,
+   "both_have_contract_same_direction": 1191,
+   "flipped": 79,
+   "flip_rate": 0.0663
+  },
+  "CALL": {
+   "common_tickers": 780,
+   "both_have_contract_same_direction": 760,
+   "flipped": 57,
+   "flip_rate": 0.075
+  },
+  "PUT": {
+   "common_tickers": 451,
+   "both_have_contract_same_direction": 431,
+   "flipped": 22,
+   "flip_rate": 0.051
+  },
+  "OTHER": {
+   "common_tickers": 179,
+   "both_have_contract_same_direction": 0,
+   "flipped": 0,
+   "flip_rate": null
+  }
+ },
+ "flip_examples": [
+  {
+   "ticker": "VITL",
+   "recommended_contract_10": "VITL261016C00010000",
+   "recommended_contract_11": "VITL260918C00010000"
+  },
+  {
+   "ticker": "VIK",
+   "recommended_contract_10": "VIK261016C00085000",
+   "recommended_contract_11": "VIK260918C00085000"
+  },
+  {
+   "ticker": "LQDA",
+   "recommended_contract_10": "LQDA260925C00068000",
+   "recommended_contract_11": "LQDA260925C00069000"
+  },
+  {
+   "ticker": "CSCO",
+   "recommended_contract_10": "CSCO260925C00109000",
+   "recommended_contract_11": "CSCO260925C00108000"
+  },
+  {
+   "ticker": "GLD",
+   "recommended_contract_10": "GLD260930C00400000",
+   "recommended_contract_11": "GLD261009C00404000"
+  },
+  {
+   "ticker": "OLED",
+   "recommended_contract_10": "OLED261016P00085000",
+   "recommended_contract_11": "OLED261016P00080000"
+  },
+  {
+   "ticker": "USO",
+   "recommended_contract_10": "USO260925P00155000",
+   "recommended_contract_11": "USO260925P00158000"
+  },
+  {
+   "ticker": "CRS",
+   "recommended_contract_10": "CRS261016C00460000",
+   "recommended_contract_11": "CRS261016C00450000"
+  }
+ ],
+ "flip_kind": {
+  "expiry_changed_only": 22,
+  "strike_changed_only": 40,
+  "both_changed": 17
+ },
+ "selection_events_by_run": [
+  [
+   "20260829_222259",
+   5,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260830_182402",
+   7,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260830_225643",
+   82,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260831_010309",
+   927,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260901_082437",
+   747,
+   267,
+   2,
+   0
+  ],
+  [
+   "20260902_232526",
+   861,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260904_004338",
+   1036,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260904_122358",
+   1037,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260905_151448",
+   1076,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260906_213931",
+   1077,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260909_071646",
+   1247,
+   200,
+   5,
+   0
+  ],
+  [
+   "20260910_150045",
+   1020,
+   0,
+   0,
+   0
+  ],
+  [
+   "20260911_115904",
+   1986,
+   949,
+   8,
+   0
+  ]
+ ],
+ "selection_reason_two_runs": [
+  [
+   "20260910_150045",
+   "BEST_MONITORABLE_LONG_OPTION_CONTRACT",
+   553,
+   null
+  ],
+  [
+   "20260910_150045",
+   "BEST_CURRENT_LONG_OPTION_QUOTE",
+   467,
+   null
+  ],
+  [
+   "20260911_115904",
+   "MORNING_EXACT_CONTRACT_REQUOTE",
+   941,
+   0
+  ],
+  [
+   "20260911_115904",
+   "BEST_MONITORABLE_LONG_OPTION_CONTRACT",
+   533,
+   null
+  ],
+  [
+   "20260911_115904",
+   "BEST_CURRENT_LONG_OPTION_QUOTE",
+   460,
+   null
+  ],
+  [
+   "20260911_115904",
+   "MORNING_REPAIR_ALTERNATIVE_SELECTED",
+   52,
+   8
+  ]
+ ],
+ "selection_versions": [
+  [
+   1,
+   "option_liquidity_lifecycle_v1",
+   1014
+  ],
+  [
+   1,
+   "options-liquidity-lifecycle-v2",
+   5537
+  ],
+  [
+   2,
+   "option_liquidity_lifecycle_v1",
+   7
+  ],
+  [
+   2,
+   "options-liquidity-lifecycle-v2",
+   3084
+  ],
+  [
+   2,
+   "options-liquidity-morning-v2",
+   314
+  ],
+  [
+   3,
+   "options-liquidity-morning-v2",
+   1052
+  ],
+  [
+   4,
+   "options-liquidity-morning-v2",
+   78
+  ],
+  [
+   5,
+   "options-liquidity-morning-v2",
+   15
+  ],
+  [
+   6,
+   "options-liquidity-morning-v2",
+   7
+  ]
+ ],
+ "switch_metadata_keys": {
+  "morning_transition_state": 8
+ },
+ "switch_metadata_margin_like_keys": [],
+ "switch_sample": [
+  [
+   "ANF:CALL:2026-09-10:OLM2",
+   "ANF260925C00147000",
+   "ANF260925C00145000",
+   "MORNING_REPAIR_ALTERNATIVE_SELECTED",
+   "{\"morning_transition_state\":\"GAP_CONFIRMATION_WITH_RUNWAY\"}"
+  ],
+  [
+   "FSLR:CALL:2026-09-10:OLM2",
+   "FSLR260925C00207500",
+   "FSLR260925C00205000",
+   "MORNING_REPAIR_ALTERNATIVE_SELECTED",
+   "{\"morning_transition_state\":\"GAP_CONFIRMATION_WITH_RUNWAY\"}"
+  ],
+  [
+   "UVXY:CALL:2026-09-10:OLM2",
+   "UVXY260925C00019000",
+   "UVXY260925C00018500",
+   "MORNING_REPAIR_ALTERNATIVE_SELECTED",
+   "{\"morning_transition_state\":\"EXECUTABLE_NOW\"}"
+  ]
+ ],
+ "switch_by_direction_primary": [
+  [
+   "CALL",
+   1266,
+   605,
+   6
+  ],
+  [
+   "PUT",
+   720,
+   344,
+   2
+  ]
+ ],
+ "doi_preferred_contract_decisions": 0
+}

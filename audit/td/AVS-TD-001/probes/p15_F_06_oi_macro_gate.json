@@ -1,0 +1,333 @@
+{
+ "n": 1444,
+ "macro_cols": [
+  "options_macro_alignment_label",
+  "options_macro_alignment_bonus",
+  "options_macro_gate_preserved",
+  "options_macro_theme_ids",
+  "options_macro_roles",
+  "options_macro_event_guards",
+  "options_macro_conflict_flags",
+  "options_macro_confirmation_required",
+  "options_macro_alignment_note",
+  "macro_alignment_state",
+  "macro_direction_authority",
+  "options_macro_authority",
+  "options_macro_effective_score_delta",
+  "macro_multiplier",
+  "macro_multiplier_advisory",
+  "macro_multiplier_authority",
+  "macro_confirmation_level",
+  "macro_routing_state"
+ ],
+ "verdict_cols": [
+  "governed_direction",
+  "options_verdict",
+  "options_route_verdict",
+  "options_score",
+  "execution_permission",
+  "final_route"
+ ],
+ "value_counts": {
+  "options_macro_alignment_label": {
+   "NO_ENRICHMENT_MATCH": 1198,
+   "": 226,
+   "MACRO_CONFLICTS_CALL": 6,
+   "NO_DIRECTIONAL_MACRO_EDGE": 6,
+   "PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3,
+   "CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3
+  },
+  "options_macro_alignment_bonus": {
+   "0.0": 1218,
+   "": 226
+  },
+  "options_macro_gate_preserved": {
+   "False": 1218,
+   "": 226
+  },
+  "options_macro_theme_ids": {
+   "[]": 1198,
+   "": 226,
+   "[\"MIDEAST_ENERGY_SHOCK_TRIPLE_DIGIT_BRENT_2026_09_11\", \"MACRO_EXPOSURE_INDEX_HINT\"]": 4,
+   "[\"MIDEAST_ENERGY_SHOCK_TRIPLE_DIGIT_BRENT_2026_09_11\"]": 3,
+   "[\"MACRO_EXPOSURE_INDEX_HINT\"]": 3,
+   "[\"AI_IDIOSYNCRATIC_RESILIENCE_ORCL_NVDA_2026_09_11\"]": 3
+  },
+  "options_macro_roles": {
+   "[]": 1198,
+   "": 226,
+   "[\"VULNERABLE\"]": 8,
+   "[\"CONTEXT_ONLY\"]": 6,
+   "[\"BENEFICIARY\"]": 5,
+   "[\"CONTEXT_ONLY\", \"VULNERABLE\"]": 1
+  },
+  "options_macro_event_guards": {
+   "[]": 1201,
+   "": 226,
+   "[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\"]": 7,
+   "[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]": 4,
+   "[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]": 3,
+   "[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\"]": 1
+  },
+  "options_macro_conflict_flags": {
+   "[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]": 1218,
+   "": 226
+  },
+  "options_macro_confirmation_required": {
+   "[]": 1201,
+   "": 226,
+   "[\"Brent remains above $100 after the current pullback\", \"XLE outperforms SPY after the US cash open\", \"fuel-sensitive transport underperforms\", \"US inflation/rate pricing remains firm\", \"PUT_GATE_DELTA_LOCK\"]": 7,
+   "[\"ORCL holds its earnings gap after the open\", \"NVDA/SMH/QQQ show relative strength\", \"Treasury yields do not re-accelerate sharply\", \"PUT_GATE_DELTA_LOCK\"]": 3,
+   "[\"Brent remains above $100 after the current pullback\", \"XLE outperforms SPY after the US cash open\", \"fuel-sensitive transport underperforms\", \"US inflation/rate pricing remains firm\", \"CPI reaction in 2Y/10Y yields\", \"USD direction confirms the rate move\", \"RSP/IWM/breadth confirm or reject the index gap\", \"HYG/LQD and VIX structure confirm or reject financial-conditions stress\", \"PUT_GATE_DELTA_LOCK\"]": 2,
+   "[\"CPI is at/above the hot side of expectations\", \"US 10Y establishes above 5%\", \"XLRE and IWM underperform SPY\", \"DXY strengthens and credit/breadth deteriorate\", \"PUT_GATE_DELTA_LOCK\"]": 1
+  },
+  "options_macro_alignment_note": {
+   "": 226,
+   "Ticker SNX was plain-ingested. No macro enrichment exposure match. Legacy macro gate retained as advisory context only. Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only \u2014 direction ABSTAINS. Ticker verdict unaffected. Macro has no ticker/sector opinion; no direction vote is emitted.": 1,
+   "Ticker PLAB was plain-ingested. No macro enrichment exposure match. Legacy macro gate retained as advisory context only. Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only \u2014 direction ABSTAINS. Ticker verdict unaffected. Macro has no ticker/sector opinion; no direction vote is emitted.": 1,
+   "Ticker SKT was plain-ingested. No macro enrichment exposure match. Legacy macro gate retained as advisory context only. Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only \u2014 direction ABSTAINS. Ticker verdict unaffected. Macro has no ticker/sector opinion; no direction vote is emitted.": 1,
+   "Ticker T was plain-ingested. No macro enrichment exposure match. Legacy macro gate retained as advisory context only. Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only \u2014 direction ABSTAINS. Ticker verdict unaffected. Macro has no ticker/sector opinion; no direction vote is emitted.": 1,
+   "Ticker CVNA was plain-ingested. No macro enrichment exposure match. Legacy macro gate retained as advisory context only. Macro filter is NO_GO (Fung-Hsieh sub-0.50): SIZE MODIFIER only \u2014 direction ABSTAINS. Ticker verdict unaffected. Macro has no ticker/sector opinion; no direction vote is emitted.": 1
+  },
+  "macro_alignment_state": {
+   "MACRO_NOT_APPLICABLE": 1198,
+   "": 226,
+   "MACRO_CONFLICTS_CALL": 6,
+   "NO_DIRECTIONAL_MACRO_EDGE": 6,
+   "PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3,
+   "CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3
+  },
+  "macro_direction_authority": {
+   "DISABLED": 1218,
+   "": 226
+  },
+  "options_macro_authority": {
+   "ADVISORY_ONLY": 1444
+  },
+  "options_macro_effective_score_delta": {
+   "0.0": 1444
+  },
+  "macro_multiplier": {
+   "1.0": 1444
+  },
+  "macro_multiplier_advisory": {
+   "1.0": 1444
+  },
+  "macro_multiplier_authority": {
+   "ADVISORY_ONLY": 1444
+  },
+  "macro_confirmation_level": {
+   "STANDARD": 1444
+  },
+  "macro_routing_state": {
+   "MACRO_NOT_APPLICABLE": 1198,
+   "STANDARD": 226,
+   "MACRO_CONFLICTS_CALL": 6,
+   "NO_DIRECTIONAL_MACRO_EDGE": 6,
+   "PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3,
+   "CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": 3
+  }
+ },
+ "crosstab": {
+  "options_macro_alignment_label x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2,
+   "('MACRO_CONFLICTS_CALL', 'ARMED')": 2,
+   "('MACRO_CONFLICTS_CALL', 'STAND_DOWN')": 4,
+   "('MACRO_CONFLICTS_PUT', 'ARMED')": 1,
+   "('MACRO_CONFLICTS_PUT', 'EXECUTE')": 1,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'ARMED')": 2,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'STAND_DOWN')": 4,
+   "('NO_ENRICHMENT_MATCH', 'ARMED')": 226,
+   "('NO_ENRICHMENT_MATCH', 'EXECUTE')": 220,
+   "('NO_ENRICHMENT_MATCH', 'STAND_DOWN')": 752,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2
+  },
+  "options_macro_alignment_bonus x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('0.0', 'ARMED')": 233,
+   "('0.0', 'EXECUTE')": 221,
+   "('0.0', 'STAND_DOWN')": 764
+  },
+  "options_macro_gate_preserved x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('False', 'ARMED')": 233,
+   "('False', 'EXECUTE')": 221,
+   "('False', 'STAND_DOWN')": 764
+  },
+  "options_macro_roles x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('[\"BENEFICIARY\"]', 'ARMED')": 2,
+   "('[\"BENEFICIARY\"]', 'EXECUTE')": 1,
+   "('[\"BENEFICIARY\"]', 'STAND_DOWN')": 2,
+   "('[\"CONTEXT_ONLY\", \"VULNERABLE\"]', 'ARMED')": 1,
+   "('[\"CONTEXT_ONLY\"]', 'ARMED')": 2,
+   "('[\"CONTEXT_ONLY\"]', 'STAND_DOWN')": 4,
+   "('[\"VULNERABLE\"]', 'ARMED')": 2,
+   "('[\"VULNERABLE\"]', 'STAND_DOWN')": 6,
+   "('[]', 'ARMED')": 226,
+   "('[]', 'EXECUTE')": 220,
+   "('[]', 'STAND_DOWN')": 752
+  },
+  "options_macro_event_guards x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'STAND_DOWN')": 1,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\"]', 'STAND_DOWN')": 1,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'ARMED')": 2,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'STAND_DOWN')": 2,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\"]', 'ARMED')": 2,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\"]', 'STAND_DOWN')": 5,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\"]', 'STAND_DOWN')": 1,
+   "('[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'ARMED')": 1,
+   "('[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'EXECUTE')": 1,
+   "('[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'STAND_DOWN')": 1,
+   "('[]', 'ARMED')": 228,
+   "('[]', 'EXECUTE')": 220,
+   "('[]', 'STAND_DOWN')": 753
+  },
+  "options_macro_conflict_flags x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\\\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\\\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\\\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\\\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\\\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]', 'ARMED')": 233,
+   "('[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\\\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\\\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\\\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\\\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\\\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]', 'EXECUTE')": 221,
+   "('[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\\\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\\\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\\\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\\\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\\\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]', 'STAND_DOWN')": 764
+  },
+  "macro_alignment_state x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2,
+   "('MACRO_CONFLICTS_CALL', 'ARMED')": 2,
+   "('MACRO_CONFLICTS_CALL', 'STAND_DOWN')": 4,
+   "('MACRO_CONFLICTS_PUT', 'ARMED')": 1,
+   "('MACRO_CONFLICTS_PUT', 'EXECUTE')": 1,
+   "('MACRO_NOT_APPLICABLE', 'ARMED')": 226,
+   "('MACRO_NOT_APPLICABLE', 'EXECUTE')": 220,
+   "('MACRO_NOT_APPLICABLE', 'STAND_DOWN')": 752,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'ARMED')": 2,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'STAND_DOWN')": 4,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2
+  },
+  "macro_direction_authority x options_verdict": {
+   "('', 'STAND_DOWN')": 226,
+   "('DISABLED', 'ARMED')": 233,
+   "('DISABLED', 'EXECUTE')": 221,
+   "('DISABLED', 'STAND_DOWN')": 764
+  },
+  "macro_routing_state x options_verdict": {
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2,
+   "('MACRO_CONFLICTS_CALL', 'ARMED')": 2,
+   "('MACRO_CONFLICTS_CALL', 'STAND_DOWN')": 4,
+   "('MACRO_CONFLICTS_PUT', 'ARMED')": 1,
+   "('MACRO_CONFLICTS_PUT', 'EXECUTE')": 1,
+   "('MACRO_NOT_APPLICABLE', 'ARMED')": 226,
+   "('MACRO_NOT_APPLICABLE', 'EXECUTE')": 220,
+   "('MACRO_NOT_APPLICABLE', 'STAND_DOWN')": 752,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'ARMED')": 2,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'STAND_DOWN')": 4,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'ARMED')": 1,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'STAND_DOWN')": 2,
+   "('STANDARD', 'STAND_DOWN')": 226
+  }
+ },
+ "crosstab_dir": {
+  "options_macro_alignment_label": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'CALL')": 3,
+   "('MACRO_CONFLICTS_CALL', 'CALL')": 6,
+   "('MACRO_CONFLICTS_PUT', 'PUT')": 2,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'CALL')": 5,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'PUT')": 1,
+   "('NO_ENRICHMENT_MATCH', 'CALL')": 758,
+   "('NO_ENRICHMENT_MATCH', 'PUT')": 440,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'PUT')": 3
+  },
+  "options_macro_alignment_bonus": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('0.0', 'CALL')": 772,
+   "('0.0', 'PUT')": 446
+  },
+  "options_macro_gate_preserved": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('False', 'CALL')": 772,
+   "('False', 'PUT')": 446
+  },
+  "options_macro_roles": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('[\"BENEFICIARY\"]', 'CALL')": 3,
+   "('[\"BENEFICIARY\"]', 'PUT')": 2,
+   "('[\"CONTEXT_ONLY\", \"VULNERABLE\"]', 'CALL')": 1,
+   "('[\"CONTEXT_ONLY\"]', 'CALL')": 5,
+   "('[\"CONTEXT_ONLY\"]', 'PUT')": 1,
+   "('[\"VULNERABLE\"]', 'CALL')": 5,
+   "('[\"VULNERABLE\"]', 'PUT')": 3,
+   "('[]', 'CALL')": 758,
+   "('[]', 'PUT')": 440
+  },
+  "options_macro_event_guards": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'CALL')": 1,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\"]', 'CALL')": 1,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'CALL')": 4,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\"]', 'CALL')": 4,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"HORMUZ_DEESCALATION_GAP_REVERSAL_GUARD_2026_09_11\"]', 'PUT')": 3,
+   "('[\"US_CPI_RATES_CONFIRMATION_GUARD_2026_09_11\", \"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\", \"CREDIT_VOL_BREADTH_CONFIRMATION_GUARD_2026_09_11\"]', 'CALL')": 1,
+   "('[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'CALL')": 1,
+   "('[\"US_OPEN_GAP_CONTINUATION_REVERSAL_GUARD_2026_09_11\"]', 'PUT')": 2,
+   "('[]', 'CALL')": 760,
+   "('[]', 'PUT')": 441
+  },
+  "options_macro_conflict_flags": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\\\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\\\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\\\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\\\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\\\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]', 'CALL')": 772,
+   "('[\"ENERGY_THEME_VS_BASE_XLE_AVOID\", \"CONFLICT_001_RESOLVED: VIX spot three-way discrepancy \\\\u2014 canonical 17.17 from VIX Engine CSV 2026-09-11; MI JSON 17.84 (2026-09-10) and FRED 16.46 (2026-09-09) noted as prior reference only\", \"CONFLICT_002_ACTIVE: Yield rates 2Y/10Y confirmed at 4.43/4.83 from FRED 2026-09-09; USMI advisory suggests 4.548/4.943 intraday (UNVERIFIED \\\\u2014 excluded from calculations); 11.3bp gap on 10Y is material and rates-sensitive conclusions carry elevated uncertainty\", \"CONFLICT_009_CONFIRMED: Retail sales MoM -0.75% contracting vs YoY +5.01% \\\\u2014 real divergence not a data error; MoM used for regime assessment\", \"CONFLICT_011_RESOLVED: TGA $883.3bn consistent FRED CSV and USMI advisory; USMI value remains advisory-only per contract\", \"WARNING_USMI_ALL_METRICS_UNVERIFIED: All 20 USMI metric fields carry evidence_status UNVERIFIED_SOURCE and usable_for_calculation=false; used as qualitative advisory only\", \"WARNING_CPI_UNRELEASED: US CPI scheduled 12:30Z \\\\u2014 pre-release analysis; regime classification may change materially post-print\", \"WARNING_FUNG_HSIEH_NO_GO: Accuracy 0.50, Bias Cautious Tier 2 \\\\u2014 NO_GO applies 0.7x size modifier; effective size_multiplier reduced from 0.75 to 0.53; NOT a hard execution gate\", \"RESOLVED: 7 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied\", \"ACTIVE: LEI/USSLIND anomaly quarantined; excluded from calculations\"]', 'PUT')": 446
+  },
+  "macro_alignment_state": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'CALL')": 3,
+   "('MACRO_CONFLICTS_CALL', 'CALL')": 6,
+   "('MACRO_CONFLICTS_PUT', 'PUT')": 2,
+   "('MACRO_NOT_APPLICABLE', 'CALL')": 758,
+   "('MACRO_NOT_APPLICABLE', 'PUT')": 440,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'CALL')": 5,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'PUT')": 1,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'PUT')": 3
+  },
+  "macro_direction_authority": {
+   "('', 'CALL')": 26,
+   "('', 'OTHER')": 188,
+   "('', 'PUT')": 12,
+   "('DISABLED', 'CALL')": 772,
+   "('DISABLED', 'PUT')": 446
+  },
+  "macro_routing_state": {
+   "('CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'CALL')": 3,
+   "('MACRO_CONFLICTS_CALL', 'CALL')": 6,
+   "('MACRO_CONFLICTS_PUT', 'PUT')": 2,
+   "('MACRO_NOT_APPLICABLE', 'CALL')": 758,
+   "('MACRO_NOT_APPLICABLE', 'PUT')": 440,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'CALL')": 5,
+   "('NO_DIRECTIONAL_MACRO_EDGE', 'PUT')": 1,
+   "('PUT_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION', 'PUT')": 3,
+   "('STANDARD', 'CALL')": 26,
+   "('STANDARD', 'OTHER')": 188,
+   "('STANDARD', 'PUT')": 12
+  }
+ }
+}

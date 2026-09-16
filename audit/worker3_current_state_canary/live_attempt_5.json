@@ -1,0 +1,177 @@
+{
+  "identity": {
+    "run_id": "20260906_213931",
+    "invocation_id": "inv_3f44dcdb0f5d69ba30ec4f88",
+    "trading_session": "2026-09-04",
+    "ticker": "AAOI",
+    "thesis_id": "AAOI:CALL:2026-09-04:OLM2",
+    "direction": "CALL",
+    "planned_hold_sessions": 5,
+    "contract_id": "ECI1:1d95ac0f4493058db0495e6a",
+    "contract_symbol": "AAOI260918C00110000",
+    "selection_version": "avshunter_selected_structure_v1"
+  },
+  "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+  "job_key": "3b2e5afd3907c18c671485f3d151f5e35244429a928690032973c01044a2cc1b",
+  "context_hash": "5dced2806750d6bcfecdfa00af1cde88d9d63a787bcd400b1b5cd580666c2fe9",
+  "evidence_hash": "edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe",
+  "request_fingerprint": "69b41965f2a2482c23633ed14d8e5515d59492e4e68e2aa7701ff588ad113a7c",
+  "request_hash": "583d22767878c6a3c0eb7e2520f91105e8f9a8fbb1c0c8e76275f5ce94ed8cd1",
+  "request_bytes": 254249,
+  "byte_based_cost_bound_microusd": 897915,
+  "release_hash": "006f30e703466b0de489bd225b869b1a1fe4a310c98d6da6385b3b7267545657",
+  "release": {
+    "allowed_models": [
+      "claude-sonnet-4-6"
+    ],
+    "authority": "ADVISORY_ONLY",
+    "can_grant_capital": false,
+    "can_reverse_direction": false,
+    "enabled": true,
+    "input_microusd_per_million_tokens": 3000000,
+    "lab_projection_enabled": true,
+    "max_call_microusd": 1000000,
+    "max_calls_per_process": 1,
+    "max_input_bytes": 500000,
+    "max_jobs_per_activation": 1,
+    "max_output_tokens": 8192,
+    "max_total_microusd": 1000000,
+    "output_microusd_per_million_tokens": 15000000,
+    "provider": "ANTHROPIC",
+    "release_id": "WORKER3-DISPOSABLE-CANARY",
+    "require_human_review": true,
+    "require_operator_approval_id": true,
+    "require_semantic_review": true,
+    "status": "CONTROLLED_ACTIVE",
+    "timeout_seconds": 300,
+    "version": "1.0.0"
+  },
+  "prepared_count": 1,
+  "mode": "valid",
+  "live": true,
+  "count_request_attempts": 1,
+  "generation_request_attempts": 1,
+  "retries": 0,
+  "count_receipt": {
+    "model": "claude-sonnet-4-6",
+    "frozen_request_hash": "583d22767878c6a3c0eb7e2520f91105e8f9a8fbb1c0c8e76275f5ce94ed8cd1",
+    "http_status": 200,
+    "input_tokens": 84079,
+    "count_packet_hash": "05333d9aee4fadd11363ed5b80c704671d6ff02dfd5da2c524464faf45f55cd3",
+    "credential_source": "os.environ",
+    "credential_fingerprint": "7e5c85a3"
+  },
+  "counted_cost_ceiling_microusd": 387405,
+  "approval_rejection": "operator approval id must be a nonempty trimmed string",
+  "activation": {
+    "id": "5219b2ec66ff316af2d89f2149673c0ed3244a7102250a2b7c6bfbe42c9e4593",
+    "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+    "release_id": "WORKER3-DISPOSABLE-CANARY",
+    "release_hash": "006f30e703466b0de489bd225b869b1a1fe4a310c98d6da6385b3b7267545657",
+    "operator_approval_id": "user-one-call-canary",
+    "at": 1788783482.6896381
+  },
+  "error": "provider response failed controlled validation; inspect durable state",
+  "uncertain_replay_rejection": "provider process call limit exhausted",
+  "provider_attempts": 1,
+  "receipts": [
+    {
+      "request_hash": "583d22767878c6a3c0eb7e2520f91105e8f9a8fbb1c0c8e76275f5ce94ed8cd1",
+      "model": "claude-sonnet-4-6",
+      "http_status": 200,
+      "input_tokens": 84079,
+      "output_tokens": 3025,
+      "elapsed_ms": 43541,
+      "credential_source": "os.environ",
+      "credential_fingerprint": "7e5c85a3",
+      "status": "RESPONSE_RECEIVED_NOT_VALIDATED",
+      "error_type": null,
+      "failure_stage": null,
+      "timeout_seconds": 300
+    }
+  ],
+  "state": "UNCERTAIN",
+  "provider_envelopes": [
+    {
+      "model": "claude-sonnet-4-6",
+      "id": "msg_011Cep4ke6JhhCDs3H3MFmJc",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"authority\":\"ADVISORY_ONLY\",\"claims\":[{\"claim_id\":\"C1\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:thesis_state\"],\"text\":\"Thesis state is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:thesis_state}}, indicating structural setup is intact but a live trigger has not yet fired.\"},{\"claim_id\":\"C2\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price\"],\"text\":\"Signal price at session close was {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price}} USD/share; no live NBBO is available in this evidence set.\"},{\"claim_id\":\"C3\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price\"],\"text\":\"Invalidation level sourced from Wyckoff validation is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price}} USD/share; a close below this level would invalidate the thesis.\"},{\"claim_id\":\"C4\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_score\",\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_quality\"],\"text\":\"Trigger score is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_score}} and quality is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_quality}}, with primary trigger type VOL_COMPRESSION per the lab signal book.\"},{\"claim_id\":\"C5\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target\"],\"text\":\"Structural target is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target}} USD/share; this is an advisory scenario figure, not a guaranteed outcome.\"},{\"claim_id\":\"C6\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:ask\",\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:bid\"],\"text\":\"EOD quote shows ask {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:ask}} and bid {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:bid}} USD/share; this quote is session-aligned EOD and requires morning re-validation before any entry.\"},{\"claim_id\":\"C7\",\"claim_type\":\"OBSERVATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:monetisability_state\"],\"text\":\"Monetisability state is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:monetisability_state}} under advisory-scenario-only authority; EV3 was rejected due to stale quotes across all four candidates.\"},{\"claim_id\":\"C8\",\"claim_type\":\"INTERPRETATION\",\"contradicting_evidence_ids\":[],\"supporting_evidence_ids\":[\"current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:target_profit_pct\"],\"text\":\"Advisory scenario target profit is {{slot:current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:target_profit_pct}} percent; this is a static BS model estimate at constant IV assuming full move to structural target, not a realised or guaranteed figure.\"}],\"context_hash\":\"5dced2806750d6bcfecdfa00af1cde88d9d63a787bcd400b1b5cd580666c2fe9\",\"evidence_hash\":\"edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe\",\"identity\":{\"contract_id\":\"ECI1:1d95ac0f4493058db0495e6a\",\"contract_symbol\":\"AAOI260918C00110000\",\"direction\":\"CALL\",\"invocation_id\":\"inv_3f44dcdb0f5d69ba30ec4f88\",\"planned_hold_sessions\":5,\"run_id\":\"20260906_213931\",\"selection_version\":\"avshunter_selected_structure_v1\",\"thesis_id\":\"AAOI:CALL:2026-09-04:OLM2\",\"ticker\":\"AAOI\",\"trading_session\":\"2026-09-04\"},\"job_key\":\"3b2e5afd3907c18c671485f3d151f5e35244429a928690032973c01044a2cc1b\",\"numeric_facts\":[],\"schema_version\":\"trading_assessment_draft_v2\",\"sections\":[{\"claim_ids\":[\"C1\",\"C4\"],\"section\":\"SUMMARY\",\"summary\":\"Thesis is structurally valid with a strong VOL_COMPRESSION trigger, but execution is locked pending morning re-validation. No prior report to compare against.\"},{\"claim_ids\":[\"C2\"],\"section\":\"COMPANY\",\"summary\":\"AAOI is classified Information Technology; signal price reflects last completed session. No fundamental or news evidence is present in the catalog.\"},{\"claim_ids\":[\"C1\",\"C7\"],\"section\":\"CAMPAIGN\",\"summary\":\"Campaign verdict is STAGED with convexity score low; EOD status is trigger-ready but capital authorization is not granted and morning validation has not run.\"},{\"claim_ids\":[\"C4\"],\"section\":\"BEHAVIOUR\",\"summary\":\"Behaviour state shows exhaustion and mid-range location; VOL_COMPRESSION trigger is strong but direction evidence base is thin with bearish directional force present.\"},{\"claim_ids\":[\"C6\",\"C7\"],\"section\":\"CONTRACT\",\"summary\":\"EOD two-sided quote is available; spread policy passes. EV3 rejected all four candidates due to stale quotes. Morning re-quote is required before any assessment of live entry viability.\"},{\"claim_ids\":[\"C2\",\"C3\"],\"section\":\"CONTEXT\",\"summary\":\"Macro regime is advisory-only TRANSITIONAL_BULLISH with partial data quality. USSLIND quarantined. No scenario evidence bundles are present in the catalog.\"},{\"claim_ids\":[\"C5\",\"C8\"],\"section\":\"SCENARIOS\",\"summary\":\"Structural target and advisory profit scenario are present but rely on constant-IV Black-Scholes assumptions; no scenario state bundles were supplied in the catalog.\"},{\"claim_ids\":[\"C3\"],\"section\":\"CHANGES\",\"summary\":\"No prior report exists; change deltas are not applicable. Invalidation level is the primary risk boundary to monitor at session open.\"}]}"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 84079,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 3025,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    }
+  ],
+  "accounting": {
+    "reported_cost_microusd": 0,
+    "unknown_cost_reservation_microusd": 1000000,
+    "unknown_calls": 1
+  },
+  "durable_response": null,
+  "events": [
+    {
+      "seq": 1,
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "at": 1788783481.1635346,
+      "state": "PREPARED",
+      "reason": "PROVIDER_DISPATCH_DISABLED"
+    },
+    {
+      "seq": 2,
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "at": 1788783482.6896381,
+      "state": "QUEUED",
+      "reason": "CONTROLLED_PROVIDER_ACTIVATION"
+    },
+    {
+      "seq": 3,
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "at": 1788783482.8273673,
+      "state": "LEASED",
+      "reason": null
+    },
+    {
+      "seq": 4,
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "at": 1788783483.1030612,
+      "state": "DISPATCHED",
+      "reason": null
+    },
+    {
+      "seq": 5,
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "at": 1788783526.8428702,
+      "state": "UNCERTAIN",
+      "reason": "PROVIDER_OUTCOME_UNCERTAIN"
+    }
+  ],
+  "charges": [
+    {
+      "token": "886c78b68de846b984d13734f275a15f",
+      "job_id": "ca96a7464ac7111712d1fa3205500253b3f661d196ec88354b400ca7b4f2b480",
+      "reserved": 1000000,
+      "cost": null,
+      "receipt": "{\"credential_fingerprint\":\"7e5c85a3\",\"credential_source\":\"os.environ\",\"elapsed_ms\":43541,\"error_type\":null,\"failure_stage\":null,\"http_status\":200,\"input_tokens\":84079,\"output_tokens\":3025,\"request_hash\":\"583d22767878c6a3c0eb7e2520f91105e8f9a8fbb1c0c8e76275f5ce94ed8cd1\",\"runtime_failure_stage\":\"STRUCTURAL_SEMANTIC_VALIDATION\",\"status\":\"RESPONSE_RECEIVED_NOT_VALIDATED\",\"timeout_seconds\":300}"
+    }
+  ],
+  "tamper_rejection": "provider release changed after runtime initialization",
+  "accepted": false
+}

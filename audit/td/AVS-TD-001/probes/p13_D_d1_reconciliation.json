@@ -1,0 +1,634 @@
+{
+ "20260911_115904": {
+  "run": "20260911_115904",
+  "lifecycle_rows": 3320,
+  "lifecycle_unique_tickers": 3320,
+  "lifecycle_state_counts": {
+   "DROPPED_STAGE": 1720,
+   "ACTIVE_CORE": 1572,
+   "DROPPED_TERMINAL_DATA": 28
+  },
+  "lifecycle_reason_counts": {
+   "NO_SIGNAL_AT_ANY_HORIZON": 1720,
+   "DISCOVERY_SURVIVOR": 1572,
+   "NO_PRICE_DATA": 28
+  },
+  "lifecycle_reason_missing_on_dropped": 0,
+  "cds3": {
+   "input_count": 3320,
+   "survivor_count": 1572,
+   "drop_count": 1748,
+   "package_worklist_count": 1572,
+   "reconciled": true
+  },
+  "discovery_survivors_rows": 1572,
+  "discovery_survivors_unique": 1572,
+  "package_files": 1572,
+  "package_index_present": true,
+  "packages_minus_discovery": [],
+  "discovery_minus_packages": [],
+  "vanguard_rows": 1522,
+  "vanguard_unique": 1522,
+  "vanguard_rejects_rows": 50,
+  "vanguard_rejects_unique": 50,
+  "vanguard_reject_reasons": {
+   "DATA_FAILURE_NO_OHLCV": 50
+  },
+  "vanguard_identity": {
+   "packages": 1572,
+   "passed_unique+rejects_unique": 1572
+  },
+  "vse_rows": 1522,
+  "vse_unique": 1522,
+  "vse_scope_cols": [],
+  "vse_scope_counts": {},
+  "vse_not_scoped_unique_tickers": 0,
+  "oi_rows": 1444,
+  "oi_unique": 1444,
+  "vanguard_to_options_identity": {
+   "vanguard_unique": 1522,
+   "oi_unique": 1444,
+   "not_scoped": 0,
+   "gap": 78
+  },
+  "options_session_exceptions": 1,
+  "eil_rows": 1444,
+  "eil_unique": 1444,
+  "execution_rows": 1444,
+  "execution_unique": 1444,
+  "eod_dropoff_unique": 1444,
+  "eod_dropoff_rows": 1444,
+  "morning_candidates_unique": 1444,
+  "fob_rows": 1444,
+  "fob_unique": 1444,
+  "fob_direction_col": "governed_direction",
+  "fob_direction_split": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "fob_raw_direction_values": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "fob_lab_execution_status": {
+   "MANUAL_REVIEW": 946,
+   "BLOCK": 248,
+   "INVALIDATION_MISSING": 202,
+   "CONTRACT_REPAIR": 29,
+   "BUY_SMALL": 19
+  },
+  "fob_execution_eligibility_state": {
+   "REVIEW_REQUIRED": 946,
+   "NOT_ELIGIBLE": 450,
+   "CONTRACT_REPAIR_REQUIRED": 29,
+   "ELIGIBLE_LIMITED": 19
+  },
+  "fob_morning_execution_permission": {
+   "NOT_ELIGIBLE": 918,
+   "LIQUIDITY_STILL_PENDING": 361,
+   "NO_GO_ECONOMICS": 76,
+   "WAIT": 46,
+   "GO_LIMIT": 19,
+   "NO_GO_DIRECTION": 18,
+   "NO_GO_MOVE_ALREADY_REALIZED": 4,
+   "CONTRACT_REPAIR": 2
+  },
+  "fob_morning_execution_lane": {
+   "UPSTREAM_NOT_AUTHORIZED": 918,
+   "QUOTE_STALE": 351,
+   "NON_MONETISABLE": 76,
+   "WAIT_FOR_PULLBACK": 42,
+   "MORNING_VALIDATED": 19,
+   "DIRECTION_INTEGRITY_FAILED": 18,
+   "REVIEWABLE_SPREAD": 8,
+   "GAP_CONFIRMATION_EXTENDED": 4,
+   "MOVE_ALREADY_REALIZED": 4,
+   "CONTRACT_ECONOMICS_RECOMPUTE": 2,
+   "DTE_UNSUITABLE": 2
+  },
+  "v3_rows": 19,
+  "v3_direction_split": {
+   "CALL": 10,
+   "PUT": 9
+  },
+  "fob_to_v3_identity": {
+   "fob": 1444,
+   "v3": 19,
+   "fob_non_v3_with_status": 1425,
+   "status_of_non_v3": {
+    "MANUAL_REVIEW": 946,
+    "BLOCK": 248,
+    "INVALIDATION_MISSING": 202,
+    "CONTRACT_REPAIR": 29
+   }
+  },
+  "mvt_rows": 1444,
+  "mvt_governed_direction": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "mvt_effective_execution_verdict": {
+   "MORNING_VALIDATION_REQUIRED": 526,
+   "OPTIONS_REPAIR_REQUIRED": 422,
+   "STRUCTURAL_WATCH": 294,
+   "FUTURE_WATCH": 202
+  },
+  "dropoff_rows": 3320,
+  "dropoff_unique": 3320,
+  "dropoff_last_stage": {
+   "UNIVERSE": 1748,
+   "EOD_CANDIDATE": 1444,
+   "VANGUARD": 78,
+   "VANGUARD_REJECT": 50
+  },
+  "dropoff_stage": {
+   "BETWEEN_UNIVERSE_AND_DISCOVERY": 1748,
+   "AFTER_EOD_BEFORE_MORNING": 992,
+   "OPTIONS_INTELLIGENCE": 452,
+   "BETWEEN_VANGUARD_AND_OPTIONS": 78,
+   "VANGUARD": 50
+  },
+  "dropoff_root_cause": {
+   "DISCOVERY_SELECTION_FILTER": 1748,
+   "UNCLASSIFIED": 992,
+   "OPTIONS_GATE_BLOCK": 226,
+   "NO_USABLE_OPTIONS_CONTRACT": 225,
+   "VANGUARD_INPUT_DATA_REJECT": 50,
+   "NEGATIVE_ACTUARIAL_EDGE": 49,
+   "WEAK_ACTUARIAL_EDGE": 29,
+   "LIQUIDITY_OR_SPREAD_BLOCK": 1
+  },
+  "dropoff_reason_top": {
+   "UNIVERSE_TICKER_NOT_SELECTED_BY_DISCOVERY": 1748,
+   "EOD_THESIS_READY_REPAIR_AT_OPEN": 672,
+   "EOD_TRIGGER_READY": 313,
+   "INVALIDATION_MISSING": 196,
+   "No governed long CALL/PUT direction; chain request suppressed": 188,
+   "DATA_FAILURE_NO_OHLCV": 50,
+   "NO_OPTIONS_INTELLIGENCE_ROW;NEGATIVE_EDGE": 49,
+   "Chain fetch failed: option-chain quote/session mismatch": 36,
+   "NO_OPTIONS_INTELLIGENCE_ROW;WEAK_EDGE": 29,
+   "STRUCTURAL_TARGET_UNRESOLVED": 29,
+   "EOD_THESIS_READY": 4,
+   "EOD_WATCHLIST_MONETISABLE": 3,
+   "BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE": 1,
+   "Chain fetch failed: MarketData option chain unavailable for DEC": 1,
+   "Low OIS=0 (<20) \u2014 Actuarial N=139 \u2014 moderate sample; edge less certain (-5) [LIVE_LOW \u2014 confirm before entry]": 1
+  },
+  "dropoff_unexplained_rows": 992,
+  "dropoff_unexplained_by_stage": {
+   "AFTER_EOD_BEFORE_MORNING": 992
+  },
+  "dropoff_unexplained_reason_values": {
+   "EOD_THESIS_READY_REPAIR_AT_OPEN": 672,
+   "EOD_TRIGGER_READY": 313,
+   "EOD_THESIS_READY": 4,
+   "EOD_WATCHLIST_MONETISABLE": 3
+  },
+  "dropoff_unexplained_sample": [
+   "A",
+   "AA",
+   "AAOI",
+   "AAON",
+   "AAPL",
+   "ABCL",
+   "ABNB",
+   "ABT",
+   "ABTC",
+   "ACAD",
+   "ACGL",
+   "ACIW",
+   "ACM",
+   "ACMR",
+   "ADBE"
+  ],
+  "dropoff_unexplained_in_fob": 992,
+  "dropoff_universe_vs_lifecycle": {
+   "dropoff_tickers": 3320,
+   "lifecycle_tickers": 3320,
+   "symdiff": 0
+  },
+  "manifest_row_counts": {
+   "completed_market_profile": 1485,
+   "discovery": 1572,
+   "eil": 1444,
+   "execution": 1444,
+   "morning_candidates": 1444,
+   "morning_validation": 1444,
+   "options": 1444,
+   "v5": 0,
+   "vanguard": 1522
+  },
+  "pipeline_integrity_eil_total_rows": 1444,
+  "options_summary": {
+   "signals_scoped": 1444,
+   "signals_processed": 1444,
+   "execute": 221,
+   "armed": 233,
+   "stand_down": 990,
+   "route_counts": {
+    "OPTIONS_BLOCKED": 422,
+    "OPTIONS_ARMED_HALF": 393,
+    "OPTIONS_PROBE_ONLY": 316,
+    "OPTIONS_GO_REVIEW": 313
+   }
+  },
+  "options_summary_cds_chain": {
+   "enabled": true,
+   "schema_version": "option_chain_v2",
+   "worklist_authorised": 1255,
+   "worklist_excluded": 267,
+   "session_exceptions": 1,
+   "physical_requests": 37,
+   "cache_hits": 1218,
+   "marketdata_fetches": 0,
+   "polygon_fallback_fetches": 0,
+   "polygon_options_disabled": true,
+   "marketdata_empty": 37,
+   "blocked_requests": 0,
+   "liquidity_lifecycle_enabled": true,
+   "liquidity_lifecycle_persisted": 993,
+   "liquidity_lifecycle_thesis_only": 225,
+   "liquidity_lifecycle_errors": 0,
+   "non_options_entries_ignored": 3044
+  },
+  "doi_counts": {
+   "input_rows": 1444,
+   "unique_tickers": 1444,
+   "retained_opportunities": 1444,
+   "family_rows": 1218,
+   "counts_by_state": {
+    "FAMILY_NOT_VALUED_RATE_UNAVAILABLE": 1218,
+    "NOT_APPLICABLE_NON_DIRECTIONAL": 188,
+    "DATA_EXCEPTION_RETAINED": 38
+   },
+   "exception_count": 38
+  },
+  "ladder": [
+   {
+    "transition": "discovery input -> survivors",
+    "input": 3320,
+    "presented": 1572,
+    "named_exceptions": 3320,
+    "gap": -1572,
+    "note": "named = lifecycle reason_code rows (see lifecycle_state_counts to separate survivors)"
+   },
+   {
+    "transition": "survivors -> packages",
+    "input": 1572,
+    "presented": 1572,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "packages -> vanguard passed",
+    "input": 1572,
+    "presented": 1522,
+    "named_exceptions": 50,
+    "gap": 0,
+    "note": "vanguard_rejects.csv"
+   },
+   {
+    "transition": "vanguard passed -> options scoped",
+    "input": 1522,
+    "presented": 1444,
+    "named_exceptions": 0,
+    "gap": 78,
+    "note": "NOT_SCOPED tickers in vanguard_signals_enriched"
+   },
+   {
+    "transition": "options -> EIL",
+    "input": 1444,
+    "presented": 1444,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "EIL -> execution",
+    "input": 1444,
+    "presented": 1444,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "execution -> EOD dropoff/morning candidates",
+    "input": 1444,
+    "presented": 1444,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "morning candidates -> Lab final book",
+    "input": 1444,
+    "presented": 1444,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "Lab final book -> lab_signal_book_v3 (GO)",
+    "input": 1444,
+    "presented": 19,
+    "named_exceptions": 1425,
+    "gap": 0,
+    "note": "named = non-GO lab_execution_status rows"
+   }
+  ]
+ },
+ "20260910_150045": {
+  "run": "20260910_150045",
+  "lifecycle_rows": 3320,
+  "lifecycle_unique_tickers": 3320,
+  "lifecycle_state_counts": {
+   "DROPPED_STAGE": 1748,
+   "ACTIVE_CORE": 1544,
+   "DROPPED_TERMINAL_DATA": 28
+  },
+  "lifecycle_reason_counts": {
+   "NO_SIGNAL_AT_ANY_HORIZON": 1748,
+   "DISCOVERY_SURVIVOR": 1544,
+   "NO_PRICE_DATA": 28
+  },
+  "lifecycle_reason_missing_on_dropped": 0,
+  "cds3": {
+   "input_count": 3320,
+   "survivor_count": 1544,
+   "drop_count": 1776,
+   "package_worklist_count": 1544,
+   "reconciled": true
+  },
+  "discovery_survivors_rows": 1544,
+  "discovery_survivors_unique": 1544,
+  "package_files": 1544,
+  "package_index_present": true,
+  "packages_minus_discovery": [],
+  "discovery_minus_packages": [],
+  "vanguard_rows": 1494,
+  "vanguard_unique": 1494,
+  "vanguard_rejects_rows": 50,
+  "vanguard_rejects_unique": 50,
+  "vanguard_reject_reasons": {
+   "DATA_FAILURE_NO_OHLCV": 50
+  },
+  "vanguard_identity": {
+   "packages": 1544,
+   "passed_unique+rejects_unique": 1544
+  },
+  "vse_rows": 1494,
+  "vse_unique": 1494,
+  "vse_scope_cols": [],
+  "vse_scope_counts": {},
+  "vse_not_scoped_unique_tickers": 0,
+  "oi_rows": 1424,
+  "oi_unique": 1424,
+  "vanguard_to_options_identity": {
+   "vanguard_unique": 1494,
+   "oi_unique": 1424,
+   "not_scoped": 0,
+   "gap": 70
+  },
+  "options_session_exceptions": 0,
+  "eil_rows": 1424,
+  "eil_unique": 1424,
+  "execution_rows": 1424,
+  "execution_unique": 1424,
+  "eod_dropoff_unique": 1424,
+  "eod_dropoff_rows": 1424,
+  "morning_candidates_unique": 1424,
+  "fob_rows": 1424,
+  "fob_unique": 1424,
+  "fob_direction_col": "governed_direction",
+  "fob_direction_split": {
+   "CALL": 791,
+   "PUT": 451,
+   "OTHER": 182
+  },
+  "fob_raw_direction_values": {
+   "CALL": 791,
+   "PUT": 451,
+   "STRANGLE": 135,
+   "UNRESOLVED": 47
+  },
+  "fob_lab_execution_status": {
+   "MANUAL_REVIEW": 941,
+   "BLOCK": 291,
+   "INVALIDATION_MISSING": 192
+  },
+  "fob_execution_eligibility_state": {
+   "nan": 1424
+  },
+  "fob_morning_execution_permission": {
+   "nan": 1424
+  },
+  "fob_morning_execution_lane": {
+   "nan": 1424
+  },
+  "v3_rows": null,
+  "dropoff_rows": 3320,
+  "dropoff_unique": 3320,
+  "dropoff_last_stage": {
+   "UNIVERSE": 1776,
+   "EOD_CANDIDATE": 1424,
+   "VANGUARD": 70,
+   "VANGUARD_REJECT": 50
+  },
+  "dropoff_stage": {
+   "BETWEEN_UNIVERSE_AND_DISCOVERY": 1776,
+   "AFTER_EOD_BEFORE_MORNING": 1019,
+   "OPTIONS_INTELLIGENCE": 405,
+   "BETWEEN_VANGUARD_AND_OPTIONS": 70,
+   "VANGUARD": 50
+  },
+  "dropoff_root_cause": {
+   "DISCOVERY_SELECTION_FILTER": 1776,
+   "UNCLASSIFIED": 1019,
+   "OPTIONS_GATE_BLOCK": 221,
+   "NO_USABLE_OPTIONS_CONTRACT": 183,
+   "VANGUARD_INPUT_DATA_REJECT": 50,
+   "NEGATIVE_ACTUARIAL_EDGE": 40,
+   "WEAK_ACTUARIAL_EDGE": 30,
+   "LIQUIDITY_OR_SPREAD_BLOCK": 1
+  },
+  "dropoff_reason_top": {
+   "UNIVERSE_TICKER_NOT_SELECTED_BY_DISCOVERY": 1776,
+   "EOD_THESIS_READY_REPAIR_AT_OPEN": 700,
+   "EOD_TRIGGER_READY": 310,
+   "INVALIDATION_MISSING": 192,
+   "No governed long CALL/PUT direction; chain request suppressed": 182,
+   "DATA_FAILURE_NO_OHLCV": 50,
+   "NO_OPTIONS_INTELLIGENCE_ROW;NEGATIVE_EDGE": 40,
+   "NO_OPTIONS_INTELLIGENCE_ROW;WEAK_EDGE": 30,
+   "STRUCTURAL_TARGET_UNRESOLVED": 29,
+   "EOD_WATCHLIST_MONETISABLE": 4,
+   "EOD_THESIS_READY": 4,
+   "EOD_DATA_INSUFFICIENT_REVIEW": 1,
+   "Low OIS=0 (<20) \u2014 Actuarial N=139 \u2014 moderate sample; edge less certain (-5) [LIVE_LOW \u2014 confirm before entry]": 1,
+   "Chain fetch failed: MarketData option chain unavailable for DEC": 1
+  },
+  "dropoff_unexplained_rows": 1019,
+  "dropoff_unexplained_by_stage": {
+   "AFTER_EOD_BEFORE_MORNING": 1019
+  },
+  "dropoff_unexplained_reason_values": {
+   "EOD_THESIS_READY_REPAIR_AT_OPEN": 700,
+   "EOD_TRIGGER_READY": 310,
+   "EOD_WATCHLIST_MONETISABLE": 4,
+   "EOD_THESIS_READY": 4,
+   "EOD_DATA_INSUFFICIENT_REVIEW": 1
+  },
+  "dropoff_unexplained_sample": [
+   "A",
+   "AA",
+   "AAOI",
+   "AAON",
+   "AAPL",
+   "ABCL",
+   "ABNB",
+   "ABT",
+   "ABTC",
+   "ACAD",
+   "ACGL",
+   "ACIW",
+   "ACM",
+   "ACMR",
+   "ADBE"
+  ],
+  "dropoff_unexplained_in_fob": 1019,
+  "dropoff_universe_vs_lifecycle": {
+   "dropoff_tickers": 3320,
+   "lifecycle_tickers": 3320,
+   "symdiff": 0
+  },
+  "manifest_row_counts": {
+   "completed_market_profile": 1468,
+   "discovery": 1544,
+   "eil": 1424,
+   "execution": 1424,
+   "morning_candidates": 1424,
+   "morning_validation": 0,
+   "options": 1424,
+   "v5": 0,
+   "vanguard": 1494
+  },
+  "pipeline_integrity_eil_total_rows": 1424,
+  "options_summary": {
+   "signals_scoped": 1424,
+   "signals_processed": 1424,
+   "execute": 227,
+   "armed": 225,
+   "stand_down": 972,
+   "route_counts": {
+    "OPTIONS_ARMED_HALF": 414,
+    "OPTIONS_BLOCKED": 375,
+    "OPTIONS_GO_REVIEW": 327,
+    "OPTIONS_PROBE_ONLY": 308
+   }
+  },
+  "options_summary_cds_chain": {
+   "enabled": true,
+   "schema_version": "option_chain_v2",
+   "worklist_authorised": 1242,
+   "worklist_excluded": 252,
+   "session_exceptions": 0,
+   "physical_requests": 1242,
+   "cache_hits": 0,
+   "marketdata_fetches": 1241,
+   "polygon_fallback_fetches": 0,
+   "polygon_options_disabled": true,
+   "marketdata_empty": 1,
+   "blocked_requests": 0,
+   "liquidity_lifecycle_enabled": true,
+   "liquidity_lifecycle_persisted": 1020,
+   "liquidity_lifecycle_thesis_only": 221,
+   "liquidity_lifecycle_errors": 0,
+   "non_options_entries_ignored": 2988
+  },
+  "doi_counts": {
+   "input_rows": 1424,
+   "unique_tickers": 1424,
+   "retained_opportunities": 1424,
+   "family_rows": 1241,
+   "counts_by_state": {
+    "NOT_APPLICABLE_NON_DIRECTIONAL": 182,
+    "FAMILY_NOT_VALUED_RATE_UNAVAILABLE": 1241,
+    "DATA_EXCEPTION_RETAINED": 1
+   },
+   "exception_count": 1
+  },
+  "ladder": [
+   {
+    "transition": "discovery input -> survivors",
+    "input": 3320,
+    "presented": 1544,
+    "named_exceptions": 3320,
+    "gap": -1544,
+    "note": "named = lifecycle reason_code rows (see lifecycle_state_counts to separate survivors)"
+   },
+   {
+    "transition": "survivors -> packages",
+    "input": 1544,
+    "presented": 1544,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "packages -> vanguard passed",
+    "input": 1544,
+    "presented": 1494,
+    "named_exceptions": 50,
+    "gap": 0,
+    "note": "vanguard_rejects.csv"
+   },
+   {
+    "transition": "vanguard passed -> options scoped",
+    "input": 1494,
+    "presented": 1424,
+    "named_exceptions": 0,
+    "gap": 70,
+    "note": "NOT_SCOPED tickers in vanguard_signals_enriched"
+   },
+   {
+    "transition": "options -> EIL",
+    "input": 1424,
+    "presented": 1424,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "EIL -> execution",
+    "input": 1424,
+    "presented": 1424,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "execution -> EOD dropoff/morning candidates",
+    "input": 1424,
+    "presented": 1424,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   },
+   {
+    "transition": "morning candidates -> Lab final book",
+    "input": 1424,
+    "presented": 1424,
+    "named_exceptions": 0,
+    "gap": 0,
+    "note": ""
+   }
+  ]
+ }
+}

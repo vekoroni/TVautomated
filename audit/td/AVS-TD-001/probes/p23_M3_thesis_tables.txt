@@ -1,0 +1,63 @@
+presented rows 9896; unique theses 8417; theses presented in both conditions 0
+unique theses by condition x direction:
+direction       CALL   PUT   All
+condition                       
+GOVERNED         172   117   289
+UNGOVERNED_PRE  6728  1400  8128
+All             6900  1517  8417
+spot_path_mismatch_flag rows: 8; sigma missing: 3
+
+T1 directional outcome by condition x direction x horizon:
+                                   n               power  side_correct  reached_V  TARGET_FIRST_V  INVALIDATION_FIRST_V  TIMEOUT_V  AMBIG_V  n_valid_S  TARGET_FIRST_S  med_terminal  med_vb_dist  med_mfe
+condition      direction hz                                                                                                                                                                               
+GOVERNED       CALL      1-5     172                             0.372      0.047           0.023                 0.465      0.512    0.000        171           0.140        -0.010        0.086    0.021
+               PUT       1-5     117                             0.496      0.043           0.034                 0.171      0.795    0.000        117           0.077        -0.000        0.124    0.039
+UNGOVERNED_PRE CALL      1-5     672                             0.507      0.083           0.073                 0.420      0.506    0.001        434           0.353         0.001        0.101    0.034
+                         11-20    35  INSUFFICIENT_POWER         0.343      0.143           0.143                 0.486      0.371    0.000          3           0.667        -0.050        0.281    0.096
+                         6-10   6021                             0.451      0.078           0.066                 0.503      0.430    0.000        705           0.409        -0.007        0.144    0.042
+               PUT       1-5     214                             0.491      0.037           0.033                 0.238      0.729    0.000        214           0.079        -0.001        0.122    0.036
+                         11-20     6  INSUFFICIENT_POWER         0.667      0.167           0.167                 0.667      0.167    0.000          6           0.000         0.027        0.370    0.101
+                         6-10   1180                             0.546      0.039           0.034                 0.363      0.603    0.000       1180           0.014         0.009        0.149    0.046
+
+T1b by condition x direction:
+                             n power  side_correct  reached_V  TARGET_FIRST_V  INVALIDATION_FIRST_V  TIMEOUT_V  AMBIG_V  n_valid_S  TARGET_FIRST_S  med_terminal  med_vb_dist  med_mfe
+condition      direction                                                                                                                                                              
+GOVERNED       CALL        172               0.372      0.047           0.023                 0.465      0.512    0.000        171           0.140        -0.010        0.086    0.021
+               PUT         117               0.496      0.043           0.034                 0.171      0.795    0.000        117           0.077        -0.000        0.124    0.039
+UNGOVERNED_PRE CALL       6728               0.456      0.078           0.067                 0.495      0.438    0.000       1142           0.388        -0.006        0.140    0.042
+               PUT        1400               0.538      0.039           0.034                 0.345      0.621    0.000       1400           0.024         0.006        0.144    0.045
+
+T1c by direction (all):
+              n power  side_correct  reached_V  TARGET_FIRST_V  INVALIDATION_FIRST_V  TIMEOUT_V  AMBIG_V  n_valid_S  TARGET_FIRST_S  med_terminal  med_vb_dist  med_mfe
+direction                                                                                                                                                              
+CALL       6900               0.454      0.078           0.066                 0.494      0.440    0.000       1313           0.356        -0.006        0.138    0.041
+PUT        1517               0.535      0.040           0.034                 0.332      0.634    0.000       1517           0.028         0.005        0.142    0.044
+
+side_correct x TARGET_FIRST_V by condition x direction:
+directional_success_V                  False  True 
+condition      direction side_correct              
+GOVERNED       CALL      False           108      0
+                         True             60      4
+               PUT       False            59      0
+                         True             54      4
+UNGOVERNED_PRE CALL      False          3650      7
+                         True           2628    443
+               PUT       False           647      0
+                         True            705     48
+
+side-wrong class by condition x direction:
+side_wrong_class          INVALIDATION_TOUCHED  TIMEOUT_NEGATIVE_NO_TOUCH   All
+condition      direction                                                       
+GOVERNED       CALL                         60                         48   108
+               PUT                          18                         41    59
+UNGOVERNED_PRE CALL                       2626                       1031  3657
+               PUT                         412                        235   647
+All                                       3116                       1355  4471
+INSUFFICIENT_POWER GOVERNED CALL INVALIDATION_TOUCHED n=60 loss/stop q10..q90 [0.194 0.523 1.032 1.899 4.073] mae/stop [1.156 1.352 1.87  2.741 5.325] frac terminal loss > stop 0.517 med stop_dist 0.0300
+INSUFFICIENT_POWER GOVERNED CALL TIMEOUT_NEGATIVE_NO_TOUCH n=48 loss/stop q10..q90 [0.046 0.137 0.339 0.554 0.666] mae/stop [0.273 0.359 0.614 0.771 0.882] frac terminal loss > stop 0.000 med stop_dist 0.0331
+INSUFFICIENT_POWER GOVERNED PUT INVALIDATION_TOUCHED n=18 loss/stop q10..q90 [0.355 0.537 0.801 1.185 1.638] mae/stop [1.168 1.197 1.37  1.797 2.003] frac terminal loss > stop 0.444 med stop_dist 0.0420
+INSUFFICIENT_POWER GOVERNED PUT TIMEOUT_NEGATIVE_NO_TOUCH n=41 loss/stop q10..q90 [0.06  0.124 0.302 0.482 0.617] mae/stop [0.186 0.36  0.496 0.647 0.86 ] frac terminal loss > stop 0.000 med stop_dist 0.1028
+UNGOVERNED_PRE CALL INVALIDATION_TOUCHED n=2626 loss/stop q10..q90 [0.351 0.75  1.244 2.07  3.541] mae/stop [1.14  1.364 1.893 2.881 4.607] frac terminal loss > stop 0.620 med stop_dist 0.0301
+UNGOVERNED_PRE CALL TIMEOUT_NEGATIVE_NO_TOUCH n=1031 loss/stop q10..q90 [0.051 0.153 0.337 0.53  0.716] mae/stop [0.383 0.509 0.711 0.867 0.949] frac terminal loss > stop 0.000 med stop_dist 0.0600
+UNGOVERNED_PRE PUT INVALIDATION_TOUCHED n=412 loss/stop q10..q90 [0.303 0.673 1.149 1.68  2.72 ] mae/stop [1.097 1.281 1.641 2.355 3.412] frac terminal loss > stop 0.570 med stop_dist 0.0613
+UNGOVERNED_PRE PUT TIMEOUT_NEGATIVE_NO_TOUCH n=235 loss/stop q10..q90 [0.064 0.14  0.277 0.451 0.63 ] mae/stop [0.413 0.558 0.68  0.848 0.934] frac terminal loss > stop 0.000 med stop_dist 0.0691

@@ -1,0 +1,188 @@
+
+=== 20260723_072618 labelled_rows=796 book_rows=1068 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'DEFENSIVE_ROTATION': 1068}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1068}
+  contract_delta: fill=1.00 nuniq=335 top={'0.0': 734, '-0.4184378464973856': 1, '0.5261590162373508': 1, '0.5107867885112486': 1, '0.3459531909399237': 1, '0.4347079779872806': 1}
+  dte: fill=1.00 nuniq=7 top={'30.0': 734, '29.0': 272, '8.0': 31, '15.0': 21, '57.0': 7, '22.0': 2}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1068}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_NEUTRAL': 1068}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1068}
+  trigger_primary: fill=0.38 nuniq=4 top={'nan': 660, 'VOL_COMPRESSION': 275, 'TRAP': 61, 'RANGE_BREAK_EARLY': 61, 'RANGE_BREAK': 11}
+
+=== 20260731_083130 labelled_rows=749 book_rows=952 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'MIXED': 952}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 952}
+  contract_delta: fill=1.00 nuniq=282 top={'0.0': 671, '0.5307213153742594': 1, '0.4118878368271647': 1, '0.458830386650246': 1, '-0.420086166717653': 1, '-0.4184853354946602': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 671, '21.0': 253, '28.0': 12, '49.0': 6, '7.0': 5, '14.0': 5}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 952}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BEARISH': 952}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 952}
+  trigger_primary: fill=0.22 nuniq=4 top={'nan': 741, 'VOL_COMPRESSION': 156, 'RANGE_BREAK_EARLY': 28, 'TRAP': 22, 'RANGE_BREAK': 5}
+
+=== 20260804_114554 labelled_rows=640 book_rows=795 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'MIXED': 795}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 795}
+  contract_delta: fill=1.00 nuniq=143 top={'0.0': 653, '0.4762761792632588': 1, '-0.0002817580291611': 1, '0.3020728510587744': 1, '0.5187584824093774': 1, '-0.1349853997124381': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 653, '17.0': 73, '24.0': 32, '45.0': 31, '31.0': 4, '10.0': 2}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 795}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 795}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 795}
+  trigger_primary: fill=0.17 nuniq=4 top={'nan': 662, 'VOL_COMPRESSION': 93, 'RANGE_BREAK_EARLY': 21, 'TRAP': 14, 'RANGE_BREAK': 5}
+
+=== 20260808_103922 labelled_rows=741 book_rows=960 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 960}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 960}
+  contract_delta: fill=1.00 nuniq=207 top={'0.0': 754, '-0.0246033429682427': 1, '-0.1153771966788708': 1, '0.0320911732638126': 1, '0.0067436374931033': 1, '0.4877320284366279': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 754, '13.0': 104, '41.0': 75, '27.0': 17, '34.0': 6, '20.0': 4}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 960}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 960}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 960}
+  trigger_primary: fill=0.21 nuniq=4 top={'nan': 757, 'VOL_COMPRESSION': 106, 'RANGE_BREAK_EARLY': 55, 'TRAP': 34, 'RANGE_BREAK': 8}
+
+=== 20260809_195823 labelled_rows=660 book_rows=848 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 848}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 848}
+  contract_delta: fill=1.00 nuniq=189 top={'0.0': 660, '-0.107049305662457': 1, '0.026676845678331': 1, '0.0049935975449684': 1, '0.4853225828366516': 1, '0.5268086039168981': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 660, '12.0': 93, '40.0': 75, '26.0': 12, '33.0': 5, '19.0': 3}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 848}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 848}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 848}
+  trigger_primary: fill=0.24 nuniq=4 top={'nan': 646, 'VOL_COMPRESSION': 106, 'RANGE_BREAK_EARLY': 54, 'TRAP': 34, 'RANGE_BREAK': 8}
+
+=== 20260814_114553 labelled_rows=910 book_rows=1186 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 1186}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1186}
+  contract_delta: fill=1.00 nuniq=426 top={'0.0': 761, '-0.4264364231144578': 1, '-0.3782240663260749': 1, '0.5514070361978027': 1, '-0.4599865179813355': 1, '-0.0487649113128252': 1}
+  dte: fill=1.00 nuniq=7 top={'30.0': 761, '35.0': 256, '7.0': 143, '21.0': 14, '14.0': 9, '28.0': 2}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1186}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 1186}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1186}
+  trigger_primary: fill=0.26 nuniq=4 top={'nan': 874, 'VOL_COMPRESSION': 184, 'TRAP': 58, 'RANGE_BREAK_EARLY': 52, 'RANGE_BREAK': 18}
+
+=== 20260815_091604 labelled_rows=876 book_rows=1123 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 1123}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1123}
+  contract_delta: fill=1.00 nuniq=333 top={'0.0': 791, '-0.3042144464737057': 1, '0.4646950188928238': 1, '-0.4259554882684142': 1, '-0.0044732516731197': 1, '-0.2872604059554702': 1}
+  dte: fill=1.00 nuniq=8 top={'30.0': 789, '34.0': 215, '6.0': 81, '13.0': 25, '20.0': 8, '27.0': 3}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1123}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 1123}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1123}
+  trigger_primary: fill=0.35 nuniq=4 top={'nan': 730, 'VOL_COMPRESSION': 246, 'TRAP': 70, 'RANGE_BREAK_EARLY': 54, 'RANGE_BREAK': 23}
+
+=== 20260816_075339 labelled_rows=874 book_rows=1097 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 1097}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1097}
+  contract_delta: fill=1.00 nuniq=277 top={'0.0': 821, '0.4613709659521748': 1, '-0.4269753855002299': 1, '-0.2857387507179856': 1, '0.0006678267508037': 1, '0.4153468193874223': 1}
+  dte: fill=1.00 nuniq=8 top={'30.0': 819, '33.0': 198, '5.0': 47, '12.0': 22, '19.0': 7, '26.0': 2}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1097}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 1097}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1097}
+  trigger_primary: fill=0.36 nuniq=4 top={'nan': 704, 'VOL_COMPRESSION': 245, 'TRAP': 70, 'RANGE_BREAK_EARLY': 55, 'RANGE_BREAK': 23}
+
+=== 20260818_041214 labelled_rows=946 book_rows=1135 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 1135}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1135}
+  contract_delta: fill=1.00 nuniq=302 top={'0.0': 834, '-0.3391970810707158': 1, '0.211724457816942': 1, '0.0006661899455073': 1, '0.4630032980542553': 1, '-0.4015739867983646': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 831, '31.0': 208, '3.0': 48, '10.0': 30, '17.0': 16, '59.0': 2}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1135}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 1135}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1135}
+  trigger_primary: fill=0.37 nuniq=4 top={'nan': 717, 'VOL_COMPRESSION': 276, 'TRAP': 83, 'RANGE_BREAK_EARLY': 38, 'RANGE_BREAK': 21}
+
+=== 20260820_225652 labelled_rows=856 book_rows=1130 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'MIXED': 1130}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1130}
+  contract_delta: fill=1.00 nuniq=287 top={'0.0': 844, '0.4840148769008555': 1, '-0.4712637248080041': 1, '0.0786472288821208': 1, '0.4912587363057308': 1, '0.0715182309857418': 1}
+  dte: fill=1.00 nuniq=7 top={'30.0': 833, '29.0': 184, '1.0': 65, '8.0': 29, '15.0': 12, '22.0': 6}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1130}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BEARISH': 1130}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1130}
+  trigger_primary: fill=0.38 nuniq=4 top={'nan': 706, 'VOL_COMPRESSION': 309, 'TRAP': 72, 'RANGE_BREAK_EARLY': 32, 'RANGE_BREAK': 11}
+
+=== 20260821_090928 labelled_rows=853 book_rows=1129 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'MIXED': 1129}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 1129}
+  contract_delta: fill=1.00 nuniq=251 top={'0.0': 879, '0.3535619026404214': 1, '-0.3941666653930764': 1, '-0.424049601959572': 1, '-0.4410932526841289': 1, '0.4869229805955556': 1}
+  dte: fill=1.00 nuniq=7 top={'30.0': 878, '28.0': 203, '7.0': 27, '14.0': 11, '21.0': 8, '10.0': 1}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 1129}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BEARISH': 1129}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 1129}
+  trigger_primary: fill=0.39 nuniq=4 top={'nan': 690, 'VOL_COMPRESSION': 319, 'TRAP': 78, 'RANGE_BREAK_EARLY': 32, 'RANGE_BREAK': 10}
+
+=== 20260824_100301 labelled_rows=706 book_rows=934 cols=['sector_tilt', 'catalyst_overlay', 'contract_delta', 'dte', 'macro_regime', 'regime_drift_status', 'morning_execution_permission', 'trigger_primary']
+  sector_tilt: fill=1.00 nuniq=1 top={'MIXED': 934}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 934}
+  contract_delta: fill=1.00 nuniq=148 top={'0.0': 787, '0.5236699567553923': 1, '-0.3822042756514334': 1, '-0.4441358765211511': 1, '-0.3479356788804596': 1, '-0.3886611467951389': 1}
+  dte: fill=1.00 nuniq=6 top={'30.0': 785, '25.0': 118, '11.0': 20, '18.0': 7, '53.0': 3, '32.0': 1}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 934}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BEARISH': 934}
+  morning_execution_permission: fill=1.00 nuniq=4 top={'NOT_ELIGIBLE': 778, 'NO_GO_ECONOMICS': 118, 'GO_LIMIT': 28, 'CONTRACT_REPAIR': 10}
+  trigger_primary: fill=0.00 nuniq=0 top={'nan': 934}
+
+=== 20260831_010309 labelled_rows=128 book_rows=201 cols=['gics_sector', 'gics_sector_norm', 'sector', 'sector_etf', 'sector_tilt', 'catalyst_overlay', 'catalyst_type', 'catalyst_date', 'catalyst_event_status', 'catalyst_truth_score', 'iv_rank', 'contract_delta', 'delta_band', 'dte', 'macro_regime', 'regime', 'regime_drift_status', 'morning_execution_permission', 'thesis_state', 'trigger_primary']
+  gics_sector: fill=1.00 nuniq=13 top={'Information Technology': 48, 'Health Care': 35, 'Energy': 23, 'Financials': 18, 'Consumer Discretionary': 15, 'Real Estate': 15}
+  gics_sector_norm: fill=1.00 nuniq=13 top={'Information Technology': 48, 'Health Care': 35, 'Energy': 23, 'Financials': 18, 'Consumer Discretionary': 15, 'Real Estate': 15}
+  sector: fill=1.00 nuniq=14 top={'Information Technology': 48, 'Health Care': 35, 'Energy': 22, 'Financials': 18, 'Real Estate': 15, 'Consumer Discretionary': 14}
+  sector_etf: fill=1.00 nuniq=20 top={'XLK': 48, 'XLV': 35, 'XLE': 23, 'XLF': 18, 'XLY': 15, 'XLRE': 15}
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 201}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 201}
+  catalyst_type: fill=1.00 nuniq=4 top={'STRUCTURAL': 198, 'AI_POWER_COOLING_INFRASTRUCTURE_READTHROUGH': 1, 'LOWER_BRENT_TACTICAL_ENERGY_WEAKNESS': 1, 'AI_INFRASTRUCTURE_NETWORKING_READTH': 1}
+  catalyst_date: fill=0.01 nuniq=1 top={'nan': 198, '2026-08-27': 3}
+  catalyst_event_status: fill=0.01 nuniq=1 top={'nan': 198, 'CONFIRMED': 3}
+  catalyst_truth_score: fill=1.00 nuniq=10 top={'7.75': 58, '15.75': 52, '9.75': 37, '17.75': 26, '10.75': 14, '18.75': 10}
+  iv_rank: fill=1.00 nuniq=133 top={'100.0': 54, '24.4': 3, '37.8': 2, '35.9': 2, '46.1': 2, '27.3': 2}
+  contract_delta: fill=0.95 nuniq=191 top={'nan': 10, '-0.522649365534827': 1, '-0.5108762425915286': 1, '-0.588580543779233': 1, '-0.4981800233536053': 1, '0.3752994899532629': 1}
+  delta_band: fill=0.95 nuniq=5 top={'NEAR_ATM_035_060': 171, 'ITM_060_075': 10, 'nan': 10, 'DEVELOPING_OTM_020_035': 7, 'FAR_OTM_LT_020': 2, 'DEEP_ITM_GT_075': 1}
+  dte: fill=0.95 nuniq=6 top={'19.0': 140, '47.0': 30, '33.0': 12, 'nan': 10, '12.0': 5, '26.0': 3}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 201}
+  regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 201}
+  regime_drift_status: fill=1.00 nuniq=1 top={'STABLE': 201}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 201}
+  thesis_state: fill=1.00 nuniq=3 top={'VALID_THESIS_REPAIR_AT_OPEN': 112, 'VALID_THESIS_TRIGGER_PENDING': 88, 'VALID_THESIS_WATCHLIST': 1}
+  trigger_primary: fill=0.76 nuniq=3 top={'VOL_COMPRESSION': 111, 'nan': 48, 'TRAP': 29, 'RANGE_BREAK_EARLY': 13}
+
+=== 20260901_082437 labelled_rows=61 book_rows=191 cols=['gics_sector', 'gics_sector_norm', 'sector', 'sector_etf', 'sector_tilt', 'catalyst_overlay', 'catalyst_type', 'catalyst_date', 'catalyst_event_status', 'catalyst_truth_score', 'iv_rank', 'contract_delta', 'delta_band', 'dte', 'macro_regime', 'regime', 'macro_sector_alignment', 'regime_drift_status', 'morning_execution_permission', 'thesis_state', 'trigger_primary']
+  gics_sector: fill=1.00 nuniq=12 top={'Information Technology': 44, 'Health Care': 39, 'Consumer Discretionary': 21, 'Financials': 20, 'Energy': 13, 'Industrials': 10}
+  gics_sector_norm: fill=1.00 nuniq=12 top={'Information Technology': 44, 'Health Care': 39, 'Consumer Discretionary': 21, 'Financials': 20, 'Energy': 13, 'Industrials': 10}
+  sector: fill=1.00 nuniq=13 top={'Information Technology': 45, 'Health Care': 39, 'Consumer Discretionary': 21, 'Financials': 20, 'Energy': 12, 'Industrials': 10}
+  sector_etf: fill=1.00 nuniq=18 top={'XLK': 44, 'XLV': 39, 'XLY': 21, 'XLF': 20, 'XLE': 13, 'XLI': 10}
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 191}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 191}
+  catalyst_type: fill=1.00 nuniq=4 top={'STRUCTURAL': 188, 'AI_INFRASTRUCTURE_NETWORKING_READTH': 1, 'EARNINGS': 1, 'AI_POWER_COOLING_INFRASTRUCTURE_READTHROUGH': 1}
+  catalyst_date: fill=0.02 nuniq=1 top={'nan': 188, '2026-08-27': 3}
+  catalyst_event_status: fill=0.02 nuniq=2 top={'nan': 188, 'CONFIRMED': 2, 'AGREED': 1}
+  catalyst_truth_score: fill=1.00 nuniq=10 top={'7.75': 63, '15.75': 45, '9.75': 29, '17.75': 23, '10.75': 17, '18.75': 10}
+  iv_rank: fill=1.00 nuniq=115 top={'100.0': 56, '34.9': 3, '63.6': 3, '54.1': 2, '52.3': 2, '34.7': 2}
+  contract_delta: fill=0.92 nuniq=174 top={'nan': 15, '-0.6056': 2, '-0.4919': 2, '0.5694': 1, '0.5257': 1, '0.5341610370967772': 1}
+  delta_band: fill=0.47 nuniq=4 top={'nan': 102, 'NEAR_ATM_035_060': 70, 'ITM_060_075': 13, 'DEVELOPING_OTM_020_035': 5, 'DEEP_ITM_GT_075': 1}
+  dte: fill=0.92 nuniq=10 top={'17.0': 102, '45.0': 27, '18.0': 22, 'nan': 15, '31.0': 11, '46.0': 5}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL_BULLISH': 191}
+  regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 191}
+  macro_sector_alignment: fill=1.00 nuniq=1 top={'UNMAPPED': 191}
+  regime_drift_status: fill=1.00 nuniq=1 top={'STABLE': 191}
+  morning_execution_permission: fill=1.00 nuniq=7 top={'NOT_ELIGIBLE': 84, 'NO_GO_DIRECTION': 71, 'GO_LIMIT': 18, 'NO_GO_ECONOMICS': 11, 'WAIT': 4, 'LIQUIDITY_STILL_PENDING': 2}
+  thesis_state: fill=1.00 nuniq=4 top={'DATA_INCOMPLETE': 102, 'ACTIVE': 74, 'INVALIDATED': 13, 'TARGET_REALIZED': 2}
+  trigger_primary: fill=1.00 nuniq=5 top={'VOL_COMPRESSION': 95, 'NONE': 46, 'TRAP': 29, 'RANGE_BREAK_EARLY': 17, 'RANGE_BREAK': 4}
+
+=== 20260902_232526 labelled_rows=100 book_rows=179 cols=['gics_sector', 'gics_sector_norm', 'sector', 'sector_etf', 'sector_tilt', 'catalyst_overlay', 'catalyst_type', 'catalyst_date', 'catalyst_event_status', 'catalyst_truth_score', 'iv_rank', 'contract_delta', 'delta_band', 'dte', 'macro_regime', 'regime', 'macro_sector_alignment', 'regime_drift_status', 'morning_execution_permission', 'thesis_state', 'trigger_primary']
+  gics_sector: fill=1.00 nuniq=12 top={'Information Technology': 40, 'Health Care': 30, 'Financials': 19, 'Consumer Discretionary': 18, 'Industrials': 12, 'Energy': 11}
+  gics_sector_norm: fill=1.00 nuniq=12 top={'Information Technology': 40, 'Health Care': 30, 'Financials': 19, 'Consumer Discretionary': 18, 'Industrials': 12, 'Energy': 11}
+  sector: fill=1.00 nuniq=13 top={'Information Technology': 43, 'Health Care': 30, 'Financials': 18, 'Consumer Discretionary': 17, 'ETF': 12, 'Materials': 10}
+  sector_etf: fill=1.00 nuniq=21 top={'XLK': 40, 'XLV': 30, 'XLF': 19, 'XLY': 18, 'XLI': 12, 'XLE': 11}
+  sector_tilt: fill=1.00 nuniq=1 top={'TECH_LED_RISK_ON': 179}
+  catalyst_overlay: fill=0.00 nuniq=0 top={'nan': 179}
+  catalyst_type: fill=1.00 nuniq=4 top={'STRUCTURAL': 176, 'EARNINGS': 1, 'AI_NETWORKING_INFRASTRUCTURE_READTHROUGH': 1, 'AI_INFRASTRUCTURE_NETWORKING_READTH': 1}
+  catalyst_date: fill=0.02 nuniq=2 top={'nan': 176, '2026-08-27': 2, '2026-08-26': 1}
+  catalyst_event_status: fill=0.02 nuniq=1 top={'nan': 176, 'CONFIRMED': 3}
+  catalyst_truth_score: fill=1.00 nuniq=13 top={'7.75': 51, '15.75': 41, '9.75': 27, '17.75': 26, '10.75': 13, '18.75': 12}
+  iv_rank: fill=1.00 nuniq=113 top={'100.0': 59, '37.6': 2, '30.1': 2, '33.2': 2, '38.8': 2, '17.0': 2}
+  contract_delta: fill=0.93 nuniq=166 top={'nan': 13, '-0.4862458565361375': 1, '-0.4482279371396522': 1, '-0.6374555891079126': 1, '-0.592883481980212': 1, '0.4170068455417496': 1}
+  delta_band: fill=0.74 nuniq=4 top={'NEAR_ATM_035_060': 124, 'nan': 47, 'ITM_060_075': 5, 'DEVELOPING_OTM_020_035': 2, 'FAR_OTM_LT_020': 1}
+  dte: fill=0.93 nuniq=6 top={'16.0': 110, '44.0': 32, '30.0': 14, 'nan': 13, '28.0': 5, '9.0': 3}
+  macro_regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 179}
+  regime: fill=1.00 nuniq=1 top={'TRANSITIONAL': 179}
+  macro_sector_alignment: fill=0.00 nuniq=0 top={'nan': 179}
+  regime_drift_status: fill=1.00 nuniq=1 top={'DRIFTING_BULLISH': 179}
+  morning_execution_permission: fill=0.00 nuniq=0 top={'nan': 179}
+  thesis_state: fill=1.00 nuniq=2 top={'VALID_THESIS_REPAIR_AT_OPEN': 114, 'VALID_THESIS_TRIGGER_PENDING': 65}
+  trigger_primary: fill=1.00 nuniq=5 top={'VOL_COMPRESSION': 79, 'NONE': 54, 'TRAP': 23, 'RANGE_BREAK_EARLY': 18, 'RANGE_BREAK': 5}

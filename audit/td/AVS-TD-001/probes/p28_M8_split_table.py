@@ -1,0 +1,10 @@
+﻿import pandas as pd
+C = pd.read_csv(r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p28_M8_cells.csv")
+R = pd.read_csv(r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p28_M8_cmh.csv")
+t = C.groupby(["variable","status"]).size().unstack(fill_value=0)
+t["cells"] = C.groupby("variable").size()//2; t["tests"] = C.groupby("variable").size()
+t["pooled_bh"] = C[C.survives_bh_005.astype(str).str.lower()=="true"].groupby("variable").size()
+t["both"] = R[R.survives_both.astype(str).str.lower()=="true"].groupby("variable").size()
+t["confounded"] = R[R.cmh_status=="SESSION_CONFOUNDED"].groupby("variable").size()
+t = t.fillna(0).astype(int); print(t.to_string()); print(t.sum().to_string())
+t.to_csv(r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p28_M8_split_table.csv")

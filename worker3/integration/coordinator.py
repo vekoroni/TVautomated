@@ -93,7 +93,7 @@ def _policy(path: str | Path) -> CoordinatorPolicy:
         raise ContractError("Worker 3 integration policy fields changed")
     if (
         document["contract_id"] != "AVS-W3-INTEGRATION"
-        or document["version"] != "1.3.0"
+        or document["version"] != "1.3.1"
         or document["status"] != "ACTIVE_PREPARE_ONLY"
         or document["enabled"] is not True
         or document["runtime_mode"] != "PREPARE_ONLY"
@@ -109,7 +109,7 @@ def _policy(path: str | Path) -> CoordinatorPolicy:
         or document["allowed_resolved_actions"] != ["BUILD_THESIS", "VALIDATE_THESIS"]
         or document["source_contracts"] != {
             "run_meta": "run_meta_v2",
-            "intelligence_lab": "lab_signal_book_v2",
+            "intelligence_lab": "lab_signal_book_v4",
             "option_chain": "option_chain_v2",
             "selected_option_quote": "selected_option_quote_v1",
             "market_profile": "market_profile_evidence_v1",

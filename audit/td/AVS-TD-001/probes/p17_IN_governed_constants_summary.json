@@ -1,0 +1,61 @@
+{
+ "annex_keys": 29,
+ "present": 20,
+ "present_exact_name": 7,
+ "absent": [
+  "friction.model",
+  "freshness_minutes",
+  "clock_skew_tolerance_minutes",
+  "spread_executable_limit",
+  "calibration.kappa",
+  "vol_validation.minimum_validation_n",
+  "vol_validation.pass.ratio",
+  "vol_validation.pass.coverage",
+  "refresh_window"
+ ],
+ "present_with_key_specific_owner": [
+  "profit_floor"
+ ],
+ "present_with_any_block_owner": 16,
+ "present_with_block_version": 20,
+ "decision_path_files": [
+  "canonical_data/dynamic_options_production.py",
+  "canonical_data/dynamic_options_ranking.py",
+  "canonical_data/dynamic_options_valuation.py",
+  "canonical_data/outcome_learning.py",
+  "canonical_data/provider_finality.py",
+  "contracts/options_liquidity_execution_guard.py",
+  "contracts/selected_contract_economics.py",
+  "domain/calibration.py",
+  "domain/contract_economics_v2.py",
+  "domain/deterministic_option_valuation.py",
+  "domain/dynamic_options_ranking.py",
+  "domain/long_option_execution.py",
+  "domain/option_contract_liquidity.py",
+  "domain/option_liquidity_execution_guard.py",
+  "domain/outcome_learning.py",
+  "domain/preferred_contract.py",
+  "domain/preferred_contract_hysteresis.py",
+  "domain/provider_finality.py",
+  "domain/reachability.py",
+  "domain/volatility_budget.py",
+  "eod_candidate_engine.py",
+  "execution_gate.py",
+  "morning_gate.py",
+  "vanguard/ev_engine_v3.py"
+ ],
+ "literal_hits": 13,
+ "literal_hit_files": [
+  "canonical_data/dynamic_options_production.py",
+  "canonical_data/dynamic_options_valuation.py",
+  "domain/contract_economics_v2.py",
+  "domain/option_contract_liquidity.py",
+  "domain/outcome_learning.py",
+  "domain/reachability.py",
+  "vanguard/ev_engine_v3.py"
+ ],
+ "absent_files": [
+  "domain/calibration.py",
+  "domain/preferred_contract.py"
+ ]
+}

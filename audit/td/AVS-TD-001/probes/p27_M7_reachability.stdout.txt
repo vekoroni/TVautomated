@@ -1,0 +1,20 @@
+  barrier_target   drift direction  families      families_power  median_reach_ratio  median_p2_single  median_p_single_mc  max_abs_single_closed_minus_mc  median_p3_target  median_p3_invalid  median_p3_timeout  median_rel_diff_p3T_vs_p2                                     iqr_rel_diff  contracts contracts_power  ev1_pos  ev3_pos  sign_flips  flips_pos_to_nonpos  median_ev1  median_ev3  family_pick_contracts  family_pick_sign_flips
+0      REACHABLE  THESIS      CALL       101                  OK            1.313101          0.627961            0.627750                        0.009946          0.560600           0.250900           0.188500                  -0.106857    [-0.40652046010164594, -0.010359777416909823]        731              OK      689      467         222                  222    0.327308    0.062796                     70                      13
+1      REACHABLE  THESIS       PUT        66  INSUFFICIENT_POWER            3.116338          0.613132            0.611375                        0.010908          0.610150           0.024300           0.364350                  -0.005030  [-0.016968390257877344, -5.454449344652607e-05]        362              OK      360      338          22                   22    0.871864    0.422490                     54                       0
+2      REACHABLE    ZERO      CALL       101                  OK            1.313101          0.158322            0.158000                        0.006582          0.140600           0.638850           0.221500                  -0.116491    [-0.44104248652826705, -0.016804881001517676]        731              OK      689       15         674                  674    0.327308   -0.159003                     70                      67
+3      REACHABLE    ZERO       PUT        66  INSUFFICIENT_POWER            3.116338          0.103036            0.103100                        0.006595          0.102375           0.288675           0.614625                  -0.002177     [-0.025111363826442065, 0.01415653122803676]        362              OK      360        7         353                  353    0.871864   -0.194060                     54                      51
+4     STRUCTURAL  THESIS      CALL       101                  OK            1.313101          0.698770            0.695200                        0.006962          0.491250           0.251150           0.150700                  -0.190345    [-0.47994866829211424, -0.028759075840121277]        731              OK      689      394         295                  295    0.327308    0.024607                     70                      13
+5     STRUCTURAL  THESIS       PUT        66  INSUFFICIENT_POWER            3.116338          0.019982            0.020425                        0.005965          0.019400           0.025050           0.947775                  -0.020132   [-0.16406967655659083, -0.0016488525334575437]        362              OK      360       90         270                  270    0.871864   -0.116793                     54                      39
+6     STRUCTURAL    ZERO      CALL       101                  OK            1.313101          0.227499            0.231100                        0.006776          0.184500           0.582300           0.192200                  -0.320582      [-0.5374717106838824, -0.07478295831400963]        731              OK      689      115         574                  574    0.327308   -0.116477                     70                      45
+7     STRUCTURAL    ZERO       PUT        66  INSUFFICIENT_POWER            3.116338          0.000107            0.000150                        0.004817          0.000175           0.291375           0.700575                  -0.028009     [-0.35138851696666323, 0.044331250165244585]        362              OK      360        8         352                  352    0.871864   -0.259258                     54                      51
+{
+ "families_with_geometry": 167,
+ "families_by_dir": {
+  "CALL": 101,
+  "PUT": 66
+ },
+ "n_paths": 20000,
+ "seed": 20260912,
+ "max_abs_p3_sum_minus_1": 1.1102230246251565e-16,
+ "elapsed_s": 12.2
+}

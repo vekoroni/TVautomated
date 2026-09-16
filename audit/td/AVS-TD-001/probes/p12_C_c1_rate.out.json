@@ -1,0 +1,279 @@
+{
+  "runs": {
+    "primary": {
+      "macro_quant_packet.json": {
+        "exists": true,
+        "observation": {
+          "rate_annual_fraction": null,
+          "rate_source": "NONE",
+          "rate_as_of": null,
+          "dataset_id": null,
+          "quality_state": "RATE_UNAVAILABLE",
+          "calculation_version": "market_rate_observation_v1"
+        },
+        "has_macro_rates_context": false,
+        "rate_key_hits": [],
+        "top_level_keys": [
+          "macro_quant_contract_version",
+          "macro_source_path",
+          "macro_contract_version",
+          "macro_generated_at_utc",
+          "macro_normalised_at_utc",
+          "macro_age_hours",
+          "macro_freshness_status",
+          "macro_confidence",
+          "macro_data_quality",
+          "macro_regime_label",
+          "macro_regime_sub_state",
+          "regime_drift_status",
+          "regime_distribution_bull",
+          "regime_distribution_neutral",
+          "regime_distribution_bear",
+          "risk_on_off_score",
+          "macro_conviction_score",
+          "net_liquidity_score",
+          "liquidity_pulse",
+          "liquidity_risk_flag",
+          "vix_level",
+          "vix_regime_label",
+          "vix_regime_score",
+          "vix_contango",
+          "vix_structure_label",
+          "vol_mode",
+          "rates_impulse",
+          "usd_state",
+          "credit_state",
+          "credit_risk_score",
+          "gex_regime_score",
+          "dealer_gamma_state",
+          "gamma_risk_flag",
+          "sector_rotation_state",
+          "leading_sectors",
+          "lagging_sectors",
+          "avoid_sectors",
+          "preferred_sectors",
+          "sector_tilt_score",
+          "ticker_sector_alignment"
+        ]
+      },
+      "macro_snapshot.json": {
+        "exists": true,
+        "observation": {
+          "rate_annual_fraction": 0.0395,
+          "rate_source": "MACRO:T3M",
+          "rate_as_of": "2026-09-09",
+          "dataset_id": "503701fac406354344dc3903c723c8549d5cd72dd48bdb3d57fc5494fe17b541",
+          "quality_state": "PASS",
+          "calculation_version": "market_rate_observation_v1"
+        },
+        "has_macro_rates_context": false,
+        "rate_key_hits": [
+          [
+            "$.extras.rates",
+            "t3m",
+            "3.95"
+          ],
+          [
+            "$.extras.rates",
+            "sofr",
+            "3.64"
+          ],
+          [
+            "$.extras.rates",
+            "fed_funds",
+            "3.63"
+          ],
+          [
+            "$.extras.rates",
+            "rates_data_as_of",
+            "2026-09-09"
+          ]
+        ],
+        "top_level_keys": [
+          "contract_version",
+          "regime_state",
+          "dir_bias",
+          "trend_energy",
+          "usd_state",
+          "rates_impulse",
+          "liquidity_pulse",
+          "regime_drift_status",
+          "macro_conviction",
+          "vol_mode",
+          "risk_on_off_switch",
+          "notes",
+          "as_of_utc",
+          "report_date",
+          "source",
+          "net_liquidity_score",
+          "vix_regime_score",
+          "gex_regime_score",
+          "macro_momentum_score",
+          "regime_label",
+          "regime_probability",
+          "vix_spot",
+          "macro_filter",
+          "sector_lead",
+          "sector_avoid",
+          "size_multiplier",
+          "trigger_required",
+          "horizon_routing",
+          "sector_rotation",
+          "extras",
+          "credit_state",
+          "credit_risk_score",
+          "gex_available",
+          "us_money_index_available",
+          "us_money_index_packet_id",
+          "us_money_index_authority",
+          "horizon_routing_enforcement",
+          "horizon_routing_complete",
+          "horizon_routing_required_buckets",
+          "_builder_metadata"
+        ]
+      },
+      "doi_report": {
+        "family_rows": 1218,
+        "assessed_families": 0,
+        "counts_by_state": {
+          "FAMILY_NOT_VALUED_RATE_UNAVAILABLE": 1218,
+          "NOT_APPLICABLE_NON_DIRECTIONAL": 188,
+          "DATA_EXCEPTION_RETAINED": 38
+        }
+      }
+    },
+    "comparison": {
+      "macro_quant_packet.json": {
+        "exists": true,
+        "observation": {
+          "rate_annual_fraction": null,
+          "rate_source": "NONE",
+          "rate_as_of": null,
+          "dataset_id": null,
+          "quality_state": "RATE_UNAVAILABLE",
+          "calculation_version": "market_rate_observation_v1"
+        },
+        "has_macro_rates_context": false,
+        "rate_key_hits": [],
+        "top_level_keys": [
+          "macro_quant_contract_version",
+          "macro_source_path",
+          "macro_contract_version",
+          "macro_generated_at_utc",
+          "macro_normalised_at_utc",
+          "macro_age_hours",
+          "macro_freshness_status",
+          "macro_confidence",
+          "macro_data_quality",
+          "macro_regime_label",
+          "macro_regime_sub_state",
+          "regime_drift_status",
+          "regime_distribution_bull",
+          "regime_distribution_neutral",
+          "regime_distribution_bear",
+          "risk_on_off_score",
+          "macro_conviction_score",
+          "net_liquidity_score",
+          "liquidity_pulse",
+          "liquidity_risk_flag",
+          "vix_level",
+          "vix_regime_label",
+          "vix_regime_score",
+          "vix_contango",
+          "vix_structure_label",
+          "vol_mode",
+          "rates_impulse",
+          "usd_state",
+          "credit_state",
+          "credit_risk_score",
+          "gex_regime_score",
+          "dealer_gamma_state",
+          "gamma_risk_flag",
+          "sector_rotation_state",
+          "leading_sectors",
+          "lagging_sectors",
+          "avoid_sectors",
+          "preferred_sectors",
+          "sector_tilt_score",
+          "ticker_sector_alignment"
+        ]
+      },
+      "macro_snapshot.json": {
+        "exists": true,
+        "observation": {
+          "rate_annual_fraction": 0.0364,
+          "rate_source": "MACRO:SOFR",
+          "rate_as_of": null,
+          "dataset_id": "790160d8f77b9f769a6ce19d03bce79ebb16899c747625328c317cd7c93bbeb8",
+          "quality_state": "PASS",
+          "calculation_version": "market_rate_observation_v1"
+        },
+        "has_macro_rates_context": false,
+        "rate_key_hits": [
+          [
+            "$.extras.rates",
+            "sofr",
+            "3.64"
+          ],
+          [
+            "$.extras.rates",
+            "fed_funds",
+            "3.63"
+          ]
+        ],
+        "top_level_keys": [
+          "contract_version",
+          "regime_state",
+          "dir_bias",
+          "trend_energy",
+          "usd_state",
+          "rates_impulse",
+          "liquidity_pulse",
+          "regime_drift_status",
+          "macro_conviction",
+          "vol_mode",
+          "risk_on_off_switch",
+          "notes",
+          "as_of_utc",
+          "report_date",
+          "source",
+          "net_liquidity_score",
+          "vix_regime_score",
+          "gex_regime_score",
+          "macro_momentum_score",
+          "regime_label",
+          "regime_probability",
+          "vix_spot",
+          "macro_filter",
+          "sector_lead",
+          "sector_avoid",
+          "size_multiplier",
+          "trigger_required",
+          "horizon_routing",
+          "sector_rotation",
+          "extras",
+          "credit_state",
+          "credit_risk_score",
+          "gex_available",
+          "us_money_index_available",
+          "us_money_index_packet_id",
+          "us_money_index_authority",
+          "horizon_routing_enforcement",
+          "horizon_routing_complete",
+          "horizon_routing_required_buckets",
+          "_builder_metadata"
+        ]
+      },
+      "doi_report": {
+        "family_rows": 1241,
+        "assessed_families": 0,
+        "counts_by_state": {
+          "NOT_APPLICABLE_NON_DIRECTIONAL": 182,
+          "FAMILY_NOT_VALUED_RATE_UNAVAILABLE": 1241,
+          "DATA_EXCEPTION_RETAINED": 1
+        }
+      }
+    }
+  },
+  "audit_families_valued": []
+}

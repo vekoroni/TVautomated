@@ -1,0 +1,9 @@
+{
+  "model": "claude-sonnet-4-6",
+  "frozen_request_hash": "24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9",
+  "http_status": 200,
+  "input_tokens": 83173,
+  "count_packet_hash": "f932c43506252a1814e68fb962b16d1e210f49e5059d1500b9d88ac15caef47f",
+  "credential_source": "os.environ",
+  "credential_fingerprint": "7e5c85a3"
+}

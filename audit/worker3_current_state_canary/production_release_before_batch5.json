@@ -1,0 +1,26 @@
+{
+  "release_id": "AVS-W3-PRODUCTION-20260907-001",
+  "version": "1.0.0",
+  "status": "CONTROLLED_ACTIVE",
+  "enabled": true,
+  "provider": "ANTHROPIC",
+  "allowed_models": [
+    "claude-sonnet-4-6"
+  ],
+  "max_jobs_per_activation": 1,
+  "max_calls_per_process": 1,
+  "max_total_microusd": 1000000,
+  "max_call_microusd": 1000000,
+  "input_microusd_per_million_tokens": 3000000,
+  "output_microusd_per_million_tokens": 15000000,
+  "max_output_tokens": 8192,
+  "max_input_bytes": 500000,
+  "timeout_seconds": 300,
+  "require_operator_approval_id": true,
+  "require_semantic_review": true,
+  "require_human_review": true,
+  "lab_projection_enabled": true,
+  "authority": "ADVISORY_ONLY",
+  "can_grant_capital": false,
+  "can_reverse_direction": false
+}

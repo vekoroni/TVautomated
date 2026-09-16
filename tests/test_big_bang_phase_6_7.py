@@ -283,7 +283,12 @@ def test_opportunity_book_and_learning_feedback() -> None:
         )
         assert Path(book["csv_path"]).exists()
         assert Path(book["json_path"]).exists()
-        assert all(field in book["rows"][0] for field in FINAL_BOOK_FIELDS)
+        assert all(
+            field in book["rows"][0]
+            for field in FINAL_BOOK_FIELDS
+            if not field.startswith("rr_")
+        )
+        assert not any(field.startswith("rr_") for field in book["rows"][0])
         payload = json.loads(book["rows"][0]["source_payload_json"])
         assert payload["legacy_column"] == "must_survive_in_payload"
 

@@ -8,7 +8,7 @@ def test_ev3_runs_after_horizon_router_and_raw_options_patch() -> None:
         encoding="utf-8",
     )
     workflow = source[source.index("def evening_workflow(") :]
-    options = workflow.index("run_options_intelligence(canonical_run_id)")
+    options = workflow.index("if not run_options_intelligence(")
     router = workflow.index("_hr_result = run_horizon_router")
     raw_target = workflow.index('f"options_intelligence_{canonical_run_id}.csv"')
     patch = workflow.index("_oi_horizon_patched = patch_horizon_fields_into_csv")

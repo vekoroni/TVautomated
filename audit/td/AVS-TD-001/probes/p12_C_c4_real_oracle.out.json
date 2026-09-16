@@ -1,0 +1,204 @@
+{
+  "cases": [
+    {
+      "ticker": "ACGL",
+      "direction": "CALL",
+      "contract": "ACGL261016C00095000",
+      "K": 95.0,
+      "expiry": "2026-10-16",
+      "bid": 3.3,
+      "ask": 3.7,
+      "iv": 0.2361,
+      "S0": 96.2,
+      "h": 10,
+      "r": 0.0395,
+      "q": 0.0,
+      "sigma_a": 0.236,
+      "time_stop_close_utc_mine": "2026-09-24T20:00:00+00:00",
+      "expiry_close_utc_mine": "2026-10-16T20:00:00+00:00",
+      "T_late_years_mine": 0.06027397260273973,
+      "reachable_mine": 102.98387854086016,
+      "reachable_prod": 102.98387854086016,
+      "reachable_abs_diff": 0.0,
+      "max_theo_rel_diff_54": 4.2028380132165715e-15,
+      "worst_theo_scenario": {
+        "key": "ADVERSE_INVALIDATION:LATE:CONTRACTED",
+        "theo_prod": 1.6906260329940608,
+        "theo_mine": 1.6906260329940679,
+        "T_mine": 0.06027397260273973,
+        "spot": 94.65,
+        "as_of_mine": "2026-09-24T20:00:00+00:00",
+        "net_prod": -0.5691840997003551,
+        "net_mine": -0.5691840997003534
+      },
+      "scenarios_theo_rel_diff_gt_0_5pct": [],
+      "scenarios_where_production_floor_binds": [],
+      "max_theo_rel_diff_54_vs_floored_oracle": 4.2028380132165715e-15,
+      "max_net_abs_diff_mine_vs_prod_54": 7.327471962526033e-15,
+      "max_net_abs_diff_friction_on_prod_theo_54": 2.220446049250313e-16,
+      "net_REACHABLE_LATE_BASE": {
+        "prod": 1.14176559050312,
+        "mine": 1.14176559050312
+      },
+      "net_FLAT_LATE_BASE": {
+        "prod": -0.2371593119174751,
+        "mine": -0.23715931191747514
+      },
+      "net_ADVERSE_LATE_BASE": {
+        "prod": -0.4576357312467816,
+        "mine": -0.45763573124678164
+      },
+      "net_STRUCTURAL_LATE_BASE": {
+        "prod": 0.6529724842641048,
+        "mine": 0.6529724842641013
+      },
+      "utility_v2": {
+        "prod": 0.4757681392929745,
+        "mine": 0.47576813929297956,
+        "abs_diff": 5.051514762044462e-15
+      },
+      "state_prod": "SCENARIO_MONETISABLE",
+      "applicability_prod": "APPLICABLE"
+    },
+    {
+      "ticker": "A",
+      "direction": "PUT",
+      "contract": "A261016P00140000",
+      "K": 140.0,
+      "expiry": "2026-10-16",
+      "bid": 3.6,
+      "ask": 4.1,
+      "iv": 0.2932,
+      "S0": 143.12,
+      "h": 10,
+      "r": 0.0395,
+      "q": 0.0,
+      "sigma_a": 0.3411,
+      "time_stop_close_utc_mine": "2026-09-24T20:00:00+00:00",
+      "expiry_close_utc_mine": "2026-10-16T20:00:00+00:00",
+      "T_late_years_mine": 0.06027397260273973,
+      "reachable_mine": 128.53276311411906,
+      "reachable_prod": 128.53276311411906,
+      "reachable_abs_diff": 0.0,
+      "max_theo_rel_diff_54": 0.02039977727604831,
+      "worst_theo_scenario": {
+        "key": "FAVOURABLE_2SIGMA:EARLY:CONTRACTED",
+        "theo_prod": 16.329649181174602,
+        "theo_mine": 16.003187716060182,
+        "T_mine": 0.0821917808219178,
+        "spot": 123.6703508188254,
+        "as_of_mine": "2026-09-16T20:00:00+00:00",
+        "net_prod": 2.7242152076166346,
+        "net_mine": 2.649760898182874
+      },
+      "scenarios_theo_rel_diff_gt_0_5pct": [
+        "FAVOURABLE_2SIGMA:EARLY:CONTRACTED",
+        "FAVOURABLE_2SIGMA:MID:CONTRACTED",
+        "FAVOURABLE_2SIGMA:MID:BASE",
+        "FAVOURABLE_2SIGMA:LATE:CONTRACTED",
+        "FAVOURABLE_2SIGMA:LATE:BASE",
+        "REACHABLE:LATE:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:EARLY:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:EARLY:BASE",
+        "STRUCTURAL_DISCLOSURE:EARLY:EXPANDED",
+        "STRUCTURAL_DISCLOSURE:MID:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:MID:BASE",
+        "STRUCTURAL_DISCLOSURE:MID:EXPANDED",
+        "STRUCTURAL_DISCLOSURE:LATE:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:LATE:BASE",
+        "STRUCTURAL_DISCLOSURE:LATE:EXPANDED"
+      ],
+      "scenarios_where_production_floor_binds": [
+        "FAVOURABLE_2SIGMA:EARLY:CONTRACTED",
+        "FAVOURABLE_2SIGMA:EARLY:BASE",
+        "FAVOURABLE_2SIGMA:MID:CONTRACTED",
+        "FAVOURABLE_2SIGMA:MID:BASE",
+        "FAVOURABLE_2SIGMA:LATE:CONTRACTED",
+        "FAVOURABLE_2SIGMA:LATE:BASE",
+        "REACHABLE:MID:CONTRACTED",
+        "REACHABLE:LATE:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:EARLY:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:EARLY:BASE",
+        "STRUCTURAL_DISCLOSURE:EARLY:EXPANDED",
+        "STRUCTURAL_DISCLOSURE:MID:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:MID:BASE",
+        "STRUCTURAL_DISCLOSURE:MID:EXPANDED",
+        "STRUCTURAL_DISCLOSURE:LATE:CONTRACTED",
+        "STRUCTURAL_DISCLOSURE:LATE:BASE",
+        "STRUCTURAL_DISCLOSURE:LATE:EXPANDED"
+      ],
+      "max_theo_rel_diff_54_vs_floored_oracle": 1.591159620195433e-13,
+      "max_net_abs_diff_mine_vs_prod_54": 0.10349196714357767,
+      "max_net_abs_diff_friction_on_prod_theo_54": 4.440892098500626e-16,
+      "net_REACHABLE_LATE_BASE": {
+        "prod": 1.6747545124009804,
+        "mine": 1.6747545124009804
+      },
+      "net_FLAT_LATE_BASE": {
+        "prod": -0.4151580144048619,
+        "mine": -0.4151580144048619
+      },
+      "net_ADVERSE_LATE_BASE": {
+        "prod": -0.9882126998035892,
+        "mine": -0.9882126998035891
+      },
+      "net_STRUCTURAL_LATE_BASE": {
+        "prod": 12.403357617991762,
+        "mine": 12.327430664262002
+      },
+      "utility_v2": {
+        "prod": 0.4909048503701291,
+        "mine": 0.49090485037012965,
+        "abs_diff": 5.551115123125783e-16
+      },
+      "state_prod": "SCENARIO_MONETISABLE",
+      "applicability_prod": "APPLICABLE"
+    },
+    {
+      "ticker": "A",
+      "direction": "PUT",
+      "contract": "A260918P00140000",
+      "expiry": "2026-09-18",
+      "remaining_sessions": 6,
+      "hold": 10,
+      "required_sessions": 18,
+      "time_stop_session_mine": "2026-09-24",
+      "expires_before_time_stop_mine": true,
+      "generator_state": "EXCLUDED_STRUCTURAL",
+      "in_display_set": false,
+      "iv_used_note": "family-row IV of a sibling contract (taxonomy carries no IV); irrelevant to the HORIZON_LIMITED branch",
+      "prod_direct_call": {
+        "applicability": "HORIZON_LIMITED",
+        "applicability_reason": "CONTRACT_EXPIRES_WITHIN_HOLD",
+        "monetisability_state": "INDETERMINATE",
+        "monetisability_reason": "HORIZON_LIMITED",
+        "n_scenarios": 0,
+        "utility": null,
+        "has_dte_inside_hold_field": false
+      }
+    }
+  ],
+  "runway_excluded_counts": {
+    "contracts": 15162,
+    "expire_inside_hold": 7981,
+    "inside_buffer_only": 7181,
+    "by_dir_inside_hold": {
+      "CALL": 4118,
+      "PUT": 3863
+    },
+    "in_display_set": 0
+  },
+  "inside_hold_two_sided": {
+    "n": 5108,
+    "spread_gt_0_30_would_report_FRICTION_OUT_OF_RANGE": 1094,
+    "spread_le_0_30_would_report_HORIZON_LIMITED": 4014,
+    "by_dir_spread_gt_0_30": {
+      "CALL": 579,
+      "PUT": 515
+    },
+    "by_dir_spread_le_0_30": {
+      "PUT": 2112,
+      "CALL": 1902
+    }
+  }
+}

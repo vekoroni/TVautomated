@@ -1,0 +1,314 @@
+{
+  "run": "20260911_115904",
+  "k": 1.5,
+  "book_shape": [
+    1444,
+    474
+  ],
+  "governed_direction_counts": {
+    "CALL": 798,
+    "PUT": 458,
+    "STRANGLE": 138,
+    "UNRESOLVED": 50
+  },
+  "published_reachability_fields": {
+    "final_book": [
+      "garch_forecast_vol",
+      "invalidation_state"
+    ],
+    "lab_triage": [
+      "garch_forecast_vol",
+      "invalidation_state"
+    ],
+    "morning_validated": [
+      "invalidation_state",
+      "l3_forward_realised_vol",
+      "live_validation_state"
+    ],
+    "options_csv": [
+      "invalidation_state",
+      "macro_applicability"
+    ],
+    "execution_gated": [
+      "invalidation_state",
+      "l3_forward_realised_vol",
+      "live_validation_state"
+    ]
+  },
+  "c2_max_abs_diff_formula_vs_function": 0.0,
+  "c2_function_quality_state_counts": {
+    "NOT_EVALUATED_DATA_MISSING": {
+      "CALL": 164,
+      "PUT": 69
+    },
+    "UNVALIDATED_INPUT": {
+      "CALL": 634,
+      "PUT": 389
+    }
+  },
+  "c2_function_validation_state_counts": {
+    "UNVALIDATED": 1256
+  },
+  "c2_function_bias_applied_counts": {
+    "false": 1256
+  },
+  "c2_reach_ratio_distribution": {
+    "CALL": {
+      "n": 634,
+      "median": 1.5442398702879612,
+      "q1": 0.6715422984251467,
+      "q3": 3.271031290999888,
+      "n_gt_1_5": 322,
+      "n_gt_3": 175,
+      "n_le_1": 218,
+      "min": 0.0370183921780008,
+      "max": 12.79861692425024
+    },
+    "PUT": {
+      "n": 389,
+      "median": 3.99768180074997,
+      "q1": 2.408394742007701,
+      "q3": 6.50037807009965,
+      "n_gt_1_5": 345,
+      "n_gt_3": 243,
+      "n_le_1": 20,
+      "min": 0.13563984029007986,
+      "max": 18.76596887802358
+    },
+    "ALL_DIRECTED": {
+      "n": 1023,
+      "median": 2.3612168648544114,
+      "q1": 1.0613458142141796,
+      "q3": 4.698657841983133,
+      "n_gt_1_5": 667,
+      "n_gt_3": 418,
+      "n_le_1": 238,
+      "min": 0.0370183921780008,
+      "max": 18.76596887802358
+    }
+  },
+  "c2_rows_directed": 1256,
+  "c2_rows_with_reach_ratio": 1023,
+  "c2_rows_directed_missing_inputs": {
+    "missing_sigma": 0,
+    "missing_target": 233,
+    "missing_hold": 0,
+    "missing_spot": 0
+  },
+  "c2_put_reachable_below_spot": {
+    "n": 389,
+    "n_below_spot": 389
+  },
+  "c2_call_reachable_above_spot": {
+    "n": 634,
+    "n_above_spot": 634
+  },
+  "c2_go_rows_verification": {
+    "h_from_hold_period": {
+      "n": 19,
+      "median": 3.4800906678342103,
+      "n_gt_3": 11,
+      "values": [
+        2.166,
+        4.084,
+        3.405,
+        3.505,
+        2.808,
+        3.48,
+        2.22,
+        2.06,
+        4.783,
+        7.136,
+        5.43,
+        5.657,
+        5.489,
+        2.747,
+        2.239,
+        7.22,
+        0.398,
+        6.5,
+        1.336
+      ]
+    },
+    "h_5_all": {
+      "n": 19,
+      "median": 4.9215914207391815,
+      "n_gt_3": 16,
+      "values": [
+        3.063,
+        5.776,
+        4.815,
+        4.957,
+        3.971,
+        4.922,
+        3.14,
+        2.913,
+        6.764,
+        7.136,
+        7.679,
+        8.0,
+        7.763,
+        3.885,
+        3.167,
+        10.211,
+        0.562,
+        6.5,
+        1.889
+      ]
+    },
+    "h_10_all": {
+      "n": 19,
+      "median": 3.4800906678342103,
+      "n_gt_3": 11,
+      "values": [
+        2.166,
+        4.084,
+        3.405,
+        3.505,
+        2.808,
+        3.48,
+        2.22,
+        2.06,
+        4.783,
+        5.046,
+        5.43,
+        5.657,
+        5.489,
+        2.747,
+        2.239,
+        7.22,
+        0.398,
+        4.596,
+        1.336
+      ]
+    },
+    "h_20_all": {
+      "n": 19,
+      "median": 2.4607957103695908,
+      "n_gt_3": 7,
+      "values": [
+        1.532,
+        2.888,
+        2.408,
+        2.479,
+        1.985,
+        2.461,
+        1.57,
+        1.457,
+        3.382,
+        3.568,
+        3.839,
+        4.0,
+        3.882,
+        1.943,
+        1.583,
+        5.106,
+        0.281,
+        3.25,
+        0.945
+      ]
+    },
+    "legacy_garch_expected_move_6_10d_pct": {
+      "median": 14.060294972190707,
+      "n_gt_3": 18
+    },
+    "legacy_cumulative_1_5d_plus_6_10d_pct": {
+      "median": 4.116622445466145,
+      "n_gt_3": 13
+    }
+  },
+  "c2_go_rows_tickers": [
+    "WRB",
+    "IOT",
+    "AA",
+    "SNEX",
+    "CELC",
+    "WTTR",
+    "PANW",
+    "SIRI",
+    "SPGI",
+    "AMGN",
+    "HCA",
+    "FAST",
+    "CP",
+    "SNPS",
+    "MLYS",
+    "APPN",
+    "D",
+    "VKTX",
+    "RF"
+  ],
+  "c3_geometry_counts": {
+    "CALL": {
+      "directed_rows": 798,
+      "target_present": 634,
+      "inval_present": 654,
+      "target_wrong_side": 0,
+      "inval_wrong_side": 0,
+      "either_wrong_side": 0,
+      "both_present_and_valid": 634
+    },
+    "PUT": {
+      "directed_rows": 458,
+      "target_present": 389,
+      "inval_present": 400,
+      "target_wrong_side": 0,
+      "inval_wrong_side": 0,
+      "either_wrong_side": 0,
+      "both_present_and_valid": 389
+    },
+    "OTHER": {
+      "rows": 188,
+      "note": "STRANGLE/UNRESOLVED: no directional geometry defined"
+    }
+  },
+  "c3_wrong_side_rows_crosstab": {
+    "invalidation_state": {},
+    "invalidation_source": {},
+    "target_state": {},
+    "target_unresolved_reason": {},
+    "monetisability_state": {},
+    "monetisability_state_timevalue": {},
+    "monetisability_status": {},
+    "contract_data_state": {}
+  },
+  "c3_wrong_side_rows_with_named_exception": 0,
+  "c3_wrong_side_rows_valued_legacy_MONETISABLE": 0,
+  "c3_wrong_side_rows": [],
+  "c3_invalidation_state_counts_by_dir": {
+    "AVAILABLE": {
+      "CALL": 654,
+      "PUT": 400,
+      "STRANGLE": 0,
+      "UNRESOLVED": 0
+    },
+    "MISSING_GOVERNED_INVALIDATION": {
+      "CALL": 144,
+      "PUT": 58,
+      "STRANGLE": 0,
+      "UNRESOLVED": 0
+    },
+    "NOT_APPLICABLE": {
+      "CALL": 0,
+      "PUT": 0,
+      "STRANGLE": 138,
+      "UNRESOLVED": 50
+    }
+  },
+  "c3_invalidation_source_counts": {
+    "WYCKOFF_VALIDATION": 1054,
+    "MISSING_AUTHORITATIVE_STOP": 202,
+    "NOT_APPLICABLE_NON_DIRECTIONAL": 188
+  },
+  "c3_manifest_missing_selected_handoff": {
+    "invalidation_spot": 202
+  },
+  "c3_directed_rows_missing_invalidation": {
+    "CALL": 144,
+    "PUT": 58
+  },
+  "c3_directed_rows_missing_target": {
+    "CALL": 164,
+    "PUT": 69
+  }
+}

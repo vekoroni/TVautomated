@@ -1,0 +1,1828 @@
+{
+ "run": "20260911_115904",
+ "gate_validated_at_utc": "2026-09-11T17:08:56+00:00",
+ "morning_validated_trades": {
+  "path": "morning_validation\\morning_validated_trades_20260911_115904.csv",
+  "rows": 1444,
+  "direction_col": "final_direction",
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "ts_cols_present": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "morning_quote_timestamp_utc",
+   "current_quote_timestamp_utc",
+   "contract_quote_timestamp",
+   "live_contract_quote_timestamp",
+   "monetisability_quote_timestamp_utc"
+  ],
+  "fetch_cols_present": [
+   "gate_checked_at_utc"
+  ],
+  "per_ts_col": {
+   "quote_as_of": {
+    "n_present": 1444,
+    "n_missing": 0,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 991
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 991
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6863,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 543,
+     "PUT": 260,
+     "OTHER": 188
+    },
+    "missing_split": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "present_split": {
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 26,
+      "PUT": 12,
+      "OTHER": 188
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "selected_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "morning_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "current_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "contract_quote_timestamp": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "live_contract_quote_timestamp": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "monetisability_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "execution_cols": {
+   "effective_execution_verdict": {
+    "value_counts": {
+     "MORNING_VALIDATION_REQUIRED": 526,
+     "OPTIONS_REPAIR_REQUIRED": 422,
+     "STRUCTURAL_WATCH": 294,
+     "FUTURE_WATCH": 202
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "verdict": {
+    "value_counts": {
+     "BLOCK": 1016,
+     "FLAG": 409,
+     "GO": 19
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   },
+   "morning_gate_verdict": {
+    "value_counts": {
+     "BLOCK": 1016,
+     "FLAG": 409,
+     "GO": 19
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   },
+   "execution_permission": {
+    "value_counts": {
+     "BLOCKED": 1016,
+     "WAIT": 407,
+     "HUMAN_APPROVAL_REQUIRED": 19,
+     "CONTRACT_REPAIR": 2
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "morning_execution_permission": {
+    "value_counts": {
+     "NOT_ELIGIBLE": 918,
+     "LIQUIDITY_STILL_PENDING": 361,
+     "NO_GO_ECONOMICS": 76,
+     "WAIT": 46,
+     "GO_LIMIT": 19,
+     "NO_GO_DIRECTION": 18,
+     "NO_GO_MOVE_ALREADY_REALIZED": 4,
+     "CONTRACT_REPAIR": 2
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   }
+  },
+  "flag_stale": {
+   "verdict_col": "morning_gate_verdict",
+   "verdict_counts": {
+    "BLOCK": 1016,
+    "FLAG": 409,
+    "GO": 19
+   },
+   "FLAG_split": {
+    "CALL": 220,
+    "PUT": 189,
+    "OTHER": 0
+   },
+   "ev3_reason_code": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 207,
+     "PUT": 184,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 239,
+     "PUT": 196,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "REJECT_QUOTE_STALE": 391,
+     "REJECT_LIQUIDITY": 11,
+     "REJECT_DTE_FEASIBILITY": 3,
+     "PRODUCTION_EVIDENCE_ONLY": 2,
+     "REJECT_THESIS_PRICE": 2
+    }
+   },
+   "economics_mismatch_reason": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 207,
+     "PUT": 184,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 239,
+     "PUT": 196,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "REJECT_QUOTE_STALE": 391,
+     "REJECT_LIQUIDITY": 11,
+     "REJECT_DTE_FEASIBILITY": 3,
+     "nan": 2,
+     "REJECT_THESIS_PRICE": 2
+    }
+   },
+   "flag_reason": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "LIQUIDITY_STILL_PENDING": 350,
+     "WAIT_FOR_PULLBACK": 38,
+     "GAP_CONFIRMATION_EXTENDED": 4,
+     "Manual liquidity review - 20.0% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 2,
+     "CONTRACT_REPRICE_REQUIRED": 2,
+     "Manual liquidity review - 23.1% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 21.1% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1,
+     "Manual liquidity review - 19.8% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 19.9% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 19.4% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1,
+     "Manual liquidity review - 20.8% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 18.2% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1
+    }
+   },
+   "quote_freshness": {
+    "FRESH": 993,
+    "UNKNOWN": 451
+   },
+   "quote_freshness_in_FLAG": {
+    "FRESH": 407,
+    "UNKNOWN": 2
+   },
+   "is_stale": {
+    "False": 1443,
+    "True": 1
+   },
+   "is_stale_in_FLAG": {
+    "False": 409
+   }
+  },
+  "columns_containing_QUOTE_STALE": [
+   [
+    "liquidity_state",
+    453
+   ],
+   [
+    "ev3_reason_code",
+    435
+   ],
+   [
+    "economics_mismatch_reason",
+    435
+   ],
+   [
+    "morning_execution_lane",
+    351
+   ]
+  ]
+ },
+ "morning_candidates": {
+  "path": "morning_validation\\morning_candidates_20260911_115904.csv",
+  "rows": 1444,
+  "direction_col": "final_direction",
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "ts_cols_present": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "monetisability_quote_timestamp_utc"
+  ],
+  "fetch_cols_present": [],
+  "per_ts_col": {
+   "quote_as_of": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "selected_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "monetisability_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "execution_cols": {
+   "effective_execution_verdict": {
+    "value_counts": {
+     "MORNING_VALIDATION_REQUIRED": 526,
+     "OPTIONS_REPAIR_REQUIRED": 422,
+     "STRUCTURAL_WATCH": 294,
+     "FUTURE_WATCH": 202
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "flag_stale": {
+   "quote_freshness": {
+    "SESSION_ALIGNED": 957,
+    "nan": 226,
+    "UNKNOWN": 225,
+    "SYNTHETIC_NOT_EXECUTABLE": 36
+   },
+   "is_stale": {
+    "False": 1443,
+    "True": 1
+   }
+  },
+  "columns_containing_QUOTE_STALE": []
+ },
+ "final_opportunity_book": {
+  "path": "intelligence_lab\\final_opportunity_book_20260911_115904.csv",
+  "rows": 1444,
+  "direction_col": "final_direction",
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "ts_cols_present": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "morning_quote_timestamp_utc",
+   "current_quote_timestamp_utc"
+  ],
+  "fetch_cols_present": [],
+  "per_ts_col": {
+   "quote_as_of": {
+    "n_present": 1444,
+    "n_missing": 0,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 991
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 991
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6863,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 543,
+     "PUT": 260,
+     "OTHER": 188
+    },
+    "missing_split": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "present_split": {
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "selected_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "morning_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "current_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {},
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "execution_cols": {
+   "morning_execution_permission": {
+    "value_counts": {
+     "NOT_ELIGIBLE": 918,
+     "LIQUIDITY_STILL_PENDING": 361,
+     "NO_GO_ECONOMICS": 76,
+     "WAIT": 46,
+     "GO_LIMIT": 19,
+     "NO_GO_DIRECTION": 18,
+     "NO_GO_MOVE_ALREADY_REALIZED": 4,
+     "CONTRACT_REPAIR": 2
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   }
+  },
+  "flag_stale": {
+   "quote_freshness": {
+    "FRESH": 993,
+    "nan": 451
+   },
+   "is_stale": {
+    "False": 1443,
+    "True": 1
+   }
+  },
+  "columns_containing_QUOTE_STALE": [
+   [
+    "morning_execution_lane",
+    351
+   ],
+   [
+    "liquidity_state",
+    453
+   ],
+   [
+    "ev3_reason_code",
+    435
+   ],
+   [
+    "source_payload_json",
+    453
+   ]
+  ]
+ },
+ "execution_gated": {
+  "path": "trades\\execution_gated_20260911_115904.csv",
+  "rows": 1444,
+  "direction_col": "final_direction",
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "ts_cols_present": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "morning_quote_timestamp_utc",
+   "current_quote_timestamp_utc",
+   "contract_quote_timestamp",
+   "live_contract_quote_timestamp",
+   "monetisability_quote_timestamp_utc"
+  ],
+  "fetch_cols_present": [
+   "gate_checked_at_utc"
+  ],
+  "per_ts_col": {
+   "quote_as_of": {
+    "n_present": 1444,
+    "n_missing": 0,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 991
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 991
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6863,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 543,
+     "PUT": 260,
+     "OTHER": 188
+    },
+    "missing_split": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "present_split": {
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 26,
+      "PUT": 12,
+      "OTHER": 188
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "selected_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "morning_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "current_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "contract_quote_timestamp": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "live_contract_quote_timestamp": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 453,
+     "2026-09-11": 765
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 36,
+     "2026-09-10 17h": 417,
+     "2026-09-11 17h": 765
+    },
+    "same_session_2026-09-11_frac_of_present": 0.6281,
+    "prior_session_2026-09-10": {
+     "CALL": 255,
+     "PUT": 198,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 517,
+     "PUT": 248,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "monetisability_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "gate_checked_at_utc": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "execution_cols": {
+   "effective_execution_verdict": {
+    "value_counts": {
+     "MORNING_VALIDATION_REQUIRED": 526,
+     "OPTIONS_REPAIR_REQUIRED": 422,
+     "STRUCTURAL_WATCH": 294,
+     "FUTURE_WATCH": 202
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "verdict": {
+    "value_counts": {
+     "BLOCK": 1016,
+     "FLAG": 409,
+     "GO": 19
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   },
+   "morning_gate_verdict": {
+    "value_counts": {
+     "BLOCK": 1016,
+     "FLAG": 409,
+     "GO": 19
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   },
+   "execution_permission": {
+    "value_counts": {
+     "BLOCKED": 1016,
+     "WAIT": 407,
+     "HUMAN_APPROVAL_REQUIRED": 19,
+     "CONTRACT_REPAIR": 2
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "morning_execution_permission": {
+    "value_counts": {
+     "NOT_ELIGIBLE": 918,
+     "LIQUIDITY_STILL_PENDING": 361,
+     "NO_GO_ECONOMICS": 76,
+     "WAIT": 46,
+     "GO_LIMIT": 19,
+     "NO_GO_DIRECTION": 18,
+     "NO_GO_MOVE_ALREADY_REALIZED": 4,
+     "CONTRACT_REPAIR": 2
+    },
+    "executable_now_like": {
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0
+    }
+   }
+  },
+  "flag_stale": {
+   "verdict_col": "morning_gate_verdict",
+   "verdict_counts": {
+    "BLOCK": 1016,
+    "FLAG": 409,
+    "GO": 19
+   },
+   "FLAG_split": {
+    "CALL": 220,
+    "PUT": 189,
+    "OTHER": 0
+   },
+   "ev3_reason_code": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 207,
+     "PUT": 184,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 239,
+     "PUT": 196,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "REJECT_QUOTE_STALE": 391,
+     "REJECT_LIQUIDITY": 11,
+     "REJECT_DTE_FEASIBILITY": 3,
+     "PRODUCTION_EVIDENCE_ONLY": 2,
+     "REJECT_THESIS_PRICE": 2
+    }
+   },
+   "economics_mismatch_reason": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 207,
+     "PUT": 184,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 239,
+     "PUT": 196,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "REJECT_QUOTE_STALE": 391,
+     "REJECT_LIQUIDITY": 11,
+     "REJECT_DTE_FEASIBILITY": 3,
+     "nan": 2,
+     "REJECT_THESIS_PRICE": 2
+    }
+   },
+   "flag_reason": {
+    "QUOTE_STALE_in_FLAG_rows": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "QUOTE_STALE_total": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "top_values_in_FLAG": {
+     "LIQUIDITY_STILL_PENDING": 350,
+     "WAIT_FOR_PULLBACK": 38,
+     "GAP_CONFIRMATION_EXTENDED": 4,
+     "Manual liquidity review - 20.0% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 2,
+     "CONTRACT_REPRICE_REQUIRED": 2,
+     "Manual liquidity review - 23.1% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 21.1% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1,
+     "Manual liquidity review - 19.8% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 19.9% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 19.4% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1,
+     "Manual liquidity review - 20.8% exceeds 18.0% executable maximum; WAIT_FOR_PULLBACK": 1,
+     "Manual liquidity review - 18.2% exceeds 18.0% executable maximum; LIQUIDITY_STILL_PENDING": 1
+    }
+   },
+   "quote_freshness": {
+    "FRESH": 993,
+    "UNKNOWN": 451
+   },
+   "quote_freshness_in_FLAG": {
+    "FRESH": 407,
+    "UNKNOWN": 2
+   },
+   "is_stale": {
+    "False": 1443,
+    "True": 1
+   },
+   "is_stale_in_FLAG": {
+    "False": 409
+   }
+  },
+  "columns_containing_QUOTE_STALE": [
+   [
+    "liquidity_state",
+    453
+   ],
+   [
+    "ev3_reason_code",
+    435
+   ],
+   [
+    "economics_mismatch_reason",
+    435
+   ],
+   [
+    "morning_execution_lane",
+    351
+   ]
+  ]
+ },
+ "options_intelligence": {
+  "path": "options\\options_intelligence_20260911_115904.csv",
+  "rows": 1444,
+  "direction_col": "final_direction",
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "ts_cols_present": [
+   "quote_as_of",
+   "contract_quote_timestamp_utc",
+   "quote_timestamp_utc",
+   "l2_quote_timestamp_utc"
+  ],
+  "fetch_cols_present": [
+   "contract_quote_timestamp_source"
+  ],
+  "per_ts_col": {
+   "quote_as_of": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "contract_quote_timestamp_source": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "contract_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "contract_quote_timestamp_source": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-10": 1218
+    },
+    "by_date_hour": {
+     "2026-09-10 16h": 117,
+     "2026-09-10 17h": 1101
+    },
+    "same_session_2026-09-11_frac_of_present": 0.0,
+    "prior_session_2026-09-10": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "contract_quote_timestamp_source": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   },
+   "l2_quote_timestamp_utc": {
+    "n_present": 1218,
+    "n_missing": 226,
+    "by_date": {
+     "2026-09-11": 1218
+    },
+    "by_date_hour": {
+     "2026-09-11 13h": 45,
+     "2026-09-11 14h": 1173
+    },
+    "same_session_2026-09-11_frac_of_present": 1.0,
+    "prior_session_2026-09-10": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "same_session_2026-09-11": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "missing_split": {
+     "CALL": 26,
+     "PUT": 12,
+     "OTHER": 188
+    },
+    "present_split": {
+     "CALL": 772,
+     "PUT": 446,
+     "OTHER": 0
+    },
+    "eq_fetch_cols_to_second": {
+     "contract_quote_timestamp_source": {
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    },
+    "eq_gate_validated_at_to_second": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "execution_cols": {
+   "execution_permission": {
+    "value_counts": {
+     "MANUAL_REVIEW_REQUIRED": 1247,
+     "NO_CAPITAL": 197
+    },
+    "executable_now_like": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    }
+   }
+  },
+  "flag_stale": {
+   "quote_freshness": {
+    "SESSION_ALIGNED": 957,
+    "nan": 226,
+    "UNKNOWN": 225,
+    "SYNTHETIC_NOT_EXECUTABLE": 36
+   }
+  },
+  "columns_containing_QUOTE_STALE": []
+ },
+ "options_intelligence_extra": {
+  "execution_permission": {
+   "MANUAL_REVIEW_REQUIRED": 1247,
+   "NO_CAPITAL": 197
+  },
+  "quote_freshness": {
+   "SESSION_ALIGNED": 957,
+   "nan": 226,
+   "UNKNOWN": 225,
+   "SYNTHETIC_NOT_EXECUTABLE": 36
+  },
+  "contract_quote_timestamp_source": {
+   "marketdata.app.updated": 1218,
+   "nan": 226
+  }
+ },
+ "crosstabs": {
+  "quote_as_of_eq_gate_checked_at__vs__selected_ts_missing": {
+   "false": {
+    "false": 1218,
+    "true": 0
+   },
+   "true": {
+    "false": 0,
+    "true": 226
+   }
+  },
+  "quote_as_of_date_x_quote_freshness": {
+   "FRESH": {
+    "2026-09-10": 453,
+    "2026-09-11": 540
+   },
+   "UNKNOWN": {
+    "2026-09-10": 0,
+    "2026-09-11": 451
+   }
+  },
+  "quote_as_of_date_x_ev3_QUOTE_STALE": {
+   "false": {
+    "2026-09-10": 18,
+    "2026-09-11": 991
+   },
+   "true": {
+    "2026-09-10": 435,
+    "2026-09-11": 0
+   }
+  },
+  "FLAG_rows_quote_freshness_x_ev3_QUOTE_STALE": {
+   "false": {
+    "FRESH": 16,
+    "UNKNOWN": 2
+   },
+   "true": {
+    "FRESH": 391,
+    "UNKNOWN": 0
+   }
+  },
+  "liquidity_state_counts": {
+   "QUOTE_STALE": 453,
+   "LIQUIDITY_PENDING": 337,
+   "LEGACY_NOT_EVALUATED": 226,
+   "LIFECYCLE_DATA_INCOMPLETE": 225,
+   "EXECUTABLE_NOW": 69,
+   "REVIEWABLE_SPREAD": 49,
+   "MONEYNESS_UNSUITABLE": 32,
+   "DTE_UNSUITABLE": 30,
+   "ZERO_BID": 23
+  },
+  "prior_session_rows_by_direction": {
+   "CALL": 255,
+   "PUT": 198,
+   "OTHER": 0
+  },
+  "eq_gate_rows_by_direction": {
+   "CALL": 26,
+   "PUT": 12,
+   "OTHER": 188
+  },
+  "eq_gate_rows_liquidity_state": {
+   "LEGACY_NOT_EVALUATED": 226
+  },
+  "eq_gate_rows_morning_execution_permission": {
+   "NOT_ELIGIBLE": 226
+  },
+  "GO_rows_quote_as_of_date_by_direction": {
+   "CALL": {
+    "2026-09-11": 10
+   },
+   "PUT": {
+    "2026-09-11": 9
+   }
+  }
+ },
+ "desk_gate_overlay": {
+  "path": "dropbox\\macro\\coaching\\desk_gate\\desk_gate_20260911_115904_evening.csv",
+  "exists": true,
+  "rows": 1444,
+  "cols": 62,
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "columns_containing_QUOTE_STALE": {},
+  "lab_verdict_counts": {
+   "MANUAL_REVIEW": 946,
+   "BLOCKED": 450,
+   "CONTRACT_REPAIR": 29,
+   "GO_LIMIT": 19
+  },
+  "monetisability_state_counts": {
+   "MONETISABLE": 757,
+   "DATA_MISSING": 451,
+   "NOT_MONETISABLE": 199,
+   "LIMITED": 37
+  },
+  "timestamp_like_columns": []
+ },
+ "morning_gate_summary_keys": [
+  "run_id",
+  "validated_at_utc",
+  "input_candidates",
+  "go_count",
+  "flag_count",
+  "block_count",
+  "contract_repair_resolved_count",
+  "liquidity_lifecycle_write_through_enabled",
+  "liquidity_lifecycle_persisted_count",
+  "msi_structure_eligible_count",
+  "msi_structure_calculated_count",
+  "msi_structure_unavailable_count",
+  "current_regime",
+  "macro_vol_mode",
+  "macro_conviction",
+  "macro_filter",
+  "macro_sector_lead",
+  "macro_sector_avoid",
+  "macro_as_of_utc",
+  "macro_loaded",
+  "bond_macro_trade_go",
+  "bond_macro_score",
+  "bond_macro_flag",
+  "bond_macro_curve",
+  "bond_macro_credit",
+  "bond_macro_loaded",
+  "go_tickers",
+  "flag_tickers",
+  "block_tickers",
+  "v6_field_coverage",
+  "output_path",
+  "score_integrity_status",
+  "score_integrity_compared",
+  "score_integrity_pass"
+ ],
+ "morning_gate_summary_quote_hist_keys": [],
+ "morning_gate_summary_counts": {
+  "input_candidates": 1444,
+  "go_count": 19,
+  "flag_count": 409,
+  "block_count": 1016
+ },
+ "doi": {
+  "physical_fetch_count": 0,
+  "canonical_reuse": 1218,
+  "family_rows": 1218,
+  "assessed_families": 0,
+  "counts_by_state": {
+   "FAMILY_NOT_VALUED_RATE_UNAVAILABLE": 1218,
+   "NOT_APPLICABLE_NON_DIRECTIONAL": 188,
+   "DATA_EXCEPTION_RETAINED": 38
+  },
+  "exception_count": 38
+ }
+}

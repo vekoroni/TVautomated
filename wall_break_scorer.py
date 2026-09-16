@@ -49,7 +49,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -112,8 +112,25 @@ PHASE_B_BUFFER_PCT = 2.0   # 2% inside wall = watching zone
 PHASE_C_BUFFER_PCT = 0.5   # 0.5% through wall = confirmed break level
 REJECTION_BUFFER   = 0.5   # 0.5% back above wall = rejection confirmed
 
-# Verdicts to include in WBS scoring
+# WBS is an advisory structural assessment, not an execution authority. A
+# completed-session run intentionally has no EXECUTE verdict before Morning
+# validation, so route vocabulary is the canonical selection boundary.
 ACTIONABLE_VERDICTS = {'EXECUTE', 'EXECUTE_WITH_RISK'}
+WBS_ELIGIBLE_ROUTES = {
+    'OPTIONS_GO_REVIEW',
+    'OPTIONS_ARMED_HALF',
+    'OPTIONS_PROBE_ONLY',
+}
+
+WBS_OUTPUT_COLUMNS = [
+    'wbs', 'wbs_grade', 'wbs_f1_vanna', 'wbs_f2_wall_weakness',
+    'wbs_f3_flip_clear', 'wbs_f4_vol_loading', 'wbs_f5_momentum',
+    'wbs_pcr_volume_state', 'wbs_wall_price', 'wbs_wall_dist_pct',
+    'wbs_phase_b_trigger', 'wbs_phase_c_trigger', 'wbs_rejection_stop',
+    'wbs_notes', 'runway_to_wall_pct', 'pin_risk_score',
+    'wbs_size_guidance', 'wbs_entry_guidance', 'wbs_phase_b_guidance',
+    'wbs_phase_c_guidance', 'wbs_stop_guidance', 'wbs_wall_stall_rule',
+]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -391,14 +408,27 @@ def run_wall_break_scorer(
         return pd.DataFrame(), ''
 
     # ── Filter to actionable verdicts ─────────────────────────────────────────
-    df_exe = df_sb[df_sb['sb_final_verdict'].isin(ACTIONABLE_VERDICTS)].copy()
-    log.info(f'Actionable signals: {len(df_exe)} ({", ".join(df_exe["sb_final_verdict"].value_counts().to_dict().keys())})')
+    if 'final_route' in df_sb.columns:
+        df_exe = df_sb[df_sb['final_route'].isin(WBS_ELIGIBLE_ROUTES)].copy()
+        selection_values = df_exe['final_route'].value_counts().to_dict().keys()
+        selection_basis = 'final_route'
+    else:
+        # Compatibility for historical frames predating Options research routes.
+        df_exe = df_sb[df_sb['sb_final_verdict'].isin(ACTIONABLE_VERDICTS)].copy()
+        selection_values = df_exe['sb_final_verdict'].value_counts().to_dict().keys()
+        selection_basis = 'sb_final_verdict'
+    log.info(
+        'WBS advisory population: %d | basis=%s | states=%s',
+        len(df_exe), selection_basis, ', '.join(selection_values),
+    )
 
     if df_exe.empty:
-        log.warning('No actionable signals found — writing empty output.')
+        log.info('No WBS-eligible research routes — writing valid empty output.')
         out_path = os.path.join(out_dir, f'wall_break_scores_{run_id}.csv')
-        pd.DataFrame().to_csv(out_path, index=False)
-        return pd.DataFrame(), out_path
+        output_columns = list(dict.fromkeys([*df_sb.columns, *WBS_OUTPUT_COLUMNS]))
+        empty_output = pd.DataFrame(columns=output_columns)
+        empty_output.to_csv(out_path, index=False)
+        return empty_output, out_path
 
     # ── Build OI lookup by ticker ─────────────────────────────────────────────
     oi_lookup: Dict[str, dict] = {}
@@ -486,7 +516,7 @@ def run_wall_break_scorer(
 
     summary = {
         'run_id':                     run_id,
-        'generated_at':               datetime.utcnow().isoformat() + 'Z',
+        'generated_at':               datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         'producer':                   'wall_break_scorer.py v1.0',
         'total_scored':               len(df_scored),
         'grade_counts':               grade_counts,
@@ -550,6 +580,9 @@ def main() -> None:
     )
 
     if df.empty:
+        if out_path and os.path.isfile(out_path):
+            log.info('Valid empty WBS advisory output produced.')
+            return
         log.error('No output produced.')
         sys.exit(1)
 
@@ -582,7 +615,7 @@ def main() -> None:
             print(f'  Notes        : {r.get("wbs_notes", "")}')
             print(f'{"─"*60}\n')
 
-    print(f'\n✓ Wall Break Scorer complete → {out_path}\n')
+    print(f'\nWall Break Scorer complete -> {out_path}\n')
 
 
 if __name__ == '__main__':

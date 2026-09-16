@@ -1,0 +1,129 @@
+﻿m 248 survive raw-BH 80 survive cluster-BH 69
+survivors raw-BH by variable/direction/outcome:
+variable                    direction  outcome
+compression_bucket          CALL       SC          2
+                                       TF          1
+                            PUT        SC          2
+confirm_morning_permission  CALL       SC          1
+                                       TF          1
+confirm_thesis_state        CALL       TF          2
+confirm_trigger_primary     CALL       SC          4
+                                       TF          3
+                            PUT        SC          1
+dte_band                    CALL       SC          1
+hidden_state                CALL       SC          3
+                            PUT        SC          2
+iv_percentile               CALL       SC          1
+                                       TF          3
+                            PUT        SC          2
+                                       TF          1
+regime_drift_status         CALL       SC          4
+                                       TF          2
+                            PUT        SC          2
+regime_drift_x_sector       CALL       SC         17
+                                       TF         10
+sector                      CALL       SC          9
+                                       TF          4
+                            PUT        SC          2
+survivors cluster-BH by variable/direction/outcome:
+variable                    direction  outcome
+catalyst_presence           CALL       SC          1
+                                       TF          1
+                            PUT        SC          1
+                                       TF          2
+compression_bucket          CALL       SC          2
+                            PUT        SC          2
+confirm_morning_permission  CALL       TF          1
+confirm_thesis_state        CALL       TF          2
+                            PUT        SC          1
+confirm_trigger_primary     CALL       SC          3
+                                       TF          2
+                            PUT        SC          2
+                                       TF          1
+hidden_state                CALL       SC          2
+                            PUT        SC          2
+iv_percentile               CALL       TF          1
+                            PUT        SC          1
+regime_drift_status         CALL       SC          2
+                                       TF          1
+                            PUT        SC          1
+regime_drift_x_sector       CALL       SC         12
+                                       TF          9
+                            PUT        TF          2
+regime_macro_regime         CALL       TF          1
+                            PUT        SC          1
+                                       TF          1
+sector                      CALL       SC          7
+                                       TF          2
+                            PUT        SC          2
+                                       TF          1
+                  variable   stratum                                   level outcome    n    rate  base_rate      diff    p_raw  p_cluster_session     p_bh  p_bh_cluster  haircut_bh  haircut_bonferroni  sessions_in_cell
+       regime_macro_regime   PUT 1-5                            TRANSITIONAL      SC  330   0.491      0.492  -0.00154    0.492           1.47e-31    0.678      3.65e-29       0.396                   1                12
+         catalyst_presence   PUT 1-5                      NONE_OR_STRUCTURAL      SC  329   0.495      0.492   0.00299    0.499           5.05e-31    0.681      6.26e-29       0.392                   1                13
+     regime_drift_x_sector CALL 6-10 DRIFTING_NEUTRAL|Information Technology      TF  103   0.194     0.0658     0.128 1.16e-07           9.68e-22 1.15e-06         8e-20      0.0822               0.211                 1
+     regime_drift_x_sector CALL 6-10            DRIFTING_BEARISH|Real Estate      SC  129   0.132      0.451     -0.32 1.68e-13           3.14e-20 8.31e-12      1.95e-18      0.0732               0.105                 4
+        compression_bucket  PUT 6-10                                    HIGH      SC  266   0.692      0.546     0.146 5.55e-08           7.01e-19 6.55e-07      3.48e-17      0.0844                 0.2                10
+     regime_drift_x_sector CALL 6-10              DRIFTING_BULLISH|Utilities      SC  120   0.117      0.451    -0.335 9.97e-14           5.52e-15 6.18e-12      2.28e-13       0.076               0.103                 5
+     regime_drift_x_sector CALL 6-10            DRIFTING_NEUTRAL|Health Care      SC  105   0.667      0.451     0.215 7.69e-06           1.19e-14 5.15e-05       4.2e-13       0.095               0.306                 1
+       regime_drift_status  PUT 6-10                        DRIFTING_NEUTRAL      SC  126   0.357      0.546    -0.189 6.82e-06           2.62e-14  4.7e-05      8.12e-13      0.0954               0.302                 1
+              hidden_state  PUT 6-10                     COMPRESSED_BALANCED      SC  349   0.662      0.546     0.116 2.08e-07           6.59e-13 1.91e-06      1.63e-11      0.0827                0.22                10
+              hidden_state  PUT 6-10                      LOW_ENERGY_NO_EDGE      SC  831   0.497      0.546   -0.0488 2.08e-07           6.59e-13 1.91e-06      1.63e-11      0.0827                0.22                10
+       regime_drift_status CALL 6-10                        DRIFTING_NEUTRAL      TF  610   0.146     0.0658    0.0801 3.86e-17           1.83e-12 9.58e-15      4.12e-11      0.0799              0.0799                 1
+     regime_drift_x_sector CALL 6-10 DRIFTING_BULLISH|Consumer Discretionary      SC  330   0.303      0.451    -0.148 2.58e-08            2.1e-09 3.55e-07      4.34e-08      0.0856               0.189                 5
+                    sector  PUT 6-10                  Consumer Discretionary      SC  172   0.738      0.546     0.193 4.04e-08            9.2e-09 5.27e-07      1.75e-07      0.0862               0.195                10
+                    sector CALL 6-10                               Utilities      SC  213   0.174      0.451    -0.278 1.14e-16           1.54e-08 1.18e-14      2.74e-07      0.0689              0.0824                10
+                    sector CALL 6-10                             Real Estate      SC  303   0.221      0.451     -0.23 1.42e-16           4.18e-08 1.18e-14      6.91e-07      0.0659               0.083                10
+         catalyst_presence  PUT 6-10                      NONE_OR_STRUCTURAL      TF 1167  0.0343     0.0339  0.000378        1           7.62e-08        1      1.18e-06           0                   0                10
+                    sector CALL 6-10                               Utilities      TF  213 0.00939     0.0658   -0.0564 0.000722           7.04e-07  0.00338      9.79e-06       0.133               0.603                10
+     regime_drift_x_sector CALL 6-10                 DRIFTING_BEARISH|Energy      SC  208   0.692      0.451     0.241 1.17e-12           7.11e-07 4.85e-11      9.79e-06       0.075               0.113                 4
+                    sector  PUT 6-10                  Information Technology      TF  264  0.0152     0.0339   -0.0187   0.0561           8.91e-07    0.128      1.16e-05       0.202                   1                10
+     regime_drift_x_sector CALL 6-10              DRIFTING_BULLISH|Utilities      TF  120 0.00833     0.0658   -0.0575   0.0103           1.87e-06   0.0345      2.32e-05       0.176                   1                 5
+       regime_drift_status  CALL 1-5                        DRIFTING_BEARISH      SC  308    0.64      0.479      0.16 1.53e-12           2.81e-06 5.41e-11      3.32e-05      0.0725               0.114                 4
+     regime_drift_x_sector CALL 6-10            DRIFTING_BEARISH|Real Estate      TF  129 0.00775     0.0658   -0.0581  0.00718           3.96e-06   0.0258      4.46e-05       0.171                   1                 4
+         catalyst_presence CALL 6-10                      NONE_OR_STRUCTURAL      TF 6004   0.066     0.0658  0.000153        1           7.44e-06        1      8.03e-05           0                   0                10
+                    sector CALL 6-10                             Real Estate      TF  303  0.0165     0.0658   -0.0493 0.000383           1.41e-05  0.00205      0.000145       0.132                0.53                10
+                    sector  PUT 6-10                             Industrials      SC  184   0.636      0.546    0.0901  0.00754            2.1e-05   0.0263      0.000208       0.169                   1                10
+       regime_drift_status CALL 6-10                        DRIFTING_NEUTRAL      SC  610   0.559      0.451     0.108 1.71e-08           4.34e-05 2.65e-07      0.000414      0.0873               0.184                 1
+     regime_drift_x_sector  PUT 6-10            DRIFTING_BULLISH|Industrials      TF  104 0.00962     0.0339   -0.0243     0.25           7.33e-05    0.438      0.000673       0.326                   1                 5
+     regime_drift_x_sector CALL 6-10            DRIFTING_BULLISH|Real Estate      SC  139   0.273      0.451    -0.178    2e-05           0.000135 0.000127       0.00119       0.102               0.341                 5
+                    sector CALL 6-10                             Industrials      SC  669   0.344      0.451    -0.108 3.07e-09            0.00014 5.87e-08        0.0012      0.0851               0.166                10
+              hidden_state CALL 6-10                     COMPRESSED_BALANCED      SC 1949   0.401      0.451   -0.0501 6.54e-08           0.000175 7.05e-07        0.0014      0.0821               0.202                10
+              hidden_state CALL 6-10                      LOW_ENERGY_NO_EDGE      SC 4069   0.475      0.451     0.024 6.54e-08           0.000175 7.05e-07        0.0014      0.0821               0.202                10
+     regime_drift_x_sector  CALL 1-5 DRIFTING_BEARISH|Information Technology      SC  109   0.688      0.479     0.209 2.91e-06           0.000192 2.19e-05       0.00145      0.0924               0.277                 4
+   confirm_trigger_primary  CALL 1-5                         VOL_COMPRESSION      SC  364   0.418      0.479   -0.0617  0.00178           0.000192  0.00763       0.00145       0.146               0.754                12
+     regime_drift_x_sector  PUT 6-10 DRIFTING_BULLISH|Information Technology      TF  106 0.00943     0.0339   -0.0245    0.252           0.000245    0.438       0.00179       0.322                   1                 5
+                    sector CALL 6-10                               Materials      SC  324   0.577      0.451     0.126 2.87e-06           0.000293 2.19e-05       0.00208      0.0929               0.277                10
+                    sector CALL 6-10                  Consumer Discretionary      SC  605   0.344      0.451    -0.108  2.1e-08           0.000302 3.07e-07       0.00208      0.0864               0.187                10
+     regime_drift_x_sector CALL 6-10 DRIFTING_NEUTRAL|Information Technology      SC  103   0.553      0.451     0.102   0.0357           0.000366   0.0962       0.00245       0.208                   1                 1
+     regime_drift_x_sector CALL 6-10            DRIFTING_BULLISH|Health Care      SC  539   0.573      0.451     0.122 2.46e-09           0.000392 5.09e-08       0.00252      0.0865               0.164                 5
+        compression_bucket  PUT 6-10                                     LOW      SC  528   0.491      0.546   -0.0552 0.000606           0.000396  0.00289       0.00252       0.131                0.58                10
+   confirm_trigger_primary  PUT 6-10                         VOL_COMPRESSION      SC  155   0.665      0.546     0.119  0.00144           0.000439  0.00639       0.00268       0.144               0.711                 9
+   confirm_trigger_primary CALL 6-10                         VOL_COMPRESSION      SC  945   0.372      0.451   -0.0788 1.13e-07           0.000443 1.15e-06       0.00268      0.0828                0.21                 9
+        compression_bucket CALL 6-10                                    HIGH      SC 1449   0.389      0.451   -0.0621 5.04e-08           0.000508 6.25e-07         0.003      0.0856               0.198                10
+         catalyst_presence   PUT 1-5                      NONE_OR_STRUCTURAL      TF  329  0.0334     0.0332  0.000202        1           0.000521        1       0.00301           0                   0                13
+       regime_macro_regime   PUT 1-5                            TRANSITIONAL      TF  330  0.0333     0.0332  0.000101        1           0.000534        1       0.00301           0                   0                12
+     regime_drift_x_sector CALL 6-10            DRIFTING_NEUTRAL|Health Care      TF  105   0.114     0.0658    0.0485   0.0432           0.000626    0.109       0.00345       0.208                   1                 1
+             iv_percentile CALL 6-10                                  T1_LOW      TF 1313  0.0312     0.0658   -0.0346  1.1e-08            0.00132 1.81e-07        0.0071      0.0871               0.179                10
+     regime_drift_x_sector CALL 6-10 DRIFTING_BULLISH|Consumer Discretionary      TF  330  0.0182     0.0658   -0.0476 0.000332            0.00197  0.00183        0.0104       0.132               0.516                 5
+                    sector CALL 6-10                             Health Care      SC 1088   0.538      0.451    0.0864 2.53e-10            0.00202 6.96e-09        0.0105      0.0843               0.145                10
+   confirm_trigger_primary  PUT 6-10                            NONE_OR_NULL      SC  930   0.532      0.546   -0.0135   0.0723            0.00229    0.159        0.0115       0.216                   1                10
+   confirm_trigger_primary CALL 6-10                         VOL_COMPRESSION      TF  945  0.0402     0.0658   -0.0256 0.000549            0.00231  0.00267        0.0115       0.131               0.569                 9
+      confirm_thesis_state CALL 6-10            VALID_THESIS_TRIGGER_PENDING      TF  318   0.113     0.0658    0.0474 0.000459            0.00242  0.00233        0.0118       0.131               0.549                10
+     regime_drift_x_sector CALL 6-10            DRIFTING_BULLISH|Industrials      SC  352   0.301      0.451     -0.15 5.37e-09            0.00255 9.51e-08        0.0122      0.0856               0.171                 5
+     regime_drift_x_sector CALL 6-10              DRIFTING_BULLISH|Materials      SC  156    0.59      0.451     0.138 0.000431            0.00286  0.00223        0.0134       0.131               0.542                 5
+     regime_drift_x_sector CALL 6-10 DRIFTING_BEARISH|Consumer Discretionary      TF  209  0.0191     0.0658   -0.0467  0.00562            0.00357   0.0211        0.0164       0.167                   1                 4
+     regime_drift_x_sector CALL 6-10            DRIFTING_BULLISH|Real Estate      TF  139  0.0144     0.0658   -0.0514   0.0134            0.00376   0.0425         0.017        0.18                   1                 5
+confirm_morning_permission CALL 6-10                            NOT_ELIGIBLE      TF  483  0.0248     0.0658    -0.041 0.000153            0.00387 0.000864        0.0171        0.12               0.452                 1
+     regime_drift_x_sector CALL 6-10              DRIFTING_BULLISH|Materials      TF  156   0.199     0.0658     0.133 1.17e-11            0.00409 3.62e-10        0.0178      0.0758               0.125                 5
+      confirm_thesis_state CALL 6-10             VALID_THESIS_REPAIR_AT_OPEN      TF 5600  0.0632     0.0658  -0.00259  0.00303            0.00454   0.0128        0.0194        0.16               0.894                10
+   confirm_trigger_primary   PUT 1-5                         VOL_COMPRESSION      TF  122  0.0656     0.0332    0.0323   0.0215            0.00484   0.0627        0.0203        0.19                   1                11
+       regime_macro_regime  CALL 1-5                            TRANSITIONAL      TF  783  0.0664     0.0629   0.00354    0.168            0.00593     0.33        0.0245       0.294                   1                12
+     regime_drift_x_sector CALL 6-10 DRIFTING_BEARISH|Consumer Discretionary      SC  209   0.306      0.451    -0.145 1.78e-05            0.00621 0.000116        0.0251       0.102               0.337                 4
+             iv_percentile  PUT 6-10                                 T3_HIGH      SC  260   0.458      0.546   -0.0881  0.00124            0.00628  0.00558        0.0251       0.142               0.684                10
+        compression_bucket CALL 6-10                                     LOW      SC 2519   0.489      0.451    0.0382 4.45e-07            0.00782 3.89e-06        0.0308      0.0854               0.234                10
+         catalyst_presence CALL 6-10                      NONE_OR_STRUCTURAL      SC 6004   0.451      0.451 -0.000613   0.0477            0.00918    0.117        0.0356       0.209                   1                10
+   confirm_trigger_primary CALL 6-10                            NONE_OR_NULL      TF 4421  0.0715     0.0658   0.00567  0.00314            0.00933    0.013        0.0356       0.159               0.904                10
+                    sector CALL 6-10                                     ETF      SC  188   0.548      0.451    0.0966  0.00687            0.00946   0.0251        0.0356       0.171                   1                10
+   confirm_trigger_primary CALL 6-10                            NONE_OR_NULL      SC 4421   0.467      0.451    0.0153 7.05e-05            0.00988 0.000426        0.0366       0.114               0.402                10
+     regime_drift_x_sector CALL 6-10            DRIFTING_BULLISH|Industrials      TF  352  0.0256     0.0658   -0.0402   0.0017             0.0106  0.00741        0.0387       0.147               0.744                 5
+      confirm_thesis_state   PUT 1-5            VALID_THESIS_TRIGGER_PENDING      SC  196   0.439      0.492   -0.0537   0.0186             0.0129   0.0556        0.0465       0.187                   1                12

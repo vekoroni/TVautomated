@@ -1,0 +1,1315 @@
+{
+ "morning_validation/morning_validated_trades_<run>.csv": {
+  "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\morning_validation\\morning_validated_trades_20260911_115904.csv",
+  "rows": 1444,
+  "state_cols": [
+   "liquidity_state",
+   "morning_transition_state",
+   "executable_now",
+   "effective_execution_verdict",
+   "current_quote_executable",
+   "contract_spread_policy_state",
+   "morning_execution_permission",
+   "morning_execution_lane",
+   "contract_data_state"
+  ],
+  "quote_cols": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "contract_bid",
+   "contract_ask",
+   "contract_mid",
+   "contract_spread_pct",
+   "ev3_quote_age_seconds",
+   "monetisability_quote_timestamp_utc",
+   "live_contract_bid",
+   "live_contract_ask",
+   "live_contract_mid",
+   "live_contract_bid_size",
+   "live_contract_ask_size",
+   "live_contract_spread_pct",
+   "live_contract_quote_timestamp",
+   "morning_contract_bid",
+   "morning_contract_ask",
+   "morning_contract_spread_pct",
+   "morning_contract_bid_size",
+   "morning_contract_ask_size",
+   "morning_quote_timestamp_utc",
+   "current_contract_bid",
+   "current_contract_ask",
+   "current_contract_spread_pct",
+   "current_contract_bid_size",
+   "current_contract_ask_size",
+   "current_quote_timestamp_utc",
+   "contract_quote_timestamp",
+   "quote_age_seconds"
+  ],
+  "state_values": {
+   "liquidity_state": {
+    "QUOTE_STALE": 453,
+    "LIQUIDITY_PENDING": 337,
+    "LEGACY_NOT_EVALUATED": 226,
+    "LIFECYCLE_DATA_INCOMPLETE": 225,
+    "EXECUTABLE_NOW": 69,
+    "REVIEWABLE_SPREAD": 49,
+    "MONEYNESS_UNSUITABLE": 32,
+    "DTE_UNSUITABLE": 30,
+    "ZERO_BID": 23
+   },
+   "morning_transition_state": {
+    "LIQUIDITY_STILL_PENDING": 771,
+    "LEGACY_LIFECYCLE_NOT_EVALUATED": 226,
+    "CONTRACT_REPRICE_REQUIRED": 225,
+    "WAIT_FOR_PULLBACK": 93,
+    "MOVE_ALREADY_REALIZED": 42,
+    "GAP_CONFIRMATION_WITH_RUNWAY": 32,
+    "EXECUTABLE_NOW": 27,
+    "THESIS_INVALIDATED": 17,
+    "GAP_CONFIRMATION_EXTENDED": 11
+   },
+   "executable_now": {
+    "False": 1375,
+    "True": 69
+   },
+   "effective_execution_verdict": {
+    "MORNING_VALIDATION_REQUIRED": 526,
+    "OPTIONS_REPAIR_REQUIRED": 422,
+    "STRUCTURAL_WATCH": 294,
+    "FUTURE_WATCH": 202
+   },
+   "current_quote_executable": {
+    "False": 924,
+    "nan": 451,
+    "True": 69
+   },
+   "contract_spread_policy_state": {
+    "EXECUTABLE_SPREAD": 622,
+    "BLOCKED_SPREAD": 508,
+    "UNAVAILABLE": 226,
+    "MANUAL_LIQUIDITY_REVIEW": 88
+   },
+   "morning_execution_permission": {
+    "NOT_ELIGIBLE": 918,
+    "LIQUIDITY_STILL_PENDING": 361,
+    "NO_GO_ECONOMICS": 76,
+    "WAIT": 46,
+    "GO_LIMIT": 19,
+    "NO_GO_DIRECTION": 18,
+    "NO_GO_MOVE_ALREADY_REALIZED": 4,
+    "CONTRACT_REPAIR": 2
+   },
+   "morning_execution_lane": {
+    "UPSTREAM_NOT_AUTHORIZED": 918,
+    "QUOTE_STALE": 351,
+    "NON_MONETISABLE": 76,
+    "WAIT_FOR_PULLBACK": 42,
+    "MORNING_VALIDATED": 19,
+    "DIRECTION_INTEGRITY_FAILED": 18,
+    "REVIEWABLE_SPREAD": 8,
+    "MOVE_ALREADY_REALIZED": 4,
+    "GAP_CONFIRMATION_EXTENDED": 4,
+    "DTE_UNSUITABLE": 2,
+    "CONTRACT_ECONOMICS_RECOMPUTE": 2
+   },
+   "contract_data_state": {
+    "nan": 1429,
+    "AVAILABLE": 15
+   }
+  },
+  "exec_like_columns": {
+   "liquidity_state": {
+    "n": 69,
+    "values": {
+     "EXECUTABLE_NOW": 69
+    }
+   },
+   "morning_transition_state": {
+    "n": 27,
+    "values": {
+     "EXECUTABLE_NOW": 27
+    }
+   },
+   "executable_now": {
+    "n": 69,
+    "values": {
+     "True": 69
+    }
+   },
+   "current_quote_executable": {
+    "n": 69,
+    "values": {
+     "True": 69
+    }
+   }
+  },
+  "exec_like_rows": {
+   "ALL": 69,
+   "CALL": 47,
+   "PUT": 22,
+   "OTHER": 0
+  },
+  "chosen": {
+   "bid": "live_contract_bid",
+   "ask": "live_contract_ask",
+   "ts_cols": [
+    "quote_as_of",
+    "selected_quote_timestamp_utc",
+    "monetisability_quote_timestamp_utc",
+    "live_contract_quote_timestamp",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "contract_quote_timestamp"
+   ]
+  },
+  "gate_time": "2026-09-11 17:08:56+00:00",
+  "timestamp_checks": {
+   "quote_as_of": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "selected_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   },
+   "monetisability_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 1396.9333333333334,
+    "median_age_min": 1426.8,
+    "max_age_min": 1454.9,
+    "within_15_min": 0
+   },
+   "live_contract_quote_timestamp": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   },
+   "morning_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "current_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "contract_quote_timestamp": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   }
+  },
+  "provider_ts_col": "quote_as_of",
+  "checks": {
+   "ALL": {
+    "n": 69,
+    "chk_bid_gt_0": 69,
+    "chk_ask_gt_bid": 69,
+    "chk_spread_le_limit": 69,
+    "chk_fresh_15m": 69,
+    "all_pass": 69,
+    "spread_frac_median": 0.13207547169811323
+   },
+   "CALL": {
+    "n": 47,
+    "chk_bid_gt_0": 47,
+    "chk_ask_gt_bid": 47,
+    "chk_spread_le_limit": 47,
+    "chk_fresh_15m": 47,
+    "all_pass": 47,
+    "spread_frac_median": 0.13333333333333333
+   },
+   "PUT": {
+    "n": 22,
+    "chk_bid_gt_0": 22,
+    "chk_ask_gt_bid": 22,
+    "chk_spread_le_limit": 22,
+    "chk_fresh_15m": 22,
+    "all_pass": 22,
+    "spread_frac_median": 0.12889487870619953
+   },
+   "OTHER": {
+    "n": 0,
+    "chk_bid_gt_0": 0,
+    "chk_ask_gt_bid": 0,
+    "chk_spread_le_limit": 0,
+    "chk_fresh_15m": 0,
+    "all_pass": 0
+   }
+  },
+  "examples_fail": []
+ },
+ "intelligence_lab/final_opportunity_book_<run>.csv": {
+  "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\intelligence_lab\\final_opportunity_book_20260911_115904.csv",
+  "rows": 1444,
+  "state_cols": [
+   "lab_execution_status",
+   "execution_eligibility_state",
+   "morning_execution_permission",
+   "morning_execution_lane",
+   "contract_data_state",
+   "liquidity_state",
+   "morning_transition_state",
+   "executable_now",
+   "olm_guard_disposition"
+  ],
+  "quote_cols": [
+   "selected_quote_timestamp_utc",
+   "morning_contract_bid",
+   "morning_contract_ask",
+   "morning_contract_spread_pct",
+   "morning_contract_bid_size",
+   "morning_contract_ask_size",
+   "morning_quote_timestamp_utc",
+   "current_contract_bid",
+   "current_contract_ask",
+   "current_contract_spread_pct",
+   "current_contract_bid_size",
+   "current_contract_ask_size",
+   "current_quote_timestamp_utc",
+   "quote_as_of",
+   "contract_bid",
+   "contract_ask",
+   "contract_mid"
+  ],
+  "state_values": {
+   "lab_execution_status": {
+    "MANUAL_REVIEW": 946,
+    "BLOCK": 248,
+    "INVALIDATION_MISSING": 202,
+    "CONTRACT_REPAIR": 29,
+    "BUY_SMALL": 19
+   },
+   "execution_eligibility_state": {
+    "REVIEW_REQUIRED": 946,
+    "NOT_ELIGIBLE": 450,
+    "CONTRACT_REPAIR_REQUIRED": 29,
+    "ELIGIBLE_LIMITED": 19
+   },
+   "morning_execution_permission": {
+    "NOT_ELIGIBLE": 918,
+    "LIQUIDITY_STILL_PENDING": 361,
+    "NO_GO_ECONOMICS": 76,
+    "WAIT": 46,
+    "GO_LIMIT": 19,
+    "NO_GO_DIRECTION": 18,
+    "NO_GO_MOVE_ALREADY_REALIZED": 4,
+    "CONTRACT_REPAIR": 2
+   },
+   "morning_execution_lane": {
+    "UPSTREAM_NOT_AUTHORIZED": 918,
+    "QUOTE_STALE": 351,
+    "NON_MONETISABLE": 76,
+    "WAIT_FOR_PULLBACK": 42,
+    "MORNING_VALIDATED": 19,
+    "DIRECTION_INTEGRITY_FAILED": 18,
+    "REVIEWABLE_SPREAD": 8,
+    "GAP_CONFIRMATION_EXTENDED": 4,
+    "MOVE_ALREADY_REALIZED": 4,
+    "CONTRACT_ECONOMICS_RECOMPUTE": 2,
+    "DTE_UNSUITABLE": 2
+   },
+   "contract_data_state": {
+    "AVAILABLE": 1218,
+    "NOT_APPLICABLE_NO_SELECTED_CONTRACT": 226
+   },
+   "liquidity_state": {
+    "QUOTE_STALE": 453,
+    "LIQUIDITY_PENDING": 337,
+    "LEGACY_NOT_EVALUATED": 226,
+    "LIFECYCLE_DATA_INCOMPLETE": 225,
+    "EXECUTABLE_NOW": 69,
+    "REVIEWABLE_SPREAD": 49,
+    "MONEYNESS_UNSUITABLE": 32,
+    "DTE_UNSUITABLE": 30,
+    "ZERO_BID": 23
+   },
+   "morning_transition_state": {
+    "LIQUIDITY_STILL_PENDING": 771,
+    "LEGACY_LIFECYCLE_NOT_EVALUATED": 226,
+    "CONTRACT_REPRICE_REQUIRED": 225,
+    "WAIT_FOR_PULLBACK": 93,
+    "MOVE_ALREADY_REALIZED": 42,
+    "GAP_CONFIRMATION_WITH_RUNWAY": 32,
+    "EXECUTABLE_NOW": 27,
+    "THESIS_INVALIDATED": 17,
+    "GAP_CONFIRMATION_EXTENDED": 11
+   },
+   "executable_now": {
+    "False": 1375,
+    "True": 69
+   },
+   "olm_guard_disposition": {
+    "MANUAL_REVIEW": 1101,
+    "CONTRACT_REPAIR": 225,
+    "CONTINUE": 59,
+    "BLOCK": 59
+   }
+  },
+  "exec_like_columns": {
+   "liquidity_state": {
+    "n": 69,
+    "values": {
+     "EXECUTABLE_NOW": 69
+    }
+   },
+   "morning_transition_state": {
+    "n": 27,
+    "values": {
+     "EXECUTABLE_NOW": 27
+    }
+   },
+   "executable_now": {
+    "n": 69,
+    "values": {
+     "True": 69
+    }
+   }
+  },
+  "exec_like_rows": {
+   "ALL": 69,
+   "CALL": 47,
+   "PUT": 22,
+   "OTHER": 0
+  },
+  "chosen": {
+   "bid": "current_contract_bid",
+   "ask": "current_contract_ask",
+   "ts_cols": [
+    "selected_quote_timestamp_utc",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "quote_as_of"
+   ]
+  },
+  "gate_time": "2026-09-11 17:08:56+00:00",
+  "timestamp_checks": {
+   "selected_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   },
+   "morning_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "current_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "quote_as_of": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   }
+  },
+  "provider_ts_col": "selected_quote_timestamp_utc",
+  "checks": {
+   "ALL": {
+    "n": 69,
+    "chk_bid_gt_0": 69,
+    "chk_ask_gt_bid": 69,
+    "chk_spread_le_limit": 69,
+    "chk_fresh_15m": 69,
+    "all_pass": 69,
+    "spread_frac_median": 0.13207547169811323
+   },
+   "CALL": {
+    "n": 47,
+    "chk_bid_gt_0": 47,
+    "chk_ask_gt_bid": 47,
+    "chk_spread_le_limit": 47,
+    "chk_fresh_15m": 47,
+    "all_pass": 47,
+    "spread_frac_median": 0.13333333333333333
+   },
+   "PUT": {
+    "n": 22,
+    "chk_bid_gt_0": 22,
+    "chk_ask_gt_bid": 22,
+    "chk_spread_le_limit": 22,
+    "chk_fresh_15m": 22,
+    "all_pass": 22,
+    "spread_frac_median": 0.12889487870619953
+   },
+   "OTHER": {
+    "n": 0,
+    "chk_bid_gt_0": 0,
+    "chk_ask_gt_bid": 0,
+    "chk_spread_le_limit": 0,
+    "chk_fresh_15m": 0,
+    "all_pass": 0
+   }
+  },
+  "examples_fail": []
+ },
+ "intelligence_lab/lab_signal_book_v3.csv": {
+  "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\intelligence_lab\\lab_signal_book_v3.csv",
+  "rows": 19,
+  "state_cols": [
+   "contract_data_state",
+   "executable_now",
+   "execution_eligibility_state",
+   "execution_quote_status",
+   "lab_execution_status",
+   "liquidity_state",
+   "morning_execution_lane",
+   "morning_execution_permission",
+   "morning_transition_state",
+   "olm_guard_disposition"
+  ],
+  "quote_cols": [
+   "contract_ask",
+   "contract_bid",
+   "contract_mid",
+   "current_contract_ask",
+   "current_contract_ask_size",
+   "current_contract_bid",
+   "current_contract_bid_size",
+   "current_contract_spread_pct",
+   "current_quote_timestamp_utc",
+   "execution_quote_timestamp_utc",
+   "morning_contract_ask",
+   "morning_contract_ask_size",
+   "morning_contract_bid",
+   "morning_contract_bid_size",
+   "morning_contract_spread_pct",
+   "morning_quote_timestamp_utc",
+   "quote_age_affects_thesis",
+   "quote_age_seconds",
+   "quote_as_of",
+   "quote_timestamp_utc",
+   "selected_quote_timestamp_utc"
+  ],
+  "state_values": {
+   "contract_data_state": {
+    "AVAILABLE": 19
+   },
+   "executable_now": {
+    "True": 19
+   },
+   "execution_eligibility_state": {
+    "ELIGIBLE_LIMITED": 19
+   },
+   "execution_quote_status": {
+    "SAME_SESSION_EVIDENCE": 19
+   },
+   "lab_execution_status": {
+    "BUY_SMALL": 19
+   },
+   "liquidity_state": {
+    "EXECUTABLE_NOW": 19
+   },
+   "morning_execution_lane": {
+    "MORNING_VALIDATED": 19
+   },
+   "morning_execution_permission": {
+    "GO_LIMIT": 19
+   },
+   "morning_transition_state": {
+    "GAP_CONFIRMATION_WITH_RUNWAY": 11,
+    "EXECUTABLE_NOW": 8
+   },
+   "olm_guard_disposition": {
+    "CONTINUE": 19
+   }
+  },
+  "exec_like_columns": {
+   "executable_now": {
+    "n": 19,
+    "values": {
+     "True": 19
+    }
+   },
+   "liquidity_state": {
+    "n": 19,
+    "values": {
+     "EXECUTABLE_NOW": 19
+    }
+   },
+   "morning_transition_state": {
+    "n": 8,
+    "values": {
+     "EXECUTABLE_NOW": 8
+    }
+   }
+  },
+  "exec_like_rows": {
+   "ALL": 19,
+   "CALL": 10,
+   "PUT": 9,
+   "OTHER": 0
+  },
+  "chosen": {
+   "bid": "current_contract_bid",
+   "ask": "current_contract_ask",
+   "ts_cols": [
+    "current_quote_timestamp_utc",
+    "execution_quote_timestamp_utc",
+    "morning_quote_timestamp_utc",
+    "quote_as_of",
+    "quote_timestamp_utc",
+    "selected_quote_timestamp_utc"
+   ]
+  },
+  "gate_time": "2026-09-11 17:08:56+00:00",
+  "timestamp_checks": {
+   "current_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "execution_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "morning_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "quote_as_of": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "selected_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.8333333333333335,
+    "median_age_min": 4.283333333333333,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   }
+  },
+  "provider_ts_col": "execution_quote_timestamp_utc",
+  "checks": {
+   "ALL": {
+    "n": 19,
+    "chk_bid_gt_0": 19,
+    "chk_ask_gt_bid": 19,
+    "chk_spread_le_limit": 19,
+    "chk_fresh_15m": 19,
+    "all_pass": 19,
+    "spread_frac_median": 0.12048192771084347
+   },
+   "CALL": {
+    "n": 10,
+    "chk_bid_gt_0": 10,
+    "chk_ask_gt_bid": 10,
+    "chk_spread_le_limit": 10,
+    "chk_fresh_15m": 10,
+    "all_pass": 10,
+    "spread_frac_median": 0.12024096385542177
+   },
+   "PUT": {
+    "n": 9,
+    "chk_bid_gt_0": 9,
+    "chk_ask_gt_bid": 9,
+    "chk_spread_le_limit": 9,
+    "chk_fresh_15m": 9,
+    "all_pass": 9,
+    "spread_frac_median": 0.13207547169811323
+   },
+   "OTHER": {
+    "n": 0,
+    "chk_bid_gt_0": 0,
+    "chk_ask_gt_bid": 0,
+    "chk_spread_le_limit": 0,
+    "chk_fresh_15m": 0,
+    "all_pass": 0
+   }
+  },
+  "examples_fail": []
+ },
+ "trades/execution_gated_<run>.csv": {
+  "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\trades\\execution_gated_20260911_115904.csv",
+  "rows": 1444,
+  "state_cols": [
+   "liquidity_state",
+   "morning_transition_state",
+   "executable_now",
+   "effective_execution_verdict",
+   "current_quote_executable",
+   "contract_spread_policy_state",
+   "morning_execution_permission",
+   "morning_execution_lane",
+   "olm_guard_disposition",
+   "execution_eligibility_state"
+  ],
+  "quote_cols": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "contract_bid",
+   "contract_ask",
+   "contract_mid",
+   "contract_spread_pct",
+   "ev3_quote_age_seconds",
+   "monetisability_quote_timestamp_utc",
+   "live_contract_bid",
+   "live_contract_ask",
+   "live_contract_mid",
+   "live_contract_bid_size",
+   "live_contract_ask_size",
+   "live_contract_spread_pct",
+   "live_contract_quote_timestamp",
+   "morning_contract_bid",
+   "morning_contract_ask",
+   "morning_contract_spread_pct",
+   "morning_contract_bid_size",
+   "morning_contract_ask_size",
+   "morning_quote_timestamp_utc",
+   "current_contract_bid",
+   "current_contract_ask",
+   "current_contract_spread_pct",
+   "current_contract_bid_size",
+   "current_contract_ask_size",
+   "current_quote_timestamp_utc",
+   "contract_quote_timestamp",
+   "quote_age_seconds"
+  ],
+  "state_values": {
+   "liquidity_state": {
+    "QUOTE_STALE": 453,
+    "LIQUIDITY_PENDING": 337,
+    "LEGACY_NOT_EVALUATED": 226,
+    "LIFECYCLE_DATA_INCOMPLETE": 225,
+    "EXECUTABLE_NOW": 69,
+    "REVIEWABLE_SPREAD": 49,
+    "MONEYNESS_UNSUITABLE": 32,
+    "DTE_UNSUITABLE": 30,
+    "ZERO_BID": 23
+   },
+   "morning_transition_state": {
+    "LIQUIDITY_STILL_PENDING": 771,
+    "LEGACY_LIFECYCLE_NOT_EVALUATED": 226,
+    "CONTRACT_REPRICE_REQUIRED": 225,
+    "WAIT_FOR_PULLBACK": 93,
+    "MOVE_ALREADY_REALIZED": 42,
+    "GAP_CONFIRMATION_WITH_RUNWAY": 32,
+    "EXECUTABLE_NOW": 27,
+    "THESIS_INVALIDATED": 17,
+    "GAP_CONFIRMATION_EXTENDED": 11
+   },
+   "executable_now": {
+    "False": 1375,
+    "True": 69
+   },
+   "effective_execution_verdict": {
+    "MORNING_VALIDATION_REQUIRED": 526,
+    "OPTIONS_REPAIR_REQUIRED": 422,
+    "STRUCTURAL_WATCH": 294,
+    "FUTURE_WATCH": 202
+   },
+   "current_quote_executable": {
+    "False": 924,
+    "nan": 451,
+    "True": 69
+   },
+   "contract_spread_policy_state": {
+    "EXECUTABLE_SPREAD": 622,
+    "BLOCKED_SPREAD": 508,
+    "UNAVAILABLE": 226,
+    "MANUAL_LIQUIDITY_REVIEW": 88
+   },
+   "morning_execution_permission": {
+    "NOT_ELIGIBLE": 918,
+    "LIQUIDITY_STILL_PENDING": 361,
+    "NO_GO_ECONOMICS": 76,
+    "WAIT": 46,
+    "GO_LIMIT": 19,
+    "NO_GO_DIRECTION": 18,
+    "NO_GO_MOVE_ALREADY_REALIZED": 4,
+    "CONTRACT_REPAIR": 2
+   },
+   "morning_execution_lane": {
+    "UPSTREAM_NOT_AUTHORIZED": 918,
+    "QUOTE_STALE": 351,
+    "NON_MONETISABLE": 76,
+    "WAIT_FOR_PULLBACK": 42,
+    "MORNING_VALIDATED": 19,
+    "DIRECTION_INTEGRITY_FAILED": 18,
+    "REVIEWABLE_SPREAD": 8,
+    "MOVE_ALREADY_REALIZED": 4,
+    "GAP_CONFIRMATION_EXTENDED": 4,
+    "DTE_UNSUITABLE": 2,
+    "CONTRACT_ECONOMICS_RECOMPUTE": 2
+   },
+   "olm_guard_disposition": {
+    "MANUAL_REVIEW": 1101,
+    "CONTRACT_REPAIR": 225,
+    "CONTINUE": 59,
+    "BLOCK": 59
+   },
+   "execution_eligibility_state": {
+    "REVIEW_REQUIRED": 946,
+    "NOT_ELIGIBLE": 450,
+    "CONTRACT_REPAIR_REQUIRED": 29,
+    "ELIGIBLE_LIMITED": 19
+   }
+  },
+  "exec_like_columns": {
+   "liquidity_state": {
+    "n": 69,
+    "values": {
+     "EXECUTABLE_NOW": 69
+    }
+   },
+   "morning_transition_state": {
+    "n": 27,
+    "values": {
+     "EXECUTABLE_NOW": 27
+    }
+   },
+   "executable_now": {
+    "n": 69,
+    "values": {
+     "True": 69
+    }
+   },
+   "current_quote_executable": {
+    "n": 69,
+    "values": {
+     "True": 69
+    }
+   }
+  },
+  "exec_like_rows": {
+   "ALL": 69,
+   "CALL": 47,
+   "PUT": 22,
+   "OTHER": 0
+  },
+  "chosen": {
+   "bid": "live_contract_bid",
+   "ask": "live_contract_ask",
+   "ts_cols": [
+    "quote_as_of",
+    "selected_quote_timestamp_utc",
+    "monetisability_quote_timestamp_utc",
+    "live_contract_quote_timestamp",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "contract_quote_timestamp"
+   ]
+  },
+  "gate_time": "2026-09-11 17:08:56+00:00",
+  "timestamp_checks": {
+   "quote_as_of": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "selected_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   },
+   "monetisability_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 1396.9333333333334,
+    "median_age_min": 1426.8,
+    "max_age_min": 1454.9,
+    "within_15_min": 0
+   },
+   "live_contract_quote_timestamp": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   },
+   "morning_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "current_quote_timestamp_utc": {
+    "nonnull": 69,
+    "min_age_min": 3.816666666666667,
+    "median_age_min": 6.816666666666666,
+    "max_age_min": 8.816666666666666,
+    "within_15_min": 69
+   },
+   "contract_quote_timestamp": {
+    "nonnull": 69,
+    "min_age_min": 3.8,
+    "median_age_min": 6.8,
+    "max_age_min": 8.8,
+    "within_15_min": 69
+   }
+  },
+  "provider_ts_col": "quote_as_of",
+  "checks": {
+   "ALL": {
+    "n": 69,
+    "chk_bid_gt_0": 69,
+    "chk_ask_gt_bid": 69,
+    "chk_spread_le_limit": 69,
+    "chk_fresh_15m": 69,
+    "all_pass": 69,
+    "spread_frac_median": 0.13207547169811323
+   },
+   "CALL": {
+    "n": 47,
+    "chk_bid_gt_0": 47,
+    "chk_ask_gt_bid": 47,
+    "chk_spread_le_limit": 47,
+    "chk_fresh_15m": 47,
+    "all_pass": 47,
+    "spread_frac_median": 0.13333333333333333
+   },
+   "PUT": {
+    "n": 22,
+    "chk_bid_gt_0": 22,
+    "chk_ask_gt_bid": 22,
+    "chk_spread_le_limit": 22,
+    "chk_fresh_15m": 22,
+    "all_pass": 22,
+    "spread_frac_median": 0.12889487870619953
+   },
+   "OTHER": {
+    "n": 0,
+    "chk_bid_gt_0": 0,
+    "chk_ask_gt_bid": 0,
+    "chk_spread_le_limit": 0,
+    "chk_fresh_15m": 0,
+    "all_pass": 0
+   }
+  },
+  "examples_fail": []
+ },
+ "trades/execution_actionable_<run>.csv": {
+  "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\trades\\execution_actionable_20260911_115904.csv",
+  "rows": 19,
+  "state_cols": [
+   "liquidity_state",
+   "morning_transition_state",
+   "executable_now",
+   "effective_execution_verdict",
+   "current_quote_executable",
+   "contract_spread_policy_state",
+   "morning_execution_permission",
+   "morning_execution_lane",
+   "olm_guard_disposition",
+   "execution_eligibility_state"
+  ],
+  "quote_cols": [
+   "quote_as_of",
+   "selected_quote_timestamp_utc",
+   "contract_bid",
+   "contract_ask",
+   "contract_mid",
+   "contract_spread_pct",
+   "ev3_quote_age_seconds",
+   "monetisability_quote_timestamp_utc",
+   "live_contract_bid",
+   "live_contract_ask",
+   "live_contract_mid",
+   "live_contract_bid_size",
+   "live_contract_ask_size",
+   "live_contract_spread_pct",
+   "live_contract_quote_timestamp",
+   "morning_contract_bid",
+   "morning_contract_ask",
+   "morning_contract_spread_pct",
+   "morning_contract_bid_size",
+   "morning_contract_ask_size",
+   "morning_quote_timestamp_utc",
+   "current_contract_bid",
+   "current_contract_ask",
+   "current_contract_spread_pct",
+   "current_contract_bid_size",
+   "current_contract_ask_size",
+   "current_quote_timestamp_utc",
+   "contract_quote_timestamp",
+   "quote_age_seconds"
+  ],
+  "state_values": {
+   "liquidity_state": {
+    "EXECUTABLE_NOW": 19
+   },
+   "morning_transition_state": {
+    "GAP_CONFIRMATION_WITH_RUNWAY": 11,
+    "EXECUTABLE_NOW": 8
+   },
+   "executable_now": {
+    "True": 19
+   },
+   "effective_execution_verdict": {
+    "MORNING_VALIDATION_REQUIRED": 19
+   },
+   "current_quote_executable": {
+    "True": 19
+   },
+   "contract_spread_policy_state": {
+    "EXECUTABLE_SPREAD": 19
+   },
+   "morning_execution_permission": {
+    "GO_LIMIT": 19
+   },
+   "morning_execution_lane": {
+    "MORNING_VALIDATED": 19
+   },
+   "olm_guard_disposition": {
+    "CONTINUE": 19
+   },
+   "execution_eligibility_state": {
+    "ELIGIBLE_LIMITED": 19
+   }
+  },
+  "exec_like_columns": {
+   "liquidity_state": {
+    "n": 19,
+    "values": {
+     "EXECUTABLE_NOW": 19
+    }
+   },
+   "morning_transition_state": {
+    "n": 8,
+    "values": {
+     "EXECUTABLE_NOW": 8
+    }
+   },
+   "executable_now": {
+    "n": 19,
+    "values": {
+     "True": 19
+    }
+   },
+   "current_quote_executable": {
+    "n": 19,
+    "values": {
+     "True": 19
+    }
+   }
+  },
+  "exec_like_rows": {
+   "ALL": 19,
+   "CALL": 10,
+   "PUT": 9,
+   "OTHER": 0
+  },
+  "chosen": {
+   "bid": "live_contract_bid",
+   "ask": "live_contract_ask",
+   "ts_cols": [
+    "quote_as_of",
+    "selected_quote_timestamp_utc",
+    "monetisability_quote_timestamp_utc",
+    "live_contract_quote_timestamp",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "contract_quote_timestamp"
+   ]
+  },
+  "gate_time": "2026-09-11 17:08:56+00:00",
+  "timestamp_checks": {
+   "quote_as_of": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "selected_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.8333333333333335,
+    "median_age_min": 4.283333333333333,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "monetisability_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 1397.4833333333333,
+    "median_age_min": 1416.3666666666666,
+    "max_age_min": 1433.4833333333333,
+    "within_15_min": 0
+   },
+   "live_contract_quote_timestamp": {
+    "nonnull": 19,
+    "min_age_min": 3.8333333333333335,
+    "median_age_min": 4.283333333333333,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "morning_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "current_quote_timestamp_utc": {
+    "nonnull": 19,
+    "min_age_min": 3.9,
+    "median_age_min": 4.3,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   },
+   "contract_quote_timestamp": {
+    "nonnull": 19,
+    "min_age_min": 3.8333333333333335,
+    "median_age_min": 4.283333333333333,
+    "max_age_min": 8.183333333333334,
+    "within_15_min": 19
+   }
+  },
+  "provider_ts_col": "quote_as_of",
+  "checks": {
+   "ALL": {
+    "n": 19,
+    "chk_bid_gt_0": 19,
+    "chk_ask_gt_bid": 19,
+    "chk_spread_le_limit": 19,
+    "chk_fresh_15m": 19,
+    "all_pass": 19,
+    "spread_frac_median": 0.12048192771084347
+   },
+   "CALL": {
+    "n": 10,
+    "chk_bid_gt_0": 10,
+    "chk_ask_gt_bid": 10,
+    "chk_spread_le_limit": 10,
+    "chk_fresh_15m": 10,
+    "all_pass": 10,
+    "spread_frac_median": 0.12024096385542177
+   },
+   "PUT": {
+    "n": 9,
+    "chk_bid_gt_0": 9,
+    "chk_ask_gt_bid": 9,
+    "chk_spread_le_limit": 9,
+    "chk_fresh_15m": 9,
+    "all_pass": 9,
+    "spread_frac_median": 0.13207547169811323
+   },
+   "OTHER": {
+    "n": 0,
+    "chk_bid_gt_0": 0,
+    "chk_ask_gt_bid": 0,
+    "chk_spread_le_limit": 0,
+    "chk_fresh_15m": 0,
+    "all_pass": 0
+   }
+  },
+  "examples_fail": []
+ },
+ "run_conditions": [
+  {
+   "run": "20260723_072618",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260731_083130",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260804_114554",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260808_103922",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260809_195823",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260814_114553",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260815_091604",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260816_075339",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260818_041214",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260820_225652",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260821_090928",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260824_060146",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260824_100301",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260830_071747",
+   "pipeline_mode": null,
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260830_182402",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260830_225643",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260831_010309",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260901_064425",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260901_082437",
+   "pipeline_mode": "MORNING_VALIDATION",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260902_232526",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260904_004338",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260904_122358",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260905_151448",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": null
+  },
+  {
+   "run": "20260906_213931",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": "avs-baseline-20260906-21-g00baa2b-dirty"
+  },
+  {
+   "run": "20260909_071646",
+   "pipeline_mode": "MORNING_VALIDATION",
+   "run_condition": null,
+   "git": "avs-baseline-20260906-21-g00baa2b-dirty"
+  },
+  {
+   "run": "20260910_150045",
+   "pipeline_mode": "EOD",
+   "run_condition": null,
+   "git": "avs-baseline-20260906-21-g00baa2b-dirty"
+  },
+  {
+   "run": "20260911_115904",
+   "pipeline_mode": "MORNING_VALIDATION",
+   "run_condition": null,
+   "git": "avs-baseline-20260906-21-g00baa2b-dirty"
+  }
+ ],
+ "run_condition_values": [
+  "None"
+ ],
+ "pipeline_mode_values": [
+  "EOD",
+  "MORNING_VALIDATION",
+  "None"
+ ]
+}

@@ -1,0 +1,17 @@
+{
+  "observed": {
+    "api_key_present": true,
+    "workspace_selector_present": false,
+    "count_http_status": 400
+  },
+  "inference": "Missing workspace selection for a possibly multi-workspace key; not conclusively proven",
+  "limitations": [
+    "Provider error body was not retained",
+    "Key workspace scope was not verified"
+  ],
+  "sources": [
+    "https://platform.claude.com/docs/en/manage-claude/authentication#select-a-workspace",
+    "https://platform.claude.com/docs/en/api/overview#request-size-limits"
+  ],
+  "no_retry": true
+}

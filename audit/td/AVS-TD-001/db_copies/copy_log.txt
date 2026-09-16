@@ -1,0 +1,8 @@
+copied data/canonical/control_plane.sqlite 762093568
+copied data/canonical/decision_outcome_ledger.sqlite 17498112
+copied data/canonical/historical_prices.sqlite 1013129216
+copied data/canonical/run_plans.sqlite 57344
+copied data/cache/iv_history_cache.db 2113536
+copied data/journal/trade_journal.db 1581056
+copied data/actuarial_db.sqlite 0
+copied phantom_history.db 16813617152

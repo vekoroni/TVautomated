@@ -14,6 +14,7 @@ from typing import Any, Mapping
 
 from .domain import ContractError, digest, instant, sha, utc
 from .market_environment import MarketEnvironmentSnapshot
+from .lab_contract import SUPPORTED_LAB_SCHEMAS
 
 
 SCHEMA_VERSION = "macro_ticker_context_v1"
@@ -413,7 +414,7 @@ def project_macro_ticker_context(
         raise ContractError("market environment and ticker context use different macro packets")
     if not isinstance(lab_row, Mapping) or _text(lab_row.get("run_id")) != run_id:
         raise ContractError("Lab row run differs from ticker context")
-    if lab_row.get("lab_schema_version") != "lab_signal_book_v2":
+    if lab_row.get("lab_schema_version") not in SUPPORTED_LAB_SCHEMAS:
         raise ContractError("unsupported Lab row schema")
     ticker = _text(lab_row.get("ticker")).upper()
     if _TICKER.fullmatch(ticker) is None:

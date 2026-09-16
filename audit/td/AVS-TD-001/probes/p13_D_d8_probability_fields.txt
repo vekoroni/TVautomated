@@ -1,0 +1,27 @@
+Traceback (most recent call last):
+  File "C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_d8_probability_fields.py", line 54, in <module>
+    res["ev3_shadow"][f.name] = scan(PRIMARY, f.name, f"ev3_shadow/{f.name}")
+                                ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_d8_probability_fields.py", line 26, in scan
+    df = read_csv(p, usecols=["ticker"] + cols + ([dcol] if dcol else []))
+  File "C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_common.py", line 24, in read_csv
+    return pd.read_csv(path, low_memory=False, usecols=usecols, **kw)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\readers.py", line 1898, in _make_engine
+    return mapping[engine](f, **self.options)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\c_parser_wrapper.py", line 140, in __init__
+    self._validate_usecols_names(usecols, self.orig_names)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACKVerissimo\AppData\Roaming\Python\Python314\site-packages\pandas\io\parsers\base_parser.py", line 988, in _validate_usecols_names
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: Usecols do not match columns, columns expected but not found: ['ticker']

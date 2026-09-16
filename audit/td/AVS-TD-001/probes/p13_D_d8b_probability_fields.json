@@ -1,0 +1,1098 @@
+{
+ "20260911_115904": {
+  "final_opportunity_book": {
+   "rows": 1444,
+   "direction_col": "governed_direction",
+   "calibration_cols": [],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "doi_p_liquidity_3d": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_positive_return": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_target_before_invalidation": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "maturation_score_is_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "ev3_p_target": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0001461516022506,
+     "median": 0.0113099089886692,
+     "max": 0.6802619389248783,
+     "unit_interval": true
+    },
+    "ev3_p_stop": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0174997204329653,
+     "median": 0.270799650794631,
+     "max": 0.8457427541263016,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0053290801580302,
+     "median": 0.7082084895661915,
+     "max": 0.976509347956382,
+     "unit_interval": true
+    },
+    "win_prob_predicted": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0049634515517708,
+     "median": 0.504147465437788,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "phase_transition_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 32.0571,
+     "median": 48.04695,
+     "max": 61.3607,
+     "unit_interval": false
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3456614509246088,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3466624435822313,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "win_rate_source": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "values": {
+      "ACTUARIAL": 1444
+     }
+    }
+   }
+  },
+  "lab_signal_book_v3": {
+   "rows": 19,
+   "direction_col": "governed_direction",
+   "calibration_cols": [],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "doi_p_liquidity_3d": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_positive_return": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_target_before_invalidation": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "ev3_p_stop": {
+     "nonnull": 5,
+     "CALL": 5,
+     "PUT": 0,
+     "OTHER": 0,
+     "min": 0.1696613489771312,
+     "median": 0.3358668186707069,
+     "max": 0.7020515762780273,
+     "unit_interval": true
+    },
+    "ev3_p_target": {
+     "nonnull": 5,
+     "CALL": 5,
+     "PUT": 0,
+     "OTHER": 0,
+     "min": 0.0102847742606744,
+     "median": 0.0202200087136388,
+     "max": 0.1784125851585287,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 5,
+     "CALL": 5,
+     "PUT": 0,
+     "OTHER": 0,
+     "min": 0.1195358385634439,
+     "median": 0.6439131726156542,
+     "max": 0.8121514960742542,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "min": 0.162660798916723,
+     "median": 0.3466624435822313,
+     "max": 0.548928238583411,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "min": 0.162660798916723,
+     "median": 0.3455284552845528,
+     "max": 0.548928238583411,
+     "unit_interval": true
+    },
+    "maturation_score_is_probability": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "phase_transition_probability": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "min": 36.887,
+     "median": 50.9378,
+     "max": 58.1166,
+     "unit_interval": false
+    },
+    "win_prob_predicted": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "min": 0.4772288977896454,
+     "median": 0.5070749582758871,
+     "max": 0.6,
+     "unit_interval": true
+    },
+    "win_rate_source": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "values": {
+      "ACTUARIAL": 19
+     }
+    }
+   }
+  },
+  "lab_triage_view": {
+   "rows": 1444,
+   "direction_col": "governed_direction",
+   "calibration_cols": [],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "doi_p_liquidity_3d": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_positive_return": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_target_before_invalidation": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "maturation_score_is_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "ev3_p_target": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0001461516022506,
+     "median": 0.0113099089886692,
+     "max": 0.6802619389248783,
+     "unit_interval": true
+    },
+    "ev3_p_stop": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0174997204329653,
+     "median": 0.270799650794631,
+     "max": 0.8457427541263016,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0053290801580302,
+     "median": 0.7082084895661915,
+     "max": 0.976509347956382,
+     "unit_interval": true
+    },
+    "win_prob_predicted": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0049634515517708,
+     "median": 0.504147465437788,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "phase_transition_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 32.0571,
+     "median": 48.04695,
+     "max": 61.3607,
+     "unit_interval": false
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3456614509246088,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3466624435822313,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "win_rate_source": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "values": {
+      "ACTUARIAL": 1444
+     }
+    }
+   }
+  },
+  "morning_validated_trades": {
+   "rows": 1444,
+   "direction_col": "governed_direction",
+   "calibration_cols": [
+    "ms_parameter_calibration_status"
+   ],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "maturation_score_is_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "win_rate_5d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0049487879069904,
+     "median": 0.5006183927677493,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "win_rate_10d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0049634515517708,
+     "median": 0.504147465437788,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_up_5d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.3285714285714285,
+     "median": 0.4991172761664565,
+     "max": 0.5977011494252874,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_up_10d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.3285714285714285,
+     "median": 0.4991398923478164,
+     "max": 0.5862068965517241,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_up_20d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.4,
+     "median": 0.4946300443306978,
+     "max": 0.5887445887445888,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_down_5d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.3908045977011494,
+     "median": 0.4968474148802018,
+     "max": 0.6285714285714286,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_down_10d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.405982905982906,
+     "median": 0.4981308411214953,
+     "max": 0.6714285714285714,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_down_20d": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.3896103896103896,
+     "median": 0.5032876622565421,
+     "max": 0.6,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3456614509246088,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__raw_prob_stop_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0,
+     "median": 0.0948619628964233,
+     "max": 0.3524804177545692,
+     "unit_interval": true
+    },
+    "layer2__baseline_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.3406244513103137,
+     "median": 0.3628564493271634,
+     "max": 0.3628564493271634,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 0.0084745762711864,
+     "median": 0.3466624435822313,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__probability_edge": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": -0.3321498750391273,
+     "median": -0.0135170184328544,
+     "max": 0.2482080359993309,
+     "unit_interval": false
+    },
+    "layer2__probability_verdict": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "values": {
+      "NEGATIVE_EDGE": 886,
+      "WEAK_EDGE": 378,
+      "STRONG_EDGE": 132,
+      "MODEST_EDGE": 48
+     }
+    },
+    "phase_transition_probability": {
+     "nonnull": 1444,
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188,
+     "min": 32.0571,
+     "median": 48.04695,
+     "max": 61.3607,
+     "unit_interval": false
+    },
+    "ev3_p_target": {
+     "nonnull": 30,
+     "CALL": 20,
+     "PUT": 10,
+     "OTHER": 0,
+     "min": 0.0002191207931095,
+     "median": 0.0148064800197505,
+     "max": 0.6802619389248783,
+     "unit_interval": true
+    },
+    "ev3_p_stop": {
+     "nonnull": 30,
+     "CALL": 20,
+     "PUT": 10,
+     "OTHER": 0,
+     "min": 0.0174997204329653,
+     "median": 0.2785597795003879,
+     "max": 0.7909915570057917,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 30,
+     "CALL": 20,
+     "PUT": 10,
+     "OTHER": 0,
+     "min": 0.0053290801580302,
+     "median": 0.6979780215777427,
+     "max": 0.976509347956382,
+     "unit_interval": true
+    },
+    "ev3_probability_uncertainty_return": {
+     "nonnull": 223,
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0,
+     "min": 0.0139696706710923,
+     "median": 0.0591038169234706,
+     "max": 1.1969298050067778,
+     "unit_interval": false
+    },
+    "ms_parameter_calibration_status": {
+     "nonnull": 19,
+     "CALL": 10,
+     "PUT": 9,
+     "OTHER": 0,
+     "values": {
+      "PROPOSED_NOT_CALIBRATED": 19
+     }
+    }
+   }
+  },
+  "ev3_shadow": {
+   "ev3_authority_overlay.csv": {
+    "rows": 1444,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0001461516022506,
+      "median": 0.0111305035444246,
+      "max": 0.2001498127280783,
+      "unit_interval": true
+     },
+     "ev3_p_stop": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0174997204329653,
+      "median": 0.2406660598352092,
+      "max": 0.8457427541263016,
+      "unit_interval": true
+     },
+     "ev3_p_timeout": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0208771787133382,
+      "median": 0.7240383771141091,
+      "max": 0.9622327034485818,
+      "unit_interval": true
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0139696706710923,
+      "median": 0.0586439062257732,
+      "max": 1.1969298050067778,
+      "unit_interval": false
+     }
+    }
+   },
+   "ev3_stage1_shadow_ranked.csv": {
+    "rows": 207,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0001461516022506,
+      "median": 0.0111305035444246,
+      "max": 0.2001498127280783,
+      "unit_interval": true
+     },
+     "ev3_p_stop": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0174997204329653,
+      "median": 0.2406660598352092,
+      "max": 0.8457427541263016,
+      "unit_interval": true
+     },
+     "ev3_p_timeout": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0208771787133382,
+      "median": 0.7240383771141091,
+      "max": 0.9622327034485818,
+      "unit_interval": true
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 207,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 207,
+      "min": 0.0139696706710923,
+      "median": 0.0586439062257732,
+      "max": 1.1969298050067778,
+      "unit_interval": false
+     }
+    }
+   },
+   "ev3_stage1_shadow_rejections.csv": {
+    "rows": 1011,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_p_stop": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_p_timeout": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    }
+   }
+  }
+ },
+ "20260910_150045": {
+  "final_opportunity_book": {
+   "rows": 1424,
+   "direction_col": "governed_direction",
+   "calibration_cols": [],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "doi_p_liquidity_3d": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_positive_return": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_target_before_invalidation": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "maturation_score_is_probability": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "ev3_p_target": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0002028802671319,
+     "median": 0.0133603902070182,
+     "max": 0.2001498127280783,
+     "unit_interval": true
+    },
+    "ev3_p_stop": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0265065636705072,
+     "median": 0.2949016348707014,
+     "max": 0.8288556654518717,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0208771787133382,
+     "median": 0.6792246920544819,
+     "max": 0.9717961760212512,
+     "unit_interval": true
+    },
+    "win_prob_predicted": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0049634515517708,
+     "median": 0.504147465437788,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "phase_transition_probability": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 32.0542,
+     "median": 46.7975,
+     "max": 61.5922,
+     "unit_interval": false
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0084745762711864,
+     "median": 0.3456614509246088,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0084745762711864,
+     "median": 0.3466624435822313,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "win_rate_source": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "values": {
+      "ACTUARIAL": 1424
+     }
+    }
+   }
+  },
+  "lab_signal_book_v3": {
+   "missing": "intelligence_lab/lab_signal_book_v3.csv"
+  },
+  "lab_triage_view": {
+   "rows": 1424,
+   "direction_col": "governed_direction",
+   "calibration_cols": [],
+   "ranking_score_kind_cols": [],
+   "columns": {
+    "doi_p_liquidity_3d": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_positive_return": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_p_target_before_invalidation": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "nonnull": 0,
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "maturation_score_is_probability": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0,
+     "unit_interval": true
+    },
+    "ev3_p_target": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0002028802671319,
+     "median": 0.0133603902070182,
+     "max": 0.2001498127280783,
+     "unit_interval": true
+    },
+    "ev3_p_stop": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0265065636705072,
+     "median": 0.2949016348707014,
+     "max": 0.8288556654518717,
+     "unit_interval": true
+    },
+    "ev3_p_timeout": {
+     "nonnull": 229,
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0,
+     "min": 0.0208771787133382,
+     "median": 0.6792246920544819,
+     "max": 0.9717961760212512,
+     "unit_interval": true
+    },
+    "win_prob_predicted": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0049634515517708,
+     "median": 0.504147465437788,
+     "max": 1.0,
+     "unit_interval": true
+    },
+    "phase_transition_probability": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 32.0542,
+     "median": 46.7975,
+     "max": 61.5922,
+     "unit_interval": false
+    },
+    "layer2__raw_prob_target_hit": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0084745762711864,
+     "median": 0.3456614509246088,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "min": 0.0084745762711864,
+     "median": 0.3466624435822313,
+     "max": 0.5888324873096447,
+     "unit_interval": true
+    },
+    "win_rate_source": {
+     "nonnull": 1424,
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182,
+     "values": {
+      "ACTUARIAL": 1424
+     }
+    }
+   }
+  },
+  "morning_validated_trades": {
+   "missing": "morning_validation/morning_validated_trades_<run>.csv"
+  },
+  "ev3_shadow": {
+   "ev3_authority_overlay.csv": {
+    "rows": 1424,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0002028802671319,
+      "median": 0.0133603902070182,
+      "max": 0.2001498127280783,
+      "unit_interval": true
+     },
+     "ev3_p_stop": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0265065636705072,
+      "median": 0.2949016348707014,
+      "max": 0.8288556654518717,
+      "unit_interval": true
+     },
+     "ev3_p_timeout": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0208771787133382,
+      "median": 0.6792246920544819,
+      "max": 0.9717961760212512,
+      "unit_interval": true
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0136092217186024,
+      "median": 0.0581645357366005,
+      "max": 1.4123728320523945,
+      "unit_interval": false
+     }
+    }
+   },
+   "ev3_stage1_shadow_ranked.csv": {
+    "rows": 229,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0002028802671319,
+      "median": 0.0133603902070182,
+      "max": 0.2001498127280783,
+      "unit_interval": true
+     },
+     "ev3_p_stop": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0265065636705072,
+      "median": 0.2949016348707014,
+      "max": 0.8288556654518717,
+      "unit_interval": true
+     },
+     "ev3_p_timeout": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0208771787133382,
+      "median": 0.6792246920544819,
+      "max": 0.9717961760212512,
+      "unit_interval": true
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 229,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 229,
+      "min": 0.0136092217186024,
+      "median": 0.0581645357366005,
+      "max": 1.4123728320523945,
+      "unit_interval": false
+     }
+    }
+   },
+   "ev3_stage1_shadow_rejections.csv": {
+    "rows": 1012,
+    "direction_col": null,
+    "calibration_cols": [],
+    "ranking_score_kind_cols": [],
+    "columns": {
+     "ev3_p_target": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_p_stop": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_p_timeout": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     },
+     "ev3_probability_uncertainty_return": {
+      "nonnull": 0,
+      "CALL": 0,
+      "PUT": 0,
+      "OTHER": 0
+     }
+    }
+   }
+  }
+ }
+}

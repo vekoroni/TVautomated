@@ -1,0 +1,237 @@
+20260723_072618: rows 1068 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.89, strike=1.00, expiry=0.31, contract_bid=0.31, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.69 ask>0 0.31
+20260731_083130: rows 952 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.94, strike=1.00, expiry=0.30, contract_bid=0.30, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.70 ask>0 0.30
+20260804_114554: rows 795 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.91, strike=1.00, expiry=0.18, contract_bid=0.18, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.82 ask>0 0.18
+20260808_103922: rows 960 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.96, strike=1.00, expiry=0.21, contract_bid=0.21, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.79 ask>0 0.21
+20260809_195823: rows 848 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.96, strike=1.00, expiry=0.22, contract_bid=0.22, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.78 ask>0 0.22
+20260814_114553: rows 1186 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.96, strike=1.00, expiry=0.36, contract_bid=0.36, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.64 ask>0 0.36
+20260815_091604: rows 1123 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.35, strike=1.00, expiry=0.30, contract_bid=0.30, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.70 ask>0 0.30
+20260816_075339: rows 1097 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.30, strike=1.00, expiry=0.25, contract_bid=0.25, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.75 ask>0 0.25
+20260818_041214: rows 1135 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.32, strike=1.00, expiry=0.27, contract_bid=0.27, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.73 ask>0 0.27
+20260820_225652: rows 1130 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.30, strike=1.00, expiry=0.26, contract_bid=0.26, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.74 ask>0 0.26
+20260821_090928: rows 1129 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.26, strike=1.00, expiry=0.22, contract_bid=0.22, contract_ask=1.00, contract_iv=1.00, spread_pct=0.00 | strike==0 0.78 ask>0 0.22
+20260824_100301: rows 934 missing cols ['governed_direction', 'contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.25, strike=1.00, expiry=0.16, contract_bid=0.16, contract_ask=1.00, contract_iv=1.00, spread_pct=0.25 | strike==0 0.84 ask>0 0.16
+20260831_010309: rows 201 missing cols ['contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.95, strike=0.95, expiry=0.95, contract_bid=0.95, contract_ask=0.95, contract_iv=0.95, spread_pct=0.95 | strike==0 0.00 ask>0 0.95
+20260901_082437: rows 191 missing cols ['contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.92, strike=0.92, expiry=0.92, contract_bid=0.92, contract_ask=0.92, contract_iv=0.92, spread_pct=0.92 | strike==0 0.00 ask>0 0.92
+20260902_232526: rows 179 missing cols ['contract_dte'] dup(ticker,dir) 0 | populated: contract_symbol=0.93, strike=0.93, expiry=0.93, contract_bid=0.93, contract_ask=0.93, contract_iv=0.93, spread_pct=0.93 | strike==0 0.00 ask>0 0.93
+labelled rows 9896 merged 9896 with book row 9894
+contract_state by condition x direction:
+contract_state            NO_ENTRY_ASK  NO_SYMBOL  SIDE_MISMATCH  VALID   All
+condition      direction                                                     
+GOVERNED       CALL                  0          1              0    171   172
+               PUT                   0          1              0    116   117
+UNGOVERNED_PRE CALL               1852       3405           1396   1329  7982
+               PUT                 305        563             88    669  1625
+All                               2157       3970           1484   2285  9896
+  tickers 0 elapsed 0s
+  tickers 200 elapsed 10s
+  tickers 400 elapsed 19s
+  tickers 600 elapsed 30s
+  tickers 800 elapsed 41s
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p23_M3_monetisation.py:85: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  H = pd.concat(hist, ignore_index=True) if hist else pd.DataFrame()
+history rows fetched 1935; distinct snapshot dates ['2026-07-31', '2026-08-28', '2026-09-04']; src {'OGH': 1935}
+saved p23_M3_monetisation.csv
+
+UNIT CHECK: median db iv / book contract_iv on priced rows: 0.985 ; median entry_db_ask/entry_ask where both: 1.000 (n=114)
+
+===== ROWS =====
+coverage_state by condition x direction:
+coverage_state            CONTRACT_NO_ENTRY_ASK  CONTRACT_NO_SYMBOL  CONTRACT_SIDE_MISMATCH  NO_SNAPSHOT_DATE_IN_WINDOW  PRICED  SYMBOL_ABSENT_FROM_HISTORY   All
+condition      direction                                                                                                                                         
+GOVERNED       CALL                           0                   1                       0                           0     156                          15   172
+               PUT                            0                   1                       0                           0     106                          10   117
+UNGOVERNED_PRE CALL                        1852                3405                    1396                         603     721                           5  7982
+               PUT                          305                 563                      88                         264     405                           0  1625
+All                                        2157                3970                    1484                         867    1388                          30  9896
+four-cell side_correct x monetised_125 (PRICED only):
+mon125                                 False  True   All
+condition      direction side_correct                   
+GOVERNED       CALL      False            94     2    96
+                         True             45    15    60
+               PUT       False            56     0    56
+                         True             38    12    50
+UNGOVERNED_PRE CALL      False           394     3   397
+                         True            263    61   324
+               PUT       False           177     2   179
+                         True            159    67   226
+All                                     1226   162  1388
+four-cell side_correct x monetised_entry (PRICED only):
+mon_entry                              False  True   All
+condition      direction side_correct                   
+GOVERNED       CALL      False            90     6    96
+                         True             37    23    60
+               PUT       False            56     0    56
+                         True             36    14    50
+UNGOVERNED_PRE CALL      False           390     7   397
+                         True            228    96   324
+               PUT       False           171     8   179
+                         True            125   101   226
+All                                     1133   255  1388
+four-cell TARGET_FIRST_V x monetised_125 (PRICED only):
+mon125                            False  True   All
+condition      direction label_V                   
+GOVERNED       CALL      False      138    14   152
+                         True         1     3     4
+               PUT       False       93     9   102
+                         True         1     3     4
+UNGOVERNED_PRE CALL      False      630    30   660
+                         True        27    34    61
+               PUT       False      335    60   395
+                         True         1     9    10
+All                                1226   162  1388
+monetised rates by condition x direction x horizon (PRICED):
+                                           n  mon125  mon_entry  med_bid_over_ask  med_snaps
+condition      direction horizon_bucket                                                     
+GOVERNED       CALL      1-5             156   0.109      0.186             0.417      1.000
+               PUT       1-5             106   0.113      0.132             0.513      1.000
+UNGOVERNED_PRE CALL      1-5             135   0.030      0.156             0.807      1.000
+                         11-20             3   0.000      0.000             0.579      1.000
+                         6-10            583   0.103      0.141             0.312      1.000
+               PUT       1-5              45   0.089      0.244             0.823      1.000
+                         11-20             3   0.000      0.333             0.967      1.000
+                         6-10            357   0.182      0.272             0.604      1.000
+side-correct-not-monetised_125 (PRICED): n=505
+first_binding by condition x direction:
+condition           GOVERNED     UNGOVERNED_PRE       All
+direction               CALL PUT           CALL  PUT     
+first_binding                                            
+FLAT_DECAY_GE_25PCT        4   2             69   45  120
+IV_DOWN_10PCT             16   6             46   22   90
+MFE_LT_STRIKE_DIST         8   0             68   49  125
+NO_CAUSE_IDENTIFIED        6   7             54   11   78
+REACH_RATIO_GT_1_5         0   4              0   22   26
+SPREAD_GT_15PCT           11  19             26   10   66
+All                       45  38            263  159  505
+cause incidence (multi-cause) by condition x direction:
+                          cause_MFE_LT_STRIKE_DIST  cause_IV_DOWN_10PCT  cause_SPREAD_GT_15PCT  cause_FLAT_DECAY_GE_25PCT  cause_DTE_LT_HOLD  cause_REACH_RATIO_GT_1_5  n_causes
+condition      direction                                                                                                                                                        
+GOVERNED       CALL                          0.178                0.400                  0.556                      0.356              0.000                     0.111     1.600
+               PUT                           0.000                0.158                  0.579                      0.158              0.000                     0.526     1.421
+UNGOVERNED_PRE CALL                          0.259                0.304                  0.384                      0.730              0.000                     0.011     1.688
+               PUT                           0.308                0.214                  0.302                      0.673              0.000                     0.723     2.220
+n_causes distribution:
+condition GOVERNED     UNGOVERNED_PRE    
+direction     CALL PUT           CALL PUT
+n_causes                                 
+0                6   7             54  11
+1               18  13             81  38
+2               12  14             51  51
+3                7   3             47  35
+4                1   1             30  12
+5                1   0              0  12
+history-free causes on ALL side-correct rows with a VALID contract (coverage-independent): n=1068
+                         cause_MFE_LT_STRIKE_DIST      cause_SPREAD_GT_15PCT      cause_FLAT_DECAY_GE_25PCT      cause_DTE_LT_HOLD      cause_REACH_RATIO_GT_1_5     
+                                             mean size                  mean size                      mean size              mean size                     mean size
+condition      direction                                                                                                                                             
+GOVERNED       CALL                         0.172   64                 0.484   64                     0.406   64             0.000   64                    0.094   64
+               PUT                          0.000   57                 0.579   57                     0.123   57             0.000   57                    0.526   57
+UNGOVERNED_PRE CALL                         0.295  599                 0.422  599                     0.785  599             0.037  599                    0.040  599
+               PUT                          0.282  348                 0.362  348                     0.681  348             0.037  348                    0.670  348
+entry geometry (VALID contracts) medians by condition x direction:
+                             n  strike_dist  spread  cal_dte  flat_decay  delta  vb_dist
+condition      direction                                                                
+GOVERNED       CALL        171        0.006   0.165   18.000      -0.242  0.500      NaN
+               PUT         116       -0.011   0.141   21.000      -0.168 -0.513      NaN
+UNGOVERNED_PRE CALL       1329        0.037   0.133   30.000      -0.346  0.443      NaN
+               PUT         669        0.032   0.121   30.000      -0.318 -0.374      NaN
+
+===== UNIQUE_THESES =====
+coverage_state by condition x direction:
+coverage_state            CONTRACT_NO_ENTRY_ASK  CONTRACT_NO_SYMBOL  CONTRACT_SIDE_MISMATCH  NO_SNAPSHOT_DATE_IN_WINDOW  PRICED  SYMBOL_ABSENT_FROM_HISTORY   All
+condition      direction                                                                                                                                         
+GOVERNED       CALL                           0                   1                       0                           0     156                          15   172
+               PUT                            0                   1                       0                           0     106                          10   117
+UNGOVERNED_PRE CALL                        1543                2873                    1171                         502     636                           3  6728
+               PUT                          268                 481                      76                         223     352                           0  1400
+All                                        1811                3356                    1247                         725    1250                          28  8417
+four-cell side_correct x monetised_125 (PRICED only):
+mon125                                 False  True   All
+condition      direction side_correct                   
+GOVERNED       CALL      False            94     2    96
+                         True             45    15    60
+               PUT       False            56     0    56
+                         True             38    12    50
+UNGOVERNED_PRE CALL      False           328     3   331
+                         True            249    56   305
+               PUT       False           156     2   158
+                         True            141    53   194
+All                                     1107   143  1250
+four-cell side_correct x monetised_entry (PRICED only):
+mon_entry                              False  True   All
+condition      direction side_correct                   
+GOVERNED       CALL      False            90     6    96
+                         True             37    23    60
+               PUT       False            56     0    56
+                         True             36    14    50
+UNGOVERNED_PRE CALL      False           324     7   331
+                         True            218    87   305
+               PUT       False           150     8   158
+                         True            114    80   194
+All                                     1025   225  1250
+four-cell TARGET_FIRST_V x monetised_125 (PRICED only):
+mon125                            False  True   All
+condition      direction label_V                   
+GOVERNED       CALL      False      138    14   152
+                         True         1     3     4
+               PUT       False       93     9   102
+                         True         1     3     4
+UNGOVERNED_PRE CALL      False      551    28   579
+                         True        26    31    57
+               PUT       False      296    46   342
+                         True         1     9    10
+All                                1107   143  1250
+monetised rates by condition x direction x horizon (PRICED):
+                                           n  mon125  mon_entry  med_bid_over_ask  med_snaps
+condition      direction horizon_bucket                                                     
+GOVERNED       CALL      1-5             156   0.109      0.186             0.417      1.000
+               PUT       1-5             106   0.113      0.132             0.513      1.000
+UNGOVERNED_PRE CALL      1-5             135   0.030      0.156             0.807      1.000
+                         11-20             3   0.000      0.000             0.579      1.000
+                         6-10            498   0.110      0.147             0.322      1.000
+               PUT       1-5              45   0.089      0.244             0.823      1.000
+                         11-20             3   0.000      0.333             0.967      1.000
+                         6-10            304   0.168      0.250             0.596      1.000
+side-correct-not-monetised_125 (PRICED): n=473
+first_binding by condition x direction:
+condition           GOVERNED     UNGOVERNED_PRE       All
+direction               CALL PUT           CALL  PUT     
+first_binding                                            
+FLAT_DECAY_GE_25PCT        4   2             63   39  108
+IV_DOWN_10PCT             16   6             43   19   84
+MFE_LT_STRIKE_DIST         8   0             66   43  117
+NO_CAUSE_IDENTIFIED        6   7             52   10   75
+REACH_RATIO_GT_1_5         0   4              0   20   24
+SPREAD_GT_15PCT           11  19             25   10   65
+All                       45  38            249  141  473
+cause incidence (multi-cause) by condition x direction:
+                          cause_MFE_LT_STRIKE_DIST  cause_IV_DOWN_10PCT  cause_SPREAD_GT_15PCT  cause_FLAT_DECAY_GE_25PCT  cause_DTE_LT_HOLD  cause_REACH_RATIO_GT_1_5  n_causes
+condition      direction                                                                                                                                                        
+GOVERNED       CALL                          0.178                0.400                  0.556                      0.356              0.000                     0.111     1.600
+               PUT                           0.000                0.158                  0.579                      0.158              0.000                     0.526     1.421
+UNGOVERNED_PRE CALL                          0.265                0.301                  0.382                      0.723              0.000                     0.012     1.683
+               PUT                           0.305                0.199                  0.312                      0.660              0.000                     0.702     2.177
+n_causes distribution:
+condition GOVERNED     UNGOVERNED_PRE    
+direction     CALL PUT           CALL PUT
+n_causes                                 
+0                6   7             52  10
+1               18  13             75  36
+2               12  14             50  43
+3                7   3             44  32
+4                1   1             28  11
+5                1   0              0   9
+history-free causes on ALL side-correct rows with a VALID contract (coverage-independent): n=955
+                         cause_MFE_LT_STRIKE_DIST      cause_SPREAD_GT_15PCT      cause_FLAT_DECAY_GE_25PCT      cause_DTE_LT_HOLD      cause_REACH_RATIO_GT_1_5     
+                                             mean size                  mean size                      mean size              mean size                     mean size
+condition      direction                                                                                                                                             
+GOVERNED       CALL                         0.172   64                 0.484   64                     0.406   64             0.000   64                    0.094   64
+               PUT                          0.000   57                 0.579   57                     0.123   57             0.000   57                    0.526   57
+UNGOVERNED_PRE CALL                         0.285  534                 0.403  534                     0.775  534             0.041  534                    0.034  534
+               PUT                          0.287  300                 0.373  300                     0.677  300             0.043  300                    0.657  300
+entry geometry (VALID contracts) medians by condition x direction:
+                             n  strike_dist  spread  cal_dte  flat_decay  delta  vb_dist
+condition      direction                                                                
+GOVERNED       CALL        171        0.006   0.165   18.000      -0.242  0.500      NaN
+               PUT         116       -0.011   0.141   21.000      -0.168 -0.513      NaN
+UNGOVERNED_PRE CALL       1141        0.036   0.129   29.000      -0.349  0.444      NaN
+               PUT         575        0.033   0.122   30.000      -0.323 -0.373      NaN

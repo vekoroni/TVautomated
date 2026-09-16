@@ -1,0 +1,45 @@
+=== run 20260911_115904: final_opportunity_book rows=1444 policy_version=['opportunity-tier-v1-ths001-s4'] current TIER_POLICY_VERSION=opportunity-tier-v1-ths001-s4
+  stored opportunity_tier distribution by direction:
+    CALL: {'ARMED': 1, 'BLOCK': 797}
+    PUT: {'ARMED': 0, 'BLOCK': 458}
+    OTHER: {'ARMED': 0, 'BLOCK': 188}
+  stored BLOCK reasons (all directions): {'SPREAD_ABOVE_REVIEWABLE_CEILING': 993, 'GOVERNED_INVALIDATION_NOT_AVAILABLE': 202, 'DIRECTION_NOT_RESOLVED': 188, 'STRUCTURAL_TARGET_UNRESOLVED': 60}
+  book spread_pct unit characterisation: n=1218 min=1.333 max=200 n<=0.25=0 n(0.25,1]=0 n(1,2]=6 n>2=1212
+  spread_pct on stored BLOCK rows: n=1218 n<=0.25=0 n(0.25,1]=0 n(1,2]=6 n>2=1212
+  stored BLOCK with reason SPREAD_ABOVE_REVIEWABLE_CEILING by dir: {'CALL': 633, 'PUT': 360, 'OTHER': 0}
+  ...of which NO other veto fires on the row's inputs (spread is the ONLY trigger): {'CALL': 633, 'PUT': 360, 'OTHER': 0}
+  ...of which the row's raw spread_pct <= 0.25 (i.e. BLOCK on a spread that is <=25% if read as fraction): {'CALL': 0, 'PUT': 0, 'OTHER': 0}
+  OFFLINE recompute with current derive_tier() on stored rows: tier unchanged={'CALL': 798, 'PUT': 458, 'OTHER': 188} changed={'CALL': 0, 'PUT': 0, 'OTHER': 0}
+    CALL recomputed tier distribution: {'BLOCK': 797, 'ARMED': 1}
+    PUT recomputed tier distribution: {'BLOCK': 458}
+    OTHER recomputed tier distribution: {'BLOCK': 188}
+  transitions stored->new (top): {}
+  new BLOCK reasons: {'SPREAD_ABOVE_REVIEWABLE_CEILING': 993, 'GOVERNED_INVALIDATION_NOT_AVAILABLE': 202, 'DIRECTION_NOT_RESOLVED': 188, 'STRUCTURAL_TARGET_UNRESOLVED': 60}
+  stored spread-BLOCK rows: new tiers = {'BLOCK': 993}; new reasons = {'SPREAD_ABOVE_REVIEWABLE_CEILING': 993}
+  adapter_spread_fraction on those rows: min=1.3333333333333344 max=200.0 n>0.25=993 n<=0.25=0
+=== run 20260910_150045: final_opportunity_book rows=1424 policy_version=['opportunity-tier-v1-ths001-s4'] current TIER_POLICY_VERSION=opportunity-tier-v1-ths001-s4
+  stored opportunity_tier distribution by direction:
+    CALL: {'ARMED': 17, 'BLOCK': 415, 'TIER_3': 358, 'WATCH': 1}
+    PUT: {'ARMED': 1, 'BLOCK': 216, 'TIER_3': 234, 'WATCH': 0}
+    OTHER: {'ARMED': 0, 'BLOCK': 182, 'TIER_3': 0, 'WATCH': 0}
+  stored BLOCK reasons (all directions): {'SPREAD_ABOVE_REVIEWABLE_CEILING': 409, 'GOVERNED_INVALIDATION_NOT_AVAILABLE': 192, 'DIRECTION_NOT_RESOLVED': 182, 'STRUCTURAL_TARGET_UNRESOLVED': 30}
+  book spread_pct unit characterisation: n=1241 min=0.01333 max=2 n<=0.25=767 n(0.25,1]=333 n(1,2]=141 n>2=0
+  spread_pct on stored BLOCK rows: n=630 n<=0.25=156 n(0.25,1]=333 n(1,2]=141 n>2=0
+  stored BLOCK with reason SPREAD_ABOVE_REVIEWABLE_CEILING by dir: {'CALL': 277, 'PUT': 132, 'OTHER': 0}
+  ...of which NO other veto fires on the row's inputs (spread is the ONLY trigger): {'CALL': 277, 'PUT': 132, 'OTHER': 0}
+  ...of which the row's raw spread_pct <= 0.25 (i.e. BLOCK on a spread that is <=25% if read as fraction): {'CALL': 0, 'PUT': 0, 'OTHER': 0}
+  OFFLINE recompute with current derive_tier() on stored rows: tier unchanged={'CALL': 791, 'PUT': 451, 'OTHER': 182} changed={'CALL': 0, 'PUT': 0, 'OTHER': 0}
+    CALL recomputed tier distribution: {'TIER_3': 358, 'WATCH': 1, 'ARMED': 17, 'BLOCK': 415}
+    PUT recomputed tier distribution: {'TIER_3': 234, 'BLOCK': 216, 'ARMED': 1}
+    OTHER recomputed tier distribution: {'BLOCK': 182}
+  transitions stored->new (top): {}
+  new BLOCK reasons: {'SPREAD_ABOVE_REVIEWABLE_CEILING': 409, 'GOVERNED_INVALIDATION_NOT_AVAILABLE': 192, 'DIRECTION_NOT_RESOLVED': 182, 'STRUCTURAL_TARGET_UNRESOLVED': 30}
+  stored spread-BLOCK rows: new tiers = {'BLOCK': 409}; new reasons = {'SPREAD_ABOVE_REVIEWABLE_CEILING': 409}
+  adapter_spread_fraction on those rows: min=0.2535211267605634 max=2.0 n>0.25=409 n<=0.25=0
+=== B4 follow-up (appended): unit-corrected 'BLOCK on spread <= 25%'
+  run 20260911_115904: book spread_pct unit=PERCENT (book spread_pct 1.33..200, sourced from live_contract_spread_pct); spread-only BLOCK rows=993; true spread <=25%: {'CALL': 349, 'PUT': 235}; true spread >25%: {'CALL': 284, 'PUT': 125}
+     spread_pct_raw quantiles on spread-only BLOCK rows: {0.0: 1.333, 0.1: 7.311, 0.25: 10.909, 0.5: 16.842, 0.75: 53.211, 0.9: 125.796, 1.0: 200.0}
+  run 20260910_150045: book spread_pct unit=FRACTION (book spread_pct 0.013..2, sourced from contract_spread_pct); spread-only BLOCK rows=409; true spread <=25%: {}; true spread >25%: {'CALL': 277, 'PUT': 132}
+     spread_pct_raw quantiles on spread-only BLOCK rows: {0.0: 0.254, 0.1: 0.286, 0.25: 0.368, 0.5: 0.595, 0.75: 1.143, 0.9: 1.897, 1.0: 2.0}
+  run 20260911_115904 final_opportunity_book spread columns: current_contract_spread_pct(n=1218,min=1.33,max=200); spread_pct(n=1218,min=1.33,max=200); execution_viability_spread_pct(n=1218,min=1.33,max=200)
+  run 20260910_150045 final_opportunity_book spread columns: spread_pct(n=1241,min=0.0133,max=2); execution_viability_spread_pct(n=1020,min=1.33,max=200)

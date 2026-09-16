@@ -1,0 +1,71 @@
+{
+ "manifest_snapshots": [
+  {
+   "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\control_plane.sqlite",
+   "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\control_plane.sqlite",
+   "bytes": 762093568,
+   "sha256": "fb505ac10960c84519246bd9d4be331ca347e16006e6b15a355320df22b70cf6",
+   "source_integrity": "ok",
+   "snapshot_integrity": "ok",
+   "table_counts_match_source": true,
+   "isolated_restore_verified": true
+  },
+  {
+   "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite",
+   "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\historical_prices.sqlite",
+   "bytes": 1013129216,
+   "sha256": "516a25ba34940dc0a4bf741e2473cd03bc98aeec0eaf338ca56246273b2735c6",
+   "source_integrity": "ok",
+   "snapshot_integrity": "ok",
+   "table_counts_match_source": true,
+   "isolated_restore_verified": true
+  },
+  {
+   "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\decision_outcome_ledger.sqlite",
+   "snapshot": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\backups\\avs_fix_002_stage0_20260912\\databases\\decision_outcome_ledger.sqlite",
+   "bytes": 17498112,
+   "sha256": "1b9ecbcbeee39d91f2bfec8db6728fee9d03c51fcc9a47bbd1a68f56bb2f4960",
+   "source_integrity": "ok",
+   "snapshot_integrity": "ok",
+   "table_counts_match_source": true,
+   "isolated_restore_verified": true
+  }
+ ],
+ "files": [
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/control_plane.sqlite",
+   "size": 762093568,
+   "sha256": "fb505ac10960c84519246bd9d4be331ca347e16006e6b15a355320df22b70cf6"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/control_plane.sqlite-shm",
+   "size": 32768,
+   "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/control_plane.sqlite-wal",
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/decision_outcome_ledger.sqlite",
+   "size": 17498112,
+   "sha256": "1b9ecbcbeee39d91f2bfec8db6728fee9d03c51fcc9a47bbd1a68f56bb2f4960"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/historical_prices.sqlite",
+   "size": 1013129216,
+   "sha256": "516a25ba34940dc0a4bf741e2473cd03bc98aeec0eaf338ca56246273b2735c6"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/historical_prices.sqlite-shm",
+   "size": 32768,
+   "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  {
+   "path": "backups/avs_fix_002_stage0_20260912/databases/historical_prices.sqlite-wal",
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "recommendation": "NO-GO",
+  "reason": "token-count HTTP 400; live end-to-end acceptance not reached",
+  "count_requests": 1,
+  "generation_requests": 0,
+  "retries": 0,
+  "paid_generation_cost_microusd": 0,
+  "count_receipt_derived_from_saved_error": {
+    "http_status": 400,
+    "frozen_request_hash": "24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9",
+    "model": "claude-sonnet-4-6"
+  },
+  "run_id": "20260906_213931",
+  "prepared": 256,
+  "exceptions": 8,
+  "original_tests": 279,
+  "integration_tests": 40,
+  "protected_files_unchanged": 1671,
+  "leading_cause": "Missing workspace selection for a possibly multi-workspace key; not conclusively proven",
+  "workspace_selector_present": false,
+  "api_key_present": true,
+  "remediation": "Configure the correct workspace selector or rotate to a single-workspace key, then separately approve a new canary"
+}

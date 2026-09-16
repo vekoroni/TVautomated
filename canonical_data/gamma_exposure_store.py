@@ -14,6 +14,7 @@ from uuid import uuid4
 import pandas as pd
 
 from macro_domain.gamma_exposure import GammaExposureConfig, GammaExposureResult
+from scripts.compute_greeks_bs import compute_greeks_from_row
 
 from .contracts import CompletenessStatus, DataScope, DatasetRecord, DatasetType
 from .registry import CanonicalRegistry
@@ -77,16 +78,62 @@ class PhantomOptionChainRepository:
             raise ValueError(f"no common completed option session for {','.join(names)}")
         return date.fromisoformat(str(row[0])[:10])
 
-    def read(self, ticker: str, session_date: date) -> pd.DataFrame:
+    def read(self, ticker: str, session_date: date, *, dataset_id: str | None = None) -> pd.DataFrame:
         with self._connection() as connection:
-            frame = pd.read_sql_query(
-                "SELECT * FROM chain_snapshots WHERE ticker=? AND quote_date=? ORDER BY option_symbol",
-                connection,
-                params=(ticker.upper(), session_date.isoformat()),
-            )
+            if dataset_id is not None:
+                records = connection.execute(
+                    "SELECT row_json FROM canonical_option_chain_revisions "
+                    "WHERE dataset_id=? AND ticker=? AND quote_date=? ORDER BY option_symbol",
+                    (dataset_id, ticker.upper(), session_date.isoformat()),
+                ).fetchall()
+                frame = pd.DataFrame([json.loads(row[0]) for row in records])
+            else:
+                frame = pd.read_sql_query(
+                    "SELECT * FROM chain_snapshots WHERE ticker=? AND quote_date=? ORDER BY option_symbol",
+                    connection,
+                    params=(ticker.upper(), session_date.isoformat()),
+                )
         if frame.empty:
             raise ValueError(f"chain unavailable for {ticker.upper()}/{session_date.isoformat()}")
         return frame
+
+
+def prepare_gex_greeks(chain: pd.DataFrame, config: GammaExposureConfig) -> tuple[pd.DataFrame, dict]:
+    """Derive missing historical Greeks on a copy; never rewrite provider evidence.
+
+    Reuses Phantom's local BS calculator. Only unadjusted successful solutions
+    from valid two-sided observations are admitted. Coverage gates remain in
+    the domain calculation. The calculator assumes zero dividend yield.
+    """
+    frame = chain.copy()
+    calculated = 0
+    rejected = 0
+    in_scope = pd.to_numeric(frame["dte"], errors="coerce").between(config.dte_min, config.dte_max)
+    for index, row in frame.loc[in_scope].iterrows():
+        if pd.notna(row.get("gamma")) and pd.notna(row.get("iv")):
+            continue
+        bid, ask = pd.to_numeric(pd.Series([row.get("bid"), row.get("ask")]), errors="coerce")
+        if config.dividend_yield != 0 or not (pd.notna(bid) and pd.notna(ask) and 0 <= bid <= ask and ask > 0):
+            rejected += 1
+            continue
+        inputs = row.to_dict()
+        inputs["mid"] = (float(bid) + float(ask)) / 2.0
+        result = compute_greeks_from_row(inputs, risk_free_rate=config.risk_free_rate)
+        if result.quality_status != "OK":
+            rejected += 1
+            continue
+        for field in ("iv", "delta", "gamma", "theta", "vega"):
+            if pd.isna(row.get(field)):
+                frame.at[index, field] = getattr(result, field)
+        calculated += 1
+    return frame, {
+        "Greek_Derivation": "PHANTOM_BS_MISSING_ONLY_V1",
+        "Greek_Computed_Contracts": calculated,
+        "Greek_Unresolved_Contracts": rejected,
+        "Greek_Risk_Free_Rate": config.risk_free_rate,
+        "Greek_Dividend_Yield": config.dividend_yield,
+        "Greek_Model_Disclosure": "European BS approximation; not observed provider Greeks",
+    }
 
 
 class CanonicalGammaExposureStore:

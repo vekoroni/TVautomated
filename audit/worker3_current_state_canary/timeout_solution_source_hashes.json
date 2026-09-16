@@ -1,0 +1,7 @@
+{
+  "worker3/integration/activation.py": "621274a7ce6264deb21bdb62efa742e4dd98def68b2db5847b1cbe8612f97d9a",
+  "worker3/adapters/anthropic_http.py": "293c1761aef4a378f38083c64d24d623c3227448c976fb4d6e7215173daa3278",
+  "worker3/adapters/jobs.py": "d29166dc81180ceaa945c5a95851e3621c71225e2469692276521f2993c81ae3",
+  "worker3/integration/current_canary.py": "ac0a071bcf4bd69bcc499f9d2358beb8feb66c5903086b2a75460e7be61d6766",
+  "tests/test_worker3_timeout_recovery.py": "bbcfde62df56a93a9b89f162cfbb0870cc124e370a8ef7104a8c44bb944ff847"
+}

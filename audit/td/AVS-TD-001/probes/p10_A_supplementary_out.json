@@ -1,0 +1,358 @@
+{
+ "morning_validated_trades": {
+  "rows": 1444,
+  "governed_direction_present": true,
+  "governed_direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "mode_cols": [],
+  "liquidity_state": {
+   "value_counts": {
+    "QUOTE_STALE": 453,
+    "LIQUIDITY_PENDING": 337,
+    "LEGACY_NOT_EVALUATED": 226,
+    "LIFECYCLE_DATA_INCOMPLETE": 225,
+    "EXECUTABLE_NOW": 69,
+    "REVIEWABLE_SPREAD": 49,
+    "MONEYNESS_UNSUITABLE": 32,
+    "DTE_UNSUITABLE": 30,
+    "ZERO_BID": 23
+   },
+   "hits_by_direction": {
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "hits_by_quote_as_of_date": {
+    "2026-09-11": 69
+   },
+   "hits_by_direction_x_date": {
+    "2026-09-11": {
+     "CALL": 47,
+     "PUT": 22
+    }
+   }
+  },
+  "executable_now": {
+   "value_counts": {
+    "False": 1375,
+    "True": 69
+   },
+   "hits_by_direction": {
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "hits_by_quote_as_of_date": {
+    "2026-09-11": 69
+   },
+   "hits_by_direction_x_date": {
+    "2026-09-11": {
+     "CALL": 47,
+     "PUT": 22
+    }
+   }
+  },
+  "execution_state": "COLUMN_ABSENT",
+  "quote_as_of_hour_hist_by_direction": {
+   "CALL": {
+    "2026-09-10 16h": 21,
+    "2026-09-10 17h": 234,
+    "2026-09-11 17h": 543
+   },
+   "OTHER": {
+    "2026-09-10 16h": 0,
+    "2026-09-10 17h": 0,
+    "2026-09-11 17h": 188
+   },
+   "PUT": {
+    "2026-09-10 16h": 15,
+    "2026-09-10 17h": 183,
+    "2026-09-11 17h": 260
+   }
+  },
+  "selected_quote_timestamp_utc_hour_hist_by_direction": {
+   "CALL": {
+    "2026-09-10 16h": 21,
+    "2026-09-10 17h": 234,
+    "2026-09-11 17h": 517,
+    "MISSING": 26
+   },
+   "OTHER": {
+    "2026-09-10 16h": 0,
+    "2026-09-10 17h": 0,
+    "2026-09-11 17h": 0,
+    "MISSING": 188
+   },
+   "PUT": {
+    "2026-09-10 16h": 15,
+    "2026-09-10 17h": 183,
+    "2026-09-11 17h": 248,
+    "MISSING": 12
+   }
+  }
+ },
+ "final_opportunity_book": {
+  "rows": 1444,
+  "governed_direction_present": true,
+  "governed_direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "mode_cols": [],
+  "liquidity_state": {
+   "value_counts": {
+    "QUOTE_STALE": 453,
+    "LIQUIDITY_PENDING": 337,
+    "LEGACY_NOT_EVALUATED": 226,
+    "LIFECYCLE_DATA_INCOMPLETE": 225,
+    "EXECUTABLE_NOW": 69,
+    "REVIEWABLE_SPREAD": 49,
+    "MONEYNESS_UNSUITABLE": 32,
+    "DTE_UNSUITABLE": 30,
+    "ZERO_BID": 23
+   },
+   "hits_by_direction": {
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "hits_by_quote_as_of_date": {
+    "2026-09-11": 69
+   },
+   "hits_by_direction_x_date": {
+    "2026-09-11": {
+     "CALL": 47,
+     "PUT": 22
+    }
+   }
+  },
+  "executable_now": {
+   "value_counts": {
+    "False": 1375,
+    "True": 69
+   },
+   "hits_by_direction": {
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "hits_by_quote_as_of_date": {
+    "2026-09-11": 69
+   },
+   "hits_by_direction_x_date": {
+    "2026-09-11": {
+     "CALL": 47,
+     "PUT": 22
+    }
+   }
+  },
+  "execution_state": "COLUMN_ABSENT",
+  "quote_as_of_hour_hist_by_direction": {
+   "CALL": {
+    "2026-09-10 16h": 21,
+    "2026-09-10 17h": 234,
+    "2026-09-11 17h": 543
+   },
+   "OTHER": {
+    "2026-09-10 16h": 0,
+    "2026-09-10 17h": 0,
+    "2026-09-11 17h": 188
+   },
+   "PUT": {
+    "2026-09-10 16h": 15,
+    "2026-09-10 17h": 183,
+    "2026-09-11 17h": 260
+   }
+  },
+  "selected_quote_timestamp_utc_hour_hist_by_direction": {
+   "CALL": {
+    "2026-09-10 16h": 21,
+    "2026-09-10 17h": 234,
+    "2026-09-11 17h": 517,
+    "MISSING": 26
+   },
+   "OTHER": {
+    "2026-09-10 16h": 0,
+    "2026-09-10 17h": 0,
+    "2026-09-11 17h": 0,
+    "MISSING": 188
+   },
+   "PUT": {
+    "2026-09-10 16h": 15,
+    "2026-09-10 17h": 183,
+    "2026-09-11 17h": 248,
+    "MISSING": 12
+   }
+  }
+ },
+ "run_plans": [
+  {
+   "run": "20260905_135123",
+   "cutoff": "2026-09-05T13:51:23Z",
+   "persisted": "2026-09-05T13:51:23.664991Z",
+   "session_state": "CLOSED",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260906_211430",
+   "cutoff": "2026-09-06T21:14:30Z",
+   "persisted": "2026-09-06T21:14:30.594938Z",
+   "session_state": "CLOSED",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260906_213931",
+   "cutoff": "2026-09-06T21:39:31Z",
+   "persisted": "2026-09-06T21:39:31.110297Z",
+   "session_state": "CLOSED",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260909_071646",
+   "cutoff": "2026-09-09T07:16:46Z",
+   "persisted": "2026-09-09T07:16:46.700562Z",
+   "session_state": "CLOSED",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260910_150045",
+   "cutoff": "2026-09-10T15:00:45Z",
+   "persisted": "2026-09-10T15:00:45.580756Z",
+   "session_state": "REGULAR",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260911_115904",
+   "cutoff": "2026-09-11T11:59:04Z",
+   "persisted": "2026-09-11T11:59:04.109928Z",
+   "session_state": "PREMARKET",
+   "operational_context": "NO_VALID_THESIS",
+   "requested_action": "BUILD_THESIS",
+   "resolved_action": "BUILD_THESIS",
+   "stages_to_run": [
+    "DISCOVERY",
+    "COMPLETED_MARKET_PROFILE",
+    "VANGUARD",
+    "OPTIONS",
+    "PUBLISH_THESIS"
+   ],
+   "keys_with_condition": []
+  },
+  {
+   "run": "20260911_115904",
+   "cutoff": "2026-09-11T16:59:43Z",
+   "persisted": "2026-09-11T16:59:44.597116Z",
+   "session_state": "REGULAR",
+   "operational_context": "VALIDATION_DUE",
+   "requested_action": "VALIDATE",
+   "resolved_action": "VALIDATE",
+   "stages_to_run": [
+    "UNDERLYING_VALIDATION",
+    "SURVIVOR_OPTION_REFRESH",
+    "DEVELOPING_MARKET_PROFILE",
+    "EXECUTION_GATE",
+    "PUBLISH_VALIDATION"
+   ],
+   "keys_with_condition": []
+  }
+ ],
+ "orchestrator_caller_3195_3235": [
+  "3195:                 \"   SuperBrain and policy engine will have no signals to process.\\n\"",
+  "3196:                 \"   Check options_intelligence log above for worklist, chain or contract errors.\"",
+  "3197:             )",
+  "3198:             if _cds_stage_enforced:",
+  "3199:                 logger.error(_empty_message + \"\\n   CDS enforcement blocks promotion.\")",
+  "3200:                 ok = False",
+  "3201:             else:",
+  "3202:                 logger.warning(",
+  "3203:                     _empty_message",
+  "3204:                     + \"\\n   Pipeline continues \u2014 morning validation will show 0 actionable signals.\"",
+  "3205:                 )",
+  "3206:         if ok and not premarket_mode:",
+  "3207:             try:",
+  "3208:                 _provider_meta = _integrate_provider_completeness_into_run_meta(",
+  "3209:                     run_id,",
+  "3210:                     options_summary_path=(",
+  "3211:                         output_dir / f\"options_intelligence_summary_{run_id}.json\"",
+  "3212:                     ),",
+  "3213:                     operator_mode=operator_mode,",
+  "3214:                 )",
+  "3215:                 _provider_evidence = _provider_meta[\"provider_completeness_evidence\"]",
+  "3216:                 logger.info(",
+  "3217:                     \"Provider finality integrated: condition=%s baseline_eligible=%s \"",
+  "3218:                     \"complete=%s/%s closes=%s/%s\",",
+  "3219:                     _provider_meta.get(\"run_condition\"),",
+  "3220:                     _provider_meta.get(\"baseline_eligible\"),",
+  "3221:                     _provider_evidence.get(\"complete_chains\"),",
+  "3222:                     _provider_evidence.get(\"chains_expected\"),",
+  "3223:                     _provider_evidence.get(\"closes_present\"),",
+  "3224:                     _provider_evidence.get(\"underlying_tickers_expected\"),",
+  "3225:                 )",
+  "3226:             except Exception as _provider_meta_error:",
+  "3227:                 logger.error(",
+  "3228:                     \"Provider finality integration failed closed at run level: %s\",",
+  "3229:                     _provider_meta_error,",
+  "3230:                 )",
+  "3231:                 if _cds_stage_enforced:",
+  "3232:                     ok = False",
+  "3233:     run_dropoff_audit_checkpoint(run_id, \"post_options\")",
+  "3234:     return ok",
+  "3235: "
+ ]
+}

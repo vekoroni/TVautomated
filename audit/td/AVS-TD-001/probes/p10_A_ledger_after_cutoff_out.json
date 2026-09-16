@@ -1,0 +1,255 @@
+{
+ "runs": {
+  "20260828_054947": {
+   "cutoff_used": "2026-08-28T05:49:47+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": false,
+   "n": 2011,
+   "physical": 1027,
+   "n_after_cutoff": 2011,
+   "physical_after_cutoff": 1027,
+   "min_started": "2026-08-28T05:57:05.839271Z",
+   "max_started": "2026-08-28T06:22:59.554917Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260828_094349": {
+   "cutoff_used": "2026-08-28T09:43:49+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": false,
+   "n": 1070,
+   "physical": 86,
+   "n_after_cutoff": 914,
+   "physical_after_cutoff": 60,
+   "min_started": "2026-08-28T09:41:46.519494Z",
+   "max_started": "2026-08-28T09:53:50.384184Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260829_100803": {
+   "cutoff_used": "2026-08-29T10:08:03+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": false,
+   "n": 1966,
+   "physical": 983,
+   "n_after_cutoff": 994,
+   "physical_after_cutoff": 497,
+   "min_started": "2026-08-29T09:58:05.255220Z",
+   "max_started": "2026-08-29T10:19:18.510178Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260829_222259": {
+   "cutoff_used": "2026-08-29T22:22:59+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": false,
+   "n": 3943,
+   "physical": 984,
+   "n_after_cutoff": 3195,
+   "physical_after_cutoff": 610,
+   "min_started": "2026-08-29T22:13:04.634663Z",
+   "max_started": "2026-08-30T01:43:43.115089Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260830_071747": {
+   "cutoff_used": "2026-08-30T07:17:47+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 1,
+   "physical": 0,
+   "n_after_cutoff": 1,
+   "physical_after_cutoff": 0,
+   "min_started": "2026-08-30T07:20:07.464979Z",
+   "max_started": "2026-08-30T07:20:07.464979Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260830_182402": {
+   "cutoff_used": "2026-08-30T18:24:02+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 18,
+   "physical": 9,
+   "n_after_cutoff": 18,
+   "physical_after_cutoff": 9,
+   "min_started": "2026-08-30T19:17:41.809272Z",
+   "max_started": "2026-08-30T19:18:01.612681Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260830_225643": {
+   "cutoff_used": "2026-08-30T22:56:43+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 163,
+   "physical": 77,
+   "n_after_cutoff": 163,
+   "physical_after_cutoff": 77,
+   "min_started": "2026-08-30T23:01:47.144044Z",
+   "max_started": "2026-08-30T23:04:57.553500Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260831_010309": {
+   "cutoff_used": "2026-08-31T01:03:09+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 1792,
+   "physical": 853,
+   "n_after_cutoff": 1518,
+   "physical_after_cutoff": 759,
+   "min_started": "2026-08-31T00:58:43.498654Z",
+   "max_started": "2026-08-31T01:31:14.757190Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260901_082437": {
+   "cutoff_used": "2026-09-01T08:24:37+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 3734,
+   "physical": 1867,
+   "n_after_cutoff": 3486,
+   "physical_after_cutoff": 1743,
+   "min_started": "2026-09-01T08:18:28.347069Z",
+   "max_started": "2026-09-01T17:52:42.650463Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260902_232526": {
+   "cutoff_used": "2026-09-02T23:25:26+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 2172,
+   "physical": 1086,
+   "n_after_cutoff": 2172,
+   "physical_after_cutoff": 1086,
+   "min_started": "2026-09-02T23:49:46.639223Z",
+   "max_started": "2026-09-03T00:39:58.036928Z",
+   "ledger_evidence_cutoff_values": [],
+   "n_distinct_ledger_cutoffs": 0
+  },
+  "20260904_004338": {
+   "cutoff_used": "2026-09-04T00:43:38+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 2528,
+   "physical": 1264,
+   "n_after_cutoff": 2528,
+   "physical_after_cutoff": 1264,
+   "min_started": "2026-09-04T01:40:47.749314Z",
+   "max_started": "2026-09-04T02:46:49.403285Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-03T20:00:00Z"
+   ],
+   "n_distinct_ledger_cutoffs": 1
+  },
+  "20260904_122358": {
+   "cutoff_used": "2026-09-04T12:23:58+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 1269,
+   "physical": 4,
+   "n_after_cutoff": 1269,
+   "physical_after_cutoff": 4,
+   "min_started": "2026-09-04T13:07:23.342482Z",
+   "max_started": "2026-09-04T13:36:25.725279Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-03T20:00:00Z"
+   ],
+   "n_distinct_ledger_cutoffs": 1
+  },
+  "20260905_151448": {
+   "cutoff_used": "2026-09-05T15:14:48+00:00",
+   "cutoff_src": "run_id_stamp",
+   "has_run_meta": true,
+   "n": 5658,
+   "physical": 2829,
+   "n_after_cutoff": 2592,
+   "physical_after_cutoff": 1296,
+   "min_started": "2026-09-05T14:40:00.139249Z",
+   "max_started": "2026-09-05T17:53:05.138004Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-04T20:00:00Z"
+   ],
+   "n_distinct_ledger_cutoffs": 1
+  },
+  "20260906_213931": {
+   "cutoff_used": "2026-09-06T21:39:31+00:00",
+   "cutoff_src": "run_plans",
+   "has_run_meta": true,
+   "n": 4369,
+   "physical": 1540,
+   "n_after_cutoff": 4369,
+   "physical_after_cutoff": 1540,
+   "min_started": "2026-09-06T22:07:30.196634Z",
+   "max_started": "2026-09-06T23:28:55.531052Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-04T20:00:00Z"
+   ],
+   "n_distinct_ledger_cutoffs": 1
+  },
+  "20260909_071646": {
+   "cutoff_used": "2026-09-09T07:16:46+00:00",
+   "cutoff_src": "run_plans",
+   "has_run_meta": true,
+   "n": 6024,
+   "physical": 3012,
+   "n_after_cutoff": 6024,
+   "physical_after_cutoff": 3012,
+   "min_started": "2026-09-09T07:52:39.013852Z",
+   "max_started": "2026-09-09T14:00:49.368458Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-08T20:00:00Z",
+    "2026-09-09T13:59:02.509431Z",
+    "2026-09-09T13:59:02.816843Z",
+    "2026-09-09T13:59:03.982308Z",
+    "2026-09-09T13:59:04.229076Z"
+   ],
+   "n_distinct_ledger_cutoffs": 213
+  },
+  "20260910_150045": {
+   "cutoff_used": "2026-09-10T15:00:45+00:00",
+   "cutoff_src": "run_plans",
+   "has_run_meta": true,
+   "n": 5472,
+   "physical": 2736,
+   "n_after_cutoff": 5472,
+   "physical_after_cutoff": 2736,
+   "min_started": "2026-09-10T15:45:48.352025Z",
+   "max_started": "2026-09-10T18:08:09.641074Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-09T20:00:00Z",
+    "2026-09-10T20:00:00Z"
+   ],
+   "n_distinct_ledger_cutoffs": 2
+  },
+  "20260911_115904": {
+   "cutoff_used": "2026-09-11T11:59:04+00:00",
+   "cutoff_src": "run_plans",
+   "has_run_meta": true,
+   "n": 6810,
+   "physical": 2796,
+   "n_after_cutoff": 6810,
+   "physical_after_cutoff": 2796,
+   "min_started": "2026-09-11T12:49:07.065885Z",
+   "max_started": "2026-09-11T17:08:47.895271Z",
+   "ledger_evidence_cutoff_values": [
+    "2026-09-10T20:00:00Z",
+    "2026-09-11T17:00:08.571361Z",
+    "2026-09-11T17:00:08.743544Z",
+    "2026-09-11T17:00:08.773549Z",
+    "2026-09-11T17:00:08.841019Z"
+   ],
+   "n_distinct_ledger_cutoffs": 1220
+  }
+ },
+ "summary": {
+  "runs_in_ledger": 17,
+  "runs_with_any_after_cutoff": 17,
+  "runs_with_physical_after_cutoff": 16,
+  "run_meta_runs_in_ledger": 13,
+  "run_meta_runs_with_any_after_cutoff": 13
+ }
+}

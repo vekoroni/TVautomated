@@ -1,0 +1,238 @@
+{
+ "ledger_columns": [
+  "event_id",
+  "schema_version",
+  "event_type",
+  "occurred_at_utc",
+  "recorded_at_utc",
+  "run_id",
+  "ticker",
+  "thesis_id",
+  "validation_event_id",
+  "previous_event_id",
+  "payload_hash",
+  "payload_json"
+ ],
+ "decision_counts_query": {
+  "20260905_151448|CANDIDATE_DECISION|CALL": 190,
+  "20260905_151448|CANDIDATE_DECISION|PUT": 104,
+  "20260906_213931|CANDIDATE_DECISION|CALL": 170,
+  "20260906_213931|CANDIDATE_DECISION|PUT": 94,
+  "20260909_071646|CANDIDATE_DECISION|CALL": 302,
+  "20260909_071646|CANDIDATE_DECISION|PUT": 168,
+  "20260909_071646|VALIDATION|PUT": 84,
+  "20260909_071646|VALIDATION|CALL": 151,
+  "20260909_071646|EXECUTION_DECISION|CALL": 151,
+  "20260909_071646|EXECUTION_DECISION|PUT": 84,
+  "20260910_150045|CANDIDATE_DECISION|PUT": 450,
+  "20260910_150045|CANDIDATE_DECISION|CALL": 791,
+  "20260911_115904|CANDIDATE_DECISION|PUT": 904,
+  "20260911_115904|CANDIDATE_DECISION|CALL": 1570,
+  "20260911_115904|CANDIDATE_DECISION|OTHER": 188,
+  "20260911_115904|VALIDATION|CALL": 798,
+  "20260911_115904|VALIDATION|PUT": 458,
+  "20260911_115904|VALIDATION|OTHER": 188,
+  "20260911_115904|EXECUTION_DECISION|CALL": 798,
+  "20260911_115904|EXECUTION_DECISION|PUT": 458,
+  "20260911_115904|EXECUTION_DECISION|OTHER": 188
+ },
+ "fill_counts_query": {},
+ "decision_payloads_with_fill_like_keys": {},
+ "outcome_previous_event_type": {
+  "CALL|NO_PREVIOUS|False": 1
+ },
+ "trade_journal": {
+  "trades": {
+   "rows": 0,
+   "source_column": [
+    "source_payload_json",
+    "horizon_source",
+    "journal_entry_source"
+   ],
+   "sources": {},
+   "per_row": []
+  },
+  "closed_trades": {
+   "rows": 14,
+   "source_column": [
+    "source_payload_json",
+    "horizon_source",
+    "journal_entry_source"
+   ],
+   "sources": {
+    "None": 6,
+    "BROKER_CONFIRMATION_IMPORT": 8
+   },
+   "per_row": [
+    {
+     "trade_id": 2,
+     "ticker": "T",
+     "direction": "OTHER",
+     "run_id": "20260305_092339",
+     "journal_entry_source": null,
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-03-06",
+     "entry_premium": 0.65,
+     "contracts": 1
+    },
+    {
+     "trade_id": 6,
+     "ticker": "DHR",
+     "direction": "OTHER",
+     "run_id": "20260508_005047",
+     "journal_entry_source": null,
+     "thesis_id": "20260508_005047:DHR:PUT:170.0:2026-06-18",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-08",
+     "entry_premium": 4.0,
+     "contracts": 1
+    },
+    {
+     "trade_id": 7,
+     "ticker": "DHR",
+     "direction": "OTHER",
+     "run_id": "20260508_005047",
+     "journal_entry_source": null,
+     "thesis_id": "20260508_005047:DHR:PUT:170.0:2026-06-18",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-08",
+     "entry_premium": 4.0,
+     "contracts": 1
+    },
+    {
+     "trade_id": 8,
+     "ticker": "SOFI",
+     "direction": "OTHER",
+     "run_id": "20260527_084748",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "20260527_084748:SOFI:CALL:16.0:2026-06-12",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-27",
+     "entry_premium": 0.87,
+     "contracts": 1
+    },
+    {
+     "trade_id": 9,
+     "ticker": "F",
+     "direction": "OTHER",
+     "run_id": "20260601_234025",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "20260601_234025:F:PUT:16.5:2026-06-26",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-02",
+     "entry_premium": 0.86,
+     "contracts": 1
+    },
+    {
+     "trade_id": 10,
+     "ticker": "SOFI",
+     "direction": "OTHER",
+     "run_id": "20260604_003037",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "20260604_003037:SOFI:PUT:16.5:2026-07-02",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-04",
+     "entry_premium": 0.74,
+     "contracts": 1
+    },
+    {
+     "trade_id": 12,
+     "ticker": "FSLY",
+     "direction": "OTHER",
+     "run_id": "20260601_234025",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-02",
+     "entry_premium": 1.5,
+     "contracts": 1
+    },
+    {
+     "trade_id": 13,
+     "ticker": "PYPL",
+     "direction": "OTHER",
+     "run_id": "20260529_105121",
+     "journal_entry_source": null,
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-29",
+     "entry_premium": 1.03,
+     "contracts": 2
+    },
+    {
+     "trade_id": 14,
+     "ticker": "SOFI",
+     "direction": "OTHER",
+     "run_id": "20260527_084748",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "20260527_084748:SOFI:CALL:16.0:2026-06-12",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-27",
+     "entry_premium": 0.87,
+     "contracts": 1
+    },
+    {
+     "trade_id": 15,
+     "ticker": "UBER",
+     "direction": "OTHER",
+     "run_id": "20260528_082219",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-05-29",
+     "entry_premium": 1.56,
+     "contracts": 1
+    },
+    {
+     "trade_id": 16,
+     "ticker": "F",
+     "direction": "OTHER",
+     "run_id": "20260601_234025",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "20260601_234025:F:PUT:16.5:2026-06-26",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-02",
+     "entry_premium": 0.86,
+     "contracts": 1
+    },
+    {
+     "trade_id": 17,
+     "ticker": "PBR",
+     "direction": "OTHER",
+     "run_id": "20260606_140310",
+     "journal_entry_source": "BROKER_CONFIRMATION_IMPORT",
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-08",
+     "entry_premium": 0.32,
+     "contracts": 2
+    },
+    {
+     "trade_id": 18,
+     "ticker": "JD",
+     "direction": "OTHER",
+     "run_id": "20260608_225148",
+     "journal_entry_source": null,
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-08",
+     "entry_premium": 0.6,
+     "contracts": 1
+    },
+    {
+     "trade_id": 19,
+     "ticker": "EMBJ",
+     "direction": "OTHER",
+     "run_id": "20260624_052030",
+     "journal_entry_source": null,
+     "thesis_id": "",
+     "ledger_fill_exists": false,
+     "entry_date": "2026-06-24",
+     "entry_premium": 1.83,
+     "contracts": 1
+    }
+   ]
+  }
+ }
+}

@@ -29,6 +29,7 @@ from ..adapters.native import (
     read_lab_document,
 )
 from ..application import _constant, _pairs
+from ..lab_contract import SUPPORTED_LAB_SCHEMAS
 from ..domain import (
     canonical,
     ContractError,
@@ -260,7 +261,7 @@ class AvshunterSourceBridge:
         lab, repairs = read_lab_document(
             run_dir, lab_ref, max_bytes=MAX_LAB_BOOK_BYTES
         )
-        if lab.get("lab_schema_version") != "lab_signal_book_v2" or lab.get("run_id") != run_id:
+        if lab.get("lab_schema_version") not in SUPPORTED_LAB_SCHEMAS or lab.get("run_id") != run_id:
             raise ContractError("Intelligence Lab book schema/run mismatch")
         rows = lab.get("rows")
         if type(rows) is not list or lab.get("candidate_count") != len(rows):
@@ -663,7 +664,7 @@ class AvshunterSourceBridge:
         ticker = str(row.get("ticker") or "").strip().upper()
         if _TICKER.fullmatch(ticker) is None:
             raise ContractError("invalid canonical ticker in Lab row")
-        if row.get("run_id") != context.run_id or row.get("lab_schema_version") != "lab_signal_book_v2":
+        if row.get("run_id") != context.run_id or row.get("lab_schema_version") != lab["lab_schema_version"]:
             raise ContractError("mixed Lab row run/schema identity")
         direction = _direction(row.get("governed_direction"))
         hold = _HOLD_ENDPOINT.get(str(row.get("hold_window") or row.get("hold_period") or ""))
@@ -730,7 +731,7 @@ class AvshunterSourceBridge:
                 observed_at=observed,
                 available_at=lab_created,
                 ticker=ticker,
-                calculation_version="lab_signal_book_v2",
+                calculation_version=lab["lab_schema_version"],
             ))
         chain = self._dataset(
             connection,

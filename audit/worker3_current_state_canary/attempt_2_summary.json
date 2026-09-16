@@ -1,0 +1,21 @@
+{
+  "attempt": 2,
+  "recommendation": "NO-GO: generation outcome uncertain",
+  "workspace_configuration_validated": true,
+  "ticker": "AAOI",
+  "direction": "CALL",
+  "model": "claude-sonnet-4-6",
+  "count_requests": 1,
+  "count_http_status": 200,
+  "counted_input_tokens": 83173,
+  "counted_cost_ceiling_microusd": 384687,
+  "generation_requests": 1,
+  "generation_elapsed_ms": 60086,
+  "generation_status": "TRANSPORT_OR_DECODE_ERROR",
+  "generation_http_status": null,
+  "actual_cost_microusd": null,
+  "reserved_microusd": 500000,
+  "retries": 0,
+  "state": "UNCERTAIN",
+  "protected_files_unchanged": 1671
+}

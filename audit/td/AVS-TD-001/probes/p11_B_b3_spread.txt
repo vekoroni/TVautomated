@@ -1,0 +1,65 @@
+=== run 20260911_115904: csv files=43; with spread_fraction_mid=0; with spread_pct_of_mid=0
+=== run 20260910_150045: csv files=39; with spread_fraction_mid=0; with spread_pct_of_mid=0
+--- per-column-name summary across CSVs (primary run) ---
+  auction_spread_risk: csvs=23 n_total=24216 min=0 max=0 n_le_1=24216 n_(1,2]=0 n_gt_2=0
+  bond_spread_risk_flag: csvs=3 n_total=2907 min=0 max=0 n_le_1=2907 n_(1,2]=0 n_gt_2=0
+  contract_spread_change_pp: csvs=1 n_total=19 min=844.5 max=1760 n_le_1=0 n_(1,2]=0 n_gt_2=19
+  contract_spread_executable_max_pct: csvs=3 n_total=2907 min=18 max=18 n_le_1=0 n_(1,2]=0 n_gt_2=2907
+  contract_spread_observed_pct: csvs=3 n_total=2455 min=1.333 max=200 n_le_1=0 n_(1,2]=12 n_gt_2=2443
+  contract_spread_pct: csvs=19 n_total=18397 min=0 max=2 n_le_1=16370 n_(1,2]=2027 n_gt_2=0
+  contract_spread_pct_eod: csvs=6 n_total=5800 min=0 max=96.97 n_le_1=912 n_(1,2]=589 n_gt_2=4299
+  contract_spread_review_max_pct: csvs=3 n_total=2907 min=25 max=25 n_le_1=0 n_(1,2]=0 n_gt_2=2907
+  current_contract_spread_pct: csvs=3 n_total=2455 min=1.333 max=200 n_le_1=0 n_(1,2]=12 n_gt_2=2443
+  eil_spread_pct_live: csvs=2 n_total=2436 min=0 max=96.97 n_le_1=38 n_(1,2]=196 n_gt_2=2202
+  eod_contract_spread_pct: csvs=1 n_total=1444 min=0 max=96.97 n_le_1=228 n_(1,2]=147 n_gt_2=1069
+  ev2_cost_spread: csvs=1 n_total=1444 min=0.05 max=195.9 n_le_1=509 n_(1,2]=6 n_gt_2=929
+  execution_viability_spread_pct: csvs=8 n_total=5908 min=1.333 max=200 n_le_1=0 n_(1,2]=30 n_gt_2=5878
+  live_contract_spread_pct: csvs=3 n_total=2455 min=1.333 max=200 n_le_1=0 n_(1,2]=12 n_gt_2=2443
+  live_spread_pct: csvs=1 n_total=19 min=0.0853 max=0.1778 n_le_1=19 n_(1,2]=0 n_gt_2=0
+  oi_spread_pct: csvs=1 n_total=1218 min=0.01333 max=2 n_le_1=1076 n_(1,2]=142 n_gt_2=0
+  repair_selector_rejected_spread: csvs=13 n_total=12597 min=0 max=128 n_le_1=8614 n_(1,2]=0 n_gt_2=3983
+  selected_max_leg_spread_pct: csvs=3 n_total=2455 min=1.333 max=200 n_le_1=0 n_(1,2]=12 n_gt_2=2443
+  spread_pct: csvs=15 n_total=12611 min=0.01333 max=200 n_le_1=2149 n_(1,2]=369 n_gt_2=10093
+--- per-column-name summary (comparison run) ---
+  auction_spread_risk: csvs=20 n_total=20954 min=0 max=0 n_le_1=20954 n_(1,2]=0 n_gt_2=0
+  contract_spread_pct: csvs=16 n_total=15683 min=0 max=2 n_le_1=13975 n_(1,2]=1708 n_gt_2=0
+  contract_spread_pct_eod: csvs=3 n_total=2854 min=0 max=96.97 n_le_1=370 n_(1,2]=291 n_gt_2=2193
+  eil_spread_pct_live: csvs=2 n_total=2482 min=0 max=96.97 n_le_1=40 n_(1,2]=196 n_gt_2=2246
+  eod_contract_spread_pct: csvs=1 n_total=1424 min=0 max=96.97 n_le_1=185 n_(1,2]=145 n_gt_2=1094
+  ev2_cost_spread: csvs=1 n_total=1424 min=0.05 max=195.9 n_le_1=457 n_(1,2]=6 n_gt_2=961
+  execution_viability_spread_pct: csvs=4 n_total=3066 min=1.333 max=200 n_le_1=0 n_(1,2]=18 n_gt_2=3048
+  oi_spread_pct: csvs=1 n_total=1241 min=0.01333 max=2 n_le_1=1100 n_(1,2]=141 n_gt_2=0
+  repair_selector_rejected_spread: csvs=13 n_total=12829 min=0 max=123 n_le_1=8772 n_(1,2]=0 n_gt_2=4057
+  spread_pct: csvs=11 n_total=10445 min=0.01333 max=195.9 n_le_1=2200 n_(1,2]=333 n_gt_2=7912
+=== ADAPTER FIXTURE 0.12 / 12.0
+  resolve_spread({'spread_pct': 0.12}) -> {'spread_fraction_mid': None, 'spread_pct_of_mid': None, 'quality_state': 'NOT_EVALUATED_UNIT_AMBIGUOUS', 'source': 'NONE', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'contract_spread_pct': 0.12}) -> {'spread_fraction_mid': None, 'spread_pct_of_mid': None, 'quality_state': 'NOT_EVALUATED_UNIT_AMBIGUOUS', 'source': 'NONE', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct': 0.12, 'spread_unit': 'PERCENT'}) -> {'spread_fraction_mid': 0.0012, 'spread_pct_of_mid': 0.12, 'quality_state': 'PASS_LEGACY_ADAPTED', 'source': 'LEGACY_PERCENT', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct': 0.12, 'spread_unit': 'FRACTION_OF_MID'}) -> {'spread_fraction_mid': 0.12, 'spread_pct_of_mid': 12.0, 'quality_state': 'PASS_LEGACY_ADAPTED', 'source': 'LEGACY_FRACTION', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_fraction_mid': 0.12}) -> {'spread_fraction_mid': 0.12, 'spread_pct_of_mid': 12.0, 'quality_state': 'PASS', 'source': 'SPREAD_FRACTION_MID', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct_of_mid': 0.12}) -> {'spread_fraction_mid': 0.0012, 'spread_pct_of_mid': 0.12, 'quality_state': 'PASS', 'source': 'SPREAD_PCT_OF_MID', 'calculation_version': 'quote_units_v1'}
+  opportunity_tier._tier_spread_fraction({'spread_pct': 0.12}) -> 0.12  (SPREAD_TIER_2_MAX=0.25; would veto: False)
+  opportunity_tier._tier_spread_fraction({'spread_fraction_mid': 0.12}) -> 0.12
+  opportunity_tier._tier_spread_fraction({'spread_pct_of_mid': 0.12}) -> 0.0012
+  resolve_spread({'spread_pct': 12.0}) -> {'spread_fraction_mid': None, 'spread_pct_of_mid': None, 'quality_state': 'NOT_EVALUATED_UNIT_AMBIGUOUS', 'source': 'NONE', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'contract_spread_pct': 12.0}) -> {'spread_fraction_mid': None, 'spread_pct_of_mid': None, 'quality_state': 'NOT_EVALUATED_UNIT_AMBIGUOUS', 'source': 'NONE', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct': 12.0, 'spread_unit': 'PERCENT'}) -> {'spread_fraction_mid': 0.12, 'spread_pct_of_mid': 12.0, 'quality_state': 'PASS_LEGACY_ADAPTED', 'source': 'LEGACY_PERCENT', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct': 12.0, 'spread_unit': 'FRACTION_OF_MID'}) -> {'spread_fraction_mid': 12.0, 'spread_pct_of_mid': 1200.0, 'quality_state': 'PASS_LEGACY_ADAPTED', 'source': 'LEGACY_FRACTION', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_fraction_mid': 12.0}) -> {'spread_fraction_mid': None, 'spread_pct_of_mid': None, 'quality_state': 'DATA_DEFECT', 'source': 'SPREAD_FRACTION_MID', 'calculation_version': 'quote_units_v1'}
+  resolve_spread({'spread_pct_of_mid': 12.0}) -> {'spread_fraction_mid': 0.12, 'spread_pct_of_mid': 12.0, 'quality_state': 'PASS', 'source': 'SPREAD_PCT_OF_MID', 'calculation_version': 'quote_units_v1'}
+  opportunity_tier._tier_spread_fraction({'spread_pct': 12.0}) -> 12.0  (SPREAD_TIER_2_MAX=0.25; would veto: True)
+  opportunity_tier._tier_spread_fraction({'spread_fraction_mid': 12.0}) -> None
+  opportunity_tier._tier_spread_fraction({'spread_pct_of_mid': 12.0}) -> 0.12
+  quote_spread_fraction(bid=1.00, ask=1.12) -> 0.11320754716981142   (selected_contract_economics.py:289 computes from bid/ask; not a legacy adapter)
+  quote_spread_fraction(bid=100, ask=112) -> 0.11320754716981132
+  quote_change_evidence builder = quote_snapshot_from_row(row: 'Mapping[str, Any]', *, role: 'str') -> 'QuoteSnapshot'
+=== quote_snapshot_from_row(row, role=...) fixture (appended)
+  role=current current_contract_spread_pct=0.12 -> QuoteSnapshot.spread_pct=0.12  (no unit label; value passed through unchanged)
+  role=morning morning_contract_spread_pct=0.12 -> QuoteSnapshot.spread_pct=0.12  (no unit label; value passed through unchanged)
+  role=current live_contract_spread_fraction=0.12 -> QuoteSnapshot.spread_pct=0.12  (no unit label; value passed through unchanged)
+  role=morning contract_spread_pct=0.12 -> QuoteSnapshot.spread_pct=0.12  (no unit label; value passed through unchanged)
+  role=current current_contract_spread_pct=12.0 -> QuoteSnapshot.spread_pct=12.0  (no unit label; value passed through unchanged)
+  role=morning morning_contract_spread_pct=12.0 -> QuoteSnapshot.spread_pct=12.0  (no unit label; value passed through unchanged)
+  role=current live_contract_spread_fraction=12.0 -> QuoteSnapshot.spread_pct=12.0  (no unit label; value passed through unchanged)
+  role=morning contract_spread_pct=12.0 -> QuoteSnapshot.spread_pct=12.0  (no unit label; value passed through unchanged)
+  role=current bid=1.0 ask=1.12 no spread field -> spread_pct=0.11320754716981142 (fallback quote_spread_fraction: FRACTION stored under name 'spread_pct')

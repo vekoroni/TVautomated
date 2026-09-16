@@ -1,0 +1,27 @@
+{
+  "authorization": "User: promote to production",
+  "at": 1788787177.7892885,
+  "release_id": "AVS-W3-PRODUCTION-20260907-001",
+  "source_hashes": {
+    "worker3/v2/assessment.py": "141c216a59c7faf238a7ebd8708a52a5c7624a06405efcdf2996b0eb6c1531b8",
+    "worker3/adapters/bound_output.py": "c67430fb72966ef36b5699d6a883e13d814b75ef8cb6496deb3bcc70da0df62b",
+    "worker3/adapters/claude_v2.py": "9c050357a9f87c115654e3655fa12b6aa3a83a8bfc8e8f7f82e5ddd8f2244c3f",
+    "tests/test_worker3_evidence_coverage.py": "8d5dafc76ebd8683d256846bc37d1ea697fa6dd81b37333c20ddee5f58326be0"
+  },
+  "promoted_assessment_id": "d1dd7da9ccb8e6de48447f36113286c22cffd914c801554fbf8ec84b4c44a555",
+  "promoted_report_origin": "Validated existing canary; no new generation",
+  "additional_provider_calls": 0,
+  "production_release_before_sha256": "24fc37f526eee6b038aa44500c7a7d9da81f68ff00812b48e9534014e3b91f80",
+  "status": "RELEASE_PROMOTED_PENDING_LAB_RESTART",
+  "release_enabled": true,
+  "production_release_sha256": "ef595d57424df7a629db76ba4fb8e99450a03c86e687100c9efeefaaa0b55498",
+  "fresh_process_lab_route_status": 200,
+  "running_lab_route_status": 404,
+  "restart_blocker": "Windows Access denied stopping verified Lab process 18456",
+  "protected_changes": [
+    "contracts\\worker3_provider_release_v1.json"
+  ],
+  "protected_files_checked": 1671,
+  "production_report_store": "data/worker3/analyst_reports.sqlite",
+  "provider_calls_during_promotion": 0
+}

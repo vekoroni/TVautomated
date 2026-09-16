@@ -1,0 +1,79 @@
+{
+ "total_rows": 8290,
+ "event_type_totals": {
+  "OUTCOME": 1,
+  "CANDIDATE_DECISION": 4931,
+  "VALIDATION": 1679,
+  "EXECUTION_DECISION": 1679
+ },
+ "event_types_present": [
+  "CANDIDATE_DECISION",
+  "EXECUTION_DECISION",
+  "OUTCOME",
+  "VALIDATION"
+ ],
+ "distinct_run_ids": [
+  "20260905_151448",
+  "20260906_213931",
+  "20260909_071646",
+  "20260910_150045",
+  "20260911_115904",
+  "run_001"
+ ],
+ "previous_event_id_link": {
+  "OUTCOME|prev_present=False": 1,
+  "CANDIDATE_DECISION|prev_present=False": 4931,
+  "VALIDATION|prev_present=False": 1679,
+  "EXECUTION_DECISION|prev_present=True": 1679
+ },
+ "payload_sub_facets": {
+  "OUTCOME": {
+   "data_status=OBSERVED_TRADE_EXIT": 1,
+   "is_counterfactual=False": 1,
+   "outcome_class=PROCESS_WIN": 1,
+   "exit_reason=QA_CLOSE": 1
+  },
+  "CANDIDATE_DECISION": {
+   "decision_stage=EOD_THESIS": 3252,
+   "final_action=MANUAL_REVIEW": 3383,
+   "execution_eligibility_state=": 3252,
+   "thesis_state=VALID_THESIS_TRIGGER_PENDING": 881,
+   "thesis_state=VALID_THESIS_REPAIR_AT_OPEN": 1955,
+   "thesis_state=VALID_THESIS_READY": 17,
+   "final_action=CONTRACT_REPAIR": 117,
+   "thesis_state=VALID_THESIS_WATCHLIST": 10,
+   "decision_stage=MORNING_VALIDATION": 1679,
+   "final_action=BUY_SMALL": 23,
+   "execution_eligibility_state=ELIGIBLE_LIMITED": 23,
+   "thesis_state=ACTIVE": 1137,
+   "execution_eligibility_state=CONTRACT_REPAIR_REQUIRED": 57,
+   "thesis_state=DATA_INCOMPLETE": 254,
+   "final_action=BLOCK": 1408,
+   "execution_eligibility_state=NOT_ELIGIBLE": 454,
+   "thesis_state=TARGET_REALIZED": 43,
+   "thesis_state=INVALIDATED": 19,
+   "execution_eligibility_state=REVIEW_REQUIRED": 1145,
+   "thesis_state=VALID_THESIS_DATA_REVIEW": 389,
+   "thesis_state=LEGACY_NOT_EVALUATED": 226
+  },
+  "VALIDATION": {
+   "data_status=COMPLETE": 1679
+  },
+  "EXECUTION_DECISION": {
+   "decision_stage=FINAL_EXECUTION_GATE": 1679,
+   "final_action=BUY_SMALL": 23,
+   "execution_eligibility_state=ELIGIBLE_LIMITED": 23,
+   "final_action=CONTRACT_REPAIR": 57,
+   "execution_eligibility_state=CONTRACT_REPAIR_REQUIRED": 57,
+   "final_action=BLOCK": 454,
+   "execution_eligibility_state=NOT_ELIGIBLE": 454,
+   "final_action=MANUAL_REVIEW": 1145,
+   "execution_eligibility_state=REVIEW_REQUIRED": 1145
+  }
+ },
+ "payload_substring_hits": {
+  "OUTCOME|mfe": 1,
+  "OUTCOME|mae": 1,
+  "OUTCOME|horizon": 1
+ }
+}

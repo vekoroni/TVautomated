@@ -1,0 +1,63 @@
+{
+  "numeric_mismatches": [
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price",
+      "returned_value": "105.53",
+      "returned_unit": "USD/share",
+      "source_value": 105.53,
+      "source_unit": "USD/share"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price",
+      "returned_value": "76.01",
+      "returned_unit": "USD/share",
+      "source_value": 76.01,
+      "source_unit": "USD/share"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target",
+      "returned_value": "194.09",
+      "returned_unit": "USD/share",
+      "source_value": 194.09,
+      "source_unit": "USD/share"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:target_profit_pct",
+      "returned_value": "1486.6038",
+      "returned_unit": "percent",
+      "source_value": 1486.6038,
+      "source_unit": "percent"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_score",
+      "returned_value": "3.5",
+      "returned_unit": "score",
+      "source_value": 3.5,
+      "source_unit": "score"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:mid",
+      "returned_value": "5.0",
+      "returned_unit": "USD/share",
+      "source_value": 5.0,
+      "source_unit": "USD/share"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:implied_volatility",
+      "returned_value": "0.839",
+      "returned_unit": "annualized_decimal",
+      "source_value": 0.839,
+      "source_unit": "annualized_decimal"
+    },
+    {
+      "evidence_id": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:open_interest",
+      "returned_value": "1374.0",
+      "returned_unit": "contracts",
+      "source_value": 1374.0,
+      "source_unit": "contracts"
+    }
+  ],
+  "diagnostic_without_fence_and_optional_numeric_facts": "observation/change slots require numeric data",
+  "network_requests": 0,
+  "original_response_unchanged": true
+}

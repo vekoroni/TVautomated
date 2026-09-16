@@ -1,0 +1,418 @@
+[written] C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_d5b_quote_truth.json
+{
+ "20260911_115904": {
+  "meta": {
+   "evidence_cutoff_utc": "2026-09-11T11:59:04Z",
+   "pipeline_mode": "MORNING_VALIDATION",
+   "run_condition": null,
+   "dynamic_plan_run_condition": null,
+   "git": "avs-baseline-20260906-21-g00baa2b-dirty"
+  },
+  "options/options_intelligence_<run>.csv": {
+   "rows": 1444,
+   "ts_cols": [
+    "quote_as_of",
+    "contract_quote_timestamp_utc",
+    "contract_quote_timestamp_source",
+    "quote_timestamp_utc",
+    "l2_quote_timestamp_utc"
+   ],
+   "refresh_cols": [
+    "contract_quote_refresh_status"
+   ],
+   "liquidity_EXECUTABLE_NOW": {
+    "ALL": 453,
+    "CALL": 255,
+    "PUT": 198,
+    "OTHER": 0
+   },
+   "executable_now_true": {
+    "ALL": 453,
+    "CALL": 255,
+    "PUT": 198,
+    "OTHER": 0
+   },
+   "refresh_values": {
+    "contract_quote_refresh_status": {
+     "nan": 1444
+    }
+   },
+   "ts::quote_as_of": {
+    "exec_rows": 453,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": 1086.0,
+     "median": 1117.0333333333333,
+     "max": 1144.3666666666666
+    },
+    "after_cutoff": 0,
+    "older_than_15m": 453,
+    "session_dates": {
+     "2026-09-10": 453
+    }
+   },
+   "ts::contract_quote_timestamp_utc": {
+    "exec_rows": 453,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": 1086.0,
+     "median": 1117.0333333333333,
+     "max": 1144.3666666666666
+    },
+    "after_cutoff": 0,
+    "older_than_15m": 453,
+    "session_dates": {
+     "2026-09-10": 453
+    }
+   },
+   "ts::contract_quote_timestamp_source": {
+    "exec_rows": 453,
+    "null": 453,
+    "age_min_vs_cutoff": null,
+    "after_cutoff": 0,
+    "older_than_15m": 0,
+    "session_dates": {
+     "nan": 453
+    }
+   },
+   "ts::quote_timestamp_utc": {
+    "exec_rows": 453,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": 1086.0,
+     "median": 1117.0333333333333,
+     "max": 1144.3666666666666
+    },
+    "after_cutoff": 0,
+    "older_than_15m": 453,
+    "session_dates": {
+     "2026-09-10": 453
+    }
+   },
+   "ts::l2_quote_timestamp_utc": {
+    "exec_rows": 453,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -147.6,
+     "median": -131.93333333333334,
+     "max": -118.91666666666667
+    },
+    "after_cutoff": 453,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 453
+    }
+   }
+  },
+  "trades/execution_gated_<run>.csv": {
+   "rows": 1444,
+   "ts_cols": [
+    "quote_as_of",
+    "selected_quote_timestamp_utc",
+    "monetisability_quote_timestamp_utc",
+    "live_contract_quote_timestamp",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "contract_quote_timestamp"
+   ],
+   "refresh_cols": [
+    "pse_execution_mode",
+    "execution_mode",
+    "monetisability_refresh_status"
+   ],
+   "liquidity_EXECUTABLE_NOW": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "executable_now_true": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "refresh_values": {
+    "pse_execution_mode": {
+     "STRUCTURAL_WATCH": 493,
+     "OPTIONS_REPAIR_REQUIRED": 422,
+     "FUTURE_WATCH": 386,
+     "TRANSITION_REVIEW": 65,
+     "CURRENT_EDGE_REVIEW": 44,
+     "CONTRACT_MONITOR": 28,
+     "EOD_PROBE_CANDIDATE": 6
+    },
+    "execution_mode": {
+     "nan": 1444
+    },
+    "monetisability_refresh_status": {
+     "PENDING_MORNING_REFRESH": 1444
+    }
+   },
+   "ts::quote_as_of": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::selected_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.06666666666666,
+     "median": -303.06666666666666,
+     "max": -301.06666666666666
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::monetisability_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": 1087.0666666666666,
+     "median": 1116.9333333333334,
+     "max": 1145.0333333333333
+    },
+    "after_cutoff": 0,
+    "older_than_15m": 69,
+    "session_dates": {
+     "2026-09-10": 69
+    }
+   },
+   "ts::live_contract_quote_timestamp": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.06666666666666,
+     "median": -303.06666666666666,
+     "max": -301.06666666666666
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::morning_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::current_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::contract_quote_timestamp": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.06666666666666,
+     "median": -303.06666666666666,
+     "max": -301.06666666666666
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   }
+  },
+  "intelligence_lab/final_opportunity_book_<run>.csv": {
+   "rows": 1444,
+   "ts_cols": [
+    "selected_quote_timestamp_utc",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "quote_as_of"
+   ],
+   "refresh_cols": [
+    "display_execution_mode"
+   ],
+   "liquidity_EXECUTABLE_NOW": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "executable_now_true": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "refresh_values": {
+    "display_execution_mode": {
+     "MONITOR_ONLY": 906,
+     "NO_TRADE": 490,
+     "REPRICE_REQUIRED": 29,
+     "REVIEW_AND_SIZE_LIMIT": 19
+    }
+   },
+   "ts::selected_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.06666666666666,
+     "median": -303.06666666666666,
+     "max": -301.06666666666666
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::morning_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::current_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::quote_as_of": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   }
+  },
+  "morning_validation/morning_validated_trades_<run>.csv": {
+   "rows": 1444,
+   "ts_cols": [
+    "quote_as_of",
+    "selected_quote_timestamp_utc",
+    "monetisability_quote_timestamp_utc",
+    "live_contract_quote_timestamp",
+    "morning_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "contract_quote_timestamp"
+   ],
+   "refresh_cols": [
+    "pse_execution_mode",
+    "execution_mode",
+    "monetisability_refresh_status"
+   ],
+   "liquidity_EXECUTABLE_NOW": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "executable_now_true": {
+    "ALL": 69,
+    "CALL": 47,
+    "PUT": 22,
+    "OTHER": 0
+   },
+   "refresh_values": {
+    "pse_execution_mode": {
+     "STRUCTURAL_WATCH": 493,
+     "OPTIONS_REPAIR_REQUIRED": 422,
+     "FUTURE_WATCH": 386,
+     "TRANSITION_REVIEW": 65,
+     "CURRENT_EDGE_REVIEW": 44,
+     "CONTRACT_MONITOR": 28,
+     "EOD_PROBE_CANDIDATE": 6
+    },
+    "execution_mode": {
+     "nan": 1444
+    },
+    "monetisability_refresh_status": {
+     "PENDING_MORNING_REFRESH": 1444
+    }
+   },
+   "ts::quote_as_of": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.05,
+     "median": -303.05,
+     "max": -301.05
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::selected_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": -306.06666666666666,
+     "median": -303.06666666666666,
+     "max": -301.06666666666666
+    },
+    "after_cutoff": 69,
+    "older_than_15m": 0,
+    "session_dates": {
+     "2026-09-11": 69
+    }
+   },
+   "ts::monetisability_quote_timestamp_utc": {
+    "exec_rows": 69,
+    "null": 0,
+    "age_min_vs_cutoff": {
+     "min": 1087.0666666666666,
+     "median": 1116.9333333333334,
+     "max": 

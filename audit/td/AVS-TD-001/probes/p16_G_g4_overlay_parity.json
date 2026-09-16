@@ -1,0 +1,563 @@
+{
+  "run": "20260911_115904",
+  "evening_vs_final_book": {
+    "label": "desk_gate evening vs final_opportunity_book",
+    "lab_rows": 1444,
+    "overlay_rows": 1444,
+    "overlay_columns": [
+      "ticker",
+      "direction",
+      "gics_sector",
+      "hold_window",
+      "lab_verdict",
+      "opportunity_tier",
+      "tier",
+      "eil_v3_verdict",
+      "final_action",
+      "hidden_state_label",
+      "phase",
+      "trigger_primary",
+      "underlying_price",
+      "invalidation_price",
+      "target_price",
+      "strike",
+      "contract_symbol",
+      "contract_mid",
+      "contract_ask",
+      "contract_dte",
+      "contract_delta",
+      "contract_iv",
+      "garch_forecast_vol",
+      "hv_30d",
+      "iv_rank",
+      "iv_vs_hv",
+      "garch_expected_move_1_5d",
+      "garch_expected_move_6_10d",
+      "spread_pct",
+      "win_prob_predicted",
+      "actuarial_sample_size",
+      "rr_predicted",
+      "monetisability_state",
+      "usmi_alignment_reason",
+      "dg_vol_budget_pct",
+      "dg_target_reachable",
+      "dg_reach_ratio",
+      "dg_rr_reachable",
+      "dg_stop_dist_pct",
+      "dg_vol_edge_pct",
+      "dg_gamma_leverage",
+      "dg_theta_cost_pct",
+      "dg_payoff_flat_pct",
+      "dg_payoff_1s_pct",
+      "dg_payoff_2s_pct",
+      "dg_payoff_reach_pct",
+      "dg_payoff_minus1s_pct",
+      "dg_convexity_label",
+      "dg_rr_option",
+      "dg_spread_pct",
+      "dg_macro_route",
+      "dg_macro_route_label",
+      "dg_macro_route_basis",
+      "dg_macro_against",
+      "dg_size_multiplier",
+      "dg_contracts",
+      "dg_hard_stops",
+      "dg_soft_flags",
+      "dg_verdict",
+      "dg_rank_score",
+      "dg_rank",
+      "dg_within_position_cap"
+    ],
+    "population": {
+      "lab_tickers": 1444,
+      "overlay_tickers": 1444,
+      "intersection": 1444,
+      "lab_only": [],
+      "overlay_only": [],
+      "lab_dup_tickers": 0,
+      "overlay_dup_tickers": 0
+    },
+    "joined": 1444,
+    "fields": {
+      "contract_symbol~contract_symbol": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "final_direction~direction": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "lab_verdict~lab_verdict": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "final_action~final_action": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "opportunity_tier~opportunity_tier": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "monetisability_state~monetisability_state": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "invalidation_price~invalidation_price": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "structural_target~target_price": {
+        "agree": 1385,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "797/798",
+          "PUT": "429/458",
+          "OTHER": "159/188"
+        },
+        "disagree_examples": [
+          [
+            "CAVA",
+            "PUT",
+            "-10.941900000000004",
+            ""
+          ],
+          [
+            "CIFR",
+            "PUT",
+            "-16.760000000000005",
+            ""
+          ],
+          [
+            "HIMS",
+            "PUT",
+            "-3.3400000000000034",
+            ""
+          ],
+          [
+            "CELH",
+            "PUT",
+            "-1.93",
+            ""
+          ]
+        ]
+      },
+      "contract_ask~contract_ask": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "spread_pct~spread_pct": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "thesis_state~thesis_state": "COLUMN ABSENT",
+      "execution_viability_state~execution_viability_state": "COLUMN ABSENT",
+      "usmi_sector_alignment~dg_macro_route_label": {
+        "agree": 879,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "486/798",
+          "PUT": "205/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": [
+          [
+            "WRB",
+            "CALL",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ],
+          [
+            "IOT",
+            "PUT",
+            "NEUTRAL",
+            "ADVERSE_REGIME_RS_REQUIRED"
+          ],
+          [
+            "AA",
+            "PUT",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ],
+          [
+            "WTTR",
+            "CALL",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ]
+        ]
+      }
+    }
+  },
+  "morning_vs_v3_book": {
+    "label": "desk_gate morning vs lab_signal_book_v3",
+    "lab_rows": 19,
+    "overlay_rows": 19,
+    "overlay_columns": [
+      "ticker",
+      "direction",
+      "gics_sector",
+      "hold_window",
+      "lab_verdict",
+      "opportunity_tier",
+      "tier",
+      "eil_v3_verdict",
+      "final_action",
+      "hidden_state_label",
+      "phase",
+      "trigger_primary",
+      "underlying_price",
+      "invalidation_price",
+      "target_price",
+      "strike",
+      "contract_symbol",
+      "contract_mid",
+      "contract_ask",
+      "contract_dte",
+      "contract_delta",
+      "contract_iv",
+      "garch_forecast_vol",
+      "hv_30d",
+      "iv_rank",
+      "iv_vs_hv",
+      "garch_expected_move_1_5d",
+      "garch_expected_move_6_10d",
+      "spread_pct",
+      "win_prob_predicted",
+      "actuarial_sample_size",
+      "rr_predicted",
+      "monetisability_state",
+      "usmi_alignment_reason",
+      "dg_vol_budget_pct",
+      "dg_target_reachable",
+      "dg_reach_ratio",
+      "dg_rr_reachable",
+      "dg_stop_dist_pct",
+      "dg_vol_edge_pct",
+      "dg_gamma_leverage",
+      "dg_theta_cost_pct",
+      "dg_payoff_flat_pct",
+      "dg_payoff_1s_pct",
+      "dg_payoff_2s_pct",
+      "dg_payoff_reach_pct",
+      "dg_payoff_minus1s_pct",
+      "dg_convexity_label",
+      "dg_rr_option",
+      "dg_spread_pct",
+      "dg_macro_route",
+      "dg_macro_route_label",
+      "dg_macro_route_basis",
+      "dg_macro_against",
+      "dg_size_multiplier",
+      "dg_contracts",
+      "dg_hard_stops",
+      "dg_soft_flags",
+      "dg_verdict",
+      "dg_rank_score",
+      "dg_rank",
+      "dg_within_position_cap"
+    ],
+    "population": {
+      "lab_tickers": 19,
+      "overlay_tickers": 19,
+      "intersection": 19,
+      "lab_only": [],
+      "overlay_only": [],
+      "lab_dup_tickers": 0,
+      "overlay_dup_tickers": 0
+    },
+    "joined": 19,
+    "fields": {
+      "contract_symbol~contract_symbol": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "final_direction~direction": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "lab_verdict~lab_verdict": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "final_action~final_action": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "opportunity_tier~opportunity_tier": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "monetisability_state~monetisability_state": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "invalidation_price~invalidation_price": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "structural_target~target_price": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "contract_ask~contract_ask": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "spread_pct~spread_pct": {
+        "agree": 19,
+        "of": 19,
+        "by_dir": {
+          "CALL": "10/10",
+          "PUT": "9/9"
+        },
+        "disagree_examples": []
+      },
+      "thesis_state~thesis_state": "COLUMN ABSENT",
+      "execution_viability_state~execution_viability_state": "COLUMN ABSENT",
+      "usmi_sector_alignment~dg_macro_route_label": {
+        "agree": 10,
+        "of": 19,
+        "by_dir": {
+          "CALL": "4/10",
+          "PUT": "6/9"
+        },
+        "disagree_examples": [
+          [
+            "WRB",
+            "CALL",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ],
+          [
+            "IOT",
+            "PUT",
+            "NEUTRAL",
+            "ADVERSE_REGIME_RS_REQUIRED"
+          ],
+          [
+            "AA",
+            "PUT",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ],
+          [
+            "WTTR",
+            "CALL",
+            "NEUTRAL",
+            "PRIORITY_WATCH"
+          ]
+        ]
+      }
+    }
+  },
+  "rank_vs_final_book_population": {
+    "label": "rank evening vs final_opportunity_book",
+    "lab_rows": 1444,
+    "overlay_rows": 1444,
+    "overlay_columns": [
+      "ticker",
+      "direction",
+      "gics_sector",
+      "hold_window",
+      "hidden_state_label",
+      "phase",
+      "trigger_primary",
+      "lab_verdict",
+      "eil_v3_verdict",
+      "underlying_price",
+      "invalidation_price",
+      "target_price",
+      "contract_symbol",
+      "contract_mid",
+      "contract_ask",
+      "contract_dte",
+      "contract_delta",
+      "contract_iv",
+      "garch_forecast_vol",
+      "spread_pct",
+      "iv_vs_hv",
+      "win_prob_predicted",
+      "actuarial_sample_size",
+      "compression_energy",
+      "rk_veto",
+      "rk_vol_budget_pct",
+      "rk_calib_key",
+      "rk_p_source",
+      "rk_p_n",
+      "rk_p_flag",
+      "rk_p",
+      "rk_ev_gross_pct",
+      "rk_spread_cost_pct",
+      "rk_ev_net_pct",
+      "rk_payoff_flat_pct",
+      "rk_payoff_plus1_pct",
+      "rk_payoff_minus1_pct",
+      "rk_payoff_plus2_pct",
+      "rk_target_reachable",
+      "rk_payoff_reach_pct",
+      "rk_macro_route",
+      "rk_root_cause",
+      "rk_quality_flags",
+      "rk_size_multiplier",
+      "rk_contracts",
+      "rk_selected",
+      "rk_rank",
+      "rk_rank.1"
+    ],
+    "population": {
+      "lab_tickers": 1444,
+      "overlay_tickers": 1444,
+      "intersection": 1444,
+      "lab_only": [],
+      "overlay_only": [],
+      "lab_dup_tickers": 0,
+      "overlay_dup_tickers": 0
+    },
+    "joined": 1444,
+    "fields": {
+      "contract_symbol~contract_symbol": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      },
+      "final_direction~direction": {
+        "agree": 1444,
+        "of": 1444,
+        "by_dir": {
+          "CALL": "798/798",
+          "PUT": "458/458",
+          "OTHER": "188/188"
+        },
+        "disagree_examples": []
+      }
+    }
+  },
+  "overlay_vocabulary_in_lab_books": {
+    "final_opportunity_book": {
+      "display_execution_mode": {
+        "NO_TRADE": 490
+      },
+      "morning_entry_action": {
+        "NO_TRADE": 1423
+      },
+      "tier": {
+        "WATCH": 506
+      }
+    },
+    "lab_signal_book_v3": {
+      "tier": {
+        "WATCH": 1
+      }
+    }
+  },
+  "desk_gate_dg_verdict_values": {
+    "NO_TRADE": 1310,
+    "WATCH": 93,
+    "TRADE_PROBE": 41
+  }
+}

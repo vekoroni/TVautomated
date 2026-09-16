@@ -1,0 +1,24 @@
+{
+  "attempt": 7,
+  "technical_canary_accepted": true,
+  "state": "REVIEW_REQUIRED",
+  "semantic_status": "REQUIRES_HUMAN_REVIEW",
+  "semantic_findings": [],
+  "count_requests": 1,
+  "generation_requests": 1,
+  "retries": 0,
+  "cost_microusd": 333063,
+  "cumulative_list_price_microusd": 1963701,
+  "input_tokens": 95131,
+  "output_tokens": 3178,
+  "elapsed_ms": 57318,
+  "restart_replay_provider_called": false,
+  "accounting": {
+    "reported_cost_microusd": 333063,
+    "unknown_cost_reservation_microusd": 0,
+    "unknown_calls": 0
+  },
+  "protected_changes": [],
+  "protected_files_checked": 1671,
+  "production_enabled": false
+}

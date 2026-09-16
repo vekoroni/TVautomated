@@ -1,0 +1,118 @@
+random.seed(20260912); random.sample(range(9), 5) -> indices [0, 1, 5, 6, 8] -> sites ['S1', 'S2', 'S6', 'S7', 'S9']: ['canonical_data/dynamic_options_production.py rate', 'canonical_data/dynamic_options_production.py dividend', 'canonical_data/dynamic_options_valuation.py quote time', 'domain/contract_economics_v2.py target/IV/quote', 'DOI probability outputs']
+--- S1 [CHOSEN] canonical_data/dynamic_options_production.py rate
+    canonical_data/dynamic_options_production.py /MarketRateObservation/ hits=2: L30: from canonical_data.market_rate_observation import load_market_rate, MarketRateObservation | L132: market_rate = load_market_rate(macro_path) if macro_path else MarketRateObservation(None, "NONE", None, None, 
+    canonical_data/dynamic_options_production.py /RATE_UNAVAILABLE/ hits=2: L132: market_rate = load_market_rate(macro_path) if macro_path else MarketRateObservation(None, "NONE", None, None,  | L288: states["FAMILY_NOT_VALUED_RATE_UNAVAILABLE"] += 1
+    canonical_data/dynamic_options_production.py /ev3_rate_used/ hits=1: L286: rate = _number(_first(raw, "ev3_rate_used", "risk_free_rate"))
+--- S2 [CHOSEN] canonical_data/dynamic_options_production.py dividend
+    canonical_data/dynamic_options_production.py /dividend_yield_available/ hits=1: L295: dividend_yield_available=dividend_available,
+    canonical_data/dynamic_options_production.py /dividend = dividend_raw/ hits=1: L292: dividend = dividend_raw if dividend_available else 0.0
+--- S3 [not chosen] layer3_forward_variance.py failed forecast
+    layer3_forward_variance.py /checkpoint_fields/ hits=2: L118: from domain.volatility_budget import checkpoint_fields | L119: budget_v2 = checkpoint_fields(
+    layer3_forward_variance.py /legacy_deprecated/ hits=1: L156: 'l3_expected_move_legacy_deprecated': True,
+    layer3_forward_variance.py /None if self\.error/ hits=1: L120: None if self.error else float(self.forward_realised_vol)
+--- S4 [not chosen] trigger_layer.py expected move
+    trigger_layer.py /expected_move_10d_fraction/ hits=1: L335: em_10_fraction = _flt(row, "expected_move_10d_fraction")
+    trigger_layer.py /l3_expected_move_6_10d\"\)/ hits=1: L339: em_6_10 = _flt(row, "l3_expected_move_6_10d")
+    trigger_layer.py // 100\.0/ hits=2: L341: return round(wr * (em_6_10 / 100.0), 8) | L345: return round(wr * (em_1_5 / 100.0), 8)
+--- S5 [not chosen] contracts/opportunity_tier.py spread
+    contracts/opportunity_tier.py /resolve_spread/ hits=3: L25: from domain.quote_units import resolve_spread | L90: canonical = resolve_spread(row) | L94: return resolve_spread({
+    contracts/opportunity_tier.py /FRACTION_OF_MID/ hits=1: L96: "spread_unit": "FRACTION_OF_MID",
+--- S6 [CHOSEN] canonical_data/dynamic_options_valuation.py quote time
+    canonical_data/dynamic_options_valuation.py /MISSING_PROVIDER_QUOTE_TIMESTAMP/ hits=1: L332: raise ValueError(f"MISSING_PROVIDER_QUOTE_TIMESTAMP:{symbol}")
+--- S7 [CHOSEN] domain/contract_economics_v2.py target/IV/quote
+    domain/contract_economics_v2.py /NOT_EVALUATED_DATA_MISSING/ hits=3: L79: return ContractEconomicsV2((), "NOT_EVALUATED_DATA_MISSING", "REQUIRED_INPUT_MISSING", | L80: "NOT_EVALUATED_DATA_MISSING", "REQUIRED_INPUT_MISSING", None, | L85: "NOT_EVALUATED_DATA_MISSING", "INVALID_BID_ASK", None,
+    domain/contract_economics_v2.py /DATA_DEFECT/ hits=1: L84: return ContractEconomicsV2((), "DATA_DEFECT", "INVALID_BID_ASK",
+--- S8 [not chosen] domain/capacity_suggestion.py multiplier/budget
+    domain/capacity_suggestion.py: FILE ABSENT
+--- S9 [CHOSEN] DOI probability outputs
+    canonical_data/dynamic_options_production.py /DETERMINISTIC_UTILITY/ hits=0: 
+    canonical_data/dynamic_options_production.py /ranking_score_kind/ hits=0: 
+    domain/dynamic_options_probability.py /DETERMINISTIC_UTILITY/ hits=0: 
+    domain/dynamic_options_probability.py /ranking_score_kind/ hits=0: 
+    canonical_data/dynamic_options_valuation.py /DETERMINISTIC_UTILITY/ hits=1: L424: "ranking_score_kind": "DETERMINISTIC_UTILITY",
+    canonical_data/dynamic_options_valuation.py /ranking_score_kind/ hits=1: L424: "ranking_score_kind": "DETERMINISTIC_UTILITY",
+=== named REQ-WP1-04 sites
+    eod_candidate_engine.py:353: def _flt(row: dict, key: str, default: float = 0.0) -> float:
+    eod_candidate_engine.py:354:     try:
+    eod_candidate_engine.py:355:         v = row.get(key, default)
+    eod_candidate_engine.py:356:         if v is None: return default
+    eod_candidate_engine.py:357:         f = float(v)
+    eod_candidate_engine.py:358:         return default if (f != f) else f   # nan check
+    eod_candidate_engine.py:359:     except (TypeError, ValueError):
+    eod_candidate_engine.py:360:         return default
+    eod_candidate_engine.py:2693:             "win_rate_5d":          _flt(row, "win_rate_5d"),
+    eod_candidate_engine.py:2694:             "win_rate_10d":         _flt(row, "win_rate_10d"),
+    eod_candidate_engine.py:2695:             "expected_move_5d":     _flt(row, "l3_expected_move_1_5d"),
+    eod_candidate_engine.py:2696:             "expected_move_10d":    _flt(row, "l3_expected_move_6_10d"),
+    eod_candidate_engine.py:2697:             "vol_forecast":         _flt(row, "l3_forward_realised_vol"),
+    eod_candidate_engine.py:2698:             "vol_conf":             _flt(row, "l3_vol_forecast_conf"),
+    vanguard/ev_engine_v3.py:443:     rate_defaulted = long_c.get("risk_free_rate") is None
+    vanguard/ev_engine_v3.py:444:     dividend_defaulted = long_c.get("dividend_yield") is None
+    vanguard/ev_engine_v3.py:445:     rate = policy.default_risk_free_rate if rate_defaulted else float(long_c["risk_free_rate"])
+    vanguard/ev_engine_v3.py:446:     dividend = policy.default_dividend_yield if dividend_defaulted else float(long_c["dividend_yield"])
+    vanguard/ev_engine_v3.py:638:     rate_defaulted = c.get("risk_free_rate") is None
+    vanguard/ev_engine_v3.py:639:     dividend_defaulted = c.get("dividend_yield") is None
+    vanguard/ev_engine_v3.py:640:     rate = policy.default_risk_free_rate if rate_defaulted else float(c["risk_free_rate"])
+    vanguard/ev_engine_v3.py:641:     dividend = policy.default_dividend_yield if dividend_defaulted else float(c["dividend_yield"])
+    vanguard/ev_engine_v3.py:571:         "ev3_rate_defaulted": rate_defaulted,
+    vanguard/ev_engine_v3.py:572:         "ev3_dividend_yield_defaulted": dividend_defaulted,
+    canonical_data/dynamic_options_production.py:284:             rate = market_rate.rate_annual_fraction
+    canonical_data/dynamic_options_production.py:285:             if rate is None:
+    canonical_data/dynamic_options_production.py:286:                 rate = _number(_first(raw, "ev3_rate_used", "risk_free_rate"))
+    canonical_data/dynamic_options_production.py:287:             if rate is None or not -0.05 <= rate <= 0.25:
+    canonical_data/dynamic_options_production.py:288:                 states["FAMILY_NOT_VALUED_RATE_UNAVAILABLE"] += 1
+    canonical_data/dynamic_options_production.py:289:                 continue
+    canonical_data/dynamic_options_production.py:290:             dividend_raw = _number(_first(raw, "ev3_dividend_yield_used", "dividend_yield"))
+    canonical_data/dynamic_options_production.py:291:             dividend_available = dividend_raw is not None and dividend_raw >= 0.0
+    canonical_data/dynamic_options_production.py:292:             dividend = dividend_raw if dividend_available else 0.0
+    canonical_data/dynamic_options_production.py:293:             valuation = DeterministicContractValuationService(
+    canonical_data/dynamic_options_production.py:294:                 store, risk_free_rate=rate, dividend_yield=max(0.0, dividend),
+    canonical_data/dynamic_options_production.py:295:                 dividend_yield_available=dividend_available,
+=== silent-default pattern grep on the named paths (production modules; tests/backups/audit excluded)
+  total hits=267 files=29
+  per-file counts (top 40):
+      80  scripts/avshunter_options_intelligence.py
+      31  eod_candidate_engine.py
+      26  morning_gate.py
+      18  avshunter_ticker_probe.py
+      15  scripts/phantom_greek_rehydrate.py
+      14  execution_gate.py
+      13  trigger_layer.py
+      11  contracts/lab_control.py
+      10  scripts/run_ev3_shadow_phase.py
+       7  orchestrator/options_intelligence.py
+       6  vanguard/ev_engine_v3.py
+       6  scripts/options_db_writer.py
+       4  zero_dte/intraday_0dte_trigger.py
+       3  vanguard/layer3_execution/scenario_builder.py
+       3  canonical_data/dynamic_options_probability.py
+       3  layer3_forward_variance.py
+       2  scripts/phantom_marketdata_quote_greek_rehydrate.py
+       2  .codex_python313_runtime/Lib/site-packages/pip/_internal/cli/cmdoptions.py
+       2  domain/dynamic_options_lifecycle.py
+       2  scripts/apply_ev3_authority.py
+       1  canonical_data/dynamic_options_bridge.py
+       1  ev_engine_v2.py
+       1  domain/dynamic_options_ranking.py
+       1  domain/deterministic_option_valuation.py
+       1  probability_engine.py
+       1  scripts/build_ev3_stage0.py
+       1  scripts/ev_engine.py
+       1  vanguard/ev_engine.py
+       1  vanguard/ev_engine_v2.py
+  hits in domain/ and contracts/ (the v2 authority path):
+    contracts/lab_control.py:671 [_flt default 0.0] def _f(value: Any, default: float = 0.0) -> float:
+    contracts/lab_control.py:1256 [.get(x, 0)] if row_counts.get(phase, 0) == 0:
+    contracts/lab_control.py:1267 [or 0)] defect_count = max([int(value or 0) for value in missing.values()] or [0])
+    contracts/lab_control.py:1268 [or 0)] denominator = max(int(population or 0), 1)
+    contracts/lab_control.py:1467 [or 0)] and int(profile_payload.get("completed") or 0) > 0
+    contracts/lab_control.py:1470 [or 0)] row_counts["completed_market_profile"] = int(profile_payload.get("completed") or 0)
+    contracts/lab_control.py:1487 [.get(x, 0)] if mode == "EOD" and row_counts.get("eil", 0) > 0 and not output_files.get("morning_candidates"):
+    contracts/lab_control.py:1560 [.get(x, 0)] else max(row_counts.get("options", 0), row_counts.get("eil", 0), 1)
+    contracts/lab_control.py:1584 [.get(x, 0)] and row_counts.get("eil", 0) > 0
+    contracts/lab_control.py:1588 [.get(x, 0)] elif row_counts.get("eil", 0) == 0:
+    contracts/lab_control.py:2986 [default=0] invalidation_price = _f(row.get("invalidation_price"), default=0.0)
+    domain/deterministic_option_valuation.py:372 [default=0] latest_time_years = max((item.time_to_expiry_years for item in valuations), default=0.0)
+    domain/dynamic_options_lifecycle.py:357 [or 0.0] old_volume = previous.volume or 0.0
+    domain/dynamic_options_lifecycle.py:358 [or 0.0] new_volume = current.volume or 0.0
+    domain/dynamic_options_ranking.py:408 [or 0.0] ordered = sorted(scored, key=lambda row: (row[1] is None, -(row[1] or 0.0), row[0].contract_symbol))

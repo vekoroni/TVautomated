@@ -1,0 +1,326 @@
+{
+ "discovery_files": 27,
+ "discovery_rows_total": 43299,
+ "pipeline_universe_n": 1907,
+ "tickers_with_sector_from_discovery": 1880,
+ "sector_vocab_discovery": {
+  "Information Technology": 8346,
+  "Health Care": 6644,
+  "Industrials": 5084,
+  "Consumer Discretionary": 4807,
+  "Financials": 4394,
+  "Energy": 3537,
+  "Materials": 2234,
+  "Real Estate": 2233,
+  "Consumer Staples": 1781,
+  "Communication Services": 1431,
+  "Utilities": 1309,
+  "ETF": 1133,
+  "Power Generation": 81,
+  "Equity Inverse ETF": 27,
+  "Rates / Bonds ETF": 27,
+  "Consumer Discretionary (ETF)": 27,
+  "Volatility": 23,
+  "Communication / Tech": 13
+ },
+ "sector_etf_vocab_discovery": {
+  "XLK": 8373,
+  "XLV": 6671,
+  "XLI": 5111,
+  "XLY": 4834,
+  "XLF": 4415,
+  "XLE": 3645,
+  "XLB": 2261,
+  "XLRE": 2260,
+  "XLP": 1808,
+  "XLC": 1471,
+  "XLU": 1336,
+  "KRE": 27,
+  "USO": 27,
+  "VIXY": 27,
+  "GLD": 27,
+  "XOP": 27,
+  "XRT": 27,
+  "EWZ": 27,
+  "VGT": 27,
+  "GDX": 27,
+  "EEM": 27,
+  "IBB": 27,
+  "MTUM": 27,
+  "XBI": 27,
+  "ARKK": 27,
+  "KBE": 27,
+  "XHB": 27,
+  "IGV": 27,
+  "JETS": 27,
+  "EWJ": 27,
+  "SPXS": 27,
+  "SLV": 27,
+  "IHI": 27,
+  "UVXY": 27,
+  "TMF": 27,
+  "IBIT": 27,
+  "VOOG": 25,
+  "SVXY": 23,
+  "FXI": 22,
+  "IYR": 22,
+  "IWM": 21,
+  "IVW": 21,
+  "VXX": 21,
+  "VNQ": 20,
+  "IJH": 18,
+  "VLUE": 15,
+  "VEA": 9,
+  "VWO": 9,
+  "EWG": 8,
+  "VTI": 8,
+  "IYT": 6,
+  "EFA": 6,
+  "IWR": 5,
+  "EWU": 5,
+  "QUAL": 3,
+  "IWN": 3,
+  "IYW": 1
+ },
+ "final_book_primary_rows": 1444,
+ "fb_gics_sector_norm_vocab": {
+  "Information Technology": 278,
+  "Health Care": 224,
+  "Industrials": 176,
+  "Consumer Discretionary": 172,
+  "Financials": 146,
+  "Energy": 120,
+  "Materials": 77,
+  "Real Estate": 67,
+  "Consumer Staples": 55,
+  "Utilities": 48,
+  "Communication Services": 44,
+  "ETF": 31,
+  "Power Generation": 2,
+  "Consumer Discretionary (ETF)": 1,
+  "Volatility": 1,
+  "Equity Inverse ETF": 1,
+  "Rates / Bonds ETF": 1
+ },
+ "fb_sector_etf_vocab": {
+  "XLK": 278,
+  "XLV": 225,
+  "XLI": 176,
+  "XLY": 172,
+  "XLF": 147,
+  "XLE": 122,
+  "XLB": 77,
+  "XLRE": 67,
+  "XLP": 56,
+  "XLU": 48,
+  "XLC": 45,
+  "USO": 1,
+  "IWM": 1,
+  "GLD": 1,
+  "IYR": 1,
+  "XHB": 1,
+  "EWZ": 1,
+  "FXI": 1,
+  "VGT": 1,
+  "IGV": 1,
+  "GDX": 1,
+  "EEM": 1,
+  "IBIT": 1,
+  "XBI": 1,
+  "IHI": 1,
+  "SLV": 1,
+  "MTUM": 1,
+  "EWJ": 1,
+  "VIXY": 1,
+  "IBB": 1,
+  "ARKK": 1,
+  "VOOG": 1,
+  "KRE": 1,
+  "SVXY": 1,
+  "SPXS": 1,
+  "XRT": 1,
+  "TMF": 1,
+  "UVXY": 1,
+  "JETS": 1,
+  "VXX": 1,
+  "KBE": 1,
+  "IJH": 1
+ },
+ "fb_final_direction": {
+  "CALL": 798,
+  "PUT": 458,
+  "STRANGLE": 138,
+  "UNRESOLVED": 50
+ },
+ "fb_usmi_sector_alignment": {
+  "NEUTRAL": 1444
+ },
+ "fb_usmi_alignment_priority": {
+  "NaN": 1444
+ },
+ "fb_usmi_state": {
+  "US_CAPITAL_MAGNET_DEFENSIVE_ROTATION": 1444
+ },
+ "fb_usmi_packet_id": {
+  "USMI:2026-09-11:39c00d46758d115f": 1444
+ },
+ "fb_sector_eq_gics_norm_share": 0.9909972299168975,
+ "fb_disc_sector_eq_fb_sector_share": 1.0,
+ "direction_by_run": {
+  "20260905_151448": {
+   "rows": 294,
+   "final_direction": {
+    "CALL": 190,
+    "PUT": 104
+   },
+   "usmi_sector_alignment": null,
+   "usmi_packet_id": null
+  },
+  "20260906_213931": {
+   "rows": 264,
+   "final_direction": {
+    "CALL": 170,
+    "PUT": 94
+   },
+   "usmi_sector_alignment": {
+    "UNAVAILABLE": 264
+   },
+   "usmi_packet_id": {
+    "USMI:2026-09-04:ff7e285c0f707af0": 264
+   }
+  },
+  "20260909_071646": {
+   "rows": 235,
+   "final_direction": {
+    "CALL": 151,
+    "PUT": 84
+   },
+   "usmi_sector_alignment": {
+    "NEUTRAL": 235
+   },
+   "usmi_packet_id": {
+    "USMI:2026-09-09:eef15c4fc09cb270": 235
+   }
+  },
+  "20260910_150045": {
+   "rows": 1424,
+   "final_direction": {
+    "CALL": 791,
+    "PUT": 451,
+    "STRANGLE": 135,
+    "UNRESOLVED": 47
+   },
+   "usmi_sector_alignment": {
+    "UNAVAILABLE": 1424
+   },
+   "usmi_packet_id": {
+    "USMI:2026-09-09:eef15c4fc09cb270": 1424
+   }
+  },
+  "20260911_115904": {
+   "rows": 1444,
+   "final_direction": {
+    "CALL": 798,
+    "PUT": 458,
+    "STRANGLE": 138,
+    "UNRESOLVED": 50
+   },
+   "usmi_sector_alignment": {
+    "NEUTRAL": 1444
+   },
+   "usmi_packet_id": {
+    "USMI:2026-09-11:39c00d46758d115f": 1444
+   }
+  }
+ },
+ "governed_universe_n": 3320,
+ "governed_sector_vocab": {
+  "Information Technology": 554,
+  "Financials": 493,
+  "Health Care": 490,
+  "Industrials": 436,
+  "Consumer Discretionary": 332,
+  "Energy": 225,
+  "Real Estate": 186,
+  "Materials": 143,
+  "Consumer Staples": 133,
+  "Communication Services": 121,
+  "Utilities": 117,
+  "ETF": 82,
+  "Power Generation": 3,
+  "Equity Inverse ETF": 1,
+  "Volatility": 1,
+  "Rates / Bonds ETF": 1,
+  "Consumer Discretionary (ETF)": 1,
+  "Communication / Tech": 1
+ },
+ "governed_industry_n_unique": 407,
+ "store_tickers_n": 3618,
+ "store_sessions_n": 1268,
+ "store_first": "2021-08-23",
+ "store_last": "2026-09-10",
+ "disc_vs_gov_agree_share": 1.0,
+ "disc_vs_gov_both_n": 1880,
+ "coverage": {
+  "store_tickers": 3618,
+  "store_with_sector": 3292,
+  "store_unknown": 326,
+  "pipeline_tickers": 1907,
+  "pipeline_in_store": 1903,
+  "pipeline_with_sector": 1896,
+  "pipeline_unknown": 11,
+  "pipeline_sector_from_discovery": 1880,
+  "pipeline_sector_from_governed": 16,
+  "governed_in_store": 3292,
+  "governed_not_in_store": 28,
+  "pipeline_not_in_store": [
+   "LSEG",
+   "MAIR",
+   "REWW",
+   "UBS"
+  ]
+ },
+ "sector_counts_pipeline": {
+  "Information Technology": 343,
+  "Health Care": 294,
+  "Industrials": 240,
+  "Consumer Discretionary": 214,
+  "Financials": 202,
+  "Energy": 145,
+  "Real Estate": 101,
+  "Materials": 94,
+  "Consumer Staples": 75,
+  "Communication Services": 63,
+  "ETF": 62,
+  "Utilities": 55,
+  "UNKNOWN": 11,
+  "Power Generation": 3,
+  "Equity Inverse ETF": 1,
+  "Volatility": 1,
+  "Rates / Bonds ETF": 1,
+  "Consumer Discretionary (ETF)": 1,
+  "Communication / Tech": 1
+ },
+ "sector_counts_store": {
+  "Information Technology": 549,
+  "Health Care": 490,
+  "Financials": 485,
+  "Industrials": 435,
+  "Consumer Discretionary": 332,
+  "UNKNOWN": 326,
+  "Energy": 224,
+  "Real Estate": 186,
+  "Materials": 142,
+  "Consumer Staples": 133,
+  "Communication Services": 121,
+  "Utilities": 107,
+  "ETF": 80,
+  "Power Generation": 3,
+  "Equity Inverse ETF": 1,
+  "Volatility": 1,
+  "Rates / Bonds ETF": 1,
+  "Consumer Discretionary (ETF)": 1,
+  "Communication / Tech": 1
+ },
+ "runtime_s": 104.2
+}

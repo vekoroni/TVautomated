@@ -1,0 +1,94 @@
+{
+  "run": "20260911_115904",
+  "quote_cols_present_v3": [
+    "quote_freshness",
+    "quote_as_of",
+    "is_stale",
+    "execution_quote_status",
+    "morning_quote_timestamp_utc",
+    "selected_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "morning_execution_permission",
+    "lab_verdict",
+    "executable_now",
+    "execution_viability_state",
+    "morning_transition_state",
+    "opportunity_tier",
+    "eil_v3_verdict",
+    "final_direction"
+  ],
+  "quote_cols_present_final": [
+    "quote_freshness",
+    "quote_as_of",
+    "is_stale",
+    "morning_quote_timestamp_utc",
+    "selected_quote_timestamp_utc",
+    "current_quote_timestamp_utc",
+    "morning_execution_permission",
+    "lab_verdict",
+    "executable_now",
+    "execution_viability_state",
+    "morning_transition_state",
+    "opportunity_tier",
+    "eil_v3_verdict",
+    "final_direction"
+  ],
+  "joined_rows": 19,
+  "v3_quote_freshness": {
+    "STALE": 19
+  },
+  "fb_quote_freshness_for_same_19": {
+    "FRESH": 19
+  },
+  "v3_quote_as_of_sample": [
+    "2026-09-11T17:04:54Z",
+    "2026-09-11T17:04:38Z",
+    "2026-09-11T17:04:47Z",
+    "2026-09-11T17:02:06Z",
+    "2026-09-11T17:04:37Z"
+  ],
+  "fb_quote_as_of_same19_sample": [
+    "2026-09-11T17:04:54Z",
+    "2026-09-11T17:04:38Z",
+    "2026-09-11T17:04:47Z",
+    "2026-09-11T17:02:06Z",
+    "2026-09-11T17:04:37Z"
+  ],
+  "v3_executable_permission_while_quote_freshness_STALE_by_dir": {
+    "CALL": 10,
+    "PUT": 9
+  },
+  "v3_is_stale_vs_quote_freshness": {
+    "False|STALE|SAME_SESSION_EVIDENCE": 19
+  },
+  "v3_executable_now_values": {
+    "True": 19
+  },
+  "fb_executable_now_values": {
+    "False": 1375,
+    "True": 69
+  },
+  "fb_morning_quote_date_x_quote_freshness": {
+    "|": 226,
+    "2026-09-10|FRESH": 453,
+    "2026-09-11|": 225,
+    "2026-09-11|FRESH": 540
+  },
+  "fb_quote_as_of_date_x_quote_freshness": {
+    "2026-09-10|FRESH": 453,
+    "2026-09-11|": 451,
+    "2026-09-11|FRESH": 540
+  },
+  "fb_eil_EXECUTE_by_morning_quote_date_dir": {
+    "2026-09-10|FRESH|CALL": 43,
+    "2026-09-10|FRESH|PUT": 38
+  },
+  "fb_GO_LIMIT_by_quote_as_of_date_dir": {
+    "2026-09-11|FRESH|CALL": 10,
+    "2026-09-11|FRESH|PUT": 9
+  },
+  "fb_transition_EXECUTABLE_NOW_by_quote_as_of_date_dir": {
+    "2026-09-11|FRESH|CALL": 14,
+    "2026-09-11|FRESH|PUT": 13
+  }
+}

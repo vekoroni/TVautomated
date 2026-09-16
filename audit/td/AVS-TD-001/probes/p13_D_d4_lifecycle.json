@@ -1,0 +1,784 @@
+{
+ "20260911_115904": {
+  "run": "20260911_115904",
+  "contracts_tested": {
+   "families": 1218,
+   "by_direction": {
+    "CALL": 772,
+    "PUT": 446
+   },
+   "contract_keys": {
+    "symbol": 189033,
+    "dte": 189033,
+    "delta": 189033,
+    "spread_pct": 189033,
+    "mid": 189033,
+    "gate_failed": 189033
+   },
+   "gate_failed_counts": {
+    "REJECT_DTE_BAND": 167603,
+    "REJECT_DELTA_BAND": 19749,
+    "null": 1175,
+    "REJECT_SPREAD": 506
+   },
+   "contracts_listed": 189033,
+   "oi_or_volume_field_present": false
+  },
+  "rejection_log_rows": 974,
+  "rejection_reasons": {
+   "SPREAD_GT_25PCT": 236,
+   "No governed long CALL/PUT direction; chain request suppressed": 188,
+   "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 157,
+   "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 156,
+   "ESTIMATED_R_LT_1": 129,
+   "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 69,
+   "CHAIN_FETCH_FAILED": 37,
+   "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_LT_1;delta": 1,
+   "BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE": 1
+  },
+  "rejection_stage": {
+   "CONTRACT_REPAIR": 937,
+   "CHAIN_FETCH": 37
+  },
+  "rejection_reason_tokens": {
+   "ESTIMATED_R_LT_1": 287,
+   "No governed long CALL/PUT direction": 188,
+   "chain request suppressed": 188,
+   "SPREAD_GT_25PCT": 463,
+   "CONTRACT_DATA_INCOMPLETE": 226,
+   "ESTIMATED_R_MISSING": 225,
+   "breakeven": 225,
+   "breakeven_feasibility": 225,
+   "estimated_R": 225,
+   "CHAIN_FETCH_FAILED": 37,
+   "delta": 1,
+   "BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE": 1
+  },
+  "rejection_tokens_mentioning_oi_or_volume": [],
+  "oi_selected_contract": {
+   "ALL": {
+    "rows": 1444,
+    "with_contract": 1218,
+    "oi_lt_100": 834,
+    "vol_eq_0": 665,
+    "thin_either": 924,
+    "liquidity_state_of_thin": {
+     "LIQUIDITY_PENDING": 327,
+     "EXECUTABLE_NOW": 288,
+     "LIFECYCLE_DATA_INCOMPLETE": 136,
+     "REVIEWABLE_SPREAD": 109,
+     "ZERO_BID": 25,
+     "LIFECYCLE_DATA_INVALID": 19,
+     "DTE_UNSUITABLE": 17,
+     "MONEYNESS_UNSUITABLE": 3
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 453,
+     "LIQUIDITY_PENDING": 349,
+     "LIFECYCLE_DATA_INCOMPLETE": 196,
+     "REVIEWABLE_SPREAD": 133,
+     "DTE_UNSUITABLE": 30,
+     "LIFECYCLE_DATA_INVALID": 29,
+     "ZERO_BID": 25,
+     "MONEYNESS_UNSUITABLE": 3
+    }
+   },
+   "CALL": {
+    "rows": 798,
+    "with_contract": 772,
+    "oi_lt_100": 543,
+    "vol_eq_0": 439,
+    "thin_either": 601,
+    "liquidity_state_of_thin": {
+     "LIQUIDITY_PENDING": 217,
+     "EXECUTABLE_NOW": 171,
+     "LIFECYCLE_DATA_INCOMPLETE": 95,
+     "REVIEWABLE_SPREAD": 79,
+     "ZERO_BID": 19,
+     "DTE_UNSUITABLE": 17,
+     "MONEYNESS_UNSUITABLE": 3
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 255,
+     "LIQUIDITY_PENDING": 234,
+     "LIFECYCLE_DATA_INCOMPLETE": 139,
+     "REVIEWABLE_SPREAD": 95,
+     "DTE_UNSUITABLE": 27,
+     "ZERO_BID": 19,
+     "MONEYNESS_UNSUITABLE": 3
+    }
+   },
+   "PUT": {
+    "rows": 458,
+    "with_contract": 446,
+    "oi_lt_100": 291,
+    "vol_eq_0": 226,
+    "thin_either": 323,
+    "liquidity_state_of_thin": {
+     "EXECUTABLE_NOW": 117,
+     "LIQUIDITY_PENDING": 110,
+     "LIFECYCLE_DATA_INCOMPLETE": 41,
+     "REVIEWABLE_SPREAD": 30,
+     "LIFECYCLE_DATA_INVALID": 19,
+     "ZERO_BID": 6
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 198,
+     "LIQUIDITY_PENDING": 115,
+     "LIFECYCLE_DATA_INCOMPLETE": 57,
+     "REVIEWABLE_SPREAD": 38,
+     "LIFECYCLE_DATA_INVALID": 29,
+     "ZERO_BID": 6,
+     "DTE_UNSUITABLE": 3
+    }
+   },
+   "OTHER": {
+    "rows": 188,
+    "with_contract": 0,
+    "oi_lt_100": 0,
+    "vol_eq_0": 0,
+    "thin_either": 0,
+    "liquidity_state_of_thin": {},
+    "liquidity_state_all": {}
+   }
+  },
+  "rejection_by_direction": {
+   "CALL": 557,
+   "PUT": 229,
+   "OTHER": 188
+  },
+  "rejection_reason_by_direction": {
+   "CALL": {
+    "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 143,
+    "SPREAD_GT_25PCT": 129,
+    "ESTIMATED_R_LT_1": 119,
+    "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 95,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 44,
+    "CHAIN_FETCH_FAILED": 25,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_LT_1;delta": 1,
+    "BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE": 1
+   },
+   "PUT": {
+    "SPREAD_GT_25PCT": 107,
+    "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 61,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 25,
+    "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 14,
+    "CHAIN_FETCH_FAILED": 12,
+    "ESTIMATED_R_LT_1": 10
+   },
+   "OTHER": {
+    "No governed long CALL/PUT direction; chain request suppressed": 188
+   }
+  },
+  "doi_report": {
+   "family_rows": 1218,
+   "family_candidates_total": 130443,
+   "bounded_candidates_total": 14514,
+   "retained_low_open_interest": 97267,
+   "retained_zero_volume": 106306,
+   "deleted_opportunities": 0
+  },
+  "repair_selector_diagnostics": {
+   "diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+   "selector_invocations": 1218,
+   "retained_oi_below_50": 771,
+   "retained_zero_volume": 496,
+   "rejected_invalid_missing_quote": 3956,
+   "rejected_spread": 10900,
+   "rejected_dte_delta_geometry": 202601,
+   "final_bounded_candidate_count": 1212
+  }
+ },
+ "20260910_150045": {
+  "run": "20260910_150045",
+  "contracts_tested": {
+   "families": 1241,
+   "by_direction": {
+    "CALL": 791,
+    "PUT": 450
+   },
+   "contract_keys": {
+    "symbol": 193035,
+    "dte": 193035,
+    "delta": 193035,
+    "spread_pct": 193035,
+    "mid": 193035,
+    "gate_failed": 193035
+   },
+   "gate_failed_counts": {
+    "REJECT_DTE_BAND": 171378,
+    "REJECT_DELTA_BAND": 19956,
+    "REJECT_SPREAD": 526,
+    "null": 1175
+   },
+   "contracts_listed": 193035,
+   "oi_or_volume_field_present": false
+  },
+  "rejection_log_rows": 930,
+  "rejection_reasons": {
+   "SPREAD_GT_25PCT": 255,
+   "No governed long CALL/PUT direction; chain request suppressed": 182,
+   "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 156,
+   "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 153,
+   "ESTIMATED_R_LT_1": 117,
+   "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 65,
+   "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_LT_1;delta": 1,
+   "CHAIN_FETCH_FAILED": 1
+  },
+  "rejection_stage": {
+   "CONTRACT_REPAIR": 929,
+   "CHAIN_FETCH": 1
+  },
+  "rejection_reason_tokens": {
+   "No governed long CALL/PUT direction": 182,
+   "chain request suppressed": 182,
+   "SPREAD_GT_25PCT": 474,
+   "ESTIMATED_R_LT_1": 271,
+   "CONTRACT_DATA_INCOMPLETE": 222,
+   "ESTIMATED_R_MISSING": 221,
+   "breakeven": 221,
+   "breakeven_feasibility": 221,
+   "estimated_R": 221,
+   "delta": 1,
+   "CHAIN_FETCH_FAILED": 1
+  },
+  "rejection_tokens_mentioning_oi_or_volume": [],
+  "oi_selected_contract": {
+   "ALL": {
+    "rows": 1424,
+    "with_contract": 1241,
+    "oi_lt_100": 844,
+    "vol_eq_0": 673,
+    "thin_either": 941,
+    "liquidity_state_of_thin": {
+     "LIQUIDITY_PENDING": 346,
+     "EXECUTABLE_NOW": 289,
+     "LIFECYCLE_DATA_INCOMPLETE": 132,
+     "REVIEWABLE_SPREAD": 114,
+     "ZERO_BID": 19,
+     "LIFECYCLE_DATA_INVALID": 19,
+     "DTE_UNSUITABLE": 17,
+     "MONEYNESS_UNSUITABLE": 5
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 458,
+     "LIQUIDITY_PENDING": 370,
+     "LIFECYCLE_DATA_INCOMPLETE": 192,
+     "REVIEWABLE_SPREAD": 139,
+     "DTE_UNSUITABLE": 29,
+     "LIFECYCLE_DATA_INVALID": 29,
+     "ZERO_BID": 19,
+     "MONEYNESS_UNSUITABLE": 5
+    }
+   },
+   "CALL": {
+    "rows": 791,
+    "with_contract": 791,
+    "oi_lt_100": 553,
+    "vol_eq_0": 441,
+    "thin_either": 614,
+    "liquidity_state_of_thin": {
+     "LIQUIDITY_PENDING": 224,
+     "EXECUTABLE_NOW": 174,
+     "LIFECYCLE_DATA_INCOMPLETE": 93,
+     "REVIEWABLE_SPREAD": 87,
+     "DTE_UNSUITABLE": 16,
+     "ZERO_BID": 15,
+     "MONEYNESS_UNSUITABLE": 5
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 262,
+     "LIQUIDITY_PENDING": 243,
+     "LIFECYCLE_DATA_INCOMPLETE": 138,
+     "REVIEWABLE_SPREAD": 103,
+     "DTE_UNSUITABLE": 25,
+     "ZERO_BID": 15,
+     "MONEYNESS_UNSUITABLE": 5
+    }
+   },
+   "PUT": {
+    "rows": 451,
+    "with_contract": 450,
+    "oi_lt_100": 291,
+    "vol_eq_0": 232,
+    "thin_either": 327,
+    "liquidity_state_of_thin": {
+     "LIQUIDITY_PENDING": 122,
+     "EXECUTABLE_NOW": 115,
+     "LIFECYCLE_DATA_INCOMPLETE": 39,
+     "REVIEWABLE_SPREAD": 27,
+     "LIFECYCLE_DATA_INVALID": 19,
+     "ZERO_BID": 4,
+     "DTE_UNSUITABLE": 1
+    },
+    "liquidity_state_all": {
+     "EXECUTABLE_NOW": 196,
+     "LIQUIDITY_PENDING": 127,
+     "LIFECYCLE_DATA_INCOMPLETE": 54,
+     "REVIEWABLE_SPREAD": 36,
+     "LIFECYCLE_DATA_INVALID": 29,
+     "ZERO_BID": 4,
+     "DTE_UNSUITABLE": 4
+    }
+   },
+   "OTHER": {
+    "rows": 182,
+    "with_contract": 0,
+    "oi_lt_100": 0,
+    "vol_eq_0": 0,
+    "thin_either": 0,
+    "liquidity_state_of_thin": {},
+    "liquidity_state_all": {}
+   }
+  },
+  "rejection_by_direction": {
+   "CALL": 522,
+   "PUT": 226,
+   "OTHER": 182
+  },
+  "rejection_reason_by_direction": {
+   "CALL": {
+    "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 140,
+    "SPREAD_GT_25PCT": 136,
+    "ESTIMATED_R_LT_1": 107,
+    "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 98,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 40,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_LT_1;delta": 1
+   },
+   "PUT": {
+    "SPREAD_GT_25PCT": 119,
+    "CONTRACT_DATA_INCOMPLETE;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 58,
+    "CONTRACT_DATA_INCOMPLETE;SPREAD_GT_25PCT;ESTIMATED_R_MISSING;breakeven;breakeven_feasibility;estimated_R": 25,
+    "SPREAD_GT_25PCT;ESTIMATED_R_LT_1": 13,
+    "ESTIMATED_R_LT_1": 10,
+    "CHAIN_FETCH_FAILED": 1
+   },
+   "OTHER": {
+    "No governed long CALL/PUT direction; chain request suppressed": 182
+   }
+  },
+  "doi_report": {
+   "family_rows": 1241,
+   "family_candidates_total": 133794,
+   "bounded_candidates_total": 14789,
+   "retained_low_open_interest": 99853,
+   "retained_zero_volume": 109091,
+   "deleted_opportunities": 0
+  },
+  "repair_selector_diagnostics": {
+   "diagnostics_version": "ev3-repair-selector-diagnostics-v1",
+   "selector_invocations": 1241,
+   "retained_oi_below_50": 769,
+   "retained_zero_volume": 500,
+   "rejected_invalid_missing_quote": 3956,
+   "rejected_spread": 11048,
+   "rejected_dte_delta_geometry": 206823,
+   "final_bounded_candidate_count": 1223
+  }
+ },
+ "control_plane": {
+  "observations_by_run": [
+   [
+    "20260829_222259",
+    5
+   ],
+   [
+    "20260830_182402",
+    7
+   ],
+   [
+    "20260830_225643",
+    82
+   ],
+   [
+    "20260831_010309",
+    927
+   ],
+   [
+    "20260901_082437",
+    644
+   ],
+   [
+    "20260902_232526",
+    861
+   ],
+   [
+    "20260904_004338",
+    1036
+   ],
+   [
+    "20260904_122358",
+    1037
+   ],
+   [
+    "20260905_151448",
+    1076
+   ],
+   [
+    "20260906_213931",
+    1077
+   ],
+   [
+    "20260909_071646",
+    1217
+   ],
+   [
+    "20260910_150045",
+    1020
+   ],
+   [
+    "20260911_115904",
+    1533
+   ]
+  ],
+  "liquidity_states": [
+   [
+    "DTE_UNSUITABLE",
+    1588
+   ],
+   [
+    "EXECUTABLE_NOW",
+    2089
+   ],
+   [
+    "LIQUIDITY_PENDING",
+    5248
+   ],
+   [
+    "MONEYNESS_UNSUITABLE",
+    93
+   ],
+   [
+    "QUOTE_STALE",
+    1
+   ],
+   [
+    "REVIEWABLE_SPREAD",
+    1047
+   ],
+   [
+    "ZERO_BID",
+    456
+   ]
+  ],
+  "thin_by_run_side_state": [
+   [
+    "20260910_150045",
+    "CALL",
+    "DTE_UNSUITABLE",
+    13,
+    16,
+    16,
+    0,
+    0,
+    25
+   ],
+   [
+    "20260910_150045",
+    "CALL",
+    "EXECUTABLE_NOW",
+    158,
+    95,
+    174,
+    0,
+    0,
+    262
+   ],
+   [
+    "20260910_150045",
+    "CALL",
+    "LIQUIDITY_PENDING",
+    201,
+    196,
+    224,
+    0,
+    0,
+    243
+   ],
+   [
+    "20260910_150045",
+    "CALL",
+    "MONEYNESS_UNSUITABLE",
+    4,
+    4,
+    5,
+    0,
+    0,
+    5
+   ],
+   [
+    "20260910_150045",
+    "CALL",
+    "REVIEWABLE_SPREAD",
+    80,
+    58,
+    87,
+    0,
+    0,
+    103
+   ],
+   [
+    "20260910_150045",
+    "CALL",
+    "ZERO_BID",
+    15,
+    14,
+    15,
+    0,
+    0,
+    15
+   ],
+   [
+    "20260910_150045",
+    "PUT",
+    "DTE_UNSUITABLE",
+    1,
+    1,
+    1,
+    0,
+    0,
+    4
+   ],
+   [
+    "20260910_150045",
+    "PUT",
+    "EXECUTABLE_NOW",
+    108,
+    62,
+    115,
+    0,
+    0,
+    196
+   ],
+   [
+    "20260910_150045",
+    "PUT",
+    "LIQUIDITY_PENDING",
+    107,
+    105,
+    122,
+    0,
+    0,
+    127
+   ],
+   [
+    "20260910_150045",
+    "PUT",
+    "REVIEWABLE_SPREAD",
+    25,
+    19,
+    27,
+    0,
+    0,
+    36
+   ],
+   [
+    "20260910_150045",
+    "PUT",
+    "ZERO_BID",
+    4,
+    4,
+    4,
+    0,
+    0,
+    4
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "DTE_UNSUITABLE",
+    30,
+    33,
+    37,
+    0,
+    0,
+    54
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "EXECUTABLE_NOW",
+    186,
+    122,
+    207,
+    0,
+    0,
+    302
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "LIQUIDITY_PENDING",
+    385,
+    377,
+    426,
+    0,
+    0,
+    461
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "MONEYNESS_UNSUITABLE",
+    25,
+    24,
+    26,
+    0,
+    0,
+    26
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "REVIEWABLE_SPREAD",
+    99,
+    77,
+    112,
+    0,
+    0,
+    133
+   ],
+   [
+    "20260911_115904",
+    "CALL",
+    "ZERO_BID",
+    34,
+    34,
+    35,
+    0,
+    0,
+    35
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "DTE_UNSUITABLE",
+    0,
+    0,
+    0,
+    0,
+    0,
+    6
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "EXECUTABLE_NOW",
+    128,
+    77,
+    136,
+    0,
+    0,
+    220
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "LIQUIDITY_PENDING",
+    196,
+    189,
+    216,
+    0,
+    0,
+    225
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "MONEYNESS_UNSUITABLE",
+    7,
+    6,
+    9,
+    0,
+    0,
+    9
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "REVIEWABLE_SPREAD",
+    34,
+    24,
+    37,
+    0,
+    0,
+    49
+   ],
+   [
+    "20260911_115904",
+    "PUT",
+    "ZERO_BID",
+    12,
+    13,
+    13,
+    0,
+    0,
+    13
+   ]
+  ],
+  "thin_all_runs_by_state": [
+   [
+    "DTE_UNSUITABLE",
+    893,
+    1588
+   ],
+   [
+    "EXECUTABLE_NOW",
+    1007,
+    2089
+   ],
+   [
+    "LIQUIDITY_PENDING",
+    4047,
+    5248
+   ],
+   [
+    "MONEYNESS_UNSUITABLE",
+    87,
+    93
+   ],
+   [
+    "QUOTE_STALE",
+    1,
+    1
+   ],
+   [
+    "REVIEWABLE_SPREAD",
+    684,
+    1047
+   ],
+   [
+    "ZERO_BID",
+    441,
+    456
+   ]
+  ],
+  "correction_state": [
+   [
+    null,
+    10522
+   ]
+  ],
+  "supersedes_nonnull": 0,
+  "calc_versions": [
+   [
+    "option_liquidity_lifecycle_v1",
+    1021
+   ],
+   [
+    "options-liquidity-lifecycle-v2",
+    8621
+   ],
+   [
+    "options-liquidity-morning-v2",
+    880
+   ]
+  ],
+  "maturation_is_probability": [
+   [
+    0,
+    10522
+   ]
+  ]
+ }
+}

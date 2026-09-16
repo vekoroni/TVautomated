@@ -1,0 +1,27 @@
+{
+  "attempt": 4,
+  "accepted": false,
+  "state": "UNCERTAIN",
+  "cap_microusd": 1000000,
+  "count_requests": 1,
+  "generation_requests": 1,
+  "retries": 0,
+  "input_tokens": 83883,
+  "output_tokens": 5106,
+  "elapsed_ms": 61746,
+  "stop_reason": "end_turn",
+  "list_price_cost_microusd": 328239,
+  "cumulative_paid_attempt_list_price_microusd": 993987,
+  "validation": {
+    "network_requests": 0,
+    "original": "invalid strict v2 JSON",
+    "fence_removed_diagnostic": "numeric value/unit differs from source",
+    "claim_count": 8,
+    "section_count": 8,
+    "original_response_preserved": true
+  },
+  "protected_file_count": 1671,
+  "protected_changes": [],
+  "production_enabled": false,
+  "billed_amount_verified": false
+}

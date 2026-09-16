@@ -1,0 +1,93 @@
+{
+  "opportunity_book_row_lines": [
+    2391,
+    3018
+  ],
+  "helpers_called_from_opportunity_book_row_in_scope": [
+    "_append_flag",
+    "_contract_for_direction",
+    "_contract_symbols",
+    "_enforce_economics_identity",
+    "_enforce_execution_authority_lab_guard",
+    "_enforce_olm_lab_guard",
+    "_f",
+    "_instrument_for_direction",
+    "_is_missing",
+    "_json_safe",
+    "_s",
+    "_side_from_value",
+    "_trade_idea_id",
+    "_trigger_evidence",
+    "_trigger_price",
+    "_u",
+    "csv_safe_row",
+    "first",
+    "first_price",
+    "first_trigger_category"
+  ],
+  "opportunity_book_row_hits": [],
+  "helper_hits": [],
+  "lab_signal_book_v4_hits": [],
+  "presentation_hits": [],
+  "counts": {
+    "opportunity_book_row_all": 0,
+    "opportunity_book_row_domain_like": 0,
+    "helpers_all": 0,
+    "helpers_domain_like": 0,
+    "v4": 0,
+    "presentation": 0
+  },
+  "v4_field_list": [
+    "lab_schema_version",
+    "lab_v4_thesis_state",
+    "lab_v4_structure_evidence_state",
+    "lab_v4_reach_ratio",
+    "lab_v4_contract_state",
+    "lab_v4_ranking_score",
+    "lab_v4_ranking_score_kind",
+    "lab_v4_execution_state",
+    "lab_v4_quote_provider_timestamp_utc",
+    "lab_v4_macro_alignment",
+    "lab_v4_macro_scenario",
+    "lab_v4_summary_state",
+    "lab_v4_summary_reason",
+    "lab_v4_authority",
+    "lab_v4_calculation_version"
+  ],
+  "v4_capital_fields": [],
+  "FINAL_BOOK_FIELDS_capital_like": [
+    "position_size_display"
+  ],
+  "lab_control_source_capital_tokens": {
+    "capacity_": 0,
+    "contracts_at_budget": 0,
+    "sb_size_pct": 0,
+    "position_size_display": 10,
+    "sb_position_size": 1
+  },
+  "ui_source_capital_tokens": {
+    "capacity_": 0,
+    "contracts_at_budget": 0,
+    "sb_size_pct": 0,
+    "sb_position_size_pct": 8,
+    "position_size_display": 6
+  },
+  "req_wp6_01_elements_present_in_v4": {
+    "thesis_state": true,
+    "structure_evidence": true,
+    "reach_ratio": true,
+    "p_with_source_and_n_or_UNCALIBRATED": false,
+    "scenario_payoffs": false,
+    "monetisability_state": true,
+    "spread": false,
+    "iv_vs_forecast": false,
+    "theta": false,
+    "lifecycle_state": false,
+    "quote_provider_timestamp": true,
+    "refresh_state": false,
+    "macro_alignment": true,
+    "macro_scenario": true,
+    "macro_route": false,
+    "what_changed_since_prior_assessment": false
+  }
+}

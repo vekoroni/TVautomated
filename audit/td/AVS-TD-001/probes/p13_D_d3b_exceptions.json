@@ -1,0 +1,223 @@
+{
+ "20260911_115904": {
+  "run": "20260911_115904",
+  "exceptions_n": 38,
+  "exc_options_csv": {
+   "liquidity_state": {
+    "nan": 38
+   },
+   "liquidity_lifecycle_reason": {
+    "nan": 38
+   },
+   "thesis_state": {
+    "nan": 38
+   },
+   "recommended_contract_present": 0,
+   "governed_direction": {
+    "CALL": 26,
+    "PUT": 12
+   },
+   "quote_timestamp_present": 0
+  },
+  "exc_rejection_log": {
+   "CHAIN_FETCH_FAILED": 37,
+   "BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE": 1
+  },
+  "exc_final_book": {
+   "thesis_id_sample": [
+    "ARW:CALL:20260911_115904",
+    "INSP:PUT:20260911_115904",
+    "MBC:PUT:20260911_115904",
+    "NVCR:CALL:20260911_115904",
+    "PCRX:CALL:20260911_115904",
+    "TGTX:CALL:20260911_115904"
+   ],
+   "thesis_state": {
+    "LEGACY_NOT_EVALUATED": 38
+   },
+   "lab_execution_status": {
+    "MANUAL_REVIEW": 31,
+    "INVALIDATION_MISSING": 6,
+    "BLOCK": 1
+   },
+   "morning_execution_permission": {
+    "NOT_ELIGIBLE": 38
+   },
+   "doi_projection_state": {
+    "DATA_UNAVAILABLE": 38
+   }
+  },
+  "fob_thesis_id_formats": {
+   "T:CALL:<date>:OLM2": 772,
+   "T:PUT:<date>:OLM2": 446,
+   "T:UNRESOLVED:<run>": 188,
+   "T:CALL:<run>": 26,
+   "T:PUT:<run>": 12
+  },
+  "options_csv_thesis_id_formats": {
+   "T:CALL:<date>:OLM2": 772,
+   "T:PUT:<date>:OLM2": 446,
+   "nan": 226
+  },
+  "thesis_agree_where_both_present": {
+   "both": 1218,
+   "equal": 1218
+  },
+  "thesis_events_for_exceptions": [
+   [
+    "LEGACY_LIFECYCLE_NOT_EVALUATED",
+    "ACTIVE",
+    38
+   ]
+  ],
+  "families_for_exceptions": 0,
+  "families_created_at_vs_origin": [
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z"
+  ],
+  "families_sample": [
+   {
+    "family_id": "626d24c4790006d52cfd9515d5a4ec8654f80df4d27554b20a20a90c4cce8320",
+    "thesis_id": "PLAB:CALL:2026-09-10:OLM2",
+    "thesis_version": 1,
+    "run_id": "20260911_115904",
+    "ticker": "PLAB",
+    "governed_direction": "CALL",
+    "origin_spot": 28.38,
+    "origin_timestamp_utc": "2026-09-10T16:54:02Z",
+    "target_spot": 32.34,
+    "invalidation_spot": 27.06,
+    "planned_hold_sessions": 10,
+    "planned_hold_source": "FINAL_HORIZON_ROUTER_ENDPOINT_V1",
+    "thesis_evidence_cutoff_utc": "2026-09-10T16:54:02Z",
+    "family_policy_version": "doi-thesis-conditioned-family-v1",
+    "evidence_cutoff_utc": "2026-09-10T16:54:02Z",
+    "candidate_symbols_json": "[\"PLAB261016C00017500\", \"PLAB261016C00020000\", \"PLAB261016C00022500\", \"PLAB261016C00025000\", \"PLAB261016C00030000\", \"PLA",
+    "source_dataset_ids_json": "[\"d46147aa387e12257a0b6a409e0989acefaaee2ace9ff096f9587b41948938fa\"]",
+    "family_state": "DETERMINISTIC_ONLY",
+    "created_at": "2026-09-10T16:54:02Z",
+    "metadata_json": "{\"complete_candidate_taxonomy\":[{\"ask\":14.6,\"audit_id\":\"c6ec99fa2fa8ab434cd730163145d576e18c779668af9ed2e9a72f569d7685aa\",\"bid\":12.4,\"contract_symbol\":\"PLAB260918C00015000\",\"decision_authority\":\"NONE\",\"display_eligible\":false,\"expiry\":\"2026-09-18\",\"expiry_bucket\":\"NEAR\",\"moneyness_bucket\":\"ITM\",\"mon",
+    "decision_authority": "NONE",
+    "can_change_direction": 0,
+    "can_invalidate_thesis": 0,
+    "can_grant_capital": 0,
+    "payload_hash": "aadacb7cefbe55436443405a6a6da4bb2fe4d22d968ace1e6e84762e220d4a6a"
+   }
+  ],
+  "families_thesis_version": [
+   [
+    1,
+    "doi-thesis-conditioned-family-v1",
+    1218
+   ]
+  ]
+ },
+ "20260910_150045": {
+  "run": "20260910_150045",
+  "exceptions_n": 1,
+  "exc_options_csv": {
+   "liquidity_state": {
+    "nan": 1
+   },
+   "liquidity_lifecycle_reason": {
+    "nan": 1
+   },
+   "thesis_state": {
+    "nan": 1
+   },
+   "recommended_contract_present": 0,
+   "governed_direction": {
+    "PUT": 1
+   },
+   "quote_timestamp_present": 0
+  },
+  "exc_rejection_log": {
+   "CHAIN_FETCH_FAILED": 1
+  },
+  "exc_final_book": {
+   "thesis_id_sample": [
+    NaN
+   ],
+   "thesis_state": {
+    "VALID_THESIS_DATA_REVIEW": 1
+   },
+   "lab_execution_status": {
+    "MANUAL_REVIEW": 1
+   },
+   "morning_execution_permission": {
+    "nan": 1
+   },
+   "doi_projection_state": {
+    "DATA_UNAVAILABLE": 1
+   }
+  },
+  "fob_thesis_id_formats": {
+   "T:CALL:<date>:OLM2": 791,
+   "T:PUT:<date>:OLM2": 450,
+   "nan": 183
+  },
+  "options_csv_thesis_id_formats": {
+   "T:CALL:<date>:OLM2": 791,
+   "T:PUT:<date>:OLM2": 450,
+   "nan": 183
+  },
+  "thesis_agree_where_both_present": {
+   "both": 1241,
+   "equal": 1241
+  },
+  "thesis_events_for_exceptions": [],
+  "families_for_exceptions": 0,
+  "families_created_at_vs_origin": [
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z",
+   "2026-09-10T16:54:02Z",
+   "2026-09-10T17:53:13Z"
+  ],
+  "families_sample": [
+   {
+    "family_id": "5da2527947188c734cefa8487b041702ddf7dc6b1df3b5b452781f33ddcf04b7",
+    "thesis_id": "PLAB:CALL:2026-09-10:OLM2",
+    "thesis_version": 1,
+    "run_id": "20260910_150045",
+    "ticker": "PLAB",
+    "governed_direction": "CALL",
+    "origin_spot": 28.56,
+    "origin_timestamp_utc": "2026-09-10T16:54:02Z",
+    "target_spot": 33.06,
+    "invalidation_spot": 27.06,
+    "planned_hold_sessions": 10,
+    "planned_hold_source": "FINAL_HORIZON_ROUTER_ENDPOINT_V1",
+    "thesis_evidence_cutoff_utc": "2026-09-10T16:54:02Z",
+    "family_policy_version": "doi-thesis-conditioned-family-v1",
+    "evidence_cutoff_utc": "2026-09-10T16:54:02Z",
+    "candidate_symbols_json": "[\"PLAB261016C00017500\", \"PLAB261016C00020000\", \"PLAB261016C00022500\", \"PLAB261016C00025000\", \"PLAB261016C00030000\", \"PLA",
+    "source_dataset_ids_json": "[\"d46147aa387e12257a0b6a409e0989acefaaee2ace9ff096f9587b41948938fa\"]",
+    "family_state": "DETERMINISTIC_ONLY",
+    "created_at": "2026-09-10T16:54:02Z",
+    "metadata_json": "{\"complete_candidate_taxonomy\":[{\"ask\":14.6,\"audit_id\":\"c6ec99fa2fa8ab434cd730163145d576e18c779668af9ed2e9a72f569d7685aa\",\"bid\":12.4,\"contract_symbol\":\"PLAB260918C00015000\",\"decision_authority\":\"NONE\",\"display_eligible\":false,\"expiry\":\"2026-09-18\",\"expiry_bucket\":\"NEAR\",\"moneyness_bucket\":\"ITM\",\"mon",
+    "decision_authority": "NONE",
+    "can_change_direction": 0,
+    "can_invalidate_thesis": 0,
+    "can_grant_capital": 0,
+    "payload_hash": "d9ccc64bbafe0c4017fe84deaeb08fb2231be72787c493e1df1df503af3a790b"
+   }
+  ],
+  "families_thesis_version": [
+   [
+    1,
+    "doi-thesis-conditioned-family-v1",
+    1241
+   ]
+  ]
+ }
+}

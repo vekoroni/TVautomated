@@ -1,0 +1,268 @@
+{
+ "run": "20260911_115904",
+ "seed": 20260913,
+ "n_call_requested": 120,
+ "n_put_requested": 80,
+ "n_as_wired": 25,
+ "jsonl_families": 1218,
+ "jsonl_direction_counts": {
+  "CALL": 772,
+  "PUT": 446
+ },
+ "sampled_tickers": 200,
+ "options_csv_forecast_vol_columns_present": [],
+ "rate": {
+  "rate_annual_fraction": 0.0395,
+  "rate_source": "MACRO:T3M",
+  "rate_as_of": "2026-09-09",
+  "dataset_id": "503701fac406354344dc3903c723c8549d5cd72dd48bdb3d57fc5494fe17b541",
+  "quality_state": "PASS",
+  "calculation_version": "market_rate_observation_v1"
+ },
+ "as_wired_exceptions": [],
+ "elapsed_s_after_valuation": 859.4,
+ "as_wired": {
+  "families": 25,
+  "contracts": 298,
+  "applicability": {
+   "NOT_EVALUATED_DATA_MISSING": 298
+  },
+  "monetisability_state": {
+   "NOT_EVALUATED_DATA_MISSING": 298
+  },
+  "utility_v2_non_null": 0,
+  "utility_v1_non_null": 254,
+  "assessment_ranking_score_equals_v1_where_v2_null": 254,
+  "reach_quality_state": {
+   "NOT_EVALUATED_DATA_MISSING": 298
+  }
+ },
+ "garch_sub_contracts": {
+  "families_valued": 200,
+  "contracts": 2385,
+  "family_id_regenerated_matches_stored": {
+   "true": 200
+  },
+  "applicability_by_dir": {
+   "CALL": {
+    "APPLICABLE": 731,
+    "FRICTION_OUT_OF_RANGE": 476,
+    "NOT_EVALUATED_DATA_MISSING": 220
+   },
+   "PUT": {
+    "FRICTION_OUT_OF_RANGE": 420,
+    "APPLICABLE": 362,
+    "NOT_EVALUATED_DATA_MISSING": 168,
+    "DATA_DEFECT": 8
+   }
+  },
+  "monetisability_by_dir": {
+   "CALL": {
+    "INDETERMINATE": 476,
+    "SCENARIO_MONETISABLE": 407,
+    "SCENARIO_LIMITED": 282,
+    "NOT_EVALUATED_DATA_MISSING": 220,
+    "NOT_CURRENTLY_MONETISABLE": 42
+   },
+   "PUT": {
+    "INDETERMINATE": 420,
+    "SCENARIO_MONETISABLE": 323,
+    "NOT_EVALUATED_DATA_MISSING": 176,
+    "SCENARIO_LIMITED": 37,
+    "NOT_CURRENTLY_MONETISABLE": 2
+   }
+  },
+  "monetisability_reason_by_dir": {
+   "CALL": {
+    "FRICTION_OUT_OF_RANGE": 476,
+    "REACHABLE_LATE_BASE_AT_OR_ABOVE_FLOOR": 407,
+    "REACHABLE_LATE_BASE_POSITIVE_BELOW_FLOOR": 282,
+    "REQUIRED_INPUT_MISSING": 220,
+    "REACHABLE_LATE_BASE_NON_POSITIVE": 42
+   },
+   "PUT": {
+    "FRICTION_OUT_OF_RANGE": 420,
+    "REACHABLE_LATE_BASE_AT_OR_ABOVE_FLOOR": 323,
+    "REQUIRED_INPUT_MISSING": 168,
+    "REACHABLE_LATE_BASE_POSITIVE_BELOW_FLOOR": 37,
+    "INVALID_BID_ASK": 8,
+    "REACHABLE_LATE_BASE_NON_POSITIVE": 2
+   }
+  },
+  "tester_state_matches": {
+   "null": 1292,
+   "true": 1093
+  },
+  "convexity_label_by_dir": {
+   "CALL": {
+    "NOT_EVALUATED": 696,
+    "LINEAR": 372,
+    "CONVEX": 359
+   },
+   "PUT": {
+    "NOT_EVALUATED": 596,
+    "CONVEX": 299,
+    "LINEAR": 63
+   }
+  },
+  "convexity_distinct": 1012,
+  "convexity_eq_2_0": 0,
+  "rate_lineage_present": 2385,
+  "friction_calendar_basis_present": 2385,
+  "validation_state_by_dir": {
+   "CALL": {
+    "UNVALIDATED": 1427
+   },
+   "PUT": {
+    "UNVALIDATED": 958
+   }
+  },
+  "reach_quality_by_dir": {
+   "CALL": {
+    "UNVALIDATED_INPUT": 1207,
+    "NOT_EVALUATED_DATA_MISSING": 220
+   },
+   "PUT": {
+    "UNVALIDATED_INPUT": 790,
+    "NOT_EVALUATED_DATA_MISSING": 168
+   }
+  },
+  "bias_multiplier_applied": {
+   "false": 2385
+  },
+  "economics_carries_validation_state": {
+   "false": 2385
+  },
+  "spearman_v1_v2_all_contracts": {
+   "CALL": {
+    "n": 731,
+    "rho": 0.0253807282813689
+   },
+   "PUT": {
+    "n": 362,
+    "rho": 0.34205174127843
+   },
+   "ALL": {
+    "n": 1093,
+    "rho": 0.1466589164556765
+   }
+  },
+  "within_family": {
+   "families": 153,
+   "median_rho": 0.6785714285714287,
+   "iqr": [
+    0.09999999999999999,
+    0.9285714285714288
+   ],
+   "share_rho_below_0_7": 0.5032679738562091,
+   "top_contract_same_v1_v2": 103,
+   "families_with_2plus": 159
+  }
+ },
+ "family_rows": {
+  "n": 200,
+  "by_dir": {
+   "CALL": 120,
+   "PUT": 80
+  },
+  "pick_rule": {
+   "LEGACY_SELECTED_CONTRACT": 134,
+   "MAX_UTILITY_V2_IN_DISPLAY_SET": 52,
+   "MAX_UTILITY_V1_OR_FIRST": 14
+  },
+  "monetisability_by_dir": {
+   "CALL": {
+    "SCENARIO_MONETISABLE": 66,
+    "INDETERMINATE": 31,
+    "NOT_EVALUATED_DATA_MISSING": 19,
+    "NOT_CURRENTLY_MONETISABLE": 3,
+    "SCENARIO_LIMITED": 1
+   },
+   "PUT": {
+    "SCENARIO_MONETISABLE": 54,
+    "NOT_EVALUATED_DATA_MISSING": 14,
+    "INDETERMINATE": 12
+   }
+  },
+  "applicability_by_dir": {
+   "CALL": {
+    "APPLICABLE": 70,
+    "FRICTION_OUT_OF_RANGE": 31,
+    "NOT_EVALUATED_DATA_MISSING": 19
+   },
+   "PUT": {
+    "APPLICABLE": 54,
+    "NOT_EVALUATED_DATA_MISSING": 14,
+    "FRICTION_OUT_OF_RANGE": 12
+   }
+  },
+  "tester_state_matches": {
+   "true": 124,
+   "null": 76
+  },
+  "legacy_book_state_by_dir": {
+   "CALL": {
+    "MONETISABLE": 61,
+    "NOT_MONETISABLE": 33,
+    "DATA_MISSING": 19,
+    "LIMITED": 7
+   },
+   "PUT": {
+    "MONETISABLE": 64,
+    "DATA_MISSING": 14,
+    "NOT_MONETISABLE": 1,
+    "LIMITED": 1
+   }
+  },
+  "convexity_label_by_dir": {
+   "CALL": {
+    "CONVEX": 66,
+    "NOT_EVALUATED": 50,
+    "LINEAR": 4
+   },
+   "PUT": {
+    "CONVEX": 54,
+    "NOT_EVALUATED": 26
+   }
+  },
+  "convexity_distinct": 124,
+  "spearman_v1_v2": {
+   "CALL": {
+    "n": 70,
+    "rho": 0.009150555506954773
+   },
+   "PUT": {
+    "n": 54,
+    "rho": 0.20548885077186962
+   },
+   "ALL": {
+    "n": 124,
+    "rho": 0.055483870967741926
+   }
+  }
+ },
+ "premise_structural_vs_reachable_contracts": {
+  "CALL": {
+   "n": 731,
+   "median_reachable_net": 0.32730750865894764,
+   "median_structural_net": 0.2940503556445656,
+   "median_gap_pp": -3.4037205390397673,
+   "share_structural_ge_floor": 0.5266757865937073,
+   "share_reachable_ge_floor": 0.5567715458276333,
+   "median_reach_ratio": 1.37917862471669
+  },
+  "PUT": {
+   "n": 362,
+   "median_reachable_net": 0.8718637248994447,
+   "median_structural_net": 2.292690999959037,
+   "median_gap_pp": 138.5647226153025,
+   "share_structural_ge_floor": 0.9116022099447514,
+   "share_reachable_ge_floor": 0.8922651933701657,
+   "median_reach_ratio": 3.220089527185457
+  },
+  "ALL": {
+   "n": 1093,
+   "median_reachable_net": 0.629846029022183,
+   "median_structural_net": 0.7082661671098827,
+   "median_gap_pp": 14.8607164315265
+exceptions garch: 0 []

@@ -1,0 +1,70 @@
+{
+  "authority": "OBSERVATION_ONLY",
+  "can_change_direction": false,
+  "can_grant_capital": false,
+  "model_activation": {
+    "ambiguous_records": 0,
+    "authority": "OBSERVATION_ONLY",
+    "can_activate": false,
+    "can_grant_capital": false,
+    "coverage_fraction": 0.0,
+    "deficient_strata": [
+      "CALL|1-5",
+      "CALL|6-10",
+      "CALL|11-20",
+      "PUT|1-5",
+      "PUT|6-10",
+      "PUT|11-20"
+    ],
+    "fit_eligible_records": 0,
+    "metrics_present": false,
+    "policy_version": "outcome_learning_gate_v1",
+    "reason_codes": [
+      "MINIMUM_FIT_OUTCOMES_NOT_MET",
+      "MINIMUM_OUTCOME_COVERAGE_NOT_MET",
+      "MINIMUM_DIRECTION_HORIZON_SUPPORT_NOT_MET",
+      "HELD_OUT_METRICS_NOT_AVAILABLE",
+      "MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE"
+    ],
+    "state": "INSUFFICIENT_OUTCOMES",
+    "stratum_counts": {},
+    "total_records": 0
+  },
+  "records": [],
+  "schema_version": "outcome_learning_snapshot_v1",
+  "summary": {
+    "accounted_candidate_horizons": 0,
+    "build_exceptions": [],
+    "complete_outcomes": 0,
+    "data_exceptions": 0,
+    "deferred_not_yet_observable": 0,
+    "exclusion_counts": {},
+    "expected_candidate_horizons": 19512,
+    "fit_eligible_records": 0,
+    "horizons": [
+      1,
+      2,
+      3,
+      5,
+      10,
+      20
+    ],
+    "label_counts": {},
+    "option_coverage_counts": {},
+    "option_labels_available": 0,
+    "population_reconciled": false,
+    "presented_candidates": 3252,
+    "unaccounted_candidate_horizons": 19512
+  },
+  "temporal_partition_plan": {
+    "excluded_boundary_overlap_record_ids": [],
+    "excluded_embargo_record_ids": [],
+    "purge_embargo_sessions": 20,
+    "state": "INSUFFICIENT_SESSIONS",
+    "test_record_ids": [],
+    "training_cutoff_session": null,
+    "training_record_ids": [],
+    "validation_cutoff_session": null,
+    "validation_record_ids": []
+  }
+}

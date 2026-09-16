@@ -1,0 +1,6 @@
+{
+  "worker3/integration/activation.py": "cafeb0ffeef16d3f3ee5eb1f2d91fcb51ad6828c12d9613a6c9a3a62e6a70a04",
+  "worker3/integration/runner.py": "409df2399012ba014408bab14e8262c8ffb2e72a84a90b71a166153b05fa5872",
+  "worker3/integration/current_canary.py": "55323acd6b201c95fd84fc580e131a95974194fe5371a93aa7d5d0a01eff7e1a",
+  "tests/test_worker3_current_canary.py": "b078c5b530ef75f5cb8ba8eb21a1c1a1bdc6ea973c3b4ed5c333746437b58a0a"
+}

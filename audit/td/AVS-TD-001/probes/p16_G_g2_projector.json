@@ -1,0 +1,2639 @@
+{
+  "run": "20260911_115904",
+  "final_book_rows": 1444,
+  "v3_rows": 19,
+  "direction_counts_final_book": {
+    "CALL": 798,
+    "PUT": 458,
+    "OTHER": 188
+  },
+  "direction_counts_v3": {
+    "CALL": 10,
+    "PUT": 9
+  },
+  "columns_present": {
+    "thesis_state": [
+      true,
+      true
+    ],
+    "execution_state": [
+      false,
+      false
+    ],
+    "execution_permission": [
+      false,
+      false
+    ],
+    "execution_viability_state": [
+      true,
+      true
+    ],
+    "olm_state": [
+      false,
+      false
+    ],
+    "monetisability_state": [
+      true,
+      true
+    ],
+    "monetisability_status": [
+      true,
+      true
+    ],
+    "lab_verdict": [
+      true,
+      true
+    ],
+    "final_action": [
+      true,
+      true
+    ],
+    "opportunity_tier": [
+      true,
+      true
+    ],
+    "verdict": [
+      false,
+      false
+    ],
+    "campaign_verdict": [
+      true,
+      true
+    ],
+    "morning_verdict": [
+      false,
+      false
+    ],
+    "morning_execution_permission": [
+      true,
+      true
+    ],
+    "morning_entry_action": [
+      true,
+      true
+    ],
+    "execution_eligibility_state": [
+      true,
+      true
+    ],
+    "final_capital_permission": [
+      true,
+      true
+    ],
+    "lab_execution_status": [
+      true,
+      true
+    ],
+    "lab_status": [
+      true,
+      true
+    ],
+    "eod_candidate_status": [
+      true,
+      true
+    ],
+    "action_category": [
+      true,
+      true
+    ],
+    "prep_permission": [
+      true,
+      true
+    ],
+    "eil_v3_verdict": [
+      true,
+      true
+    ],
+    "eil_signal_verdict": [
+      true,
+      true
+    ],
+    "tier": [
+      true,
+      true
+    ],
+    "quote_freshness": [
+      true,
+      true
+    ],
+    "is_stale": [
+      true,
+      true
+    ],
+    "morning_transition_state": [
+      true,
+      true
+    ],
+    "contract_data_state": [
+      true,
+      true
+    ],
+    "doi_monetisability_state": [
+      false,
+      false
+    ],
+    "doi_projection_state": [
+      true,
+      true
+    ],
+    "lab_v4_summary_state": [
+      false,
+      false
+    ],
+    "lab_v4_execution_state": [
+      false,
+      false
+    ],
+    "execution_quote_status": [
+      false,
+      true
+    ],
+    "execution_authorized": [
+      true,
+      true
+    ],
+    "execution_can_grant_capital": [
+      true,
+      true
+    ],
+    "lab_tradeable": [
+      true,
+      true
+    ],
+    "execution_category": [
+      true,
+      true
+    ],
+    "display_execution_mode": [
+      true,
+      true
+    ],
+    "model_final_action": [
+      false,
+      true
+    ],
+    "lab_status_banner": [
+      false,
+      true
+    ]
+  },
+  "value_counts": {
+    "thesis_state": {
+      "ACTIVE": 934,
+      "LEGACY_NOT_EVALUATED": 226,
+      "DATA_INCOMPLETE": 225,
+      "TARGET_REALIZED": 42,
+      "INVALIDATED": 17
+    },
+    "execution_viability_state": {
+      "EXECUTABLE_QUOTE": 622,
+      "BLOCKED_WIDE_SPREAD": 471,
+      "DATA_MISSING": 226,
+      "MANUAL_LIQUIDITY_REVIEW": 88,
+      "ZERO_BID_REVIEW": 37
+    },
+    "monetisability_state": {
+      "MONETISABLE": 757,
+      "DATA_MISSING": 451,
+      "NOT_MONETISABLE": 199,
+      "LIMITED": 37
+    },
+    "monetisability_status": {
+      "COMPLETE": 993,
+      "FAILED": 451
+    },
+    "lab_verdict": {
+      "MANUAL_REVIEW": 946,
+      "BLOCKED": 450,
+      "CONTRACT_REPAIR": 29,
+      "GO_LIMIT": 19
+    },
+    "final_action": {
+      "MANUAL_REVIEW": 946,
+      "BLOCK": 450,
+      "CONTRACT_REPAIR": 29,
+      "BUY_SMALL": 19
+    },
+    "opportunity_tier": {
+      "BLOCK": 1443,
+      "ARMED": 1
+    },
+    "campaign_verdict": {
+      "STAGED": 1218,
+      "REJECT": 226
+    },
+    "morning_execution_permission": {
+      "NOT_ELIGIBLE": 918,
+      "LIQUIDITY_STILL_PENDING": 361,
+      "NO_GO_ECONOMICS": 76,
+      "WAIT": 46,
+      "GO_LIMIT": 19,
+      "NO_GO_DIRECTION": 18,
+      "NO_GO_MOVE_ALREADY_REALIZED": 4,
+      "CONTRACT_REPAIR": 2
+    },
+    "morning_entry_action": {
+      "NO_TRADE": 1423,
+      "REVIEW_AND_SIZE_LIMIT": 19,
+      "RECOMPUTE_SELECTED_CONTRACT_ECONOMICS": 2
+    },
+    "execution_eligibility_state": {
+      "REVIEW_REQUIRED": 946,
+      "NOT_ELIGIBLE": 450,
+      "CONTRACT_REPAIR_REQUIRED": 29,
+      "ELIGIBLE_LIMITED": 19
+    },
+    "final_capital_permission": {
+      "REVIEW_ONLY": 975,
+      "NO": 450,
+      "HUMAN_APPROVAL_REQUIRED": 19
+    },
+    "lab_execution_status": {
+      "MANUAL_REVIEW": 946,
+      "BLOCK": 248,
+      "INVALIDATION_MISSING": 202,
+      "CONTRACT_REPAIR": 29,
+      "BUY_SMALL": 19
+    },
+    "lab_status": {
+      "MANUAL_REVIEW": 946,
+      "BLOCKED": 450,
+      "CONTRACT_REPAIR": 29,
+      "GO_LIMIT": 19
+    },
+    "eod_candidate_status": {
+      "EOD_THESIS_READY_REPAIR_AT_OPEN": 701,
+      "EOD_DATA_INSUFFICIENT_REVIEW": 422,
+      "EOD_TRIGGER_READY": 314,
+      "EOD_THESIS_READY": 4,
+      "EOD_WATCHLIST_MONETISABLE": 3
+    },
+    "action_category": {
+      "MANUAL_REVIEW": 946,
+      "BLOCKED": 450,
+      "CONTRACT_REPAIR": 29,
+      "BUY_SMALL": 19
+    },
+    "prep_permission": {
+      "": 1444
+    },
+    "eil_v3_verdict": {
+      "BLOCKED": 809,
+      "NOT_EVALUATED": 420,
+      "EXECUTE_WITH_CAUTION": 134,
+      "EXECUTE": 81
+    },
+    "eil_signal_verdict": {
+      "BLOCKED": 809,
+      "NOT_EVALUATED": 420,
+      "EXECUTE_WITH_CAUTION": 134,
+      "EXECUTE": 81
+    },
+    "tier": {
+      "C": 564,
+      "WATCH": 506,
+      "A": 200,
+      "B": 174
+    },
+    "quote_freshness": {
+      "FRESH": 993,
+      "": 451
+    },
+    "is_stale": {
+      "False": 1443,
+      "True": 1
+    },
+    "morning_transition_state": {
+      "LIQUIDITY_STILL_PENDING": 771,
+      "LEGACY_LIFECYCLE_NOT_EVALUATED": 226,
+      "CONTRACT_REPRICE_REQUIRED": 225,
+      "WAIT_FOR_PULLBACK": 93,
+      "MOVE_ALREADY_REALIZED": 42,
+      "GAP_CONFIRMATION_WITH_RUNWAY": 32,
+      "EXECUTABLE_NOW": 27,
+      "THESIS_INVALIDATED": 17,
+      "GAP_CONFIRMATION_EXTENDED": 11
+    },
+    "contract_data_state": {
+      "AVAILABLE": 1218,
+      "NOT_APPLICABLE_NO_SELECTED_CONTRACT": 226
+    },
+    "doi_projection_state": {
+      "DATA_UNAVAILABLE": 1381,
+      "DATA_INCONSISTENT": 63
+    },
+    "execution_authorized": {
+      "False": 1444
+    },
+    "execution_can_grant_capital": {
+      "False": 1444
+    },
+    "lab_tradeable": {
+      "False": 1425,
+      "True": 19
+    },
+    "execution_category": {
+      "MANUAL_REVIEW": 906,
+      "BLOCKED": 450,
+      "STAND_DOWN_UPSTREAM_AUTHORITY": 40,
+      "CONTRACT_REPAIR": 29,
+      "GO_LIMIT": 19
+    },
+    "display_execution_mode": {
+      "MONITOR_ONLY": 906,
+      "NO_TRADE": 490,
+      "REPRICE_REQUIRED": 29,
+      "REVIEW_AND_SIZE_LIMIT": 19
+    }
+  },
+  "v3_value_counts": {
+    "thesis_state": {
+      "ACTIVE": 19
+    },
+    "execution_viability_state": {
+      "EXECUTABLE_QUOTE": 19
+    },
+    "monetisability_state": {
+      "MONETISABLE": 18,
+      "NOT_MONETISABLE": 1
+    },
+    "monetisability_status": {
+      "COMPLETE": 19
+    },
+    "lab_verdict": {
+      "GO_LIMIT": 19
+    },
+    "final_action": {
+      "BUY_SMALL": 19
+    },
+    "opportunity_tier": {
+      "BLOCK": 19
+    },
+    "campaign_verdict": {
+      "STAGED": 19
+    },
+    "morning_execution_permission": {
+      "GO_LIMIT": 19
+    },
+    "morning_entry_action": {
+      "REVIEW_AND_SIZE_LIMIT": 19
+    },
+    "execution_eligibility_state": {
+      "ELIGIBLE_LIMITED": 19
+    },
+    "final_capital_permission": {
+      "HUMAN_APPROVAL_REQUIRED": 19
+    },
+    "lab_execution_status": {
+      "BUY_SMALL": 19
+    },
+    "lab_status": {
+      "GO_LIMIT": 19
+    },
+    "eod_candidate_status": {
+      "EOD_TRIGGER_READY": 12,
+      "EOD_THESIS_READY_REPAIR_AT_OPEN": 7
+    },
+    "action_category": {
+      "BUY_SMALL": 19
+    },
+    "prep_permission": {
+      "": 19
+    },
+    "eil_v3_verdict": {
+      "BLOCKED": 15,
+      "EXECUTE_WITH_CAUTION": 4
+    },
+    "eil_signal_verdict": {
+      "BLOCKED": 15,
+      "EXECUTE_WITH_CAUTION": 4
+    },
+    "tier": {
+      "C": 16,
+      "A": 2,
+      "WATCH": 1
+    },
+    "quote_freshness": {
+      "STALE": 19
+    },
+    "is_stale": {
+      "False": 19
+    },
+    "morning_transition_state": {
+      "GAP_CONFIRMATION_WITH_RUNWAY": 11,
+      "EXECUTABLE_NOW": 8
+    },
+    "contract_data_state": {
+      "AVAILABLE": 19
+    },
+    "doi_projection_state": {
+      "DATA_UNAVAILABLE": 19
+    },
+    "execution_quote_status": {
+      "SAME_SESSION_EVIDENCE": 19
+    },
+    "execution_authorized": {
+      "False": 19
+    },
+    "execution_can_grant_capital": {
+      "False": 19
+    },
+    "lab_tradeable": {
+      "True": 19
+    },
+    "execution_category": {
+      "GO_LIMIT": 19
+    },
+    "display_execution_mode": {
+      "REVIEW_AND_SIZE_LIMIT": 19
+    },
+    "model_final_action": {
+      "BUY_SMALL": 19
+    },
+    "lab_status_banner": {
+      "THESIS CONFIRMED \u2014 EXECUTION VIABILITY PASSED": 19
+    }
+  },
+  "lab_v4_columns_on_run": [],
+  "execution_state_column_used": "execution_viability_state",
+  "thesis_x_execution_x_monetisability": {
+    "ACTIVE x BLOCKED_WIDE_SPREAD x LIMITED": {
+      "CALL": 13,
+      "PUT": 2
+    },
+    "ACTIVE x BLOCKED_WIDE_SPREAD x MONETISABLE": {
+      "CALL": 143,
+      "PUT": 110
+    },
+    "ACTIVE x BLOCKED_WIDE_SPREAD x NOT_MONETISABLE": {
+      "CALL": 78,
+      "PUT": 6
+    },
+    "ACTIVE x EXECUTABLE_QUOTE x LIMITED": {
+      "CALL": 12,
+      "PUT": 1
+    },
+    "ACTIVE x EXECUTABLE_QUOTE x MONETISABLE": {
+      "CALL": 231,
+      "PUT": 219
+    },
+    "ACTIVE x EXECUTABLE_QUOTE x NOT_MONETISABLE": {
+      "CALL": 39,
+      "PUT": 1
+    },
+    "ACTIVE x MANUAL_LIQUIDITY_REVIEW x LIMITED": {
+      "CALL": 7
+    },
+    "ACTIVE x MANUAL_LIQUIDITY_REVIEW x MONETISABLE": {
+      "CALL": 24,
+      "PUT": 11
+    },
+    "ACTIVE x MANUAL_LIQUIDITY_REVIEW x NOT_MONETISABLE": {
+      "CALL": 7,
+      "PUT": 1
+    },
+    "ACTIVE x ZERO_BID_REVIEW x LIMITED": {
+      "CALL": 1
+    },
+    "ACTIVE x ZERO_BID_REVIEW x MONETISABLE": {
+      "CALL": 8,
+      "PUT": 7
+    },
+    "ACTIVE x ZERO_BID_REVIEW x NOT_MONETISABLE": {
+      "CALL": 13
+    },
+    "DATA_INCOMPLETE x BLOCKED_WIDE_SPREAD x DATA_MISSING": {
+      "CALL": 56,
+      "PUT": 39
+    },
+    "DATA_INCOMPLETE x EXECUTABLE_QUOTE x DATA_MISSING": {
+      "CALL": 55,
+      "PUT": 39
+    },
+    "DATA_INCOMPLETE x MANUAL_LIQUIDITY_REVIEW x DATA_MISSING": {
+      "CALL": 25,
+      "PUT": 7
+    },
+    "DATA_INCOMPLETE x ZERO_BID_REVIEW x DATA_MISSING": {
+      "CALL": 3,
+      "PUT": 1
+    },
+    "INVALIDATED x BLOCKED_WIDE_SPREAD x MONETISABLE": {
+      "CALL": 1
+    },
+    "INVALIDATED x BLOCKED_WIDE_SPREAD x NOT_MONETISABLE": {
+      "CALL": 7
+    },
+    "INVALIDATED x EXECUTABLE_QUOTE x MONETISABLE": {
+      "PUT": 1
+    },
+    "INVALIDATED x EXECUTABLE_QUOTE x NOT_MONETISABLE": {
+      "CALL": 5
+    },
+    "INVALIDATED x MANUAL_LIQUIDITY_REVIEW x NOT_MONETISABLE": {
+      "CALL": 3
+    },
+    "LEGACY_NOT_EVALUATED x DATA_MISSING x DATA_MISSING": {
+      "CALL": 26,
+      "OTHER": 188,
+      "PUT": 12
+    },
+    "TARGET_REALIZED x BLOCKED_WIDE_SPREAD x NOT_MONETISABLE": {
+      "CALL": 16
+    },
+    "TARGET_REALIZED x EXECUTABLE_QUOTE x LIMITED": {
+      "CALL": 1
+    },
+    "TARGET_REALIZED x EXECUTABLE_QUOTE x MONETISABLE": {
+      "CALL": 2
+    },
+    "TARGET_REALIZED x EXECUTABLE_QUOTE x NOT_MONETISABLE": {
+      "CALL": 15,
+      "PUT": 1
+    },
+    "TARGET_REALIZED x MANUAL_LIQUIDITY_REVIEW x NOT_MONETISABLE": {
+      "CALL": 3
+    },
+    "TARGET_REALIZED x ZERO_BID_REVIEW x NOT_MONETISABLE": {
+      "CALL": 4
+    }
+  },
+  "distinct_combinations": 28,
+  "summary_columns_with_go_like_values": [
+    "lab_verdict",
+    "final_action",
+    "morning_execution_permission",
+    "lab_execution_status",
+    "lab_status",
+    "action_category",
+    "eil_v3_verdict",
+    "eil_signal_verdict",
+    "morning_transition_state",
+    "execution_category"
+  ],
+  "go_like_crosstabs": {
+    "lab_verdict": {
+      "go_like_values": {
+        "GO_LIMIT": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "final_action": {
+      "go_like_values": {
+        "BUY_SMALL": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "morning_execution_permission": {
+      "go_like_values": {
+        "GO_LIMIT": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "lab_execution_status": {
+      "go_like_values": {
+        "BUY_SMALL": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "lab_status": {
+      "go_like_values": {
+        "GO_LIMIT": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "action_category": {
+      "go_like_values": {
+        "BUY_SMALL": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "eil_v3_verdict": {
+      "go_like_values": {
+        "EXECUTE": 81
+      },
+      "by_direction": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 81
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 81,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "vs_quote_freshness": {
+        "FRESH": 81
+      },
+      "vs_is_stale": {
+        "False": 81
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-10T17:00:18Z": 1,
+        "2026-09-10T17:22:26Z": 1,
+        "2026-09-10T17:33:15Z": 1,
+        "2026-09-10T17:37:43Z": 1,
+        "2026-09-10T16:57:45Z": 1,
+        "2026-09-10T17:29:25Z": 1,
+        "2026-09-10T17:25:07Z": 1,
+        "2026-09-10T17:19:37Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "eil_signal_verdict": {
+      "go_like_values": {
+        "EXECUTE": 81
+      },
+      "by_direction": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 81
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 81,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "vs_quote_freshness": {
+        "FRESH": 81
+      },
+      "vs_is_stale": {
+        "False": 81
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-10T17:00:18Z": 1,
+        "2026-09-10T17:22:26Z": 1,
+        "2026-09-10T17:33:15Z": 1,
+        "2026-09-10T17:37:43Z": 1,
+        "2026-09-10T16:57:45Z": 1,
+        "2026-09-10T17:29:25Z": 1,
+        "2026-09-10T17:25:07Z": 1,
+        "2026-09-10T17:19:37Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "morning_transition_state": {
+      "go_like_values": {
+        "EXECUTABLE_NOW": 27
+      },
+      "by_direction": {
+        "CALL": 14,
+        "PUT": 13
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 27
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 27,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 14,
+        "PUT": 13
+      },
+      "vs_quote_freshness": {
+        "FRESH": 27
+      },
+      "vs_is_stale": {
+        "False": 27
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:02:06Z": 2,
+        "2026-09-11T17:00:48Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:45Z": 1,
+        "2026-09-11T17:04:55Z": 1,
+        "2026-09-11T17:03:43Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    },
+    "execution_category": {
+      "go_like_values": {
+        "GO_LIMIT": 19
+      },
+      "by_direction": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_execution_viability_state": {
+        "EXECUTABLE_QUOTE": 19
+      },
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW": 19,
+      "go_like_while_execution_state_ne_EXECUTABLE_NOW_by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "vs_quote_freshness": {
+        "FRESH": 19
+      },
+      "vs_is_stale": {
+        "False": 19
+      },
+      "vs_morning_quote_timestamp_utc": {
+        "2026-09-11T17:04:45Z": 2,
+        "2026-09-11T17:04:54Z": 1,
+        "2026-09-11T17:04:38Z": 1,
+        "2026-09-11T17:04:47Z": 1,
+        "2026-09-11T17:04:37Z": 1,
+        "2026-09-11T17:02:06Z": 1,
+        "2026-09-11T17:02:04Z": 1,
+        "2026-09-11T17:05:02Z": 1
+      },
+      "go_like_while_quote_stale": 0,
+      "go_like_while_quote_stale_by_dir": {}
+    }
+  },
+  "block_bearing_columns": [
+    "lab_verdict",
+    "lab_status",
+    "lab_execution_status",
+    "final_action",
+    "execution_authority_ceiling",
+    "execution_category",
+    "action_category",
+    "position_size_display",
+    "morning_unlock_condition",
+    "morning_lab_alignment_reason",
+    "conflict_flags",
+    "olm_guard_disposition",
+    "execution_viability_state",
+    "opportunity_tier",
+    "eil_signal_verdict",
+    "eil_v3_verdict",
+    "readiness_label",
+    "hold_window",
+    "time_horizon",
+    "hold_period",
+    "advisory_flags"
+  ],
+  "go_bearing_columns": [
+    "lab_verdict",
+    "lab_status",
+    "lab_execution_status",
+    "final_action",
+    "execution_authority_ceiling",
+    "execution_category",
+    "action_category",
+    "morning_execution_permission",
+    "morning_execution_route",
+    "eil_signal_verdict",
+    "eil_v3_verdict"
+  ],
+  "block_beside_go_pairs": {
+    "lab_verdict BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "lab_verdict BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "lab_status BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "lab_status BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "lab_execution_status BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "lab_execution_status BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "final_action BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "final_action BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "execution_authority_ceiling BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "execution_authority_ceiling BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "execution_category BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "execution_category BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "action_category BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "action_category BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "position_size_display BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "0% - OLM lifecycle block",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "0% - OLM lifecycle block",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "position_size_display BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "0% - OLM lifecycle block",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "0% - OLM lifecycle block",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "morning_lab_alignment_reason BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "Execution Gate final_action=BLOCK mapped to Lab BLOCKED.",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "Execution Gate final_action=BLOCK mapped to Lab BLOCKED.",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "morning_lab_alignment_reason BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "Execution Gate final_action=BLOCK mapped to Lab BLOCKED.",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "Execution Gate final_action=BLOCK mapped to Lab BLOCKED.",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside lab_verdict GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside lab_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside lab_execution_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside final_action GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside execution_authority_ceiling GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside execution_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside action_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside morning_execution_permission GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "conflict_flags BLOCK* beside morning_execution_route GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"SOFT:WARN_WIDE_SPREAD\", \"SOFT:EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "olm_guard_disposition BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "olm_guard_disposition BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside lab_verdict GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside lab_status GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside lab_execution_status GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside final_action GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside execution_authority_ceiling GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside execution_category GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside action_category GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside morning_execution_permission GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside morning_execution_route GO*": {
+      "n": 19,
+      "by_dir": {
+        "CALL": 10,
+        "PUT": 9
+      },
+      "example": [
+        [
+          "WRB",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "IOT",
+          "BLOCK",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCK",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside eil_signal_verdict GO*": {
+      "n": 81,
+      "by_dir": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "PLTR",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "opportunity_tier BLOCK* beside eil_v3_verdict GO*": {
+      "n": 81,
+      "by_dir": {
+        "CALL": 43,
+        "PUT": 38
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCK",
+          "EXECUTE"
+        ],
+        [
+          "PLTR",
+          "BLOCK",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside lab_verdict GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside lab_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside lab_execution_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside final_action GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside execution_authority_ceiling GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside execution_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside action_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside morning_execution_permission GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_signal_verdict BLOCK* beside morning_execution_route GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside lab_verdict GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside lab_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside lab_execution_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside final_action GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside execution_authority_ceiling GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside execution_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside action_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside morning_execution_permission GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "eil_v3_verdict BLOCK* beside morning_execution_route GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "BLOCKED",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "BLOCKED",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "readiness_label BLOCK* beside eil_signal_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "readiness_label BLOCK* beside eil_v3_verdict GO*": {
+      "n": 2,
+      "by_dir": {
+        "CALL": 2
+      },
+      "example": [
+        [
+          "ONON",
+          "BLOCKED",
+          "EXECUTE"
+        ],
+        [
+          "AS",
+          "BLOCKED",
+          "EXECUTE"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside lab_verdict GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside lab_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside lab_execution_status GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside final_action GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside execution_authority_ceiling GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside execution_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside action_category GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "BUY_SMALL"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside morning_execution_permission GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    },
+    "advisory_flags BLOCK* beside morning_execution_route GO*": {
+      "n": 15,
+      "by_dir": {
+        "PUT": 9,
+        "CALL": 6
+      },
+      "example": [
+        [
+          "IOT",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "AA",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ],
+        [
+          "SNEX",
+          "[\"WARN_WIDE_SPREAD\", \"EIL_ADVISORY_BLOCKED\"]",
+          "GO_LIMIT"
+        ]
+      ]
+    }
+  },
+  "block_beside_go_rows_any_pair": 100,
+  "block_beside_go_rows_any_pair_by_dir": {
+    "CALL": 53,
+    "PUT": 47
+  },
+  "opportunity_tier_BLOCK_beside_lab_verdict_GO": {
+    "n": 19,
+    "by_dir": {
+      "CALL": 10,
+      "PUT": 9
+    },
+    "lab_verdict_values": {
+      "GO_LIMIT": 19
+    }
+  },
+  "v3_opportunity_tier_BLOCK_beside_lab_verdict_GO": {
+    "n": 19,
+    "of": 19,
+    "by_dir": {
+      "CALL": 10,
+      "PUT": 9
+    }
+  },
+  "offline_480": {
+    "total": 480,
+    "branch_counts": {
+      "branch3_default_MONITOR": 420,
+      "branch2_executable_now": 60
+    },
+    "executable_summary_without_EXECUTABLE_NOW": 0,
+    "violations_sample": [],
+    "summary_reason_says_THESIS_ACTIVE_when_thesis_is_not_ACTIVE": 432,
+    "contradiction_sample": [
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "SCENARIO_MONETISABLE",
+        "MONITOR",
+        "THESIS_ACTIVE|SCENARIO_MONETISABLE|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ],
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "SCENARIO_LIMITED",
+        "MONITOR",
+        "THESIS_ACTIVE|SCENARIO_LIMITED|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ],
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "NOT_CURRENTLY_MONETISABLE",
+        "MONITOR",
+        "THESIS_ACTIVE|NOT_CURRENTLY_MONETISABLE|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ],
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "INDETERMINATE",
+        "MONITOR",
+        "THESIS_ACTIVE|INDETERMINATE|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ],
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "NOT_EVALUATED_DATA_MISSING",
+        "MONITOR",
+        "THESIS_ACTIVE|NOT_EVALUATED_DATA_MISSING|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ],
+      [
+        "THESIS_DEVELOPING",
+        "EXECUTION_QUOTE_UNAVAILABLE",
+        "NOT_APPLICABLE",
+        "MONITOR",
+        "THESIS_ACTIVE|NOT_APPLICABLE|EXECUTION_QUOTE_UNAVAILABLE|MACRO_UNAVAILABLE"
+      ]
+    ],
+    "thesis_values_recognised_by_branch1": [
+      "INVALID",
+      "THESIS_INVALIDATED"
+    ],
+    "branch1_values_in_SD_9_1_vocabulary": [],
+    "distinct_summary_states": [
+      "EXECUTION_REVIEW",
+      "MONITOR"
+    ],
+    "monetisability_influences_summary_state": false,
+    "monetisability_changes_summary_state_for_any_thesis_execution_pair": false,
+    "examples_breached_or_insufficient_with_executable_now": [
+      {
+        "thesis": "THESIS_CONDITION_BREACHED",
+        "execution": "EXECUTION_EXECUTABLE_NOW",
+        "monetisability": "NOT_CURRENTLY_MONETISABLE",
+        "summary_state": "EXECUTION_REVIEW",
+        "summary_reason": "THESIS_ACTIVE|NOT_CURRENTLY_MONETISABLE|HUMAN_CONFIRMATION_REQUIRED",
+        "branch": "branch2_executable_now"
+      },
+      {
+        "thesis": "THESIS_DATA_INSUFFICIENT",
+        "execution": "EXECUTION_EXECUTABLE_NOW",
+        "monetisability": "NOT_CURRENTLY_MONETISABLE",
+        "summary_state": "EXECUTION_REVIEW",
+        "summary_reason": "THESIS_ACTIVE|NOT_CURRENTLY_MONETISABLE|HUMAN_CONFIRMATION_REQUIRED",
+        "branch": "branch2_executable_now"
+      }
+    ]
+  },
+  "v4_projector_defaults_on_empty_row": {
+    "lab_schema_version": "lab_signal_book_v4",
+    "lab_v4_thesis_state": "UNKNOWN",
+    "lab_v4_structure_evidence_state": "DEVELOPING",
+    "lab_v4_reach_ratio": null,
+    "lab_v4_contract_state": "NOT_EVALUATED",
+    "lab_v4_ranking_score": null,
+    "lab_v4_ranking_score_kind": "DETERMINISTIC_UTILITY",
+    "lab_v4_execution_state": "EXECUTION_REVIEWABLE",
+    "lab_v4_quote_provider_timestamp_utc": null,
+    "lab_v4_macro_alignment": "UNAVAILABLE",
+    "lab_v4_macro_scenario": "UNRESOLVED",
+    "lab_v4_summary_state": "MONITOR",
+    "lab_v4_summary_reason": "THESIS_ACTIVE|NOT_EVALUATED|EXECUTION_REVIEWABLE|MACRO_UNAVAILABLE",
+    "lab_v4_authority": "DISPLAY_ONLY",
+    "lab_v4_calculation_version": "lab_signal_book_v4"
+  },
+  "offline_v4_projection_of_stored_book": {
+    "summary_state_by_dir": {
+      "MONITOR|CALL": 798,
+      "MONITOR|OTHER": 188,
+      "MONITOR|PUT": 458
+    },
+    "execution_state_source_values": {
+      "EXECUTABLE_QUOTE": 622,
+      "BLOCKED_WIDE_SPREAD": 471,
+      "DATA_MISSING": 226,
+      "MANUAL_LIQUIDITY_REVIEW": 88,
+      "ZERO_BID_REVIEW": 37
+    },
+    "thesis_state_values": {
+      "ACTIVE": 934,
+      "LEGACY_NOT_EVALUATED": 226,
+      "DATA_INCOMPLETE": 225,
+      "TARGET_REALIZED": 42,
+      "INVALIDATED": 17
+    },
+    "contract_state_values": {
+      "MONETISABLE": 757,
+      "DATA_MISSING": 451,
+      "NOT_MONETISABLE": 199,
+      "LIMITED": 37
+    },
+    "rows_where_execution_state_defaulted_to_EXECUTION_REVIEWABLE_because_missing": 0
+  }
+}

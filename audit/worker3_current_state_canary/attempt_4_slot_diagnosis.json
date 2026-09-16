@@ -1,0 +1,38 @@
+{
+  "invalid_slots": [
+    {
+      "ref": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:thesis_state",
+      "kind": "OBSERVATION",
+      "value": "VALID_THESIS_TRIGGER_PENDING",
+      "unit": "state"
+    },
+    {
+      "ref": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_primary",
+      "kind": "OBSERVATION",
+      "value": "VOL_COMPRESSION",
+      "unit": "state"
+    },
+    {
+      "ref": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_quality",
+      "kind": "OBSERVATION",
+      "value": "STRONG",
+      "unit": "state"
+    },
+    {
+      "ref": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:liquidity_state",
+      "kind": "OBSERVATION",
+      "value": "EXECUTABLE_NOW",
+      "unit": "state"
+    },
+    {
+      "ref": "current:edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:monetisability_state",
+      "kind": "OBSERVATION",
+      "value": "MONETISABLE",
+      "unit": "state"
+    }
+  ],
+  "diagnostic_only_corrected_copy_validation": "slot is not in the claim's supporting evidence",
+  "network_requests": 0,
+  "production_response_unchanged": true,
+  "new_request_bytes": 253885
+}

@@ -1,0 +1,327 @@
+{
+  "run": "20260911_115904",
+  "lab_rows": 19,
+  "desk_morning_rows": 19,
+  "core_intel_dossiers": 1522,
+  "dossier_md_sections_parsed": 19,
+  "core_intel_meta": {
+    "run_id": "20260911_115904",
+    "generated_at_utc": "2026-09-11T15:10:55.134428+00:00",
+    "source": "CORE_INTEL_EXPORTER v1.1",
+    "macro_attached": true,
+    "options_attached": true
+  },
+  "sample_20": [
+    {
+      "ticker": "AMGN",
+      "direction": "PUT",
+      "field": "spread",
+      "lab_column": "spread_pct",
+      "lab_value": "17.777777777777793",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "17.777777777777793",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "SIRI",
+      "direction": "CALL",
+      "field": "direction",
+      "lab_column": "final_direction",
+      "lab_value": "CALL",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "CALL",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "FAST",
+      "direction": "CALL",
+      "field": "structural_target",
+      "lab_column": "structural_target",
+      "lab_value": "63.85999999999999",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "63.85999999999999",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "CELC",
+      "direction": "PUT",
+      "field": "preferred_contract",
+      "lab_column": "contract_symbol",
+      "lab_value": "CELC261016P00085000",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "CELC261016P00085000",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "AA",
+      "direction": "PUT",
+      "field": "expected_move",
+      "lab_column": "garch_expected_move_6_10d",
+      "lab_value": "3.05",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "3.05",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "WRB",
+      "direction": "CALL",
+      "field": "spread",
+      "lab_column": "spread_pct",
+      "lab_value": "12.048192771084347",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "12.0",
+      "equal": false,
+      "note": ""
+    },
+    {
+      "ticker": "VKTX",
+      "direction": "PUT",
+      "field": "direction",
+      "lab_column": "final_direction",
+      "lab_value": "PUT",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "PUT",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "WRB",
+      "direction": "CALL",
+      "field": "structural_target",
+      "lab_column": "structural_target",
+      "lab_value": "78.11999999999999",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "78.12",
+      "equal": false,
+      "note": ""
+    },
+    {
+      "ticker": "SNEX",
+      "direction": "PUT",
+      "field": "preferred_contract",
+      "lab_column": "contract_symbol",
+      "lab_value": "SNEX261016P00070000",
+      "coaching_source": "CORE_INTEL",
+      "coaching_value": "SNEX261016P00070000",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "APPN",
+      "direction": "CALL",
+      "field": "direction",
+      "lab_column": "final_direction",
+      "lab_value": "CALL",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "CALL",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "D",
+      "direction": "CALL",
+      "field": "spread",
+      "lab_column": "spread_pct",
+      "lab_value": "13.333333333333334",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "13.3",
+      "equal": false,
+      "note": ""
+    },
+    {
+      "ticker": "APPN",
+      "direction": "CALL",
+      "field": "direction",
+      "lab_column": "final_direction",
+      "lab_value": "CALL",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "CALL",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "SNEX",
+      "direction": "PUT",
+      "field": "expected_move",
+      "lab_column": "garch_expected_move_6_10d",
+      "lab_value": "2.91",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "2.91",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "SIRI",
+      "direction": "CALL",
+      "field": "spread",
+      "lab_column": "spread_pct",
+      "lab_value": "8.530805687203797",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "8.530805687203797",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "SPGI",
+      "direction": "PUT",
+      "field": "verdict",
+      "lab_column": "lab_verdict",
+      "lab_value": "GO_LIMIT",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "GO_LIMIT",
+      "equal": true,
+      "note": "verdict vocabularies differ (lab_verdict vs morning_execution_permission)"
+    },
+    {
+      "ticker": "VKTX",
+      "direction": "PUT",
+      "field": "structural_target",
+      "lab_column": "structural_target",
+      "lab_value": "14.04000000000002",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "14.04",
+      "equal": false,
+      "note": ""
+    },
+    {
+      "ticker": "AMGN",
+      "direction": "PUT",
+      "field": "ask",
+      "lab_column": "contract_ask",
+      "lab_value": "9.8",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "9.80",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "WTTR",
+      "direction": "CALL",
+      "field": "spread",
+      "lab_column": "spread_pct",
+      "lab_value": "16.393442622950822",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "16.4",
+      "equal": false,
+      "note": ""
+    },
+    {
+      "ticker": "VKTX",
+      "direction": "PUT",
+      "field": "expected_move",
+      "lab_column": "garch_expected_move_6_10d",
+      "lab_value": "3.03",
+      "coaching_source": "DESK_MORN",
+      "coaching_value": "3.03",
+      "equal": true,
+      "note": ""
+    },
+    {
+      "ticker": "AMGN",
+      "direction": "PUT",
+      "field": "expected_move",
+      "lab_column": "garch_expected_move_6_10d",
+      "lab_value": "2.48",
+      "coaching_source": "DOSSIER_MD",
+      "coaching_value": "2.48",
+      "equal": true,
+      "note": ""
+    }
+  ],
+  "sample_equal": 15,
+  "sample_by_dir": {
+    "CALL": {
+      "n": 9,
+      "equal": 5
+    },
+    "PUT": {
+      "n": 11,
+      "equal": 10
+    },
+    "OTHER": {
+      "n": 0,
+      "equal": 0
+    }
+  },
+  "full_population_parity": {
+    "structural_target|DOSSIER_MD": {
+      "CALL": "3/10",
+      "PUT": "2/9"
+    },
+    "structural_target|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "invalidation|DOSSIER_MD": {
+      "CALL": "8/10",
+      "PUT": "7/9"
+    },
+    "invalidation|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "direction|DOSSIER_MD": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "direction|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "direction|CORE_INTEL": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "preferred_contract|DOSSIER_MD": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "preferred_contract|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "preferred_contract|CORE_INTEL": {
+      "CALL": "9/10",
+      "PUT": "7/9"
+    },
+    "ask|DOSSIER_MD": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "ask|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "spread|DOSSIER_MD": {
+      "CALL": "0/10",
+      "PUT": "0/9"
+    },
+    "spread|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "expected_move|DOSSIER_MD": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "expected_move|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "verdict|DOSSIER_MD": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    },
+    "verdict|DESK_MORN": {
+      "CALL": "10/10",
+      "PUT": "9/9"
+    }
+  },
+  "core_intel_ticker_coverage_of_lab": 19,
+  "desk_morning_coverage_of_lab": 19
+}

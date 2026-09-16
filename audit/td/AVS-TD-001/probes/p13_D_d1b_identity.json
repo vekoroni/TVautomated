@@ -1,0 +1,261 @@
+{
+ "20260911_115904": {
+  "run": "20260911_115904",
+  "discovery": {
+   "input": 3320,
+   "survivors": 1572,
+   "dropped_with_reason": 1748,
+   "dropped_without_reason": 0,
+   "gap": 0
+  },
+  "vse": {
+   "rows": 1522,
+   "in_options_csv": 1444,
+   "not_in_options_csv": 78,
+   "options_verdict_of_missing": {
+    "NOT_SCOPED": 78
+   },
+   "options_verdict_all": {
+    "STAND_DOWN": 990,
+    "ARMED": 233,
+    "EXECUTE": 221,
+    "NOT_SCOPED": 78
+   },
+   "final_route_of_missing": {
+    "nan": 78
+   },
+   "not_scoped_rows": 78,
+   "not_scoped_and_missing": 78,
+   "missing_not_labelled_not_scoped": 0
+  },
+  "dropoff_stage_x_in_fob": {
+   "('AFTER_EOD_BEFORE_MORNING', True)": 992,
+   "('BETWEEN_UNIVERSE_AND_DISCOVERY', False)": 1748,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', False)": 78,
+   "('OPTIONS_INTELLIGENCE', True)": 452,
+   "('VANGUARD', False)": 50
+  },
+  "last_stage_x_in_fob": {
+   "('EOD_CANDIDATE', True)": 1444,
+   "('UNIVERSE', False)": 1748,
+   "('VANGUARD', False)": 78,
+   "('VANGUARD_REJECT', False)": 50
+  },
+  "stage_reason_not_in_fob": {
+   "('BETWEEN_UNIVERSE_AND_DISCOVERY', 'DISCOVERY_SELECTION_FILTER')": 1748,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', 'NEGATIVE_ACTUARIAL_EDGE')": 49,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', 'WEAK_ACTUARIAL_EDGE')": 29,
+   "('VANGUARD', 'VANGUARD_INPUT_DATA_REJECT')": 50
+  },
+  "not_in_fob_without_reason": 0,
+  "identity_ticker_grain": {
+   "input": 3320,
+   "presented_in_fob": 1444,
+   "named_exceptions_not_in_fob_with_reason": 1876,
+   "unexplained": 0,
+   "gap": 0
+  },
+  "in_fob_labelled_dropoff": {
+   "('OPTIONS_INTELLIGENCE', 'INVALIDATION_MISSING')": 196,
+   "('OPTIONS_INTELLIGENCE', 'No governed long CALL/PUT direction; chain request suppressed')": 188,
+   "('OPTIONS_INTELLIGENCE', 'Chain fetch failed: option-chain quote/session mismatch')": 36,
+   "('OPTIONS_INTELLIGENCE', 'STRUCTURAL_TARGET_UNRESOLVED')": 29,
+   "('OPTIONS_INTELLIGENCE', 'BLOCK_DATA_EXCEPTION: UNDERLYING_DATA_STALE expected=2026-09-10 actual=2026-09-10 source=STALE_CACHE')": 1,
+   "('OPTIONS_INTELLIGENCE', 'Chain fetch failed: MarketData option chain unavailable for DEC')": 1,
+   "('OPTIONS_INTELLIGENCE', 'Low OIS=0 (<20) \u2014 Actuarial N=139 \u2014 moderate sample; edge less certain (-5) [LIVE_LOW \u2014 confirm before entry]')": 1
+  },
+  "doi_grain": {
+   "input_rows": 1444,
+   "family_rows": 1218,
+   "non_directional": 188,
+   "exceptions": 38,
+   "gap": 0,
+   "deleted_opportunities": 0
+  },
+  "book_by_direction": {
+   "CALL": {
+    "book_rows": 798,
+    "raw_values": {
+     "CALL": 798
+    },
+    "in_v3": 10,
+    "lab_execution_status": {
+     "MANUAL_REVIEW": 587,
+     "INVALIDATION_MISSING": 144,
+     "BLOCK": 57,
+     "BUY_SMALL": 10
+    },
+    "doi_input_rows": 798
+   },
+   "PUT": {
+    "book_rows": 458,
+    "raw_values": {
+     "PUT": 458
+    },
+    "in_v3": 9,
+    "lab_execution_status": {
+     "MANUAL_REVIEW": 359,
+     "INVALIDATION_MISSING": 58,
+     "CONTRACT_REPAIR": 29,
+     "BUY_SMALL": 9,
+     "BLOCK": 3
+    },
+    "doi_input_rows": 458
+   },
+   "OTHER": {
+    "book_rows": 188,
+    "raw_values": {
+     "STRANGLE": 138,
+     "UNRESOLVED": 50
+    },
+    "in_v3": 0,
+    "lab_execution_status": {
+     "BLOCK": 188
+    },
+    "doi_input_rows": 188
+   }
+  },
+  "vanguard_signals": {
+   "rows": 1522,
+   "unique_tickers": 1522
+  },
+  "manifest_row_counts": {
+   "completed_market_profile": 1485,
+   "discovery": 1572,
+   "eil": 1444,
+   "execution": 1444,
+   "morning_candidates": 1444,
+   "morning_validation": 1444,
+   "options": 1444,
+   "v5": 0,
+   "vanguard": 1522
+  }
+ },
+ "20260910_150045": {
+  "run": "20260910_150045",
+  "discovery": {
+   "input": 3320,
+   "survivors": 1544,
+   "dropped_with_reason": 1776,
+   "dropped_without_reason": 0,
+   "gap": 0
+  },
+  "vse": {
+   "rows": 1494,
+   "in_options_csv": 1424,
+   "not_in_options_csv": 70,
+   "options_verdict_of_missing": {
+    "NOT_SCOPED": 70
+   },
+   "options_verdict_all": {
+    "STAND_DOWN": 972,
+    "EXECUTE": 227,
+    "ARMED": 225,
+    "NOT_SCOPED": 70
+   },
+   "final_route_of_missing": {
+    "nan": 70
+   },
+   "not_scoped_rows": 70,
+   "not_scoped_and_missing": 70,
+   "missing_not_labelled_not_scoped": 0
+  },
+  "dropoff_stage_x_in_fob": {
+   "('AFTER_EOD_BEFORE_MORNING', True)": 1019,
+   "('BETWEEN_UNIVERSE_AND_DISCOVERY', False)": 1776,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', False)": 70,
+   "('OPTIONS_INTELLIGENCE', True)": 405,
+   "('VANGUARD', False)": 50
+  },
+  "last_stage_x_in_fob": {
+   "('EOD_CANDIDATE', True)": 1424,
+   "('UNIVERSE', False)": 1776,
+   "('VANGUARD', False)": 70,
+   "('VANGUARD_REJECT', False)": 50
+  },
+  "stage_reason_not_in_fob": {
+   "('BETWEEN_UNIVERSE_AND_DISCOVERY', 'DISCOVERY_SELECTION_FILTER')": 1776,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', 'NEGATIVE_ACTUARIAL_EDGE')": 40,
+   "('BETWEEN_VANGUARD_AND_OPTIONS', 'WEAK_ACTUARIAL_EDGE')": 30,
+   "('VANGUARD', 'VANGUARD_INPUT_DATA_REJECT')": 50
+  },
+  "not_in_fob_without_reason": 0,
+  "identity_ticker_grain": {
+   "input": 3320,
+   "presented_in_fob": 1424,
+   "named_exceptions_not_in_fob_with_reason": 1896,
+   "unexplained": 0,
+   "gap": 0
+  },
+  "in_fob_labelled_dropoff": {
+   "('OPTIONS_INTELLIGENCE', 'INVALIDATION_MISSING')": 192,
+   "('OPTIONS_INTELLIGENCE', 'No governed long CALL/PUT direction; chain request suppressed')": 182,
+   "('OPTIONS_INTELLIGENCE', 'STRUCTURAL_TARGET_UNRESOLVED')": 29,
+   "('OPTIONS_INTELLIGENCE', 'Chain fetch failed: MarketData option chain unavailable for DEC')": 1,
+   "('OPTIONS_INTELLIGENCE', 'Low OIS=0 (<20) \u2014 Actuarial N=139 \u2014 moderate sample; edge less certain (-5) [LIVE_LOW \u2014 confirm before entry]')": 1
+  },
+  "doi_grain": {
+   "input_rows": 1424,
+   "family_rows": 1241,
+   "non_directional": 182,
+   "exceptions": 1,
+   "gap": 0,
+   "deleted_opportunities": 0
+  },
+  "book_by_direction": {
+   "CALL": {
+    "book_rows": 791,
+    "raw_values": {
+     "CALL": 791
+    },
+    "in_v3": 0,
+    "lab_execution_status": {
+     "MANUAL_REVIEW": 469,
+     "BLOCK": 184,
+     "INVALIDATION_MISSING": 138
+    },
+    "doi_input_rows": 791
+   },
+   "PUT": {
+    "book_rows": 451,
+    "raw_values": {
+     "PUT": 451
+    },
+    "in_v3": 0,
+    "lab_execution_status": {
+     "MANUAL_REVIEW": 290,
+     "BLOCK": 107,
+     "INVALIDATION_MISSING": 54
+    },
+    "doi_input_rows": 451
+   },
+   "OTHER": {
+    "book_rows": 182,
+    "raw_values": {
+     "STRANGLE": 135,
+     "UNRESOLVED": 47
+    },
+    "in_v3": 0,
+    "lab_execution_status": {
+     "MANUAL_REVIEW": 182
+    },
+    "doi_input_rows": 182
+   }
+  },
+  "vanguard_signals": {
+   "rows": 1494,
+   "unique_tickers": 1494
+  },
+  "manifest_row_counts": {
+   "completed_market_profile": 1468,
+   "discovery": 1544,
+   "eil": 1424,
+   "execution": 1424,
+   "morning_candidates": 1424,
+   "morning_validation": 0,
+   "options": 1424,
+   "v5": 0,
+   "vanguard": 1494
+  }
+ }
+}

@@ -1,0 +1,7 @@
+{
+  "validation": "observation/change slots require numeric data",
+  "claims": 8,
+  "sections": 8,
+  "numeric_facts": 0,
+  "network_requests": 0
+}

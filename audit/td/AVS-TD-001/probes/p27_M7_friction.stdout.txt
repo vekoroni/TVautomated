@@ -1,0 +1,122 @@
+{
+ "20260911_115904": {
+  "rows": 1444,
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "governed_direction_values": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "quoted_rows": 1218,
+  "no_quote_rows": 226,
+  "bid_zero_rows": 37,
+  "spread_pct_vs_s_rows": 1218,
+  "spread_pct_eq_s_within_1pct_rel": 0,
+  "spread_pct_eq_100s_within_1pct_rel": 1218,
+  "spread_pct_range": [
+   1.3333333333333344,
+   200.0
+  ]
+ },
+ "20260910_150045": {
+  "rows": 1424,
+  "direction_counts": {
+   "CALL": 791,
+   "PUT": 451,
+   "OTHER": 182
+  },
+  "governed_direction_values": {
+   "CALL": 791,
+   "PUT": 451,
+   "STRANGLE": 135,
+   "UNRESOLVED": 47
+  },
+  "quoted_rows": 1241,
+  "no_quote_rows": 183,
+  "bid_zero_rows": 36,
+  "spread_pct_vs_s_rows": 1241,
+  "spread_pct_eq_s_within_1pct_rel": 1241,
+  "spread_pct_eq_100s_within_1pct_rel": 0,
+  "spread_pct_range": [
+   0.0133333333333333,
+   2.0
+  ]
+ },
+ "OFFLINE": {
+  "rows": 2385,
+  "direction_counts": {
+   "CALL": 1427,
+   "PUT": 958
+  },
+  "quoted_rows": 2374,
+  "store_spread_pct_eq_s": 1855,
+  "store_spread_pct_rows": 1855
+ },
+ "fills": "0 FILL_RECORDED in decision_outcome_ledger copy (Track H); effective half-spread multiplier unestimable; 1.0 only supportable assumption (MEASURED)"
+}
+            source direction   dimension       cell     n               power  median_s     p25_s     p75_s  share_s_gt_0_30  share_bid_zero  median_half_spread_uncapped  median_half_spread_capped
+0       BOOK_11SEP      CALL  delta_band      <0.25     6  INSUFFICIENT_POWER  2.000000  0.875000  2.000000         0.833333        0.666667                     1.000000                   0.150000
+1       BOOK_11SEP      CALL  delta_band  0.25-0.40    60  INSUFFICIENT_POWER  0.588235  0.285714  1.428571         0.733333        0.133333                     0.294118                   0.150000
+2       BOOK_11SEP      CALL  delta_band  0.40-0.60   545                  OK  0.162162  0.105263  0.444444         0.310092        0.031193                     0.081081                   0.081081
+3       BOOK_11SEP      CALL  delta_band     >=0.60   161                  OK  0.351351  0.173913  0.652174         0.571429        0.000000                     0.175676                   0.150000
+4       BOOK_11SEP      CALL   oi_bucket          0   125                  OK  0.477876  0.166667  1.482353         0.624000        0.112000                     0.238938                   0.150000
+5       BOOK_11SEP      CALL   oi_bucket        1-9   144                  OK  0.371998  0.133333  0.722518         0.534722        0.027778                     0.185999                   0.150000
+6       BOOK_11SEP      CALL   oi_bucket      10-99   264                  OK  0.201978  0.117081  0.527390         0.405303        0.030303                     0.100989                   0.100989
+7       BOOK_11SEP      CALL   oi_bucket    100-999   189                  OK  0.142857  0.095238  0.253369         0.211640        0.015873                     0.071429                   0.071429
+8       BOOK_11SEP      CALL   oi_bucket     >=1000    50  INSUFFICIENT_POWER  0.174322  0.105263  0.265217         0.160000        0.000000                     0.087161                   0.087161
+9       BOOK_11SEP      CALL         ALL        ALL   772                  OK  0.203811  0.115702  0.561509         0.401554        0.037565                     0.101906                   0.101906
+10      BOOK_11SEP       PUT  delta_band      <0.25     2  INSUFFICIENT_POWER  0.472727  0.436364  0.509091         1.000000        0.000000                     0.236364                   0.150000
+11      BOOK_11SEP       PUT  delta_band  0.25-0.40    36  INSUFFICIENT_POWER  0.358289  0.141700  0.721034         0.583333        0.083333                     0.179144                   0.150000
+12      BOOK_11SEP       PUT  delta_band  0.40-0.60   342                  OK  0.139333  0.094719  0.319970         0.254386        0.008772                     0.069666                   0.069666
+13      BOOK_11SEP       PUT  delta_band     >=0.60    66  INSUFFICIENT_POWER  0.344966  0.180952  0.608519         0.530303        0.030303                     0.172483                   0.150000
+14      BOOK_11SEP       PUT   oi_bucket          0    51  INSUFFICIENT_POWER  0.358974  0.138733  0.936027         0.529412        0.078431                     0.179487                   0.150000
+15      BOOK_11SEP       PUT   oi_bucket        1-9    81  INSUFFICIENT_POWER  0.352941  0.139130  0.694737         0.567901        0.012346                     0.176471                   0.150000
+16      BOOK_11SEP       PUT   oi_bucket      10-99   155                  OK  0.158730  0.100505  0.351471         0.296774        0.012903                     0.079365                   0.079365
+17      BOOK_11SEP       PUT   oi_bucket    100-999   125                  OK  0.131274  0.084034  0.196078         0.184000        0.008000                     0.065637                   0.065637
+18      BOOK_11SEP       PUT   oi_bucket     >=1000    34  INSUFFICIENT_POWER  0.077973  0.050833  0.154762         0.088235        0.000000                     0.038986                   0.038986
+19      BOOK_11SEP       PUT         ALL        ALL   446                  OK  0.157208  0.101584  0.398361         0.325112        0.017937                     0.078604                   0.078604
+20      BOOK_11SEP     OTHER  delta_band      <0.25     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+21      BOOK_11SEP     OTHER  delta_band  0.25-0.40     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+22      BOOK_11SEP     OTHER  delta_band  0.40-0.60     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+23      BOOK_11SEP     OTHER  delta_band     >=0.60     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+24      BOOK_11SEP     OTHER   oi_bucket          0     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+25      BOOK_11SEP     OTHER   oi_bucket        1-9     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+26      BOOK_11SEP     OTHER   oi_bucket      10-99     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+27      BOOK_11SEP     OTHER   oi_bucket    100-999     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+28      BOOK_11SEP     OTHER   oi_bucket     >=1000     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+29      BOOK_11SEP     OTHER         ALL        ALL     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+30  OFFLINE_SAMPLE      CALL  delta_band      <0.25   305                  OK  2.000000  2.000000  2.000000         0.954098        0.760656                     1.000000                   0.150000
+31  OFFLINE_SAMPLE      CALL  delta_band  0.25-0.40   135                  OK  0.300654  0.153846  1.286772         0.503704        0.177778                     0.150327                   0.150000
+32  OFFLINE_SAMPLE      CALL  delta_band  0.40-0.60   312                  OK  0.166667  0.105263  0.371528         0.291667        0.025641                     0.083333                   0.083333
+33  OFFLINE_SAMPLE      CALL  delta_band     >=0.60   672                  OK  0.137330  0.086813  0.231368         0.139881        0.000000                     0.068665                   0.068665
+34  OFFLINE_SAMPLE      CALL   oi_bucket          0   550                  OK  0.185650  0.099538  0.409229         0.316364        0.143636                     0.092825                   0.092825
+35  OFFLINE_SAMPLE      CALL   oi_bucket        1-9   289                  OK  0.247788  0.116761  1.920000         0.442907        0.242215                     0.123894                   0.123894
+36  OFFLINE_SAMPLE      CALL   oi_bucket      10-99   303                  OK  0.234818  0.133759  1.560440         0.448845        0.224422                     0.117409                   0.117409
+37  OFFLINE_SAMPLE      CALL   oi_bucket    100-999   235                  OK  0.193548  0.105263  0.522727         0.370213        0.182979                     0.096774                   0.096774
+38  OFFLINE_SAMPLE      CALL   oi_bucket     >=1000    47  INSUFFICIENT_POWER  0.204724  0.104483  0.545455         0.404255        0.085106                     0.102362                   0.102362
+39  OFFLINE_SAMPLE      CALL         ALL        ALL  1424                  OK  0.205337  0.110340  0.727232         0.382022        0.185393                     0.102669                   0.102669
+40  OFFLINE_SAMPLE       PUT  delta_band      <0.25   400                  OK  2.000000  1.522059  2.000000         0.967500        0.612500                     1.000000                   0.150000
+41  OFFLINE_SAMPLE       PUT  delta_band  0.25-0.40   100                  OK  0.200917  0.119155  0.400791         0.330000        0.040000                     0.100459                   0.100459
+42  OFFLINE_SAMPLE       PUT  delta_band  0.40-0.60   226                  OK  0.123009  0.079017  0.222222         0.176991        0.026549                     0.061505                   0.061505
+43  OFFLINE_SAMPLE       PUT  delta_band     >=0.60   224                  OK  0.170221  0.109690  0.251454         0.174107        0.000000                     0.085111                   0.085111
+44  OFFLINE_SAMPLE       PUT   oi_bucket          0   315                  OK  2.000000  0.269466  2.000000         0.714286        0.530159                     1.000000                   0.150000
+45  OFFLINE_SAMPLE       PUT   oi_bucket        1-9   163                  OK  0.375000  0.170821  1.918367         0.564417        0.233129                     0.187500                   0.150000
+46  OFFLINE_SAMPLE       PUT   oi_bucket      10-99   259                  OK  0.270270  0.119531  1.313725         0.459459        0.135135                     0.135135                   0.135135
+47  OFFLINE_SAMPLE       PUT   oi_bucket    100-999   168                  OK  0.134740  0.074668  0.400000         0.297619        0.059524                     0.067370                   0.067370
+48  OFFLINE_SAMPLE       PUT   oi_bucket     >=1000    45  INSUFFICIENT_POWER  0.120000  0.038095  0.400000         0.288889        0.111111                     0.060000                   0.060000
+49  OFFLINE_SAMPLE       PUT         ALL        ALL   950                  OK  0.347414  0.133333  2.000000         0.525263        0.268421                     0.173707                   0.150000
+50  OFFLINE_SAMPLE     OTHER  delta_band      <0.25     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+51  OFFLINE_SAMPLE     OTHER  delta_band  0.25-0.40     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+52  OFFLINE_SAMPLE     OTHER  delta_band  0.40-0.60     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+53  OFFLINE_SAMPLE     OTHER  delta_band     >=0.60     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+54  OFFLINE_SAMPLE     OTHER   oi_bucket          0     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+55  OFFLINE_SAMPLE     OTHER   oi_bucket        1-9     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+56  OFFLINE_SAMPLE     OTHER   oi_bucket      10-99     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+57  OFFLINE_SAMPLE     OTHER   oi_bucket    100-999     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+58  OFFLINE_SAMPLE     OTHER   oi_bucket     >=1000     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN
+59  OFFLINE_SAMPLE     OTHER         ALL        ALL     0  INSUFFICIENT_POWER       NaN       NaN       NaN              NaN             NaN                          NaN                        NaN

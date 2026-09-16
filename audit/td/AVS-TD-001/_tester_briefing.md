@@ -1,0 +1,51 @@
+# Tester briefing for AVS-TD-001 track workers (read fully before starting)
+
+You are one worker of the independent tester for the AVSHUNTER monetisable-pipeline remediation (AVS-FIX-002). Repository root: `C:\Users\ACKVerissimo\AVSHUNTER-Intelligence`. Commit `cc509cb` (2026-09-12 20:09 +0100), tag `avs-baseline-20260906-44-gcc509cb`, tree clean of tracked modifications.
+
+## Hard rules (violations invalidate the run)
+
+1. **Read-only.** Never edit implementation code, tests, configuration or anything under `data/`, `dropbox/`, `config/`, `contracts/`, `domain/`, etc. Never run `intelligent_orchestrator.py`, `morning_gate.py`, `build_macro_json.py`, or any script that fetches from a provider, writes to `data/`, or mutates a ledger. You MAY run `pytest` on specific test files via `python tools/run_governed_pytest.py -q <path> -p no:cacheprovider`, read-only Python probes, `git` read commands and grep. Python is 3.14 with pandas 2.3, numpy 2.3, scipy 1.17, pyarrow 23.
+2. **Databases: probe the copies only**, at `audit/td/AVS-TD-001/db_copies/` (`control_plane.sqlite`, `decision_outcome_ledger.sqlite`, `historical_prices.sqlite`, `run_plans.sqlite`, `iv_history_cache.db`, `trade_journal.db`, `phantom_history.db`). Open them with `sqlite3.connect("file:...?mode=ro", uri=True)`. Schemas and row counts are in `audit/td/AVS-TD-001/probes/p02_db_schema.json`. `data/actuarial_db.sqlite` is 0 bytes (ABSENT).
+3. **Write only into** `audit/td/AVS-TD-001/`. Put probe scripts in `audit/td/AVS-TD-001/probes/` named `pNN_<track>_<topic>.py` and their outputs beside them. Write your track file `audit/td/AVS-TD-001/track_<X>.md`. Do NOT write to `state_log.csv` or any other shared file; instead put a `## State log lines` section at the end of your track file with CSV lines `step,state,n,duration,note` for the coordinator to merge.
+4. **No step stops the run.** If a check cannot run, record `NOT TESTED` (reason) or `BLOCKED` (what change would be needed) and continue. Never ask a question; never wait.
+5. **Two-level closure.** `CLOSED` needs (a) source evidence file:line AND (b) a run artefact from a stored run showing the behaviour firing. Source or unit-test evidence alone is `CLOSED OFFLINE`, reported in its own column, never merged with CLOSED. Runs on a dirty tree are TEST condition and nothing tested on them can be `CLOSED`.
+6. **Three-direction discipline.** Every check involving directed rows is reported separately for CALL, PUT and OTHER (non-directional/unresolved).
+7. **Verdict vocabulary (acceptance only):** `CLOSED` · `CLOSED OFFLINE` · `OPEN` (implemented but fails) · `NOT IMPLEMENTED` (absent) · `NOT TESTED` (reason) · `BLOCKED`. Severity: `P0` invariant violated (population loss, macro sizing, inferred fill, stale quote executable, uncalibrated number shown as probability, irreproducible assessment); `P1` requirement fails its acceptance test; `P2` correct behaviour with wrong/missing lineage or disclosure; `P3` cosmetic. Never soften: no "mostly passes".
+8. **Defects are `UAT-Dnn`** (use a track prefix placeholder like `UAT-D-A1` and the coordinator renumbers). Each defect: REQ ID, severity, CALL/PUT/OTHER exposure, evidence (file:line and run artefact/field/value), reproduction steps, what a fix would need to show to close. Do not propose the fix.
+9. **Every finding carries a trace line:** `TRACE: REQ-<id> | ALG-<id> | WP-<id> | STAGE-<n> | TRACK-<letter> | EVIDENCE-<artefact> | N=<rows>` with `NONE` where a slot does not apply and `UNMAPPED` where behaviour is covered by no REQ/ALG.
+10. **Deviations and premise notes.** Anything where code/data differs from what the design, requirements, claim sheets or artefacts say goes in a `## Deviations` section (claimed / found / evidence / severity). Anything where the spec is internally consistent but measurement suggests it solves the wrong quantity goes in `## Premise notes` (spec / measured / gap size; no severity, no recommendation).
+11. Report what you could not test with the reason. Nothing here authorises a trade; label anything signal-like `RESEARCH_ONLY`.
+12. **Save incrementally.** Write your track file after the FIRST check completes and rewrite it after every subsequent check (a previous worker set was killed by a session limit before writing anything). Save every probe script and its CSV output to disk as soon as it runs. Keep probe runtimes short: sample large tables, and never load `packages/` or the 142 MB JSON in full.
+13. **Pytest baseline already exists:** the full governed suite was run once (`audit/td/AVS-TD-001/pytest/full_run.txt`, `junit_full.xml`, `failures_list.txt`: 1,881 passed, 44 failed, 4 skipped, 66 minutes). Do NOT rerun the full suite; run only the specific test files your track names, with `-p no:cacheprovider -q`.
+
+## Runs
+
+- **Primary run:** `data/output/runs/20260911_115904` — TEST condition (forced intra-session on 11 Sep; `run_meta.json.git_describe = avs-baseline-20260906-21-g00baa2b-dirty`; `pipeline_mode = MORNING_VALIDATION`; `dynamic_plan.evidence_cutoff_utc = 2026-09-11T11:59:04Z`; `last_completed_session = 2026-09-10`; morning gate completed 17:08Z). Both runs were produced by pre-remediation code (commit 00baa2b, before all 12 Sep commits).
+- **Comparison run:** `data/output/runs/20260910_150045` — TEST (forced intra-session 10 Sep, cutoff 15:00:45Z, `pipeline_mode = EOD`, no morning artefacts).
+- 25 further older runs carry full artefacts (see `audit/td/AVS-TD-001/probes/p01_run_inventory_raw.csv`); 24 run_ids are 2–4-file stubs. **No `NORMAL_COMPLETED_SESSION` run exists.** State that sentence at the head of your track file.
+- Stored books may be read for structure only (field population, geometry, schema, lineage), never for edge/EV/hit-rate claims.
+- Artefact inventory with row/column counts: `audit/td/AVS-TD-001/probes/p03_artefact_inventory_raw.csv`. Key primary artefacts: `intelligence_lab/lab_signal_book_v3.csv` (19 rows × 502 cols — the GO rows only), `intelligence_lab/final_opportunity_book_<run>.csv` (1,444 × 474), `intelligence_lab/lab_triage_view_<run>.csv` (1,444 × 473), `morning_validation/morning_validated_trades_<run>.csv` (1,444 × 991), `morning_validation/morning_candidates_<run>.csv` (1,444 × 674), `morning_validation/morning_gate_summary_<run>.json`, `options/options_intelligence_<run>.csv` (14,784 × 857 — multi-line, count rows with pandas), `options/dynamic_options_intelligence_<run>.json` (DOI report: 1,218 families, all `FAMILY_NOT_VALUED_RATE_UNAVAILABLE`, 38 `MISSING_GOVERNED_THESIS_ID` exceptions retained), `options/contracts_tested_<run>.jsonl` (1,218 families), `options/contract_rejection_log_<run>.csv` (974), `execution/execution_v3_5_<run>.csv` (1,444 × 1,191 after multi-line), `trades/execution_gated_<run>.csv` (1,444 × 950), `trades/execution_actionable_<run>.csv` (19), `qomega/garch_forecasts_<run>.csv` (1,444 × 17), `horizon/*.csv`, `superbrain/eil_enriched_<run>.csv`, `diagnostics/dropoff_audit_<run>.csv` (3,320 × 129), `discovery/discovery_lifecycle_<run>.csv` (3,320), `discovery/discovery_candidates_ultimate_<run>.csv` (1,572 × 338), `ev3_shadow/*`, `macro_quant_packet.json`, `macro_snapshot.json`, `interpreter/interpreter_macro_context.json`, `final_run_manifest.json`, `pipeline_integrity_<run>.json`, `packages/<TICKER>.package.json` (1,573 files, ~2.9 MB each).
+- Governed constants: `config/governed_constants_v1.json` (sigma_multiple 1.5, iv_stress 0.8/1.0/1.2, friction cap 0.15, max model spread 0.30, profit_floor 0.25, w_flat 0.5, hysteresis 0.05/0.10, provider completeness 0.95/0.99, outcome learning gates). Note: no `freshness_minutes`, `clock_skew_tolerance_minutes`, `spread_executable_limit`, `refresh_window`, `calibration.kappa`, `calibration.n_min`, or `vol_validation.pass` keys are present in that file (verify yourself if your track needs it).
+- Claim sheets (implementer): `audit/avs_fix_002/stage0/STAGE0_CLAIM_SHEET.md`, `stage1/SLICE1_PROVIDER_FINALITY_CLAIM.md`, `stage2_5/STAGES2_5_CLAIM_SHEET.md`, `stage6/STAGE6_CLAIM_SHEET.md`. Governing docs: `docs/AVS-SD-FIX-002_MONETISABLE_PIPELINE_REMEDIATION.md`, `docs/requirements/AVS-REQ-FIX-002_developer_requirements.md`, `docs/requirements/AVS-REQ-FIX-002_Annex_A_algorithms_and_models.md`. Read the REQ rows and ALG sections for your track before testing.
+- Comprehension findings you should know: legacy `l3_expected_move_6_10d/11_20d` are differenced (`layer3_forward_variance.py:521-524`); v2 cumulative fields come from `domain/volatility_budget.py`; two monetisability engines coexist (`contracts/selected_contract_economics.py` prices structural-target intrinsic/BS with no friction and is what Morning Gate/EOD read; `domain/contract_economics_v2.py` prices the reachable target with `friction_model_v1` and is only reachable through the DOI path `canonical_data/dynamic_options_production.py`); `domain/reachability.py` exists with one caller (`canonical_data/dynamic_options_valuation.py:379-383`); `convexity_score` is an 0–8 condition count called on the raw Discovery row with an empty dashboard (`scripts/avshunter_options_intelligence.py:7754-7755`); the DOI replacement is `doi_convexity_score/label`; the macro join runs twice (`contracts/interpreter_macro_context.py:430-518` then `domain/macro_advisory_context.py:52-94` overwrites); `usmi_routing_key` is not emitted anywhere; `ranking_score_uncalibrated_v1` is not implemented; `MarketRateObservation` feeds DOI only, not EV3 (`vanguard/ev_engine_v3.py:32` default 0.045).
+
+## Output format for the track file
+
+```
+# Track <X> — <title>
+No NORMAL_COMPLETED_SESSION run exists; every result below is on TEST-condition runs and cannot be CLOSED.
+Runs used: ...
+Data sources: ...
+
+## Results
+| REQ ID | check | CALL result | PUT result | OTHER result | source evidence (file:line) | run evidence (run_id, artefact, field, value) | verdict | closed-offline? |
+...
+## Per-check notes  (one short paragraph per check with the numbers and how to re-check)
+## Defects (UAT-D-<track><n>)
+## Deviations
+## Premise notes
+## Not tested / blocked
+## Expectation vs actual  (compare to the E column in audit/td/AVS-TD-001/expectations.md for your track; state the gap)
+## State log lines
+```
+Keep prose tight; every number must be re-checkable from a probe script you leave in probes/.

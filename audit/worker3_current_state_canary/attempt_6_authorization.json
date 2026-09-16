@@ -1,0 +1,16 @@
+{
+  "authorization": "User approved one schema-constrained live canary, $1.00 cap, no retries",
+  "at": 1788785051.8723474,
+  "max_generations": 1,
+  "max_count_requests": 1,
+  "max_cost_microusd": 1000000,
+  "retries": 0,
+  "source_hashes": {
+    "worker3/adapters/bound_output.py": "88eb03026524d12c78f7d3f79a919f4ed813f87b66d39d113dbd104148b09806",
+    "worker3/adapters/claude_v2.py": "a1782393b8a9ebd438f09141a8408687d5c5104c98091e7b1b7117fa0778ad6c",
+    "worker3/adapters/anthropic_http.py": "43c1f640ea6f51562e7a30f5be343f77f545b75c8462381cabe62e78c277369e",
+    "worker3/integration/current_canary.py": "d24f4648285fe3de440f2cab7833e854b7ff13e7c30c5aa8af201908f31774c7",
+    "tests/test_worker3_bound_output.py": "fabce31adee02a2a63ba864ecfd6f582e1fae6ca71373e98774151c6ecffc75f"
+  },
+  "prior_list_price_microusd": 1291599
+}

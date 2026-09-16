@@ -1,0 +1,56 @@
+{
+ "schema_migration_log": {
+  "columns": [
+   "migration_id",
+   "from_version",
+   "to_version",
+   "applied_at",
+   "detail_json"
+  ],
+  "rows": [
+   {
+    "migration_id": "cds_control_plane_v1_to_v2",
+    "from_version": "cds_control_plane_v1",
+    "to_version": "cds_control_plane_v2",
+    "applied_at": "2026-09-03T21:32:18.297811Z",
+    "detail_json": "{\"added_columns\": [], \"legacy_rows_backfilled\": 16870, \"resumed_partial_migration\": true}"
+   }
+  ]
+ },
+ "schema_metadata": {
+  "columns": [
+   "schema_version",
+   "installed_at"
+  ],
+  "rows": [
+   {
+    "schema_version": "cds_control_plane_v1",
+    "installed_at": "2026-08-22T16:48:24.028208Z"
+   },
+   {
+    "schema_version": "option_liquidity_lifecycle_v1",
+    "installed_at": "2026-08-29T22:11:15.524169Z"
+   },
+   {
+    "schema_version": "option_liquidity_lifecycle_v2",
+    "installed_at": "2026-08-31T21:59:22.384300Z"
+   },
+   {
+    "schema_version": "cds_control_plane_v2",
+    "installed_at": "2026-09-03T21:32:18.297592Z"
+   },
+   {
+    "schema_version": "option_liquidity_lifecycle_v3",
+    "installed_at": "2026-09-10T17:06:25.066241Z"
+   },
+   {
+    "schema_version": "doi_dynamic_lifecycle_v1",
+    "installed_at": "2026-09-10T17:06:25.066344Z"
+   },
+   {
+    "schema_version": "doi_outcome_labels_v1",
+    "installed_at": "2026-09-10T17:06:25.066362Z"
+   }
+  ]
+ }
+}

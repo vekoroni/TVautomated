@@ -1,0 +1,154 @@
+== within-thesis rel_med CALL h5
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025    0.963    0.771    0.711
+D025_040    0.982    0.798    0.696
+D040_060    0.868    0.720    0.705
+D060_085    0.764    0.623    0.656
+ n_theses
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025       90       46       92
+D025_040       90       47       93
+D040_060      109       48      114
+D060_085      121       48      105
+ powered-cell peak (rel_med): D040_060/H+05_15 rel_med=0.868 n=109
+== within-thesis rel_med CALL h10
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025    0.987    0.783    0.895
+D025_040    0.914    0.802    0.959
+D040_060    0.866    0.737    0.920
+D060_085    0.714    0.608    0.782
+ n_theses
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025       60       46      195
+D025_040       62       57      246
+D040_060       68       59      251
+D060_085       61       52      257
+ powered-cell peak (rel_med): D025_040/H+30_45 rel_med=0.959 n=246
+== within-thesis rel_med PUT h5
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025    1.000    0.700    0.551
+D025_040    0.835    0.560    0.481
+D040_060    0.661    0.456    0.427
+D060_085    0.497    0.372    0.360
+ n_theses
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025       62       47       66
+D025_040       66       47       70
+D040_060       69       47       71
+D060_085       72       45       66
+ no powered cell
+== within-thesis rel_med PUT h10
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025    0.953    0.774    0.923
+D025_040    0.969    0.859    0.939
+D040_060    0.950    0.858    0.902
+D060_085    0.855    0.687    0.759
+ n_theses
+tband     H+05_15  H+15_30  H+30_45
+dband                              
+D010_025       13       12       39
+D025_040       14       12       37
+D040_060       14       12       41
+D060_085       12        8       41
+ no powered cell
+argmax marginals CALL h5 n=137 dband={'D025_040': 41, 'D010_025': 39, 'D040_060': 32, 'D060_085': 25} tband={'H+05_15': 120, 'H+30_45': 16, 'H+15_30': 1} |delta| q=[0.241, 0.36, 0.541] dte_offset q=[9.0, 10.0, 14.0]
+argmax marginals CALL h10 n=303 dband={'D025_040': 111, 'D040_060': 81, 'D010_025': 78, 'D060_085': 33} tband={'H+30_45': 251, 'H+05_15': 51, 'H+15_30': 1} |delta| q=[0.245, 0.34, 0.462] dte_offset q=[32.0, 32.0, 32.0]
+argmax marginals PUT h5 n=81 dband={'D010_025': 58, 'D025_040': 16, 'D040_060': 5, 'D060_085': 2} tband={'H+05_15': 80, 'H+30_45': 1} |delta| q=[0.144, 0.178, 0.269] dte_offset q=[7.0, 9.0, 14.0]
+argmax marginals PUT h10 n=49 dband={'D010_025': 18, 'D025_040': 16, 'D040_060': 12, 'D060_085': 3} tband={'H+30_45': 37, 'H+05_15': 10, 'H+15_30': 2} |delta| q=[0.209, 0.325, 0.443] dte_offset q=[32.0, 32.0, 32.0]
+   direction  hold         a         b  n_theses  share_a_beats_b  med_ratio_a_over_b               power
+0       CALL     5  D010_025  D040_060        97            0.526               1.096  INSUFFICIENT_POWER
+1       CALL    10  D010_025  D040_060       177            0.554               1.058              n>=100
+2        PUT     5  D010_025  D040_060        67            0.910               1.370  INSUFFICIENT_POWER
+3        PUT    10  D010_025  D040_060        37            0.541               1.008  INSUFFICIENT_POWER
+4       CALL     5  D025_040  D040_060        95            0.674               1.078  INSUFFICIENT_POWER
+5       CALL    10  D025_040  D040_060       212            0.656               1.062              n>=100
+6        PUT     5  D025_040  D040_060        66            0.924               1.168  INSUFFICIENT_POWER
+7        PUT    10  D025_040  D040_060        34            0.735               1.033  INSUFFICIENT_POWER
+8       CALL     5  D060_085  D040_060       109            0.138               0.892              n>=100
+9       CALL    10  D060_085  D040_060       213            0.099               0.861              n>=100
+10       PUT     5  D060_085  D040_060        70            0.086               0.802  INSUFFICIENT_POWER
+11       PUT    10  D060_085  D040_060        37            0.081               0.887  INSUFFICIENT_POWER
+12      CALL     5  D010_025  D025_040        88            0.534               1.028  INSUFFICIENT_POWER
+13      CALL    10  D010_025  D025_040       176            0.409               0.998              n>=100
+14       PUT     5  D010_025  D025_040        62            0.855               1.185  INSUFFICIENT_POWER
+15       PUT    10  D010_025  D025_040        32            0.312               0.959  INSUFFICIENT_POWER
+   direction  hold        a        b  n_theses  share_a_beats_b  med_ratio               power
+0       CALL     5  H+05_15  H+30_45       118            0.814      1.248              n>=100
+1       CALL     5  H+15_30  H+30_45        49            0.776      1.144  INSUFFICIENT_POWER
+2       CALL     5  H+05_15  H+15_30        49            0.939      1.190  INSUFFICIENT_POWER
+3       CALL    10  H+05_15  H+30_45        71            0.690      1.121  INSUFFICIENT_POWER
+4       CALL    10  H+15_30  H+30_45        66            0.394      1.011  INSUFFICIENT_POWER
+5       CALL    10  H+05_15  H+15_30        66            0.864      1.110  INSUFFICIENT_POWER
+6        PUT     5  H+05_15  H+30_45        75            0.987      1.604  INSUFFICIENT_POWER
+7        PUT     5  H+15_30  H+30_45        47            1.000      1.252  INSUFFICIENT_POWER
+8        PUT     5  H+05_15  H+15_30        47            1.000      1.327  INSUFFICIENT_POWER
+9        PUT    10  H+05_15  H+30_45        14            0.714      1.144  INSUFFICIENT_POWER
+10       PUT    10  H+15_30  H+30_45        13            0.308      1.012  INSUFFICIENT_POWER
+11       PUT    10  H+05_15  H+15_30        13            0.769      1.091  INSUFFICIENT_POWER
+             run_id direction  hold    n  with_symbol  side_mismatch  book_delta_zero  book_delta_na  dte_offset_med  dte_offset_lt5  dte_offset_le0  in_family
+0   20260804_114554      CALL     5   29           28              4                2              1            11.0               1               0         18
+1   20260804_114554      CALL    10  321          285            105              259             36             4.0             212               5         39
+2   20260804_114554      CALL    20    3            2              1                2              1           -10.0               2               2          0
+3   20260804_114554       PUT     5    7            7              0                1              0            11.0               0               0          2
+4   20260804_114554       PUT    10   54           50             11               43              4             4.0              26               1         14
+5   20260804_114554       PUT    20    1            1              0                1              0            18.0               0               0          1
+6   20260831_010309      CALL     5   40           40              0                0              0            14.0               0               0         31
+7   20260831_010309       PUT     5   43           43              0                0              0            14.0               0               0         42
+8   20260901_082437      CALL     5   40           40              0                0              0            10.0               1               0         33
+9   20260902_232526      CALL     5   31           31              0                0              0             9.0               0               0         25
+10  20260902_232526       PUT     5   32           32              0                0              0             9.0               2               0         27
+  direction  hold    n  in_bucket_peak_cell  in_own_best_cell  payoff_ge_90pct_best  ratio_med  d_steps_vs_best_med  higher_delta_than_best  lower_delta_than_best
+0      CALL     5  107                    1                36                    50   0.893160                  1.0                      62                      5
+1      CALL    10   39                    7                 7                    12   0.849282                  1.0                      30                      1
+2       PUT     5   71                    3                11                    13   0.635500                  2.0                      59                      1
+3       PUT    10   14                    0                 2                     5   0.855159                  1.0                       9                      2
+4       PUT    20    1                    1                 1                     1   1.000000                  0.0                       0                      0
+             n  ratio_med  ge90  higher_delta  same_band  lower_delta
+direction                                                            
+CALL       146   0.879324    62            92         48            6
+PUT         86   0.666181    19            68         15            3
+                                      0         1                          2                           3                         4                          5
+key                                CALL       PUT  ('CALL', np.float64(5.0))  ('CALL', np.float64(10.0))  ('PUT', np.float64(5.0))  ('PUT', np.float64(10.0))
+n                                   440       130                        137                         303                        81                         49
+be_min_med                        0.444     0.305                      0.472                       0.423                     0.225                      0.494
+be_med_p10                        0.239     0.174                      0.367                       0.194                     0.115                      0.357
+be_med_p50                        0.751      0.62                      0.896                       0.706                     0.527                       0.89
+be_med_p90                        1.724     1.401                       2.53                       1.486                     1.396                      1.477
+mfe_over_sigma_h_med              0.621     0.359                      0.502                       0.679                     0.354                      0.363
+share_mfe_ge_be_min               0.616     0.608                      0.453                        0.69                     0.691                      0.469
+share_mfe_ge_be_med               0.448     0.385                      0.307                       0.512                     0.457                      0.265
+share_term_ge_be_med              0.248     0.154                      0.153                        0.29                     0.198                      0.082
+target_first                      0.132     0.054                      0.073                       0.158                     0.037                      0.082
+side_correct                       0.55     0.469                      0.445                       0.597                     0.481                      0.449
+n_low_be                            220        65                         68                         151                        40                         24
+n_high_be                           220        65                         69                         152                        41                         25
+side_correct_low_be               0.623     0.462                      0.515                       0.656                       0.4                      0.542
+side_correct_high_be              0.477     0.477                      0.377                       0.539                     0.561                       0.36
+target_first_low_be               0.159     0.031                      0.103                       0.172                     0.025                      0.125
+target_first_high_be              0.105     0.077                      0.043                       0.145                     0.049                       0.04
+be_med_side_correct               0.647     0.653                      0.754                       0.633                      0.59                      0.809
+be_med_side_wrong                 0.861      0.61                      1.026                       0.814                     0.474                      0.902
+mw_p_be_by_side_correct         0.00019  0.988834                    0.03626                    0.012913                  0.499153                   0.513579
+n_sel_be                            146        85                        107                          39                        71                         14
+sel_be_p50                        0.517     0.331                      0.664                       0.303                     0.319                      0.678
+share_mfe_ge_sel_be               0.459       0.6                      0.364                       0.718                     0.648                      0.357
+side_correct_and_mfe_lt_be_med       75        27                         24                          51                        15                         12
+power                            n>=100    n>=100                     n>=100                      n>=100        INSUFFICIENT_POWER         INSUFFICIENT_POWER
+            run_id governed_direction  families  median  zero  one
+0  20260910_150045               CALL       791    56.0     0    0
+1  20260910_150045                PUT       450    66.0     0    0
+2  20260911_115904               CALL       772    56.0     0    0
+3  20260911_115904                PUT       446    66.0     0    0
+DOI all:                  size  median  <lambda_0>
+run_id                                   
+20260910_150045  1241    59.0           0
+20260911_115904  1218    59.0           0
+family_policy_version: {'doi-thesis-conditioned-family-v1': 2459} family_state: {'DETERMINISTIC_ONLY': 2459}
+metadata sample: {"complete_candidate_taxonomy":[{"ask":14.6,"audit_id":"c6ec99fa2fa8ab434cd730163145d576e18c779668af9ed2e9a72f569d7685aa","bid":12.4,"contract_symbol":"PLAB260918C00015000","decision_authority":"NONE","display_eligible":false,"expiry":"2026-09-18","expiry_bucket":"NEAR","moneyness_bucket":"ITM","monitor_reasons":["LOW_OPEN_INTEREST","ZERO_VOLUME"],"open_interest":7.0,"option_side":"CALL","quote_state":"TWO_SIDED","raw_contract_symbol":"PLAB260918C00015000","remaining_sessions":6,"required_sessions":18,"source_row_index":0,"state":"EXCLUDED_STRUCTURAL","strike":15.0,"structural_exclusions":["INSUFFICIENT_SESSION_RUNWAY"],"target_reachability":"WITHIN_TARGET","volume":0.0},{"ask":12.1,"audit_id":"c29fd050a976a8caa7114127ae47981c88e5f15cd1278f1dbc1401a861bd3623","bid":10.2,"contract_symbol":"PLAB260918C00017500","decision_authority":"NONE","display_eligible":false,"expiry":"2026-09-18","expiry_bucket":"NEAR","moneyness_bucket":"ITM","monitor_reasons":["LOW_OPEN_INTEREST","ZERO_VOLUME"],"open_interest":24.0,"option_side":"CALL","quote_state":"TWO_SIDED","raw_contract_symbol":"PLAB260918C00017500","remaining_sessions":6,"required_sessions":18,"source_row_index":1,"state":"EXCLUDED_STRUCTURAL","strike":17.5,"structural_exclusions":["INSUFFICIENT_SESSION_RUNWAY"],"target_reachability":"WITHIN_TARGET","volume":0.0},{"ask":9.2,"audit_id":"14d802adad535c148773eee031efbb909f101d2d5f0c697e1bf1844cf7ab29c6","bid":7.9,"contract_symbol":"PLAB260918C00020000","decision_authority":"NONE","dis

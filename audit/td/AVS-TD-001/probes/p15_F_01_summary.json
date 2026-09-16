@@ -1,0 +1,83 @@
+{
+ "universe_file": "data/universe/polygon_liquid_universe.csv",
+ "universe_n": 3320,
+ "universe_empty_sector": 0,
+ "universe_empty_industry": 344,
+ "universe_sector_values": {
+  "Information Technology": 554,
+  "Financials": 493,
+  "Health Care": 490,
+  "Industrials": 436,
+  "Consumer Discretionary": 332,
+  "Energy": 225,
+  "Real Estate": 186,
+  "Materials": 143,
+  "Consumer Staples": 133,
+  "Communication Services": 121,
+  "Utilities": 117,
+  "ETF": 82,
+  "Power Generation": 3,
+  "Equity Inverse ETF": 1,
+  "Volatility": 1,
+  "Rates / Bonds ETF": 1,
+  "Consumer Discretionary (ETF)": 1,
+  "Communication / Tech": 1
+ },
+ "book_n": 1444,
+ "book_tickers_not_in_universe": 0,
+ "book_tickers_missing_gics_in_store": 0,
+ "book_empty_gics_sector": 0,
+ "book_empty_sector": 0,
+ "CALL_n": 798,
+ "CALL_missing_gics_in_store": 0,
+ "CALL_SECTOR_UNMAPPED": 798,
+ "CALL_book_empty_gics_sector": 0,
+ "PUT_n": 458,
+ "PUT_missing_gics_in_store": 0,
+ "PUT_SECTOR_UNMAPPED": 458,
+ "PUT_book_empty_gics_sector": 0,
+ "OTHER_n": 188,
+ "OTHER_missing_gics_in_store": 0,
+ "OTHER_SECTOR_UNMAPPED": 188,
+ "OTHER_book_empty_gics_sector": 0,
+ "book_duplicate_tickers": 0,
+ "manifest_available": 0,
+ "manifest_requested": 1444,
+ "manifest_fraction": 0.0,
+ "manifest_stale": 1082,
+ "manifest_conflicting": 362,
+ "manifest_sector_only": 1390,
+ "go_n": 19,
+ "go_SECTOR_UNMAPPED": 19,
+ "go_by_dir": {
+  "CALL": 10,
+  "PUT": 9
+ },
+ "go_empty_gics_sector": 0,
+ "go_sector_nonempty": 19,
+ "go_lab_verdict": {
+  "GO_LIMIT": 19
+ },
+ "go_usmi_sector_alignment": {
+  "NEUTRAL": 19
+ },
+ "go_macro_sector_alignment": {
+  "UNMAPPED": 19
+ },
+ "package_example": "A.package.json",
+ "package_discovery_sector_keys": {
+  "macro_sector_advisory_score": "0.0",
+  "scanner_sector": "",
+  "sector": "Health Care",
+  "sector_etf": "XLV",
+  "industry": "LABORATORY ANALYTICAL INSTRUMENTS",
+  "sector_rotation_state": "DEFENSIVE_ROTATION",
+  "leading_sectors": "[\"Energy\"]",
+  "lagging_sectors": "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]",
+  "avoid_sectors": "[\"Consumer Discretionary\", \"Industrials\", \"Materials\", \"Real Estate\"]",
+  "preferred_sectors": "[\"Energy\"]",
+  "sector_tilt_score": "20.0",
+  "ticker_sector_alignment": "NEUTRAL",
+  "ticker_sector_alignment_score": "50.0"
+ }
+}

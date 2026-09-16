@@ -2115,7 +2115,16 @@ def build_candidate_manifest(
     # ── Merge WBS ─────────────────────────────────────────────────────────────
     wbs_map: dict[str, dict] = {}
     if wbs_path and Path(wbs_path).exists():
-        wbs_df = pd.read_csv(wbs_path, low_memory=False)
+        try:
+            wbs_df = pd.read_csv(wbs_path, low_memory=False)
+        except pd.errors.EmptyDataError:
+            # Historical WBS versions emitted a schema-less file when no
+            # research route was eligible. WBS is advisory and must never
+            # prevent the authoritative EOD candidate manifest publishing.
+            wbs_df = pd.DataFrame()
+            log.warning(
+                "WBS artifact is schema-less and empty — continuing without advisory WBS"
+            )
         for _, r in wbs_df.iterrows():
             t = str(r.get("ticker", "")).strip().upper()
             if t:

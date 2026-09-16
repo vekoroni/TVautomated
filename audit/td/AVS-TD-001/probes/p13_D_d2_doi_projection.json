@@ -1,0 +1,1101 @@
+{
+ "20260911_115904": {
+  "final_opportunity_book": {
+   "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\intelligence_lab\\final_opportunity_book_20260911_115904.csv",
+   "rows": 1444,
+   "direction_col": "governed_direction",
+   "doi_cols": [
+    "doi_projection_version",
+    "doi_projection_state",
+    "doi_projection_reason",
+    "doi_family_id",
+    "doi_ranking_id",
+    "doi_ranking_mode",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_governed_contract_symbol",
+    "doi_contract_alignment",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_model_uncertainty",
+    "doi_probability_model_id",
+    "doi_evidence_cutoff_utc",
+    "doi_input_dataset_ids_json",
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_decision_authority",
+    "doi_execution_authority"
+   ],
+   "doi_projection_state": {
+    "ALL": {
+     "DATA_UNAVAILABLE": 1381,
+     "DATA_INCONSISTENT": 63
+    },
+    "CALL": {
+     "DATA_UNAVAILABLE": 761,
+     "DATA_INCONSISTENT": 37
+    },
+    "PUT": {
+     "DATA_UNAVAILABLE": 432,
+     "DATA_INCONSISTENT": 26
+    },
+    "OTHER": {
+     "DATA_UNAVAILABLE": 188
+    }
+   },
+   "doi_projection_reason": {
+    "ALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 1381,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 63
+    },
+    "CALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 761,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 37
+    },
+    "PUT": {
+     "DOI_TABLES_NOT_ACTIVATED": 432,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 26
+    },
+    "OTHER": {
+     "DOI_TABLES_NOT_ACTIVATED": 188
+    }
+   },
+   "doi_contract_alignment": {
+    "ALL": {
+     "NOT_COMPARABLE": 1444
+    },
+    "CALL": {
+     "NOT_COMPARABLE": 798
+    },
+    "PUT": {
+     "NOT_COMPARABLE": 458
+    },
+    "OTHER": {
+     "NOT_COMPARABLE": 188
+    }
+   },
+   "doi_ranking_mode": {
+    "ALL": {
+     "nan": 1444
+    },
+    "CALL": {
+     "nan": 798
+    },
+    "PUT": {
+     "nan": 458
+    },
+    "OTHER": {
+     "nan": 188
+    }
+   },
+   "doi_projection_version": {
+    "ALL": {
+     "doi-trader-projection-v1": 1444
+    },
+    "CALL": {
+     "doi-trader-projection-v1": 798
+    },
+    "PUT": {
+     "doi-trader-projection-v1": 458
+    },
+    "OTHER": {
+     "doi-trader-projection-v1": 188
+    }
+   },
+   "doi_authority": {
+    "ALL": {
+     "ADVISORY_ONLY": 1444
+    },
+    "CALL": {
+     "ADVISORY_ONLY": 798
+    },
+    "PUT": {
+     "ADVISORY_ONLY": 458
+    },
+    "OTHER": {
+     "ADVISORY_ONLY": 188
+    }
+   },
+   "doi_decision_authority": {
+    "ALL": {
+     "NONE": 1444
+    },
+    "CALL": {
+     "NONE": 798
+    },
+    "PUT": {
+     "NONE": 458
+    },
+    "OTHER": {
+     "NONE": 188
+    }
+   },
+   "doi_execution_authority": {
+    "ALL": {
+     "HUMAN_ONLY": 1444
+    },
+    "CALL": {
+     "HUMAN_ONLY": 798
+    },
+    "PUT": {
+     "HUMAN_ONLY": 458
+    },
+    "OTHER": {
+     "HUMAN_ONLY": 188
+    }
+   },
+   "nonnull_doi_preferred_contract_symbol": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_governed_contract_symbol": {
+    "ALL": 1218,
+    "CALL": 772,
+    "PUT": 446,
+    "OTHER": 0
+   },
+   "nonnull_doi_preferred_assessment_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_family_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_ranking_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_liquidity_3d": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_positive_return": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_target_before_invalidation": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_model_uncertainty": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_alternatives_json": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_evidence_cutoff_utc": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "governed_vs_contract_symbol_equal": 1218,
+   "governed_symbol_empty": 226,
+   "state_x_reason": {
+    "('DATA_INCONSISTENT', 'GOVERNED_CONTRACT_IDENTITY_MISMATCH')": 63,
+    "('DATA_UNAVAILABLE', 'DOI_TABLES_NOT_ACTIVATED')": 1381
+   },
+   "mismatch_examples": []
+  },
+  "lab_triage_view": {
+   "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\intelligence_lab\\lab_triage_view_20260911_115904.csv",
+   "rows": 1444,
+   "direction_col": "governed_direction",
+   "doi_cols": [
+    "doi_projection_version",
+    "doi_projection_state",
+    "doi_projection_reason",
+    "doi_family_id",
+    "doi_ranking_id",
+    "doi_ranking_mode",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_governed_contract_symbol",
+    "doi_contract_alignment",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_model_uncertainty",
+    "doi_probability_model_id",
+    "doi_evidence_cutoff_utc",
+    "doi_input_dataset_ids_json",
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_decision_authority",
+    "doi_execution_authority"
+   ],
+   "doi_projection_state": {
+    "ALL": {
+     "DATA_UNAVAILABLE": 1381,
+     "DATA_INCONSISTENT": 63
+    },
+    "CALL": {
+     "DATA_UNAVAILABLE": 761,
+     "DATA_INCONSISTENT": 37
+    },
+    "PUT": {
+     "DATA_UNAVAILABLE": 432,
+     "DATA_INCONSISTENT": 26
+    },
+    "OTHER": {
+     "DATA_UNAVAILABLE": 188
+    }
+   },
+   "doi_projection_reason": {
+    "ALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 1381,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 63
+    },
+    "CALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 761,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 37
+    },
+    "PUT": {
+     "DOI_TABLES_NOT_ACTIVATED": 432,
+     "GOVERNED_CONTRACT_IDENTITY_MISMATCH": 26
+    },
+    "OTHER": {
+     "DOI_TABLES_NOT_ACTIVATED": 188
+    }
+   },
+   "doi_contract_alignment": {
+    "ALL": {
+     "NOT_COMPARABLE": 1444
+    },
+    "CALL": {
+     "NOT_COMPARABLE": 798
+    },
+    "PUT": {
+     "NOT_COMPARABLE": 458
+    },
+    "OTHER": {
+     "NOT_COMPARABLE": 188
+    }
+   },
+   "doi_ranking_mode": {
+    "ALL": {
+     "nan": 1444
+    },
+    "CALL": {
+     "nan": 798
+    },
+    "PUT": {
+     "nan": 458
+    },
+    "OTHER": {
+     "nan": 188
+    }
+   },
+   "doi_projection_version": {
+    "ALL": {
+     "doi-trader-projection-v1": 1444
+    },
+    "CALL": {
+     "doi-trader-projection-v1": 798
+    },
+    "PUT": {
+     "doi-trader-projection-v1": 458
+    },
+    "OTHER": {
+     "doi-trader-projection-v1": 188
+    }
+   },
+   "doi_authority": {
+    "ALL": {
+     "ADVISORY_ONLY": 1444
+    },
+    "CALL": {
+     "ADVISORY_ONLY": 798
+    },
+    "PUT": {
+     "ADVISORY_ONLY": 458
+    },
+    "OTHER": {
+     "ADVISORY_ONLY": 188
+    }
+   },
+   "doi_decision_authority": {
+    "ALL": {
+     "NONE": 1444
+    },
+    "CALL": {
+     "NONE": 798
+    },
+    "PUT": {
+     "NONE": 458
+    },
+    "OTHER": {
+     "NONE": 188
+    }
+   },
+   "doi_execution_authority": {
+    "ALL": {
+     "HUMAN_ONLY": 1444
+    },
+    "CALL": {
+     "HUMAN_ONLY": 798
+    },
+    "PUT": {
+     "HUMAN_ONLY": 458
+    },
+    "OTHER": {
+     "HUMAN_ONLY": 188
+    }
+   },
+   "nonnull_doi_preferred_contract_symbol": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_governed_contract_symbol": {
+    "ALL": 1218,
+    "CALL": 772,
+    "PUT": 446,
+    "OTHER": 0
+   },
+   "nonnull_doi_preferred_assessment_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_family_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_ranking_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_liquidity_3d": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_positive_return": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_target_before_invalidation": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_model_uncertainty": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_alternatives_json": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_evidence_cutoff_utc": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "governed_vs_contract_symbol_equal": 1218,
+   "governed_symbol_empty": 226,
+   "state_x_reason": {
+    "('DATA_INCONSISTENT', 'GOVERNED_CONTRACT_IDENTITY_MISMATCH')": 63,
+    "('DATA_UNAVAILABLE', 'DOI_TABLES_NOT_ACTIVATED')": 1381
+   },
+   "mismatch_examples": []
+  },
+  "lab_signal_book_v3": {
+   "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260911_115904\\intelligence_lab\\lab_signal_book_v3.csv",
+   "rows": 19,
+   "direction_col": "governed_direction",
+   "doi_cols": [
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_contract_alignment",
+    "doi_decision_authority",
+    "doi_evidence_cutoff_utc",
+    "doi_execution_authority",
+    "doi_family_id",
+    "doi_governed_contract_identity_reason",
+    "doi_governed_contract_identity_state",
+    "doi_governed_contract_parsed_expiry",
+    "doi_governed_contract_parsed_side",
+    "doi_governed_contract_parsed_strike",
+    "doi_governed_contract_symbol",
+    "doi_input_dataset_ids_json",
+    "doi_model_uncertainty",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_probability_model_id",
+    "doi_projection_reason",
+    "doi_projection_state",
+    "doi_projection_version",
+    "doi_ranking_id",
+    "doi_ranking_mode"
+   ],
+   "doi_projection_state": {
+    "ALL": {
+     "DATA_UNAVAILABLE": 19
+    },
+    "CALL": {
+     "DATA_UNAVAILABLE": 10
+    },
+    "PUT": {
+     "DATA_UNAVAILABLE": 9
+    },
+    "OTHER": {}
+   },
+   "doi_projection_reason": {
+    "ALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 19
+    },
+    "CALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 10
+    },
+    "PUT": {
+     "DOI_TABLES_NOT_ACTIVATED": 9
+    },
+    "OTHER": {}
+   },
+   "doi_contract_alignment": {
+    "ALL": {
+     "NOT_COMPARABLE": 19
+    },
+    "CALL": {
+     "NOT_COMPARABLE": 10
+    },
+    "PUT": {
+     "NOT_COMPARABLE": 9
+    },
+    "OTHER": {}
+   },
+   "doi_ranking_mode": {
+    "ALL": {
+     "nan": 19
+    },
+    "CALL": {
+     "nan": 10
+    },
+    "PUT": {
+     "nan": 9
+    },
+    "OTHER": {}
+   },
+   "doi_governed_contract_identity_state": {
+    "ALL": {
+     "MATCH": 19
+    },
+    "CALL": {
+     "MATCH": 10
+    },
+    "PUT": {
+     "MATCH": 9
+    },
+    "OTHER": {}
+   },
+   "doi_governed_contract_identity_reason": {
+    "ALL": {
+     "OCC_IDENTITY_RECONCILED": 19
+    },
+    "CALL": {
+     "OCC_IDENTITY_RECONCILED": 10
+    },
+    "PUT": {
+     "OCC_IDENTITY_RECONCILED": 9
+    },
+    "OTHER": {}
+   },
+   "doi_projection_version": {
+    "ALL": {
+     "doi-trader-projection-v1": 19
+    },
+    "CALL": {
+     "doi-trader-projection-v1": 10
+    },
+    "PUT": {
+     "doi-trader-projection-v1": 9
+    },
+    "OTHER": {}
+   },
+   "doi_authority": {
+    "ALL": {
+     "ADVISORY_ONLY": 19
+    },
+    "CALL": {
+     "ADVISORY_ONLY": 10
+    },
+    "PUT": {
+     "ADVISORY_ONLY": 9
+    },
+    "OTHER": {}
+   },
+   "doi_decision_authority": {
+    "ALL": {
+     "NONE": 19
+    },
+    "CALL": {
+     "NONE": 10
+    },
+    "PUT": {
+     "NONE": 9
+    },
+    "OTHER": {}
+   },
+   "doi_execution_authority": {
+    "ALL": {
+     "HUMAN_ONLY": 19
+    },
+    "CALL": {
+     "HUMAN_ONLY": 10
+    },
+    "PUT": {
+     "HUMAN_ONLY": 9
+    },
+    "OTHER": {}
+   },
+   "nonnull_doi_preferred_contract_symbol": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_governed_contract_symbol": {
+    "ALL": 19,
+    "CALL": 10,
+    "PUT": 9,
+    "OTHER": 0
+   },
+   "nonnull_doi_preferred_assessment_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_family_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_ranking_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_liquidity_3d": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_positive_return": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_target_before_invalidation": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_model_uncertainty": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_alternatives_json": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_evidence_cutoff_utc": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "governed_vs_contract_symbol_equal": 19,
+   "governed_symbol_empty": 0,
+   "state_x_reason": {
+    "('DATA_UNAVAILABLE', 'DOI_TABLES_NOT_ACTIVATED')": 19
+   },
+   "mismatch_examples": []
+  }
+ },
+ "20260910_150045": {
+  "final_opportunity_book": {
+   "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\intelligence_lab\\final_opportunity_book_20260910_150045.csv",
+   "rows": 1424,
+   "direction_col": "governed_direction",
+   "doi_cols": [
+    "doi_projection_version",
+    "doi_projection_state",
+    "doi_projection_reason",
+    "doi_family_id",
+    "doi_ranking_id",
+    "doi_ranking_mode",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_governed_contract_symbol",
+    "doi_contract_alignment",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_model_uncertainty",
+    "doi_probability_model_id",
+    "doi_evidence_cutoff_utc",
+    "doi_input_dataset_ids_json",
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_decision_authority",
+    "doi_execution_authority"
+   ],
+   "doi_projection_state": {
+    "ALL": {
+     "DATA_UNAVAILABLE": 1424
+    },
+    "CALL": {
+     "DATA_UNAVAILABLE": 791
+    },
+    "PUT": {
+     "DATA_UNAVAILABLE": 451
+    },
+    "OTHER": {
+     "DATA_UNAVAILABLE": 182
+    }
+   },
+   "doi_projection_reason": {
+    "ALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 1424
+    },
+    "CALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 791
+    },
+    "PUT": {
+     "DOI_TABLES_NOT_ACTIVATED": 451
+    },
+    "OTHER": {
+     "DOI_TABLES_NOT_ACTIVATED": 182
+    }
+   },
+   "doi_contract_alignment": {
+    "ALL": {
+     "NOT_COMPARABLE": 1424
+    },
+    "CALL": {
+     "NOT_COMPARABLE": 791
+    },
+    "PUT": {
+     "NOT_COMPARABLE": 451
+    },
+    "OTHER": {
+     "NOT_COMPARABLE": 182
+    }
+   },
+   "doi_ranking_mode": {
+    "ALL": {
+     "nan": 1424
+    },
+    "CALL": {
+     "nan": 791
+    },
+    "PUT": {
+     "nan": 451
+    },
+    "OTHER": {
+     "nan": 182
+    }
+   },
+   "doi_projection_version": {
+    "ALL": {
+     "doi-trader-projection-v1": 1424
+    },
+    "CALL": {
+     "doi-trader-projection-v1": 791
+    },
+    "PUT": {
+     "doi-trader-projection-v1": 451
+    },
+    "OTHER": {
+     "doi-trader-projection-v1": 182
+    }
+   },
+   "doi_authority": {
+    "ALL": {
+     "ADVISORY_ONLY": 1424
+    },
+    "CALL": {
+     "ADVISORY_ONLY": 791
+    },
+    "PUT": {
+     "ADVISORY_ONLY": 451
+    },
+    "OTHER": {
+     "ADVISORY_ONLY": 182
+    }
+   },
+   "doi_decision_authority": {
+    "ALL": {
+     "NONE": 1424
+    },
+    "CALL": {
+     "NONE": 791
+    },
+    "PUT": {
+     "NONE": 451
+    },
+    "OTHER": {
+     "NONE": 182
+    }
+   },
+   "doi_execution_authority": {
+    "ALL": {
+     "HUMAN_ONLY": 1424
+    },
+    "CALL": {
+     "HUMAN_ONLY": 791
+    },
+    "PUT": {
+     "HUMAN_ONLY": 451
+    },
+    "OTHER": {
+     "HUMAN_ONLY": 182
+    }
+   },
+   "nonnull_doi_preferred_contract_symbol": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_governed_contract_symbol": {
+    "ALL": 1241,
+    "CALL": 791,
+    "PUT": 450,
+    "OTHER": 0
+   },
+   "nonnull_doi_preferred_assessment_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_family_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_ranking_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_liquidity_3d": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_positive_return": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_target_before_invalidation": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_model_uncertainty": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_alternatives_json": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_evidence_cutoff_utc": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "governed_vs_contract_symbol_equal": 1241,
+   "governed_symbol_empty": 183,
+   "state_x_reason": {
+    "('DATA_UNAVAILABLE', 'DOI_TABLES_NOT_ACTIVATED')": 1424
+   },
+   "mismatch_examples": []
+  },
+  "lab_triage_view": {
+   "file": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\intelligence_lab\\lab_triage_view_20260910_150045.csv",
+   "rows": 1424,
+   "direction_col": "governed_direction",
+   "doi_cols": [
+    "doi_projection_version",
+    "doi_projection_state",
+    "doi_projection_reason",
+    "doi_family_id",
+    "doi_ranking_id",
+    "doi_ranking_mode",
+    "doi_policy_id",
+    "doi_preferred_assessment_id",
+    "doi_preferred_contract_symbol",
+    "doi_governed_contract_symbol",
+    "doi_contract_alignment",
+    "doi_p_liquidity_3d",
+    "doi_p_positive_return",
+    "doi_p_target_before_invalidation",
+    "doi_model_uncertainty",
+    "doi_probability_model_id",
+    "doi_evidence_cutoff_utc",
+    "doi_input_dataset_ids_json",
+    "doi_alternatives_json",
+    "doi_authority",
+    "doi_decision_authority",
+    "doi_execution_authority"
+   ],
+   "doi_projection_state": {
+    "ALL": {
+     "DATA_UNAVAILABLE": 1424
+    },
+    "CALL": {
+     "DATA_UNAVAILABLE": 791
+    },
+    "PUT": {
+     "DATA_UNAVAILABLE": 451
+    },
+    "OTHER": {
+     "DATA_UNAVAILABLE": 182
+    }
+   },
+   "doi_projection_reason": {
+    "ALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 1424
+    },
+    "CALL": {
+     "DOI_TABLES_NOT_ACTIVATED": 791
+    },
+    "PUT": {
+     "DOI_TABLES_NOT_ACTIVATED": 451
+    },
+    "OTHER": {
+     "DOI_TABLES_NOT_ACTIVATED": 182
+    }
+   },
+   "doi_contract_alignment": {
+    "ALL": {
+     "NOT_COMPARABLE": 1424
+    },
+    "CALL": {
+     "NOT_COMPARABLE": 791
+    },
+    "PUT": {
+     "NOT_COMPARABLE": 451
+    },
+    "OTHER": {
+     "NOT_COMPARABLE": 182
+    }
+   },
+   "doi_ranking_mode": {
+    "ALL": {
+     "nan": 1424
+    },
+    "CALL": {
+     "nan": 791
+    },
+    "PUT": {
+     "nan": 451
+    },
+    "OTHER": {
+     "nan": 182
+    }
+   },
+   "doi_projection_version": {
+    "ALL": {
+     "doi-trader-projection-v1": 1424
+    },
+    "CALL": {
+     "doi-trader-projection-v1": 791
+    },
+    "PUT": {
+     "doi-trader-projection-v1": 451
+    },
+    "OTHER": {
+     "doi-trader-projection-v1": 182
+    }
+   },
+   "doi_authority": {
+    "ALL": {
+     "ADVISORY_ONLY": 1424
+    },
+    "CALL": {
+     "ADVISORY_ONLY": 791
+    },
+    "PUT": {
+     "ADVISORY_ONLY": 451
+    },
+    "OTHER": {
+     "ADVISORY_ONLY": 182
+    }
+   },
+   "doi_decision_authority": {
+    "ALL": {
+     "NONE": 1424
+    },
+    "CALL": {
+     "NONE": 791
+    },
+    "PUT": {
+     "NONE": 451
+    },
+    "OTHER": {
+     "NONE": 182
+    }
+   },
+   "doi_execution_authority": {
+    "ALL": {
+     "HUMAN_ONLY": 1424
+    },
+    "CALL": {
+     "HUMAN_ONLY": 791
+    },
+    "PUT": {
+     "HUMAN_ONLY": 451
+    },
+    "OTHER": {
+     "HUMAN_ONLY": 182
+    }
+   },
+   "nonnull_doi_preferred_contract_symbol": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_governed_contract_symbol": {
+    "ALL": 1241,
+    "CALL": 791,
+    "PUT": 450,
+    "OTHER": 0
+   },
+   "nonnull_doi_preferred_assessment_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_family_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_ranking_id": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_liquidity_3d": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_positive_return": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_p_target_before_invalidation": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_model_uncertainty": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_alternatives_json": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "nonnull_doi_evidence_cutoff_utc": {
+    "ALL": 0,
+    "CALL": 0,
+    "PUT": 0,
+    "OTHER": 0
+   },
+   "governed_vs_contract_symbol_equal": 1241,
+   "governed_symbol_empty": 183,
+   "state_x_reason": {
+    "('DATA_UNAVAILABLE', 'DOI_TABLES_NOT_ACTIVATED')": 1424
+   },
+   "mismatch_examples": []
+  },
+  "lab_signal_book_v3": {
+   "missing": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20260910_150045\\intelligence_lab\\lab_signal_book_v3.csv"
+  }
+ }
+}

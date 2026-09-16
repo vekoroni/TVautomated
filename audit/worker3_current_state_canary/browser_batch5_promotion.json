@@ -1,0 +1,35 @@
+{
+  "authorization": "User approved up to five selected tickers, $5 cumulative production budget, $1 per ticker, no retries",
+  "at": 1788810964.456946,
+  "release": {
+    "release_id": "AVS-W3-PRODUCTION-20260907-BATCH5",
+    "version": "1.0.0",
+    "status": "CONTROLLED_ACTIVE",
+    "enabled": true,
+    "provider": "ANTHROPIC",
+    "allowed_models": [
+      "claude-sonnet-4-6"
+    ],
+    "max_jobs_per_activation": 5,
+    "max_calls_per_process": 5,
+    "max_total_microusd": 5000000,
+    "max_call_microusd": 1000000,
+    "input_microusd_per_million_tokens": 3000000,
+    "output_microusd_per_million_tokens": 15000000,
+    "max_output_tokens": 8192,
+    "max_input_bytes": 500000,
+    "timeout_seconds": 300,
+    "require_operator_approval_id": true,
+    "require_semantic_review": true,
+    "require_human_review": true,
+    "lab_projection_enabled": true,
+    "authority": "ADVISORY_ONLY",
+    "can_grant_capital": false,
+    "can_reverse_direction": false
+  },
+  "budget_migration": {
+    "database_existed": false
+  },
+  "provider_calls": 0,
+  "previous_release_sha256": "ef595d57424df7a629db76ba4fb8e99450a03c86e687100c9efeefaaa0b55498"
+}

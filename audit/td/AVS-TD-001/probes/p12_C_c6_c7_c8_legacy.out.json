@@ -1,0 +1,520 @@
+{
+  "primary": {
+    "book_shape": [
+      1444,
+      475
+    ],
+    "side_counts": {
+      "CALL": 798,
+      "PUT": 458,
+      "OTHER": 188
+    },
+    "c6_legacy_states": {
+      "monetisability_state": {
+        "CALL": {
+          "DATA_MISSING": 165,
+          "LIMITED": 34,
+          "MONETISABLE": 409,
+          "NOT_MONETISABLE": 190
+        },
+        "OTHER": {
+          "DATA_MISSING": 188,
+          "LIMITED": 0,
+          "MONETISABLE": 0,
+          "NOT_MONETISABLE": 0
+        },
+        "PUT": {
+          "DATA_MISSING": 98,
+          "LIMITED": 3,
+          "MONETISABLE": 348,
+          "NOT_MONETISABLE": 9
+        }
+      },
+      "monetisability_state_timevalue": {
+        "CALL": {
+          "LIMITED": 31,
+          "MONETISABLE": 466,
+          "NOT_EVALUATED": 165,
+          "NOT_MONETISABLE": 136
+        },
+        "OTHER": {
+          "LIMITED": 0,
+          "MONETISABLE": 0,
+          "NOT_EVALUATED": 188,
+          "NOT_MONETISABLE": 0
+        },
+        "PUT": {
+          "LIMITED": 4,
+          "MONETISABLE": 350,
+          "NOT_EVALUATED": 98,
+          "NOT_MONETISABLE": 6
+        }
+      },
+      "monetisability_status": {
+        "CALL": {
+          "COMPLETE": 633,
+          "FAILED": 165
+        },
+        "OTHER": {
+          "COMPLETE": 0,
+          "FAILED": 188
+        },
+        "PUT": {
+          "COMPLETE": 360,
+          "FAILED": 98
+        }
+      },
+      "monetisability_authority": {
+        "CALL": {
+          "ADVISORY_SCENARIO_ONLY": 798
+        },
+        "OTHER": {
+          "ADVISORY_SCENARIO_ONLY": 188
+        },
+        "PUT": {
+          "ADVISORY_SCENARIO_ONLY": 458
+        }
+      },
+      "monetisability_calculation_version": {
+        "CALL": {
+          "expiry-intrinsic-floor-v2-advisory": 798
+        },
+        "OTHER": {
+          "expiry-intrinsic-floor-v2-advisory": 188
+        },
+        "PUT": {
+          "expiry-intrinsic-floor-v2-advisory": 458
+        }
+      },
+      "monetisability_timevalue_model": {
+        "CALL": {
+          "BS_CONST_IV_R0_Q0": 798
+        },
+        "OTHER": {
+          "BS_CONST_IV_R0_Q0": 188
+        },
+        "PUT": {
+          "BS_CONST_IV_R0_Q0": 458
+        }
+      },
+      "monetisability_reason": {
+        "CALL": {
+          "DIRECTION_TARGET_OR_LONG_LEG_MISSING": 139,
+          "GOVERNED_DIRECTION_MISSING": 0,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 34,
+          "SELECTED_CONTRACT_MISSING": 26,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 190,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 409
+        },
+        "OTHER": {
+          "DIRECTION_TARGET_OR_LONG_LEG_MISSING": 0,
+          "GOVERNED_DIRECTION_MISSING": 188,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 0,
+          "SELECTED_CONTRACT_MISSING": 0,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 0,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 0
+        },
+        "PUT": {
+          "DIRECTION_TARGET_OR_LONG_LEG_MISSING": 86,
+          "GOVERNED_DIRECTION_MISSING": 0,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 3,
+          "SELECTED_CONTRACT_MISSING": 12,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 9,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 348
+        }
+      }
+    },
+    "c6_scenario_vocabulary_present": [],
+    "c6_doi_columns_populated": {
+      "doi_projection_version": 1444,
+      "doi_projection_state": 1444,
+      "doi_projection_reason": 1444,
+      "doi_family_id": 0,
+      "doi_ranking_id": 0,
+      "doi_ranking_mode": 0,
+      "doi_policy_id": 0,
+      "doi_preferred_assessment_id": 0,
+      "doi_preferred_contract_symbol": 0,
+      "doi_governed_contract_symbol": 1218,
+      "doi_contract_alignment": 1444,
+      "doi_p_liquidity_3d": 0,
+      "doi_p_positive_return": 0,
+      "doi_p_target_before_invalidation": 0,
+      "doi_model_uncertainty": 0,
+      "doi_probability_model_id": 0,
+      "doi_evidence_cutoff_utc": 0,
+      "doi_input_dataset_ids_json": 1444,
+      "doi_alternatives_json": 1444,
+      "doi_authority": 1444,
+      "doi_decision_authority": 1444,
+      "doi_execution_authority": 1444
+    },
+    "c7_convexity": {
+      "final_book": {
+        "n": 1444,
+        "n_nonnull": 1444,
+        "n_distinct": 2,
+        "value_counts": {
+          "2.0": 1218,
+          "0.0": 226
+        },
+        "fraction_eq_2": 0.8434903047091413,
+        "by_side_fraction_eq_2": {
+          "CALL": 0.9674185463659147,
+          "PUT": 0.9737991266375546,
+          "OTHER": 0.0
+        }
+      },
+      "options_csv": {
+        "n": 1444,
+        "n_distinct": 1,
+        "fraction_eq_2": 0.8434903047091413,
+        "value_counts": {
+          "2.0": 1218,
+          "nan": 226
+        },
+        "cols_present": [
+          "ticker",
+          "governed_direction",
+          "convexity_score",
+          "event_convexity_score"
+        ]
+      }
+    }
+  },
+  "comparison": {
+    "book_shape": [
+      1424,
+      475
+    ],
+    "side_counts": {
+      "CALL": 791,
+      "PUT": 451,
+      "OTHER": 182
+    },
+    "c6_legacy_states": {
+      "monetisability_state": {
+        "CALL": {
+          "DATA_MISSING": 138,
+          "LIMITED": 32,
+          "MONETISABLE": 456,
+          "NOT_MONETISABLE": 165
+        },
+        "OTHER": {
+          "DATA_MISSING": 182,
+          "LIMITED": 0,
+          "MONETISABLE": 0,
+          "NOT_MONETISABLE": 0
+        },
+        "PUT": {
+          "DATA_MISSING": 84,
+          "LIMITED": 5,
+          "MONETISABLE": 353,
+          "NOT_MONETISABLE": 9
+        }
+      },
+      "monetisability_state_timevalue": {
+        "CALL": {
+          "LIMITED": 40,
+          "MONETISABLE": 507,
+          "NOT_EVALUATED": 138,
+          "NOT_MONETISABLE": 106
+        },
+        "OTHER": {
+          "LIMITED": 0,
+          "MONETISABLE": 0,
+          "NOT_EVALUATED": 182,
+          "NOT_MONETISABLE": 0
+        },
+        "PUT": {
+          "LIMITED": 4,
+          "MONETISABLE": 356,
+          "NOT_EVALUATED": 84,
+          "NOT_MONETISABLE": 7
+        }
+      },
+      "monetisability_status": {
+        "CALL": {
+          "COMPLETE": 653,
+          "FAILED": 138
+        },
+        "OTHER": {
+          "COMPLETE": 0,
+          "FAILED": 182
+        },
+        "PUT": {
+          "COMPLETE": 367,
+          "FAILED": 84
+        }
+      },
+      "monetisability_authority": {
+        "CALL": {
+          "ADVISORY_SCENARIO_ONLY": 791
+        },
+        "OTHER": {
+          "ADVISORY_SCENARIO_ONLY": 182
+        },
+        "PUT": {
+          "ADVISORY_SCENARIO_ONLY": 451
+        }
+      },
+      "monetisability_calculation_version": {
+        "CALL": {
+          "expiry-intrinsic-floor-v2-advisory": 791
+        },
+        "OTHER": {
+          "expiry-intrinsic-floor-v2-advisory": 182
+        },
+        "PUT": {
+          "expiry-intrinsic-floor-v2-advisory": 451
+        }
+      },
+      "monetisability_timevalue_model": {
+        "CALL": {
+          "BS_CONST_IV_R0_Q0": 791
+        },
+        "OTHER": {
+          "BS_CONST_IV_R0_Q0": 182
+        },
+        "PUT": {
+          "BS_CONST_IV_R0_Q0": 451
+        }
+      },
+      "monetisability_reason": {
+        "CALL": {
+          "EOD_ASK_STRIKE_OR_TARGET_MISSING": 138,
+          "GOVERNED_DIRECTION_MISSING": 0,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 32,
+          "SELECTED_CONTRACT_MISSING": 0,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 165,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 456
+        },
+        "OTHER": {
+          "EOD_ASK_STRIKE_OR_TARGET_MISSING": 0,
+          "GOVERNED_DIRECTION_MISSING": 182,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 0,
+          "SELECTED_CONTRACT_MISSING": 0,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 0,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 0
+        },
+        "PUT": {
+          "EOD_ASK_STRIKE_OR_TARGET_MISSING": 83,
+          "GOVERNED_DIRECTION_MISSING": 0,
+          "POSITIVE_TARGET_PROFIT_BELOW_MINIMUM": 5,
+          "SELECTED_CONTRACT_MISSING": 1,
+          "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN": 9,
+          "TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR": 353
+        }
+      }
+    },
+    "c6_scenario_vocabulary_present": [],
+    "c6_doi_columns_populated": {
+      "doi_projection_version": 1424,
+      "doi_projection_state": 1424,
+      "doi_projection_reason": 1424,
+      "doi_family_id": 0,
+      "doi_ranking_id": 0,
+      "doi_ranking_mode": 0,
+      "doi_policy_id": 0,
+      "doi_preferred_assessment_id": 0,
+      "doi_preferred_contract_symbol": 0,
+      "doi_governed_contract_symbol": 1241,
+      "doi_contract_alignment": 1424,
+      "doi_p_liquidity_3d": 0,
+      "doi_p_positive_return": 0,
+      "doi_p_target_before_invalidation": 0,
+      "doi_model_uncertainty": 0,
+      "doi_probability_model_id": 0,
+      "doi_evidence_cutoff_utc": 0,
+      "doi_input_dataset_ids_json": 1424,
+      "doi_alternatives_json": 1424,
+      "doi_authority": 1424,
+      "doi_decision_authority": 1424,
+      "doi_execution_authority": 1424
+    },
+    "c7_convexity": {
+      "final_book": {
+        "n": 1424,
+        "n_nonnull": 1424,
+        "n_distinct": 2,
+        "value_counts": {
+          "2.0": 1241,
+          "0.0": 183
+        },
+        "fraction_eq_2": 0.8714887640449438,
+        "by_side_fraction_eq_2": {
+          "CALL": 1.0,
+          "PUT": 0.9977827050997783,
+          "OTHER": 0.0
+        }
+      },
+      "options_csv": {
+        "n": 1424,
+        "n_distinct": 1,
+        "fraction_eq_2": 0.8714887640449438,
+        "value_counts": {
+          "2.0": 1241,
+          "nan": 183
+        },
+        "cols_present": [
+          "ticker",
+          "governed_direction",
+          "convexity_score",
+          "event_convexity_score"
+        ]
+      }
+    }
+  },
+  "c8_rr_columns": {
+    "intelligence_lab/final_opportunity_book_20260911_115904.csv": {
+      "n_cols": 474,
+      "rr_cols": [
+        "rr_predicted",
+        "rr_underlying",
+        "rr_premium_expected",
+        "rr_contract_symbol",
+        "rr_evaluation_id",
+        "rr_recompute_status",
+        "rr_recompute_reason",
+        "rr_calculation_version",
+        "rr_entry_debit_per_share",
+        "rr_target_value_per_share"
+      ],
+      "n_rr": 10
+    },
+    "intelligence_lab/lab_triage_view_20260911_115904.csv": {
+      "n_cols": 473,
+      "rr_cols": [
+        "rr_predicted",
+        "rr_underlying",
+        "rr_premium_expected",
+        "rr_contract_symbol",
+        "rr_evaluation_id",
+        "rr_recompute_status",
+        "rr_recompute_reason",
+        "rr_calculation_version",
+        "rr_entry_debit_per_share",
+        "rr_target_value_per_share"
+      ],
+      "n_rr": 10
+    },
+    "intelligence_lab/lab_signal_book_v3.csv": {
+      "n_cols": 502,
+      "rr_cols": [
+        "rr_calculation_version",
+        "rr_contract_symbol",
+        "rr_entry_debit_per_share",
+        "rr_evaluation_id",
+        "rr_predicted",
+        "rr_premium_expected",
+        "rr_recompute_reason",
+        "rr_recompute_status",
+        "rr_target_value_per_share",
+        "rr_underlying"
+      ],
+      "n_rr": 10
+    },
+    "morning_validation/morning_validated_trades_20260911_115904.csv": {
+      "n_cols": 991,
+      "rr_cols": [
+        "rr",
+        "rr_underlying",
+        "rr_flag",
+        "rr_confidence",
+        "rr_premium_expected",
+        "rr_options",
+        "option_rr",
+        "rr_predicted",
+        "rr_contract_symbol",
+        "rr_evaluation_id",
+        "rr_recompute_status",
+        "rr_recompute_reason",
+        "rr_calculation_version",
+        "rr_entry_debit_per_share",
+        "rr_target_value_per_share"
+      ],
+      "n_rr": 15
+    },
+    "morning_validation/morning_candidates_20260911_115904.csv": {
+      "n_cols": 674,
+      "rr_cols": [
+        "rr",
+        "rr_underlying",
+        "rr_flag",
+        "rr_confidence",
+        "rr_premium_expected"
+      ],
+      "n_rr": 5
+    },
+    "options/options_intelligence_20260911_115904.csv": {
+      "n_cols": 857,
+      "rr_cols": [
+        "rr_options",
+        "rr_premium_expected"
+      ],
+      "n_rr": 2
+    },
+    "execution/execution_v3_5_20260911_115904.csv": {
+      "n_cols": 1191,
+      "rr_cols": [
+        "rr_options",
+        "rr_premium_expected"
+      ],
+      "n_rr": 2
+    },
+    "trades/execution_gated_20260911_115904.csv": {
+      "n_cols": 950,
+      "rr_cols": [
+        "rr",
+        "rr_underlying",
+        "rr_flag",
+        "rr_confidence",
+        "rr_premium_expected",
+        "rr_options",
+        "option_rr",
+        "rr_predicted",
+        "rr_contract_symbol",
+        "rr_evaluation_id",
+        "rr_recompute_status",
+        "rr_recompute_reason",
+        "rr_calculation_version",
+        "rr_entry_debit_per_share",
+        "rr_target_value_per_share"
+      ],
+      "n_rr": 15
+    },
+    "trades/execution_actionable_20260911_115904.csv": {
+      "n_cols": 1006,
+      "rr_cols": [
+        "rr",
+        "rr_underlying",
+        "rr_flag",
+        "rr_confidence",
+        "rr_premium_expected",
+        "rr_options",
+        "option_rr",
+        "rr_predicted",
+        "rr_contract_symbol",
+        "rr_evaluation_id",
+        "rr_recompute_status",
+        "rr_recompute_reason",
+        "rr_calculation_version",
+        "rr_entry_debit_per_share",
+        "rr_target_value_per_share"
+      ],
+      "n_rr": 15
+    },
+    "final_book_rr_population": {
+      "rr_predicted": 992,
+      "rr_underlying": 1444,
+      "rr_premium_expected": 992,
+      "rr_contract_symbol": 992,
+      "rr_evaluation_id": 0,
+      "rr_recompute_status": 1218,
+      "rr_recompute_reason": 257,
+      "rr_calculation_version": 961,
+      "rr_entry_debit_per_share": 961,
+      "rr_target_value_per_share": 961
+    }
+  }
+}

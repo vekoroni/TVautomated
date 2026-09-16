@@ -1,0 +1,15 @@
+== test_dynamic_options_ranking
+..............                                                           [100%]
+14 passed in 125.73s (0:02:05)
+== test_dynamic_options_lifecycle
+.................                                                        [100%]
+17 passed in 39.44s
+== test_dynamic_options_non_discard_policy
+....                                                                     [100%]
+4 passed in 36.30s
+== test_option_liquidity_lifecycle
+................                                                         [100%]
+16 passed in 60.56s (0:01:00)
+== test_doi11_production_integration
+......                                                                   [100%]
+6 passed in 67.27s (0:01:07)

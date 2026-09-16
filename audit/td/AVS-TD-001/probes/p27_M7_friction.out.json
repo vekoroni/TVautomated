@@ -1,0 +1,61 @@
+{
+ "20260911_115904": {
+  "rows": 1444,
+  "direction_counts": {
+   "CALL": 798,
+   "PUT": 458,
+   "OTHER": 188
+  },
+  "governed_direction_values": {
+   "CALL": 798,
+   "PUT": 458,
+   "STRANGLE": 138,
+   "UNRESOLVED": 50
+  },
+  "quoted_rows": 1218,
+  "no_quote_rows": 226,
+  "bid_zero_rows": 37,
+  "spread_pct_vs_s_rows": 1218,
+  "spread_pct_eq_s_within_1pct_rel": 0,
+  "spread_pct_eq_100s_within_1pct_rel": 1218,
+  "spread_pct_range": [
+   1.3333333333333344,
+   200.0
+  ]
+ },
+ "20260910_150045": {
+  "rows": 1424,
+  "direction_counts": {
+   "CALL": 791,
+   "PUT": 451,
+   "OTHER": 182
+  },
+  "governed_direction_values": {
+   "CALL": 791,
+   "PUT": 451,
+   "STRANGLE": 135,
+   "UNRESOLVED": 47
+  },
+  "quoted_rows": 1241,
+  "no_quote_rows": 183,
+  "bid_zero_rows": 36,
+  "spread_pct_vs_s_rows": 1241,
+  "spread_pct_eq_s_within_1pct_rel": 1241,
+  "spread_pct_eq_100s_within_1pct_rel": 0,
+  "spread_pct_range": [
+   0.0133333333333333,
+   2.0
+  ]
+ },
+ "OFFLINE": {
+  "rows": 2385,
+  "direction_counts": {
+   "CALL": 1427,
+   "PUT": 958
+  },
+  "quoted_rows": 2374,
+  "store_spread_pct_eq_s": 1855,
+  "store_spread_pct_rows": 1855
+ },
+ "fills": "0 FILL_RECORDED in decision_outcome_ledger copy (Track H); effective half-spread multiplier unestimable; 1.0 only supportable assumption (MEASURED)"
+}

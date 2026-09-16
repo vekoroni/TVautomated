@@ -1,0 +1,74 @@
+FFFFFFFFFFF..FF.....F.                                                   [100%]
+================================== FAILURES ===================================
+E   KeyError: 'STR1'
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:128: KeyError: 'STR1'
+E   KeyError: 'T'
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:142: KeyError: 'T'
+E   KeyError: 'ABS1'
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:154: KeyError: 'ABS1'
+E   KeyError: 'STR1'
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:163: KeyError: 'STR1'
+E   AssertionError: assert 'STR1' in set()
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:180: AssertionError: assert 'STR1' in set()
+E   AssertionError: FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)
+    assert 'STR1' in set()
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:192: AssertionError: FLAG_ONLY must keep the row in the dataset (recoverable via Show blocked)
+E   AssertionError: governed-book membership cannot be changed by a local UI policy
+    assert 'STR1' in set()
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:205: AssertionError: governed-book membership cannot be changed by a local UI policy
+E   KeyError: 'STR1'
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 3 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:240: KeyError: 'STR1'
+E   StopIteration
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 3 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 3 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 3/3 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_strangle_direction.py:260: StopIteration
+E   IndexError: list index out of range
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 1 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 0 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: EIL_FULL via eil_enriched | 1/1 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_cache_signature.py:85: IndexError: list index out of range
+E   IndexError: list index out of range
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 1 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 1 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 0 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: EIL_FULL via eil_enriched | 1/1 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_cache_signature.py:132: IndexError: list index out of range
+E   IndexError: list index out of range
+---------------------------- Captured stdout call -----------------------------
+  \u2713 EIL (primary): 1 signals\n  \u2713 SuperBrain (verdict only): 0 rows\n  \u2713 Execution verdicts: 0 rows\n  \u2713 Options intel: 0 rows\n  \u2713 Vanguard: 0 rows\n  \u2713 WBS: 0 rows\n  \u2713 GARCH: 0 rows\n  \u2713 Morning validation: 1 rows\n  \u2713 EOD candidates: 0 rows\n  Lab handoff: MORNING_VALIDATION via morning_validated_trades | 1/1 rows\n  \u2713 V5 signals: 0 rows (not found)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_lab_journal_handoff.py:286: IndexError: list index out of range
+E   ValueError: substring not found
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_ev3_orchestrator_order.py:11: ValueError: substring not found
+E   assert False
+     +  where False = all(<generator object test_opportunity_book_and_learning_feedback.<locals>.<genexpr> at 0x000001EB35192340>)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\tests\test_big_bang_phase_6_7.py:286: assert False
+=========================== short test summary info ===========================
+FAILED tests/test_lab_strangle_direction.py::test_strangle_row_does_not_receive_call_or_put_direction
+FAILED tests/test_lab_strangle_direction.py::test_genuine_put_row_still_resolves_to_put
+FAILED tests/test_lab_strangle_direction.py::test_absent_direction_row_behaves_as_before
+FAILED tests/test_lab_strangle_direction.py::test_strangle_row_gets_options_direction_and_coherence_columns
+FAILED tests/test_lab_strangle_direction.py::test_strangle_policy_include_labelled_keeps_row_in_default_queue
+FAILED tests/test_lab_strangle_direction.py::test_local_flag_policy_cannot_override_governed_book_membership
+FAILED tests/test_lab_strangle_direction.py::test_local_exclude_policy_cannot_delete_governed_book_evidence
+FAILED tests/test_lab_strangle_direction.py::test_strangle_direction_survives_conflicting_eod_candidate_manifest
+FAILED tests/test_lab_strangle_direction.py::test_directional_thesis_target_survives_without_fabricated_contract_geometry
+FAILED tests/test_lab_cache_signature.py::test_lab_reload_detects_fresh_eil_enriched_output_without_manual_cache_clear
+FAILED tests/test_lab_cache_signature.py::test_lab_reload_detects_fresh_options_intelligence_output_without_manual_cache_clear
+FAILED tests/test_lab_journal_handoff.py::test_lab_reload_detects_fresh_morning_validator_output_without_manual_cache_clear
+FAILED tests/test_ev3_orchestrator_order.py::test_ev3_runs_after_horizon_router_and_raw_options_patch
+FAILED tests/test_big_bang_phase_6_7.py::test_opportunity_book_and_learning_feedback
+14 failed, 8 passed in 79.90s (0:01:19)
+exit=1

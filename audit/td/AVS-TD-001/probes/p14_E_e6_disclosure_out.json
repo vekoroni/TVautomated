@@ -1,0 +1,143 @@
+{
+ "substitute_computed": false,
+ "files": {
+  "scripts/calibrate_probabilities.py": false,
+  "vanguard/layer2_statistical/calibration_labels.py": false,
+  "audit/avs_fix_002/stage6/CURRENT_LEARNING_READINESS.json": true
+ },
+ "calibration_named_artefacts": [
+  "data\\output\\runs\\20260831_010309\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260901_082437\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260902_232526\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260904_004338\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260904_122358\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260905_151448\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260906_213931\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260909_071646\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260910_150045\\ev3_shadow\\ev3_calibration_readiness.json",
+  "data\\output\\runs\\20260911_115904\\ev3_shadow\\ev3_calibration_readiness.json"
+ ],
+ "governed_constants_top_keys": [
+  "provider_completeness",
+  "volatility_budget",
+  "contract_economics",
+  "preferred_contract",
+  "outcome_learning",
+  "schema_version"
+ ],
+ "calibration_kappa_n_min_present": {
+  "calibration": false,
+  "kappa": false,
+  "n_min": false
+ },
+ "ledger": {
+  "OUTCOME_events": 1,
+  "OUTCOME_counterfactual": 0,
+  "OUTCOME_with_first_passage_state": 0,
+  "OUTCOME_OBSERVATION_events": 0,
+  "CANDIDATE_DECISION": 4931
+ },
+ "resolved_label_n_by_direction_x_hold": {
+  "CALL|1-5": 0,
+  "CALL|6-10": 0,
+  "CALL|11-20": 0,
+  "PUT|1-5": 0,
+  "PUT|6-10": 0,
+  "PUT|11-20": 0
+ },
+ "resolved_label_n_OTHER": 0,
+ "control_plane_doi_outcome_labels": 0,
+ "phantom_outcomes": 0,
+ "books": {
+  "20260911_115904": {
+   "rows": 1444,
+   "fields": {
+    "doi_p_target_before_invalidation": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "ev3_p_target": {
+     "CALL": 129,
+     "PUT": 94,
+     "OTHER": 0
+    },
+    "win_prob_predicted": {
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "CALL": 798,
+     "PUT": 458,
+     "OTHER": 188
+    }
+   },
+   "rows_by_direction": {
+    "CALL": 798,
+    "PUT": 458,
+    "OTHER": 188
+   }
+  },
+  "20260910_150045": {
+   "rows": 1424,
+   "fields": {
+    "doi_p_target_before_invalidation": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "doi_probability_model_id": {
+     "CALL": 0,
+     "PUT": 0,
+     "OTHER": 0
+    },
+    "ev3_p_target": {
+     "CALL": 134,
+     "PUT": 95,
+     "OTHER": 0
+    },
+    "win_prob_predicted": {
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182
+    },
+    "layer2__adjusted_prob_target_hit": {
+     "CALL": 791,
+     "PUT": 451,
+     "OTHER": 182
+    }
+   },
+   "rows_by_direction": {
+    "CALL": 791,
+    "PUT": 451,
+    "OTHER": 182
+   }
+  }
+ },
+ "ev3_calibration_readiness": {
+  "20260911_115904": {
+   "status": "INSUFFICIENT_OUTCOMES",
+   "matched_outcome_rows": 0,
+   "capital_authority_calibrated": false,
+   "schema_version": "ev3-calibration-readiness-v1"
+  },
+  "20260910_150045": {
+   "status": "INSUFFICIENT_OUTCOMES",
+   "matched_outcome_rows": 0,
+   "capital_authority_calibrated": false,
+   "schema_version": "ev3-calibration-readiness-v1"
+  }
+ },
+ "stage6_readiness": {
+  "state": "INSUFFICIENT_OUTCOMES",
+  "can_activate": false,
+  "records": 0,
+  "partition_state": "INSUFFICIENT_SESSIONS"
+ }
+}

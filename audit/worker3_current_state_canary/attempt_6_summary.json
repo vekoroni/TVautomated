@@ -1,0 +1,28 @@
+{
+  "attempt": 6,
+  "technical_canary_accepted": true,
+  "state": "REVIEW_REQUIRED",
+  "semantic_status": "BLOCKED",
+  "semantic_findings": [
+    "section:CHANGES:UNCITED_SECTION_REVIEW",
+    "section:COMPANY:UNCITED_SECTION_REVIEW",
+    "section:CONTEXT:UNCITED_SECTION_REVIEW"
+  ],
+  "count_requests": 1,
+  "generation_requests": 1,
+  "retries": 0,
+  "cost_microusd": 339039,
+  "cumulative_list_price_microusd": 1630638,
+  "input_tokens": 94558,
+  "output_tokens": 3691,
+  "elapsed_ms": 64695,
+  "restart_replay_provider_called": false,
+  "accounting": {
+    "reported_cost_microusd": 339039,
+    "unknown_cost_reservation_microusd": 0,
+    "unknown_calls": 0
+  },
+  "protected_changes": [],
+  "protected_files_checked": 1671,
+  "production_enabled": false
+}

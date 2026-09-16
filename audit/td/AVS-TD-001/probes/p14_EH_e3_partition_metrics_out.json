@@ -1,0 +1,156 @@
+{
+ "partA_partition": {
+  "state": "READY",
+  "purge_embargo_sessions": 20,
+  "n_records": 280,
+  "n_train": 196,
+  "n_val": 2,
+  "n_test": 2,
+  "n_embargo": 80,
+  "n_overlap": 0,
+  "train_sessions": [
+   "2025-01-02",
+   "2025-05-19"
+  ],
+  "val_sessions": [
+   "2025-06-17",
+   "2025-06-17"
+  ],
+  "test_sessions": [
+   "2025-07-16",
+   "2025-07-16"
+  ],
+  "training_cutoff_session": "2025-05-19",
+  "validation_cutoff_session": "2025-06-17",
+  "date_ordered_train_lt_val_lt_test": true,
+  "gap_train_to_val_sessions": 21,
+  "gap_val_to_test_sessions": 21,
+  "embargo_ge_20_both_boundaries": true,
+  "no_train_outcome_reaches_val": true,
+  "no_val_outcome_reaches_test": true,
+  "all_records_accounted": true,
+  "order_invariant": true,
+  "30_sessions_state": "INSUFFICIENT_SESSIONS_FOR_PURGED_PARTITIONS",
+  "embargo_unit_note": "embargo counted in DISTINCT decision sessions present in the data (index positions), not exchange-calendar sessions; with dense daily data the two coincide"
+ },
+ "partB_metrics": {
+  "n": 300,
+  "class_counts": [
+   133.0,
+   89.0,
+   78.0
+  ],
+  "brier_multiclass_mine": 0.1793865913370169,
+  "brier_base_mine": 0.2159481481481481,
+  "brier_skill_mine": 0.16930710971435925,
+  "classwise": {
+   "TARGET_FIRST": {
+    "ece_mine": 0.04908824386772045,
+    "ece_production_bins": 0.04908824386772045,
+    "ece_production_metrics": 0.04908824386772045,
+    "ece_agree_1e-12": true,
+    "binary_brier_production": 0.20658969993789625,
+    "binary_brier_mine": 0.20658969993789625,
+    "n_bins_populated": 10
+   },
+   "INVALIDATION_FIRST": {
+    "ece_mine": 0.038534925781098274,
+    "ece_production_bins": 0.03853492578109827,
+    "ece_production_metrics": 0.03853492578109827,
+    "ece_agree_1e-12": true,
+    "binary_brier_production": 0.1743362356307162,
+    "binary_brier_mine": 0.1743362356307162,
+    "n_bins_populated": 9
+   },
+   "TIMEOUT": {
+    "ece_mine": 0.047668235950584184,
+    "ece_production_bins": 0.047668235950584184,
+    "ece_production_metrics": 0.047668235950584184,
+    "ece_agree_1e-12": true,
+    "binary_brier_production": 0.15723383844243835,
+    "binary_brier_mine": 0.15723383844243835,
+    "n_bins_populated": 10
+   }
+  },
+  "brier_multiclass_from_production_binary_mean": 0.17938659133701693,
+  "brier_multiclass_agree_1e-12": true,
+  "production_multiclass_function_exists": false,
+  "production_classwise_ece_function_exists": "binary only: canonical_data/dynamic_options_probability._calibration_bins/_metrics (DOI module, not ALG-09)"
+ },
+ "partC_gate": {
+  "zero_records_policy_off": {
+   "state": "INSUFFICIENT_OUTCOMES",
+   "can_activate": false,
+   "reasons": [
+    "MINIMUM_FIT_OUTCOMES_NOT_MET",
+    "MINIMUM_OUTCOME_COVERAGE_NOT_MET",
+    "MINIMUM_DIRECTION_HORIZON_SUPPORT_NOT_MET",
+    "HELD_OUT_METRICS_NOT_AVAILABLE",
+    "MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE"
+   ],
+   "coverage": 0.0
+  },
+  "good_metrics_policy_off": {
+   "state": "RELEASE_PROFILE_DISABLED",
+   "can_activate": false,
+   "reasons": [
+    "MODEL_ACTIVATION_DISABLED_BY_RELEASE_PROFILE"
+   ],
+   "coverage": 1.0
+  },
+  "good_metrics_policy_on": {
+   "state": "ELIGIBLE_FOR_OPERATOR_REVIEW",
+   "can_activate": true,
+   "reasons": [],
+   "coverage": 1.0
+  },
+  "ece_0.1001": {
+   "state": "METRIC_GATES_FAILED",
+   "can_activate": false,
+   "reasons": [
+    "HELD_OUT_METRIC_GATES_FAILED"
+   ],
+   "coverage": 1.0
+  },
+  "brier_skill_0_tie": {
+   "state": "METRIC_GATES_FAILED",
+   "can_activate": false,
+   "reasons": [
+    "HELD_OUT_METRIC_GATES_FAILED"
+   ],
+   "coverage": 1.0
+  },
+  "roc_0.50_tie": {
+   "state": "METRIC_GATES_FAILED",
+   "can_activate": false,
+   "reasons": [
+    "HELD_OUT_METRIC_GATES_FAILED"
+   ],
+   "coverage": 1.0
+  },
+  "pr_auc_eq_base_rate_tie": {
+   "state": "METRIC_GATES_FAILED",
+   "can_activate": false,
+   "reasons": [
+    "HELD_OUT_METRIC_GATES_FAILED"
+   ],
+   "coverage": 1.0
+  },
+  "lift_1.0_tie": {
+   "state": "METRIC_GATES_FAILED",
+   "can_activate": false,
+   "reasons": [
+    "HELD_OUT_METRIC_GATES_FAILED"
+   ],
+   "coverage": 1.0
+  },
+  "coverage_0.59": {
+   "state": "INSUFFICIENT_COVERAGE",
+   "can_activate": false,
+   "reasons": [
+    "MINIMUM_OUTCOME_COVERAGE_NOT_MET"
+   ],
+   "coverage": 0.5897
+  }
+ }
+}

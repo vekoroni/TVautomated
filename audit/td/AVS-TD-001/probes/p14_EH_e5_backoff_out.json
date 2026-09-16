@@ -1,0 +1,635 @@
+{
+ "kappa_in_domain_outcome_learning_source": false,
+ "functions_in_domain_outcome_learning": [
+  "_canonical",
+  "_finite_optional",
+  "_identity",
+  "assess_model_activation",
+  "attribute_outcome",
+  "competing_event_label",
+  "hold_bucket"
+ ],
+ "config_keys_matching_kappa_or_n_min_or_calibration": [],
+ "backoff_chain_order_matches_annex": true,
+ "match_level_type": "str",
+ "fields_present_on_all_10": {
+  "match_level": true,
+  "exact_n": false,
+  "parent_n": false,
+  "shrinkage_weight": false,
+  "match_dims_used": false
+ },
+ "unavailable_retained_not_dropped": true,
+ "rows": [
+  {
+   "key": "ACCUMULATION|EARLY|LOW|CALL|1-5",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 10,
+    "p_exact": 0.4,
+    "p_parent": 0.3
+   },
+   "my_shrunk_p_hat_kappa50": 0.316667,
+   "my_shrinkage_weight_kappa50": 0.833333,
+   "production_p_hat": null
+  },
+  {
+   "key": "ACCUMULATION|EARLY|MID|CALL|6-10",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 120,
+    "p_exact": 0.45,
+    "p_parent": 0.33
+   },
+   "my_shrunk_p_hat_kappa50": 0.414706,
+   "my_shrinkage_weight_kappa50": 0.294118,
+   "production_p_hat": null
+  },
+  {
+   "key": "MARKUP|LATE|HIGH|CALL|11-20",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 0,
+    "p_exact": 0.0,
+    "p_parent": 0.31
+   },
+   "my_shrunk_p_hat_kappa50": 0.31,
+   "my_shrinkage_weight_kappa50": 1.0,
+   "production_p_hat": null
+  },
+  {
+   "key": "DISTRIBUTION|EARLY|LOW|PUT|1-5",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 250,
+    "p_exact": 0.36,
+    "p_parent": 0.3
+   },
+   "my_shrunk_p_hat_kappa50": 0.35,
+   "my_shrinkage_weight_kappa50": 0.166667,
+   "production_p_hat": null
+  },
+  {
+   "key": "DISTRIBUTION|MID|MID|PUT|6-10",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 50,
+    "p_exact": 0.5,
+    "p_parent": 0.32
+   },
+   "my_shrunk_p_hat_kappa50": 0.41,
+   "my_shrinkage_weight_kappa50": 0.5,
+   "production_p_hat": null
+  },
+  {
+   "key": "MARKDOWN|LATE|HIGH|PUT|11-20",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 5,
+    "p_exact": 0.8,
+    "p_parent": 0.29
+   },
+   "my_shrunk_p_hat_kappa50": 0.336364,
+   "my_shrinkage_weight_kappa50": 0.909091,
+   "production_p_hat": null
+  },
+  {
+   "key": "UNAVAILABLE|UNAVAILABLE|UNAVAILABLE|CALL|1-5",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 30,
+    "p_exact": 0.2,
+    "p_parent": 0.3
+   },
+   "my_shrunk_p_hat_kappa50": 0.2625,
+   "my_shrinkage_weight_kappa50": 0.625,
+   "production_p_hat": null
+  },
+  {
+   "key": "REACCUMULATION|UNAVAILABLE|LOW|PUT|6-10",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 199,
+    "p_exact": 0.34,
+    "p_parent": 0.3
+   },
+   "my_shrunk_p_hat_kappa50": 0.331968,
+   "my_shrinkage_weight_kappa50": 0.200803,
+   "production_p_hat": null
+  },
+  {
+   "key": "MARKUP|MID|UNAVAILABLE|CALL|6-10",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 1000,
+    "p_exact": 0.41,
+    "p_parent": 0.33
+   },
+   "my_shrunk_p_hat_kappa50": 0.40619,
+   "my_shrinkage_weight_kappa50": 0.047619,
+   "production_p_hat": null
+  },
+  {
+   "key": "MARKDOWN|EARLY|MID|PUT|11-20",
+   "chain_len": 5,
+   "match_levels": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "level0_keys": [
+    "compression_bucket",
+    "direction",
+    "hidden_state_label",
+    "hold_bucket",
+    "match_level",
+    "phase"
+   ],
+   "fields_present": {
+    "match_level": true,
+    "exact_n": false,
+    "parent_n": false,
+    "shrinkage_weight": false,
+    "match_dims_used": false
+   },
+   "chain_dims": [
+    [
+     "compression_bucket",
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket",
+     "phase"
+    ],
+    [
+     "direction",
+     "hidden_state_label",
+     "hold_bucket"
+    ],
+    [
+     "direction",
+     "hold_bucket"
+    ],
+    [
+     "direction"
+    ]
+   ],
+   "synthetic": {
+    "n_exact": 75,
+    "p_exact": 0.28,
+    "p_parent": 0.29
+   },
+   "my_shrunk_p_hat_kappa50": 0.284,
+   "my_shrinkage_weight_kappa50": 0.4,
+   "production_p_hat": null
+  }
+ ]
+}

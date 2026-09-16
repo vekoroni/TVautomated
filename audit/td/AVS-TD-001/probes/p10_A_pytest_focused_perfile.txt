@@ -1,0 +1,9 @@
+== tests/test_avs_fix_002_provider_finality.py
+.................                                                        [100%]
+17 passed in 44.49s
+== tests/test_avs_fix_002_stage1_closure.py
+...........                                                              [100%]
+11 passed in 30.77s
+== tests/test_msi_orchestrator_run_meta.py
+.......                                                                  [100%]
+7 passed in 6.60s

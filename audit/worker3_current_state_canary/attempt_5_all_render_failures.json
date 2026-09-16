@@ -1,0 +1,41 @@
+[
+  {
+    "location": "C1",
+    "error": "observation/change slots require numeric data",
+    "slot_values": [
+      {
+        "field": "thesis_state",
+        "value": "VALID_THESIS_TRIGGER_PENDING"
+      }
+    ]
+  },
+  {
+    "location": "C4",
+    "error": "observation/change slots require numeric data",
+    "slot_values": [
+      {
+        "field": "trigger_score",
+        "value": 3.5
+      },
+      {
+        "field": "trigger_quality",
+        "value": "STRONG"
+      }
+    ]
+  },
+  {
+    "location": "C7",
+    "error": "v2 narrative figures must use bound slots, not raw digits",
+    "slot_values": [
+      {
+        "field": "monetisability_state",
+        "value": "MONETISABLE"
+      }
+    ]
+  },
+  {
+    "location": "CONTRACT",
+    "error": "v2 narrative figures must use bound slots, not raw digits",
+    "slot_values": []
+  }
+]

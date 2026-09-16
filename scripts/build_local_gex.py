@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 from canonical_data.gamma_exposure_store import (  # noqa: E402
     CanonicalGammaExposureStore,
     PhantomOptionChainRepository,
+    prepare_gex_greeks,
 )
 from contracts.macro_file_contract import (  # noqa: E402
     GEX_BY_STRIKE_FILENAME,
@@ -72,17 +73,19 @@ def build_local_gex(
     strike_frames: list[pd.DataFrame] = []
     dataset_ids: list[str] = []
     for ticker in tickers:
-        chain = repository.read(ticker, session_date)
+        source_dataset_id = (
+            source_option_dataset_ids.get(ticker)
+            if source_option_dataset_ids is not None else None
+        )
+        chain = repository.read(ticker, session_date, dataset_id=source_dataset_id)
+        chain, greek_diagnostics = prepare_gex_greeks(chain, cfg)
         result = calculate_gamma_exposure(
             chain,
             ticker=ticker,
             session_date=session_date.isoformat(),
             config=cfg,
         )
-        source_dataset_id = (
-            source_option_dataset_ids.get(ticker)
-            if source_option_dataset_ids is not None else None
-        )
+        result.summary.update(greek_diagnostics)
         record = store.persist(
             result,
             run_id=invocation,

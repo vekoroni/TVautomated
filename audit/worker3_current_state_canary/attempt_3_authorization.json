@@ -1,0 +1,12 @@
+{
+  "authorization": "User: proceed to next steps, after timeout solution",
+  "at": 1788775832.6997557,
+  "max_count_requests": 1,
+  "max_generations": 1,
+  "max_cost_microusd": 500000,
+  "retries": 0,
+  "timeout_seconds": 300,
+  "prior_attempt_reservation_microusd": 500000,
+  "prior_billing_reconciliation": "UNRESOLVED_CONSOLE_SIGN_IN_REQUIRED",
+  "production_release_hash_before": "24fc37f526eee6b038aa44500c7a7d9da81f68ff00812b48e9534014e3b91f80"
+}

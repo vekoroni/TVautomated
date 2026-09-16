@@ -1,0 +1,4 @@
+{
+  "worker3/adapters/claude_v2.py": "639dd6f3991902bd37dafd49176aa4003cd21046dff1dfb9daa98fa322390b10",
+  "tests/test_worker3_response_guidance.py": "4ed56f9d0c33fb2a8795d476eaa38c82bbf2e1e872cd402b0823c871f73f9bd3"
+}

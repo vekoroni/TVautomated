@@ -2594,9 +2594,10 @@ def materialize_worker3_market_environment(
     lab_bytes = lab_path.read_bytes()
     lab_hash = hashlib.sha256(lab_bytes).hexdigest()
     lab_document = json.loads(lab_bytes.decode("utf-8-sig"))
+    from worker3.lab_contract import SUPPORTED_LAB_SCHEMAS
     if (
         not isinstance(lab_document, dict)
-        or lab_document.get("lab_schema_version") != "lab_signal_book_v2"
+        or lab_document.get("lab_schema_version") not in SUPPORTED_LAB_SCHEMAS
         or lab_document.get("run_id") != str(run_id)
         or not isinstance(lab_document.get("rows"), list)
         or lab_document.get("candidate_count") != len(lab_document["rows"])
@@ -2661,6 +2662,7 @@ def materialize_worker3_market_environment(
         "created_at_utc": cutoff,
         "source_packet_id": reference["packet_id"],
         "source_packet_sha256": reference["sha256"],
+        "source_lab_schema_version": lab_document["lab_schema_version"],
         "lab_book_sha256": lab_hash,
         "authority": "ADVISORY_ONLY",
         "trading_authority": False,

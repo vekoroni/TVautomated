@@ -1,0 +1,28 @@
+{
+  "source_hashes": {
+    "worker3/v2/assessment.py": "141c216a59c7faf238a7ebd8708a52a5c7624a06405efcdf2996b0eb6c1531b8",
+    "worker3/adapters/bound_output.py": "c67430fb72966ef36b5699d6a883e13d814b75ef8cb6496deb3bcc70da0df62b",
+    "worker3/adapters/claude_v2.py": "9c050357a9f87c115654e3655fa12b6aa3a83a8bfc8e8f7f82e5ddd8f2244c3f",
+    "tests/test_worker3_evidence_coverage.py": "8d5dafc76ebd8683d256846bc37d1ea697fa6dd81b37333c20ddee5f58326be0"
+  },
+  "protected_files_checked": 1671,
+  "protected_changes": [],
+  "paid_calls": 0,
+  "live_tested": false,
+  "production_enabled": false,
+  "diagnostic": {
+    "semantic_status": "REQUIRES_HUMAN_REVIEW",
+    "findings": [],
+    "claims": 8,
+    "sections": 8,
+    "human_edited_offline_copy": true,
+    "live_generation_requests": 0,
+    "historical_response_unchanged": true,
+    "source_checks": {
+      "sector": "Information Technology",
+      "macro_regime": "TRANSITIONAL"
+    },
+    "context_hash_changed_for_new_citable_metadata": true
+  },
+  "tests_passed": 314
+}

@@ -1,0 +1,14 @@
+{
+  "semantic_status": "REQUIRES_HUMAN_REVIEW",
+  "findings": [],
+  "claims": 8,
+  "sections": 8,
+  "human_edited_offline_copy": true,
+  "live_generation_requests": 0,
+  "historical_response_unchanged": true,
+  "source_checks": {
+    "sector": "Information Technology",
+    "macro_regime": "TRANSITIONAL"
+  },
+  "context_hash_changed_for_new_citable_metadata": true
+}

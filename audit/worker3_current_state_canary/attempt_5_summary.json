@@ -1,0 +1,58 @@
+{
+  "attempt": 5,
+  "accepted": false,
+  "state": "UNCERTAIN",
+  "count_requests": 1,
+  "generation_requests": 1,
+  "retries": 0,
+  "input_tokens": 84079,
+  "output_tokens": 3025,
+  "elapsed_ms": 43541,
+  "cost_list_price_microusd": 297612,
+  "cumulative_list_price_microusd": 1291599,
+  "billed_amount_verified": false,
+  "protected_changes": [],
+  "protected_files_checked": 1671,
+  "production_enabled": false,
+  "render_failures": [
+    {
+      "location": "C1",
+      "error": "observation/change slots require numeric data",
+      "slot_values": [
+        {
+          "field": "thesis_state",
+          "value": "VALID_THESIS_TRIGGER_PENDING"
+        }
+      ]
+    },
+    {
+      "location": "C4",
+      "error": "observation/change slots require numeric data",
+      "slot_values": [
+        {
+          "field": "trigger_score",
+          "value": 3.5
+        },
+        {
+          "field": "trigger_quality",
+          "value": "STRONG"
+        }
+      ]
+    },
+    {
+      "location": "C7",
+      "error": "v2 narrative figures must use bound slots, not raw digits",
+      "slot_values": [
+        {
+          "field": "monetisability_state",
+          "value": "MONETISABLE"
+        }
+      ]
+    },
+    {
+      "location": "CONTRACT",
+      "error": "v2 narrative figures must use bound slots, not raw digits",
+      "slot_values": []
+    }
+  ]
+}

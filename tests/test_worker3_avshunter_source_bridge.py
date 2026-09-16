@@ -307,6 +307,19 @@ class SourceFixture:
 
 
 class AvshunterSourceBridgeTests(unittest.TestCase):
+    def test_v4_book_and_rows_prepare_both_directions_and_stamp_true_version(self):
+        path = self.fixture.run / "intelligence_lab" / f"final_opportunity_book_{RUN_ID}.json"
+        document = json.loads(path.read_text())
+        document["lab_schema_version"] = "lab_signal_book_v4"
+        for row in document["rows"]:
+            row["lab_schema_version"] = "lab_signal_book_v4"
+        _write_json(path, document)
+        prepared = self.bridge.prepare_run(RUN_ID)
+        self.assertEqual([e.status for e in prepared.entries], ["EVIDENCE_PREPARED", "EVIDENCE_PREPARED"])
+        for entry in prepared.entries:
+            observation = next(o for o in entry.bundle.observations if o.field == "signal_price")
+            self.assertEqual(observation.calculation_version, "lab_signal_book_v4")
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.fixture = SourceFixture(Path(self.temp.name))

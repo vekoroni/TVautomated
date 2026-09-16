@@ -86,6 +86,10 @@ def apply_completed_gex_overlay(
         "proxy_sha256": digest,
         "source": "canonical_phantom_projection|avshunter_gex_proxy.csv",
         "authority": "ADVISORY_ONLY",
+        "greek_derivation": spy.get("Greek_Derivation"),
+        "greek_model_disclosure": spy.get("Greek_Model_Disclosure"),
+        "greek_computed_contracts": _float(spy.get("Greek_Computed_Contracts")),
+        "greek_unresolved_contracts": _float(spy.get("Greek_Unresolved_Contracts")),
     }
     macro["gex_regime_score"] = extras["gex"]["score"]
     macro["gex_available"] = True

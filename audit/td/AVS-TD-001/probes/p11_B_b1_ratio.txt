@@ -1,0 +1,64 @@
+=== run 20260911_115904: garch_forecasts rows=1444 cols=['ticker', 'l3_forward_realised_vol', 'l3_vol_forecast_conf', 'l3_expected_move_1_5d', 'l3_expected_move_6_10d', 'l3_expected_move_11_20d', 'l3_iv_tailwind_score', 'l3_iv_tailwind_score_capped', 'l3_jump_risk_flag', 'l3_method', 'l3_garch_alpha', 'l3_garch_beta', 'l3_n_bars', 'l3_model_risk_flags', 'l3_model_risk_flag_count', 'l3_model_risk_capital_guard', 'l3_error']
+  garch_forecasts: rows=1444 v2 fields present=['l3_forward_realised_vol'] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated']
+  final_opportunity_book: rows=1444 v2 fields present=[] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated', 'l3_forward_realised_vol']
+  execution_v3_5: rows=1444 v2 fields present=['l3_forward_realised_vol'] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated']
+  direction split (garch_forecasts joined to final_opportunity_book on ticker): {'CALL': 798, 'PUT': 458, 'OTHER': 188}
+  LEGACY differenced ratio l3_expected_move_6_10d / l3_expected_move_1_5d (expect 0.4142 by construction, 2dp rounding noise):
+    CALL: n=798 min=0.4118 max=0.4175 within0.01of0.4142=798 nonpos_1_5d=0
+    PUT: n=458 min=0.4122 max=0.4164 within0.01of0.4142=458 nonpos_1_5d=0
+    OTHER: n=188 min=0.4120 max=0.4158 within0.01of0.4142=188 nonpos_1_5d=0
+  LEGACY ratio garch_expected_move_6_10d / garch_expected_move_1_5d in final_opportunity_book:
+    CALL: n=798 rows_total=798 min=0.4118 max=0.4175 within0.01of0.4142=798
+    PUT: n=458 rows_total=458 min=0.4122 max=0.4164 within0.01of0.4142=458
+    OTHER: n=188 rows_total=188 min=0.4120 max=0.4158 within0.01of0.4142=188
+  OFFLINE v2: checkpoint_fields(l3_forward_realised_vol) per garch_forecasts row -> 10d/5d and 20d/5d:
+    quality_state counts: {'PASS': 1444}
+  CALL v2 10d/5d: n=798 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=798 outside=0
+  CALL v2 20d/5d: n=798 min=2.00000 max=2.00000
+  PUT v2 10d/5d: n=458 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=458 outside=0
+  PUT v2 20d/5d: n=458 min=2.00000 max=2.00000
+  OTHER v2 10d/5d: n=188 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=188 outside=0
+  OTHER v2 20d/5d: n=188 min=2.00000 max=2.00000
+    rows where legacy 6_10d/100 == v2 10d (tol 1e-6): 0 of 1444
+    legacy_1_5d/100 divided by v2_5d: n=1444 min=0.8432 max=0.8474 median=0.8451 (sqrt(5/7)=0.8452 if legacy applies calendar->trading 5/7; 2dp rounding adds noise)
+=== run 20260910_150045: garch_forecasts rows=1424 cols=['ticker', 'l3_forward_realised_vol', 'l3_vol_forecast_conf', 'l3_expected_move_1_5d', 'l3_expected_move_6_10d', 'l3_expected_move_11_20d', 'l3_iv_tailwind_score', 'l3_iv_tailwind_score_capped', 'l3_jump_risk_flag', 'l3_method', 'l3_garch_alpha', 'l3_garch_beta', 'l3_n_bars', 'l3_model_risk_flags', 'l3_model_risk_flag_count', 'l3_model_risk_capital_guard', 'l3_error']
+  garch_forecasts: rows=1424 v2 fields present=['l3_forward_realised_vol'] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated']
+  final_opportunity_book: rows=1424 v2 fields present=[] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated', 'l3_forward_realised_vol']
+  execution_v3_5: rows=1424 v2 fields present=['l3_forward_realised_vol'] absent=['expected_move_5d_fraction', 'expected_move_10d_fraction', 'expected_move_20d_fraction', 'volatility_budget_version', 'horizon_convention', 'forecast_horizon_basis', 'forward_realised_vol', 'l3_expected_move_legacy_deprecated']
+  direction split (garch_forecasts joined to final_opportunity_book on ticker): {'CALL': 791, 'PUT': 451, 'OTHER': 182}
+  LEGACY differenced ratio l3_expected_move_6_10d / l3_expected_move_1_5d (expect 0.4142 by construction, 2dp rounding noise):
+    CALL: n=791 min=0.4112 max=0.4171 within0.01of0.4142=791 nonpos_1_5d=0
+    PUT: n=451 min=0.4126 max=0.4167 within0.01of0.4142=451 nonpos_1_5d=0
+    OTHER: n=182 min=0.4115 max=0.4167 within0.01of0.4142=182 nonpos_1_5d=0
+  LEGACY ratio garch_expected_move_6_10d / garch_expected_move_1_5d in final_opportunity_book:
+    CALL: n=791 rows_total=791 min=0.4112 max=0.4171 within0.01of0.4142=791
+    PUT: n=451 rows_total=451 min=0.4126 max=0.4167 within0.01of0.4142=451
+    OTHER: n=182 rows_total=182 min=0.4115 max=0.4167 within0.01of0.4142=182
+  OFFLINE v2: checkpoint_fields(l3_forward_realised_vol) per garch_forecasts row -> 10d/5d and 20d/5d:
+    quality_state counts: {'PASS': 1424}
+  CALL v2 10d/5d: n=791 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=791 outside=0
+  CALL v2 20d/5d: n=791 min=2.00000 max=2.00000
+  PUT v2 10d/5d: n=451 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=451 outside=0
+  PUT v2 20d/5d: n=451 min=2.00000 max=2.00000
+  OTHER v2 10d/5d: n=182 min=1.41421 max=1.41421 median=1.41421 in[1.407,1.421]=182 outside=0
+  OTHER v2 20d/5d: n=182 min=2.00000 max=2.00000
+    rows where legacy 6_10d/100 == v2 10d (tol 1e-6): 0 of 1424
+    legacy_1_5d/100 divided by v2_5d: n=1424 min=0.8433 max=0.8472 median=0.8451 (sqrt(5/7)=0.8452 if legacy applies calendar->trading 5/7; 2dp rounding adds noise)
+=== FIXTURES
+  ALG-01 sigma=0.30: 5d=0.04226 (exp 0.04226) 10d=0.05976 (exp 0.05976) 20d=0.08452 (exp 0.08452) ratio10/5=1.41421 version=vol_budget_v2 conv=CUMULATIVE_1SIGMA basis=SCALED_CURRENT_ANNUAL_FORECAST vstate=UNVALIDATED bias=1.0
+  REQ-WP1-02 sigma=0.40 h=7: move=0.06667 (exp 0.06667) basis=SCALED_CURRENT_ANNUAL_FORECAST conv=CUMULATIVE_1SIGMA q=PASS vstate=UNVALIDATED version=vol_budget_v2 bias_applied=False
+  edge sigma None: move=None quality_state=NOT_EVALUATED_DATA_MISSING validation_state=UNVALIDATED
+  edge sigma 0: move=None quality_state=DATA_DEFECT validation_state=UNVALIDATED
+  edge sigma -0.1: move=None quality_state=DATA_DEFECT validation_state=UNVALIDATED
+  edge sigma 3.0 boundary: move=0.42257712736425823 quality_state=PASS validation_state=UNVALIDATED
+  edge sigma 3.01: move=None quality_state=DATA_DEFECT validation_state=UNVALIDATED
+  edge sigma nan: move=None quality_state=DATA_DEFECT validation_state=UNVALIDATED
+  edge sigma inf: move=None quality_state=DATA_DEFECT validation_state=UNVALIDATED
+  edge sigma 0.30 h=1: move=0.01889822365046136 quality_state=PASS validation_state=UNVALIDATED
+  edge sigma 0.30 h=20: move=0.08451542547285165 quality_state=PASS validation_state=UNVALIDATED
+  edge h=0: raises ValueError: hold_sessions must be an integer between 1 and 20
+  edge h=21: raises ValueError: hold_sessions must be an integer between 1 and 20
+  edge h=-1: raises ValueError: hold_sessions must be an integer between 1 and 20
+  edge h=5.5: raises ValueError: hold_sessions must be an integer between 1 and 20
+  edge h=5.0: move=0.042257712736425826 q=PASS (accepted)
+  checkpoint_fields(None) = {'volatility_budget_version': 'vol_budget_v2', 'expected_move_5d_fraction': None, 'expected_move_10d_fraction': None, 'expected_move_20d_fraction': None, 'horizon_convention': 'CUMULATIVE_1SIGMA', 'forecast_horizon_basis': 'SCALED_CURRENT_ANNUAL_FORECAST', 'vol_validation_state': 'UNVALIDATED', 'bias_multiplier': 1.0, 'bias_multiplier_applied': False, 'validation_report_id': None, 'held_out_validation_passed': False}

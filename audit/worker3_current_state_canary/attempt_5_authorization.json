@@ -1,0 +1,10 @@
+{
+  "authorization": "User approved one further canary, $1.00 cap, no retries",
+  "at": 1788783479.878721,
+  "max_generations": 1,
+  "max_count_requests": 1,
+  "max_cost_microusd": 1000000,
+  "retries": 0,
+  "adapter_sha256": "335314122685064c5cc0b340088d7bf94e25a9fa861274a33a18b99a27154c77",
+  "prior_list_price_microusd": 993987
+}

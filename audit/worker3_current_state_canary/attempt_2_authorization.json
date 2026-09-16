@@ -1,0 +1,9 @@
+{
+  "authorization": "User explicitly requested rerun after permanent workspace configuration",
+  "at": 1788774865.1972282,
+  "max_count_requests": 1,
+  "max_generations": 1,
+  "max_cost_microusd": 500000,
+  "retries": 0,
+  "production_release_hash_before": "24fc37f526eee6b038aa44500c7a7d9da81f68ff00812b48e9534014e3b91f80"
+}

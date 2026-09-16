@@ -1,0 +1,52 @@
+{
+ "db_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\audit\\td\\AVS-TD-001\\db_copies\\historical_prices.sqlite",
+ "schema_metadata": [
+  [
+   "cds_historical_prices_v1",
+   "2026-08-22T16:23:40.811929Z"
+  ]
+ ],
+ "global_min_date": "2021-08-23",
+ "global_max_date": "2026-09-10",
+ "total_rows": 2294796,
+ "distinct_tickers_in_store": 3618,
+ "bar_status_counts": {
+  "COMPLETE": 2294796
+ },
+ "adjustment_conventions": {
+  "POLYGON_SPLIT_ADJUSTED": 2294796
+ },
+ "providers": {
+  "POLYGON": 2294796
+ },
+ "primary_book_tickers": 1444,
+ "primary_book_tickers_covered": 1444,
+ "primary_book_tickers_missing": 0,
+ "missing_ticker_sample": [],
+ "rows_per_covered_ticker": {
+  "min": 214,
+  "median": 1268,
+  "max": 1268
+ },
+ "covered_tickers_with_max_date_ge_2026-09-10": 1444,
+ "max_date_distribution_top": [
+  [
+   "2026-09-10",
+   1444
+  ]
+ ],
+ "coverage_by_book_direction_rows": {
+  "CALL": {
+   "covered": 798,
+   "rows": 798
+  },
+  "PUT": {
+   "covered": 458,
+   "rows": 458
+  },
+  "OTHER": {
+   "covered": 188,
+   "rows": 188
+  }
+ }
+}

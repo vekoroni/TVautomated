@@ -10,7 +10,7 @@ import requests
 
 
 MARKETDATA_OPTION_CHAIN_COLUMNS = (
-    "optionSymbol,underlying,expiration,side,strike,firstTraded,dte,updated,"
+    "s,optionSymbol,underlying,expiration,side,strike,firstTraded,dte,updated,"
     "bid,bidSize,mid,ask,askSize,last,openInterest,volume,inTheMoney,"
     "intrinsicValue,extrinsicValue,underlyingPrice,iv,delta,gamma,theta,vega,"
     "contractMultiplier"
@@ -35,6 +35,24 @@ class MarketDataOptionChainError(RuntimeError):
 
 class MarketDataOptionChainNoData(MarketDataOptionChainError):
     pass
+
+
+def _response_error_detail(response: HttpResponse, *, api_token: str) -> str:
+    """Return a bounded provider error without echoing headers or credentials."""
+    try:
+        payload = response.json()
+    except Exception:
+        payload = None
+    detail = str(getattr(response, "text", "") or "")
+    if isinstance(payload, Mapping):
+        for key in ("errmsg", "error", "message", "detail"):
+            value = payload.get(key)
+            if value:
+                detail = str(value)
+                break
+    if api_token:
+        detail = detail.replace(api_token, "[REDACTED]")
+    return " ".join(detail.split())[:300]
 
 
 class MarketDataOptionChainAdapter:
@@ -72,7 +90,6 @@ class MarketDataOptionChainAdapter:
             "from": (session_date + timedelta(days=1)).isoformat(),
             "to": (session_date + timedelta(days=int(dte_max))).isoformat(),
             "minOpenInterest": int(min_open_interest),
-            "mode": "cached",
             "columns": MARKETDATA_OPTION_CHAIN_COLUMNS,
         }
         response = self.transport.get(
@@ -86,8 +103,10 @@ class MarketDataOptionChainAdapter:
                 f"MarketData has no {ticker_up} option chain for {session_date}"
             )
         if not response.ok:
+            detail = _response_error_detail(response, api_token=self.api_token)
             raise MarketDataOptionChainError(
                 f"MarketData option chain failed for {ticker_up}: HTTP {response.status_code}"
+                + (f" ({detail})" if detail else "")
             )
         try:
             payload = response.json()

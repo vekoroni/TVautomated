@@ -1,0 +1,766 @@
+{
+ "routing_source_path": "macro_snapshot.extras.us_money_index.source_payload.options_monetisation.sector_routing.routing",
+ "routing": {
+  "IWM_SMALL_CAPS_PUT": "NOT_YET_CONFIRMED",
+  "AIRLINES_PUT": "PRIORITY_UPGRADE",
+  "TRANSPORT_LOGISTICS_PUT": "PRIORITY_UPGRADE",
+  "FUEL_SENSITIVE_DISCRETIONARY_PUT": "PRIORITY_UPGRADE",
+  "HOMEBUILDERS_REITS_PUT": "PRIORITY_UPGRADE",
+  "SPY_QQQ_PUT": "PRIORITY_WATCH",
+  "WEAK_TECH_PUT": "ADVERSE_REGIME_RS_REQUIRED",
+  "MATERIALS_INDUSTRIALS_PUT": "PRIORITY_WATCH",
+  "ENERGY_PRODUCERS_CALL": "NOT_YET_CONFIRMED",
+  "REFINERS_OIL_SERVICES_CALL": "PRIORITY_WATCH",
+  "DEFENCE_CALL": "PRIORITY_WATCH",
+  "AI_SEMICONDUCTOR_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+  "AI_CLOUD_PROVEN_MONETISATION_CALL": "PRIORITY_WATCH",
+  "AI_SOFTWARE_CLOUD_CALL": "ADVERSE_REGIME_RS_REQUIRED",
+  "FINANCIALS_CALL": "PRIORITY_WATCH",
+  "BROAD_INDEX_CALL": "NOT_YET_CONFIRMED"
+ },
+ "stored_has_usmi_routing_key": false,
+ "book_n": 1444,
+ "universe_industry_empty_in_book": 112,
+ "sample_tickers": [
+  "MTCH",
+  "PDD",
+  "XHB",
+  "KO",
+  "USO",
+  "ZION",
+  "SPXS",
+  "KKR",
+  "ABSI",
+  "BE",
+  "AOSL",
+  "CF",
+  "CEG",
+  "TMF",
+  "UDR",
+  "EVRG",
+  "SVXY",
+  "AVA",
+  "ADSK",
+  "BBNX"
+ ],
+ "sample_sectors": {
+  "Health Care": 2,
+  "Utilities": 2,
+  "Information Technology": 2,
+  "Communication Services": 1,
+  "Consumer Discretionary": 1,
+  "ETF": 1,
+  "Energy": 1,
+  "Consumer Staples": 1,
+  "Consumer Discretionary (ETF)": 1,
+  "Financials": 1,
+  "Equity Inverse ETF": 1,
+  "Materials": 1,
+  "Industrials": 1,
+  "Power Generation": 1,
+  "Rates / Bonds ETF": 1,
+  "Real Estate": 1,
+  "Volatility": 1
+ },
+ "sample20": {
+  "CALL": {
+   "n": 10,
+   "oracle_eq_j2_key": 3,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 10,
+   "oracle_keys": {
+    "NO_CALL_ROUTE_FOR_SECTOR": 7,
+    "ENERGY_PRODUCERS_CALL": 1,
+    "AI_SEMICONDUCTOR_CALL": 1,
+    "AI_SOFTWARE_CLOUD_CALL": 1
+   },
+   "oracle_labels": {
+    "NEUTRAL": 7,
+    "ADVERSE_REGIME_RS_REQUIRED": 2,
+    "NOT_YET_CONFIRMED": 1
+   },
+   "stored_alignment": {
+    "NEUTRAL": 10
+   },
+   "stored_priority": {
+    "": 10
+   },
+   "stored_alignment_in_five": 10,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 10
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 10
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 10
+   },
+   "j2_alignment": {
+    "UNAVAILABLE": 7,
+    "NEUTRAL": 3
+   },
+   "j2_reason": {
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 7,
+    "ROUTE_PRESENT": 3
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 10
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "MTCH",
+     "Communication Services",
+     "SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "PDD",
+     "Consumer Discretionary",
+     "Broadline Retail",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "XHB",
+     "Consumer Discretionary (ETF)",
+     "",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "KO",
+     "Consumer Staples",
+     "BEVERAGES",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "BE",
+     "Industrials",
+     "ELECTRICAL INDUSTRIAL APPARATUS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "EVRG",
+     "Utilities",
+     "ELECTRIC & OTHER SERVICES COMBINED",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "AVA",
+     "Utilities",
+     "ELECTRIC & OTHER SERVICES COMBINED",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ]
+   ]
+  },
+  "PUT": {
+   "n": 7,
+   "oracle_eq_j2_key": 2,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 7,
+   "oracle_keys": {
+    "NO_PUT_ROUTE_FOR_SECTOR": 5,
+    "MATERIALS_INDUSTRIALS_PUT": 1,
+    "HOMEBUILDERS_REITS_PUT": 1
+   },
+   "oracle_labels": {
+    "NEUTRAL": 5,
+    "PRIORITY_WATCH": 1,
+    "PRIORITY_UPGRADE": 1
+   },
+   "stored_alignment": {
+    "NEUTRAL": 7
+   },
+   "stored_priority": {
+    "": 7
+   },
+   "stored_alignment_in_five": 7,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 7
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 7
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 7
+   },
+   "j2_alignment": {
+    "UNAVAILABLE": 5,
+    "NEUTRAL": 2
+   },
+   "j2_reason": {
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 5,
+    "ROUTE_PRESENT": 2
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 7
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "USO",
+     "ETF",
+     "COMMODITY CONTRACTS BROKERS & DEALERS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "SPXS",
+     "Equity Inverse ETF",
+     "",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "TMF",
+     "Rates / Bonds ETF",
+     "",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "SVXY",
+     "Volatility",
+     "",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "BBNX",
+     "Health Care",
+     "SURGICAL & MEDICAL INSTRUMENTS & APPARATUS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ]
+   ]
+  },
+  "OTHER": {
+   "n": 3,
+   "oracle_eq_j2_key": 0,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 3,
+   "oracle_keys": {
+    "UNMAPPED": 3
+   },
+   "oracle_labels": {
+    "NEUTRAL": 3
+   },
+   "stored_alignment": {
+    "NEUTRAL": 3
+   },
+   "stored_priority": {
+    "": 3
+   },
+   "stored_alignment_in_five": 3,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 3
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 3
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 3
+   },
+   "j2_alignment": {
+    "UNAVAILABLE": 3
+   },
+   "j2_reason": {
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 3
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 3
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "KKR",
+     "Financials",
+     "INVESTMENT ADVICE",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ABSI",
+     "Health Care",
+     "SERVICES-COMMERCIAL PHYSICAL & BIOLOGICAL RESEARCH",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "CEG",
+     "Power Generation",
+     "ELECTRIC SERVICES",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ]
+   ]
+  }
+ },
+ "full": {
+  "CALL": {
+   "n": 798,
+   "oracle_eq_j2_key": 288,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 798,
+   "oracle_keys": {
+    "NO_CALL_ROUTE_FOR_SECTOR": 486,
+    "FINANCIALS_CALL": 93,
+    "AI_SEMICONDUCTOR_CALL": 81,
+    "AI_SOFTWARE_CLOUD_CALL": 65,
+    "ENERGY_PRODUCERS_CALL": 45,
+    "REFINERS_OIL_SERVICES_CALL": 23,
+    "DEFENCE_CALL": 5
+   },
+   "oracle_labels": {
+    "NEUTRAL": 486,
+    "ADVERSE_REGIME_RS_REQUIRED": 146,
+    "PRIORITY_WATCH": 121,
+    "NOT_YET_CONFIRMED": 45
+   },
+   "stored_alignment": {
+    "NEUTRAL": 798
+   },
+   "stored_priority": {
+    "": 798
+   },
+   "stored_alignment_in_five": 798,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 798
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 798
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 798
+   },
+   "j2_alignment": {
+    "UNAVAILABLE": 486,
+    "NEUTRAL": 312
+   },
+   "j2_reason": {
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 486,
+    "ROUTE_PRESENT": 312
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 798
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "SIRI",
+     "Communication Services",
+     "RADIO BROADCASTING STATIONS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "HCA",
+     "Health Care",
+     "SERVICES-GENERAL MEDICAL & SURGICAL HOSPITALS, NEC",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "FAST",
+     "Industrials",
+     "RETAIL-BUILDING MATERIALS, HARDWARE, GARDEN SUPPLY",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "D",
+     "Utilities",
+     "ELECTRIC SERVICES",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "WM",
+     "Industrials",
+     "REFUSE SYSTEMS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "LINC",
+     "Consumer Staples",
+     "SERVICES-EDUCATIONAL SERVICES",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "WWD",
+     "Industrials",
+     "ELECTRICAL INDUSTRIAL APPARATUS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "SFD",
+     "Consumer Staples",
+     "MEAT PACKING PLANTS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "ONON",
+     "Consumer Discretionary",
+     "Textiles, Apparel & Luxury Goods",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "VFC",
+     "Consumer Discretionary",
+     "MEN'S & BOYS' FURNISHGS, WORK CLOTHG, & ALLIED GARMENTS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "AER",
+     "Industrials",
+     "Trading Companies & Distributors",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "BROS",
+     "Consumer Discretionary",
+     "RETAIL-EATING & DRINKING PLACES",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "TEX",
+     "Industrials",
+     "INDUSTRIAL TRUCKS, TRACTORS, TRAILERS & STACKERS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "COMP",
+     "Information Technology",
+     "SERVICES-COMPUTER PROGRAMMING SERVICES",
+     "AI_SOFTWARE_CLOUD_CALL",
+     "AI_SEMICONDUCTOR_CALL"
+    ],
+    [
+     "HRL",
+     "Consumer Staples",
+     "MEAT PACKING PLANTS",
+     "NO_CALL_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ]
+   ]
+  },
+  "PUT": {
+   "n": 458,
+   "oracle_eq_j2_key": 245,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 458,
+   "oracle_keys": {
+    "NO_PUT_ROUTE_FOR_SECTOR": 205,
+    "WEAK_TECH_PUT": 92,
+    "MATERIALS_INDUSTRIALS_PUT": 80,
+    "FUEL_SENSITIVE_DISCRETIONARY_PUT": 57,
+    "HOMEBUILDERS_REITS_PUT": 20,
+    "TRANSPORT_LOGISTICS_PUT": 4
+   },
+   "oracle_labels": {
+    "NEUTRAL": 205,
+    "ADVERSE_REGIME_RS_REQUIRED": 92,
+    "PRIORITY_UPGRADE": 81,
+    "PRIORITY_WATCH": 80
+   },
+   "stored_alignment": {
+    "NEUTRAL": 458
+   },
+   "stored_priority": {
+    "": 458
+   },
+   "stored_alignment_in_five": 458,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 458
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 379,
+    "ALIGNED": 79
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 379,
+    "USMI_V2_OPTIONS_MONETISATION:AIRLINES": 46,
+    "USMI_V2_OPTIONS_MONETISATION:WEAK_SOFTWARE": 33
+   },
+   "j2_alignment": {
+    "NEUTRAL": 248,
+    "UNAVAILABLE": 210
+   },
+   "j2_reason": {
+    "ROUTE_PRESENT": 248,
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 210
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 458
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "SNEX",
+     "Financials",
+     "SECURITY & COMMODITY BROKERS, DEALERS, EXCHANGES & SERVICES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "CELC",
+     "Energy",
+     "SERVICES-MEDICAL LABORATORIES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "SPGI",
+     "Financials",
+     "SERVICES-CONSUMER CREDIT REPORTING, COLLECTION AGENCIES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "AMGN",
+     "Health Care",
+     "BIOLOGICAL PRODUCTS, (NO DIAGNOSTIC SUBSTANCES)",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "MLYS",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "VKTX",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "HIMS",
+     "Health Care",
+     "SERVICES-OFFICES & CLINICS OF DOCTORS OF MEDICINE",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "CELH",
+     "Consumer Staples",
+     "BOTTLED & CANNED SOFT DRINKS & CARBONATED WATERS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "QDEL",
+     "Health Care",
+     "IN VITRO & IN VIVO DIAGNOSTIC SUBSTANCES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "PINS",
+     "Communication Services",
+     "SERVICES-COMPUTER PROGRAMMING, DATA PROCESSING, ETC.",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "CAPR",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "KLAR",
+     "Financials",
+     "Financial Services",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "COCO",
+     "Consumer Staples",
+     "BEVERAGES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "VCYT",
+     "Health Care",
+     "SERVICES-MEDICAL LABORATORIES",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ],
+    [
+     "COLL",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "NO_PUT_ROUTE_FOR_SECTOR",
+     "NO_ROUTE"
+    ]
+   ]
+  },
+  "OTHER": {
+   "n": 188,
+   "oracle_eq_j2_key": 0,
+   "oracle_eq_stored_key": 0,
+   "oracle_in_routing": 188,
+   "oracle_keys": {
+    "UNMAPPED": 188
+   },
+   "oracle_labels": {
+    "NEUTRAL": 188
+   },
+   "stored_alignment": {
+    "NEUTRAL": 188
+   },
+   "stored_priority": {
+    "": 188
+   },
+   "stored_alignment_in_five": 188,
+   "stored_OPPOSED": 0,
+   "j1_empty_reason": {
+    "SECTOR_UNMAPPED": 188
+   },
+   "j1_filled_alignment": {
+    "NEUTRAL": 188
+   },
+   "j1_filled_reason": {
+    "SECTOR_UNMAPPED": 188
+   },
+   "j2_alignment": {
+    "UNAVAILABLE": 188
+   },
+   "j2_reason": {
+    "NO_ROUTE:ROUTE_UNAVAILABLE": 188
+   },
+   "j2_scenario": {
+    "UNRESOLVED": 188
+   },
+   "mismatch_oracle_vs_j2": [
+    [
+     "ABBV",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ABSI",
+     "Health Care",
+     "SERVICES-COMMERCIAL PHYSICAL & BIOLOGICAL RESEARCH",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ACHC",
+     "Health Care",
+     "SERVICES-SPECIALTY OUTPATIENT FACILITIES, NEC",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ACN",
+     "Information Technology",
+     "SERVICES-BUSINESS SERVICES, NEC",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AEHL",
+     "Industrials",
+     "",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AHR",
+     "Real Estate",
+     "REAL ESTATE INVESTMENT TRUSTS",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ALL",
+     "Financials",
+     "FIRE, MARINE & CASUALTY INSURANCE",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AMCR",
+     "Consumer Discretionary",
+     "MISCELLANEOUS MANUFACTURING INDUSTRIES",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AMN",
+     "Health Care",
+     "SERVICES-HELP SUPPLY SERVICES",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AMRX",
+     "Health Care",
+     "PHARMACEUTICAL PREPARATIONS",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "AMT",
+     "Real Estate",
+     "REAL ESTATE INVESTMENT TRUSTS",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "APG",
+     "Industrials",
+     "SERVICES-TO DWELLINGS & OTHER BUILDINGS",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "APO",
+     "Financials",
+     "INVESTMENT ADVICE",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ARES",
+     "Financials",
+     "INVESTMENT ADVICE",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ],
+    [
+     "ARMK",
+     "Industrials",
+     "RETAIL-EATING PLACES",
+     "UNMAPPED",
+     "NO_ROUTE"
+    ]
+   ]
+  }
+ }
+}

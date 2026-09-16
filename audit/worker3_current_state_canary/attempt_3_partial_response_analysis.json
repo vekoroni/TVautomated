@@ -1,0 +1,144 @@
+{
+  "analysis_scope": "Offline inspection of complete claim objects extracted from a truncated response; not an accepted or repaired assessment",
+  "complete_claims_inspected": 22,
+  "claims_with_unknown_supporting_refs": 22,
+  "claims_with_raw_digits_outside_slots": 20,
+  "render_rejections": {
+    "slot is not in the claim's supporting evidence": 1,
+    "v2 narrative figures must use bound slots, not raw digits": 20,
+    "none": 1
+  },
+  "findings": [
+    {
+      "claim_id": "C01",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": false,
+      "render_rejection": "slot is not in the claim's supporting evidence"
+    },
+    {
+      "claim_id": "C02",
+      "unknown_supporting_refs": 5,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C03",
+      "unknown_supporting_refs": 4,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C04",
+      "unknown_supporting_refs": 5,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C05",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C06",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C07",
+      "unknown_supporting_refs": 8,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C08",
+      "unknown_supporting_refs": 6,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C09",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C10",
+      "unknown_supporting_refs": 3,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C11",
+      "unknown_supporting_refs": 2,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C12",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C13",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C14",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C15",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C16",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C17",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C18",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C19",
+      "unknown_supporting_refs": 3,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C20",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    },
+    {
+      "claim_id": "C21",
+      "unknown_supporting_refs": 1,
+      "raw_digits_outside_slots": false
+    },
+    {
+      "claim_id": "C22",
+      "unknown_supporting_refs": 3,
+      "raw_digits_outside_slots": true,
+      "render_rejection": "v2 narrative figures must use bound slots, not raw digits"
+    }
+  ]
+}

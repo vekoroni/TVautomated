@@ -1,0 +1,153 @@
+{
+ "packet_scenario_ids": [
+  "A_HOT_CPI_ESCALATION",
+  "B_IN_LINE_CPI_HOLD",
+  "C_SOFT_CPI_DE_ESCALATION"
+ ],
+ "conditions_all_type": "str",
+ "observed_used": {
+  "cpi_core_mom_pct": [
+   null,
+   null
+  ],
+  "cpi_headline_mom_pct": [
+   null,
+   null
+  ],
+  "us_10y_pct": [
+   4.943,
+   "2026-09-11T11:35:00+00:00"
+  ],
+  "vix": [
+   17.7,
+   "2026-09-10"
+  ],
+  "hyg_close": [
+   78.62,
+   "2026-09-10"
+  ],
+  "hy_oas_pct": [
+   2.71,
+   null
+  ],
+  "cash_session_breadth": [
+   null,
+   null
+  ],
+  "fed_hike_probability_pct": [
+   null,
+   null
+  ]
+ },
+ "tester_satisfied": [],
+ "tester_result": "UNRESOLVED",
+ "tester_first_failed_or_missing": {
+  "A_HOT_CPI_ESCALATION": "cpi_core_mom_pct >= 0.4 OR cpi_headline_mom_pct >= 0.5 missing ['cpi_core_mom_pct', 'cpi_headline_mom_pct']",
+  "B_IN_LINE_CPI_HOLD": "cpi_core_mom_pct in [0.2, 0.3] missing ['cpi_core_mom_pct']",
+  "C_SOFT_CPI_DE_ESCALATION": "cpi_core_mom_pct <= 0.2 missing ['cpi_core_mom_pct']"
+ },
+ "stored_usmi_scenario_by_dir": {
+  "CALL": {
+   "UNRESOLVED": 798
+  },
+  "PUT": {
+   "UNRESOLVED": 458
+  },
+  "OTHER": {
+   "UNRESOLVED": 188
+  }
+ },
+ "stored_failed_clause_field_present": false,
+ "normalised_usmi_scenarios(us_money_index_contract.py:424)": {},
+ "prod_join1_stored_interpreter_packet": {
+  "scenario": "UNRESOLVED",
+  "results": {},
+  "authority": "ADVISORY_ONLY"
+ },
+ "prod_join1_evaluate_scenarios_on_source_scenarios": {
+  "scenario": "UNRESOLVED",
+  "results": {
+   "A_HOT_CPI_ESCALATION": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   },
+   "B_IN_LINE_CPI_HOLD": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   },
+   "C_SOFT_CPI_DE_ESCALATION": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   }
+  },
+  "authority": "ADVISORY_ONLY"
+ },
+ "prod_join2_on_snapshot": {
+  "usmi_scenario": "UNRESOLVED",
+  "usmi_scenario_failed_clause": "SCENARIOS_UNAVAILABLE"
+ },
+ "fixture_join2_ok": {
+  "usmi_scenario": "A",
+  "usmi_scenario_failed_clause": ""
+ },
+ "fixture_join2_missing_metric": {
+  "usmi_scenario": "UNRESOLVED",
+  "usmi_scenario_failed_clause": "MISSING_METRIC:cpi_mom"
+ },
+ "fixture_join1_alg14_shape": {
+  "scenario": "UNRESOLVED",
+  "results": {
+   "A": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   },
+   "B": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   },
+   "C": {
+    "status": "UNAVAILABLE",
+    "reason": "UNSTRUCTURED_PREDICATES"
+   }
+  },
+  "authority": "ADVISORY_ONLY"
+ },
+ "fixture_join1_suffix_shape": {
+  "scenario": "A",
+  "results": {
+   "A": {
+    "status": "MATCH",
+    "predicates": [
+     true,
+     true
+    ]
+   },
+   "B": {
+    "status": "NO_MATCH",
+    "predicates": [
+     false
+    ]
+   }
+  },
+  "authority": "ADVISORY_ONLY"
+ },
+ "fixture_join1_missing_metric": {
+  "scenario": "UNRESOLVED",
+  "results": {
+   "A": {
+    "status": "UNAVAILABLE",
+    "predicates": [
+     null,
+     true
+    ]
+   },
+   "B": {
+    "status": "UNAVAILABLE",
+    "predicates": [
+     null
+    ]
+   }
+  },
+  "authority": "ADVISORY_ONLY"
+ }
+}

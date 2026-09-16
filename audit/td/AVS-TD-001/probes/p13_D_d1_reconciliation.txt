@@ -1,0 +1,28 @@
+[written] C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\audit\td\AVS-TD-001\probes\p13_D_d1_reconciliation.json
+
+== 20260911_115904
+{'transition': 'discovery input -> survivors', 'input': 3320, 'presented': 1572, 'named_exceptions': 3320, 'gap': -1572, 'note': 'named = lifecycle reason_code rows (see lifecycle_state_counts to separate survivors)'}
+{'transition': 'survivors -> packages', 'input': 1572, 'presented': 1572, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'packages -> vanguard passed', 'input': 1572, 'presented': 1522, 'named_exceptions': 50, 'gap': 0, 'note': 'vanguard_rejects.csv'}
+{'transition': 'vanguard passed -> options scoped', 'input': 1522, 'presented': 1444, 'named_exceptions': 0, 'gap': 78, 'note': 'NOT_SCOPED tickers in vanguard_signals_enriched'}
+{'transition': 'options -> EIL', 'input': 1444, 'presented': 1444, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'EIL -> execution', 'input': 1444, 'presented': 1444, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'execution -> EOD dropoff/morning candidates', 'input': 1444, 'presented': 1444, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'morning candidates -> Lab final book', 'input': 1444, 'presented': 1444, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'Lab final book -> lab_signal_book_v3 (GO)', 'input': 1444, 'presented': 19, 'named_exceptions': 1425, 'gap': 0, 'note': 'named = non-GO lab_execution_status rows'}
+dropoff stage {'BETWEEN_UNIVERSE_AND_DISCOVERY': 1748, 'AFTER_EOD_BEFORE_MORNING': 992, 'OPTIONS_INTELLIGENCE': 452, 'BETWEEN_VANGUARD_AND_OPTIONS': 78, 'VANGUARD': 50}
+unexplained 992 {'AFTER_EOD_BEFORE_MORNING': 992}
+fob split {'CALL': 798, 'PUT': 458, 'OTHER': 188} lifecycle states {'DROPPED_STAGE': 1720, 'ACTIVE_CORE': 1572, 'DROPPED_TERMINAL_DATA': 28}
+
+== 20260910_150045
+{'transition': 'discovery input -> survivors', 'input': 3320, 'presented': 1544, 'named_exceptions': 3320, 'gap': -1544, 'note': 'named = lifecycle reason_code rows (see lifecycle_state_counts to separate survivors)'}
+{'transition': 'survivors -> packages', 'input': 1544, 'presented': 1544, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'packages -> vanguard passed', 'input': 1544, 'presented': 1494, 'named_exceptions': 50, 'gap': 0, 'note': 'vanguard_rejects.csv'}
+{'transition': 'vanguard passed -> options scoped', 'input': 1494, 'presented': 1424, 'named_exceptions': 0, 'gap': 70, 'note': 'NOT_SCOPED tickers in vanguard_signals_enriched'}
+{'transition': 'options -> EIL', 'input': 1424, 'presented': 1424, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'EIL -> execution', 'input': 1424, 'presented': 1424, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'execution -> EOD dropoff/morning candidates', 'input': 1424, 'presented': 1424, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+{'transition': 'morning candidates -> Lab final book', 'input': 1424, 'presented': 1424, 'named_exceptions': 0, 'gap': 0, 'note': ''}
+dropoff stage {'BETWEEN_UNIVERSE_AND_DISCOVERY': 1776, 'AFTER_EOD_BEFORE_MORNING': 1019, 'OPTIONS_INTELLIGENCE': 405, 'BETWEEN_VANGUARD_AND_OPTIONS': 70, 'VANGUARD': 50}
+unexplained 1019 {'AFTER_EOD_BEFORE_MORNING': 1019}
+fob split {'CALL': 791, 'PUT': 451, 'OTHER': 182} lifecycle states {'DROPPED_STAGE': 1748, 'ACTIVE_CORE': 1544, 'DROPPED_TERMINAL_DATA': 28}

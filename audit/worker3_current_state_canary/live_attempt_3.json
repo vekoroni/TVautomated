@@ -1,0 +1,177 @@
+{
+  "identity": {
+    "run_id": "20260906_213931",
+    "invocation_id": "inv_3f44dcdb0f5d69ba30ec4f88",
+    "trading_session": "2026-09-04",
+    "ticker": "AAOI",
+    "thesis_id": "AAOI:CALL:2026-09-04:OLM2",
+    "direction": "CALL",
+    "planned_hold_sessions": 5,
+    "contract_id": "ECI1:1d95ac0f4493058db0495e6a",
+    "contract_symbol": "AAOI260918C00110000",
+    "selection_version": "avshunter_selected_structure_v1"
+  },
+  "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+  "job_key": "3b2e5afd3907c18c671485f3d151f5e35244429a928690032973c01044a2cc1b",
+  "context_hash": "5dced2806750d6bcfecdfa00af1cde88d9d63a787bcd400b1b5cd580666c2fe9",
+  "evidence_hash": "edf989e378a87fbf660dba6357ce2e505e2bf09dfee1b9250b90532839f4bebe",
+  "request_fingerprint": "907c5c8bb5bc8cd02f776c246add5a8cf704a1a3f92828f41bbd7d77cc5afeaf",
+  "request_hash": "24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9",
+  "request_bytes": 251127,
+  "byte_based_cost_bound_microusd": 888549,
+  "release_hash": "aad53780107c399188372dccd73022986d6508439f3e5ea4bf9601a5e31337bc",
+  "release": {
+    "allowed_models": [
+      "claude-sonnet-4-6"
+    ],
+    "authority": "ADVISORY_ONLY",
+    "can_grant_capital": false,
+    "can_reverse_direction": false,
+    "enabled": true,
+    "input_microusd_per_million_tokens": 3000000,
+    "lab_projection_enabled": true,
+    "max_call_microusd": 500000,
+    "max_calls_per_process": 1,
+    "max_input_bytes": 500000,
+    "max_jobs_per_activation": 1,
+    "max_output_tokens": 8192,
+    "max_total_microusd": 500000,
+    "output_microusd_per_million_tokens": 15000000,
+    "provider": "ANTHROPIC",
+    "release_id": "WORKER3-DISPOSABLE-CANARY",
+    "require_human_review": true,
+    "require_operator_approval_id": true,
+    "require_semantic_review": true,
+    "status": "CONTROLLED_ACTIVE",
+    "timeout_seconds": 300,
+    "version": "1.0.0"
+  },
+  "prepared_count": 1,
+  "mode": "valid",
+  "live": true,
+  "count_request_attempts": 1,
+  "generation_request_attempts": 1,
+  "retries": 0,
+  "count_receipt": {
+    "model": "claude-sonnet-4-6",
+    "frozen_request_hash": "24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9",
+    "http_status": 200,
+    "input_tokens": 83173,
+    "count_packet_hash": "f932c43506252a1814e68fb962b16d1e210f49e5059d1500b9d88ac15caef47f",
+    "credential_source": "os.environ",
+    "credential_fingerprint": "7e5c85a3"
+  },
+  "counted_cost_ceiling_microusd": 384687,
+  "approval_rejection": "operator approval id must be a nonempty trimmed string",
+  "activation": {
+    "id": "f2dc0925127e90af59d5db76b4a8fbd2f8110b7de434b22a8ed22d7e14411010",
+    "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+    "release_id": "WORKER3-DISPOSABLE-CANARY",
+    "release_hash": "aad53780107c399188372dccd73022986d6508439f3e5ea4bf9601a5e31337bc",
+    "operator_approval_id": "user-one-call-canary",
+    "at": 1788775834.6137168
+  },
+  "error": "provider response failed controlled validation; inspect durable state",
+  "uncertain_replay_rejection": "provider process call limit exhausted",
+  "provider_attempts": 1,
+  "receipts": [
+    {
+      "request_hash": "24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9",
+      "model": "claude-sonnet-4-6",
+      "http_status": 200,
+      "input_tokens": 83173,
+      "output_tokens": 8192,
+      "elapsed_ms": 130012,
+      "credential_source": "os.environ",
+      "credential_fingerprint": "7e5c85a3",
+      "status": "RESPONSE_RECEIVED_NOT_VALIDATED",
+      "error_type": null,
+      "failure_stage": null,
+      "timeout_seconds": 300
+    }
+  ],
+  "state": "UNCERTAIN",
+  "provider_envelopes": [
+    {
+      "model": "claude-sonnet-4-6",
+      "id": "msg_011Ceou2sVz74B2f3jtpDbvZ",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"authority\": \"ADVISORY_ONLY\",\n  \"claims\": [\n    {\n      \"claim_id\": \"C01\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"AAOI is classified under the Information Technology sector (GICS) with sector ETF XLK. No fundamental company-specific news, earnings date, or catalyst event was detected in the evidence; the catalyst type is recorded as STRUCTURAL with no catalyst date available. Catalyst truth score is {{slot:native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68}} (field: catalyst_truth_score). The USMI sector alignment field is reported as UNAVAILABLE.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C02\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The thesis ID is AAOI:CALL:2026-09-04:OLM2. The thesis state is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:thesis_state}} as of the evidence observed date 2026-09-04. The setup type is WYCKOFF_ACCUMULATION in Wyckoff phase C. The campaign verdict is STAGED. The primary trigger is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_primary}} with quality {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_quality}} and trigger score {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_score}}.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:thesis_state\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_primary\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_quality\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:trigger_score\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C03\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The signal (entry reference) price for AAOI is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price}}, observed at 2026-09-04T20:00:00Z (EOD close). The structural target is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target}}. The invalidation price sourced from WYCKOFF_VALIDATION is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price}}. The call wall is at 140.0 USD/share and the put wall is at 100.0 USD/share per the lab signal book.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C04\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The underlying price at signal time was 105.53 USD/share. The market profile point-of-control (POC) observed at 2026-09-04T19:55:00Z was {{slot:profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_poc}}, with value area low {{slot:profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_value_area_low}} and value area high {{slot:profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_value_area_high}}. Profile type was SINGLE_DISTRIBUTION with quality FIVE_MINUTE_ESTIMATED and uncertainty score {{slot:profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_uncertainty_score}}.\",\n      \"supporting_evidence_ids\": [\n        \"profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_poc\",\n        \"profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_value_area_low\",\n        \"profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_value_area_high\",\n        \"profile:efa20ded8e8bb8ea6e458f127a6b12517739343045e3e001c214a3581d1870ea:profile_uncertainty_score\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C05\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The hidden state label is COMPRESSED_BEARISH_FORCE. The behaviour state key is EXHAUSTION|LOW|MID_RANGE|NO_TRIGGER|UNK|UNK|NONE. The physics state is PHYS|ENERGY_MED|FORCE_BEAR|INERTIA_LOW|ENTROPY_LOW|VOL_PRESSURE_LOW|FRICTION_LOW. The VWAP EOD was 127.09 USD/share and the closing underlying price was below VWAP (vwap_bias_eod=BELOW). The directional force is reported as -45.0 (bearish force reading). The direction resolution winning side is PUT (put_score=1.0, call_score=0.0), yet the governed direction remains CALL via DISCOVERY_GOVERNED authority (precor_intent=BUY_SETUP). This constitutes a noted internal tension requiring live morning validation.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C06\",\n      \"claim_type\": \"INTERPRETATION\",\n      \"text\": \"The direction conflict status is recorded as NO_CONFLICT at the governance layer; however, the directional force of -45.0 and direction resolution evidence (PUT side, weight 1.0) create a soft tension with the CALL governed direction. The direction integrity status in the source payload is PENDING_MORNING_VALIDATION. This tension is explicitly flagged as a soft conflict (SOFT:EOD_MISSING_MORNING_VALIDATION; SOFT:EOD_MORNING_VALIDATION_PENDING) and does not constitute a hard veto, but it requires live confirmation before any action.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C07\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The selected contract is AAOI260918C00110000 (strike 110.0, expiry 2026-09-18). The EOD quote observed at 2026-09-04T20:00:00Z shows bid {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:bid}}, ask {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:ask}}, mid {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:mid}}, spread_pct {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:spread_pct}} (ratio), OI {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:open_interest}} contracts, volume {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:volume}} contracts. Quote quality is TWO_SIDED. Dataset completeness is COMPLETE.\",\n      \"supporting_evidence_ids\": [\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:bid\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:ask\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:mid\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:spread_pct\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:open_interest\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:volume\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:quote_quality\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:dataset_completeness\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C08\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The contract greeks at the EOD quote date are: delta {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:delta}} (delta band: NEAR_ATM_035_060), gamma {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:gamma}} per_USD, theta {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:theta_daily}} USD/share/day, vega {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:vega}} USD/share/vol_point, implied volatility {{slot:quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:implied_volatility}} annualized. The contract DTE as recorded at signal date is 9 trading sessions (XNYS basis to OCC expiry) with the thesis DTE recorded as 13 calendar-equivalent sessions.\",\n      \"supporting_evidence_ids\": [\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:delta\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:gamma\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:theta_daily\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:vega\",\n        \"quote:dc9294713642967ce510917ae2b37fe968074372143daa7f92bcb9c630c4d196:implied_volatility\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C09\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The contract DTE at signal (9 trading sessions per XNYS basis) is below the minimum required DTE of 13 sessions recorded in the lab signal book. This is a notable structural constraint on holding duration. The planned hold sessions for this invocation is 5, and the trading session is 2026-09-04. With expiry 2026-09-18, the available holding window is materially constrained by time decay.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C10\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The monetisability state is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:monetisability_state}} under ADVISORY_SCENARIO_ONLY authority, with monetisability reason TARGET_CLEARS_BREAKEVEN_AND_PROFIT_FLOOR. The breakeven spot is 115.3 USD/share. The advisory target profit percentage is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:target_profit_pct}} percent, modelled under BS_CONST_IV_R0_Q0 assumptions (constant IV, r=0, q=0, European exercise, no dividend). The monetisability authority is explicitly ADVISORY_SCENARIO_ONLY; this figure does not represent a certified profit outcome.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:monetisability_state\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:target_profit_pct\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C11\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The liquidity state is {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:liquidity_state}} per the EOD lab run. Liquidity persistence status is PERSISTED. Liquidity friction score is 32.0. Intraday PCR volume data is UNAVAILABLE (OI_ONLY_NO_INTRADAY_VOLUME). The WBS momentum alignment state is UNAVAILABLE_NO_INTRADAY_PCR.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:liquidity_state\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C12\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The Wall Break Score (WBS) is 77.1 with grade IMMINENT and break direction UP. The WBS phase B trigger is at 137.2 USD/share and phase C confirmed break trigger is at 140.7 USD/share. The call wall is at 140.0 USD/share. The WBS entry guidance from the evidence is to enter within 15 minutes of open. The wall stall rule states: if the wall holds for 3 sessions, close all positions \u2014 thesis failed. The gamma island at 140.0 USD/share is on the upside path and is characterised as PINNING_POSITIVE_GEX. Gamma flip is approximately 31.0 USD/share.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C13\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The macro regime is TRANSITIONAL_BULLISH as of macro packet date 2026-09-06. The macro data quality is PARTIAL and authority is ADVISORY_ONLY. Key macro observations: VIX spot 14.53 (1Y percentile rank 4.7%), full contango structure (VIX9D 16.85 < VIX3M 20.54 < spot lowest). Yield curve is positively sloped (2s10s +41bp, 3m10s +87bp). SPY GEX is positive (+1.66bn) with gamma flip at 766.03. Fung-Hsieh GO_NO_GO = NO_GO at 55.6% accuracy \u2014 treated as a size modifier (0.70x) only, not a hard gate. USSLIND series (dated 2020-02-01, approximately 2,409 days stale) is quarantined and excluded from regime signal. Information Technology sector tilt is MIXED. The macro packet ID is MACRO:2026-09-06:8438408e5af75603.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C14\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The GARCH volatility forecast (HAR_RV method, 251 price bars) shows: 1-5d expected move 17.24 USD/share, 6-10d expected move 7.14 USD/share, 11-20d expected move 10.1 USD/share. Forecast confidence is 91.2%. IV/HV ratio is 0.645 (IV labelled CHEAP relative to realised). The IVP (IV percentile) is 0.0% \u2014 confirmed very cheap implied volatility. The GARCH IV tailwind score is -0.609, indicating a mild headwind from IV vs forecast vol. No jump risk flag is active. HV-30d is 1.3662 annualised.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C15\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The options term structure is recorded as BACKWARDATION (near-term vol elevated vs back end). Theta drag percentage is 108.46% \u2014 meaning daily theta decay at the EOD mid price represents a material erosion risk relative to the premium paid. The move/theta ratio (advisory proxy over 5d) is 28.598, labelled WIDE_MARGIN in the evidence. The negative factors explicitly note: term structure backwardation, theta drag of 108%, and charm of -0.0052/day.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C16\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The EV3 evaluation status is REJECTED with reason REJECT_NO_EVALUABLE_CONTRACT. The detail provided is: candidates=4; child_rejections=REJECT_QUOTE_STALE:4. All four EV3 candidate contracts were rejected on stale quotes. The EV3 advisory flag EV_AVOID is active. Actuarial EV weight is 0.0. EV status is FAIL. The EV3 authority is retired to advisory-only mode (ev3_authority_mode=PRODUCTION_EVIDENCE_ADVISORY). No certified EV figure is available for this invocation.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C17\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The layer-2 actuarial model (RELAXED match, N=161,128, HIGH sample confidence) yields: adjusted probability of target hit 0.4128, raw probability of target hit 0.4216. Raw probability of stop hit is 0.1672. The state match was on four dimensions (vol_regime=NORMAL, trend_direction=DOWN, structure_quality=WEAK, wyckoff_phase_bucket=ACCUMULATION), not exact. Probability verdict is WEAK_EDGE (probability edge 0.0499). Median days to target (advisory) is 20 days. Raw probability of up move over 5d is approximately 0.490 and over 20d is approximately 0.491. These figures are advisory only and not certified execution permissions.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C18\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The execution lock reason is OLM_EOD_PENDING_MORNING_REQUOTE. Execution is not authorized (execution_authorized=false). The OLM guard pass is false with reason OLM_EOD_PENDING_MORNING_REQUOTE. The morning transition state is EOD_PENDING_MORNING_REQUOTE. No morning validator baton was supplied (morning_lab_alignment_status=NO_MORNING_BATON). Readiness label is EOD_PREP_COMPLETE_MORNING_VALIDATION_REQUIRED at readiness stage 3. The display execution mode is MONITOR_ONLY. Live capital permission is NO.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C19\",\n      \"claim_type\": \"INTERPRETATION\",\n      \"text\": \"The contract AAOI260918C00110000 is currently OTM (moneyness_state=OTM) with strike 110.0 vs signal price {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price}}. The breakeven at expiry requires the underlying to reach {{slot:native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68}} (field: breakeven_price, 115.0 USD/share). The structural target of {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target}} is materially above current spot, and reaching it within the contract lifetime is not assured by available evidence.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:signal_price\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C20\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"This is the first report (prior_report=null, prior_report_validation=NOT_APPLICABLE). No prior-period figures exist for comparison. No delta from a previous report can be stated. The evidence source hash is 8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d, captured at 2026-09-07T07:22:02Z. Source freshness is explicitly NOT_INFERRED_FROM_CAPTURE; the file creation timestamp is not certified as the quote observation time. The lab run ID is 20260906_213931.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C21\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The scenario catalog supplied to this invocation is empty (scenarios=[]). No scenario state observations are available for bull, bear, or timeout outcomes. Scenario section is populated from available structural and actuarial evidence only, not from a pre-computed scenario set.\",\n      \"supporting_evidence_ids\": [\"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C22\",\n      \"claim_type\": \"OBSERVATION\",\n      \"text\": \"The exit rule summary from the evidence is: STOP at invalidation price {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price}} | THETA_EXIT 2026-09-16 | MAX_DTE -6d. The exit scale plan is 60/25/15 at the wall. Exit T1 is 140.0 USD/share, T2 is the structural target {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target}}, T3 is 199.91 USD/share (advisory only). The theta exit date of 2026-09-16 is 2 calendar days before contract expiry 2026-09-18, which is a critical constraint given the planned 5-session hold period from 2026-09-04.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price\",\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:structural_target\",\n        \"native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68\"\n      ],\n      \"contradicting_evidence_ids\": []\n    },\n    {\n      \"claim_id\": \"C23\",\n      \"claim_type\": \"HYPOTHESIS\",\n      \"text\": \"If morning validation confirms the thesis active, the underlying price remains above {{slot:lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI:invalidation_price}}, and tape/trigger confirms VOL_COMPRESSION break, the structural bull case is that price advances toward the call wall at 140.0 USD/share (WBS phase C trigger {{slot:native:0423241974055a023460d8b1e9cf4061ed4a2937205040c56e04fea2ffa0bb68}}, field: wbs_phase_c_trigger, 140.7 USD/share). The adjusted actuarial probability of reaching the structural target is approximately 0.41 (WEAK_EDGE per evidence). This is a hypothesis, not a certified outcome.\",\n      \"supporting_evidence_ids\": [\n        \"lab:8000d37c3595903a3b6f21aa05d4eb58fd65df3c19d898d27b86ebda30b35d9d:AAOI"
+        }
+      ],
+      "stop_reason": "max_tokens",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 83173,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 8192,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    }
+  ],
+  "accounting": {
+    "reported_cost_microusd": 0,
+    "unknown_cost_reservation_microusd": 500000,
+    "unknown_calls": 1
+  },
+  "durable_response": null,
+  "events": [
+    {
+      "seq": 1,
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "at": 1788775833.3214087,
+      "state": "PREPARED",
+      "reason": "PROVIDER_DISPATCH_DISABLED"
+    },
+    {
+      "seq": 2,
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "at": 1788775834.6137168,
+      "state": "QUEUED",
+      "reason": "CONTROLLED_PROVIDER_ACTIVATION"
+    },
+    {
+      "seq": 3,
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "at": 1788775834.7533734,
+      "state": "LEASED",
+      "reason": null
+    },
+    {
+      "seq": 4,
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "at": 1788775835.0088043,
+      "state": "DISPATCHED",
+      "reason": null
+    },
+    {
+      "seq": 5,
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "at": 1788775965.1622949,
+      "state": "UNCERTAIN",
+      "reason": "PROVIDER_OUTCOME_UNCERTAIN"
+    }
+  ],
+  "charges": [
+    {
+      "token": "bb60b7ca57674367a7fb72f35f11f0c8",
+      "job_id": "e7ddd32486e1919301f231d525b4c33c237081f70913d8f42ce349c64a67b376",
+      "reserved": 500000,
+      "cost": null,
+      "receipt": "{\"credential_fingerprint\":\"7e5c85a3\",\"credential_source\":\"os.environ\",\"elapsed_ms\":130012,\"error_type\":null,\"failure_stage\":null,\"http_status\":200,\"input_tokens\":83173,\"output_tokens\":8192,\"request_hash\":\"24275ca3e8203412d984d4162f6d599780b596e25a03d36d69d2049592041ba9\",\"runtime_failure_stage\":\"STRUCTURAL_SEMANTIC_VALIDATION\",\"status\":\"RESPONSE_RECEIVED_NOT_VALIDATED\",\"timeout_seconds\":300}"
+    }
+  ],
+  "tamper_rejection": "provider release changed after runtime initialization",
+  "accepted": false
+}
