@@ -1,0 +1,130 @@
+"""P0-8 service: ingest, scoring idempotency, provenance and report on synthetic books and prices."""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta, timezone
+import json
+import os
+from pathlib import Path
+import sqlite3
+
+import pytest
+
+from avshunter.c12_outcome import service
+from avshunter.c12_outcome.adapters import storage
+from avshunter.c12_outcome.records import provenance_class, resolve_evidence_session
+from avshunter.config import ConfigRegistry
+from avshunter.config.adapters import load_documents, load_lock
+from avshunter.shared.xnys_calendar import is_xnys_session
+
+NOW = datetime(2026, 9, 17, 7, 0, tzinfo=timezone.utc)
+
+
+def snapshot(**overrides):
+    documents = load_documents()
+    if overrides:
+        for document in documents:
+            for entry in document["entries"]:
+                if entry["config_key"] in overrides:
+                    entry["value"] = overrides[entry["config_key"]]
+        return ConfigRegistry.from_documents(documents).resolve(date(2026, 9, 17))
+    return ConfigRegistry.from_documents(documents, load_lock()).resolve(date(2026, 9, 17))
+
+
+def sessions_from(start: date, count: int) -> list[date]:
+    out, day = [], start
+    while len(out) < count:
+        if is_xnys_session(day):
+            out.append(day)
+        day += timedelta(days=1)
+    return out
+
+
+@pytest.fixture()
+def world(tmp_path: Path):
+    runs = tmp_path / "runs"
+    run = runs / "20260902_232526" / "intelligence_lab"
+    run.mkdir(parents=True)
+    (run.parent / "run_meta.json").write_text(json.dumps({"pipeline_mode": "EOD", "run_status": "COMPLETED"}), encoding="utf-8")
+    book = run / "final_opportunity_book_20260902_232526.csv"
+    book.write_text(
+        "ticker,direction,thesis_id,underlying_price,invalidation_price,target_price,contract_symbol,contract_bid,contract_ask,tier,lab_verdict\n"
+        "UPCO,CALL,UPCO:CALL:2026-09-02:OLM2,100,95,110,UPCO261016C00105000,1.0,1.2,A,MANUAL_REVIEW\n"
+        "DNCO,CALL,DNCO:CALL:2026-09-02:OLM2,100,95,110,,,,B,MANUAL_REVIEW\n"
+        "NEGT,PUT,NEGT:PUT:2026-09-02:OLM2,9.54,15.61,-8.67,NEGT261016P00010000,1.45,1.75,C,MANUAL_REVIEW\n"
+        "BADS,CALL,BADS:CALL:2026-09-02:OLM2,100,105,110,,,,C,MANUAL_REVIEW\n",
+        encoding="utf-8",
+    )
+    recorded = datetime(2026, 9, 2, 23, 30, tzinfo=timezone.utc).timestamp()
+    os.utime(book, (recorded, recorded))
+
+    prices_db = tmp_path / "prices.sqlite"
+    con = sqlite3.connect(prices_db)
+    con.execute("CREATE TABLE ohlcv_daily (ticker TEXT, trading_date TEXT, open REAL, high REAL, low REAL, close REAL, bar_status TEXT)")
+    days = sessions_from(date(2026, 9, 3), 10)
+    rows = []
+    for i, d in enumerate(days):
+        rows.append(("UPCO", d.isoformat(), 100, 111 if i == 2 else 102, 99, 101, "COMPLETE"))
+        rows.append(("DNCO", d.isoformat(), 100, 101, 94 if i == 1 else 99, 100, "COMPLETE"))
+        rows.append(("NEGT", d.isoformat(), 9.5, 9.8, 9.2, 9.5, "COMPLETE"))
+        rows.append(("BADS", d.isoformat(), 100, 101, 99, 100, "COMPLETE"))
+    con.executemany("INSERT INTO ohlcv_daily VALUES (?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    store = storage.connect(tmp_path / "scoring.sqlite")
+    return runs, prices_db, store, days
+
+
+def test_ingest_classifies_and_is_idempotent(world):
+    runs, _, store, _ = world
+    first = service.ingest(store, runs, NOW)
+    again = service.ingest(store, runs, NOW)
+    assert (first["new_predictions"], again["new_predictions"], again["new_sightings"]) == (4, 0, 0)
+    states = dict(store.execute("SELECT ticker, target_state || '/' || invalidation_state || '/' || provenance_class FROM prediction_records"))
+    assert states["NEGT"] == "INVALID_LEGACY/VALID/RECORDED_AT_RUN"
+    assert states["BADS"].split("/")[1] == "WRONG_SIDE"
+
+
+def test_score_as_of_is_point_in_time_and_idempotent(world):
+    runs, prices_db, store, days = world
+    service.ingest(store, runs, NOW)
+    early = service.score(store, days[1], snapshot(), NOW, prices_db)   # two sessions observed
+    assert early["states"] == {"OPEN_CENSORED": 2, "STOP_FIRST": 1, "NOT_SCORABLE": 1}
+    repeat = service.score(store, days[1], snapshot(), NOW, prices_db)
+    assert repeat["written"] == 0
+    later = service.score(store, days[4], snapshot(), NOW, prices_db)
+    # DNCO and BADS already terminal; UPCO resolves on session 3; NEGT stays open (target invalid)
+    assert later["states"] == {"TARGET_FIRST": 1, "OPEN_CENSORED": 1}
+    latest = dict(store.execute("SELECT prediction_id, state FROM latest_underlying_outcomes").fetchall())
+    assert sorted(latest.values()) == ["NOT_SCORABLE", "OPEN_CENSORED", "STOP_FIRST", "TARGET_FIRST"]
+
+
+def test_unsupported_policy_in_configuration_fails_loudly(world):
+    runs, prices_db, store, days = world
+    service.ingest(store, runs, NOW)
+    with pytest.raises(ValueError, match="does not implement"):
+        service.score(store, days[1], snapshot(**{"outcome.stop_fill_policy": "LEVEL_ONLY"}), NOW, prices_db)
+
+
+def test_report_written_with_insufficient_sessions_label(world, tmp_path):
+    runs, prices_db, store, days = world
+    service.ingest(store, runs, NOW)
+    service.score(store, days[4], snapshot(), NOW, prices_db)
+    path = service.build_report(store, days[4], snapshot(), tmp_path / "report")
+    text = path.read_text(encoding="utf-8")
+    assert "INSUFFICIENT_SESSIONS" in text and "headline" in text
+    payload = json.loads((tmp_path / "report" / "outcome_report.json").read_text(encoding="utf-8"))
+    assert payload["coverage"]["target_state"]["INVALID_LEGACY"] == 1
+
+
+def test_evidence_session_resolution_order():
+    assert resolve_evidence_session("X:CALL:2026-09-02:OLM2", {"session_date": "2026-09-01"}, "20260902_232526").source == "THESIS_ID"
+    assert resolve_evidence_session(None, {"session_date": "2026-09-01"}, "20260902_232526").source == "RUN_META"
+    derived = resolve_evidence_session(None, {}, "20260804_114554")   # Tue 4 Aug 11:45 UTC = 07:45 ET, before the open
+    assert (derived.source, derived.session) == ("DERIVED_FROM_RUN_ID", date(2026, 8, 3))
+
+
+def test_provenance_after_first_session_close_is_retrospective():
+    evidence, first = date(2026, 9, 2), date(2026, 9, 3)
+    assert provenance_class(datetime(2026, 9, 3, 19, 0, tzinfo=timezone.utc), evidence, first) == "RECORDED_AT_RUN"
+    assert provenance_class(datetime(2026, 9, 4, 1, 0, tzinfo=timezone.utc), evidence, first) == "RETROSPECTIVE_UNVERIFIED"

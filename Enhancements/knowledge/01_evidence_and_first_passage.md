@@ -32,11 +32,20 @@ The "state" is the set of features describing today (structure phase, trend, vol
 - Prefer few, well-populated states over many sparse ones; report sample per state.
 - A dimension is added only if it shows measured out-of-sample lift (note 06).
 
+### 2a. Recent observations: right-censoring instead of waiting for maturity
+
+Approved by ACK 17 Sep 2026 — specification amendment AM-1 (Invariant E, §8).
+Fixed-horizon labels (legacy 5/10/20-day buckets) discard every observation younger than the horizon — with prices to session *T*, no 20-day label exists for entries after *T* − 20 sessions. The competing-risks formulation uses them:
+- An entry *k* sessions old that has already touched the target or invalidation is a **fully observed** event at its touch session.
+- An entry *k* sessions old that is still unresolved is **right-censored at session k**: it contributes to the at-risk set for sessions 1..k and nothing beyond.
+- The Aalen-Johansen / discrete-hazard estimators handle censoring by construction, so evidence stays current to the last completed session. Censoring must be non-informative in time (entry date alone decides it), which holds for calendar-driven censoring.
+- Calibration and walk-forward tests still use only outcomes observable at the evaluation date (no look-ahead).
+
 ### 3. Data hygiene before any statistic (spec Invariant E)
 - **Split / corporate-action adjusted** prices.
 - Returns that imply implausible jumps (e.g. > ±100% in a session) are data errors until proven otherwise → **excluded with a recorded reason**; never winsorised or capped silently, never kept.
 - **Point-in-time universe including delisted tickers** (survivorship bias inflates historical results).
-- **Label maturity**: an observation is usable only once its full 20-session window has matured before the evidence session.
+- **Point-in-time labels**: an observation contributes only what was observable by the evidence session — resolved events at their touch session, unresolved paths right-censored at their current age (§2a). Nothing after the evidence session is used.
 - Use **medians and quantiles** for return summaries.
 
 ### 4. Overlapping labels and effective sample size

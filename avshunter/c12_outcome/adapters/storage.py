@@ -1,0 +1,101 @@
+"""Append-only scoring store (``data/canonical/outcome_scoring.sqlite``)."""
+
+from __future__ import annotations
+
+from dataclasses import asdict
+from datetime import date, datetime
+from enum import Enum
+import json
+from pathlib import Path
+import sqlite3
+from typing import Any, Iterable
+
+DEFAULT_STORE = Path(__file__).resolve().parents[3] / "data" / "canonical" / "outcome_scoring.sqlite"
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS prediction_records (
+  prediction_id TEXT PRIMARY KEY,
+  ticker TEXT NOT NULL, direction TEXT, direction_text TEXT,
+  evidence_session TEXT, evidence_session_source TEXT NOT NULL,
+  reference_price REAL, invalidation_price REAL, invalidation_state TEXT NOT NULL,
+  target_price REAL, target_state TEXT NOT NULL,
+  contract_symbol TEXT, contract_state TEXT NOT NULL,
+  first_run_id TEXT NOT NULL, provenance_class TEXT NOT NULL,
+  scorer_version TEXT NOT NULL, recorded_at_utc TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS prediction_sightings (
+  prediction_id TEXT NOT NULL, run_id TEXT NOT NULL, pipeline_mode TEXT, run_condition TEXT,
+  book_path TEXT NOT NULL, book_sha256 TEXT NOT NULL, book_mtime_utc TEXT NOT NULL,
+  entry_bid REAL, entry_ask REAL, labels_json TEXT NOT NULL, ingested_at_utc TEXT NOT NULL,
+  PRIMARY KEY (prediction_id, run_id, book_sha256)
+);
+CREATE TABLE IF NOT EXISTS underlying_outcomes (
+  prediction_id TEXT NOT NULL, as_of_session TEXT NOT NULL, scorer_version TEXT NOT NULL,
+  state TEXT NOT NULL, sessions_observed INTEGER NOT NULL, resolution_session INTEGER,
+  exit_session_date TEXT, exit_price REAL, return_to_exit_pct REAL, r_multiple REAL,
+  mfe_pct REAL, mae_pct REAL, reason TEXT, terminal INTEGER NOT NULL, config_snapshot_id TEXT NOT NULL,
+  scored_at_utc TEXT NOT NULL,
+  PRIMARY KEY (prediction_id, as_of_session, scorer_version)
+);
+CREATE TABLE IF NOT EXISTS scorer_runs (
+  scorer_run_id TEXT PRIMARY KEY, command TEXT NOT NULL, as_of_session TEXT, scorer_version TEXT NOT NULL,
+  config_snapshot_id TEXT NOT NULL, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, counts_json TEXT
+);
+CREATE VIEW IF NOT EXISTS latest_underlying_outcomes AS
+  SELECT o.* FROM underlying_outcomes o
+  JOIN (SELECT prediction_id, scorer_version, MAX(as_of_session) AS as_of_session
+        FROM underlying_outcomes GROUP BY prediction_id, scorer_version) m
+    ON m.prediction_id = o.prediction_id AND m.scorer_version = o.scorer_version AND m.as_of_session = o.as_of_session;
+"""
+
+
+def _plain(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    return value
+
+
+def connect(path: Path = DEFAULT_STORE) -> sqlite3.Connection:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(str(path))
+    connection.executescript(SCHEMA)
+    return connection
+
+
+def insert_ignore(connection: sqlite3.Connection, table: str, rows: Iterable[dict]) -> int:
+    rows = list(rows)
+    if not rows:
+        return 0
+    columns = list(rows[0])
+    sql = f"INSERT OR IGNORE INTO {table} ({','.join(columns)}) VALUES ({','.join('?' for _ in columns)})"
+    before = connection.total_changes
+    connection.executemany(sql, [[_plain(row[c]) for c in columns] for row in rows])
+    return connection.total_changes - before
+
+
+def outcome_row(prediction_id: str, as_of: date, scorer_version: str, outcome, snapshot_id: str, now: datetime) -> dict:
+    data = asdict(outcome)
+    return {
+        "prediction_id": prediction_id,
+        "as_of_session": as_of.isoformat(),
+        "scorer_version": scorer_version,
+        "state": outcome.state.value,
+        "sessions_observed": data["sessions_observed"],
+        "resolution_session": data["resolution_session"],
+        "exit_session_date": _plain(data["exit_session_date"]),
+        "exit_price": data["exit_price"],
+        "return_to_exit_pct": data["return_to_exit_pct"],
+        "r_multiple": data["r_multiple"],
+        "mfe_pct": data["mfe_pct"],
+        "mae_pct": data["mae_pct"],
+        "reason": data["reason"],
+        "terminal": int(outcome.state.terminal),
+        "config_snapshot_id": snapshot_id,
+        "scored_at_utc": now.isoformat(),
+    }
+
+
+def labels_json(labels: dict) -> str:
+    return json.dumps(labels, sort_keys=True, default=str)

@@ -1,0 +1,216 @@
+{
+  "path": "C:\\Users\\ACKVerissimo\\vanguard\\data\\staging\\actuarial_database_v7_20260917.parquet",
+  "rows": 3817003,
+  "tickers": 3594,
+  "date_min": "2021-12-14",
+  "date_max": "2026-09-16",
+  "horizons": {
+    "5d": {
+      "labelled_rows": 3799037,
+      "latest_labelled_date": "2026-09-09",
+      "max_abs_return": 45069999.0,
+      "rows_abs_gt_1": 1523,
+      "rows_abs_gt_10": 121,
+      "top_tickers_abs_gt_10": [
+        {
+          "ticker": "PSWW",
+          "rows": 44
+        },
+        {
+          "ticker": "FNEC",
+          "rows": 7
+        },
+        {
+          "ticker": "SOLS",
+          "rows": 7
+        },
+        {
+          "ticker": "ALF",
+          "rows": 5
+        },
+        {
+          "ticker": "BBBY",
+          "rows": 5
+        },
+        {
+          "ticker": "CORZ",
+          "rows": 5
+        },
+        {
+          "ticker": "DBD",
+          "rows": 5
+        },
+        {
+          "ticker": "LAZR",
+          "rows": 5
+        },
+        {
+          "ticker": "META",
+          "rows": 5
+        },
+        {
+          "ticker": "WW",
+          "rows": 5
+        },
+        {
+          "ticker": "WOLF",
+          "rows": 4
+        },
+        {
+          "ticker": "ALCE",
+          "rows": 3
+        },
+        {
+          "ticker": "ASST",
+          "rows": 3
+        },
+        {
+          "ticker": "BMNR",
+          "rows": 3
+        },
+        {
+          "ticker": "SBET",
+          "rows": 3
+        }
+      ]
+    },
+    "10d": {
+      "labelled_rows": 3781076,
+      "latest_labelled_date": "2026-09-01",
+      "max_abs_return": 48739999.0,
+      "rows_abs_gt_1": 3568,
+      "rows_abs_gt_10": 172,
+      "top_tickers_abs_gt_10": [
+        {
+          "ticker": "PSWW",
+          "rows": 43
+        },
+        {
+          "ticker": "SOLS",
+          "rows": 11
+        },
+        {
+          "ticker": "ALF",
+          "rows": 10
+        },
+        {
+          "ticker": "BBBY",
+          "rows": 10
+        },
+        {
+          "ticker": "CORZ",
+          "rows": 10
+        },
+        {
+          "ticker": "DBD",
+          "rows": 10
+        },
+        {
+          "ticker": "LAZR",
+          "rows": 10
+        },
+        {
+          "ticker": "META",
+          "rows": 10
+        },
+        {
+          "ticker": "WW",
+          "rows": 10
+        },
+        {
+          "ticker": "SBET",
+          "rows": 7
+        },
+        {
+          "ticker": "SBNY",
+          "rows": 6
+        },
+        {
+          "ticker": "WOLF",
+          "rows": 6
+        },
+        {
+          "ticker": "ASST",
+          "rows": 5
+        },
+        {
+          "ticker": "BMNR",
+          "rows": 5
+        },
+        {
+          "ticker": "FNEC",
+          "rows": 4
+        }
+      ]
+    },
+    "20d": {
+      "labelled_rows": 3745210,
+      "latest_labelled_date": "2026-08-18",
+      "max_abs_return": 46929999.0,
+      "rows_abs_gt_1": 8846,
+      "rows_abs_gt_10": 309,
+      "top_tickers_abs_gt_10": [
+        {
+          "ticker": "PSWW",
+          "rows": 41
+        },
+        {
+          "ticker": "BBBY",
+          "rows": 20
+        },
+        {
+          "ticker": "DBD",
+          "rows": 20
+        },
+        {
+          "ticker": "LAZR",
+          "rows": 20
+        },
+        {
+          "ticker": "SBNY",
+          "rows": 20
+        },
+        {
+          "ticker": "SOLS",
+          "rows": 20
+        },
+        {
+          "ticker": "WOLF",
+          "rows": 20
+        },
+        {
+          "ticker": "WW",
+          "rows": 20
+        },
+        {
+          "ticker": "CORZ",
+          "rows": 19
+        },
+        {
+          "ticker": "ASST",
+          "rows": 18
+        },
+        {
+          "ticker": "META",
+          "rows": 18
+        },
+        {
+          "ticker": "ALF",
+          "rows": 16
+        },
+        {
+          "ticker": "RGC",
+          "rows": 15
+        },
+        {
+          "ticker": "LAES",
+          "rows": 10
+        },
+        {
+          "ticker": "SBET",
+          "rows": 8
+        }
+      ]
+    }
+  }
+}

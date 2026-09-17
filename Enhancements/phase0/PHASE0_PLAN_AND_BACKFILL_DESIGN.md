@@ -133,7 +133,17 @@ Follow-ups:
 |---|---|---|---|---|---|
 | 25,011 | 18,291 | 6,720 | 0 | 1,232,708 | 25,011 |
 
-Remaining after part 1 (dry run): **32,719** weekly requests (before no-data stops). Part 2 after the 17 Sep morning run (allowance resets 14:30 UK), together with the late-publication re-requests for 09-14/09-15 and B4.
+Remaining after part 1 (dry run): **32,719** weekly requests (before no-data stops). **Part 2 started 17 Sep ~04:40 UK** (ACK: complete before market open; the allowance resets 14:30 UK, before the morning run), cap 35,000, log `backfill_receipts/run_b3_part2.log`.
+
+**B3 part 2 — completed 17 Sep 2026 ~05:10 UK:**
+
+| Results | OK | NO_DATA | Errors | Rows written | Credits | Ticker no-data stops |
+|---|---|---|---|---|---|---|
+| 27,685 | 23,348 | 4,337 | 0 | 2,082,329 | 27,775 | 232 |
+
+Remaining after part 2 (dry run): **5,034** weekly requests before no-data stops (mostly older weeks for tickers the tool stops on). Credits in the allowance window ending 14:30 UK 17 Sep: Day 1 30,600 + B3 part 1 25,011 + B3 part 2 27,775 = 83,386, plus the 16 Sep evening run's own usage; no provider quota errors occurred.
+
+**B4 finding (17 Sep):** `scripts/finalize_phantom_weekly_snapshot.py` cannot finalise backfilled sessions as written. It reads the last `--expected-rows` rows by `rowid` and requires them all to share one `quote_date` (designed for a single freshly appended weekly snapshot). Backfilled sessions are interleaved, so every date fails its tail-slice contract. Options: (a) a date-selected variant (`WHERE quote_date = ?`) reusing the same aggregation — a change to a legacy script, needs approval; (b) skip legacy `iv_surface_history` / `iv_history_cache.db` refresh and build the daily IV series in the rebuild (C7, Phase 1) directly from `chain_snapshots`. Recommendation: (b) — the legacy IV tables are superseded by the C7 daily constant-maturity IV series, and refreshing them would change legacy inputs mid-migration. **ACK decision 17 Sep 2026: option (b).** B4 is closed as not applicable; legacy `iv_surface_history` and `iv_history_cache.db` stay untouched; the daily IV series is built in C7 (Phase 1) from `chain_snapshots`. ~~Late-publication re-requests for 09-14/09-15~~ — **dropped (ACK decision 17 Sep 2026): `NO_DATA` is final for a session; no re-request.** In pipeline runs a ticker without option-chain data keeps its share expressions and is recorded as `OPTIONS_DATA_UNAVAILABLE` (spec S2 confirmed by ACK); the no-data state is always recorded, never silent.
 
 ## 6. Approvals requested
 

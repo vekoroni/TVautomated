@@ -284,7 +284,7 @@ BEAR theses use mirrored evidence, mirrored barriers and mirrored valuation. No 
 
 ### Invariant E — data hygiene
 
-Evidence and validation are built only from cleaned, split/dividend-adjusted, outlier-validated returns with fully matured labels. A return that fails validation is excluded with a recorded reason, never capped silently and never kept.
+Evidence and validation are built only from cleaned, split/dividend-adjusted, outlier-validated returns with **point-in-time labels**: only what was observable by the evidence session is used. A path that has already reached its target or invalidation is a fully observed event at its touch session; a path that has not yet resolved contributes as right-censored at its current age ("still open after *k* sessions"). Nothing after the evidence session is ever used. A return that fails validation is excluded with a recorded reason, never capped silently and never kept.
 
 ### Invariant F — freshness is explicit
 
@@ -587,7 +587,7 @@ Session-by-session outcomes are three competing states through time: target reac
 - `n_eff` counted in independent time blocks, because overlapping observations are not independent;
 - uncertainty by block bootstrap;
 - touches measured on intraday high/low; when both barriers are touched in the same session the order is unknown → `AMBIGUOUS`, counted conservatively as stop-first for estimation and the count recorded;
-- labels only from fully matured windows; returns cleaned per Invariant E; BEAR mirrored per Invariant D.
+- point-in-time labels per Invariant E: resolved paths as events at their touch session, unresolved recent paths right-censored at their current age, so evidence stays current to the last completed session; returns cleaned per Invariant E; BEAR mirrored per Invariant D.
 
 Method detail and references belong to knowledge note 01.
 
@@ -2209,6 +2209,15 @@ Section numbers in the "v1.0 location" column refer to version 1.0.
 | S3 | No-target path undefined in geometry selection and vertical generation | Expectancy formula for `target_state = NONE`; verticals only from approved fixed-width variants or `VERTICALS_NOT_APPLICABLE_NO_TARGET`; no synthetic target or barrier. (Also corrected: timeout term weighted by `P_timeout`.) | §9, §10, §12, §21, §26 |
 | S4 | Replication wording required R1/R4 before contexts are "built", blocking replication through production services | Build → shadow → replication → validation → authority; optional earlier research replication; explicit authority states | §24, §26 |
 | S5 | "last_exit_session relative to today" could be implemented as a moving expiry window | `last_exit_session` absolute and immutable; later runs derive `remaining_sessions_to_last_exit`; new candidates get new `expression_id` | §10, §14, §21, §25, §26 |
+
+---
+
+## A.7 Amendments after sign-off
+
+| Ref | Date | ACK decision | Change | Location |
+|---|---|---|---|---|
+| AM-1 | 17 Sep 2026 | Evidence stays current to the last completed session | "Fully matured labels" replaced by point-in-time labels: resolved paths are events at their touch session; unresolved recent paths are right-censored at their current age; no information after the evidence session. Removes the ~20-session lag of fixed-horizon maturity. | Invariant E (§3), §8 estimation method |
+| AM-2 | 17 Sep 2026 | No option-chain data | Confirmed S2 unchanged: ticker stays eligible, `OPTIONS_DATA_UNAVAILABLE`, share expressions still generated; recorded, never silent. `NO_DATA` for a session is final (no re-request). | §6 (no text change) |
 
 ---
 

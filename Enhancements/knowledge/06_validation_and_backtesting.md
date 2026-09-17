@@ -36,7 +36,7 @@ AUTHORITY (granted per context by ACK)
 ## 3. Non-negotiable rules for historical tests
 
 1. **Point-in-time inputs**: data as it was known at decision time (revisions, universe membership including delisted names, corporate actions, configuration versions in force).
-2. **No look-ahead**: features use only trailing information; evidence packets built only from windows fully matured before the evidence session.
+2. **No look-ahead**: features use only trailing information; evidence packets use only what was observable by the evidence session (resolved events at their touch session; unresolved paths right-censored at their current age — spec AM-1); evaluation outcomes are scored only once observable.
 3. **Purging and embargo**: remove training observations whose 20-session window overlaps the test period, and embargo a buffer after it (López de Prado, 2018, ch. 7 [verify]).
 4. **Walk-forward**: fit on the past, test on the next period, roll forward; never tune on the full history.
 5. **Realistic costs**: entry at ask, exit at bid with absolute spread floor, commissions, borrow — the same cost model as production.
