@@ -90,3 +90,61 @@ def test_morning_capture_records_missing_nbbo_without_fabrication() -> None:
     assert resolver.exact is None
     assert resolver.underlying is None
     assert live["msi_underlying_quote_resolution"] == "PROVIDER_NBBO_NOT_AVAILABLE"
+
+
+# --- ACK 17 Sep 2026: provider timestamp from the hydrated structure -----------------------------------------------
+# Since c1f651b quotes arrive through hydrate_selected_structure, which records the provider instant as
+# selected_quote_timestamp_utc / live_contract_quote_timestamp, not live_contract_provider_updated. The capture must
+# read the same timestamp chain as the rest of Morning Gate, or every quote is marked CONTRACT_QUOTE_UNAVAILABLE and
+# the morning quote fields never reach the Lab book.
+
+class _QuoteResolver:
+    def __init__(self) -> None:
+        self.exact = None
+
+    def exact_option_quote(self, **kwargs):
+        self.exact = kwargs
+        raw = kwargs["fetch"](kwargs["ticker"], kwargs["symbol"])
+        return _Result(
+            payload={"bid": raw["bid"][0], "ask": raw["ask"][0], "mid": 2.1, "spread_fraction_mid": 0.095,
+                     "quote_timestamp_utc": raw["updated"][0], "quote_quality": "TWO_SIDED"},
+            dataset_id="OPTION-DATASET",
+        )
+
+    def underlying_nbbo(self, **kwargs):
+        return _Result(payload={}, dataset_id="NBBO-DATASET")
+
+
+def _hydrated_live(**timestamps) -> dict:
+    live = {"live_contract_symbol": "AAA260918C00100000", "live_contract_bid": 2.0, "live_contract_ask": 2.2,
+            "live_contract_mid": 2.1, "live_options_fetched_at": "2026-09-17T16:44:00+00:00"}
+    live.update(timestamps)
+    return live
+
+
+def test_capture_uses_hydrated_provider_timestamp_and_keeps_morning_quote() -> None:
+    resolver = _QuoteResolver()
+    live = _hydrated_live(selected_quote_timestamp_utc="2026-09-17T16:29:20Z")
+    _capture_msi_market_observations({"ticker": "AAA", "contract_symbol": "AAA260918C00100000"}, live, resolver,
+                                     date(2026, 9, 17))
+    assert resolver.exact is not None
+    assert live["quote_provider_timestamp_utc"] == "2026-09-17T16:29:20Z"
+    assert live["morning_contract_bid"] == 2.0 and live["morning_contract_ask"] == 2.2
+    assert live["msi_exact_quote_dataset_id"] == "OPTION-DATASET"
+    assert "execution_viability_state" not in live
+
+
+def test_capture_accepts_live_contract_quote_timestamp() -> None:
+    resolver = _QuoteResolver()
+    live = _hydrated_live(live_contract_quote_timestamp="2026-09-17T16:29:20+00:00")
+    _capture_msi_market_observations({"ticker": "AAA"}, live, resolver, date(2026, 9, 17))
+    assert resolver.exact is not None and live["morning_contract_bid"] == 2.0
+
+
+def test_capture_without_any_provider_timestamp_stays_unavailable() -> None:
+    resolver = _QuoteResolver()
+    live = _hydrated_live()
+    _capture_msi_market_observations({"ticker": "AAA"}, live, resolver, date(2026, 9, 17))
+    assert resolver.exact is None
+    assert live["execution_viability_state"] == "CONTRACT_QUOTE_UNAVAILABLE"
+    assert live["contract_quote_quality"] == "MISSING_PROVIDER_TIMESTAMP"

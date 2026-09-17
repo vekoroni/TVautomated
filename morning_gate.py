@@ -925,8 +925,12 @@ def _capture_msi_market_observations(
     )
     bid = _f(live.get("live_contract_bid"))
     ask = _f(live.get("live_contract_ask"))
+    # Hydrated structures record the provider instant as selected_quote_timestamp_utc /
+    # live_contract_quote_timestamp (ACK 17 Sep 2026); acquisition time is never substituted.
     option_provider_timestamp = _normalise_provider_timestamp(
         live.get("live_contract_provider_updated")
+        or live.get("selected_quote_timestamp_utc")
+        or live.get("live_contract_quote_timestamp")
     )
     live["quote_provider_timestamp_utc"] = option_provider_timestamp or ""
     live["quote_fetch_timestamp_utc"] = _s(live.get("live_options_fetched_at"))
