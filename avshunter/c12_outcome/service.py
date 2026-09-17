@@ -632,6 +632,8 @@ def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSn
 
     lines += _expression_section(connection, resamples, low_q, high_q, min_sessions, summary)
     lines += _hypothesis_section(connection, snapshot)
+    from .signal_service import signal_section
+    lines += signal_section(connection, snapshot)
     lines += ["", "## Resolution timing (session of first touch)", "", "| State | " +
               " | ".join(str(k) for k in range(1, window + 1)) + " |", "|---|" + "---|" * window]
     for state, by_session in sorted(timing.items()):

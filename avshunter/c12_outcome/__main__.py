@@ -7,6 +7,8 @@
   python -m avshunter.c12_outcome expressions [--as-of YYYY-MM-DD]
   python -m avshunter.c12_outcome report [--as-of YYYY-MM-DD]
   python -m avshunter.c12_outcome all    [--as-of YYYY-MM-DD]
+  python -m avshunter.c12_outcome signals [--run-id RUN_ID]      (issue tickets from the morning book, now)
+  python -m avshunter.c12_outcome signal-scores [--as-of YYYY-MM-DD]
 """
 
 from __future__ import annotations
@@ -39,8 +41,9 @@ def _config_session(clock) -> date:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m avshunter.c12_outcome")
-    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "expressions", "hypotheses", "report", "all"])
+    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "expressions", "hypotheses", "signals", "signal-scores", "report", "all"])
     parser.add_argument("--as-of", default=None)
+    parser.add_argument("--run-id", default=None)
     args = parser.parse_args(argv)
     now = wall_clock_utc()
     clock = build_decision_clock(now)
@@ -50,6 +53,15 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as error:
         print(f"CONFIG ERROR: {error}", file=sys.stderr)
         return 2
+    if args.command == "signals":
+        from .signal_service import issue_signals
+        if clock.market_session is None:
+            print("signals are issued during an XNYS session only", file=sys.stderr)
+            return 2
+        run_id = args.run_id or json.loads((REPO / "data" / "output" / "latest.json").read_text(encoding="utf-8-sig"))["run_id"]
+        result = issue_signals(storage.connect(), RUNS_DIR, run_id, snapshot, now, clock.market_session)
+        print(json.dumps(result, indent=2, default=str))
+        return 0 if result.get("status") == "ISSUED" else 3
     as_of = date.fromisoformat(args.as_of) if args.as_of else prices.latest_session()
     if not is_xnys_session(as_of) or as_of > clock.evidence_session:
         print(f"as-of {as_of} must be a completed XNYS session (last completed: {clock.evidence_session})", file=sys.stderr)
@@ -68,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
         results["expressions"] = service.score_expressions(connection, as_of, snapshot, now)
     if args.command in ("hypotheses", "all"):
         results["hypotheses"] = service.track_hypotheses(connection, as_of, snapshot, now)
+    if args.command in ("signal-scores", "all"):
+        from .signal_service import score_signals
+        results["signal_scores"] = score_signals(connection, as_of, snapshot, now)
     if args.command in ("report", "all"):
         results["report"] = str(service.build_report(connection, as_of, snapshot, REPORTS_DIR / as_of.isoformat()))
     print(json.dumps(results, indent=2, default=str))

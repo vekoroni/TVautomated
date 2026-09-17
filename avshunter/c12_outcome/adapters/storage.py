@@ -86,6 +86,29 @@ CREATE TABLE IF NOT EXISTS hypothesis_outcomes (
   config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
   PRIMARY KEY (hypothesis_id, ticker, event_session, horizon)
 );
+CREATE TABLE IF NOT EXISTS signal_tickets (
+  ticket_id TEXT PRIMARY KEY, signal_version TEXT NOT NULL, run_id TEXT NOT NULL, evidence_session TEXT NOT NULL,
+  issue_session TEXT NOT NULL, rank INTEGER NOT NULL, ticker TEXT NOT NULL, direction TEXT NOT NULL,
+  expression TEXT NOT NULL, side TEXT NOT NULL, contract_symbol TEXT, expiry TEXT, last_usable_session TEXT,
+  limit_price REAL NOT NULL, scored_entry REAL NOT NULL, reference_spot REAL NOT NULL, reference_spot_utc TEXT,
+  stop_spot REAL NOT NULL, target_spot REAL NOT NULL, hold_sessions INTEGER NOT NULL, r_cautious REAL NOT NULL,
+  r_central REAL, r_upside REAL, p_target_first REAL, p_stop_first REAL, share_spread REAL,
+  quote_bid REAL, quote_ask REAL, quote_timestamp_utc TEXT, quote_state TEXT NOT NULL,
+  quote_adjustment_state TEXT NOT NULL, quote_spot_at_quote REAL, quote_delta REAL, quote_shift REAL,
+  iv_source TEXT NOT NULL, o4_pcr_oi REAL, o4_percentile REAL, o4_stance TEXT NOT NULL, o2_state TEXT NOT NULL,
+  h9r_gap_up_event INTEGER NOT NULL, config_snapshot_id TEXT NOT NULL, recorded_at_utc TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS signal_rejections (
+  run_id TEXT NOT NULL, issue_session TEXT NOT NULL, ticker TEXT NOT NULL, signal_version TEXT NOT NULL,
+  reason TEXT NOT NULL, recorded_at_utc TEXT NOT NULL,
+  PRIMARY KEY (run_id, issue_session, ticker, signal_version)
+);
+CREATE TABLE IF NOT EXISTS signal_outcomes (
+  ticket_id TEXT NOT NULL, signal_version TEXT NOT NULL, as_of_session TEXT NOT NULL, state TEXT NOT NULL,
+  exit_session TEXT, exit_reason TEXT, entry_price REAL, exit_price REAL, return_on_capital REAL, pnl_per_unit REAL,
+  reason TEXT, config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
+  PRIMARY KEY (ticket_id, signal_version)
+);
 CREATE VIEW IF NOT EXISTS latest_underlying_outcomes AS
   SELECT o.* FROM underlying_outcomes o
   JOIN (SELECT prediction_id, scorer_version, MAX(as_of_session) AS as_of_session
