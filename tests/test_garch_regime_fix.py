@@ -85,12 +85,13 @@ def test_legacy_regime_fallback(tmp_path):
     print("PASS: _load_regime falls back to regime")
 
 
-def test_default_transitional_when_no_file(tmp_path):
-    """Returns TRANSITIONAL when no macro file exists."""
+def test_default_missing_when_no_file(tmp_path):
+    """Returns MACRO_REGIME_MISSING when no macro file exists (display only; never an invented
+    TRANSITIONAL — changed 17 Sep 2026, tests/test_layer3_volatility_leftovers.py M1)."""
     mod = _load_garch_runner()
     regime = mod._load_regime(tmp_path)
-    assert regime == "TRANSITIONAL", f"Expected TRANSITIONAL default, got: {regime}"
-    print("PASS: _load_regime defaults to TRANSITIONAL when file absent")
+    assert regime == "MACRO_REGIME_MISSING", f"Expected MACRO_REGIME_MISSING, got: {regime}"
+    print("PASS: _load_regime reports MACRO_REGIME_MISSING when file absent")
 
 
 def test_real_macro_json_resolves_correctly():
@@ -104,7 +105,7 @@ def test_real_macro_json_resolves_correctly():
     regime = mod._load_regime(base_dir)
     assert regime != "TRANSITIONAL" or True  # just confirm it doesn't crash
     data = json.loads(macro_path.read_text(encoding="utf-8"))
-    expected = data.get("regime_state", data.get("active_regime", data.get("regime", "TRANSITIONAL")))
+    expected = data.get("regime_state") or data.get("active_regime") or data.get("regime") or "MACRO_REGIME_MISSING"
     assert regime == str(expected), f"Expected {expected}, got: {regime}"
     print(f"PASS: real macro JSON regime resolved: {regime}")
 
@@ -116,6 +117,6 @@ if __name__ == "__main__":
         test_reads_regime_state_field(tp / "t2")
         test_legacy_active_regime_fallback(tp / "t3")
         test_legacy_regime_fallback(tp / "t4")
-        test_default_transitional_when_no_file(tp / "t5")
+        test_default_missing_when_no_file(tp / "t5")
     test_real_macro_json_resolves_correctly()
     print("\nAll garch_runner regime tests PASSED")

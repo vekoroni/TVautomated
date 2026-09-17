@@ -994,6 +994,9 @@ def _garch_stats(garch_rows):
         "expensive_vol":       sum(1 for t in present if t > 0.05),
         "iv_tailwind_missing": len(tailwinds) - len(present),
         "jump_risk":           sum(1 for r in garch_rows if str(r.get("l3_jump_risk_flag","")).lower()=="true"),
+        # Not assessed (no forecast / short or flat history) is counted, never read as no jump risk.
+        "jump_risk_not_assessed": sum(1 for r in garch_rows
+                                      if str(r.get("l3_jump_risk_flag","") or "").strip().lower() not in ("true", "false")),
         "har_rv_count":        _method_count("HAR_RV"),
         "garch_count":         _method_count("GARCH"),
         "ewma_count":          _method_count("EWMA_FALLBACK"),

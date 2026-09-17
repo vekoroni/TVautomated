@@ -397,6 +397,21 @@ def _str(row: dict, key: str, default: str = "") -> str:
     return str(v).strip()
 
 
+def _jump_risk_review_fields(row: dict) -> dict:
+    """Manifest jump-risk fields. A missing Layer 3 jump flag (no forecast / not assessable) is
+    NOT_ASSESSED, never FALSE = no review needed (R1; tests/test_layer3_volatility_leftovers.py C5)."""
+    raw = _str(row, "l3_jump_risk_flag") or _str(row, "jump_risk_flag")
+    flagged = (_str(row, "l3_jump_risk_flag").upper() in {"TRUE", "1", "YES"}
+               or _str(row, "jump_risk_flag").upper() in {"TRUE", "1", "YES"})
+    if flagged:
+        required, note = "TRUE", "GARCH_JUMP_RISK_REVIEW"
+    elif raw.upper() in {"FALSE", "0", "NO"}:
+        required, note = "FALSE", ""
+    else:
+        required, note = "NOT_ASSESSED", "GARCH_JUMP_RISK_NOT_ASSESSED"
+    return {"l3_jump_risk_flag": raw, "jump_risk_review_required": required, "jump_risk_note": note}
+
+
 def _trigger_text(row: dict, key: str, default: str = "") -> str:
     """Preserve the governed categorical literal ``NONE``.
 
@@ -2564,15 +2579,7 @@ def build_candidate_manifest(
             "estimated_R": _flt(row, "estimated_R"),
             "theta_decay_expected": _flt(row, "theta_decay_expected"),
             "runway_to_wall_pct": _flt(row, "runway_to_wall_pct"),
-            "l3_jump_risk_flag": _str(row, "l3_jump_risk_flag") or _str(row, "jump_risk_flag"),
-            "jump_risk_review_required": "TRUE"
-            if (_str(row, "l3_jump_risk_flag").upper() in {"TRUE", "1", "YES"}
-                or _str(row, "jump_risk_flag").upper() in {"TRUE", "1", "YES"})
-            else "FALSE",
-            "jump_risk_note": "GARCH_JUMP_RISK_REVIEW"
-            if (_str(row, "l3_jump_risk_flag").upper() in {"TRUE", "1", "YES"}
-                or _str(row, "jump_risk_flag").upper() in {"TRUE", "1", "YES"})
-            else "",
+            **_jump_risk_review_fields(row),
             "iv_gex_entry_quality": _flt(row, "iv_gex_entry_quality"),
             "iv_gex_entry_quality_label": _str(row, "iv_gex_entry_quality_label"),
             "iv_gex_entry_quality_narrative": _str(row, "iv_gex_entry_quality_narrative"),

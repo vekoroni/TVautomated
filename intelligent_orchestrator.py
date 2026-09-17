@@ -4122,9 +4122,15 @@ def merge_garch_into_enriched(run_id: str) -> bool:
         merged.to_csv(sb_path, index=False)
 
         n_matched = merged["l3_method"].notna().sum() if "l3_method" in merged.columns else "?"
+        # Rows now exist for tickers without a forecast (explicit l3_forecast_state), so a
+        # match is not a forecast: log both (tests/test_layer3_volatility_leftovers.py V6).
+        n_forecast = (
+            merged["l3_forward_realised_vol"].notna().sum()
+            if "l3_forward_realised_vol" in merged.columns else "?"
+        )
         logger.info(
-            "✅  GARCH merge complete (superbrain): %d l3_ fields added | %s/%d tickers matched",
-            len(l3_cols), n_matched, len(merged)
+            "✅  GARCH merge complete (superbrain): %d l3_ fields added | %s/%d tickers matched | %s with forecast",
+            len(l3_cols), n_matched, len(merged), n_forecast
         )
 
         # ── EIL ENRICHED MERGE (Phase 10b-EIL) ───────────────────────────────
