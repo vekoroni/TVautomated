@@ -74,6 +74,18 @@ CREATE TABLE IF NOT EXISTS expression_outcomes (
   config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
   PRIMARY KEY (prediction_id, expression_version)
 );
+CREATE TABLE IF NOT EXISTS hypothesis_events (
+  hypothesis_id TEXT NOT NULL, ticker TEXT NOT NULL, event_session TEXT NOT NULL, direction TEXT NOT NULL,
+  held TEXT NOT NULL, gap_atr REAL NOT NULL, entry_close REAL NOT NULL, share_spread REAL,
+  config_snapshot_id TEXT NOT NULL, recorded_at_utc TEXT NOT NULL,
+  PRIMARY KEY (hypothesis_id, ticker, event_session)
+);
+CREATE TABLE IF NOT EXISTS hypothesis_outcomes (
+  hypothesis_id TEXT NOT NULL, ticker TEXT NOT NULL, event_session TEXT NOT NULL, horizon INTEGER NOT NULL,
+  exit_session TEXT NOT NULL, raw_return REAL, universe_median REAL, net_return REAL, state TEXT NOT NULL,
+  config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
+  PRIMARY KEY (hypothesis_id, ticker, event_session, horizon)
+);
 CREATE VIEW IF NOT EXISTS latest_underlying_outcomes AS
   SELECT o.* FROM underlying_outcomes o
   JOIN (SELECT prediction_id, scorer_version, MAX(as_of_session) AS as_of_session

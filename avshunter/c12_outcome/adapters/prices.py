@@ -64,3 +64,25 @@ def load_all_bars(start: date, end: date, path: Path = DEFAULT_PRICE_DB) -> dict
         for ticker, session, open_, high, low, close in rows:
             result.setdefault(ticker, []).append(Bar(date.fromisoformat(session), open_, high, low, close))
     return result
+
+
+def load_price_panel(start: date, end: date, path: Path = DEFAULT_PRICE_DB):
+    """Complete OHLCV bars for every ticker with start <= session <= end as a dense PricePanel (read-only)."""
+    import numpy as np
+    from ..hypotheses import PricePanel
+    with _connect(path) as connection:
+        rows = connection.execute(
+            "SELECT ticker, trading_date, open, high, low, close, volume FROM ohlcv_daily "
+            "WHERE bar_status = 'COMPLETE' AND trading_date BETWEEN ? AND ? ORDER BY trading_date, ticker",
+            (start.isoformat(), end.isoformat()),
+        ).fetchall()
+    sessions = sorted({r[1] for r in rows})
+    tickers = sorted({r[0] for r in rows})
+    s_index = {d: i for i, d in enumerate(sessions)}
+    t_index = {t: j for j, t in enumerate(tickers)}
+    arrays = [np.full((len(sessions), len(tickers)), np.nan) for _ in range(len(("o", "h", "l", "c", "v")))]
+    for ticker, session, *values in rows:
+        i, j = s_index[session], t_index[ticker]
+        for array, value in zip(arrays, values):
+            array[i, j] = value
+    return PricePanel(tuple(date.fromisoformat(d) for d in sessions), tuple(tickers), *arrays)

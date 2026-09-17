@@ -17,6 +17,7 @@ from . import estimators
 from .adapters import books, chains, macro, prices, storage
 from .base_rate import BASE_RATE_VERSION, build_panel, matched_incidence, panel_atr
 from .conditions import CONDITION_VERSION, ConditionSettings, macro_condition, market_condition
+from . import hypotheses as hyp
 from .expression import EXPRESSION_VERSION, ExitPlan, contract_expiry, mark_expression, plan_exit
 from .geometry import classify
 from .model import Bar, ContractState, OutcomeState, TargetState, UnderlyingOutcome
@@ -370,6 +371,80 @@ def score_expressions(connection: sqlite3.Connection, as_of: date, snapshot: Con
     return {"candidates": len(rows), "written": written, "states": dict(counts)}
 
 
+# --- forward hypothesis tests (ACK 17 Sep 2026; plan A Addendum 2) --------------------
+
+def track_hypotheses(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSnapshot, now: datetime,
+                     price_db: Path = prices.DEFAULT_PRICE_DB, settings_override=None) -> dict:
+    s = settings_override or hyp.settings_from_snapshot(snapshot)
+    if as_of < s.forward_start:
+        return {"hypothesis_id": s.hypothesis_id, "new_events": 0, "new_outcomes": 0, "reason": "BEFORE_FORWARD_START"}
+    start = sessions_before(s.forward_start, s.lookback_sessions + 1)
+    panel = prices.load_price_panel(start, as_of, price_db)
+    events, last = [], {}
+    for i, session in enumerate(panel.sessions):
+        if session < s.forward_start:
+            continue
+        found = hyp.detect_events(panel, i, s, last)
+        for event in found:
+            last[event.ticker] = event.event_session
+        events.extend(found)
+    event_rows = [{"hypothesis_id": s.hypothesis_id, "ticker": e.ticker, "event_session": e.event_session.isoformat(),
+                   "direction": e.direction, "held": e.held, "gap_atr": e.gap_atr, "entry_close": e.entry_close,
+                   "share_spread": e.share_spread, "config_snapshot_id": snapshot.snapshot_id,
+                   "recorded_at_utc": now.isoformat()} for e in events]
+    new_events = storage.insert_ignore(connection, "hypothesis_events", event_rows)
+    stored = connection.execute(
+        "SELECT ticker, event_session, direction, held, gap_atr, entry_close, share_spread FROM hypothesis_events "
+        "WHERE hypothesis_id = ?", (s.hypothesis_id,)).fetchall()
+    done = {(r[0], r[1], r[2]) for r in connection.execute(
+        "SELECT ticker, event_session, horizon FROM hypothesis_outcomes WHERE hypothesis_id = ?", (s.hypothesis_id,))}
+    outcome_rows = []
+    for ticker, session, direction, held, gap_atr, entry_close, spread in stored:
+        event = hyp.GapEvent(ticker, date.fromisoformat(session), direction, held, gap_atr, entry_close, spread)
+        for horizon in s.horizons:
+            if (ticker, session, horizon) in done:
+                continue
+            outcome = hyp.score_outcome(panel, event, horizon, s)
+            if outcome is None:
+                continue
+            outcome_rows.append({"hypothesis_id": s.hypothesis_id, "ticker": ticker, "event_session": session,
+                                 "horizon": horizon, "exit_session": outcome.exit_session.isoformat(),
+                                 "raw_return": outcome.raw_return, "universe_median": outcome.universe_median,
+                                 "net_return": outcome.net_return, "state": outcome.state,
+                                 "config_snapshot_id": snapshot.snapshot_id, "scored_at_utc": now.isoformat()})
+    new_outcomes = storage.insert_ignore(connection, "hypothesis_outcomes", outcome_rows)
+    connection.commit()
+    return {"hypothesis_id": s.hypothesis_id, "events_detected": len(events), "new_events": new_events,
+            "new_outcomes": new_outcomes}
+
+
+def _hypothesis_section(connection: sqlite3.Connection, snapshot: ConfigSnapshot) -> list[str]:
+    s = hyp.settings_from_snapshot(snapshot)
+    rows = connection.execute(
+        "SELECT e.direction, o.horizon, e.event_session, o.net_return, e.share_spread FROM hypothesis_outcomes o "
+        "JOIN hypothesis_events e USING (hypothesis_id, ticker, event_session) WHERE o.hypothesis_id = ? AND o.state = ?",
+        (s.hypothesis_id, hyp.SCORED)).fetchall()
+    lines = ["", "## Forward hypothesis tests", "",
+             f"`{s.hypothesis_id}` — pre-registered forward test from {s.forward_start.isoformat()} "
+             f"(SIGNAL_RESEARCH_PLAN_A.md Addendum 2). Primary: {s.primary_direction} events, {s.primary_horizon}-session "
+             f"net return expected negative; verdict needs >= {s.min_event_dates} event dates and >= {s.min_events} events, "
+             f"clustered t <= {s.pass_t} and |mean| above the median share spread. Measurement only.", "",
+             "| Direction | Horizon | Events | Event dates | Mean net (bps) | Clustered t | Median share spread (bps) | Verdict |",
+             "|---|---|---|---|---|---|---|---|"]
+    for direction in (hyp.EVENT_UP, hyp.EVENT_DOWN):
+        for horizon in s.horizons:
+            items = [(r[2], r[3], r[4]) for r in rows if r[0] == direction and r[1] == horizon]
+            result = hyp.evaluate(items, s)
+            primary = direction == s.primary_direction and horizon == s.primary_horizon
+            verdict = result["verdict"] if primary else "SECONDARY"
+            mean = "n/a" if result["mean"] is None else f"{result['mean'] * 1e4:.1f}"
+            t_stat = "n/a" if result["t"] is None else f"{result['t']:.2f}"
+            spread = "n/a" if result["median_share_spread"] is None else f"{result['median_share_spread'] * 1e4:.1f}"
+            lines.append(f"| {direction} | {horizon} | {result['events']} | {result['event_dates']} | {mean} | "
+                         f"{t_stat} | {spread} | {verdict} |")
+    return lines
+
+
 # --- report --------------------------------------------------------------------
 
 GROUP_LABELS = ("tier", "lab_verdict", "final_action", "thesis_state", "ev3_absolute_state")
@@ -556,6 +631,7 @@ def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSn
                             "base_stop": paired.base_stop, "excess_stop": paired.excess_stop, "verdict": verdict})
 
     lines += _expression_section(connection, resamples, low_q, high_q, min_sessions, summary)
+    lines += _hypothesis_section(connection, snapshot)
     lines += ["", "## Resolution timing (session of first touch)", "", "| State | " +
               " | ".join(str(k) for k in range(1, window + 1)) + " |", "|---|" + "---|" * window]
     for state, by_session in sorted(timing.items()):

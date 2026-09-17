@@ -47,3 +47,25 @@ Per date: Spearman IC of the signal vs forward log return net of the date's cros
 5. Not explained by H1 (reversal): partial IC controlling for past 5-session return stays same-signed and |t| ≥ 2.0 on test.
 
 A signal passing 1–5 becomes a **candidate direction input** (shadow only) and is re-tested on forward sessions by the outcome scorer before any authority (G1–G4).
+
+## Addendum 1 — H9 gap drift as an event study (pre-registered 17 Sep 2026, before any H9 event result)
+
+The cross-sectional design could not evaluate H9 (fewer than 100 events per date). It is re-specified as an event study.
+
+- **Event:** session t with |open_t − close_(t−1)| ≥ 2 × ATR14 (ending t−1) and volume_t ≥ 2 × median volume of the 20 sessions before t. Universe: liquid (20-session median dollar volume ≥ $5M, ending t−1), DQ-12 clean over [t−260, t+20]. At most one event per ticker per 20 sessions (the first), so outcome windows do not overlap within a ticker.
+- **Entry:** close of the event session t (point-in-time: the gap and its volume are known by then). **Outcome:** log return from close_t to close_(t+h), h = 5 / 10 / 20, net of the median return of the liquid universe over the same window, signed by the gap direction (+ for gap up, − for gap down).
+- **Expected sign:** + (post-event drift in the gap direction). Reported split by (a) gap up / gap down and (b) whether session t closed beyond its open in the gap direction ("held") or not ("faded") — pre-declared as the only two splits.
+- **Statistics:** mean signed net return with standard errors clustered by event date; share positive; train 2022-09 → 2024-12, test 2025-01 → 2026-08; per-year means.
+- **Pass:** train mean > 0 with t ≥ 2.5; test same sign with t ≥ 2.0 (Benjamini-Hochberg q = 0.10 across horizon × split); same sign in at least 4 of 5 years; economic — mean signed 10-session net return greater than the median round-trip share spread of the event names (and reported against the median ATM straddle cost where chain data exists).
+
+## Addendum 2 — forward test of the gap-up reversal (H9R), pre-registered 17 Sep 2026 (ACK)
+
+Source of the hypothesis: the H9 event study test period (2025-01 → 2026-08) showed gap-up events reversing (−105 bps at 10 sessions, t −3.5), the opposite of the pre-registered H9 sign. Because it was found after seeing test data, it is **not** evidence; it is tested only on sessions **from 2026-09-17 onward**.
+
+- **Event:** identical to Addendum 1 (gap ≥ 2 × ATR14, volume ≥ 2 × prior 20-session median, liquid ≥ $5M, DQ-12 clean, first event per ticker in 20 sessions), direction UP only for the primary test; DOWN tracked as a secondary report.
+- **Primary prediction:** mean 10-session log return from the event-session close, net of the liquid-universe median, is **negative** for gap-up events. Secondary: 5 and 20 sessions.
+- **Tracking:** C12 outcome scorer (measurement only, no authority), from events on or after 2026-09-17; outcomes scored when close(t+h) exists; no revision of the definition during the test.
+- **Evaluation gate:** no judgement before ≥ 30 distinct event dates and ≥ 200 gap-up events with a 10-session outcome.
+- **Pass:** clustered-by-date t ≤ −2.0 for the primary horizon, and |mean| greater than the median round-trip share spread of the event names. A pass makes H9R a candidate direction input (shadow); authority still requires G1–G4.
+
+**Decision (ACK, 17 Sep 2026, before any forward data):** gap-down stays **secondary** — reported alongside, never part of the H9R pass verdict. No multiple-testing adjustment is applied to the primary test.

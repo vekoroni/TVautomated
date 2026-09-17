@@ -1,0 +1,19 @@
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\Enhancements\direction_evidence\signal_research_a_h9_gap_events.py:55: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  liquid_prev = ((close * vol).rolling(20, min_periods=15).median() >= 5_000_000).shift(1).fillna(False)
+events 8337 (train 4641, test 3696), tickers 1674, median gap 3.01 ATR
+split  horizon  train_events  train_mean_bps  train_t  test_events  test_mean_bps  test_t  same_sign_years  median_share_spread_bps  train_pass  test_pass  years_pass  economic_10d  passes
+  ALL        5          4641           19.85     1.52         3696         -30.74   -1.73                3                    15.23       False      False       False         False   False
+  ALL       10          4641           33.29     1.90         3696         -58.27   -2.50                3                    15.23       False      False       False         False   False
+  ALL       20          4641           41.50     2.14         3696         -50.43   -1.96                3                    15.23       False      False       False         False   False
+   UP        5          2421           20.06     1.02         1914         -62.99   -2.87                3                    21.85       False      False       False         False   False
+   UP       10          2421           45.87     1.73         1914        -104.62   -3.46                3                    21.85       False      False       False         False   False
+   UP       20          2421           46.76     1.46         1914         -79.62   -1.94                2                    21.85       False      False       False         False   False
+ DOWN        5          2220           19.63     1.17         1782           3.83    0.14                4                     7.01       False      False        True         False   False
+ DOWN       10          2220           19.60     1.03         1782          -8.51   -0.23                3                     7.01       False      False       False         False   False
+ DOWN       20          2220           35.78     1.50         1782         -19.08   -0.57                2                     7.01       False      False       False         False   False
+ HELD        5          2442           24.01     1.42         1921         -32.10   -1.17                3                    22.95       False      False       False         False   False
+ HELD       10          2442           45.61     2.35         1921         -50.87   -1.41                3                    22.95       False      False       False         False   False
+ HELD       20          2442           56.37     2.17         1921         -37.37   -1.04                3                    22.95       False      False       False         False   False
+FADED        5          2199           15.23     0.77         1775         -29.28   -1.35                2                     0.00       False      False       False         False   False
+FADED       10          2199           19.58     0.68         1775         -66.28   -2.34                2                     0.00       False      False       False         False   False
+FADED       20          2199           24.95     0.95         1775         -64.55   -1.75                2                     0.00       False      False       False         False   False

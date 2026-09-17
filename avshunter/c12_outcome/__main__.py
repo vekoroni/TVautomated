@@ -39,7 +39,7 @@ def _config_session(clock) -> date:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m avshunter.c12_outcome")
-    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "expressions", "report", "all"])
+    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "expressions", "hypotheses", "report", "all"])
     parser.add_argument("--as-of", default=None)
     args = parser.parse_args(argv)
     now = wall_clock_utc()
@@ -66,6 +66,8 @@ def main(argv: list[str] | None = None) -> int:
         results["base_rate"] = service.score_base_rates(connection, as_of, snapshot, now)
     if args.command in ("expressions", "all"):
         results["expressions"] = service.score_expressions(connection, as_of, snapshot, now)
+    if args.command in ("hypotheses", "all"):
+        results["hypotheses"] = service.track_hypotheses(connection, as_of, snapshot, now)
     if args.command in ("report", "all"):
         results["report"] = str(service.build_report(connection, as_of, snapshot, REPORTS_DIR / as_of.isoformat()))
     print(json.dumps(results, indent=2, default=str))
