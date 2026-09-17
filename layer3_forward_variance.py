@@ -91,6 +91,34 @@ def _load_forecast_bounds(path: Path = GOVERNED_CONSTANTS_PATH) -> tuple:
 
 VOL_FLOOR, VOL_CAP = _load_forecast_bounds()   # annualised decimal fractions
 
+
+# DQ-12 price history integrity (ACK 17 Sep 2026; config "price_history_integrity", fail-closed).
+# A one-bar move of >= ratio (either way), sub-cent closes or a long gap mark the start of a different
+# security (unadjusted corporate action, ticker reuse, re-emergence): the forecast uses only the history
+# from the latest break (tests/test_layer3_price_history_integrity.py).
+def _load_price_history_integrity(path: Path = GOVERNED_CONSTANTS_PATH) -> tuple:
+    payload = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    rules = payload['price_history_integrity']
+    if rules.get('version') != 'price_history_integrity_v1':
+        raise ValueError('unsupported price_history_integrity version')
+    ratio = float(rules['one_bar_break_ratio'])
+    sub_cent = float(rules['sub_cent_price'])
+    gap = int(rules['max_gap_sessions'])
+    if not (ratio > 1.0 and sub_cent > 0.0 and gap > 0):
+        raise ValueError('price_history_integrity values out of range')
+    return ratio, sub_cent, gap
+
+
+PRICE_BREAK_RATIO, SUB_CENT_PRICE, PRICE_GAP_SESSIONS = _load_price_history_integrity()
+
+PRICE_HISTORY_INTACT               = 'INTACT'
+PRICE_HISTORY_BREAK_TRUNCATED      = 'BREAK_TRUNCATED'
+PRICE_HISTORY_BREAK_INSUFFICIENT   = 'BREAK_INSUFFICIENT_HISTORY'
+PRICE_HISTORY_SUB_CENT             = 'SUB_CENT_PRICE'
+BREAK_REASON_RATIO                 = 'ONE_BAR_MOVE_AT_OR_ABOVE_RATIO'
+BREAK_REASON_SUB_CENT              = 'SUB_CENT_PRICE'
+BREAK_REASON_GAP                   = 'GAP_OVER_SESSIONS'
+
 # Layer 3 model-risk guardrails. These do not mutate the raw forecast; they
 # add audit flags and bounded scoring companions for downstream capital gates.
 L3_MODEL_RISK_VOL_HARDCAP     = VOL_CAP
@@ -154,6 +182,9 @@ class ForwardVarianceResult:
     macro_regime_display:   str = ''        # display/audit only; never used in any value
     jump_risk_state:        Optional[str] = None   # derived when not given
     forward_realised_vol_raw: Optional[float] = None  # model output before the range guard
+    price_history_state:    str = 'INTACT'  # DQ-12: INTACT | BREAK_TRUNCATED | BREAK_INSUFFICIENT_HISTORY | SUB_CENT_PRICE
+    price_history_break_date: Optional[str] = None
+    price_history_break_reason: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.jump_risk_state is None:
@@ -208,6 +239,9 @@ class ForwardVarianceResult:
             'l3_forward_realised_vol':        _round_or_none(self.forward_realised_vol, 4),
             'l3_forward_realised_vol_raw':    _round_or_none(self.forward_realised_vol_raw, 4),
             'l3_forecast_state':              self.forecast_state,
+            'l3_price_history_state':         self.price_history_state,
+            'l3_price_history_break_date':    self.price_history_break_date,
+            'l3_price_history_break_reason':  self.price_history_break_reason,
             'l3_vol_forecast_conf':           _round_or_none(self.vol_forecast_confidence, 1),
             'l3_expected_move_1_5d':          _round_or_none(self.expected_move_1_5d, 2),
             'l3_expected_move_6_10d':         _round_or_none(self.expected_move_6_10d, 2),
@@ -511,6 +545,42 @@ def _atr_proxy(ohlcv: pd.DataFrame) -> Optional[float]:
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
+def _sessions_between(previous, current) -> int:
+    """XNYS sessions strictly after ``previous`` up to and including ``current`` (dates or datetimes)."""
+    from avshunter.shared.xnys_calendar import xnys_sessions_between
+    return xnys_sessions_between(pd.Timestamp(previous).date(), pd.Timestamp(current).date())
+
+
+def _price_history_segment(ohlcv: pd.DataFrame, close_col: str):
+    """Return (segment, state, break_date, reason) for the current security's price history (DQ-12)."""
+    frame = ohlcv[ohlcv[close_col].notna()].reset_index(drop=True)
+    closes = frame[close_col].astype(float).to_numpy()
+    if closes.size == 0:
+        return frame, PRICE_HISTORY_INTACT, None, None
+    if closes[-1] < SUB_CENT_PRICE:
+        return frame.iloc[0:0], PRICE_HISTORY_SUB_CENT, None, BREAK_REASON_SUB_CENT
+    dates = frame['date'] if 'date' in frame.columns else None
+    break_at, reason = None, None
+    for i in range(1, closes.size):
+        previous, current = closes[i - 1], closes[i]
+        cause = None
+        if previous > 0 and current > 0 and (current / previous >= PRICE_BREAK_RATIO
+                                              or previous / current >= PRICE_BREAK_RATIO):
+            cause = BREAK_REASON_RATIO
+        elif previous < SUB_CENT_PRICE and current >= SUB_CENT_PRICE:
+            cause = BREAK_REASON_SUB_CENT
+        elif dates is not None and pd.notna(dates.iloc[i - 1]) and pd.notna(dates.iloc[i]) \
+                and _sessions_between(dates.iloc[i - 1], dates.iloc[i]) > PRICE_GAP_SESSIONS:
+            cause = BREAK_REASON_GAP
+        if cause is not None:
+            break_at, reason = i, cause
+    if break_at is None:
+        return frame, PRICE_HISTORY_INTACT, None, None
+    segment = frame.iloc[break_at:].reset_index(drop=True)
+    break_date = str(pd.Timestamp(dates.iloc[break_at]).date()) if dates is not None else None
+    return segment, PRICE_HISTORY_BREAK_TRUNCATED, break_date, reason
+
+
 def compute_forward_variance(
     ticker:       str,
     ohlcv:        pd.DataFrame,
@@ -529,6 +599,8 @@ def compute_forward_variance(
     """
     regime_display = '' if regime is None else str(regime)
 
+    history_state, break_date, break_reason = PRICE_HISTORY_INTACT, None, None
+
     def _no_forecast(state: str, error: str, n_bars: int = 0) -> ForwardVarianceResult:
         return ForwardVarianceResult(
             ticker=ticker, forward_realised_vol=None,
@@ -539,6 +611,8 @@ def compute_forward_variance(
             n_bars_used=n_bars, error=error, forecast_state=state,
             jump_risk_state=JUMP_RISK_NOT_ASSESSED_NO_FORECAST,
             macro_regime_display=regime_display,
+            price_history_state=history_state, price_history_break_date=break_date,
+            price_history_break_reason=break_reason,
         )
 
     close_col = 'close' if 'close' in ohlcv.columns else 'Close'
@@ -546,7 +620,13 @@ def compute_forward_variance(
     if ohlcv.empty or close_col not in ohlcv.columns:
         return _no_forecast(FORECAST_MISSING_PRICES, 'empty_or_no_close_column')
 
+    ohlcv, history_state, break_date, break_reason = _price_history_segment(ohlcv, close_col)
+    if history_state == PRICE_HISTORY_SUB_CENT:
+        return _no_forecast(FORECAST_MISSING_PRICES, 'latest_close_below_sub_cent_threshold')
     prices  = ohlcv[close_col].dropna()
+    if history_state == PRICE_HISTORY_BREAK_TRUNCATED and len(prices) <= MIN_BARS_EWMA:
+        history_state = PRICE_HISTORY_BREAK_INSUFFICIENT
+        return _no_forecast(FORECAST_MISSING_PRICES, 'too_little_history_after_price_break', max(len(prices) - 1, 0))
     if len(prices) < 2:
         return _no_forecast(FORECAST_MISSING_PRICES, 'fewer_than_two_closes')
     returns = _log_returns(prices)
@@ -649,4 +729,7 @@ def compute_forward_variance(
         forecast_state          = forecast_state,
         macro_regime_display    = regime_display,
         forward_realised_vol_raw = raw_vol,
+        price_history_state     = history_state,
+        price_history_break_date = break_date,
+        price_history_break_reason = break_reason,
     )

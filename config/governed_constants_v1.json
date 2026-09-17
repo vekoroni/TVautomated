@@ -20,9 +20,13 @@
   },
   "contract_economics": {
     "sigma_multiple": 1.5,
-    "iv_stress": [0.8, 1.0, 1.2],
+    "iv_stress": [
+      0.8,
+      1.0,
+      1.2
+    ],
     "friction_spread_cap": 0.15,
-    "friction_max_model_spread": 0.30,
+    "friction_max_model_spread": 0.3,
     "profit_floor": 0.25,
     "profit_floor_approved": true,
     "profit_floor_approval_id": "ACK-20260912-AVS-FIX-002",
@@ -32,7 +36,7 @@
   },
   "preferred_contract": {
     "margin_abs": 0.05,
-    "margin_relative": 0.10,
+    "margin_relative": 0.1,
     "approved": true,
     "approval_id": "ACK-20260912-AVS-FIX-002",
     "configuration_owner": "ACK",
@@ -44,14 +48,21 @@
     "model_activation_enabled": false,
     "model_activation_owner": "ACK",
     "counterfactual_scope": "ALL_PRESENTED",
-    "horizons_sessions": [1, 2, 3, 5, 10, 20],
+    "horizons_sessions": [
+      1,
+      2,
+      3,
+      5,
+      10,
+      20
+    ],
     "minimum_fit_outcomes": 200,
     "minimum_stratum_outcomes": 100,
-    "minimum_coverage": 0.60,
-    "maximum_overall_ece": 0.10,
+    "minimum_coverage": 0.6,
+    "maximum_overall_ece": 0.1,
     "maximum_stratum_ece": 0.15,
     "require_positive_brier_skill": true,
-    "require_target_roc_auc_above": 0.50,
+    "require_target_roc_auc_above": 0.5,
     "require_target_pr_auc_above_base_rate": true,
     "require_top_quintile_lift_above": 1.0,
     "purge_embargo_sessions": 20,
@@ -60,11 +71,20 @@
   },
   "layer3_forecast_bounds": {
     "floor_annual_vol_fraction": 0.05,
-    "cap_annual_vol_fraction": 2.50,
+    "cap_annual_vol_fraction": 2.5,
     "validation_state": "RANGE_GUARD_NOT_ACCURACY_IMPROVEMENT",
     "evidence": "Enhancements/expression_forensics/VOL_FLOOR_CAP_EVIDENCE.md",
     "configuration_owner": "ACK",
     "version": "l3_forecast_bounds_v1"
+  },
+  "price_history_integrity": {
+    "one_bar_break_ratio": 10.0,
+    "sub_cent_price": 0.01,
+    "max_gap_sessions": 20,
+    "validation_state": "EVIDENCE_BACKED_DATA_RULE",
+    "evidence": "Enhancements/expression_forensics/dq12_price_history_integrity_scan.csv",
+    "configuration_owner": "ACK",
+    "version": "price_history_integrity_v1"
   },
   "schema_version": "governed_constants_v1"
 }

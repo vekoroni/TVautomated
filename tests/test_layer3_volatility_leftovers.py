@@ -81,7 +81,11 @@ def test_v5_har_rv_below_floor_is_clipped_at_floor_with_raw_kept():
 
 
 def test_v5_har_rv_above_cap_is_clipped_at_cap_with_raw_kept():
-    result = l3.compute_forward_variance("AAA", _ohlcv(daily=0.25), implied_vol=0.3)
+    frame = _ohlcv(daily=0.25)
+    # DQ-12 (17 Sep 2026): keep the synthetic 25%-a-day walk at a realistic price level; a walk that
+    # drifts below $0.01 is (correctly) treated as a defunct history and gets no forecast.
+    frame[["close", "high", "low"]] = frame[["close", "high", "low"]] * (50.0 / frame["low"].min())
+    result = l3.compute_forward_variance("AAA", frame, implied_vol=0.3)
     assert result.method == "HAR_RV"
     row = result.to_dict()
     assert row["l3_forecast_state"] == "CLIPPED_AT_CAP"
