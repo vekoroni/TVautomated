@@ -173,3 +173,71 @@ def test_m8_missing_calibration_is_explicit(tmp_path):
 def test_m9_path_settings_are_governed():
     assert emp_module.PATH_SETTINGS["version"] == "empirical_path_valuation_v1"
     assert emp_module.PATH_SETTINGS["paths"] > 0 and isinstance(emp_module.PATH_SETTINGS["seed"], int)
+
+
+# ── Increment 3: shares and expression preference in the shadow stage ───────────────────────────
+
+import sqlite3
+
+import numpy as np
+
+from empirical_option_ev import SHARE_COLUMNS
+
+
+def _price_db(tmp_path, ticker="AAPL", sessions=80, last_date="2026-09-17", spread=0.004):
+    path = tmp_path / "prices.sqlite"
+    con = sqlite3.connect(path)
+    con.execute("CREATE TABLE ohlcv_daily (ticker TEXT, trading_date TEXT, open REAL, high REAL, low REAL, close REAL, "
+                "volume REAL, bar_status TEXT)")
+    rng = np.random.default_rng(5)
+    dates = pd.bdate_range(end=last_date, periods=sessions)
+    mid = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, sessions)))
+    close = mid * (1 + rng.choice([-1, 1], sessions) * spread / 2)
+    rows = [(ticker, d.date().isoformat(), m, max(m * 1.01, c), min(m * 0.99, c), c, 1e6, "COMPLETE")
+            for d, m, c in zip(dates, mid, close)]
+    rows.append((ticker, "2026-09-30", 500.0, 900.0, 100.0, 800.0, 1e6, "COMPLETE"))   # after the run: must not be used
+    con.executemany("INSERT INTO ohlcv_daily VALUES (?,?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    return path
+
+
+def _stage_full(tmp_path, price_db):
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text(json.dumps(_CALIBRATION), encoding="utf-8")
+    with patch.object(orchestrator.cfg, "RUNS_DIR", tmp_path / "runs"), \
+         patch.object(orchestrator, "EMPIRICAL_PATH_CALIBRATION_PATH", calibration), \
+         patch.object(orchestrator, "EMPIRICAL_SHARE_PRICE_DB", price_db):
+        return orchestrator.run_empirical_option_ev_shadow_stage(RUN)
+
+
+def test_m10_share_valuation_and_preference_written(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row()])
+    summary = _stage_full(tmp_path, _price_db(tmp_path))
+    row = pd.read_csv(out_path).iloc[0]
+    assert set(SHARE_COLUMNS) <= set(pd.read_csv(out_path).columns)
+    assert row["emp_share_quality_flag"] == "OK" and 0 <= row["emp_share_spread_estimate"] < 0.05
+    assert row["emp_expression_preference"] in {"OPTION", "SHARES", "NEITHER"}
+    assert summary["preference_counts"] == {row["emp_expression_preference"]: 1}
+
+
+def test_m11_missing_price_history_keeps_option_value(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row(ticker="NOHIST")])
+    _stage_full(tmp_path, _price_db(tmp_path, ticker="AAPL"))
+    row = pd.read_csv(out_path).iloc[0]
+    assert row["emp_path_quality_flag"] == "OK" and pd.notna(row["emp_path_r_central"])
+    assert row["emp_share_quality_flag"] == "SHARE_SPREAD_UNAVAILABLE"
+    assert row["emp_expression_preference"] == "PREFERENCE_UNAVAILABLE"
+
+
+def test_m12_share_spread_uses_only_bars_up_to_the_run_date(tmp_path):
+    db = _price_db(tmp_path)
+    assert orchestrator._share_spread_for(db, "AAPL", "2026-09-17") == \
+        orchestrator._share_spread_for(db, "AAPL", "2026-09-17")
+    with sqlite3.connect(db) as con:
+        rows = con.execute("SELECT high, low, close FROM ohlcv_daily WHERE ticker='AAPL' AND trading_date <= '2026-09-17' "
+                           "ORDER BY trading_date").fetchall()
+    import empirical_option_ev as emp
+    tail = rows[-emp.PATH_SETTINGS["share_spread_window_sessions"]:]
+    expected = emp.abdi_ranaldo_spread([r[0] for r in tail], [r[1] for r in tail], [r[2] for r in tail])
+    assert orchestrator._share_spread_for(db, "AAPL", "2026-09-17") == pytest.approx(expected)

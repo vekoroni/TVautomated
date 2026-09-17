@@ -398,6 +398,10 @@ def _load_path_settings() -> dict:
         raise ValueError("unsupported empirical_path_valuation version")
     if int(settings["paths"]) <= 0:
         raise ValueError("empirical_path_valuation.paths must be positive")
+    if int(settings["share_spread_min_sessions"]) <= 0 or int(settings["share_spread_window_sessions"]) < int(settings["share_spread_min_sessions"]):
+        raise ValueError("empirical_path_valuation share spread window must cover the minimum sessions")
+    settings["share_spread_min_sessions"] = int(settings["share_spread_min_sessions"])
+    settings["share_spread_window_sessions"] = int(settings["share_spread_window_sessions"])
     settings["paths"], settings["seed"] = int(settings["paths"]), int(settings["seed"])
     return settings
 
@@ -473,22 +477,27 @@ def _path_null(flag: str) -> dict:
     return out
 
 
-def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, target, invalidation, hold_sessions,
-                           forecast_vol, calibration: dict, paths: int, seed: int) -> dict:
+def _simulate_path_exits(*, side, spot, strike, dte, bid, ask, iv, rate, target, invalidation, hold_sessions,
+                         forecast_vol, calibration: dict, paths: int, seed: int):
+    """Validate inputs and simulate exits for the p10 / p50 / p90 volatility scenarios.
+
+    Returns (flag, context, scenarios). On a quality failure scenarios is None. Each scenario holds the exit
+    session index, exit price and stop-first / target-first masks shared by every expression valued on it.
+    """
     values = {name: _finite_or_none(v) for name, v in dict(spot=spot, strike=strike, dte=dte, bid=bid, ask=ask, iv=iv,
                                                            rate=rate, forecast_vol=forecast_vol).items()}
     side = str(side or "").strip().lower()
     if side not in ("call", "put") or any(values[k] is None for k in ("spot", "strike", "dte", "iv", "rate")) \
             or values["spot"] <= 0 or values["strike"] <= 0 or values["iv"] <= 0:
-        return _path_null(PATH_BAD_INPUT)
+        return PATH_BAD_INPUT, None, None
     if values["bid"] is None or values["ask"] is None or values["bid"] <= 0 or values["ask"] <= 0 or values["ask"] < values["bid"]:
-        return _path_null(PATH_NO_MARKET)
+        return PATH_NO_MARKET, None, None
     if values["forecast_vol"] is None or values["forecast_vol"] <= 0:
-        return _path_null(PATH_VOL_UNAVAILABLE)
+        return PATH_VOL_UNAVAILABLE, None, None
     sign = 1.0 if side == "call" else -1.0
     stop = _finite_or_none(invalidation)
     if stop is None or stop <= 0 or sign * (values["spot"] - stop) <= 0:
-        return _path_null(PATH_GEOMETRY_UNAVAILABLE)
+        return PATH_GEOMETRY_UNAVAILABLE, None, None
     goal = _finite_or_none(target)
     target_state = "LEVEL"
     if goal is None:
@@ -498,7 +507,7 @@ def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, targe
     try:
         sessions = max(1, int(round(float(hold_sessions))))
     except (TypeError, ValueError):
-        return _path_null(PATH_BAD_INPUT)
+        return PATH_BAD_INPUT, None, None
     bands = {int(k): v for k, v in calibration["forecast_error_bands"].items()}
     band_key = min([k for k in bands if k >= sessions] or [max(bands)])
     band = bands[band_key]
@@ -507,9 +516,7 @@ def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, targe
     innovations = sample_innovations(calibration["innovation_quantiles"], rng, (int(paths), sessions))
     stop_uniforms = rng.uniform(0.0, 1.0, (int(paths), sessions))
     target_uniforms = rng.uniform(0.0, 1.0, (int(paths), sessions))
-    half_spread = (values["ask"] - values["bid"]) / 2.0
-    session_index = _np.arange(1, sessions + 1)
-    results = {}
+    scenarios = {}
     for label in ("p10", "p50", "p90"):
         vol = values["forecast_vol"] * float(band[label])
         daily = vol / math.sqrt(SESSIONS_PER_YEAR)
@@ -541,13 +548,24 @@ def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, targe
         exit_index = _np.where(stop_first, stop_at, _np.where(target_first, target_at, sessions - 1))
         exit_price = _np.where(stop_first, stop, _np.where(target_first, goal if goal is not None else 0.0,
                                                            prices[:, sessions - 1]))
-        remaining = (values["dte"] - session_index[exit_index] * CALENDAR_DAYS_PER_SESSION) / 365.0
-        exit_value = _np.maximum(_bs_vector(side, exit_price, values["strike"], remaining, values["rate"], values["iv"])
-                                 - half_spread, 0.0)
-        results[label] = {
-            "r": float(exit_value.mean() / values["ask"] - 1.0), "vol": vol,
-            "p_target": float(target_first.mean()), "p_stop": float(stop_first.mean()),
-        }
+        scenarios[label] = {"vol": vol, "exit_index": exit_index, "exit_price": exit_price,
+                            "stop_first": stop_first, "target_first": target_first}
+    context = {"values": values, "side": side, "sign": sign, "stop": stop, "sessions": sessions,
+               "band_key": band_key, "target_state": target_state}
+    return PATH_QUALITY_OK, context, scenarios
+
+
+def _option_result(context, scenarios) -> dict:
+    values, sessions = context["values"], context["sessions"]
+    half_spread = (values["ask"] - values["bid"]) / 2.0
+    session_index = _np.arange(1, sessions + 1)
+    results = {}
+    for label, sc in scenarios.items():
+        remaining = (values["dte"] - session_index[sc["exit_index"]] * CALENDAR_DAYS_PER_SESSION) / 365.0
+        exit_value = _np.maximum(_bs_vector(context["side"], sc["exit_price"], values["strike"], remaining,
+                                            values["rate"], values["iv"]) - half_spread, 0.0)
+        results[label] = {"r": float(exit_value.mean() / values["ask"] - 1.0), "vol": sc["vol"],
+                          "p_target": float(sc["target_first"].mean()), "p_stop": float(sc["stop_first"].mean())}
     returns = [results[k]["r"] for k in ("p10", "p50", "p90")]
     return {
         "emp_path_r_cautious": round(min(returns), 6),
@@ -558,7 +576,104 @@ def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, targe
         "emp_path_vol_low": results["p10"]["vol"],
         "emp_path_vol_central": results["p50"]["vol"],
         "emp_path_vol_high": results["p90"]["vol"],
-        "emp_path_horizon_band": band_key,
-        "emp_path_target_state": target_state,
+        "emp_path_horizon_band": context["band_key"],
+        "emp_path_target_state": context["target_state"],
         "emp_path_quality_flag": PATH_QUALITY_OK,
     }
+
+
+def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, target, invalidation, hold_sessions,
+                           forecast_vol, calibration: dict, paths: int, seed: int) -> dict:
+    flag, context, scenarios = _simulate_path_exits(
+        side=side, spot=spot, strike=strike, dte=dte, bid=bid, ask=ask, iv=iv, rate=rate, target=target,
+        invalidation=invalidation, hold_sessions=hold_sessions, forecast_vol=forecast_vol,
+        calibration=calibration, paths=paths, seed=seed)
+    if flag != PATH_QUALITY_OK:
+        return _path_null(flag)
+    return _option_result(context, scenarios)
+
+
+# ── Item 2 increment 3 (ACK 17 Sep 2026): shares on the same paths, and the expression preference ─────────
+
+SHARE_SPREAD_UNAVAILABLE = "SHARE_SPREAD_UNAVAILABLE"
+PREFERENCE_UNAVAILABLE = "PREFERENCE_UNAVAILABLE"
+SHARE_COLUMNS = (
+    "emp_share_r_cautious", "emp_share_r_central", "emp_share_r_upside", "emp_share_spread_estimate",
+    "emp_share_quality_flag", "emp_expression_preference", "emp_expression_preference_margin",
+)
+
+
+def abdi_ranaldo_spread(high, low, close, min_sessions=None):
+    """Effective bid-ask spread (fraction) from daily high, low and close — Abdi and Ranaldo (2017).
+
+    s^2 = 4 * mean[(c_t - eta_t)(c_t - eta_(t+1))] with c = ln close and eta = (ln high + ln low) / 2; a negative
+    mean is reported as 0. Fewer than the governed minimum of usable sessions returns None (never a default).
+    """
+    minimum = PATH_SETTINGS["share_spread_min_sessions"] if min_sessions is None else int(min_sessions)
+    h = _np.asarray(high, dtype=float)
+    l = _np.asarray(low, dtype=float)
+    c = _np.asarray(close, dtype=float)
+    valid = _np.isfinite(h) & _np.isfinite(l) & _np.isfinite(c) & (h > 0) & (l > 0) & (c > 0) & (h >= l)
+    if valid.sum() < minimum + 1:
+        return None
+    h, l, c = h[valid], l[valid], c[valid]
+    eta = (_np.log(h) + _np.log(l)) / 2.0
+    lc = _np.log(c)
+    products = (lc[:-1] - eta[:-1]) * (lc[:-1] - eta[1:])
+    if products.size < minimum:
+        return None
+    return float(math.sqrt(max(4.0 * float(products.mean()), 0.0)))
+
+
+def expression_preference(option_r_cautious, share_r_cautious) -> str:
+    """OPTION / SHARES from the cautious values per unit of capital at risk; NEITHER when neither is positive."""
+    option_r = _finite_or_none(option_r_cautious)
+    share_r = _finite_or_none(share_r_cautious)
+    if option_r is None or share_r is None:
+        return PREFERENCE_UNAVAILABLE
+    if option_r <= 0 and share_r <= 0:
+        return "NEITHER"
+    return "OPTION" if option_r > share_r else "SHARES"
+
+
+def compute_path_expression_ev(*, side, spot, strike, dte, bid, ask, iv, rate, target, invalidation, hold_sessions,
+                               forecast_vol, share_spread, calibration: dict, paths: int, seed: int) -> dict:
+    flag, context, scenarios = _simulate_path_exits(
+        side=side, spot=spot, strike=strike, dte=dte, bid=bid, ask=ask, iv=iv, rate=rate, target=target,
+        invalidation=invalidation, hold_sessions=hold_sessions, forecast_vol=forecast_vol,
+        calibration=calibration, paths=paths, seed=seed)
+    out = {column: None for column in SHARE_COLUMNS}
+    if flag != PATH_QUALITY_OK:
+        out.update(_path_null(flag))
+        out["emp_share_quality_flag"] = flag
+        out["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
+        return out
+    out.update(_option_result(context, scenarios))
+    spread = _finite_or_none(share_spread)
+    if spread is None or spread < 0:
+        out["emp_share_quality_flag"] = SHARE_SPREAD_UNAVAILABLE
+        out["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
+        return out
+    half = spread / 2.0
+    sign, spot_value, stop = context["sign"], context["values"]["spot"], context["stop"]
+    entry = spot_value * (1.0 + sign * half)                     # buy at the ask (short: sell at the bid)
+    risk = sign * (entry - stop * (1.0 - sign * half))            # entry to the stop exit, per share
+    if not risk > 0:
+        out["emp_share_quality_flag"] = PATH_GEOMETRY_UNAVAILABLE
+        out["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
+        return out
+    share_r = {}
+    for label, sc in scenarios.items():
+        exit_net = sc["exit_price"] * (1.0 - sign * half)          # sell at the bid (short: buy back at the ask)
+        share_r[label] = float((sign * (exit_net - entry)).mean() / risk)
+    returns = [share_r[k] for k in ("p10", "p50", "p90")]
+    out.update({
+        "emp_share_r_cautious": round(min(returns), 6),
+        "emp_share_r_central": round(share_r["p50"], 6),
+        "emp_share_r_upside": round(max(returns), 6),
+        "emp_share_spread_estimate": spread,
+        "emp_share_quality_flag": PATH_QUALITY_OK,
+    })
+    out["emp_expression_preference"] = expression_preference(out["emp_path_r_cautious"], out["emp_share_r_cautious"])
+    out["emp_expression_preference_margin"] = round(out["emp_path_r_cautious"] - out["emp_share_r_cautious"], 6)
+    return out

@@ -2157,6 +2157,24 @@ def assert_finalise_preconditions(
 
 
 EMPIRICAL_PATH_CALIBRATION_PATH = cfg.BASE_DIR / "config" / "calibration" / "volatility_range_calibration_v1.json"
+EMPIRICAL_SHARE_PRICE_DB = cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite"
+
+
+def _share_spread_for(price_db, ticker: str, cutoff_date: str):
+    """Abdi-Ranaldo share spread from the price store (read-only), bars up to and including cutoff_date."""
+    import sqlite3 as _sqlite3
+    from empirical_option_ev import PATH_SETTINGS, abdi_ranaldo_spread
+    try:
+        with _sqlite3.connect(f"file:{Path(price_db).as_posix()}?mode=ro", uri=True) as con:
+            rows = con.execute(
+                "SELECT high, low, close FROM ohlcv_daily WHERE ticker = ? AND bar_status = 'COMPLETE' "
+                "AND trading_date <= ? ORDER BY trading_date DESC LIMIT ?",
+                (str(ticker).upper(), cutoff_date, PATH_SETTINGS["share_spread_window_sessions"]),
+            ).fetchall()
+    except _sqlite3.Error:
+        return None
+    rows.reverse()
+    return abdi_ranaldo_spread([r[0] for r in rows], [r[1] for r in rows], [r[2] for r in rows])
 
 
 def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
@@ -2191,10 +2209,12 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
     try:
         import pandas as pd
         from empirical_option_ev import (
-            EMPTY_COLUMNS, PATH_CALIBRATION_UNAVAILABLE, PATH_COLUMNS, PATH_SETTINGS, QUALITY_NO_SELECTED_CONTRACT,
-            candidate_from_options_row, compute_empirical_option_ev, compute_path_option_ev,
-            path_inputs_from_options_row,
+            EMPTY_COLUMNS, PATH_CALIBRATION_UNAVAILABLE, PATH_COLUMNS, PATH_SETTINGS, PREFERENCE_UNAVAILABLE,
+            QUALITY_NO_SELECTED_CONTRACT, SHARE_COLUMNS, candidate_from_options_row, compute_empirical_option_ev,
+            compute_path_expression_ev, path_inputs_from_options_row,
         )
+        cutoff_date = f"{run_id[:4]}-{run_id[4:6]}-{run_id[6:8]}"
+        path_columns = list(PATH_COLUMNS) + [c for c in SHARE_COLUMNS if c not in PATH_COLUMNS]
         calibration = None
         try:
             if Path(EMPIRICAL_PATH_CALIBRATION_PATH).is_file():
@@ -2206,7 +2226,7 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
         summary["path_settings"] = {k: PATH_SETTINGS[k] for k in ("paths", "seed", "version")}
         summary["path_calibration"] = str(EMPIRICAL_PATH_CALIBRATION_PATH) if calibration else None
         options = pd.read_csv(options_path, low_memory=False)
-        options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS or c in PATH_COLUMNS],
+        options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS or c in path_columns],
                                errors="ignore")
         symbol_column = "contract_occ_symbol" if "contract_occ_symbol" in options.columns else "contract_symbol"
         results, path_results = [], []
@@ -2215,25 +2235,33 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
             if not isinstance(symbol, str) or not symbol.strip():
                 result = {column: None for column in EMPTY_COLUMNS}
                 result["emp_quality_flag"] = QUALITY_NO_SELECTED_CONTRACT
-                path_result = {column: None for column in PATH_COLUMNS}
+                path_result = {column: None for column in path_columns}
                 path_result["emp_path_quality_flag"] = QUALITY_NO_SELECTED_CONTRACT
+                path_result["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
             else:
                 result = compute_empirical_option_ev(candidate_from_options_row(row))
                 inputs = path_inputs_from_options_row(row)
                 source = inputs.pop("forecast_source")
                 if calibration is None:
-                    path_result = {column: None for column in PATH_COLUMNS}
+                    path_result = {column: None for column in path_columns}
                     path_result["emp_path_quality_flag"] = PATH_CALIBRATION_UNAVAILABLE
+                    path_result["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
                 else:
-                    path_result = compute_path_option_ev(**inputs, calibration=calibration,
-                                                         paths=PATH_SETTINGS["paths"], seed=PATH_SETTINGS["seed"])
+                    share_spread = _share_spread_for(EMPIRICAL_SHARE_PRICE_DB, row.get("ticker"), cutoff_date)
+                    path_result = compute_path_expression_ev(**inputs, share_spread=share_spread,
+                                                             calibration=calibration, paths=PATH_SETTINGS["paths"],
+                                                             seed=PATH_SETTINGS["seed"])
                 path_result["emp_path_forecast_source"] = source
             results.append(result)
             path_results.append(path_result)
         emp = pd.DataFrame(results, columns=list(EMPTY_COLUMNS), index=options.index)
-        emp_path = pd.DataFrame(path_results, columns=list(PATH_COLUMNS), index=options.index)
+        emp_path = pd.DataFrame(path_results, columns=path_columns, index=options.index)
         pd.concat([options, emp, emp_path], axis=1).to_csv(options_path, index=False)
         summary["path_quality_flags"] = emp_path["emp_path_quality_flag"].value_counts().to_dict()
+        summary["share_quality_flags"] = emp_path["emp_share_quality_flag"].value_counts().to_dict()
+        summary["preference_counts"] = emp_path.loc[
+            emp_path["emp_path_quality_flag"] != QUALITY_NO_SELECTED_CONTRACT, "emp_expression_preference"
+        ].value_counts().to_dict()
         summary["status"] = "COMPLETED"
         summary["rows"] = len(options)
         summary["quality_flags"] = emp["emp_quality_flag"].value_counts().to_dict()
