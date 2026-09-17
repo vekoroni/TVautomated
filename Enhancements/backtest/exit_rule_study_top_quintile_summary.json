@@ -1,0 +1,77 @@
+{
+  "scope": "top_quintile",
+  "candidates": 1702,
+  "rules": {
+    "baseline": {
+      "closed": 914,
+      "mean_return": -0.2761,
+      "median_return": -0.4326,
+      "hit_rate": 0.218,
+      "worst": -1.0,
+      "best": 5.4,
+      "mean_sessions_held": 3.85,
+      "exit_reasons": {
+        "STOP": 502,
+        "CONTRACT_LAST_USABLE": 364,
+        "TARGET": 143
+      },
+      "exit_mark_unavailable": 95,
+      "still_open": 693,
+      "max_drawdown_equal_weight": 1.0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+    },
+    "wide_stop": {
+      "closed": 652,
+      "mean_return": -0.1711,
+      "median_return": -0.2968,
+      "hit_rate": 0.359,
+      "worst": -1.0,
+      "best": 5.4,
+      "mean_sessions_held": 5.79,
+      "exit_reasons": {
+        "CONTRACT_LAST_USABLE": 510,
+        "TARGET": 231,
+        "STOP": 6
+      },
+      "exit_mark_unavailable": 95,
+      "still_open": 955,
+      "max_drawdown_equal_weight": 1.0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+    },
+    "no_stop": {
+      "closed": 649,
+      "mean_return": -0.171,
+      "median_return": -0.3,
+      "hit_rate": 0.359,
+      "worst": -1.0,
+      "best": 5.4,
+      "mean_sessions_held": 5.81,
+      "exit_reasons": {
+        "CONTRACT_LAST_USABLE": 515,
+        "TARGET": 231
+      },
+      "exit_mark_unavailable": 97,
+      "still_open": 956,
+      "max_drawdown_equal_weight": 1.0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+    },
+    "revalue": {
+      "closed": 1459,
+      "mean_return": -0.1735,
+      "median_return": -0.2029,
+      "hit_rate": 0.246,
+      "worst": -1.0,
+      "best": 4.7895,
+      "mean_sessions_held": 1.38,
+      "exit_reasons": {
+        "REVALUED_BELOW_ZERO": 1295,
+        "TARGET": 107,
+        "CONTRACT_LAST_USABLE": 80
+      },
+      "exit_mark_unavailable": 23,
+      "still_open": 220,
+      "max_drawdown_equal_weight": 1.0,
+      "verdict": "INSUFFICIENT_EVIDENCE"
+    }
+  }
+}
