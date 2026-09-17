@@ -280,3 +280,33 @@ def test_e7_side_rule_has_one_owner() -> None:
     assert invalidation_on_thesis_side("STRANGLE", 95.0, 100.0) is False
     assert invalidation_on_thesis_side("CALL", 0.0, 100.0) is False
     assert invalidation_on_thesis_side("CALL", 95.0, None) is False
+
+
+# ─── E5 follow-up (ACK 17 Sep 2026): gate action on a removed option expression ───
+
+@pytest.mark.parametrize("gate_action", ["BUY_NOW", "BUY_SMALL", "BUY_LIMIT"])
+@pytest.mark.parametrize("direction, wrong_symbol", [("CALL", PUT_OCC), ("PUT", CALL_OCC)])
+def test_e5_active_gate_action_is_downgraded_to_contract_repair_when_contract_removed(
+    gate_action, direction, wrong_symbol
+) -> None:
+    row = opportunity_book_row(
+        _sig(direction, contract_symbol=wrong_symbol, final_action=gate_action, lab_verdict="GO",
+             lab_tradeable=True, **_QUOTE),
+        "RUN-BI", 1,
+    )
+    assert row["contract_symbol"] in ("", None)
+    assert row["contract_data_state"] == "OPTION_EXPRESSION_REMOVED_CONTRACT_SIDE_CONFLICT"
+    assert row["final_action"] == "CONTRACT_REPAIR"
+    assert row["lab_verdict"] == "CONTRACT_REPAIR"
+    assert row["lab_execution_status"] == "CONTRACT_REPAIR"
+    assert row["lab_tradeable"] is False
+    assert "OPTION_EXPRESSION_REMOVED_CONTRACT_SIDE_CONFLICT" in row["execution_lock_reason"]
+
+
+@pytest.mark.parametrize("gate_action", ["BLOCK", "SKIP", "MANUAL_REVIEW", "CONTRACT_REPAIR"])
+def test_e5_protective_gate_action_is_never_upgraded(gate_action) -> None:
+    row = opportunity_book_row(
+        _sig("CALL", contract_symbol=PUT_OCC, final_action=gate_action, **_QUOTE), "RUN-BI", 1,
+    )
+    assert row["final_action"] == gate_action
+    assert row["lab_tradeable"] is False

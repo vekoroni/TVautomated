@@ -1207,16 +1207,21 @@ def _enforce_option_expression_removed(
 ) -> None:
     """WP3 / E5: a row whose option expression was removed cannot claim one.
 
-    The row stays in the book (share expression, ACK S2). Like the economics
-    identity lock, a Lab-level tradeable claim is withdrawn; an Execution Gate
-    final_action is immutable here and is left to upstream reconciliation.
+    The row stays in the book (share expression, ACK S2). A Lab-level tradeable claim is
+    withdrawn. An active Execution Gate final_action (e.g. BUY_NOW) is downgraded to
+    CONTRACT_REPAIR (ACK decision 17 Sep 2026), exactly as the OLM execution guard does;
+    protective actions (BLOCK, SKIP, MANUAL_REVIEW, CONTRACT_REPAIR) are never upgraded.
     """
+    protective = {"BLOCK", "SKIP", "MANUAL_REVIEW", "CONTRACT_REPAIR"}
+    current_action = _u(row.get("final_action"))
     is_tradeable = row.get("lab_tradeable") is True or _u(row.get("lab_tradeable")) in {
         "TRUE", "1", "YES",
     }
-    if _u(row.get("final_action")) or not (
-        is_tradeable or _u(row.get("lab_verdict")) in {"GO", "GO_LIMIT", "PROBE"}
-    ):
+    active_action = bool(current_action) and current_action not in protective
+    if current_action in protective:
+        row["lab_tradeable"] = False
+        return
+    if not (active_action or is_tradeable or _u(row.get("lab_verdict")) in {"GO", "GO_LIMIT", "PROBE"}):
         return
     row["lab_tradeable"] = False
     row["lab_verdict"] = "CONTRACT_REPAIR"
@@ -1226,8 +1231,16 @@ def _enforce_option_expression_removed(
     row["execution_lock_reason"] = _append_flag(
         row.get("execution_lock_reason"), CONTRACT_DATA_STATE_SIDE_CONFLICT
     )
+    if active_action:
+        row["final_action"] = "CONTRACT_REPAIR"
+        row["execution_category"] = "CONTRACT_REPAIR"
+        row["display_execution_mode"] = "REPRICE_REQUIRED"
+        row["position_size_display"] = "0% - option expression removed (contract side conflict)"
+        row["economics_comparable"] = False
     if provenance is not None:
         provenance["lab_tradeable"] = "governed_materializer:contract_side_conflict"
+        if active_action:
+            provenance["final_action"] = "governed_materializer:contract_side_conflict"
 
 
 def _append_flag(existing: Any, flag: str) -> str:
