@@ -898,6 +898,51 @@ CONTRACT_SIDE_CONFLICT_FLAG = "CONTRACT_SYMBOL_SIDE_CONFLICT"
 CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG = "CONTRACT_QUOTE_NOT_ESTABLISHED_FOR_RESELECTED_CONTRACT"
 #: WP3 / E5 (DQ-2): explicit state when the option expression is removed.
 CONTRACT_DATA_STATE_SIDE_CONFLICT = "OPTION_EXPRESSION_REMOVED_CONTRACT_SIDE_CONFLICT"
+#: L1: contract DTE is not evaluated for a contract the Lab reselected.
+CONTRACT_DTE_STATE_RESELECTED = "NOT_EVALUATED_CONTRACT_RESELECTED"
+#: L1 (DQ-3, R6): book fields that describe the row's contract WITHOUT naming
+#: their own symbol. After a reselection or a side-conflict removal they would
+#: describe the original contract, so they are withheld; the reason is in
+#: lab_coherence_flags / contract_data_state / contract_dte_state /
+#: execution_viability_reason. Fields that carry their own contract symbol
+#: (monetisability_*, ev3_*, rr_*, doi_*, alternative_contract_*,
+#: previous_contract_symbol) are self-labelled and governed elsewhere.
+ORIGINAL_CONTRACT_DESCRIBING_FIELDS = (
+    # identity claim and quote lineage
+    "morning_selected_contract_symbol", "contract_source",
+    "selected_quote_snapshot_id", "selected_quote_timestamp_utc", "selected_quote_dataset_id",
+    "quote_as_of", "quote_freshness",
+    # hydrated structure legs
+    "selected_structure_hydration_status", "selected_structure_hydration_reason",
+    "selected_structure_hydration_schema_version", "selected_legs_json",
+    # morning / current exact-contract quotes and their comparison
+    "morning_contract_bid", "morning_contract_ask", "morning_contract_mid",
+    "morning_contract_spread_pct", "morning_contract_bid_size", "morning_contract_ask_size",
+    "morning_quote_dataset_id", "morning_quote_timestamp_utc",
+    "current_contract_bid", "current_contract_ask", "current_contract_mid",
+    "current_contract_spread_pct", "current_contract_bid_size", "current_contract_ask_size",
+    "current_quote_dataset_id", "current_quote_timestamp_utc",
+    "contract_bid_change", "contract_bid_change_pct", "contract_ask_change",
+    "contract_ask_change_pct", "contract_mid_change", "contract_mid_change_pct",
+    "contract_spread_change_pp", "contract_bid_size_change", "contract_ask_size_change",
+    "comparison_status", "change_status",
+    # exact-contract lifecycle evidence
+    "liquidity_state", "moneyness_state", "delta_band", "atm_distance_sigma",
+    "dte_buffer_sessions", "maturation_state_1d", "maturation_state_2d", "maturation_state_3d",
+    "maturation_score_1d", "maturation_score_2d", "maturation_score_3d",
+    "liquidity_persistence_status", "morning_liquidity_persistence_status",
+    # contract economics
+    "contract_dte", "selected_contract_economics_ready",
+    "execution_viability_bid", "execution_viability_ask", "execution_viability_spread_pct",
+    "contract_mark_synthetic", "theta_drag_pct", "vega_risk_pct", "theta_constrained",
+    "ts_expiry_date", "ts_dte_remaining_at_stop", "ts_dte_used",
+)
+#: Contract-economics fields filled by run-source enrichment only from a source
+#: row whose contract symbol is the row's contract (in addition to quotes).
+ENRICHMENT_CONTRACT_ECONOMICS_FIELDS = (
+    "theta_drag_pct", "vega_risk_pct", "theta_constrained", "contract_mark_synthetic",
+    "ts_expiry_date", "ts_dte_remaining_at_stop", "ts_dte_used",
+)
 #: WP4 / E7 (DQ-4): invalidation candidates in book precedence, and the thesis
 #: reference prices the side is judged against (same order as the EOD engine).
 BOOK_INVALIDATION_FIELDS = (
@@ -943,19 +988,54 @@ def _book_invalidation(sig: Dict[str, Any], direction: Any) -> tuple[Any, Any, s
     )
 
 
+CONTRACT_SYMBOL_KEYS = (
+    "morning_selected_contract_symbol",
+    "live_selected_contract_symbol",
+    "contract_symbol",
+    "live_contract_symbol",
+    "option_symbol",
+    "recommended_contract",
+    "preferred_contract",
+    "evening_contract_symbol",
+    "opt__recommended_contract",
+)
+
+
+def _withhold_original_contract_evidence(
+    row: Dict[str, Any],
+    *,
+    written_contract: str,
+    original_contract: str,
+    alignment_flag: str,
+) -> None:
+    """L1: nothing describing the original contract is published for another.
+
+    Called when the Lab reselected a contract for the direction or removed a
+    wrong-side contract. Each withheld field is missing; the reason is recorded.
+    """
+    for field in ORIGINAL_CONTRACT_DESCRIBING_FIELDS:
+        row[field] = ""
+    row["executable_now"] = False
+    row["contract_dte_state"] = (
+        CONTRACT_DTE_STATE_RESELECTED if written_contract
+        else "NOT_APPLICABLE_NO_SELECTED_CONTRACT"
+    )
+    row["execution_viability_contract_symbol"] = written_contract
+    row["execution_viability_state"] = "DATA_MISSING"
+    row["execution_viability_reason"] = (
+        CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG if written_contract
+        else CONTRACT_DATA_STATE_SIDE_CONFLICT
+    )
+    row["execution_viability_eligible"] = False
+    row["execution_viability_reviewable"] = False
+    if _is_missing(row.get("previous_contract_symbol")):
+        row["previous_contract_symbol"] = original_contract
+    row["contract_selection_reason"] = alignment_flag
+
+
 def _contract_for_direction(sig: Dict[str, Any], direction: Any) -> tuple[str, str]:
     side = _side_from_value(direction)
-    keys = (
-        "morning_selected_contract_symbol",
-        "live_selected_contract_symbol",
-        "contract_symbol",
-        "live_contract_symbol",
-        "option_symbol",
-        "recommended_contract",
-        "preferred_contract",
-        "evening_contract_symbol",
-        "opt__recommended_contract",
-    )
+    keys = CONTRACT_SYMBOL_KEYS
     original = _s(first(sig, *keys))
     if side not in {"CALL", "PUT"}:
         return original, ""
@@ -1049,6 +1129,17 @@ def _economics_evaluation_id(
 
 def _quote_snapshot_id(sig: Dict[str, Any], structure_id: str) -> str:
     if not structure_id:
+        return ""
+    # L1: a snapshot id identifies an observed quote; with no bid, ask or mid
+    # observed there is nothing to identify.
+    if all(
+        _is_missing(first(sig, *keys))
+        for keys in (
+            ("contract_bid", "live_contract_bid", "bid"),
+            ("contract_ask", "live_contract_ask", "ask"),
+            ("contract_mid", "premium_mid", "live_contract_mid", "mid"),
+        )
+    ):
         return ""
     values = [
         structure_id,
@@ -3113,6 +3204,14 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "notes": first(sig, "notes", "execution_lock_reason", "verdict_coherence_notes", "sb_verdict_reason"),
         "source_payload_json": _json_safe(sig),
     }
+    if contract_reselected or contract_side_conflict:
+        _withhold_original_contract_evidence(
+            row,
+            written_contract=aligned_contract,
+            original_contract=_s(first(sig, *CONTRACT_SYMBOL_KEYS)),
+            alignment_flag=contract_alignment_flag,
+        )
+        provenance["contract_evidence"] = "governed_materializer:original_contract_evidence_withheld"
     _enforce_economics_identity(row, provenance)
     if contract_side_conflict:
         _enforce_option_expression_removed(row, provenance)
@@ -3543,6 +3642,21 @@ def _recompute_governed_lab_fields(row: Dict[str, Any], provenance: Dict[str, st
     for field in ("readiness_stage", "readiness_label", "readiness_enter_now", "wbs_data_state"):
         provenance[field] = "governed_materializer"
 
+    # L3: the not-established flag describes the final row. Enrichment fills
+    # quote fields only from a source row whose symbol is the row's contract,
+    # so a two-sided quote present now belongs to the reselected contract.
+    flags = [part for part in _s(row.get("lab_coherence_flags")).split("|") if part]
+    if (
+        CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG in flags
+        and not _is_missing_price(row.get("contract_bid"))
+        and not _is_missing_price(row.get("contract_ask"))
+    ):
+        flags.remove(CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG)
+        row["lab_coherence_flags"] = "|".join(flags)
+        provenance["lab_coherence_flags"] = (
+            "governed_materializer:reselected_contract_quote_established"
+        )
+
     # Source enrichment can fill EV3 and contract fields from different stage
     # outputs. Re-run the binding after every merge and fail closed when the
     # selected contract and monetisability do not describe the same structure.
@@ -3593,7 +3707,7 @@ def _enrich_lab_extract_rows_from_run_sources(rows: List[Dict[str, Any]], runs_d
         "breakeven_pct", "breakeven_feasibility", "option_gain_at_target",
         "contract_delta", "contract_gamma", "contract_theta", "contract_vega", "contract_iv",
         "contract_bid", "contract_ask", "contract_mid", "contract_oi",
-        "contract_volume",
+        "contract_volume", *ENRICHMENT_CONTRACT_ECONOMICS_FIELDS,
     }
     rr_contract_fields = {"rr_premium_expected", "rr_predicted", "option_gain_at_target"}
     for row in rows:

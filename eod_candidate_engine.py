@@ -2618,12 +2618,15 @@ def build_candidate_manifest(
             "contract_repair_required": str(contract_profile["contract_repair_required"]).upper(),
             "contract_repair_reason": contract_profile["contract_repair_reason"],
             "contract_spread_pct_eod": contract_profile["contract_spread_pct_eod"],
-            "contract_oi":           _flt(row, "contract_oi"),
+            # L2 (DQ-1): an unobserved greek, IV, open interest or volume
+            # stays missing (NaN, an empty CSV cell), never 0.0 -- a zero
+            # delta/IV/OI is a measurement, not a stand-in for "not observed".
+            "contract_oi":           _flt(row, "contract_oi",     float("nan")),
             "contract_volume":       _flt(row, "contract_volume", float("nan")),
-            "contract_delta":        _flt(row, "contract_delta"),
-            "contract_gamma":        _flt(row, "contract_gamma"),
-            "contract_theta":        _flt(row, "contract_theta"),
-            "contract_iv":           _flt(row, "contract_iv"),
+            "contract_delta":        _flt(row, "contract_delta",  float("nan")),
+            "contract_gamma":        _flt(row, "contract_gamma",  float("nan")),
+            "contract_theta":        _flt(row, "contract_theta",  float("nan")),
+            "contract_iv":           _flt(row, "contract_iv",     float("nan")),
             "contract_bid":          _flt(row, "contract_bid",    float("nan")),
             # WP2 / E3: an unobserved ask, mid or spread stays missing (NaN),
             # like the bid; 0.0 would read as a free contract / perfect market.
