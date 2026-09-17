@@ -2781,6 +2781,23 @@ def run_gate(
     return out
 
 
+def _align_selected_quote_dataset(result: Dict[str, Any]) -> None:
+    """Point the quote evidence at the dataset holding the quote the row displays (ACK 17 Sep 2026).
+
+    Terminal replays, invalid quote identities and reused observations can leave the evening
+    ``selected_quote_dataset_id`` on a row that now shows the morning quote; Worker 3 then isolates the ticker
+    because the Lab quote and its canonical dataset disagree (tests/test_morning_gate_quote_evidence_pointer.py).
+    """
+    morning_dataset = _s(result.get("morning_quote_dataset_id"))
+    if not morning_dataset:
+        return
+    displayed = (_f(result.get("contract_bid")), _f(result.get("contract_ask")))
+    morning = (_f(result.get("morning_contract_bid")), _f(result.get("morning_contract_ask")))
+    if any(value is None for value in displayed + morning) or displayed != morning:
+        return
+    result["selected_quote_dataset_id"] = morning_dataset
+
+
 def _persist_morning_liquidity_result(
     result: Dict[str, Any],
     run_id: str,
@@ -3294,6 +3311,7 @@ def run_morning_gate(
                     ticker,
                     liquidity_persist_error,
                 )
+            _align_selected_quote_dataset(result)
         results.append(result)
 
     # Structure is intentionally calculated after the Morning decision.  It is
