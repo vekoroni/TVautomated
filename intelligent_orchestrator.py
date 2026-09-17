@@ -2156,6 +2156,9 @@ def assert_finalise_preconditions(
         )
 
 
+EMPIRICAL_PATH_CALIBRATION_PATH = cfg.BASE_DIR / "config" / "calibration" / "volatility_range_calibration_v1.json"
+
+
 def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
     """Value each selected contract with empirical_option_ev in SHADOW (item 2, ACK 17 Sep 2026).
 
@@ -2188,22 +2191,49 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
     try:
         import pandas as pd
         from empirical_option_ev import (
-            EMPTY_COLUMNS, QUALITY_NO_SELECTED_CONTRACT, candidate_from_options_row, compute_empirical_option_ev,
+            EMPTY_COLUMNS, PATH_CALIBRATION_UNAVAILABLE, PATH_COLUMNS, PATH_SETTINGS, QUALITY_NO_SELECTED_CONTRACT,
+            candidate_from_options_row, compute_empirical_option_ev, compute_path_option_ev,
+            path_inputs_from_options_row,
         )
+        calibration = None
+        try:
+            if Path(EMPIRICAL_PATH_CALIBRATION_PATH).is_file():
+                calibration = json.loads(Path(EMPIRICAL_PATH_CALIBRATION_PATH).read_text(encoding="utf-8"))
+                if calibration.get("version") != "volatility_range_calibration_v1":
+                    calibration = None
+        except (OSError, ValueError):
+            calibration = None
+        summary["path_settings"] = {k: PATH_SETTINGS[k] for k in ("paths", "seed", "version")}
+        summary["path_calibration"] = str(EMPIRICAL_PATH_CALIBRATION_PATH) if calibration else None
         options = pd.read_csv(options_path, low_memory=False)
-        options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS], errors="ignore")
+        options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS or c in PATH_COLUMNS],
+                               errors="ignore")
         symbol_column = "contract_occ_symbol" if "contract_occ_symbol" in options.columns else "contract_symbol"
-        results = []
+        results, path_results = [], []
         for row in options.to_dict("records"):
             symbol = row.get(symbol_column)
             if not isinstance(symbol, str) or not symbol.strip():
                 result = {column: None for column in EMPTY_COLUMNS}
                 result["emp_quality_flag"] = QUALITY_NO_SELECTED_CONTRACT
+                path_result = {column: None for column in PATH_COLUMNS}
+                path_result["emp_path_quality_flag"] = QUALITY_NO_SELECTED_CONTRACT
             else:
                 result = compute_empirical_option_ev(candidate_from_options_row(row))
+                inputs = path_inputs_from_options_row(row)
+                source = inputs.pop("forecast_source")
+                if calibration is None:
+                    path_result = {column: None for column in PATH_COLUMNS}
+                    path_result["emp_path_quality_flag"] = PATH_CALIBRATION_UNAVAILABLE
+                else:
+                    path_result = compute_path_option_ev(**inputs, calibration=calibration,
+                                                         paths=PATH_SETTINGS["paths"], seed=PATH_SETTINGS["seed"])
+                path_result["emp_path_forecast_source"] = source
             results.append(result)
+            path_results.append(path_result)
         emp = pd.DataFrame(results, columns=list(EMPTY_COLUMNS), index=options.index)
-        pd.concat([options, emp], axis=1).to_csv(options_path, index=False)
+        emp_path = pd.DataFrame(path_results, columns=list(PATH_COLUMNS), index=options.index)
+        pd.concat([options, emp, emp_path], axis=1).to_csv(options_path, index=False)
+        summary["path_quality_flags"] = emp_path["emp_path_quality_flag"].value_counts().to_dict()
         summary["status"] = "COMPLETED"
         summary["rows"] = len(options)
         summary["quality_flags"] = emp["emp_quality_flag"].value_counts().to_dict()

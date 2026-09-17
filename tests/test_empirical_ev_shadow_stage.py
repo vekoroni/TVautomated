@@ -22,6 +22,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 import intelligent_orchestrator as orchestrator
 from empirical_option_ev import EMPTY_COLUMNS, candidate_from_options_row
@@ -111,3 +112,64 @@ def test_m6_evening_workflow_runs_stage_after_layer3_merge():
     merged = source.index("merge_garch_into_enriched(canonical_run_id)")
     shadow = source.index("run_empirical_option_ev_shadow_stage(canonical_run_id)")
     assert merged < shadow
+
+
+# ── Increment 2: path valuation in the shadow stage ─────────────────────────────────────────────
+
+import empirical_option_ev as emp_module
+from empirical_option_ev import PATH_COLUMNS
+
+_CALIBRATION = {
+    "version": "volatility_range_calibration_v1",
+    "forecast_error_bands": {"5": {"p10": 0.6, "p50": 0.9, "p90": 1.5}, "10": {"p10": 0.65, "p50": 0.92, "p90": 1.4},
+                             "20": {"p10": 0.7, "p50": 0.95, "p90": 1.3}},
+    "innovation_quantiles": {"levels": [0.001, 0.5, 0.999], "values": [-3.09, 0.0, 3.09], "std": 1.0},
+}
+
+
+def _path_row(**overrides):
+    return _options_row(structural_target=112.0, invalidation_spot=94.0, contract_dte=30.0, strike=100.0,
+                        underlying_price=100.0, contract_iv=0.30, **overrides)
+
+
+def _stage_with_calibration(tmp_path, calibration):
+    path = tmp_path / "calibration.json"
+    if calibration is not None:
+        path.write_text(json.dumps(calibration), encoding="utf-8")
+    with patch.object(orchestrator.cfg, "RUNS_DIR", tmp_path / "runs"), \
+         patch.object(orchestrator, "EMPIRICAL_PATH_CALIBRATION_PATH", path):
+        return orchestrator.run_empirical_option_ev_shadow_stage(RUN)
+
+
+def test_m7_path_columns_written_with_governed_settings(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row()])
+    summary = _stage_with_calibration(tmp_path, _CALIBRATION)
+    out = pd.read_csv(out_path)
+    assert set(PATH_COLUMNS) <= set(out.columns)
+    row = out.iloc[0]
+    assert row["emp_path_quality_flag"] == "OK"
+    assert row["emp_path_r_cautious"] <= row["emp_path_r_central"] <= row["emp_path_r_upside"]
+    assert summary["path_settings"]["paths"] == emp_module.PATH_SETTINGS["paths"]
+    assert summary["path_quality_flags"] == {"OK": 1}
+
+
+def test_m7_clipped_forecast_is_never_used_for_value(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row(l3_forward_realised_vol=2.5, l3_forward_realised_vol_raw=3.4,
+                                                   l3_forecast_state="CLIPPED_AT_CAP")])
+    _stage_with_calibration(tmp_path, _CALIBRATION)
+    row = pd.read_csv(out_path).iloc[0]
+    assert row["emp_path_vol_central"] == pytest.approx(3.4 * 0.92)          # hold 10 sessions -> band 10, p50 0.92
+    assert row["emp_path_forecast_source"] == "RAW_UNCLIPPED"
+
+
+def test_m8_missing_calibration_is_explicit(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row()])
+    summary = _stage_with_calibration(tmp_path, None)
+    row = pd.read_csv(out_path).iloc[0]
+    assert row["emp_path_quality_flag"] == "CALIBRATION_UNAVAILABLE" and pd.isna(row["emp_path_r_central"])
+    assert summary["status"] == "COMPLETED"
+
+
+def test_m9_path_settings_are_governed():
+    assert emp_module.PATH_SETTINGS["version"] == "empirical_path_valuation_v1"
+    assert emp_module.PATH_SETTINGS["paths"] > 0 and isinstance(emp_module.PATH_SETTINGS["seed"], int)

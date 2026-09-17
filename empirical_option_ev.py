@@ -359,3 +359,206 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
         "emp_vol_scale": round(vol_scale, 6) if vol_scale is not None else None,
         "emp_exit_half_spread": round(exit_half_spread, 6),
     }
+
+
+# ── Item 2 increment 2 (ACK 17 Sep 2026): volatility-range, exit-path valuation (shadow) ──────────────────
+#
+# Paths exit exactly as the outcome scorer does (invalidation first -> invalidation level; target first ->
+# target; otherwise the horizon close), are repriced with the contract's IV and sold at the bid. There is no
+# directional drift (direction skill is not established) and daily moves come from the calibrated empirical
+# innovation distribution. Volatility is a range: forecast x calibrated forecast-error bands (p10/p50/p90).
+# Ranking should use the cautious (lowest) expected return; the upside is reported beside it.
+
+import numpy as _np
+from scipy.special import ndtr as _ndtr
+
+PATH_QUALITY_OK = "OK"
+PATH_NO_MARKET = "NO_MARKET"
+PATH_VOL_UNAVAILABLE = "VOL_SCALE_UNAVAILABLE"
+PATH_GEOMETRY_UNAVAILABLE = "GEOMETRY_UNAVAILABLE"
+PATH_BAD_INPUT = "BAD_INPUT"
+CALENDAR_DAYS_PER_SESSION = 7.0 / 5.0
+PATH_COLUMNS = (
+    "emp_path_r_cautious", "emp_path_r_central", "emp_path_r_upside",
+    "emp_path_p_target_first_central", "emp_path_p_stop_first_central",
+    "emp_path_vol_low", "emp_path_vol_central", "emp_path_vol_high",
+    "emp_path_horizon_band", "emp_path_target_state", "emp_path_quality_flag", "emp_path_forecast_source",
+)
+PATH_CALIBRATION_UNAVAILABLE = "CALIBRATION_UNAVAILABLE"
+
+
+def _load_path_settings() -> dict:
+    """Governed path-valuation settings (config/governed_constants_v1.json, fail-closed)."""
+    import json as _json
+    from pathlib import Path as _Path
+    payload = _json.loads((_Path(__file__).resolve().parent / "config" / "governed_constants_v1.json")
+                          .read_text(encoding="utf-8-sig"))
+    settings = dict(payload["empirical_path_valuation"])
+    if settings.get("version") != "empirical_path_valuation_v1":
+        raise ValueError("unsupported empirical_path_valuation version")
+    if int(settings["paths"]) <= 0:
+        raise ValueError("empirical_path_valuation.paths must be positive")
+    settings["paths"], settings["seed"] = int(settings["paths"]), int(settings["seed"])
+    return settings
+
+
+PATH_SETTINGS = _load_path_settings()
+
+
+def path_inputs_from_options_row(row: dict) -> dict:
+    """Map an evening options-output row to compute_path_option_ev inputs.
+
+    A clipped Layer 3 forecast is never used for value (ACK 17 Sep 2026): the raw model output is used and
+    the source is recorded.
+    """
+    def first(*keys):
+        for key in keys:
+            value = _finite_or_none(row.get(key))
+            if value is not None:
+                return value
+        return None
+
+    state = str(row.get("l3_forecast_state") or "")
+    raw = first("l3_forward_realised_vol_raw")
+    if raw is not None and raw > 0:
+        forecast, source = raw, "RAW_UNCLIPPED"
+    elif state.startswith("CLIPPED"):
+        forecast, source = None, "CLIPPED_WITHOUT_RAW"
+    else:
+        forecast, source = first("l3_forward_realised_vol"), "L3_FORECAST"
+    direction = str(row.get("final_direction") or row.get("direction") or "").strip().upper()
+    return {
+        "side": {"CALL": "call", "PUT": "put"}.get(direction, ""),
+        "spot": first("underlying_price", "entry_spot", "stock_price"),
+        "strike": first("strike", "contract_strike"),
+        "dte": first("contract_dte", "dte"),
+        "bid": first("contract_bid"), "ask": first("contract_ask"), "iv": first("contract_iv"),
+        "rate": DEFAULT_RISK_FREE_RATE,
+        "target": first("structural_target", "target_spot"),
+        "invalidation": first("invalidation_spot", "invalidation_price"),
+        "hold_sessions": first("layer2__recommended_hold_days", "hold_days"),
+        "forecast_vol": forecast, "forecast_source": source,
+    }
+
+
+def sample_innovations(quantiles: dict, rng, size) -> "_np.ndarray":
+    """Draw daily innovations by inverse-CDF interpolation of calibrated quantiles; zero mean, unit variance."""
+    levels = _np.asarray(quantiles["levels"], dtype=float)
+    values = _np.asarray(quantiles["values"], dtype=float)
+    uniforms = rng.uniform(levels[0], levels[-1], size)
+    draws = _np.interp(uniforms, levels, values)
+    return (draws - draws.mean()) / draws.std()
+
+
+def _bs_vector(side: str, spot, strike: float, time_years, rate: float, vol: float):
+    spot = _np.asarray(spot, dtype=float)
+    time_years = _np.asarray(time_years, dtype=float)
+    intrinsic = _np.maximum(spot - strike, 0.0) if side == "call" else _np.maximum(strike - spot, 0.0)
+    live = time_years > 0
+    t = _np.where(live, time_years, 1.0)
+    sqrt_t = _np.sqrt(t)
+    d1 = (_np.log(spot / strike) + (rate + 0.5 * vol * vol) * t) / (vol * sqrt_t)
+    d2 = d1 - vol * sqrt_t
+    discount = _np.exp(-rate * t)
+    if side == "call":
+        priced = spot * _ndtr(d1) - strike * discount * _ndtr(d2)
+    else:
+        priced = strike * discount * _ndtr(-d2) - spot * _ndtr(-d1)
+    return _np.where(live, priced, intrinsic)
+
+
+def _path_null(flag: str) -> dict:
+    out = {column: None for column in PATH_COLUMNS}
+    out["emp_path_quality_flag"] = flag
+    return out
+
+
+def compute_path_option_ev(*, side, spot, strike, dte, bid, ask, iv, rate, target, invalidation, hold_sessions,
+                           forecast_vol, calibration: dict, paths: int, seed: int) -> dict:
+    values = {name: _finite_or_none(v) for name, v in dict(spot=spot, strike=strike, dte=dte, bid=bid, ask=ask, iv=iv,
+                                                           rate=rate, forecast_vol=forecast_vol).items()}
+    side = str(side or "").strip().lower()
+    if side not in ("call", "put") or any(values[k] is None for k in ("spot", "strike", "dte", "iv", "rate")) \
+            or values["spot"] <= 0 or values["strike"] <= 0 or values["iv"] <= 0:
+        return _path_null(PATH_BAD_INPUT)
+    if values["bid"] is None or values["ask"] is None or values["bid"] <= 0 or values["ask"] <= 0 or values["ask"] < values["bid"]:
+        return _path_null(PATH_NO_MARKET)
+    if values["forecast_vol"] is None or values["forecast_vol"] <= 0:
+        return _path_null(PATH_VOL_UNAVAILABLE)
+    sign = 1.0 if side == "call" else -1.0
+    stop = _finite_or_none(invalidation)
+    if stop is None or stop <= 0 or sign * (values["spot"] - stop) <= 0:
+        return _path_null(PATH_GEOMETRY_UNAVAILABLE)
+    goal = _finite_or_none(target)
+    target_state = "LEVEL"
+    if goal is None:
+        target_state = "NONE"
+    elif goal <= 0 or sign * (goal - values["spot"]) <= 0:
+        goal, target_state = None, "INVALID_IGNORED"
+    try:
+        sessions = max(1, int(round(float(hold_sessions))))
+    except (TypeError, ValueError):
+        return _path_null(PATH_BAD_INPUT)
+    bands = {int(k): v for k, v in calibration["forecast_error_bands"].items()}
+    band_key = min([k for k in bands if k >= sessions] or [max(bands)])
+    band = bands[band_key]
+
+    rng = _np.random.default_rng(seed)
+    innovations = sample_innovations(calibration["innovation_quantiles"], rng, (int(paths), sessions))
+    stop_uniforms = rng.uniform(0.0, 1.0, (int(paths), sessions))
+    target_uniforms = rng.uniform(0.0, 1.0, (int(paths), sessions))
+    half_spread = (values["ask"] - values["bid"]) / 2.0
+    session_index = _np.arange(1, sessions + 1)
+    results = {}
+    for label in ("p10", "p50", "p90"):
+        vol = values["forecast_vol"] * float(band[label])
+        daily = vol / math.sqrt(SESSIONS_PER_YEAR)
+        prices = values["spot"] * _np.exp(_np.cumsum(daily * innovations - 0.5 * daily * daily, axis=1))
+        previous = _np.concatenate([_np.full((int(paths), 1), values["spot"]), prices[:, :-1]], axis=1)
+
+        def touched(level, uniforms, beyond):
+            # close beyond the level, or an intraday touch between two closes on the same side
+            # (Brownian-bridge crossing probability exp(-2 ln(a/L) ln(b/L) / sigma^2)), matching the
+            # scorer's use of session highs and lows
+            closed_beyond = beyond(prices)
+            both_inside = ~beyond(previous) & ~closed_beyond
+            with _np.errstate(divide="ignore", invalid="ignore"):
+                crossing = _np.exp(-2.0 * _np.log(previous / level) * _np.log(prices / level) / (daily * daily))
+            return closed_beyond | (both_inside & (uniforms < _np.nan_to_num(crossing)))
+
+        stop_hit = touched(stop, stop_uniforms, lambda x: sign * (x - stop) <= 0)
+        stop_any = stop_hit.any(axis=1)
+        stop_at = _np.where(stop_any, stop_hit.argmax(axis=1), sessions)
+        if goal is not None:
+            target_hit = touched(goal, target_uniforms, lambda x: sign * (x - goal) >= 0)
+            target_any = target_hit.any(axis=1)
+            target_at = _np.where(target_any, target_hit.argmax(axis=1), sessions)
+        else:
+            target_any = _np.zeros(int(paths), dtype=bool)
+            target_at = _np.full(int(paths), sessions)
+        stop_first = stop_any & (stop_at <= target_at)            # same-session touch counts as stop (scorer policy)
+        target_first = target_any & ~stop_first
+        exit_index = _np.where(stop_first, stop_at, _np.where(target_first, target_at, sessions - 1))
+        exit_price = _np.where(stop_first, stop, _np.where(target_first, goal if goal is not None else 0.0,
+                                                           prices[:, sessions - 1]))
+        remaining = (values["dte"] - session_index[exit_index] * CALENDAR_DAYS_PER_SESSION) / 365.0
+        exit_value = _np.maximum(_bs_vector(side, exit_price, values["strike"], remaining, values["rate"], values["iv"])
+                                 - half_spread, 0.0)
+        results[label] = {
+            "r": float(exit_value.mean() / values["ask"] - 1.0), "vol": vol,
+            "p_target": float(target_first.mean()), "p_stop": float(stop_first.mean()),
+        }
+    returns = [results[k]["r"] for k in ("p10", "p50", "p90")]
+    return {
+        "emp_path_r_cautious": round(min(returns), 6),
+        "emp_path_r_central": round(results["p50"]["r"], 6),
+        "emp_path_r_upside": round(max(returns), 6),
+        "emp_path_p_target_first_central": round(results["p50"]["p_target"], 6),
+        "emp_path_p_stop_first_central": round(results["p50"]["p_stop"], 6),
+        "emp_path_vol_low": results["p10"]["vol"],
+        "emp_path_vol_central": results["p50"]["vol"],
+        "emp_path_vol_high": results["p90"]["vol"],
+        "emp_path_horizon_band": band_key,
+        "emp_path_target_state": target_state,
+        "emp_path_quality_flag": PATH_QUALITY_OK,
+    }

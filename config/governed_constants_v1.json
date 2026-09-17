@@ -86,5 +86,13 @@
     "configuration_owner": "ACK",
     "version": "price_history_integrity_v1"
   },
+  "empirical_path_valuation": {
+    "paths": 2000,
+    "seed": 20260917,
+    "calibration": "config/calibration/volatility_range_calibration_v1.json",
+    "validation_state": "SHADOW_NO_AUTHORITY",
+    "configuration_owner": "ACK",
+    "version": "empirical_path_valuation_v1"
+  },
   "schema_version": "governed_constants_v1"
 }
