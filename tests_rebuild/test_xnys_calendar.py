@@ -19,6 +19,28 @@ def test_parity_with_legacy_session_clock():
         assert rebuild.xnys_holidays(year) == legacy.xnys_holidays(year)
 
 
+def test_session_state_parity_with_legacy_snapshot():
+    from datetime import datetime, timezone
+    from canonical_data import session_clock as legacy
+
+    instants = []
+    start = datetime(2026, 3, 6, 0, 0, tzinfo=timezone.utc)   # spans the US DST change
+    for hours in range(0, 24 * 21, 1):
+        instants.append(start + timedelta(hours=hours, minutes=7))
+    instants += [
+        datetime(2026, 11, 27, 18, 5, tzinfo=timezone.utc),   # day after Thanksgiving early close
+        datetime(2026, 12, 24, 18, 5, tzinfo=timezone.utc),
+        datetime(2026, 9, 16, 22, 37, tzinfo=timezone.utc),
+        datetime(2026, 9, 17, 13, 45, tzinfo=timezone.utc),
+    ]
+    for instant in instants:
+        phase, session, last_completed = rebuild.session_state(instant)
+        snapshot = legacy.session_snapshot(instant)
+        assert phase.value == snapshot.state.value, instant
+        assert session == snapshot.session_date, instant
+        assert last_completed == snapshot.last_completed_session, instant
+
+
 def test_known_2026_holidays_are_not_sessions():
     for holiday in (date(2026, 4, 3), date(2026, 6, 19), date(2026, 7, 3), date(2026, 9, 7)):
         assert not rebuild.is_xnys_session(holiday)

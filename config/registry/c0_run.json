@@ -103,6 +103,36 @@
       "evidence_ref": null,
       "provenance": "MIGRATED_FROM:data/output/runs/20260914_214012/run_meta.json resolved_feature_flags",
       "recorded_at_utc": "2026-09-16T18:45:00Z"
+    },
+    {
+      "config_key": "run.production_interpreter",
+      "version": 1,
+      "value": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\venv\\Scripts\\python.exe",
+      "value_type": "STRING",
+      "unit": "none",
+      "effective_from": "2026-09-17",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260916-P0-3",
+      "rationale": "ACK decision 16 Sep 2026: one interpreter for production and tests - the repository venv rebuilt on Python 3.14.",
+      "evidence_ref": null,
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-17T03:30:00Z"
+    },
+    {
+      "config_key": "run.production_code_paths",
+      "version": 1,
+      "value": ["./*.py", "avshunter/", "bridge/", "canonical_data/", "contracts/", "domain/", "intelligence-lab/", "macro_domain/", "market_structure/", "ml_confidence_layer/", "orchestrator/", "pipeline_interpreter/", "scripts/", "short_swing/", "tools/", "vanguard/", "worker3/", "zero_dte/"],
+      "value_type": "LIST",
+      "unit": "none",
+      "effective_from": "2026-09-17",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260916-P0-3",
+      "rationale": "Repository folders whose code the pipelines can import; untracked files here make the tree unclean and untracked imports block a run.",
+      "evidence_ref": null,
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-17T03:30:00Z"
     }
   ]
 }

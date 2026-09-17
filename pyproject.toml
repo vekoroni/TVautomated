@@ -1,0 +1,14 @@
+[project]
+name = "avshunter"
+dynamic = ["version"]
+description = "AVSHUNTER rebuild package (governed by Enhancements/knowledge specification v1.1)"
+requires-python = ">=3.14"
+
+[tool.setuptools.dynamic]
+version = { attr = "avshunter.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["avshunter*"]
+
+# No [tool.pytest.ini_options] here: the repository pytest.ini remains the
+# single pytest configuration for tests/ and tests_rebuild/.

@@ -187,6 +187,32 @@ cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence
 - Registry entries (P0-2) for the legacy CDS and dynamic-session flags so the launcher sets them.
 - Release tagging procedure documented in `Enhancements/phase0/`.
 
+## 5a. Implementation status (17 Sep 2026)
+
+**Increment 1 — done (new package only; legacy code unchanged):**
+
+| Deliverable | Status |
+|---|---|
+| `pyproject.toml` (package metadata; no pytest section — root `pytest.ini` stays the single pytest config) | Done |
+| `avshunter/c0_run/`: `model`, `clock` (decision clock), `preflight` (gate with Option A), `context`, `launcher`; adapters `clock` (only wall-clock reader), `git` (clean tree, release tag, untracked imports), `environment` (interpreter, shell flags, concurrent writers), `legacy` (read-only `--plan-only` thesis resolution, run hand-off), `storage` | Done |
+| `python -m avshunter preflight\|run --action BUILD\|REVALUE [--mode]` | Done |
+| Checks: concurrent writers (BLOCK), untracked imports (BLOCK), action vs session phase (BLOCK), stale thesis for REVALUE (BLOCK), clean tree / release tag / interpreter (Option A downgrade) | Done |
+| Legacy flags set from configuration; shell conflicts overridden and warned | Done |
+| Calendar session phase added to `avshunter/shared/xnys_calendar.py`, parity-tested against legacy `session_snapshot` (DST, early closes) | Done |
+| Registry: `run.production_interpreter`, `run.production_code_paths` (PROVISIONAL, approval ACK-20260916-P0-3); lock extended by addition only | Done |
+| P0-2 key-reference test (orphans allowed only for P0-4 pending consumers) | Done |
+| `tests_rebuild`: 61 passed (Python 3.14 venv) | Done |
+| Live pre-flight on the real repository (17 Sep ~04:30 UK): BUILD and REVALUE both correctly REFUSED while the B3 backfill was running; REVALUE resolved thesis `book:20260916_223756:2026-09-16` and passed the stale-thesis check | Done |
+| `Enhancements/phase0/RUNBOOK_MANUAL_POWERSHELL.md` | Done |
+
+Design refinement made during implementation: a stale thesis for REVALUE and a concurrent data writer **refuse** the run in every mode (a downgrade cannot make either safe or meaningful).
+
+**Increment 2 — next (touches legacy code; after the 17 Sep morning run):**
+- Single morning path: add the post-Lab score integrity check and verified Interpreter sync to `premarket_workflow` (path A), retire path B as an entry point.
+- Legacy run records honour `AVSHUNTER_OPERATOR_MODE=RESEARCH` (run_meta `run_condition`, baseline eligibility, ledger production records).
+- Caller check and quarantine of legacy launchers.
+- First release tag procedure (`rel-YYYYMMDD-N`) on ACK instruction.
+
 ## 6. Decisions requested
 
 1. Approve the design, including the new `avshunter/` package and `tests_rebuild/` isolated tests.

@@ -16,7 +16,9 @@
     "market_data.daily_credit_budget@1": "3e6c8723b8dbe3d4d385dfcd5130024ebfe8244841af4d4003f5a9333d85163d",
     "market_data.history_max_staleness@1": "daa37e6cd374b5732d29d969b2f89b3b4d9e1c163f75211d6606343cb983d4b6",
     "market_data.provider_settlement_delay@1": "baee798110cf3ff22b0636a2ac27c158af1c46d6385da75ed630db0841f3a4c4",
+    "run.production_code_paths@1": "a4cb580e6e0ecca3780ad0c1be77246dee7bf97ccdd1107d5eb6ef25afac7f22",
     "run.production_gate_failure_mode@1": "1c48af69c5a65281f53ef5123be6625c6f70a3004cc56d2171777a5402096fb3",
+    "run.production_interpreter@1": "50eb13375224ede6f9832e4aefcde1dfc522e246878f7ccc883ed037156eeeaa",
     "run.production_requires_clean_tree@1": "24eda3c1d571b79a80ea343a015650ca88105c07b3a4379c9e53ba23b41b66b6"
   }
 }

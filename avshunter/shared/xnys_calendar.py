@@ -9,7 +9,18 @@ parity against the legacy module.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
+from enum import Enum
+from zoneinfo import ZoneInfo
+
+NEW_YORK = ZoneInfo("America/New_York")
+
+
+class SessionPhase(str, Enum):
+    CLOSED = "CLOSED"
+    PREMARKET = "PREMARKET"
+    REGULAR = "REGULAR"
+    AFTER_HOURS = "AFTER_HOURS"
 
 
 def _nth_weekday(year: int, month: int, weekday: int, occurrence: int) -> date:
@@ -67,6 +78,55 @@ def xnys_holidays(year: int) -> frozenset[date]:
 
 def is_xnys_session(value: date) -> bool:
     return value.weekday() < 5 and value not in xnys_holidays(value.year)
+
+
+def is_early_close(value: date) -> bool:
+    if not is_xnys_session(value):
+        return False
+    thanksgiving = _nth_weekday(value.year, 11, 3, 4)
+    if value == thanksgiving + timedelta(days=1):
+        return True
+    if value.month == 12 and value.day == 24:
+        return True
+    return (value.month, value.day) in {(7, 3), (7, 2)} and (
+        value + timedelta(days=1) == date(value.year, 7, 4)
+        or date(value.year, 7, 4).weekday() == 5
+    )
+
+
+def session_bounds(value: date) -> tuple[datetime, datetime]:
+    if not is_xnys_session(value):
+        raise ValueError(f"{value} is not an XNYS session")
+    open_local = datetime.combine(value, time(9, 30), NEW_YORK)
+    close_local = datetime.combine(value, time(13 if is_early_close(value) else 16, 0), NEW_YORK)
+    return open_local.astimezone(timezone.utc), close_local.astimezone(timezone.utc)
+
+
+def session_state(instant: datetime) -> tuple[SessionPhase, date | None, date]:
+    """Return (phase, market_session_or_None, last_completed_session) for an aware instant.
+
+    Same rules as legacy ``session_snapshot``: premarket from 04:00 ET, after hours
+    until 20:00 ET; the current session counts as completed from its close.
+    """
+    if instant.tzinfo is None:
+        raise ValueError("session clock requires a timezone-aware instant")
+    instant = instant.astimezone(timezone.utc)
+    today = instant.astimezone(NEW_YORK).date()
+    if not is_xnys_session(today):
+        return SessionPhase.CLOSED, None, previous_xnys_session(today)
+    open_utc, close_utc = session_bounds(today)
+    premarket_utc = datetime.combine(today, time(4), NEW_YORK).astimezone(timezone.utc)
+    after_hours_end = datetime.combine(today, time(20), NEW_YORK).astimezone(timezone.utc)
+    if instant < premarket_utc or instant >= after_hours_end:
+        phase = SessionPhase.CLOSED
+    elif instant < open_utc:
+        phase = SessionPhase.PREMARKET
+    elif instant < close_utc:
+        phase = SessionPhase.REGULAR
+    else:
+        phase = SessionPhase.AFTER_HOURS
+    last_completed = today if instant >= close_utc else previous_xnys_session(today)
+    return phase, today, last_completed
 
 
 def previous_xnys_session(value: date) -> date:

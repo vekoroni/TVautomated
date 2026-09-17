@@ -127,6 +127,14 @@ Follow-ups:
 - **B4** (IV surface finalisation) not run on Day 1; not needed for the evening pipeline. Run with B3.
 - **B3** weekly gaps: after the morning run on 17 Sep (credit allowance resets 14:30 UK), ≤ 30,000 credits/day.
 
+**B3 part 1 — completed 17 Sep 2026, ~04:00–04:20 UK** (after the 16 Sep evening run completed; log `backfill_receipts/run_b3_day1.log`): weekly Fridays 2025-09-05 … 2026-09-04, newest first, cap 25,000.
+
+| Results | OK | NO_DATA | Errors | Rows written | Credits |
+|---|---|---|---|---|---|
+| 25,011 | 18,291 | 6,720 | 0 | 1,232,708 | 25,011 |
+
+Remaining after part 1 (dry run): **32,719** weekly requests (before no-data stops). Part 2 after the 17 Sep morning run (allowance resets 14:30 UK), together with the late-publication re-requests for 09-14/09-15 and B4.
+
 ## 6. Approvals requested
 
 1. **Approve P0-1 backfill batches B0–B5** as designed, including API credit spend of ≈ 31,000 (Day 1) and ≤ 57,000 (Days 2–3), capped at ≤ 30,000 per day.
