@@ -113,7 +113,9 @@ def test_stale_provider_quote_requires_requote_without_touching_thesis() -> None
             "selected_structure_hydration_status": "COMPLETE",
             "selected_structure": "LONG_SINGLE",
             "selected_long_leg": {"bid": 1.0, "ask": 1.1},
-            "selected_quote_timestamp_utc": "2026-09-10T09:30:00+00:00",
+            # 60 min raw = 45 min beyond the disclosed 15-min provider delay (option_quote_feed, ACK 17 Sep 2026);
+            # the former 30-min fixture sits exactly on the window edge once the known delay is removed.
+            "selected_quote_timestamp_utc": "2026-09-10T09:00:00+00:00",
         },
         as_of_utc="2026-09-10T10:00:00+00:00",
     )

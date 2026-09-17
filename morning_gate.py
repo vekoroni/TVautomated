@@ -65,6 +65,7 @@ from contracts.selected_contract_economics import (
 )
 from contracts.long_option_policy import (
     LONG_OPTION_EXECUTION_POLICY,
+    effective_quote_age_seconds,
     evaluate_execution_viability,
     quote_age_seconds,
     quote_spread_percent,
@@ -2014,7 +2015,7 @@ def _morning_liquidity_lifecycle(
             current_spot=float(required["current_spot"]),
             structural_target=float(required["target"]),
             invalidation_spot=float(required["invalidation"]),
-            quote_age_seconds=quote_age_seconds(
+            quote_age_seconds=effective_quote_age_seconds(
                 live_data.get("live_contract_provider_updated")
                 or live_data.get("quote_provider_timestamp_utc")
                 or live_data.get("selected_quote_timestamp_utc")

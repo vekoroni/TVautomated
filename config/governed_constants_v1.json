@@ -96,5 +96,15 @@
     "share_spread_window_sessions": 60,
     "share_spread_min_sessions": 20
   },
-  "schema_version": "governed_constants_v1"
+  "schema_version": "governed_constants_v1",
+  "option_quote_feed": {
+    "provider": "MARKETDATA",
+    "disclosed_delay_seconds": 900,
+    "freshness_max_seconds": 900,
+    "validation_state": "EVIDENCE_BACKED_PROVIDER_ENTITLEMENT",
+    "evidence": "MarketData x-options-data-permissions=delayed_quotes_permission,historical_quotes_permission (17 Sep 2026); 1,332 morning quotes arrived 891-900 s after provider timestamp (runs/20260916_223756 morning_validated_trades)",
+    "approval_id": "ACK-20260917-QUOTE-FEED-OPTION-2",
+    "configuration_owner": "ACK",
+    "version": "option_quote_feed_v1"
+  }
 }

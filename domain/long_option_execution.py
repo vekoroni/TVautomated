@@ -7,7 +7,9 @@ structure authority cannot drift between the two handoff stages.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import math
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -32,7 +34,28 @@ LONG_OPTION_EXECUTION_POLICY = MappingProxyType(
 
 QUOTE_POLICY_VERSION = "long-options-quote-policy-v2"
 QUOTE_SPREAD_DENOMINATOR = "MID"
-EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS = 15 * 60
+GOVERNED_CONSTANTS_PATH = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+QUOTE_FEED_DELAYED = "DELAYED_PROVIDER_FEED"
+QUOTE_FEED_REAL_TIME = "REAL_TIME_PROVIDER_FEED"
+
+
+def _load_option_quote_feed(path: Path = GOVERNED_CONSTANTS_PATH) -> tuple[float, float]:
+    """Disclosed provider delay and freshness window (config "option_quote_feed", fail-closed).
+
+    A provider entitled only to delayed quotes stamps every quote ``disclosed_delay_seconds`` in the past; that
+    delay is a known fact, not staleness (ACK 17 Sep 2026, tests/test_option_quote_feed_delay.py).
+    """
+    rules = json.loads(Path(path).read_text(encoding="utf-8-sig"))["option_quote_feed"]
+    if rules.get("version") != "option_quote_feed_v1":
+        raise ValueError("unsupported option_quote_feed version")
+    delay = float(rules["disclosed_delay_seconds"])
+    window = float(rules["freshness_max_seconds"])
+    if not (math.isfinite(delay) and math.isfinite(window) and delay >= 0 and window > 0):
+        raise ValueError("option_quote_feed values out of range")
+    return delay, window
+
+
+QUOTE_FEED_DELAY_SECONDS, EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS = _load_option_quote_feed()
 
 
 def _finite(value: Any) -> float | None:
@@ -121,6 +144,22 @@ def quote_age_seconds(
         as_of = as_of.replace(tzinfo=timezone.utc)
     age = (as_of.astimezone(timezone.utc) - observed).total_seconds()
     return max(0.0, age)
+
+
+def effective_quote_age_seconds(
+    observed_at: Any,
+    *,
+    as_of_utc: datetime | str | None = None,
+) -> float | None:
+    """Quote age net of the disclosed provider delay; freshness is judged on this value."""
+    age = quote_age_seconds(observed_at, as_of_utc=as_of_utc)
+    if age is None:
+        return None
+    return max(0.0, age - QUOTE_FEED_DELAY_SECONDS)
+
+
+def quote_feed_state() -> str:
+    return QUOTE_FEED_DELAYED if QUOTE_FEED_DELAY_SECONDS > 0 else QUOTE_FEED_REAL_TIME
 
 
 def evaluate_execution_viability(
@@ -213,7 +252,8 @@ def evaluate_execution_viability(
         or row.get("quote_provider_timestamp_utc")
         or row.get("selected_quote_timestamp_utc")
     )
-    age = quote_age_seconds(provider_timestamp, as_of_utc=as_of_utc)
+    raw_age = quote_age_seconds(provider_timestamp, as_of_utc=as_of_utc)
+    age = effective_quote_age_seconds(provider_timestamp, as_of_utc=as_of_utc)
     if age is None:
         return {
             **base,
@@ -232,6 +272,8 @@ def evaluate_execution_viability(
         ),
         "execution_viability_quote_provider_timestamp_utc": str(provider_timestamp),
         "execution_viability_quote_age_seconds": age,
+        "execution_viability_quote_raw_age_seconds": raw_age,
+        "execution_viability_quote_feed_state": quote_feed_state(),
     }
     if age > EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS:
         return {
