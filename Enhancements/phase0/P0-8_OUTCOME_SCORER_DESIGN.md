@@ -241,3 +241,13 @@ No API calls; no changes to legacy code.
 5. Macro and market conditions added as analysis-only labels (§6a) so the loop learns the conditions behind outcomes.
 
 Build order: domain (geometry, passage, estimators, base rate) → ingest 27 books → underlying outcomes → conditions → first report → expression marks.
+
+## 13. Implementation status (17 Sep 2026)
+
+| Increment | Status |
+|---|---|
+| 1 — ingest, first passage, Aalen-Johansen, report | Done (commit 1912f75). 25 books, 18,330 predictions. |
+| 2 — matched base rate (§5.4), ConditionRecord (§6a), fast bootstrap | Done, uncommitted. Base rate `c12-base-rate-v1.0.0`: vectorised over the full price store (3,618 tickers); predictions enter the same estimator as fractional events; paired session-block bootstrap gives observed − base intervals. Conditions `c12-conditions-v1.0.0`: run's own `macro_snapshot.json` + SPY trend / volatility percentile / breadth / drawdown; ticker sector not yet available (`MISSING_TICKER_SECTOR`). Nine `outcome.condition.*` keys registered PROVISIONAL. Guard test: nothing outside C12 imports it. Full run 45 s (was 19 min). |
+| 3 — expression marks (§5.3) | Next. |
+
+First comparison vs chance (as of 2026-09-16, all INSUFFICIENT_SESSIONS): overall target-first excess +0.3% (−0.2 to +0.8), stop-first excess +2.1% (+1.4 to +2.8). `thesis_state` TARGET_REALIZED / INVALIDATED describe levels already crossed when the book was written (44 of 45 and 32 of 32 resolve on session 1); they are not predictions and must not be read as skill. Conditions coverage is narrow: SPY above its 200-session average throughout; `risk_on_off_switch` identical on all 19 sessions.

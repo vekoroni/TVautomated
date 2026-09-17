@@ -50,3 +50,17 @@ def load_bars(tickers: Iterable[str], start: date, end: date, path: Path = DEFAU
 def all_tickers(path: Path = DEFAULT_PRICE_DB) -> list[str]:
     with _connect(path) as connection:
         return [row[0] for row in connection.execute("SELECT DISTINCT ticker FROM ohlcv_daily ORDER BY ticker")]
+
+
+def load_all_bars(start: date, end: date, path: Path = DEFAULT_PRICE_DB) -> dict[str, list[Bar]]:
+    """Complete bars for every ticker with start <= session <= end."""
+    result: dict[str, list[Bar]] = {}
+    with _connect(path) as connection:
+        rows = connection.execute(
+            "SELECT ticker, trading_date, open, high, low, close FROM ohlcv_daily "
+            "WHERE bar_status = 'COMPLETE' AND trading_date BETWEEN ? AND ? ORDER BY ticker, trading_date",
+            (start.isoformat(), end.isoformat()),
+        )
+        for ticker, session, open_, high, low, close in rows:
+            result.setdefault(ticker, []).append(Bar(date.fromisoformat(session), open_, high, low, close))
+    return result

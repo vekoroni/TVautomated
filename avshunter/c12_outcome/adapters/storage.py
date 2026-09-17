@@ -41,6 +41,30 @@ CREATE TABLE IF NOT EXISTS scorer_runs (
   scorer_run_id TEXT PRIMARY KEY, command TEXT NOT NULL, as_of_session TEXT, scorer_version TEXT NOT NULL,
   config_snapshot_id TEXT NOT NULL, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, counts_json TEXT
 );
+CREATE TABLE IF NOT EXISTS base_rate_outcomes (
+  prediction_id TEXT NOT NULL, as_of_session TEXT NOT NULL, base_rate_version TEXT NOT NULL,
+  state TEXT NOT NULL, observed_sessions INTEGER NOT NULL, target_atr REAL, stop_atr REAL, atr REAL,
+  universe INTEGER, excluded INTEGER, target_fractions_json TEXT, stop_fractions_json TEXT,
+  config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
+  PRIMARY KEY (prediction_id, as_of_session, base_rate_version)
+);
+CREATE VIEW IF NOT EXISTS latest_base_rate_outcomes AS
+  SELECT b.* FROM base_rate_outcomes b
+  JOIN (SELECT prediction_id, base_rate_version, MAX(as_of_session) AS as_of_session
+        FROM base_rate_outcomes GROUP BY prediction_id, base_rate_version) m
+    ON m.prediction_id = b.prediction_id AND m.base_rate_version = b.base_rate_version AND m.as_of_session = b.as_of_session;
+CREATE TABLE IF NOT EXISTS condition_records (
+  prediction_id TEXT NOT NULL, condition_version TEXT NOT NULL,
+  macro_source TEXT NOT NULL, macro_run_id TEXT, macro_as_of_utc TEXT, macro_report_date TEXT,
+  macro_freshness TEXT NOT NULL, macro_lag_sessions INTEGER,
+  regime_label TEXT, regime_state TEXT, regime_probability REAL, macro_conviction REAL,
+  risk_on_off_switch TEXT, credit_state TEXT, net_liquidity_score REAL, rates_impulse TEXT,
+  ticker_sector TEXT, sector_alignment TEXT NOT NULL,
+  market_trend_state TEXT NOT NULL, market_vol_percentile REAL, market_vol_state TEXT NOT NULL,
+  market_breadth REAL, market_breadth_state TEXT NOT NULL, market_drawdown_pct REAL,
+  config_snapshot_id TEXT NOT NULL, recorded_at_utc TEXT NOT NULL,
+  PRIMARY KEY (prediction_id, condition_version)
+);
 CREATE VIEW IF NOT EXISTS latest_underlying_outcomes AS
   SELECT o.* FROM underlying_outcomes o
   JOIN (SELECT prediction_id, scorer_version, MAX(as_of_session) AS as_of_session

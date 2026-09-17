@@ -202,3 +202,91 @@ def test_matched_base_rate_on_synthetic_universe():
     assert results["UP"].state is OutcomeState.TARGET_FIRST
     assert results["DOWN"].state is OutcomeState.STOP_FIRST
     assert results["FLAT"].state is OutcomeState.TIMEOUT
+
+
+# --- increment 2: fast estimators, vectorised base rate, conditions -----------------
+
+import numpy as np
+
+from avshunter.c12_outcome.base_rate import build_panel, matched_incidence, panel_atr
+from avshunter.c12_outcome.conditions import ConditionSettings, band, macro_condition, market_condition
+from avshunter.c12_outcome.estimators import base_rate_events, paired_block_bootstrap
+
+
+def test_weighted_events_equal_duplicated_events():
+    single = [EventRecord(1, TARGET, "a", 2.0), EventRecord(2, STOP, "a"), EventRecord(3, CENSOR, "b", 3.0)]
+    duplicated = [EventRecord(1, TARGET, "a"), EventRecord(1, TARGET, "a"), EventRecord(2, STOP, "a")] + \
+                 [EventRecord(3, CENSOR, "b")] * 3
+    assert aalen_johansen(single, 3).target == pytest.approx(aalen_johansen(duplicated, 3).target)
+    assert aalen_johansen(single, 3).stop == pytest.approx(aalen_johansen(duplicated, 3).stop)
+
+
+def test_base_rate_events_conserve_weight_and_paired_excess_is_zero_against_itself():
+    events = base_rate_events([0.1, 0.2, 0.0], [0.3, 0.0, 0.1], 3, "s1")
+    assert sum(e.weight for e in events) == pytest.approx(1.0)
+    observed = [EventRecord(1, TARGET, "s1"), EventRecord(2, STOP, "s2"), EventRecord(3, CENSOR, "s3")]
+    paired = paired_block_bootstrap(observed, observed, 3, 100, 0, 0.05, 0.95)
+    assert paired.excess_target == pytest.approx((0.0, 0.0, 0.0))
+    assert paired.base_target == pytest.approx(paired.observed.target_by_final_session[1])
+
+
+def _universe_panel():
+    s = sessions_after(EVIDENCE, WINDOW)
+    history_sessions = []
+    day = EVIDENCE
+    while len(history_sessions) < 15:
+        if is_xnys_session(day):
+            history_sessions.append(day)
+        day -= timedelta(days=1)
+    history_sessions.reverse()
+    history = [Bar(d, 100, 102, 98, 100) for d in history_sessions]
+    up = [Bar(d, *row) for d, row in zip(s, [(100, 109, 99, 108)] + [(108, 108, 108, 108)] * 19)]
+    down = [Bar(d, *row) for d, row in zip(s, [(100, 101, 91, 92)] + [(92, 92, 92, 92)] * 19)]
+    flat = [Bar(d, 100, 101, 99, 100) for d in s]
+    gap = [Bar(d, 100, 101, 99, 100) for d in s if d != s[3]]
+    bars = {"UP": history + up, "DOWN": history + down, "FLAT": history + flat, "GAP": history + gap}
+    return build_panel(bars, history_sessions + s), s, history, {"UP": up, "DOWN": down, "FLAT": flat}
+
+
+def test_panel_atr_matches_scalar_atr():
+    panel, _, history, _ = _universe_panel()
+    atr = panel_atr(panel, panel.index_of(EVIDENCE), 14)
+    assert atr[panel.tickers.index("UP")] == pytest.approx(average_true_range(history, 14))
+
+
+def test_vectorised_matched_incidence_equals_loop_version_and_excludes_gaps():
+    panel, s, history, futures = _universe_panel()
+    index = panel.index_of(EVIDENCE)
+    matched = matched_incidence(Direction.BULL, 2.0, 2.0, panel, index, WINDOW, panel_atr(panel, index, 14))
+    loop = dict(matched_outcomes(Direction.BULL, 2.0, 2.0,
+                                 {t: (history, {b.session: b for b in bars}) for t, bars in futures.items()},
+                                 s, WINDOW, 14))
+    assert (matched.universe, matched.excluded) == (3, 1)
+    assert matched.target_fractions[0] == pytest.approx(sum(o.state is OutcomeState.TARGET_FIRST for o in loop.values()) / 3)
+    assert matched.stop_fractions[0] == pytest.approx(sum(o.state is OutcomeState.STOP_FIRST for o in loop.values()) / 3)
+    assert sum(matched.target_fractions[1:]) + sum(matched.stop_fractions[1:]) == 0
+
+
+SETTINGS = ConditionSettings("SPY", 3, 5, 2, 4, 3, 5, (0.3333, 0.6667), (0.4, 0.6))
+
+
+def test_band_and_macro_freshness():
+    assert [band(v, (0.4, 0.6)) for v in (0.1, 0.5, 0.9, None)] == ["LOW", "MID", "HIGH", "MISSING"]
+    evidence = date(2026, 9, 16)
+    assert macro_condition({"report_date": "2026-09-16"}, "r", evidence).macro_freshness == "CURRENT"
+    stale = macro_condition({"report_date": "2026-09-14"}, "r", evidence)
+    assert (stale.macro_freshness, stale.macro_lag_sessions) == ("STALE", 2)
+    assert macro_condition(None, "r", evidence).macro_source == "NONE"
+
+
+def test_market_condition_trend_breadth_and_drawdown():
+    rising = [100, 101, 102, 103, 104, 105, 106, 107, 108, 110]
+    panel = np.array([[10, 20], [11, 19], [12, 18]], dtype=float)   # first above its mean, second below
+    state = market_condition(rising, panel, SETTINGS)
+    assert state.market_trend_state == "ABOVE_BOTH"
+    assert state.market_breadth == pytest.approx(0.5)
+    assert state.market_drawdown_pct == pytest.approx(0.0)
+    assert 0.0 <= state.market_vol_percentile <= 1.0 and state.market_vol_state in ("LOW", "MID", "HIGH")
+    falling = market_condition(list(reversed(rising)), panel, SETTINGS)
+    assert falling.market_trend_state == "BELOW_BOTH" and falling.market_drawdown_pct < 0
+    assert market_condition(rising[:3], panel, SETTINGS).market_trend_state == "INSUFFICIENT_HISTORY"

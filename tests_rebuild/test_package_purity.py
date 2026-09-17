@@ -65,3 +65,22 @@ def test_no_sys_path_manipulation():
         if "sys.path" in path.read_text(encoding="utf-8")
     ]
     assert not offenders, f"use package imports, not sys.path: {offenders}"
+
+
+def test_condition_labels_are_not_imported_by_decision_code():
+    """P0-8 §6a guard: conditions are analysis dimensions; only the outcome scorer may import them."""
+    offenders = []
+    for path in _python_files():
+        relative = _relative(path)
+        if relative.startswith("c12_outcome/"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names = []
+            if isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            elif isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            if any("c12_outcome" in name for name in names):
+                offenders.append(f"{relative}:{node.lineno}")
+    assert not offenders, f"outcome scoring / condition labels imported outside C12: {offenders}"
