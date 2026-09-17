@@ -20,9 +20,15 @@ Architecture:
                expected_move_1_5d      — % move expected over 1-5 days
                expected_move_6_10d     — % move expected over 6-10 days
                expected_move_11_20d    — % move expected over 11-20 days
-               iv_tailwind_score       — signed: positive = IV cheap vs forecast
+               iv_tailwind_score       — signed: implied_vol - forecast (None when IV or forecast missing)
                jump_risk_flag          — True if recent vol cluster suggests jump
-               method                  — 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY'
+               method                  — 'HAR_RV' | 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY' | 'NO_FORECAST'
+               forecast_state          — 'FORECAST_OK' | 'MISSING_PRICE_HISTORY' | 'FORECAST_UNAVAILABLE'
+               iv_tailwind_state       — 'IV_TAILWIND_OK' | 'IV_MISSING' | 'FORECAST_MISSING'
+
+    Missing is never neutral (R1): no usable price history gives no numeric forecast, and a
+    missing implied vol gives no tailwind. The macro regime is recorded for display only and
+    never changes a model value (CLAUDE.md rule 6; ACK 17 Sep 2026).
 
 Dependencies:
     numpy, pandas, scipy (all already in pipeline venv)
@@ -77,39 +83,67 @@ CONF_STABLE_WEIGHT  = 0.35   # stable vol = more predictable
 CONF_METHOD_WEIGHT  = 0.25   # GARCH > EWMA > ATR
 
 
+# Explicit states (R1 missing is never neutral; R6 labels say what was measured)
+FORECAST_OK                  = 'FORECAST_OK'
+FORECAST_MISSING_PRICES      = 'MISSING_PRICE_HISTORY'
+FORECAST_UNAVAILABLE         = 'FORECAST_UNAVAILABLE'
+METHOD_NO_FORECAST           = 'NO_FORECAST'
+IV_TAILWIND_OK               = 'IV_TAILWIND_OK'
+IV_TAILWIND_IV_MISSING       = 'IV_MISSING'
+IV_TAILWIND_FORECAST_MISSING = 'FORECAST_MISSING'
+
+
+def _round_or_none(value: Optional[float], digits: int) -> Optional[float]:
+    return None if value is None else round(float(value), digits)
+
+
 # ── Output dataclass ───────────────────────────────────────────────────────────
 
 @dataclass
 class ForwardVarianceResult:
     ticker:                 str
-    forward_realised_vol:   float           # annualised decimal
-    vol_forecast_confidence: float          # 0-100
-    expected_move_1_5d:     float           # % (e.g. 3.2 = 3.2%)
-    expected_move_6_10d:    float
-    expected_move_11_20d:   float
-    iv_tailwind_score:      float           # implied_vol - forward_realised_vol (signed)
+    forward_realised_vol:   Optional[float] # annualised decimal; None when no forecast
+    vol_forecast_confidence: Optional[float] # 0-100; None when no forecast
+    expected_move_1_5d:     Optional[float] # % (e.g. 3.2 = 3.2%)
+    expected_move_6_10d:    Optional[float]
+    expected_move_11_20d:   Optional[float]
+    iv_tailwind_score:      Optional[float] # implied_vol - forward_realised_vol (signed); None when missing
     jump_risk_flag:         bool
-    method:                 str             # 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY'
+    method:                 str             # 'HAR_RV' | 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY' | 'NO_FORECAST'
     garch_omega:            Optional[float] = None
     garch_alpha:            Optional[float] = None
     garch_beta:             Optional[float] = None
     n_bars_used:            int = 0
     error:                  Optional[str]  = None
+    forecast_state:         str = FORECAST_OK
+    iv_tailwind_state:      Optional[str] = None   # derived from the values when not given
+    macro_regime_display:   str = ''        # display/audit only; never used in any value
+
+    def __post_init__(self) -> None:
+        if self.iv_tailwind_state is None:
+            if self.forward_realised_vol is None:
+                self.iv_tailwind_state = IV_TAILWIND_FORECAST_MISSING
+            elif self.iv_tailwind_score is None:
+                self.iv_tailwind_state = IV_TAILWIND_IV_MISSING
+            else:
+                self.iv_tailwind_state = IV_TAILWIND_OK
 
     def _model_risk_flags(self) -> list:
         flags = []
-        raw_tailwind = float(self.iv_tailwind_score or 0.0)
+        vol = self.forward_realised_vol
 
-        if self.forward_realised_vol >= L3_MODEL_RISK_VOL_HARDCAP:
+        if vol is not None and vol >= L3_MODEL_RISK_VOL_HARDCAP:
             flags.append("VOL_HARDCAP")
         if (
-            self.vol_forecast_confidence <= L3_LOW_CONF_THRESHOLD
-            and self.forward_realised_vol >= L3_HIGH_VOL_THRESHOLD
+            vol is not None
+            and self.vol_forecast_confidence is not None
+            and self.vol_forecast_confidence <= L3_LOW_CONF_THRESHOLD
+            and vol >= L3_HIGH_VOL_THRESHOLD
         ):
             flags.append("LOW_CONF_HIGH_VOL")
         if self.n_bars_used and self.n_bars_used < L3_THIN_HISTORY_MIN_BARS:
             flags.append("THIN_HISTORY")
-        if abs(raw_tailwind) > L3_IV_TAILWIND_SCORE_CAP:
+        if self.iv_tailwind_score is not None and abs(self.iv_tailwind_score) > L3_IV_TAILWIND_SCORE_CAP:
             flags.append("IV_TAILWIND_EXTREME")
 
         return flags
@@ -117,10 +151,10 @@ class ForwardVarianceResult:
     def to_dict(self) -> dict:
         from domain.volatility_budget import checkpoint_fields
         budget_v2 = checkpoint_fields(
-            None if self.error else float(self.forward_realised_vol)
+            None if (self.error or self.forward_realised_vol is None) else float(self.forward_realised_vol)
         )
-        raw_tailwind = float(self.iv_tailwind_score or 0.0)
-        capped_tailwind = float(np.clip(
+        raw_tailwind = self.iv_tailwind_score
+        capped_tailwind = None if raw_tailwind is None else float(np.clip(
             raw_tailwind,
             -L3_IV_TAILWIND_SCORE_CAP,
             L3_IV_TAILWIND_SCORE_CAP,
@@ -128,14 +162,17 @@ class ForwardVarianceResult:
         model_risk_flags = self._model_risk_flags()
         return {
             'ticker':                         self.ticker,
-            'l3_forward_realised_vol':        round(self.forward_realised_vol, 4),
-            'l3_vol_forecast_conf':           round(self.vol_forecast_confidence, 1),
-            'l3_expected_move_1_5d':          round(self.expected_move_1_5d, 2),
-            'l3_expected_move_6_10d':         round(self.expected_move_6_10d, 2),
-            'l3_expected_move_11_20d':        round(self.expected_move_11_20d, 2),
+            'l3_forward_realised_vol':        _round_or_none(self.forward_realised_vol, 4),
+            'l3_forecast_state':              self.forecast_state,
+            'l3_vol_forecast_conf':           _round_or_none(self.vol_forecast_confidence, 1),
+            'l3_expected_move_1_5d':          _round_or_none(self.expected_move_1_5d, 2),
+            'l3_expected_move_6_10d':         _round_or_none(self.expected_move_6_10d, 2),
+            'l3_expected_move_11_20d':        _round_or_none(self.expected_move_11_20d, 2),
             # Preserve raw tailwind/headwind for audit, add capped companion for scoring.
-            'l3_iv_tailwind_score':           round(raw_tailwind, 4),
-            'l3_iv_tailwind_score_capped':    round(capped_tailwind, 4),
+            # None + l3_iv_tailwind_state when IV or forecast is missing (never neutral 0).
+            'l3_iv_tailwind_score':           _round_or_none(raw_tailwind, 4),
+            'l3_iv_tailwind_score_capped':    _round_or_none(capped_tailwind, 4),
+            'l3_iv_tailwind_state':           self.iv_tailwind_state,
             'l3_jump_risk_flag':              self.jump_risk_flag,
             # FIX RC-7b: method now correctly reflects actual model used.
             # 'HAR_RV'  - Heterogeneous Autoregressive Realised Volatility (primary)
@@ -152,6 +189,8 @@ class ForwardVarianceResult:
             'l3_model_risk_flag_count':       len(model_risk_flags),
             'l3_model_risk_capital_guard':    bool(model_risk_flags),
             'l3_error':                       self.error,
+            # Display/audit only (CLAUDE.md rule 6): never an input to any value above.
+            'l3_macro_regime_display':        self.macro_regime_display,
             **budget_v2,
             'l3_expected_move_legacy_deprecated': True,
             'l3_expected_move_legacy_unit': 'PERCENT',
@@ -382,14 +421,14 @@ def _garch_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
         log.warning('[L3] GARCH(1,1) fit failed (%s: %s); no GARCH forecast', type(exc).__name__, exc)
 
     return None
-def _ewma_forecast(returns: np.ndarray) -> float:
+def _ewma_forecast(returns: np.ndarray) -> Optional[float]:
     """
     EWMA (RiskMetrics) volatility estimate.
     σ²_t = λ·σ²_{t-1} + (1-λ)·r²_{t-1}
-    Returns annualised decimal vol.
+    Returns annualised decimal vol, or None when there are too few returns (never a default).
     """
     if len(returns) < 5:
-        return 0.25  # last-resort default: 25% vol
+        return None
     var = float(np.var(returns[:10], ddof=1))  # seed
     lam = EWMA_LAMBDA
     for r in returns:
@@ -397,11 +436,11 @@ def _ewma_forecast(returns: np.ndarray) -> float:
     return _annualise(math.sqrt(max(var, 1e-10)))
 
 
-def _atr_proxy(ohlcv: pd.DataFrame) -> float:
+def _atr_proxy(ohlcv: pd.DataFrame) -> Optional[float]:
     """
     ATR-based vol proxy when only OHLCV available.
     Approximates daily vol from True Range / Close.
-    Returns annualised decimal vol.
+    Returns annualised decimal vol, or None when it cannot be computed (never a default).
     """
     try:
         high  = ohlcv['high'].values  if 'high'  in ohlcv.columns else ohlcv['High'].values
@@ -413,9 +452,12 @@ def _atr_proxy(ohlcv: pd.DataFrame) -> float:
         atr14 = np.mean(tr[-14:]) if len(tr) >= 14 else np.mean(tr)
         last_close = close[-1]
         daily_vol  = (atr14 / last_close) / 1.25  # ATR ≈ 1.25σ for lognormal
+        if not math.isfinite(float(daily_vol)) or daily_vol <= 0:
+            return None
         return _annualise(daily_vol)
-    except Exception:
-        return 0.25
+    except Exception as exc:
+        log.debug('[L3] ATR proxy unavailable (%s: %s)', type(exc).__name__, exc)
+        return None
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
@@ -423,8 +465,8 @@ def _atr_proxy(ohlcv: pd.DataFrame) -> float:
 def compute_forward_variance(
     ticker:       str,
     ohlcv:        pd.DataFrame,
-    implied_vol:  float = 0.0,    # current market IV for tailwind score (annualised decimal)
-    regime:       str   = '',     # macro regime label for confidence adjustment
+    implied_vol:  Optional[float] = None,  # current market IV (annualised decimal); None/NaN/<=0 = missing
+    regime:       str   = '',     # macro regime label: recorded for display only, never used in a value
 ) -> ForwardVarianceResult:
     """
     Main entry point. Accepts OHLCV DataFrame, returns ForwardVarianceResult.
@@ -433,21 +475,30 @@ def compute_forward_variance(
     Sorted oldest-first.
 
     implied_vol: pass the current ATM IV from options intelligence (annualised decimal).
-    If 0, iv_tailwind_score will be 0 (neutral).
+    If missing (None, NaN or <= 0), iv_tailwind_score is None with iv_tailwind_state='IV_MISSING'.
+    No usable price history gives forward_realised_vol=None with an explicit forecast_state.
     """
+    regime_display = '' if regime is None else str(regime)
+
+    def _no_forecast(state: str, error: str, n_bars: int = 0) -> ForwardVarianceResult:
+        return ForwardVarianceResult(
+            ticker=ticker, forward_realised_vol=None,
+            vol_forecast_confidence=None,
+            expected_move_1_5d=None, expected_move_6_10d=None,
+            expected_move_11_20d=None, iv_tailwind_score=None,
+            jump_risk_flag=False, method=METHOD_NO_FORECAST,
+            n_bars_used=n_bars, error=error, forecast_state=state,
+            macro_regime_display=regime_display,
+        )
+
     close_col = 'close' if 'close' in ohlcv.columns else 'Close'
 
     if ohlcv.empty or close_col not in ohlcv.columns:
-        return ForwardVarianceResult(
-            ticker=ticker, forward_realised_vol=0.25,
-            vol_forecast_confidence=0.0,
-            expected_move_1_5d=0.0, expected_move_6_10d=0.0,
-            expected_move_11_20d=0.0, iv_tailwind_score=0.0,
-            jump_risk_flag=False, method='ATR_PROXY',
-            error='empty_or_no_close_column',
-        )
+        return _no_forecast(FORECAST_MISSING_PRICES, 'empty_or_no_close_column')
 
     prices  = ohlcv[close_col].dropna()
+    if len(prices) < 2:
+        return _no_forecast(FORECAST_MISSING_PRICES, 'fewer_than_two_closes')
     returns = _log_returns(prices)
     n_bars  = len(returns)
 
@@ -491,15 +542,12 @@ def compute_forward_variance(
         method  = 'ATR_PROXY'
         ann_vol = _atr_proxy(ohlcv)
 
-    # ── Regime adjustment ──────────────────────────────────────────────────────
-    # In RISK_OFF regimes, realised vol tends to be 20-30% higher than model predicts.
-    # Apply a conservative +10% buffer so RIEG does not overstate edge in bear markets.
-    regime_upper = str(regime).upper()
-    if 'RISK_OFF' in regime_upper or 'BEAR' in regime_upper:
-        ann_vol = min(ann_vol * 1.10, VOL_CAP)
-    elif 'TRANSITIONAL' in regime_upper:
-        ann_vol = min(ann_vol * 1.05, VOL_CAP)
+    if ann_vol is None or not math.isfinite(float(ann_vol)):
+        return _no_forecast(FORECAST_UNAVAILABLE, f'{method.lower()}_unavailable', n_bars)
 
+    # No macro-regime adjustment: the former x1.10 (RISK_OFF/BEAR) and x1.05 (TRANSITIONAL)
+    # multipliers let a macro label change the forecast, against CLAUDE.md rule 6 (removed
+    # 17 Sep 2026, tests/test_layer3_volatility_integrity.py V1).
     ann_vol = float(np.clip(ann_vol, VOL_FLOOR, VOL_CAP))
 
     # ── Expected moves ─────────────────────────────────────────────────────────
@@ -512,7 +560,12 @@ def compute_forward_variance(
     # Negative = market IV < forecast realised vol = options CHEAP (tailwind)
     # Named "tailwind" from the long-option buyer's perspective:
     #   negative value means you are buying cheap → tailwind
-    iv_tailwind = float(implied_vol - ann_vol) if implied_vol > 0 else 0.0
+    try:
+        iv_value = None if implied_vol is None else float(implied_vol)
+    except (TypeError, ValueError):
+        iv_value = None
+    iv_present = iv_value is not None and math.isfinite(iv_value) and iv_value > 0
+    iv_tailwind = float(iv_value - ann_vol) if iv_present else None
 
     # ── Jump risk ──────────────────────────────────────────────────────────────
     jump_flag = _jump_risk(returns) if n_bars >= JUMP_LOOKBACK_LONG else False
@@ -520,10 +573,7 @@ def compute_forward_variance(
     # ── Confidence ────────────────────────────────────────────────────────────
     stab  = _vol_stability(returns)
     conf  = _confidence_score(n_bars, stab, method)
-
-    # Penalise confidence in RISK_OFF: vol regime is less predictable
-    if 'RISK_OFF' in regime_upper:
-        conf = max(0.0, conf - 10.0)
+    # No macro-regime confidence penalty (rule 6; removed 17 Sep 2026).
 
     return ForwardVarianceResult(
         ticker                  = ticker,
@@ -539,4 +589,6 @@ def compute_forward_variance(
         garch_alpha             = garch_alpha,
         garch_beta              = garch_beta,
         n_bars_used             = n_bars,
+        forecast_state          = FORECAST_OK,
+        macro_regime_display    = regime_display,
     )

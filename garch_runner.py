@@ -269,30 +269,36 @@ def _audit_garch_result(row_dict: dict) -> dict:
 
 # ── Per-ticker worker (called by ThreadPoolExecutor) ──────────────────────────
 
+#: Status labels say which model actually produced the forecast (R6). HAR_RV is never
+#: reported as GARCH; anything that produced no forecast is FAIL (fix 17 Sep 2026,
+#: tests/test_layer3_volatility_integrity.py V4).
+FORECAST_METHOD_LABELS = ('HAR_RV', 'GARCH', 'EWMA_FALLBACK', 'ATR_PROXY')
+STATUS_FAIL = 'FAIL'
+STATUS_LABELS = FORECAST_METHOD_LABELS + (STATUS_FAIL,)
+
+
+def _format_status_counts(counts: Dict[str, int]) -> str:
+    return ' '.join(f'{label}={counts.get(label, 0)}' for label in STATUS_LABELS)
+
+
 def _process_one_ticker(args: tuple) -> tuple:
-    """Process a single ticker. Returns (row_dict_or_None, status_str)."""
+    """Process a single ticker. Returns (row_dict_or_None, status) where status is the
+    model that produced the forecast (HAR_RV / GARCH / EWMA_FALLBACK / ATR_PROXY) or FAIL."""
     ticker, iv, regime = args
     try:
         ohlcv = _fetch_ohlcv(ticker, PRICE_BARS)
         time.sleep(RATE_SLEEP)
         if ohlcv is None or ohlcv.empty:
             log.debug(f'[{ticker}] No price data — skipping')
-            return None, 'fail'
+            return None, STATUS_FAIL
         result   = compute_forward_variance(ticker, ohlcv, implied_vol=iv, regime=regime)
         row_dict = _audit_garch_result(result.to_dict())
         method   = row_dict.get('l3_method', '')
-        if method in ('HAR_RV', 'GARCH'):
-            status = 'ok'
-        elif method in ('EWMA_FALLBACK', 'ATR_PROXY'):
-            status = 'warn'
-        elif result.error:
-            status = 'fail'
-        else:
-            status = 'warn'
+        status   = method if method in FORECAST_METHOD_LABELS else STATUS_FAIL
         return row_dict, status
     except Exception as e:
         log.warning(f'[{ticker}] Unexpected error: {e}')
-        return None, 'fail'
+        return None, STATUS_FAIL
 
 
 # ── Main batch runner ──────────────────────────────────────────────────────────
@@ -327,14 +333,16 @@ def run_garch_batch(
     # Load supporting data
     regime = _load_regime(BASE_DIR)
     iv_map = _build_iv_map(run_id, RUNS_DIR)
-    log.info(f'[GARCH] Regime={regime} | IV map: {len(iv_map)} tickers')
+    log.info(f'[GARCH] Regime={regime} (display only) | IV map: {len(iv_map)} tickers')
 
     # Batch process — 2 workers (each sleeps RATE_SLEEP between Polygon calls)
     results = []
-    ok = warn = fail = 0
+    counts: Dict[str, int] = {label: 0 for label in STATUS_LABELS}
 
     log.info('[GARCH] Running with 2 workers (ThreadPoolExecutor)')
-    worker_args = [(t, iv_map.get(t, 0.0), regime) for t in tickers]
+    # Missing IV is passed as None (explicit IV_MISSING in layer 3), never 0.0.
+    # The regime is passed for display only; layer 3 never uses it in a value.
+    worker_args = [(t, iv_map.get(t), regime) for t in tickers]
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         for i, (row_dict, status) in enumerate(
@@ -342,14 +350,9 @@ def run_garch_batch(
         ):
             if row_dict is not None:
                 results.append(row_dict)
-            if status == 'ok':
-                ok += 1
-            elif status == 'warn':
-                warn += 1
-            else:
-                fail += 1
+            counts[status if status in counts else STATUS_FAIL] += 1
             if i % 50 == 0:
-                log.info(f'[GARCH] Progress: {i}/{len(tickers)} | OK={ok} EWMA={warn} FAIL={fail}')
+                log.info(f'[GARCH] Progress: {i}/{len(tickers)} | {_format_status_counts(counts)}')
 
     if not results:
         log.error('[GARCH] No results produced — check Polygon API key and data access')
@@ -360,7 +363,7 @@ def run_garch_batch(
 
     log.info(
         f'[GARCH] Complete: {len(results)} tickers | '
-        f'GARCH={ok} EWMA={warn} FAIL={fail} | '
+        f'{_format_status_counts(counts)} | '
         f'Output: {out_path}'
     )
     return out_path

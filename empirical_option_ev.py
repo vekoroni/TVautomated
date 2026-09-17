@@ -111,6 +111,17 @@ def _null_result(quality_flag: str, horizon_used: Optional[str] = None, n_obs: O
     return out
 
 
+def _finite_or_none(value) -> Optional[float]:
+    """Float value, or None when missing, blank, non-numeric or non-finite (NaN is missing)."""
+    if value is None or value == "":
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) else None
+
+
 def _select_horizon(get) -> Optional[str]:
     """
     Map the actuarial layer's preferred horizon to the 5d/10d/20d percentile
@@ -195,11 +206,10 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
 
     live_iv = g("live_iv", "contract_iv")
     forecast_vol = g("forecast_vol", "l3_forward_realised_vol")
-    try:
-        live_iv_f = float(live_iv) if live_iv is not None else None
-        forecast_vol_f = float(forecast_vol) if forecast_vol is not None else None
-    except (TypeError, ValueError):
-        live_iv_f = forecast_vol_f = None
+    # A missing Layer 3 forecast (None / "" / NaN, e.g. MISSING_PRICE_HISTORY) leaves the
+    # vol-divergence gate not evaluated; it is never compared as a number.
+    live_iv_f = _finite_or_none(live_iv)
+    forecast_vol_f = _finite_or_none(forecast_vol)
     if live_iv_f and forecast_vol_f is not None and (forecast_vol_f / live_iv_f) >= 2.0:
         return _null_result(QUALITY_VOL_DIVERGENCE)
 

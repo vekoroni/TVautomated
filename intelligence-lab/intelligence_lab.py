@@ -968,6 +968,40 @@ def _normalise_macro(m):
     }
 
 # ─── PRIORITY SCORING (pipeline-native fields) ──────────────────────────────
+def _optional_tailwind(value):
+    """Layer 3 IV tailwind as float, or None when missing / blank / NaN (never neutral 0)."""
+    try:
+        s = str(value if value is not None else "").strip()
+        if s in ("", "None", "nan", "NaN", "N/A"):
+            return None
+        v = float(s)
+        return v if math.isfinite(v) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _garch_stats(garch_rows):
+    """Layer 3 summary. Missing tailwinds are counted as missing, not fair; methods are
+    counted by the model that actually ran (tests/test_layer3_volatility_integrity.py C4)."""
+    tailwinds = [_optional_tailwind(r.get("l3_iv_tailwind_score")) for r in garch_rows]
+    present = [t for t in tailwinds if t is not None]
+    def _method_count(name):
+        return sum(1 for r in garch_rows if r.get("l3_method", "") == name)
+    return {
+        "count":               len(garch_rows),
+        "cheap_vol":           sum(1 for t in present if t < -0.03),
+        "fair_vol":            sum(1 for t in present if -0.03 <= t <= 0.05),
+        "expensive_vol":       sum(1 for t in present if t > 0.05),
+        "iv_tailwind_missing": len(tailwinds) - len(present),
+        "jump_risk":           sum(1 for r in garch_rows if str(r.get("l3_jump_risk_flag","")).lower()=="true"),
+        "har_rv_count":        _method_count("HAR_RV"),
+        "garch_count":         _method_count("GARCH"),
+        "ewma_count":          _method_count("EWMA_FALLBACK"),
+        "atr_proxy_count":     _method_count("ATR_PROXY"),
+        "no_forecast_count":   _method_count("NO_FORECAST"),
+    }
+
+
 def _compute_priority_score(sig):
     """
     Priority score built entirely from new pipeline fields.
@@ -1007,7 +1041,7 @@ def _compute_priority_score(sig):
     opt_s  = _f("options_score") or _f("opt__options_score")
     wbs_g  = _s("wbs__wbs_grade") or _s("wbs__grade")
     wbs_s  = _f("wbs__wbs") or _f("wbs__wbs_score")
-    tail   = _f("garch__l3_iv_tailwind_score")
+    tail   = _optional_tailwind(sig.get("garch__l3_iv_tailwind_score"))
 
     # Verdict dimension
     w_ov = {"EXECUTE": 1.0, "ARMED": 0.35, "STAND_DOWN": 0.0,
@@ -1035,8 +1069,13 @@ def _compute_priority_score(sig):
     wbs_mult = {"PROBABLE": 1.0, "POSSIBLE": 0.6, "UNLIKELY": 0.2}.get(wbs_g, 0)
     w_wbs = (wbs_s / 100) * wbs_mult * 0.05
 
-    # GARCH vol state — cheap vol = buying edge
-    w_gar = (1.0 if tail < -0.03 else 0.5 if abs(tail) <= 0.03 else 0.1) * 0.05
+    # GARCH vol state — cheap vol = buying edge. Missing tailwind (IV_MISSING /
+    # FORECAST_MISSING) earns nothing, like every other missing dimension here; it is
+    # never scored as the neutral 0.5 (R1).
+    if tail is None:
+        w_gar = 0.0
+    else:
+        w_gar = (1.0 if tail < -0.03 else 0.5 if abs(tail) <= 0.03 else 0.1) * 0.05
 
     raw = (w_ov + w_cv + w_ev + w_eil + w_ev2 + w_rr + w_opt + w_wbs + w_gar) * 100
     return round(min(raw, 100), 1)
@@ -1219,8 +1258,8 @@ def _compute_conv_checks(sig):
 
     # 3. Underpriced vol: iv_rank < 30 or garch tailwind negative (cheap vol)
     iv_r = _f("iv_rank") or _f("opt__iv_rank")
-    tail = _f("garch__l3_iv_tailwind_score")
-    c_vol = "Y" if (0 < iv_r < 30) or tail < -0.03 else "N"
+    tail = _optional_tailwind(sig.get("garch__l3_iv_tailwind_score"))
+    c_vol = "Y" if (0 < iv_r < 30) or (tail is not None and tail < -0.03) else "N"
 
     # 4. Gamma proximity: within 7% of call/put wall
     price = _f("underlying_price") or _f("current_price") or _f("signal_price")
@@ -1404,19 +1443,7 @@ def _load_run(run_id, force_reload=False):
     result["garch_forecasts"] = garch_rows
     print(f"  ✓ GARCH: {len(garch_rows)} rows")
 
-    if garch_rows:
-        tailwinds = [float(r.get("l3_iv_tailwind_score",0) or 0) for r in garch_rows]
-        result["garch_stats"] = {
-            "count":         len(garch_rows),
-            "cheap_vol":     sum(1 for t in tailwinds if t < -0.03),
-            "fair_vol":      sum(1 for t in tailwinds if -0.03 <= t <= 0.05),
-            "expensive_vol": sum(1 for t in tailwinds if t > 0.05),
-            "jump_risk":     sum(1 for r in garch_rows if str(r.get("l3_jump_risk_flag","")).lower()=="true"),
-            "garch_count":   sum(1 for r in garch_rows if r.get("l3_method","")=="GARCH"),
-            "ewma_count":    sum(1 for r in garch_rows if r.get("l3_method","")=="EWMA_FALLBACK"),
-        }
-    else:
-        result["garch_stats"] = {}
+    result["garch_stats"] = _garch_stats(garch_rows) if garch_rows else {}
 
     # ── 8. MACRO ─────────────────────────────────────────────────────────────
     ci_path = _glob_first(run_dir / "core_intel", f"core_intel_dossiers_{run_id}.json")
