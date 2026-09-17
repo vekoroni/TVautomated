@@ -1033,6 +1033,147 @@ def _withhold_original_contract_evidence(
     row["contract_selection_reason"] = alignment_flag
 
 
+CONTRACT_SOURCE_CHAIN_SESSION_LOOKUP = "CANONICAL_CHAIN_SESSION_LOOKUP"
+CHAIN_QUOTE_NOT_TWO_SIDED = "CHAIN_QUOTE_NOT_TWO_SIDED"
+#: Session fields a Lab row carries for its completed evidence session.
+EVIDENCE_SESSION_FIELDS = ("evidence_session_date", "completed_session", "session_date")
+
+
+def _apply_reselected_chain_quote(
+    row: Dict[str, Any],
+    sig: Dict[str, Any],
+    *,
+    ticker: str,
+    written_contract: str,
+    direction: Any,
+    lookup: Any,
+    provenance: Dict[str, str],
+) -> None:
+    """Establish a reselected contract's quote from the stored session chain.
+
+    ``lookup`` is a reuse-only adapter (``canonical_data.session_chain_quote_lookup``);
+    it never fetches. Only a stored two-sided quote (bid > 0 and ask > 0) is
+    written. Liquidity is classified by the lifecycle owner with the inputs the
+    normal EOD Options path uses (routed hold -> DTE requirement, moneyness from
+    spot/strike/delta, session-aligned quote without a provider quote age).
+    """
+    session = first(sig, *EVIDENCE_SESSION_FIELDS)
+    result = lookup(ticker=ticker, symbol=written_contract, session_date=session)
+    quote = result.quote if getattr(result, "state", "") == "CHAIN_LOOKUP_HIT" else None
+    if quote is None:
+        row["lab_coherence_flags"] = _append_flag(
+            row.get("lab_coherence_flags"), _s(getattr(result, "state", "")) or "CHAIN_LOOKUP_MISS"
+        )
+        return
+    bid = _f(quote.get("bid"), None)
+    ask = _f(quote.get("ask"), None)
+    if bid is None or ask is None or bid <= 0 or ask <= 0:
+        row["lab_coherence_flags"] = _append_flag(row.get("lab_coherence_flags"), CHAIN_QUOTE_NOT_TWO_SIDED)
+        return
+
+    from domain.long_option_execution import evaluate_execution_viability
+    from domain.option_contract_liquidity import (
+        calculate_dte_requirement,
+        classify_current_executability,
+        classify_moneyness,
+    )
+
+    mid = _f(quote.get("mid"), None)
+    if mid is None or mid <= 0:
+        mid = round((bid + ask) / 2.0, 4)
+    spread = resolve_spread({"bid": bid, "ask": ask})
+    timestamp = _s(quote.get("quote_timestamp_utc"))
+    dte = _f(quote.get("dte"), None)
+    delta = _f(quote.get("delta"), None)
+    row.update({
+        "contract_bid": bid,
+        "contract_ask": ask,
+        "contract_mid": mid,
+        "premium_mid": mid,
+        "spread_fraction_mid": spread.spread_fraction_mid,
+        "spread_pct_of_mid": spread.spread_pct_of_mid,
+        "spread_pct": spread.spread_pct_of_mid,
+        "spread_unit": "PCT_OF_MID" if spread.spread_pct_of_mid is not None else "",
+        "contract_bid_size": quote.get("bid_size"),
+        "contract_ask_size": quote.get("ask_size"),
+        "contract_quote_quality": _s(quote.get("quote_quality")),
+        "selected_quote_timestamp_utc": timestamp,
+        "quote_as_of": timestamp,
+        "quote_freshness": "SESSION_ALIGNED",
+        "dte": dte if dte is not None else "",
+        "contract_delta": delta if delta is not None else "",
+        "contract_gamma": _f(quote.get("gamma"), ""),
+        "contract_theta": _f(quote.get("theta"), ""),
+        "contract_vega": _f(quote.get("vega"), ""),
+        "contract_iv": _f(quote.get("implied_vol", quote.get("iv")), ""),
+        "contract_oi": _f(quote.get("open_interest"), ""),
+        "contract_volume": _f(quote.get("volume"), ""),
+        "contract_source": CONTRACT_SOURCE_CHAIN_SESSION_LOOKUP,
+        "selected_quote_dataset_id": _s(getattr(result, "dataset_id", "")),
+    })
+    flags = [part for part in _s(row.get("lab_coherence_flags")).split("|") if part]
+    if CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG in flags:
+        flags.remove(CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG)
+    row["lab_coherence_flags"] = "|".join(flags)
+
+    # Execution viability: the same owner and hydrated shape as the EOD engine.
+    row.update(evaluate_execution_viability(row, {
+        "selected_contract_symbol": written_contract,
+        "selected_structure": "LONG_SINGLE",
+        "selected_structure_hydration_status": "COMPLETE",
+        "selected_quote_timestamp_utc": timestamp,
+        "selected_long_leg": {"symbol": written_contract, "bid": bid, "ask": ask},
+    }))
+
+    side = _side_from_value(direction)
+    spot = _f(quote.get("underlying_price"), None) or _f(
+        first_price(sig, "signal_price", "underlying_price"), None
+    )
+    strike = _f(quote.get("strike"), None)
+    hold = _f(first(sig, "planned_hold_sessions", "remaining_hold_sessions"), None)
+    required = {"side": side if side in {"CALL", "PUT"} else None, "spot": spot,
+                "strike": strike, "dte": dte, "remaining_hold_sessions": hold}
+    missing = [key for key, value in required.items() if value is None]
+    if missing:
+        row.update({
+            "liquidity_state": "LIFECYCLE_DATA_INCOMPLETE",
+            "recovery_disposition": "CONTRACT_REPAIR",
+            "executable_now": False,
+        })
+    else:
+        try:
+            requirement = calculate_dte_requirement(hold)
+            moneyness = classify_moneyness(side, spot=spot, strike=strike, delta=delta)
+            liquidity = classify_current_executability(
+                bid=bid, ask=ask, bid_size=quote.get("bid_size"), ask_size=quote.get("ask_size"),
+                quote_age_seconds=None, dte=dte,
+                minimum_required_dte=requirement["minimum_required_dte"],
+                moneyness_treatment=moneyness["moneyness_treatment"], listed_market=True,
+            )
+        except (KeyError, TypeError, ValueError):
+            row.update({
+                "liquidity_state": "LIFECYCLE_DATA_INVALID",
+                "recovery_disposition": "CONTRACT_REPAIR",
+                "executable_now": False,
+            })
+        else:
+            row.update({
+                "liquidity_state": liquidity["liquidity_state"],
+                "recovery_disposition": liquidity["recovery_disposition"],
+                "executable_now": liquidity["executable_now"],
+                "moneyness_state": moneyness["moneyness_state"],
+                "delta_band": moneyness["delta_band"],
+                "minimum_required_dte": requirement["minimum_required_dte"],
+                "dte_buffer_sessions": round(dte - float(requirement["minimum_required_dte"]), 2),
+            })
+    for field in (
+        "contract_bid", "contract_ask", "contract_mid", "premium_mid", "spread_pct",
+        "contract_delta", "contract_oi", "selected_quote_timestamp_utc", "dte",
+        "contract_source", "selected_quote_dataset_id", "liquidity_state",
+    ):
+        provenance[field] = "canonical_chain_session_lookup:read_only"
+
+
 def _contract_for_direction(sig: Dict[str, Any], direction: Any) -> tuple[str, str]:
     side = _side_from_value(direction)
     keys = CONTRACT_SYMBOL_KEYS
@@ -2612,7 +2753,13 @@ def _trade_idea_id(row: Dict[str, Any], run_id: str) -> str:
     return f"{run_id}:{ticker}:{direction}:{instrument}:{strike}:{expiry}"
 
 
-def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[str, Any]:
+def opportunity_book_row(
+    sig: Dict[str, Any],
+    run_id: str,
+    rank: int,
+    *,
+    contract_quote_lookup: Any = None,
+) -> Dict[str, Any]:
     canonical_direction = first(sig, "final_direction", "canonical_direction", "resolved_direction", "direction", "options_direction", "selected_contract_side", "option_direction")
     aligned_instrument = _instrument_for_direction(
         canonical_direction,
@@ -3212,6 +3359,15 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
             alignment_flag=contract_alignment_flag,
         )
         provenance["contract_evidence"] = "governed_materializer:original_contract_evidence_withheld"
+        if contract_reselected and contract_quote_lookup is not None:
+            _apply_reselected_chain_quote(
+                row, sig,
+                ticker=_s(sig.get("ticker")).upper(),
+                written_contract=aligned_contract,
+                direction=canonical_direction,
+                lookup=contract_quote_lookup,
+                provenance=provenance,
+            )
     _enforce_economics_identity(row, provenance)
     if contract_side_conflict:
         _enforce_option_expression_removed(row, provenance)
@@ -3287,6 +3443,8 @@ def build_final_opportunity_book(
     run_id: str,
     signals: Iterable[Dict[str, Any]],
     run_manifest: Optional[Dict[str, Any]] = None,
+    *,
+    contract_quote_lookup: Any = None,
 ) -> List[Dict[str, Any]]:
     manifest = run_manifest or {}
     enriched = [dict(sig) for sig in signals]
@@ -3303,7 +3461,10 @@ def build_final_opportunity_book(
             _s(row.get("ticker")),
         )
     )
-    return [opportunity_book_row(sig, run_id, rank) for rank, sig in enumerate(enriched, 1)]
+    return [
+        opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup)
+        for rank, sig in enumerate(enriched, 1)
+    ]
 
 
 
@@ -3819,8 +3980,20 @@ def write_final_opportunity_book(
     runs_dir: Path | str,
     *,
     sync_interpreter: bool = True,
+    contract_quote_lookup: Any = None,
 ) -> Dict[str, Any]:
-    rows = build_final_opportunity_book(run_id, signals, run_manifest)
+    if contract_quote_lookup is None:
+        # Reuse-only lookup of a reselected contract in the run's stored
+        # completed-session chain (read-only registry; never a provider call).
+        from canonical_data.session_chain_quote_lookup import StoredSessionChainQuoteLookup
+
+        contract_quote_lookup = StoredSessionChainQuoteLookup(
+            Path(runs_dir).parent.parent / "canonical" / "control_plane.sqlite",
+            run_id=run_id,
+        )
+    rows = build_final_opportunity_book(
+        run_id, signals, run_manifest, contract_quote_lookup=contract_quote_lookup
+    )
     run_root = Path(runs_dir) / run_id
     if (run_root / "morning_validation" / f"morning_validated_trades_{run_id}.csv").exists():
         input_source = "morning_validated_trades"
