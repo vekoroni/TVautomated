@@ -75,6 +75,7 @@ QUALITY_UNKNOWN_TIER = "UNKNOWN_MATCH_TIER"
 QUALITY_VOL_DIVERGENCE = "VOL_DIVERGENCE_BLOCK"
 QUALITY_BAD_INPUT = "BAD_INPUT"
 QUALITY_VOL_SCALE_UNAVAILABLE = "VOL_SCALE_UNAVAILABLE"
+QUALITY_NO_SELECTED_CONTRACT = "NO_SELECTED_CONTRACT"
 
 # Item 2 (ACK 17 Sep 2026): reality calibration. The actuarial percentiles are pooled by state, so they
 # are re-scaled to the ticker's own volatility forecast (p10-p90 width), and exits pay the half-spread.
@@ -124,6 +125,33 @@ def scaled_percentile_returns(returns, forecast_vol: float, sessions: int):
     target_width = 2.0 * Z_P90 * forecast_vol * math.sqrt(sessions / SESSIONS_PER_YEAR)
     scale = target_width / pooled_width
     return [math.expm1(median + (l - median) * scale) for l in logs], scale
+
+
+OPTIONS_ROW_FIELD_MAP = (
+    ("contract_bid", "bid"), ("contract_ask", "ask"), ("contract_iv", "live_iv"),
+    ("underlying_price", "live_spot"), ("entry_spot", "live_spot"), ("stock_price", "live_spot"),
+    ("strike", "strike"), ("contract_dte", "dte"), ("dte", "dte"), ("final_direction", "direction"),
+    ("layer2__recommended_hold_days", "hold_days"), ("layer2__preferred_horizon", "preferred_horizon"),
+    ("layer2__n_obs_5d", "n_obs_5d"), ("layer2__n_obs_10d", "n_obs_10d"), ("layer2__n_obs_20d", "n_obs_20d"),
+    ("l3_forward_realised_vol", "forecast_vol"),
+)
+
+
+def candidate_from_options_row(row: dict) -> dict:
+    """Map an evening options-output row onto this module's candidate fields (first present value wins)."""
+    def present(value) -> bool:
+        return value is not None and value != "" and not (isinstance(value, float) and math.isnan(value))
+
+    candidate = {}
+    for key, value in row.items():
+        if key.startswith("layer2__outcomes__") and present(value):
+            candidate[key[len("layer2__outcomes__"):]] = value
+    for source, target in OPTIONS_ROW_FIELD_MAP:
+        if target not in candidate and present(row.get(source)):
+            candidate[target] = row[source]
+    if "state_match_method" not in candidate and present(row.get("layer2__state_match_method")):
+        candidate["state_match_method"] = row["layer2__state_match_method"]
+    return candidate
 
 
 def _null_result(quality_flag: str, horizon_used: Optional[str] = None, n_obs: Optional[int] = None) -> dict:

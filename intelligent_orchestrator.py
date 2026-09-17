@@ -2156,6 +2156,65 @@ def assert_finalise_preconditions(
         )
 
 
+def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
+    """Value each selected contract with empirical_option_ev in SHADOW (item 2, ACK 17 Sep 2026).
+
+    Writes emp_* columns into the evening options output after the Layer 3 merge (the module needs the
+    ticker volatility forecast). NO AUTHORITY: nothing may branch on emp_*; the columns exist so the
+    outcome scorer can test the valuation on forward sessions. NON-CRITICAL: every failure is a named
+    status in diagnostics/empirical_option_ev_<run_id>.json.
+    """
+    summary: dict[str, object] = {
+        "run_id": run_id, "stage": "EMPIRICAL_OPTION_EV_SHADOW", "authority": "NO_AUTHORITY",
+        "can_grant_capital": False, "status": "NOT_RUN", "reason": "",
+        "started_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+    def _publish() -> dict[str, object]:
+        try:
+            destination = cfg.RUNS_DIR / str(run_id) / "diagnostics" / f"empirical_option_ev_{run_id}.json"
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+            summary["artefact"] = str(destination)
+        except Exception as write_error:
+            logger.warning("Empirical option EV summary not written (non-critical): %s", write_error)
+        return summary
+
+    options_path = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+    if not options_path.exists():
+        summary["status"] = "SKIPPED"
+        summary["reason"] = "OPTIONS_OUTPUT_NOT_FOUND"
+        return _publish()
+    try:
+        import pandas as pd
+        from empirical_option_ev import (
+            EMPTY_COLUMNS, QUALITY_NO_SELECTED_CONTRACT, candidate_from_options_row, compute_empirical_option_ev,
+        )
+        options = pd.read_csv(options_path, low_memory=False)
+        options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS], errors="ignore")
+        symbol_column = "contract_occ_symbol" if "contract_occ_symbol" in options.columns else "contract_symbol"
+        results = []
+        for row in options.to_dict("records"):
+            symbol = row.get(symbol_column)
+            if not isinstance(symbol, str) or not symbol.strip():
+                result = {column: None for column in EMPTY_COLUMNS}
+                result["emp_quality_flag"] = QUALITY_NO_SELECTED_CONTRACT
+            else:
+                result = compute_empirical_option_ev(candidate_from_options_row(row))
+            results.append(result)
+        emp = pd.DataFrame(results, columns=list(EMPTY_COLUMNS), index=options.index)
+        pd.concat([options, emp], axis=1).to_csv(options_path, index=False)
+        summary["status"] = "COMPLETED"
+        summary["rows"] = len(options)
+        summary["quality_flags"] = emp["emp_quality_flag"].value_counts().to_dict()
+        logger.info("✅ Empirical option EV (shadow): %s", summary["quality_flags"])
+    except Exception as ev_error:
+        summary["status"] = "FAILED"
+        summary["reason"] = f"{type(ev_error).__name__}: {ev_error}"
+        logger.warning("⚠️  Empirical option EV shadow stage failed (non-critical): %s", ev_error)
+    return _publish()
+
+
 C12_OUTCOME_SCORING_TIMEOUT_SECONDS = 1800   # full scorer run measured at ~2 minutes on 17 Sep 2026
 
 
@@ -5803,6 +5862,7 @@ def evening_workflow(
         # eil_enriched — EVEngineV2 then reads l3_iv_tailwind_score correctly.
         run_garch_layer(canonical_run_id)              # Phase 10a
         merge_garch_into_enriched(canonical_run_id)   # Phase 10b — now patches eil_enriched too
+        run_empirical_option_ev_shadow_stage(canonical_run_id)   # item 2: shadow valuation, no authority
 
         # DOI consumes the v2 cumulative-vol evidence produced above. It is
         # advisory and cannot change EIL population or capital authority.
