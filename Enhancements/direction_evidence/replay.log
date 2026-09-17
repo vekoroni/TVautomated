@@ -1,0 +1,14 @@
+tickers eligible 1896, sampled 600
+50/600 tickers, 6319 rows, 217s
+100/600 tickers, 13030 rows, 408s
+150/600 tickers, 20012 rows, 593s
+200/600 tickers, 26658 rows, 764s
+250/600 tickers, 34200 rows, 971s
+300/600 tickers, 40336 rows, 1132s
+350/600 tickers, 47596 rows, 1369s
+400/600 tickers, 53826 rows, 1509s
+450/600 tickers, 60178 rows, 1727s
+500/600 tickers, 66540 rows, 1921s
+550/600 tickers, 74437 rows, 2143s
+600/600 tickers, 82327 rows, 2306s
+done: 82327 rows, 983 sessions, 584 tickers, 2309s
