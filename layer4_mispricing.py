@@ -56,19 +56,36 @@ EDGE_GAP_MODERATE         =  0.05   # 5%+ = moderate edge
 MISPRICING_CHEAP_FLOOR    =  60     # vol_mispricing_score >= 60 = cheap (buy signal)
 MISPRICING_EXPENSIVE_CAP  =  40     # vol_mispricing_score <  40 = expensive (avoid)
 
+# Explicit not-evaluated states: a missing Layer 3 forecast or IV is never scored as FAIR / 50
+# (R1 missing is never neutral; tests/test_layer3_volatility_integrity.py C1).
+STATE_NOT_EVALUATED_DATA_MISSING = 'NOT_EVALUATED_DATA_MISSING'
+STATE_NOT_EVALUATED_ERROR        = 'NOT_EVALUATED_ERROR'
+
+
+def _finite_positive(value) -> bool:
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(v) and v > 0
+
+
+def _r(value, digits):
+    return None if value is None else round(value, digits)
+
 
 # ── Output dataclass ───────────────────────────────────────────────────────────
 
 @dataclass
 class MispricingResult:
     ticker:                str
-    rieg:                  float   # Realised-Implied Edge Gap (signed decimal)
-    ccr:                   float   # Convexity Capture Ratio
-    vol_mispricing_score:  float   # 0-100
-    edge_gap_pct:          float   # % difference: forecast_move - breakeven_move
-    mispricing_state:      str     # CHEAP / FAIR / EXPENSIVE
-    expected_value_after_decay: float   # EV adjusted for theta drag
-    convexity_value_score: float   # standalone convexity quality 0-100
+    rieg:                  Optional[float]   # Realised-Implied Edge Gap (signed decimal); None = not evaluated
+    ccr:                   Optional[float]   # Convexity Capture Ratio
+    vol_mispricing_score:  Optional[float]   # 0-100
+    edge_gap_pct:          Optional[float]   # % difference: forecast_move - breakeven_move
+    mispricing_state:      str     # CHEAP / FAIR / EXPENSIVE / NOT_EVALUATED_*
+    expected_value_after_decay: Optional[float]   # EV adjusted for theta drag
+    convexity_value_score: Optional[float]   # standalone convexity quality 0-100
     rieg_label:            str
     ccr_label:             str
     error:                 Optional[str] = None
@@ -76,13 +93,13 @@ class MispricingResult:
     def to_dict(self) -> dict:
         return {
             'ticker':                       self.ticker,
-            'l4_rieg':                      round(self.rieg,                 4),
-            'l4_ccr':                        round(self.ccr,                  3),
-            'l4_vol_mispricing_score':       round(self.vol_mispricing_score, 1),
-            'l4_edge_gap_pct':               round(self.edge_gap_pct,         2),
+            'l4_rieg':                      _r(self.rieg,                 4),
+            'l4_ccr':                        _r(self.ccr,                  3),
+            'l4_vol_mispricing_score':       _r(self.vol_mispricing_score, 1),
+            'l4_edge_gap_pct':               _r(self.edge_gap_pct,         2),
             'l4_mispricing_state':           self.mispricing_state,
-            'l4_ev_after_decay':             round(self.expected_value_after_decay, 4),
-            'l4_convexity_value_score':      round(self.convexity_value_score, 1),
+            'l4_ev_after_decay':             _r(self.expected_value_after_decay, 4),
+            'l4_convexity_value_score':      _r(self.convexity_value_score, 1),
             'l4_rieg_label':                 self.rieg_label,
             'l4_ccr_label':                  self.ccr_label,
             'l4_error':                      self.error,
@@ -289,14 +306,16 @@ def compute_mispricing(
     breakeven_pct, expected_move_pct in % (e.g. 3.5 for 3.5%).
     """
     try:
-        if forward_realised_vol <= 0 or implied_vol <= 0:
+        if not _finite_positive(forward_realised_vol) or not _finite_positive(implied_vol):
             return MispricingResult(
-                ticker=ticker, rieg=0.0, ccr=0.0,
-                vol_mispricing_score=50.0, edge_gap_pct=0.0,
-                mispricing_state='FAIR', expected_value_after_decay=0.0,
-                convexity_value_score=50.0, rieg_label='UNKNOWN',
+                ticker=ticker, rieg=None, ccr=None,
+                vol_mispricing_score=None, edge_gap_pct=None,
+                mispricing_state=STATE_NOT_EVALUATED_DATA_MISSING, expected_value_after_decay=None,
+                convexity_value_score=None, rieg_label='UNKNOWN',
                 ccr_label='UNKNOWN', error='missing_vol_inputs',
             )
+        forward_realised_vol = float(forward_realised_vol)
+        implied_vol = float(implied_vol)
 
         rieg, rieg_label = _compute_rieg(forward_realised_vol, implied_vol)
 
@@ -347,9 +366,9 @@ def compute_mispricing(
     except Exception as e:
         log.error(f'[{ticker}] Layer 4 error: {e}')
         return MispricingResult(
-            ticker=ticker, rieg=0.0, ccr=0.0,
-            vol_mispricing_score=50.0, edge_gap_pct=0.0,
-            mispricing_state='FAIR', expected_value_after_decay=0.0,
-            convexity_value_score=50.0, rieg_label='UNKNOWN',
+            ticker=ticker, rieg=None, ccr=None,
+            vol_mispricing_score=None, edge_gap_pct=None,
+            mispricing_state=STATE_NOT_EVALUATED_ERROR, expected_value_after_decay=None,
+            convexity_value_score=None, rieg_label='UNKNOWN',
             ccr_label='UNKNOWN', error=str(e),
         )

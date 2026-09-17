@@ -459,6 +459,15 @@ def _f(row: Dict, key: str, default: float = 0.0) -> float:
         return default
 
 
+def _l3_iv_tailwind(row: Dict) -> Optional[float]:
+    """Layer 3 IV tailwind (garch__ prefix first), or None when missing / blank / NaN."""
+    for key in ('garch__l3_iv_tailwind_score', 'l3_iv_tailwind_score'):
+        value = _f(row, key, default=None)
+        if value is not None and math.isfinite(value):
+            return value
+    return None
+
+
 def _s(row: Dict, key: str, default: str = '') -> str:
     """Safe string extraction."""
     v = row.get(key, default)
@@ -1523,9 +1532,10 @@ def assemble_execution_plan(
     # Gate only fires when GARCH data is present — if missing, no penalty.
     # Conflict 7 fix: GARCH now runs in Phase 8c.5 (before SuperBrain) so
     # l3_iv_tailwind_score is populated in the signal dict at verdict time.
-    tailwind = float(_f(signal, 'garch__l3_iv_tailwind_score') or
-                     _f(signal, 'l3_iv_tailwind_score') or 0)
-    if tailwind > 0.15 and base not in ('STAND_DOWN', 'DATA_FAILURE'):
+    # Missing tailwind (IV_MISSING / FORECAST_MISSING) leaves the gate not evaluated; it is
+    # never read as 0 (R1; tests/test_layer3_volatility_integrity.py C3).
+    tailwind = _l3_iv_tailwind(signal)
+    if tailwind is not None and tailwind > 0.15 and base not in ('STAND_DOWN', 'DATA_FAILURE'):
         return (
             'EXECUTE_WITH_RISK',
             f'GATE_EXPENSIVE_VOL: HAR-RV tailwind={tailwind:+.3f} — implied vol is '
