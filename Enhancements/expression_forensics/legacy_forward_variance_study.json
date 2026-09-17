@@ -1,0 +1,19 @@
+{
+  "n": 6623,
+  "tickers": 158,
+  "methods": {
+    "HAR_RV": 6623
+  },
+  "legacy": {
+    "qlike": 0.5649685163848407,
+    "mean_abs_log": 0.3201351516519262,
+    "median_log_ratio": 0.13594798445902315,
+    "share_below_delivered": 0.33942322210478637
+  },
+  "ewma": {
+    "qlike": 0.5645338560861182,
+    "mean_abs_log": 0.3224428898954081,
+    "median_log_ratio": 0.05077383918009492,
+    "share_below_delivered": 0.44285067190095123
+  }
+}

@@ -139,7 +139,7 @@ class ForwardVarianceResult:
             'l3_jump_risk_flag':              self.jump_risk_flag,
             # FIX RC-7b: method now correctly reflects actual model used.
             # 'HAR_RV'  - Heterogeneous Autoregressive Realised Volatility (primary)
-            # 'GARCH'   - EGARCH or GARCH(1,1) fallback (arch library)
+            # 'GARCH'   - GARCH(1,1) fallback (arch library; EGARCH removed 17 Sep 2026)
             # 'EWMA_FALLBACK' - RiskMetrics EWMA (insufficient bars for HAR-RV)
             # 'ATR_PROXY'     - ATR-based estimate (< MIN_BARS_EWMA bars)
             'l3_method':                      self.method,
@@ -330,8 +330,10 @@ def _har_rv_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
 
 def _garch_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
     """
-    HAR-RV primary (always works), EGARCH fallback, GARCH(1,1) last resort.
-    HAR-RV is used first because it has no convergence or stationarity issues.
+    HAR-RV primary, GARCH(1,1) fallback; the caller falls back to EWMA when this returns None.
+    Order decided by ACK on 17 Sep 2026 from the model comparison
+    (Enhancements/expression_forensics/garch_comparison_study.json): HAR-RV QLIKE 0.511,
+    GARCH(1,1) 0.593, EGARCH as coded unsafe (QLIKE 319) and therefore removed.
     """
     # ── Primary: HAR-RV ───────────────────────────────────────────────────────
     result = _har_rv_forecast(returns, horizon)
@@ -346,45 +348,24 @@ def _garch_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
 
     r_pct = returns * 100.0
 
-    # EGARCH — no stationarity constraint
-    try:
-        am  = arch_model(r_pct, vol='EGARCH', p=1, q=1, dist='Normal', rescale=True)
-        res = am.fit(disp='off', show_warning=False, options={'maxiter': 200})
-        cv  = res.conditional_volatility
-        if cv is not None and len(cv) > 0:
-            last_pct = float(cv.iloc[-1])
-            if np.isfinite(last_pct) and last_pct > 0:
-                beta_e  = float(np.clip(res.params.get('beta[1]', 0.95), 0.0, 1.0))
-                lr_var  = float(np.std(r_pct)) ** 2
-                cur_var = last_pct ** 2
-                avg_var = max(
-                    sum(lr_var + (beta_e**h)*(cur_var-lr_var) for h in range(1, horizon+1)) / horizon,
-                    1e-8
-                )
-                return {
-                    'omega':    float(res.params.get('omega', np.nan)),
-                    'alpha':    float(res.params.get('alpha[1]', np.nan)),
-                    'beta':     beta_e,
-                    'ann_vol':  _annualise(math.sqrt(avg_var) / 100.0),
-                    'daily_var':avg_var,
-                    'last_var': cur_var,
-                    'persist':  beta_e,
-                }
-    except Exception:
-        pass
+    # arch returns ndarray attributes for ndarray input (``_log_returns`` yields an
+    # ndarray), and reports values in rescaled units when ``rescale=True`` changes the
+    # data; ``res.scale`` converts them back to percent returns. Failed fits are logged
+    # with their reason, never swallowed (fix 17 Sep 2026, tests/test_layer3_garch_fallback.py).
 
     # GARCH(1,1) — strict stationarity only
     try:
         am  = arch_model(r_pct, vol='Garch', p=1, q=1, dist='Normal', rescale=True)
         res = am.fit(disp='off', show_warning=False, options={'maxiter': 200})
-        omega = float(res.params.get('omega', np.nan))
+        scale = float(getattr(res, 'scale', 1.0) or 1.0)
+        omega = float(res.params.get('omega', np.nan)) / (scale ** 2)
         alpha = float(res.params.get('alpha[1]', np.nan))
         beta  = float(res.params.get('beta[1]',  np.nan))
         if (np.isfinite(omega) and np.isfinite(alpha) and np.isfinite(beta)
                 and alpha + beta < 1.0 and alpha >= 0 and beta >= 0 and omega > 0):
             persist  = alpha + beta
             lr_var   = omega / (1.0 - persist)
-            last_var = float(res.conditional_volatility.iloc[-1] ** 2)
+            last_var = (float(np.asarray(res.conditional_volatility, dtype=float)[-1]) / scale) ** 2
             avg_var  = max(
                 sum(lr_var + (persist**h)*(last_var-lr_var) for h in range(1, horizon+1)) / horizon,
                 1e-8
@@ -393,9 +374,12 @@ def _garch_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
                 'omega': omega, 'alpha': alpha, 'beta': beta,
                 'ann_vol': _annualise(math.sqrt(avg_var) / 100.0),
                 'daily_var': avg_var, 'last_var': last_var, 'persist': persist,
+                'method_used': 'GARCH',
             }
-    except Exception:
-        pass
+        log.warning('[L3] GARCH(1,1) fit is not stationary (alpha=%s beta=%s omega=%s); no GARCH forecast',
+                    alpha, beta, omega)
+    except Exception as exc:
+        log.warning('[L3] GARCH(1,1) fit failed (%s: %s); no GARCH forecast', type(exc).__name__, exc)
 
     return None
 def _ewma_forecast(returns: np.ndarray) -> float:
@@ -482,7 +466,7 @@ def compute_forward_variance(
 
         # FIX RC-7b (2026-04-16): Detect which model actually ran via 'method_used' key.
         # HAR-RV (primary path) stores 'har_b1'/'har_b5_b22' — NOT GARCH alpha/beta.
-        # Only EGARCH and GARCH(1,1) fallbacks store true 'alpha'/'beta' parameters
+        # Only the GARCH(1,1) fallback stores true 'alpha'/'beta' parameters
         # that satisfy GARCH stationarity constraints (alpha>=0, beta>=0, sum<1).
         # Previously ALL paths stored into result['alpha']/result['beta'], causing
         # HAR-RV OLS coefficients to appear in l3_garch_alpha/l3_garch_beta with
@@ -494,7 +478,7 @@ def compute_forward_variance(
             garch_alpha = None   # HAR-RV b1 is NOT a GARCH alpha — do not store
             garch_beta  = None   # HAR-RV b5+b22 is NOT a GARCH beta — do not store
         else:
-            # EGARCH or GARCH(1,1): store real stationarity parameters
+            # GARCH(1,1): store real stationarity parameters
             method      = 'GARCH'
             garch_alpha = garch_res.get('alpha')
             garch_beta  = garch_res.get('beta')

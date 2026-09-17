@@ -1,0 +1,73 @@
+{
+  "evaluations": 6640,
+  "tickers": 158,
+  "common_evaluations": 6199,
+  "fit_stats": {
+    "EGARCH_converged": 6100,
+    "GARCH_non_stationary": 441,
+    "GARCH_converged": 6199,
+    "EGARCH_not_converged": 540,
+    "EGARCH_rescaled": 5,
+    "GARCH_rescaled": 5
+  },
+  "legacy_arch_model_used": {
+    "NONE": 6640
+  },
+  "availability": {
+    "HAR_RV": 1.0,
+    "EGARCH": 1.0,
+    "GARCH11": 0.9335843373493976,
+    "EWMA": 1.0,
+    "LEGACY_ARCH": 0.0
+  },
+  "models": {
+    "HAR_RV": {
+      "qlike": 0.5110900529303782,
+      "mean_abs_log": 0.31443887221279193,
+      "median_log_ratio": 0.13037056807186828,
+      "share_below_delivered": 0.34892724633005323,
+      "share_extreme_over_2x_or_under_half": 0.07856105823519922
+    },
+    "EGARCH": {
+      "qlike": 319.03212683999806,
+      "mean_abs_log": 0.3675701643566799,
+      "median_log_ratio": 0.09880865365298623,
+      "share_below_delivered": 0.39232134215196,
+      "share_extreme_over_2x_or_under_half": 0.09372479432166478
+    },
+    "GARCH11": {
+      "qlike": 0.5925355266751607,
+      "mean_abs_log": 0.3228915716772661,
+      "median_log_ratio": 0.13476964966023977,
+      "share_below_delivered": 0.3526375221809969,
+      "share_extreme_over_2x_or_under_half": 0.0869495079851589
+    },
+    "EWMA": {
+      "qlike": 0.5886080957955377,
+      "mean_abs_log": 0.3142983622552503,
+      "median_log_ratio": 0.038589760933481175,
+      "share_below_delivered": 0.45297628649782223,
+      "share_extreme_over_2x_or_under_half": 0.0913050492014841
+    }
+  },
+  "qlike_by_regime": {
+    "LOW_VOL": {
+      "HAR_RV": 0.7370937694302194,
+      "EGARCH": 16.90507875650009,
+      "GARCH11": 0.9619278835100039,
+      "EWMA": 0.7943349619003313
+    },
+    "MID_VOL": {
+      "HAR_RV": 0.35320480535909976,
+      "EGARCH": 502.91574400445774,
+      "GARCH11": 0.364010528096106,
+      "EWMA": 0.4195427289585348
+    },
+    "HIGH_VOL": {
+      "HAR_RV": 0.44304800474120115,
+      "EGARCH": 437.1865531040678,
+      "GARCH11": 0.45177878071297267,
+      "EWMA": 0.5520284287479004
+    }
+  }
+}
