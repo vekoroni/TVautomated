@@ -2169,10 +2169,10 @@ def run_gate(
             "live_contract_quote_timestamp": "contract_quote_timestamp",
             "live_options_source": "contract_source",
         }
-        for source_field, contract_field in live_to_contract.items():
-            value = live_data.get(source_field)
-            if value is not None and value != "":
-                out[contract_field] = value
+        # L1: every contract field now describes the replacement. A field the
+        # replacement quote did not observe is missing, never the previous
+        # contract's value.
+        _replace_contract_describing_fields(out, live_data, live_to_contract)
         out["premium_mid"] = live_data.get("live_contract_mid", "")
         out["selected_contract_symbols"] = json.dumps([repaired_contract.replace("O:", "")])
         for stale_field in (
@@ -3847,6 +3847,35 @@ def _evaluate_hydrated_ev3(
         }
 
 
+#: L1: fields of the row that describe the selected contract but are not
+#: refreshed from a live quote. When the contract changes they belong to the
+#: previous contract and are cleared unless the live data supplies them.
+PREVIOUS_CONTRACT_ONLY_FIELDS = (
+    "contract_quote_timestamp_utc", "contract_bid_size", "contract_ask_size",
+    "contract_quote_quality", "contract_size_quality", "contract_spread_pct_eod",
+    "premium_eod", "premium", "contract_premium", "entry_premium",
+    "breakeven_price", "breakeven_pct", "breakeven_feasibility", "liquidity_score",
+    "theta_drag_pct", "vega_risk_pct", "contract_mark_synthetic",
+)
+
+
+def _replace_contract_describing_fields(
+    row: Dict[str, Any],
+    live_data: Dict[str, Any],
+    live_to_contract: Dict[str, str],
+) -> None:
+    """Write the replacement contract's observed values; missing otherwise."""
+    for source_field, contract_field in live_to_contract.items():
+        value = live_data.get(source_field)
+        if value is not None and value != "":
+            row[contract_field] = value
+        elif contract_field not in live_data:
+            row[contract_field] = ""
+    for field in PREVIOUS_CONTRACT_ONLY_FIELDS:
+        if field not in live_data:
+            row[field] = ""
+
+
 def _recompute_selected_contract_economics(
     row: Dict[str, Any],
     live_data: Dict[str, Any],
@@ -3898,7 +3927,11 @@ def _recompute_selected_contract_economics(
         "selected_legs_json",
     ):
         row[key] = live_data.get(key, "")
+    previous_contract_symbol = _s(row.get("contract_symbol"))
     row["contract_symbol"] = live_data.get("selected_contract_symbol", row.get("contract_symbol", ""))
+    contract_changed = _u(previous_contract_symbol).replace("O:", "") != _u(
+        row.get("contract_symbol")
+    ).replace("O:", "")
     row["recommended_contract"] = row["contract_symbol"]
     row["morning_selected_contract_symbol"] = row["contract_symbol"]
 
@@ -3918,10 +3951,14 @@ def _recompute_selected_contract_economics(
         "live_contract_quote_timestamp": "contract_quote_timestamp",
         "live_options_source": "contract_source",
     }
-    for source_field, contract_field in live_to_contract.items():
-        value = live_data.get(source_field)
-        if value is not None and value != "":
-            row[contract_field] = value
+    if contract_changed:
+        # L1: a different contract never keeps the previous one's values.
+        _replace_contract_describing_fields(row, live_data, live_to_contract)
+    else:
+        for source_field, contract_field in live_to_contract.items():
+            value = live_data.get(source_field)
+            if value is not None and value != "":
+                row[contract_field] = value
     row["premium_mid"] = live_data.get("live_contract_mid", "")
 
     # R:R remains available for research exports, but never gates permission.
