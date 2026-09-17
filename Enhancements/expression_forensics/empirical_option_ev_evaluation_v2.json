@@ -1,0 +1,101 @@
+{
+  "joined": 2922,
+  "forecast_source": {
+    "POINT_IN_TIME_HAR_RV": 2409,
+    "RECORDED_L3": 513
+  },
+  "old_flags": {
+    "OK": 2473,
+    "NO_MARKET": 338,
+    "BAD_INPUT": 41,
+    "VOL_DIVERGENCE_BLOCK": 37,
+    "THIN_SAMPLE": 33
+  },
+  "new_flags": {
+    "OK": 2473,
+    "NO_MARKET": 338,
+    "BAD_INPUT": 41,
+    "VOL_DIVERGENCE_BLOCK": 37,
+    "THIN_SAMPLE": 33
+  },
+  "same_rows_both_ok": 2473,
+  "vol_scale_median": 1.176456,
+  "OLD": {
+    "n": 2473,
+    "sessions": 15,
+    "spearman": 0.10906225503215734,
+    "spearman_by_session_median": 0.09008195754741731,
+    "predicted_mean": 0.034338461382935705,
+    "realised_mean": -0.4000554624782809,
+    "mean_abs_error": 0.7216980317907797,
+    "quintiles": {
+      "0": {
+        "predicted": -0.544,
+        "realised": -0.54,
+        "win": 0.123
+      },
+      "1": {
+        "predicted": -0.295,
+        "realised": -0.438,
+        "win": 0.13
+      },
+      "2": {
+        "predicted": -0.123,
+        "realised": -0.396,
+        "win": 0.174
+      },
+      "3": {
+        "predicted": 0.136,
+        "realised": -0.342,
+        "win": 0.221
+      },
+      "4": {
+        "predicted": 0.997,
+        "realised": -0.285,
+        "win": 0.238
+      }
+    },
+    "realised_if_predicted_positive": -0.30953303619721495,
+    "n_predicted_positive": 946,
+    "realised_if_predicted_non_positive": -0.45613549866812264
+  },
+  "NEW": {
+    "n": 2473,
+    "sessions": 15,
+    "spearman": 0.1578875565363437,
+    "spearman_by_session_median": 0.13780888805805241,
+    "predicted_mean": 0.057662494136676096,
+    "realised_mean": -0.4000554624782809,
+    "mean_abs_error": 0.721946094189661,
+    "quintiles": {
+      "0": {
+        "predicted": -0.641,
+        "realised": -0.658,
+        "win": 0.048
+      },
+      "1": {
+        "predicted": -0.32,
+        "realised": -0.4,
+        "win": 0.134
+      },
+      "2": {
+        "predicted": -0.096,
+        "realised": -0.38,
+        "win": 0.192
+      },
+      "3": {
+        "predicted": 0.221,
+        "realised": -0.293,
+        "win": 0.229
+      },
+      "4": {
+        "predicted": 1.124,
+        "realised": -0.269,
+        "win": 0.283
+      }
+    },
+    "realised_if_predicted_positive": -0.2907679426907954,
+    "n_predicted_positive": 1051,
+    "realised_if_predicted_non_positive": -0.48082985298225217
+  }
+}

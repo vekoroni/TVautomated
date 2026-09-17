@@ -186,7 +186,8 @@ def test_put_direction_priced_correctly_at_zero_time_value():
         c[f"ret_pctl_10d_{label}"] = -0.10  # spot -> 90, put strike 95 -> intrinsic 5
     out = compute_empirical_option_ev(c)
     assert out["emp_quality_flag"] == QUALITY_OK
-    expected_r = (5.0 - c["ask"]) / c["ask"]
+    # Item 2 rule R3 (ACK 17 Sep 2026): the exit is sold at the bid, paying the entry half-spread.
+    expected_r = (5.0 - (c["ask"] - c["bid"]) / 2 - c["ask"]) / c["ask"]
     assert abs(out["emp_expected_r"] - expected_r) < 1e-6
 
 

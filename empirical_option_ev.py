@@ -74,11 +74,18 @@ QUALITY_STALE_QUOTE = "STALE_QUOTE"
 QUALITY_UNKNOWN_TIER = "UNKNOWN_MATCH_TIER"
 QUALITY_VOL_DIVERGENCE = "VOL_DIVERGENCE_BLOCK"
 QUALITY_BAD_INPUT = "BAD_INPUT"
+QUALITY_VOL_SCALE_UNAVAILABLE = "VOL_SCALE_UNAVAILABLE"
+
+# Item 2 (ACK 17 Sep 2026): reality calibration. The actuarial percentiles are pooled by state, so they
+# are re-scaled to the ticker's own volatility forecast (p10-p90 width), and exits pay the half-spread.
+SESSIONS_PER_YEAR = 252
+Z_P90 = 1.2815515655446004   # standard normal 90th percentile: p10-p90 width = 2 * Z_P90 * sigma
 
 EMPTY_COLUMNS = (
     "emp_expected_r", "emp_p_profit", "emp_p_double", "emp_p_triple",
     "emp_p_total_loss", "emp_e_r_given_win", "emp_e_r_given_loss",
     "emp_skew", "emp_n_obs", "emp_horizon_used", "emp_quality_flag",
+    "emp_vol_scale", "emp_exit_half_spread",
 )
 
 
@@ -101,6 +108,22 @@ def _percentile_weights() -> tuple:
 
 PERCENTILE_WEIGHTS = _percentile_weights()
 assert abs(sum(PERCENTILE_WEIGHTS) - 1.0) < 1e-9, "percentile weights must sum to 1.0"
+
+
+def scaled_percentile_returns(returns, forecast_vol: float, sessions: int):
+    """Re-scale percentile returns so the p10-p90 width matches the ticker's own volatility forecast.
+
+    Scaling is done on log returns around the median log return (consistent with the lognormal width
+    2 * Z_P90 * sigma * sqrt(sessions / 252)), so scaled scenarios can never imply a non-positive price.
+    Returns (scaled simple returns, scale). Ordering and relative spacing (the empirical shape) are kept.
+    """
+    logs = [math.log1p(r) for r in returns]
+    by_label = dict(zip(PERCENTILE_LABELS, logs))
+    median = by_label["p50"]
+    pooled_width = by_label["p90"] - by_label["p10"]
+    target_width = 2.0 * Z_P90 * forecast_vol * math.sqrt(sessions / SESSIONS_PER_YEAR)
+    scale = target_width / pooled_width
+    return [math.expm1(median + (l - median) * scale) for l in logs], scale
 
 
 def _null_result(quality_flag: str, horizon_used: Optional[str] = None, n_obs: Optional[int] = None) -> dict:
@@ -235,6 +258,17 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
         except (TypeError, ValueError):
             return _null_result(QUALITY_THIN_SAMPLE, horizon_used=horizon, n_obs=n_obs)
 
+    if forecast_vol_f is None or forecast_vol_f <= 0:
+        return _null_result(QUALITY_VOL_SCALE_UNAVAILABLE, horizon_used=horizon, n_obs=n_obs)
+    by_label = dict(zip(PERCENTILE_LABELS, pctl_returns))
+    if min(pctl_returns) <= -1.0 or by_label["p90"] < by_label["p10"]:
+        return _null_result(QUALITY_BAD_INPUT, horizon_used=horizon, n_obs=n_obs)
+    if by_label["p90"] > by_label["p10"]:
+        pctl_returns, vol_scale = scaled_percentile_returns(pctl_returns, forecast_vol_f, int(horizon.rstrip("d")))
+    else:
+        vol_scale = None   # a zero-width (deterministic) distribution has no dispersion to re-scale
+    exit_half_spread = (ask - bid) / 2.0
+
     spot = g("live_spot", "underlying_price")
     strike = g("strike", "contract_strike")
     dte = g("dte", "contract_dte")
@@ -259,6 +293,7 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
             value_i = max(s_i - strike, 0.0) if direction == "call" else max(strike - s_i, 0.0)
         else:
             value_i = black_scholes_price(direction, s_i, strike, time_years, rate, live_iv_f)
+        value_i = max(value_i - exit_half_spread, 0.0)      # the exit is sold at the bid
         r_values.append((value_i - ask) / ask)
 
     expected_r = sum(w * r for w, r in zip(PERCENTILE_WEIGHTS, r_values))
@@ -293,4 +328,6 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
         "emp_n_obs": n_obs,
         "emp_horizon_used": horizon,
         "emp_quality_flag": QUALITY_OK,
+        "emp_vol_scale": round(vol_scale, 6) if vol_scale is not None else None,
+        "emp_exit_half_spread": round(exit_half_spread, 6),
     }
