@@ -1113,6 +1113,22 @@ def _try_live_repair_alternatives(
     return {}
 
 
+def _stored_quote_is_fresh(observation: Any, freshness_seconds: float, now: datetime) -> bool:
+    """A stored observation stands in for a live quote only while the quote itself is within the freshness window.
+
+    Other reasons not to poll (monitoring not required, terminal thesis, horizon) govern background monitoring and
+    must not make an operator-requested morning validation reuse an old quote (ACK 17 Sep 2026,
+    tests/test_morning_gate_quote_reuse.py).
+    """
+    quote_as_of = getattr(observation, "quote_as_of", None)
+    if not isinstance(quote_as_of, datetime):
+        return False
+    if quote_as_of.tzinfo is None:
+        quote_as_of = quote_as_of.replace(tzinfo=timezone.utc)
+    age = (now - quote_as_of).total_seconds()
+    return 0 <= age <= freshness_seconds
+
+
 def _fetch_all_live(
     candidates: List[Dict[str, Any]],
     spread_threshold: float = DEFAULT_SPREAD_THRESHOLD,
@@ -1157,14 +1173,16 @@ def _fetch_all_live(
             thesis_id = _s(row.get("thesis_id"))
             if liquidity_store is not None and thesis_id:
                 try:
+                    decision_now = datetime.now(timezone.utc)
                     decision = liquidity_store.should_fetch(
                         thesis_id, freshness_seconds=liquidity_freshness_seconds,
-                        now=datetime.now(timezone.utc),
+                        now=decision_now,
                     )
                     observation = decision.latest_observation
                     if (
                         not decision.should_fetch
                         and observation is not None
+                        and _stored_quote_is_fresh(observation, liquidity_freshness_seconds, decision_now)
                         and _u(observation.contract_symbol).replace("O:", "")
                         == _u(occ).replace("O:", "")
                     ):
@@ -1182,7 +1200,7 @@ def _fetch_all_live(
                             "live_contract_volume": observation.volume,
                             "live_contract_provider_updated": observation.quote_as_of.isoformat(),
                             "live_options_source": "MARKETDATA",
-                            "live_options_fetched_at": _utc_now(),
+                            "live_options_fetched_at": observation.observed_at.isoformat(),
                             "live_options_resolution": "CDS_FRESH_QUOTE_HIT",
                         }
                         source_record = liquidity_store.registry.get_dataset(
