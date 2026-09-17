@@ -8,6 +8,27 @@ from typing import Any, Optional, Tuple
 from contracts.governed_states import LifecycleEvaluationState
 
 
+def invalidation_on_thesis_side(direction: Any, invalidation: Any, reference: Any) -> bool:
+    """True only when an invalidation level lies on the thesis side of its reference price.
+
+    The single owner of the side rule: a CALL (bullish) thesis is invalidated
+    strictly below the reference price, a PUT (bearish) thesis strictly above.
+    A missing, non-numeric or non-positive level or reference, or a
+    non-directional thesis, is never "on side" (missing is never neutral).
+    """
+    side = str(direction or "").upper().strip()
+    if side not in {"CALL", "PUT"}:
+        return False
+    try:
+        level = float(invalidation)
+        ref = float(reference)
+    except (TypeError, ValueError):
+        return False
+    if not (math.isfinite(level) and math.isfinite(ref)) or level <= 0 or ref <= 0:
+        return False
+    return level < ref if side == "CALL" else level > ref
+
+
 def select_directional_invalidation(
     row: Any,
     direction: str,
@@ -52,9 +73,7 @@ def select_directional_invalidation(
         if not math.isfinite(value) or value <= 0:
             continue
         saw_numeric = True
-        if (direction == "CALL" and value < entry_value) or (
-            direction == "PUT" and value > entry_value
-        ):
+        if invalidation_on_thesis_side(direction, value, entry_value):
             return value, source, "AVAILABLE"
 
     return (

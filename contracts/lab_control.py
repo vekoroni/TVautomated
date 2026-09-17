@@ -19,6 +19,8 @@ from typing import Any, Dict, Iterable, List, Optional
 from contracts.direction_governance import validate_direction_record
 from contracts.dynamic_options_policy import eil_advisory_flags
 from contracts.dynamic_session_contract import DataExceptionReason
+from contracts.governed_states import LifecycleEvaluationState
+from contracts.thesis_geometry import invalidation_on_thesis_side
 from contracts.options_liquidity_execution_guard import (
     action_is_within_guard,
     evaluate_olm_execution_guard,
@@ -889,6 +891,58 @@ def _contract_side_from_symbol(symbol: Any) -> str:
     return "CALL" if match.group(1) == "C" else "PUT"
 
 
+CONTRACT_RESELECTED_FLAG = "CONTRACT_RESELECTED_FOR_DIRECTION"
+CONTRACT_SIDE_CONFLICT_FLAG = "CONTRACT_SYMBOL_SIDE_CONFLICT"
+#: WP2 / E4 (DQ-3): the row's generic quote fields describe the original
+#: contract, so after a reselection they are withheld, not borrowed.
+CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG = "CONTRACT_QUOTE_NOT_ESTABLISHED_FOR_RESELECTED_CONTRACT"
+#: WP3 / E5 (DQ-2): explicit state when the option expression is removed.
+CONTRACT_DATA_STATE_SIDE_CONFLICT = "OPTION_EXPRESSION_REMOVED_CONTRACT_SIDE_CONFLICT"
+#: WP4 / E7 (DQ-4): invalidation candidates in book precedence, and the thesis
+#: reference prices the side is judged against (same order as the EOD engine).
+BOOK_INVALIDATION_FIELDS = (
+    "invalidation_spot", "ev3_invalidation_spot", "invalidation_price",
+    "invalidation_eod", "stop_loss",
+)
+THESIS_REFERENCE_PRICE_FIELDS = ("entry_spot", "signal_price", "underlying_price")
+INVALIDATION_WRONG_SIDE_FLAG = "INVALIDATION_WRONG_SIDE"
+INVALIDATION_SIDE_UNVERIFIED_FLAG = "INVALIDATION_SIDE_UNVERIFIED_NO_REFERENCE_PRICE"
+
+
+def _book_invalidation(sig: Dict[str, Any], direction: Any) -> tuple[Any, Any, str]:
+    """Return ``(invalidation_price, invalidation_state, flag)`` for the book.
+
+    The first present candidate decides; a wrong-side level is reported as a
+    data defect and is not silently replaced by a later (legacy) alias whose
+    lineage the row's invalidation_state/source would not describe.
+    """
+    state = first(sig, "invalidation_state", "ev3_invalidation_state")
+    for field in BOOK_INVALIDATION_FIELDS:
+        value = sig.get(field)
+        if _is_missing_price(value):
+            continue
+        try:
+            float(str(value).strip())
+        except (TypeError, ValueError):
+            continue
+        break
+    else:
+        return "", state, ""
+    side = _side_from_value(direction)
+    if side not in {"CALL", "PUT"}:
+        return value, state, ""
+    reference = first_price(sig, *THESIS_REFERENCE_PRICE_FIELDS)
+    if _is_missing_price(reference):
+        return value, state, INVALIDATION_SIDE_UNVERIFIED_FLAG
+    if invalidation_on_thesis_side(side, value, reference):
+        return value, state, ""
+    return (
+        "",
+        LifecycleEvaluationState.DATA_DEFECT_WRONG_SIDE.value,
+        f"{INVALIDATION_WRONG_SIDE_FLAG}:{field}",
+    )
+
+
 def _contract_for_direction(sig: Dict[str, Any], direction: Any) -> tuple[str, str]:
     side = _side_from_value(direction)
     keys = (
@@ -909,11 +963,14 @@ def _contract_for_direction(sig: Dict[str, Any], direction: Any) -> tuple[str, s
         candidate = _s(sig.get(key))
         if candidate and _contract_side_from_symbol(candidate) == side:
             if original and candidate != original:
-                return candidate, f"CONTRACT_RESELECTED_FOR_DIRECTION:{original}->{candidate}"
+                return candidate, f"{CONTRACT_RESELECTED_FLAG}:{original}->{candidate}"
             return candidate, ""
     original_side = _contract_side_from_symbol(original)
     if original and original_side and original_side != side:
-        return original, f"CONTRACT_SYMBOL_SIDE_CONFLICT:{original_side}->{side}"
+        # WP3 / E5 (DQ-2): a wrong-side contract is never the option
+        # expression. No symbol is returned; the caller records the removal
+        # and keeps the row (share expression, ACK S2).
+        return "", f"{CONTRACT_SIDE_CONFLICT_FLAG}:{original_side}->{side}"
     return original, ""
 
 
@@ -1142,6 +1199,35 @@ def _enforce_economics_identity(
         row["lab_status"] = "CONTRACT_REPAIR"
         row["lab_execution_status"] = "CONTRACT_REPAIR"
         row["action_category"] = "CONTRACT_REPAIR"
+
+
+def _enforce_option_expression_removed(
+    row: Dict[str, Any],
+    provenance: Optional[Dict[str, str]] = None,
+) -> None:
+    """WP3 / E5: a row whose option expression was removed cannot claim one.
+
+    The row stays in the book (share expression, ACK S2). Like the economics
+    identity lock, a Lab-level tradeable claim is withdrawn; an Execution Gate
+    final_action is immutable here and is left to upstream reconciliation.
+    """
+    is_tradeable = row.get("lab_tradeable") is True or _u(row.get("lab_tradeable")) in {
+        "TRUE", "1", "YES",
+    }
+    if _u(row.get("final_action")) or not (
+        is_tradeable or _u(row.get("lab_verdict")) in {"GO", "GO_LIMIT", "PROBE"}
+    ):
+        return
+    row["lab_tradeable"] = False
+    row["lab_verdict"] = "CONTRACT_REPAIR"
+    row["lab_status"] = "CONTRACT_REPAIR"
+    row["lab_execution_status"] = "CONTRACT_REPAIR"
+    row["action_category"] = "CONTRACT_REPAIR"
+    row["execution_lock_reason"] = _append_flag(
+        row.get("execution_lock_reason"), CONTRACT_DATA_STATE_SIDE_CONFLICT
+    )
+    if provenance is not None:
+        provenance["lab_tradeable"] = "governed_materializer:contract_side_conflict"
 
 
 def _append_flag(existing: Any, flag: str) -> str:
@@ -2429,21 +2515,42 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         first(sig, "instrument", "options_strategy", "sb_instrument_now"),
     )
     aligned_contract, contract_alignment_flag = _contract_for_direction(sig, canonical_direction)
+    contract_reselected = contract_alignment_flag.startswith(CONTRACT_RESELECTED_FLAG)
+    contract_side_conflict = contract_alignment_flag.startswith(CONTRACT_SIDE_CONFLICT_FLAG)
     lab_coherence_flags = first(sig, "lab_coherence_flags", "direction_conflict_reason")
     if contract_alignment_flag:
         lab_coherence_flags = _append_flag(lab_coherence_flags, contract_alignment_flag)
+    if contract_reselected:
+        lab_coherence_flags = _append_flag(lab_coherence_flags, CONTRACT_QUOTE_NOT_ESTABLISHED_FLAG)
     lab_coherence_status = first(sig, "lab_coherence_status", "direction_alignment_status")
     if contract_alignment_flag and not lab_coherence_status:
         lab_coherence_status = "DIRECTION_CONTRACT_REVIEW"
+    book_invalidation, book_invalidation_state, invalidation_flag = _book_invalidation(
+        sig, canonical_direction
+    )
+    if invalidation_flag:
+        lab_coherence_flags = _append_flag(lab_coherence_flags, invalidation_flag)
 
     contract_selected = not _is_missing(aligned_contract)
+    # WP2 / E4: the generic quote, greek, size and contract-economics fields
+    # describe the contract the upstream stage selected. They are written only
+    # when that is the contract in this row; after a reselection they would
+    # describe a different symbol, so they stay missing.
+    quote_owned = contract_selected and not contract_reselected
+    quote_not_borrowed = not (contract_reselected or contract_side_conflict)
+    reselected_identity: Dict[str, Any] = {}
+    if contract_reselected:
+        try:
+            reselected_identity = parse_selected_occ_symbol(aligned_contract)
+        except ValueError:
+            reselected_identity = {}
     rr_value = first(sig, "rr_premium_expected", "rr_options", "option_rr")
     explicit_rr_contract = first(sig, "rr_contract_symbol")
     original_contract = first(sig, "contract_symbol_original", "morning_repaired_from_contract")
     repair_flag = _u(first(sig, "contract_repair_resolved_at_open", "morning_contract_repair_used")) in {
         "TRUE", "1", "YES",
     }
-    contract_changed = repair_flag or (
+    contract_changed = repair_flag or contract_reselected or (
         bool(_contract_symbols(original_contract))
         and _contract_symbols(original_contract) != _contract_symbols(aligned_contract)
     )
@@ -2550,7 +2657,11 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "composite_score": first(sig, "composite_score", "composite", "options_research_score"),
         "instrument": aligned_instrument,
         "contract_symbol": aligned_contract,
-        "contract_data_state": "AVAILABLE" if contract_selected else "NOT_APPLICABLE_NO_SELECTED_CONTRACT",
+        "contract_data_state": (
+            "AVAILABLE" if contract_selected
+            else CONTRACT_DATA_STATE_SIDE_CONFLICT if contract_side_conflict
+            else "NOT_APPLICABLE_NO_SELECTED_CONTRACT"
+        ),
         "contract_source": first(sig, "contract_source", "contract_quote_source", "contract_quote_timestamp_source"),
         "morning_selected_contract_symbol": first(sig, "morning_selected_contract_symbol", "live_selected_contract_symbol"),
         "selected_structure": first(sig, "selected_structure"),
@@ -2566,10 +2677,10 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "selected_structure_hydration_reason": first(sig, "selected_structure_hydration_reason"),
         "selected_structure_hydration_schema_version": first(sig, "selected_structure_hydration_schema_version"),
         "selected_legs_json": first(sig, "selected_legs_json"),
-        "contract_bid_size": first(sig, "contract_bid_size", "live_contract_bid_size"),
-        "contract_ask_size": first(sig, "contract_ask_size", "live_contract_ask_size"),
-        "contract_size_quality": first(sig, "contract_size_quality"),
-        "contract_quote_quality": first(sig, "contract_quote_quality"),
+        "contract_bid_size": first(sig, "contract_bid_size", "live_contract_bid_size") if quote_not_borrowed else "",
+        "contract_ask_size": first(sig, "contract_ask_size", "live_contract_ask_size") if quote_not_borrowed else "",
+        "contract_size_quality": first(sig, "contract_size_quality") if quote_not_borrowed else "",
+        "contract_quote_quality": first(sig, "contract_quote_quality") if quote_not_borrowed else "",
         "morning_contract_bid": first(sig, "morning_contract_bid"),
         "morning_contract_ask": first(sig, "morning_contract_ask"),
         "morning_contract_mid": first(sig, "morning_contract_mid"),
@@ -2667,15 +2778,23 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "alternative_contract_1": first(sig, "alternative_contract_1", "alt_contract_1"),
         "alternative_contract_2": first(sig, "alternative_contract_2", "alt_contract_2"),
         "alternative_contract_3": first(sig, "alternative_contract_3", "alt_contract_3"),
-        "strike": first(sig, "strike", "live_contract_strike", "contract_strike", "opt__contract_strike") if contract_selected else "",
-        "expiry": first(sig, "expiry", "contract_expiry", "opt__contract_expiry") if contract_selected else "",
-        "dte": first(sig, "dte", "contract_dte", "opt__contract_dte") if contract_selected else "",
-        "premium_mid": first(sig, "premium_mid", "contract_mid", "premium_eod", "premium", "entry_premium", "contract_premium", "opt__premium_mid", "opt__contract_premium") if contract_selected else "",
-        "spread_fraction_mid": spread_observation.spread_fraction_mid if contract_selected else "",
-        "spread_pct_of_mid": spread_observation.spread_pct_of_mid if contract_selected else "",
-        "spread_unit": "PCT_OF_MID" if contract_selected and spread_observation.spread_pct_of_mid is not None else "",
-        "spread_pct": spread_observation.spread_pct_of_mid if contract_selected else "",
-        "liquidity_score": first(sig, "liquidity_score", "eil_liquidity_score", "opt__liquidity_score") if contract_selected else "",
+        "strike": (
+            reselected_identity.get("strike", "") if contract_reselected
+            else first(sig, "strike", "live_contract_strike", "contract_strike", "opt__contract_strike") if contract_selected
+            else ""
+        ),
+        "expiry": (
+            reselected_identity.get("expiry", "") if contract_reselected
+            else first(sig, "expiry", "contract_expiry", "opt__contract_expiry") if contract_selected
+            else ""
+        ),
+        "dte": first(sig, "dte", "contract_dte", "opt__contract_dte") if quote_owned else "",
+        "premium_mid": first(sig, "premium_mid", "contract_mid", "premium_eod", "premium", "entry_premium", "contract_premium", "opt__premium_mid", "opt__contract_premium") if quote_owned else "",
+        "spread_fraction_mid": spread_observation.spread_fraction_mid if quote_owned else "",
+        "spread_pct_of_mid": spread_observation.spread_pct_of_mid if quote_owned else "",
+        "spread_unit": "PCT_OF_MID" if quote_owned and spread_observation.spread_pct_of_mid is not None else "",
+        "spread_pct": spread_observation.spread_pct_of_mid if quote_owned else "",
+        "liquidity_score": first(sig, "liquidity_score", "eil_liquidity_score", "opt__liquidity_score") if quote_owned else "",
         "priority_score": first(sig, "priority_score", "research_priority_score", "options_research_score", "options_research_confidence"),
         "options_research_route": first(sig, "options_research_route", "final_route", "options_route_verdict"),
         "options_research_permission": first(sig, "options_research_permission", "execution_permission"),
@@ -2686,9 +2805,9 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "gics_sector": first(sig, "gics_sector", "gics_sector_norm", "sector"),
         "gics_sector_norm": first(sig, "gics_sector_norm", "gics_sector", "sector"),
         "sector_etf": first(sig, "sector_etf", "sector_etf_mapped", "sector_proxy"),
-        "rr_predicted": rr_value if contract_selected else "",
+        "rr_predicted": rr_value if quote_owned else "",
         "rr_underlying": first(sig, "rr_underlying", "rr"),
-        "rr_premium_expected": rr_value if contract_selected else "",
+        "rr_premium_expected": rr_value if quote_owned else "",
         "rr_contract_symbol": governed_rr_contract,
         "rr_recompute_status": first(sig, "rr_recompute_status"),
         "rr_recompute_reason": first(sig, "rr_recompute_reason"),
@@ -2857,15 +2976,9 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "eil_v3_verdict": first(sig, "eil_v3_verdict", "eil_signal_verdict", "fd_advisory_verdict", "fd_verdict"),
         "eil_composite_eod": first(sig, "eil_composite_eod", "eil_composite_score", "eil__composite_score"),
         "entry_plan": first(sig, "entry_plan", "trigger_primary", "scenario_entry_trigger", "wbs__entry_guidance"),
-        "invalidation_price": first(
-            sig,
-            "invalidation_spot",
-            "ev3_invalidation_spot",
-            "invalidation_price",
-            "invalidation_eod",
-            "stop_loss",
-        ),
-        "invalidation_state": first(sig, "invalidation_state", "ev3_invalidation_state"),
+        # WP4 / E7 (DQ-4): side-checked against the thesis reference price.
+        "invalidation_price": book_invalidation,
+        "invalidation_state": book_invalidation_state,
         "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
         # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
         # so a fabricated 0.0 is treated as absent rather than as a price.
@@ -2880,24 +2993,24 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "target_zone": first(sig, "target_zone", "wbs__target_zone"),
         "runway_to_target": first(sig, "runway_to_target", "runway_to_wall", "runway_to_wall_pct"),
         "runway_to_wall_pct": first(sig, "runway_to_wall_pct", "runway_to_wall", "runway_to_target"),
-        "breakeven_price": first(sig, "breakeven_price", "opt__breakeven_price"),
-        "breakeven_pct": first(sig, "breakeven_pct", "csm_breakeven_pct", "opt__breakeven_pct"),
-        "breakeven_feasibility": first(sig, "breakeven_feasibility", "opt__breakeven_feasibility"),
-        "option_gain_at_target": first(sig, "option_gain_at_target", "opt__option_gain_at_target"),
+        "breakeven_price": first(sig, "breakeven_price", "opt__breakeven_price") if quote_not_borrowed else "",
+        "breakeven_pct": first(sig, "breakeven_pct", "csm_breakeven_pct", "opt__breakeven_pct") if quote_not_borrowed else "",
+        "breakeven_feasibility": first(sig, "breakeven_feasibility", "opt__breakeven_feasibility") if quote_not_borrowed else "",
+        "option_gain_at_target": first(sig, "option_gain_at_target", "opt__option_gain_at_target") if quote_not_borrowed else "",
         "layer2__raw_prob_target_hit": first(sig, "layer2__raw_prob_target_hit", "layer2__outcomes__raw_prob_target_hit", "vg__layer2__raw_prob_target_hit"),
         "layer2__adjusted_prob_target_hit": first(sig, "layer2__adjusted_prob_target_hit", "layer2__outcomes__adjusted_prob_target_hit", "vg__layer2__adjusted_prob_target_hit"),
         "layer2__raw_expected_time_to_target": first(sig, "layer2__raw_expected_time_to_target", "layer2__outcomes__raw_expected_time_to_target", "vg__layer2__raw_expected_time_to_target"),
         "layer2__outcomes__median_days_to_target": first(sig, "layer2__outcomes__median_days_to_target", "layer2__median_days_to_target", "vg__layer2__outcomes__median_days_to_target"),
-        "contract_delta": first(sig, "contract_delta", "opt__contract_delta", "delta") if contract_selected else "",
-        "contract_gamma": first(sig, "contract_gamma", "opt__contract_gamma", "gamma") if contract_selected else "",
-        "contract_theta": first(sig, "contract_theta", "opt__contract_theta", "theta") if contract_selected else "",
-        "contract_vega": first(sig, "contract_vega", "opt__contract_vega", "vega") if contract_selected else "",
-        "contract_iv": first(sig, "contract_iv", "opt__contract_iv", "iv") if contract_selected else "",
-        "contract_bid": first(sig, "contract_bid", "opt__contract_bid", "bid") if contract_selected else "",
-        "contract_ask": first(sig, "contract_ask", "opt__contract_ask", "ask") if contract_selected else "",
-        "contract_mid": first(sig, "contract_mid", "opt__contract_mid", "mid", "premium_mid") if contract_selected else "",
-        "contract_oi": first(sig, "contract_oi", "opt__contract_oi", "openInterest", "open_interest") if contract_selected else "",
-        "contract_volume": first(sig, "contract_volume", "opt__contract_volume", "volume") if contract_selected else "",
+        "contract_delta": first(sig, "contract_delta", "opt__contract_delta", "delta") if quote_owned else "",
+        "contract_gamma": first(sig, "contract_gamma", "opt__contract_gamma", "gamma") if quote_owned else "",
+        "contract_theta": first(sig, "contract_theta", "opt__contract_theta", "theta") if quote_owned else "",
+        "contract_vega": first(sig, "contract_vega", "opt__contract_vega", "vega") if quote_owned else "",
+        "contract_iv": first(sig, "contract_iv", "opt__contract_iv", "iv") if quote_owned else "",
+        "contract_bid": first(sig, "contract_bid", "opt__contract_bid", "bid") if quote_owned else "",
+        "contract_ask": first_price(sig, "contract_ask", "opt__contract_ask", "ask") if quote_owned else "",
+        "contract_mid": first(sig, "contract_mid", "opt__contract_mid", "mid", "premium_mid") if quote_owned else "",
+        "contract_oi": first(sig, "contract_oi", "opt__contract_oi", "openInterest", "open_interest") if quote_owned else "",
+        "contract_volume": first(sig, "contract_volume", "opt__contract_volume", "volume") if quote_owned else "",
         "options_score": first(sig, "options_score", "options_research_score", "opt__options_score"),
         "iv_rank": first(sig, "iv_rank", "ivp", "opt__iv_rank"),
         "ivp_label": first(sig, "ivp_label", "iv_alignment", "opt__ivp_label"),
@@ -2988,6 +3101,8 @@ def opportunity_book_row(sig: Dict[str, Any], run_id: str, rank: int) -> Dict[st
         "source_payload_json": _json_safe(sig),
     }
     _enforce_economics_identity(row, provenance)
+    if contract_side_conflict:
+        _enforce_option_expression_removed(row, provenance)
     _enforce_olm_lab_guard(row, provenance)
     _enforce_execution_authority_lab_guard(row, provenance)
     # Liquidity-maturation scores are deterministic monitoring evidence. They

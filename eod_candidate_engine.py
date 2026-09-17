@@ -87,6 +87,7 @@ from contracts.direction_governance import (
     resolve_governed_direction,
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
+from contracts.thesis_geometry import invalidation_on_thesis_side
 from datetime import date, datetime, timezone
 from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from contracts.selected_contract_economics import (
@@ -343,9 +344,7 @@ def _invalidation_level(row: dict) -> Optional[float]:
     stop = _first_flt(row, "invalidation_spot", "ev3_invalidation_spot", default=0.0)
     if direction not in GOVERNED_DIRECTED_SIDES or not signal or not stop:
         return None
-    if direction == "CALL" and stop < signal:
-        return round(stop, 2)
-    if direction == "PUT" and stop > signal:
+    if invalidation_on_thesis_side(direction, stop, signal):
         return round(stop, 2)
     return None
 
@@ -358,6 +357,17 @@ def _flt(row: dict, key: str, default: float = 0.0) -> float:
         return default if (f != f) else f   # nan check
     except (TypeError, ValueError):
         return default
+
+def _observed_price(row: dict, key: str) -> float:
+    """A contract price as observed, or NaN when it was not observed.
+
+    WP2 / E3 (DQ-1): a missing, blank, non-numeric or non-positive price is
+    not a price. It stays missing (NaN, written as an empty CSV cell) and is
+    never published as 0.0, which downstream readers would take as a quote.
+    """
+    value = _flt(row, key, float("nan"))
+    return value if value > 0 else float("nan")
+
 
 def _optional_flt(row: dict, key: str) -> Optional[float]:
     """Return a finite float without converting missing telemetry to zero."""
@@ -2593,7 +2603,7 @@ def build_candidate_manifest(
             "strike":               _flt(row, "strike"),
             "expiry":               _str(row, "expiry"),
             "dte":                  dte,
-            "premium_eod":          _flt(row, "premium"),
+            "premium_eod":          _observed_price(row, "premium"),
             "instrument":           (_str(row, "sb_instrument_now") or
                                      _str(row, "options_strategy")),
             "contract_symbol":      (_str(row, "recommended_contract") or
@@ -2615,9 +2625,11 @@ def build_candidate_manifest(
             "contract_theta":        _flt(row, "contract_theta"),
             "contract_iv":           _flt(row, "contract_iv"),
             "contract_bid":          _flt(row, "contract_bid",    float("nan")),
-            "contract_ask":          _flt(row, "contract_ask"),
-            "contract_mid":          _flt(row, "contract_mid"),
-            "contract_spread_pct":   _flt(row, "contract_spread_pct"),
+            # WP2 / E3: an unobserved ask, mid or spread stays missing (NaN),
+            # like the bid; 0.0 would read as a free contract / perfect market.
+            "contract_ask":          _observed_price(row, "contract_ask"),
+            "contract_mid":          _observed_price(row, "contract_mid"),
+            "contract_spread_pct":   _flt(row, "contract_spread_pct", float("nan")),
             # AVS-FIX-001 W1.5: trading-session DTE derived from the selected
             # contract's own OCC expiry, so MVP §4 (DTE >= 2 x hold) is
             # evaluable straight from the book. `dte` above stays as the
