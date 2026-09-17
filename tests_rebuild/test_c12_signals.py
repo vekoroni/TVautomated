@@ -8,12 +8,13 @@ Rules:
      THESIS_INVALIDATED_INTRADAY; through the target is TARGET_ALREADY_REACHED; a move that has started is re-valued;
   S3 a delayed option quote is brought to issue: bid and ask shift by delta x (live spot - spot at quote time); a
      missing bar or delta leaves the quote unadjusted and flagged; quote age is recorded as a flag, never a gate;
-  S4 the decision is forward-looking at the issue-time premium: re-valuation must be OK, preference OPTION or SHARES,
-     the preferred cautious return above the minimum; OPTION also needs an executable gate quote and a contract
-     holdable past the issue session. Options: limit = adjusted mid, scored from the adjusted ask. Shares (long for
-     CALL, short for PUT): at the issue price moved against the trade by half the share spread;
+  S4 the decision is forward-looking at the issue-time premium and OPTION-ONLY for the trial (ACK 17 Sep 2026: the
+     share spread estimate is floored at zero, so share values are not a measured alternative): re-valuation must be
+     OK, the option's cautious return above the minimum, an executable gate quote and a contract holdable past the
+     issue session. Limit = adjusted mid, scored from the adjusted ask. The share valuation is recorded beside the
+     ticket for comparison and never issues or vetoes a ticket;
   S5 context (O4 stance, O2 availability, H9R event) is recorded and never changes eligibility or rank; tickets rank
-     by the preferred cautious return;
+     by the option's cautious return;
   S6 exit: first of issue-session close beyond the stop; a later session touching stop or target (both = stop); the
      planned hold; for options the last usable session. Options exit at the end-of-day bid (missing =
      MARK_UNAVAILABLE); shares at the stop level or worse open, the target level, or the close, less half the spread;
@@ -175,9 +176,8 @@ def test_s4_option_ticket_at_issue_premium():
 
 @pytest.mark.parametrize("gate, reval, reason", [
     ({}, dict(emp_path_quality_flag="NO_MARKET"), "REVALUATION_NOT_OK:NO_MARKET"),
-    ({}, dict(emp_expression_preference="NEITHER"), "PREFERENCE_NEITHER"),
-    ({}, dict(emp_expression_preference="PREFERENCE_UNAVAILABLE"), "PREFERENCE_UNAVAILABLE"),
     ({}, dict(emp_path_r_cautious=-0.01), "CAUTIOUS_RETURN_NOT_POSITIVE"),
+    ({}, dict(emp_path_r_cautious=None), "CAUTIOUS_RETURN_NOT_POSITIVE"),
     (dict(execution_viability_state="BLOCKED_WIDE_SPREAD"), {}, "OPTION_NOT_EXECUTABLE"),
 ])
 def test_s4_forward_decision_rejections(gate, reval, reason):
@@ -191,17 +191,15 @@ def test_s4_option_not_holdable_past_issue():
     assert sig.decide(p, revaluation(), settings())[0] == "OPTION_NOT_EXECUTABLE"
 
 
-def test_s4_shares_ticket_long_and_short():
-    shares = dict(emp_expression_preference="SHARES", emp_share_r_cautious=0.03)
-    _, p = prepare(gate=dict(execution_viability_state="BLOCKED_WIDE_SPREAD"))
-    reason, fields = sig.decide(p, revaluation(**shares), settings())
-    assert reason is None and fields["side"] == "LONG" and fields["limit_price"] == pytest.approx(102.0 * 1.001)
-    _, p = prepare(book=dict(final_direction="PUT"), gate=dict(live_low=100.0),
-                   valuation=dict(final_direction="PUT", structural_target=90.0, invalidation_spot=105.0))
-    reason, fields = sig.decide(p, revaluation(**shares), settings())
-    assert reason is None and fields["side"] == "SHORT" and fields["limit_price"] == pytest.approx(102.0 * 0.999)
-    _, p = prepare(valuation=dict(emp_share_spread_estimate=None))
-    assert sig.decide(p, revaluation(**shares), settings())[0] == "SHARE_SPREAD_UNAVAILABLE"
+def test_s4_option_only_share_values_recorded_never_decide():
+    _, p = prepare(spot=101.0)
+    for share in (dict(emp_expression_preference="SHARES", emp_share_r_cautious=0.50),
+                  dict(emp_expression_preference="NEITHER", emp_share_r_cautious=-0.2),
+                  dict(emp_expression_preference="PREFERENCE_UNAVAILABLE", emp_share_r_cautious=None)):
+        reason, fields = sig.decide(p, revaluation(**share), settings())
+        assert reason is None and fields["expression"] == "OPTION" and fields["r_cautious"] == 0.12
+        assert fields["share_r_cautious"] == share["emp_share_r_cautious"]
+        assert fields["value_model_preference"] == share["emp_expression_preference"]
 
 
 # --- S5 ----------------------------------------------------------------------------------------------------------
@@ -257,7 +255,7 @@ def test_s6_marks():
     assert out.state == "CLOSED" and out.return_on_capital == pytest.approx(6.0 / 5.0 - 1)
     assert sig.mark_signal(t, plan, bid=None).state == "MARK_UNAVAILABLE"
     shares = ticket(expression="SHARES", side="LONG", contract_symbol=None, limit_price=100.5, scored_entry=100.5,
-                    share_spread=0.01, hold_sessions=5, last_usable_session=None)
+                    share_spread=0.01, hold_sessions=5, last_usable_session=None)   # marking kept for later use
     plan = sig.plan_exit(shares, bars((100.2, 101, 99.5, 100.5), (101, 111, 100, 109)), as_of=date(2026, 9, 21))
     out = sig.mark_signal(shares, plan, bid=None)
     assert out.return_on_capital == pytest.approx(110.0 * 0.995 / 100.5 - 1)
@@ -292,6 +290,9 @@ def test_spot_at_uses_last_completed_bar(tmp_path):
     assert intraday.spot_at("ABC", ISSUE, "2026-09-18T14:32:00Z", tmp_path) == 101.0
     assert intraday.spot_at("ABC", ISSUE, "2026-09-18T14:10:00Z", tmp_path) is None
     assert intraday.spot_at("XYZ", ISSUE, "2026-09-18T14:32:00Z", tmp_path) is None
+    # a bar that closed more than one interval before the quote is not the price at quote time (smoke test 17 Sep)
+    assert intraday.spot_at("ABC", ISSUE, "2026-09-18T15:10:00Z", tmp_path) is None
+    assert intraday.spot_at("ABC", ISSUE, "2026-09-18T14:39:59Z", tmp_path) == 101.5
 
 
 # --- S8 service ----------------------------------------------------------------------------------------------------

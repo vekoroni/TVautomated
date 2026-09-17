@@ -29,13 +29,13 @@ include the issue session, so the same session does not duplicate tickets.
 
 ## Reading a ticket
 
-- **Expression / contract** — OPTION (bought) or SHARES (long for CALL, short for PUT).
+- **Contract** — tickets are option-only for the trial (ACK 17 Sep 2026): a bought call or put. The value model's share comparison is recorded in the CSV (`share_r_cautious`, `value_model_preference`) but never issues or vetoes a ticket, because the share spread estimate is floored at zero.
 - **Limit** — options: the issue-time mid; place a limit order at or inside it, never a market order.
   **Scored entry** — the ask the track record assumes (conservative).
 - **Stop / Target / Hold** — underlying levels and planned sessions; exit at the first of these (options also before
   their last usable session, expiry minus 2 sessions).
-- **Cautious / central / upside** — value-model return on capital at the issue-time premium (volatility range, exit
-  at the bid). A ticket exists only when cautious is above zero.
+- **Cautious / central / upside** — value-model return on the option premium at the issue-time price (volatility range, exit
+  at the bid). A ticket exists only when cautious is above zero and the quote is executable.
 - **Quote** — `CURRENT_SESSION` / `PRIOR_SESSION` and whether the delayed (15-min) quote was delta-adjusted to the
   issue instant. Flags, not gates: check the live quote in your broker before entering.
 - **O4 / H9R** — information only (O4 put/call open-interest stance; H9R gap-up event). They never change eligibility
@@ -49,7 +49,8 @@ The trust gate needs ≥ 40 closed signals over ≥ 15 issue sessions with the l
 
 ## Known limits (17 Sep 2026)
 
-- MarketData options entitlement is delayed 15 minutes; the delta adjustment is first-order.
+- MarketData options entitlement is delayed 15 minutes; the delta adjustment is first-order and needs a 5-minute bar within one interval of the quote. Bars exist only for the market-profile worklist (~200 tickers), so most tickets will show `NOT_ADJUSTED_BAR_MISSING`: always check the live quote in the broker.
+- Run the morning pipeline once: a same-day rerun can reuse stored quotes an hour old (defect under investigation).
 - EV3 (retired, advisory) still labels delayed quotes stale — ignore it.
 - O2 is not recorded by the pipeline yet (shown as UNAVAILABLE).
 - Direction has no demonstrated edge; expect many NEITHER rejections and roughly half of tickets to lose.

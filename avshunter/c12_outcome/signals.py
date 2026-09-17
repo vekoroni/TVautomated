@@ -97,6 +97,9 @@ class SignalTicket:
     p_target_first: float | None
     p_stop_first: float | None
     share_spread: float | None
+    share_r_cautious: float | None  # comparison only (never decides)
+    share_r_central: float | None
+    value_model_preference: str | None  # OPTION | SHARES | NEITHER | PREFERENCE_UNAVAILABLE (recorded only)
     quote_bid: float | None        # provider quote as received
     quote_ask: float | None
     quote_timestamp_utc: str | None
@@ -271,39 +274,30 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
 
 
 def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | None, dict]:
-    """Forward-looking decision at the issue-time premium: is the remaining move still worth entering?"""
+    """Forward-looking decision at the issue-time premium: is the remaining move still worth buying the option?
+
+    Option-only for the trial (ACK 17 Sep 2026): the share spread estimate is floored at zero, so the share value is
+    not a measured alternative; it is recorded beside the ticket and never issues or vetoes one.
+    """
     if _text(revaluation.get("emp_path_quality_flag")) != PATH_OK:
         return "REVALUATION_NOT_OK:" + (_text(revaluation.get("emp_path_quality_flag")) or "MISSING"), {}
-    preference = _text(revaluation.get("emp_expression_preference")).upper()
-    if preference == "NEITHER":
-        return "PREFERENCE_NEITHER", {}
-    if preference not in (OPTION, SHARES):
-        return "PREFERENCE_UNAVAILABLE", {}
-    if preference == OPTION and not p.option_executable:
-        return "OPTION_NOT_EXECUTABLE", {}
-    prefix = "emp_path" if preference == OPTION else "emp_share"
-    cautious = _num(revaluation.get(f"{prefix}_r_cautious"))
+    cautious = _num(revaluation.get("emp_path_r_cautious"))
     if cautious is None or cautious <= s.min_cautious_return:
         return "CAUTIOUS_RETURN_NOT_POSITIVE", {}
-    spread = p.path_inputs.get("share_spread")
-    if preference == SHARES:
-        if spread is None or spread < 0:
-            return "SHARE_SPREAD_UNAVAILABLE", {}
-        side = LONG if p.direction == "CALL" else SHORT
-        half = spread / 2.0
-        limit = p.live_spot * (1 + half) if side == LONG else p.live_spot * (1 - half)
-        entry = dict(side=side, contract_symbol=None, expiry=None, last_usable_session=None, limit_price=limit,
-                     scored_entry=limit)
-    else:
-        entry = dict(side=LONG, contract_symbol=p.contract_symbol, expiry=p.expiry,
-                     last_usable_session=p.last_usable_session, limit_price=(p.bid + p.ask) / 2.0, scored_entry=p.ask)
-    return None, dict(entry, direction=p.direction, expression=preference, reference_spot=p.live_spot,
-                      reference_spot_utc=p.live_spot_utc, stop_spot=p.stop, target_spot=p.target,
-                      hold_sessions=p.hold_sessions, r_cautious=cautious,
-                      r_central=_num(revaluation.get(f"{prefix}_r_central")),
-                      r_upside=_num(revaluation.get(f"{prefix}_r_upside")),
+    if not p.option_executable:
+        return "OPTION_NOT_EXECUTABLE", {}
+    return None, dict(direction=p.direction, expression=OPTION, side=LONG, contract_symbol=p.contract_symbol,
+                      expiry=p.expiry, last_usable_session=p.last_usable_session, limit_price=(p.bid + p.ask) / 2.0,
+                      scored_entry=p.ask, reference_spot=p.live_spot, reference_spot_utc=p.live_spot_utc,
+                      stop_spot=p.stop, target_spot=p.target, hold_sessions=p.hold_sessions, r_cautious=cautious,
+                      r_central=_num(revaluation.get("emp_path_r_central")),
+                      r_upside=_num(revaluation.get("emp_path_r_upside")),
                       p_target_first=_num(revaluation.get("emp_path_p_target_first_central")),
-                      p_stop_first=_num(revaluation.get("emp_path_p_stop_first_central")), share_spread=spread,
+                      p_stop_first=_num(revaluation.get("emp_path_p_stop_first_central")),
+                      share_spread=p.path_inputs.get("share_spread"),
+                      share_r_cautious=_num(revaluation.get("emp_share_r_cautious")),
+                      share_r_central=_num(revaluation.get("emp_share_r_central")),
+                      value_model_preference=_text(revaluation.get("emp_expression_preference")) or None,
                       quote_bid=p.quote_bid, quote_ask=p.quote_ask, quote_timestamp_utc=p.quote_timestamp_utc,
                       quote_state=p.quote_state, quote_adjustment_state=p.adjustment_state,
                       quote_spot_at_quote=p.spot_at_quote, quote_delta=p.delta, quote_shift=p.shift,

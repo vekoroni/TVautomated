@@ -19,9 +19,10 @@ def _parse(timestamp: str) -> datetime | None:
 
 
 def spot_at(ticker: str, session: date, timestamp: str | None, root: Path = DEFAULT_BAR_ROOT) -> float | None:
-    """Close of the last completed bar ending at or before ``timestamp`` (newest stored file for the session).
+    """Close of the bar that completed within one interval before ``timestamp`` (newest stored file for the session).
 
-    No bar ending at or before the instant means no reference price (never the nearest later bar).
+    No such bar means no reference price: never a later bar, and never an older bar whose close is not the price at
+    the quote instant.
     """
     instant = _parse(timestamp) if timestamp else None
     folder = Path(root) / session.isoformat() / ticker.upper()
@@ -33,8 +34,10 @@ def spot_at(ticker: str, session: date, timestamp: str | None, root: Path = DEFA
     bars = pd.read_parquet(files[-1], columns=["timestamp_utc", "close", "interval_minutes"])
     if bars.empty:
         return None
-    ends = pd.to_datetime(bars["timestamp_utc"], utc=True) + pd.to_timedelta(bars["interval_minutes"], unit="m")
-    eligible = bars[ends <= pd.Timestamp(instant)]
+    interval = pd.to_timedelta(bars["interval_minutes"], unit="m")
+    ends = pd.to_datetime(bars["timestamp_utc"], utc=True) + interval
+    moment = pd.Timestamp(instant)
+    eligible = bars[(ends <= moment) & (ends > moment - interval)]
     if eligible.empty:
         return None
     value = float(eligible.sort_values("timestamp_utc")["close"].iloc[-1])

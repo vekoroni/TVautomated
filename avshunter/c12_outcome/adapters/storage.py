@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS signal_tickets (
   limit_price REAL NOT NULL, scored_entry REAL NOT NULL, reference_spot REAL NOT NULL, reference_spot_utc TEXT,
   stop_spot REAL NOT NULL, target_spot REAL NOT NULL, hold_sessions INTEGER NOT NULL, r_cautious REAL NOT NULL,
   r_central REAL, r_upside REAL, p_target_first REAL, p_stop_first REAL, share_spread REAL,
-  quote_bid REAL, quote_ask REAL, quote_timestamp_utc TEXT, quote_state TEXT NOT NULL,
+  share_r_cautious REAL, share_r_central REAL, value_model_preference TEXT, quote_bid REAL, quote_ask REAL, quote_timestamp_utc TEXT, quote_state TEXT NOT NULL,
   quote_adjustment_state TEXT NOT NULL, quote_spot_at_quote REAL, quote_delta REAL, quote_shift REAL,
   iv_source TEXT NOT NULL, o4_pcr_oi REAL, o4_percentile REAL, o4_stance TEXT NOT NULL, o2_state TEXT NOT NULL,
   h9r_gap_up_event INTEGER NOT NULL, config_snapshot_id TEXT NOT NULL, recorded_at_utc TEXT NOT NULL
