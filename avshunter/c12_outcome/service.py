@@ -343,8 +343,10 @@ def score_expressions(connection: sqlite3.Connection, as_of: date, snapshot: Con
                 last_usable = last_usable_session(expiry, buffer_sessions)
                 plan = plan_exit(underlying_state, resolution, sessions_after(evidence_day, date.max, window),
                                  last_usable, evidence_day, as_of)
+                evidence_ask = quotes.ask(ticker, symbol, evidence_day)
                 outcome = mark_expression(geometry.contract_state, symbol, entry_ask, plan,
-                                          lambda sym, day, t=ticker: quotes.bid(t, sym, day), multiplier)
+                                          lambda sym, day, t=ticker: quotes.bid(t, sym, day), multiplier,
+                                          evidence_chain_ask=evidence_ask)
             counts[outcome.state] += 1
             if outcome.state == "PENDING":
                 continue
@@ -355,7 +357,7 @@ def score_expressions(connection: sqlite3.Connection, as_of: date, snapshot: Con
                 "expiry": expiry.isoformat() if expiry else None,
                 "last_usable_session": last_usable.isoformat() if last_usable else None,
                 "exit_session": outcome.exit_session.isoformat() if outcome.exit_session else None,
-                "exit_reason": outcome.exit_reason, "entry_ask": outcome.entry_ask, "entry_source": "RECORDED_ASK",
+                "exit_reason": outcome.exit_reason, "entry_ask": outcome.entry_ask, "entry_source": outcome.entry_source,
                 "exit_bid": outcome.exit_bid, "pnl_per_contract": outcome.pnl_per_contract,
                 "return_on_premium": outcome.return_on_premium, "evidence_session_chain_ask": evidence_ask,
                 "underlying_state": state, "underlying_return_to_exit_pct": underlying_return,
@@ -414,7 +416,7 @@ def _expression_section(connection, resamples, low_q, high_q, min_sessions, summ
         WHERE e.expression_version = ? AND p.provenance_class = 'RECORDED_AT_RUN'
         """, (EXPRESSION_VERSION,)).fetchall()
     lines = ["", "## Expressions: option contract vs underlying (headline predictions)", "",
-             "Entry at the recorded ask, exit at the end-of-day bid on the exit session (underlying resolution, "
+             "Entry at the recorded ask (else the chain ask on the evidence session; see entry_source), exit at the end-of-day bid on the exit session (underlying resolution, "
              "session-20 timeout, or the contract's last usable session). Underlying return is the same "
              "prediction's direction-signed return to its exit. Intervals: session-block bootstrap of the mean.", ""]
     states = defaultdict(int)
@@ -434,7 +436,7 @@ def _expression_section(connection, resamples, low_q, high_q, min_sessions, summ
         if row["state"] != "MARKED":
             continue
         labels = json.loads(row["first_labels"] or "{}")
-        keys = ["ALL", f"direction={row['direction']}", f"target_state={row['target_state']}",
+        keys = ["ALL", f"entry_source={row['entry_source']}", f"direction={row['direction']}", f"target_state={row['target_state']}",
                 f"underlying_state={row['underlying_state']}", f"exit_reason={row['exit_reason']}"]
         keys += [f"{label}={labels[label]}" for label in ("tier", "lab_verdict") if labels.get(label) not in (None, "")]
         for key in keys:

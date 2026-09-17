@@ -1,7 +1,9 @@
 """Expression marks: what the recorded option contract did (P0-8 §3.3, §5.3; pure).
 
 Rules:
-- entry at the recorded ``contract_ask`` (> 0), otherwise ENTRY_NOT_VALUED (no substitution);
+- entry at the recorded ``contract_ask`` (> 0); otherwise the chain ask for the same contract on the
+  evidence session (> 0), the quote available when the book was built (ACK, 17 Sep 2026); otherwise
+  ENTRY_NOT_VALUED. The entry source is always recorded;
 - the planned exit session follows the underlying outcome: resolution session for TARGET_FIRST /
   STOP_FIRST / AMBIGUOUS, the final window session for TIMEOUT or an unscorable underlying;
 - the contract is never held past its last usable session (expiry minus ``outcome.contract_exit_buffer``
@@ -20,7 +22,7 @@ from typing import Callable, Sequence
 
 from .model import ContractState, OutcomeState
 
-EXPRESSION_VERSION = "c12-expression-v1.0.0"
+EXPRESSION_VERSION = "c12-expression-v1.1.0"
 
 OCC_EXPIRY = re.compile(r"^[A-Z.]+(?P<yy>\d{2})(?P<mm>\d{2})(?P<dd>\d{2})[CP]\d{8}$")
 CENTURY = 2000
@@ -34,6 +36,14 @@ def contract_expiry(symbol: str) -> date | None:
         return date(CENTURY + int(match["yy"]), int(match["mm"]), int(match["dd"]))
     except ValueError:
         return None
+
+
+def choose_entry(recorded_ask: float | None, evidence_chain_ask: float | None) -> tuple[float | None, str]:
+    if recorded_ask is not None and recorded_ask > 0:
+        return recorded_ask, "RECORDED_ASK"
+    if evidence_chain_ask is not None and evidence_chain_ask > 0:
+        return evidence_chain_ask, "CHAIN_ASK_EVIDENCE_SESSION"
+    return None, "NONE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +84,7 @@ class ExpressionOutcome:
     pnl_per_contract: float | None
     return_on_premium: float | None
     reason: str = ""
+    entry_source: str = "NONE"
 
 
 def mark_expression(
@@ -83,6 +94,7 @@ def mark_expression(
     plan: ExitPlan,
     bid_lookup: Callable[[str, date], float | None],
     multiplier: float,
+    evidence_chain_ask: float | None = None,
 ) -> ExpressionOutcome:
     if contract_state is not ContractState.VALID:
         return ExpressionOutcome("CONTRACT_INVALID", None, None, entry_ask, None, None, None, contract_state.value)
@@ -91,12 +103,13 @@ def mark_expression(
                                  "contract expires within the exit buffer")
     if plan.session is None:
         return ExpressionOutcome("PENDING", None, plan.reason, entry_ask, None, None, None)
-    if entry_ask is None or not entry_ask > 0:
-        return ExpressionOutcome("ENTRY_NOT_VALUED", plan.session, plan.reason, entry_ask, None, None, None,
-                                 "recorded ask missing or not positive")
+    entry_ask, entry_source = choose_entry(entry_ask, evidence_chain_ask)
+    if entry_ask is None:
+        return ExpressionOutcome("ENTRY_NOT_VALUED", plan.session, plan.reason, None, None, None, None,
+                                 "recorded and evidence-session chain ask missing or not positive", entry_source)
     bid = bid_lookup(contract_symbol, plan.session)
     if bid is None:
         return ExpressionOutcome("MARK_UNAVAILABLE", plan.session, plan.reason, entry_ask, None, None, None,
-                                 f"no chain row for {contract_symbol} on {plan.session.isoformat()}")
+                                 f"no chain row for {contract_symbol} on {plan.session.isoformat()}", entry_source)
     return ExpressionOutcome("MARKED", plan.session, plan.reason, entry_ask, bid,
-                             (bid - entry_ask) * multiplier, bid / entry_ask - 1.0)
+                             (bid - entry_ask) * multiplier, bid / entry_ask - 1.0, "", entry_source)

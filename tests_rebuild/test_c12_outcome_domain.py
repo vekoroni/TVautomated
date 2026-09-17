@@ -322,3 +322,27 @@ def test_mark_states_and_return_on_premium():
     assert mark_expression(ContractState.VALID, "X", 1.0, plan, lambda sym, d: None, 100).state == "MARK_UNAVAILABLE"
     assert mark_expression(ContractState.SIDE_MISMATCH, "X", 1.0, plan, lambda sym, d: 2.5, 100).state == "CONTRACT_INVALID"
     assert mark_expression(ContractState.VALID, "X", 1.0, ExitPlan(None, "NOT_HOLDABLE"), lambda sym, d: 2.5, 100).state == "CONTRACT_INVALID"
+
+
+# --- ACK 17 Sep: chain ask on the evidence session when the recorded ask is unusable ----
+
+from avshunter.c12_outcome.expression import choose_entry
+
+
+def test_entry_prefers_recorded_ask_then_evidence_session_chain_ask():
+    assert choose_entry(1.2, 1.3) == (1.2, "RECORDED_ASK")
+    assert choose_entry(0.0, 1.3) == (1.3, "CHAIN_ASK_EVIDENCE_SESSION")
+    assert choose_entry(None, 1.3) == (1.3, "CHAIN_ASK_EVIDENCE_SESSION")
+    assert choose_entry(0.0, 0.0) == (None, "NONE")
+    assert choose_entry(None, None) == (None, "NONE")
+
+
+def test_mark_uses_chosen_entry_and_reports_its_source():
+    s = sessions_after(EVIDENCE, WINDOW)
+    plan = ExitPlan(s[2], "RESOLUTION")
+    marked = mark_expression(ContractState.VALID, "X261016C00105000", 0.0, plan, lambda sym, d: 2.6, 100,
+                             evidence_chain_ask=1.3)
+    assert (marked.state, marked.entry_ask, marked.entry_source) == ("MARKED", 1.3, "CHAIN_ASK_EVIDENCE_SESSION")
+    assert marked.return_on_premium == pytest.approx(1.0)
+    none = mark_expression(ContractState.VALID, "X", 0.0, plan, lambda sym, d: 2.6, 100, evidence_chain_ask=None)
+    assert (none.state, none.entry_source) == ("ENTRY_NOT_VALUED", "NONE")
