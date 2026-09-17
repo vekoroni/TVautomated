@@ -30,6 +30,7 @@
     "outcome.condition.vol_sessions@1": "c279a2e178b5325a332acc06740fcc5999a5f1a6e4a40e1eb85eed5578f8f372",
     "outcome.condition.vol_state_bands@1": "f359ee886981817262413039823a9129973285b863ad5592880a61eb216de5a1",
     "outcome.contract_exit_buffer@1": "879141229bd479f1594a4b81bea5fc50cc555107c3bbe1bedcc9231eeb10b7fc",
+    "outcome.contract_multiplier@1": "10fa2d4f6402601c9ede9b526be4543f4e0d2893e4dda96eaecb9eec598b04f3",
     "outcome.first_session_provenance_cutoff@1": "4deec63290938e0acaf847b53f908d284bea24042e5346aaa1bb973d6dec683d",
     "outcome.interval_quantiles@1": "9da99fd8ba9d3ef212458ec58abad867b51fc1c8d0c70120169f0b2819c76397",
     "outcome.min_sessions_for_verdict@1": "98f4affdf11df7731d8a3b699a1ee181ffa9afe8e7a90b3112eb72de79ada4ef",

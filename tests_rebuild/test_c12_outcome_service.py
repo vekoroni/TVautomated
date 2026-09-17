@@ -77,6 +77,14 @@ def world(tmp_path: Path):
     con.executemany("INSERT INTO ohlcv_daily VALUES (?,?,?,?,?,?,?)", rows)
     con.commit()
     con.close()
+    chain_db = tmp_path / "chains.sqlite"
+    con = sqlite3.connect(chain_db)
+    con.execute("CREATE TABLE chain_snapshots (ticker TEXT, quote_date TEXT, option_symbol TEXT, bid REAL, ask REAL, "
+                "PRIMARY KEY (ticker, quote_date, option_symbol))")
+    con.execute("INSERT INTO chain_snapshots VALUES ('UPCO', ?, 'UPCO261016C00105000', 3.0, 3.2)", (days[2].isoformat(),))
+    con.execute("INSERT INTO chain_snapshots VALUES ('UPCO', '2026-09-02', 'UPCO261016C00105000', 1.0, 1.2)")
+    con.commit()
+    con.close()
     store = storage.connect(tmp_path / "scoring.sqlite")
     return runs, prices_db, store, days
 
@@ -170,3 +178,18 @@ def test_provenance_after_first_session_close_is_retrospective():
     evidence, first = date(2026, 9, 2), date(2026, 9, 3)
     assert provenance_class(datetime(2026, 9, 3, 19, 0, tzinfo=timezone.utc), evidence, first) == "RECORDED_AT_RUN"
     assert provenance_class(datetime(2026, 9, 4, 1, 0, tzinfo=timezone.utc), evidence, first) == "RETROSPECTIVE_UNVERIFIED"
+
+
+def test_expressions_mark_resolved_contracts_and_wait_for_open_ones(world):
+    runs, prices_db, store, days = world
+    service.ingest(store, runs, NOW)
+    service.score(store, days[4], snapshot(), NOW, prices_db)
+    result = service.score_expressions(store, days[4], snapshot(), NOW, prices_db.parent / "chains.sqlite")
+    assert result["states"] == {"MARKED": 1, "PENDING": 1}
+    row = store.execute("SELECT state, exit_reason, entry_ask, exit_bid, pnl_per_contract, return_on_premium, "
+                        "evidence_session_chain_ask, underlying_state FROM expression_outcomes").fetchone()
+    assert row[:5] == ("MARKED", "RESOLUTION", 1.2, 3.0, pytest.approx(180.0))
+    assert row[5] == pytest.approx(1.5) and row[6] == 1.2 and row[7] == "TARGET_FIRST"
+    assert service.score_expressions(store, days[4], snapshot(), NOW, prices_db.parent / "chains.sqlite")["written"] == 0
+    path = service.build_report(store, days[4], snapshot(), prices_db.parent / "report")
+    assert "## Expressions" in path.read_text(encoding="utf-8")

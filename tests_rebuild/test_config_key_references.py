@@ -25,7 +25,6 @@ PENDING_CONSUMERS = {
     "market_data.daily_credit_budget": "P0-4",
     "market_data.backfill_daily_credit_cap": "P0-4",
     "market_data.provider_settlement_delay": "P0-4",
-    "outcome.contract_exit_buffer": "P0-8 increment 3 (expression marks)",
 }
 
 

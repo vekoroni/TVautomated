@@ -65,6 +65,15 @@ CREATE TABLE IF NOT EXISTS condition_records (
   config_snapshot_id TEXT NOT NULL, recorded_at_utc TEXT NOT NULL,
   PRIMARY KEY (prediction_id, condition_version)
 );
+CREATE TABLE IF NOT EXISTS expression_outcomes (
+  prediction_id TEXT NOT NULL, expression_version TEXT NOT NULL, as_of_session TEXT NOT NULL,
+  state TEXT NOT NULL, contract_symbol TEXT, expiry TEXT, last_usable_session TEXT,
+  exit_session TEXT, exit_reason TEXT, entry_ask REAL, entry_source TEXT, exit_bid REAL,
+  pnl_per_contract REAL, return_on_premium REAL, evidence_session_chain_ask REAL,
+  underlying_state TEXT, underlying_return_to_exit_pct REAL, reason TEXT,
+  config_snapshot_id TEXT NOT NULL, scored_at_utc TEXT NOT NULL,
+  PRIMARY KEY (prediction_id, expression_version)
+);
 CREATE VIEW IF NOT EXISTS latest_underlying_outcomes AS
   SELECT o.* FROM underlying_outcomes o
   JOIN (SELECT prediction_id, scorer_version, MAX(as_of_session) AS as_of_session

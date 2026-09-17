@@ -14,11 +14,12 @@ from avshunter.shared.xnys_calendar import is_xnys_session, previous_xnys_sessio
 import numpy as np
 
 from . import estimators
-from .adapters import books, macro, prices, storage
+from .adapters import books, chains, macro, prices, storage
 from .base_rate import BASE_RATE_VERSION, build_panel, matched_incidence, panel_atr
 from .conditions import CONDITION_VERSION, ConditionSettings, macro_condition, market_condition
+from .expression import EXPRESSION_VERSION, ExitPlan, contract_expiry, mark_expression, plan_exit
 from .geometry import classify
-from .model import Bar, OutcomeState, TargetState, UnderlyingOutcome
+from .model import Bar, ContractState, OutcomeState, TargetState, UnderlyingOutcome
 from .passage import evaluate_passage
 from .records import prediction_id, provenance_class, resolve_evidence_session
 
@@ -290,6 +291,83 @@ def _scalar(value):
     return value
 
 
+# --- expression marks (P0-8 §3.3, §5.3) ---------------------------------------------
+
+def last_usable_session(expiry: date, buffer_sessions: int) -> date:
+    session = expiry if is_xnys_session(expiry) else previous_xnys_session(expiry)
+    return sessions_before(session, buffer_sessions)
+
+
+def quotes_bid_unused(symbol: str, session: date) -> None:
+    raise AssertionError("invalid contracts are never marked")
+
+
+def score_expressions(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSnapshot, now: datetime,
+                      chain_db: Path = chains.DEFAULT_CHAIN_DB) -> dict:
+    window = int(snapshot.get("outcome.window_sessions").value)
+    buffer_sessions = int(snapshot.get("outcome.contract_exit_buffer").value)
+    multiplier = float(snapshot.get("outcome.contract_multiplier").value)
+    rows = connection.execute(
+        """
+        SELECT p.prediction_id, p.ticker, p.direction_text, p.evidence_session, p.reference_price,
+               p.invalidation_price, p.target_price, p.contract_symbol,
+               o.state, o.resolution_session, o.return_to_exit_pct,
+               (SELECT s.entry_ask FROM prediction_sightings s WHERE s.prediction_id = p.prediction_id
+                ORDER BY s.book_mtime_utc LIMIT 1) AS entry_ask
+        FROM prediction_records p
+        LEFT JOIN latest_underlying_outcomes o ON o.prediction_id = p.prediction_id AND o.scorer_version = ?
+        WHERE p.evidence_session IS NOT NULL AND p.evidence_session < ? AND p.contract_state != 'MISSING'
+          AND NOT EXISTS (SELECT 1 FROM expression_outcomes e WHERE e.prediction_id = p.prediction_id
+                          AND e.expression_version = ?)
+        """,
+        (SCORER_VERSION, as_of.isoformat(), EXPRESSION_VERSION),
+    ).fetchall()
+    quotes = chains.ChainQuotes(chain_db)
+    out_rows, counts = [], defaultdict(int)
+    try:
+        for (pid, ticker, direction_text, evidence, reference, invalidation, target, contract,
+             state, resolution, underlying_return, entry_ask) in rows:
+            geometry = classify(direction_text, reference, invalidation, target, contract)
+            evidence_day = date.fromisoformat(evidence)
+            symbol = geometry.contract_symbol or (str(contract).strip().upper() if contract else None)
+            expiry = contract_expiry(symbol) if symbol else None
+            underlying_state = OutcomeState(state) if state else None
+            if geometry.contract_state is not ContractState.VALID:
+                last_usable = None
+                outcome = mark_expression(geometry.contract_state, symbol, entry_ask, ExitPlan(None, "PENDING"),
+                                          quotes_bid_unused, multiplier)
+            elif expiry is None:
+                counts["UNPARSEABLE_EXPIRY"] += 1
+                continue
+            else:
+                last_usable = last_usable_session(expiry, buffer_sessions)
+                plan = plan_exit(underlying_state, resolution, sessions_after(evidence_day, date.max, window),
+                                 last_usable, evidence_day, as_of)
+                outcome = mark_expression(geometry.contract_state, symbol, entry_ask, plan,
+                                          lambda sym, day, t=ticker: quotes.bid(t, sym, day), multiplier)
+            counts[outcome.state] += 1
+            if outcome.state == "PENDING":
+                continue
+            evidence_ask = quotes.ask(ticker, symbol, evidence_day) if geometry.contract_state is ContractState.VALID else None
+            out_rows.append({
+                "prediction_id": pid, "expression_version": EXPRESSION_VERSION, "as_of_session": as_of.isoformat(),
+                "state": outcome.state, "contract_symbol": symbol,
+                "expiry": expiry.isoformat() if expiry else None,
+                "last_usable_session": last_usable.isoformat() if last_usable else None,
+                "exit_session": outcome.exit_session.isoformat() if outcome.exit_session else None,
+                "exit_reason": outcome.exit_reason, "entry_ask": outcome.entry_ask, "entry_source": "RECORDED_ASK",
+                "exit_bid": outcome.exit_bid, "pnl_per_contract": outcome.pnl_per_contract,
+                "return_on_premium": outcome.return_on_premium, "evidence_session_chain_ask": evidence_ask,
+                "underlying_state": state, "underlying_return_to_exit_pct": underlying_return,
+                "reason": outcome.reason, "config_snapshot_id": snapshot.snapshot_id, "scored_at_utc": now.isoformat(),
+            })
+    finally:
+        quotes.close()
+    written = storage.insert_ignore(connection, "expression_outcomes", out_rows)
+    connection.commit()
+    return {"candidates": len(rows), "written": written, "states": dict(counts)}
+
+
 # --- report --------------------------------------------------------------------
 
 GROUP_LABELS = ("tier", "lab_verdict", "final_action", "thesis_state", "ev3_absolute_state")
@@ -310,6 +388,74 @@ def _pct(values) -> str:
 
 def _signed(values) -> str:
     return " / ".join("n/a" if v != v else f"{v:+.1%}" for v in values)
+
+
+def _block_mean_interval(values_by_block: dict[str, list[float]], resamples: int, low_q: float, high_q: float):
+    blocks = sorted(values_by_block)
+    sums = np.array([sum(values_by_block[b]) for b in blocks])
+    counts = np.array([len(values_by_block[b]) for b in blocks], dtype=float)
+    point = float(sums.sum() / counts.sum())
+    rng = np.random.default_rng(0)
+    draws = rng.integers(0, len(blocks), size=(resamples, len(blocks)))
+    multiplicity = np.stack([np.bincount(row, minlength=len(blocks)) for row in draws]).astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        means = (multiplicity @ sums) / (multiplicity @ counts)
+    low, high = np.nanquantile(means, [low_q, high_q])
+    return float(low), point, float(high)
+
+
+def _expression_section(connection, resamples, low_q, high_q, min_sessions, summary) -> list[str]:
+    rows = connection.execute(
+        """
+        SELECT e.*, p.evidence_session, p.direction, p.target_state,
+               (SELECT labels_json FROM prediction_sightings s WHERE s.prediction_id = p.prediction_id
+                ORDER BY s.book_mtime_utc LIMIT 1) AS first_labels
+        FROM expression_outcomes e JOIN prediction_records p USING (prediction_id)
+        WHERE e.expression_version = ? AND p.provenance_class = 'RECORDED_AT_RUN'
+        """, (EXPRESSION_VERSION,)).fetchall()
+    lines = ["", "## Expressions: option contract vs underlying (headline predictions)", "",
+             "Entry at the recorded ask, exit at the end-of-day bid on the exit session (underlying resolution, "
+             "session-20 timeout, or the contract's last usable session). Underlying return is the same "
+             "prediction's direction-signed return to its exit. Intervals: session-block bootstrap of the mean.", ""]
+    states = defaultdict(int)
+    for row in rows:
+        states[row["state"]] += 1
+    lines.append("- **expression_state**: " + ", ".join(f"{k} {v}" for k, v in sorted(states.items())))
+    reasons = defaultdict(int)
+    for row in rows:
+        if row["state"] == "MARKED":
+            reasons[row["exit_reason"]] += 1
+    lines.append("- **exit_reason (marked)**: " + ", ".join(f"{k} {v}" for k, v in sorted(reasons.items())))
+    lines += ["", "| Group | Marked | Sessions | Win rate (bid > ask) | Median return on premium | "
+              "Mean return on premium (low / point / high) | Mean underlying return, same predictions | Verdict |",
+              "|---|---|---|---|---|---|---|---|"]
+    groups: dict[str, list] = defaultdict(list)
+    for row in rows:
+        if row["state"] != "MARKED":
+            continue
+        labels = json.loads(row["first_labels"] or "{}")
+        keys = ["ALL", f"direction={row['direction']}", f"target_state={row['target_state']}",
+                f"underlying_state={row['underlying_state']}", f"exit_reason={row['exit_reason']}"]
+        keys += [f"{label}={labels[label]}" for label in ("tier", "lab_verdict") if labels.get(label) not in (None, "")]
+        for key in keys:
+            groups[key].append(row)
+    for group, items in sorted(groups.items()):
+        by_block, underlying = defaultdict(list), []
+        for row in items:
+            by_block[row["evidence_session"]].append(row["return_on_premium"])
+            if row["underlying_return_to_exit_pct"] is not None:
+                underlying.append(row["underlying_return_to_exit_pct"])
+        values = [row["return_on_premium"] for row in items]
+        interval = _block_mean_interval(by_block, resamples, low_q, high_q)
+        verdict = "OK" if len(by_block) >= min_sessions else "INSUFFICIENT_SESSIONS"
+        win = sum(1 for v in values if v > 0) / len(values)
+        under = f"{float(np.mean(underlying)):+.1%}" if underlying else "n/a"
+        lines.append(f"| {group} | {len(items)} | {len(by_block)} | {win:.0%} | {float(np.median(values)):+.1%} | "
+                     f"{_signed(interval)} | {under} | {verdict} |")
+        summary.append({"section": "Expressions", "group": group, "marked": len(items), "sessions": len(by_block),
+                        "win_rate": win, "median_return_on_premium": float(np.median(values)),
+                        "mean_return_on_premium": interval, "verdict": verdict})
+    return lines
 
 
 def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSnapshot, output_dir: Path) -> Path:
@@ -407,6 +553,7 @@ def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSn
                             "excess_target": paired.excess_target, "stop": obs.stop_by_final_session,
                             "base_stop": paired.base_stop, "excess_stop": paired.excess_stop, "verdict": verdict})
 
+    lines += _expression_section(connection, resamples, low_q, high_q, min_sessions, summary)
     lines += ["", "## Resolution timing (session of first touch)", "", "| State | " +
               " | ".join(str(k) for k in range(1, window + 1)) + " |", "|---|" + "---|" * window]
     for state, by_session in sorted(timing.items()):

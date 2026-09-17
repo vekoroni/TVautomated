@@ -290,3 +290,35 @@ def test_market_condition_trend_breadth_and_drawdown():
     falling = market_condition(list(reversed(rising)), panel, SETTINGS)
     assert falling.market_trend_state == "BELOW_BOTH" and falling.market_drawdown_pct < 0
     assert market_condition(rising[:3], panel, SETTINGS).market_trend_state == "INSUFFICIENT_HISTORY"
+
+
+# --- increment 3: expression marks -------------------------------------------------
+
+from avshunter.c12_outcome.expression import ExitPlan, contract_expiry, mark_expression, plan_exit
+
+
+def test_contract_expiry_parses_occ_symbol():
+    assert contract_expiry("SNAP261016P00010000") == date(2026, 10, 16)
+    assert contract_expiry("BAD") is None
+
+
+def test_exit_follows_underlying_resolution_and_never_passes_last_usable_session():
+    s = sessions_after(EVIDENCE, WINDOW)
+    far = date(2026, 12, 18)
+    assert plan_exit(OutcomeState.TARGET_FIRST, 3, s, far, EVIDENCE, s[5]) == ExitPlan(s[2], "RESOLUTION")
+    assert plan_exit(OutcomeState.TIMEOUT, WINDOW, s, far, EVIDENCE, s[-1]) == ExitPlan(s[-1], "TIMEOUT")
+    assert plan_exit(OutcomeState.TARGET_FIRST, 8, s, s[4], EVIDENCE, s[9]) == ExitPlan(s[4], "CONTRACT_LAST_USABLE")
+    assert plan_exit(OutcomeState.OPEN_CENSORED, None, s, far, EVIDENCE, s[3]).reason == "PENDING"
+    assert plan_exit(OutcomeState.OPEN_CENSORED, None, s, s[2], EVIDENCE, s[3]) == ExitPlan(s[2], "CONTRACT_LAST_USABLE")
+    assert plan_exit(OutcomeState.STOP_FIRST, 1, s, EVIDENCE, EVIDENCE, s[3]).reason == "NOT_HOLDABLE"
+
+
+def test_mark_states_and_return_on_premium():
+    s = sessions_after(EVIDENCE, WINDOW)
+    plan = ExitPlan(s[2], "RESOLUTION")
+    marked = mark_expression(ContractState.VALID, "X261016C00105000", 1.25, plan, lambda sym, d: 2.5, 100)
+    assert (marked.state, marked.pnl_per_contract, marked.return_on_premium) == ("MARKED", 125.0, pytest.approx(1.0))
+    assert mark_expression(ContractState.VALID, "X", 0.0, plan, lambda sym, d: 2.5, 100).state == "ENTRY_NOT_VALUED"
+    assert mark_expression(ContractState.VALID, "X", 1.0, plan, lambda sym, d: None, 100).state == "MARK_UNAVAILABLE"
+    assert mark_expression(ContractState.SIDE_MISMATCH, "X", 1.0, plan, lambda sym, d: 2.5, 100).state == "CONTRACT_INVALID"
+    assert mark_expression(ContractState.VALID, "X", 1.0, ExitPlan(None, "NOT_HOLDABLE"), lambda sym, d: 2.5, 100).state == "CONTRACT_INVALID"

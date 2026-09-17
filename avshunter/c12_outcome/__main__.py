@@ -4,6 +4,7 @@
   python -m avshunter.c12_outcome score  [--as-of YYYY-MM-DD]   (default: latest complete price session)
   python -m avshunter.c12_outcome conditions                  (analysis labels; never used by decisions)
   python -m avshunter.c12_outcome base-rate [--as-of YYYY-MM-DD]
+  python -m avshunter.c12_outcome expressions [--as-of YYYY-MM-DD]
   python -m avshunter.c12_outcome report [--as-of YYYY-MM-DD]
   python -m avshunter.c12_outcome all    [--as-of YYYY-MM-DD]
 """
@@ -38,7 +39,7 @@ def _config_session(clock) -> date:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m avshunter.c12_outcome")
-    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "report", "all"])
+    parser.add_argument("command", choices=["ingest", "score", "conditions", "base-rate", "expressions", "report", "all"])
     parser.add_argument("--as-of", default=None)
     args = parser.parse_args(argv)
     now = wall_clock_utc()
@@ -63,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
         results["conditions"] = service.record_conditions(connection, RUNS_DIR, snapshot, now)
     if args.command in ("base-rate", "all"):
         results["base_rate"] = service.score_base_rates(connection, as_of, snapshot, now)
+    if args.command in ("expressions", "all"):
+        results["expressions"] = service.score_expressions(connection, as_of, snapshot, now)
     if args.command in ("report", "all"):
         results["report"] = str(service.build_report(connection, as_of, snapshot, REPORTS_DIR / as_of.isoformat()))
     print(json.dumps(results, indent=2, default=str))
