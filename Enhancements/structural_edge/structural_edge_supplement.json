@@ -1,0 +1,2172 @@
+{
+ "etf_list": [
+  "SPY",
+  "QQQ",
+  "IWM",
+  "DIA",
+  "XLF",
+  "XLE",
+  "XLK",
+  "XLV",
+  "XLI",
+  "XLU",
+  "XLP",
+  "XLY",
+  "XLB",
+  "XLRE",
+  "XLC",
+  "SMH",
+  "XBI",
+  "GLD",
+  "SLV",
+  "TLT",
+  "EEM",
+  "EFA",
+  "HYG",
+  "KRE",
+  "ARKK",
+  "USO",
+  "GDX",
+  "FXI",
+  "EWZ",
+  "IBIT"
+ ],
+ "cells": {
+  "t07_20|iron_condor_25_15|le10": {
+   "tp50_trigger_rate": 0.04709302325581395,
+   "hold_session_equal_weight_mean": -0.05067162316661945,
+   "hold_mean_excluding_jump_windows_ex_post": 0.012192687444761145,
+   "etf_hold": {
+    "n": 498,
+    "sessions": 115,
+    "tickers": 13,
+    "mean": 0.017485333611196918,
+    "median": 0.3313638601674052,
+    "win_rate": 0.642570281124498,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.20054022120565493,
+    "worst5_sum_over_net_total": -2.871023471963085,
+    "net_total": 8.707696138376065,
+    "entry_spread_cost_per_risk": 0.029593059152799774,
+    "mean_hold_days": 13.981927710843374,
+    "bootstrap": {
+     "block_ci95": [
+      -0.0380715231139544,
+      0.07104364745235205
+     ],
+     "block_p_mean_le_0": 0.251,
+     "iid_session_ci95": [
+      -0.03451515988167764,
+      0.06767395864929401
+     ],
+     "session_equal_weight_mean": 0.01999331111716824
+    }
+   },
+   "etf_tp50": {
+    "n": 498,
+    "sessions": 115,
+    "tickers": 13,
+    "mean": 0.019161068235542596,
+    "median": 0.30434782608695654,
+    "win_rate": 0.6526104417670683,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.20387052720303775,
+    "worst5_sum_over_net_total": -2.619937604508501,
+    "net_total": 9.542211981300213,
+    "entry_spread_cost_per_risk": 0.029593059152799774,
+    "mean_hold_days": 13.981927710843374
+   },
+   "etf_mid": {
+    "n": 343,
+    "sessions": 106,
+    "tickers": 12,
+    "mean": -0.00846797075734489,
+    "median": 0.06711409395973165,
+    "win_rate": 0.6268221574344023,
+    "p01": -0.8923360135421075,
+    "p05": -0.471958329760782,
+    "worst5_sum_over_gross_gains": 0.5100834761176058,
+    "worst5_sum_over_net_total": -4.840254940726751,
+    "net_total": -2.9045139697692974,
+    "entry_spread_cost_per_risk": 0.031866516805322494,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 1222,
+    "sessions": 188,
+    "tickers": 107,
+    "mean": -0.04331076753610375,
+    "median": 0.2953367875647668,
+    "win_rate": 0.5924713584288053,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.21522866652094275,
+    "worst5_sum_over_net_total": -1.1714522838394483,
+    "net_total": -52.92575792911879,
+    "entry_spread_cost_per_risk": 0.03707150651386942,
+    "mean_hold_days": 13.963993453355155,
+    "bootstrap": {
+     "block_ci95": [
+      -0.08770776345709158,
+      -0.00010847646986760049
+     ],
+     "block_p_mean_le_0": 0.975,
+     "iid_session_ci95": [
+      -0.0863927605242888,
+      -0.001864329515723783
+     ],
+     "session_equal_weight_mean": -0.06422355765871839
+    }
+   }
+  },
+  "t07_20|iron_condor_25_15|le20": {
+   "tp50_trigger_rate": 0.027598020555767034,
+   "hold_session_equal_weight_mean": -0.11864454615731265,
+   "hold_mean_excluding_jump_windows_ex_post": -0.04324383466566804,
+   "etf_hold": {
+    "n": 773,
+    "sessions": 116,
+    "tickers": 16,
+    "mean": -0.008739355597318225,
+    "median": 0.293103448275862,
+    "win_rate": 0.628719275549806,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.21562109313272848,
+    "worst5_sum_over_net_total": -5.773055096506516,
+    "net_total": -6.755521876726988,
+    "entry_spread_cost_per_risk": 0.042337324430295094,
+    "mean_hold_days": 13.971539456662354,
+    "bootstrap": {
+     "block_ci95": [
+      -0.05974409029063868,
+      0.04140991245200789
+     ],
+     "block_p_mean_le_0": 0.628,
+     "iid_session_ci95": [
+      -0.05945635163092493,
+      0.039284639851527414
+     ],
+     "session_equal_weight_mean": -0.024598068259222082
+    }
+   },
+   "etf_tp50": {
+    "n": 773,
+    "sessions": 116,
+    "tickers": 16,
+    "mean": -0.00741633273727834,
+    "median": 0.28205128205128216,
+    "win_rate": 0.6364812419146184,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.21815246120000903,
+    "worst5_sum_over_net_total": -6.802928503690084,
+    "net_total": -5.732825205916157,
+    "entry_spread_cost_per_risk": 0.042337324430295094,
+    "mean_hold_days": 13.971539456662354
+   },
+   "etf_mid": {
+    "n": 540,
+    "sessions": 106,
+    "tickers": 14,
+    "mean": -0.029686342851045593,
+    "median": 0.032915441366145645,
+    "win_rate": 0.562962962962963,
+    "p01": -0.9173148539991537,
+    "p05": -0.467549086855869,
+    "worst5_sum_over_gross_gains": 0.6077729095728615,
+    "worst5_sum_over_net_total": -1.3573143118079265,
+    "net_total": -16.03062513956462,
+    "entry_spread_cost_per_risk": 0.04397309818738321,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 4481,
+    "sessions": 238,
+    "tickers": 322,
+    "mean": -0.08896251698734353,
+    "median": 0.24319526627218882,
+    "win_rate": 0.5842445882615488,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.24618260016474502,
+    "worst5_sum_over_net_total": -0.5644175541452896,
+    "net_total": -398.6410386202864,
+    "entry_spread_cost_per_risk": 0.06653037485477616,
+    "mean_hold_days": 13.978353046195046,
+    "bootstrap": {
+     "block_ci95": [
+      -0.11765211625778643,
+      -0.06127906435148704
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.1182127939616384,
+      -0.06094246482751736
+     ],
+     "session_equal_weight_mean": -0.124997402955048
+    }
+   }
+  },
+  "t07_20|iron_condor_25_15|le35": {
+   "tp50_trigger_rate": 0.0162408919322272,
+   "hold_session_equal_weight_mean": -0.13172710419485537,
+   "hold_mean_excluding_jump_windows_ex_post": -0.0746921955585871,
+   "etf_hold": {
+    "n": 922,
+    "sessions": 137,
+    "tickers": 19,
+    "mean": -0.028848542405774853,
+    "median": 0.27118644067796605,
+    "win_rate": 0.6203904555314533,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.23069612947884585,
+    "worst5_sum_over_net_total": -1.7670264969237783,
+    "net_total": -26.598356098124412,
+    "entry_spread_cost_per_risk": 0.05410327150648454,
+    "mean_hold_days": 13.969631236442517,
+    "bootstrap": {
+     "block_ci95": [
+      -0.07600913923471335,
+      0.01812854173382901
+     ],
+     "block_p_mean_le_0": 0.8895,
+     "iid_session_ci95": [
+      -0.07643791106780308,
+      0.0156446844288913
+     ],
+     "session_equal_weight_mean": -0.05271819213247811
+    }
+   },
+   "etf_tp50": {
+    "n": 922,
+    "sessions": 137,
+    "tickers": 19,
+    "mean": -0.027896768674225754,
+    "median": 0.26582278481012656,
+    "win_rate": 0.6268980477223427,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.2332653757911686,
+    "worst5_sum_over_net_total": -1.827313386146082,
+    "net_total": -25.720820717636144,
+    "entry_spread_cost_per_risk": 0.05410327150648454,
+    "mean_hold_days": 13.969631236442517
+   },
+   "etf_mid": {
+    "n": 635,
+    "sessions": 120,
+    "tickers": 18,
+    "mean": -0.05437683214254436,
+    "median": 0.009009009009009018,
+    "win_rate": 0.5133858267716536,
+    "p01": -1.0296649537512848,
+    "p05": -0.5495453190220633,
+    "worst5_sum_over_gross_gains": 0.7361196581966042,
+    "worst5_sum_over_net_total": -0.7851108798565805,
+    "net_total": -34.52928841051567,
+    "entry_spread_cost_per_risk": 0.05425983396297433,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 10469,
+    "sessions": 241,
+    "tickers": 550,
+    "mean": -0.11502502978296548,
+    "median": 0.1976047904191617,
+    "win_rate": 0.5792339287420002,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.27978409854422115,
+    "worst5_sum_over_net_total": -0.43514473461369074,
+    "net_total": -1204.1970367978656,
+    "entry_spread_cost_per_risk": 0.09642815432087366,
+    "mean_hold_days": 13.962651638169834,
+    "bootstrap": {
+     "block_ci95": [
+      -0.13925674607130104,
+      -0.09177495748486919
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.13821638919481918,
+      -0.09194464551421754
+     ],
+     "session_equal_weight_mean": -0.1325653406886027
+    }
+   }
+  },
+  "t07_20|put_credit_spread_25_15|le10": {
+   "tp50_trigger_rate": 0.27994661327994663,
+   "hold_session_equal_weight_mean": -0.011459931071310294,
+   "hold_mean_excluding_jump_windows_ex_post": 0.029781595278041535,
+   "etf_hold": {
+    "n": 627,
+    "sessions": 116,
+    "tickers": 16,
+    "mean": 0.03769016738863671,
+    "median": 0.18343195266272186,
+    "win_rate": 0.8373205741626795,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.32031573878994546,
+    "worst5_sum_over_net_total": -1.354111328012227,
+    "net_total": 23.631734952675217,
+    "entry_spread_cost_per_risk": 0.01606395232823448,
+    "mean_hold_days": 13.974481658692184,
+    "bootstrap": {
+     "block_ci95": [
+      -0.009331507932786559,
+      0.08175761027075784
+     ],
+     "block_p_mean_le_0": 0.06,
+     "iid_session_ci95": [
+      -0.003076725169886799,
+      0.07712948322239187
+     ],
+     "session_equal_weight_mean": 0.017052921272280086
+    }
+   },
+   "etf_tp50": {
+    "n": 627,
+    "sessions": 116,
+    "tickers": 16,
+    "mean": 0.031171317835046793,
+    "median": 0.16666666666666666,
+    "win_rate": 0.8500797448165869,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3463703369947435,
+    "worst5_sum_over_net_total": -1.637296276201964,
+    "net_total": 19.54441628257434,
+    "entry_spread_cost_per_risk": 0.01606395232823448,
+    "mean_hold_days": 13.974481658692184
+   },
+   "etf_mid": {
+    "n": 505,
+    "sessions": 107,
+    "tickers": 15,
+    "mean": -0.045268449939844094,
+    "median": 0.041666666666666706,
+    "win_rate": 0.5861386138613861,
+    "p01": -0.9389051808406645,
+    "p05": -0.5999245852187027,
+    "worst5_sum_over_gross_gains": 0.6432785462306011,
+    "worst5_sum_over_net_total": -0.9276859099606211,
+    "net_total": -22.860567219621267,
+    "entry_spread_cost_per_risk": 0.0166694335461549,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 2370,
+    "sessions": 218,
+    "tickers": 228,
+    "mean": -0.0032655091658742724,
+    "median": 0.19760479041916168,
+    "win_rate": 0.7839662447257384,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.30007726259382284,
+    "worst5_sum_over_net_total": -15.376153583905827,
+    "net_total": -7.7392567231220255,
+    "entry_spread_cost_per_risk": 0.023970624300650653,
+    "mean_hold_days": 13.972995780590717,
+    "bootstrap": {
+     "block_ci95": [
+      -0.04752484149011701,
+      0.038612451097682986
+     ],
+     "block_p_mean_le_0": 0.535,
+     "iid_session_ci95": [
+      -0.04464841307865622,
+      0.03476755219263655
+     ],
+     "session_equal_weight_mean": -0.01263969550628933
+    }
+   }
+  },
+  "t07_20|put_credit_spread_25_15|le20": {
+   "tp50_trigger_rate": 0.20659062103929024,
+   "hold_session_equal_weight_mean": -0.03532902311309713,
+   "hold_mean_excluding_jump_windows_ex_post": -0.0027884091640235356,
+   "etf_hold": {
+    "n": 883,
+    "sessions": 121,
+    "tickers": 18,
+    "mean": 0.04082363998652782,
+    "median": 0.17647058823529407,
+    "win_rate": 0.8482446206115515,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.32831295939442284,
+    "worst5_sum_over_net_total": -1.2483606906044307,
+    "net_total": 36.04727410810406,
+    "entry_spread_cost_per_risk": 0.023222725221722328,
+    "mean_hold_days": 13.97281993204983,
+    "bootstrap": {
+     "block_ci95": [
+      -0.005546554007000914,
+      0.0808013574857093
+     ],
+     "block_p_mean_le_0": 0.038,
+     "iid_session_ci95": [
+      0.004847678999413529,
+      0.07539926034322289
+     ],
+     "session_equal_weight_mean": 0.026875034934306246
+    }
+   },
+   "etf_tp50": {
+    "n": 883,
+    "sessions": 121,
+    "tickers": 18,
+    "mean": 0.034523398403146825,
+    "median": 0.1619047619047619,
+    "win_rate": 0.8607021517553793,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3557619829086289,
+    "worst5_sum_over_net_total": -1.4761764415962957,
+    "net_total": 30.484160789978645,
+    "entry_spread_cost_per_risk": 0.023222725221722328,
+    "mean_hold_days": 13.97281993204983
+   },
+   "etf_mid": {
+    "n": 720,
+    "sessions": 111,
+    "tickers": 17,
+    "mean": -0.0527844951974017,
+    "median": 0.042160347551342826,
+    "win_rate": 0.5847222222222223,
+    "p01": -0.9366141251221896,
+    "p05": -0.590681979818386,
+    "worst5_sum_over_gross_gains": 0.6972369802709363,
+    "worst5_sum_over_net_total": -0.7977631902492482,
+    "net_total": -38.004836542129226,
+    "entry_spread_cost_per_risk": 0.023740743198097474,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 8585,
+    "sessions": 240,
+    "tickers": 502,
+    "mean": -0.03143895599829492,
+    "median": 0.17647058823529407,
+    "win_rate": 0.7754222481071636,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3369963670598021,
+    "worst5_sum_over_net_total": -1.5931623709152647,
+    "net_total": -269.90343724536183,
+    "entry_spread_cost_per_risk": 0.04360342159787509,
+    "mean_hold_days": 13.971578334304018,
+    "bootstrap": {
+     "block_ci95": [
+      -0.0703268285396915,
+      0.004696682525932267
+     ],
+     "block_p_mean_le_0": 0.958,
+     "iid_session_ci95": [
+      -0.06425983103560212,
+      0.0005246509728463227
+     ],
+     "session_equal_weight_mean": -0.03832482752997236
+    }
+   }
+  },
+  "t07_20|put_credit_spread_25_15|le35": {
+   "tp50_trigger_rate": 0.14764234636270768,
+   "hold_session_equal_weight_mean": -0.049287896300393944,
+   "hold_mean_excluding_jump_windows_ex_post": -0.024767329357678208,
+   "etf_hold": {
+    "n": 1061,
+    "sessions": 157,
+    "tickers": 20,
+    "mean": 0.02386275227909222,
+    "median": 0.16788321167883213,
+    "win_rate": 0.8397737983034873,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3468525421438041,
+    "worst5_sum_over_net_total": -2.1328378688302343,
+    "net_total": 25.318380168116846,
+    "entry_spread_cost_per_risk": 0.031828795773779,
+    "mean_hold_days": 13.970782280867107,
+    "bootstrap": {
+     "block_ci95": [
+      -0.02023980129985736,
+      0.06283663741372474
+     ],
+     "block_p_mean_le_0": 0.1285,
+     "iid_session_ci95": [
+      -0.011268111208848948,
+      0.05695900136512143
+     ],
+     "session_equal_weight_mean": -0.008059145092270566
+    }
+   },
+   "etf_tp50": {
+    "n": 1061,
+    "sessions": 157,
+    "tickers": 20,
+    "mean": 0.01770860797683177,
+    "median": 0.1538461538461538,
+    "win_rate": 0.8501413760603205,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3746252651720275,
+    "worst5_sum_over_net_total": -2.8740475695181384,
+    "net_total": 18.788833063418508,
+    "entry_spread_cost_per_risk": 0.031828795773779,
+    "mean_hold_days": 13.970782280867107
+   },
+   "etf_mid": {
+    "n": 858,
+    "sessions": 141,
+    "tickers": 18,
+    "mean": -0.08019518428096578,
+    "median": 0.023774198106542275,
+    "win_rate": 0.5442890442890443,
+    "p01": -1.1581728704366496,
+    "p05": -0.6546931913701316,
+    "worst5_sum_over_gross_gains": 0.9660290452652165,
+    "worst5_sum_over_net_total": -0.6576474451432275,
+    "net_total": -68.80746811306864,
+    "entry_spread_cost_per_risk": 0.03182413478975593,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 17538,
+    "sessions": 241,
+    "tickers": 809,
+    "mean": -0.05037689179772618,
+    "median": 0.14942528735632177,
+    "win_rate": 0.7691869084274148,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3861315658992813,
+    "worst5_sum_over_net_total": -0.9926317428478815,
+    "net_total": -883.5099283485217,
+    "entry_spread_cost_per_risk": 0.06121855511889363,
+    "mean_hold_days": 13.914927585813661,
+    "bootstrap": {
+     "block_ci95": [
+      -0.08468518524417139,
+      -0.0191711343813044
+     ],
+     "block_p_mean_le_0": 0.9995,
+     "iid_session_ci95": [
+      -0.08087883449306829,
+      -0.02326292542287617
+     ],
+     "session_equal_weight_mean": -0.05016691027992424
+    }
+   }
+  },
+  "t07_20|short_straddle|le10": {
+   "tp50_trigger_rate": 0.010349671028313743,
+   "hold_session_equal_weight_mean": -0.007564316257365285,
+   "hold_mean_excluding_jump_windows_ex_post": 0.02216225005758567,
+   "etf_hold": {
+    "n": 963,
+    "sessions": 124,
+    "tickers": 18,
+    "mean": 0.010590781595940768,
+    "median": 0.03558467266814351,
+    "win_rate": 0.5981308411214953,
+    "p01": -0.6619208133575795,
+    "p05": -0.2925284362209355,
+    "worst5_sum_over_gross_gains": 0.3821836172609662,
+    "worst5_sum_over_net_total": -2.445037915105043,
+    "net_total": 10.198922676890959,
+    "entry_spread_cost_per_risk": 0.0035944744747853697,
+    "mean_hold_days": 13.96988577362409,
+    "bootstrap": {
+     "block_ci95": [
+      -0.0038463502805545467,
+      0.02479938850896819
+     ],
+     "block_p_mean_le_0": 0.0785,
+     "iid_session_ci95": [
+      -0.002554737765327859,
+      0.023820423238332375
+     ],
+     "session_equal_weight_mean": 0.012640958800266803
+    }
+   },
+   "etf_tp50": {
+    "n": 963,
+    "sessions": 124,
+    "tickers": 18,
+    "mean": 0.010714363052020776,
+    "median": 0.03558467266814351,
+    "win_rate": 0.5981308411214953,
+    "p01": -0.6619208133575795,
+    "p05": -0.2925284362209355,
+    "worst5_sum_over_gross_gains": 0.38148780444575897,
+    "worst5_sum_over_net_total": -2.41683639306846,
+    "net_total": 10.317931619096008,
+    "entry_spread_cost_per_risk": 0.0035944744747853697,
+    "mean_hold_days": 13.96988577362409
+   },
+   "etf_mid": {
+    "n": 868,
+    "sessions": 115,
+    "tickers": 17,
+    "mean": -0.0010314122326496719,
+    "median": 0.01883516873332132,
+    "win_rate": 0.652073732718894,
+    "p01": -0.4001609297599254,
+    "p05": -0.17150560724657854,
+    "worst5_sum_over_gross_gains": 0.5375652873905135,
+    "worst5_sum_over_net_total": -15.179206808970724,
+    "net_total": -0.8952658179399151,
+    "entry_spread_cost_per_risk": 0.003500224156962048,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 12564,
+    "sessions": 240,
+    "tickers": 726,
+    "mean": -0.00927438374475656,
+    "median": 0.03906719614089925,
+    "win_rate": 0.5717924227952881,
+    "p01": -1.265894583518002,
+    "p05": -0.5951776548909689,
+    "worst5_sum_over_gross_gains": 0.45771536049003464,
+    "worst5_sum_over_net_total": -5.499662171349489,
+    "net_total": -116.52335736912141,
+    "entry_spread_cost_per_risk": 0.011048918602967542,
+    "mean_hold_days": 13.933062718879338,
+    "bootstrap": {
+     "block_ci95": [
+      -0.025036741298535597,
+      0.006918933592762537
+     ],
+     "block_p_mean_le_0": 0.8625,
+     "iid_session_ci95": [
+      -0.025506512027883715,
+      0.0060316695367002866
+     ],
+     "session_equal_weight_mean": -0.007634840317904296
+    }
+   }
+  },
+  "t07_20|short_straddle|le20": {
+   "tp50_trigger_rate": 0.00618116783282608,
+   "hold_session_equal_weight_mean": -0.011612594062877107,
+   "hold_mean_excluding_jump_windows_ex_post": 0.015967301807575326,
+   "etf_hold": {
+    "n": 1186,
+    "sessions": 159,
+    "tickers": 20,
+    "mean": 0.005713779288934503,
+    "median": 0.03627135888545549,
+    "win_rate": 0.6011804384485666,
+    "p01": -0.7128455845672315,
+    "p05": -0.3167127506429118,
+    "worst5_sum_over_gross_gains": 0.4116860572210675,
+    "worst5_sum_over_net_total": -4.995082266593819,
+    "net_total": 6.77654223667632,
+    "entry_spread_cost_per_risk": 0.006022450218186598,
+    "mean_hold_days": 13.96627318718381,
+    "bootstrap": {
+     "block_ci95": [
+      -0.009315039048968207,
+      0.020693273568166345
+     ],
+     "block_p_mean_le_0": 0.2235,
+     "iid_session_ci95": [
+      -0.008559680818840966,
+      0.019098971099226054
+     ],
+     "session_equal_weight_mean": 0.00375528193810436
+    }
+   },
+   "etf_tp50": {
+    "n": 1186,
+    "sessions": 159,
+    "tickers": 20,
+    "mean": 0.005814124096864567,
+    "median": 0.03627135888545549,
+    "win_rate": 0.6011804384485666,
+    "p01": -0.7128455845672315,
+    "p05": -0.3167127506429118,
+    "worst5_sum_over_gross_gains": 0.41109103530073615,
+    "worst5_sum_over_net_total": -4.90887313822201,
+    "net_total": 6.895551178881377,
+    "entry_spread_cost_per_risk": 0.006022450218186598,
+    "mean_hold_days": 13.96627318718381
+   },
+   "etf_mid": {
+    "n": 1061,
+    "sessions": 147,
+    "tickers": 19,
+    "mean": -0.007482331212565476,
+    "median": 0.014848657909765847,
+    "win_rate": 0.6116870876531574,
+    "p01": -0.40422242422930854,
+    "p05": -0.18851435705368288,
+    "worst5_sum_over_gross_gains": 0.5975212561225837,
+    "worst5_sum_over_net_total": -2.1741735067687014,
+    "net_total": -7.93875341653197,
+    "entry_spread_cost_per_risk": 0.005728150490905626,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 30685,
+    "sessions": 241,
+    "tickers": 1170,
+    "mean": -0.01249061300678107,
+    "median": 0.036217303822937745,
+    "win_rate": 0.5690402476780185,
+    "p01": -1.2805997188162304,
+    "p05": -0.5841378553674899,
+    "worst5_sum_over_gross_gains": 0.47868285957417467,
+    "worst5_sum_over_net_total": -4.1207835441852145,
+    "net_total": -383.2744601130771,
+    "entry_spread_cost_per_risk": 0.018153802878287113,
+    "mean_hold_days": 13.666025745478247,
+    "bootstrap": {
+     "block_ci95": [
+      -0.025289405600651557,
+      0.0009890410787747042
+     ],
+     "block_p_mean_le_0": 0.965,
+     "iid_session_ci95": [
+      -0.02496590795399779,
+      0.00011659000594631708
+     ],
+     "session_equal_weight_mean": -0.011706713797526825
+    }
+   }
+  },
+  "t07_20|short_straddle|le35": {
+   "tp50_trigger_rate": 0.0044687089273076535,
+   "hold_session_equal_weight_mean": -0.014725027010452132,
+   "hold_mean_excluding_jump_windows_ex_post": 0.01076269495678996,
+   "etf_hold": {
+    "n": 1453,
+    "sessions": 200,
+    "tickers": 26,
+    "mean": 0.0022196369544532977,
+    "median": 0.03337131694611732,
+    "win_rate": 0.5939435650378527,
+    "p01": -0.6896990932644007,
+    "p05": -0.3180132501182012,
+    "worst5_sum_over_gross_gains": 0.42215416869269545,
+    "worst5_sum_over_net_total": -12.86476200063077,
+    "net_total": 3.2251324948206417,
+    "entry_spread_cost_per_risk": 0.009467021683697594,
+    "mean_hold_days": 13.967653131452169,
+    "bootstrap": {
+     "block_ci95": [
+      -0.01092302233803653,
+      0.015639145521357794
+     ],
+     "block_p_mean_le_0": 0.366,
+     "iid_session_ci95": [
+      -0.01044408736634915,
+      0.014447536008070848
+     ],
+     "session_equal_weight_mean": -0.008956329481289802
+    }
+   },
+   "etf_tp50": {
+    "n": 1453,
+    "sessions": 200,
+    "tickers": 26,
+    "mean": 0.0023015426269963413,
+    "median": 0.03337131694611732,
+    "win_rate": 0.5939435650378527,
+    "p01": -0.6896990932644007,
+    "p05": -0.3180132501182012,
+    "worst5_sum_over_gross_gains": 0.4216436085812664,
+    "worst5_sum_over_net_total": -12.406939941891414,
+    "net_total": 3.3441414370256837,
+    "entry_spread_cost_per_risk": 0.009467021683697594,
+    "mean_hold_days": 13.967653131452169
+   },
+   "etf_mid": {
+    "n": 1295,
+    "sessions": 183,
+    "tickers": 24,
+    "mean": -0.014175717898132248,
+    "median": 0.009554535302146663,
+    "win_rate": 0.5768339768339769,
+    "p01": -0.4407244115274321,
+    "p05": -0.1982683685565153,
+    "worst5_sum_over_gross_gains": 0.7042456598983244,
+    "worst5_sum_over_net_total": -1.206287236851512,
+    "net_total": -18.35755467808126,
+    "entry_spread_cost_per_risk": 0.008992890259094331,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 48002,
+    "sessions": 241,
+    "tickers": 1399,
+    "mean": -0.014620851922503683,
+    "median": 0.03297940572686317,
+    "win_rate": 0.562393233615266,
+    "p01": -1.201980100501951,
+    "p05": -0.5646549731430919,
+    "worst5_sum_over_gross_gains": 0.48506807283397546,
+    "worst5_sum_over_net_total": -3.410563459343831,
+    "net_total": -701.8301339840218,
+    "entry_spread_cost_per_risk": 0.025127850219607586,
+    "mean_hold_days": 13.336798466730553,
+    "bootstrap": {
+     "block_ci95": [
+      -0.027256985722133087,
+      -0.0022557675138711463
+     ],
+     "block_p_mean_le_0": 0.9865,
+     "iid_session_ci95": [
+      -0.027011439125680086,
+      -0.0027098571512951964
+     ],
+     "session_equal_weight_mean": -0.01458706559970515
+    }
+   }
+  },
+  "t07_20|short_strangle_25d|le10": {
+   "tp50_trigger_rate": 0.19288742345737164,
+   "hold_session_equal_weight_mean": -0.006217487732396267,
+   "hold_mean_excluding_jump_windows_ex_post": 0.019745351643036615,
+   "etf_hold": {
+    "n": 791,
+    "sessions": 115,
+    "tickers": 14,
+    "mean": 0.006084494927839147,
+    "median": 0.03969604173755245,
+    "win_rate": 0.706700379266751,
+    "p01": -0.571180213059775,
+    "p05": -0.24634671412174267,
+    "worst5_sum_over_gross_gains": 0.46905184178945636,
+    "worst5_sum_over_net_total": -3.5713517757369564,
+    "net_total": 4.812835487920765,
+    "entry_spread_cost_per_risk": 0.001674575302347808,
+    "mean_hold_days": 13.972187104930468,
+    "bootstrap": {
+     "block_ci95": [
+      -0.005384513131571435,
+      0.017136335958585575
+     ],
+     "block_p_mean_le_0": 0.15,
+     "iid_session_ci95": [
+      -0.005219671513489089,
+      0.017041692492956253
+     ],
+     "session_equal_weight_mean": 0.008146745881560577
+    }
+   },
+   "etf_tp50": {
+    "n": 791,
+    "sessions": 115,
+    "tickers": 14,
+    "mean": 0.004792527822718775,
+    "median": 0.03608224027594971,
+    "win_rate": 0.7357774968394437,
+    "p01": -0.571180213059775,
+    "p05": -0.24517234611190247,
+    "worst5_sum_over_gross_gains": 0.5062372402644973,
+    "worst5_sum_over_net_total": -4.523687862242154,
+    "net_total": 3.790889507770551,
+    "entry_spread_cost_per_risk": 0.001674575302347808,
+    "mean_hold_days": 13.972187104930468
+   },
+   "etf_mid": {
+    "n": 620,
+    "sessions": 106,
+    "tickers": 14,
+    "mean": 0.0036751938829291883,
+    "median": 0.018701651826907337,
+    "win_rate": 0.717741935483871,
+    "p01": -0.31707845729926126,
+    "p05": -0.09946709218069447,
+    "worst5_sum_over_gross_gains": 0.5272481322832421,
+    "worst5_sum_over_net_total": -3.2720407150345694,
+    "net_total": 2.278620207416097,
+    "entry_spread_cost_per_risk": 0.0017124547817249651,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 3455,
+    "sessions": 218,
+    "tickers": 295,
+    "mean": -0.006321463470966626,
+    "median": 0.07446268404129289,
+    "win_rate": 0.6804630969609262,
+    "p01": -1.071522262499578,
+    "p05": -0.5063606582322917,
+    "worst5_sum_over_gross_gains": 0.5378835400521418,
+    "worst5_sum_over_net_total": -7.047520255265472,
+    "net_total": -21.840656292189692,
+    "entry_spread_cost_per_risk": 0.004430938606707811,
+    "mean_hold_days": 13.968162083936324,
+    "bootstrap": {
+     "block_ci95": [
+      -0.024829293711715057,
+      0.00983275398751152
+     ],
+     "block_p_mean_le_0": 0.759,
+     "iid_session_ci95": [
+      -0.023732435685065188,
+      0.009756160753256174
+     ],
+     "session_equal_weight_mean": -0.007216183145503449
+    }
+   }
+  },
+  "t07_20|short_strangle_25d|le20": {
+   "tp50_trigger_rate": 0.1412275176709357,
+   "hold_session_equal_weight_mean": -0.006347190860314349,
+   "hold_mean_excluding_jump_windows_ex_post": 0.017075461357952303,
+   "etf_hold": {
+    "n": 1001,
+    "sessions": 128,
+    "tickers": 17,
+    "mean": 0.009278365548777057,
+    "median": 0.04143704959728698,
+    "win_rate": 0.7002997002997003,
+    "p01": -0.5376170487568616,
+    "p05": -0.2309044423138385,
+    "worst5_sum_over_gross_gains": 0.4273479027163066,
+    "worst5_sum_over_net_total": -2.208570129634902,
+    "net_total": 9.287643914325834,
+    "entry_spread_cost_per_risk": 0.0024420566975650493,
+    "mean_hold_days": 13.97002997002997,
+    "bootstrap": {
+     "block_ci95": [
+      -0.00149631139577052,
+      0.019547420821628237
+     ],
+     "block_p_mean_le_0": 0.0505,
+     "iid_session_ci95": [
+      -0.0006137486466757564,
+      0.01922408114141629
+     ],
+     "session_equal_weight_mean": 0.009773697751338968
+    }
+   },
+   "etf_tp50": {
+    "n": 1001,
+    "sessions": 128,
+    "tickers": 17,
+    "mean": 0.008518013800252954,
+    "median": 0.03842844434073706,
+    "win_rate": 0.7322677322677322,
+    "p01": -0.5376170487568616,
+    "p05": -0.22651466122367706,
+    "worst5_sum_over_gross_gains": 0.4533606670914907,
+    "worst5_sum_over_net_total": -2.398852476211235,
+    "net_total": 8.526531814053207,
+    "entry_spread_cost_per_risk": 0.0024420566975650493,
+    "mean_hold_days": 13.97002997002997
+   },
+   "etf_mid": {
+    "n": 782,
+    "sessions": 115,
+    "tickers": 17,
+    "mean": 0.003722608083361759,
+    "median": 0.018658536814326616,
+    "win_rate": 0.7148337595907929,
+    "p01": -0.31127492756522906,
+    "p05": -0.10149159925928192,
+    "worst5_sum_over_gross_gains": 0.5201641920569217,
+    "worst5_sum_over_net_total": -3.1929948808583717,
+    "net_total": 2.9110795211888956,
+    "entry_spread_cost_per_risk": 0.002429467385686834,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 13288,
+    "sessions": 241,
+    "tickers": 677,
+    "mean": -0.008043985974765556,
+    "median": 0.0670855074311302,
+    "win_rate": 0.6741420830824805,
+    "p01": -1.0712211442683104,
+    "p05": -0.48139274212060357,
+    "worst5_sum_over_gross_gains": 0.5532553618621804,
+    "worst5_sum_over_net_total": -5.495672276125724,
+    "net_total": -106.8884856326847,
+    "entry_spread_cost_per_risk": 0.007877173061221996,
+    "mean_hold_days": 13.944762191450932,
+    "bootstrap": {
+     "block_ci95": [
+      -0.020948049644355503,
+      0.004657806740206085
+     ],
+     "block_p_mean_le_0": 0.8845,
+     "iid_session_ci95": [
+      -0.020214947428486882,
+      0.004284451975990854
+     ],
+     "session_equal_weight_mean": -0.0063818060924993435
+    }
+   }
+  },
+  "t07_20|short_strangle_25d|le35": {
+   "tp50_trigger_rate": 0.10898023541490962,
+   "hold_session_equal_weight_mean": -0.003977300747039508,
+   "hold_mean_excluding_jump_windows_ex_post": 0.016573082120598694,
+   "etf_hold": {
+    "n": 1213,
+    "sessions": 170,
+    "tickers": 23,
+    "mean": 0.006041818044263945,
+    "median": 0.04123526511586212,
+    "win_rate": 0.6949711459192086,
+    "p01": -0.5912781533115941,
+    "p05": -0.2404604207424478,
+    "worst5_sum_over_gross_gains": 0.4647925864546047,
+    "worst5_sum_over_net_total": -3.6736482603918463,
+    "net_total": 7.328725287692166,
+    "entry_spread_cost_per_risk": 0.003836145529698947,
+    "mean_hold_days": 13.96949711459192,
+    "bootstrap": {
+     "block_ci95": [
+      -0.004198686868592029,
+      0.016273284306610434
+     ],
+     "block_p_mean_le_0": 0.1245,
+     "iid_session_ci95": [
+      -0.0037926502037922477,
+      0.015575235591930395
+     ],
+     "session_equal_weight_mean": 0.0034577153472073554
+    }
+   },
+   "etf_tp50": {
+    "n": 1213,
+    "sessions": 170,
+    "tickers": 23,
+    "mean": 0.0056684371293334295,
+    "median": 0.03878739462232219,
+    "win_rate": 0.7238252267106348,
+    "p01": -0.5912781533115941,
+    "p05": -0.23115167643045667,
+    "worst5_sum_over_gross_gains": 0.489073295679229,
+    "worst5_sum_over_net_total": -3.904055692926459,
+    "net_total": 6.87581423788145,
+    "entry_spread_cost_per_risk": 0.003836145529698947,
+    "mean_hold_days": 13.96949711459192
+   },
+   "etf_mid": {
+    "n": 933,
+    "sessions": 148,
+    "tickers": 22,
+    "mean": 0.0013811473420217491,
+    "median": 0.017231795441912175,
+    "win_rate": 0.6956055734190782,
+    "p01": -0.30935381727265615,
+    "p05": -0.10337127552341495,
+    "worst5_sum_over_gross_gains": 0.5502939056070093,
+    "worst5_sum_over_net_total": -8.579353202629335,
+    "net_total": 1.288610470106292,
+    "entry_spread_cost_per_risk": 0.0036244168505525838,
+    "mean_hold_days": 14.0
+   },
+   "single_names_hold": {
+    "n": 26058,
+    "sessions": 241,
+    "tickers": 1057,
+    "mean": -0.006143524384220746,
+    "median": 0.06403198904980383,
+    "win_rate": 0.6752244991941054,
+    "p01": -1.0322886670869778,
+    "p05": -0.45824648493233433,
+    "worst5_sum_over_gross_gains": 0.5470976494637764,
+    "worst5_sum_over_net_total": -6.961335047018978,
+    "net_total": -160.08795840402422,
+    "entry_spread_cost_per_risk": 0.011781726276965842,
+    "mean_hold_days": 13.805741039220202,
+    "bootstrap": {
+     "block_ci95": [
+      -0.018010359941840342,
+      0.005620921673130049
+     ],
+     "block_p_mean_le_0": 0.857,
+     "iid_session_ci95": [
+      -0.01684930321410897,
+      0.004604705401360104
+     ],
+     "session_equal_weight_mean": -0.004232267193819211
+    }
+   }
+  },
+  "t20_45|iron_condor_25_15|le10": {
+   "tp50_trigger_rate": 0.23567251461988303,
+   "hold_session_equal_weight_mean": -0.08020224488509702,
+   "hold_mean_excluding_jump_windows_ex_post": -0.004949537247823222,
+   "etf_hold": {
+    "n": 475,
+    "sessions": 112,
+    "tickers": 12,
+    "mean": -0.03365849008906992,
+    "median": 0.2969543147208113,
+    "win_rate": 0.6210526315789474,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.21568437978569474,
+    "worst5_sum_over_net_total": -1.501146238460689,
+    "net_total": -15.98778279230821,
+    "entry_spread_cost_per_risk": 0.02947948759550993,
+    "mean_hold_days": 28.029473684210526,
+    "bootstrap": {
+     "block_ci95": [
+      -0.11026393004925421,
+      0.04202801265211707
+     ],
+     "block_p_mean_le_0": 0.7765,
+     "iid_session_ci95": [
+      -0.0915416275266622,
+      0.02670138293302697
+     ],
+     "session_equal_weight_mean": -0.04762329229984511
+    }
+   },
+   "etf_tp50": {
+    "n": 475,
+    "sessions": 112,
+    "tickers": 12,
+    "mean": -0.02582691531722096,
+    "median": 0.2524271844660195,
+    "win_rate": 0.6589473684210526,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.23066614503196634,
+    "worst5_sum_over_net_total": -1.9563434180536292,
+    "net_total": -12.267784775679957,
+    "entry_spread_cost_per_risk": 0.02947948759550993,
+    "mean_hold_days": 28.029473684210526
+   },
+   "etf_mid": {
+    "n": 388,
+    "sessions": 110,
+    "tickers": 11,
+    "mean": -0.027035114358348964,
+    "median": 0.022311212814645313,
+    "win_rate": 0.5618556701030928,
+    "p01": -0.8259872442200373,
+    "p05": -0.45962593559167303,
+    "worst5_sum_over_gross_gains": 0.5491627676461598,
+    "worst5_sum_over_net_total": -1.3566737860424294,
+    "net_total": -10.489624371039397,
+    "entry_spread_cost_per_risk": 0.03086593747118402,
+    "mean_hold_days": 28.030927835051546
+   },
+   "single_names_hold": {
+    "n": 1235,
+    "sessions": 194,
+    "tickers": 137,
+    "mean": -0.06580391230228762,
+    "median": 0.2853470437017994,
+    "win_rate": 0.5894736842105263,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.21779340767586858,
+    "worst5_sum_over_net_total": -0.7629094896239524,
+    "net_total": -81.2678316933252,
+    "entry_spread_cost_per_risk": 0.0356866620578811,
+    "mean_hold_days": 27.97165991902834,
+    "bootstrap": {
+     "block_ci95": [
+      -0.11824011664730472,
+      -0.02311267770457377
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.11253817043682836,
+      -0.0217547018988768
+     ],
+     "session_equal_weight_mean": -0.08541643865186559
+    }
+   }
+  },
+  "t20_45|iron_condor_25_15|le20": {
+   "tp50_trigger_rate": 0.16194255479969766,
+   "hold_session_equal_weight_mean": -0.11493294206892886,
+   "hold_mean_excluding_jump_windows_ex_post": -0.0369819670185078,
+   "etf_hold": {
+    "n": 673,
+    "sessions": 120,
+    "tickers": 17,
+    "mean": -0.04008144880792838,
+    "median": 0.2711864406779661,
+    "win_rate": 0.6270430906389302,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.22698999094461483,
+    "worst5_sum_over_net_total": -1.260434962754411,
+    "net_total": -26.974815047735802,
+    "entry_spread_cost_per_risk": 0.03901031394891609,
+    "mean_hold_days": 28.026745913818722,
+    "bootstrap": {
+     "block_ci95": [
+      -0.10913064360246147,
+      0.021123766604654495
+     ],
+     "block_p_mean_le_0": 0.8905,
+     "iid_session_ci95": [
+      -0.08859857088198698,
+      0.010116576724440666
+     ],
+     "session_equal_weight_mean": -0.051776637347888316
+    }
+   },
+   "etf_tp50": {
+    "n": 673,
+    "sessions": 120,
+    "tickers": 17,
+    "mean": -0.03712817722779516,
+    "median": 0.24223602484472043,
+    "win_rate": 0.6552748885586924,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.24208417737639265,
+    "worst5_sum_over_net_total": -1.3606932310574986,
+    "net_total": -24.987263274306144,
+    "entry_spread_cost_per_risk": 0.03901031394891609,
+    "mean_hold_days": 28.026745913818722
+   },
+   "etf_mid": {
+    "n": 563,
+    "sessions": 119,
+    "tickers": 16,
+    "mean": -0.049128666543159144,
+    "median": 0.012820512820512832,
+    "win_rate": 0.5257548845470693,
+    "p01": -0.8993023120715695,
+    "p05": -0.5087287401520674,
+    "worst5_sum_over_gross_gains": 0.6670176175266364,
+    "worst5_sum_over_net_total": -0.7951831742694337,
+    "net_total": -27.659439263798596,
+    "entry_spread_cost_per_risk": 0.03996572849061835,
+    "mean_hold_days": 28.02486678507993
+   },
+   "single_names_hold": {
+    "n": 4619,
+    "sessions": 231,
+    "tickers": 454,
+    "mean": -0.09873538566367115,
+    "median": 0.2345679012345679,
+    "win_rate": 0.5780471963628491,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.24531268504338571,
+    "worst5_sum_over_net_total": -0.5065136933198361,
+    "net_total": -456.05874638049704,
+    "entry_spread_cost_per_risk": 0.06486405561916656,
+    "mean_hold_days": 28.6899761853215,
+    "bootstrap": {
+     "block_ci95": [
+      -0.13665021829441587,
+      -0.06806010403175874
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.1276203936016138,
+      -0.07037540371100239
+     ],
+     "session_equal_weight_mean": -0.11862946825327488
+    }
+   }
+  },
+  "t20_45|iron_condor_25_15|le35": {
+   "tp50_trigger_rate": 0.09584155410532706,
+   "hold_session_equal_weight_mean": -0.13836810074007955,
+   "hold_mean_excluding_jump_windows_ex_post": -0.07052576436516954,
+   "etf_hold": {
+    "n": 809,
+    "sessions": 160,
+    "tickers": 19,
+    "mean": -0.060652580639959375,
+    "median": 0.24324324324324242,
+    "win_rate": 0.6180469715698393,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.24261492642711244,
+    "worst5_sum_over_net_total": -0.8355761805020003,
+    "net_total": -49.067937737727135,
+    "entry_spread_cost_per_risk": 0.053060232208511506,
+    "mean_hold_days": 28.019777503090236,
+    "bootstrap": {
+     "block_ci95": [
+      -0.12590812460518214,
+      -0.0009856871309974916
+     ],
+     "block_p_mean_le_0": 0.976,
+     "iid_session_ci95": [
+      -0.1090673083327724,
+      -0.01510782998610794
+     ],
+     "session_equal_weight_mean": -0.09129803391165
+    }
+   },
+   "etf_tp50": {
+    "n": 809,
+    "sessions": 160,
+    "tickers": 19,
+    "mean": -0.05905107495823246,
+    "median": 0.21982758620689577,
+    "win_rate": 0.6415327564894932,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.2579251976918151,
+    "worst5_sum_over_net_total": -0.85823758000296,
+    "net_total": -47.77231964121006,
+    "entry_spread_cost_per_risk": 0.053060232208511506,
+    "mean_hold_days": 28.019777503090236
+   },
+   "etf_mid": {
+    "n": 679,
+    "sessions": 157,
+    "tickers": 18,
+    "mean": -0.0890029033093541,
+    "median": -0.022377622377622395,
+    "win_rate": 0.45066273932253315,
+    "p01": -1.062782608695652,
+    "p05": -0.5712940212940212,
+    "worst5_sum_over_gross_gains": 0.8943866047137624,
+    "worst5_sum_over_net_total": -0.49530478127046335,
+    "net_total": -60.43297134705144,
+    "entry_spread_cost_per_risk": 0.05430653497565324,
+    "mean_hold_days": 28.02061855670103
+   },
+   "single_names_hold": {
+    "n": 12369,
+    "sessions": 239,
+    "tickers": 795,
+    "mean": -0.1238992813429125,
+    "median": 0.19047619047619044,
+    "win_rate": 0.5746624626081333,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.27958289815133186,
+    "worst5_sum_over_net_total": -0.4039124800507303,
+    "net_total": -1532.5102109304848,
+    "entry_spread_cost_per_risk": 0.09612357887036505,
+    "mean_hold_days": 29.437222087476755,
+    "bootstrap": {
+     "block_ci95": [
+      -0.15631923112720564,
+      -0.09375014729758913
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.14610867253367263,
+      -0.10211337538561063
+     ],
+     "session_equal_weight_mean": -0.13955652482211311
+    }
+   }
+  },
+  "t20_45|put_credit_spread_25_15|le10": {
+   "tp50_trigger_rate": 0.4650630011454754,
+   "hold_session_equal_weight_mean": -0.015629832450745895,
+   "hold_mean_excluding_jump_windows_ex_post": 0.03618478740179169,
+   "etf_hold": {
+    "n": 615,
+    "sessions": 112,
+    "tickers": 16,
+    "mean": 0.024068715312465013,
+    "median": 0.19047619047619047,
+    "win_rate": 0.8227642276422764,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3044351237634242,
+    "worst5_sum_over_net_total": -2.0942748048931175,
+    "net_total": 14.802259917165983,
+    "entry_spread_cost_per_risk": 0.01665804864240784,
+    "mean_hold_days": 28.034146341463416,
+    "bootstrap": {
+     "block_ci95": [
+      -0.057173030955405525,
+      0.0969499275926757
+     ],
+     "block_p_mean_le_0": 0.2495,
+     "iid_session_ci95": [
+      -0.02405077225132317,
+      0.07345099382627535
+     ],
+     "session_equal_weight_mean": 0.018698638244184267
+    }
+   },
+   "etf_tp50": {
+    "n": 615,
+    "sessions": 112,
+    "tickers": 16,
+    "mean": 0.010881571934212849,
+    "median": 0.15322580645161296,
+    "win_rate": 0.8406504065040651,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.36078895103916103,
+    "worst5_sum_over_net_total": -4.63228147273071,
+    "net_total": 6.692166739540902,
+    "entry_spread_cost_per_risk": 0.01665804864240784,
+    "mean_hold_days": 28.034146341463416
+   },
+   "etf_mid": {
+    "n": 556,
+    "sessions": 111,
+    "tickers": 16,
+    "mean": -0.049065707365383154,
+    "median": 0.04675998343761503,
+    "win_rate": 0.5719424460431655,
+    "p01": -0.8604446503010655,
+    "p05": -0.6459175040574604,
+    "worst5_sum_over_gross_gains": 0.6191568544070957,
+    "worst5_sum_over_net_total": -0.8236687846321773,
+    "net_total": -27.280533295153035,
+    "entry_spread_cost_per_risk": 0.016970610355608057,
+    "mean_hold_days": 28.03956834532374
+   },
+   "single_names_hold": {
+    "n": 2877,
+    "sessions": 227,
+    "tickers": 350,
+    "mean": -0.005172877560575824,
+    "median": 0.20481927710843373,
+    "win_rate": 0.7726798748696558,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.28583505537239734,
+    "worst5_sum_over_net_total": -9.67587905517851,
+    "net_total": -14.882368741776645,
+    "entry_spread_cost_per_risk": 0.025813854717534723,
+    "mean_hold_days": 28.41119221411192,
+    "bootstrap": {
+     "block_ci95": [
+      -0.06559157728895208,
+      0.046302512350399054
+     ],
+     "block_p_mean_le_0": 0.559,
+     "iid_session_ci95": [
+      -0.04358833995606255,
+      0.029720274669026093
+     ],
+     "session_equal_weight_mean": -0.020407963793396714
+    }
+   }
+  },
+  "t20_45|put_credit_spread_25_15|le20": {
+   "tp50_trigger_rate": 0.3380765456329735,
+   "hold_session_equal_weight_mean": -0.023377332420756358,
+   "hold_mean_excluding_jump_windows_ex_post": 0.005365128638290074,
+   "etf_hold": {
+    "n": 818,
+    "sessions": 138,
+    "tickers": 20,
+    "mean": 0.03189613280038094,
+    "median": 0.18343195266272194,
+    "win_rate": 0.8337408312958435,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3121231967664308,
+    "worst5_sum_over_net_total": -1.5714208898752275,
+    "net_total": 26.091036630711613,
+    "entry_spread_cost_per_risk": 0.023636047124188486,
+    "mean_hold_days": 28.019559902200488,
+    "bootstrap": {
+     "block_ci95": [
+      -0.03909348059289326,
+      0.08886993123598969
+     ],
+     "block_p_mean_le_0": 0.1685,
+     "iid_session_ci95": [
+      -0.012630707624067289,
+      0.0741310934260312
+     ],
+     "session_equal_weight_mean": 0.009364572703293406
+    }
+   },
+   "etf_tp50": {
+    "n": 818,
+    "sessions": 138,
+    "tickers": 20,
+    "mean": 0.018909575550402482,
+    "median": 0.14664290305615615,
+    "win_rate": 0.8508557457212714,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.36827094321810083,
+    "worst5_sum_over_net_total": -2.6506279453578863,
+    "net_total": 15.468032800229231,
+    "entry_spread_cost_per_risk": 0.023636047124188486,
+    "mean_hold_days": 28.019559902200488
+   },
+   "etf_mid": {
+    "n": 742,
+    "sessions": 138,
+    "tickers": 20,
+    "mean": -0.056910737574682374,
+    "median": 0.02513422465522689,
+    "win_rate": 0.5579514824797843,
+    "p01": -0.9516666666666665,
+    "p05": -0.675388305269488,
+    "worst5_sum_over_gross_gains": 0.7124742329726081,
+    "worst5_sum_over_net_total": -0.7537438055210918,
+    "net_total": -42.22776728041432,
+    "entry_spread_cost_per_risk": 0.023638804115731625,
+    "mean_hold_days": 28.024258760107816
+   },
+   "single_names_hold": {
+    "n": 11410,
+    "sessions": 238,
+    "tickers": 792,
+    "mean": -0.03316709155261832,
+    "median": 0.17647058823529416,
+    "win_rate": 0.7638913234005259,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3235805170665277,
+    "worst5_sum_over_net_total": -1.5088396017502101,
+    "net_total": -378.436514615375,
+    "entry_spread_cost_per_risk": 0.045467925404269895,
+    "mean_hold_days": 29.438737949167397,
+    "bootstrap": {
+     "block_ci95": [
+      -0.08608040395771553,
+      0.00949476751243592
+     ],
+     "block_p_mean_le_0": 0.9315,
+     "iid_session_ci95": [
+      -0.06391006664004646,
+      -0.001685357138625382
+     ],
+     "session_equal_weight_mean": -0.025297314873374614
+    }
+   }
+  },
+  "t20_45|put_credit_spread_25_15|le35": {
+   "tp50_trigger_rate": 0.23284823284823286,
+   "hold_session_equal_weight_mean": -0.046274446906282206,
+   "hold_mean_excluding_jump_windows_ex_post": -0.018071105769384217,
+   "etf_hold": {
+    "n": 999,
+    "sessions": 175,
+    "tickers": 22,
+    "mean": 0.02789001092485366,
+    "median": 0.174496644295302,
+    "win_rate": 0.8388388388388388,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3282746952149142,
+    "worst5_sum_over_net_total": -1.794551109531796,
+    "net_total": 27.862120913928806,
+    "entry_spread_cost_per_risk": 0.033768951630061134,
+    "mean_hold_days": 28.007007007007008,
+    "bootstrap": {
+     "block_ci95": [
+      -0.03801328808270178,
+      0.08114785786352377
+     ],
+     "block_p_mean_le_0": 0.1955,
+     "iid_session_ci95": [
+      -0.012393357196756827,
+      0.06604701820634253
+     ],
+     "session_equal_weight_mean": 0.007021980942079892
+    }
+   },
+   "etf_tp50": {
+    "n": 999,
+    "sessions": 175,
+    "tickers": 22,
+    "mean": 0.015740867665036025,
+    "median": 0.1366666666666667,
+    "win_rate": 0.8538538538538538,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.3834470020631339,
+    "worst5_sum_over_net_total": -3.1796245998066777,
+    "net_total": 15.72512679737099,
+    "entry_spread_cost_per_risk": 0.033768951630061134,
+    "mean_hold_days": 28.007007007007008
+   },
+   "etf_mid": {
+    "n": 907,
+    "sessions": 174,
+    "tickers": 22,
+    "mean": -0.08129794217625344,
+    "median": 0.012307692307692285,
+    "win_rate": 0.5248070562293274,
+    "p01": -1.0391733997835337,
+    "p05": -0.7128426423492372,
+    "worst5_sum_over_gross_gains": 0.9023633509824064,
+    "worst5_sum_over_net_total": -0.5924101699825474,
+    "net_total": -73.73723355386187,
+    "entry_spread_cost_per_risk": 0.0337910060156262,
+    "mean_hold_days": 28.00992282249173
+   },
+   "single_names_hold": {
+    "n": 25937,
+    "sessions": 239,
+    "tickers": 1101,
+    "mean": -0.05330515644641196,
+    "median": 0.14942528735632182,
+    "win_rate": 0.761152022207657,
+    "p01": -1.0,
+    "p05": -1.0,
+    "worst5_sum_over_gross_gains": 0.37667964247408586,
+    "worst5_sum_over_net_total": -0.9381040517962929,
+    "net_total": -1382.575842750587,
+    "entry_spread_cost_per_risk": 0.0638688073500481,
+    "mean_hold_days": 29.84115356440606,
+    "bootstrap": {
+     "block_ci95": [
+      -0.10209649727651429,
+      -0.010842661909240178
+     ],
+     "block_p_mean_le_0": 0.9935,
+     "iid_session_ci95": [
+      -0.08307458001110836,
+      -0.027487453532155502
+     ],
+     "session_equal_weight_mean": -0.04822208798765095
+    }
+   }
+  },
+  "t20_45|short_straddle|le10": {
+   "tp50_trigger_rate": 0.08370815775768192,
+   "hold_session_equal_weight_mean": -0.020939397367638914,
+   "hold_mean_excluding_jump_windows_ex_post": 0.02227498835567422,
+   "etf_hold": {
+    "n": 950,
+    "sessions": 139,
+    "tickers": 19,
+    "mean": -0.0007191278701062449,
+    "median": 0.04492732773733141,
+    "win_rate": 0.5936842105263158,
+    "p01": -0.9779030906409223,
+    "p05": -0.5284453591659085,
+    "worst5_sum_over_gross_gains": 0.4472910560238316,
+    "worst5_sum_over_net_total": -58.18296145928765,
+    "net_total": -0.6831714766009327,
+    "entry_spread_cost_per_risk": 0.004654761204577857,
+    "mean_hold_days": 28.013684210526314,
+    "bootstrap": {
+     "block_ci95": [
+      -0.02329931054428031,
+      0.022508301521071385
+     ],
+     "block_p_mean_le_0": 0.519,
+     "iid_session_ci95": [
+      -0.020883376607918936,
+      0.019162717020779294
+     ],
+     "session_equal_weight_mean": -0.005002720276565849
+    }
+   },
+   "etf_tp50": {
+    "n": 950,
+    "sessions": 139,
+    "tickers": 19,
+    "mean": 0.0004209118028056704,
+    "median": 0.04993129803494033,
+    "win_rate": 0.6042105263157894,
+    "p01": -0.9779030906409223,
+    "p05": -0.5138733970510082,
+    "worst5_sum_over_gross_gains": 0.4487428850731361,
+    "worst5_sum_over_net_total": -99.21534049944285,
+    "net_total": 0.3998662126653869,
+    "entry_spread_cost_per_risk": 0.004654761204577857,
+    "mean_hold_days": 28.013684210526314
+   },
+   "etf_mid": {
+    "n": 930,
+    "sessions": 138,
+    "tickers": 19,
+    "mean": -0.00047121709268334484,
+    "median": 0.024752116461730873,
+    "win_rate": 0.6473118279569893,
+    "p01": -0.45354990036243253,
+    "p05": -0.22021201900309728,
+    "worst5_sum_over_gross_gains": 0.4960139756335612,
+    "worst5_sum_over_net_total": -40.9100950732717,
+    "net_total": -0.43823189619551073,
+    "entry_spread_cost_per_risk": 0.0046799367750470265,
+    "mean_hold_days": 28.00752688172043
+   },
+   "single_names_hold": {
+    "n": 20171,
+    "sessions": 239,
+    "tickers": 1036,
+    "mean": -0.02281387526192436,
+    "median": 0.05023683077364701,
+    "win_rate": 0.5639284120767438,
+    "p01": -1.7202988546694133,
+    "p05": -0.7730936116228913,
+    "worst5_sum_over_gross_gains": 0.4885051198467605,
+    "worst5_sum_over_net_total": -3.0767411196465355,
+    "net_total": -460.1786779082763,
+    "entry_spread_cost_per_risk": 0.014921269964930243,
+    "mean_hold_days": 30.01249318328293,
+    "bootstrap": {
+     "block_ci95": [
+      -0.04357494442735744,
+      -0.0022166890733988295
+     ],
+     "block_p_mean_le_0": 0.982,
+     "iid_session_ci95": [
+      -0.03845971616864817,
+      -0.007938093064432227
+     ],
+     "session_equal_weight_mean": -0.020624744158263392
+    }
+   }
+  },
+  "t20_45|short_straddle|le20": {
+   "tp50_trigger_rate": 0.06468666468666469,
+   "hold_session_equal_weight_mean": -0.02254259295068977,
+   "hold_mean_excluding_jump_windows_ex_post": 0.018425578898186287,
+   "etf_hold": {
+    "n": 1203,
+    "sessions": 182,
+    "tickers": 22,
+    "mean": 0.004050336474955514,
+    "median": 0.045568131706599575,
+    "win_rate": 0.5935162094763092,
+    "p01": -0.8833820538132907,
+    "p05": -0.5150059142121461,
+    "worst5_sum_over_gross_gains": 0.4140300002516205,
+    "worst5_sum_over_net_total": -10.022443973630633,
+    "net_total": 4.872554779371484,
+    "entry_spread_cost_per_risk": 0.008370734506112157,
+    "mean_hold_days": 28.00332502078138,
+    "bootstrap": {
+     "block_ci95": [
+      -0.014841466694916245,
+      0.025916765038856333
+     ],
+     "block_p_mean_le_0": 0.3305,
+     "iid_session_ci95": [
+      -0.013911986410389298,
+      0.021451659686176967
+     ],
+     "session_equal_weight_mean": 0.0028110128296958675
+    }
+   },
+   "etf_tp50": {
+    "n": 1203,
+    "sessions": 182,
+    "tickers": 22,
+    "mean": 0.004805970919180622,
+    "median": 0.050432599632402805,
+    "win_rate": 0.6026600166251039,
+    "p01": -0.8833820538132907,
+    "p05": -0.507277486485199,
+    "worst5_sum_over_gross_gains": 0.416407943541337,
+    "worst5_sum_over_net_total": -8.431831931337447,
+    "net_total": 5.781583015774288,
+    "entry_spread_cost_per_risk": 0.008370734506112157,
+    "mean_hold_days": 28.00332502078138
+   },
+   "etf_mid": {
+    "n": 1180,
+    "sessions": 181,
+    "tickers": 22,
+    "mean": -0.009416549524653477,
+    "median": 0.018035135905624063,
+    "win_rate": 0.597457627118644,
+    "p01": -0.4688803741998598,
+    "p05": -0.24469918158270407,
+    "worst5_sum_over_gross_gains": 0.5522680330233336,
+    "worst5_sum_over_net_total": -2.1143945791850287,
+    "net_total": -11.111528439091103,
+    "entry_spread_cost_per_risk": 0.008417964974689118,
+    "mean_hold_days": 27.998305084745763
+   },
+   "single_names_hold": {
+    "n": 49302,
+    "sessions": 239,
+    "tickers": 1393,
+    "mean": -0.02554324177725928,
+    "median": 0.048063486310361885,
+    "win_rate": 0.562492393817695,
+    "p01": -1.7202511179604125,
+    "p05": -0.7830338476558759,
+    "worst5_sum_over_gross_gains": 0.4999866701303552,
+    "worst5_sum_over_net_total": -2.8157968375919578,
+    "net_total": -1259.332906102437,
+    "entry_spread_cost_per_risk": 0.025229881885867115,
+    "mean_hold_days": 30.021114762078618,
+    "bootstrap": {
+     "block_ci95": [
+      -0.04516878875966036,
+      -0.007803657334900848
+     ],
+     "block_p_mean_le_0": 0.9985,
+     "iid_session_ci95": [
+      -0.03946246469318632,
+      -0.01274214725656674
+     ],
+     "session_equal_weight_mean": -0.02338255586836042
+    }
+   }
+  },
+  "t20_45|short_straddle|le35": {
+   "tp50_trigger_rate": 0.05143557648880573,
+   "hold_session_equal_weight_mean": -0.027003280989618437,
+   "hold_mean_excluding_jump_windows_ex_post": 0.013158922602510299,
+   "etf_hold": {
+    "n": 1486,
+    "sessions": 208,
+    "tickers": 25,
+    "mean": -0.0014062185895653175,
+    "median": 0.040309947560254696,
+    "win_rate": 0.585464333781965,
+    "p01": -0.8974219854294415,
+    "p05": -0.4887884278496428,
+    "worst5_sum_over_gross_gains": 0.4326524477073586,
+    "worst5_sum_over_net_total": -28.818031929869022,
+    "net_total": -2.0896408240940616,
+    "entry_spread_cost_per_risk": 0.0134384810994441,
+    "mean_hold_days": 28.00471063257066,
+    "bootstrap": {
+     "block_ci95": [
+      -0.02084183450019715,
+      0.019851125225075737
+     ],
+     "block_p_mean_le_0": 0.529,
+     "iid_session_ci95": [
+      -0.01951840511392283,
+      0.016845563224545914
+     ],
+     "session_equal_weight_mean": -0.0011696909511908606
+    }
+   },
+   "etf_tp50": {
+    "n": 1486,
+    "sessions": 208,
+    "tickers": 25,
+    "mean": -0.000822677509835698,
+    "median": 0.04647416556071986,
+    "win_rate": 0.5928667563930013,
+    "p01": -0.8974219854294415,
+    "p05": -0.48381670835650453,
+    "worst5_sum_over_gross_gains": 0.4347456008874383,
+    "worst5_sum_over_net_total": -49.1700243826715,
+    "net_total": -1.2224987796158473,
+    "entry_spread_cost_per_risk": 0.0134384810994441,
+    "mean_hold_days": 28.00471063257066
+   },
+   "etf_mid": {
+    "n": 1456,
+    "sessions": 205,
+    "tickers": 25,
+    "mean": -0.02337245806002027,
+    "median": 0.00826465153078156,
+    "win_rate": 0.5432692307692307,
+    "p01": -0.5151175615392518,
+    "p05": -0.269048621299528,
+    "worst5_sum_over_gross_gains": 0.7102222809887735,
+    "worst5_sum_over_net_total": -0.9578176878028227,
+    "net_total": -34.03029893538951,
+    "entry_spread_cost_per_risk": 0.013422683286590405,
+    "mean_hold_days": 27.998626373626372
+   },
+   "single_names_hold": {
+    "n": 76009,
+    "sessions": 239,
+    "tickers": 1540,
+    "mean": -0.031666745037579984,
+    "median": 0.04238344552480665,
+    "win_rate": 0.5556447262824139,
+    "p01": -1.7183322335713056,
+    "p05": -0.785464811453922,
+    "worst5_sum_over_gross_gains": 0.5168514680955097,
+    "worst5_sum_over_net_total": -2.2768244062557152,
+    "net_total": -2406.9576235614168,
+    "entry_spread_cost_per_risk": 0.0355380260542789,
+    "mean_hold_days": 30.020865950084858,
+    "bootstrap": {
+     "block_ci95": [
+      -0.05061287418181199,
+      -0.014489387227177377
+     ],
+     "block_p_mean_le_0": 1.0,
+     "iid_session_ci95": [
+      -0.044501606954446445,
+      -0.019251112099847662
+     ],
+     "session_equal_weight_mean": -0.028080917307287005
+    }
+   }
+  },
+  "t20_45|short_strangle_25d|le10": {
+   "tp50_trigger_rate": 0.41447494720675754,
+   "hold_session_equal_weight_mean": -0.015516847386995733,
+   "hold_mean_excluding_jump_windows_ex_post": 0.030887297734240055,
+   "etf_hold": {
+    "n": 786,
+    "sessions": 113,
+    "tickers": 15,
+    "mean": 0.008770016111301614,
+    "median": 0.05972681498991763,
+    "win_rate": 0.7175572519083969,
+    "p01": -0.7395889588958892,
+    "p05": -0.3704631043345064,
+    "worst5_sum_over_gross_gains": 0.46579645896705935,
+    "worst5_sum_over_net_total": -3.597666454900492,
+    "net_total": 6.893232663483069,
+    "entry_spread_cost_per_risk": 0.002167219605344848,
+    "mean_hold_days": 28.012722646310433,
+    "bootstrap": {
+     "block_ci95": [
+      -0.007816231440385579,
+      0.026528281001462296
+     ],
+     "block_p_mean_le_0": 0.146,
+     "iid_session_ci95": [
+      -0.005845097415761564,
+      0.02225526843815354
+     ],
+     "session_equal_weight_mean": 0.009160335553308072
+    }
+   },
+   "etf_tp50": {
+    "n": 786,
+    "sessions": 113,
+    "tickers": 15,
+    "mean": 0.005673353948677601,
+    "median": 0.05435453018208702,
+    "win_rate": 0.7493638676844784,
+    "p01": -0.6910613539932853,
+    "p05": -0.33514158647496745,
+    "worst5_sum_over_gross_gains": 0.515972486299106,
+    "worst5_sum_over_net_total": -5.309002388302098,
+    "net_total": 4.459256203660594,
+    "entry_spread_cost_per_risk": 0.002167219605344848,
+    "mean_hold_days": 28.012722646310433
+   },
+   "etf_mid": {
+    "n": 638,
+    "sessions": 113,
+    "tickers": 15,
+    "mean": 0.009784322256863943,
+    "median": 0.024255261031192975,
+    "win_rate": 0.7210031347962382,
+    "p01": -0.28533458656153077,
+    "p05": -0.12826151696379612,
+    "worst5_sum_over_gross_gains": 0.42096596550075277,
+    "worst5_sum_over_net_total": -1.382325746733049,
+    "net_total": 6.242397599879196,
+    "entry_spread_cost_per_risk": 0.0023348277425898753,
+    "mean_hold_days": 28.0141065830721
+   },
+   "single_names_hold": {
+    "n": 4423,
+    "sessions": 223,
+    "tickers": 484,
+    "mean": -0.013851909304644468,
+    "median": 0.10539067231980583,
+    "win_rate": 0.6766900293918156,
+    "p01": -1.56296752384258,
+    "p05": -0.7293387232620376,
+    "worst5_sum_over_gross_gains": 0.5631293834755631,
+    "worst5_sum_over_net_total": -4.686142070895266,
+    "net_total": -61.26699485444249,
+    "entry_spread_cost_per_risk": 0.006140002604752403,
+    "mean_hold_days": 28.789283291883336,
+    "bootstrap": {
+     "block_ci95": [
+      -0.040940082848102737,
+      0.010010807639368945
+     ],
+     "block_p_mean_le_0": 0.843,
+     "iid_session_ci95": [
+      -0.0339997081086382,
+      0.006470359868284316
+     ],
+     "session_equal_weight_mean": -0.016871319658179004
+    }
+   }
+  },
+  "t20_45|short_strangle_25d|le20": {
+   "tp50_trigger_rate": 0.33058267082620507,
+   "hold_session_equal_weight_mean": -0.008484825632304157,
+   "hold_mean_excluding_jump_windows_ex_post": 0.021424048760528072,
+   "etf_hold": {
+    "n": 975,
+    "sessions": 141,
+    "tickers": 20,
+    "mean": 0.00780407560464698,
+    "median": 0.05933312277218788,
+    "win_rate": 0.7097435897435898,
+    "p01": -0.7728890581365826,
+    "p05": -0.37608540880423874,
+    "worst5_sum_over_gross_gains": 0.46398748877883994,
+    "worst5_sum_over_net_total": -4.043020591851902,
+    "net_total": 7.608973714530805,
+    "entry_spread_cost_per_risk": 0.0032762739012777513,
+    "mean_hold_days": 28.00717948717949,
+    "bootstrap": {
+     "block_ci95": [
+      -0.008803671274024717,
+      0.024638449663779195
+     ],
+     "block_p_mean_le_0": 0.171,
+     "iid_session_ci95": [
+      -0.005147462118735463,
+      0.021742864636891204
+     ],
+     "session_equal_weight_mean": 0.005478385823617458
+    }
+   },
+   "etf_tp50": {
+    "n": 975,
+    "sessions": 141,
+    "tickers": 20,
+    "mean": 0.005087853205101574,
+    "median": 0.05526657997399256,
+    "win_rate": 0.7425641025641025,
+    "p01": -0.7433921039162735,
+    "p05": -0.34548745630916616,
+    "worst5_sum_over_gross_gains": 0.5101469646365329,
+    "worst5_sum_over_net_total": -5.988396045100999,
+    "net_total": 4.960656874974035,
+    "entry_spread_cost_per_risk": 0.0032762739012777513,
+    "mean_hold_days": 28.00717948717949
+   },
+   "etf_mid": {
+    "n": 811,
+    "sessions": 141,
+    "tickers": 20,
+    "mean": 0.005971233718622363,
+    "median": 0.022405286742407087,
+    "win_rate": 0.686806411837238,
+    "p01": -0.2877007846472425,
+    "p05": -0.13410217195428462,
+    "worst5_sum_over_gross_gains": 0.44036461376500985,
+    "worst5_sum_over_net_total": -2.2258543882561033,
+    "net_total": 4.842670545802736,
+    "entry_spread_cost_per_risk": 0.003473061560128606,
+    "mean_hold_days": 28.009864364981503
+   },
+   "single_names_hold": {
+    "n": 18899,
+    "sessions": 239,
+    "tickers": 982,
+    "mean": -0.012074944460288034,
+    "median": 0.09272697951943233,
+    "win_rate": 0.6652203820307953,
+    "p01": -1.4221129691306573,
+    "p05": -0.6301876428072781,
+    "worst5_sum_over_gross_gains": 0.5466726261197522,
+    "worst5_sum_over_net_total": -4.781177173540924,
+    "net_total": -228.20437535498354,
+    "entry_spread_cost_per_risk": 0.010724195825895589,
+    "mean_hold_days": 29.600402137679243,
+    "bootstrap": {
+     "block_ci95": [
+      -0.030079512910525526,
+      0.003823914751702475
+     ],
+     "block_p_mean_le_0": 0.938,
+     "iid_session_ci95": [
+      -0.024478781645637413,
+      0.00016551932295071775
+     ],
+     "session_equal_weight_mean": -0.008960172992279854
+    }
+   }
+  },
+  "t20_45|short_strangle_25d|le35": {
+   "tp50_trigger_rate": 0.2636877297737423,
+   "hold_session_equal_weight_mean": -0.010494053067014241,
+   "hold_mean_excluding_jump_windows_ex_post": 0.02097259960361246,
+   "etf_hold": {
+    "n": 1199,
+    "sessions": 185,
+    "tickers": 25,
+    "mean": 0.0068472636302497145,
+    "median": 0.060420954783878884,
+    "win_rate": 0.7022518765638032,
+    "p01": -0.784055877645621,
+    "p05": -0.37589141516648605,
+    "worst5_sum_over_gross_gains": 0.4658717275389091,
+    "worst5_sum_over_net_total": -4.633494875551866,
+    "net_total": 8.209869092669408,
+    "entry_spread_cost_per_risk": 0.005310779585671741,
+    "mean_hold_days": 28.002502085070894,
+    "bootstrap": {
+     "block_ci95": [
+      -0.007490051984824114,
+      0.023056137995687388
+     ],
+     "block_p_mean_le_0": 0.1585,
+     "iid_session_ci95": [
+      -0.006365894103919653,
+      0.019540720815192012
+     ],
+     "session_equal_weight_mean": 0.011704058152233111
+    }
+   },
+   "etf_tp50": {
+    "n": 1199,
+    "sessions": 185,
+    "tickers": 25,
+    "mean": 0.004547885656595592,
+    "median": 0.05583819332423377,
+    "win_rate": 0.7356130108423686,
+    "p01": -0.7692778331087544,
+    "p05": -0.355052146716054,
+    "worst5_sum_over_gross_gains": 0.5105849608533652,
+    "worst5_sum_over_net_total": -6.786134255729566,
+    "net_total": 5.452914902258115,
+    "entry_spread_cost_per_risk": 0.005310779585671741,
+    "mean_hold_days": 28.002502085070894
+   },
+   "etf_mid": {
+    "n": 1013,
+    "sessions": 184,
+    "tickers": 24,
+    "mean": 0.0011056302398165959,
+    "median": 0.01870677600997695,
+    "win_rate": 0.6554787759131293,
+    "p01": -0.3280783913116772,
+    "p05": -0.14891199515154743,
+    "worst5_sum_over_gross_gains": 0.4962985019995233,
+    "worst5_sum_over_net_total": -12.584299301817342,
+    "net_total": 1.1200034329342117,
+    "entry_spread_cost_per_risk": 0.005525269852551816,
+    "mean_hold_days": 28.005923000987167
+   },
+   "single_names_hold": {
+    "n": 39330,
+    "sessions": 239,
+    "tickers": 1306,
+    "mean": -0.013152130019396887,
+    "median": 0.09010257831993344,
+    "win_rate": 0.6683193490973811,
+    "p01": -1.4405372887565613,
+    "p05": -0.6284497542113168,
+    "worst5_sum_over_gross_gains": 0.5609545034492263,
+    "worst5_sum_over_net_total": -4.515091996337361,
+    "net_total": -517.2732736628795,
+    "entry_spread_cost_per_risk": 0.016697400629313394,
+    "mean_hold_days": 29.881973048563438,
+    "bootstrap": {
+     "block_ci95": [
+      -0.02756365052727278,
+      0.0015462772010366786
+     ],
+     "block_p_mean_le_0": 0.957,
+     "iid_session_ci95": [
+      -0.023762797951731852,
+      -0.0023881879657617422
+     ],
+     "session_equal_weight_mean": -0.011626959449275867
+    }
+   }
+  }
+ }
+}

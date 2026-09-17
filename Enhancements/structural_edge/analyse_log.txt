@@ -1,0 +1,37 @@
+{
+ "trades_total": 576852,
+ "entry_sessions": 241,
+ "tickers": 1753,
+ "entry_range": [
+  "2021-11-19",
+  "2026-08-28"
+ ],
+ "context_iv_vs_delivered": {
+  "t07_20": {
+   "n": 84320,
+   "median_iv_over_delivered": 1.1573842407490738,
+   "share_iv_above_delivered": 0.660483870967742,
+   "median_underlying_ret": 0.002733221492091209,
+   "share_jump_windows": 0.06736242884250475
+  },
+  "t20_45": {
+   "n": 122550,
+   "median_iv_over_delivered": 1.0980244764923723,
+   "share_iv_above_delivered": 0.6269441044471644,
+   "median_underlying_ret": 0.004869440261834668,
+   "share_jump_windows": 0.15118727050183597
+  }
+ },
+ "trades_per_entry_session": {
+  "t07_20": {
+   "median": 82.0,
+   "min": 28,
+   "max": 4002
+  },
+  "t20_45": {
+   "median": 93.0,
+   "min": 32,
+   "max": 4307
+  }
+ }
+}

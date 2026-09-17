@@ -1,0 +1,55 @@
+tickers 1761
+250/1761 tickers, 29301 rows, 365s
+500/1761 tickers, 59146 rows, 1035s
+750/1761 tickers, 88848 rows, 1612s
+1000/1761 tickers, 118565 rows, 2161s
+1250/1761 tickers, 148221 rows, 2822s
+1500/1761 tickers, 168506 rows, 3210s
+1750/1761 tickers, 174163 rows, 3366s
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\venv\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+feature rows 174494, evaluated rows 159682, dates 116, 3502s
+signal  horizon  expected_sign  dates  median_names      ic       t  expected_sign_share  first_half_ic  second_half_ic  partial_ic  partial_t  top_bottom_net  median_share_spread      p   fdr  expected_sign_and_t  stable_halves  not_reversal  economic_10d  exploratory_pass
+    O1        5             -1    116           808  0.0021  0.2836               0.5172         0.0029          0.0012      0.0004     0.0599         -0.0019               0.0032 0.7767 False                False          False         False         False             False
+    O1       10             -1    111           804  0.0033  0.3550               0.5045         0.0062          0.0004      0.0003     0.0297         -0.0020               0.0031 0.7226 False                False          False         False         False             False
+    O1       20             -1    107           802  0.0000  0.0039               0.5047        -0.0026          0.0026     -0.0009    -0.0730         -0.0019               0.0029 0.9969 False                False          False         False         False             False
+    O2        5              1    116          1079  0.0097  2.1154               0.6207         0.0120          0.0075      0.0088     1.9003          0.0014               0.0036 0.0344  True                 True           True         False         False             False
+    O2       10              1    111          1072  0.0149  2.6541               0.6126         0.0162          0.0137      0.0151     2.9367          0.0026               0.0034 0.0080  True                 True           True          True         False              True
+    O2       20              1    107          1071  0.0179  2.7241               0.6542         0.0191          0.0167      0.0172     2.7739          0.0052               0.0033 0.0064  True                 True           True          True         False              True
+    O3        5             -1    116          1072 -0.0044 -0.6085               0.5431         0.0006         -0.0095     -0.0051    -0.7224          0.0001               0.0038 0.5429 False                False          False         False         False             False
+    O3       10             -1    111          1070 -0.0068 -0.8397               0.5315        -0.0101         -0.0036     -0.0049    -0.6448          0.0001               0.0037 0.4011 False                False           True         False         False             False
+    O3       20             -1    107          1065 -0.0108 -0.9118               0.5140        -0.0253          0.0035     -0.0084    -0.7732          0.0008               0.0035 0.3619 False                False          False         False         False             False
+    O4        5             -1    116          1302 -0.0083 -2.2960               0.5517        -0.0059         -0.0108     -0.0080    -2.2036         -0.0023               0.0037 0.0217  True                 True           True          True         False              True
+    O4       10             -1    111          1300 -0.0146 -3.3118               0.6486        -0.0074         -0.0217     -0.0135    -2.9970         -0.0052               0.0037 0.0009  True                 True           True          True          True              True
+    O4       20             -1    107          1297 -0.0166 -3.3931               0.6916        -0.0071         -0.0260     -0.0164    -3.2837         -0.0093               0.0034 0.0007  True                 True           True          True         False              True
+    O5        5             -1    104           951  0.0057  0.8217               0.4519         0.0121         -0.0006      0.0052     0.8259          0.0005               0.0032 0.4112 False                False          False         False         False             False
+    O5       10             -1    104           951  0.0017  0.2354               0.4712         0.0041         -0.0006      0.0015     0.2080         -0.0014               0.0032 0.8139 False                False          False         False         False             False
+    O5       20             -1    102           947  0.0039  0.5173               0.4706         0.0058          0.0020      0.0010     0.1505         -0.0030               0.0031 0.6049 False                False          False         False         False             False
