@@ -1,0 +1,49 @@
+{
+  "sessions": [
+    "2026-07-22",
+    "2026-07-30",
+    "2026-08-03",
+    "2026-08-07",
+    "2026-08-13",
+    "2026-08-14",
+    "2026-08-17",
+    "2026-08-20",
+    "2026-08-21",
+    "2026-08-31",
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04",
+    "2026-09-08",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-16"
+  ],
+  "tests": 1448,
+  "fdr_q": 0.1,
+  "median_session_gap_sessions": 2.142857142857143,
+  "evidence_counts": {
+    "NO_EVIDENCE": 1448
+  },
+  "pipeline_direction": [
+    {
+      "input": "final_direction",
+      "kind": "LABEL",
+      "horizon": 1,
+      "metric": "mean_signed_bps",
+      "sessions": 8,
+      "mean": 8.249129859213184,
+      "t": 1.1426706508242945,
+      "p": 0.2907476012425339,
+      "stable_halves": true,
+      "first_half": 15.558335907840181,
+      "second_half": 0.9399238105861887,
+      "median_tickers": 1263.5,
+      "hit_rate_mean": 0.5123391246359217,
+      "bh_threshold": 0.010566298342541436,
+      "fdr_significant": false,
+      "evidence": "NO_EVIDENCE"
+    }
+  ],
+  "top_stable": []
+}

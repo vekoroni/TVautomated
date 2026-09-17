@@ -1,0 +1,29 @@
+sessions: 18 (2026-07-22 .. 2026-09-16)
+2026-07-22 20260723_072618: tickers 1379, numeric 247, labels 11
+2026-07-30 20260731_083130: tickers 1259, numeric 242, labels 11
+2026-08-03 20260804_114554: tickers 1253, numeric 282, labels 11
+2026-08-07 20260809_195823: tickers 1139, numeric 283, labels 11
+2026-08-13 20260814_114553: tickers 1399, numeric 283, labels 11
+2026-08-14 20260816_075339: tickers 1346, numeric 283, labels 11
+2026-08-17 20260818_041214: tickers 1399, numeric 284, labels 11
+2026-08-20 20260821_090928: tickers 1371, numeric 285, labels 11
+2026-08-21 20260824_100301: tickers 1307, numeric 284, labels 12
+2026-08-31 20260901_082437: tickers 1283, numeric 308, labels 14
+2026-09-02 20260902_232526: tickers 1274, numeric 302, labels 17
+2026-09-03 20260904_122358: tickers 1450, numeric 291, labels 17
+2026-09-04 20260906_213931: tickers 1461, numeric 290, labels 17
+2026-09-08 20260909_071646: tickers 1448, numeric 292, labels 17
+2026-09-10 20260911_115904: tickers 1444, numeric 292, labels 17
+2026-09-11 20260913_143230: tickers 1440, numeric 286, labels 17
+2026-09-14 20260914_214012: tickers 1449, numeric 287, labels 17
+{
+ "tests": 1448,
+ "evidence_counts": {
+  "NO_EVIDENCE": 1448
+ }
+}
+          input  kind  horizon          metric  sessions    mean        t        p  stable_halves  first_half  second_half  median_tickers  hit_rate_mean  bh_threshold  fdr_significant    evidence
+final_direction LABEL        1 mean_signed_bps         8 8.24913 1.142671 0.290748           True   15.558336     0.939924          1263.5       0.512339      0.010566            False NO_EVIDENCE
+Empty DataFrame
+Columns: [input, kind, horizon, metric, sessions, mean, t, p, stable_halves, evidence]
+Index: []
