@@ -1,0 +1,66 @@
+{
+  "generated_at_utc": "2026-09-17T19:57:51",
+  "signal_version": "SIG-V1-BACKTEST",
+  "sessions": [
+    "2026-08-31",
+    "2026-09-01",
+    "2026-09-02",
+    "2026-09-04",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-16"
+  ],
+  "candidates_skipped_before_valuation": {
+    "DIRECTION_NOT_CALL_OR_PUT": 13657,
+    "THESIS_OR_QUOTE_INCOMPLETE": 1623,
+    "NO_CONTRACT": 137,
+    "PRICE_HISTORY_NOT_INTACT": 6
+  },
+  "tickets": {
+    "candidates": 91,
+    "sessions": 8,
+    "thesis_scored": 21,
+    "thesis_target_share": 0.048,
+    "thesis_stop_share": 0.952,
+    "option_closed": 19,
+    "option_mean_return": -0.5047,
+    "option_median_return": -0.5,
+    "option_hit_rate": 0.053,
+    "option_worst": -1.0,
+    "exit_mark_unavailable": 2,
+    "still_open": 70,
+    "median_spread_fraction": 0.0952,
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "mean_interval": null
+  },
+  "rejected_candidates": {
+    "candidates": 8859,
+    "sessions": 9,
+    "thesis_scored": 3296,
+    "thesis_target_share": 0.187,
+    "thesis_stop_share": 0.813,
+    "option_closed": 2973,
+    "option_mean_return": -0.5523,
+    "option_median_return": -0.6863,
+    "option_hit_rate": 0.107,
+    "option_worst": -1.0,
+    "exit_mark_unavailable": 323,
+    "still_open": 5563,
+    "median_spread_fraction": 0.3762,
+    "verdict": "INSUFFICIENT_EVIDENCE",
+    "mean_interval": null
+  },
+  "rejection_reasons": {
+    "CAUTIOUS_RETURN_NOT_POSITIVE": 8397,
+    "REVALUATION_NOT_OK:NO_MARKET": 442,
+    "OPTION_NOT_EXECUTABLE": 20
+  },
+  "caveats": [
+    "entry at the recorded evening close ask, not the morning intraday quote",
+    "no morning requote, delayed-quote adjustment or morning gate",
+    "exit marks come from the stored chain on the exit session only (no nearest-date substitution)",
+    "daily chains exist only for recent weeks, so option P&L coverage is thin before September 2026"
+  ]
+}
