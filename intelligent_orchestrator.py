@@ -2156,6 +2156,74 @@ def assert_finalise_preconditions(
         )
 
 
+C12_OUTCOME_SCORING_TIMEOUT_SECONDS = 1800   # full scorer run measured at ~2 minutes on 17 Sep 2026
+
+
+def run_c12_outcome_scoring_stage(run_id: str, runner=subprocess.run) -> dict[str, object]:
+    """Score recorded predictions against realised outcomes after a completed evening run.
+
+    ACK 17 Sep 2026 (item 1). Runs ``python -m avshunter.c12_outcome all`` (ingest books,
+    underlying and expression outcomes, conditions, matched base rate, report) as a subprocess
+    so the rebuild package stays isolated from pipeline imports.
+
+    NON-CRITICAL and OBSERVATION_ONLY, like outcome maturation: every failure is a named
+    status in ``diagnostics/outcome_scoring_<run_id>.json``; nothing here can abort the run
+    or change any decision.
+    """
+    summary: dict[str, object] = {
+        "run_id": run_id,
+        "stage": "C12_OUTCOME_SCORING",
+        "authority": "OBSERVATION_ONLY",
+        "can_grant_capital": False,
+        "status": "NOT_RUN",
+        "reason": "",
+        "started_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    cmd = [sys.executable, "-m", "avshunter.c12_outcome", "all"]
+    summary["command"] = " ".join(cmd[1:])
+    try:
+        result = runner(
+            cmd,
+            cwd=str(cfg.BASE_DIR),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=C12_OUTCOME_SCORING_TIMEOUT_SECONDS,
+        )
+        summary["exit_code"] = result.returncode
+        if result.returncode == 0:
+            summary["status"] = "COMPLETED"
+            try:
+                text = result.stdout or ""
+                summary["scorer_result"] = json.loads(text[text.index("{"):]) if "{" in text else {}
+            except (ValueError, json.JSONDecodeError):
+                summary["scorer_result"] = {}
+                summary["reason"] = "SCORER_OUTPUT_NOT_JSON"
+            logger.info("✅ C12 outcome scoring complete: %s", (summary.get("scorer_result") or {}).get("report", ""))
+        else:
+            summary["status"] = "FAILED"
+            summary["reason"] = ((result.stderr or "") + (result.stdout or ""))[-2000:]
+            logger.warning("⚠️  C12 outcome scoring FAILED (non-critical, exit %s)", result.returncode)
+    except subprocess.TimeoutExpired:
+        summary["status"] = "FAILED"
+        summary["reason"] = f"TIMEOUT after {C12_OUTCOME_SCORING_TIMEOUT_SECONDS}s"
+        logger.warning("⚠️  C12 outcome scoring TIMEOUT (non-critical)")
+    except Exception as scoring_error:
+        summary["status"] = "FAILED"
+        summary["reason"] = f"{type(scoring_error).__name__}: {scoring_error}"
+        logger.warning("⚠️  C12 outcome scoring could not run (non-critical): %s", scoring_error)
+    summary["finished_at_utc"] = datetime.now(timezone.utc).isoformat()
+    try:
+        destination = cfg.RUNS_DIR / str(run_id) / "diagnostics" / f"outcome_scoring_{run_id}.json"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+        summary["artefact"] = str(destination)
+    except Exception as write_error:
+        logger.warning("C12 outcome scoring summary not written (non-critical): %s", write_error)
+    return summary
+
+
 def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
     """Mature 1/2/3/5/10/20-session outcomes for every ledger candidate.
 
@@ -6804,6 +6872,10 @@ def evening_workflow(
         _update_run_meta_status(canonical_run_id, "COMPLETED", pipeline_mode="EOD")
     except Exception as _run_meta_error:
         logger.warning("Could not close run_meta.json: %s", _run_meta_error)
+
+    # Item 1 (ACK 17 Sep 2026): measure recorded predictions against reality after every
+    # completed evening run. Non-critical, observation only.
+    run_c12_outcome_scoring_stage(canonical_run_id)
 
     logger.info("=" * 80)
     logger.info("✅ EVENING WORKFLOW COMPLETE")
