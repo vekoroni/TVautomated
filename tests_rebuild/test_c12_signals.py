@@ -13,6 +13,10 @@ Rules:
      OK, the option's cautious return above the minimum, an executable gate quote and a contract holdable past the
      issue session. Limit = adjusted mid, scored from the adjusted ask. The share valuation is recorded beside the
      ticket for comparison and never issues or vetoes a ticket;
+  S4b the contract must outlive the plan (backtest 17 Sep 2026: tickets held contracts covering a median 0.54 of
+     their planned hold, the expiry cap was the most common exit, and contracts with 10 or fewer days to expiry
+     returned -75.6%): days to expiry at least the governed cover multiple of the planned hold in calendar days,
+     never below the governed floor, and moneyness no further out of the money than the governed limit;
   S5 context (O4 stance, O2 availability, H9R event) is recorded and never changes eligibility or rank; tickets rank
      by the option's cautious return;
   S6 exit: first of issue-session close beyond the stop; a later session touching stop or target (both = stop); the
@@ -48,7 +52,7 @@ def settings(**overrides):
     base = dict(signal_version="SIG-V1", blocked_final_actions=("BLOCK", "CONTRACT_REPAIR"),
                 required_price_history_state="INTACT", min_cautious_return=0.0, contract_exit_buffer=2,
                 contract_multiplier=100.0, o4_extreme_quantile=0.2, min_closed_signals=6, min_issue_sessions=3,
-                interval_z=1.645)
+                interval_z=1.645, min_dte_cover=1.5, min_contract_dte_days=21, max_out_of_the_money=0.05)
     base.update(overrides)
     return sig.SignalSettings(**base)
 
@@ -122,6 +126,24 @@ def test_s1_missing_gate_or_valuation():
                        last_usable_for=last_usable, rate=0.045)[0] == "MORNING_GATE_ROW_MISSING"
     assert sig.prepare(book_row(), gate_row(), None, None, settings(), issue_session=ISSUE,
                        last_usable_for=last_usable, rate=0.045)[0] == "VALUATION_MISSING"
+
+
+@pytest.mark.parametrize("symbol, hold, reason", [
+    ("ABC261016C00100000", 40, "CONTRACT_EXPIRES_BEFORE_PLAN"),     # 28 days vs 1.5 x 56 calendar days
+    ("ABC260930C00100000", 5, "CONTRACT_DTE_BELOW_FLOOR"),          # 12 days, floor 21
+    ("ABC261016C00130000", 5, "MONEYNESS_TOO_FAR_OUT_OF_THE_MONEY"),  # strike 130 vs spot 102
+])
+def test_s4b_contract_must_outlive_the_plan(symbol, hold, reason):
+    result = sig.prepare(book_row(morning_selected_contract_symbol=symbol),
+                         gate_row(live_contract_symbol=symbol),
+                         valuation_row(contract_occ_symbol=symbol, layer2__recommended_hold_days=hold),
+                         101.0, settings(), issue_session=ISSUE, last_usable_for=last_usable, rate=0.045)
+    assert result[0] == reason
+
+
+def test_s4b_contract_covering_the_plan_passes():
+    reason, p = prepare(valuation=dict(layer2__recommended_hold_days=10))   # 28 days vs 1.5 x 14 = 21
+    assert reason is None and p.option_executable
 
 
 def test_s2_started_move_is_revalued_from_the_current_price():
@@ -277,6 +299,7 @@ def test_registered_settings_load_from_configuration():
     snap = ConfigRegistry.from_documents(load_documents(), load_lock()).resolve(ISSUE)
     s = sig.settings_from_snapshot(snap)
     assert s.signal_version == "SIG-V1" and "BLOCK" in s.blocked_final_actions and s.min_closed_signals == 40
+    assert (s.min_dte_cover, s.min_contract_dte_days, s.max_out_of_the_money) == (1.5, 21, 0.05)
 
 
 # --- intraday adapter ----------------------------------------------------------------------------------------------

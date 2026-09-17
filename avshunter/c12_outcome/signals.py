@@ -35,6 +35,7 @@ NOT_ADJUSTED_BAR_MISSING, NOT_ADJUSTED_DELTA_MISSING = "NOT_ADJUSTED_BAR_MISSING
 EXITED, PENDING = "EXITED", "PENDING"
 CLOSED, MARK_UNAVAILABLE, NOT_FILLED = "CLOSED", "MARK_UNAVAILABLE", "NOT_FILLED"
 INSUFFICIENT_EVIDENCE, EVIDENCE_SUPPORTS, NOT_SUPPORTED = "INSUFFICIENT_EVIDENCE", "EVIDENCE_SUPPORTS", "NOT_SUPPORTED"
+CALENDAR_DAYS_PER_SESSION = 7.0 / 5.0
 OCC = re.compile(r"^[A-Z.]+\d{6}(?P<side>[CP])(?P<strike>\d{8})$")
 
 
@@ -50,6 +51,9 @@ class SignalSettings:
     min_closed_signals: int
     min_issue_sessions: int
     interval_z: float
+    min_dte_cover: float           # days to expiry / planned hold in calendar days
+    min_contract_dte_days: int
+    max_out_of_the_money: float    # fraction of spot; beyond this the contract is too far out of the money
 
 
 def settings_from_snapshot(snapshot) -> SignalSettings:
@@ -66,6 +70,9 @@ def settings_from_snapshot(snapshot) -> SignalSettings:
         min_closed_signals=int(value("outcome.signal.min_closed_signals")),
         min_issue_sessions=int(value("outcome.signal.min_issue_sessions")),
         interval_z=float(value("outcome.signal.interval_z")),
+        min_dte_cover=float(value("outcome.signal.min_dte_cover")),
+        min_contract_dte_days=int(value("outcome.signal.min_contract_dte_days")),
+        max_out_of_the_money=float(value("outcome.signal.max_out_of_the_money")),
     )
 
 
@@ -199,6 +206,23 @@ def adjust_delayed_quote(bid: float, ask: float, delta: float | None, spot_at_qu
     return bid + shift, ask + shift, shift, ADJUSTED
 
 
+def contract_guard(direction: str, strike: float, spot: float, expiry: date | None, hold_sessions: int,
+                   issue_session: date, s: SignalSettings) -> str | None:
+    """Named rejection when the contract cannot carry the plan, else None (ACK 17 Sep 2026)."""
+    if expiry is None:
+        return "CONTRACT_UNPARSEABLE"
+    days = (expiry - issue_session).days
+    if days < s.min_contract_dte_days:
+        return "CONTRACT_DTE_BELOW_FLOOR"
+    if days < s.min_dte_cover * hold_sessions * CALENDAR_DAYS_PER_SESSION:
+        return "CONTRACT_EXPIRES_BEFORE_PLAN"
+    sign = 1.0 if direction == "CALL" else -1.0
+    moneyness = sign * (spot - strike) / spot          # negative is out of the money
+    if moneyness < -s.max_out_of_the_money:
+        return "MONEYNESS_TOO_FAR_OUT_OF_THE_MONEY"
+    return None
+
+
 def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot_at_quote: float | None,
             s: SignalSettings, *, issue_session: date, last_usable_for: Callable[[date], date],
             rate: float) -> tuple[str | None, Prepared | None]:
@@ -249,6 +273,11 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
     if match and match["side"] == direction[0]:
         strike = int(match["strike"]) / 1000.0
         expiry = contract_expiry(symbol)
+        # The contract must outlive the plan: a contract that expires first is closed at the expiry cap with its
+        # time value gone (backtest 17 Sep 2026), which no exit rule can repair.
+        guard = contract_guard(direction, strike, live, expiry, int(round(hold)), issue_session, s)
+        if guard is not None:
+            return guard, None
         last_usable = last_usable_for(expiry) if expiry else None
         raw_bid, raw_ask = _num(gate.get("live_contract_bid")), _num(gate.get("live_contract_ask"))
         delta = _num(gate.get("live_contract_delta"))

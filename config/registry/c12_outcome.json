@@ -711,6 +711,51 @@
       "evidence_ref": null,
       "provenance": "NEW",
       "recorded_at_utc": "2026-09-17T18:40:00Z"
+    },
+    {
+      "config_key": "outcome.signal.min_dte_cover",
+      "version": 1,
+      "value": 1.5,
+      "value_type": "NUMBER",
+      "unit": "none",
+      "effective_from": "2026-09-17",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260917-TICKET-GUARD",
+      "rationale": "Contract days to expiry as a multiple of the planned hold in calendar days. Tickets covered a median 0.54 of their hold; the expiry cap was the most common exit and only cover >= 1 approached break-even.",
+      "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-17T22:45:00Z"
+    },
+    {
+      "config_key": "outcome.signal.min_contract_dte_days",
+      "version": 1,
+      "value": 21,
+      "value_type": "INTEGER",
+      "unit": "calendar_days",
+      "effective_from": "2026-09-17",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260917-TICKET-GUARD",
+      "rationale": "Absolute floor on days to expiry. Contracts with <= 10 days returned -75.6% mean on 219 closed results.",
+      "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-17T22:45:00Z"
+    },
+    {
+      "config_key": "outcome.signal.max_out_of_the_money",
+      "version": 1,
+      "value": 0.05,
+      "value_type": "NUMBER",
+      "unit": "fraction",
+      "effective_from": "2026-09-17",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260917-TICKET-GUARD",
+      "rationale": "How far out of the money a contract may be. Beyond -5% mean return fell to -69%, and beyond -15% to -90%.",
+      "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-17T22:45:00Z"
     }
   ]
 }
