@@ -76,7 +76,9 @@ def load_trade_candidates(run_dir: Path, max_candidates: int = 10) -> List[Dict[
         permission = str(row.get("morning_execution_permission") or row.get("execution_permission") or row.get("campaign_verdict") or row.get("effective_execution_verdict") or "").upper()
         if permission not in {"READY_EXECUTE", "MORNING_VALIDATION_REQUIRED", "GO", "GO_LIMIT", "PROBE"}:
             continue
-        if _truthy(row.get("l3_jump_risk_flag")):
+        # Jump risk must be measured and absent to order: a missing flag (no forecast / not
+        # assessable) is not "no jump risk" (R1; tests/test_layer3_volatility_leftovers.py C6).
+        if str(row.get("l3_jump_risk_flag") or "").strip().upper() not in {"0", "FALSE", "NO", "N"}:
             continue
         if _float(row.get("live_contract_spread_pct") or row.get("contract_spread_pct"), 0.0) >= 25.0:
             continue

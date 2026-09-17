@@ -58,5 +58,13 @@
     "activation_state": "GATED_PENDING_SUFFICIENT_OUTCOMES_AND_HELD_OUT_ACCEPTANCE",
     "version": "outcome_learning_gate_v1"
   },
+  "layer3_forecast_bounds": {
+    "floor_annual_vol_fraction": 0.05,
+    "cap_annual_vol_fraction": 2.50,
+    "validation_state": "RANGE_GUARD_NOT_ACCURACY_IMPROVEMENT",
+    "evidence": "Enhancements/expression_forensics/VOL_FLOOR_CAP_EVIDENCE.md",
+    "configuration_owner": "ACK",
+    "version": "l3_forecast_bounds_v1"
+  },
   "schema_version": "governed_constants_v1"
 }

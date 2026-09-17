@@ -52,7 +52,12 @@ BASE_DIR   = Path(__file__).resolve().parent
 QOMEGA_DIR = BASE_DIR / 'qomega'
 sys.path.insert(0, str(BASE_DIR))
 
-from layer3_forward_variance import compute_forward_variance
+from layer3_forward_variance import (
+    FORECAST_FAILED,
+    METHOD_NO_FORECAST,
+    ForwardVarianceResult,
+    compute_forward_variance,
+)
 
 logging.basicConfig(
     level   = logging.INFO,
@@ -134,12 +139,18 @@ def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
 
 # ── Macro regime ───────────────────────────────────────────────────────────────
 
+#: Display value when no macro regime could be read. The regime is display-only (CLAUDE.md rule 6);
+#: a missing one is said, never invented as TRANSITIONAL (tests/test_layer3_volatility_leftovers.py M1).
+MACRO_REGIME_MISSING = 'MACRO_REGIME_MISSING'
+
+
 def _load_regime(base_dir: Path) -> str:
-    """Read regime_state from macro_intelligence_latest.json.
+    """Read regime_state from macro_intelligence_latest.json (display only).
 
     The canonical field is 'regime_state' (macro_contract_v1_0).
     Legacy aliases 'active_regime' and 'regime' are checked as fallbacks
-    for backward compatibility.
+    for backward compatibility. No file, no readable file or no regime field gives
+    MACRO_REGIME_MISSING.
     """
     candidates = [
         # Canonical dropbox location (written by build_macro_json.py)
@@ -160,11 +171,11 @@ def _load_regime(base_dir: Path) -> str:
                     data.get('regime_state')
                     or data.get('active_regime')
                     or data.get('regime')
-                    or 'TRANSITIONAL'
+                    or MACRO_REGIME_MISSING
                 )
-            except Exception:
-                pass
-    return 'TRANSITIONAL'
+            except Exception as exc:
+                log.warning('[GARCH] macro file unreadable (%s: %s): %s', type(exc).__name__, exc, p)
+    return MACRO_REGIME_MISSING
 
 
 # ── IV lookup ──────────────────────────────────────────────────────────────────
@@ -281,24 +292,40 @@ def _format_status_counts(counts: Dict[str, int]) -> str:
     return ' '.join(f'{label}={counts.get(label, 0)}' for label in STATUS_LABELS)
 
 
+def _failed_row(ticker: str, error: str, regime: str) -> dict:
+    """Explicit FORECAST_FAILED row: every numeric field missing, the reason in l3_error."""
+    return ForwardVarianceResult(
+        ticker=ticker, forward_realised_vol=None, vol_forecast_confidence=None,
+        expected_move_1_5d=None, expected_move_6_10d=None, expected_move_11_20d=None,
+        iv_tailwind_score=None, jump_risk_flag=None, method=METHOD_NO_FORECAST,
+        error=error, forecast_state=FORECAST_FAILED,
+        macro_regime_display='' if regime is None else str(regime),
+    ).to_dict()
+
+
 def _process_one_ticker(args: tuple) -> tuple:
-    """Process a single ticker. Returns (row_dict_or_None, status) where status is the
-    model that produced the forecast (HAR_RV / GARCH / EWMA_FALLBACK / ATR_PROXY) or FAIL."""
+    """Process a single ticker. Returns (row_dict, status) where status is the model that
+    produced the forecast (HAR_RV / GARCH / EWMA_FALLBACK / ATR_PROXY) or FAIL.
+
+    Every requested ticker gets a row: no price data gives an explicit MISSING_PRICE_HISTORY row
+    and an unexpected error a FORECAST_FAILED row with the reason, numeric fields missing — never
+    an absent row that merges as an unexplained NaN (R1; tests/test_layer3_volatility_leftovers.py V6).
+    """
     ticker, iv, regime = args
     try:
         ohlcv = _fetch_ohlcv(ticker, PRICE_BARS)
         time.sleep(RATE_SLEEP)
         if ohlcv is None or ohlcv.empty:
-            log.debug(f'[{ticker}] No price data — skipping')
-            return None, STATUS_FAIL
+            log.debug(f'[{ticker}] No price data — explicit MISSING_PRICE_HISTORY row')
+            ohlcv = pd.DataFrame()
         result   = compute_forward_variance(ticker, ohlcv, implied_vol=iv, regime=regime)
         row_dict = _audit_garch_result(result.to_dict())
         method   = row_dict.get('l3_method', '')
         status   = method if method in FORECAST_METHOD_LABELS else STATUS_FAIL
         return row_dict, status
     except Exception as e:
-        log.warning(f'[{ticker}] Unexpected error: {e}')
-        return None, STATUS_FAIL
+        log.warning(f'[{ticker}] Unexpected error: {type(e).__name__}: {e}')
+        return _failed_row(ticker, f'{type(e).__name__}: {e}', regime), STATUS_FAIL
 
 
 # ── Main batch runner ──────────────────────────────────────────────────────────
@@ -354,18 +381,20 @@ def run_garch_batch(
             if i % 50 == 0:
                 log.info(f'[GARCH] Progress: {i}/{len(tickers)} | {_format_status_counts(counts)}')
 
-    if not results:
-        log.error('[GARCH] No results produced — check Polygon API key and data access')
-        raise RuntimeError('GARCH batch produced zero results')
-
+    # Every requested ticker has a row (explicit state when no forecast); written before any
+    # failure is raised so downstream merges see the reason rather than an absent row.
     out_df = pd.DataFrame(results)
     out_df.to_csv(out_path, index=False)
 
+    n_forecasts = sum(counts.get(label, 0) for label in FORECAST_METHOD_LABELS)
     log.info(
         f'[GARCH] Complete: {len(results)} tickers | '
         f'{_format_status_counts(counts)} | '
         f'Output: {out_path}'
     )
+    if n_forecasts == 0:
+        log.error('[GARCH] No forecasts produced — check price history access; rows carry the missing states')
+        raise RuntimeError('GARCH batch produced zero forecasts')
     return out_path
 
 

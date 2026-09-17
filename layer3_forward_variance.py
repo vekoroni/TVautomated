@@ -21,9 +21,14 @@ Architecture:
                expected_move_6_10d     — % move expected over 6-10 days
                expected_move_11_20d    — % move expected over 11-20 days
                iv_tailwind_score       — signed: implied_vol - forecast (None when IV or forecast missing)
-               jump_risk_flag          — True if recent vol cluster suggests jump
+               jump_risk_flag          — True if recent vol cluster suggests jump; None when not assessed
+               jump_risk_state         — 'ASSESSED' | 'NOT_ASSESSED_NO_FORECAST' | 'NOT_ASSESSED_SHORT_HISTORY'
+                                         | 'NOT_ASSESSED_NO_PRICE_VARIATION'
                method                  — 'HAR_RV' | 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY' | 'NO_FORECAST'
                forecast_state          — 'FORECAST_OK' | 'MISSING_PRICE_HISTORY' | 'FORECAST_UNAVAILABLE'
+                                         | 'FORECAST_FAILED' (runner: unexpected error, reason in error)
+                                         | 'CLIPPED_AT_FLOOR' | 'CLIPPED_AT_CAP' (value is the bound, not the model)
+               forward_realised_vol_raw — unbounded model output (None when no forecast)
                iv_tailwind_state       — 'IV_TAILWIND_OK' | 'IV_MISSING' | 'FORECAST_MISSING'
 
     Missing is never neutral (R1): no usable price history gives no numeric forecast, and a
@@ -43,10 +48,12 @@ Position in pipeline:
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -61,8 +68,28 @@ MIN_BARS_GARCH      = 60    # minimum daily bars for GARCH calibration
 MIN_BARS_EWMA       = 20    # minimum bars for EWMA fallback
 EWMA_LAMBDA         = 0.94  # RiskMetrics lambda for EWMA
 GARCH_MAX_ITER      = 200   # GARCH optimisation iteration cap
-VOL_FLOOR           = 0.05  # 5% annualised — never report below this
-VOL_CAP             = 2.50  # 250% annualised — never report above this
+
+# Forecast range guard, governed configuration (config/governed_constants_v1.json
+# "layer3_forecast_bounds"; loaded fail-closed). Evidence (Enhancements/expression_forensics/
+# VOL_FLOOR_CAP_EVIDENCE.md): the bounds are a range guard, not an accuracy improvement, so a
+# bounded forecast is labelled CLIPPED_AT_FLOOR / CLIPPED_AT_CAP with the raw model output kept
+# in forward_realised_vol_raw (tests/test_layer3_volatility_leftovers.py V5).
+GOVERNED_CONSTANTS_PATH = Path(__file__).resolve().parent / 'config' / 'governed_constants_v1.json'
+
+
+def _load_forecast_bounds(path: Path = GOVERNED_CONSTANTS_PATH) -> tuple:
+    payload = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    bounds = payload['layer3_forecast_bounds']
+    if bounds.get('version') != 'l3_forecast_bounds_v1':
+        raise ValueError('unsupported layer3_forecast_bounds version')
+    floor = float(bounds['floor_annual_vol_fraction'])
+    cap = float(bounds['cap_annual_vol_fraction'])
+    if not (0.0 < floor < cap and math.isfinite(cap)):
+        raise ValueError('layer3_forecast_bounds must satisfy 0 < floor < cap')
+    return floor, cap
+
+
+VOL_FLOOR, VOL_CAP = _load_forecast_bounds()   # annualised decimal fractions
 
 # Layer 3 model-risk guardrails. These do not mutate the raw forecast; they
 # add audit flags and bounded scoring companions for downstream capital gates.
@@ -87,10 +114,17 @@ CONF_METHOD_WEIGHT  = 0.25   # GARCH > EWMA > ATR
 FORECAST_OK                  = 'FORECAST_OK'
 FORECAST_MISSING_PRICES      = 'MISSING_PRICE_HISTORY'
 FORECAST_UNAVAILABLE         = 'FORECAST_UNAVAILABLE'
+FORECAST_FAILED              = 'FORECAST_FAILED'
+FORECAST_CLIPPED_AT_FLOOR    = 'CLIPPED_AT_FLOOR'
+FORECAST_CLIPPED_AT_CAP      = 'CLIPPED_AT_CAP'
 METHOD_NO_FORECAST           = 'NO_FORECAST'
 IV_TAILWIND_OK               = 'IV_TAILWIND_OK'
 IV_TAILWIND_IV_MISSING       = 'IV_MISSING'
 IV_TAILWIND_FORECAST_MISSING = 'FORECAST_MISSING'
+JUMP_RISK_ASSESSED                  = 'ASSESSED'
+JUMP_RISK_NOT_ASSESSED_NO_FORECAST  = 'NOT_ASSESSED_NO_FORECAST'
+JUMP_RISK_NOT_ASSESSED_SHORT        = 'NOT_ASSESSED_SHORT_HISTORY'
+JUMP_RISK_NOT_ASSESSED_FLAT         = 'NOT_ASSESSED_NO_PRICE_VARIATION'
 
 
 def _round_or_none(value: Optional[float], digits: int) -> Optional[float]:
@@ -108,7 +142,7 @@ class ForwardVarianceResult:
     expected_move_6_10d:    Optional[float]
     expected_move_11_20d:   Optional[float]
     iv_tailwind_score:      Optional[float] # implied_vol - forward_realised_vol (signed); None when missing
-    jump_risk_flag:         bool
+    jump_risk_flag:         Optional[bool]  # None when jump risk could not be assessed (never False-means-safe)
     method:                 str             # 'HAR_RV' | 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY' | 'NO_FORECAST'
     garch_omega:            Optional[float] = None
     garch_alpha:            Optional[float] = None
@@ -118,8 +152,17 @@ class ForwardVarianceResult:
     forecast_state:         str = FORECAST_OK
     iv_tailwind_state:      Optional[str] = None   # derived from the values when not given
     macro_regime_display:   str = ''        # display/audit only; never used in any value
+    jump_risk_state:        Optional[str] = None   # derived when not given
+    forward_realised_vol_raw: Optional[float] = None  # model output before the range guard
 
     def __post_init__(self) -> None:
+        if self.jump_risk_state is None:
+            if self.jump_risk_flag is not None:
+                self.jump_risk_state = JUMP_RISK_ASSESSED
+            elif self.forward_realised_vol is None:
+                self.jump_risk_state = JUMP_RISK_NOT_ASSESSED_NO_FORECAST
+            else:
+                self.jump_risk_state = JUMP_RISK_NOT_ASSESSED_SHORT
         if self.iv_tailwind_state is None:
             if self.forward_realised_vol is None:
                 self.iv_tailwind_state = IV_TAILWIND_FORECAST_MISSING
@@ -163,6 +206,7 @@ class ForwardVarianceResult:
         return {
             'ticker':                         self.ticker,
             'l3_forward_realised_vol':        _round_or_none(self.forward_realised_vol, 4),
+            'l3_forward_realised_vol_raw':    _round_or_none(self.forward_realised_vol_raw, 4),
             'l3_forecast_state':              self.forecast_state,
             'l3_vol_forecast_conf':           _round_or_none(self.vol_forecast_confidence, 1),
             'l3_expected_move_1_5d':          _round_or_none(self.expected_move_1_5d, 2),
@@ -173,7 +217,8 @@ class ForwardVarianceResult:
             'l3_iv_tailwind_score':           _round_or_none(raw_tailwind, 4),
             'l3_iv_tailwind_score_capped':    _round_or_none(capped_tailwind, 4),
             'l3_iv_tailwind_state':           self.iv_tailwind_state,
-            'l3_jump_risk_flag':              self.jump_risk_flag,
+            'l3_jump_risk_flag':              self.jump_risk_flag,   # None when not assessed
+            'l3_jump_risk_state':             self.jump_risk_state,
             # FIX RC-7b: method now correctly reflects actual model used.
             # 'HAR_RV'  - Heterogeneous Autoregressive Realised Volatility (primary)
             # 'GARCH'   - GARCH(1,1) fallback (arch library; EGARCH removed 17 Sep 2026)
@@ -205,9 +250,9 @@ def _log_returns(prices: pd.Series) -> np.ndarray:
 
 
 def _annualise(daily_vol: float) -> float:
-    """Convert daily vol to annualised, clamped to floor/cap."""
-    ann = daily_vol * math.sqrt(TRADING_DAYS_YEAR)
-    return float(np.clip(ann, VOL_FLOOR, VOL_CAP))
+    """Convert daily vol to annualised (unbounded; the range guard is applied and labelled once,
+    in compute_forward_variance)."""
+    return float(daily_vol * math.sqrt(TRADING_DAYS_YEAR))
 
 
 def _expected_move(annualised_vol: float, days: float) -> float:
@@ -226,15 +271,19 @@ def _expected_move(annualised_vol: float, days: float) -> float:
     return float(annualised_vol * math.sqrt(trading_frac / TRADING_DAYS_YEAR) * 100)
 
 
-def _jump_risk(returns: np.ndarray) -> bool:
-    """True if short-term realised vol is JUMP_RISK_RATIO× long-term."""
+def _jump_risk(returns: np.ndarray) -> tuple:
+    """(flag, state): flag True if short-term realised vol is JUMP_RISK_RATIO× long-term.
+
+    Too few returns or no price variation cannot be assessed: flag None with the reason, never
+    False (R1; tests/test_layer3_volatility_leftovers.py V7).
+    """
     if len(returns) < JUMP_LOOKBACK_LONG:
-        return False
+        return None, JUMP_RISK_NOT_ASSESSED_SHORT
     short_vol = float(np.std(returns[-JUMP_LOOKBACK_SHORT:], ddof=1))
     long_vol  = float(np.std(returns[-JUMP_LOOKBACK_LONG:],  ddof=1))
-    if long_vol <= 0:
-        return False
-    return (short_vol / long_vol) >= JUMP_RISK_RATIO
+    if not math.isfinite(long_vol) or long_vol <= 0:
+        return None, JUMP_RISK_NOT_ASSESSED_FLAT
+    return bool((short_vol / long_vol) >= JUMP_RISK_RATIO), JUMP_RISK_ASSESSED
 
 
 def _confidence_score(n_bars: int, vol_stability: float, method: str) -> float:
@@ -342,7 +391,7 @@ def _har_rv_forecast(returns: np.ndarray, horizon: int = 20) -> Optional[dict]:
 
         # Convert daily variance to annualised vol (decimal)
         ann_vol = float(np.sqrt(avg_rv) * np.sqrt(252))
-        ann_vol = float(np.clip(ann_vol, 0.05, 2.50))
+        # No clip here: the governed range guard is applied and labelled in compute_forward_variance.
 
         return {
             # FIX RC-7a (2026-04-16): Keys renamed from 'alpha'/'beta' to 'har_b1'/'har_b5_b22'.
@@ -486,8 +535,9 @@ def compute_forward_variance(
             vol_forecast_confidence=None,
             expected_move_1_5d=None, expected_move_6_10d=None,
             expected_move_11_20d=None, iv_tailwind_score=None,
-            jump_risk_flag=False, method=METHOD_NO_FORECAST,
+            jump_risk_flag=None, method=METHOD_NO_FORECAST,
             n_bars_used=n_bars, error=error, forecast_state=state,
+            jump_risk_state=JUMP_RISK_NOT_ASSESSED_NO_FORECAST,
             macro_regime_display=regime_display,
         )
 
@@ -548,7 +598,13 @@ def compute_forward_variance(
     # No macro-regime adjustment: the former x1.10 (RISK_OFF/BEAR) and x1.05 (TRANSITIONAL)
     # multipliers let a macro label change the forecast, against CLAUDE.md rule 6 (removed
     # 17 Sep 2026, tests/test_layer3_volatility_integrity.py V1).
-    ann_vol = float(np.clip(ann_vol, VOL_FLOOR, VOL_CAP))
+    raw_vol = float(ann_vol)
+    if raw_vol < VOL_FLOOR:
+        ann_vol, forecast_state = float(VOL_FLOOR), FORECAST_CLIPPED_AT_FLOOR
+    elif raw_vol > VOL_CAP:
+        ann_vol, forecast_state = float(VOL_CAP), FORECAST_CLIPPED_AT_CAP
+    else:
+        ann_vol, forecast_state = raw_vol, FORECAST_OK
 
     # ── Expected moves ─────────────────────────────────────────────────────────
     em_1_5   = _expected_move(ann_vol, 5)
@@ -568,7 +624,7 @@ def compute_forward_variance(
     iv_tailwind = float(iv_value - ann_vol) if iv_present else None
 
     # ── Jump risk ──────────────────────────────────────────────────────────────
-    jump_flag = _jump_risk(returns) if n_bars >= JUMP_LOOKBACK_LONG else False
+    jump_flag, jump_state = _jump_risk(returns)
 
     # ── Confidence ────────────────────────────────────────────────────────────
     stab  = _vol_stability(returns)
@@ -584,11 +640,13 @@ def compute_forward_variance(
         expected_move_11_20d    = em_11_20,
         iv_tailwind_score       = iv_tailwind,
         jump_risk_flag          = jump_flag,
+        jump_risk_state         = jump_state,
         method                  = method,
         garch_omega             = garch_omega,
         garch_alpha             = garch_alpha,
         garch_beta              = garch_beta,
         n_bars_used             = n_bars,
-        forecast_state          = FORECAST_OK,
+        forecast_state          = forecast_state,
         macro_regime_display    = regime_display,
+        forward_realised_vol_raw = raw_vol,
     )
