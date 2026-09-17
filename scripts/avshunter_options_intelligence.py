@@ -3999,6 +3999,40 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
 _select_directional_invalidation = select_directional_invalidation
 
 
+def _governed_structural_target(direction: str, entry: float, discovery_target: Optional[float],
+                                l1_far: Any, stop_dist: Optional[float]) -> Tuple[Optional[float], str]:
+    """Return (target, state). A target is positive and on the thesis side of entry, or absent.
+
+    Preference: Discovery structural target, L1 far trigger, then entry +/- 3 x invalidation distance.
+    States: DISCOVERY_TARGET | L1_FAR | TARGET_3R | TARGET_3R_NON_POSITIVE | NO_TARGET_SOURCE.
+    """
+    sign = 1 if direction == 'CALL' else -1 if direction == 'PUT' else 0
+    if sign == 0 or entry is None or not entry > 0:
+        return None, 'NO_TARGET_SOURCE'
+
+    def _usable(value: Any) -> Optional[float]:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(number) or number <= 0 or sign * (number - entry) <= 0:
+            return None
+        return number
+
+    discovery = _usable(discovery_target)
+    if discovery is not None:
+        return discovery, 'DISCOVERY_TARGET'
+    far = _usable(l1_far)
+    if far is not None:
+        return far, 'L1_FAR'
+    if stop_dist is None:
+        return None, 'NO_TARGET_SOURCE'
+    three_r = entry + sign * 3 * stop_dist
+    if _usable(three_r) is None:
+        return None, 'TARGET_3R_NON_POSITIVE'
+    return three_r, 'TARGET_3R'
+
+
 def parse_structural_context(signal_row: pd.Series) -> Dict:
     """
     Extract all structural intelligence from the merged Vanguard + Discovery row.
@@ -4242,32 +4276,18 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         delta_zone = DELTA_ZONES['EARLY']
         preferred_strategy = 'LONG_CALL' if direction=='CALL' else 'LONG_PUT'
 
-    # Use L1 far trigger as structural target if available, else 3R
-    # Direction-aware: CALL target must be ABOVE entry, PUT target must be BELOW entry.
-    # Previously l1_far > entry was used for both directions, causing PUT targets to be
-    # wrongly set above entry when l1_far existed, producing option_value_at_target = 0
-    # and rr_options = -1.0. Fix: gate on direction before accepting l1_far.
-    structural_target = None
+    # Structural target: Discovery target, then L1 far trigger, then 3R — each only when it is
+    # positive and on the thesis side of entry (WP1 E6, ACK 17 Sep 2026). A 3R PUT target that
+    # is not positive is recorded as absent with its reason, never passed on.
     try:
         discovery_target = float(_f('structural_target'))
         if not np.isfinite(discovery_target) or discovery_target <= 0:
             discovery_target = None
     except (TypeError, ValueError):
         discovery_target = None
-    if discovery_target and direction == 'CALL' and discovery_target > entry:
-        structural_target = discovery_target
-    elif discovery_target and direction == 'PUT' and discovery_target < entry:
-        structural_target = discovery_target
-    elif l1_far and direction == 'CALL' and float(l1_far) > entry:
-        structural_target = float(l1_far)
-    elif l1_far and direction == 'PUT' and float(l1_far) < entry:
-        structural_target = float(l1_far)
-    elif direction == 'CALL' and target_3r is not None:
-        structural_target = target_3r
-    elif direction == 'PUT' and stop_dist is not None:
-        structural_target = entry - 3*stop_dist
-    else:
-        structural_target = None
+    structural_target, structural_target_state = _governed_structural_target(
+        direction, entry, discovery_target, l1_far, stop_dist,
+    )
 
     return {
         '_signal_row'        : signal_row,   # FIX (2026-03-07): raw row stash for asof_date in _stand_down
@@ -4296,6 +4316,7 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'target_2r'          : target_2r,
         'target_3r'          : target_3r,
         'structural_target'  : structural_target,
+        'structural_target_state': structural_target_state,
         'composite'          : composite,
         'win_prob'           : win_prob,
         'crabel'             : crabel,
@@ -4610,6 +4631,18 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # Preserve them for scoring and lifecycle monitoring. A positive mark
         # is still required so contract economics can be computed.
         eligible_df = leg_df[leg_df['mark'].fillna(0) > 0].copy()
+        if eligible_df.empty: return None
+
+        # WP1 E1/E2 (ACK 17 Sep 2026): only tradeable expressions are selectable — a two-sided
+        # quote and a measured spread within the horizon spread limit, the same authority the
+        # terminal gate uses. Measured on recorded chains, the round-trip cost of a long option
+        # is its entry spread; one-sided, unmeasured and wide contracts stay monitorable in the
+        # chain and the rejection taxonomy, but are not chosen as the expression.
+        _bid = pd.to_numeric(eligible_df.get('bid', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
+        _ask = pd.to_numeric(eligible_df.get('ask', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
+        _spread = pd.to_numeric(eligible_df.get('spread_pct', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
+        _tradeable = (_bid > 0) & (_ask > 0) & (_ask >= _bid) & _spread.notna() & (_spread <= spread_limit)
+        eligible_df = eligible_df.loc[_tradeable.fillna(False)].copy()
         if eligible_df.empty: return None
 
         core_delta = eligible_df['delta'].fillna(0).abs()

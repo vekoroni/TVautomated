@@ -3,8 +3,14 @@
 These tests document the defects measured in
 Enhancements/expression_forensics/EXPRESSION_FORENSIC_AND_TDD_APPROACH_20260917.md (E1, E2).
 They assert what the code does today, not what it should do. When WP1 changes the
-behaviour, each test here is replaced by the business-rule test that supersedes it
-(named in its docstring) — never silently deleted.
+behaviour, each test here is replaced by the business-rule test that supersedes it.
+
+Superseded on 17 Sep 2026 by tests/test_wp1_expression_tradeability_rules.py:
+- spread limit not a selection filter (E1)  -> T2 / T4
+- one-sided quote selectable with a mark (E2) -> T1
+- wide spread preferred over tight spread (E1) -> T4
+Still current behaviour (kept, consistent with the execution-cost probe): volume and open interest
+are ranking evidence, not gates.
 """
 
 from __future__ import annotations
@@ -55,36 +61,9 @@ def _select(rows, **ctx):
     return oi.select_best_contract(pd.DataFrame(rows), _ctx(**ctx))
 
 
-def test_current_spread_limit_is_not_a_selection_filter():
-    """E1. Superseded by: test_wp1_rules::test_contract_above_spread_limit_is_not_tradeable."""
-    wide = _row("WPONE261016C00100000", 100.0, bid=1.00, ask=3.00, delta=0.50)       # 100% of mid
-    chosen = _select([wide])
-    assert chosen is not None and chosen["symbol"] == "WPONE261016C00100000"
-    assert chosen["spread_pct"] > 0.10
-
-
 def test_current_zero_volume_zero_open_interest_contract_is_selectable():
-    """E1. Superseded by: test_wp1_rules::test_untraded_contract_carries_its_measured_execution_cost."""
+    """Volume / open interest are not hard gates (kept by design: once the spread is known they add little to cost)."""
     dead = _row("WPONE261016C00100000", 100.0, open_interest=0, volume=0)
     chosen = _select([dead])
     assert chosen is not None and chosen["open_interest"] == 0 and chosen["volume"] == 0
     assert chosen["oi_used_as_hard_gate"] is False and chosen["volume_used_as_hard_gate"] is False
-
-
-def test_current_one_sided_quote_with_mark_is_selectable():
-    """E2. Superseded by: test_wp1_rules::test_contract_without_two_sided_quote_is_not_priceable."""
-    one_sided = _row("WPONE261016C00100000", 100.0, bid=None, ask=None, mark=1.50,
-                     spread_pct=None, quote_quality="INCOMPLETE", quote_fields_complete=False)
-    chosen = _select([one_sided])
-    assert chosen is not None and chosen["ask"] is None
-    assert chosen["selection_reason"] == "BEST_MONITORABLE_LONG_OPTION_CONTRACT"
-
-
-def test_current_score_can_prefer_wide_spread_over_tight_spread():
-    """E1. Superseded by: test_wp1_rules::test_ranking_uses_expected_net_value_after_execution_cost."""
-    wide_on_target_delta = _row("WPONE261016C00100000", 100.0, bid=1.00, ask=2.40, delta=0.50,
-                                open_interest=5000, volume=2000)
-    tight_off_delta = _row("WPONE261016C00095000", 95.0, bid=4.95, ask=5.00, delta=0.70,
-                           open_interest=5000, volume=2000)
-    chosen = _select([wide_on_target_delta, tight_off_delta])
-    assert chosen["symbol"] == "WPONE261016C00100000"
