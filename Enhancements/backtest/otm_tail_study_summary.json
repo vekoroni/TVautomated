@@ -1,0 +1,63 @@
+{
+  "theses": 8950,
+  "contracts_built": 34772,
+  "closed": 12437,
+  "bands": {
+    "near_atm": {
+      "closed": 3102,
+      "median_moneyness": -0.001,
+      "median_dte": 37.0,
+      "median_entry": 3.4,
+      "median_spread": 0.358,
+      "mean_return": -0.484,
+      "median_return": -0.5579,
+      "hit_rate": 0.104,
+      "share_ge_100pct": 0.0084,
+      "share_ge_400pct": 0.0,
+      "max_return": 2.43,
+      "total_return_equal_weight": -0.484
+    },
+    "otm_10": {
+      "closed": 3122,
+      "median_moneyness": -0.096,
+      "median_dte": 37.0,
+      "median_entry": 1.5,
+      "median_spread": 0.733,
+      "mean_return": -0.6223,
+      "median_return": -0.75,
+      "hit_rate": 0.076,
+      "share_ge_100pct": 0.0147,
+      "share_ge_400pct": 0.0006,
+      "max_return": 5.15,
+      "total_return_equal_weight": -0.6223
+    },
+    "otm_20": {
+      "closed": 3112,
+      "median_moneyness": -0.172,
+      "median_dte": 42.0,
+      "median_entry": 0.95,
+      "median_spread": 1.098,
+      "mean_return": -0.7321,
+      "median_return": -0.869,
+      "hit_rate": 0.042,
+      "share_ge_100pct": 0.0071,
+      "share_ge_400pct": 0.0,
+      "max_return": 3.67,
+      "total_return_equal_weight": -0.7321
+    },
+    "otm_30": {
+      "closed": 3101,
+      "median_moneyness": -0.187,
+      "median_dte": 42.0,
+      "median_entry": 0.75,
+      "median_spread": 1.2,
+      "mean_return": -0.7807,
+      "median_return": -0.9062,
+      "hit_rate": 0.028,
+      "share_ge_100pct": 0.0039,
+      "share_ge_400pct": 0.0,
+      "max_return": 3.5,
+      "total_return_equal_weight": -0.7807
+    }
+  }
+}
