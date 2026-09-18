@@ -50,8 +50,7 @@ class SignalSettings:
     min_closed_signals: int
     min_issue_sessions: int
     interval_z: float
-    min_dte_cover: float           # days to expiry / planned hold in calendar days
-    min_contract_dte_days: int
+    thesis_window_sessions: int    # the thesis window (outcome.window_sessions); every ticket is planned over it
     max_out_of_the_money: float    # fraction of spot; beyond this the contract is too far out of the money
     max_entry_spread_fraction: float  # (ask - bid) / mid at issue; a tradeability fact, not a forecast
     max_tickets_per_session: int   # daily cap on issued tickets; every candidate below it is still recorded
@@ -70,8 +69,7 @@ def settings_from_snapshot(snapshot) -> SignalSettings:
         min_closed_signals=int(value("outcome.signal.min_closed_signals")),
         min_issue_sessions=int(value("outcome.signal.min_issue_sessions")),
         interval_z=float(value("outcome.signal.interval_z")),
-        min_dte_cover=float(value("outcome.signal.min_dte_cover")),
-        min_contract_dte_days=int(value("outcome.signal.min_contract_dte_days")),
+        thesis_window_sessions=int(value("outcome.window_sessions")),
         max_out_of_the_money=float(value("outcome.signal.max_out_of_the_money")),
         max_entry_spread_fraction=float(value("outcome.signal.max_entry_spread_fraction")),
         max_tickets_per_session=int(value("outcome.signal.max_tickets_per_session")),
@@ -208,16 +206,15 @@ def adjust_delayed_quote(bid: float, ask: float, delta: float | None, spot_at_qu
     return bid + shift, ask + shift, shift, ADJUSTED
 
 
-def contract_guard(direction: str, strike: float, spot: float, expiry: date | None, hold_sessions: int,
-                   issue_session: date, s: SignalSettings) -> str | None:
-    """Named rejection when the contract cannot carry the plan, else None (ACK 17 Sep 2026)."""
+def contract_guard(direction: str, strike: float, spot: float, expiry: date | None, s: SignalSettings) -> str | None:
+    """Named rejection for a contract that is not a candidate expression, else None.
+
+    No duration rule (ACK D1(a), 18 Sep 2026): a shorter-dated contract is valued only until its own last exit
+    session (decision C3) and ranked; whether it can be held past issue at all is the tradeability check in
+    ``prepare``. Only the moneyness limit remains here.
+    """
     if expiry is None:
         return "CONTRACT_UNPARSEABLE"
-    days = (expiry - issue_session).days
-    if days < s.min_contract_dte_days:
-        return "CONTRACT_DTE_BELOW_FLOOR"
-    if days < s.min_dte_cover * hold_sessions * CALENDAR_DAYS_PER_SESSION:
-        return "CONTRACT_EXPIRES_BEFORE_PLAN"
     sign = 1.0 if direction == "CALL" else -1.0
     moneyness = sign * (spot - strike) / spot          # negative is out of the money
     if moneyness < -s.max_out_of_the_money:
@@ -247,11 +244,11 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
     target = _num(valuation.get("structural_target"))
     if target is None:
         target = _num(valuation.get("target_spot"))
-    hold = _num(valuation.get("layer2__recommended_hold_days"))
+    # ACK D2(a), 18 Sep 2026: the plan is the thesis window, capped per contract by its last exit session; the
+    # actuarial recommended hold (a fallback default in most rows) is not a hold.
+    hold = s.thesis_window_sessions
     if stop is None or target is None or stop <= 0 or target <= 0 or (target - stop) * (1 if direction == "CALL" else -1) <= 0:
         return "STOP_OR_TARGET_UNDEFINED", None
-    if hold is None or hold < 1:
-        return "HOLD_UNDEFINED", None
     live = _num(gate.get("live_price"))
     if live is None or live <= 0:
         return "LIVE_PRICE_MISSING", None
@@ -275,9 +272,7 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
     if match and match["side"] == direction[0]:
         strike = int(match["strike"]) / 1000.0
         expiry = contract_expiry(symbol)
-        # The contract must outlive the plan: a contract that expires first is closed at the expiry cap with its
-        # time value gone (backtest 17 Sep 2026), which no exit rule can repair.
-        guard = contract_guard(direction, strike, live, expiry, int(round(hold)), issue_session, s)
+        guard = contract_guard(direction, strike, live, expiry, s)
         if guard is not None:
             return guard, None
         last_usable = last_usable_for(expiry) if expiry else None
@@ -293,13 +288,13 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
     side = "call" if direction == "CALL" else "put"
     dte = (expiry - issue_session).days if expiry else None
     path_inputs = dict(side=side, spot=live, strike=strike, dte=dte, bid=bid, ask=ask, iv=iv, rate=rate, target=target,
-                       invalidation=stop, hold_sessions=int(round(hold)), forecast_vol=forecast,
+                       invalidation=stop, hold_sessions=hold, forecast_vol=forecast,
                        share_spread=_num(valuation.get("emp_share_spread_estimate")))
     return None, Prepared(
         ticker=_text(book.get("ticker")).upper(), direction=direction, contract_symbol=symbol if match else None,
         strike=strike, expiry=expiry, last_usable_session=last_usable, live_spot=live,
         live_spot_utc=_text(gate.get("live_fetched_at")) or None, stop=stop, target=target,
-        hold_sessions=int(round(hold)), quote_bid=raw_bid, quote_ask=raw_ask, quote_timestamp_utc=quote_ts,
+        hold_sessions=hold, quote_bid=raw_bid, quote_ask=raw_ask, quote_timestamp_utc=quote_ts,
         quote_state=quote_state, adjustment_state=adjustment, spot_at_quote=spot_at_quote, delta=delta, shift=shift,
         bid=bid, ask=ask, option_executable=executable, iv=iv, iv_source=iv_source, path_inputs=path_inputs)
 
@@ -308,7 +303,7 @@ def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | 
     """Factual eligibility at the issue-time premium; the forecast only ranks (R11, ACK 18 Sep 2026).
 
     Hard exclusions are facts: the contract could be priced, it has an executable two-sided quote inside the ticket
-    spread limit, and it outlives the plan (checked in ``prepare``). The cautious value must exist because it is the
+    spread limit, and it can be held past the issue session (checked in ``prepare``). The cautious value must exist because it is the
     ranking key, but no threshold on it vetoes a candidate: as a gate at zero it kept 20 of 2,992 backtest trades and
     rejected every large winner, while as a ranking it correlates 0.44 with realised returns.
 

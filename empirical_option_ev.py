@@ -414,11 +414,13 @@ def _load_path_settings() -> dict:
 PATH_SETTINGS = _load_path_settings()
 
 
-def path_inputs_from_options_row(row: dict) -> dict:
+def path_inputs_from_options_row(row: dict, *, thesis_window_sessions: int | None) -> dict:
     """Map an evening options-output row to compute_path_option_ev inputs.
 
     A clipped Layer 3 forecast is never used for value (ACK 17 Sep 2026): the raw model output is used and
-    the source is recorded.
+    the source is recorded. The valuation window is the governed thesis window (``outcome.window_sessions``,
+    ACK D2(a) 18 Sep 2026), capped per contract by its last exit session inside the simulation; the actuarial
+    recommended hold is not used, and a missing window is reported as bad input, never replaced (R1).
     """
     def first(*keys):
         for key in keys:
@@ -445,7 +447,7 @@ def path_inputs_from_options_row(row: dict) -> dict:
         "rate": DEFAULT_RISK_FREE_RATE,
         "target": first("structural_target", "target_spot"),
         "invalidation": first("invalidation_spot", "invalidation_price"),
-        "hold_sessions": first("layer2__recommended_hold_days", "hold_days"),
+        "hold_sessions": thesis_window_sessions,
         "forecast_vol": forecast, "forecast_source": source,
     }
 

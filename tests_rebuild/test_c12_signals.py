@@ -53,7 +53,7 @@ def settings(**overrides):
     base = dict(signal_version="SIG-V1", blocked_final_actions=("BLOCK", "CONTRACT_REPAIR"),
                 required_price_history_state="INTACT", contract_exit_buffer=2,
                 contract_multiplier=100.0, o4_extreme_quantile=0.2, min_closed_signals=6, min_issue_sessions=3,
-                interval_z=1.645, min_dte_cover=1.5, min_contract_dte_days=21, max_out_of_the_money=0.05,
+                interval_z=1.645, thesis_window_sessions=20, max_out_of_the_money=0.05,
                 max_entry_spread_fraction=0.10, max_tickets_per_session=5)
     base.update(overrides)
     return sig.SignalSettings(**base)
@@ -112,7 +112,6 @@ def prepare(book=None, gate=None, valuation=None, spot=101.0):
     ({}, {}, dict(final_direction="PUT"), "DIRECTION_CHANGED_SINCE_VALUATION"),
     ({}, {}, dict(l3_price_history_state="BREAK_TRUNCATED"), "PRICE_HISTORY_NOT_INTACT"),
     ({}, {}, dict(structural_target=None, target_spot=None), "STOP_OR_TARGET_UNDEFINED"),
-    ({}, {}, dict(layer2__recommended_hold_days=None), "HOLD_UNDEFINED"),
     ({}, dict(live_price=None), {}, "LIVE_PRICE_MISSING"),
     ({}, dict(live_low=94.5), {}, "THESIS_INVALIDATED_INTRADAY"),
     ({}, dict(live_price=94.0, live_low=93.0), {}, "THESIS_INVALIDATED_INTRADAY"),
@@ -130,22 +129,37 @@ def test_s1_missing_gate_or_valuation():
                        last_usable_for=last_usable, rate=0.045)[0] == "VALUATION_MISSING"
 
 
-@pytest.mark.parametrize("symbol, hold, reason", [
-    ("ABC261016C00100000", 40, "CONTRACT_EXPIRES_BEFORE_PLAN"),     # 28 days vs 1.5 x 56 calendar days
-    ("ABC260930C00100000", 5, "CONTRACT_DTE_BELOW_FLOOR"),          # 12 days, floor 21
-    ("ABC261016C00130000", 5, "MONEYNESS_TOO_FAR_OUT_OF_THE_MONEY"),  # strike 130 vs spot 102
-])
-def test_s4b_contract_must_outlive_the_plan(symbol, hold, reason):
-    result = sig.prepare(book_row(morning_selected_contract_symbol=symbol),
-                         gate_row(live_contract_symbol=symbol),
-                         valuation_row(contract_occ_symbol=symbol, layer2__recommended_hold_days=hold),
-                         101.0, settings(), issue_session=ISSUE, last_usable_for=last_usable, rate=0.045)
-    assert result[0] == reason
+def _prepare_symbol(symbol, **valuation):
+    return sig.prepare(book_row(morning_selected_contract_symbol=symbol), gate_row(live_contract_symbol=symbol),
+                       valuation_row(contract_occ_symbol=symbol, **valuation), 101.0, settings(), issue_session=ISSUE,
+                       last_usable_for=last_usable, rate=0.045)
 
 
-def test_s4b_contract_covering_the_plan_passes():
-    reason, p = prepare(valuation=dict(layer2__recommended_hold_days=10))   # 28 days vs 1.5 x 14 = 21
-    assert reason is None and p.option_executable
+def test_s4b_contract_far_out_of_the_money_is_rejected():
+    assert _prepare_symbol("ABC261016C00130000")[0] == "MONEYNESS_TOO_FAR_OUT_OF_THE_MONEY"   # strike 130, spot 102
+
+
+def test_d1_short_dated_contract_is_valued_not_rejected():
+    """ACK D1(a), 18 Sep 2026: no duration rule. A 12-day contract is a candidate; the value model exits it at its
+    own last exit session (C3) and ranking decides."""
+    reason, p = _prepare_symbol("ABC260930C00100000")
+    assert reason is None
+    assert p.path_inputs["dte"] == 12
+
+
+def test_d2_hold_is_the_thesis_window_not_the_actuarial_default():
+    """ACK D2(a), 18 Sep 2026: every candidate is valued and held over the governed thesis window (1-20 sessions);
+    the actuarial recommended hold (a fallback default of 20 in most rows) neither decides nor rejects."""
+    for recorded in (None, 5, 40):
+        reason, p = prepare(valuation=dict(layer2__recommended_hold_days=recorded))
+        assert reason is None
+        assert p.hold_sessions == 20 and p.path_inputs["hold_sessions"] == 20
+
+
+def test_d2_the_contract_caps_the_window_at_its_last_exit_session():
+    """The ticket carries the contract's last usable session; the exit plan ends there if it comes first."""
+    reason, p = _prepare_symbol("ABC260930C00100000")
+    assert reason is None and p.last_usable_session == last_usable(None)
 
 
 def test_s2_started_move_is_revalued_from_the_current_price():
@@ -320,7 +334,8 @@ def test_registered_settings_load_from_configuration():
     snap = ConfigRegistry.from_documents(load_documents(), load_lock()).resolve(ISSUE)
     s = sig.settings_from_snapshot(snap)
     assert s.signal_version == "SIG-V1" and "BLOCK" in s.blocked_final_actions and s.min_closed_signals == 40
-    assert (s.min_dte_cover, s.min_contract_dte_days, s.max_out_of_the_money) == (1.5, 21, 0.05)
+    assert (s.thesis_window_sessions, s.max_out_of_the_money) == (20, 0.05)
+    assert not hasattr(s, "min_dte_cover") and not hasattr(s, "min_contract_dte_days")   # retired, ACK D1
     assert (s.max_entry_spread_fraction, s.max_tickets_per_session) == (0.10, 5)
 
 

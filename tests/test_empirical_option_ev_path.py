@@ -157,3 +157,19 @@ def test_c3_moves_after_the_contract_is_sold_are_never_credited():
 def test_c3_contract_with_no_usable_life_is_flagged():
     out = _value(dte=3.0, hold_sessions=10)           # 3 days ~ 2 sessions, minus 2 buffer -> 0
     assert out["emp_path_quality_flag"] == "CONTRACT_NOT_HOLDABLE"
+
+
+# --- ACK decision D2(a): the evening valuation uses the thesis window, not the actuarial hold ------------------------
+
+def test_d2_evening_inputs_use_the_thesis_window():
+    from empirical_option_ev import path_inputs_from_options_row
+    row = {"final_direction": "CALL", "underlying_price": 100.0, "strike": 100.0, "contract_dte": 45,
+           "contract_bid": 4.8, "contract_ask": 5.0, "contract_iv": 0.3, "structural_target": 110.0,
+           "invalidation_spot": 95.0, "layer2__recommended_hold_days": 5, "l3_forward_realised_vol": 0.3}
+    assert path_inputs_from_options_row(row, thesis_window_sessions=20)["hold_sessions"] == 20
+
+
+def test_d2_missing_thesis_window_is_never_replaced_by_the_actuarial_hold():
+    from empirical_option_ev import path_inputs_from_options_row
+    row = {"final_direction": "CALL", "layer2__recommended_hold_days": 5}
+    assert path_inputs_from_options_row(row, thesis_window_sessions=None)["hold_sessions"] is None   # R1

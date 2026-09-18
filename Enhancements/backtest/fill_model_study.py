@@ -37,8 +37,8 @@ MODELS = {"quoted": 1.00, "timed": 0.30, "mid": 0.00}
 SETTINGS = sig.SignalSettings(
     signal_version="FILL-STUDY", blocked_final_actions=(), required_price_history_state="INTACT",
     contract_exit_buffer=2, contract_multiplier=100.0, o4_extreme_quantile=0.2,
-    min_closed_signals=40, min_issue_sessions=15, interval_z=1.645, min_dte_cover=1.5,
-    min_contract_dte_days=21, max_out_of_the_money=0.05, max_entry_spread_fraction=0.10,
+    min_closed_signals=40, min_issue_sessions=15, interval_z=1.645, thesis_window_sessions=20,
+    max_out_of_the_money=0.05, max_entry_spread_fraction=0.10,
     max_tickets_per_session=5)
 
 

@@ -801,6 +801,36 @@
       "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
       "provenance": "NEW",
       "recorded_at_utc": "2026-09-18T07:30:00Z"
+    },
+    {
+      "config_key": "outcome.signal.min_dte_cover",
+      "version": 2,
+      "value": 1.5,
+      "value_type": "NUMBER",
+      "unit": "none",
+      "effective_from": "2026-09-18",
+      "validation_state": "RETIRED",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-D1",
+      "rationale": "Retired by ACK decision D1(a), 18 Sep 2026: decision C3(b) reaffirmed - shorter-dated contracts are valued only until their own last exit session (expiry minus the exit buffer) and ranked; no duration rule. The guard's evidence (short contracts losing) came from a value model that credited moves after expiry, fixed in c65cc59.",
+      "evidence_ref": "Enhancements/knowledge/ACK_DECISIONS_20260918.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T12:00:00Z"
+    },
+    {
+      "config_key": "outcome.signal.min_contract_dte_days",
+      "version": 2,
+      "value": 21,
+      "value_type": "INTEGER",
+      "unit": "calendar_days",
+      "effective_from": "2026-09-18",
+      "validation_state": "RETIRED",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-D1",
+      "rationale": "Retired by ACK decision D1(a), 18 Sep 2026: decision C3(b) reaffirmed - shorter-dated contracts are valued only until their own last exit session (expiry minus the exit buffer) and ranked; no duration rule. The guard's evidence (short contracts losing) came from a value model that credited moves after expiry, fixed in c65cc59.",
+      "evidence_ref": "Enhancements/knowledge/ACK_DECISIONS_20260918.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T12:00:00Z"
     }
   ]
 }

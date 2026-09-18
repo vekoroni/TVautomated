@@ -158,7 +158,8 @@ def test_m7_clipped_forecast_is_never_used_for_value(tmp_path):
                                                    l3_forecast_state="CLIPPED_AT_CAP")])
     _stage_with_calibration(tmp_path, _CALIBRATION)
     row = pd.read_csv(out_path).iloc[0]
-    assert row["emp_path_vol_central"] == pytest.approx(3.4 * 0.92)          # hold 10 sessions -> band 10, p50 0.92
+    # ACK D2(a): valued over the governed thesis window (20 sessions) -> band 20, p50 0.95; not the actuarial hold
+    assert row["emp_path_vol_central"] == pytest.approx(3.4 * 0.95)
     assert row["emp_path_forecast_source"] == "RAW_UNCLIPPED"
 
 
@@ -241,3 +242,10 @@ def test_m12_share_spread_uses_only_bars_up_to_the_run_date(tmp_path):
     tail = rows[-emp.PATH_SETTINGS["share_spread_window_sessions"]:]
     expected = emp.abdi_ranaldo_spread([r[0] for r in tail], [r[1] for r in tail], [r[2] for r in tail])
     assert orchestrator._share_spread_for(db, "AAPL", "2026-09-17") == pytest.approx(expected)
+
+
+def test_d2_stage_values_over_the_governed_thesis_window(tmp_path):
+    out_path = _write_options(tmp_path, [_path_row(layer2__recommended_hold_days=5)])
+    summary = _stage_with_calibration(tmp_path, _CALIBRATION)
+    assert summary["thesis_window_sessions"] == 20
+    assert pd.read_csv(out_path).iloc[0]["emp_path_last_exit_sessions"] == 19   # 30 days: 21 sessions - 2 buffer

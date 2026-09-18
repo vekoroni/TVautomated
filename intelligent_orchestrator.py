@@ -2224,6 +2224,16 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
         except (OSError, ValueError):
             calibration = None
         summary["path_settings"] = {k: PATH_SETTINGS[k] for k in ("paths", "seed", "version")}
+        # ACK D2(a): value over the governed thesis window; unresolvable means every row is flagged, never defaulted.
+        try:
+            from datetime import date as _date
+            from avshunter.config.adapters import load_registry
+            thesis_window = int(load_registry().resolve(_date.fromisoformat(cutoff_date))
+                                .get("outcome.window_sessions").value)
+        except Exception as exc:  # noqa: BLE001 - recorded in the stage summary
+            thesis_window = None
+            summary["thesis_window_error"] = f"{type(exc).__name__}: {exc}"
+        summary["thesis_window_sessions"] = thesis_window
         summary["path_calibration"] = str(EMPIRICAL_PATH_CALIBRATION_PATH) if calibration else None
         options = pd.read_csv(options_path, low_memory=False)
         options = options.drop(columns=[c for c in options.columns if c in EMPTY_COLUMNS or c in path_columns],
@@ -2240,7 +2250,7 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
                 path_result["emp_expression_preference"] = PREFERENCE_UNAVAILABLE
             else:
                 result = compute_empirical_option_ev(candidate_from_options_row(row))
-                inputs = path_inputs_from_options_row(row)
+                inputs = path_inputs_from_options_row(row, thesis_window_sessions=thesis_window)
                 source = inputs.pop("forecast_source")
                 if calibration is None:
                     path_result = {column: None for column in path_columns}
