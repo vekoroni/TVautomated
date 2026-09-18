@@ -99,8 +99,11 @@ def issue_signals(connection: sqlite3.Connection, runs_dir: Path, run_id: str, s
             rejections[ticker] = reason
             continue
         decided.append((ticker, fields_))
-    tickets = sig.rank_tickets(decided, valuations, s, run_id=run_id, evidence_session=evidence_session,
-                               issue_session=issue_session, h9r_tickers=h9r)
+    ranked = sig.rank_tickets(decided, valuations, s, run_id=run_id, evidence_session=evidence_session,
+                              issue_session=issue_session, h9r_tickers=h9r)
+    tickets, held_back = sig.apply_daily_cap(ranked, s)
+    for t in held_back:
+        rejections[t.ticker] = f"RANK_BELOW_DAILY_CAP:{t.rank}"
     ticket_rows = []
     for t in tickets:
         row = {k: storage._plain(v) for k, v in asdict(t).items()}

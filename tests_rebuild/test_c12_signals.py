@@ -8,17 +8,18 @@ Rules:
      THESIS_INVALIDATED_INTRADAY; through the target is TARGET_ALREADY_REACHED; a move that has started is re-valued;
   S3 a delayed option quote is brought to issue: bid and ask shift by delta x (live spot - spot at quote time); a
      missing bar or delta leaves the quote unadjusted and flagged; quote age is recorded as a flag, never a gate;
-  S4 the decision is forward-looking at the issue-time premium and OPTION-ONLY for the trial (ACK 17 Sep 2026: the
-     share spread estimate is floored at zero, so share values are not a measured alternative): re-valuation must be
-     OK, the option's cautious return above the minimum, an executable gate quote and a contract holdable past the
-     issue session. Limit = adjusted mid, scored from the adjusted ask. The share valuation is recorded beside the
-     ticket for comparison and never issues or vetoes a ticket;
+  S4 rank, don't gate (R11; ACK 18 Sep 2026): hard exclusions are facts only — the contract must be priceable,
+     carry an executable two-sided quote within the ticket spread limit and be holdable past the issue session; the
+     cautious value must be present because it is the ranking key, but NO forecast threshold vetoes a candidate.
+     OPTION-ONLY for the trial (the share spread estimate is floored at zero). Limit = adjusted mid, scored from the
+     adjusted ask. The share valuation is recorded beside the ticket and never issues or vetoes one;
   S4b the contract must outlive the plan (backtest 17 Sep 2026: tickets held contracts covering a median 0.54 of
      their planned hold, the expiry cap was the most common exit, and contracts with 10 or fewer days to expiry
      returned -75.6%): days to expiry at least the governed cover multiple of the planned hold in calendar days,
      never below the governed floor, and moneyness no further out of the money than the governed limit;
-  S5 context (O4 stance, O2 availability, H9R event) is recorded and never changes eligibility or rank; tickets rank
-     by the option's cautious return;
+  S5 context (O4 stance, O2 availability, H9R event) is recorded and never changes eligibility or rank; candidates
+     rank by the option's cautious value and the top N per session (governed daily cap) are issued; every candidate
+     below the cap is recorded with its rank, so the denominator is kept;
   S6 exit: first of issue-session close beyond the stop; a later session touching stop or target (both = stop); the
      planned hold; for options the last usable session. Options exit at the end-of-day bid (missing =
      MARK_UNAVAILABLE); shares at the stop level or worse open, the target level, or the close, less half the spread;
@@ -50,9 +51,10 @@ SYMBOL = "ABC261016C00100000"
 
 def settings(**overrides):
     base = dict(signal_version="SIG-V1", blocked_final_actions=("BLOCK", "CONTRACT_REPAIR"),
-                required_price_history_state="INTACT", min_cautious_return=0.0, contract_exit_buffer=2,
+                required_price_history_state="INTACT", contract_exit_buffer=2,
                 contract_multiplier=100.0, o4_extreme_quantile=0.2, min_closed_signals=6, min_issue_sessions=3,
-                interval_z=1.645, min_dte_cover=1.5, min_contract_dte_days=21, max_out_of_the_money=0.05)
+                interval_z=1.645, min_dte_cover=1.5, min_contract_dte_days=21, max_out_of_the_money=0.05,
+                max_entry_spread_fraction=0.10, max_tickets_per_session=5)
     base.update(overrides)
     return sig.SignalSettings(**base)
 
@@ -198,13 +200,21 @@ def test_s4_option_ticket_at_issue_premium():
 
 @pytest.mark.parametrize("gate, reval, reason", [
     ({}, dict(emp_path_quality_flag="NO_MARKET"), "REVALUATION_NOT_OK:NO_MARKET"),
-    ({}, dict(emp_path_r_cautious=-0.01), "CAUTIOUS_RETURN_NOT_POSITIVE"),
-    ({}, dict(emp_path_r_cautious=None), "CAUTIOUS_RETURN_NOT_POSITIVE"),
+    ({}, dict(emp_path_r_cautious=None), "CAUTIOUS_UNAVAILABLE"),
     (dict(execution_viability_state="BLOCKED_WIDE_SPREAD"), {}, "OPTION_NOT_EXECUTABLE"),
+    (dict(live_contract_bid=4.0, live_contract_ask=5.0), {}, "SPREAD_ABOVE_TICKET_MAXIMUM"),   # 22% of mid
 ])
-def test_s4_forward_decision_rejections(gate, reval, reason):
+def test_s4_factual_exclusions(gate, reval, reason):
     _, p = prepare(gate=gate)
     assert sig.decide(p, revaluation(**reval), settings())[0] == reason
+
+
+@pytest.mark.parametrize("cautious", [-0.60, -0.05, 0.0, 0.12])
+def test_s4_r11_no_forecast_vetoes_a_candidate(cautious):
+    """Rank, don't gate: however poor the cautious value, a factually tradeable candidate is kept for ranking."""
+    _, p = prepare(spot=101.0)
+    reason, fields = sig.decide(p, revaluation(emp_path_r_cautious=cautious), settings())
+    assert reason is None and fields["r_cautious"] == cautious
 
 
 def test_s4_option_not_holdable_past_issue():
@@ -225,6 +235,17 @@ def test_s4_option_only_share_values_recorded_never_decide():
 
 
 # --- S5 ----------------------------------------------------------------------------------------------------------
+
+def test_s5_daily_cap_issues_top_n_and_records_the_rest():
+    _, p = prepare(spot=101.0)
+    cautious = {"A1": 0.2, "A2": -0.1, "A3": 0.05, "A4": -0.4, "A5": 0.0, "A6": -0.2, "A7": 0.1}
+    decided = [(t, dict(sig.decide(p, revaluation(emp_path_r_cautious=c), settings())[1])) for t, c in cautious.items()]
+    ranked = sig.rank_tickets(decided, {}, settings(), run_id="r", evidence_session=EVIDENCE, issue_session=ISSUE,
+                              h9r_tickers=set())
+    issued, held_back = sig.apply_daily_cap(ranked, settings(max_tickets_per_session=5))
+    assert [t.ticker for t in issued] == ["A1", "A7", "A3", "A5", "A2"]
+    assert [(t.ticker, t.rank) for t in held_back] == [("A6", 6), ("A4", 7)]
+
 
 def test_s5_context_recorded_never_ranks():
     pcr = {"AAA": 3.0, "BBB": 0.2, "CCC": 1.0, "DDD": None, "EEE": 1.1}
@@ -300,6 +321,7 @@ def test_registered_settings_load_from_configuration():
     s = sig.settings_from_snapshot(snap)
     assert s.signal_version == "SIG-V1" and "BLOCK" in s.blocked_final_actions and s.min_closed_signals == 40
     assert (s.min_dte_cover, s.min_contract_dte_days, s.max_out_of_the_money) == (1.5, 21, 0.05)
+    assert (s.max_entry_spread_fraction, s.max_tickets_per_session) == (0.10, 5)
 
 
 # --- intraday adapter ----------------------------------------------------------------------------------------------

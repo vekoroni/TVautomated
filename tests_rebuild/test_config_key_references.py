@@ -38,13 +38,21 @@ def _string_constants() -> set[str]:
 
 
 def test_registry_keys_have_consumers_and_referenced_keys_exist():
-    keys = set(load_registry().keys)
+    registry = load_registry()
+    keys = set(registry.keys)
+    latest = {}
+    for entry in registry.entries():
+        latest[entry.config_key] = entry
+    # A key whose latest version is RETIRED has, by design, no live consumer (append-only retirement).
+    retired = {key for key, entry in latest.items() if entry.validation_state.value == "RETIRED"}
     constants = _string_constants()
     referenced = {c for c in constants if c in keys}
     looks_like_key = {c for c in constants if c.count(".") >= 1 and c.split(".", 1)[0] in {"run", "legacy", "market_data", "eligibility", "ranking", "valuation", "thesis", "expression", "tradeability"} and " " not in c and "/" not in c and not c.endswith(".py")}
     missing = sorted(looks_like_key - keys)
     assert not missing, f"code reads configuration keys that are not registered: {missing}"
-    orphans = sorted(keys - referenced - set(PENDING_CONSUMERS))
+    orphans = sorted(keys - referenced - set(PENDING_CONSUMERS) - retired)
+    still_read = sorted(retired & referenced)
+    assert not still_read, f"code still reads RETIRED configuration keys: {still_read}"
     assert not orphans, f"registry keys without a consumer: {orphans}"
     stale_pending = sorted(set(PENDING_CONSUMERS) & referenced)
     assert not stale_pending, f"remove from PENDING_CONSUMERS (now consumed): {stale_pending}"

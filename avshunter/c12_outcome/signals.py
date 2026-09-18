@@ -44,7 +44,6 @@ class SignalSettings:
     signal_version: str
     blocked_final_actions: tuple[str, ...]
     required_price_history_state: str
-    min_cautious_return: float
     contract_exit_buffer: int
     contract_multiplier: float
     o4_extreme_quantile: float
@@ -54,6 +53,8 @@ class SignalSettings:
     min_dte_cover: float           # days to expiry / planned hold in calendar days
     min_contract_dte_days: int
     max_out_of_the_money: float    # fraction of spot; beyond this the contract is too far out of the money
+    max_entry_spread_fraction: float  # (ask - bid) / mid at issue; a tradeability fact, not a forecast
+    max_tickets_per_session: int   # daily cap on issued tickets; every candidate below it is still recorded
 
 
 def settings_from_snapshot(snapshot) -> SignalSettings:
@@ -63,7 +64,6 @@ def settings_from_snapshot(snapshot) -> SignalSettings:
         signal_version=str(value("outcome.signal.version")),
         blocked_final_actions=tuple(str(v) for v in value("outcome.signal.blocked_final_actions")),
         required_price_history_state=str(value("outcome.signal.required_price_history_state")),
-        min_cautious_return=float(value("outcome.signal.min_cautious_return")),
         contract_exit_buffer=int(value("outcome.contract_exit_buffer")),
         contract_multiplier=float(value("outcome.contract_multiplier")),
         o4_extreme_quantile=float(value("outcome.signal.o4_extreme_quantile")),
@@ -73,6 +73,8 @@ def settings_from_snapshot(snapshot) -> SignalSettings:
         min_dte_cover=float(value("outcome.signal.min_dte_cover")),
         min_contract_dte_days=int(value("outcome.signal.min_contract_dte_days")),
         max_out_of_the_money=float(value("outcome.signal.max_out_of_the_money")),
+        max_entry_spread_fraction=float(value("outcome.signal.max_entry_spread_fraction")),
+        max_tickets_per_session=int(value("outcome.signal.max_tickets_per_session")),
     )
 
 
@@ -303,7 +305,12 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
 
 
 def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | None, dict]:
-    """Forward-looking decision at the issue-time premium: is the remaining move still worth buying the option?
+    """Factual eligibility at the issue-time premium; the forecast only ranks (R11, ACK 18 Sep 2026).
+
+    Hard exclusions are facts: the contract could be priced, it has an executable two-sided quote inside the ticket
+    spread limit, and it outlives the plan (checked in ``prepare``). The cautious value must exist because it is the
+    ranking key, but no threshold on it vetoes a candidate: as a gate at zero it kept 20 of 2,992 backtest trades and
+    rejected every large winner, while as a ranking it correlates 0.44 with realised returns.
 
     Option-only for the trial (ACK 17 Sep 2026): the share spread estimate is floored at zero, so the share value is
     not a measured alternative; it is recorded beside the ticket and never issues or vetoes one.
@@ -311,10 +318,13 @@ def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | 
     if _text(revaluation.get("emp_path_quality_flag")) != PATH_OK:
         return "REVALUATION_NOT_OK:" + (_text(revaluation.get("emp_path_quality_flag")) or "MISSING"), {}
     cautious = _num(revaluation.get("emp_path_r_cautious"))
-    if cautious is None or cautious <= s.min_cautious_return:
-        return "CAUTIOUS_RETURN_NOT_POSITIVE", {}
+    if cautious is None:
+        return "CAUTIOUS_UNAVAILABLE", {}
     if not p.option_executable:
         return "OPTION_NOT_EXECUTABLE", {}
+    spread = (p.ask - p.bid) / ((p.ask + p.bid) / 2.0) if (p.ask or 0) + (p.bid or 0) > 0 else None
+    if spread is None or spread > s.max_entry_spread_fraction:
+        return "SPREAD_ABOVE_TICKET_MAXIMUM", {}
     return None, dict(direction=p.direction, expression=OPTION, side=LONG, contract_symbol=p.contract_symbol,
                       expiry=p.expiry, last_usable_session=p.last_usable_session, limit_price=(p.bid + p.ask) / 2.0,
                       scored_entry=p.ask, reference_spot=p.live_spot, reference_spot_utc=p.live_spot_utc,
@@ -370,6 +380,12 @@ def rank_tickets(decided: Iterable[tuple[str, dict]], valuations: Mapping[str, M
     return [SignalTicket(ticket_id=_ticket_id(run_id, d["ticker"], issue_session, d["expression"], s.signal_version),
                          signal_version=s.signal_version, run_id=run_id, evidence_session=evidence_session,
                          issue_session=issue_session, rank=i + 1, **d) for i, d in enumerate(drafts)]
+
+
+def apply_daily_cap(ranked: Sequence[SignalTicket], s: SignalSettings) -> tuple[list[SignalTicket], list[SignalTicket]]:
+    """Issue the top N by rank; return the rest separately so they are recorded, never silently dropped."""
+    cap = max(0, int(s.max_tickets_per_session))
+    return list(ranked[:cap]), list(ranked[cap:])
 
 
 # --- exit and marks -----------------------------------------------------------------------------------------------

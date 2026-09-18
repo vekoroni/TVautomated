@@ -756,6 +756,51 @@
       "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
       "provenance": "NEW",
       "recorded_at_utc": "2026-09-17T22:45:00Z"
+    },
+    {
+      "config_key": "outcome.signal.max_entry_spread_fraction",
+      "version": 1,
+      "value": 0.1,
+      "value_type": "NUMBER",
+      "unit": "fraction",
+      "effective_from": "2026-09-18",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-RANK-NOT-GATE",
+      "rationale": "Ticket tradeability limit on (ask - bid) / mid at issue. Backtest: entry spread <= 10% returned -31.5% mean on 196 closed trades against -55.2% for all 2,992; with exit spread <= 20% it was -17.4%.",
+      "evidence_ref": "Enhancements/backtest/fill_model_study_summary.json",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T07:30:00Z"
+    },
+    {
+      "config_key": "outcome.signal.max_tickets_per_session",
+      "version": 1,
+      "value": 5,
+      "value_type": "INTEGER",
+      "unit": "count",
+      "effective_from": "2026-09-18",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-RANK-NOT-GATE",
+      "rationale": "Daily cap: candidates rank by cautious value and the top N are issued; the rest are recorded with their rank. Replaces the cautious > 0 gate (R11). Backtest: top 5 per session -18.8% mean, 25% profitable, against -37.5% for the worst 5 and -49.7% / 5% for the gate.",
+      "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T07:30:00Z"
+    },
+    {
+      "config_key": "outcome.signal.min_cautious_return",
+      "version": 2,
+      "value": 0.0,
+      "value_type": "NUMBER",
+      "unit": "fraction",
+      "effective_from": "2026-09-18",
+      "validation_state": "RETIRED",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-RANK-NOT-GATE",
+      "rationale": "Retired: a forecast threshold used as a hard exclusion breaks design rule R11 (rank, don't gate). As a gate at zero it kept 20 of 2,992 backtest trades (-49.7% mean, 0% >= +100%) and rejected every large winner; the cautious value now ranks candidates under outcome.signal.max_tickets_per_session.",
+      "evidence_ref": "Enhancements/backtest/SIGNAL_TICKET_BACKTEST_20260917.md",
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T07:30:00Z"
     }
   ]
 }
