@@ -384,8 +384,10 @@ PATH_COLUMNS = (
     "emp_path_vol_low", "emp_path_vol_central", "emp_path_vol_high",
     "emp_path_horizon_band", "emp_path_target_state", "emp_path_quality_flag", "emp_path_forecast_source",
     "emp_path_last_exit_sessions", "emp_path_forced_exit_share",
+    "emp_path_iv_provider", "emp_path_iv_calibrated",
 )
 PATH_CONTRACT_NOT_HOLDABLE = "CONTRACT_NOT_HOLDABLE"
+PATH_PRICE_NOT_CALIBRATABLE = "PRICE_NOT_CALIBRATABLE"
 PATH_CALIBRATION_UNAVAILABLE = "CALIBRATION_UNAVAILABLE"
 
 
@@ -478,6 +480,32 @@ def _bs_vector(side: str, spot, strike: float, time_years, rate: float, vol: flo
     return _np.where(live, priced, intrinsic)
 
 
+def calibrated_iv(side: str, spot: float, strike: float, time_years: float, rate: float, price: float,
+                  low: float = 1e-4, high: float = 5.0, tolerance: float = 1e-7) -> float | None:
+    """Volatility at which this module's pricing formula reproduces ``price`` (the market mid at entry).
+
+    ACK 18 Sep 2026: exits are repriced with the same formula, so the model's value at entry must equal the market.
+    The provider's IV is computed with dividends / borrow / its own rate, which this no-dividend formula lacks:
+    using it directly priced calls above market (median +1.2%, 90th pct +8.3%) and puts below (-1.6%), and made
+    day-one stop-outs look profitable. Returns None when no volatility in [low, high] reproduces the price (e.g.
+    a mid below intrinsic value) - the caller flags it, never values it.
+    """
+    f = lambda vol: float(_bs_vector(side, spot, strike, time_years, rate, vol)) - price   # noqa: E731
+    f_low, f_high = f(low), f(high)
+    if not (f_low <= 0.0 <= f_high):
+        return None
+    for _ in range(200):
+        mid = 0.5 * (low + high)
+        f_mid = f(mid)
+        if abs(f_mid) < tolerance:
+            return mid
+        if f_mid < 0.0:
+            low = mid
+        else:
+            high = mid
+    return 0.5 * (low + high)
+
+
 def _path_null(flag: str) -> dict:
     out = {column: None for column in PATH_COLUMNS}
     out["emp_path_quality_flag"] = flag
@@ -501,6 +529,13 @@ def _simulate_path_exits(*, side, spot, strike, dte, bid, ask, iv, rate, target,
         return PATH_NO_MARKET, None, None
     if values["forecast_vol"] is None or values["forecast_vol"] <= 0:
         return PATH_VOL_UNAVAILABLE, None, None
+    # Calibrate to the market at entry: exits are repriced with the volatility that makes this formula reproduce
+    # today's mid, so the model's value at entry equals the market by construction (ACK 18 Sep 2026).
+    iv_calibrated = calibrated_iv(side, values["spot"], values["strike"], values["dte"] / 365.0, values["rate"],
+                                  (values["bid"] + values["ask"]) / 2.0)
+    if iv_calibrated is None:
+        return PATH_PRICE_NOT_CALIBRATABLE, None, None
+    values["iv_provider"], values["iv"] = values["iv"], iv_calibrated
     sign = 1.0 if side == "call" else -1.0
     stop = _finite_or_none(invalidation)
     if stop is None or stop <= 0 or sign * (values["spot"] - stop) <= 0:
@@ -599,6 +634,8 @@ def _option_result(context, scenarios) -> dict:
         "emp_path_target_state": context["target_state"],
         "emp_path_last_exit_sessions": context["option_window"],
         "emp_path_forced_exit_share": round(results["p50"]["forced"], 6),
+        "emp_path_iv_provider": round(values["iv_provider"], 6),
+        "emp_path_iv_calibrated": round(values["iv"], 6),
         "emp_path_quality_flag": PATH_QUALITY_OK,
     }
 

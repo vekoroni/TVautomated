@@ -75,7 +75,11 @@ def test_v1_invalidation_touched_first_dominates_when_stop_is_close():
 def test_v1_no_touch_exits_at_horizon_with_time_value():
     tiny = _value(forecast_vol=0.0001, target=150.0, invalidation=50.0, hold_sessions=5)
     remaining = (30.0 - 5 * 7 / 5) / 365.0
-    expected_value = black_scholes_price("call", 100.0, 100.0, remaining, 0.045, 0.30) - 0.1
+    # Exits are repriced at the volatility that reproduces the 3.00 market mid at entry (ACK 18 Sep 2026), not the
+    # quoted 0.30, which would price this contract at ~3.61.
+    from empirical_option_ev import calibrated_iv
+    market_vol = calibrated_iv("call", 100.0, 100.0, 30.0 / 365.0, 0.045, 3.0)
+    expected_value = black_scholes_price("call", 100.0, 100.0, remaining, 0.045, market_vol) - 0.1
     assert tiny["emp_path_r_central"] == pytest.approx(expected_value / 3.1 - 1.0, abs=0.01)
 
 
@@ -173,3 +177,30 @@ def test_d2_missing_thesis_window_is_never_replaced_by_the_actuarial_hold():
     from empirical_option_ev import path_inputs_from_options_row
     row = {"final_direction": "CALL", "layer2__recommended_hold_days": 5}
     assert path_inputs_from_options_row(row, thesis_window_sessions=None)["hold_sessions"] is None   # R1
+
+
+# --- Market calibration at entry (ACK 18 Sep 2026) ---------------------------------------------------------------
+# Measured on run 20260918_112522: pricing exits with the provider IV in a no-dividend formula put the model value at
+# entry +1.2% above the market mid for the median call (+8.3% at the 90th percentile) and -1.6% for puts; the five
+# issued tickets sat at +7% to +17%, so 90%-likely day-one stop-outs showed gains (UPS +2.1%).
+
+def test_mkt_model_value_at_entry_equals_the_market_mid():
+    from empirical_option_ev import calibrated_iv, _bs_vector
+    iv = calibrated_iv("call", 100.0, 100.0, 91 / 365.0, 0.045, 5.26)
+    assert float(_bs_vector("call", 100.0, 100.0, 91 / 365.0, 0.045, iv)) == pytest.approx(5.26, abs=1e-4)
+
+
+def test_mkt_day_one_stop_out_is_a_loss_even_when_the_provider_iv_overprices_the_contract():
+    """Provider IV 0.40 prices this call well above its 2.62/2.82 market (a dividend payer): a stop hit on day one
+    must lose at least the half-spread, never show a gain."""
+    out = _value(dte=91.0, bid=2.62, ask=2.82, iv=0.40, invalidation=99.9, target=140.0, hold_sessions=20)
+    assert out["emp_path_quality_flag"] == PATH_QUALITY_OK
+    assert out["emp_path_p_stop_first_central"] > 0.95
+    assert out["emp_path_r_upside"] < -(0.10 / 2.82) * 0.5
+    assert out["emp_path_iv_provider"] == pytest.approx(0.40)
+    assert out["emp_path_iv_calibrated"] < 0.40
+
+
+def test_mkt_price_that_no_volatility_can_match_is_flagged_not_valued():
+    out = _value(spot=120.0, strike=100.0, bid=10.0, ask=10.4, invalidation=110.0, target=130.0)   # below intrinsic
+    assert out["emp_path_quality_flag"] == "PRICE_NOT_CALIBRATABLE"
