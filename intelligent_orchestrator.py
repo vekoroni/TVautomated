@@ -3621,6 +3621,18 @@ def run_superbrain_layer(run_id: str, premarket_mode: bool = False, eod_mode: bo
 
 # ============================================================ PATCH 1: HORIZON PROPAGATION HELPER
 
+def _governed_thesis_window_sessions(run_id: str) -> int | None:
+    """The governed thesis window (``outcome.window_sessions``, ACK D2) effective on the run's date."""
+    try:
+        from datetime import date as _date
+        from avshunter.config.adapters import load_registry
+        run_date = _date(int(run_id[:4]), int(run_id[4:6]), int(run_id[6:8]))
+        return int(load_registry().resolve(run_date).get("outcome.window_sessions").value)
+    except Exception as exc:  # noqa: BLE001 - reported as THESIS_WINDOW_UNAVAILABLE on every row
+        logger.warning("Thesis window unresolvable for %s: %s: %s", run_id, type(exc).__name__, exc)
+        return None
+
+
 def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> bool:
     """
     PATCH 1 (MUST): Stamp Phase 1B horizon routing fields into a downstream CSV.
@@ -3722,20 +3734,27 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         # pre-router hold in place (for example hold=5 with bucket=6_10d), which
         # is a deterministic REJECT_HORIZON defect. Re-derive both fields from
         # the final router bucket atomically.
-        # ACK 18 Sep 2026: horizon_bucket is Discovery's thesis horizon and is no longer overwritten; the
-        # router's bucket (contract expiry) is contract_expiry_bucket.  The hold keeps its existing derivation
-        # from that bucket - it sets the required contract runway downstream, so changing it is a separate
-        # decision - and its source label now says what it is.
+        # ACK 18 Sep 2026: two facts, each with one owner.
+        #   anticipated_move_sessions - when the move is expected: Discovery's thesis horizon (never the
+        #     router's contract-expiry bucket).  Informs display, timing and measurement.
+        #   planned_hold_sessions - how long the contract may be held: the governed thesis window (D2).  It
+        #     sets the required contract runway and the valuation window, so it is never shortened to the
+        #     anticipated move.  Unresolvable values are flagged, never defaulted.
         _hold_by_bucket = {"1_5d": 5, "6_10d": 10, "11_20d": 20}
-        patched["planned_hold_sessions"] = patched["contract_expiry_bucket"].map(
-            _hold_by_bucket
-        ).astype("Int64")
-        patched["planned_hold_source"] = patched["contract_expiry_bucket"].map(
-            {
-                bucket: "ROUTER_CONTRACT_EXPIRY_BUCKET_V1"
-                for bucket in _hold_by_bucket
-            }
-        ).fillna("UNROUTED")
+        if "horizon_bucket" not in patched.columns:
+            patched["horizon_bucket"] = _pd_hp.NA
+        _thesis_bucket = patched["horizon_bucket"].astype("string").str.strip().str.lower()
+        patched["anticipated_move_sessions"] = _thesis_bucket.map(_hold_by_bucket).astype("Int64")
+        patched["anticipated_move_source"] = _thesis_bucket.map(
+            {bucket: "DISCOVERY_THESIS_HORIZON" for bucket in _hold_by_bucket}
+        ).fillna("HORIZON_UNAVAILABLE")
+        _window = _governed_thesis_window_sessions(run_id)
+        patched["planned_hold_sessions"] = _pd_hp.array(
+            [_window] * len(patched), dtype="Int64"
+        )
+        patched["planned_hold_source"] = (
+            "THESIS_WINDOW_D2" if _window is not None else "THESIS_WINDOW_UNAVAILABLE"
+        )
 
         patched.to_csv(target_csv, index=False)
 

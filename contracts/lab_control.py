@@ -303,6 +303,10 @@ FINAL_BOOK_FIELDS = [
     "previous_contract_symbol",
     "contract_changed",
     "contract_selection_reason",
+    "anticipated_move_sessions",
+    "anticipated_move_source",
+    "planned_hold_sessions",
+    "planned_hold_source",
     "contract_runway_floor_days",
     "contract_runway_basis",
     "contract_runway_state",
@@ -3021,6 +3025,7 @@ def opportunity_book_row(
         # Display only (18 Sep 2026): the selector's runway and spread facts and the 20-session valuation,
         # passed through exactly as recorded upstream.
         **{field: sig.get(field) for field in (
+            "anticipated_move_sessions", "anticipated_move_source", "planned_hold_sessions", "planned_hold_source",
             "contract_runway_floor_days", "contract_runway_basis", "contract_runway_state", "spread_above_limit",
             "emp_path_quality_flag", "emp_path_r_cautious", "emp_path_r_central", "emp_path_r_upside",
             "emp_path_last_exit_sessions", "emp_path_forced_exit_share")},

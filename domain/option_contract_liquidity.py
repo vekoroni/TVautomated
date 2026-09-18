@@ -394,7 +394,7 @@ def classify_current_executability(
     """Classify the current exact quote without using OI as a hard gate.
 
     Runway (ACK 18 Sep 2026): a contract short of ``minimum_required_dte`` but holdable past issue
-    (``minimum_holdable_dte``) is classified on its quote and flagged ``RUNWAY_BELOW_ANTICIPATED_MOVE``
+    (``minimum_holdable_dte``) is classified on its quote and flagged ``RUNWAY_BELOW_PLANNED_HOLD``
     for manual review; it is never sent to repair for its runway. Without a holdable minimum the former
     rule applies (the caller did not say the contract can be held).
     """
@@ -412,7 +412,7 @@ def classify_current_executability(
         return result
     if "minimum_required_dte" in result:
         result["minimum_required_dte"] = minimum
-    result["liquidity_reasons"] = list(result.get("liquidity_reasons", [])) + ["RUNWAY_BELOW_ANTICIPATED_MOVE"]
+    result["liquidity_reasons"] = list(result.get("liquidity_reasons", [])) + ["RUNWAY_BELOW_PLANNED_HOLD"]
     result["runway_state"] = "RUNWAY_SHORT"
     if result["recovery_disposition"] == "EXECUTABLE":
         result.update(liquidity_state=ContractLiquidityState.RUNWAY_SHORT_REVIEW.value,

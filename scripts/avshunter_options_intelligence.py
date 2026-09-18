@@ -79,7 +79,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-import sys, os, time, json, math, cmath, warnings, random, re, hashlib
+import sys, os, time, json, math, cmath, warnings, random, re, hashlib, functools
 
 # ── Windows CP1252 fix: configure streams in place so importing this module
 # never replaces or closes a host/test runner's capture streams.
@@ -1277,19 +1277,29 @@ def _load_contract_selection_policy() -> Dict[str, Any]:
 CONTRACT_SELECTION = _load_contract_selection_policy()
 
 
-def contract_runway_policy(horizon: object) -> Dict[str, Any]:
-    """Preferred runway for the anticipated move: a floor in calendar days, never a ceiling.
+@functools.lru_cache(maxsize=1)
+def governed_thesis_window_sessions() -> int:
+    """The planned hold: the governed thesis window ``outcome.window_sessions`` (ACK D2).
 
-    A missing or unrecognised horizon is reported and uses the full thesis window (buy more runway),
-    never the shortest window.
+    One owner with ``planned_hold_sessions`` downstream.  An unresolvable registry raises, so every
+    affected row stands down with a governed exception reason - it is never defaulted.
+    """
+    from avshunter.config.adapters import load_registry
+    return int(load_registry().resolve(date.today()).get("outcome.window_sessions").value)
+
+
+def contract_runway_policy(horizon: object) -> Dict[str, Any]:
+    """Runway floor for the contract: the planned hold, in calendar days - a floor, never a ceiling.
+
+    ACK 18 Sep 2026 decision (a): the contract must outlast the planned hold (the thesis window), not only
+    the anticipated move; the move is expected inside the window.  The anticipated-move horizon is kept in
+    the basis for display and measurement and never shortens the runway.
     """
     text = str(horizon or "").lower().replace("-", "_").replace(" ", "")
     key = ("1_5d" if "1_5" in text else "6_10d" if "6_10" in text else "11_20d" if "11_20" in text
            else text if text in DTE_CONFIG else None)
-    if key is None:
-        hold, basis = int(CONTRACT_SELECTION["missing_horizon_runway_hold_sessions"]), "THESIS_WINDOW_HORIZON_UNAVAILABLE"
-    else:
-        hold, basis = HORIZON_PLANNED_HOLD_SESSIONS[key], f"HORIZON:{key}"
+    hold = governed_thesis_window_sessions()
+    basis = f"THESIS_WINDOW_D2|HORIZON:{key}" if key is not None else "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
     requirement = calculate_dte_requirement(hold)
     return {
         "contract_runway_floor_days": int(requirement["minimum_required_dte"]),

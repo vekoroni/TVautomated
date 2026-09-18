@@ -32,6 +32,9 @@ def main():
     parser.add_argument("--out", required=True)
     parser.add_argument("--run", default="20260916_223756")
     parser.add_argument("--session", default=SESSION)
+    parser.add_argument("--discovery", default=None,
+                        help="Discovery CSV: replay its thesis horizon (the options file's horizon_bucket was "
+                             "overwritten by the Horizon Router before 18 Sep 2026)")
     args = parser.parse_args()
     run_csv = MAIN / "data" / "output" / "runs" / args.run / "options" / f"options_intelligence_{args.run}.csv"
     sys.path.insert(0, args.root)
@@ -39,6 +42,10 @@ def main():
     from scripts import avshunter_options_intelligence as oi   # noqa: E402
 
     rows = pd.read_csv(run_csv, low_memory=False)
+    if args.discovery:
+        thesis = pd.read_csv(args.discovery, low_memory=False, usecols=["ticker", "horizon_bucket"])
+        rows = rows.drop(columns=["horizon_bucket", "contract_rejection_horizon"], errors="ignore").merge(
+            thesis, on="ticker", how="left")
     con = sqlite3.connect(f"file:{CHAINS.as_posix()}?mode=ro", uri=True)
     out = []
     for _, r in rows.iterrows():
@@ -83,6 +90,8 @@ def main():
                     "spread_limit": oi.horizon_spread_limit(horizon),
                     "spread_above_limit": chosen.get("spread_above_limit") if chosen else None,
                     "runway_state": chosen.get("contract_runway_state") if chosen else None,
+                    "runway_floor_days": chosen.get("contract_runway_floor_days") if chosen else None,
+                    "selected_mid": (chosen.get("mark") or chosen.get("mid")) if chosen else None,
                     "recorded_liquidity_state": r.get("liquidity_state")})
     pd.DataFrame(out).to_csv(args.out, index=False)
     print(f"replayed {len(out)} tickers -> {args.out}")

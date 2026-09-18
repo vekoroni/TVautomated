@@ -15,7 +15,7 @@ import intelligent_orchestrator as orch
 
 
 def _patch(tmp_path, monkeypatch, target_rows, routes):
-    run_id = "RUN1"
+    run_id = "20260918_112522"
     horizon_dir = tmp_path / run_id / "horizon"
     horizon_dir.mkdir(parents=True)
     for bucket, rows in routes.items():
@@ -39,8 +39,8 @@ def test_a_long_dated_contract_does_not_relabel_the_thesis_horizon(tmp_path, mon
                  {"11_20d": [_route("AAA")], "6_10d": [_route("BBB")]})
     assert out.loc["AAA", "horizon_bucket"] == "1_5d"
     assert out.loc["AAA", "contract_expiry_bucket"] == "11_20d"      # the router's view, under its own name
-    assert out.loc["AAA", "planned_hold_sessions"] == 20              # hold unchanged: sets contract runway downstream
-    assert out.loc["BBB", "horizon_bucket"] == "6_10d" and out.loc["BBB", "planned_hold_sessions"] == 10
+    assert out.loc["AAA", "planned_hold_sessions"] == 20              # the governed thesis window
+    assert out.loc["BBB", "horizon_bucket"] == "6_10d" and out.loc["BBB", "planned_hold_sessions"] == 20
 
 
 def test_a_router_block_is_carried_by_the_action_not_by_the_horizon(tmp_path, monkeypatch):
@@ -71,3 +71,39 @@ def test_the_trade_book_honours_a_router_block_by_action():
     import inspect
     import trade_book_builder as tbb
     assert '_hb == "blocked" or _ha == "BLOCKED"' in inspect.getsource(tbb)
+
+
+# --- Two facts: when the move is expected, and how long the contract may be held (ACK 18 Sep 2026) ----------------
+
+def test_anticipated_move_follows_the_thesis_horizon_and_the_hold_is_the_thesis_window(tmp_path, monkeypatch):
+    out = _patch(tmp_path, monkeypatch,
+                 [{"ticker": "AAA", "horizon_bucket": "1_5d"}, {"ticker": "BBB", "horizon_bucket": "6_10d"},
+                  {"ticker": "CCC", "horizon_bucket": "11_20d"}],
+                 {"11_20d": [_route("AAA"), _route("CCC")], "6_10d": [_route("BBB")]})
+    assert out["anticipated_move_sessions"].to_dict() == {"AAA": 5, "BBB": 10, "CCC": 20}
+    assert set(out["anticipated_move_source"]) == {"DISCOVERY_THESIS_HORIZON"}
+    assert out["planned_hold_sessions"].to_dict() == {"AAA": 20, "BBB": 20, "CCC": 20}
+    assert set(out["planned_hold_source"]) == {"THESIS_WINDOW_D2"}
+
+
+def test_a_row_without_a_thesis_horizon_has_no_anticipated_move_but_keeps_the_hold(tmp_path, monkeypatch):
+    out = _patch(tmp_path, monkeypatch, [{"ticker": "BZ", "horizon_bucket": None}],
+                 {"blocked": [_route("BZ", "BLOCKED", "NON_DIRECTIONAL_NOT_ROUTABLE")]})
+    assert pd.isna(out.loc["BZ", "anticipated_move_sessions"])
+    assert out.loc["BZ", "anticipated_move_source"] == "HORIZON_UNAVAILABLE"
+    assert out.loc["BZ", "planned_hold_sessions"] == 20
+
+
+def test_the_hold_follows_the_governed_window_not_a_literal(tmp_path, monkeypatch):
+    monkeypatch.setattr(orch, "_governed_thesis_window_sessions", lambda run_id: 15)
+    out = _patch(tmp_path, monkeypatch, [{"ticker": "AAA", "horizon_bucket": "1_5d"}],
+                 {"1_5d": [_route("AAA")]})
+    assert out.loc["AAA", "planned_hold_sessions"] == 15
+
+
+def test_an_unresolvable_window_is_flagged_never_defaulted(tmp_path, monkeypatch):
+    monkeypatch.setattr(orch, "_governed_thesis_window_sessions", lambda run_id: None)
+    out = _patch(tmp_path, monkeypatch, [{"ticker": "AAA", "horizon_bucket": "1_5d"}],
+                 {"1_5d": [_route("AAA")]})
+    assert pd.isna(out.loc["AAA", "planned_hold_sessions"])
+    assert out.loc["AAA", "planned_hold_source"] == "THESIS_WINDOW_UNAVAILABLE"

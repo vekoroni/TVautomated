@@ -49,7 +49,9 @@ def test_book_carries_the_valuation_and_contract_runway_facts():
     sig = {"ticker": "ABC", "final_direction": "CALL", "emp_path_r_cautious": 0.088, "emp_path_r_central": 0.103,
            "emp_path_r_upside": 0.11, "emp_path_last_exit_sessions": 20, "emp_path_forced_exit_share": 0.0,
            "emp_path_quality_flag": "OK", "contract_runway_floor_days": 19, "contract_runway_basis": "HORIZON:1_5d",
-           "contract_runway_state": "RUNWAY_COVERED", "spread_above_limit": False}
+           "contract_runway_state": "RUNWAY_COVERED", "spread_above_limit": False,
+           "anticipated_move_sessions": 5, "anticipated_move_source": "DISCOVERY_THESIS_HORIZON",
+           "planned_hold_sessions": 20, "planned_hold_source": "THESIS_WINDOW_D2"}
     row = opportunity_book_row(sig, "RUN-T", 1)
     for field, value in sig.items():
         if field in ("ticker", "final_direction"):

@@ -85,24 +85,29 @@ def test_a_longer_dated_contract_is_never_dropped_for_being_longer():
     assert selected is not None and selected["dte"] == 64.0
 
 
-def test_monthly_only_chain_gets_its_monthly_contract_not_the_expiring_one():
+# ACK 18 Sep 2026 decision (a): the runway floor is the planned hold - the governed 20-session thesis window
+# (+3 monitor, +5 exit buffer = 28 sessions = 40 calendar days) - whatever the anticipated move. The move is
+# expected within the window; the contract must outlast the hold.
+
+@pytest.mark.parametrize("horizon", ["1_5d", "6_10d", "11_20d"])
+def test_monthly_chain_gets_the_nearest_expiry_covering_the_planned_hold(horizon):
     rows = [_contract("TEST260918C00100000", 1.0), _contract("TEST261016C00100000", 29.0),
             _contract("TEST261120C00100000", 64.0), _contract("TEST261218C00100000", 92.0)]
-    selected = _select(rows, _ctx("1_5d"))
-    assert selected["dte"] == 29.0          # nearest expiry that covers the anticipated move + buffers
+    selected = _select(rows, _ctx(horizon))
+    assert selected["dte"] == 64.0          # 29 days cannot outlast a 20-session hold; 92 is more than needed
 
 
-def test_longer_anticipated_move_prefers_the_expiry_that_covers_it():
-    rows = [_contract("TEST261016C00100000", 29.0), _contract("TEST261120C00100000", 64.0)]
-    selected = _select(rows, _ctx("11_20d"))
-    assert selected["dte"] == 64.0          # 20 sessions + buffers = 40 calendar days
+def test_the_runway_floor_is_the_planned_hold_not_the_anticipated_move():
+    floors = {h: _structural_context(h)["contract_runway_floor_days"] for h in ("1_5d", "6_10d", "11_20d", None)}
+    assert set(floors.values()) == {math.ceil((20 + 3 + 5) * 7 / 5)}
+    assert _structural_context("1_5d")["contract_runway_hold_sessions"] == 20
 
 
 def test_short_runway_is_selected_and_flagged_for_manual_review():
     selected = _select([_contract("TEST261002C00100000", 15.0)], _ctx("6_10d"))
     assert selected is not None
     assert selected["contract_runway_state"] == "RUNWAY_SHORT"
-    assert selected["contract_runway_floor_days"] == math.ceil((10 + 3 + 5) * 7 / 5)
+    assert selected["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
 
 
 def test_a_contract_that_cannot_be_held_past_issue_is_never_chosen():
@@ -143,13 +148,13 @@ def test_delta_preference_is_the_same_for_every_horizon():
 @pytest.mark.parametrize("horizon", [None, "", "UNKNOWN"])
 def test_missing_horizon_is_reported_and_uses_the_full_thesis_window_not_the_shortest(horizon):
     ctx = _structural_context(horizon)
-    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_HORIZON_UNAVAILABLE"
+    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
     assert ctx["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
 
 
 def test_known_horizon_is_the_runway_basis_and_stays_descriptive():
     ctx = _structural_context("6_10d")
-    assert ctx["contract_runway_basis"] == "HORIZON:6_10d"
+    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON:6_10d"
     assert ctx["dte_config"]["planned_hold_sessions"] == 10          # the horizon is still carried
 
 
@@ -161,7 +166,7 @@ def test_lifecycle_short_runway_is_manual_review_not_contract_repair():
         minimum_holdable_dte=5, moneyness_treatment="PREFERRED_EXECUTION")
     assert result["recovery_disposition"] == "MONITOR"
     assert result["liquidity_state"] == "RUNWAY_SHORT_REVIEW"
-    assert "RUNWAY_BELOW_ANTICIPATED_MOVE" in result["liquidity_reasons"]
+    assert "RUNWAY_BELOW_PLANNED_HOLD" in result["liquidity_reasons"]
 
 
 def test_lifecycle_contract_not_holdable_past_issue_still_needs_repair():

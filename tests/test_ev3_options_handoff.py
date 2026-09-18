@@ -576,7 +576,9 @@ def test_ev3_candidate_set_is_two_expiries_by_three_delta_nearest_strikes() -> N
             })
     candidates = select_repair_alternative_contracts(pd.DataFrame(rows), _context(), limit=6)
     assert len(candidates) == 6
-    assert {candidate["expiry"] for candidate in candidates} == {"2026-09-08", "2026-09-13"}
+    # ACK 18 Sep 2026 (a): the runway floor is the 20-session planned hold (40 calendar days), so the two
+    # expiries nearest to covering it are 30 and 40 days (was 25 and 30 under the anticipated-move floor).
+    assert {candidate["expiry"] for candidate in candidates} == {"2026-09-13", "2026-09-23"}
     assert all(candidate["structure"] == "LONG_SINGLE" for candidate in candidates)
     assert all(candidate["candidate_generation_rank"] == index for index, candidate in enumerate(candidates, 1))
 

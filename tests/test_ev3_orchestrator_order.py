@@ -41,8 +41,8 @@ def test_horizon_patch_rederives_ev3_planned_hold_atomically() -> None:
     assert '"6_10d": 10' in helper
     assert '"11_20d": 20' in helper
     assert 'patched["planned_hold_sessions"]' in helper
-    # ACK 18 Sep 2026: the hold keeps its router-bucket derivation, labelled as the contract-expiry bucket.
-    assert "ROUTER_CONTRACT_EXPIRY_BUCKET_V1" in helper
+    # ACK 18 Sep 2026: the hold is the governed thesis window; the anticipated move follows the thesis horizon.
+    assert "THESIS_WINDOW_D2" in helper
     assert "FINAL_HORIZON_ROUTER_ENDPOINT_V1" not in helper
 
 

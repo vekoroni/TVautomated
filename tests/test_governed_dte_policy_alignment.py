@@ -167,4 +167,4 @@ def test_unknown_horizon_descriptive_window_and_full_window_runway() -> None:
     """The descriptive window still normalises to 1_5d, but the runway that drives selection uses the full
     thesis window and says so (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
     assert options.governed_dte_window("UNKNOWN") == (19, 20, 21)
-    assert options.contract_runway_policy("UNKNOWN")["contract_runway_basis"] == "THESIS_WINDOW_HORIZON_UNAVAILABLE"
+    assert options.contract_runway_policy("UNKNOWN")["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
