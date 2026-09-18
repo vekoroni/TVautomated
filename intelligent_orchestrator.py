@@ -2286,6 +2286,45 @@ def run_empirical_option_ev_shadow_stage(run_id: str) -> dict[str, object]:
 C12_OUTCOME_SCORING_TIMEOUT_SECONDS = 1800   # full scorer run measured at ~2 minutes on 17 Sep 2026
 
 
+def _open_records_for(session_date):
+    from avshunter.c12_outcome.signal_ledger import open_ledger, open_records
+    return open_records(open_ledger(read_only=True), session_date)
+
+
+def _open_record_request_budget(session_date) -> int:
+    from avshunter.config.adapters import load_registry
+    return int(load_registry().resolve(session_date).get("market_data.daily_credit_budget").value)
+
+
+def run_open_record_capture_stage(run_id: str, session_date, *, load_records=None, capture=None,
+                                  max_requests: int | None = None) -> dict[str, object]:
+    """P0-4 (ACK 18 Sep 2026): keep a daily exact-session mark for every open ticket until it exits.
+
+    Fetches the completed session's chain only for open tickets whose contract is not already stored (a ticker that
+    left the candidate list keeps its marks). DATA_CAPTURE_ONLY and NON-CRITICAL: it never raises, never changes a
+    candidate or decision, and writes ``capture/open_record_coverage_<run_id>.json``.
+    """
+    summary: dict[str, object] = {"run_id": run_id, "stage": "OPEN_RECORD_CAPTURE",
+                                  "authority": "DATA_CAPTURE_ONLY", "session_date": str(session_date)}
+    try:
+        from orchestrator.completed_session_gex import capture_open_record_chains
+        records = (load_records or _open_records_for)(session_date)
+        budget = max_requests if max_requests is not None else _open_record_request_budget(session_date)
+        summary.update((capture or capture_open_record_chains)(
+            repository_root=cfg.BASE_DIR, run_id=run_id, session_date=session_date, records=records,
+            max_requests=budget))
+    except Exception as error:      # noqa: BLE001 - recorded, never raised
+        summary.update(status="FAILED", reason=f"{type(error).__name__}: {error}")
+    try:
+        destination = cfg.RUNS_DIR / run_id / "capture" / f"open_record_coverage_{run_id}.json"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    except Exception as write_error:      # noqa: BLE001
+        logger.warning("Open-record capture coverage not written (non-critical): %s", write_error)
+    logger.info("Open-record capture: status=%s captured=%s", summary.get("status"), summary.get("captured"))
+    return summary
+
+
 def run_c12_outcome_scoring_stage(run_id: str, runner=subprocess.run) -> dict[str, object]:
     """Score recorded predictions against realised outcomes after a completed evening run.
 
@@ -7006,6 +7045,9 @@ def evening_workflow(
         _update_run_meta_status(canonical_run_id, "COMPLETED", pipeline_mode="EOD")
     except Exception as _run_meta_error:
         logger.warning("Could not close run_meta.json: %s", _run_meta_error)
+
+    # P0-4 (ACK 18 Sep 2026): open tickets keep an exact daily mark before outcomes are scored.
+    run_open_record_capture_stage(canonical_run_id, date.fromisoformat(_evidence_session_date))
 
     # Item 1 (ACK 17 Sep 2026): measure recorded predictions against reality after every
     # completed evening run. Non-critical, observation only.

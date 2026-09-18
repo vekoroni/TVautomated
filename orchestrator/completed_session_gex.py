@@ -7,7 +7,7 @@ from pathlib import Path
 import sqlite3
 from typing import Callable, Mapping, Any
 
-from canonical_data.benchmark_option_chain import CanonicalBenchmarkOptionChainStore
+from canonical_data.benchmark_option_chain import CanonicalBenchmarkOptionChainStore, OPEN_RECORD_MARK
 from canonical_data.marketdata_option_chain import MarketDataOptionChainAdapter
 from canonical_data.macro_gex_overlay import (
     apply_completed_gex_overlay,
@@ -156,4 +156,120 @@ def refresh_completed_session_gex(
         }
 
 
-__all__ = ["refresh_completed_session_gex"]
+def _contract_present(phantom_path: Path, ticker: str, session_date: date, symbol: str) -> bool:
+    if not phantom_path.is_file():
+        return False
+    with sqlite3.connect(f"file:{phantom_path.as_posix()}?mode=ro", uri=True) as connection:
+        try:
+            row = connection.execute(
+                "SELECT 1 FROM chain_snapshots WHERE ticker=? AND quote_date=? AND option_symbol=? LIMIT 1",
+                (ticker, session_date.isoformat(), symbol),
+            ).fetchone()
+        except sqlite3.OperationalError:          # store not initialised yet
+            return False
+    return row is not None
+
+
+def _projected_dataset_ids(phantom_path: Path, dataset_ids: list[str], session_date: date) -> set[str]:
+    if not dataset_ids or not phantom_path.is_file():
+        return set()
+    marks = ",".join("?" for _ in dataset_ids)
+    with sqlite3.connect(phantom_path) as connection:
+        rows = connection.execute(
+            f"SELECT dataset_id, session_date, rows_projected FROM canonical_projection_receipts "
+            f"WHERE dataset_id IN ({marks})",
+            tuple(dataset_ids),
+        ).fetchall()
+    return {str(d) for d, s, n in rows if str(s) == session_date.isoformat() and int(n) > 0}
+
+
+def capture_open_record_chains(
+    *,
+    repository_root: Path | str,
+    run_id: str,
+    session_date: date,
+    records,
+    max_requests: int,
+    fetch_chain: Callable[[str, int], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Keep a daily mark for every open ticket until it exits (P0-4, ACK 18 Sep 2026).
+
+    ``records``: ``signal_ledger.OpenRecord`` items. A ticker is fetched only when one of its open contracts has no
+    row for ``session_date`` in the Phantom store (never re-fetched, never overwritten). The request window reaches
+    the latest open expiry for the ticker. At most ``max_requests`` provider requests. Data capture only: no
+    candidate, rank or decision is created or changed; failures are reported, never raised.
+    """
+
+    root = Path(repository_root)
+    registry_path = root / "data" / "canonical" / "control_plane.sqlite"
+    phantom_path = root / "data" / "phantom" / "phantom_history.db"
+    needed: dict[str, int] = {}
+    already: set[str] = set()
+    for record in records:
+        if _contract_present(phantom_path, record.ticker, session_date, record.contract_symbol):
+            already.add(record.ticker)
+            continue
+        window = max(60, (record.expiry - session_date).days + 1)
+        needed[record.ticker] = max(needed.get(record.ticker, 0), window)
+    already -= set(needed)
+    result: dict[str, Any] = {
+        "contract_version": "open-record-chain-capture-v1",
+        "session_date": session_date.isoformat(),
+        "open_records": len(list(records)),
+        "needed": sorted(needed),
+        "already_present": sorted(already),
+        "captured": [],
+        "over_budget": [],
+        "failed": {},
+        "requests_used": 0,
+        "dataset_ids": [],
+        "authority": "DATA_CAPTURE_ONLY",
+    }
+    if not needed:
+        result["status"] = "NOTHING_TO_CAPTURE"
+        return result
+    if fetch_chain is None:
+        adapter = MarketDataOptionChainAdapter()
+        fetch_chain = lambda name, dte_max: adapter.fetch(       # noqa: E731
+            name, session_date=session_date, dte_max=dte_max, min_open_interest=0)
+    store = CanonicalBenchmarkOptionChainStore(
+        registry_path=registry_path,
+        payload_root=root / "data" / "canonical" / "market_observations",
+        run_id=run_id,
+        purpose=OPEN_RECORD_MARK,
+    )
+    fetched_by_ticker: dict[str, str] = {}
+    for ticker in sorted(needed):
+        if result["requests_used"] >= max_requests:
+            result["over_budget"].append(ticker)
+            continue
+
+        def counted(name: str, _window=needed[ticker]) -> Mapping[str, Any]:
+            result["requests_used"] += 1
+            return fetch_chain(name, _window)
+
+        try:
+            chain = store.get(ticker=ticker, session_date=session_date, dte_max=needed[ticker], fetch=counted)
+            fetched_by_ticker[ticker] = chain.dataset_id
+        except Exception as error:      # noqa: BLE001 - reported per ticker
+            result["failed"][ticker] = f"{type(error).__name__}: {error}"
+    if fetched_by_ticker:
+        try:
+            deliver_phantom_option_events(
+                registry_path=registry_path, phantom_database_path=phantom_path, limit=100_000)
+            projected = _projected_dataset_ids(phantom_path, list(fetched_by_ticker.values()), session_date)
+        except Exception as error:      # noqa: BLE001
+            projected = set()
+            result["projection_error"] = f"{type(error).__name__}: {error}"
+        for ticker, dataset_id in fetched_by_ticker.items():
+            if dataset_id in projected:
+                result["captured"].append(ticker)
+            else:
+                result["failed"][ticker] = "NOT_PROJECTED_TO_PHANTOM"
+        result["dataset_ids"] = sorted(fetched_by_ticker.values())
+    result["captured"].sort()
+    result["status"] = "COMPLETE" if not result["failed"] and not result["over_budget"] else "PARTIAL"
+    return result
+
+
+__all__ = ["capture_open_record_chains", "refresh_completed_session_gex"]

@@ -212,11 +212,11 @@ def score_signals(ledger, as_of: date, snapshot: ConfigSnapshot, now: datetime, 
                   if e.event_id not in done]
     counts: Counter = Counter()
     if not open_items:
-        return {"open_tickets": 0, "new_outcomes": 0, "states": {}}
+        return {"open_tickets": 0, "new_outcomes": 0, "states": {}, "waiting_on_mark": []}
     start = min(t.issue_session for _, t in open_items)
     bars = prices.load_bars({t.ticker for _, t in open_items}, start, as_of, price_db)
     quotes = chains.ChainQuotes(chain_db)
-    events = []
+    events, waiting = [], []
     try:
         for presentation, t in open_items:
             have = {b.session: b for b in bars.get(t.ticker, [])}
@@ -230,6 +230,10 @@ def score_signals(ledger, as_of: date, snapshot: ConfigSnapshot, now: datetime, 
                 plan.state == sig.EXITED and t.expression == sig.OPTION) else None
             outcome = sig.mark_signal(t, plan, bid, s.contract_multiplier)
             counts[outcome.state] += 1
+            if outcome.state == sig.MARK_UNAVAILABLE:
+                # Exact-session mark missing: listed, never substituted by a nearby date (P0-4, RC3).
+                waiting.append({"ticket_id": t.ticket_id, "ticker": t.ticker, "contract": t.contract_symbol,
+                                "mark_session": plan.session.isoformat() if plan.session else None})
             if outcome.state != sig.CLOSED:
                 continue
             held = len([d for d in _sessions(t.issue_session, outcome.exit_session) if d > t.issue_session])
@@ -239,7 +243,8 @@ def score_signals(ledger, as_of: date, snapshot: ConfigSnapshot, now: datetime, 
     finally:
         quotes.close()
     written = ledger.append_many(events)
-    return {"open_tickets": len(open_items), "new_outcomes": written, "states": dict(counts)}
+    return {"open_tickets": len(open_items), "new_outcomes": written, "states": dict(counts),
+            "waiting_on_mark": waiting}
 
 
 def _sessions(start: date, end: date) -> list[date]:
