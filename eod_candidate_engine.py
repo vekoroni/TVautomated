@@ -1228,6 +1228,10 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
 
     return row
 
+# The anticipated-move horizons inside the 1-20 session thesis window (D2).
+THESIS_WINDOW_HORIZON_BUCKETS = frozenset({"1_5d", "6_10d", "11_20d"})
+
+
 def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     eil_verdict = _str(row, "eil_v3_verdict").upper()
     trigger_quality = _str(row, "trigger_quality").upper()
@@ -1311,9 +1315,11 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
         return "EOD_TRIGGER_READY", "TRIGGER_READY_BUT_EIL_NOT_EXECUTE"
 
     if signal in {"NO_EDGE", "DATA_MISSING"} or momentum_tier in {"TIER_4_FLAT", "DATA_MISSING"}:
-        if horizon_bucket == "11_20d":
-            return "EOD_PROBE_CANDIDATE", "SPARSE_ACTUARIAL_LONG_HORIZON_REVIEW"
-        return "EOD_DATA_INSUFFICIENT_REVIEW", "SPARSE_OR_FLAT_ACTUARIAL_CONTEXT"
+        # ACK 18 Sep 2026: uniform across the 1-20 session thesis window - the horizon informs, it never
+        # decides the class.  A row without a thesis horizon is reported, not defaulted.
+        if horizon_bucket in THESIS_WINDOW_HORIZON_BUCKETS:
+            return "EOD_PROBE_CANDIDATE", "SPARSE_ACTUARIAL_THESIS_WINDOW_REVIEW"
+        return "EOD_DATA_INSUFFICIENT_REVIEW", "SPARSE_ACTUARIAL_HORIZON_UNAVAILABLE"
 
     if tier == "WATCH":
         return "EOD_WATCHLIST_MONETISABLE", "QUALITY_FLOOR_NOT_MET_BUT_THESIS_PRESERVED"
