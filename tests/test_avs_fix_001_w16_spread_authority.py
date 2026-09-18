@@ -6,9 +6,10 @@ Two limits governed the same decision. Contract SELECTION used the per-horizon
 MAX_SPREAD_PCT (25%). A 1_5d contract at 18% failed the band and passed the
 gate.
 
-The per-horizon band is now the authority everywhere, clamped by the flat
-reviewable ceiling: `min(band, flat)`. Tightening either tightens the gate;
-loosening one alone cannot loosen it.
+W1.6 made the per-horizon band the authority everywhere. Superseded on 18 Sep 2026 (ACK: the horizon
+informs contract choice, never gates it): one limit - the flat reviewable ceiling - for every horizon,
+still one authority for selection and the terminal gate. The ticket stage keeps its own stricter
+tradeability limit (outcome.signal.max_entry_spread_fraction).
 
 The leak reproduced from run 20260905_151448 is recorded in
 `test_leaking_rows_from_151448_are_now_blocked` below.
@@ -37,21 +38,19 @@ class HorizonKeyNormalisation(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual(oi.normalise_horizon_key(value), expected)
 
-    def test_an_unknown_horizon_falls_back_to_the_tightest_band(self) -> None:
-        """Fail closed: an unrecognised horizon must not buy a looser gate."""
+    def test_an_unknown_horizon_gets_the_same_single_limit(self) -> None:
+        """No horizon, known or unknown, buys a looser or tighter gate."""
         for value in ("", None, "bogus", "30d"):
             with self.subTest(value=value):
                 self.assertEqual(oi.normalise_horizon_key(value), "1_5d")
-                self.assertEqual(oi.horizon_spread_limit(value), 0.15)
+                self.assertEqual(oi.horizon_spread_limit(value), oi.MAX_SPREAD_PCT)
 
 
 class SpreadLimitAuthority(unittest.TestCase):
-    def test_the_limit_is_the_minimum_of_band_and_flat_ceiling(self) -> None:
-        self.assertEqual(oi.horizon_spread_limit("1_5d"), 0.15)   # band 0.15 < 0.25
-        self.assertEqual(oi.horizon_spread_limit("6_10d"), 0.25)  # band 0.25 == 0.25
-        # The 11_20d band is 0.35; the flat reviewable ceiling caps it at 0.25.
-        self.assertEqual(oi.DTE_CONFIG["11_20d"]["spread_max"], 0.35)
-        self.assertEqual(oi.horizon_spread_limit("11_20d"), 0.25)
+    def test_the_limit_is_the_flat_ceiling_on_every_horizon(self) -> None:
+        for horizon in ("1_5d", "6_10d", "11_20d"):
+            with self.subTest(horizon=horizon):
+                self.assertEqual(oi.horizon_spread_limit(horizon), 0.25)
 
     def test_no_horizon_can_exceed_the_flat_ceiling(self) -> None:
         for horizon in oi.DTE_CONFIG:
@@ -68,22 +67,22 @@ class SpreadLimitAuthority(unittest.TestCase):
         self.assertEqual(oi.clamp_spread_limit(0.05), 0.05)
 
 
-class TerminalGateAppliesTheHorizonBand(unittest.TestCase):
-    """The behaviour AVS-IMP-FIX-001 names: 18% blocked on 1_5d, passed on 6_10d."""
+class TerminalGateAppliesOneLimit(unittest.TestCase):
+    """18 Sep 2026: the same 25% limit on every horizon (formerly 18% blocked on 1_5d only)."""
 
     @staticmethod
     def _blocked_at(spread_pct: float, horizon: str) -> bool:
         return spread_pct > oi.horizon_spread_limit(horizon)
 
-    def test_eighteen_percent_is_blocked_on_1_5d(self) -> None:
-        self.assertTrue(self._blocked_at(0.18, "1_5d"))
+    def test_eighteen_percent_passes_on_1_5d(self) -> None:
+        self.assertFalse(self._blocked_at(0.18, "1_5d"))
 
     def test_eighteen_percent_passes_on_6_10d(self) -> None:
         self.assertFalse(self._blocked_at(0.18, "6_10d"))
 
     def test_the_boundary_itself_is_not_blocked(self) -> None:
-        self.assertFalse(self._blocked_at(0.15, "1_5d"))
-        self.assertTrue(self._blocked_at(0.1500001, "1_5d"))
+        self.assertFalse(self._blocked_at(0.25, "1_5d"))
+        self.assertTrue(self._blocked_at(0.2500001, "1_5d"))
 
     def test_thirty_percent_is_blocked_on_every_horizon(self) -> None:
         for horizon in oi.DTE_CONFIG:
@@ -129,10 +128,12 @@ class LeakReproducedFrom151448(unittest.TestCase):
             with self.subTest(ticker=ticker):
                 self.assertLessEqual(spread, oi.MAX_SPREAD_PCT)
 
-    def test_every_leaking_row_is_now_blocked(self) -> None:
+    def test_every_former_leaking_row_is_inside_the_single_limit(self) -> None:
+        """Superseded 18 Sep 2026: these rows are no longer a leak - one limit for every horizon, and the
+        selection and the terminal gate still agree on it."""
         for ticker, horizon, spread in self.LEAKING_ROWS:
             with self.subTest(ticker=ticker):
-                self.assertGreater(spread, oi.horizon_spread_limit(horizon))
+                self.assertLessEqual(spread, oi.horizon_spread_limit(horizon))
 
     def test_both_directions_are_represented(self) -> None:
         """The leak was not one-sided: PUT rows leaked too (APA, ARKK, UUUU)."""

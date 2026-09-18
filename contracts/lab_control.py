@@ -1148,6 +1148,7 @@ def _apply_reselected_chain_quote(
                 bid=bid, ask=ask, bid_size=quote.get("bid_size"), ask_size=quote.get("ask_size"),
                 quote_age_seconds=None, dte=dte,
                 minimum_required_dte=requirement["minimum_required_dte"],
+                minimum_holdable_dte=requirement["minimum_holdable_dte"],
                 moneyness_treatment=moneyness["moneyness_treatment"], listed_market=True,
             )
         except (KeyError, TypeError, ValueError):

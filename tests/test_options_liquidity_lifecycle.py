@@ -53,7 +53,8 @@ def test_deep_itm_is_stock_like_not_lottery_geometry() -> None:
 
 def test_dte_requirement_includes_hold_monitor_and_exit_buffer() -> None:
     result = calculate_dte_requirement(10, monitor_sessions=2, exit_buffer_sessions=5)
-    assert result["minimum_required_dte"] == 17
+    assert result["minimum_required_sessions"] == 17
+    assert result["minimum_required_dte"] == 24          # 17 sessions in calendar days (R3, 18 Sep 2026)
 
 
 @pytest.mark.parametrize("invalid_hold", [0, 7, 8, 15, 100])

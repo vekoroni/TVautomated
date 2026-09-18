@@ -128,6 +128,7 @@ from contracts.options_liquidity_lifecycle import (
     OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
     calculate_dte_requirement,
     evaluate_options_liquidity_lifecycle,
+    label_eod_quote_state,
 )
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
 from contracts.dynamic_session_contract import DataExceptionReason
@@ -1257,7 +1258,52 @@ HORIZON_PLANNED_HOLD_SESSIONS = {
     "6_10d": 10,
     "11_20d": 20,
 }
-DTE_SELECTION_POLICY_VERSION = "governed-dte-alignment-v1"
+DTE_SELECTION_POLICY_VERSION = "governed-dte-alignment-v2"
+
+
+def _load_contract_selection_policy() -> Dict[str, Any]:
+    """Governed long-option contract selection (config/governed_constants_v1.json, ACK 18 Sep 2026)."""
+    path = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+    policy = json.loads(path.read_text(encoding="utf-8-sig"))["long_option_contract_selection"]
+    for key in ("delta_mandate_abs", "delta_preferred_abs"):
+        low, high = (float(v) for v in policy[key])
+        if not 0.0 <= low < high <= 1.0:
+            raise ValueError(f"long_option_contract_selection.{key} must satisfy 0 <= low < high <= 1")
+        policy[key] = (low, high)
+    return policy
+
+
+# The horizon informs contract choice; it never decides which contracts exist (ACK 18 Sep 2026).
+CONTRACT_SELECTION = _load_contract_selection_policy()
+
+
+def contract_runway_policy(horizon: object) -> Dict[str, Any]:
+    """Preferred runway for the anticipated move: a floor in calendar days, never a ceiling.
+
+    A missing or unrecognised horizon is reported and uses the full thesis window (buy more runway),
+    never the shortest window.
+    """
+    text = str(horizon or "").lower().replace("-", "_").replace(" ", "")
+    key = ("1_5d" if "1_5" in text else "6_10d" if "6_10" in text else "11_20d" if "11_20" in text
+           else text if text in DTE_CONFIG else None)
+    if key is None:
+        hold, basis = int(CONTRACT_SELECTION["missing_horizon_runway_hold_sessions"]), "THESIS_WINDOW_HORIZON_UNAVAILABLE"
+    else:
+        hold, basis = HORIZON_PLANNED_HOLD_SESSIONS[key], f"HORIZON:{key}"
+    requirement = calculate_dte_requirement(hold)
+    return {
+        "contract_runway_floor_days": int(requirement["minimum_required_dte"]),
+        "contract_min_holdable_dte": int(requirement["minimum_holdable_dte"]),
+        "contract_runway_basis": basis,
+        "contract_runway_hold_sessions": hold,
+    }
+
+
+def _runway_from_ctx(ctx: Dict) -> Dict[str, Any]:
+    if ctx.get("contract_runway_floor_days") is not None and ctx.get("contract_min_holdable_dte") is not None:
+        return {key: ctx.get(key) for key in ("contract_runway_floor_days", "contract_min_holdable_dte",
+                                              "contract_runway_basis", "contract_runway_hold_sessions")}
+    return contract_runway_policy(ctx.get("horizon_bucket") or ctx.get("macro_preferred_horizon"))
 
 
 def governed_dte_config(horizon: object) -> Dict[str, Any]:
@@ -1284,7 +1330,12 @@ def governed_dte_config(horizon: object) -> Dict[str, Any]:
             f"DTE policy has no selectable range for {key}: "
             f"minimum={effective_minimum}, maximum={configured_maximum}"
         )
+    # One delta preference and one spread limit for every horizon (ACK 18 Sep 2026); the horizon's
+    # days-to-expiry band is descriptive only - selection uses the runway floor, never a ceiling.
     config.update({
+        "delta_min": CONTRACT_SELECTION["delta_preferred_abs"][0],
+        "delta_max": CONTRACT_SELECTION["delta_preferred_abs"][1],
+        "spread_max": float(MAX_SPREAD_PCT),
         "dte_min": effective_minimum,
         "planned_hold_sessions": planned_hold,
         "lifecycle_minimum_dte": lifecycle_minimum,
@@ -1317,11 +1368,13 @@ def clamp_spread_limit(band: object) -> float:
 
 
 def horizon_spread_limit(horizon: object) -> float:
-    """The one spread limit that governs a contract on this horizon."""
+    """The one spread limit for every horizon: the reviewable ceiling (ACK 18 Sep 2026).
 
-    return clamp_spread_limit(
-        DTE_CONFIG.get(normalise_horizon_key(horizon), {}).get("spread_max")
-    )
+    The per-horizon bands (15% / 25% / 35%) made the horizon a gate; the argument is kept so callers
+    and records stay unchanged.
+    """
+
+    return float(MAX_SPREAD_PCT)
 
 
 # EV-2 bounded long-single search. Two expiries x three delta-nearest strikes.
@@ -4219,6 +4272,11 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     _horizon_dte_cfg = governed_dte_config(_horizon_key)
     if _horizon_dte_cfg:
         dte_window = governed_dte_window(_horizon_key)
+    _contract_runway = contract_runway_policy(
+        signal_row.get('horizon_bucket')
+        or signal_row.get('expected_move_window')
+        or signal_row.get('macro_preferred_horizon')
+    )
 
     # Expected hold days — use L2 if available, else DTE target
     hold_days = l2_hold_days if l2_hold_days > 0 else dte_window[1]
@@ -4327,6 +4385,7 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'pct_52w_low'        : pct_52w_low,
         'dte_window'         : dte_window,
         'dte_config'         : _horizon_dte_cfg,
+        **_contract_runway,
         'hold_days'          : hold_days,
         'hold_label'         : hold_label,
         'hold_urgency'       : hold_urgency,
@@ -4573,24 +4632,20 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
     def _score_leg(leg_df: pd.DataFrame, right: str) -> Optional[Dict]:
         if leg_df.empty: return None
 
-        dte_min, dte_target, dte_max = ctx['dte_window']
         spot = ctx['spot']
-        _dte_cfg = ctx.get('dte_config') or {}
-        delta_min = float(_dte_cfg.get('delta_min', 0.15))
-        delta_max = float(_dte_cfg.get('delta_max', 0.35))
-        # AVS-FIX-001 W1.6: one authority, so selection and the terminal gate
-        # can never disagree about the same contract.
-        spread_limit = clamp_spread_limit(_dte_cfg.get('spread_max'))
+        runway = _runway_from_ctx(ctx)
+        floor_days = float(runway['contract_runway_floor_days'])
+        # One delta preference and one spread limit for every horizon (ACK 18 Sep 2026); the same
+        # authority as the terminal gate (horizon_spread_limit), so the two can never disagree.
+        delta_min, delta_max = CONTRACT_SELECTION['delta_preferred_abs']
+        spread_limit = horizon_spread_limit(ctx.get('horizon_bucket'))
         target_delta = (delta_min + delta_max) / 2.0
 
-        # DTE filter — try strict window first, then relax ±15 days if empty
-        strict_df = leg_df[leg_df['dte'].between(dte_min, dte_max)].copy()
-        if strict_df.empty:
-            relaxed_min = max(1, dte_min - 15)
-            relaxed_max = dte_max + 15
-            leg_df = leg_df[leg_df['dte'].between(relaxed_min, relaxed_max)].copy()
-        else:
-            leg_df = strict_df
+        # Runway is a floor, never a ceiling (ACK: buy more runway than the anticipated move). Only a
+        # contract that cannot be held past issue is removed; longer contracts are always candidates.
+        leg_df = leg_df[
+            pd.to_numeric(leg_df['dte'], errors='coerce') >= float(runway['contract_min_holdable_dte'])
+        ].copy()
         if leg_df.empty: return None
 
         # Governed long-option moneyness range. Near-ATM OTM remains preferred,
@@ -4598,7 +4653,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # family member. It must be classified and monitored, not erased. Far
         # OTM (<.20 delta) and deep ITM (>.75 delta) remain outside mandate.
         delta_abs = leg_df['delta'].abs()
-        leg_df = leg_df[delta_abs.between(0.20, 0.75, inclusive='both')].copy()
+        mandate_low, mandate_high = CONTRACT_SELECTION['delta_mandate_abs']
+        leg_df = leg_df[delta_abs.between(mandate_low, mandate_high, inclusive='both')].copy()
         if leg_df.empty: return None
 
         # Invalid/crossed observations are retained in the canonical chain for
@@ -4641,8 +4697,12 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         _bid = pd.to_numeric(eligible_df.get('bid', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
         _ask = pd.to_numeric(eligible_df.get('ask', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
         _spread = pd.to_numeric(eligible_df.get('spread_pct', pd.Series(np.nan, index=eligible_df.index)), errors='coerce')
-        _tradeable = (_bid > 0) & (_ask > 0) & (_ask >= _bid) & _spread.notna() & (_spread <= spread_limit)
-        eligible_df = eligible_df.loc[_tradeable.fillna(False)].copy()
+        _two_sided = (_bid > 0) & (_ask > 0) & (_ask >= _bid) & _spread.notna()
+        _tradeable = _two_sided & (_spread <= spread_limit)
+        # Nothing inside the spread limit: keep the best two-sided contract for manual review with the
+        # reason, instead of dropping the ticker (ACK 18 Sep 2026).
+        spread_above_limit = not bool(_tradeable.fillna(False).any())
+        eligible_df = eligible_df.loc[(_two_sided if spread_above_limit else _tradeable).fillna(False)].copy()
         if eligible_df.empty: return None
 
         core_delta = eligible_df['delta'].fillna(0).abs()
@@ -4694,7 +4754,7 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         scores = []
         for _, row in leg_df.iterrows():
             delta_abs = abs(row['delta']) if pd.notna(row['delta']) else 0.3
-            dte_val   = row['dte'] or dte_target
+            dte_val   = float(row['dte'])
             theta     = row['theta'] or -0.02
             vega      = row['vega']  or 0.05
             mark      = row['mark']  or 0
@@ -4713,8 +4773,11 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             # 1. Delta alignment (30%)
             delta_score = max(0, 100 - abs(delta_abs - target_delta)*300)
 
-            # 2. DTE fit (20%)
-            dte_score = max(0, 100 - abs(dte_val - dte_target)*3)
+            # 2. Runway fit (20%): short of the floor costs the most; extra runway costs a little so the
+            #    nearest covering expiry wins ties, but a longer contract is never excluded.
+            dte_score = max(0, 100
+                            - max(0.0, floor_days - dte_val) * float(CONTRACT_SELECTION['runway_shortfall_score_per_day'])
+                            - max(0.0, dte_val - floor_days) * float(CONTRACT_SELECTION['runway_excess_score_per_day']))
 
             # 3. Theta efficiency: theta/mark ratio — lower is better (20%)
             theta_drain_pct = abs(theta)*ctx['hold_days'] / mark if mark > 0 else 1.0
@@ -4765,8 +4828,14 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'best_available_suboptimal': bool(row.get('best_available_suboptimal', False)),
                 'otm_delta_target': target_delta,
                 'contract_score'  : round(composite, 2),
+                'contract_runway_floor_days': runway['contract_runway_floor_days'],
+                'contract_runway_basis': runway['contract_runway_basis'],
+                'contract_runway_state': 'RUNWAY_COVERED' if dte_val >= floor_days else 'RUNWAY_SHORT',
+                'spread_above_limit': spread_above_limit,
                 'selection_reason': (
-                    'BEST_CURRENT_LONG_OPTION_QUOTE'
+                    'BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW'
+                    if spread_above_limit
+                    else 'BEST_CURRENT_LONG_OPTION_QUOTE'
                     if (
                         str(row.get('quote_quality') or '').upper() == 'TWO_SIDED'
                         and not bool(row.get('mark_synthetic', False))
@@ -4785,6 +4854,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             })
 
         if not scores: return None
+        if spread_above_limit:
+            return min(scores, key=lambda x: (x['spread_pct'], -x['contract_score']))
         return max(scores, key=lambda x: x['contract_score'])
 
     if direction == 'CALL':
@@ -4884,13 +4955,16 @@ def contract_rejection_taxonomy(df: pd.DataFrame, ctx: Dict) -> Dict[str, Any]:
     except Exception:
         rows = []
 
+    # Report the gates selection actually applies (ACK 18 Sep 2026): holdable-past-issue is the only
+    # days-to-expiry exclusion, the delta mandate is the delta exclusion, one spread limit.
+    runway = _runway_from_ctx(ctx)
     return classify_chain(
         rows,
         direction=str(ctx.get('direction') or '').upper(),
-        dte_min=dte_min,
-        dte_max=dte_max,
-        delta_min=float(config.get('delta_min', 0.15)),
-        delta_max=float(config.get('delta_max', 0.35)),
+        dte_min=float(runway['contract_min_holdable_dte']),
+        dte_max=math.inf,
+        delta_min=CONTRACT_SELECTION['delta_mandate_abs'][0],
+        delta_max=CONTRACT_SELECTION['delta_mandate_abs'][1],
         spread_limit=horizon_spread_limit(horizon),
     )
 
@@ -5103,6 +5177,12 @@ def _options_liquidity_lifecycle_fields(
         }
 
     runway_factor = _repair_alt_float(lifecycle.get("remaining_runway_factor"), 0.0) or 0.0
+    # An end-of-day quote carrying a provider timestamp awaits the morning re-quote (R6); it is not a
+    # quote without a timestamp. Disposition (MONITOR -> manual review) is unchanged.
+    if not mark_synthetic:
+        lifecycle["liquidity_state"] = label_eod_quote_state(
+            lifecycle.get("liquidity_state"), contract.get("quote_timestamp_utc")
+        )
     lifecycle.update({
         **base,
         "planned_hold_sessions": required["remaining_hold_sessions"],
@@ -5248,23 +5328,16 @@ def select_repair_alternative_contracts(
     else:
         return []
 
-    try:
-        dte_min, dte_target, dte_max = ctx.get("dte_window") or (7, 30, 60)
-    except Exception:
-        dte_min, dte_target, dte_max = (7, 30, 60)
-    dte_cfg = ctx.get("dte_config") or {}
-    delta_min = _repair_alt_float(dte_cfg.get("delta_min"), 0.15) or 0.15
-    delta_max = _repair_alt_float(dte_cfg.get("delta_max"), 0.35) or 0.35
+    # Same rules as selection (ACK 18 Sep 2026): runway floor as a preference, holdable-past-issue as the
+    # only days-to-expiry exclusion, one delta preference and one spread limit for every horizon.
+    runway = _runway_from_ctx(ctx)
+    dte_target = float(runway["contract_runway_floor_days"])
+    minimum_dte = float(runway["contract_min_holdable_dte"])
+    delta_min, delta_max = CONTRACT_SELECTION["delta_preferred_abs"]
     target_delta = (delta_min + delta_max) / 2.0
-    # AVS-FIX-001 W1.6: same authority for the repair-alternative search.
-    spread_limit = clamp_spread_limit(dte_cfg.get("spread_max"))
+    spread_limit = horizon_spread_limit(ctx.get("horizon_bucket"))
     spot = _repair_alt_float(ctx.get("spot"))
     structural_target = _repair_alt_float(ctx.get("structural_target"))
-    hold_sessions = _repair_alt_float(_ev3_handoff_fields(ctx).get("planned_hold_sessions"))
-    if hold_sessions is None:
-        minimum_dte = 1
-    else:
-        minimum_dte = int(calculate_dte_requirement(hold_sessions)["minimum_required_dte"])
 
     excluded = set()
     if selected_contract:
@@ -5305,10 +5378,6 @@ def select_repair_alternative_contracts(
         if strike is None or dte_val is None or not expiry or signed_delta is None:
             _reject("rejected_dte_delta_geometry")
             continue
-        if dte_val < float(dte_min) or dte_val > float(dte_max):
-            _reject("rejected_dte_delta_geometry")
-            continue
-
         if dte_val < minimum_dte:
             _reject("rejected_dte_delta_geometry")
             continue

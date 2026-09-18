@@ -107,5 +107,23 @@
     "approval_id": "ACK-20260917-QUOTE-FEED-OPTION-2",
     "configuration_owner": "ACK",
     "version": "option_quote_feed_v1"
+  },
+  "long_option_contract_selection": {
+    "version": "long_option_contract_selection_v2",
+    "configuration_owner": "ACK",
+    "approval": "ACK 18 Sep 2026: the horizon informs contract choice, it never gates it",
+    "validation_state": "PROVISIONAL",
+    "delta_mandate_abs": [
+      0.2,
+      0.75
+    ],
+    "delta_preferred_abs": [
+      0.3,
+      0.6
+    ],
+    "runway_shortfall_score_per_day": 3.0,
+    "runway_excess_score_per_day": 0.5,
+    "missing_horizon_runway_hold_sessions": 20,
+    "rationale": "One delta preference (the union of the former per-horizon ranges) and one spread limit (the reviewable ceiling) for every horizon. Runway is a floor: anticipated move + monitor + exit buffer sessions in calendar days; a contract short of it is flagged, a longer one is mildly penalised per extra day so the nearest covering expiry wins ties, never excluded. A missing horizon uses the full 20-session thesis window (ACK: buy more runway) and is reported. Evidence: 17 Sep evening run, 838 of 1,359 searches found no contract."
   }
 }

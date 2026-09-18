@@ -49,6 +49,8 @@ class ContractLiquidityState(_ValueEnum):
     LIQUIDITY_PENDING = "LIQUIDITY_PENDING"
     QUOTE_STALE = "QUOTE_STALE"
     QUOTE_TIMESTAMP_UNAVAILABLE = "QUOTE_TIMESTAMP_UNAVAILABLE"
+    EOD_QUOTE_PENDING_MORNING_REQUOTE = "EOD_QUOTE_PENDING_MORNING_REQUOTE"
+    RUNWAY_SHORT_REVIEW = "RUNWAY_SHORT_REVIEW"
     ZERO_BID = "ZERO_BID"
     NO_DISPLAYED_SIZE = "NO_DISPLAYED_SIZE"
     NO_CURRENT_MARKET = "NO_CURRENT_MARKET"
@@ -145,6 +147,7 @@ DEFAULT_MONITOR_SESSIONS = 3
 DEFAULT_EXIT_BUFFER_SESSIONS = 5
 DEFAULT_MIN_REMAINING_RUNWAY_FACTOR = 0.20
 GOVERNED_HOLD_SESSIONS = frozenset({5.0, 10.0, 20.0})
+CALENDAR_DAYS_PER_SESSION = 7.0 / 5.0   # unit conversion: trading sessions -> calendar days (R3)
 
 EXECUTABLE_STATES = frozenset({"EXECUTABLE_NOW"})
 RECOVERABLE_STATES = frozenset(
@@ -200,11 +203,12 @@ def calculate_dte_requirement(
     monitor_sessions: Any = DEFAULT_MONITOR_SESSIONS,
     exit_buffer_sessions: Any = DEFAULT_EXIT_BUFFER_SESSIONS,
 ) -> Dict[str, Any]:
-    """Calculate the DTE needed before waiting for contract liquidity.
+    """Runway the contract should have: hold + monitor + exit buffer sessions, in calendar days.
 
-    DTE is calendar time whereas the inputs are trading-session allowances.  A
-    conservative session sum is used as the minimum contract requirement; the
-    integration layer may apply a larger calendar-day conversion if desired.
+    DTE is calendar time whereas the inputs are trading sessions, so the session total is converted
+    (R3; the former version compared sessions with calendar days). ``minimum_required_dte`` is the
+    preferred runway (a floor, never a ceiling; ACK 18 Sep 2026). ``minimum_holdable_dte`` is the least
+    DTE that leaves one session before the exit buffer - below it the contract cannot be held at all.
     """
     hold = _finite_number(remaining_hold_sessions)
     monitor = _finite_number(monitor_sessions)
@@ -217,12 +221,14 @@ def calculate_dte_requirement(
         raise ValueError(
             "remaining_hold_sessions must be a governed routed hold in {5, 10, 20}"
         )
-    minimum = math.ceil(hold + monitor + exit_buffer)
+    sessions = math.ceil(hold + monitor + exit_buffer)
     return {
         "remaining_hold_sessions": hold,
         "monitor_sessions": monitor,
         "exit_buffer_sessions": exit_buffer,
-        "minimum_required_dte": minimum,
+        "minimum_required_sessions": sessions,
+        "minimum_required_dte": math.ceil(sessions * CALENDAR_DAYS_PER_SESSION),
+        "minimum_holdable_dte": math.ceil((exit_buffer + 1) * CALENDAR_DAYS_PER_SESSION),
         "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
     }
 
@@ -378,13 +384,66 @@ def classify_current_executability(
     dte: Any,
     minimum_required_dte: Any,
     moneyness_treatment: str,
+    minimum_holdable_dte: Any = None,
     listed_market: bool = True,
     executable_spread_max_pct: float = DEFAULT_EXECUTABLE_SPREAD_MAX_PCT,
     reviewable_spread_max_pct: float = DEFAULT_REVIEWABLE_SPREAD_MAX_PCT,
     quote_freshness_max_seconds: float = DEFAULT_QUOTE_FRESHNESS_MAX_SECONDS,
     require_displayed_size: bool = False,
 ) -> Dict[str, Any]:
-    """Classify the current exact quote without using OI as a hard gate."""
+    """Classify the current exact quote without using OI as a hard gate.
+
+    Runway (ACK 18 Sep 2026): a contract short of ``minimum_required_dte`` but holdable past issue
+    (``minimum_holdable_dte``) is classified on its quote and flagged ``RUNWAY_BELOW_ANTICIPATED_MOVE``
+    for manual review; it is never sent to repair for its runway. Without a holdable minimum the former
+    rule applies (the caller did not say the contract can be held).
+    """
+    dte_value, minimum = _finite_number(dte), _finite_number(minimum_required_dte)
+    holdable = _finite_number(minimum_holdable_dte)
+    runway_short = (dte_value is not None and minimum is not None and holdable is not None
+                    and holdable <= dte_value < minimum)
+    result = _classify_current_executability(
+        bid=bid, ask=ask, bid_size=bid_size, ask_size=ask_size, quote_age_seconds=quote_age_seconds, dte=dte,
+        minimum_required_dte=dte_value if runway_short else minimum_required_dte,
+        moneyness_treatment=moneyness_treatment, listed_market=listed_market,
+        executable_spread_max_pct=executable_spread_max_pct, reviewable_spread_max_pct=reviewable_spread_max_pct,
+        quote_freshness_max_seconds=quote_freshness_max_seconds, require_displayed_size=require_displayed_size)
+    if not runway_short:
+        return result
+    if "minimum_required_dte" in result:
+        result["minimum_required_dte"] = minimum
+    result["liquidity_reasons"] = list(result.get("liquidity_reasons", [])) + ["RUNWAY_BELOW_ANTICIPATED_MOVE"]
+    result["runway_state"] = "RUNWAY_SHORT"
+    if result["recovery_disposition"] == "EXECUTABLE":
+        result.update(liquidity_state=ContractLiquidityState.RUNWAY_SHORT_REVIEW.value,
+                      recovery_disposition="MONITOR", executable_now=False, current_quote_executable=False)
+    return result
+
+
+def label_eod_quote_state(liquidity_state: Any, quote_timestamp_utc: Any) -> Any:
+    """An end-of-day quote that carries a provider timestamp awaits the morning re-quote; it is not a quote
+    without a timestamp (labels say what was measured, R6). Other states are returned unchanged."""
+    if liquidity_state == ContractLiquidityState.QUOTE_TIMESTAMP_UNAVAILABLE.value and str(quote_timestamp_utc or "").strip():
+        return ContractLiquidityState.EOD_QUOTE_PENDING_MORNING_REQUOTE.value
+    return liquidity_state
+
+
+def _classify_current_executability(
+    *,
+    bid: Any,
+    ask: Any,
+    bid_size: Any,
+    ask_size: Any,
+    quote_age_seconds: Any,
+    dte: Any,
+    minimum_required_dte: Any,
+    moneyness_treatment: str,
+    listed_market: bool,
+    executable_spread_max_pct: float,
+    reviewable_spread_max_pct: float,
+    quote_freshness_max_seconds: float,
+    require_displayed_size: bool,
+) -> Dict[str, Any]:
     bid_value = _finite_number(bid)
     ask_value = _finite_number(ask)
     bid_size_value = _finite_number(bid_size)
@@ -729,6 +788,7 @@ def evaluate_options_liquidity_lifecycle(
         quote_age_seconds=values.get("quote_age_seconds"),
         dte=values["dte"],
         minimum_required_dte=dte_requirement["minimum_required_dte"],
+        minimum_holdable_dte=dte_requirement["minimum_holdable_dte"],
         moneyness_treatment=moneyness["moneyness_treatment"],
         listed_market=bool(values.get("listed_market", True)),
         require_displayed_size=require_displayed_size,

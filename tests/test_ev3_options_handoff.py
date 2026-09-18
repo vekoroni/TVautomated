@@ -236,11 +236,12 @@ def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
     assert lifecycle["invalidation_spot"] == 103.0
     assert lifecycle["invalidation_source"] == "stop_loss"
     assert lifecycle["planned_hold_sessions"] == 5.0
-    assert lifecycle["minimum_required_dte"] == 13
+    assert lifecycle["minimum_required_dte"] == 19          # 13 sessions in calendar days (R3)
     # Completed-session evidence can prepare and rank the thesis, but cannot
     # claim current executability.  That state is minted only by the governed
     # post-open contract refresh.
-    assert lifecycle["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    # The quote carries a provider timestamp: it awaits the morning re-quote (label, 18 Sep 2026).
+    assert lifecycle["liquidity_state"] == "EOD_QUOTE_PENDING_MORNING_REQUOTE"
     assert lifecycle["remaining_runway_state"] == "THESIS_ACTIVE"
     assert lifecycle["thesis_state"] == "ACTIVE"
 
@@ -738,7 +739,8 @@ def test_tc08_repair_selector_publishes_required_observability_counts() -> None:
         symbol="INVALID_SPREAD", oi=500, volume=100, bid=1.0, ask=2.0,
     )
     invalid_geometry = _tc08_repair_row(symbol="INVALID_GEOMETRY", oi=500, volume=100)
-    invalid_geometry["dte"] = 90
+    # A longer contract is never dropped (ACK 18 Sep 2026: the horizon informs contract choice, never gates it); a contract that cannot be held past issue is.
+    invalid_geometry["dte"] = 2
 
     diagnostics = oi._new_repair_selector_diagnostics()
     candidates = select_repair_alternative_contracts(

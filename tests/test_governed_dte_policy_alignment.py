@@ -10,9 +10,10 @@ from scripts import avshunter_options_intelligence as options
 @pytest.mark.parametrize(
     ("horizon", "hold", "configured_min", "expected_effective_min", "expected_max"),
     [
-        ("1_5d", 5, 7, 13, 21),
-        ("6_10d", 10, 21, 21, 35),
-        ("11_20d", 20, 35, 35, 60),
+        # Runway in calendar days (hold + 3 + 5 sessions x 7/5); the band is descriptive (ACK 18 Sep 2026: the horizon informs contract choice, never gates it).
+        ("1_5d", 5, 7, 19, 21),
+        ("6_10d", 10, 21, 26, 35),
+        ("11_20d", 20, 35, 40, 60),
     ],
 )
 def test_selection_never_undercuts_lifecycle_dte_requirement(
@@ -49,8 +50,8 @@ def test_structural_context_uses_governed_dte_window() -> None:
 
     context = options.parse_structural_context(row)
 
-    assert context["dte_window"] == (13, 17, 21)
-    assert context["dte_config"]["lifecycle_minimum_dte"] == 13
+    assert context["dte_window"] == (19, 20, 21)
+    assert context["dte_config"]["lifecycle_minimum_dte"] == 19
     assert context["dte_config"]["dte_policy_version"] == options.DTE_SELECTION_POLICY_VERSION
 
 
@@ -114,9 +115,11 @@ def _chain(right: str) -> pd.DataFrame:
 
 
 @pytest.mark.parametrize(("direction", "right"), [("CALL", "C"), ("PUT", "P")])
-def test_call_and_put_selector_cannot_choose_a_contract_lifecycle_will_reject(
+def test_call_and_put_selector_prefers_the_longer_runway_and_flags_the_shortfall(
     direction: str, right: str
 ) -> None:
+    """Neither contract covers the 19-day runway; the longer one is chosen and flagged, never dropped
+    (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
     policy = options.governed_dte_config("1_5d")
     context = {
         "ticker": "TEST",
@@ -132,13 +135,16 @@ def test_call_and_put_selector_cannot_choose_a_contract_lifecycle_will_reject(
 
     assert selected is not None
     assert selected["symbol"] == f"TEST_ALIGNED_{right}"
-    assert selected["dte"] >= policy["lifecycle_minimum_dte"]
+    assert selected["dte"] < policy["lifecycle_minimum_dte"]
+    assert selected["contract_runway_state"] == "RUNWAY_SHORT"
 
 
 @pytest.mark.parametrize(("direction", "right"), [("CALL", "C"), ("PUT", "P")])
-def test_repair_selector_uses_the_same_lifecycle_dte_floor(
+def test_repair_selector_keeps_holdable_contracts_and_prefers_the_runway(
     direction: str, right: str
 ) -> None:
+    """Both contracts can be held past issue, so both are alternatives; the one nearer the runway floor
+    comes first (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
     chain = _chain(right)
     chain["quote_timestamp_utc"] = "2026-09-09T14:00:00Z"
     context = {
@@ -147,17 +153,18 @@ def test_repair_selector_uses_the_same_lifecycle_dte_floor(
         "horizon_bucket": "1_5d",
         "spot": 100.0,
         "structural_target": 110.0 if direction == "CALL" else 90.0,
-        # Deliberately supply the former selector band. The repair selector
-        # must still reject 9 DTE using the shared lifecycle calculation.
         "dte_window": (7, 14, 21),
         "dte_config": options.DTE_CONFIG["1_5d"],
     }
 
     alternatives = options.select_repair_alternative_contracts(chain, context)
 
-    assert [item["symbol"] for item in alternatives] == [f"TEST_ALIGNED_{right}"]
-    assert alternatives[0]["dte"] >= calculate_dte_requirement(5)["minimum_required_dte"]
+    assert [item["symbol"] for item in alternatives] == [f"TEST_ALIGNED_{right}", f"TEST_SHORT_{right}"]
+    assert alternatives[-1]["dte"] >= calculate_dte_requirement(5)["minimum_holdable_dte"]
 
 
-def test_unknown_horizon_fails_to_the_governed_short_horizon_policy() -> None:
-    assert options.governed_dte_window("UNKNOWN") == (13, 17, 21)
+def test_unknown_horizon_descriptive_window_and_full_window_runway() -> None:
+    """The descriptive window still normalises to 1_5d, but the runway that drives selection uses the full
+    thesis window and says so (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
+    assert options.governed_dte_window("UNKNOWN") == (19, 20, 21)
+    assert options.contract_runway_policy("UNKNOWN")["contract_runway_basis"] == "THESIS_WINDOW_HORIZON_UNAVAILABLE"

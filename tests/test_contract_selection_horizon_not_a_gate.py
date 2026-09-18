@@ -1,0 +1,192 @@
+"""The horizon informs contract choice; it never decides which trades exist (ACK, 18 Sep 2026).
+
+Business rules (ACK):
+- Buy more runway than the anticipated move: a contract is never dropped for being longer-dated.
+- Runway is a floor in correct units (sessions -> calendar days), a preference, never a ceiling.
+- A contract short of the anticipated move is flagged for manual review, not sent to repair; only a
+  contract that cannot be held past issue is unusable.
+- One spread limit and one delta preference for every horizon. When nothing is inside the spread
+  limit, the best contract is shown for manual review with the reason; the ticker never disappears.
+- A missing horizon is reported, never defaulted to the shortest window.
+- An end-of-day quote with a provider timestamp is labelled as awaiting the morning re-quote, not as
+  "timestamp unavailable".
+
+Evidence: 17 Sep evening run - 838 of 1,359 contract searches ended with no contract (482 on the
+days-to-expiry window, 308 on the per-horizon spread band, 48 on delta); 667 of those tickers list only
+monthly expiries (1, 29, 64, 92 days), which the 13-21 day window could never contain.
+"""
+
+from __future__ import annotations
+
+import math
+
+import pandas as pd
+import pytest
+
+from domain.option_contract_liquidity import (
+    calculate_dte_requirement,
+    classify_current_executability,
+)
+from scripts import avshunter_options_intelligence as oi
+
+
+def _contract(symbol: str, dte: float, *, right: str = "C", spread: float = 0.08, delta: float = 0.50,
+              strike: float = 100.0) -> dict:
+    mid = 2.0
+    half = mid * spread / 2.0
+    return {
+        "symbol": symbol, "underlying": "TEST", "right": right, "strike": strike,
+        "expiration_date": "2026-10-16", "dte": dte, "mark": mid, "bid": mid - half, "ask": mid + half,
+        "bid_size": 10, "ask_size": 10, "delta": delta if right == "C" else -delta, "gamma": 0.03,
+        "theta": -0.03, "vega": 0.08, "implied_vol": 0.40, "open_interest": 100, "volume": 20,
+        "spread_pct": spread, "quote_quality": "TWO_SIDED", "quality_flags": (),
+        "quote_fields_complete": True, "mark_synthetic": False,
+        "quote_timestamp_utc": "2026-09-17T20:00:00Z",
+    }
+
+
+def _structural_context(horizon: str | None) -> dict:
+    """The context the evening run builds from a signal row (runway fields are direction-independent)."""
+    row = pd.Series({"ticker": "TEST", "direction": "CALL", "horizon_bucket": horizon,
+                     "current_price": 100.0, "target_price": 110.0, "invalidation_spot": 95.0,
+                     "invalidation_state": "AVAILABLE"})
+    return oi.parse_structural_context(row)
+
+
+def _ctx(horizon: str | None = "1_5d", direction: str = "CALL") -> dict:
+    """Selection context as the existing selector tests build it, with the runway the run attaches."""
+    return {"ticker": "TEST", "direction": direction, "spot": 100.0, "horizon_bucket": horizon,
+            "structural_target": 110.0 if direction == "CALL" else 90.0, "hold_days": 5,
+            "dte_window": oi.governed_dte_window(horizon), "dte_config": oi.governed_dte_config(horizon),
+            **_runway(horizon)}
+
+
+def _runway(horizon):
+    ctx = _structural_context(horizon)
+    return {k: ctx[k] for k in ("contract_runway_floor_days", "contract_min_holdable_dte",
+                                "contract_runway_basis", "contract_runway_hold_sessions")}
+
+
+def _select(rows: list[dict], ctx: dict) -> dict | None:
+    return oi.select_best_contract(pd.DataFrame(rows), ctx)
+
+
+# --- runway: a floor in correct units, never a ceiling ------------------------------------------------------------
+
+def test_runway_requirement_converts_sessions_to_calendar_days():
+    result = calculate_dte_requirement(10, monitor_sessions=2, exit_buffer_sessions=5)
+    assert result["minimum_required_sessions"] == 17
+    assert result["minimum_required_dte"] == math.ceil(17 * 7 / 5)          # 24 calendar days, not 17
+
+
+def test_a_longer_dated_contract_is_never_dropped_for_being_longer():
+    """The anticipated move is within 5 sessions, but the only contract has 64 days: it is the trade."""
+    selected = _select([_contract("TEST261120C00100000", 64.0)], _ctx("1_5d"))
+    assert selected is not None and selected["dte"] == 64.0
+
+
+def test_monthly_only_chain_gets_its_monthly_contract_not_the_expiring_one():
+    rows = [_contract("TEST260918C00100000", 1.0), _contract("TEST261016C00100000", 29.0),
+            _contract("TEST261120C00100000", 64.0), _contract("TEST261218C00100000", 92.0)]
+    selected = _select(rows, _ctx("1_5d"))
+    assert selected["dte"] == 29.0          # nearest expiry that covers the anticipated move + buffers
+
+
+def test_longer_anticipated_move_prefers_the_expiry_that_covers_it():
+    rows = [_contract("TEST261016C00100000", 29.0), _contract("TEST261120C00100000", 64.0)]
+    selected = _select(rows, _ctx("11_20d"))
+    assert selected["dte"] == 64.0          # 20 sessions + buffers = 40 calendar days
+
+
+def test_short_runway_is_selected_and_flagged_for_manual_review():
+    selected = _select([_contract("TEST261002C00100000", 15.0)], _ctx("6_10d"))
+    assert selected is not None
+    assert selected["contract_runway_state"] == "RUNWAY_SHORT"
+    assert selected["contract_runway_floor_days"] == math.ceil((10 + 3 + 5) * 7 / 5)
+
+
+def test_a_contract_that_cannot_be_held_past_issue_is_never_chosen():
+    assert _select([_contract("TEST260918C00100000", 1.0)], _ctx("1_5d")) is None
+
+
+# --- one spread limit, one delta preference; manual review instead of disappearing --------------------------------
+
+def test_spread_limit_is_the_same_for_every_horizon():
+    for horizon in ("1_5d", "6_10d", "11_20d", None, "UNKNOWN"):
+        assert oi.horizon_spread_limit(horizon) == oi.MAX_SPREAD_PCT
+
+
+def test_a_contract_inside_the_single_spread_limit_is_selected_on_a_short_horizon():
+    """20% spread: rejected by the former 15% band for 1_5d; inside the one reviewable limit (25%)."""
+    selected = _select([_contract("TEST261016C00100000", 29.0, spread=0.20)], _ctx("1_5d"))
+    assert selected is not None and selected["spread_above_limit"] is False
+
+
+def test_when_nothing_is_inside_the_spread_limit_the_best_contract_goes_to_manual_review():
+    rows = [_contract("TEST261016C00100000", 29.0, spread=0.60),
+            _contract("TEST261016C00105000", 29.0, spread=0.35, strike=105.0)]
+    selected = _select(rows, _ctx("6_10d"))
+    assert selected is not None
+    assert selected["spread_above_limit"] is True
+    assert selected["selection_reason"] == "BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW"
+    assert selected["spread_pct"] == 0.35   # the tighter of the two
+
+
+def test_delta_preference_is_the_same_for_every_horizon():
+    policies = [oi.governed_dte_config(h) for h in ("1_5d", "6_10d", "11_20d")]
+    assert {(p["delta_min"], p["delta_max"]) for p in policies} == {
+        (oi.CONTRACT_SELECTION["delta_preferred_abs"][0], oi.CONTRACT_SELECTION["delta_preferred_abs"][1])}
+
+
+# --- missing horizon: reported, not defaulted ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("horizon", [None, "", "UNKNOWN"])
+def test_missing_horizon_is_reported_and_uses_the_full_thesis_window_not_the_shortest(horizon):
+    ctx = _structural_context(horizon)
+    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_HORIZON_UNAVAILABLE"
+    assert ctx["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
+
+
+def test_known_horizon_is_the_runway_basis_and_stays_descriptive():
+    ctx = _structural_context("6_10d")
+    assert ctx["contract_runway_basis"] == "HORIZON:6_10d"
+    assert ctx["dte_config"]["planned_hold_sessions"] == 10          # the horizon is still carried
+
+
+# --- lifecycle: short runway is a manual-review flag, not a repair ------------------------------------------------
+
+def test_lifecycle_short_runway_is_manual_review_not_contract_repair():
+    result = classify_current_executability(
+        bid=4.90, ask=5.00, quote_age_seconds=60, dte=15, minimum_required_dte=26,
+        minimum_holdable_dte=5, moneyness_treatment="PREFERRED_EXECUTION")
+    assert result["recovery_disposition"] == "MONITOR"
+    assert result["liquidity_state"] == "RUNWAY_SHORT_REVIEW"
+    assert "RUNWAY_BELOW_ANTICIPATED_MOVE" in result["liquidity_reasons"]
+
+
+def test_lifecycle_contract_not_holdable_past_issue_still_needs_repair():
+    result = classify_current_executability(
+        bid=4.90, ask=5.00, quote_age_seconds=60, dte=1, minimum_required_dte=26,
+        minimum_holdable_dte=5, moneyness_treatment="PREFERRED_EXECUTION")
+    assert result["liquidity_state"] == "DTE_UNSUITABLE"
+    assert result["recovery_disposition"] == "CONTRACT_REPAIR"
+
+
+# --- repair search follows the same rules ---------------------------------------------------------------------------
+
+def test_repair_search_keeps_longer_dated_alternatives():
+    chain = pd.DataFrame([_contract("TEST261120C00100000", 64.0), _contract("TEST260918C00100000", 1.0)])
+    ctx = _ctx("1_5d")
+    ctx["horizon_bucket"] = "1_5d"
+    alternatives = oi.select_repair_alternative_contracts(chain, ctx)
+    assert [a["symbol"] for a in alternatives] == ["TEST261120C00100000"]
+
+
+# --- evening quote label ---------------------------------------------------------------------------------------------
+
+def test_eod_quote_with_provider_timestamp_is_labelled_awaiting_morning_requote():
+    from domain.option_contract_liquidity import label_eod_quote_state
+    assert label_eod_quote_state("QUOTE_TIMESTAMP_UNAVAILABLE", "2026-09-17T20:00:00Z") == \
+        "EOD_QUOTE_PENDING_MORNING_REQUOTE"
+    assert label_eod_quote_state("QUOTE_TIMESTAMP_UNAVAILABLE", None) == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    assert label_eod_quote_state("REVIEWABLE_SPREAD", "2026-09-17T20:00:00Z") == "REVIEWABLE_SPREAD"

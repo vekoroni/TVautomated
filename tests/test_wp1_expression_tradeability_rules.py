@@ -38,9 +38,12 @@ def test_t1_contract_without_two_sided_quote_is_not_tradeable():
     assert _select([zero_bid]) is None
 
 
-def test_t2_contract_above_spread_limit_is_not_tradeable():
+def test_t2_contract_above_spread_limit_goes_to_manual_review_not_tradeable():
+    """ACK 18 Sep 2026: the horizon informs contract choice, never gates it: nothing inside the limit -> the best contract is shown for manual review with the reason."""
     wide = _row("WPONE261016C00100000", 100.0, bid=1.00, ask=3.00, delta=0.50)       # spread 100% of mid
-    assert _select([wide]) is None
+    selected = _select([wide])
+    assert selected["spread_above_limit"] is True
+    assert selected["selection_reason"] == "BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW"
 
 
 def test_t3_contract_without_measurable_spread_is_not_tradeable():
@@ -61,7 +64,7 @@ def test_t4_tight_spread_contract_chosen_over_wide_one_even_off_delta():
 def test_t5_no_qualifying_contract_is_reported_by_the_taxonomy():
     wide = _row("WPONE261016C00100000", 100.0, bid=1.00, ask=3.00, delta=0.50)
     chain = pd.DataFrame([wide])
-    assert oi.select_best_contract(chain, _ctx()) is None
+    assert oi.select_best_contract(chain, _ctx())["spread_above_limit"] is True
     taxonomy = oi.contract_rejection_taxonomy(chain, _ctx())
     assert REJECT_SPREAD in str(taxonomy)
 
