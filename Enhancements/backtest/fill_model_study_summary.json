@@ -1,0 +1,80 @@
+{
+  "source": "signal_ticket_backtest_rows.csv re-marked with stored exit quotes",
+  "models": {
+    "quoted": "effective spread fraction 1.00",
+    "timed": "effective spread fraction 0.30",
+    "mid": "effective spread fraction 0.00"
+  },
+  "median_entry_spread": 0.3931,
+  "median_exit_spread": 0.6087,
+  "all_candidates": {
+    "quoted": {
+      "closed": 2633,
+      "mean": -0.4909,
+      "median": -0.6374,
+      "hit_rate": 0.123,
+      "share_ge_100pct": 0.0247
+    },
+    "timed": {
+      "closed": 2990,
+      "mean": -0.3215,
+      "median": -0.4777,
+      "hit_rate": 0.171,
+      "share_ge_100pct": 0.0391
+    },
+    "mid": {
+      "closed": 2990,
+      "mean": -0.181,
+      "median": -0.3529,
+      "hit_rate": 0.227,
+      "share_ge_100pct": 0.0585
+    }
+  },
+  "top_cautious_quintile": {
+    "quoted": {
+      "closed": 557,
+      "mean": -0.2669,
+      "median": -0.3684,
+      "hit_rate": 0.183,
+      "share_ge_100pct": 0.0413
+    },
+    "timed": {
+      "closed": 574,
+      "mean": -0.167,
+      "median": -0.2806,
+      "hit_rate": 0.232,
+      "share_ge_100pct": 0.047
+    },
+    "mid": {
+      "closed": 574,
+      "mean": -0.1101,
+      "median": -0.2261,
+      "hit_rate": 0.27,
+      "share_ge_100pct": 0.054
+    }
+  },
+  "tickets": {
+    "quoted": {
+      "closed": 17,
+      "mean": -0.4465,
+      "median": -0.3429,
+      "hit_rate": 0.059,
+      "share_ge_100pct": 0.0
+    },
+    "timed": {
+      "closed": 19,
+      "mean": -0.4096,
+      "median": -0.2886,
+      "hit_rate": 0.105,
+      "share_ge_100pct": 0.0
+    },
+    "mid": {
+      "closed": 19,
+      "mean": -0.3657,
+      "median": -0.2647,
+      "hit_rate": 0.211,
+      "share_ge_100pct": 0.0
+    }
+  },
+  "reference": "Muravyev & Pearson (2020) RFS 33(11): effective spreads 20-40% of quoted for timed execution"
+}
