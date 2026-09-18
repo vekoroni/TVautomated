@@ -1544,7 +1544,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
 
         _counts = {}
         _extra_horizon_fields = [
-            "signal_id", "horizon_bucket", "horizon_action",
+            "signal_id", "horizon_bucket", "contract_expiry_bucket", "horizon_action",
             "horizon_size_multiplier", "horizon_block_reason",
             "horizon_source", "router_version", "horizon_regime_state",
             "horizon_macro_conviction", "horizon_macro_momentum_score",
@@ -1565,7 +1565,8 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
                     _orig = _ticker_to_raw.get(_sig.ticker, {})
                     _out_row = dict(_orig)
                     _out_row["signal_id"]                = getattr(_sig, "signal_id", "")
-                    _out_row["horizon_bucket"]           = _bucket
+                    # Router bucket = contract expiry; the thesis horizon stays Discovery's (ACK, 18 Sep 2026).
+                    _out_row["contract_expiry_bucket"]   = _bucket
                     _out_row["horizon_action"]           = _sig.action.value
                     _out_row["horizon_size_multiplier"]  = _sig.size_multiplier
                     _out_row["horizon_block_reason"]     = _sig.block_reason
@@ -1591,7 +1592,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
                     for _sig in _bucket_signals:
                         # _sig is a RoutedSignal dataclass — access fields directly
                         _lookup[_sig.ticker] = {
-                            "horizon_bucket":          _bucket,
+                            "contract_expiry_bucket":  _bucket,
                             "horizon_action":          _sig.action.value,
                             "horizon_size_multiplier": float(_sig.size_multiplier),
                             "horizon_regime_state":    _horizon_regime_state,
@@ -1599,7 +1600,7 @@ def run_horizon_router(macro_path: Path, run_id: str) -> dict:
                             "horizon_macro_momentum_score": _horizon_macro_momentum,
                         }
                 if _lookup:
-                    _sb["horizon_bucket"]          = _sb["ticker"].map(lambda t: _lookup.get(t, {}).get("horizon_bucket", "unrouted"))
+                    _sb["contract_expiry_bucket"]  = _sb["ticker"].map(lambda t: _lookup.get(t, {}).get("contract_expiry_bucket", "unrouted"))
                     _sb["horizon_action"]          = _sb["ticker"].map(lambda t: _lookup.get(t, {}).get("horizon_action", "UNKNOWN"))
                     _sb["horizon_size_multiplier"] = _sb["ticker"].map(lambda t: _lookup.get(t, {}).get("horizon_size_multiplier", 0.0))
                     _sb["horizon_regime_state"]    = _sb["ticker"].map(lambda t: _lookup.get(t, {}).get("horizon_regime_state", _horizon_regime_state))
@@ -3664,11 +3665,12 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             if _hdf.empty or "ticker" not in _hdf.columns:
                 continue
             _hdf["ticker"] = _hdf["ticker"].astype(str).str.strip().str.upper()
-            _hdf["horizon_bucket"] = _bucket
+            # Router bucket = contract expiry; the thesis horizon stays Discovery's (ACK, 18 Sep 2026).
+            _hdf["contract_expiry_bucket"] = _bucket
             _keep = [
                 c for c in [
                     "ticker", "signal_id", "instrument",
-                    "horizon_bucket", "horizon_action",
+                    "contract_expiry_bucket", "horizon_action",
                     "horizon_size_multiplier", "horizon_block_reason",
                     "horizon_source", "router_version",
                 ]
@@ -3690,7 +3692,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         target_df["ticker"] = target_df["ticker"].astype(str).str.strip().str.upper()
 
         _horizon_cols = [
-            "horizon_bucket", "horizon_action",
+            "contract_expiry_bucket", "horizon_action",
             "horizon_size_multiplier", "horizon_block_reason",
             "horizon_source", "router_version",
         ]
@@ -3710,7 +3712,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             patched = target_df.merge(route_df[_merge_cols], on="ticker", how="left")
             _merge_key = "ticker"
 
-        patched["horizon_bucket"] = patched["horizon_bucket"].fillna("unrouted")
+        patched["contract_expiry_bucket"] = patched["contract_expiry_bucket"].fillna("unrouted")
         patched["horizon_action"] = patched["horizon_action"].fillna("UNKNOWN")
         patched["horizon_size_multiplier"] = patched["horizon_size_multiplier"].fillna(0.0)
         patched["horizon_block_reason"] = patched["horizon_block_reason"].fillna("")
@@ -3720,20 +3722,24 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         # pre-router hold in place (for example hold=5 with bucket=6_10d), which
         # is a deterministic REJECT_HORIZON defect. Re-derive both fields from
         # the final router bucket atomically.
+        # ACK 18 Sep 2026: horizon_bucket is Discovery's thesis horizon and is no longer overwritten; the
+        # router's bucket (contract expiry) is contract_expiry_bucket.  The hold keeps its existing derivation
+        # from that bucket - it sets the required contract runway downstream, so changing it is a separate
+        # decision - and its source label now says what it is.
         _hold_by_bucket = {"1_5d": 5, "6_10d": 10, "11_20d": 20}
-        patched["planned_hold_sessions"] = patched["horizon_bucket"].map(
+        patched["planned_hold_sessions"] = patched["contract_expiry_bucket"].map(
             _hold_by_bucket
         ).astype("Int64")
-        patched["planned_hold_source"] = patched["horizon_bucket"].map(
+        patched["planned_hold_source"] = patched["contract_expiry_bucket"].map(
             {
-                bucket: "FINAL_HORIZON_ROUTER_ENDPOINT_V1"
+                bucket: "ROUTER_CONTRACT_EXPIRY_BUCKET_V1"
                 for bucket in _hold_by_bucket
             }
         ).fillna("UNROUTED")
 
         patched.to_csv(target_csv, index=False)
 
-        _matched = int((patched["horizon_bucket"] != "unrouted").sum())
+        _matched = int((patched["contract_expiry_bucket"] != "unrouted").sum())
         logger.info(
             "✅ Horizon patch → %s | matched=%d/%d via %s | file=%s",
             label, _matched, len(patched), _merge_key, target_csv.name,

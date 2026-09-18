@@ -4671,7 +4671,28 @@ def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     ):
         fields[field] = ctx.get(field, '')
     fields.update(macro_quant_columns_for_row(signal_row, signal_row))
+    # Upstream facts every branch carries (ACK, 18 Sep 2026): a stand-down record used to drop them and
+    # SuperBrain inherited blanks.  Branches that recompute a field (full rows: sector ETF, macro decision)
+    # set it later in their own record, so those values are unchanged.
+    fields.update({
+        'win_probability': ctx.get('win_prob'),
+        'behaviour_state_key': ctx.get('behaviour_state_key'),
+        'behaviour_state_hash': ctx.get('behaviour_state_hash'),
+        'catalyst_overlay': ctx.get('catalyst_overlay'),
+        'sector_etf': signal_row.get('sector_etf') or signal_row.get('sector_etf_mapped') or '',
+    })
+    for field in _UPSTREAM_MACRO_DECISION_FIELDS:
+        if field in signal_row:
+            fields[field] = signal_row.get(field)
     return fields
+
+
+# The macro decision record Vanguard publishes per candidate; options recomputes it only on full rows.
+_UPSTREAM_MACRO_DECISION_FIELDS = (
+    'macro_alignment_state', 'macro_direction_authority', 'macro_applicability', 'macro_direction_vote',
+    'macro_raw_direction_hint', 'macro_can_invert_direction', 'structure_first_required',
+    'trade_type_classification',
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

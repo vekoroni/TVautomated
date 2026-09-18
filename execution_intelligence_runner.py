@@ -1162,7 +1162,7 @@ def _process_row(
     _ha = str(row.get("horizon_action", "")).strip().upper()
     # ISSUE 6: _f() safe parse â€” raw float() crashes on N/A, nan, empty string
     # FIX: explicit guard â€” only zero-out when action is genuinely blocked.
-    if _ha == "MONITOR_ONLY" or _hb == "blocked":
+    if _ha == "MONITOR_ONLY" or (_hb == "blocked" or _ha == "BLOCKED"):
         _default_hsm = 0.0
     elif _hb == "6_10d":
         _default_hsm = 0.70
@@ -1179,7 +1179,7 @@ def _process_row(
     # Blocking on _hb == "11_20d" was preventing 13+ valid signals per run
     # (CRWD, COIN, LCID, IWM, AVGO, PANW, ABNB, AMD, ARM, ORCL, DDOG, ROKU,
     # BAC) from ever reaching EIL scoring â€” all had real OIS/R:R/Wyckoff data.
-    if _ha == "MONITOR_ONLY" or _hb == "blocked":
+    if _ha == "MONITOR_ONLY" or (_hb == "blocked" or _ha == "BLOCKED"):
         # DOI-1: horizon/timing is advisory.  Preserve the observation and run
         # the normal enrichment path so an elapsed or temporarily unattractive
         # setup cannot disappear from the governed opportunity population.

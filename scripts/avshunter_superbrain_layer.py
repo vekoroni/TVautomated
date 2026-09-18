@@ -2089,7 +2089,7 @@ def process_signal(signal: Dict, dashboard: Dict) -> Dict:
             "options_score":       _f(signal, "options_score"),
         }
 
-    if _horizon_bucket == "blocked":
+    if _horizon_bucket == "blocked" or _horizon_action == "BLOCKED":
         return {
             "ticker":              ticker,
             "original_verdict":    original_verdict,

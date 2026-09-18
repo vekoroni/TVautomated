@@ -278,7 +278,7 @@ def _is_eligible(row: dict[str, Any]) -> tuple[bool, str]:
     _pse_mode = str(row.get("pse_execution_mode", "")).strip().upper()
     if _ha == "MONITOR_ONLY" or _pse_mode == "MONITOR_ONLY":
         return False, f"HORIZON_MONITOR_ONLY:{_hb}:{_ha}"
-    if _hb == "blocked":
+    if _hb == "blocked" or _ha == "BLOCKED":
         return False, f"HORIZON_BLOCKED:{row.get('horizon_block_reason','')}"
     # ── End horizon safety gate ───────────────────────────────────────────────
 

@@ -265,3 +265,26 @@ def test_a_newer_macro_in_vanguard_replaces_the_older_discovery_stamp():
 def test_the_same_generation_time_keeps_the_discovery_stamp():
     row = _macro_join("2026-09-18T11:00:00+00:00", "2026-09-18T11:00:00+00:00").iloc[0]
     assert (row["macro_packet_id"], row["macro_regime"]) == ("MACRO:D", "NEUTRAL")
+
+
+# --- Stand-down rows keep the upstream facts (ACK 18 Sep 2026) ------------------------------------------------------
+# Run 20260918_112522: 147 rows stood down before a contract (137 without a long CALL/PUT direction) and their
+# options record dropped 13 upstream facts that full rows carry; SuperBrain inherited the blanks.
+
+_UPSTREAM_FACTS = {
+    "win_probability": 60.3, "behaviour_state_key": "CONTINUATION|MID|TRANSITION_ZONE",
+    "behaviour_state_hash": "ab12cd34", "sector_etf": "XLI", "catalyst_overlay": "NONE",
+    "trade_type_classification": "STRUCTURAL_SINGLE_STOCK", "structure_first_required": True,
+    "macro_alignment_state": "MACRO_NOT_APPLICABLE", "macro_direction_authority": "DISABLED",
+    "macro_applicability": "NOT_APPLICABLE", "macro_direction_vote": "ABSTAIN",
+    "macro_raw_direction_hint": "ABSTAIN", "macro_can_invert_direction": False,
+}
+
+
+def test_a_stand_down_record_carries_the_same_upstream_facts_as_a_full_row():
+    row = pd.Series({"ticker": "BZ", "direction": "STRANGLE", "current_price": 20.0, **_UPSTREAM_FACTS})
+    ctx = oi.parse_structural_context(row)
+    ctx["_signal_row"] = row
+    record = oi._stand_down(ctx, "No governed long CALL/PUT direction; chain request suppressed")
+    assert {k: record.get(k) for k in _UPSTREAM_FACTS} == _UPSTREAM_FACTS
+    assert record["dte"] is None and record["strike"] is None       # no contract: contract facts stay empty

@@ -952,7 +952,7 @@ def run_decision_engine(
             continue
 
         # BLOCKED by horizon router: hard block
-        if _hb == "blocked":
+        if _hb == "blocked" or _ha == "BLOCKED":
             _horizon_blocked_count += 1
             results.append(EDEResult(
                 ticker          = str(row.get("ticker","")).upper(),
