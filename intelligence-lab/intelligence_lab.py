@@ -3550,6 +3550,48 @@ def api_outcomes():
 
 
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
+def _read_csv_rows(path):
+    import csv as _csv
+    with open(path, newline="", encoding="utf-8") as handle:
+        return [dict(row) for row in _csv.DictReader(handle)]
+
+
+def signal_ticket_payload(run_id):
+    """The day's signal tickets and watchlist exactly as written by `avshunter.c12_outcome signals`.
+
+    Read-only display (ACK 18 Sep 2026): rows are returned in file order with their recorded rank and values;
+    nothing is re-ranked, re-valued or filtered. A missing file is named, never shown as an empty success.
+    """
+    folder = RUNS_DIR / str(run_id) / "signals"
+    summary_path = _glob_latest(folder, "signal_tickets_*_summary.json")
+    payload = {"ok": True, "run_id": run_id, "authority": "DECISION_SUPPORT_ONLY", "tickets": [], "watchlist": []}
+    if summary_path is None:
+        payload.update(state="NOT_ISSUED", watchlist_state="NOT_PRODUCED", summary={})
+        return payload
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    stem = summary_path.name[: -len("_summary.json")]
+    tickets_path, watch_path = folder / f"{stem}.csv", folder / f"{stem}_watchlist.csv"
+    payload.update(
+        state=str(summary.get("status") or "ISSUED"),
+        summary={k: summary.get(k) for k in ("issue_session", "evidence_session", "issued", "ranked", "watchlist",
+                                             "book_rows", "rejections")},
+        tickets=_read_csv_rows(tickets_path) if tickets_path.exists() else [],
+        tickets_state="PRESENT" if tickets_path.exists() else "FILE_MISSING",
+        watchlist=_read_csv_rows(watch_path) if watch_path.exists() else [],
+        watchlist_state="PRESENT" if watch_path.exists() else "NOT_PRODUCED",
+    )
+    return payload
+
+
+@app.route("/api/signal_tickets/<run_id>")
+def api_signal_tickets(run_id):
+    try:
+        return jsonify(signal_ticket_payload(_latest_run_id() if run_id == "latest" else run_id))
+    except Exception as e:
+        import traceback
+        return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()}), 500
+
+
 @app.route("/api/learning_feedback")
 def api_learning_feedback():
     try:

@@ -227,12 +227,18 @@ def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
         "ask": 2.00,
         "quote_timestamp_utc": "2026-08-28T20:00:00Z",
         "mark_synthetic": False,
+        "contract_runway_floor_days": 19, "contract_runway_basis": "HORIZON:1_5d",
+        "contract_runway_state": "RUNWAY_COVERED", "spread_above_limit": False,
     }
 
     lifecycle = oi._options_liquidity_lifecycle_fields(
         ctx, contract, {"hv_30d": 0.28, "atm_iv": 0.30}
     )
 
+    # The selector's runway and spread facts reach the output row (Lab display, 18 Sep 2026).
+    assert (lifecycle["contract_runway_floor_days"], lifecycle["contract_runway_basis"],
+            lifecycle["contract_runway_state"], lifecycle["spread_above_limit"]) == (
+        19, "HORIZON:1_5d", "RUNWAY_COVERED", False)
     assert lifecycle["invalidation_spot"] == 103.0
     assert lifecycle["invalidation_source"] == "stop_loss"
     assert lifecycle["planned_hold_sessions"] == 5.0

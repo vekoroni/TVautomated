@@ -5083,6 +5083,11 @@ def _options_liquidity_lifecycle_fields(
         "previous_contract_symbol": "",
         "contract_changed": False,
         "contract_selection_reason": contract.get("selection_reason") or "EOD_CONTRACT_SELECTION",
+        # The selector's runway and spread facts, carried to the output row for display (18 Sep 2026).
+        "contract_runway_floor_days": contract.get("contract_runway_floor_days"),
+        "contract_runway_basis": contract.get("contract_runway_basis"),
+        "contract_runway_state": contract.get("contract_runway_state"),
+        "spread_above_limit": contract.get("spread_above_limit"),
         "quote_as_of": quote_as_of or evidence_session,
     }
     if side not in {"CALL", "PUT"}:
@@ -9368,6 +9373,7 @@ def run_options_layer(
         'maturation_score_1d','maturation_score_2d','maturation_score_3d',
         'maturation_score_is_probability','maturation_execution_authority',
         'previous_contract_symbol','contract_changed','contract_selection_reason',
+        'contract_runway_floor_days','contract_runway_basis','contract_runway_state','spread_above_limit',
         'quote_as_of','quote_freshness','liquidity_persistence_status',
         'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',
         'option_chain_provider','option_chain_resolution',

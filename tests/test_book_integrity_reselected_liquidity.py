@@ -131,11 +131,13 @@ def test_hit_classifies_liquidity_exactly_as_the_normal_eod_path() -> None:
         current_spot=100.0, structural_target=90.0, invalidation_spot=105.0,
         quote_age_seconds=None, listed_market=True,
     ))
-    for field in ("liquidity_state", "recovery_disposition", "moneyness_state",
-                  "delta_band", "minimum_required_dte"):
+    for field in ("recovery_disposition", "moneyness_state", "delta_band", "minimum_required_dte"):
         assert row[field] == normal[field], field
     assert row["executable_now"] in (normal["executable_now"], str(normal["executable_now"]))
-    assert row["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    # Same label as the normal EOD path writes (18 Sep 2026): a stored quote with a provider timestamp awaits
+    # the morning re-quote; it is not "timestamp unavailable".
+    assert normal["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    assert row["liquidity_state"] == "EOD_QUOTE_PENDING_MORNING_REQUOTE"
     assert row["dte_buffer_sessions"] == pytest.approx(14.0 - normal["minimum_required_dte"])
     assert row["quote_freshness"] == "SESSION_ALIGNED"
 
@@ -322,6 +324,6 @@ def test_book_writer_wires_the_read_only_adapter_for_the_run(tmp_path, no_networ
     assert row["contract_symbol"] == PUT_OCC
     assert float(row["contract_ask"]) == 1.08
     assert row["contract_source"] == "CANONICAL_CHAIN_SESSION_LOOKUP"
-    assert row["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    assert row["liquidity_state"] == "EOD_QUOTE_PENDING_MORNING_REQUOTE"
     assert NOT_ESTABLISHED not in (row["lab_coherence_flags"] or "")
     assert _fingerprint(registry_path) == before

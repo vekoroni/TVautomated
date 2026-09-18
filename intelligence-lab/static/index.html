@@ -117,6 +117,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 .sig-row.audit-row{opacity:.62;background:rgba(255,61,90,.018)}.sig-row.audit-row::after{content:'';position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,61,90,.45)}
 .sc{padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);border-right:1px solid var(--border);display:flex;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.sc:last-child{border-right:none}
 .sc-tk{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:#fff}
+.dtbl{width:100%;border-collapse:collapse;margin:6px 0 12px;font-family:'Share Tech Mono',monospace;font-size:11px}.dtbl th{text-align:left;padding:5px 8px;border-bottom:1px solid rgba(0,200,255,.3);color:var(--cyan);font-weight:700;white-space:nowrap}.dtbl td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}.dtbl tr:hover td{background:rgba(0,200,255,.05)}
 .pill{display:inline-block;padding:2px 6px;border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;border:1px solid;line-height:1.4}
 .p-exec{background:rgba(0,229,160,.12);color:var(--green);border-color:rgba(0,229,160,.3)}.p-armed{background:rgba(0,200,255,.08);color:var(--cyan);border-color:rgba(0,200,255,.25)}.p-sd{background:rgba(180,60,60,.08);color:#c0392b;border-color:rgba(180,60,60,.25)}.p-risk{background:rgba(255,140,0,.1);color:#ff8c00;border-color:rgba(255,140,0,.3)}
 .p-call{background:rgba(0,200,255,.07);color:var(--cyan);border-color:rgba(0,200,255,.2)}.p-put{background:rgba(255,61,90,.07);color:var(--red);border-color:rgba(255,61,90,.2)}.p-strangle{background:rgba(255,184,77,.07);color:var(--amber);border-color:rgba(255,184,77,.2)}
@@ -391,6 +392,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <button class="ltab" onclick="switchLab('conv',this)">⬡ Convexity Engine</button>
       <button class="ltab" onclick="switchLab('open',this)">Open Positions</button>
       <button class="ltab" onclick="switchLab('exit',this)">Exit Ticket</button>
+      <button class="ltab" onclick="switchLab('tickets',this)">Signal Tickets</button>
       <button class="ltab" onclick="switchLab('outcomes',this)">Outcomes</button>
       <button class="ltab" onclick="switchLab('learning',this)">Learning Loop</button>
       <button class="ltab" onclick="switchLab('health',this)">Run Health</button>
@@ -400,6 +402,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="lpane" id="lab-conv"><div id="conv-cards"></div></div>
     <div class="lpane" id="lab-open"><div id="open-positions-content">Loading...</div></div>
     <div class="lpane" id="lab-exit"><div id="exit-ticket-content">Select an open position to prepare an exit ticket.</div></div>
+    <div class="lpane" id="lab-tickets"><div id="tickets-content">Loading...</div></div>
     <div class="lpane" id="lab-outcomes"><div id="outcomes-content">Loading...</div></div>
     <div class="lpane" id="lab-learning"><div id="learning-content">Loading...</div></div>
     <div class="lpane" id="lab-health"><div id="run-health-content">Loading...</div></div>
@@ -1495,6 +1498,7 @@ function shortExecutionCategory(cat) {
     GO_LIMIT: 'LIMIT',
     PROBE: 'PROBE',
     CONTRACT_REPAIR: 'REPAIR',
+    MANUAL_REVIEW: 'REVIEW',
     OPTIONS_GO_REVIEW: 'OPT GO',
     OPTIONS_ARMED_HALF: 'OPT HALF',
     OPTIONS_PROBE_ONLY: 'OPT PROBE',
@@ -1607,8 +1611,16 @@ function getMorningLabAlignment(s) {
   ])) || 'NO_MORNING_BATON';
 }
 
+// States added 18 Sep 2026: named for the reader, never re-derived here.
+const STATE_LABELS = {
+  EOD_QUOTE_PENDING_MORNING_REQUOTE: 'EOD QUOTE · AWAITING MORNING RE-QUOTE',
+  RUNWAY_SHORT_REVIEW: 'RUNWAY SHORT · MANUAL REVIEW',
+  MANUAL_REVIEW: 'MANUAL REVIEW',
+  BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW: 'SPREAD ABOVE LIMIT · MANUAL REVIEW',
+};
 function displayCategory(cat) {
   const c = cleanCategory(cat);
+  if (c && STATE_LABELS[c]) return STATE_LABELS[c];
   return c ? c.replace(/_/g, ' ') : '—';
 }
 
@@ -3351,6 +3363,53 @@ async function renderLearningLoop() {
   }
 }
 
+// Signal tickets and watchlist exactly as recorded by the ticket step (display only; never re-ranked or re-valued).
+function _h(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function _pct(v) { const n = parseFloat(v); return Number.isFinite(n) ? `${n >= 0 ? '+' : ''}${(n*100).toFixed(1)}%` : '—'; }
+function _num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n.toFixed(2) : '—'; }
+function _ticketTable(rows) {
+  if (!rows.length) return '<div class="meta-note">None.</div>';
+  const head = ['#','Ticker','Dir','Contract','Expiry','Entry','Spot','Stop','Target','Hold','Cautious / central / upside','Quote'];
+  return `<table class="dtbl"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `
+    <tr><td>${_h(r.rank)}</td><td>${_h(r.ticker)}</td><td>${_h(r.direction)}</td><td>${_h(r.contract_symbol)}</td>
+    <td>${_h(r.expiry)}</td><td>${_num(r.scored_entry)}</td><td>${_num(r.reference_spot)}</td><td>${_num(r.stop_spot)}</td>
+    <td>${_num(r.target_spot)}</td><td>${_h(r.hold_sessions)}</td>
+    <td>${_pct(r.r_cautious)} / ${_pct(r.r_central)} / ${_pct(r.r_upside)}</td>
+    <td>${_h(String(r.quote_state || '').replace('QUOTE_',''))}</td></tr>`).join('')}</tbody></table>`;
+}
+async function renderSignalTickets() {
+  const el = document.getElementById('tickets-content');
+  if (!el) return;
+  const runId = (RUN_DATA && RUN_DATA.run_id) || 'latest';
+  try {
+    const data = await fetch(`${API}/signal_tickets/${encodeURIComponent(runId)}`).then(r => r.json());
+    if (!data.ok) throw new Error(data.error || 'unavailable');
+    if (data.state === 'NOT_ISSUED') {
+      el.innerHTML = `<div class="meta-note">No signal tickets issued for run ${_h(data.run_id)} yet. Run: python -m avshunter.c12_outcome signals</div>`;
+      return;
+    }
+    const s = data.summary || {};
+    const rej = Object.entries(s.rejections || {}).map(([k,v]) => `<div class="meta-note">${_h(k.replace(/_/g,' '))}: ${_h(v)}</div>`).join('');
+    const watch = data.watchlist_state === 'PRESENT'
+      ? _ticketTable(data.watchlist)
+      : '<div class="meta-note">Watchlist not produced for this session.</div>';
+    el.innerHTML = `
+      <div class="meta-note">Decision support only · ranked by cautious value at the issue premium · no capital authority.</div>
+      <div class="meta-grid">
+        <div class="mrow"><span class="mr-k">Run</span><span class="mr-v c">${_h(data.run_id)}</span></div>
+        <div class="mrow"><span class="mr-k">Issued for</span><span class="mr-v">${_h(s.issue_session)} (evidence ${_h(s.evidence_session)})</span></div>
+        <div class="mrow"><span class="mr-k">Tickets / ranked</span><span class="mr-v">${_h(s.issued)} / ${_h(s.ranked ?? '—')}</span></div>
+      </div>
+      <h4>Tickets</h4>${_ticketTable(data.tickets || [])}
+      <h4>Watchlist — ranked, not issued</h4>${watch}
+      <h4>Not issued (reason counts)</h4>${rej || '<div class="meta-note">None.</div>'}`;
+  } catch(e) {
+    el.innerHTML = `<div class="meta-note">Signal tickets unavailable: ${_h(e.message)}</div>`;
+  }
+}
+
 async function renderRunHealth() {
   const el = document.getElementById('run-health-content');
   if (!el) return;
@@ -3546,6 +3605,7 @@ function switchLab(name, btn) {
   btn?.classList.add('active');
   if (name === 'open') renderOpenPositions();
   if (name === 'outcomes') renderOutcomes();
+  if (name === 'tickets') renderSignalTickets();
   if (name === 'learning') renderLearningLoop();
   if (name === 'health') renderRunHealth();
 }

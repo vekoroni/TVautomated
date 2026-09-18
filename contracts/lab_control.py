@@ -303,6 +303,16 @@ FINAL_BOOK_FIELDS = [
     "previous_contract_symbol",
     "contract_changed",
     "contract_selection_reason",
+    "contract_runway_floor_days",
+    "contract_runway_basis",
+    "contract_runway_state",
+    "spread_above_limit",
+    "emp_path_quality_flag",
+    "emp_path_r_cautious",
+    "emp_path_r_central",
+    "emp_path_r_upside",
+    "emp_path_last_exit_sessions",
+    "emp_path_forced_exit_share",
     "quote_as_of",
     "quote_freshness",
     "bar_data_source",
@@ -1076,6 +1086,7 @@ def _apply_reselected_chain_quote(
         calculate_dte_requirement,
         classify_current_executability,
         classify_moneyness,
+        label_eod_quote_state,
     )
 
     mid = _f(quote.get("mid"), None)
@@ -1159,7 +1170,9 @@ def _apply_reselected_chain_quote(
             })
         else:
             row.update({
-                "liquidity_state": liquidity["liquidity_state"],
+                # Same label as the normal EOD path: a stored quote with a provider timestamp awaits the
+                # morning re-quote (18 Sep 2026).
+                "liquidity_state": label_eod_quote_state(liquidity["liquidity_state"], timestamp),
                 "recovery_disposition": liquidity["recovery_disposition"],
                 "executable_now": liquidity["executable_now"],
                 "moneyness_state": moneyness["moneyness_state"],
@@ -3005,6 +3018,12 @@ def opportunity_book_row(
         "previous_contract_symbol": first(sig, "previous_contract_symbol", "contract_symbol_original", "morning_repaired_from_contract"),
         "contract_changed": sig.get("contract_changed", contract_changed),
         "contract_selection_reason": first(sig, "contract_selection_reason", "contract_repair_reason"),
+        # Display only (18 Sep 2026): the selector's runway and spread facts and the 20-session valuation,
+        # passed through exactly as recorded upstream.
+        **{field: sig.get(field) for field in (
+            "contract_runway_floor_days", "contract_runway_basis", "contract_runway_state", "spread_above_limit",
+            "emp_path_quality_flag", "emp_path_r_cautious", "emp_path_r_central", "emp_path_r_upside",
+            "emp_path_last_exit_sessions", "emp_path_forced_exit_share")},
         "quote_as_of": first(
             sig,
             "quote_as_of",
@@ -3454,7 +3473,9 @@ def build_final_opportunity_book(
         sig.setdefault("pipeline_mode", pipeline_mode)
         if "lab_verdict" not in sig or "morning_lab_alignment_status" not in sig:
             apply_lab_resolution(sig, manifest)
-    order = {"GO": 0, "GO_LIMIT": 1, "PROBE": 2, "MANUAL_LIQUIDITY_REVIEW": 3, "CONTRACT_REPAIR": 4, "MORNING_VALIDATION_REQUIRED": 5, "ARMED": 6, "WAIT": 7, "BLOCKED": 8}
+    # MANUAL_REVIEW (the Execution Gate's review action) ranks with the other review states, above
+    # repair and BLOCKED (18 Sep 2026: 554 review rows had fallen below 381 blocked rows).
+    order = {"GO": 0, "GO_LIMIT": 1, "PROBE": 2, "MANUAL_REVIEW": 3, "MANUAL_LIQUIDITY_REVIEW": 3, "CONTRACT_REPAIR": 4, "MORNING_VALIDATION_REQUIRED": 5, "ARMED": 6, "WAIT": 7, "BLOCKED": 8}
     enriched.sort(
         key=lambda row: (
             order.get(_u(row.get("lab_verdict")), 9),
