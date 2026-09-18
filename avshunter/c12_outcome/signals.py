@@ -54,6 +54,7 @@ class SignalSettings:
     max_out_of_the_money: float    # fraction of spot; beyond this the contract is too far out of the money
     max_entry_spread_fraction: float  # (ask - bid) / mid at issue; a tradeability fact, not a forecast
     max_tickets_per_session: int   # daily cap on issued tickets; every candidate below it is still recorded
+    watchlist_rank_limit: int      # ranks after the cap up to this rank are displayed as a watchlist (never issued)
 
 
 def settings_from_snapshot(snapshot) -> SignalSettings:
@@ -73,6 +74,7 @@ def settings_from_snapshot(snapshot) -> SignalSettings:
         max_out_of_the_money=float(value("outcome.signal.max_out_of_the_money")),
         max_entry_spread_fraction=float(value("outcome.signal.max_entry_spread_fraction")),
         max_tickets_per_session=int(value("outcome.signal.max_tickets_per_session")),
+        watchlist_rank_limit=int(value("outcome.signal.watchlist_rank_limit")),
     )
 
 
@@ -381,6 +383,12 @@ def apply_daily_cap(ranked: Sequence[SignalTicket], s: SignalSettings) -> tuple[
     """Issue the top N by rank; return the rest separately so they are recorded, never silently dropped."""
     cap = max(0, int(s.max_tickets_per_session))
     return list(ranked[:cap]), list(ranked[cap:])
+
+
+def watchlist(held_back: Sequence[SignalTicket], s: SignalSettings) -> list[SignalTicket]:
+    """Ranked candidates after the daily cap, up to ``watchlist_rank_limit``: shown for manual review, never issued
+    and never tracked as tickets (ACK 18 Sep 2026). Their rank and reason stay in the ledger as for every candidate."""
+    return [t for t in held_back if t.rank <= int(s.watchlist_rank_limit)]
 
 
 # --- exit and marks -----------------------------------------------------------------------------------------------

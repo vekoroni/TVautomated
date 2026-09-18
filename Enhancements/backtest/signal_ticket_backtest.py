@@ -61,7 +61,7 @@ SETTINGS = sig.SignalSettings(
     required_price_history_state="INTACT", contract_exit_buffer=2,
     contract_multiplier=100.0, o4_extreme_quantile=0.2, min_closed_signals=40, min_issue_sessions=15,
     interval_z=1.645, thesis_window_sessions=20,
-    max_out_of_the_money=0.05, max_entry_spread_fraction=0.10, max_tickets_per_session=5)
+    max_out_of_the_money=0.05, max_entry_spread_fraction=0.10, max_tickets_per_session=5, watchlist_rank_limit=50)
 FORECAST_BARS = 260
 SPREAD_LIMIT = 0.25          # governed reviewable ceiling (long_option_execution policy), fraction of mid
 

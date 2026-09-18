@@ -30,8 +30,11 @@ Rules:
 
 from __future__ import annotations
 
+from collections import Counter
+
 from datetime import date, datetime, timezone
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -54,7 +57,7 @@ def settings(**overrides):
                 required_price_history_state="INTACT", contract_exit_buffer=2,
                 contract_multiplier=100.0, o4_extreme_quantile=0.2, min_closed_signals=6, min_issue_sessions=3,
                 interval_z=1.645, thesis_window_sessions=20, max_out_of_the_money=0.05,
-                max_entry_spread_fraction=0.10, max_tickets_per_session=5)
+                max_entry_spread_fraction=0.10, max_tickets_per_session=5, watchlist_rank_limit=50)
     base.update(overrides)
     return sig.SignalSettings(**base)
 
@@ -261,6 +264,24 @@ def test_s5_daily_cap_issues_top_n_and_records_the_rest():
     assert [(t.ticker, t.rank) for t in held_back] == [("A6", 6), ("A4", 7)]
 
 
+def test_s5_watchlist_shows_ranks_after_the_cap_up_to_the_governed_depth_and_is_never_issued():
+    """ACK 18 Sep 2026: tickets stay the top 5; ranks 6-50 are displayed as a watchlist (ranked, not issued)."""
+    _, p = prepare(spot=101.0)
+    cautious = {f"W{i:02d}": 0.5 - i / 100 for i in range(1, 13)}
+    decided = [(t, dict(sig.decide(p, revaluation(emp_path_r_cautious=c), settings())[1])) for t, c in cautious.items()]
+    ranked = sig.rank_tickets(decided, {}, settings(), run_id="r", evidence_session=EVIDENCE, issue_session=ISSUE,
+                              h9r_tickers=set())
+    s = settings(max_tickets_per_session=5, watchlist_rank_limit=10)
+    issued, held_back = sig.apply_daily_cap(ranked, s)
+    watch = sig.watchlist(held_back, s)
+    assert [t.rank for t in issued] == [1, 2, 3, 4, 5]
+    assert [t.rank for t in watch] == [6, 7, 8, 9, 10]
+    assert not {t.ticket_id for t in watch} & {t.ticket_id for t in issued}
+    page = signal_service._ticket_page(issued, Counter(), "r", ISSUE, NOW, watch=watch)
+    assert "Watchlist" in page and "ranked, not issued" in page
+    assert "| 10 | W10 |" in page and "| 11 | W11 |" not in page
+
+
 def test_s5_context_recorded_never_ranks():
     pcr = {"AAA": 3.0, "BBB": 0.2, "CCC": 1.0, "DDD": None, "EEE": 1.1}
     cautious = {"AAA": 0.30, "BBB": 0.05, "CCC": 0.10, "DDD": 0.20, "EEE": 0.15}
@@ -337,6 +358,7 @@ def test_registered_settings_load_from_configuration():
     assert (s.thesis_window_sessions, s.max_out_of_the_money) == (20, 0.05)
     assert not hasattr(s, "min_dte_cover") and not hasattr(s, "min_contract_dte_days")   # retired, ACK D1
     assert (s.max_entry_spread_fraction, s.max_tickets_per_session) == (0.10, 5)
+    assert s.watchlist_rank_limit == 50
 
 
 # --- intraday adapter ----------------------------------------------------------------------------------------------
@@ -407,6 +429,7 @@ def test_s8_tickets_and_outcomes_live_in_the_decision_ledger(tmp_path):
     # a ticket that cannot be recorded is never issued: every issued ticket must be measurable
     assert first["status"] == "ISSUED" and first["issued"] == 1
     assert first["missing_thesis_identity"] == ["NOID"]
+    assert Path(first["watchlist_csv"]).is_file() and first["watchlist"] == 0      # nothing ranked below the cap here
     assert first["ledger_chain_unavailable"] == ["NOCHAIN"]
     presentations = [e for e in ledger.events_by_type("PRESENTATION_DECISION")
                      if e.payload.get("decision_stage") == "SIGNAL_TICKET"]

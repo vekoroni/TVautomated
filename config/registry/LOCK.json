@@ -68,6 +68,7 @@
     "outcome.signal.o4_extreme_quantile@1": "5e36f6268f41427ea147c08014e2c39977addeaaf090ca491e0e08072d2869a4",
     "outcome.signal.required_price_history_state@1": "7a99191bd2a07e731cfa2d041a3aeafc81e035183cc83f14759718137cd97c3e",
     "outcome.signal.version@1": "5d9bb5e0622c29e0e068264497eab4ce1e1742b6a9fdcf05f12a19dd872a7722",
+    "outcome.signal.watchlist_rank_limit@1": "6344c34cc19f62d1ea28f7b82daf6c3c78844d8cfa5e902509b106ebb4c641af",
     "outcome.stop_fill_policy@1": "db23ab4fd9b5229338b3a86c8adf5df8c4a4061db4aab8062aadbd9c2cf973e8",
     "outcome.window_sessions@1": "eac8b648b3622c1874b1bfd01e234dc924aef2a79bb614b0accb1b968f0233c3",
     "run.production_code_paths@1": "a4cb580e6e0ecca3780ad0c1be77246dee7bf97ccdd1107d5eb6ef25afac7f22",

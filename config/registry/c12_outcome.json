@@ -831,6 +831,21 @@
       "evidence_ref": "Enhancements/knowledge/ACK_DECISIONS_20260918.md",
       "provenance": "NEW",
       "recorded_at_utc": "2026-09-18T12:00:00Z"
+    },
+    {
+      "config_key": "outcome.signal.watchlist_rank_limit",
+      "version": 1,
+      "value": 50,
+      "value_type": "INTEGER",
+      "unit": "count",
+      "effective_from": "2026-09-18",
+      "validation_state": "PROVISIONAL",
+      "business_owner": "ACK",
+      "approval_id": "ACK-20260918-WATCHLIST",
+      "rationale": "Display only: ranked candidates after the daily ticket cap, up to this rank, are listed as a watchlist (ranked, not issued) for manual review. Never issued or tracked as tickets; the ledger records every candidate's rank regardless.",
+      "evidence_ref": null,
+      "provenance": "NEW",
+      "recorded_at_utc": "2026-09-18T17:00:00Z"
     }
   ]
 }

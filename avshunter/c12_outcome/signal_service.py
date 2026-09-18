@@ -140,13 +140,24 @@ def issue_signals(connection: sqlite3.Connection, runs_dir: Path, run_id: str, s
         writer.writeheader()
         for row in ticket_rows:
             writer.writerow({k: row[k] for k in TICKET_FIELDS})
+    watch = sig.watchlist(held_back, s)
+    with (out_dir / f"{stem}_watchlist.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["listing"] + TICKET_FIELDS)
+        writer.writeheader()
+        for t in watch:
+            row = {k: storage._plain(v) for k, v in asdict(t).items()}
+            row["h9r_gap_up_event"] = int(t.h9r_gap_up_event)
+            writer.writerow({"listing": "WATCHLIST_RANKED_NOT_ISSUED", **{k: row[k] for k in TICKET_FIELDS}})
     counts = Counter(r.split(":")[0] for r in rejections.values())
-    (out_dir / f"{stem}.md").write_text(_ticket_page(tickets, counts, run_id, issue_session, now), encoding="utf-8")
+    (out_dir / f"{stem}.md").write_text(_ticket_page(tickets, counts, run_id, issue_session, now, watch=watch),
+                                        encoding="utf-8")
     summary = {"status": "ISSUED", "run_id": run_id, "issue_session": issue_session.isoformat(),
                "evidence_session": evidence_session.isoformat(), "book_rows": len(book), "issued": len(tickets),
                "new_events": new_events, "rejections": dict(counts.most_common()),
                "missing_thesis_identity": missing_identity, "ledger_chain_unavailable": chain_unavailable,
-               "csv": str(out_dir / f"{stem}.csv"), "page": str(out_dir / f"{stem}.md")}
+               "ranked": len(ranked), "watchlist": len(watch),
+               "csv": str(out_dir / f"{stem}.csv"), "watchlist_csv": str(out_dir / f"{stem}_watchlist.csv"),
+               "page": str(out_dir / f"{stem}.md")}
     (out_dir / f"{stem}_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
 
@@ -155,7 +166,20 @@ def _fmt(value, spec: str = ".2f") -> str:
     return "n/a" if value is None else format(value, spec)
 
 
-def _ticket_page(tickets, counts: Counter, run_id: str, issue_session: date, now: datetime) -> str:
+def _ticket_rows(tickets) -> list[str]:
+    rows = []
+    for t in tickets:
+        quote = f"{t.quote_state.replace('QUOTE_', '')}, {t.quote_adjustment_state}"
+        rows.append(
+            f"| {t.rank} | {t.ticker} | {t.direction} | {t.expression}{' ' + t.side if t.expression == 'SHARES' else ''} | "
+            f"{t.contract_symbol or '—'} | {t.limit_price:.2f} | {t.scored_entry:.2f} | {t.reference_spot:.2f} | "
+            f"{t.stop_spot:.2f} | {t.target_spot:.2f} | {t.hold_sessions} | "
+            f"{t.r_cautious:+.1%} / {_fmt(t.r_central, '+.1%')} / {_fmt(t.r_upside, '+.1%')} | {quote} | "
+            f"{t.o4_stance} | {'yes' if t.h9r_gap_up_event else 'no'} |")
+    return rows
+
+
+def _ticket_page(tickets, counts: Counter, run_id: str, issue_session: date, now: datetime, *, watch=()) -> str:
     lines = [f"# Signal tickets — issued {issue_session.isoformat()} ({now.strftime('%H:%M')} UTC)", "",
              f"Run `{run_id}`. Decision support only: each ticket is valued forward from the price and premium at "
              "issue and scored at real prices until it exits. No capital authority (G1–G4 not yet passed).", "",
@@ -164,16 +188,16 @@ def _ticket_page(tickets, counts: Counter, run_id: str, issue_session: date, now
              "| # | Ticker | Dir | Expression | Contract | Limit | Scored entry | Spot at issue | Stop | Target | Hold | "
              "Cautious / central / upside | Quote | O4 | H9R |",
              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
-    for t in tickets:
-        quote = f"{t.quote_state.replace('QUOTE_', '')}, {t.quote_adjustment_state}"
-        lines.append(
-            f"| {t.rank} | {t.ticker} | {t.direction} | {t.expression}{' ' + t.side if t.expression == 'SHARES' else ''} | "
-            f"{t.contract_symbol or '—'} | {t.limit_price:.2f} | {t.scored_entry:.2f} | {t.reference_spot:.2f} | "
-            f"{t.stop_spot:.2f} | {t.target_spot:.2f} | {t.hold_sessions} | "
-            f"{t.r_cautious:+.1%} / {_fmt(t.r_central, '+.1%')} / {_fmt(t.r_upside, '+.1%')} | {quote} | "
-            f"{t.o4_stance} | {'yes' if t.h9r_gap_up_event else 'no'} |")
+    lines += _ticket_rows(tickets)
     if not tickets:
         lines.append("| — | no ticket passed | | | | | | | | | | | | | |")
+    if watch:
+        lines += ["", f"## Watchlist — ranked, not issued (ranks {watch[0].rank}–{watch[-1].rank})", "",
+                  "Same ranking and valuation as the tickets; shown for manual review only. Not tracked as tickets "
+                  "(their rank and reason are recorded in the ledger like every candidate).", "",
+                  "| # | Ticker | Dir | Expression | Contract | Limit | Scored entry | Spot at issue | Stop | Target | "
+                  "Hold | Cautious / central / upside | Quote | O4 | H9R |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"] + _ticket_rows(watch)
     lines += ["", "## Not issued (reason counts)", ""] + [f"- {k}: {v}" for k, v in counts.most_common()] + [""]
     return "\n".join(lines)
 
