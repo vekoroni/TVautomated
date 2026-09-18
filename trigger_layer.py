@@ -146,6 +146,16 @@ def _flt(row: Dict, key: str, default: float = 0.0) -> float:
         return default
 
 
+def _volume_ratio(row: Dict) -> float:
+    """Today's volume / 20-day average, from the canonical ``volume_ratio`` (Discovery owns it).
+
+    ``volume_ratio_x`` is the name a suffixed Discovery/Vanguard merge once produced; it is read only when the
+    canonical field is absent, so archived spines replay unchanged (ACK, 18 Sep 2026).
+    """
+    canonical = _flt(row, "volume_ratio", float("nan"))
+    return canonical if canonical == canonical else _flt(row, "volume_ratio_x", 0.0)
+
+
 def _str(row: Dict, key: str, default: str = "") -> str:
     v = row.get(key)
     if v is None:
@@ -414,7 +424,7 @@ def _t2_vwap_reclaim(row: Dict) -> Optional[str]:
     vwap_bias    = _str(row, "vwap_bias")
     control_state = _str(row, "control_state")
     controller   = _str(row, "layer1__control__controller")
-    volume_ratio = _flt(row, "volume_ratio_x", 0.0)
+    volume_ratio = _volume_ratio(row)
     direction    = _direction(row)
 
     # CALL setup: reclaim — price crossed above VWAP with buyers taking control
@@ -460,7 +470,7 @@ def _t3_range_break(row: Dict) -> Optional[str]:
     bucket = _str(row, "wyckoff_phase_bucket")
     ema    = _str(row, "ema_stack")
     adx    = _flt(row, "adx_14", 0.0)
-    vol    = _flt(row, "volume_ratio_x", 0.0)
+    vol    = _volume_ratio(row)
 
     # EARLY: ADX rising into trend threshold, Wyckoff spring/early markup
     if (phase in T3_EARLY_PHASES

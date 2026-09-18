@@ -4538,6 +4538,73 @@ def _coalesce_ev3_merge_inputs(frame: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+# One owner per fact at the Discovery/Vanguard join (R2; ACK, 18 Sep 2026).  Vanguard receives each Discovery
+# row inside its package and copies it through, so every field both files carry is Discovery's fact, except:
+VANGUARD_OWNED_MERGE_FIELDS = frozenset({
+    'timestamp',             # Vanguard signal time: anchors the SuperBrain time-stop
+    'adx_14',                # Vanguard resolves Discovery's value with an OHLCV fallback (EV3 barrier key)
+    'atr_percentile_rank',   # as adx_14
+})
+
+
+def _prefer_latest_macro(merged: pd.DataFrame, vanguard_copies: pd.DataFrame, macro_fields: List[str]) -> None:
+    """Keep the newest macro packet per row, whichever file carries it (ACK, 18 Sep 2026).
+
+    Several packets in one run are by design: a run near the open picks up the updated macro, and the latest
+    macro must always be considered.  Discovery's stamp is kept unless Vanguard's packet was generated later.
+    Macro stays display-only; this chooses what is recorded, not any score.
+    """
+    stamp = 'macro_generated_at_utc'
+    if stamp not in macro_fields:
+        return
+    discovery_time = pd.to_datetime(merged[stamp], utc=True, errors='coerce').reset_index(drop=True)
+    vanguard_time = pd.to_datetime(vanguard_copies[stamp], utc=True, errors='coerce')
+    newer = (vanguard_time > discovery_time) | (discovery_time.isna() & vanguard_time.notna())
+    packets = {'discovery_packets': [], 'vanguard_packets': []}
+    if 'macro_packet_id' in macro_fields:
+        packets = {'discovery_packets': sorted(merged['macro_packet_id'].dropna().astype(str).unique().tolist()),
+                   'vanguard_packets': sorted(vanguard_copies['macro_packet_id'].dropna().astype(str).unique().tolist())}
+    for field in macro_fields:
+        merged[field] = merged[field].astype(object)
+        merged.loc[newer.values, field] = vanguard_copies.loc[newer, field].values
+    merged.attrs['macro_packet_resolution'] = {**packets, 'rows_using_vanguard_macro': int(newer.sum())}
+    if packets['discovery_packets'] != packets['vanguard_packets']:
+        print(f"[LOAD] Macro packets differ between Discovery and Vanguard; newest kept: "
+              f"{merged.attrs['macro_packet_resolution']}")
+
+
+def merge_discovery_vanguard(disc: pd.DataFrame, vanguard: pd.DataFrame) -> pd.DataFrame:
+    """Join Discovery and Vanguard so every shared field appears once, under its own name, from its owner.
+
+    A plain ``pd.merge`` suffixed the 132 shared fields ``_x``/``_y``; readers asking for the plain name got
+    their default (run 20260918_112522: ``volume_ratio`` 1.0 and ``sector`` blank on all 1,499 options rows,
+    and those defaults were re-published to SuperBrain).  The owner's value is used, filled from the other
+    file only where the owner is missing; disagreements and fills are counted in
+    ``attrs['merge_field_report']`` and printed, never hidden.  Output column names are unchanged.
+    """
+    shared = [c for c in disc.columns if c in vanguard.columns and c != 'ticker']
+    merged = pd.merge(disc, vanguard.drop(columns=shared), on='ticker', how='inner')
+    copies = vanguard.set_index('ticker')[shared].reindex(merged['ticker']).reset_index(drop=True)
+    report: Dict[str, Dict[str, int]] = {}
+    for field in shared:
+        discovery_values, vanguard_values = merged[field].reset_index(drop=True), copies[field]
+        if field in VANGUARD_OWNED_MERGE_FIELDS:
+            owner, other = vanguard_values, discovery_values
+        else:
+            owner, other = discovery_values, vanguard_values
+        both = owner.notna() & other.notna()
+        disagree = int((owner[both].astype(str) != other[both].astype(str)).sum())
+        filled = int((owner.isna() & other.notna()).sum())
+        if disagree or filled:
+            report[field] = {'disagree': disagree, 'filled_from_copy': filled}
+        merged[field] = owner.combine_first(other).values
+    _prefer_latest_macro(merged, copies, [f for f in shared if f.startswith('macro_')])
+    merged.attrs['merge_field_report'] = report
+    if report:
+        print(f"[LOAD] Discovery/Vanguard shared fields resolved by owner (differences): {report}")
+    return merged
+
+
 def _ev3_direction_fields(
     ctx: Dict[str, Any],
     direction_arbitration: Dict[str, Any],
@@ -8871,7 +8938,7 @@ def run_options_layer(
         print(f"[FATAL] Could not load pipeline CSVs: {e}")
         return pd.DataFrame()
 
-    merged = pd.merge(disc, vanguard, on='ticker', how='inner')
+    merged = merge_discovery_vanguard(disc, vanguard)
     merged = resolve_macro_suffix_columns(merged)
     merged = _coalesce_ev3_merge_inputs(merged)
     # FIX (2026-03-07): Both discovery and vanguard CSVs have a 'timestamp' column.

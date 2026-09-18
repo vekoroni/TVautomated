@@ -73,3 +73,29 @@ def test_governed_source_date_computes_session_age():
     assert stale["freshness_state"] == "STALE"
     assert stale["age_sessions"] == 4
     assert stale["go_eligible"] is False
+
+
+# --- The trigger layer reads the canonical volume_ratio (ACK 18 Sep 2026) ------------------------------------------
+# Run 20260918_112522: the spine carries `volume_ratio`; the layer asked for the merge-suffixed `volume_ratio_x`,
+# read 0.0, and the volume-confirmed RANGE_BREAK never fired (49 rows would have, 37 of them newly GO-eligible).
+
+def test_volume_confirmed_range_break_uses_the_canonical_volume_ratio():
+    from trigger_layer import T3_CONF_ADX_MIN, T3_CONF_PHASES, _t3_range_break
+
+    row = {"wyckoff_phase_bucket": sorted(T3_CONF_PHASES)[0], "ema_stack": "MIXED",
+           "adx_14": T3_CONF_ADX_MIN + 1, "volume_ratio": 1.6}
+    assert _t3_range_break(row) == "RANGE_BREAK"
+
+
+def test_vwap_trigger_uses_the_canonical_volume_ratio():
+    from trigger_layer import _t2_vwap_reclaim
+
+    assert _t2_vwap_reclaim({"control_state": "SHIFTING", "volume_ratio": 1.5, "vwap_bias": "ABOVE",
+                             "layer1__control__controller": "BUYERS", "direction": "CALL"}) == "VWAP_RECLAIM"
+
+
+def test_ws2_spine_passes_the_canonical_volume_ratio_to_the_trigger_layer():
+    import intelligent_orchestrator as orch
+
+    assert "volume_ratio" in orch._WS2_TRIGGER_INPUT_COLS
+    assert "volume_ratio_x" not in orch._WS2_TRIGGER_INPUT_COLS

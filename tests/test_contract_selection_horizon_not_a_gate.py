@@ -190,3 +190,78 @@ def test_eod_quote_with_provider_timestamp_is_labelled_awaiting_morning_requote(
         "EOD_QUOTE_PENDING_MORNING_REQUOTE"
     assert label_eod_quote_state("QUOTE_TIMESTAMP_UNAVAILABLE", None) == "QUOTE_TIMESTAMP_UNAVAILABLE"
     assert label_eod_quote_state("REVIEWABLE_SPREAD", "2026-09-17T20:00:00Z") == "REVIEWABLE_SPREAD"
+
+
+# --- Discovery/Vanguard join: one owner per shared fact (ACK 18 Sep 2026) ------------------------------------------
+# Run 20260918_112522: both inputs carry 132 fields (Vanguard copies the Discovery row from its package). The plain
+# merge suffixed them _x/_y, so the options stage read defaults - volume_ratio 1.0 and sector blank on all 1,499
+# rows - and re-published those defaults to SuperBrain. 128 of the 132 were identical in both files.
+
+def _join_inputs():
+    disc = pd.DataFrame([{"ticker": "AAA", "volume_ratio": 2.4, "sector": "Technology", "iv_rank": None,
+                          "adx_14": 22.0, "timestamp": "2026-09-17T20:00:00"},
+                         {"ticker": "BBB", "volume_ratio": 0.6, "sector": "Energy", "iv_rank": 40.0,
+                          "adx_14": None, "timestamp": "2026-09-17T20:01:00"}])
+    vang = pd.DataFrame([{"ticker": "AAA", "volume_ratio": 2.4, "sector": "Technology", "iv_rank": 31.0,
+                          "adx_14": 22.0, "timestamp": "2026-09-17T21:00:00+00:00", "verdict": "PASS"},
+                         {"ticker": "BBB", "volume_ratio": 0.9, "sector": "Energy", "iv_rank": 40.0,
+                          "adx_14": 18.5, "timestamp": "2026-09-17T21:01:00+00:00", "verdict": "PASS"}])
+    return oi.merge_discovery_vanguard(disc, vang)
+
+
+def test_every_shared_field_appears_once_under_its_own_name():
+    merged = _join_inputs()
+    assert not [c for c in merged.columns if c.endswith(("_x", "_y"))]
+    assert list(merged["sector"]) == ["Technology", "Energy"] and "verdict" in merged.columns
+
+
+def test_discovery_owns_the_fields_vanguard_copies_through():
+    merged = _join_inputs().set_index("ticker")
+    assert merged.loc["AAA", "volume_ratio"] == 2.4
+    assert merged.loc["BBB", "volume_ratio"] == 0.6            # the owner's value, not the copy
+
+
+def test_vanguard_owns_signal_time_and_the_resolved_trend_inputs():
+    merged = _join_inputs().set_index("ticker")
+    assert merged.loc["AAA", "timestamp"] == "2026-09-17T21:00:00+00:00"
+    assert merged.loc["BBB", "adx_14"] == 18.5                 # Vanguard's OHLCV-resolved value
+
+
+def test_a_missing_owner_value_is_filled_from_the_copy_and_every_difference_is_reported():
+    merged = _join_inputs()
+    assert merged.set_index("ticker").loc["AAA", "iv_rank"] == 31.0
+    report = merged.attrs["merge_field_report"]
+    assert report["volume_ratio"] == {"disagree": 1, "filled_from_copy": 0}
+    assert report["iv_rank"] == {"disagree": 0, "filled_from_copy": 1}
+    assert report["timestamp"]["disagree"] == 2
+
+
+def test_structural_context_reads_the_real_volume_ratio():
+    row = _join_inputs().iloc[0]
+    assert oi.parse_structural_context(row)["vol_ratio"] == 2.4
+
+
+# --- Macro: the latest packet always wins (ACK 18 Sep 2026) --------------------------------------------------------
+# Several macro packets in one run are by design: a run near the open picks up the updated macro. The join must keep
+# the newest by generation time, whichever file carries it, and record both packets when they differ.
+
+def _macro_join(disc_generated: str, vang_generated: str):
+    disc = pd.DataFrame([{"ticker": "AAA", "volume_ratio": 1.2, "macro_packet_id": "MACRO:D",
+                          "macro_generated_at_utc": disc_generated, "macro_regime": "NEUTRAL"}])
+    vang = pd.DataFrame([{"ticker": "AAA", "volume_ratio": 1.2, "macro_packet_id": "MACRO:V",
+                          "macro_generated_at_utc": vang_generated, "macro_regime": "RISK_OFF"}])
+    return oi.merge_discovery_vanguard(disc, vang)
+
+
+def test_a_newer_macro_in_vanguard_replaces_the_older_discovery_stamp():
+    merged = _macro_join("2026-09-18T11:00:00+00:00", "2026-09-18T13:45:00+00:00")
+    row = merged.iloc[0]
+    assert (row["macro_packet_id"], row["macro_regime"]) == ("MACRO:V", "RISK_OFF")
+    assert row["volume_ratio"] == 1.2                               # non-macro fields keep their owner
+    assert merged.attrs["macro_packet_resolution"] == {
+        "discovery_packets": ["MACRO:D"], "vanguard_packets": ["MACRO:V"], "rows_using_vanguard_macro": 1}
+
+
+def test_the_same_generation_time_keeps_the_discovery_stamp():
+    row = _macro_join("2026-09-18T11:00:00+00:00", "2026-09-18T11:00:00+00:00").iloc[0]
+    assert (row["macro_packet_id"], row["macro_regime"]) == ("MACRO:D", "NEUTRAL")

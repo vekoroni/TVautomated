@@ -3944,7 +3944,7 @@ _WS2_TRIGGER_INPUT_COLS = (
     "crabel_state", "crabel_compression", "atr_percentile_rank",
     "vwap_bias", "control_state", "wyckoff_phase_bucket",
     "catalyst_proximity", "days_in_range", "adx_14", "ema_stack",
-    "dominant_trend", "volume_ratio_x", "layer1__control__controller",
+    "dominant_trend", "volume_ratio", "layer1__control__controller",
     "layer1__auction_state", "precor_intent",
     "layer2__sample_confidence_bucket", "layer2__preferred_horizon",
     "layer2__state_match_method", "layer2__state_match_stage",
