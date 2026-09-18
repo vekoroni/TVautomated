@@ -84,7 +84,7 @@ def prepared_for(row, s: sig.SignalSettings) -> tuple[str | None, sig.Prepared |
     if not match or expiry is None:
         return "CONTRACT_UNPARSEABLE", None
     strike = int(match["strike"]) / 1000.0
-    guard = sig.contract_guard(row.direction, strike, row.spot, expiry, int(row.hold), session, s)
+    guard = sig.contract_guard(row.direction, strike, row.spot, expiry, s)
     if guard is not None:
         return guard, None
     usable = last_usable(expiry, s.contract_exit_buffer)
@@ -92,13 +92,13 @@ def prepared_for(row, s: sig.SignalSettings) -> tuple[str | None, sig.Prepared |
     return None, sig.Prepared(
         ticker=row.ticker, direction=row.direction, contract_symbol=row.contract, strike=strike, expiry=expiry,
         last_usable_session=usable, live_spot=row.spot, live_spot_utc=None, stop=row.stop, target=row.target,
-        hold_sessions=int(row.hold), quote_bid=row.entry_bid, quote_ask=row.entry_ask, quote_timestamp_utc=None,
+        hold_sessions=s.thesis_window_sessions, quote_bid=row.entry_bid, quote_ask=row.entry_ask, quote_timestamp_utc=None,
         quote_state=sig.QUOTE_CURRENT_SESSION, adjustment_state="EVENING_CLOSE_QUOTE", spot_at_quote=None, delta=None,
         shift=None, bid=row.entry_bid, ask=row.entry_ask, option_executable=executable, iv=row.iv,
         iv_source="EVENING_CONTRACT",
         path_inputs=dict(side="call" if row.direction == "CALL" else "put", spot=row.spot, strike=strike, dte=row.dte,
                          bid=row.entry_bid, ask=row.entry_ask, iv=row.iv, rate=ev.DEFAULT_RISK_FREE_RATE,
-                         target=row.target, invalidation=row.stop, hold_sessions=int(row.hold),
+                         target=row.target, invalidation=row.stop, hold_sessions=s.thesis_window_sessions,
                          forecast_vol=row.forecast_vol, share_spread=None))
 
 
@@ -108,6 +108,138 @@ def fill_price(bid: float, ask: float, fraction: float, entry: bool) -> float | 
     mid, half = (bid + ask) / 2.0, (ask - bid) / 2.0
     value = mid + fraction * half if entry else mid - fraction * half
     return value if value > 0 else None
+
+
+# --- exit-policy variant: roll at the contract's last exit session (ACK idea, 18 Sep 2026) ---------------------------
+#
+# When a contract reaches its last exit session with the thesis unresolved (no stop, no target) and thesis window
+# left, the forward question is asked again at today's premium: which later-expiry contract of the same direction is
+# the best candidate (same tradeability rules and ranking key as issue), and is it still worth buying (central value
+# at today's ask > 0)? If yes, sell the old contract at the bid and buy the new one at the ask, self-financing (the
+# proceeds are reinvested, no capital is added); the thesis keeps its stop, target and window (C4: not restarted).
+# Otherwise exit, exactly as the baseline does. Research only: no decision authority (G1-G4).
+
+ROLL_ROLLED, ROLL_NOT_WORTH_BUYING = "ROLLED", "NOT_WORTH_BUYING"
+ROLL_WINDOW_EXHAUSTED, ROLL_NO_LATER_CONTRACT = "WINDOW_EXHAUSTED", "NO_LATER_CONTRACT"
+ROLL_ALWAYS, ROLL_IF_WORTH_BUYING = "roll_always", "roll_if_worth_buying"
+
+
+def roll_candidates(chain, ticket: sig.SignalTicket, session: date, spot: float, remaining: int, forecast_vol: float,
+                    s: sig.SignalSettings) -> list[dict]:
+    """Every later-expiry contract of the thesis direction that passes the issue-time rules, valued at today's quote
+    over the remaining window (capped by its own last exit session inside the value model)."""
+    side = "call" if ticket.direction == "CALL" else "put"
+    out = []
+    for symbol, strike, bid, ask, iv in chain.execute(
+            "SELECT option_symbol, strike, bid, ask, iv FROM chain_snapshots WHERE ticker = ? AND quote_date = ? "
+            "AND side = ?", (ticket.ticker, session.isoformat(), side)):
+        expiry = sig.contract_expiry(symbol)
+        if expiry is None or ticket.expiry is None or expiry <= ticket.expiry:
+            continue
+        if bid is None or ask is None or iv is None or bid <= 0 or ask < bid or iv <= 0:
+            continue
+        if (ask - bid) / ((ask + bid) / 2.0) > s.max_entry_spread_fraction:
+            continue
+        if sig.contract_guard(ticket.direction, strike, spot, expiry, s) is not None:
+            continue
+        value = ev.compute_path_expression_ev(
+            side=side, spot=spot, strike=strike, dte=(expiry - session).days, bid=bid, ask=ask, iv=iv,
+            rate=ev.DEFAULT_RISK_FREE_RATE, target=ticket.target_spot, invalidation=ticket.stop_spot,
+            hold_sessions=remaining, forecast_vol=forecast_vol, share_spread=None, calibration=CALIBRATION,
+            paths=ev.PATH_SETTINGS["paths"], seed=ev.PATH_SETTINGS["seed"])
+        if value.get("emp_path_quality_flag") != "OK" or value.get("emp_path_r_cautious") is None:
+            continue
+        out.append({"symbol": symbol, "expiry": expiry, "bid": bid, "ask": ask,
+                    "r_cautious": value["emp_path_r_cautious"], "r_central": value["emp_path_r_central"]})
+    out.sort(key=lambda c: (-c["r_cautious"], c["symbol"]))       # the issue-time ranking key
+    return out
+
+
+def follow_roll(chain, ticket: sig.SignalTicket, plan: sig.SignalExit, history: list, as_of: date, forecast_vol: float,
+                s: sig.SignalSettings, policy: str) -> dict:
+    """Legs of one thesis under a roll policy, from the first contract's last exit session to the final exit.
+
+    Returns the state of the first roll decision and the legs [(entry quote, exit quote, how the leg ended)], where a
+    leg still open at ``as_of`` is marked at that session's bid (MARKED_OPEN)."""
+    legs, current, first_state = [], ticket, None
+    while plan.state == sig.EXITED and plan.reason == "CONTRACT_LAST_USABLE":
+        used = sum(1 for b in history if ticket.issue_session < b.session <= plan.session)
+        remaining = s.thesis_window_sessions - used
+        spot = next(b.close for b in history if b.session == plan.session)
+        options = roll_candidates(chain, current, plan.session, spot, remaining, forecast_vol, s) if remaining >= 1 else []
+        if remaining < 1:
+            state = ROLL_WINDOW_EXHAUSTED
+        elif not options:
+            state = ROLL_NO_LATER_CONTRACT
+        elif policy == ROLL_IF_WORTH_BUYING and not (options[0]["r_central"] is not None and options[0]["r_central"] > 0):
+            state = ROLL_NOT_WORTH_BUYING
+        else:
+            state = ROLL_ROLLED
+        first_state = first_state or state
+        if state != ROLL_ROLLED:
+            break
+        best = options[0]
+        current = replace(current, issue_session=plan.session, contract_symbol=best["symbol"], expiry=best["expiry"],
+                          last_usable_session=last_usable(best["expiry"], s.contract_exit_buffer),
+                          hold_sessions=remaining, quote_bid=best["bid"], quote_ask=best["ask"])
+        plan = sig.plan_exit(current, [b for b in history if b.session >= plan.session], as_of)
+        legs.append({"ticket": current, "plan": plan})
+    return {"state": first_state, "legs": legs}
+
+
+def chain_quote(chain, ticker: str, session: date, symbol: str):
+    return chain.execute("SELECT bid, ask FROM chain_snapshots WHERE ticker = ? AND quote_date = ? AND option_symbol = ?",
+                         (ticker, session.isoformat(), symbol)).fetchone()
+
+
+def roll_returns(chain, ticket: sig.SignalTicket, first_exit: date, roll: dict, as_of: date) -> dict:
+    """Self-financing return of the rolled thesis under each fill model, and whether its last leg is closed."""
+    out = {"roll_state": roll["state"], "roll_legs": len(roll["legs"]), "roll_final": None}
+    growth = {name: fill_price(ticket.quote_bid, ticket.quote_ask, f, entry=True) for name, f in FILL_MODELS.items()}
+    exit_quote = chain_quote(chain, ticket.ticker, first_exit, ticket.contract_symbol)
+    for name, f in FILL_MODELS.items():
+        sold = None if exit_quote is None else fill_price(exit_quote[0], exit_quote[1], f, entry=False)
+        growth[name] = None if growth[name] is None or sold is None else sold / growth[name]
+    for leg in roll["legs"]:
+        t, plan = leg["ticket"], leg["plan"]
+        if plan.state == sig.EXITED and plan.reason == "CONTRACT_LAST_USABLE" and leg is not roll["legs"][-1]:
+            session, final = plan.session, "ROLLED_AGAIN"
+        elif plan.state == sig.EXITED:
+            session, final = plan.session, "CLOSED"
+        else:
+            session, final = as_of, "MARKED_OPEN"
+        quote = chain_quote(chain, t.ticker, session, t.contract_symbol)
+        for name, f in FILL_MODELS.items():
+            bought = fill_price(t.quote_bid, t.quote_ask, f, entry=True)
+            sold = None if quote is None else fill_price(quote[0], quote[1], f, entry=False)
+            growth[name] = (None if growth[name] is None or bought is None or sold is None
+                            else growth[name] * sold / bought)
+        out["roll_final"] = final
+    for name in FILL_MODELS:
+        out[f"roll_return_{name}"] = None if growth[name] is None else growth[name] - 1.0
+    return out
+
+
+def roll_summary(group: pd.DataFrame, policy: str) -> dict:
+    """Paired comparison on theses that reached their contract's last exit session: exit there vs the roll policy."""
+    at_last = group[group.exit_reason == "CONTRACT_LAST_USABLE"]
+    col = lambda name: f"{policy}_return_{name}"                                   # noqa: E731
+    out = {"reached_last_exit_session": int(len(at_last)),
+           "decisions": {str(k): int(v) for k, v in at_last[f"{policy}_state"].value_counts().items()}
+           if len(at_last) else {},
+           "final_leg": {str(k): int(v) for k, v in at_last[f"{policy}_final"].dropna().value_counts().items()}
+           if len(at_last) else {}}
+    for name in FILL_MODELS:
+        pair = at_last[[f"return_{name}", col(name)]].dropna() if len(at_last) else pd.DataFrame()
+        whole = group[f"return_{name}"].copy()
+        if len(at_last):
+            whole.loc[at_last.index] = at_last[col(name)]
+        out[name] = {"paired": int(len(pair)),
+                     "exit_at_last_session_mean": round(float(pair.iloc[:, 0].mean()), 4) if len(pair) else None,
+                     "roll_mean": round(float(pair.iloc[:, 1].mean()), 4) if len(pair) else None,
+                     "difference_mean": round(float((pair.iloc[:, 1] - pair.iloc[:, 0]).mean()), 4) if len(pair) else None,
+                     "all_with_policy": measure(pd.DataFrame({"r": whole}), "r")}
+    return out
 
 
 def measure(group: pd.DataFrame, column: str) -> dict:
@@ -156,6 +288,7 @@ def run(label: str, overrides: dict | None = None) -> dict:
             reasons["RANK_BELOW_DAILY_CAP"] = reasons.get("RANK_BELOW_DAILY_CAP", 0) + len(held_back)
             tickets_per_session[session] = len(issued)
             issued_tickers = {t.ticker for t in issued}
+            forecast = {t: r.forecast_vol for t, _, r in decided}
             for ticket in ranked:
                 history = [b for b in bars.get(ticket.ticker, []) if b.session >= ticket.issue_session]
                 plan = sig.plan_exit(ticket, history, as_of)
@@ -171,12 +304,25 @@ def run(label: str, overrides: dict | None = None) -> dict:
                         exit_value = None if quote is None else fill_price(quote[0], quote[1], fraction, entry=False)
                         record[f"return_{name}"] = (None if entry is None or exit_value is None
                                                     else exit_value / entry - 1.0)
+                    if plan.reason == "CONTRACT_LAST_USABLE":
+                        for policy in (ROLL_IF_WORTH_BUYING, ROLL_ALWAYS):
+                            roll = follow_roll(chain, ticket, plan, history, as_of, forecast[ticket.ticker], s, policy)
+                            result = roll_returns(chain, ticket, plan.session, roll, as_of)
+                            record[f"{policy}_state"], record[f"{policy}_final"] = result["roll_state"], result["roll_final"]
+                            for name in FILL_MODELS:
+                                record[f"{policy}_return_{name}"] = result[f"roll_return_{name}"]
                 issued_rows.append(record)
     finally:
         chain.close()
     scored = pd.DataFrame(issued_rows)
     if scored.empty:
         scored = pd.DataFrame(columns=["issued", "cautious"] + [f"return_{m}" for m in FILL_MODELS])
+    for policy in (ROLL_IF_WORTH_BUYING, ROLL_ALWAYS):
+        for column in [f"{policy}_state", f"{policy}_final"] + [f"{policy}_return_{m}" for m in FILL_MODELS]:
+            if column not in scored.columns:
+                scored[column] = None
+    if "exit_reason" not in scored.columns:
+        scored["exit_reason"] = None
     tickets = scored[scored.issued] if len(scored) else scored
     top = scored[scored.cautious >= scored.cautious.quantile(0.8)] if len(scored) else scored
     commit, dirty = git_state()
@@ -196,6 +342,10 @@ def run(label: str, overrides: dict | None = None) -> dict:
         "tickets": {m: measure(tickets, f"return_{m}") for m in FILL_MODELS},
         "eligible_all": {m: measure(scored, f"return_{m}") for m in FILL_MODELS},
         "eligible_top_quintile": {m: measure(top, f"return_{m}") for m in FILL_MODELS},
+        "exit_reasons": {"tickets": {str(k): int(v) for k, v in tickets.exit_reason.value_counts().items()},
+                         "eligible": {str(k): int(v) for k, v in scored.exit_reason.value_counts().items()}},
+        "exit_policy_roll": {policy: {"tickets": roll_summary(tickets, policy), "eligible": roll_summary(scored, policy)}
+                             for policy in (ROLL_IF_WORTH_BUYING, ROLL_ALWAYS)},
     }
     with LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record) + "\n")
@@ -236,7 +386,7 @@ def main() -> int:
     parser.add_argument("--label", default="")
     parser.add_argument("--show", action="store_true")
     parser.add_argument("--override", action="append", default=[],
-                        help="experiment only: signal setting=value, e.g. min_dte_cover=0")
+                        help="experiment only: signal setting=value, e.g. max_tickets_per_session=10")
     args = parser.parse_args()
     if not args.show:
         if not args.label:
