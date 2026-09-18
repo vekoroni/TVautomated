@@ -27,6 +27,7 @@ from avshunter.shared.xnys_calendar import is_xnys_session
 
 from . import service
 from .adapters import prices, storage
+from .signal_ledger import open_ledger
 
 REPO = Path(__file__).resolve().parents[2]
 RUNS_DIR = REPO / "data" / "output" / "runs"
@@ -59,7 +60,8 @@ def main(argv: list[str] | None = None) -> int:
             print("signals are issued during an XNYS session only", file=sys.stderr)
             return 2
         run_id = args.run_id or json.loads((REPO / "data" / "output" / "latest.json").read_text(encoding="utf-8-sig"))["run_id"]
-        result = issue_signals(storage.connect(), RUNS_DIR, run_id, snapshot, now, clock.market_session)
+        result = issue_signals(storage.connect(), RUNS_DIR, run_id, snapshot, now, clock.market_session,
+                               ledger=open_ledger())
         print(json.dumps(result, indent=2, default=str))
         return 0 if result.get("status") == "ISSUED" else 3
     as_of = date.fromisoformat(args.as_of) if args.as_of else prices.latest_session()
@@ -82,9 +84,10 @@ def main(argv: list[str] | None = None) -> int:
         results["hypotheses"] = service.track_hypotheses(connection, as_of, snapshot, now)
     if args.command in ("signal-scores", "all"):
         from .signal_service import score_signals
-        results["signal_scores"] = score_signals(connection, as_of, snapshot, now)
+        results["signal_scores"] = score_signals(open_ledger(), as_of, snapshot, now)
     if args.command in ("report", "all"):
-        results["report"] = str(service.build_report(connection, as_of, snapshot, REPORTS_DIR / as_of.isoformat()))
+        results["report"] = str(service.build_report(connection, as_of, snapshot, REPORTS_DIR / as_of.isoformat(),
+                                                     ledger=open_ledger(read_only=True)))
     print(json.dumps(results, indent=2, default=str))
     return 0
 

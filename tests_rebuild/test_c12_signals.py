@@ -342,30 +342,74 @@ def test_spot_at_uses_last_completed_bar(tmp_path):
 
 # --- S8 service ----------------------------------------------------------------------------------------------------
 
-def test_s8_issue_and_score_idempotent(tmp_path):
+THESIS = "ABC:CALL:2026-09-17:OLM2"
+
+
+def seed_morning_chain(ledger, ticker: str, thesis_id: str, run_id: str) -> str:
+    """The morning handoff's own events for a thesis: a candidate decision, then an execution decision."""
+    from canonical_data.decision_outcome_ledger import make_ledger_event
+    candidate = make_ledger_event(event_type="CANDIDATE_DECISION", occurred_at_utc="2026-09-18T14:40:00Z",
+                                  run_id=run_id, ticker=ticker, thesis_id=thesis_id,
+                                  payload={"decision_stage": "MORNING_VALIDATION"})
+    ledger.append(candidate)
+    execution = make_ledger_event(event_type="EXECUTION_DECISION", occurred_at_utc="2026-09-18T14:41:00Z",
+                                  run_id=run_id, ticker=ticker, thesis_id=thesis_id,
+                                  previous_event_id=candidate.event_id,
+                                  payload={"decision_stage": "MORNING_VALIDATION"})
+    ledger.append(execution)
+    return execution.event_id
+
+
+def test_s8_tickets_and_outcomes_live_in_the_decision_ledger(tmp_path):
+    """S8 (ACK 18 Sep 2026): one owner per fact — issued tickets are PRESENTATION_DECISION events chained to the
+    thesis's morning decision, every other candidate with a thesis is recorded as NOT_PRESENTED with its reason,
+    and ticket outcomes are counterfactual OUTCOME events chained to the presentation. Idempotent throughout."""
+    from canonical_data.decision_outcome_ledger import DecisionOutcomeLedger
     run_id = "20260917_220000"
     runs = tmp_path / "runs"
     for folder in ("intelligence_lab", "options", "morning_validation"):
         (runs / run_id / folder).mkdir(parents=True)
-    pd.DataFrame([book_row()]).to_csv(runs / run_id / "intelligence_lab" / f"final_opportunity_book_{run_id}.csv", index=False)
-    pd.DataFrame([valuation_row()]).to_csv(runs / run_id / "options" / f"options_intelligence_{run_id}.csv", index=False)
-    pd.DataFrame([gate_row()]).to_csv(runs / run_id / "morning_validation" / f"morning_validated_trades_{run_id}.csv",
-                                      index=False)
+    books = [book_row(thesis_id=THESIS),
+             book_row(ticker="XYZ", thesis_id="XYZ:CALL:2026-09-17:OLM2", final_action="BLOCK"),
+             book_row(ticker="NOID"),                                             # no thesis identity
+             book_row(ticker="NOCHAIN", thesis_id="NOCHAIN:CALL:2026-09-17:OLM2")]  # no morning decision yet
+    pd.DataFrame(books).to_csv(runs / run_id / "intelligence_lab" / f"final_opportunity_book_{run_id}.csv", index=False)
+    pd.DataFrame([valuation_row(ticker=b["ticker"]) for b in books]).to_csv(
+        runs / run_id / "options" / f"options_intelligence_{run_id}.csv", index=False)
+    pd.DataFrame([gate_row(ticker=b["ticker"]) for b in books]).to_csv(
+        runs / run_id / "morning_validation" / f"morning_validated_trades_{run_id}.csv", index=False)
     snap = ConfigRegistry.from_documents(load_documents(), load_lock()).resolve(ISSUE)
     store = storage.connect(tmp_path / "scoring.sqlite")
+    ledger = DecisionOutcomeLedger(tmp_path / "ledger.sqlite")
+    abc_execution = seed_morning_chain(ledger, "ABC", THESIS, run_id)
+    seed_morning_chain(ledger, "XYZ", "XYZ:CALL:2026-09-17:OLM2", run_id)
     seen = []
     stub = lambda inputs: (seen.append(inputs), revaluation())[1]  # noqa: E731
-    first = signal_service.issue_signals(store, runs, run_id, snap, NOW, ISSUE, bar_root=tmp_path / "bars",
-                                         revalue=stub, rate=0.045, settings_override=settings())
-    assert first["status"] == "ISSUED" and first["issued"] == 1 and first["new_tickets"] == 1
-    assert seen[0]["spot"] == 102.0 and seen[0]["ask"] == 5.0          # no bars: unadjusted, flagged
+
+    first = signal_service.issue_signals(store, runs, run_id, snap, NOW, ISSUE, ledger=ledger,
+                                         bar_root=tmp_path / "bars", revalue=stub, rate=0.045,
+                                         settings_override=settings())
+    # a ticket that cannot be recorded is never issued: every issued ticket must be measurable
+    assert first["status"] == "ISSUED" and first["issued"] == 1
+    assert first["missing_thesis_identity"] == ["NOID"]
+    assert first["ledger_chain_unavailable"] == ["NOCHAIN"]
+    presentations = [e for e in ledger.events_by_type("PRESENTATION_DECISION")
+                     if e.payload.get("decision_stage") == "SIGNAL_TICKET"]
+    by_ticker = {e.ticker: e for e in presentations}
+    assert set(by_ticker) == {"ABC", "XYZ"}
+    assert by_ticker["ABC"].previous_event_id == abc_execution
+    assert by_ticker["ABC"].payload["human_response"] == "NOT_YET_RECORDED"
+    assert by_ticker["ABC"].payload["presented"] is True and by_ticker["ABC"].payload["rank"] == 1
+    assert by_ticker["XYZ"].payload["human_response"] == "NOT_PRESENTED"
+    assert by_ticker["XYZ"].payload["reason"] == "FINAL_ACTION_BLOCKED"
     assert "ABC" in (runs / run_id / "signals" / f"signal_tickets_{run_id}_{ISSUE.isoformat()}.md").read_text(encoding="utf-8")
-    again = signal_service.issue_signals(store, runs, run_id, snap, NOW, ISSUE, bar_root=tmp_path / "bars",
-                                         revalue=stub, rate=0.045, settings_override=settings())
-    assert again["new_tickets"] == 0
-    stale = signal_service.issue_signals(store, runs, run_id, snap, NOW, date(2026, 9, 22), bar_root=tmp_path,
-                                         revalue=stub, rate=0.045, settings_override=settings())
-    assert stale["status"] == "STALE_BOOK"
+    again = signal_service.issue_signals(store, runs, run_id, snap, NOW, ISSUE, ledger=ledger,
+                                         bar_root=tmp_path / "bars", revalue=stub, rate=0.045,
+                                         settings_override=settings())
+    assert again["new_events"] == 0
+    assert signal_service.issue_signals(store, runs, run_id, snap, NOW, date(2026, 9, 22), ledger=ledger,
+                                        bar_root=tmp_path, revalue=stub, rate=0.045,
+                                        settings_override=settings())["status"] == "STALE_BOOK"
 
     chain_db, price_db = tmp_path / "chains.db", tmp_path / "prices.sqlite"
     con = sqlite3.connect(chain_db)
@@ -379,15 +423,19 @@ def test_s8_issue_and_score_idempotent(tmp_path):
         ("ABC", "2026-09-18", 100, 103, 99, 102, 1e6, "COMPLETE"),
         ("ABC", "2026-09-21", 102, 111, 101, 109, 1e6, "COMPLETE")])
     con.commit(); con.close()
-    early = signal_service.score_signals(store, ISSUE, snap, NOW, chain_db=chain_db, price_db=price_db,
+    early = signal_service.score_signals(ledger, ISSUE, snap, NOW, chain_db=chain_db, price_db=price_db,
                                          settings_override=settings())
     assert early["new_outcomes"] == 0 and early["states"].get("PENDING") == 1
-    scored = signal_service.score_signals(store, date(2026, 9, 21), snap, NOW, chain_db=chain_db, price_db=price_db,
-                                          settings_override=settings())
+    scored = signal_service.score_signals(ledger, date(2026, 9, 21), snap, NOW, chain_db=chain_db,
+                                          price_db=price_db, settings_override=settings())
     assert scored["new_outcomes"] == 1
-    row = store.execute("SELECT state, exit_reason, return_on_capital FROM signal_outcomes").fetchone()
-    assert row[0] == "CLOSED" and row[1] == "TARGET" and row[2] == pytest.approx(7.0 / 5.0 - 1)
-    assert signal_service.score_signals(store, date(2026, 9, 21), snap, NOW, chain_db=chain_db, price_db=price_db,
+    outcomes = [e for e in ledger.events_by_type("OUTCOME") if e.payload.get("decision_stage") == "SIGNAL_TICKET"]
+    assert len(outcomes) == 1 and outcomes[0].previous_event_id == by_ticker["ABC"].event_id
+    assert outcomes[0].payload["is_counterfactual"] is True and outcomes[0].payload["exit_reason"] == "TARGET"
+    assert outcomes[0].payload["return_on_capital"] == pytest.approx(7.0 / 5.0 - 1)
+    assert signal_service.score_signals(ledger, date(2026, 9, 21), snap, NOW, chain_db=chain_db, price_db=price_db,
                                         settings_override=settings())["new_outcomes"] == 0
-    report = service.build_report(store, date(2026, 9, 21), snap, tmp_path / "report")
-    assert "Signal track record" in report.read_text(encoding="utf-8")
+    report = signal_service.signal_section(ledger, snap)
+    assert any("Signal track record" in line for line in report)
+    assert not {"signal_tickets", "signal_outcomes", "signal_rejections"} & {
+        r[0] for r in store.execute("SELECT name FROM sqlite_master WHERE type='table'")}

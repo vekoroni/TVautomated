@@ -535,7 +535,8 @@ def _expression_section(connection, resamples, low_q, high_q, min_sessions, summ
     return lines
 
 
-def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSnapshot, output_dir: Path) -> Path:
+def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSnapshot, output_dir: Path,
+                 ledger=None) -> Path:
     connection.row_factory = sqlite3.Row
     window = int(snapshot.get("outcome.window_sessions").value)
     min_sessions = int(snapshot.get("outcome.min_sessions_for_verdict").value)
@@ -633,7 +634,7 @@ def build_report(connection: sqlite3.Connection, as_of: date, snapshot: ConfigSn
     lines += _expression_section(connection, resamples, low_q, high_q, min_sessions, summary)
     lines += _hypothesis_section(connection, snapshot)
     from .signal_service import signal_section
-    lines += signal_section(connection, snapshot)
+    lines += signal_section(ledger, snapshot)
     lines += ["", "## Resolution timing (session of first touch)", "", "| State | " +
               " | ".join(str(k) for k in range(1, window + 1)) + " |", "|---|" + "---|" * window]
     for state, by_session in sorted(timing.items()):
