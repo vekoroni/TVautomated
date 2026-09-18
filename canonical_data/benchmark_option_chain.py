@@ -31,6 +31,9 @@ from .storage import AtomicPayloadStore
 
 
 BENCHMARK_CHAIN_SCHEMA_VERSION = "benchmark_option_chain_v1"
+MARKET_REFERENCE_GEX, OPEN_RECORD_MARK = "MARKET_REFERENCE_GEX", "OPEN_RECORD_MARK"
+_PURPOSE_STAGE = {MARKET_REFERENCE_GEX: ("MACRO_GEX", "macro-gex", "COMPLETED_GEX_REFERENCE"),
+                  OPEN_RECORD_MARK: ("OPEN_RECORD_CAPTURE", "open-record-mark", "OPEN_RECORD_MARK_REFERENCE")}
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +44,11 @@ class BenchmarkChainResult:
 
 
 class CanonicalBenchmarkOptionChainStore:
-    """Resolve SPY/QQQ reference chains outside candidate lifecycle authority."""
+    """Resolve completed-session reference chains outside candidate lifecycle authority.
+
+    ``purpose``: MARKET_REFERENCE_GEX (SPY/QQQ for GEX) or OPEN_RECORD_MARK (daily marks for open tickets, P0-4).
+    Both are data only: they never create or change a candidate.
+    """
 
     def __init__(
         self,
@@ -49,7 +56,11 @@ class CanonicalBenchmarkOptionChainStore:
         registry_path: Path | str,
         payload_root: Path | str,
         run_id: str,
+        purpose: str = MARKET_REFERENCE_GEX,
     ) -> None:
+        if purpose not in _PURPOSE_STAGE:
+            raise ValueError(f"unknown reference-chain purpose: {purpose}")
+        self.purpose = purpose
         self.registry = CanonicalRegistry(registry_path)
         self.registry.initialise()
         self.ledger = RequestLedger(self.registry)
@@ -73,7 +84,7 @@ class CanonicalBenchmarkOptionChainStore:
     def _request(self, ticker: str, session_date: date, dte_max: int) -> DatasetRequest:
         return DatasetRequest(
             run_id=self.run_id,
-            requesting_stage="MACRO_GEX",
+            requesting_stage=_PURPOSE_STAGE[self.purpose][0],
             dataset_type=DatasetType.OPTION_CHAIN,
             instrument_id=ticker,
             session_date=session_date,
@@ -83,12 +94,12 @@ class CanonicalBenchmarkOptionChainStore:
                 dte_min=1,
                 dte_max=dte_max,
                 sides=("CALL", "PUT"),
-                extra=(("purpose", "MARKET_REFERENCE_GEX"), ("min_open_interest", "0")),
+                extra=(("purpose", self.purpose), ("min_open_interest", "0")),
             ),
             accepted_providers=("MARKETDATA",),
             adjustment_convention="RAW_OPTION_CONTRACT",
             schema_version=BENCHMARK_CHAIN_SCHEMA_VERSION,
-            invocation_id=f"{self.run_id}:macro-gex",
+            invocation_id=f"{self.run_id}:{_PURPOSE_STAGE[self.purpose][1]}",
             evidence_cutoff_utc=session_bounds(session_date)[1],
             exchange_calendar="XNYS",
             evidence_state="COMPLETED_SESSION",
@@ -116,7 +127,7 @@ class CanonicalBenchmarkOptionChainStore:
                 """,
                 (
                     self.run_id,
-                    "COMPLETED_GEX_REFERENCE",
+                    _PURPOSE_STAGE[self.purpose][2],
                     session_date.isoformat(),
                     iso_utc(utc_now()),
                     json.dumps({"authority": "DATA_REFERENCE_ONLY"}, sort_keys=True),
@@ -214,7 +225,7 @@ class CanonicalBenchmarkOptionChainStore:
                 as_of=as_of,
                 adjustment_convention=request.adjustment_convention,
                 schema_version=BENCHMARK_CHAIN_SCHEMA_VERSION,
-                quality_flags=("MARKET_REFERENCE_GEX",),
+                quality_flags=(self.purpose,),
                 source_run_id=self.run_id,
             )
             self.registry.register_dataset(
@@ -240,6 +251,8 @@ class CanonicalBenchmarkOptionChainStore:
 
 __all__ = [
     "BENCHMARK_CHAIN_SCHEMA_VERSION",
+    "MARKET_REFERENCE_GEX",
+    "OPEN_RECORD_MARK",
     "BenchmarkChainResult",
     "CanonicalBenchmarkOptionChainStore",
 ]

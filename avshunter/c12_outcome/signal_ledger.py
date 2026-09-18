@@ -14,7 +14,7 @@ it is never issued (every issued ticket must be measurable).
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -69,6 +69,35 @@ def signal_outcomes(ledger) -> list:
     return [e for e in ledger.events_by_type("OUTCOME") if e.payload.get("decision_stage") == DECISION_STAGE]
 
 
+@dataclass(frozen=True, slots=True)
+class OpenRecord:
+    """An issued option ticket that still needs a daily mark (P0-4)."""
+    ticker: str
+    contract_symbol: str
+    expiry: date
+    last_usable_session: date
+    presentation_event_id: str
+
+
+def open_records(ledger, session: date) -> list[OpenRecord]:
+    """Issued option tickets with no CLOSED outcome that are still inside their contract's usable life on
+    ``session``; each needs that session's exact quote to be scored (P0-4, ACK 18 Sep 2026)."""
+    closed = {e.previous_event_id for e in signal_outcomes(ledger) if e.payload.get("state") == sig.CLOSED}
+    out = []
+    for e in issued_presentations(ledger, session):
+        p = e.payload
+        symbol, expiry, usable = p.get("contract_symbol"), p.get("expiry"), p.get("last_usable_session")
+        if e.event_id in closed or not symbol or not expiry or not usable:
+            continue
+        usable_day = date.fromisoformat(str(usable)[:10])
+        if usable_day < session:
+            continue
+        out.append(OpenRecord(ticker=str(p.get("ticker") or e.ticker).upper(), contract_symbol=str(symbol).upper(),
+                              expiry=date.fromisoformat(str(expiry)[:10]), last_usable_session=usable_day,
+                              presentation_event_id=e.event_id))
+    return sorted(out, key=lambda r: (r.ticker, r.contract_symbol))
+
+
 def ticket_from_payload(payload: Mapping[str, Any]) -> sig.SignalTicket:
     names = sig.SignalTicket.__dataclass_fields__.keys()
     data = {k: payload.get(k) for k in names}
@@ -87,7 +116,9 @@ def outcome_event(*, presentation, outcome: sig.SignalOutcome, ticket: sig.Signa
                "exit_session": _plain(outcome.exit_session), "exit_reason": outcome.exit_reason,
                "entry_price": outcome.entry_price, "exit_price": outcome.exit_price,
                "return_on_capital": outcome.return_on_capital, "pnl_per_unit": outcome.pnl_per_unit,
-               "reason": outcome.reason, "config_snapshot_id": config_snapshot_id}
+               "reason": outcome.reason, "config_snapshot_id": config_snapshot_id,
+               # Marks are exact-session point lookups, never nearest-date substitutes (P0-4, RC3).
+               "mark_quote_date": _plain(outcome.exit_session), "mark_basis": "EXACT_SESSION"}
     return make_ledger_event(event_type="OUTCOME", occurred_at_utc=now.isoformat(), run_id=presentation.run_id,
                              ticker=presentation.ticker, thesis_id=presentation.thesis_id,
                              previous_event_id=presentation.event_id, payload=payload)

@@ -429,7 +429,6 @@ def test_s8_tickets_and_outcomes_live_in_the_decision_ledger(tmp_path):
     chain_db, price_db = tmp_path / "chains.db", tmp_path / "prices.sqlite"
     con = sqlite3.connect(chain_db)
     con.execute("CREATE TABLE chain_snapshots (ticker TEXT, quote_date TEXT, option_symbol TEXT, bid REAL, ask REAL)")
-    con.execute("INSERT INTO chain_snapshots VALUES ('ABC', '2026-09-21', ?, 7.0, 7.3)", (SYMBOL,))
     con.commit(); con.close()
     con = sqlite3.connect(price_db)
     con.execute("CREATE TABLE ohlcv_daily (ticker TEXT, trading_date TEXT, open REAL, high REAL, low REAL, close REAL, "
@@ -441,6 +440,14 @@ def test_s8_tickets_and_outcomes_live_in_the_decision_ledger(tmp_path):
     early = signal_service.score_signals(ledger, ISSUE, snap, NOW, chain_db=chain_db, price_db=price_db,
                                          settings_override=settings())
     assert early["new_outcomes"] == 0 and early["states"].get("PENDING") == 1
+    # P0-4 (RC3): the exit session has no stored quote yet -> the ticket waits for its exact mark and is listed.
+    waiting = signal_service.score_signals(ledger, date(2026, 9, 21), snap, NOW, chain_db=chain_db,
+                                           price_db=price_db, settings_override=settings())
+    assert waiting["new_outcomes"] == 0
+    assert [(w["ticker"], w["mark_session"]) for w in waiting["waiting_on_mark"]] == [("ABC", "2026-09-21")]
+    con = sqlite3.connect(chain_db)
+    con.execute("INSERT INTO chain_snapshots VALUES ('ABC', '2026-09-21', ?, 7.0, 7.3)", (SYMBOL,))
+    con.commit(); con.close()
     scored = signal_service.score_signals(ledger, date(2026, 9, 21), snap, NOW, chain_db=chain_db,
                                           price_db=price_db, settings_override=settings())
     assert scored["new_outcomes"] == 1
@@ -448,6 +455,7 @@ def test_s8_tickets_and_outcomes_live_in_the_decision_ledger(tmp_path):
     assert len(outcomes) == 1 and outcomes[0].previous_event_id == by_ticker["ABC"].event_id
     assert outcomes[0].payload["is_counterfactual"] is True and outcomes[0].payload["exit_reason"] == "TARGET"
     assert outcomes[0].payload["return_on_capital"] == pytest.approx(7.0 / 5.0 - 1)
+    assert outcomes[0].payload["mark_quote_date"] == "2026-09-21"            # exact-session mark (P0-4, RC3)
     assert signal_service.score_signals(ledger, date(2026, 9, 21), snap, NOW, chain_db=chain_db, price_db=price_db,
                                         settings_override=settings())["new_outcomes"] == 0
     report = signal_service.signal_section(ledger, snap)
