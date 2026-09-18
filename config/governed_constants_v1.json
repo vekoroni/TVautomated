@@ -94,7 +94,8 @@
     "configuration_owner": "ACK",
     "version": "empirical_path_valuation_v1",
     "share_spread_window_sessions": 60,
-    "share_spread_min_sessions": 20
+    "share_spread_min_sessions": 20,
+    "option_exit_buffer_sessions": 2
   },
   "schema_version": "governed_constants_v1",
   "option_quote_feed": {

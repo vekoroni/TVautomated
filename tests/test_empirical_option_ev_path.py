@@ -120,3 +120,40 @@ def test_v1_intraday_touches_between_closes_are_counted():
     # a stop just below spot is touched far more often once intraday crossings count
     out = _value(invalidation=99.9, target=150.0, hold_sessions=1, forecast_vol=0.30)
     assert out["emp_path_p_stop_first_central"] > 0.8
+
+
+# --- ACK decision C3(b), 16 Sep 2026 (spec "Expression life: last exit session") ---------------------------------
+# A contract is valued only until its own last_exit_session = min(thesis window, expiry minus the exit buffer);
+# paths still unresolved then exit at that session's price. Short-dated convexity is judged by valuation and
+# ranking, not by a DTE rule. Before this, the model simulated the full hold regardless of expiry and credited
+# moves that happen after the contract has expired, overvaluing short-dated contracts (decision record D1).
+
+from empirical_option_ev import PATH_SETTINGS  # noqa: E402
+
+
+def test_c3_exit_buffer_is_governed():
+    assert PATH_SETTINGS["option_exit_buffer_sessions"] == 2
+
+
+def test_c3_last_exit_session_caps_the_valuation_window():
+    short = _value(dte=10.0, hold_sessions=20)       # 10 calendar days ~ 7 sessions, minus 2 buffer -> 5
+    assert short["emp_path_last_exit_sessions"] == 5
+    long_ = _value(dte=60.0, hold_sessions=10)       # contract outlives the hold -> the hold ends the window
+    assert long_["emp_path_last_exit_sessions"] == 10
+
+
+def test_c3_forced_exits_are_reported():
+    short = _value(dte=10.0, hold_sessions=20)
+    assert short["emp_path_forced_exit_share"] > 0.5  # most paths are unresolved when the contract must be sold
+    assert _value(dte=60.0, hold_sessions=10)["emp_path_forced_exit_share"] == 0.0
+
+
+def test_c3_moves_after_the_contract_is_sold_are_never_credited():
+    capped = _value(dte=10.0, hold_sessions=5)        # the same contract valued over its own life
+    over_hold = _value(dte=10.0, hold_sessions=20)    # a 20-session thesis cannot make it worth more
+    assert over_hold["emp_path_r_central"] <= capped["emp_path_r_central"] + 0.05
+
+
+def test_c3_contract_with_no_usable_life_is_flagged():
+    out = _value(dte=3.0, hold_sessions=10)           # 3 days ~ 2 sessions, minus 2 buffer -> 0
+    assert out["emp_path_quality_flag"] == "CONTRACT_NOT_HOLDABLE"

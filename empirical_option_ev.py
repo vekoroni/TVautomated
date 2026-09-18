@@ -383,7 +383,9 @@ PATH_COLUMNS = (
     "emp_path_p_target_first_central", "emp_path_p_stop_first_central",
     "emp_path_vol_low", "emp_path_vol_central", "emp_path_vol_high",
     "emp_path_horizon_band", "emp_path_target_state", "emp_path_quality_flag", "emp_path_forecast_source",
+    "emp_path_last_exit_sessions", "emp_path_forced_exit_share",
 )
+PATH_CONTRACT_NOT_HOLDABLE = "CONTRACT_NOT_HOLDABLE"
 PATH_CALIBRATION_UNAVAILABLE = "CALIBRATION_UNAVAILABLE"
 
 
@@ -403,6 +405,9 @@ def _load_path_settings() -> dict:
     settings["share_spread_min_sessions"] = int(settings["share_spread_min_sessions"])
     settings["share_spread_window_sessions"] = int(settings["share_spread_window_sessions"])
     settings["paths"], settings["seed"] = int(settings["paths"]), int(settings["seed"])
+    settings["option_exit_buffer_sessions"] = int(settings["option_exit_buffer_sessions"])
+    if settings["option_exit_buffer_sessions"] < 0:
+        raise ValueError("empirical_path_valuation.option_exit_buffer_sessions must not be negative")
     return settings
 
 
@@ -508,6 +513,12 @@ def _simulate_path_exits(*, side, spot, strike, dte, bid, ask, iv, rate, target,
         sessions = max(1, int(round(float(hold_sessions))))
     except (TypeError, ValueError):
         return PATH_BAD_INPUT, None, None
+    # ACK decision C3(b): the option is valued only until its own last exit session (expiry minus the exit
+    # buffer); the thesis window is not shortened, but moves after the contract must be sold are never credited.
+    option_life = int(math.floor(values["dte"] / CALENDAR_DAYS_PER_SESSION)) - PATH_SETTINGS["option_exit_buffer_sessions"]
+    if option_life < 1:
+        return PATH_CONTRACT_NOT_HOLDABLE, None, None
+    option_window = min(sessions, option_life)
     bands = {int(k): v for k, v in calibration["forecast_error_bands"].items()}
     band_key = min([k for k in bands if k >= sessions] or [max(bands)])
     band = bands[band_key]
@@ -549,9 +560,9 @@ def _simulate_path_exits(*, side, spot, strike, dte, bid, ask, iv, rate, target,
         exit_price = _np.where(stop_first, stop, _np.where(target_first, goal if goal is not None else 0.0,
                                                            prices[:, sessions - 1]))
         scenarios[label] = {"vol": vol, "exit_index": exit_index, "exit_price": exit_price,
-                            "stop_first": stop_first, "target_first": target_first}
+                            "stop_first": stop_first, "target_first": target_first, "prices": prices}
     context = {"values": values, "side": side, "sign": sign, "stop": stop, "sessions": sessions,
-               "band_key": band_key, "target_state": target_state}
+               "band_key": band_key, "target_state": target_state, "option_window": option_window}
     return PATH_QUALITY_OK, context, scenarios
 
 
@@ -560,12 +571,18 @@ def _option_result(context, scenarios) -> dict:
     half_spread = (values["ask"] - values["bid"]) / 2.0
     session_index = _np.arange(1, sessions + 1)
     results = {}
+    last = context["option_window"] - 1                      # 0-based index of the contract's last exit session
     for label, sc in scenarios.items():
-        remaining = (values["dte"] - session_index[sc["exit_index"]] * CALENDAR_DAYS_PER_SESSION) / 365.0
-        exit_value = _np.maximum(_bs_vector(context["side"], sc["exit_price"], values["strike"], remaining,
+        forced = sc["exit_index"] > last                   # still unresolved when the contract must be sold
+        exit_index = _np.where(forced, last, sc["exit_index"])
+        exit_price = _np.where(forced, sc["prices"][:, last], sc["exit_price"])
+        remaining = (values["dte"] - session_index[exit_index] * CALENDAR_DAYS_PER_SESSION) / 365.0
+        exit_value = _np.maximum(_bs_vector(context["side"], exit_price, values["strike"], remaining,
                                             values["rate"], values["iv"]) - half_spread, 0.0)
         results[label] = {"r": float(exit_value.mean() / values["ask"] - 1.0), "vol": sc["vol"],
-                          "p_target": float(sc["target_first"].mean()), "p_stop": float(sc["stop_first"].mean())}
+                          "p_target": float((sc["target_first"] & ~forced).mean()),
+                          "p_stop": float((sc["stop_first"] & ~forced).mean()),
+                          "forced": float(forced.mean())}
     returns = [results[k]["r"] for k in ("p10", "p50", "p90")]
     return {
         "emp_path_r_cautious": round(min(returns), 6),
@@ -578,6 +595,8 @@ def _option_result(context, scenarios) -> dict:
         "emp_path_vol_high": results["p90"]["vol"],
         "emp_path_horizon_band": context["band_key"],
         "emp_path_target_state": context["target_state"],
+        "emp_path_last_exit_sessions": context["option_window"],
+        "emp_path_forced_exit_share": round(results["p50"]["forced"], 6),
         "emp_path_quality_flag": PATH_QUALITY_OK,
     }
 

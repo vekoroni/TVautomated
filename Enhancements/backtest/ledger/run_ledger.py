@@ -119,9 +119,11 @@ def measure(group: pd.DataFrame, column: str) -> dict:
             "share_ge_100pct": round(float((values >= 1).mean()), 4)}
 
 
-def run(label: str) -> dict:
+def run(label: str, overrides: dict | None = None) -> dict:
     snapshot = load_registry().resolve(RULES_SESSION)
     s = sig.settings_from_snapshot(snapshot)
+    if overrides:                      # an experiment, recorded in the ledger; never a production change
+        s = replace(s, **overrides)
     frame = pd.read_csv(REFERENCE).dropna(subset=["spot", "stop", "target", "hold", "dte", "iv", "forecast_vol",
                                                   "entry_bid", "entry_ask"])
     frame = frame.drop_duplicates(["session", "ticker"])
@@ -183,7 +185,7 @@ def run(label: str) -> dict:
         "trial": len(history) + 1, "label": label,
         "recorded_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": commit, "git_dirty": dirty, "config_snapshot_id": snapshot.snapshot_id,
-        "signal_version": s.signal_version, "dataset": REFERENCE.name, "dataset_sha256": sha256(REFERENCE),
+        "signal_version": s.signal_version, "settings_overrides": overrides or {}, "dataset": REFERENCE.name, "dataset_sha256": sha256(REFERENCE),
         "reference_candidates": int(len(frame)), "eligible_candidates": int(len(scored)),
         "tickets_per_session": tickets_per_session,
         "mean_tickets_per_session": round(float(np.mean(list(tickets_per_session.values()))), 2)
@@ -217,7 +219,8 @@ def show() -> None:
         a = r["eligible_all"]["timed"]
         lines.append({
             "trial": r["trial"], "commit": r["git_commit"] + ("*" if r["git_dirty"] else ""),
-            "label": r["label"][:40], "dataset": r["dataset_sha256"][:8],
+            "label": r["label"][:40], "overrides": ",".join(f"{k}={v}" for k, v in r.get("settings_overrides", {}).items()) or "-",
+            "dataset": r["dataset_sha256"][:8],
             "tickets/session": r["mean_tickets_per_session"], "zero days": r["sessions_with_zero_tickets"],
             "tickets closed": t.get("closed", 0), "tickets mean (timed)": t.get("mean"),
             "tickets hit": t.get("hit_rate"), "eligible closed": a.get("closed", 0),
@@ -232,12 +235,18 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--label", default="")
     parser.add_argument("--show", action="store_true")
+    parser.add_argument("--override", action="append", default=[],
+                        help="experiment only: signal setting=value, e.g. min_dte_cover=0")
     args = parser.parse_args()
     if not args.show:
         if not args.label:
             print("--label is required: say what changed", file=sys.stderr)
             return 2
-        record = run(args.label)
+        overrides = {}
+        for item in args.override:
+            key, _, value = item.partition("=")
+            overrides[key] = type(getattr(sig.settings_from_snapshot(load_registry().resolve(RULES_SESSION)), key))(value)
+        record = run(args.label, overrides)
         print(json.dumps({k: record[k] for k in ("trial", "label", "git_commit", "git_dirty",
                                                  "mean_tickets_per_session", "sessions_with_zero_tickets",
                                                  "rejections", "tickets", "eligible_all")}, indent=2))
