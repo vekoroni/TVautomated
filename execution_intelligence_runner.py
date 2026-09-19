@@ -1038,6 +1038,19 @@ def _ensure_options_quotes_from_contract(ctx, row: dict) -> bool:
 # ENHANCEMENT 1 â€” CURRENT EDGE SOVEREIGN VETO
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+def _attach_physics_verdict(row: dict) -> dict:
+    """Set physics_verdict from the physics transition label and the final direction (ACK, 19 Sep 2026)."""
+    try:
+        from vanguard.physics_state_engine import physics_forward_verdict
+    except Exception:  # pragma: no cover - legacy flat layout
+        from physics_state_engine import physics_forward_verdict  # type: ignore
+    if not str(row.get("physics_verdict") or "").strip():
+        direction = next((row.get(k) for k in ("final_direction", "governed_direction", "canonical_direction",
+                                                "direction") if str(row.get(k) or "").strip()), None)
+        row["physics_verdict"] = physics_forward_verdict(row.get("state_transition_label"), direction)
+    return row
+
+
 def _apply_current_edge_hard_veto(row: dict) -> dict:
     """
     Sovereign current-edge veto (Phase 1 â€” production version).
@@ -1521,6 +1534,7 @@ def _process_row(
     # â”€â”€ End horizon fields passthrough â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     # â”€â”€ ENHANCEMENT 1: Current Edge Sovereign Veto (call 2 of 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    row = _attach_physics_verdict(row)
     row = _apply_current_edge_hard_veto(row)
     # â”€â”€ SIGNAL AUTHORITY POLICY (call 2 of 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     row = _apply_signal_authority_policy(row)

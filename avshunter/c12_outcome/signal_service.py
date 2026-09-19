@@ -22,6 +22,8 @@ from .expression import contract_expiry
 REPO = Path(__file__).resolve().parents[2]
 CALIBRATION_PATH = REPO / "config" / "calibration" / "volatility_range_calibration_v1.json"
 TICKET_FIELDS = [f.name for f in fields(sig.SignalTicket)]
+# Display-only columns taken from the ticket's book row (ACK 19 Sep 2026); never part of the ledger record.
+TICKET_DISPLAY_FIELDS = ["physics_verdict"]
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -127,27 +129,36 @@ def issue_signals(connection: sqlite3.Connection, runs_dir: Path, run_id: str, s
                                             reason=reason.split(":")[0], rank=ranks.get(ticker))
                for ticker, reason in rejections.items()]
     new_events = ledger.append_many(events)
+    book_by_ticker = {str(r.get("ticker") or "").upper(): r for r in book}
+
+    def _display(ticker: str) -> dict:
+        source = book_by_ticker.get(ticker.upper(), {})
+        return {field: source.get(field, "") for field in TICKET_DISPLAY_FIELDS}
+
     ticket_rows = []
     for t in tickets:
         row = {k: storage._plain(v) for k, v in asdict(t).items()}
         row["h9r_gap_up_event"] = int(t.h9r_gap_up_event)
+        row.update(_display(t.ticker))
         ticket_rows.append(row)
     out_dir = run_dir / "signals"
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = f"signal_tickets_{run_id}_{issue_session.isoformat()}"
     with (out_dir / f"{stem}.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=TICKET_FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=TICKET_FIELDS + TICKET_DISPLAY_FIELDS)
         writer.writeheader()
         for row in ticket_rows:
-            writer.writerow({k: row[k] for k in TICKET_FIELDS})
+            writer.writerow({k: row[k] for k in TICKET_FIELDS + TICKET_DISPLAY_FIELDS})
     watch = sig.watchlist(held_back, s)
     with (out_dir / f"{stem}_watchlist.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["listing"] + TICKET_FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=["listing"] + TICKET_FIELDS + TICKET_DISPLAY_FIELDS)
         writer.writeheader()
         for t in watch:
             row = {k: storage._plain(v) for k, v in asdict(t).items()}
             row["h9r_gap_up_event"] = int(t.h9r_gap_up_event)
-            writer.writerow({"listing": "WATCHLIST_RANKED_NOT_ISSUED", **{k: row[k] for k in TICKET_FIELDS}})
+            row.update(_display(t.ticker))
+            writer.writerow({"listing": "WATCHLIST_RANKED_NOT_ISSUED",
+                             **{k: row[k] for k in TICKET_FIELDS + TICKET_DISPLAY_FIELDS}})
     counts = Counter(r.split(":")[0] for r in rejections.values())
     (out_dir / f"{stem}.md").write_text(_ticket_page(tickets, counts, run_id, issue_session, now, watch=watch),
                                         encoding="utf-8")

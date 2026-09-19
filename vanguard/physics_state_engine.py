@@ -503,3 +503,34 @@ def physics_price_inputs(ticker: str, as_of: Any) -> Dict[str, Any]:
         if var_m > 0:
             out["beta"] = sum((t - mean_t) * (m - mean_m) for t, m in zip(tr, mr)) / var_m
     return out
+
+
+
+# ── Forward pressure verdict (ACK, 19 Sep 2026) ───────────────────────────────────────────────────────────────
+# EIL routes a no-current-edge row to EOD_PROBE_CANDIDATE when physics shows forward pressure in the trade's
+# direction; nothing produced that verdict, so the route never fired. Display, measurement and review routing
+# only - no capital, no ticket ranking.
+_PRESSURE_WITH = {
+    "CALL": {"BALANCE_TO_UPSIDE_EXPANSION": "EARLY_PRESSURE_BUILDING", "CONTINUATION_UP": "MONETISABLE_PRESSURE"},
+    "PUT": {"BALANCE_TO_DOWNSIDE_EXPANSION": "EARLY_PRESSURE_BUILDING", "CONTINUATION_DOWN": "MONETISABLE_PRESSURE"},
+}
+_PRESSURE_AGAINST = {
+    "CALL": {"BALANCE_TO_DOWNSIDE_EXPANSION", "CONTINUATION_DOWN"},
+    "PUT": {"BALANCE_TO_UPSIDE_EXPANSION", "CONTINUATION_UP"},
+}
+
+
+def physics_forward_verdict(state_transition_label: Any, direction: Any) -> str:
+    """EARLY_PRESSURE_BUILDING | MONETISABLE_PRESSURE | PRESSURE_AGAINST_DIRECTION | NO_DIRECTIONAL_PRESSURE |
+    NOT_APPLICABLE_NON_DIRECTIONAL | PHYSICS_UNAVAILABLE."""
+    side = str(direction or "").strip().upper()
+    if side not in _PRESSURE_WITH:
+        return "NOT_APPLICABLE_NON_DIRECTIONAL"
+    label = str(state_transition_label or "").strip().upper()
+    if label in MISSING_TOKENS:
+        return "PHYSICS_UNAVAILABLE"
+    if label in _PRESSURE_WITH[side]:
+        return _PRESSURE_WITH[side][label]
+    if label in _PRESSURE_AGAINST[side]:
+        return "PRESSURE_AGAINST_DIRECTION"
+    return "NO_DIRECTIONAL_PRESSURE"
