@@ -12,6 +12,18 @@ design thesis (M12–M24).
 
 ---
 
+## 0. H+ is now live (19 Sep 2026, re-scored after the 760-ticker daily backfill)
+
+`Enhancements/research/legacy_signal_scoring.py` re-run: 1,786 legacy recommendations, 26 May-27 Aug 2026, option
+coverage 96.3% (1,719/1,786) now that the backfill supplies daily rather than weekly-only chains. Corroborates
+round 1 on an independent, earlier, larger sample: underlying ~flat (h20 mean -0.7%, hit 50%), options lose far
+more (h20 mean -26.4%, hit 27%, >=+100% share 9.7%), CALLs underperform PUTs (regime, not stock skill). Top-5-per-
+run beats the field on a second sample (-8.4% mean / 33% hit / 11.9% >=+100% vs -19.2%/28%/6.3% at h5) -
+independent confirmation the ranking carries information even though options remain net negative. New finding:
+NEGATIVE_RR-flagged trades carry the highest 20-session tail share of any verdict bucket (15.1% >=+100%) despite
+the worst 5-session result - direct evidence for rank-not-gate, feeds FX/TC. Full detail:
+`Enhancements/research/legacy_signals/legacy_signal_summary.json`.
+
 ## 1. Populations
 
 | Id | Population | Source | Judges |
