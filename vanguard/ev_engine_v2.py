@@ -206,11 +206,9 @@ class EVEngineV2:
         return 0.0
 
     def _regime_mult(self,x):
-        b={"RISK_ON":1.08,"BULLISH":1.08,"TRANSITIONAL":1.00,"NEUTRAL":1.00,
-           "RISK_OFF":0.88,"BEARISH":0.88,"FLIPPED":0.72}.get(
-            x.regime_state.upper().replace(" ","_"),1.00)
-        d={"Stable":1.00,"Drifting":0.88,"Flipped":0.72}.get(x.regime_drift_status,0.88)
-        return _clamp(b*d,0.50,1.20)
+        # D7 19 Sep 2026: macro regime/drift is display-only (rule 6); the unmeasured regime x drift factor
+        # (including the 0.88 default for an unrecognised drift status) is removed. Neutral until measured.
+        return 1.00
 
     def _conf_mult(self,x):
         return _clamp(0.50*(x.data_quality_score/100)+0.50*(x.calibration_confidence/100),0.25,1.00)

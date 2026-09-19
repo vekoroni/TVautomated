@@ -382,9 +382,8 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             runway_pct = abs((spot - gamma_flip) / spot)
             runway_source = "GAMMA_FLIP_PROXY"
         if runway_source != "NONE" and runway_pct < cfg_gate.MIN_RUNWAY_PCT:
-            warnings.append("WARN_LOW_RUNWAY")
-            penalty *= 0.5
-            log.info("[%s] WARN_LOW_RUNWAY runway=%.2f%% -> 0.5x", ticker, runway_pct * 100)
+            warnings.append("WARN_LOW_RUNWAY")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
+            log.info("[%s] WARN_LOW_RUNWAY runway=%.2f%% (display only, GEX/wall)", ticker, runway_pct * 100)
 
         # GATE-05: Gamma flip, trending-day bypass.
         gamma_state = "UNKNOWN"
@@ -392,9 +391,8 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             gamma_state = "ABOVE_FLIP" if spot > gamma_flip else "BELOW_FLIP"
         if gamma_state == "ABOVE_FLIP":
             if rcs_label not in cfg_gate.TRENDING_REGIMES:
-                warnings.append("WARN_ABOVE_GAMMA")
-                penalty *= 0.75
-                log.info("[%s] WARN_ABOVE_GAMMA rcs=%s -> 0.75x", ticker, rcs_label)
+                warnings.append("WARN_ABOVE_GAMMA")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
+                log.info("[%s] WARN_ABOVE_GAMMA rcs=%s (display only, GEX)", ticker, rcs_label)
             else:
                 log.info("[%s] Above gamma flip, trending regime %s - bypass", ticker, rcs_label)
 
@@ -410,10 +408,9 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
                     runway_pct * 100,
                 )
             else:
-                warnings.append("WARN_TARGET_EXCEEDS_RUNWAY")
-                penalty *= 0.5
+                warnings.append("WARN_TARGET_EXCEEDS_RUNWAY")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
                 log.info(
-                    "[%s] WARN_TARGET_EXCEEDS_RUNWAY need=%.2f%% runway=%.2f%% -> 0.5x",
+                    "[%s] WARN_TARGET_EXCEEDS_RUNWAY need=%.2f%% runway=%.2f%% (display only, GEX/wall runway)",
                     ticker,
                     target_move_pct * 100,
                     runway_pct * 100,

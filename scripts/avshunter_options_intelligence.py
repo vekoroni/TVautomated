@@ -6480,8 +6480,9 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
     if phase in ('C','D'):
         pos.append(f"Phase {phase} — optimal entry timing (+{pp})")
 
+    # D7 19 Sep 2026: macro regime is display-only (rule 6) - noted, never scored (was score -= 3).
     if regime == 'TRANSITIONAL' and ivp and ivp > IVP_CHEAP_MAX:
-        neg.append("TRANSITIONAL regime + expensive vol — dual headwind"); score -= 3
+        neg.append("TRANSITIONAL regime + expensive vol — noted, not scored (macro is display-only)")
 
     # ── [C] TRADE ECONOMICS (22 pts) ──────────────────────────────────────────
     rr     = econ.get('rr_options', 0)
