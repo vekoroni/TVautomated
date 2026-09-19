@@ -3253,6 +3253,50 @@ def compute_pcr(df: pd.DataFrame) -> Tuple[Optional[float], str]:
     signal = 'BULLISH' if pcr < 0.7 else ('BEARISH' if pcr > 1.0 else 'NEUTRAL')
     return round(pcr, 3), signal
 
+def compute_delta_weighted_oi(df: pd.DataFrame, spot: float) -> Dict:
+    """
+    Delta-weighted options flow: directional exposure and a volume-based put/call
+    ratio, both weighted by real per-contract data rather than raw OI alone.
+
+    F7 19 Sep 2026: this function was called throughout the module (dw_call_exposure_m,
+    dw_put_exposure_m, dw_ratio, dw_signal, dw_pcr_vol) but was never defined - the call
+    site's broad except silently caught the resulting NameError and fell back to {},
+    so every row reported chain volume as unavailable even when it was genuinely printed.
+    dw_pcr_vol uses only contracts with a real printed volume (never OI-backfilled), so it
+    stays None - not fabricated - on chains where no volume was reported at all.
+    """
+    result = {
+        'dw_call_exposure': None, 'dw_put_exposure': None,
+        'dw_ratio': None, 'dw_signal': 'UNKNOWN', 'dw_pcr_vol': None,
+    }
+    if df is None or df.empty or spot is None or spot <= 0:
+        return result
+
+    right     = df['right'].astype(str).str.upper()
+    delta_abs = pd.to_numeric(df.get('delta'), errors='coerce').abs()
+    oi        = pd.to_numeric(df.get('open_interest'), errors='coerce').fillna(0.0)
+    volume    = pd.to_numeric(df.get('volume'), errors='coerce')
+
+    calls = right == 'C'
+    puts  = right == 'P'
+
+    call_exposure = float((delta_abs.where(calls, 0.0) * oi * spot * 100.0).sum())
+    put_exposure  = float((delta_abs.where(puts, 0.0) * oi * spot * 100.0).sum())
+    result['dw_call_exposure'] = round(call_exposure / 1e6, 3)
+    result['dw_put_exposure']  = round(put_exposure / 1e6, 3)
+    if call_exposure > 0:
+        dw_ratio = put_exposure / call_exposure
+        result['dw_ratio']  = round(dw_ratio, 3)
+        result['dw_signal'] = 'BULLISH' if dw_ratio < 0.7 else ('BEARISH' if dw_ratio > 1.0 else 'NEUTRAL')
+
+    if volume.notna().any():
+        call_vol = float(volume.where(calls, 0.0).fillna(0.0).sum())
+        put_vol  = float(volume.where(puts, 0.0).fillna(0.0).sum())
+        if call_vol > 0:
+            result['dw_pcr_vol'] = round(put_vol / call_vol, 3)
+
+    return result
+
 
 
 
@@ -7598,7 +7642,11 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             if _chain_ctx.get('atm_iv') is not None:
                 for _k in ('term_structure','term_ratio','iv_direction',
                            'skew_label','risk_reversal','heston_params',
-                           'vol_of_vol','iv_accel_detected'):
+                           'vol_of_vol','iv_accel_detected',
+                           # F7/O2 19 Sep 2026: these two were hardcoded None above and
+                           # never re-enhanced, even though compute_iv_context (via
+                           # compute_iv_skew) genuinely computes them from the chain.
+                           'put_25d_iv','call_25d_iv'):
                     if _chain_ctx.get(_k) is not None:
                         iv_ctx[_k] = _chain_ctx[_k]
         except Exception:
