@@ -357,7 +357,8 @@ def test_offline_replay_disables_auxiliary_provider_calls(monkeypatch) -> None:
 
     contract = {"mark": 1.0, "mark_synthetic": True}
     assert oi.enrich_contract_with_real_quotes(contract) is contract
-    assert oi.fetch_sector_regime("AAPL")["sector_regime"] == "UNKNOWN"
+    # F5 (19 Sep 2026): sector figures come from the canonical price store, never a provider, in replay too.
+    assert oi.fetch_sector_regime("AAPL")["sector_data_source"] in (None, "CANONICAL_HISTORICAL_PRICE_DB")
     assert oi._fetch_underlying_nbbo_fields("AAPL")["l2_quote_source"] == "UNAVAILABLE"
     assert calls == []
 

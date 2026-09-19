@@ -491,17 +491,18 @@ def _macro_execution_caution(drawer_active: bool, freshness: str, confidence: fl
 def _ticker_alignment(packet: Mapping[str, Any], row: Optional[Mapping[str, Any]] = None) -> tuple[str, float]:
     if not row:
         return "UNKNOWN", 0.0
-    sector = str(
-        row.get("gics_sector")
-        or row.get("sector")
-        or row.get("sector_etf")
-        or row.get("sector_etf_mapped")
-        or ""
-    ).strip().upper()
+    # F5 (19 Sep 2026): a blank value (None, NaN, "nan") is missing, never the text "NAN"; the sector lists may
+    # arrive as JSON text from a CSV row and are parsed, never iterated letter by letter.
+    def _present(value: Any) -> str:
+        text = "" if value is None else str(value).strip().upper()
+        return "" if text in {"", "NAN", "NONE", "NULL"} else text
+
+    sector = next((_present(row.get(key)) for key in ("gics_sector", "sector", "sector_etf", "sector_etf_mapped")
+                   if _present(row.get(key))), "")
     if not sector:
         return "UNKNOWN", 0.0
-    preferred = [str(v).upper() for v in packet.get("preferred_sectors", []) or []]
-    avoid = [str(v).upper() for v in packet.get("avoid_sectors", []) or []]
+    preferred = [v.upper() for v in _as_list(packet.get("preferred_sectors"))]
+    avoid = [v.upper() for v in _as_list(packet.get("avoid_sectors"))]
     if any(sector in p or p in sector for p in preferred):
         return "ALIGNED", 100.0
     if any(sector in a or a in sector for a in avoid):

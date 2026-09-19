@@ -3402,7 +3402,95 @@ def compute_volume_confirmation(vol_ratio: float, phase: str,
     }
 
 
-def fetch_sector_regime(ticker: str) -> Dict:
+# F5 (19 Sep 2026): the canonical price store (point-in-time daily closes for every ticker, SPY and the sector
+# ETFs) is the price source for sector momentum and relative strength; no provider call, works in replay.
+CANONICAL_PRICE_DB = Path(__file__).resolve().parents[1] / "data" / "canonical" / "historical_prices.sqlite"
+
+
+@functools.lru_cache(maxsize=4096)
+def _canonical_closes(symbol: str, as_of: str, count: int) -> Tuple[float, ...]:
+    """The last ``count`` closes on or before ``as_of`` (oldest first); empty when unavailable."""
+    import sqlite3
+    try:
+        con = sqlite3.connect(f"file:{Path(CANONICAL_PRICE_DB).as_posix()}?mode=ro", uri=True)
+        try:
+            rows = con.execute(
+                "SELECT close FROM ohlcv_daily WHERE ticker = ? AND trading_date <= ? AND close IS NOT NULL "
+                "ORDER BY trading_date DESC LIMIT ?", (symbol.upper(), as_of, count)).fetchall()
+        finally:
+            con.close()
+    except Exception:  # noqa: BLE001 - unavailable is reported by the caller, never zero
+        return ()
+    return tuple(float(r[0]) for r in reversed(rows))
+
+
+def _period_return_pct(closes: Tuple[float, ...], sessions: int) -> Optional[float]:
+    if len(closes) < sessions + 1 or closes[-sessions - 1] <= 0:
+        return None
+    return (closes[-1] / closes[-sessions - 1] - 1.0) * 100.0
+
+
+def fetch_sector_regime(ticker: str, sector_etf: Optional[str] = None, as_of: Optional[date] = None) -> Dict:
+    """Sector ETF momentum and the ticker's relative strength (F5, 19 Sep 2026).
+
+    ETF: the governed ticker map first, else the candidate's own sector ETF from Discovery. Prices: the canonical
+    price store up to the evidence session ``as_of`` (point-in-time). Relative strength (20 sessions, percentage
+    points vs SPY and vs the sector ETF) is recorded for display and measurement only - it is not a direction or
+    scoring input. Missing prices are flagged, never zero. The legacy provider fetch remains the fallback for the
+    sector return when the store has no ETF closes.
+    """
+    session = as_of or date.today()
+    mapped = _legacy_sector_regime_map().get(ticker.upper())
+    supplied = str(sector_etf or '').strip().upper()
+    supplied = supplied if supplied and supplied not in {'NAN', 'NONE', 'NULL', 'UNKNOWN'} else ''
+    etf = mapped or supplied or None
+    result = {
+        'sector_etf': etf,
+        'sector_etf_source': 'SECTOR_MAP' if mapped else 'DISCOVERY_SECTOR_ETF' if supplied else None,
+        'sector_5d_return': None,
+        'sector_regime': 'UNKNOWN',
+        'sector_alignment_ok': True,
+        'sector_data_source': None,
+        'rs_vs_spy_20d_pct': None,
+        'rs_vs_sector_20d_pct': None,
+        'relative_strength_state': 'NOT_EVALUATED',
+    }
+    key = session.isoformat()
+    etf_closes = _canonical_closes(etf, key, 21) if etf else ()
+    etf_5d = _period_return_pct(etf_closes, 5)
+    if etf_5d is not None:
+        result['sector_5d_return'] = round(etf_5d, 2)
+        result['sector_data_source'] = 'CANONICAL_HISTORICAL_PRICE_DB'
+        ret_5d = etf_5d / 100.0
+        result['sector_regime'] = ('STRONG_UPTREND' if ret_5d > 0.03 else 'MILD_UPTREND' if ret_5d > 0.01
+                                   else 'STRONG_DOWNTREND' if ret_5d < -0.03 else 'MILD_DOWNTREND' if ret_5d < -0.01
+                                   else 'FLAT')
+    elif etf and mapped:
+        legacy = _legacy_fetch_sector_regime(ticker)
+        if legacy.get('sector_5d_return') is not None:
+            result.update({k: legacy[k] for k in ('sector_5d_return', 'sector_regime')})
+            result['sector_data_source'] = 'MARKETDATA_CANDLES_FALLBACK'
+
+    ticker_20d = _period_return_pct(_canonical_closes(ticker, key, 21), 20)
+    spy_20d = _period_return_pct(_canonical_closes('SPY', key, 21), 20)
+    etf_20d = _period_return_pct(etf_closes, 20)
+    if ticker_20d is None:
+        result['relative_strength_state'] = 'TICKER_PRICES_UNAVAILABLE'
+    else:
+        result['rs_vs_spy_20d_pct'] = round(ticker_20d - spy_20d, 2) if spy_20d is not None else None
+        result['rs_vs_sector_20d_pct'] = round(ticker_20d - etf_20d, 2) if etf_20d is not None else None
+        result['relative_strength_state'] = (
+            'AVAILABLE' if None not in (result['rs_vs_spy_20d_pct'], result['rs_vs_sector_20d_pct'])
+            else 'SECTOR_OR_SPY_PRICES_UNAVAILABLE')
+    return result
+
+
+def _legacy_sector_regime_map() -> Dict[str, str]:
+    """The governed ticker -> sector ETF map (the table inside the legacy fetch)."""
+    return _legacy_fetch_sector_regime("", _map_only=True)
+
+
+def _legacy_fetch_sector_regime(ticker: str, _map_only: bool = False) -> Dict:
     """
     Sector ETF Regime Modifier.
 
@@ -3414,14 +3502,6 @@ def fetch_sector_regime(ticker: str) -> Dict:
 
     Returns: sector_etf, sector_5d_return, sector_regime, sector_alignment_ok
     """
-    if _canonical_offline_replay_enabled():
-        return {
-            'sector_etf': None,
-            'sector_5d_return': None,
-            'sector_regime': 'UNKNOWN',
-            'sector_alignment_ok': True,
-        }
-
     # Sector ETF mapping — common US equities
     SECTOR_MAP = {
         # Consumer Staples
@@ -3455,12 +3535,16 @@ def fetch_sector_regime(ticker: str) -> Dict:
         'T':'XLC','VZ':'XLC','CMCSA':'XLC','NFLX':'XLC','DIS':'XLC',
     }
 
+    if _map_only:
+        return SECTOR_MAP
     result = {
         'sector_etf':           None,
         'sector_5d_return':     None,
         'sector_regime':        'UNKNOWN',
         'sector_alignment_ok':  True,   # assume ok if data unavailable
     }
+    if _canonical_offline_replay_enabled():
+        return result
 
     sector_etf = SECTOR_MAP.get(ticker.upper())
     if not sector_etf:
@@ -7477,7 +7561,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     # ── 3b. Sector regime ──────────────────────────────────────────────────
     try:
-        sector_data = fetch_sector_regime(ticker)
+        _raw_row = ctx.get('_signal_row')
+        _row_get = _raw_row.get if hasattr(_raw_row, 'get') else (lambda key, default=None: default)
+        sector_data = fetch_sector_regime(ticker, sector_etf=(_row_get('sector_etf') or _row_get('sector_etf_mapped')),
+                                          as_of=_CDS_V2_SESSION)
     except Exception:
         sector_data = {}
 
@@ -8070,6 +8157,12 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'sector_etf'              : (sector_data.get('sector_etf') or signal_row.get('sector_etf') or signal_row.get('sector_etf_mapped') or ''),
         'sector_5d_return'        : sector_data.get('sector_5d_return'),
         'sector_regime'           : sector_data.get('sector_regime'),
+        # F5 (19 Sep 2026): source of the sector figures and relative strength - display and measurement only.
+        'sector_etf_source'       : sector_data.get('sector_etf_source'),
+        'sector_data_source'      : sector_data.get('sector_data_source'),
+        'rs_vs_spy_20d_pct'       : sector_data.get('rs_vs_spy_20d_pct'),
+        'rs_vs_sector_20d_pct'    : sector_data.get('rs_vs_sector_20d_pct'),
+        'relative_strength_state' : sector_data.get('relative_strength_state'),
 
         # v1.1 — Macro sector alignment (from sector_alignment.py via env var)
         # gics_sector_norm is pre-populated from sector_etf reverse-map so classify_from_row()
