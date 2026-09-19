@@ -539,15 +539,16 @@ def detect_early_position(df: pd.DataFrame, wyckoff_data: dict, precor_data: dic
         current_price = float(df['close'].iloc[-1])
         stop_loss = current_price * 0.97
         
-        # Estimate days to trigger based on compression
-        if compression_ratio < 0.55:
-            days_to_trigger = 3
-        elif compression_ratio < 0.65:
-            days_to_trigger = 5
-        elif compression_ratio < 0.75:
-            days_to_trigger = 8
+        # F4 19 Sep 2026: distance to trigger is measured from the compression range edge, not a
+        # compression-ratio bucket lookup unrelated to actual price distance.
+        distance_to_trigger_price = min(abs(high_level - current_price), abs(current_price - low_level))
+        distance_to_trigger_pct = round(distance_to_trigger_price / current_price, 4) if current_price > 0 else None
+        if atr_current > 0:
+            days_to_trigger = max(1, min(20, round(distance_to_trigger_price / atr_current)))
+            days_to_trigger_source = 'ATR_DISTANCE_TO_RANGE_EDGE'
         else:
             days_to_trigger = 10
+            days_to_trigger_source = 'ATR_UNAVAILABLE_DEFAULT_10'
         
         # Get phase for info only (NOT required)
         phase = str(wyckoff_data.get('current_phase', 'UNKNOWN')).upper()
@@ -570,6 +571,8 @@ def detect_early_position(df: pd.DataFrame, wyckoff_data: dict, precor_data: dic
             'stop_pct': 3.0,
             'days_in_range': days_in_range,
             'days_to_trigger': days_to_trigger,
+            'days_to_trigger_source': days_to_trigger_source,
+            'distance_to_trigger_pct': distance_to_trigger_pct,
             'compression_ratio': round(compression_ratio, 3),
             'early_formation_score': score,
             'conditions_met': conditions,
