@@ -320,6 +320,8 @@ FINAL_BOOK_FIELDS = [
     "contract_value_best_symbol",
     "contract_value_best_r_central",
     "contract_value_alternatives",
+    "thesis_geometry_review_state",
+    "thesis_geometry_review_reason",
     "emp_path_quality_flag",
     "emp_path_r_cautious",
     "emp_path_r_central",
@@ -3039,6 +3041,7 @@ def opportunity_book_row(
             "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
             "contract_value_r_central", "contract_value_r_cautious", "contract_value_score_choice_symbol",
             "contract_value_best_symbol", "contract_value_best_r_central", "contract_value_alternatives",
+            "thesis_geometry_review_state", "thesis_geometry_review_reason",
             "emp_path_quality_flag", "emp_path_r_cautious", "emp_path_r_central", "emp_path_r_upside",
             "emp_path_last_exit_sessions", "emp_path_forced_exit_share")},
         "quote_as_of": first(

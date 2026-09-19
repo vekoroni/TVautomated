@@ -4655,6 +4655,45 @@ def _ev3_direction_fields(
     }
 
 
+THESIS_GEOMETRY_REVIEW_FIELDS = ("thesis_geometry_review_state", "thesis_geometry_review_reason")
+_STRUCTURE_SIDE = {"ACCUMULATION": "CALL", "DISTRIBUTION": "PUT"}
+
+
+def thesis_geometry_review(ctx: Dict[str, Any]) -> Dict[str, str]:
+    """Label a thesis whose stop or target is unusable, for manual review (ACK, 19 Sep 2026).
+
+    Labels only: no stop or target is invented, no row is removed, nothing is gated.
+    DIRECTION_CONTRADICTS_STRUCTURE - CALL in Wyckoff DISTRIBUTION or PUT in ACCUMULATION: the structural
+      invalidation lies on the wrong side, so no stop exists (163 of 211 unvaluable rows on 18 Sep).
+    STOP_TOO_DISTANT_NO_TARGET - the stop is so far away that entry -/+ 3 x its distance is not a usable
+      target (42 PUTs on 18 Sep, stop a median 44% above price).
+    MISSING_STOP / MISSING_TARGET - otherwise missing; COMPLETE - both present.
+    """
+    direction = str(ctx.get('direction') or '').upper()
+    raw_row = ctx.get('_signal_row')
+    row = raw_row.to_dict() if isinstance(raw_row, pd.Series) else dict(raw_row or {})
+    mode = str(row.get('wyckoff_mode') or '').strip().upper() or 'UNKNOWN'
+    stop, target, entry = ctx.get('stop'), ctx.get('structural_target'), ctx.get('entry')
+    facts = f"direction={direction or 'NONE'}; wyckoff_mode={mode}"
+    if direction not in {'CALL', 'PUT'}:
+        return {"thesis_geometry_review_state": "NOT_APPLICABLE_NON_DIRECTIONAL",
+                "thesis_geometry_review_reason": facts}
+    if _STRUCTURE_SIDE.get(mode) not in (None, direction):
+        return {"thesis_geometry_review_state": "DIRECTION_CONTRADICTS_STRUCTURE",
+                "thesis_geometry_review_reason": f"{facts}: structural invalidation lies on the wrong side"}
+    if stop is not None and target is None and ctx.get('structural_target_state') == 'TARGET_3R_NON_POSITIVE':
+        distance = abs(float(stop) - float(entry)) / float(entry) if entry else None
+        shown = f"{distance:.1%}" if distance is not None else "UNKNOWN"
+        return {"thesis_geometry_review_state": "STOP_TOO_DISTANT_NO_TARGET",
+                "thesis_geometry_review_reason": f"{facts}; stop distance {shown}: 3R target not positive"}
+    if stop is None:
+        return {"thesis_geometry_review_state": "MISSING_STOP", "thesis_geometry_review_reason": facts}
+    if target is None:
+        return {"thesis_geometry_review_state": "MISSING_TARGET",
+                "thesis_geometry_review_reason": f"{facts}; target state {ctx.get('structural_target_state')}"}
+    return {"thesis_geometry_review_state": "COMPLETE", "thesis_geometry_review_reason": facts}
+
+
 def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     """Return direction and macro/bond context for every output branch.
 
@@ -4702,6 +4741,7 @@ def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     for field in _UPSTREAM_MACRO_DECISION_FIELDS:
         if field in signal_row:
             fields[field] = signal_row.get(field)
+    fields.update(thesis_geometry_review(ctx))
     return fields
 
 
@@ -9601,6 +9641,7 @@ def run_options_layer(
         'previous_contract_symbol','contract_changed','contract_selection_reason',
         'contract_runway_floor_days','contract_runway_basis','contract_runway_state','spread_above_limit',
         *CONTRACT_VALUE_FIELDS,
+        *THESIS_GEOMETRY_REVIEW_FIELDS,
         'quote_as_of','quote_freshness','liquidity_persistence_status',
         'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',
         'option_chain_provider','option_chain_resolution',
