@@ -322,6 +322,42 @@ FINAL_BOOK_FIELDS = [
     "contract_value_alternatives",
     "thesis_geometry_review_state",
     "thesis_geometry_review_reason",
+    "structure_detail_state",
+    "crabel_bucket",
+    "crabel_compression",
+    "crabel_pattern",
+    "crabel_score",
+    "crabel_state",
+    "wyckoff_entry_trigger",
+    "wyckoff_execution_bias",
+    "wyckoff_mode",
+    "wyckoff_phase_bucket",
+    "wyckoff_phase_granular",
+    "wyckoff_score",
+    "wyckoff_setup_quality",
+    "wyckoff_transition_conf",
+    "wyckoff_transition_to",
+    "wyckoff_validation_alternative_phase",
+    "wyckoff_validation_alternative_phase_probability",
+    "wyckoff_validation_completed_phase_events",
+    "wyckoff_validation_contradicting_evidence",
+    "wyckoff_validation_event_sequence_valid",
+    "wyckoff_validation_expected_bars_remaining",
+    "wyckoff_validation_last_confirmed_event",
+    "wyckoff_validation_missing_phase_events",
+    "wyckoff_validation_next_expected_event",
+    "wyckoff_validation_phase_churn_warning",
+    "wyckoff_validation_phase_correctness_score",
+    "wyckoff_validation_phase_maturity_score",
+    "wyckoff_validation_phase_probability",
+    "wyckoff_validation_phase_status",
+    "wyckoff_validation_structural_invalidation_level",
+    "wyckoff_validation_timeframe_alignment",
+    "wyckoff_validation_transition_probability_10_bars",
+    "wyckoff_validation_transition_probability_20_bars",
+    "wyckoff_validation_transition_probability_5_bars",
+    "wyckoff_validation_wyckoff_phase",
+    "wyckoff_validation_wyckoff_structure",
     "emp_path_quality_flag",
     "emp_path_r_cautious",
     "emp_path_r_central",
@@ -3041,7 +3077,8 @@ def opportunity_book_row(
             "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
             "contract_value_r_central", "contract_value_r_cautious", "contract_value_score_choice_symbol",
             "contract_value_best_symbol", "contract_value_best_r_central", "contract_value_alternatives",
-            "thesis_geometry_review_state", "thesis_geometry_review_reason",
+            "thesis_geometry_review_state", "thesis_geometry_review_reason", "structure_detail_state",
+            *STRUCTURE_DETAIL_FIELDS,
             "emp_path_quality_flag", "emp_path_r_cautious", "emp_path_r_central", "emp_path_r_upside",
             "emp_path_last_exit_sessions", "emp_path_forced_exit_share")},
         "quote_as_of": first(
@@ -4015,6 +4052,69 @@ def _enrich_lab_extract_rows_from_run_sources(rows: List[Dict[str, Any]], runs_d
     return {"sources": source_manifest, "source_errors": source_errors}
 
 
+# F6 (ACK, 19 Sep 2026): Discovery owns the Crabel and Wyckoff detail. On run 20260918_112522 none of these 35
+# fields reached the book; the book takes them from the run's Discovery file by ticker (display only).
+STRUCTURE_DETAIL_FIELDS = (
+    "crabel_bucket",
+    "crabel_compression",
+    "crabel_pattern",
+    "crabel_score",
+    "crabel_state",
+    "wyckoff_entry_trigger",
+    "wyckoff_execution_bias",
+    "wyckoff_mode",
+    "wyckoff_phase_bucket",
+    "wyckoff_phase_granular",
+    "wyckoff_score",
+    "wyckoff_setup_quality",
+    "wyckoff_transition_conf",
+    "wyckoff_transition_to",
+    "wyckoff_validation_alternative_phase",
+    "wyckoff_validation_alternative_phase_probability",
+    "wyckoff_validation_completed_phase_events",
+    "wyckoff_validation_contradicting_evidence",
+    "wyckoff_validation_event_sequence_valid",
+    "wyckoff_validation_expected_bars_remaining",
+    "wyckoff_validation_last_confirmed_event",
+    "wyckoff_validation_missing_phase_events",
+    "wyckoff_validation_next_expected_event",
+    "wyckoff_validation_phase_churn_warning",
+    "wyckoff_validation_phase_correctness_score",
+    "wyckoff_validation_phase_maturity_score",
+    "wyckoff_validation_phase_probability",
+    "wyckoff_validation_phase_status",
+    "wyckoff_validation_structural_invalidation_level",
+    "wyckoff_validation_timeframe_alignment",
+    "wyckoff_validation_transition_probability_10_bars",
+    "wyckoff_validation_transition_probability_20_bars",
+    "wyckoff_validation_transition_probability_5_bars",
+    "wyckoff_validation_wyckoff_phase",
+    "wyckoff_validation_wyckoff_structure",
+)
+
+
+def attach_discovery_structure_detail(signals: Iterable[Dict[str, Any]], discovery_csv: Path) -> List[Dict[str, Any]]:
+    """Fill each signal's missing structure detail from Discovery by ticker; never overwrite; flag what is absent."""
+    rows = [dict(sig) for sig in signals]
+    try:
+        with Path(discovery_csv).open(newline="", encoding="utf-8-sig") as handle:
+            detail = {str(r.get("ticker") or "").upper(): r for r in csv.DictReader(handle)}
+    except OSError:
+        for row in rows:
+            row["structure_detail_state"] = "DISCOVERY_FILE_UNAVAILABLE"
+        return rows
+    for row in rows:
+        source = detail.get(str(row.get("ticker") or "").upper())
+        if source is None:
+            row["structure_detail_state"] = "TICKER_NOT_IN_DISCOVERY"
+            continue
+        for field in STRUCTURE_DETAIL_FIELDS:
+            if _is_missing(row.get(field)) and not _is_missing(source.get(field)):
+                row[field] = source.get(field)
+        row["structure_detail_state"] = "DISCOVERY_DETAIL_ATTACHED"
+    return rows
+
+
 def write_final_opportunity_book(
     run_id: str,
     signals: Iterable[Dict[str, Any]],
@@ -4033,6 +4133,9 @@ def write_final_opportunity_book(
             Path(runs_dir).parent.parent / "canonical" / "control_plane.sqlite",
             run_id=run_id,
         )
+    signals = attach_discovery_structure_detail(
+        signals, Path(runs_dir) / run_id / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
+    )
     rows = build_final_opportunity_book(
         run_id, signals, run_manifest, contract_quote_lookup=contract_quote_lookup
     )
