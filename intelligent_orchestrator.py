@@ -1186,6 +1186,66 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     return True, f"Macro JSON OK: {macro_file.name}", macro_file
 
 
+def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price_path,
+                         phantom_sample_tickers=("SPY", "QQQ", "IWM", "AAPL", "MSFT")) -> dict:
+    """Latest session held by each data source and its lag behind ``expected_session`` (ACK, 19 Sep 2026).
+
+    FRESH (caught up) | BEHIND_ONE_SESSION (normal before the run that fills it) | STALE (more than one session
+    behind) | MISSING. Report only - never blocks a run (R12). Queries use indexed paths.
+    """
+    import sqlite3 as _sqlite3
+    from avshunter.shared.xnys_calendar import xnys_sessions_between
+
+    def _latest(path, sql, params=()):
+        try:
+            if not Path(path).is_file():
+                return None
+            con = _sqlite3.connect(f"file:{Path(path).as_posix()}?mode=ro", uri=True, timeout=30)
+            try:
+                value = con.execute(sql, params).fetchone()[0]
+            finally:
+                con.close()
+            return str(value)[:10] if value else None
+        except Exception:  # noqa: BLE001 - an unreadable source is MISSING, never an exception
+            return None
+
+    def _state(latest):
+        if latest is None:
+            return {"state": "MISSING", "latest": None, "lag_sessions": None}
+        lag = xnys_sessions_between(date.fromisoformat(latest), expected_session)
+        state = "FRESH" if lag == 0 else "BEHIND_ONE_SESSION" if lag == 1 else "STALE"
+        return {"state": state, "latest": latest, "lag_sessions": lag}
+
+    marks = ",".join("?" * len(phantom_sample_tickers))
+    return {
+        "price_store": _state(_latest(price_path, "SELECT MAX(trading_date) FROM ohlcv_daily WHERE ticker = 'SPY'")),
+        "phantom_chains": _state(_latest(
+            phantom_path, f"SELECT MAX(quote_date) FROM chain_snapshots WHERE ticker IN ({marks})",
+            tuple(phantom_sample_tickers))),
+        "iv_surface_history": _state(_latest(phantom_path, "SELECT MAX(quote_date) FROM iv_surface_history")),
+        "iv_cache": _state(_latest(iv_cache_path, "SELECT MAX(sample_date) FROM iv_history")),
+    }
+
+
+def refresh_iv_history_after_delivery(run_id: str, evidence_session_date: str) -> dict:
+    """Derive IV history for the session just delivered to Phantom (ACK, 19 Sep 2026). Never raises."""
+    try:
+        from scripts.finalize_phantom_weekly_snapshot import derive_iv_history
+        options_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
+        import csv as _csv
+        with open(options_csv, newline="", encoding="utf-8-sig") as handle:
+            tickers = sorted({str(r.get("ticker") or "").upper() for r in _csv.DictReader(handle) if r.get("ticker")})
+        report = derive_iv_history(cfg.PHANTOM_DB_PATH, cfg.BASE_DIR / "data" / "cache" / "iv_history_cache.db",
+                                   evidence_session_date, tickers, execute=True)
+        logger.info("IV history refresh %s: %s tickers, %s surface rows, %s cache rows (%s)",
+                    evidence_session_date, report.get("tickers_derived"), report.get("surface_rows"),
+                    report.get("iv_cache_rows"), report.get("status"))
+        return report
+    except Exception as exc:  # noqa: BLE001 - reported; the run continues
+        logger.warning("IV history refresh skipped for %s: %s: %s", evidence_session_date, type(exc).__name__, exc)
+        return {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
+
+
 def run_preflight_checks(min_universe: int, target_universe: int, universe_gate_mode: str) -> Tuple[bool, Optional[Path]]:
     """Run all pre-flight checks. Returns (all_ok, macro_path)."""
     logger.info("🔍 Running pre-flight checks...")
@@ -1234,6 +1294,20 @@ def run_preflight_checks(min_universe: int, target_universe: int, universe_gate_
     if not all_ok:
         logger.error("❌ Pre-flight FAILED — fix issues above then re-run\n")
         return False, None
+
+    # Data readiness (ACK 19 Sep 2026): report only, never blocks (R12).
+    try:
+        from avshunter.shared.xnys_calendar import session_state
+        _expected = session_state(datetime.now(timezone.utc))[2]
+        _readiness = check_data_readiness(
+            expected_session=_expected, phantom_path=cfg.PHANTOM_DB_PATH,
+            iv_cache_path=cfg.BASE_DIR / "data" / "cache" / "iv_history_cache.db",
+            price_path=cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite")
+        for _source, _info in _readiness.items():
+            _line = f"   Data {_source:<19}: {_info['state']} (latest {_info['latest']}, expected {_expected})"
+            (logger.warning if _info["state"] in {"STALE", "MISSING"} else logger.info)(_line)
+    except Exception as _readiness_error:  # noqa: BLE001
+        logger.warning("   Data readiness : not evaluated (%s)", _readiness_error)
 
     # Ensure output directories exist
     cfg.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -5465,6 +5539,8 @@ def evening_workflow(
             "✅ Canonical→Phantom option projection: delivered=%d",
             len(_phantom_projection_results),
         )
+        # ACK 19 Sep 2026: derive IV history for the session just stored, so it never falls behind again.
+        refresh_iv_history_after_delivery(canonical_run_id, _evidence_session_date)
         from canonical_data.projection_outbox import ProjectionOutbox
         _projection_health = ProjectionOutbox(
             cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
