@@ -25,6 +25,54 @@ BUCKET_SCHEMA_VERSION = "1.1.0"   # ADX: <20=WEAK,20-35=MOD,>35=STRONG | ATR: <3
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+# ── F3 (ACK, 19 Sep 2026): the database's own volatility-regime rule ─────────────────────────────────────────
+# avshunter_db_update._compute_technicals/_compute_state label every historical state: ATR% (14-EWM true range /
+# close x 100) and Bollinger width (4 x 20-day std / 20-day mean x 100), each ranked against its last 252 bars;
+# COMPRESSION if both ranks < 30, EXPANSION if either > 70, else NORMAL. Live candidates must be labelled the same
+# way or the state match compares unlike things (18 Sep: NORMAL on 1,580 of 1,580 rows).
+DB_REGIME_MIN_BARS = 60          # avshunter_db_update.MIN_BARS_REQUIRED
+DB_REGIME_WINDOW = 252
+DB_REGIME_COMPRESSION_BELOW = 30.0
+DB_REGIME_EXPANSION_ABOVE = 70.0
+
+
+def db_consistent_vol_regime(ohlcv) -> Dict | None:
+    """The regime of the last bar under the database's rule, or None when the bars cannot support it."""
+    if ohlcv is None or not hasattr(ohlcv, "columns") or len(ohlcv) <= DB_REGIME_MIN_BARS:
+        return None
+    df = ohlcv.copy()
+    df.columns = [str(c).lower() for c in df.columns]
+    if not {"high", "low", "close"}.issubset(df.columns):
+        return None
+    close = pd.to_numeric(df["close"], errors="coerce")
+    high = pd.to_numeric(df["high"], errors="coerce")
+    low = pd.to_numeric(df["low"], errors="coerce")
+    if not close.iloc[-1] > 0:
+        return None
+    tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+    atr_pct = tr.ewm(span=14, adjust=False).mean() / close.replace(0, np.nan) * 100
+    bb_width = 4 * close.rolling(20).std() / close.rolling(20).mean().replace(0, np.nan) * 100
+
+    def pct_rank(series):
+        window = series.iloc[-(DB_REGIME_WINDOW + 1):].dropna()
+        current = series.iloc[-1]
+        if window.empty or pd.isna(current):
+            return None
+        return float((window < current).sum() / len(window) * 100)
+
+    atr_rank, bb_rank = pct_rank(atr_pct), pct_rank(bb_width)
+    if atr_rank is None or bb_rank is None:
+        return None
+    if atr_rank < DB_REGIME_COMPRESSION_BELOW and bb_rank < DB_REGIME_COMPRESSION_BELOW:
+        regime = "COMPRESSION"
+    elif atr_rank > DB_REGIME_EXPANSION_ABOVE or bb_rank > DB_REGIME_EXPANSION_ABOVE:
+        regime = "EXPANSION"
+    else:
+        regime = "NORMAL"
+    return {"regime": regime, "atr_percentile": atr_rank, "bb_percentile": bb_rank,
+            "regime_source": "DB_CONSISTENT_ATR_BB_252"}
+
+
 class StateVectorCalculator:
     """
     Calculates complete state fingerprint for actuarial matching
@@ -336,11 +384,36 @@ class StateVectorCalculator:
             horizon_bucket=horizon_bucket,
         )
         
+    @staticmethod
+    def _legacy_iv_percentile(tech: 'TechnicalData') -> float:
+        """IV percentile as the legacy weighted rule reads it: ivp_252d, iv_percentile, iv_rank, else 50."""
+        if hasattr(tech, 'ivp_252d') and tech.ivp_252d is not None:
+            v = tech.ivp_252d
+            return float(v) * 100.0 if float(v) <= 1.0 else float(v)
+        if hasattr(tech, 'iv_percentile') and tech.iv_percentile is not None:
+            return float(tech.iv_percentile)
+        if hasattr(tech, 'iv_rank') and tech.iv_rank is not None:
+            return float(tech.iv_rank)
+        return 50.0
+
     def _calculate_volatility_regime(self, tech: 'TechnicalData') -> Dict:
         """
         Determine volatility regime (COMPRESSION, NORMAL, EXPANSION)
         """
         
+        # F3 (19 Sep 2026): the database's rule on the bars this candidate carries; the legacy weighted rule
+        # below remains only when the bars cannot support it, and says so.
+        db_regime = db_consistent_vol_regime(getattr(tech, "ohlcv", None))
+        if db_regime is not None:
+            distance = (DB_REGIME_COMPRESSION_BELOW - max(db_regime["atr_percentile"], db_regime["bb_percentile"])
+                        if db_regime["regime"] == "COMPRESSION"
+                        else max(db_regime["atr_percentile"], db_regime["bb_percentile"]) - DB_REGIME_EXPANSION_ABOVE
+                        if db_regime["regime"] == "EXPANSION"
+                        else 50 - abs((db_regime["atr_percentile"] + db_regime["bb_percentile"]) / 2 - 50))
+            # The IV input does not exist at this stage; keep exactly what the legacy path supplies (the ticker's
+            # IV fields when present, else its 50 placeholder) - the edge detector's IV check reads it.
+            return {**db_regime, "score": distance, "iv_percentile": self._legacy_iv_percentile(tech)}
+
         # Calculate percentiles
         atr_pct = self._percentile(tech.atr_current, tech.atr_history) if tech.atr_history else 50.0
         # FIX: Use pre-computed atr_percentile_rank from discovery if available.
@@ -390,7 +463,8 @@ class StateVectorCalculator:
             'score': score,
             'atr_percentile': atr_pct,
             'bb_percentile': bb_pct,
-            'iv_percentile': iv_pct
+            'iv_percentile': iv_pct,
+            'regime_source': 'LEGACY_WEIGHTED_INPUTS_INCOMPLETE',
         }
         
     def _calculate_trend_maturity(self, tech: 'TechnicalData',
