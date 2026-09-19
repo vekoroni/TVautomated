@@ -67,6 +67,126 @@ historical population **and** keeps its sign on N.
 | M23 | Entering early may mean false starts | Anticipatory thesis | Open | S-ANT-1…3 |
 | M24 | Concentration (same sector / root cause) | Ticket lists | Open | S-RANK-3 |
 
+## 1a. Four monetisation layers (ACK 19 Sep 2026)
+
+Every scenario belongs to one layer; each layer has its own scorecard so a loss can be traced to the layer that
+caused it (wrong direction / wrong timing / wrong instrument / excessive friction / premature exit).
+
+| Layer | Question | Scenario families |
+|---|---|---|
+| **A — Intelligence** | Does AVSHUNTER find movement, direction, timing and regime-specific effects — market-adjusted? | IA-1, IA-2, IA-4, IA-5, IA-7, IA-9; S-DIR-1…5; S-ANT-1…3; S-REG-1…2; S-ABL-1…3 |
+| **B — Pricing** | Is the expected move larger or more favourable than the market already charges (realised vs implied; distribution vs price)? | IA-3; IA-8; S-VAL-1…2; S-IV-1…2 |
+| **C — Expression** | Which permitted instrument, contract and cost best monetise the opportunity? | EXPR-*; opportunity rank vs expression rank (S-RANK split); S-RUN; S-VALSEL; S-COST; S-TIME; S-CONV; S-PORT; S-ELIG |
+| **D — Management** | How to hold, exit, re-express and preserve the right tail? | S-EXIT-1…7; TAIL-CAPTURE; right-tail measures |
+
+Ranking is split in two for layer C: **opportunity rank** (which underlying opportunity has the strongest evidence —
+movement, direction, timing, structure, regime, calibrated confidence) and **expression rank** (which instrument /
+contract monetises it best — expected value against the price, cautious scenario, cost, liquidity). The cautious
+return is tested in the expression role.
+
+Order of evidence: layer A and IA-3 first — they confirm or refute the two premises the monetisation study rests on
+(magnitude information; fast signal decay) before layers C and D are built on them.
+
+### Right-tail measures (required in every layer C and D scenario)
+
+Mean, median, share ≥ +50 / +100 / +200 / +500%, largest winner retained, tail contribution (share of total profit
+from trades ≥ +100%), time to +50 / +100 / +200 / +500%. A rule that improves the median while reducing tail capture
+is reported as such, never as a plain improvement.
+
+### Family FX — Extreme-winner forensics (layer A/C, measurement only)
+
+| Id | Test | Population |
+|---|---|---|
+| FX-1 | State at entry of every closed trade ≥ +100% and ≥ +200% (+500% as case studies): direction, move, time to peak, delta, gamma, DTE, moneyness, IV and IV percentile, spread, volume, OI, sector, regime, Wyckoff, Crabel, relative strength, physics, catalyst proximity | H, H+, N |
+| FX-2 | The same state for matched losing contracts (same session, same direction, similar premium) — what was systematically different before the winners? | H, H+, N |
+| FX-3 | Calls and puts studied separately (downside tails behave differently: IV expansion, skew repricing) | H, H+, N |
+
+Sample sizes are small (67 trades ≥ +100%, 13 ≥ +200%, none ≥ +500% — best +479% — in 2,992 closed on H; +515% exists only in the rebuilt-contract set); FX findings are
+hypotheses for layer A/B tests, never selection rules on their own.
+
+### Family TC — Tail capture (layer D/C, measurement only)
+
+| Id | Test | Population |
+|---|---|---|
+| TC-1 | Every historical underlying move large enough that a listed option returned ≥ +100 / +200 / +500%: was the ticker in Discovery, direction right, rank, contract chosen, winning contract available, and which rule (spread, delta, DTE, rank, stop, cap) removed it? | H, H+ (chains where stored) |
+| TC-2 | Tail capture rate = tail opportunities captured ÷ tail opportunities available, per threshold, per stage | H, H+, N |
+| TC-3 | Convex frontier: per thesis, all eligible contracts on (probability of loss, tail payoff); share of chosen contracts that are dominated | N (long-dated chains now stored) |
+
+Forward ledger fields for every option mark (from N): hit_50 / hit_100 / hit_200 / hit_500, max return, time to each
+threshold — the survival data a tail model will need.
+
+### Pre-registered after batch 4 (approved by ACK 19 Sep 2026; definitions frozen before any test)
+
+- **S-IV-3 — expression-rank tilt by volatility cheapness (layer B/C).** Expression rank = 0.7 × percentile rank of
+  the cautious return + 0.3 × percentile rank of volatility cheapness, where cheapness = the mean of the percentile
+  ranks of (forecast volatility ÷ contract IV) and (1 − true IV percentile), both within the session. Weights fixed
+  here. Compared with A0 (cautious only) on the same eligible set: top-5 and rank-bucket outcomes, right-tail
+  measures. Populations: N; the weekly-chain year where contract IV and forecast exist point-in-time.
+- **EXPR-BAR-2 — core + convex satellite (layer C).** Core: the contract the pipeline selects today (runway ≥ planned
+  hold). Satellite, added only when all hold at entry: anticipated move horizon 1–5 sessions; same direction;
+  |moneyness| ≤ 2%; 7–21 days to expiry; entry spread ≤ 10% of mid; contract IV ÷ forecast volatility ≤ 1.0.
+  Premium split 75% core / 25% satellite of the same total premium. Satellite managed by S-EXIT-8 (no stop, fair
+  value, right-tail floor); core by the policy under test. Compared with core-only on the same trades. Populations:
+  H+ (where chains hold both contracts), N.
+- **FX hypotheses (to be confirmed or rejected on H+ and N; never selection rules on their own):**
+  H-FX-1 winners bought cheaper volatility (IV ÷ realised / forecast lower; IV rank lower);
+  H-FX-2 winners had tighter spreads and more open interest / volume;
+  H-FX-3 winners traded with the stock's own recent trend — to be re-tested market-adjusted (regime confound);
+  H-FX-4 the extreme tail (≥ +200%) came from near-the-money, 9–20 DTE contracts on fast moves (1–11 sessions);
+  H-FX-5 Wyckoff structure did not predict direction (10 of 12 put winners ≥ +200% sat in ACCUMULATION).
+  Source: `Enhancements/research/intelligence_audit/fx_extreme_winner_forensics_H.json` (67 winners ≥ +100%,
+  13 ≥ +200% of 2,992 closed; one falling regime; ~37 features per direction tested, so p-values are indicative).
+
+- **EXPR-CHOOSE-2 — choose the instrument by the option's price (layer C; registered 19 Sep 2026, before any test).**
+  At entry compute cheapness = contract (ATM) IV ÷ trailing 20-session realised volatility, and its percentile within
+  the tradeable universe on that date (point-in-time). If cheapness is in the **cheapest 40%** of the universe: express
+  with a long call (bullish) or long put (bearish), nearest-to-the-money eligible contract (|moneyness| ≤ 2.5%), runway
+  per the planned hold. Otherwise: bullish → **long shares**; bearish → **no trade** (short shares not permitted).
+  Management: no underlying stop (S-EXIT-2); options additionally reported under the fair-value exit (S-EXIT-6).
+  Compared with the fixed current expression (always the selected option) on the same opportunities, per layer
+  scorecard and right-tail measures. Populations: N; the weekly-chain year for the option leg; U for the share leg.
+  Evidence behind the definition: IA-3 year (below).
+
+### Round 1 findings (19 Sep 2026) — recorded for the reassessment
+
+- **Baseline (trial 9):** tickets −19.5% (timed), 5 per session, no zero days; 83% of candidates fail the 10% ticket
+  spread limit.
+- **IA-6:** the spread costs ~21 (top fifth) to ~39 (all) points at one session; direction ≈ market beta; the ranking
+  selects magnitude, not direction.
+- **IA-1/IA-2 (U 2021–2024, holdout sealed):** no market-adjusted directional information in bar features; strong
+  magnitude information vs trailing realised volatility (compression t 16–24, persistent; volume ratio t 22 → 9,
+  decays in days).
+- **IA-3 (H):** candidates realise ~20–35% more movement relative to their IV than the universe, but still less than
+  priced.
+- **IA-3 (weekly-chain year, 94 Fridays, 337k observations, both halves consistent):** variance ratio 0.61–0.65
+  overall (options overpriced ~35–40% in variance); cheapest IV-vs-realised fifth 0.84–1.03 (≈ fair), richest fifth
+  ~0.3; low own-IV-percentile third 0.78–0.86 vs high third 0.50–0.56; high volume 0.91 at one session fading to
+  0.66; **most compressed fifth 0.51–0.58 — compression is fully (over)priced, not an edge against the option price**.
+  No state clearly underpriced.
+- **Exits (H top fifth):** no stop +2.9 pts t 3.25 (best tail, hit 36%); fair value +4.9 pts t 3.86 (tail given up
+  before +100%); S-EXIT-8 +4.8 pts t 3.78 — the +100% floor acts too late to restore the tail; fixed 1 session raises
+  the mean by destroying the tail.
+- **Costs (22–25 closed tickets per trial — direction only):** nearer the money (OTM limit 2.5%) tickets −13.2% vs
+  −19.5%; tighter spread improves the eligible pool.
+- **FX forensics:** winners bought cheaper volatility and tighter markets; extreme tail from near-the-money 9–20 DTE
+  contracts on fast moves; Wyckoff structure did not predict direction (H-FX-1…5).
+- **Reading:** the levers found (cheap volatility / shares when options are rich, no stop, near the money, tight
+  spreads) should shrink the loss toward break-even; a profit still needs a direction or timing edge — next round:
+  S-REG-2 (regime mix) and the non-price features on N, with H+ after the backfill.
+
+## 2a. Permitted expressions for research (ACK 19 Sep 2026)
+
+The expression layer chooses among permitted **long** instruments — one, or a combination — rather than a fixed
+call-or-put: **shares (long only; never short), a long call, a long put, or shares combined with a long option**
+(shares + long call; shares + long put), or **no trade**. Long straddles / strangles (long call + long put on the
+same name) are **not permitted** (ACK 19 Sep 2026). Research scenarios may compare any
+of these on the same opportunity; nothing is implemented in the pipeline. Shares are priced with the existing
+share leg of the path valuation (`emp_share_r_*`, measured share spread).
+
+Expression scenarios (layer C): EXPR-SHARES-1 (shares only), EXPR-CALL-1 / EXPR-PUT-1 (single option),
+EXPR-BAR-1 (shares + convex long call, one risk budget), EXPR-HEDGE-1 (shares + long put), EXPR-CHOOSE-1 (the best expression per opportunity by expected value against
+the market price, versus the fixed current choice). Every expression scenario reports the right-tail measures below.
+
 ## 3a. Family IA — Intelligence Audit (runs first; ACK 19 Sep 2026)
 
 Question before any strategy: **what does AVSHUNTER know that the market does not yet price, and where along the
@@ -112,11 +232,9 @@ an automatic build).
   direction from the book's result.
 
 ### Expansion without direction (M1 alternative)
-- **S-EXP-1 Buy expansion, not direction.** On COMPRESSION regime or EARLY_PRESSURE_BUILDING names, a long
-  straddle / strangle (same runway and spread rules). Today the pipeline excludes non-directional expressions. ·
-  N (and H where chains allow) · → a non-directional expression for names where direction is unproven but
-  expansion is expected. **This is the scenario most aligned with "enter before the crowd" if direction skill stays
-  at 51%.**
+- **S-EXP-1 — withdrawn (ACK 19 Sep 2026: long straddles / strangles are not permitted).** Magnitude information,
+  if IA-3 confirms it, must be monetised through a permitted directional expression: which name to trade (magnitude
+  ranking) and which permitted instrument (layer C).
 
 ### Ranking — the de facto gate (M12, M16, M24)
 - **S-RANK-1** central return · **S-RANK-2** upside ÷ |cautious| · **S-RANK-3** cautious with one ticket per sector
@@ -133,6 +251,13 @@ an automatic build).
 - **S-EXIT-6** option-value exit that compares holding against the **bid** (the fair version of the degenerate
   re-value rule).
 - **S-EXIT-7** roll at the last exit session (ledger trial 18 Sep).
+- **S-EXIT-8** (registered 19 Sep 2026, before any run) — **no underlying stop + fair-value exit + right-tail floor.**
+  Each session with a stored quote: exit when the option's expected (central) value of holding the rest of the plan,
+  priced against the current **bid**, is below zero (S-EXIT-6) — **unless** the position is already at ≥ +100% (bid ≥ 2
+  × entry ask), in which case the fair-value exit is suspended and the trade runs to target, planned hold or the
+  contract's last usable session. No underlying stop at any point. Compared paired against baseline, S-EXIT-2 and
+  S-EXIT-6, with the right-tail measures. Motivation: batch 2 (history H) — S-EXIT-2 +2.9 pts t 3.25 with the best
+  tail; S-EXIT-6 +4.9 pts t 3.86 with some tail given up.
 - · H, H+, N · → the exit policy decision (D4).
 
 ### Runway and contract (M4, M6)
