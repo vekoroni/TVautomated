@@ -107,3 +107,23 @@ def test_an_unresolvable_window_is_flagged_never_defaulted(tmp_path, monkeypatch
                  {"1_5d": [_route("AAA")]})
     assert pd.isna(out.loc["AAA", "planned_hold_sessions"])
     assert out.loc["AAA", "planned_hold_source"] == "THESIS_WINDOW_UNAVAILABLE"
+
+
+# --- Non-session days (found 19 Sep 2026): the registry resolves only on XNYS sessions --------------------------------
+
+def test_a_run_dated_on_a_weekend_resolves_the_window_of_the_last_session():
+    assert orch._governed_thesis_window_sessions("20260919_101500") == 20          # Saturday
+
+
+def test_the_selector_resolves_the_thesis_window_on_a_weekend_or_holiday():
+    from datetime import date
+    from scripts import avshunter_options_intelligence as oi
+    assert oi.governed_thesis_window_sessions(date(2026, 9, 19)) == 20              # Saturday
+    assert oi.governed_thesis_window_sessions(date(2026, 12, 25)) == 20             # Christmas
+
+
+def test_the_calendar_gives_the_session_on_or_before_a_date():
+    from datetime import date
+    from avshunter.shared.xnys_calendar import xnys_session_on_or_before
+    assert xnys_session_on_or_before(date(2026, 9, 18)) == date(2026, 9, 18)     # Friday: itself
+    assert xnys_session_on_or_before(date(2026, 9, 20)) == date(2026, 9, 18)     # Sunday: Friday

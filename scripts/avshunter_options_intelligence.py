@@ -1270,6 +1270,10 @@ def _load_contract_selection_policy() -> Dict[str, Any]:
         if not 0.0 <= low < high <= 1.0:
             raise ValueError(f"long_option_contract_selection.{key} must satisfy 0 <= low < high <= 1")
         policy[key] = (low, high)
+    if policy.get("value_selection_mode") not in ("SHADOW", "ACTIVE"):
+        raise ValueError("long_option_contract_selection.value_selection_mode must be SHADOW or ACTIVE")
+    if policy.get("value_selection_measure") != "emp_path_r_central":
+        raise ValueError("long_option_contract_selection.value_selection_measure must be emp_path_r_central")
     return policy
 
 
@@ -1277,15 +1281,19 @@ def _load_contract_selection_policy() -> Dict[str, Any]:
 CONTRACT_SELECTION = _load_contract_selection_policy()
 
 
-@functools.lru_cache(maxsize=1)
-def governed_thesis_window_sessions() -> int:
+@functools.lru_cache(maxsize=8)
+def governed_thesis_window_sessions(on: Optional[date] = None) -> int:
     """The planned hold: the governed thesis window ``outcome.window_sessions`` (ACK D2).
 
-    One owner with ``planned_hold_sessions`` downstream.  An unresolvable registry raises, so every
-    affected row stands down with a governed exception reason - it is never defaulted.
+    Resolved on the XNYS session on or before ``on`` (default today): the registry resolves only on sessions,
+    and a weekend or holiday run uses the last session's configuration (found 19 Sep 2026).  One owner with
+    ``planned_hold_sessions`` downstream.  An unresolvable registry raises, so every affected row stands down
+    with a governed exception reason - it is never defaulted.
     """
     from avshunter.config.adapters import load_registry
-    return int(load_registry().resolve(date.today()).get("outcome.window_sessions").value)
+    from avshunter.shared.xnys_calendar import xnys_session_on_or_before
+    session = xnys_session_on_or_before(on or date.today())
+    return int(load_registry().resolve(session).get("outcome.window_sessions").value)
 
 
 def contract_runway_policy(horizon: object) -> Dict[str, Any]:
@@ -4953,14 +4961,133 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
 
         if not scores: return None
         if spread_above_limit:
-            return min(scores, key=lambda x: (x['spread_pct'], -x['contract_score']))
-        return max(scores, key=lambda x: x['contract_score'])
+            chosen = min(scores, key=lambda x: (x['spread_pct'], -x['contract_score']))
+        else:
+            chosen = max(scores, key=lambda x: x['contract_score'])
+        # ACK 18 Sep 2026: value the shortlist. Above the spread limit the row is manual review and the
+        # tightest contract stays selected, with its value recorded.
+        return apply_contract_value_selection(scores, chosen, ctx, allow_switch=not spread_above_limit)
 
     if direction == 'CALL':
         return _score_leg(call_df, 'C')
     elif direction == 'PUT':
         return _score_leg(put_df, 'P')
     return None
+
+
+# ── Contract value selection (ACK, 18 Sep 2026) ────────────────────────────────────────────────────────
+# The contract is chosen by what it is expected to earn: the calibrated path valuation over the planned hold
+# (the same model the evening valuation stage uses), measured as central return per dollar of premium.
+# The valuation is SHADOW_NO_AUTHORITY until proven (CLAUDE.md rule 5): SHADOW records the value choice
+# beside the score choice; ACTIVE (ACK's switch) makes it the selected contract.
+
+CONTRACT_VALUE_FIELDS = (
+    "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
+    "contract_value_r_central", "contract_value_r_cautious", "contract_value_score_choice_symbol",
+    "contract_value_best_symbol", "contract_value_best_r_central", "contract_value_alternatives",
+)
+
+
+@functools.lru_cache(maxsize=1)
+def _contract_value_model() -> Dict[str, Any]:
+    """Path-valuation settings and calibration, loaded once (fail-closed, as the evening valuation stage)."""
+    import empirical_option_ev as _eoe
+    settings = _eoe.PATH_SETTINGS
+    path = Path(__file__).resolve().parents[1] / settings["calibration"]
+    calibration = json.loads(path.read_text(encoding="utf-8"))
+    if calibration.get("version") != "volatility_range_calibration_v1":
+        raise ValueError(f"unsupported path calibration: {calibration.get('version')}")
+    return {"module": _eoe, "settings": settings, "calibration": calibration}
+
+
+def _default_contract_valuer(ctx: Dict):
+    """A valuer for this ticker's contracts, or None when a ticker-level input is missing (flagged)."""
+    try:
+        model = _contract_value_model()
+    except Exception as exc:  # noqa: BLE001 - every candidate is flagged, never defaulted
+        print(f"  [{ctx.get('ticker')}] contract valuation unavailable: {type(exc).__name__}: {exc}")
+        return None
+    raw_row = ctx.get('_signal_row')
+    row = raw_row.to_dict() if isinstance(raw_row, pd.Series) else dict(raw_row or {})
+    inputs = model["module"].path_inputs_from_options_row(
+        {**row, "final_direction": ctx.get('direction')}, thesis_window_sessions=governed_thesis_window_sessions())
+    side = inputs["side"]
+    spot, target, stop = ctx.get('spot'), ctx.get('structural_target'), ctx.get('invalidation_spot')
+    if not side or inputs["forecast_vol"] is None or not spot or target is None or stop is None:
+        return None
+    settings = model["settings"]
+
+    def valuer(candidate: Dict) -> Dict:
+        return model["module"].compute_path_option_ev(
+            side=side, spot=float(spot), strike=candidate.get('strike'), dte=candidate.get('dte'),
+            bid=candidate.get('bid'), ask=candidate.get('ask'), iv=candidate.get('iv'), rate=inputs["rate"],
+            target=float(target), invalidation=float(stop), hold_sessions=inputs["hold_sessions"],
+            forecast_vol=inputs["forecast_vol"], calibration=model["calibration"],
+            paths=settings["paths"], seed=settings["seed"])
+    return valuer
+
+
+def _value_ok(value: Dict) -> bool:
+    return value.get("emp_path_quality_flag") == "OK" and value.get("emp_path_r_central") is not None
+
+
+def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, *, allow_switch: bool) -> Dict:
+    """Value the best contract per expiry and record (SHADOW) or apply (ACTIVE) the value choice."""
+    shortlist: Dict[Any, Dict] = {}
+    for candidate in scores:
+        key = candidate.get('expiry')
+        if key not in shortlist or candidate['contract_score'] > shortlist[key]['contract_score']:
+            shortlist[key] = candidate
+    if chosen['symbol'] not in {c['symbol'] for c in shortlist.values()}:
+        shortlist[('chosen', chosen['symbol'])] = chosen
+    valuer = ctx.get('_contract_valuer') or _default_contract_valuer(ctx)
+    unavailable = {"emp_path_quality_flag": "VALUE_INPUTS_UNAVAILABLE", "emp_path_r_central": None,
+                   "emp_path_r_cautious": None}
+    valued = []
+    for candidate in sorted(shortlist.values(), key=lambda c: (c['dte'], str(c['symbol']))):
+        try:
+            value = valuer(candidate) if valuer else unavailable
+        except Exception as exc:  # noqa: BLE001 - one bad candidate is flagged, the ticker continues
+            value = {**unavailable, "emp_path_quality_flag": f"VALUATION_ERROR:{type(exc).__name__}"}
+        valued.append((candidate, value))
+    # ACK 19 Sep 2026: only a contract that outlasts the planned hold (the runway floor) may be the value
+    # choice; on central value alone the 18 Sep replay moved 244 contracts shorter for a worse downside.
+    floor_days = float(_runway_from_ctx(ctx)['contract_runway_floor_days'])
+    ok = [(c, v) for c, v in valued if _value_ok(v)]
+    covering = [(c, v) for c, v in ok if float(c['dte']) >= floor_days]
+    best = max(covering, key=lambda cv: (cv[1]["emp_path_r_central"], cv[0]['contract_score'])) if covering else None
+    mode = CONTRACT_SELECTION["value_selection_mode"]
+    selected = best[0] if (best is not None and allow_switch and mode == "ACTIVE") else chosen
+    if not ok:
+        basis = "SCORE_FALLBACK_VALUE_UNAVAILABLE"
+    elif not allow_switch:
+        basis = "SCORE_SPREAD_ABOVE_LIMIT_REVIEW"
+    elif best is None:
+        basis = "SCORE_NO_VALUED_CONTRACT_COVERS_HOLD"
+    elif mode == "ACTIVE":
+        basis = "VALUE_PER_PREMIUM_CENTRAL"
+    else:
+        basis = "SCORE_VALUE_SHADOW"
+    own = next(v for c, v in valued if c['symbol'] == selected['symbol'])
+    alternatives = [{
+        "symbol": c['symbol'], "expiry": c.get('expiry'), "dte": c.get('dte'), "strike": c.get('strike'),
+        "delta": c.get('delta'), "ask": c.get('ask'), "spread_pct": c.get('spread_pct'),
+        "contract_score": c.get('contract_score'), "r_central": v.get("emp_path_r_central"),
+        "r_cautious": v.get("emp_path_r_cautious"), "quality_flag": v.get("emp_path_quality_flag"),
+        "covers_planned_hold": float(c['dte']) >= floor_days,
+    } for c, v in valued]
+    return {
+        **selected,
+        "contract_value_selection_mode": mode,
+        "contract_value_basis": basis,
+        "contract_value_quality_flag": own.get("emp_path_quality_flag"),
+        "contract_value_r_central": own.get("emp_path_r_central") if _value_ok(own) else None,
+        "contract_value_r_cautious": own.get("emp_path_r_cautious") if _value_ok(own) else None,
+        "contract_value_score_choice_symbol": chosen['symbol'],
+        "contract_value_best_symbol": best[0]['symbol'] if best else None,
+        "contract_value_best_r_central": best[1]["emp_path_r_central"] if best else None,
+        "contract_value_alternatives": json.dumps(alternatives, default=str),
+    }
 
 
 #: Run identity for the W3.3 sidecar. `process_ticker` has no access to the
@@ -5186,6 +5313,7 @@ def _options_liquidity_lifecycle_fields(
         "contract_runway_basis": contract.get("contract_runway_basis"),
         "contract_runway_state": contract.get("contract_runway_state"),
         "spread_above_limit": contract.get("spread_above_limit"),
+        **{field: contract.get(field) for field in CONTRACT_VALUE_FIELDS},
         "quote_as_of": quote_as_of or evidence_session,
     }
     if side not in {"CALL", "PUT"}:
@@ -9472,6 +9600,7 @@ def run_options_layer(
         'maturation_score_is_probability','maturation_execution_authority',
         'previous_contract_symbol','contract_changed','contract_selection_reason',
         'contract_runway_floor_days','contract_runway_basis','contract_runway_state','spread_above_limit',
+        *CONTRACT_VALUE_FIELDS,
         'quote_as_of','quote_freshness','liquidity_persistence_status',
         'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',
         'option_chain_provider','option_chain_resolution',

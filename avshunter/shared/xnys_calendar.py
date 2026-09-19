@@ -136,6 +136,11 @@ def previous_xnys_session(value: date) -> date:
     return candidate
 
 
+def xnys_session_on_or_before(value: date) -> date:
+    """The session itself, or the latest XNYS session before a weekend or holiday."""
+    return value if is_xnys_session(value) else previous_xnys_session(value)
+
+
 def xnys_sessions_between(start: date, end: date) -> int:
     """Count sessions strictly after ``start`` up to and including ``end``."""
     if end <= start:

@@ -123,6 +123,11 @@
     ],
     "runway_shortfall_score_per_day": 3.0,
     "runway_excess_score_per_day": 0.5,
+    "value_selection_mode": "SHADOW",
+    "value_selection_measure": "emp_path_r_central",
+    "value_selection_shortlist": "BEST_SCORE_PER_EXPIRY",
+    "value_selection_eligibility": "COVERS_PLANNED_HOLD",
+    "value_selection_approval": "ACK 18 Sep 2026: choose the contract by central return per dollar of premium; SHADOW until proven (rule 5), ACK switches to ACTIVE",
     "missing_horizon_runway_hold_sessions": 20,
     "rationale": "One delta preference (the union of the former per-horizon ranges) and one spread limit (the reviewable ceiling) for every horizon. Runway is a floor: anticipated move + monitor + exit buffer sessions in calendar days; a contract short of it is flagged, a longer one is mildly penalised per extra day so the nearest covering expiry wins ties, never excluded. A missing horizon uses the full 20-session thesis window (ACK: buy more runway) and is reported. Evidence: 17 Sep evening run, 838 of 1,359 searches found no contract."
   }

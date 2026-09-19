@@ -78,7 +78,10 @@ def main():
         ctx = {"ticker": r["ticker"], "direction": direction, "spot": spot, "entry": float(r.get("entry_price") or spot),
                "structural_target": r.get("structural_target") if pd.notna(r.get("structural_target")) else None,
                "dte_window": window, "dte_config": oi.governed_dte_config(horizon), "hold_days": hold,
-               "horizon_bucket": horizon}
+               "horizon_bucket": horizon,
+               # 18 Sep 2026: inputs for the contract value selection (stop, volatility forecast).
+               "invalidation_spot": r.get("invalidation_spot") if pd.notna(r.get("invalidation_spot")) else None,
+               "_signal_row": r.to_dict()}
         chosen = oi.select_best_contract(chain, ctx)
         out.append({"ticker": r["ticker"], "horizon": horizon, "direction": direction, "chain_rows": len(chain_rows),
                     "recorded_contract": r.get("contract_occ_symbol"), "recorded_spread": r.get("contract_spread_pct"),
@@ -92,6 +95,10 @@ def main():
                     "runway_state": chosen.get("contract_runway_state") if chosen else None,
                     "runway_floor_days": chosen.get("contract_runway_floor_days") if chosen else None,
                     "selected_mid": (chosen.get("mark") or chosen.get("mid")) if chosen else None,
+                    **{f: (chosen.get(f) if chosen else None) for f in (
+                        "contract_value_basis", "contract_value_quality_flag", "contract_value_r_central",
+                        "contract_value_r_cautious", "contract_value_best_symbol", "contract_value_best_r_central",
+                        "contract_value_alternatives")},
                     "recorded_liquidity_state": r.get("liquidity_state")})
     pd.DataFrame(out).to_csv(args.out, index=False)
     print(f"replayed {len(out)} tickers -> {args.out}")

@@ -3626,8 +3626,10 @@ def _governed_thesis_window_sessions(run_id: str) -> int | None:
     try:
         from datetime import date as _date
         from avshunter.config.adapters import load_registry
+        from avshunter.shared.xnys_calendar import xnys_session_on_or_before
         run_date = _date(int(run_id[:4]), int(run_id[4:6]), int(run_id[6:8]))
-        return int(load_registry().resolve(run_date).get("outcome.window_sessions").value)
+        session = xnys_session_on_or_before(run_date)       # the registry resolves only on XNYS sessions
+        return int(load_registry().resolve(session).get("outcome.window_sessions").value)
     except Exception as exc:  # noqa: BLE001 - reported as THESIS_WINDOW_UNAVAILABLE on every row
         logger.warning("Thesis window unresolvable for %s: %s: %s", run_id, type(exc).__name__, exc)
         return None
