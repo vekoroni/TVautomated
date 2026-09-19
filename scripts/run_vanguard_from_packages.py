@@ -89,11 +89,13 @@ try:
     from vanguard.physics_state_engine import (
         PHYSICS_FIELDS,
         calculate_market_physics,
+        physics_price_inputs,
     )
 except Exception:
     from physics_state_engine import (  # type: ignore
         PHYSICS_FIELDS,
         calculate_market_physics,
+        physics_price_inputs,
     )
 
 ACTUARIAL_SOURCE_V6_DB = "V6_DB"
@@ -1231,6 +1233,9 @@ def signal_to_row(
         "atr_percentile_rank",
         "return_5d",
         "return_10d",
+        "gap_pct",                 # F8: Discovery has it; physics previously defaulted it
+        "beta",
+        "physics_price_inputs_state",
         "volume_ratio",
         "crabel_compression",
         "crabel_pattern",
@@ -1485,6 +1490,9 @@ def main() -> int:
             _disc_row = dict(pkg.get("discovery") or {})
             _disc_row.setdefault("run_id", pkg.get("run_id") or rp.run_id)
             _disc_row.setdefault("ticker", ticker)
+            # F8 (19 Sep 2026): measured price inputs for physics at the row's evidence session; never overwrite.
+            for _key, _value in physics_price_inputs(ticker, _disc_row.get("bar_data_asof")).items():
+                _disc_row.setdefault(_key, _value)
             pass_rows.append(signal_to_row(
                 signal,
                 disc=_disc_row,

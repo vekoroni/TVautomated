@@ -445,3 +445,61 @@ def append_physics_fields_from_source(target_df: pd.DataFrame, source_df: pd.Dat
                 merged[field] = merged[alt]
                 merged = merged.drop(columns=[alt])
     return ensure_physics_fields(merged)
+
+
+# ── F8 (ACK, 19 Sep 2026): measured price inputs ─────────────────────────────────────────────────────────────
+# Run 20260918_112522 used neutral defaults for returns, average volume and beta on every row: nothing computed
+# them. They are measured from the canonical price store at the row's evidence session (point-in-time).
+from pathlib import Path as _Path
+
+CANONICAL_PRICE_DB = _Path(__file__).resolve().parents[1] / "data" / "canonical" / "historical_prices.sqlite"
+_BETA_SESSIONS = 60
+_AVG_VOLUME_SESSIONS = 20
+
+
+def _store_bars(symbol: str, as_of: str, count: int) -> list[tuple[str, float, float]]:
+    import sqlite3
+    try:
+        con = sqlite3.connect(f"file:{_Path(CANONICAL_PRICE_DB).as_posix()}?mode=ro", uri=True)
+        try:
+            rows = con.execute(
+                "SELECT trading_date, close, volume FROM ohlcv_daily WHERE ticker = ? AND trading_date <= ? "
+                "AND close IS NOT NULL ORDER BY trading_date DESC LIMIT ?", (symbol.upper(), as_of, count)).fetchall()
+        finally:
+            con.close()
+    except Exception:  # noqa: BLE001 - reported as unavailable, never zero
+        return []
+    return [(str(d), float(c), float(v) if v is not None else float("nan")) for d, c, v in reversed(rows)]
+
+
+def physics_price_inputs(ticker: str, as_of: Any) -> Dict[str, Any]:
+    """Returns (fractions), 20-session average share volume and 60-session beta vs SPY at ``as_of``.
+
+    Inputs that cannot be measured are left absent so the physics engine flags them; the reason is recorded in
+    ``physics_price_inputs_state``.
+    """
+    session = str(as_of or "").strip()[:10]
+    if not session or session.upper() in {"NAN", "NONE"}:
+        return {"physics_price_inputs_state": "EVIDENCE_SESSION_UNAVAILABLE"}
+    bars = _store_bars(ticker, session, _BETA_SESSIONS + 1)
+    if len(bars) < 11:
+        return {"physics_price_inputs_state": "TICKER_PRICES_UNAVAILABLE"}
+    closes = [c for _, c, _ in bars]
+    volumes = [v for _, _, v in bars[-_AVG_VOLUME_SESSIONS:] if v == v]
+    out: Dict[str, Any] = {
+        "return_5d": closes[-1] / closes[-6] - 1.0,
+        "return_10d": closes[-1] / closes[-11] - 1.0,
+        "physics_price_inputs_state": "CANONICAL_PRICE_STORE",
+    }
+    if volumes:
+        out["avg_volume"] = sum(volumes) / len(volumes)
+    spy = {d: c for d, c, _ in _store_bars("SPY", session, _BETA_SESSIONS + 1)}
+    paired = [(c, spy[d]) for d, c, _ in bars if d in spy]
+    if len(paired) >= 21:
+        tr = [paired[i][0] / paired[i - 1][0] - 1.0 for i in range(1, len(paired))]
+        mr = [paired[i][1] / paired[i - 1][1] - 1.0 for i in range(1, len(paired))]
+        mean_t, mean_m = sum(tr) / len(tr), sum(mr) / len(mr)
+        var_m = sum((m - mean_m) ** 2 for m in mr)
+        if var_m > 0:
+            out["beta"] = sum((t - mean_t) * (m - mean_m) for t, m in zip(tr, mr)) / var_m
+    return out
