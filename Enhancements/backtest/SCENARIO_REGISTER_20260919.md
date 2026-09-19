@@ -174,6 +174,38 @@ threshold — the survival data a tail model will need.
   spreads) should shrink the loss toward break-even; a profit still needs a direction or timing edge — next round:
   S-REG-2 (regime mix) and the non-price features on N, with H+ after the backfill.
 
+### Family IV-LAG — does IV lag the structure, or price it before we can trade it? (layer B; registered 19 Sep 2026)
+
+Motivation: IA-3 (weekly-chain year) found the *most* compressed names carry the *worst* mispricing (variance ratio
+0.51–0.58) — worse than mild compression (0.62–0.67) or no compression (0.82). Read together with how IV actually
+gets set (realised-vol tracking + dated catalysts + order flow — nothing reads a Bollinger/ATR percentile directly),
+this says the crude compression heuristic is well-followed enough that flow has already priced it, and priced it
+past fair. The edge, if any, is in getting there before that heuristic is obvious, or in a state flow hasn't reached
+yet. Three sub-scenarios, each pre-registered exactly as follows before any run:
+
+- **IA-3b — onset vs level.** Onset = first session a ticker enters the top compression quintile after ≥10 prior
+  sessions outside it (point-in-time). At event-relative offsets e = 0, 5, 10, 15, 20 sessions after onset, measure
+  variance ratio and IV percentile (nearest available sample). Tests whether the transition into compression prices
+  closer to fair than the static extreme state.
+- **IA-3c — dated vs undated catalyst.** Split variance ratio (compression-quintile-4 rows only) by whether
+  `days_to_catalyst` is populated and ≤ 20 at the observation date, vs absent/further out. Tests whether "no known
+  event" compression is less overpriced (off the market's mechanical radar) than compression with a scheduled
+  catalyst (IV already kinked for it).
+- **IA-3d — before vs after flow arrives.** Split variance ratio (compression-quintile-4 rows) by contract volume
+  and open-interest percentile in the prior 5 sessions (proxy for "has the crowd already positioned"). Tests
+  whether pre-flow compression prices fairer than post-flow.
+
+Populations, in order of what they can honestly answer:
+1. **Coarse / full universe (now):** the weekly-chain year (94 Fridays), ~5-session event resolution. Unbiased
+   across the tradeable universe; can't resolve a lag shorter than one weekly step.
+2. **Fine / biased (after the weekend backfill):** the 760 tickers and 21 May – 2 Aug 2026 windows the targeted
+   backfill restores at daily resolution. Daily resolution, but **selection-biased** — only names the old pipeline
+   already flagged as candidates, not a random cross-section. Reported as a validity check on the coarse result,
+   never as the clean answer.
+3. **Fine / unbiased (from N, as it accumulates):** every evening run now derives that session's IV history
+   automatically (the 19 Sep refresh fix), so a genuine daily, unbiased series builds itself going forward. This is
+   the population that settles IA-3b/c/d once enough sessions exist.
+
 ## 2a. Permitted expressions for research (ACK 19 Sep 2026)
 
 The expression layer chooses among permitted **long** instruments — one, or a combination — rather than a fixed
