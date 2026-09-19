@@ -67,6 +67,32 @@ historical population **and** keeps its sign on N.
 | M23 | Entering early may mean false starts | Anticipatory thesis | Open | S-ANT-1…3 |
 | M24 | Concentration (same sector / root cause) | Ticket lists | Open | S-RANK-3 |
 
+## 3a. Family IA — Intelligence Audit (runs first; ACK 19 Sep 2026)
+
+Question before any strategy: **what does AVSHUNTER know that the market does not yet price, and where along the
+chain is that information kept or lost?** Temporarily ignore GO/WAIT/BLOCK, tickets, cap, stop, contract and exit;
+measure the information content of the pipeline's own evidence, then how much survives each transformation.
+
+| Id | Test | Population |
+|---|---|---|
+| IA-1 | Information per feature: rank correlation of the **raw continuous** value with forward return at 1 / 2 / 3 / 5 / 10 / 20 sessions | U (bar-derived features, ~5 years); weekly chains (options-state features, ~1 year) |
+| IA-2 | Decay: IA-1 by horizon for each feature — the signal half-life that contract expiry should follow | U |
+| IA-3 | Magnitude vs direction: forward absolute move **÷ implied move at entry** (realised ÷ priced), then direction conditional on large moves. Raw magnitude is never the outcome: the option price already charges for it | U + weekly chains |
+| IA-4 | Conditional information by regime (volatility regime, trend, sector state) | U |
+| IA-5 | Incremental information: does a feature add anything once the others are known (partial correlation; model with and without it on the holdout) | U |
+| IA-6 | **Transformation loss**: information surviving each step — universe → Discovery candidates → ranking → tickets → option expression → after stop → after spread → net | H now; N later |
+| IA-7 | Discretisation loss: continuous value vs its label, same holdout | U |
+| IA-8 | Calibration: stated probabilities (Layer 2 target-hit probability) vs realised; outcome monotonicity by confidence bucket | H+, N |
+| IA-9 | Interactions: a short list fixed before looking (compression × relative strength, structure × IV state, early pressure × regime); any wider search only inside the exploration period | U |
+
+Governance for IA: exploration 2021–2024, confirmation holdout 2025–2026 (untouched until exploration findings are
+frozen), purging between train and test, every test logged, PBO / deflated Sharpe reported for the family.
+Features are used only where they exist point-in-time: bar-derived over ~5 years, options-state over ~1 year of
+weekly chains, full-pipeline features (physics verdict, geometry, value fields, macro) only where runs are recorded.
+
+The scientifically accurate statement until IA reports: "we have not yet identified where AVSHUNTER's information
+becomes economic edge, or where the decision chain destroys it."
+
 ## 4. Scenario catalogue
 
 Format: **hypothesis** · variant against "as is" · population · what a pass would lead to (a design proposal, never

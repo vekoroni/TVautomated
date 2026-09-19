@@ -1,0 +1,239 @@
+{
+  "population": "H",
+  "sessions": [
+    "2026-08-31",
+    "2026-09-01",
+    "2026-09-02",
+    "2026-09-04",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-16"
+  ],
+  "candidates": 8950,
+  "tickets": 91,
+  "horizons": {
+    "1": {
+      "U0_universe": {
+        "n": 26924,
+        "mean_ret_pct": -0.141,
+        "mean_abs_move_pct": 1.925
+      },
+      "S1_discovery_all": {
+        "n": 8950,
+        "mean_dir_ret_pct": 0.008,
+        "hit_rate": 0.494,
+        "mean_abs_move_pct": 2.036
+      },
+      "S1_by_direction": {
+        "CALL": {
+          "n": 5729,
+          "mean_dir_ret_pct": -0.128,
+          "hit_rate": 0.466,
+          "mean_abs_move_pct": 1.932
+        },
+        "PUT": {
+          "n": 3221,
+          "mean_dir_ret_pct": 0.25,
+          "hit_rate": 0.543,
+          "mean_abs_move_pct": 2.221
+        }
+      },
+      "S2_ranking": {
+        "mean_session_spearman_cautious_vs_dir_ret": 0.037,
+        "sessions": 9,
+        "top_quintile": {
+          "n": 1703,
+          "mean_dir_ret_pct": 0.193,
+          "hit_rate": 0.521,
+          "mean_abs_move_pct": 2.333
+        },
+        "bottom_quintile": {
+          "n": 1706,
+          "mean_dir_ret_pct": -0.093,
+          "hit_rate": 0.467,
+          "mean_abs_move_pct": 1.812
+        }
+      },
+      "S3_tickets": {
+        "n": 91,
+        "mean_dir_ret_pct": 0.116,
+        "hit_rate": 0.527,
+        "mean_abs_move_pct": 2.46
+      },
+      "S4_option_all": {
+        "n_marked": 8427,
+        "mean_ask_to_bid_pct": -40.63,
+        "median_ask_to_bid_pct": -41.84,
+        "mean_mid_to_mid_pct": -1.3,
+        "share_profitable_ask_to_bid": 0.114
+      },
+      "S4_option_top_quintile": {
+        "n_marked": 1672,
+        "mean_ask_to_bid_pct": -19.51,
+        "median_ask_to_bid_pct": -22.67,
+        "mean_mid_to_mid_pct": 1.33,
+        "share_profitable_ask_to_bid": 0.227
+      },
+      "S4_option_tickets": {
+        "n_marked": 88,
+        "mean_ask_to_bid_pct": -14.58,
+        "median_ask_to_bid_pct": -17.97,
+        "mean_mid_to_mid_pct": 1.12,
+        "share_profitable_ask_to_bid": 0.25
+      }
+    },
+    "3": {
+      "U0_universe": {
+        "n": 23925,
+        "mean_ret_pct": -0.569,
+        "mean_abs_move_pct": 3.31
+      },
+      "S1_discovery_all": {
+        "n": 7784,
+        "mean_dir_ret_pct": -0.244,
+        "hit_rate": 0.462,
+        "mean_abs_move_pct": 3.492
+      },
+      "S1_by_direction": {
+        "CALL": {
+          "n": 4964,
+          "mean_dir_ret_pct": -0.837,
+          "hit_rate": 0.388,
+          "mean_abs_move_pct": 3.337
+        },
+        "PUT": {
+          "n": 2820,
+          "mean_dir_ret_pct": 0.799,
+          "hit_rate": 0.592,
+          "mean_abs_move_pct": 3.764
+        }
+      },
+      "S2_ranking": {
+        "mean_session_spearman_cautious_vs_dir_ret": 0.026,
+        "sessions": 8,
+        "top_quintile": {
+          "n": 1483,
+          "mean_dir_ret_pct": -0.103,
+          "hit_rate": 0.483,
+          "mean_abs_move_pct": 4.029
+        },
+        "bottom_quintile": {
+          "n": 1486,
+          "mean_dir_ret_pct": -0.202,
+          "hit_rate": 0.447,
+          "mean_abs_move_pct": 3.126
+        }
+      },
+      "S3_tickets": {
+        "n": 87,
+        "mean_dir_ret_pct": -1.244,
+        "hit_rate": 0.368,
+        "mean_abs_move_pct": 3.814
+      },
+      "S4_option_all": {
+        "n_marked": 7224,
+        "mean_ask_to_bid_pct": -43.66,
+        "median_ask_to_bid_pct": -51.6,
+        "mean_mid_to_mid_pct": -5.33,
+        "share_profitable_ask_to_bid": 0.152
+      },
+      "S4_option_top_quintile": {
+        "n_marked": 1426,
+        "mean_ask_to_bid_pct": -23.07,
+        "median_ask_to_bid_pct": -30.53,
+        "mean_mid_to_mid_pct": -1.98,
+        "share_profitable_ask_to_bid": 0.265
+      },
+      "S4_option_tickets": {
+        "n_marked": 77,
+        "mean_ask_to_bid_pct": -33.27,
+        "median_ask_to_bid_pct": -33.87,
+        "mean_mid_to_mid_pct": -19.0,
+        "share_profitable_ask_to_bid": 0.234
+      }
+    },
+    "5": {
+      "U0_universe": {
+        "n": 17944,
+        "mean_ret_pct": -1.42,
+        "mean_abs_move_pct": 4.079
+      },
+      "S1_discovery_all": {
+        "n": 5539,
+        "mean_dir_ret_pct": -0.417,
+        "hit_rate": 0.442,
+        "mean_abs_move_pct": 4.232
+      },
+      "S1_by_direction": {
+        "CALL": {
+          "n": 3431,
+          "mean_dir_ret_pct": -1.639,
+          "hit_rate": 0.322,
+          "mean_abs_move_pct": 3.976
+        },
+        "PUT": {
+          "n": 2108,
+          "mean_dir_ret_pct": 1.571,
+          "hit_rate": 0.638,
+          "mean_abs_move_pct": 4.648
+        }
+      },
+      "S2_ranking": {
+        "mean_session_spearman_cautious_vs_dir_ret": 0.021,
+        "sessions": 6,
+        "top_quintile": {
+          "n": 1051,
+          "mean_dir_ret_pct": -0.304,
+          "hit_rate": 0.463,
+          "mean_abs_move_pct": 4.862
+        },
+        "bottom_quintile": {
+          "n": 1054,
+          "mean_dir_ret_pct": -0.405,
+          "hit_rate": 0.427,
+          "mean_abs_move_pct": 3.983
+        }
+      },
+      "S3_tickets": {
+        "n": 80,
+        "mean_dir_ret_pct": -0.769,
+        "hit_rate": 0.45,
+        "mean_abs_move_pct": 4.257
+      },
+      "S4_option_all": {
+        "n_marked": 5074,
+        "mean_ask_to_bid_pct": -48.5,
+        "median_ask_to_bid_pct": -63.39,
+        "mean_mid_to_mid_pct": -10.1,
+        "share_profitable_ask_to_bid": 0.146
+      },
+      "S4_option_top_quintile": {
+        "n_marked": 986,
+        "mean_ask_to_bid_pct": -27.54,
+        "median_ask_to_bid_pct": -44.02,
+        "mean_mid_to_mid_pct": -6.62,
+        "share_profitable_ask_to_bid": 0.252
+      },
+      "S4_option_tickets": {
+        "n_marked": 71,
+        "mean_ask_to_bid_pct": -32.35,
+        "median_ask_to_bid_pct": -44.79,
+        "mean_mid_to_mid_pct": -17.14,
+        "share_profitable_ask_to_bid": 0.211
+      }
+    }
+  },
+  "S5_shipped_exit": {
+    "all_closed": {
+      "n": 2992,
+      "mean_pct": -55.2,
+      "median_pct": -68.57
+    },
+    "tickets_closed": {
+      "n": 19,
+      "mean_pct": -50.47
+    }
+  }
+}
