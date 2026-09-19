@@ -3699,22 +3699,72 @@ def _fetch_hist_closes(ticker: str, days: int = 252) -> List[float]:
 _IV_HISTORY: Dict[str, List[float]] = {}  # ticker → [atm_iv_d-5, ..., atm_iv_today]
 
 
-def _load_iv_history(ticker: str, run_dir: str = None) -> List[float]:
-    """Load rolling ATM IV history from prior runs. Returns list of recent ATM IVs."""
-    global _IV_HISTORY
-    if ticker in _IV_HISTORY:
-        return _IV_HISTORY[ticker]
-    if run_dir:
-        hist_file = os.path.join(run_dir, 'iv_history.json')
-        if os.path.exists(hist_file):
-            try:
-                with open(hist_file) as f:
-                    data = json.load(f)
-                    _IV_HISTORY[ticker] = data.get(ticker, [])
-                    return _IV_HISTORY[ticker]
-            except Exception:
-                pass
-    return []
+# F2 (ACK, 19 Sep 2026): the IV cache is the ticker's ATM IV history (restored 8-17 Sep, refreshed by every evening
+# run after the Phantom delivery). It replaces runs/<run>/iv_history.json, which nothing wrote.
+IV_CACHE_DB = Path(__file__).resolve().parents[1] / "data" / "cache" / "iv_history_cache.db"
+IV_PERCENTILE_WINDOW_DAYS = 365         # calendar days of history the IV percentile ranks against
+IV_PERCENTILE_MIN_SAMPLES = 20          # fewer samples: the percentile is not measured
+IV_DIRECTION_WINDOW_DAYS = 21           # recent samples used for direction of travel and vol-of-vol
+
+
+@functools.lru_cache(maxsize=8192)
+def _iv_history_samples(ticker: str, as_of: str) -> Tuple[Tuple[str, float], ...]:
+    """(sample_date, atm_iv) strictly before ``as_of`` within the percentile window, oldest first."""
+    import sqlite3
+    start = (date.fromisoformat(as_of) - timedelta(days=IV_PERCENTILE_WINDOW_DAYS)).isoformat()
+    try:
+        con = sqlite3.connect(f"file:{Path(IV_CACHE_DB).as_posix()}?mode=ro", uri=True, timeout=30)
+        try:
+            rows = con.execute(
+                "SELECT sample_date, atm_iv FROM iv_history WHERE ticker = ? AND sample_date < ? "
+                "AND sample_date >= ? AND atm_iv > 0 ORDER BY sample_date", (ticker.upper(), as_of, start)).fetchall()
+        finally:
+            con.close()
+    except Exception:  # noqa: BLE001 - no history is reported by the caller, never zero
+        return ()
+    return tuple((str(d)[:10], float(v)) for d, v in rows)
+
+
+def _iv_evidence_session() -> date:
+    return _CDS_V2_SESSION or date.today()
+
+
+def _load_iv_history(ticker: str, run_dir: str = None, *, as_of: Optional[date] = None) -> List[float]:
+    """Recent ATM IVs (oldest first) strictly before the evidence session, for direction and vol-of-vol."""
+    session = as_of or _iv_evidence_session()
+    recent_from = (session - timedelta(days=IV_DIRECTION_WINDOW_DAYS)).isoformat()
+    return [v for d, v in _iv_history_samples(ticker, session.isoformat()) if d >= recent_from]
+
+
+def iv_percentile_from_history(atm_iv: float, history: List[float]) -> Optional[float]:
+    """Share of the ticker's own past ATM IVs below today's; None when history is too short to measure."""
+    if atm_iv is None or not len(history) >= IV_PERCENTILE_MIN_SAMPLES:
+        return None
+    return float(sum(1 for v in history if v < atm_iv) / len(history))
+
+
+def _ivp_label(ivp: Optional[float]) -> str:
+    if ivp is None:
+        return 'UNKNOWN'
+    return 'CHEAP' if ivp <= IVP_CHEAP_MAX else 'EXPENSIVE' if ivp > IVP_EXPENSIVE else 'FAIR'
+
+
+def _apply_true_iv_percentile(result: Dict, ticker: str, atm_iv: float, as_of: date) -> None:
+    """Rank today's ATM IV against the ticker's own IV history; keep the realised-range measure by its name."""
+    result['iv_vs_rv_range_252d'] = result.get('ivp_252d')
+    result['iv_vs_rv_range_30d'] = result.get('ivp_30d')
+    history = [v for _, v in _iv_history_samples(ticker, as_of.isoformat())]
+    result['iv_history_samples'] = len(history)
+    true_ivp = iv_percentile_from_history(atm_iv, history)
+    if true_ivp is None:
+        result['iv_percentile_source'] = 'RV_RANGE_PROXY' if result.get('iv_percentile') is not None else 'UNAVAILABLE'
+        return
+    result['iv_percentile'] = round(true_ivp, 3)
+    result['ivp_252d'] = round(true_ivp, 3)
+    result['ivp_30d'] = None
+    result['iv_rank'] = round(true_ivp * 100, 1)
+    result['ivp_label'] = _ivp_label(true_ivp)
+    result['iv_percentile_source'] = 'IV_HISTORY_252D'
 
 
 def compute_iv_skew(chain_df: pd.DataFrame, spot: float) -> Dict:
@@ -3849,6 +3899,8 @@ def classify_iv_regime(atm_iv: float, chain_df: pd.DataFrame,
     # ── 2. IV direction of travel (5-day) ────────────────────────────────────
     iv_dir_pct = 0.0
     iv_accel   = False
+    if len(iv_history) < 2:
+        result['iv_direction'] = 'UNAVAILABLE'      # F2: no history is reported, never read as STABLE
     if len(iv_history) >= 2:
         iv_5d_ago = float(iv_history[-min(5, len(iv_history))])
         if iv_5d_ago > 0:
@@ -4127,9 +4179,12 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
     result.update(skew)
 
     # ── IV Regime Classification ─────────────────────────────────────────────
-    iv_history = _load_iv_history(ticker, run_dir)
+    _iv_as_of = _iv_evidence_session()
+    iv_history = _load_iv_history(ticker, as_of=_iv_as_of)
     regime_data = classify_iv_regime(atm_iv, chain_df, iv_history, spot)
     result.update(regime_data)
+    # F2 (19 Sep 2026): rank today's ATM IV against the ticker's own IV history.
+    _apply_true_iv_percentile(result, ticker, atm_iv, _iv_as_of)
 
     # Store current ATM IV in history
     iv_history.append(atm_iv)
@@ -7534,6 +7589,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             'call_25d_iv':      None,
             'skew_label':       'UNKNOWN',
             'heston_params':    None,
+            'iv_percentile_source': 'SCANNER_IV_RANK',
         }
         # Best-effort: try to enhance with chain IV data if available
         try:
@@ -8090,6 +8146,11 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'iv_regime'               : iv_ctx.get('iv_regime'),
         'iv_direction'            : iv_ctx.get('iv_direction'),
         'iv_direction_pct'        : iv_ctx.get('iv_direction_pct'),
+        # F2 (19 Sep 2026): what the IV percentile measured, and the IV-vs-realised range kept by its own name.
+        'iv_percentile_source'    : iv_ctx.get('iv_percentile_source'),
+        'iv_history_samples'      : iv_ctx.get('iv_history_samples'),
+        'iv_vs_rv_range_252d'     : iv_ctx.get('iv_vs_rv_range_252d'),
+        'iv_vs_rv_range_30d'      : iv_ctx.get('iv_vs_rv_range_30d'),
         'term_ratio'              : iv_ctx.get('term_ratio'),
         'vol_of_vol'              : iv_ctx.get('vol_of_vol'),
         'iv_accel_detected'       : iv_ctx.get('iv_accel_detected', False),
@@ -9768,6 +9829,7 @@ def run_options_layer(
         'contract_gamma','contract_oi','contract_spread_pct',
         # iv_engine fields
         'hv_30d','atm_iv','iv_vs_hv','iv_direction','iv_regime',
+        'iv_percentile_source','iv_history_samples','iv_vs_rv_range_252d','iv_vs_rv_range_30d',
         # PIPELINE-01 (2026-05-03): Single source of truth — discovery structural fields
         # must survive the full pipeline to EOD/morning validation. These were written
         # by discovery but dropped here, causing rr_underlying=0.00 in morning manifest
