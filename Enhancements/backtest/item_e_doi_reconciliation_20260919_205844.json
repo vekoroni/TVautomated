@@ -1,0 +1,123 @@
+{
+  "run_id": "20260919_205844",
+  "input_rows": 1545,
+  "unique_tickers": 30,
+  "retained_opportunities": 30,
+  "family_rows": 22,
+  "family_candidates_total": 2500,
+  "bounded_candidates_total": 264,
+  "retained_low_open_interest": 1881,
+  "retained_zero_volume": 1880,
+  "assessed_families": 9,
+  "ranked_families": 9,
+  "lifecycle_families": 9,
+  "canonical_reuse": 22,
+  "physical_fetch_count": 0,
+  "exception_count": 13,
+  "unassessed_families": 13,
+  "unranked_assessed_families": 0,
+  "accounted_terminal_rows": 30,
+  "population_reconciled": true,
+  "counts_by_state": {
+    "NOT_APPLICABLE_NON_DIRECTIONAL": 8,
+    "DATA_EXCEPTION_RETAINED": 13,
+    "RANKED_DETERMINISTIC": 9
+  },
+  "exceptions": [
+    {
+      "ticker": "XNCR",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "PLAB",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "BRZE",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "KSS",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "RPM",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "SON",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "BLMN",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "GPCR",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "SRE",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "PFE",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "FIG",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "BRBR",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    },
+    {
+      "ticker": "UPST",
+      "error_type": "OptionLifecycleConflict",
+      "reason": "contract quote identity already has different immutable content",
+      "retained": true,
+      "pipeline_stage": "DETERMINISTIC_VALUATION"
+    }
+  ],
+  "authority": "ADVISORY_ONLY",
+  "deleted_opportunities": 0,
+  "integration_version": "doi-production-integration-v1",
+  "population_equation": "30 input = 30 terminal retained/exception rows"
+}

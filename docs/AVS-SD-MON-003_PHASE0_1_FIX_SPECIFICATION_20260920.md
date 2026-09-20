@@ -186,26 +186,49 @@ originally guessed — the mechanism is one level lower, in the general registry
 ACK chooses — they currently encode the *old* behaviour as correct, so a fix without updating them would
 just trade one false assertion for another.
 
-### E. Reconcile all DOI generated/assessed/ranked/exception populations
+### E. Reconcile all DOI generated/assessed/ranked/exception populations — checked against real data, found a third root cause
 
-**Root cause:** downstream of D — the validation record notes "only a subset of directional families
-completed ranking; most exceptions were immutable quote-identity conflicts" (§3.2 item 3). Expected to
-substantially resolve once D lands; not treated as an independent defect in this spec.
+**The accounting itself is sound, confirmed by construction, not by inspection:**
+`DOIProductionSummary.__post_init__()` (`canonical_data/dynamic_options_production.py`) already enforces
+`family_rows == assessed_families + unassessed_families` and
+`assessed_families == ranked_families + unranked_assessed_families` as hard, raising invariants — the
+object cannot be constructed if a candidate goes missing unaccounted for. This is not a log-line convention,
+it is a Python `__post_init__` that raises `ValueError` on any imbalance.
 
-**DDD owner:** `domain/dynamic_options_ranking.py` (the design's named owner for DOI ranking).
+**Verified this against real data, not just the code:** ran `run_completed_session_doi()` (read-only —
+against a scratch copy of `data/canonical/control_plane.sqlite`, never the live file, using tonight's real,
+already-stored `options_intelligence_20260919_205844.csv` and `provider_finality_20260919_205844.json`) for
+a 30-ticker sample. Result: `population_reconciled: true`, 30 input = 30 terminal rows, zero unexplained
+loss. **E's own definition is satisfied.**
 
-**Characterisation test to write first:** for one full run, assert
-`generated == assessed + data_exception_count` and `assessed == ranked + exception_retained_count`, i.e. no
-candidate disappears between phases without a recorded reason. Run this against `20260919_205844` now, before
-D is fixed, to get the current unreconciled gap as a baseline number, then again after D lands to confirm it
-closes to (ideally) zero unexplained loss.
+**But this surfaced a third, distinct root cause, separate from D's fix.** All 13 exceptions in the sample
+share the reason `"contract quote identity already has different immutable content"` —
+`OptionLifecycleConflict` from `canonical_data/option_liquidity_lifecycle.py:2261`, inside
+`persist_contract_observation()` (or its equivalent). This is a **separate identity/idempotency mechanism
+from the one item D fixed** — `option_contract_observations` persistence, not the general
+`canonical_data/registry.py::register_dataset()`. It already has its own tolerance logic (a whitelist of
+"comparable fields" — strike, expiration, delta, bid, ask, bid_size, ask_size, spread_pct, volume,
+open_interest, iv — deliberately excluding DTE and spot, with a documented rationale: "the same unchanged
+option quote on a later Morning pass while the independently captured underlying spot has moved... Reuse it
+only when all option-quote facts agree"). Despite that tolerance, 13/30 real tickers still hit the conflict.
+Two live hypotheses, not yet distinguished: (a) genuine drift in one of the whitelisted quote fields between
+two provider observations sharing the same `(thesis, run, contract, quote_time)` identity, or (b) a
+type-comparison bug in `_same_value()` — e.g. `str(150)` vs `str(150.0)` would false-positive as "different"
+for an integer-vs-float value pulled from sqlite vs. freshly computed, which `_same_value`'s numeric branch
+should catch via `math.isclose` but its string fallback would not if either side isn't recognised as numeric.
 
-**Fix:** re-run reconciliation after D; if a gap remains, it is a second, independent defect in
-`dynamic_options_ranking.py` itself and gets its own root-cause pass rather than being bundled with D's fix.
+**DDD owner:** `canonical_data/option_liquidity_lifecycle.py` (not `dynamic_options_ranking.py` as
+originally guessed — the conflict happens at observation-persistence time, before ranking is reached).
 
-**Regression:** the reconciliation assertion above, kept as a standing per-run observability check (design
-§15 already calls for this — "candidates assessed, ranked, monitored and ready... exact population
-reconciliation" — this makes it a test, not only a log line).
+**Not fixed in this pass** — deserves its own characterisation test (feed two payloads through
+`_same_value()`/the comparable-fields check directly, with real field values pulled from one of the 13
+failing tickers, to distinguish hypothesis (a) from (b)) rather than a guess. Reproduction script and
+evidence: `Enhancements/backtest/item_e_reconciliation_check.py`,
+`Enhancements/backtest/item_e_doi_reconciliation_20260919_205844.json`.
+
+**Regression:** the reconciliation invariant is already enforced by `__post_init__` (no new test needed to
+prove that part); a future fix for the quote-identity conflict needs its own characterisation test against
+`option_liquidity_lifecycle.py`'s `_same_value()`/comparable-fields logic.
 
 ### F. Correct the remaining missing invalidation lineage — REVISED, not a code defect
 
@@ -339,7 +362,10 @@ Narrower than the design's global §18 — this closes when:
    cause is fully traced** (the capture service and its writer both exist, are tested, and are proven
    against real data by the rehearsal script — only the live-run wiring is missing); the blocking count
    (0/11,454 available) still needs to move once that wiring is built.
-5. E's reconciliation assertion runs clean, or any residual gap is independently root-caused.
+5. **E's reconciliation confirmed clean** (verified against real data, 30-ticker sample, zero unexplained
+   loss). The residual gap (13/30 exceptions) is independently root-caused as a third, separate identity
+   mechanism (`option_liquidity_lifecycle.py`'s contract-observation persistence) — not yet fixed, needs its
+   own characterisation test to distinguish a data-drift cause from a type-comparison bug.
 6. **Closed.** F's 162 rows are confirmed correctly withheld from candidate/capital authority (verified
    against real data, not assumed), and the audit's `FAIL` severity is confirmed to describe a D1 data-
    coverage question, not an authority-governance gap — no fill-rate target applies here, D1's decision
