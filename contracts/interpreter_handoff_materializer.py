@@ -590,6 +590,13 @@ def materialize_interpreter_handoff(
         "bundle_path": str(bundles_path),
         "reconciliation_path": str(reconciliation_path),
         "handoff_manifest_path": str(handoff_path),
+        # ILA-RC-06: lets a caller (morning_handoff_finalizer.py) record, per ticker, that
+        # an evidence bundle was prepared - without re-reading bundles_path - so the Lab can
+        # later show that lifecycle stage even if no assessment is ever produced.
+        "bundles": [
+            {"ticker": bundle["ticker"], "bundle_id": bundle["bundle_id"]}
+            for bundle in bundles
+        ],
     }
 
 

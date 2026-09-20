@@ -48,6 +48,12 @@ ASSESSMENT_FIELDS = {
     "interpreter_manual_checks", "interpreter_data_gaps",
     "interpreter_plain_language_reason", "interpreter_authority_statement",
     "interpreter_assessment_status",
+    # ILA-RC-06: the earlier lifecycle stage - an evidence bundle was prepared for this
+    # ticker - written by morning_handoff_finalizer.py right after
+    # materialize_interpreter_handoff succeeds, independently of whether an assessment is
+    # ever produced. Lets the Lab distinguish "prepared, no assessment yet" from "never
+    # selected for Interpreter evidence" instead of collapsing both into NOT_ASSESSED.
+    "interpreter_bundle_status", "interpreter_bundle_prepared_utc",
 }
 OVERLAY_ALLOWED_FIELDS = frozenset(
     CURRENT_QUOTE_FIELDS | UNDERLYING_FIELDS | STRUCTURE_FIELDS | ASSESSMENT_FIELDS

@@ -583,6 +583,38 @@ def _publish_msi_handoff(
             + ";".join(independent.get("mismatches") or [])
         )
 
+    # ILA-RC-06: record that an evidence bundle was prepared for each ticker, independently
+    # of whether an Interpreter assessment is ever produced for it, so the Lab can show that
+    # lifecycle stage instead of collapsing "prepared, not yet assessed" into the same
+    # NOT_ASSESSED state as "never selected for Interpreter evidence". Advisory-only and
+    # best-effort: the handoff above has already succeeded, so a failure here must never
+    # fail the Morning run.
+    try:
+        from contracts.lab_evidence_overlay import append_overlay, build_overlay
+
+        overlay_path = run_dir / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl"
+        prepared_utc = datetime.now(timezone.utc).isoformat()
+        for bundle in result.get("bundles", []):
+            append_overlay(
+                overlay_path,
+                build_overlay(
+                    run_id=run_id,
+                    ticker=bundle["ticker"],
+                    bundle_id=bundle["bundle_id"],
+                    fields={
+                        "interpreter_bundle_status": "PREPARED",
+                        "interpreter_bundle_prepared_utc": prepared_utc,
+                    },
+                    source="morning_handoff_finalizer",
+                ),
+            )
+    except Exception as overlay_error:
+        log.warning(
+            "Interpreter bundle-prepared overlay write failed without affecting the "
+            "published handoff: %s",
+            overlay_error,
+        )
+
     if ledger_summary is not None:
         result["decision_outcome_ledger"] = ledger_summary
 

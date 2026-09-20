@@ -1720,6 +1720,25 @@ function getMorningEventMode(s) {
   return {label, timestamp, reason: timestamp ? `${label} · ${timestamp}` : label};
 }
 
+function getInterpreterLifecycleState(s) {
+  // ILA-RC-06: interpreter_assessment_status is an overlay field written back only once a
+  // separate CLI command runs an actual Interpreter assessment. Its absence alone cannot
+  // tell a reader whether this row was ever queued for Interpreter evidence in the first
+  // place. interpreter_bundle_status (also an overlay field, written by
+  // morning_handoff_finalizer.py right after the evidence bundle is published) records that
+  // earlier stage independently, so the two together distinguish PREPARED-but-not-assessed
+  // from NOT REQUESTED.
+  const assessment = String(s.interpreter_assessment_status || '').trim();
+  if (assessment) {
+    return {label: assessment, reason: 'An Interpreter assessment has been produced for this row.'};
+  }
+  const bundleStatus = String(s.interpreter_bundle_status || '').toUpperCase();
+  if (bundleStatus === 'PREPARED') {
+    return {label: 'PREPARED', reason: 'Evidence bundle prepared; no Interpreter assessment has been produced yet.'};
+  }
+  return {label: 'NOT REQUESTED', reason: 'This row was not selected for Interpreter evidence preparation this run.'};
+}
+
 function getMorningLifecycleBanner(s) {
   // ILA-RC-04: lab_status_banner is set only by the EOD interpreter-handoff path
   // (contracts/interpreter_handoff_materializer.py), never by morning_gate.py - it is
@@ -2985,7 +3004,8 @@ function openModal(ticker) {
     </div>
     <div class="m-sec-hdr">Interpreter Assessment — Advisory Only</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Assessment State</div><div class="mf-v a">${msiVal(s.interpreter_assessment_status,'NOT_ASSESSED')}</div></div>
+      <div class="m-field"><div class="mf-k">Assessment State</div><div class="mf-v a">${htmlSafe(getInterpreterLifecycleState(s).label)}<br><span class="dim">${htmlSafe(getInterpreterLifecycleState(s).reason)}</span></div></div>
+      <div class="m-field"><div class="mf-k">Bundle Prepared (UTC)</div><div class="mf-v sm">${msiVal(s.interpreter_bundle_prepared_utc,'NOT_PREPARED')}</div></div>
       <div class="m-field"><div class="mf-k">Strengthening / Weakening</div><div class="mf-v">${msiVal(s.interpreter_strengthening_weakening,'NOT_ASSESSED')}</div></div>
       <div class="m-field"><div class="mf-k">Agreement / Conflict</div><div class="mf-v">${msiVal(s.interpreter_agreement_conflict,'NOT_ASSESSED')}</div></div>
       <div class="m-field"><div class="mf-k">Created (UTC)</div><div class="mf-v sm">${msiVal(s.interpreter_created_utc,'NOT_ASSESSED')}</div></div>
