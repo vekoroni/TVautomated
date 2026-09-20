@@ -255,7 +255,7 @@ def test_intelligence_lab_has_trader_facing_liquidity_labels() -> None:
     html = (ROOT / "intelligence-lab" / "static" / "index.html").read_text(encoding="utf-8")
     for label in (
         "Liquidity State",
-        "Morning Transition",
+        "Morning Post-Open Contract State",
         "Distance to ATM",
         "Remaining Runway",
         "Quote Freshness",

@@ -1666,7 +1666,12 @@ function getMorningDrift(s) {
   return {value: null, label: notRun ? 'Not run' : 'Unavailable', reason: notRun ? 'Morning validation has not run; regime drift is a different measure.' : 'No morning drift measurement supplied.'};
 }
 
-function getMorningThesisDisplay(s) {
+function getPreopenThesisState(s) {
+  // ILA-RC-04: this reads ONLY the pre-open thesis-check event (validation_transition).
+  // It must never be read as "Morning did not run" - a row can be fully validated in
+  // POSTOPEN_CONTRACT_REFRESH mode (see getPostopenContractState) while this is absent,
+  // because that mode never produces a validation_transition value. See getMorningEventMode
+  // for which event actually ran on this row.
   const transition = String(s.validation_transition || '').toUpperCase();
   const governedReason = String(s.validation_reason || '').trim();
   const reason = fallback => governedReason || fallback;
@@ -1677,7 +1682,60 @@ function getMorningThesisDisplay(s) {
   if (transition === 'DATA_DEFERRED') return {label: 'DEFERRED', valid: false, reason: reason('Morning evidence was not sufficient to validate the thesis.')};
   if (transition === 'NOT_EVALUATED_NON_DIRECTIONAL') return {label: 'N/A', valid: false, reason: reason('Directional Morning validation is not applicable to this thesis.')};
   if (transition) return {label: 'UNKNOWN', valid: false, reason: reason(`Unrecognised governed transition: ${transition}`)};
-  return {label: 'NOT RUN', valid: false, reason: 'Morning Gate has not validated this thesis.'};
+  return {label: 'NOT RUN', valid: false, reason: 'This run did not perform a pre-open thesis-validation event (see Morning Event Mode).'};
+}
+
+const POSTOPEN_CONTRACT_STATE_LABELS = {
+  EXECUTABLE_NOW: {label: 'EXECUTABLE NOW', valid: true, reason: 'A current, executable quote is available for the selected contract.'},
+  CONTRACT_REPRICE_REQUIRED: {label: 'REPRICE REQUIRED', valid: false, reason: 'The contract needs a fresh price/lifecycle recompute before it can be treated as executable.'},
+  THESIS_INVALIDATED: {label: 'INVALIDATED', valid: false, reason: 'Post-open price action invalidated the governed thesis.'},
+  MOVE_ALREADY_REALIZED: {label: 'MOVE ALREADY REALISED', valid: false, reason: 'The anticipated move already occurred before this contract state was evaluated.'},
+  LIQUIDITY_STILL_PENDING: {label: 'LIQUIDITY PENDING', valid: false, reason: 'The selected contract does not yet have a two-sided, tradeable quote.'},
+  GAP_CONFIRMATION_WITH_RUNWAY: {label: 'GAP CONFIRMATION', valid: false, reason: 'An overnight gap requires confirmation before the contract is treated as executable; runway remains.'},
+  WAIT_FOR_PULLBACK: {label: 'WAIT FOR PULLBACK', valid: false, reason: 'Remaining runway calls for a pullback before entry is executable.'},
+  GAP_CONFIRMATION_EXTENDED: {label: 'GAP CONFIRMATION EXTENDED', valid: false, reason: 'Overnight gap confirmation is still pending beyond the normal window.'},
+  LEGACY_LIFECYCLE_NOT_EVALUATED: {label: 'LEGACY / NOT EVALUATED', valid: false, reason: 'This row predates the current contract-lifecycle evaluation.'},
+};
+function getPostopenContractState(s) {
+  // ILA-RC-04: this reads ONLY the post-open contract-refresh event
+  // (morning_transition_state, set in morning_gate.py's lifecycle evaluation). It must never
+  // be conflated with getPreopenThesisState - they are two different events that can each be
+  // present, absent, or in conflict, and both must be shown labelled, side by side.
+  const state = String(s.morning_transition_state || '').toUpperCase();
+  if (POSTOPEN_CONTRACT_STATE_LABELS[state]) return POSTOPEN_CONTRACT_STATE_LABELS[state];
+  if (state) return {label: state.replace(/_/g, ' '), valid: false, reason: `Unmapped post-open contract state: ${state}`};
+  return {label: 'NOT RUN', valid: false, reason: 'This run did not perform a post-open contract-refresh event (see Morning Event Mode).'};
+}
+
+const MORNING_EVENT_MODE_LABELS = {
+  PREOPEN_THESIS_CHECK: 'Pre-open thesis check',
+  POSTOPEN_CONTRACT_REFRESH: 'Post-open contract refresh',
+};
+function getMorningEventMode(s) {
+  // Tells the reader WHICH of the two Morning events actually ran on this row, so the
+  // "NOT RUN" fallback on the other one is never mistaken for Morning not running at all.
+  const mode = String(s.morning_execution_mode || '').toUpperCase();
+  const label = MORNING_EVENT_MODE_LABELS[mode] || (mode ? mode.replace(/_/g, ' ') : 'NOT RUN');
+  const timestamp = s.morning_quote_timestamp_utc || '';
+  return {label, timestamp, reason: timestamp ? `${label} · ${timestamp}` : label};
+}
+
+function getMorningLifecycleBanner(s) {
+  // ILA-RC-04: lab_status_banner is set only by the EOD interpreter-handoff path
+  // (contracts/interpreter_handoff_materializer.py), never by morning_gate.py - it is
+  // entirely absent for every real Morning row. Its absence must not fall back to a static
+  // "CURRENT VALIDATION NOT RUN" claim, which directly contradicts a row's own GO/
+  // READY_EXECUTE verdict shown elsewhere on the same dossier whenever Morning ran in
+  // POSTOPEN_CONTRACT_REFRESH mode (every observed real run). Fall back mode-aware instead.
+  if (s.lab_status_banner) return s.lab_status_banner;
+  const mode = String(s.morning_execution_mode || '').toUpperCase();
+  if (mode === 'POSTOPEN_CONTRACT_REFRESH') {
+    return `THESIS PREPARED — POST-OPEN CONTRACT REFRESH RAN (${getPostopenContractState(s).label})`;
+  }
+  if (mode === 'PREOPEN_THESIS_CHECK') {
+    return `THESIS PREPARED — PRE-OPEN THESIS CHECK RAN (${getPreopenThesisState(s).label})`;
+  }
+  return 'THESIS PREPARED — MORNING VALIDATION NOT RUN';
 }
 
 function getWbsDisplay(s) {
@@ -2016,7 +2074,7 @@ const sortKeys = [
   s => getEilDisplay(s),                            // 22 EIL
   s => parseFloat(s.current_contract_mid||0),       // 23 Current quote
   s => s.quote_freshness||s.lab_v4_quote_freshness||'', // 24 Quote freshness
-  s => getMorningThesisDisplay(s).label,             // 25 Morning thesis status
+  s => getPreopenThesisState(s).label,               // 25 Morning thesis status
   s => s.ms_lifecycle||'',                          // 26 Structure lifecycle
   s => s.ms_direction_relationship||'',             // 27 Structure relationship
   s => s.interpreter_assessment_status||'',         // 28 Interpreter assessment
@@ -2182,7 +2240,7 @@ function buildTable() {
       })()}</div>
       <div class="sc" title="Current exact-contract bid / ask" style="font-size:9px;color:var(--cyan)">${s.current_contract_bid ?? 'MISSING'} / ${s.current_contract_ask ?? 'MISSING'}</div>
       <div class="sc" title="Provider quote freshness; does not alter thesis validity" style="font-size:8px;color:${String(s.quote_freshness||s.lab_v4_quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${s.quote_freshness || s.lab_v4_quote_freshness || 'UNKNOWN'}</div>
-      <div class="sc" title="${attrSafe(getMorningThesisDisplay(s).reason)}" style="font-size:8px;color:${getMorningThesisDisplay(s).valid?'var(--green)':'var(--amber)'}">${getMorningThesisDisplay(s).label}</div>
+      <div class="sc" title="${attrSafe(getPreopenThesisState(s).reason)}" style="font-size:8px;color:${getPreopenThesisState(s).valid?'var(--green)':'var(--amber)'}">${getPreopenThesisState(s).label}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_lifecycle || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_direction_relationship || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.interpreter_assessment_status || 'NOT_APPLICABLE'}</div>
@@ -2414,7 +2472,7 @@ function openModal(ticker) {
 
   // TAB 1: OVERVIEW
   document.getElementById('mp-overview').innerHTML = `
-    <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(s.lab_status_banner||'THESIS PREPARED — CURRENT VALIDATION NOT RUN')}</div>
+    <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(getMorningLifecycleBanner(s))}</div>
     <div class="m-sec-hdr" style="margin-top:18px">Frozen Thesis — Completed Evidence</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Completed Session</div><div class="mf-v c">${htmlSafe(s.evidence_session_date||s.completed_session||s.thesis_session_date||'—')}</div></div>
@@ -2529,10 +2587,11 @@ function openModal(ticker) {
     <div class="m-sec-hdr">Liquidity Lifecycle</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Liquidity State</div><div class="mf-v ${s.executable_now===true||String(s.executable_now).toUpperCase()==='TRUE'?'g':'a'}">${displayCategory(s.liquidity_state||'NOT EVALUATED')}</div></div>
-      <div class="m-field"><div class="mf-k">Morning Transition</div><div class="mf-v a">${displayCategory(s.morning_transition_state||'NOT RUN')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Post-Open Contract State</div><div class="mf-v ${getPostopenContractState(s).valid?'g':'a'}">${getPostopenContractState(s).label}<br><span class="dim">${htmlSafe(getPostopenContractState(s).reason)}</span></div></div>
       <div class="m-field"><div class="mf-k">Distance to ATM</div><div class="mf-v">${Number.isFinite(parseFloat(s.atm_distance_sigma))?parseFloat(s.atm_distance_sigma).toFixed(2)+' sigma':'—'}</div></div>
       <div class="m-field"><div class="mf-k">Remaining Runway</div><div class="mf-v ${String(s.remaining_runway_state||'').includes('REALIZED')?'r':'a'}">${Number.isFinite(parseFloat(s.remaining_runway_pct))?parseFloat(s.remaining_runway_pct).toFixed(1)+'%':'—'} · ${displayCategory(s.remaining_runway_state||'NOT EVALUATED')}</div></div>
-      <div class="m-field"><div class="mf-k">Morning Thesis Check</div><div class="mf-v ${getMorningThesisDisplay(s).valid?'g':'a'}">${getMorningThesisDisplay(s).label}<br><span class="dim">${htmlSafe(getMorningThesisDisplay(s).reason)}</span></div></div>
+      <div class="m-field"><div class="mf-k">Morning Pre-Open Thesis State</div><div class="mf-v ${getPreopenThesisState(s).valid?'g':'a'}">${getPreopenThesisState(s).label}<br><span class="dim">${htmlSafe(getPreopenThesisState(s).reason)}</span></div></div>
+      <div class="m-field"><div class="mf-k">Morning Event Mode</div><div class="mf-v a">${htmlSafe(getMorningEventMode(s).label)}<br><span class="dim">${htmlSafe(getMorningEventMode(s).timestamp||'no event timestamp')}</span></div></div>
       <div class="m-field"><div class="mf-k">Canonical Quote Lineage</div><div class="mf-v sm">${htmlSafe(s.option_chain_provider||'MARKETDATA')} · ${htmlSafe(s.option_chain_resolution||s.live_options_resolution||'DIRECT')}<br><span class="dim">chain ${htmlSafe(String(s.option_chain_dataset_id||'unavailable').slice(0,16))} · exact ${htmlSafe(String(s.selected_quote_dataset_id||'unavailable').slice(0,16))}</span></div></div>
       <div class="m-field"><div class="mf-k">Contract Changed</div><div class="mf-v ${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'a':'g'}">${s.contract_changed===true||String(s.contract_changed).toUpperCase()==='TRUE'?'YES':'NO'}${s.contract_selection_reason?' · '+htmlSafe(s.contract_selection_reason):''}</div></div>
       <div class="m-field"><div class="mf-k">Maturation 1 / 2 / 3 Sessions</div><div class="mf-v sm">${s.maturation_score_1d??'—'} / ${s.maturation_score_2d??'—'} / ${s.maturation_score_3d??'—'} · monitoring estimate only — not a probability and cannot authorize entry</div></div>
@@ -2899,7 +2958,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Mid</div><div class="mf-v">${msiNum(s.current_contract_mid)}</div></div>
       <div class="m-field"><div class="mf-k">Spread</div><div class="mf-v">${msiNum(s.current_contract_spread_pct,2,'%')}</div></div>
       <div class="m-field"><div class="mf-k">Bid / Ask Size</div><div class="mf-v">${msiVal(s.contract_bid_size)} / ${msiVal(s.contract_ask_size)}</div></div>
-      <div class="m-field"><div class="mf-k">Morning Thesis Check</div><div class="mf-v ${getMorningThesisDisplay(s).valid?'g':'a'}">${getMorningThesisDisplay(s).label}<br><span class="dim">${htmlSafe(getMorningThesisDisplay(s).reason)}</span></div></div>
+      <div class="m-field"><div class="mf-k">Morning Post-Open Contract State</div><div class="mf-v ${getPostopenContractState(s).valid?'g':'a'}">${getPostopenContractState(s).label}<br><span class="dim">${htmlSafe(getPostopenContractState(s).reason)}</span></div></div>
       <div class="m-field"><div class="mf-k">Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.quote_timestamp_utc,'MISSING')}</div></div>
       <div class="m-field"><div class="mf-k">Comparison State</div><div class="mf-v a">${msiVal(s.comparison_status,'NOT_APPLICABLE')}</div></div>
     </div>
