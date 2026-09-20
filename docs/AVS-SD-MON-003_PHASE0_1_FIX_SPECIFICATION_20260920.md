@@ -278,10 +278,9 @@ test" the validation record references (not yet identified by name in this pass 
 for a test asserting provider/fetch timestamp equality or a fixed clock that has since drifted stale);
 (4) tag the resulting commit as the Phase 0 baseline.
 
-**Status, 20 Sep 2026:** (1) is explicitly **deferred 8 days** (ACK decision, 20 Sep 2026 — revisit ~28 Sep
-2026) rather than resolved now; the 39 deletions stay exactly as they are in the working tree, neither
-committed nor restored. H therefore cannot close before that date. (3) and (4) remain open independent of
-the deferral and can proceed once (1) is resolved.
+**Status, 20 Sep 2026:** (1) is **resolved** — the 39 deletions were initially deferred 8 days, then
+reconsidered within the same session and confirmed for deletion (`43136b1`). (3) and (4) remain open: the
+stale provider-timestamp test is not yet identified by name, and the Phase 0 baseline is not yet tagged.
 
 **Regression:** full suite green at the tagged commit; this tag becomes the rollback target named in the
 design's §16.
@@ -303,8 +302,8 @@ Required before declaring Phase 0/1 closed:
 
 Narrower than the design's global §18 — this closes when:
 
-1. A is committed (`65c5d7d`, done). H is deferred 8 days (ACK, 20 Sep 2026) on the 39 pending deletions —
-   tagging the Phase 0 baseline waits until that resolves.
+1. A is committed (`65c5d7d`, done). H's deletion blocker is resolved (`43136b1`); the stale
+   provider-timestamp test and the Phase 0 tag are still outstanding.
 2. G is proven (archive completes cleanly on the next run, pre-flight check added).
 3. D's characterisation test exists and its root cause is named (fixed or explicitly deferred with reason).
 4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. C still
