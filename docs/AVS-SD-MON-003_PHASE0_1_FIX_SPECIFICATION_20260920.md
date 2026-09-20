@@ -102,61 +102,79 @@ proven directly for this exact field.
 `test_avs_fix_002_stage6_outcome_learning.py` (22), `test_dynamic_session_phase7.py` (7),
 `test_c12_outcome_scoring_stage.py` (5), `test_avs_fix_001_w39_outcome_maturation_stage.py` (14) — all green.
 
-### C. Capture daily option bid paths for monitored family members
+### C. Capture daily option bid paths for monitored family members — root cause fully traced, buildable
 
-**Root cause, confirmed by code trace:** `outcome_learning.py:215` defaults
-`option_status = "UNDERLYING_ONLY"` whenever `option.get("data_status")` is absent; `option` is sourced from
-`load_option_outcome_lookup()`, whose own docstring is explicit — "Read already-canonical DOI labels; never
-fetch or infer option history" — reading a `doi_outcome_labels` table that returns `{}` silently if the
-table is empty, missing, or the control-plane path doesn't resolve (`outcome_learning.py:171-197`). This
-function is a pure reader by design; the defect is upstream, in whatever process is meant to populate
-`doi_outcome_labels` with daily bid/ask marks for monitored contracts. The validation record's structural-fit
-list names `domain/dynamic_options_outcomes.py` as the module that should own this write path.
+**Confirmed, not hypothesised:** the entire write path already exists, is tested, and is proven to work
+end-to-end — it is simply never invoked from a live run.
 
-**DDD owner:** `domain/dynamic_options_outcomes.py` (Path Forecast / Decision and Outcome boundary) — must
-write `doi_outcome_labels` from observed option marks; `outcome_learning.py` stays a pure reader.
+- `outcome_learning.py:215` defaults `option_status = "UNDERLYING_ONLY"` when `option.get("data_status")`
+  is absent; `option` comes from `load_option_outcome_lookup()`, a deliberate pure reader
+  (`outcome_learning.py:171-197`) of the `doi_outcome_labels` table.
+- `canonical_data/option_liquidity_lifecycle.py` owns that table's schema (`doi_outcome_labels_v1`,
+  line 570) and its real writer, `record_doi_outcome_label()` (INSERT at line 1324) — not a stub.
+- `canonical_data/dynamic_options_outcomes.py`'s `OutcomeCaptureService.capture_family()` is a complete,
+  working capture service: given a DOI family, an evaluation cutoff, and two callables
+  (`read_option_path`, `read_underlying_path`), it calls `domain/dynamic_options_outcomes.py`'s
+  `evaluate_assessment_outcome()` per assessment/horizon and persists real labels via
+  `store.record_doi_outcome_label()`. Fully covered by `tests/test_dynamic_options_outcomes.py`.
+- `audit/doi/doi7_real_outcome_rehearsal.py` (224 lines) proves this works against **real** canonical
+  chain data end-to-end — it is not a mock. But it hardcodes one `ORIGIN_DATASET_ID` and two
+  `FUTURE_DATASET_IDS` for a single, manually-chosen ticker/session as a one-off demonstration.
 
-**Characterisation test to write first:** for a monitored contract with real chain snapshots on file in
-Phantom for two or more sessions after entry, assert `load_option_outcome_lookup()` returns a non-empty
-entry for that `(assessment_id, horizon)` with `data_status != "UNDERLYING_ONLY"`. Currently fails
-(0/11,454 available, per the validation record) — confirm whether the write path is never invoked, invoked
-but writing to the wrong path/table, or invoked but silently failing (each has a different, smaller fix).
+**Grepped every call site of `capture_family()`/`OutcomeCaptureService(` in the repo: only its own
+definition, its unit test, and the rehearsal script call it.** `intelligent_orchestrator.py` never does.
+This is not a missing capability — it is missing wiring.
 
-**Fix:** depends on what the characterisation test isolates — likely wiring `dynamic_options_outcomes.py`'s
-label-writer into the same run phase that already fetches daily chains (reuse, no new chain-fetch
-mechanism — canonical stores already exist per the design's §3.1).
+**DDD owner:** `domain/dynamic_options_outcomes.py` / `canonical_data/dynamic_options_outcomes.py` (already
+correct); the gap is in `intelligent_orchestrator.py`'s run flow, which needs to call the existing service.
 
-**Regression:** outcome-learning fit-eligible count should move off zero; `test_ev3_options_handoff.py` and
-the option-liquidity-lifecycle suite for no regression on existing DOI ranking behaviour.
+**Remaining work (scoped, not yet built):** generalise the rehearsal script's approach — loop over every
+monitored DOI family each run (not one hardcoded ticker), resolve `read_option_path`/`read_underlying_path`
+dynamically via the canonical registry (not hardcoded dataset IDs), and call `capture_family()` from the
+same orchestrator phase that already fetches daily chains, once a session completes. This touches
+production-critical canonical-registry code on the live run path and deserves its own focused session
+rather than being rushed — characterisation test first: assert that after a completed session with real
+chain snapshots on file, `load_option_outcome_lookup()` returns a non-empty, non-`UNDERLYING_ONLY` entry for
+at least one monitored assessment, currently 0/11,454 per the validation record.
 
-### D. Repair idempotent/superseding option-observation identity
+**Regression:** outcome-learning fit-eligible count should move off zero once wired; `test_ev3_options_handoff.py`
+and the option-liquidity-lifecycle suite for no regression on existing DOI ranking behaviour.
 
-**Root cause:** not yet isolated in this pass — flagged by the design (§13, Phase 1.1: "so repeated same-run
-observations are idempotent and genuinely different observations supersede rather than conflict") and the
-validation record's "most exceptions were immutable quote-identity conflicts" (§3.2 item 3). No confirmed
-code-level mechanism found in this session; grep for an observation-identity/supersession function in
-`canonical_data/dynamic_options_production.py` (the design's named owner) returned nothing named that way —
-the actual identity key is likely elsewhere in the same file or in `canonical_data/dynamic_options_*`
-siblings and needs direct inspection before a fix spec can be written with confidence.
+### D. Repair idempotent/superseding option-observation identity — root cause confirmed, needs an ACK decision
 
-**DDD owner:** `canonical_data/dynamic_options_production.py` (Canonical Market Evidence — option-observation
-identity).
+**Confirmed, not hypothesised — and no new test was even needed, existing tests already prove it:**
+`canonical_data/registry.py::register_dataset()` (the general canonical registry, used for OHLCV as well as
+options — not options-specific) computes `dataset_id = sha256(type|ticker|session_date|scope_fingerprint|
+content_hash)` (`canonical_data/option_chain_store.py:184-189`). `content_hash` is baked into `dataset_id`
+itself, so two genuinely different quote observations can never collide — that part of the design is
+sound. The conflict is different: `completeness_status`, `as_of`, and `expires_at` are **not** part of the
+hash, so a *second* registration of byte-identical content (e.g. the same chain re-observed later, or
+upgraded from `PARTIAL` to `COMPLETE`) shares the same `dataset_id` but differs in a field the immutability
+check does not tolerate — `register_dataset()` only normalises `source_run_id` and `observed_at` before
+comparing, not `as_of` or `completeness_status`. Proven directly by two tests already in the suite,
+currently green as *expected* behaviour:
+- `tests/test_canonical_data_system.py::test_registry_preserves_provenance_and_content_identity` — registers
+  a record, re-registers the same `dataset_id` with only `as_of` advanced, asserts `DatasetValidationError`.
+- `tests/test_canonical_data_system.py::test_identical_dataset_is_reusable_across_runs_without_rewriting_origin`
+  — same pattern for `source_run_id`/`observed_at` (which *are* tolerated) vs. `content_hash` (which correctly
+  is not).
 
-**Characterisation test to write first:** given two fetches of the same contract within the same run where
-only the quote timestamp advanced, assert the second fetch supersedes the first (one live observation,
-one superseded, not two conflicting rows). Given two fetches where the underlying quote genuinely differs
-(a real re-quote), assert both persist as distinct, ordered observations. This test does not yet exist and
-must be written against current behaviour first — it will very likely fail, which is the point: it turns
-"most exceptions were immutable quote-identity conflicts" from a description into a reproducible case.
+**This is not a mechanical bug to patch — it is a design decision.** `register_dataset()`'s current behaviour
+is asserted as *correct* by tests that would need to change alongside any fix, and this registry is the
+general canonical-evidence store, not an options-only component — changing what "immutable" tolerates
+affects every dataset type it serves, not just option quotes. The open question for ACK: when the same
+content (`content_hash`/`dataset_id` identical) is re-registered with a different `completeness_status` or
+`as_of`, should the registry (a) keep the first-observed record unchanged (idempotent no-op, matching how
+`source_run_id`/`observed_at` already behave), (b) accept the newer/more-complete metadata as a supersession
+(update in place), or (c) something else? This determines the fix; it should not be decided unilaterally in
+this pass.
 
-**Fix:** withheld until the characterisation test names the exact identity key currently causing conflicts
-(candidate keys to check: whether provider timestamp, fetch timestamp, or both are part of the identity;
-whether "immutable" here means an append-only table with no supersession concept at all, which would be a
-larger and different fix than a key correction).
+**DDD owner:** `canonical_data/registry.py` (`register_dataset()`), not `dynamic_options_production.py` as
+originally guessed — the mechanism is one level lower, in the general registry every dataset type shares.
 
-**Regression:** `test_options_crossed_quote_integration.py` and `test_msi_options_chain_v2_integration.py`
-(closest existing coverage) plus item E's reconciliation counts as the acceptance signal — if D is fixed,
-E's generated/assessed/ranked/exception populations should reconcile without unexplained loss.
+**Regression:** the two existing tests above will need their assertions updated to match whichever semantics
+ACK chooses — they currently encode the *old* behaviour as correct, so a fix without updating them would
+just trade one false assertion for another.
 
 ### E. Reconcile all DOI generated/assessed/ranked/exception populations
 
@@ -304,11 +322,13 @@ Narrower than the design's global §18 — this closes when:
 
 1. A is committed (`65c5d7d`, done). H's deletion blocker is resolved (`43136b1`); the stale
    provider-timestamp test and the Phase 0 tag are still outstanding.
-2. G is proven (archive completes cleanly on the next run, pre-flight check added).
-3. D's characterisation test exists and its root cause is named (fixed or explicitly deferred with reason).
-4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. C still
-   needs its blocking count (0/11,454 available) moved off its current value, with evidence, even if not
-   fully to zero.
+2. **G closed** (`16475ea`). Archive completes cleanly with a pre-flight headroom check added.
+3. **D's root cause is named and confirmed** (existing tests prove it, no new test needed) — awaiting ACK's
+   decision on the three possible semantics before any fix lands; not deferred for lack of investigation.
+4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. **C's root
+   cause is fully traced** (the capture service and its writer both exist, are tested, and are proven
+   against real data by the rehearsal script — only the live-run wiring is missing); the blocking count
+   (0/11,454 available) still needs to move once that wiring is built.
 5. E's reconciliation assertion runs clean, or any residual gap is independently root-caused.
 6. **Closed.** F's 162 rows are confirmed correctly withheld from candidate/capital authority (verified
    against real data, not assumed), and the audit's `FAIL` severity is confirmed to describe a D1 data-
