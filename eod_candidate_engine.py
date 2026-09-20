@@ -1129,7 +1129,10 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
     if not pcr_status:
         if _audit_has_number(row, "dw_pcr_vol", "pcr_vol"):
             row["pcr_vol_status"] = "OK"
-        elif pcr_signal in {"BULLISH", "BEARISH", "NEUTRAL", "STRONGLY_BULLISH", "STRONGLY_BEARISH"}:
+        elif pcr_signal in {
+            "CALL_HEAVY", "PUT_HEAVY", "BALANCED",
+            "BULLISH", "BEARISH", "NEUTRAL", "STRONGLY_BULLISH", "STRONGLY_BEARISH",
+        }:
             row["pcr_vol_status"] = "OI_ONLY_NO_INTRADAY_VOLUME"
         elif verdict in {"STAND_DOWN", "BLOCK", "BLOCKED"}:
             row["pcr_vol_status"] = "NOT_EVALUATED"
@@ -1145,17 +1148,13 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
         elif status == "MISSING":
             row["pcr_vol_missing_reason"] = "NO_PCR_VOLUME_OR_OI_SIGNAL"
 
-    if not _str(row, "pcr_direction_conflict_status") and "PCR" in _str(row, "direction_conflict_reason").upper():
-        legacy_status = _str(row, "direction_conflict_status").upper()
-        row["pcr_direction_conflict_status"] = (
-            "PCR_CONFLICT_REQUIRES_FLOW_CONFIRMATION"
-            if legacy_status == "UNRESOLVED"
-            else (_str(row, "direction_conflict_status") or "PCR_CONFLICT_REQUIRES_FLOW_CONFIRMATION")
+    if pcr_signal or _audit_has_number(row, "pcr_oi", "dw_ratio", "dw_pcr_vol", "pcr_vol"):
+        row["pcr_direction_conflict_status"] = "PCR_POSITIONING_CONTEXT_ONLY"
+        row["pcr_direction_conflict_reason"] = (
+            "PCR describes option positioning/activity concentration; buyer/seller direction is ambiguous"
         )
-        row["pcr_direction_conflict_reason"] = _str(row, "direction_conflict_reason")
-    if not _str(row, "pcr_direction_conflict_status"):
-        row["pcr_direction_conflict_status"] = "NOT_EVALUATED" if verdict in {"STAND_DOWN", "BLOCK", "BLOCKED"} else "NO_PCR_CONFLICT"
-    if not _str(row, "pcr_direction_conflict_reason"):
+    elif not _str(row, "pcr_direction_conflict_status"):
+        row["pcr_direction_conflict_status"] = "NOT_EVALUATED" if verdict in {"STAND_DOWN", "BLOCK", "BLOCKED"} else "NO_PCR_DATA"
         row["pcr_direction_conflict_reason"] = ""
 
     catalyst_audit = _catalyst_direction_conflict(row)
@@ -1171,10 +1170,7 @@ def _normalise_audit_handoff_fields(row: dict) -> dict:
     structural_conflict = _str(row, "direction_arbitration_status").upper() == "CONFLICT_STRUCTURE_LEADS"
     catalyst_conflict = _str(row, "catalyst_direction_conflict_status").upper() == "CATALYST_CONFLICT_REQUIRES_CONFIRMATION"
     _pcr_status = _str(row, "pcr_direction_conflict_status").upper()
-    pcr_conflict = (
-        "CONFLICT" in _pcr_status
-        and _pcr_status not in {"NO_CONFLICT", "NO_PCR_CONFLICT"}
-    )
+    pcr_conflict = False
     if verdict in {"STAND_DOWN", "BLOCK", "BLOCKED"}:
         row["direction_conflict_status"] = "NOT_EVALUATED"
         row["direction_conflict_reason"] = ""

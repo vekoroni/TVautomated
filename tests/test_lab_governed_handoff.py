@@ -78,6 +78,27 @@ def test_alternative_contract_is_not_promoted_to_selected_contract():
     assert row["contract_symbol"] == ""
     assert row["contract_data_state"] == "NOT_APPLICABLE_NO_SELECTED_CONTRACT"
     assert row["strike"] == ""
+
+
+def test_option_activity_context_reaches_lab_without_directional_authority():
+    row = opportunity_book_row(
+        _base_signal(
+            oi_positioning_state="PUT_HEAVY",
+            volume_activity_state="CALL_HEAVY",
+            option_activity_state="MIXED_ACTIVITY",
+            activity_evidence_strength="CONFLICTED",
+            activity_directional_inference="AMBIGUOUS",
+            activity_authority="ADVISORY_ONLY",
+            activity_reason="Positioning and activity disagree.",
+        ),
+        RUN_ID,
+        1,
+    )
+    assert row["oi_positioning_state"] == "PUT_HEAVY"
+    assert row["volume_activity_state"] == "CALL_HEAVY"
+    assert row["option_activity_state"] == "MIXED_ACTIVITY"
+    assert row["activity_directional_inference"] == "AMBIGUOUS"
+    assert row["activity_authority"] == "ADVISORY_ONLY"
     assert row["expiry"] == ""
     assert row["dte"] == ""
     assert row["rr_predicted"] == ""

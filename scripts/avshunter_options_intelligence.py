@@ -42,7 +42,7 @@
 ║    put_wall              : highest OI put strike                             ║
 ║    max_pain              : max pain strike                                   ║
 ║    pcr_oi                : put/call ratio by OI                              ║
-║    pcr_signal            : BULLISH / BEARISH / NEUTRAL                      ║
+║    pcr_signal            : CALL_HEAVY / PUT_HEAVY / BALANCED                ║
 ║    target_in_play        : True if structural target clears call wall        ║
 ║    breakeven_pct         : % move needed to break even on option             ║
 ║    theta_drag_pct        : theta cost as % of premium over hold period      ║
@@ -329,30 +329,13 @@ def _direction_conflict_status_oi(direction: str, pcr_signal: Any, pcr_value: An
             "pcr_confidence_weight": 0.0,
         }
 
-    confirms = (
-        (direction_u == "CALL" and signal_u in {"BULLISH", "CALL_BULLISH", "CALL_CONFIRM", "RISK_ON"})
-        or (direction_u == "PUT" and signal_u in {"BEARISH", "PUT_BEARISH", "PUT_CONFIRM", "RISK_OFF"})
-    )
-    conflicts = (
-        (direction_u == "CALL" and signal_u in {"BEARISH", "PUT_BEARISH", "PUT_CONFIRM", "RISK_OFF"})
-        or (direction_u == "PUT" and signal_u in {"BULLISH", "CALL_BULLISH", "CALL_CONFIRM", "RISK_ON"})
-    )
-    if confirms:
-        return {
-            "pcr_direction_conflict_status": "PCR_CONFIRMS_REDUCED_CONFIDENCE",
-            "pcr_direction_conflict_reason": f"OI PCR confirms {direction_u} with reduced confidence",
-            "pcr_confidence_weight": 0.6,
-        }
-    if conflicts:
-        return {
-            "pcr_direction_conflict_status": "PCR_CONFLICT_REQUIRES_FLOW_CONFIRMATION",
-            "pcr_direction_conflict_reason": f"OI PCR conflicts with {direction_u}",
-            "pcr_confidence_weight": 0.6,
-        }
     return {
-        "pcr_direction_conflict_status": "PCR_NEUTRAL",
-        "pcr_direction_conflict_reason": f"OI PCR signal {signal_u} is not directional for {direction_u}",
-        "pcr_confidence_weight": 0.6 if pcr_value not in (None, "", "nan", "NaN") else 0.0,
+        "pcr_direction_conflict_status": "PCR_POSITIONING_CONTEXT_ONLY",
+        "pcr_direction_conflict_reason": (
+            f"OI PCR state {signal_u} is advisory positioning context and cannot "
+            f"confirm or contradict {direction_u} without signed-flow evidence"
+        ),
+        "pcr_confidence_weight": 0.0,
     }
 
 
@@ -989,9 +972,6 @@ def compute_convexity_score_oi(
                      _flt_conv(signal,    'call_wall')      or _flt_conv(signal,    'gex_wall_call'))
     put_wall      = (_flt_conv(dashboard, 'top_put_wall')  or _flt_conv(dashboard, 'gex_wall_put') or
                      _flt_conv(signal,    'put_wall')       or _flt_conv(signal,    'gex_wall_put'))
-    # pcr_vol - use volume PCR if available, fall back to OI PCR as proxy
-    pcr_vol       = (_flt_conv(dashboard, 'pcr_vol') or _flt_conv(signal, 'pcr_vol') or
-                     _flt_conv(dashboard, 'pcr_oi')  or _flt_conv(signal, 'pcr_oi'))
     notional_buy  = _flt_conv(signal, 'notional_buy')
     notional_sell = _flt_conv(signal, 'notional_sell')
 
@@ -1017,9 +997,8 @@ def compute_convexity_score_oi(
                   f'(buy={notional_buy:.0f} sell={notional_sell:.0f}) - '
                   f'{"ABSORPTION present" if c2 else "one-sided flow, no absorption"}')
     else:
-        c2 = 0.70 < pcr_vol < 1.30 if pcr_vol > 0 else False
-        reason = (f'PCR_vol={pcr_vol:.2f} proxy - '
-                  f'{"BALANCED" if c2 else "directionally skewed, no absorption signal"}')
+        c2 = False
+        reason = 'Signed notional unavailable; PCR cannot prove absorption or buyer/seller direction'
     conditions['energy'] = {'pass': c2, 'reason': reason}
 
     # ── C3: UNDERPRICED VOL - IV not already pricing the move ─────────────────
@@ -3243,20 +3222,87 @@ def compute_oi_walls(df: pd.DataFrame) -> Dict:
 
     return {'call_wall': call_wall, 'put_wall': put_wall, 'max_pain': max_pain}
 
+def _pcr_bucket(value: Any) -> str:
+    """Describe a put/call ratio without inferring buyer or seller direction."""
+    ratio = _oi_float(value)
+    if ratio is None or ratio < 0:
+        return 'UNKNOWN'
+    if ratio < 0.7:
+        return 'CALL_HEAVY'
+    if ratio > 1.0:
+        return 'PUT_HEAVY'
+    return 'BALANCED'
+
+
 def compute_pcr(df: pd.DataFrame) -> Tuple[Optional[float], str]:
-    """Put/Call ratio by OI. Returns (pcr_value, signal_label)."""
+    """Put/call OI ratio and non-directional positioning state.
+
+    Open interest cannot identify whether contracts were bought, sold, opened,
+    or closed. The state therefore describes positioning concentration only;
+    it is never a bullish/bearish flow instruction.
+    """
     if df.empty: return None, 'UNKNOWN'
     calls = df[df['right'].str.upper()=='C']['open_interest'].sum()
     puts  = df[df['right'].str.upper()=='P']['open_interest'].sum()
     if calls <= 0: return None, 'UNKNOWN'
     pcr = float(puts/calls)
-    signal = 'BULLISH' if pcr < 0.7 else ('BEARISH' if pcr > 1.0 else 'NEUTRAL')
-    return round(pcr, 3), signal
+    return round(pcr, 3), _pcr_bucket(pcr)
+
+
+def _combine_option_activity(positioning_ratio: Any, volume_ratio: Any) -> Dict[str, str]:
+    """Combine OI positioning and printed-volume activity without inventing flow."""
+    positioning = _pcr_bucket(positioning_ratio)
+    activity = _pcr_bucket(volume_ratio)
+
+    if positioning == 'UNKNOWN' and activity == 'UNKNOWN':
+        state, strength, reason = (
+            'INSUFFICIENT_EVIDENCE', 'NONE',
+            'Neither OI positioning nor printed option volume is available.',
+        )
+    elif activity == 'UNKNOWN':
+        state, strength, reason = (
+            'POSITIONING_ONLY', 'SINGLE_SOURCE',
+            f'OI positioning is {positioning}; no printed-volume confirmation is available.',
+        )
+    elif positioning == 'UNKNOWN':
+        state, strength, reason = (
+            'VOLUME_ACTIVITY_ONLY', 'SINGLE_SOURCE',
+            f'Printed option activity is {activity}; OI positioning is unavailable.',
+        )
+    elif positioning == activity == 'CALL_HEAVY':
+        state, strength, reason = (
+            'CALL_ACTIVITY_WITH_CALL_HEAVY_POSITIONING', 'CORROBORATED',
+            'Call-heavy printed activity and call-heavy OI positioning agree.',
+        )
+    elif positioning == activity == 'PUT_HEAVY':
+        state, strength, reason = (
+            'PUT_ACTIVITY_WITH_PUT_HEAVY_POSITIONING', 'CORROBORATED',
+            'Put-heavy printed activity and put-heavy OI positioning agree.',
+        )
+    elif positioning == activity == 'BALANCED':
+        state, strength, reason = (
+            'BALANCED_ACTIVITY_AND_POSITIONING', 'CORROBORATED',
+            'Printed activity and OI positioning are both balanced.',
+        )
+    else:
+        state, strength, reason = (
+            'MIXED_ACTIVITY', 'CONFLICTED',
+            f'Printed activity ({activity}) and OI positioning ({positioning}) do not agree.',
+        )
+
+    return {
+        'oi_positioning_state': positioning,
+        'volume_activity_state': activity,
+        'option_activity_state': state,
+        'activity_evidence_strength': strength,
+        'activity_directional_inference': 'AMBIGUOUS',
+        'activity_authority': 'ADVISORY_ONLY',
+        'activity_reason': reason + ' Buyer/seller direction is not inferred from PCR.',
+    }
 
 def compute_delta_weighted_oi(df: pd.DataFrame, spot: float) -> Dict:
     """
-    Delta-weighted options flow: directional exposure and a volume-based put/call
-    ratio, both weighted by real per-contract data rather than raw OI alone.
+    Delta-weighted OI positioning and a separate printed-volume put/call ratio.
 
     F7 19 Sep 2026: this function was called throughout the module (dw_call_exposure_m,
     dw_put_exposure_m, dw_ratio, dw_signal, dw_pcr_vol) but was never defined - the call
@@ -3268,6 +3314,7 @@ def compute_delta_weighted_oi(df: pd.DataFrame, spot: float) -> Dict:
     result = {
         'dw_call_exposure': None, 'dw_put_exposure': None,
         'dw_ratio': None, 'dw_signal': 'UNKNOWN', 'dw_pcr_vol': None,
+        **_combine_option_activity(None, None),
     }
     if df is None or df.empty or spot is None or spot <= 0:
         return result
@@ -3287,7 +3334,7 @@ def compute_delta_weighted_oi(df: pd.DataFrame, spot: float) -> Dict:
     if call_exposure > 0:
         dw_ratio = put_exposure / call_exposure
         result['dw_ratio']  = round(dw_ratio, 3)
-        result['dw_signal'] = 'BULLISH' if dw_ratio < 0.7 else ('BEARISH' if dw_ratio > 1.0 else 'NEUTRAL')
+        result['dw_signal'] = _pcr_bucket(dw_ratio)
 
     if volume.notna().any():
         call_vol = float(volume.where(calls, 0.0).fillna(0.0).sum())
@@ -3295,7 +3342,14 @@ def compute_delta_weighted_oi(df: pd.DataFrame, spot: float) -> Dict:
         if call_vol > 0:
             result['dw_pcr_vol'] = round(put_vol / call_vol, 3)
 
+    result.update(_combine_option_activity(result['dw_ratio'], result['dw_pcr_vol']))
+
     return result
+
+
+def _activity_score_baseline(_dw_data: Optional[Dict] = None) -> Tuple[float, str]:
+    """Return a state-invariant OIS baseline while activity evidence is tested."""
+    return 3.0, 'Option activity/PCR retained as advisory evidence; zero directional authority (+3 neutral baseline)'
 
 
 
@@ -6578,37 +6632,13 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
                 neg.append(f"Breakeven ${be_dollar:.2f} exceeds expected range ${expected_range:.2f}")
 
     # ── [D] MARKET MICROSTRUCTURE (22 pts) ────────────────────────────────────
-    # Delta-weighted flow (replaces simple PCR for primary microstructure signal)
+    # Positioning and activity are separate advisory evidence. Neither ratio
+    # identifies buying/selling or opening/closing, so the score receives a
+    # state-invariant baseline pending held-out validation.
     dw_data = dw_data or {}
-    dw_signal = dw_data.get('dw_signal', 'UNKNOWN')
-    if direction == 'CALL':
-        if dw_signal in ('STRONGLY_BULLISH', 'BULLISH'):
-            score += 8; pos.append(f"Delta-weighted OI: {dw_signal} — institutional call exposure confirms direction (+8)")
-        elif dw_signal == 'NEUTRAL':
-            score += 3; pos.append("Delta-weighted OI: NEUTRAL — no institutional contradiction (+3)")
-        elif dw_signal in ('BEARISH', 'STRONGLY_BEARISH'):
-            score -= 4; neg.append(f"Delta-weighted OI: {dw_signal} — institutional positioning contradicts CALL")
-        else:  # PCR fallback
-            if pcr_signal == 'BULLISH':
-                score += 5; pos.append("PCR bullish — flow confirms call (+5)")
-            elif pcr_signal == 'BEARISH':
-                score -= 3; neg.append("PCR bearish against call")
-            else:
-                score += 2
-    elif direction == 'PUT':
-        if dw_signal in ('STRONGLY_BEARISH', 'BEARISH'):
-            score += 8; pos.append(f"Delta-weighted OI: {dw_signal} — institutional put exposure confirms direction (+8)")
-        elif dw_signal == 'NEUTRAL':
-            score += 3
-        elif dw_signal in ('BULLISH', 'STRONGLY_BULLISH'):
-            score -= 4; neg.append(f"Delta-weighted OI: {dw_signal} — institutional positioning contradicts PUT")
-        else:
-            if pcr_signal == 'BEARISH':
-                score += 5; pos.append("PCR bearish — flow confirms put (+5)")
-            elif pcr_signal == 'BULLISH':
-                score -= 3; neg.append("PCR bullish against put")
-            else:
-                score += 2
+    activity_points, activity_note = _activity_score_baseline(dw_data)
+    score += activity_points
+    pos.append(activity_note)
 
     # Gamma velocity
     gamma_vel = gamma_vel or {}
@@ -8238,6 +8268,13 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'dw_ratio'                : dw_data.get('dw_ratio'),
         'dw_signal'               : dw_data.get('dw_signal'),
         'dw_pcr_vol'              : dw_data.get('dw_pcr_vol'),
+        'oi_positioning_state'    : dw_data.get('oi_positioning_state'),
+        'volume_activity_state'   : dw_data.get('volume_activity_state'),
+        'option_activity_state'   : dw_data.get('option_activity_state'),
+        'activity_evidence_strength': dw_data.get('activity_evidence_strength'),
+        'activity_directional_inference': dw_data.get('activity_directional_inference'),
+        'activity_authority'      : dw_data.get('activity_authority'),
+        'activity_reason'         : dw_data.get('activity_reason'),
         'pcr_vol_status'          : (
             'OK' if _oi_float(dw_data.get('dw_pcr_vol')) is not None
             else ('OI_ONLY_NO_INTRADAY_VOLUME' if _oi_float(pcr_val) is not None else 'MISSING')
@@ -9864,7 +9901,10 @@ def run_options_layer(
         'phase_best','underlying_price','composite','volume_ratio',
         'atr_percentile','pcr_vol','pcr_vol_status','pcr_vol_missing_reason',
         'iv_regime','ivp_252d','iv_vs_hv',
-        'dw_signal','dw_pcr_vol','hold_label','hold_urgency',
+        'dw_signal','dw_pcr_vol','oi_positioning_state','volume_activity_state',
+        'option_activity_state','activity_evidence_strength',
+        'activity_directional_inference','activity_authority','activity_reason',
+        'hold_label','hold_urgency',
         'sector','gics_sector','sector_etf','sector_5d_return','sector_regime',
         # v1.1: macro sector alignment fields (from sector_alignment.py)
         'macro_sector_bias','sector_alignment_label','sector_alignment_score',

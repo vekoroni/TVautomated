@@ -129,9 +129,9 @@ def _run_normalise(row: dict) -> dict:
 
 
 def test_no_pcr_conflict_literal_does_not_create_conflict():
-    """NO_PCR_CONFLICT must not match the positive CONFLICT classifier."""
+    """Missing PCR evidence must not manufacture a direction conflict."""
     result = _run_normalise(_make_row_for_normalise())
-    assert result["pcr_direction_conflict_status"] == "NO_PCR_CONFLICT"
+    assert result["pcr_direction_conflict_status"] == "NO_PCR_DATA"
     assert result["direction_conflict_status"] == "NO_CONFLICT"
 
 

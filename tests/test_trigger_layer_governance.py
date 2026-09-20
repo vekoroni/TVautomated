@@ -37,7 +37,7 @@ def test_extended_range_is_context_not_data_staleness():
     assert block["go_eligible"] is True
 
 
-def test_far_trap_is_retained_for_human_wall_review():
+def test_pcr_cannot_manufacture_far_trap_without_signed_flow():
     row = {
         "options_direction": "PUT",
         "precor_intent": "SELL_SETUP",
@@ -46,7 +46,7 @@ def test_far_trap_is_retained_for_human_wall_review():
         "layer1__control__controller": "BUYERS",
         "catalyst_proximity": "FAR",
     }
-    assert "TRAP" in evaluate_triggers(row)
+    assert "TRAP" not in evaluate_triggers(row)
 
 
 def test_explicit_stale_source_retains_observation_but_blocks_go():

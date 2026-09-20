@@ -1254,10 +1254,10 @@ def _compute_conv_checks(sig):
     crabel = _s("crabel_state") or _s("eil__crabel_state")
     c_compression = "Y" if crabel in ("COILING", "CRABEL_READY") else "N"
 
-    # 2. Energy: PCR signal or OBI score
-    pcr = _s("pcr_signal") or _s("opt__pcr_signal")
+    # 2. Energy: OBI only. PCR is advisory positioning/activity context and
+    # cannot prove buying/selling pressure or absorption.
     obi = _f("eil_obi_score") or _f("eil__obi_score")
-    c_energy = "Y" if pcr in ("BULLISH","NEUTRAL") and obi >= 65 else "N"
+    c_energy = "Y" if obi >= 65 else "N"
 
     # 3. Underpriced vol: iv_rank < 30 or garch tailwind negative (cheap vol)
     iv_r = _f("iv_rank") or _f("opt__iv_rank")

@@ -149,13 +149,12 @@ QA-01  Fixed convexity score denominator: all /5 references updated to /8
 QA-02  Fixed vanna_quality fallback: c6 now defaults True (neutral pass) when Heston
        data unavailable, not False (penalty). Comment previously said "do not penalise"
        but code was penalising. Real vanna from Heston will score correctly when available.
-QA-03  Fixed PCR threshold asymmetry: VETO_PCR_PUT_MIN corrected from 0.60 to 0.55
-       (= 1/1.80, symmetric reciprocal of VETO_PCR_CALL_MAX). PUT signals were being
-       vetoed more aggressively than CALL signals on flow contradiction.
+QA-03  Historical PCR direction thresholds retired: aggregate volume and OI do
+       not establish signed buyer/seller flow.
 QA-04  Added _ivp() fallback structure for future data quality logging.
 
 ──────────────────────
-GAP-01  Added V6_PCR_CONTRADICTION veto - flags when PCR vol contradicts direction
+GAP-01  PCR activity retained as advisory context; no signed-flow inference
 GAP-02  Renamed campaign label WATCHLIST → STAGED (eliminates collision with verdict
         WATCHLIST); STAGED now drives position sizing (50%), not verdict cap — see v2.0.0
 GAP-03  Added superbrain_summary_<run_id>.json output matching orchestrator pattern
@@ -371,8 +370,6 @@ VETO_RUNWAY_MULTIPLIER      = 2.0    # runway must exceed breakeven × this fact
 VETO_HIGH_IV_THRESHOLD      = 0.70   # IVP above this = expensive vol
 VETO_HIGH_IV_RUNWAY_MIN_PCT = 3.0    # minimum runway (%) required when IV is high
 VETO_TRANSITIONAL_COMPOSITE = 65.0   # composite floor for TRANSITIONAL regime
-VETO_PCR_CALL_MAX           = 1.80   # PCR_vol above this contradicts CALL direction
-VETO_PCR_PUT_MIN            = 0.55   # PCR_vol below this contradicts PUT direction (= 1/1.80, symmetric)
 
 # ── Convexity Score thresholds ────────────────────────────────────────────────
 CONV_COMPRESSION_ATR_PCT    = 30.0   # ATR percentile < this = compressed (Vanguard)
@@ -601,7 +598,7 @@ def apply_behavioural_vetoes(
         V3  High IV without edge        → STAND_DOWN
         V4  TRANSITIONAL + low composite→ ARMED
         V5  No hold period defined      → informational only (no verdict change)
-        V6  PCR volume contradicts dir  → ARMED        [NEW v1.1 - GAP-01]
+        V6  PCR volume context           → advisory only (no direction inference)
     """
     vetoes: List[str] = []
     verdict_adj = ''
@@ -620,8 +617,6 @@ def apply_behavioural_vetoes(
                   _f(signal, 'call_wall')       or _f(signal, 'gex_wall_call'))
     put_wall   = (_f(dashboard, 'top_put_wall')  or _f(dashboard, 'gex_wall_put') or
                   _f(signal, 'put_wall')         or _f(signal, 'gex_wall_put'))
-    pcr_vol    = (_f(dashboard, 'pcr_vol') or _f(signal, 'pcr_vol') or
-                  _f(dashboard, 'pcr_oi')  or _f(signal, 'pcr_oi'))
 
     # ── V1: Late Entry - big move already happened ────────────────────────────
     if phase_low > 0 and spot > 0:
@@ -722,22 +717,9 @@ def apply_behavioural_vetoes(
         )
         # Informational only: no verdict_adj change
 
-    # ── V6: PCR Volume contradicts trade direction [NEW v1.1 - GAP-01] ───────
-    if pcr_vol > 0:
-        if direction == 'CALL' and pcr_vol > VETO_PCR_CALL_MAX:
-            vetoes.append(
-                f'V6_PCR_CONTRADICTION: Direction=CALL but PCR_vol={pcr_vol:.2f} '
-                f'(>{VETO_PCR_CALL_MAX}). Live put volume is {pcr_vol:.1f}× calls. '
-                f'Smart money flow contradicts bullish structural thesis today.'
-            )
-            # FIX-H: V6 is a WARNING. PCR flow is context, not execution infeasibility.
-        elif direction == 'PUT' and pcr_vol < VETO_PCR_PUT_MIN:
-            vetoes.append(
-                f'V6_PCR_CONTRADICTION: Direction=PUT but PCR_vol={pcr_vol:.2f} '
-                f'(<{VETO_PCR_PUT_MIN}). Live call volume dominant. '
-                f'Smart money flow contradicts bearish structural thesis today.'
-            )
-            # FIX-H: V6 PUT is a WARNING. Size down but do not block.
+    # PCR remains available as advisory activity/positioning context. It cannot
+    # identify buying versus selling, so it cannot create a directional veto,
+    # warning penalty, or "smart money" assertion.
 
     # ── V7: IV Regime - EVENT_PRICED with expensive vol → STAND_DOWN ─────────
     iv_regime  = _s(signal, 'iv_regime').upper()
@@ -767,23 +749,9 @@ def apply_behavioural_vetoes(
         )
         # FIX-H: V7b → WARNING. Structurally expensive vol = size-down, not block.
 
-    # ── V8: Delta-weighted OI contradicts direction → ARMED ──────────────────
-    dw_signal = _s(signal, 'dw_signal').upper()
-    if dw_signal and dw_signal != 'UNKNOWN':
-        if direction == 'CALL' and dw_signal == 'STRONGLY_BEARISH':
-            vetoes.append(
-                f'V8_DW_CONTRADICTION: Direction=CALL but delta-weighted OI = '
-                f'STRONGLY_BEARISH. Institutional dollar-exposure is net put-heavy. '
-                f'Smart money not positioned for upside.'
-            )
-            # FIX-H: V8 is a WARNING. DW context informs sizing, not execution.
-        elif direction == 'PUT' and dw_signal == 'STRONGLY_BULLISH':
-            vetoes.append(
-                f'V8_DW_CONTRADICTION: Direction=PUT but delta-weighted OI = '
-                f'STRONGLY_BULLISH. Institutional dollar-exposure is net call-heavy. '
-                f'Smart money not positioned for downside.'
-            )
-            # FIX-H: V8 PUT is a WARNING. Smart money context, not a trade block.
+    # Delta-weighted OI is positioning concentration, not signed flow. The
+    # explicit activity fields remain available for review and backtesting but
+    # do not create a Superbrain veto or direction adjustment.
 
     return vetoes, verdict_adj
 
@@ -822,9 +790,6 @@ def compute_convexity_score(
                      _f(signal,    'call_wall')      or _f(signal,    'gex_wall_call'))
     put_wall      = (_f(dashboard, 'top_put_wall')  or _f(dashboard, 'gex_wall_put') or
                      _f(signal,    'put_wall')       or _f(signal,    'gex_wall_put'))
-    # pcr_vol - use volume PCR if available, fall back to OI PCR as proxy
-    pcr_vol       = (_f(dashboard, 'pcr_vol') or _f(signal, 'pcr_vol') or
-                     _f(dashboard, 'pcr_oi')  or _f(signal, 'pcr_oi'))
     notional_buy  = _f(signal, 'notional_buy')
     notional_sell = _f(signal, 'notional_sell')
 
@@ -850,9 +815,8 @@ def compute_convexity_score(
                   f'(buy={notional_buy:.0f} sell={notional_sell:.0f}) - '
                   f'{"ABSORPTION present" if c2 else "one-sided flow, no absorption"}')
     else:
-        c2 = 0.70 < pcr_vol < 1.30 if pcr_vol > 0 else False
-        reason = (f'PCR_vol={pcr_vol:.2f} proxy - '
-                  f'{"BALANCED" if c2 else "directionally skewed, no absorption signal"}')
+        c2 = False
+        reason = 'Signed notional unavailable; PCR cannot prove absorption or buyer/seller direction'
     conditions['energy'] = {'pass': c2, 'reason': reason}
 
     # ── C3: UNDERPRICED VOL - IV not already pricing the move ─────────────────
@@ -1627,8 +1591,6 @@ def assemble_execution_plan(
         'EVENT_PRICED':          2.0,
         'V7b_ANNUAL_HIGH_VOL':   2.0,
         'V7_UNCERTAIN_IV':       1.5,
-        'V8_DW_CONTRADICTION':   2.0,
-        'V6_PCR_CONTRADICTION':  1.5,
         # Standard — 1.0 each
         'V1_LATE_ENTRY':         1.0,
         'V1_LATE_ENTRY_PROXY':   1.0,
@@ -1658,11 +1620,9 @@ def assemble_execution_plan(
     # Regime-aware adjustment: PUT signals in RISK_OFF/TRANSITIONAL are aligned
     # with macro — do not penalise regime-aligned directional signals.
     #
-    # Conflict 6 fix: V6_PCR_CONTRADICTION and V8_DW_CONTRADICTION are FLOW
-    # warnings — they reflect live market order flow contradicting the thesis.
-    # Regime alignment is a STRUCTURAL argument. These operate in different domains.
-    # Flow contradictions must not be discounted by structural regime alignment.
-    # Discount applies only to context/structural warnings (V4, V5, V3, V1).
+    # PCR and delta-weighted OI cannot create warnings because neither supplies
+    # signed buyer/seller flow. Regime discount applies to the remaining
+    # context/structural warnings (V4, V5, V3, V1).
     direction_val = _s(signal, 'direction').upper()
     regime_discount = 0.0
     if regime_val in ('RISK_OFF', 'TRANSITIONAL') and direction_val == 'PUT':
@@ -1675,21 +1635,8 @@ def assemble_execution_plan(
     synth_warnings      = [w for w in warnings if 'QUOTE_WARNING' in w or 'synthetic' in w.lower()]
     has_synth = len(synth_warnings) > 0
 
-    # Flow warnings (V6, V8) are exempt from regime discount — they are live
-    # order flow signals, not structural context. Regime alignment does not
-    # override what the market is actually doing with its money today.
-    REGIME_DISCOUNT_EXEMPT = ('V6_PCR_CONTRADICTION', 'V8_DW_CONTRADICTION')
-    flow_warning_weight = sum(
-        _warning_weight(w) for w in structural_warnings
-        if any(ex in w for ex in REGIME_DISCOUNT_EXEMPT)
-    )
-    non_flow_weight = sum(
-        _warning_weight(w) for w in structural_warnings
-        if not any(ex in w for ex in REGIME_DISCOUNT_EXEMPT)
-    )
-    # Regime discount applies only to non-flow warnings
-    non_flow_discounted = max(0.0, non_flow_weight - regime_discount)
-    weighted_score = flow_warning_weight + non_flow_discounted
+    warning_weight = sum(_warning_weight(w) for w in structural_warnings)
+    weighted_score = max(0.0, warning_weight - regime_discount)
 
     has_critical = any(_warning_weight(w) >= 2.0 for w in structural_warnings)
     has_standard = any(1.0 <= _warning_weight(w) < 2.0 for w in structural_warnings)
@@ -1700,7 +1647,7 @@ def assemble_execution_plan(
     # New: MEDIUM ≤ 2.5 — same combination stays MEDIUM → EXECUTE path preserved
     #
     # This does NOT lower the EXTREME ceiling — genuinely dangerous signals
-    # (EVENT_PRICED + DW_CONTRADICTION = 3.5+) still reach HIGH/EXTREME.
+    # combinations of genuine structural/volatility warnings still reach HIGH/EXTREME.
     if weighted_score == 0.0 and not has_synth:
         risk_label = 'LOW'
     elif weighted_score == 0.0 and has_synth:

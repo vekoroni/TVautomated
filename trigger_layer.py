@@ -27,7 +27,7 @@ v2.1 changes (2026-04-29):
     Fix 9: _is_stale — days_in_range gate now guards against absent field.
             days_in_range only populated for 43% of universe (Crabel-scored signals).
             Absent field no longer treated as 0 (which was passing the >15 gate).
-    Fix 10: _t4_trap — pcr_signal absent guard added. pcr only populated for 34%
+    Fix 10: _t4_trap — PCR-based trap inference retired pending signed-flow evidence
             of universe. Empty string was being compared to BEARISH/BULLISH, always
             failing but risking silent wrong matches on whitespace edge cases.
     Fix 11: _t1_vol_compression — crabel_state absent handling. crabel_state only
@@ -495,64 +495,13 @@ def _t3_range_break(row: Dict) -> Optional[str]:
 
 def _t4_trap(row: Dict) -> Optional[str]:
     """
-    T4: Trap — failed move with structure confirmation (v2.0)
+    PCR-based trap inference is deactivated pending signed-flow evidence.
 
-    Fix 3: PCR contradiction alone is NOT a trap. It is divergence.
-    A trap requires the structural foundation to be failing as well.
-
-    FIX-TRAP-PCR (2026-04-29): pcr_signal is only populated for 34% of the universe
-    (options-scoped signals only). An empty pcr_signal must not be treated as NEUTRAL
-    or matched against "BEARISH"/"BULLISH" checks. Gate returns None when pcr absent.
-
-    Confirmation requires one of:
-        - control_state=SELLERS or SHIFTING (structure losing/lost)
-        - layer1__auction_state=TRANSITIONING (balance breaking)
-
-    For CALL traps (bull trap):
-        BUY_SETUP intent + PCR BEARISH + structure failing
-        → institutional selling into retail buying = bull trap
-
-    For PUT traps (bear trap):
-        SELL_SETUP intent + PCR BULLISH + structure failing
-        → institutional buying into retail selling = bear trap
+    OI and aggregate option volume cannot distinguish buying from selling or
+    opening from closing. They may remain visible as advisory context, but they
+    cannot manufacture a TRAP trigger. A future trap implementation must use
+    independently governed price/structure failure and signed-flow evidence.
     """
-    pcr = _str(row, "pcr_signal")
-    # Guard: pcr absent for 66% of universe — do not fire trap without PCR data
-    if not pcr or pcr in ("NEUTRAL", "NONE"):
-        return None
-
-    direction     = _direction(row)
-    control_state = _str(row, "control_state")
-    auction_state = _str(row, "layer1__auction_state")
-    intent        = _str(row, "precor_intent")
-    controller    = _str(row, "layer1__control__controller")
-
-    # Structure failure confirmation
-    structure_failing = (
-        control_state in ("SELLERS", "SHIFTING")
-        or auction_state == "TRANSITIONING"
-    )
-
-    # Bull trap: bullish setup but bearish flow + structure failing
-    if ("BUY" in intent
-            and pcr == "BEARISH"
-            and structure_failing
-            and controller == "SELLERS"):
-        return "TRAP"
-
-    # Bear trap: bearish setup but bullish flow + structure failing
-    if ("SELL" in intent
-            and pcr == "BULLISH"
-            and structure_failing
-            and controller == "BUYERS"):
-        return "TRAP"
-
-    # Direction-based check when intent is ambiguous
-    if direction == "CALL" and pcr == "BEARISH" and structure_failing and controller == "SELLERS":
-        return "TRAP"
-    if direction == "PUT" and pcr == "BULLISH" and structure_failing and controller == "BUYERS":
-        return "TRAP"
-
     return None
 
 

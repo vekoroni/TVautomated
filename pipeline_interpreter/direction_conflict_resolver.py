@@ -52,11 +52,7 @@ def _score_layer(layer_name: str, row: dict) -> tuple[str, str]:
 
     if layer_name == "pcr":
         pcr = _get_str(row, "pcr_signal", "pcr_direction", "put_call_ratio_signal")
-        if "BULLISH" in pcr:
-            return "CALL", f"pcr_signal={pcr}"
-        if "BEARISH" in pcr:
-            return "PUT", f"pcr_signal={pcr}"
-        return "NEUTRAL", f"pcr_signal={pcr or 'missing'}"
+        return "NEUTRAL", f"pcr_positioning={pcr or 'missing'} advisory_only; signed_flow=unknown"
 
     if layer_name == "catalyst":
         cat = _get_str(row, "catalyst_direction", "news_bias", "catalyst_side")

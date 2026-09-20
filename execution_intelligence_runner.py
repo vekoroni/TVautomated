@@ -2651,7 +2651,10 @@ def _ensure_eil_audit_contract(df: pd.DataFrame) -> pd.DataFrame:
     out.loc[blank_status & pcr_source.notna(), "pcr_vol_status"] = "OK"
     blank_status = out["pcr_vol_status"].apply(_handoff_blank)
     out.loc[
-        blank_status & pcr_signal.isin({"BULLISH", "BEARISH", "NEUTRAL", "STRONGLY_BULLISH", "STRONGLY_BEARISH"}),
+        blank_status & pcr_signal.isin({
+            "CALL_HEAVY", "PUT_HEAVY", "BALANCED",
+            "BULLISH", "BEARISH", "NEUTRAL", "STRONGLY_BULLISH", "STRONGLY_BEARISH",
+        }),
         "pcr_vol_status",
     ] = "OI_ONLY_NO_INTRADAY_VOLUME"
     blank_status = out["pcr_vol_status"].apply(_handoff_blank)
@@ -2672,13 +2675,11 @@ def _ensure_eil_audit_contract(df: pd.DataFrame) -> pd.DataFrame:
         "pcr_vol_missing_reason",
     ] = "NO_PCR_VOLUME_OR_OI_SIGNAL"
 
-    pcr_legacy = out["direction_conflict_reason"].fillna("").astype(str).str.upper().str.contains("PCR")
-    pcr_blank = out["pcr_direction_conflict_status"].apply(_handoff_blank)
-    legacy_status = out["direction_conflict_status"].fillna("").astype(str).str.upper()
-    out.loc[pcr_blank & pcr_legacy & legacy_status.eq("UNRESOLVED"), "pcr_direction_conflict_status"] = "PCR_CONFLICT_REQUIRES_FLOW_CONFIRMATION"
-    out.loc[pcr_blank & pcr_legacy & ~legacy_status.eq("UNRESOLVED"), "pcr_direction_conflict_status"] = out.loc[pcr_blank & pcr_legacy & ~legacy_status.eq("UNRESOLVED"), "direction_conflict_status"]
-    reason_blank = out["pcr_direction_conflict_reason"].apply(_handoff_blank)
-    out.loc[reason_blank & pcr_legacy, "pcr_direction_conflict_reason"] = out.loc[reason_blank & pcr_legacy, "direction_conflict_reason"]
+    has_pcr_context = pcr_source.notna() | ~pcr_signal.apply(_handoff_blank)
+    out.loc[has_pcr_context, "pcr_direction_conflict_status"] = "PCR_POSITIONING_CONTEXT_ONLY"
+    out.loc[has_pcr_context, "pcr_direction_conflict_reason"] = (
+        "PCR describes option positioning/activity concentration; buyer/seller direction is ambiguous"
+    )
 
     catalyst_audit = out.apply(_catalyst_conflict_row, axis=1, result_type="expand")
     for col in catalyst_audit.columns:
@@ -2692,7 +2693,7 @@ def _ensure_eil_audit_contract(df: pd.DataFrame) -> pd.DataFrame:
 
     structural_conflict = out["direction_arbitration_status"].fillna("").astype(str).str.upper().eq("CONFLICT_STRUCTURE_LEADS")
     catalyst_conflict = out["catalyst_direction_conflict_status"].fillna("").astype(str).str.upper().eq("CATALYST_CONFLICT_REQUIRES_CONFIRMATION")
-    pcr_conflict = out["pcr_direction_conflict_status"].fillna("").astype(str).str.upper().str.contains("CONFLICT")
+    pcr_conflict = pd.Series([False] * len(out), index=out.index)
 
     out.loc[verdict.isin({"STAND_DOWN", "BLOCK", "BLOCKED"}), "direction_conflict_status"] = "NOT_EVALUATED"
     active_mask = ~verdict.isin({"STAND_DOWN", "BLOCK", "BLOCKED"})
@@ -2707,8 +2708,7 @@ def _ensure_eil_audit_contract(df: pd.DataFrame) -> pd.DataFrame:
             parts.append(str(row.get("direction_arbitration_reason", "") or "STRUCTURE_PROBABILITY_CONFLICT"))
         if str(row.get("catalyst_direction_conflict_status", "")).upper() == "CATALYST_CONFLICT_REQUIRES_CONFIRMATION":
             parts.append(str(row.get("catalyst_direction_conflict_reason", "") or "CATALYST_DIRECTION_CONFLICT"))
-        if "CONFLICT" in str(row.get("pcr_direction_conflict_status", "")).upper():
-            parts.append(str(row.get("pcr_direction_conflict_reason", "") or "PCR_DIRECTION_CONFLICT"))
+        # PCR has no signed-flow authority and cannot create a direction conflict.
         reasons.append("; ".join(p for p in parts if p))
     out["direction_conflict_reason"] = reasons
     out.loc[out["direction_conflict_status"].eq("NO_CONFLICT"), "direction_conflict_reason"] = ""
