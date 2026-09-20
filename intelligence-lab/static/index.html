@@ -1084,7 +1084,7 @@ function renderCardPanels(stats, macro, summary) {
 }
 
 function execCardHTML(s) {
-  const opt = (k) => s[`opt__${k}`] || s[k] || '—';
+  const opt = (k) => optField(s, k);
   const verdict = finalLabVerdict(s);
   const campaign = displayCampaign(s);
   const execMode = displayExecutionMode(s);
@@ -1320,6 +1320,26 @@ function formatEv(v) {
     return `${ev>=0?'+':''}${(ev * 10000).toFixed(1)}bp`;
   }
   return `${ev>=0?'+':''}${ev.toFixed(3)}`;
+}
+
+// AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-05: the local `opt` closure duplicated four
+// times across this file (execCardHTML, the dossier panel, the execute-pane list, the armed
+// list) used `s[\`opt__${k}\`] || s[k] || '—'` - plain OR treats a valid 0 (e.g. contract
+// volume) the same as missing, rendering a real zero as a blank dash. `_hasValue` mirrors the
+// Python-side project() helper's own missing-value rule (contracts/lab_control.py /
+// intelligence_lab.py's _governed_ui_projection: empty string, 'nan' and 'None' are "not set";
+// everything else, including 0 and false, is a real value).
+function _hasValue(v) {
+  if (v === null || v === undefined) return false;
+  const t = String(v).trim();
+  return t !== '' && t !== 'nan' && t !== 'None';
+}
+function optField(s, k) {
+  const a = s[`opt__${k}`];
+  if (_hasValue(a)) return a;
+  const b = s[k];
+  if (_hasValue(b)) return b;
+  return '—';
 }
 
 // ── Price fallback chain ──────────────────────────────────────────────────
@@ -2354,7 +2374,7 @@ function openModal(ticker) {
   selectedTicker = ticker;
   buildTable();
 
-  const opt = (k) => s[`opt__${k}`] || s[k] || '—';
+  const opt = (k) => optField(s, k);
   const dir = (s.final_direction||s.governed_direction||s.direction||'UNRESOLVED').toUpperCase();
   const dirClass = dir==='CALL'?'call':dir.includes('PUT')?'put':'strangle';
   const finalV = finalLabVerdict(s);
@@ -2954,7 +2974,7 @@ function renderExecutePane() {
     return;
   }
   document.getElementById('execute-pane-content').innerHTML = execute.map(s => {
-    const opt = (k) => s[`opt__${k}`] || s[k] || '—';
+    const opt = (k) => optField(s, k);
     const strike = parseFloat(opt('contract_strike')||0);
     const target = parseFloat(opt('structural_target')||0);
     const gain = opt('gain_at_target');
@@ -3028,7 +3048,7 @@ function renderExecutePane() {
 function buildArmedList() {
   const armed = ALL_SIGS.filter(s => ['ARMED','CONTRACT_REPAIR','EOD_CAUTION'].includes(finalLabVerdict(s)))
     .sort((a,b) => parseFloat(a.priority_rank||9999) - parseFloat(b.priority_rank||9999));
-  const opt = (s,k) => s[`opt__${k}`] || s[k] || '—';
+  const opt = optField;
 
   document.getElementById('armed-list-items').innerHTML = armed.map(s => {
     const ev = getEv(s);
