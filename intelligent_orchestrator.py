@@ -4596,6 +4596,16 @@ def run_premarket_intelligence() -> bool:
 
 # ============================================================ PHASE 10: ARCHIVE + PRUNE + REPORT
 
+# AVS-SD-MON-003 item G (20 Sep 2026): a run's archive copy must not be attempted with insufficient
+# headroom. A 20% margin over the measured source size absorbs filesystem overhead and loose
+# OUTPUT_DIR files without needing a second, separate size probe for them.
+ARCHIVE_HEADROOM_MARGIN = 1.2
+
+
+def _dir_size_bytes(path: Path) -> int:
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
 def archive_outputs(run_id: str) -> bool:
     """Archive current run outputs (never deletes originals)."""
     logger.info("=" * 80)
@@ -4605,6 +4615,22 @@ def archive_outputs(run_id: str) -> bool:
     current_run_dir = cfg.RUNS_DIR / run_id
     if not current_run_dir.exists():
         logger.error(f"❌ ARCHIVE ABORTED — run directory does not exist: {current_run_dir}\n")
+        return False
+
+    # Root cause (run 20260919_205844): Phase 10 failed mid-copytree with [WinError 112], leaving a
+    # partially-populated archive directory. Check headroom before creating anything.
+    required_bytes = int(_dir_size_bytes(current_run_dir) * ARCHIVE_HEADROOM_MARGIN)
+    # cfg.ARCHIVE_DIR itself may not exist yet on a first run; its parent always does (repo root).
+    _, _, free_bytes = shutil.disk_usage(cfg.ARCHIVE_DIR.parent)
+    if free_bytes < required_bytes:
+        shortfall_gb = (required_bytes - free_bytes) / 1e9
+        logger.error(
+            f"❌ ARCHIVE ABORTED — insufficient disk headroom: need ~{required_bytes / 1e9:.2f}GB "
+            f"(source {required_bytes / ARCHIVE_HEADROOM_MARGIN / 1e9:.2f}GB + "
+            f"{int((ARCHIVE_HEADROOM_MARGIN - 1) * 100)}% margin), "
+            f"have {free_bytes / 1e9:.2f}GB free — short by {shortfall_gb:.2f}GB. "
+            f"No files written; run directory untouched.\n"
+        )
         return False
 
     archive_session = cfg.ARCHIVE_DIR / run_id
