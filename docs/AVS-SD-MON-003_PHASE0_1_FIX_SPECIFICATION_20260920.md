@@ -273,10 +273,15 @@ tagged baseline, and explicit confirmation from ACK on the 39 pending deletions 
 committed or restored.
 
 **Fix:** (1) resolve the 39 pending deletions explicitly — commit or `git checkout --` restore, not left
-ambiguous; (2) commit item A; (3) locate and update the "one stale provider-timestamp test" the validation
-record references (not yet identified by name in this pass — needs a targeted search for a test asserting
-provider/fetch timestamp equality or a fixed clock that has since drifted stale); (4) tag the resulting
-commit as the Phase 0 baseline.
+ambiguous; (2) ~~commit item A~~ **done** (`65c5d7d`); (3) locate and update the "one stale provider-timestamp
+test" the validation record references (not yet identified by name in this pass — needs a targeted search
+for a test asserting provider/fetch timestamp equality or a fixed clock that has since drifted stale);
+(4) tag the resulting commit as the Phase 0 baseline.
+
+**Status, 20 Sep 2026:** (1) is explicitly **deferred 8 days** (ACK decision, 20 Sep 2026 — revisit ~28 Sep
+2026) rather than resolved now; the 39 deletions stay exactly as they are in the working tree, neither
+committed nor restored. H therefore cannot close before that date. (3) and (4) remain open independent of
+the deferral and can proceed once (1) is resolved.
 
 **Regression:** full suite green at the tagged commit; this tag becomes the rollback target named in the
 design's §16.
@@ -298,7 +303,8 @@ Required before declaring Phase 0/1 closed:
 
 Narrower than the design's global §18 — this closes when:
 
-1. A and H are committed and tagged as the Phase 0 baseline.
+1. A is committed (`65c5d7d`, done). H is deferred 8 days (ACK, 20 Sep 2026) on the 39 pending deletions —
+   tagging the Phase 0 baseline waits until that resolves.
 2. G is proven (archive completes cleanly on the next run, pre-flight check added).
 3. D's characterisation test exists and its root cause is named (fixed or explicitly deferred with reason).
 4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. C still
