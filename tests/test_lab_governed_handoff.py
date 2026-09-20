@@ -271,6 +271,40 @@ def test_morning_live_and_msi_fields_survive_into_the_final_book(tmp_path):
     assert float(row["ms_value_area_high"]) == 30.80
 
 
+def test_pcr_advisory_authority_fields_survive_into_the_final_book(tmp_path):
+    """AVS-ILA-001 (audit/intelligence_lab/, 20 Sep 2026), root cause ILA-RC-07: PCR is
+    presented as directional fact ("PCR SIGNAL: BULLISH") with no advisory-authority label,
+    even though eod_candidate_engine.py already computes pcr_direction_conflict_status/
+    _reason alongside it - verified against a real run's options_intelligence CSV (run
+    20260918_112522, ticker SA: pcr_signal=BULLISH, pcr_direction_conflict_status=
+    PCR_CONFIRMS_REDUCED_CONFIDENCE, pcr_direction_conflict_reason='OI PCR confirms CALL
+    with reduced confidence', pcr_confidence_weight=0.6). None of the three reached the
+    final opportunity-book row - the same genuine handoff-loss pattern as ILA-RC-03, not an
+    alias/presentation defect.
+    """
+    book = write_final_opportunity_book(
+        RUN_ID,
+        [_base_signal(
+            contract_symbol=OCC,
+            strike=100,
+            expiry="2099-01-19",
+            dte=30,
+            pcr_signal="BULLISH",
+            pcr_direction_conflict_status="PCR_CONFIRMS_REDUCED_CONFIDENCE",
+            pcr_direction_conflict_reason="OI PCR confirms CALL with reduced confidence",
+            pcr_confidence_weight=0.6,
+        )],
+        {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
+        tmp_path,
+        sync_interpreter=False,
+    )
+    row = book["rows"][0]
+    assert row["pcr_signal"] == "BULLISH"
+    assert row["pcr_direction_conflict_status"] == "PCR_CONFIRMS_REDUCED_CONFIDENCE"
+    assert row["pcr_direction_conflict_reason"] == "OI PCR confirms CALL with reduced confidence"
+    assert float(row["pcr_confidence_weight"]) == 0.6
+
+
 def test_lab_publication_converts_pandas_style_nan_to_json_null(tmp_path):
     book = write_final_opportunity_book(
         RUN_ID,

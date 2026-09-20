@@ -2576,7 +2576,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${parseFloat(getGovernedContractField(s,'contract_delta','live_contract_delta')||0).toFixed(3)}</div></div>
       <div class="m-field"><div class="mf-k">Breakeven Price</div><div class="mf-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</div></div>
       <div class="m-field"><div class="mf-k">Monetisability</div><div class="mf-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</div></div>
-      <div class="m-field"><div class="mf-k">Conservative Target Profit</div><div class="mf-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Conservative Target Profit</div><div class="mf-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}<br><span class="dim">scenario payoff if target is reached — not a probability and cannot authorize entry</span></div></div>
       <div class="m-field"><div class="mf-k">EV3 Advisory</div><div class="mf-v ${evDisplayClass(ev)}">${formatEv(ev)}</div></div>
       <div class="m-field"><div class="mf-k">Quote Hydration</div><div class="mf-v ${cleanCategory(s.selected_structure_hydration_status)==='COMPLETE'?'g':'a'}">${s.selected_structure_hydration_status||'LEGACY / NOT RUN'}</div></div>
       <div class="m-field"><div class="mf-k">Monetisability Check</div><div class="mf-v ${cleanCategory(s.monetisability_status)==='COMPLETE'?'g':'a'}">${s.monetisability_status||'NOT RUN'}</div></div>
@@ -2602,7 +2602,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Call Wall (Ceiling)</div><div class="mf-v c">$${opt('call_wall')}</div></div>
       <div class="m-field"><div class="mf-k">Put Wall (Floor)</div><div class="mf-v r">$${opt('put_wall')}</div></div>
       <div class="m-field"><div class="mf-k">Gamma Flip</div><div class="mf-v a">$${parseFloat(opt('gamma_flip')||0).toFixed(2)}</div></div>
-      <div class="m-field"><div class="mf-k">PCR Signal</div><div class="mf-v">${opt('pcr_signal')}</div></div>
+      <div class="m-field"><div class="mf-k">PCR Signal (OI Positioning — Not Flow)</div><div class="mf-v">${opt('pcr_signal')}${opt('pcr_direction_conflict_reason')!=='—'?`<br><span class="dim">${htmlSafe(opt('pcr_direction_conflict_reason'))}</span>`:''}</div></div>
       <div class="m-field"><div class="mf-k">Target In Play</div><div class="mf-v ${opt('target_in_play')==='True'?'g':'r'}">${opt('target_in_play')||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Max Pain</div><div class="mf-v">$${opt('max_pain')||'—'}</div></div>
     </div>
