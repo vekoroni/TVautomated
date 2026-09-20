@@ -221,6 +221,56 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
     assert book["reconciliation"]["economics_mismatch_rows"] == 0
 
 
+def test_morning_live_and_msi_fields_survive_into_the_final_book(tmp_path):
+    """AVS-ILA-001 (audit/intelligence_lab/, 20 Sep 2026), root cause ILA-RC-03: Morning
+    validation genuinely computes live_price, live_vwap and the full ms_* market-structure
+    evidence set (verified against a real run's morning_validated_trades CSV, run
+    20260918_112522: ms_profile_type=SINGLE_DISTRIBUTION, ms_lifecycle=MS_NONE,
+    live_price=30.68, etc.) but none of it reached the final opportunity-book row -
+    opportunity_book_row's explicit field dict never copied it, and FINAL_BOOK_FIELDS never
+    allow-listed it. This is a genuine handoff loss, not an alias/presentation defect like
+    ILA-RC-01/02: the data existed one stage earlier and was dropped, not merely renamed.
+    """
+    book = write_final_opportunity_book(
+        RUN_ID,
+        [_base_signal(
+            contract_symbol=OCC,
+            strike=100,
+            expiry="2099-01-19",
+            dte=30,
+            monetisability_status="COMPLETE",
+            monetisability_state="MONETISABLE",
+            monetisability_contract_symbol=OCC,
+            live_price=30.68,
+            live_vwap=30.6867,
+            quote_timestamp_utc="2026-09-18T15:41:30Z",
+            ms_profile_type="SINGLE_DISTRIBUTION",
+            ms_lifecycle="MS_NONE",
+            ms_quality_class="FIVE_MINUTE_ESTIMATED",
+            ms_reason_code="NO_QUALIFYING_DOUBLE_DISTRIBUTION",
+            ms_developing_poc=30.68,
+            ms_final_poc=30.68,
+            ms_value_area_low=30.36,
+            ms_value_area_high=30.80,
+        )],
+        {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
+        tmp_path,
+        sync_interpreter=False,
+    )
+    row = book["rows"][0]
+    assert float(row["live_price"]) == 30.68
+    assert float(row["live_vwap"]) == 30.6867
+    assert row["quote_timestamp_utc"] == "2026-09-18T15:41:30Z"
+    assert row["ms_profile_type"] == "SINGLE_DISTRIBUTION"
+    assert row["ms_lifecycle"] == "MS_NONE"
+    assert row["ms_quality_class"] == "FIVE_MINUTE_ESTIMATED"
+    assert row["ms_reason_code"] == "NO_QUALIFYING_DOUBLE_DISTRIBUTION"
+    assert float(row["ms_developing_poc"]) == 30.68
+    assert float(row["ms_final_poc"]) == 30.68
+    assert float(row["ms_value_area_low"]) == 30.36
+    assert float(row["ms_value_area_high"]) == 30.80
+
+
 def test_lab_publication_converts_pandas_style_nan_to_json_null(tmp_path):
     book = write_final_opportunity_book(
         RUN_ID,

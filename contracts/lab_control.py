@@ -663,6 +663,20 @@ FINAL_BOOK_FIELDS = [
     "direction_conflict_status",
     "direction_conflict_reason",
     "notes",
+    # AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-03: see opportunity_book_row's matching
+    # comment - Morning live-price/VWAP and market-structure evidence, genuinely computed
+    # but previously dropped before the published book.
+    "live_price",
+    "live_vwap",
+    "quote_timestamp_utc",
+    "ms_profile_type",
+    "ms_lifecycle",
+    "ms_quality_class",
+    "ms_reason_code",
+    "ms_developing_poc",
+    "ms_final_poc",
+    "ms_value_area_low",
+    "ms_value_area_high",
     "source_payload_json",
 ]
 
@@ -3442,6 +3456,23 @@ def opportunity_book_row(
         "direction_conflict_status": first(sig, "direction_conflict_status", "opt__direction_conflict_status"),
         "direction_conflict_reason": first(sig, "direction_conflict_reason", "opt__direction_conflict_reason"),
         "notes": first(sig, "notes", "execution_lock_reason", "verdict_coherence_notes", "sb_verdict_reason"),
+        # AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-03: Morning validation genuinely
+        # computes these (morning_validated_trades_{run_id}.csv, which feeds `sig` via
+        # write_final_opportunity_book's `signals` argument) but this dict never copied them
+        # through - a handoff loss, not an alias problem. live_price is a distinct concept
+        # from the frozen/signal price fallback chain the price display already uses; it is
+        # published here so it is available to show separately, not to silently replace it.
+        "live_price": first(sig, "live_price"),
+        "live_vwap": first(sig, "live_vwap", "mv__live_vwap"),
+        "quote_timestamp_utc": first(sig, "quote_timestamp_utc"),
+        "ms_profile_type": first(sig, "ms_profile_type"),
+        "ms_lifecycle": first(sig, "ms_lifecycle"),
+        "ms_quality_class": first(sig, "ms_quality_class"),
+        "ms_reason_code": first(sig, "ms_reason_code"),
+        "ms_developing_poc": first(sig, "ms_developing_poc"),
+        "ms_final_poc": first(sig, "ms_final_poc"),
+        "ms_value_area_low": first(sig, "ms_value_area_low"),
+        "ms_value_area_high": first(sig, "ms_value_area_high"),
         "source_payload_json": _json_safe(sig),
     }
     if contract_reselected or contract_side_conflict:
