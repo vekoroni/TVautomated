@@ -2876,7 +2876,7 @@ function openModal(ticker) {
     ${s['eil__recommended_entry_window']?`<div class="m-sec-hdr">Entry Window</div><div class="m-reason" style="color:var(--cyan)">${s['eil__recommended_entry_window']}</div>`:''}
     <div class="m-sec-hdr">Interpretation</div>
     <div class="m-reason" style="color:${eilColor}">${eilInterpret}</div>` :
-    '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No EIL data. Run execution_intelligence_runner.py to populate.</div>';
+    '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">LEGACY TELEMETRY — NOT ACTIVE FOR THIS RUN</div>';
 
   // ── Q-OMEGA Layer 3 pane ────────────────────────────────────────────────────
   const g = k => s[`garch__l3_${k}`] !== undefined ? s[`garch__l3_${k}`] : (s[`garch__${k}`] !== undefined ? s[`garch__${k}`] : null);
