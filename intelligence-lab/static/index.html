@@ -1235,8 +1235,14 @@ function getEvInfo(s) {
     'ev_final', 'eil__ev_final',
     'ev_net', 'ev'
   ];
-  let first = { value: 0, source: '' };
-  let seen = false;
+  // AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-05: when no EV key ever resolves to a
+  // real number, this used to fall through to the loop's initial { value: 0, source: '' }
+  // sentinel and present it as a genuine value - a row with no validated EV at all
+  // (SA: "EV3 values are blank and EV3 is rejected") rendered as "+0.000", indistinguishable
+  // from a real, computed zero-EV row. `first` now starts null and is only ever set from a
+  // real, non-NaN key; formatEv() already renders NaN as 'NOT COMPARABLE' (line ~1312) - the
+  // display side was already correct, only this function was fabricating the zero.
+  let first = null;
   for (const k of keys) {
     const n = parseFloat(s[k]);
     if (Number.isNaN(n)) continue;
@@ -1244,10 +1250,10 @@ function getEvInfo(s) {
     const isEv3 = EV3_SOURCE_KEYS.includes(k) ||
       (k === 'ev_predicted' && Number.isFinite(parseFloat(s.ev3_ev_conservative_return)));
     const info = { value: n, source: isEv3 ? 'EV3' : 'LEGACY' };
-    if (!seen) { first = info; seen = true; }
+    if (first === null) { first = info; }
     if (Math.abs(n) > 0) return info;
   }
-  return first;
+  return first || { value: Number.NaN, source: '' };
 }
 
 function getEv(s) {
