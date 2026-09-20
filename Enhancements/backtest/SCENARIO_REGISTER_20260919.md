@@ -186,6 +186,41 @@ threshold — the survival data a tail model will need.
   spreads) should shrink the loss toward break-even; a profit still needs a direction or timing edge — next round:
   S-REG-2 (regime mix) and the non-price features on N, with H+ after the backfill.
 
+### Round 2 findings (20 Sep 2026) — S-VAL-1, S-DIR-3
+
+- **S-VAL-1 (H, `option_state=='CLOSED'`, n=2,992 — not restricted to `ticket==True`; only 91/8,950 rows
+  ever became a ticket, so a ticket-only sample was too thin (19 closed) and too selection-biased):**
+  `cautious` calibrates meaningfully against realised `option_return` (Spearman ρ=0.44, p<0.001, monotonic
+  across all 5 deciles; win rate 4.2% → 17.6% worst to best decile); `central` calibrates more weakly
+  (ρ=0.31). Validates the existing convention of ranking on `cautious`, not `central`. Even the best decile
+  still averages a loss (mean −29%) — the model discriminates correctly but carries no positive edge
+  (confirms M13: no drift). → **D5 read: stay SHADOW** — the ranking works, there is no edge yet to
+  promote on.
+- **S-DIR-3 (discovery+options output from 22 run folders with both files present, 15 Aug – 19 Sep 2026 —
+  not the full 5-year U; no standing Wyckoff-replay engine exists over raw historical bars, building one is
+  a separate, larger project, run ahead of the Step-3 P2 ordering below since S-DIR-3's own definition does
+  not depend on the expansion-event definition):** 3,320 `DIRECTION_CONTRADICTS_STRUCTURE` rows found
+  (`thesis_geometry_review`'s own conflict rule, replicated exactly — `_STRUCTURE_SIDE`). Forward
+  underlying return in the governed vs. structure-implied direction, deduped on (ticker, session):
+
+  | horizon | n (unique tickers) | governed win% | structure win% | t / p |
+  |---|---|---|---|---|
+  | 5d | 1,625 (527) | 45.9% | 54.0% | t=−0.77, p=0.44 (not significant) |
+  | 10d | 866 (385) | 35.8% | 64.0% | **t=−4.89, p<0.0001** |
+  | 20d | 213 (154) | 31.0% | 69.0% | **t=−4.73, p<0.0001** |
+
+  At 10–20 sessions, structure has been significantly right and governed direction significantly wrong —
+  not driven by a couple of names (385/154 unique tickers). At 5 sessions, no significant edge either way.
+  **Sits against the earlier FX forensics reading** ("Wyckoff structure did not predict direction,"
+  H-FX-1…5) — that tested extreme winners/losers broadly; this tests specifically the conflict subset,
+  a narrower and different question. Both stand; not yet reconciled. → **D1 read: structure wins is
+  favoured** for the conflict subset beyond a 5-day hold, pending a full U-scale replay and a robustness
+  pass (no PBO/deflated-Sharpe check run yet; candidates recur across adjacent sessions so trials are not
+  fully independent even after dedup).
+
+Scripts: `Enhancements/backtest/val1_calibration.py`, `Enhancements/backtest/dir3_structure_conflict.py`.
+Output: `val1_calibration_H.json`, `dir3_structure_conflict.json` (same folder).
+
 ### Family IV-LAG — does IV lag the structure, or price it before we can trade it? (layer B; registered 19 Sep 2026)
 
 Motivation: IA-3 (weekly-chain year) found the *most* compressed names carry the *worst* mispricing (variance ratio

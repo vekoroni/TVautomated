@@ -1,0 +1,38 @@
+{
+  "scenario": "S-DIR-3",
+  "population": "discovery+options output from 22 run folders, 2026-08-15 to 2026-09-19 (not a full 5-year U replay - see module docstring)",
+  "n_directional_rows": 26223,
+  "n_conflict_rows_deduped": 2550,
+  "horizons": {
+    "5": {
+      "n": 1625,
+      "unique_tickers": 527,
+      "governed_direction_mean_return": -0.0012,
+      "governed_direction_win_rate": 0.4585,
+      "structure_direction_mean_return": 0.0012,
+      "structure_direction_win_rate": 0.5403,
+      "t_stat_governed_vs_zero": -0.768,
+      "p_value": 0.442521
+    },
+    "10": {
+      "n": 866,
+      "unique_tickers": 385,
+      "governed_direction_mean_return": -0.0137,
+      "governed_direction_win_rate": 0.358,
+      "structure_direction_mean_return": 0.0137,
+      "structure_direction_win_rate": 0.6397,
+      "t_stat_governed_vs_zero": -4.886,
+      "p_value": 1e-06
+    },
+    "20": {
+      "n": 213,
+      "unique_tickers": 154,
+      "governed_direction_mean_return": -0.0385,
+      "governed_direction_win_rate": 0.3099,
+      "structure_direction_mean_return": 0.0385,
+      "structure_direction_win_rate": 0.6901,
+      "t_stat_governed_vs_zero": -4.732,
+      "p_value": 4e-06
+    }
+  }
+}

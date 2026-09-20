@@ -1,0 +1,100 @@
+{
+  "scenario": "S-VAL-1",
+  "population": "H (signal_ticket_backtest_rows.csv), option_state=='CLOSED' (ticketed and non-ticketed)",
+  "n_rows": 2992,
+  "n_ticketed": 19,
+  "central": {
+    "buckets": [
+      {
+        "bucket": 0,
+        "n": 574,
+        "central_median": -0.7391,
+        "option_return_mean": -0.7696,
+        "option_return_median": -0.8895,
+        "win_rate": 0.0418
+      },
+      {
+        "bucket": 1,
+        "n": 574,
+        "central_median": -0.4965,
+        "option_return_mean": -0.5719,
+        "option_return_median": -0.6875,
+        "win_rate": 0.1028
+      },
+      {
+        "bucket": 2,
+        "n": 574,
+        "central_median": -0.3491,
+        "option_return_mean": -0.5378,
+        "option_return_median": -0.6459,
+        "win_rate": 0.1045
+      },
+      {
+        "bucket": 3,
+        "n": 574,
+        "central_median": -0.2421,
+        "option_return_mean": -0.4072,
+        "option_return_median": -0.5787,
+        "win_rate": 0.1533
+      },
+      {
+        "bucket": 4,
+        "n": 574,
+        "central_median": -0.1193,
+        "option_return_mean": -0.391,
+        "option_return_median": -0.5383,
+        "win_rate": 0.1516
+      }
+    ],
+    "spearman_rho": 0.3092,
+    "spearman_p": 0.0,
+    "monotonic_increasing": true
+  },
+  "cautious": {
+    "buckets": [
+      {
+        "bucket": 0,
+        "n": 574,
+        "cautious_median": -0.8096,
+        "option_return_mean": -0.7714,
+        "option_return_median": -0.9,
+        "win_rate": 0.0418
+      },
+      {
+        "bucket": 1,
+        "n": 574,
+        "cautious_median": -0.6014,
+        "option_return_mean": -0.6155,
+        "option_return_median": -0.753,
+        "win_rate": 0.0941
+      },
+      {
+        "bucket": 2,
+        "n": 574,
+        "cautious_median": -0.4737,
+        "option_return_mean": -0.5463,
+        "option_return_median": -0.6835,
+        "win_rate": 0.115
+      },
+      {
+        "bucket": 3,
+        "n": 574,
+        "cautious_median": -0.3646,
+        "option_return_mean": -0.4557,
+        "option_return_median": -0.603,
+        "win_rate": 0.1272
+      },
+      {
+        "bucket": 4,
+        "n": 574,
+        "cautious_median": -0.2292,
+        "option_return_mean": -0.2886,
+        "option_return_median": -0.3881,
+        "win_rate": 0.176
+      }
+    ],
+    "spearman_rho": 0.4386,
+    "spearman_p": 0.0,
+    "monotonic_increasing": true
+  }
+}
