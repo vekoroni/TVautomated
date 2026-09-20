@@ -450,10 +450,64 @@ def test_governed_projection_supplies_display_aliases_without_granting_eod_entry
     assert projected["opt__recommended_contract"] == "O:CRWV260918P00085000"
     assert projected["wbs__wbs_grade"] == "PROBABLE"
     assert projected["wbs__momentum_alignment_state"] == "UNAVAILABLE_NO_INTRADAY_PCR"
-    assert projected["garch__l3_vol_forecast"] == "0.938"
+    # AVS-ILA-001 ILA-RC-02: garch__l3_vol_forecast was never read by anything in
+    # static/index.html - the real target is garch__l3_forward_realised_vol (see
+    # test_governed_projection_applies_to_the_actual_production_schema_v4 for the verified
+    # source/target mapping using real l3_* field names).
+    assert projected["garch__l3_forward_realised_vol"] == "0.938"
     assert projected["sb_enter_now_stages"] == ""
     assert projected["sb_alert_stages"] == "3"
     assert projected["position_size_display"] == "HUMAN DETERMINED"
+
+
+def test_governed_projection_applies_to_the_actual_production_schema_v4():
+    """AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-01: every row the pipeline actually
+    publishes is lab_schema_version=='lab_signal_book_v4' (confirmed: contracts/lab_control.py
+    stamps this; test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields
+    already asserts it). _governed_ui_projection's schema allow-list only contained
+    'lab_signal_book_v2' and 'lab_signal_book_v4_projection' - never the real 'lab_signal_book_v4'
+    - so every alias in its (correct, complete) mapping table was silently skipped for every
+    real production row: hold period, GARCH/Q-Omega fields, convexity, composite score,
+    readiness stage/ladder and option spread all rendered blank despite the governed book
+    genuinely containing the values (AVS-ILA-001 section 5, "confirmed false-missing fields").
+    """
+    lab = _load_lab_module()
+    projected = lab._governed_ui_projection({
+        "lab_schema_version": "lab_signal_book_v4",
+        "ticker": "SA",
+        "pipeline_mode": "EOD",
+        "morning_data_state": "NOT_RUN_EOD",
+        "contract_symbol": "O:SA260918P00030000",
+        "hold_period": "11_20d",
+        "spread_pct": 5.825,
+        "contract_volume": 0,
+        "l3_forward_realised_vol": 0.4950,
+        "l3_vol_forecast_conf": 87.2,
+        "l3_method": "HAR_RV",
+        "l3_n_bars": 251,
+        "convexity_score": 2.0,
+        "composite_score": 64.4,
+        "readiness_stage": 4,
+        "readiness_label": "MORNING_VALIDATED_EXECUTION_READY",
+        "readiness_enter_now": True,
+    })
+    assert projected["opt__hold_label"] == "11_20d"
+    assert projected["opt__contract_spread_pct"] == 5.825
+    assert projected["opt__contract_volume"] == 0  # a real zero, not treated as missing
+    # Field names verified against a real governed book (run 20260919_205844): the source
+    # columns are l3_* (forward_realised_vol/vol_forecast_conf/method/n_bars), never the
+    # garch_* names the alias table previously assumed - those do not exist in production
+    # data at all. The target names must match what static/index.html's g(k) helper reads
+    # (garch__l3_${k}), which gates the entire Q-Omega pane on garch__l3_forward_realised_vol.
+    assert projected["garch__l3_forward_realised_vol"] == 0.4950
+    assert projected["garch__l3_vol_forecast_conf"] == 87.2
+    assert projected["garch__l3_method"] == "HAR_RV"
+    assert projected["garch__l3_n_bars"] == 251
+    assert projected["sb_conv_score"] == 2.0
+    assert projected["composite"] == 64.4
+    assert projected["sb_current_stage"] == 4
+    assert projected["sb_ladder_summary"] == "MORNING_VALIDATED_EXECUTION_READY"
+    assert projected["sb_enter_now_stages"] == "4"
 
 
 def test_post_merge_materialization_recovers_owned_lab_fields(tmp_path):

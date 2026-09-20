@@ -2410,8 +2410,13 @@ def _governed_ui_projection(sig):
     This is deliberately a name-only projection.  It must not rescore, rerank,
     infer execution permission, or otherwise reinterpret the governed row.
     """
+    # AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-01: every row the pipeline actually
+    # publishes is lab_signal_book_v4 (contracts/lab_control.py stamps this version) - it was
+    # missing from this allow-list, so the alias table below - hold period, GARCH/Q-Omega,
+    # convexity, composite score, readiness stage/ladder, option spread - was silently
+    # skipped for every real production row, not just an edge case.
     if not isinstance(sig, dict) or sig.get("lab_schema_version") not in {
-        "lab_signal_book_v2", "lab_signal_book_v4_projection"
+        "lab_signal_book_v2", "lab_signal_book_v4", "lab_signal_book_v4_projection"
     }:
         return sig
 
@@ -2477,14 +2482,22 @@ def _governed_ui_projection(sig):
         "wbs__wbs_wall_dist_pct": ("wbs_wall_dist_pct",),
         "wbs__break_direction": ("wbs_break_direction",),
         "wbs__momentum_alignment_state": ("wbs_momentum_alignment_state",),
-        "garch__l3_vol_forecast": ("garch_forecast_vol",),
-        "garch__l3_iv_tailwind_score": ("garch_iv_tailwind_score",),
-        "garch__l3_jump_risk_flag": ("garch_jump_risk_flag",),
-        "garch__l3_forecast_confidence": ("garch_forecast_confidence",),
-        "garch__l3_expected_move_1_5d": ("garch_expected_move_1_5d",),
-        "garch__l3_expected_move_6_10d": ("garch_expected_move_6_10d",),
-        "garch__l3_expected_move_11_20d": ("garch_expected_move_11_20d",),
-        "garch__l3_n_bars": ("garch_price_bars_used",),
+        # AVS-ILA-001 (20 Sep 2026), root cause ILA-RC-02: source names verified against a
+        # real governed book (run 20260919_205844) - the columns are l3_* (produced by the
+        # Q-OMEGA GARCH runner), never the garch_* names this table previously assumed, which
+        # do not exist in production data at all. Target names verified against
+        # static/index.html's g(k) helper (reads garch__l3_${k}), which gates the entire
+        # Q-Omega pane's visibility on garch__l3_forward_realised_vol - the old target name
+        # here, garch__l3_vol_forecast, was never read by anything.
+        "garch__l3_forward_realised_vol": ("l3_forward_realised_vol", "garch_forecast_vol"),
+        "garch__l3_iv_tailwind_score": ("l3_iv_tailwind_score", "garch_iv_tailwind_score"),
+        "garch__l3_jump_risk_flag": ("l3_jump_risk_flag", "garch_jump_risk_flag"),
+        "garch__l3_vol_forecast_conf": ("l3_vol_forecast_conf", "garch_forecast_confidence"),
+        "garch__l3_expected_move_1_5d": ("l3_expected_move_1_5d", "garch_expected_move_1_5d"),
+        "garch__l3_expected_move_6_10d": ("l3_expected_move_6_10d", "garch_expected_move_6_10d"),
+        "garch__l3_expected_move_11_20d": ("l3_expected_move_11_20d", "garch_expected_move_11_20d"),
+        "garch__l3_n_bars": ("l3_n_bars", "garch_price_bars_used"),
+        "garch__l3_method": ("l3_method",),
         "sb_instrument_now": ("instrument",),
         "sb_verdict_reason": ("entry_reason",),
         "sb_checkpoint_rule": ("wbs_wall_stall_rule", "ts_checkpoint_rule"),
