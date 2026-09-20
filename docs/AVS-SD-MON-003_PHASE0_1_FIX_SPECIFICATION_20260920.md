@@ -76,35 +76,31 @@ behaviour from its test across commits).
 (`test_direction_governance_contract.py`, `test_avs_sd003_authority_boundaries.py`) to confirm no other
 consumer still reads `pcr_signal`/`dw_signal` as directional.
 
-### B. Restore planned-hold lineage to outcome records
+### B. Restore planned-hold lineage to outcome records — REVISED, already fixed, not live
 
-**Root cause, confirmed by code trace:** `canonical_data/outcome_learning.py:246-247` excludes a record with
-`PLANNED_HOLD_UNAVAILABLE` whenever `candidate_payload.get("planned_hold_sessions")` is `None`.
-`candidate_payload` is `candidate.payload`, sourced from `decision_outcome_ledger.py:352`
-(`"planned_hold_sessions": row.get("planned_hold_sessions")`) — i.e. whatever was on the `row` at the moment
-the ledger recorded the decision. `intelligent_orchestrator.py:3808-3828` patches `planned_hold_sessions`
-onto the options dataframe for EV3's consumption, with its own comment noting it is "the governed thesis
-window (D2)." The two facts together are consistent with a sequencing fault: the ledger records its decision
-snapshot from a row taken before this patch step runs, not after.
+**Original hypothesis (this section as first written):** a sequencing fault — the ledger recording a
+decision snapshot from a row taken before `intelligent_orchestrator.py`'s `planned_hold_sessions` patch runs.
 
-**DDD owner:** `canonical_data/decision_outcome_ledger.py` (Decision and Outcome context) — it must read the
-patched row, not an earlier one.
+**Verified against the real ledger before writing a fix:** `canonical_data/decision_outcome_ledger.py:352`
+(`"planned_hold_sessions": row.get("planned_hold_sessions")`) is a simple, correct pass-through — no
+sequencing bug in that function. Queried `data/canonical/decision_outcome_ledger.sqlite` directly (245,062
+total rows) across its 12 most recent `run_id`s: **only `20260919_205844` (tonight) has
+`planned_hold_sessions` populated — not even `20260918_112522` (yesterday) does.** This is not a live,
+ongoing defect; it is a fix that already landed as part of this session's broader work and is working
+correctly starting exactly from tonight's run. The validation record's "11,454/11,454 excluded" figure is
+accumulated pre-fix ledger history (weeks of runs before tonight), which correctly stays
+`PLANNED_HOLD_UNAVAILABLE` forever — those rows genuinely never had the field. It is not evidence of an
+ongoing gap, and it will not reach zero; it will asymptote toward the (small, growing) share of records from
+tonight onward as outcome maturation processes them over the coming sessions.
 
-**Characterisation test to write first:** given a fixture row that has `planned_hold_sessions` set only
-*after* the point in the pipeline `intelligent_orchestrator.py` currently patches it, assert that a decision
-recorded from that row via `decision_outcome_ledger` carries a non-null `planned_hold_sessions` in its
-persisted payload. This should fail against current code (reproducing the 11,454/11,454 exclusion) before
-any fix, and pass after — the standard characterise-then-fix pattern.
+**Action taken:** no code change. `tests/test_ddd_decision_outcome.py` gained two regression-lock cases —
+`candidate_events_from_rows` preserves `planned_hold_sessions` when present, and correctly leaves it `None`
+(never fabricated) when absent — since this pass-through was previously covered indirectly at best, not
+proven directly for this exact field.
 
-**Fix:** move the ledger's decision-recording call to after the `planned_hold_sessions` patch in the
-orchestrator's phase order, or have the ledger read the patched dataframe rather than the pre-patch row —
-whichever is the smaller, more local change once the characterisation test shows exactly which row instance
-is stale.
-
-**Regression:** `tests/test_ev3_orchestrator_order.py` (already exists, presumably covers ordering) plus the
-outcome-learning suite; re-run tonight's `20260919_205844` learning-record build and confirm the
-`PLANNED_HOLD_UNAVAILABLE` exclusion count drops from 100% to the genuine residual (rows where the thesis
-truly has no governed hold, not all rows).
+**Regression:** the two new cases plus the full `test_ddd_decision_outcome.py` (20 total),
+`test_avs_fix_002_stage6_outcome_learning.py` (22), `test_dynamic_session_phase7.py` (7),
+`test_c12_outcome_scoring_stage.py` (5), `test_avs_fix_001_w39_outcome_maturation_stage.py` (14) — all green.
 
 ### C. Capture daily option bid paths for monitored family members
 
@@ -305,8 +301,9 @@ Narrower than the design's global §18 — this closes when:
 1. A and H are committed and tagged as the Phase 0 baseline.
 2. G is proven (archive completes cleanly on the next run, pre-flight check added).
 3. D's characterisation test exists and its root cause is named (fixed or explicitly deferred with reason).
-4. B and C each move their respective blocking count off its current value (100% excluded, 0 available) with
-   evidence, even if not fully to zero.
+4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. C still
+   needs its blocking count (0/11,454 available) moved off its current value, with evidence, even if not
+   fully to zero.
 5. E's reconciliation assertion runs clean, or any residual gap is independently root-caused.
 6. **Closed.** F's 162 rows are confirmed correctly withheld from candidate/capital authority (verified
    against real data, not assumed), and the audit's `FAIL` severity is confirmed to describe a D1 data-

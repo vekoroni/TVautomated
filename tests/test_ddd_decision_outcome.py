@@ -206,6 +206,37 @@ def test_candidate_and_execution_factories_retain_go_and_rejection() -> None:
     assert all(event.payload["ledger_authority"] == "OBSERVATION_ONLY" for event in executions)
 
 
+def test_candidate_events_carry_planned_hold_sessions_through_to_the_ledger_payload() -> None:
+    """Item B (AVS-SD-MON-003 Phase 0/1 fix spec, 20 Sep 2026) - regression lock, not a fix.
+
+    The fix spec assumed a sequencing bug (ledger recording from a row snapshot taken before
+    intelligent_orchestrator.py's horizon patch sets planned_hold_sessions). Verified against the
+    real decision_outcome_ledger.sqlite before writing any code: run 20260919_205844's own ledger
+    entries already carry planned_hold_sessions=20.0 correctly - the field is a simple pass-through
+    in candidate_events_from_rows (row.get("planned_hold_sessions")), already correct. Checked the
+    ledger's most recent 12 run_ids: only 20260919_205844 (tonight) has it populated - not even
+    18 Sep's run does - confirming this is a fix that already landed as part of this session's
+    broader work, not a live defect. The historical exclusion the validation record measured
+    (11,454/11,454 PLANNED_HOLD_UNAVAILABLE) is accumulated pre-fix ledger history, which correctly
+    stays excluded forever; it is not evidence of an ongoing gap.
+    """
+    row = _row("AAA", "BUY_SMALL")
+    row["planned_hold_sessions"] = 20
+    events = candidate_events_from_rows(
+        [row], run_id=RUN_ID, occurred_at_utc=NOW, decision_stage="EOD_THESIS"
+    )
+    assert events[0].payload["planned_hold_sessions"] == 20
+
+
+def test_candidate_events_leave_planned_hold_sessions_missing_when_absent_from_the_row() -> None:
+    row = _row("BBB", "BLOCK")
+    assert "planned_hold_sessions" not in row
+    events = candidate_events_from_rows(
+        [row], run_id=RUN_ID, occurred_at_utc=NOW, decision_stage="EOD_THESIS"
+    )
+    assert events[0].payload["planned_hold_sessions"] is None
+
+
 @pytest.mark.parametrize(
     ("direction", "target", "stop", "expected_return", "passage"),
     [
