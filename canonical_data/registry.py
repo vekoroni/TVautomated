@@ -393,6 +393,20 @@ class CanonicalRegistry:
                 # dataset.  Preserve the original provenance and make that
                 # repeat registration idempotent; every other field remains
                 # part of the immutability comparison below.
+                #
+                # AVS-SD-MON-003 item D (ACK, 20 Sep 2026): completeness_status,
+                # as_of and expires_at are metadata about *how* and *when* the
+                # content was observed, not part of the content itself - they
+                # are deliberately excluded from dataset_id's hash (which is
+                # derived from content_hash). Re-observing byte-identical
+                # content later (e.g. a PARTIAL->COMPLETE completeness
+                # upgrade) is the same object, not a conflict. Decision: keep
+                # the first-observed record unchanged (idempotent no-op), not
+                # a supersession - the later, possibly-more-complete metadata
+                # is discarded, matching how source_run_id/observed_at already
+                # behave. A genuine content_hash mismatch under the same
+                # dataset_id (data corruption, not a legitimate re-observation)
+                # still raises below.
                 elif replace(
                     record,
                     source_run_id=existing.source_run_id,
@@ -400,6 +414,9 @@ class CanonicalRegistry:
                     # freshness window.  Keep the first-observed provenance;
                     # the later physical request is recorded in the ledger.
                     observed_at=existing.observed_at,
+                    completeness_status=existing.completeness_status,
+                    as_of=existing.as_of,
+                    expires_at=existing.expires_at,
                 ) == existing:
                     pass
                 else:

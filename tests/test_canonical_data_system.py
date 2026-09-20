@@ -202,9 +202,33 @@ class CanonicalDataSystemTests(unittest.TestCase):
         self.assertEqual(restored.content_hash, "a" * 64)
         self.assertEqual(restored.source_run_id, "run-1")
         self.assertEqual(restored.scope, scope)
-        changed = make_record(scope, as_of=NOW + timedelta(minutes=1))
-        with self.assertRaises(DatasetValidationError):
-            self.registry.register_dataset(changed)
+
+        # AVS-SD-MON-003 item D (ACK, 20 Sep 2026): re-observing byte-identical content
+        # (same dataset_id, since dataset_id is derived from content_hash) later, with a
+        # different as_of, is the same object re-observed - not a conflict. Decision: keep
+        # the first-observed record unchanged (idempotent no-op), discard the later as_of.
+        later = make_record(scope, as_of=NOW + timedelta(minutes=1))
+        self.registry.register_dataset(later)  # must not raise
+        restored_again = self.registry.get_dataset("dataset-1")
+        assert restored_again is not None
+        self.assertEqual(restored_again.as_of, NOW)  # first-observed as_of, not the later one
+        self.assertEqual(self.registry.dataset_count(), 1)
+
+    def test_completeness_status_upgrade_on_identical_content_keeps_first_observed(self) -> None:
+        # The motivating real-world case for item D: an option chain first registered PARTIAL
+        # (early in a session) and later re-observed byte-identical and COMPLETE. Same
+        # dataset_id/content_hash - this is one physical observation, not two.
+        scope = DataScope(start_date=SESSION, end_date=SESSION, fields=("CLOSE",))
+        partial = make_record(scope, status=CompletenessStatus.PARTIAL)
+        self.registry.register_dataset(partial)
+
+        upgraded = make_record(scope, status=CompletenessStatus.COMPLETE)
+        self.registry.register_dataset(upgraded)  # must not raise "immutable and already registered"
+
+        restored = self.registry.get_dataset("dataset-1")
+        assert restored is not None
+        self.assertEqual(restored.completeness_status, CompletenessStatus.PARTIAL)  # first-observed kept
+        self.assertEqual(self.registry.dataset_count(), 1)
 
     def test_identical_dataset_is_reusable_across_runs_without_rewriting_origin(self) -> None:
         scope = DataScope(start_date=SESSION, end_date=SESSION, fields=("CLOSE",))
