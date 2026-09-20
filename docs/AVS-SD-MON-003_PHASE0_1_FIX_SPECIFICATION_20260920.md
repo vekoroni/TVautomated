@@ -211,24 +211,55 @@ from the one item D fixed** — `option_contract_observations` persistence, not 
 open_interest, iv — deliberately excluding DTE and spot, with a documented rationale: "the same unchanged
 option quote on a later Morning pass while the independently captured underlying spot has moved... Reuse it
 only when all option-quote facts agree"). Despite that tolerance, 13/30 real tickers still hit the conflict.
-Two live hypotheses, not yet distinguished: (a) genuine drift in one of the whitelisted quote fields between
-two provider observations sharing the same `(thesis, run, contract, quote_time)` identity, or (b) a
-type-comparison bug in `_same_value()` — e.g. `str(150)` vs `str(150.0)` would false-positive as "different"
-for an integer-vs-float value pulled from sqlite vs. freshly computed, which `_same_value`'s numeric branch
-should catch via `math.isclose` but its string fallback would not if either side isn't recognised as numeric.
+**Pinned down (hypothesis (a) confirmed, (b) refuted) by instrumenting the exact comparison** (temporary
+debug logging added, exercised against a scratch registry copy, then fully reverted — no debug code
+shipped) and diffing `existing` vs `payload` field-by-field for all 13 real conflicts:
 
-**DDD owner:** `canonical_data/option_liquidity_lifecycle.py` (not `dynamic_options_ranking.py` as
-originally guessed — the conflict happens at observation-persistence time, before ranking is reached).
+| Field | Pattern across all 13/13 |
+|---|---|
+| `bid`, `ask`, `spread_pct`, `volume`, `open_interest`, `iv`, `strike`, `expiration` | always identical |
+| `bid_size`, `ask_size` | `existing` always `null`, `payload` always a real value |
+| `delta` | `existing` always full-precision (e.g. `-0.5581241067854372`), `payload` always 4-decimal vendor precision (e.g. `-0.5607`) |
 
-**Not fixed in this pass** — deserves its own characterisation test (feed two payloads through
-`_same_value()`/the comparable-fields check directly, with real field values pulled from one of the 13
-failing tickers, to distinguish hypothesis (a) from (b)) rather than a guess. Reproduction script and
-evidence: `Enhancements/backtest/item_e_reconciliation_check.py`,
-`Enhancements/backtest/item_e_doi_reconciliation_20260919_205844.json`.
+Not a type-comparison bug — genuine, explainable drift. Traced `bid_size`/`ask_size` to their exact source:
+`morning_gate.py`'s call to `record_contract_observation()` (the "first" write for these identities) never
+passed `bid_size`/`ask_size` at all, even though `live_contract_bid_size`/`live_contract_ask_size` are
+already computed from the same live quote fetch two lines above it (`api_value("bidSize")`/`("askSize")`,
+covered by `tests/test_msi_morning_capture.py`) — just never threaded through to the persisted observation.
+Not a data gap, a missing parameter.
+
+**Fixed:** `morning_gate.py`'s `_persist_morning_liquidity_result()` now passes
+`bid_size=_f(result.get("live_contract_bid_size"))` and `ask_size=_f(result.get("live_contract_ask_size"))`.
+This is a source fix, not a reconciliation-layer patch — it prevents the incomplete observation from being
+written in the first place, for all future Morning runs. It cannot retroactively repair already-stored
+historical rows (the table is append-only by design — see below), so it will not visibly change the
+conflict count against *already-poisoned* historical data; verified instead via a direct TDD test proving
+the size fields now reach the stored record.
+
+**`delta`'s mismatch is a separate, deeper issue and remains unfixed.** Traced to a second code path in
+`morning_gate.py` that reuses a *prior* observation's own `.delta` (`"live_contract_delta": observation.delta`,
+line ~1198) rather than the fresh API fetch (`api_value("delta")`, line 867) — genuinely different code paths,
+not obviously safe to unify without its own investigation. This fix does not resolve conflicts where delta
+also differs; a future EOD-vs-Morning pair could still collide on delta alone even with `bid_size`/`ask_size`
+now fixed at the source.
+
+**An architectural dead end worth recording:** the original plan (reconcile completions in
+`option_liquidity_lifecycle.py`'s identity-comparison logic, treating a null→value transition as a
+supersession) was implemented, tested, and then reverted — `option_contract_observations` (and every other
+table in this store) has a SQL trigger hard-blocking `UPDATE`/`DELETE` ("option observations are
+append-only"), enforced at the database level, not just convention. A supersession would need a genuinely
+new `observation_id` (currently a deterministic hash of `thesis, run, contract, quote_time` with no room for
+a completion/version marker) linked via the store's own `supersedes_event_id` field — a materially bigger
+change than fixing the source, and not needed once the source fix closes the specific gap found.
+
+**DDD owner:** `morning_gate.py` (the actual write site), not `option_liquidity_lifecycle.py`'s comparison
+logic and not `dynamic_options_ranking.py` as originally guessed.
 
 **Regression:** the reconciliation invariant is already enforced by `__post_init__` (no new test needed to
-prove that part); a future fix for the quote-identity conflict needs its own characterisation test against
-`option_liquidity_lifecycle.py`'s `_same_value()`/comparable-fields logic.
+prove that part). The fix: `tests/test_option_liquidity_lifecycle.py::test_morning_persistence_records_bid_and_ask_size`
+(new, confirmed red before the fix — `None != 20` — green after), full suite for that file (17 cases) plus
+15 more test files touching `morning_gate` (≈130 more cases) — all green. Reproduction/diagnostic script:
+`Enhancements/backtest/item_e_reconciliation_check.py`.
 
 ### F. Correct the remaining missing invalidation lineage — REVISED, not a code defect
 
@@ -362,10 +393,10 @@ Narrower than the design's global §18 — this closes when:
    cause is fully traced** (the capture service and its writer both exist, are tested, and are proven
    against real data by the rehearsal script — only the live-run wiring is missing); the blocking count
    (0/11,454 available) still needs to move once that wiring is built.
-5. **E's reconciliation confirmed clean** (verified against real data, 30-ticker sample, zero unexplained
-   loss). The residual gap (13/30 exceptions) is independently root-caused as a third, separate identity
-   mechanism (`option_liquidity_lifecycle.py`'s contract-observation persistence) — not yet fixed, needs its
-   own characterisation test to distinguish a data-drift cause from a type-comparison bug.
+5. **E closed.** Reconciliation confirmed clean (verified against real data, zero unexplained loss). The
+   third root cause it surfaced (`bid_size`/`ask_size` never threaded through `morning_gate.py`'s observation
+   write) is fixed and tested. `delta`'s separate mismatch (a different code path — reused prior observation
+   vs. fresh API fetch) remains open, explicitly not bundled into this fix.
 6. **Closed.** F's 162 rows are confirmed correctly withheld from candidate/capital authority (verified
    against real data, not assumed), and the audit's `FAIL` severity is confirmed to describe a D1 data-
    coverage question, not an authority-governance gap — no fill-rate target applies here, D1's decision

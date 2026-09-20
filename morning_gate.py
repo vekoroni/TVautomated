@@ -3019,6 +3019,16 @@ def _persist_morning_liquidity_result(
         delta=_f(result.get("live_contract_delta")),
         bid=_f(result.get("live_contract_bid")),
         ask=_f(result.get("live_contract_ask")),
+        # AVS-SD-MON-003 item E (ACK, 20 Sep 2026): live_contract_bid_size/ask_size are
+        # already captured from the same live quote fetch (see api_value("bidSize")/
+        # ("askSize") above) but were never threaded through to the stored observation -
+        # every Morning-written observation therefore had null size fields by omission,
+        # not because the data was unavailable. Root-caused against 13 real
+        # option_contract_observations conflicts (run 20260919_205844) where a later EOD
+        # valuation pass, reading real bid_size/ask_size from the canonical chain, was
+        # rejected as conflicting with this incomplete Morning-written observation.
+        bid_size=_f(result.get("live_contract_bid_size")),
+        ask_size=_f(result.get("live_contract_ask_size")),
         spread_pct=spread_observation.spread_fraction_mid,
         volume=_f(result.get("live_contract_volume")),
         open_interest=_f(result.get("live_contract_oi")),

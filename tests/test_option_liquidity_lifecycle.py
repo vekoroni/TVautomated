@@ -801,6 +801,61 @@ class OptionLiquidityLifecycleTests(unittest.TestCase):
             )["BP"]
         self.assertEqual(live["live_options_resolution"], "CDS_FRESH_QUOTE_HIT")
 
+    def test_morning_persistence_records_bid_and_ask_size(self) -> None:
+        """AVS-SD-MON-003 item E (ACK, 20 Sep 2026): live_contract_bid_size/ask_size are
+        already captured from the live quote fetch (test_msi_morning_capture.py covers
+        that part) but were never threaded through to the stored observation - every
+        Morning-written observation therefore had null size fields by omission. Root-
+        caused against 13 real option_contract_observations conflicts (run
+        20260919_205844) where a later EOD valuation pass, reading real bid_size/
+        ask_size from the canonical chain, was rejected as conflicting with this
+        incomplete Morning-written observation. This locks the fix: size fields must
+        reach the stored record, not merely the live result dict.
+        """
+        result = {
+            "ticker": "BP",
+            "direction": "PUT",
+            "final_direction": "PUT",
+            "thesis_id": "BP-PUT-MORNING-SIZE",
+            "morning_transition_state": "EXECUTABLE_NOW",
+            "liquidity_state": "EXECUTABLE_NOW",
+            "morning_selected_contract_symbol": "O:BP260918P00040000",
+            "contract_symbol": "O:BP260918P00040000",
+            "live_options_source": "MARKETDATA",
+            "live_options_fetched_at": "2026-08-29T08:00:01Z",
+            "live_contract_provider_updated": "2026-08-29T08:00:00Z",
+            "live_price": 41.0,
+            "live_contract_bid": 0.90,
+            "live_contract_ask": 1.00,
+            "live_contract_mid": 0.95,
+            "live_contract_spread_pct": 10.5263,
+            "live_contract_delta": -0.32,
+            "live_contract_gamma": 0.03,
+            "live_contract_theta": -0.02,
+            "live_contract_vega": 0.08,
+            "live_contract_iv": 0.44,
+            "live_contract_oi": 12,
+            "live_contract_volume": 3,
+            "live_contract_bid_size": 20,
+            "live_contract_ask_size": 30,
+            "maturation_score_1d": 62.0,
+            "maturation_score_2d": 71.0,
+            "maturation_score_3d": 78.0,
+            "maturation_score_is_probability": False,
+            "atm_distance_sigma": 0.71,
+            "remaining_runway_pct": 82.0,
+            "selected_contract_economics_ready": True,
+            "contract_changed": False,
+        }
+        with patch.object(morning_gate, "ROOT", self.root):
+            morning_gate._persist_morning_liquidity_result(
+                result, RUN_ID, self.registry, self.store
+            )
+        self.assertEqual(result["morning_liquidity_persistence_status"], "PERSISTED")
+        stored = self.store.latest_observation("BP-PUT-MORNING-SIZE")
+        self.assertEqual(stored.bid_size, 20)
+        self.assertEqual(stored.ask_size, 30)
+
     def test_morning_persistence_reuses_msi_exact_quote_dataset(self) -> None:
         exact_id = self._dataset(
             dataset_type=DatasetType.EXACT_OPTION_QUOTE,
