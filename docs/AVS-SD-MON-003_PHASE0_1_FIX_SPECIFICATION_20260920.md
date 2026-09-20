@@ -140,7 +140,17 @@ at least one monitored assessment, currently 0/11,454 per the validation record.
 **Regression:** outcome-learning fit-eligible count should move off zero once wired; `test_ev3_options_handoff.py`
 and the option-liquidity-lifecycle suite for no regression on existing DOI ranking behaviour.
 
-### D. Repair idempotent/superseding option-observation identity — root cause confirmed, needs an ACK decision
+### D. Repair idempotent/superseding option-observation identity — CLOSED (`b23b7f4`)
+
+**Decision (ACK, 20 Sep 2026):** keep first-observed unchanged. `register_dataset()` now also tolerates
+`completeness_status`/`as_of`/`expires_at` differing between a new and an already-registered record when
+everything else (including `content_hash`) matches — the later registration becomes a no-op, first-observed
+metadata is kept. A genuine `content_hash` mismatch under the same `dataset_id` still raises (data
+corruption, not a legitimate re-observation, was never tolerated). Regression: 22 cases in
+`test_canonical_data_system.py` plus 232+ across 19 more files touching `CanonicalRegistry`/
+`register_dataset` directly — all green.
+
+Detail retained below for provenance.
 
 **Confirmed, not hypothesised — and no new test was even needed, existing tests already prove it:**
 `canonical_data/registry.py::register_dataset()` (the general canonical registry, used for OHLCV as well as
@@ -323,8 +333,8 @@ Narrower than the design's global §18 — this closes when:
 1. A is committed (`65c5d7d`, done). H's deletion blocker is resolved (`43136b1`); the stale
    provider-timestamp test and the Phase 0 tag are still outstanding.
 2. **G closed** (`16475ea`). Archive completes cleanly with a pre-flight headroom check added.
-3. **D's root cause is named and confirmed** (existing tests prove it, no new test needed) — awaiting ACK's
-   decision on the three possible semantics before any fix lands; not deferred for lack of investigation.
+3. **D closed** (`b23b7f4`). ACK decided "keep first-observed unchanged"; fixed, tested, wide regression
+   green.
 4. **B closed.** Verified already fixed as of tonight's run, not a live defect — see revised §B. **C's root
    cause is fully traced** (the capture service and its writer both exist, are tested, and are proven
    against real data by the rehearsal script — only the live-run wiring is missing); the blocking count
