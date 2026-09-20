@@ -183,38 +183,49 @@ closes to (ideally) zero unexplained loss.
 §15 already calls for this — "candidates assessed, ranked, monitored and ready... exact population
 reconciliation" — this makes it a test, not only a log line).
 
-### F. Correct the remaining missing invalidation lineage
+### F. Correct the remaining missing invalidation lineage — REVISED, not a code defect
 
-**Root cause, directly evidenced tonight:** `handoff_contract_audit_20260919_205844.csv`
-(`data/output/runs/20260919_205844/diagnostics/`), the one live `FAIL`-severity row:
-`eod_candidates | eod_candidate_requires_invalidation | EOD_CANDIDATE_WITHOUT_GOVERNED_INVALIDATION |
-filled_rows=162 | fill_rate=0.1049`, with the audit's own recommendation: "Remove candidate/capital
-authority until governed invalidation is available." Sample tickers: MCD, Z, USAR, AEP, SOFI, CELH, LEU,
-DJT, AAP, NNE, GNTX, YELP. This is the validation record's "Genuine semantic defect" line, now traced to its
-exact source artefact and column.
+**Original assumption (this section as first written):** `eod_candidate_engine.py` needed a fix to withhold
+candidate/capital authority for the 162 rows flagged by `handoff_contract_audit_20260919_205844.csv`
+(`eod_candidate_requires_invalidation | filled_rows=162 | fill_rate=0.1049`), per the audit's own
+recommendation: "Remove candidate/capital authority until governed invalidation is available." Sample
+tickers: MCD, Z, USAR, AEP, SOFI, CELH, LEU, DJT, AAP, NNE, GNTX, YELP.
 
-**DDD owner:** `eod_candidate_engine.py` (owns EOD candidate assembly, per its direct role in producing
-`morning_candidates_20260919_205844.csv`) in concert with whichever upstream stage is meant to set
-`invalidation_spot`/`invalidation_source` (design §7.1, `OpportunityThesis.invalidation_spot`) before a
-candidate reaches EOD assembly — mandatory invariant §5.3: "Missing values remain missing and carry a
-reason; they never become zero," so the fix is either to supply the real value or to correctly withhold
-candidate authority for these 162, never to fabricate a stop.
+**Verified against real code and tonight's real data before writing any fix (exactly what B and C's
+characterisation-first approach would have caught for this item too, had it been done before the original
+draft):** `_candidate_permission_fields()` and the EOD status classifier both already withhold authority
+correctly — `direction in GOVERNED_DIRECTED_SIDES and not invalidation_available` sets
+`capital_permission="NO"`, `capital_authorization_state="NOT_AUTHORIZED_INVALIDATION_MISSING"`,
+`eod_status="EOD_DATA_INSUFFICIENT_REVIEW"`. Checked directly against `morning_candidates_20260919_205844.csv`
+for 11 of the 12 sample tickers (the 12th had a CSV-parsing artefact in the recommendation string, not a
+data issue): every one shows `capital_permission=NO`, `invalidation_spot=NaN` (correctly missing, never
+zero), `eod_status=EOD_DATA_INSUFFICIENT_REVIEW`. **There is no governance gap here — the mandatory
+invariant is already being honoured.**
 
-**Characterisation test to write first:** for the 162 known tickers/rows from tonight's audit output,
-assert each one's upstream source (Discovery structural-stop resolution) either produces a real
-`invalidation_spot` or an explicit, reasoned `THESIS_STATE=UNEVALUATED`/equivalent — never a silent pass to
-EOD candidacy with the field blank. Then assert `eod_candidate_engine.py` withholds candidate/capital
-authority (per the audit's own recommendation) for any row still missing it after that upstream fix is
-applied.
+**The upstream question has a confirmed, clean answer, not a bug:** cross-referencing all 162 rows against
+`thesis_geometry_review_state` (`scripts/avshunter_options_intelligence.py`) shows 160/162 are
+`DIRECTION_CONTRADICTS_STRUCTURE` and 2/162 are `MISSING_STOP`. `thesis_geometry_review()` is working
+exactly as documented — a CALL in Wyckoff DISTRIBUTION or a PUT in ACCUMULATION has no valid stop because
+the structural invalidation lies on the wrong side, and it correctly refuses to fabricate one rather than
+inventing a number. **This is the identical population S-DIR-3 already measured** (register, Round 2
+findings, 20 Sep): at 10 and 20 session horizons, the structure-implied direction has significantly
+outperformed the governed direction for exactly these rows (t=-4.89/-4.73, p<0.0001). Item F was never a
+second, independent defect — it is D1, observed from a different angle (the authority side rather than the
+directional-accuracy side).
 
-**Fix:** two parts — (1) close the upstream gap that leaves 10.5% of candidates without a governed
-invalidation source at all (needs its own trace into Discovery's stop-resolution paths,
-`structural_stop_source` values like `ATR_FALLBACK` are one candidate cause, not yet confirmed), (2)
-regardless of (1)'s outcome, `eod_candidate_engine.py` must honour the audit's recommendation and withhold
-authority for any row that still lacks it, rather than passing it through.
+**Action taken:** no code change. `tests/test_missing_invalidation_authority_withheld.py` locks the
+verified-correct current behaviour against regression (it was previously assumed, not proven, so it needed
+a test regardless of there being no fix). **Any further action is gated on ACK's D1 decision, not a
+standalone repair** — if D1 resolves toward "structure wins" for conflict rows, a natural follow-on would
+be computing a structure-consistent invalidation level for the structure-implied direction so
+`eod_candidate_engine.py`'s already-correct logic can then grant authority using it. That is new scope for
+whenever D1 closes, not part of Phase 0/1.
 
-**Regression:** re-run the handoff contract audit on the next EOD run and confirm the `FAIL`-severity row's
-`fill_rate` moves toward 1.0, with any residual gap explicitly reasoned per the invariant above.
+**Regression:** `tests/test_missing_invalidation_authority_withheld.py` (4 cases) plus the existing
+`eod_candidate_engine.py` suites (`test_avs_fix_001_w13_monetisability_authority`,
+`test_avs_sd003_authority_boundaries`, `test_book_integrity_e3_e4_e5_e7`, `test_cycle2_governance`,
+`test_direction_geometry_semantic_repairs`, `test_dynamic_options_non_discard_policy`,
+`test_eod_options_research_handoff`, `test_low_risk_pipeline_repairs` — 71 cases) all green.
 
 ### G. Restore disk headroom and prove final archive completion
 
@@ -297,8 +308,10 @@ Narrower than the design's global §18 — this closes when:
 4. B and C each move their respective blocking count off its current value (100% excluded, 0 available) with
    evidence, even if not fully to zero.
 5. E's reconciliation assertion runs clean, or any residual gap is independently root-caused.
-6. F's fill rate is shown moving toward 1.0, or the 162 rows are confirmed correctly withheld from
-   candidate/capital authority per the audit's own recommendation.
+6. **Closed.** F's 162 rows are confirmed correctly withheld from candidate/capital authority (verified
+   against real data, not assumed), and the audit's `FAIL` severity is confirmed to describe a D1 data-
+   coverage question, not an authority-governance gap — no fill-rate target applies here, D1's decision
+   governs whatever comes next.
 
 Until all six hold, Phase 2 (path-label factory) and Phase 3 (research tournament) do not start — matching
 the approved design's own instruction to proceed with Phase 0 and Phase 1 before building a predictive path
