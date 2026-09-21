@@ -1299,49 +1299,6 @@ def _compute_conv_checks(sig):
         "conv_score":    conv_score,
     }
 
-# ─── STAGE LADDER (execution readiness) ─────────────────────────────────────
-def _compute_stage_ladder(sig):
-    """
-    Repurposes Stage Ladder as Execution Readiness across 4 intelligent layers.
-    Stage 1: Signal triggered (trigger_go_eligible)
-    Stage 2: Campaign ready (campaign_verdict == READY_EXECUTE/READY_PROBE)
-    Stage 3: EIL cleared (eil_v3_verdict contains EXECUTE)
-    Stage 4: Execution gate open (execution_verdict == BUY_NOW)
-    """
-    def _s(key):
-        return str(sig.get(key,"") or "").upper().strip()
-    def _bool(key):
-        v = str(sig.get(key,"") or "").upper().strip()
-        return v in ("TRUE","1","YES","Y")
-
-    s1 = _bool("trigger_go_eligible") or _bool("eil__trigger_go_eligible")
-    cv = _s("campaign_verdict") or _s("eil__campaign_verdict")
-    s2 = cv in ("READY_EXECUTE","READY_PROBE")
-    ev_v = _s("eil_v3_verdict") or _s("eil__v3_verdict") or _s("eil__eil_v3_verdict")
-    s3 = "EXECUTE" in ev_v and "BLOCKED" not in ev_v
-    ex_v = _s("execution_verdict") or _s("eil__execution_verdict")
-    s4 = ex_v == "BUY_NOW"
-
-    current = 4 if s4 else 3 if s3 else 2 if s2 else 1 if s1 else 0
-    enter_now = "4" if s4 else ""
-    alert = "3" if s3 and not s4 else "2" if s2 and not s3 else ""
-
-    summary = (
-        "All 4 layers aligned — ENTER NOW" if s4 else
-        f"EIL cleared · waiting on execution gate" if s3 else
-        f"Campaign ready · EIL checking microstructure" if s2 else
-        f"Signal triggered · campaign building" if s1 else
-        "Signal not yet triggered"
-    )
-
-    return {
-        "current_stage":   current,
-        "enter_now_stages": enter_now,
-        "alert_stages":    alert,
-        "ladder_summary":  summary,
-        "stages_passed":   current,
-    }
-
 # ─── MAIN LOAD ──────────────────────────────────────────────────────────────
 def _load_run(run_id, force_reload=False):
     run_dir = RUNS_DIR / run_id
@@ -2090,13 +2047,6 @@ def _load_run(run_id, force_reload=False):
         sig["sb_c_runway"]          = conv["c_runway"]
         sig["sb_conv_score"]        = conv["conv_score"]
 
-        # STAGE LADDER (execution readiness)
-        ladder = _compute_stage_ladder(sig)
-        sig["sb_current_stage"]    = ladder["current_stage"]
-        sig["sb_enter_now_stages"] = ladder["enter_now_stages"]
-        sig["sb_alert_stages"]     = ladder["alert_stages"]
-        sig["sb_ladder_summary"]   = ladder["ladder_summary"]
-        sig["sb_stages_passed"]    = ladder["stages_passed"]
         sig["sb_time_stop_date"]   = sig.get("opt__contract_expiry","")
         sig["sb_checkpoint_rule"]  = sig.get("wbs__wbs_wall_stall_rule","")
 

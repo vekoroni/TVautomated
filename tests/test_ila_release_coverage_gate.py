@@ -14,12 +14,19 @@ does NOT attempt the full canonical presentation-DTO redesign (section 9.1 items
 is separate, larger design work.
 
 Deliberately excluded from this gate: readiness_stage / readiness_label / sb_current_stage.
-While building this gate, found that intelligence-lab/intelligence_lab.py live-recomputes
+While building this gate, found that intelligence-lab/intelligence_lab.py live-recomputed
 sb_current_stage at serve time (_compute_stage_ladder) from trigger/campaign/EIL/execution
 verdicts, independently of the governed readiness_stage field (which opportunity_book_row
-currently hardcodes blank regardless of input) - a possible dual-ownership defect (design
-rule R2, "one owner per fact") that needs its own root-cause investigation before any gate
-asserts what "correct" coverage looks like for it. Also excluded: the ILA-RC-06 Interpreter
+hardcodes blank; _recompute_governed_lab_fields fills it in for real immediately afterward
+in the same write path). Root-cause investigation (ILA-RC-09, 21 Sep 2026) found the two
+never actually conflicted for a trader: _load_run always replaced result["signals"] with
+the governed book's rows (or emptied it, fail-closed) right after the live recompute ran,
+so sb_current_stage from _compute_stage_ladder never survived to any served response - dead
+code, not a live dual-ownership defect. It has been removed (see
+tests/test_ila_stage_ladder_dual_owner_characterization.py); readiness_stage /
+readiness_label / sb_current_stage remain excluded from this coverage gate only because
+this session did not re-scope the gate to cover them, not because ownership is still
+unresolved. Also excluded: the ILA-RC-06 Interpreter
 overlay fields (interpreter_bundle_status, interpreter_assessment_status, etc.), which are
 applied at serve time via a different mechanism (contracts/lab_evidence_overlay.py) and are
 covered by their own gate below.
