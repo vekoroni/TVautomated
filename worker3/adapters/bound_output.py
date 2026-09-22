@@ -28,16 +28,22 @@ def output_schema(contract, catalog, *, detailed=False):
     text = dict(prose)
     if slots:
         text["pattern"] = r"^([^\d{}]|\{\{slot:(" + alternatives + r")\}\})*$"
+    # Anthropic's constrained-output grammar accepts minItems only at 0 or 1
+    # and does not support maxItems. The catalog-sized slot regex can also
+    # exceed its pattern subset. Detailed requests use a portable grammar;
+    # local assessment/semantic validation retains the stricter rules.
+    provider_text = {"type": "string"} if detailed else text
+    provider_summary = {"type": "string"} if detailed else prose
     reference = {"type": "string", "enum": available} if available else {"type": "string", "pattern": "^$"}
     refs = {"type": "array", "items": reference}
     claim = _object({"claim_id": {"type": "string"},
         "claim_type": {"type": "string", "enum": ["OBSERVATION", "INTERPRETATION", "HYPOTHESIS"]},
-        "text": text, "supporting_evidence_ids": {**refs, "minItems": 1}, "contradicting_evidence_ids": refs})
+        "text": provider_text, "supporting_evidence_ids": {**refs, "minItems": 1}, "contradicting_evidence_ids": refs})
     section = _object({"section": {"type": "string", "enum": [s["section"] for s in contract["sections"]]},
-        "summary": prose, "claim_ids": {"type": "array", "minItems": 2 if detailed else 1, "items": {"type": "string"}}})
+        "summary": provider_summary, "claim_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}}})
     fact = _object({"evidence_id": {"type": "string", "enum": numeric} if numeric else {"type": "string", "pattern": "^$"},
         "value": {"type": "number"}, "unit": {"type": "string"}})
     properties = {key: _fixed(value) for key, value in contract.items() if key not in ("claims", "sections", "numeric_facts")}
-    properties.update(claims={"type": "array", "items": claim, **({"minItems": 16, "maxItems": 20} if detailed else {})}, sections={"type": "array", "items": section},
+    properties.update(claims={"type": "array", "items": claim, **({"minItems": 1} if detailed else {})}, sections={"type": "array", "items": section},
                       numeric_facts={"type": "array", "items": fact})
     return _object(properties)

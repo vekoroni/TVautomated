@@ -324,6 +324,10 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <select id="eod-filter-select" class="search-inp" style="width:190px" onchange="setF('eod',this.value,this)">
       <option value="ALL">All EOD</option>
     </select>
+    <span class="fb-lbl">Evening Thesis</span>
+    <select id="evening-thesis-filter-select" class="search-inp" style="width:235px" onchange="setF('eveningThesis',this.value,this)" title="Evidence-reconciled Evening homework; Morning still validates changes before human execution">
+      <option value="ALL">All Evening theses</option>
+    </select>
     <span class="fb-lbl">Morning</span>
     <select id="morning-filter-select" class="search-inp" style="width:170px" onchange="setF('morning',this.value,this)">
       <option value="ALL">All morning</option>
@@ -334,6 +338,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     </select>
     <div class="f-sep"></div>
     <span class="fb-lbl">Quick</span>
+    <button class="fb" id="btn-pretrade-focus" onclick="toggleQuick('pretradeFocus',this)" title="Show EOD primary pre-open review names. Advisory only: Morning thesis and entry quote are not yet validated.">Pre-open Focus</button>
+    <button class="fb" id="btn-pretrade-repair" onclick="toggleQuick('pretradeRepair',this)" title="Show monetisable EOD names whose selected contract still requires repair; the ticker thesis remains available.">Contract Repair Watch</button>
     <button class="fb" id="btn-monetisable" onclick="toggleQuick('monetisable',this)" title="Show only contracts classified as monetisable">Monetisable</button>
     <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only positive EV signals. Legacy v2 EV / EV3 advisory — not a validated expected value">EV* &gt; 0</button>
     <button class="fb active" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Toggle between the complete governed opportunity population and the actionable subset">All Opportunities</button>
@@ -344,9 +350,12 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="f-sep"></div>
     <button class="fb" onclick="exportCSV()" title="Export current filtered view to CSV" style="border-color:rgba(0,229,160,.4);color:var(--green)">⬇ CSV</button>
     <button class="fb" id="worker3-launch" onclick="previewWorker3()">Worker 3: preview selected (0/5)</button>
+    <button class="fb" id="interpreter-launch" onclick="previewInterpreterDesk()" title="Create advisory Interpreter reports for up to five human-selected tickers; no screenshots or trading authority">Interpreter reports (0/5)</button>
     <span id="export-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)"></span>
   </div>
   <div id="worker3-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
+  <div id="interpreter-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
+  <div id="interpreter-panel" style="display:none;max-height:480px;overflow:auto;padding:12px 16px;border:1px solid var(--border);margin:0 10px 10px;background:var(--bg2)"></div>
   <div class="sig-list-zone">
     <div class="sig-list-head">
       <div class="slh priority-col sorted" onclick="sortBy(0)">⬆ Rank</div>
@@ -586,6 +595,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 </div>
 
 <script src="/static/worker3-controls.js"></script>
+<script src="/static/interpreter-desk-controls.js"></script>
 <script>
 // ═══ STATE ═══════════════════════════════════════════════════════════════
 const API = 'http://localhost:5002/api';
@@ -595,8 +605,8 @@ let SIGNALS  = [];     // actionable subset used by specialist panes
 let ALL_SIGS = [];     // all signals including SD
 let DISCOVERY = [];
 
-const filters = {verdict:'ALL', dir:'ALL', camp:'ALL', exec:'ALL', eod:'ALL', morning:'ALL', optRoute:'ALL'};
-const quickFilters = {monetisable: false, ev: false};
+const filters = {verdict:'ALL', dir:'ALL', camp:'ALL', exec:'ALL', eod:'ALL', eveningThesis:'ALL', morning:'ALL', optRoute:'ALL'};
+const quickFilters = {pretradeFocus: false, pretradeRepair: false, monetisable: false, ev: false};
 let searchTerm = '', sortCol = 0, sortDir = 1, selectedTicker = null;  // default: priority rank ascending
 let activeCardId = null;
 let campaignViewMode = false;  // when true, table shows all CORE_CAMPAIGN signals
@@ -703,7 +713,10 @@ async function loadRun(runId) {
   const data = await fetch(`${API}/run/${runId}`).then(r => r.json());
   if (data.error) throw new Error(data.error);
   data.signals = (data.signals || []).map(populateGovernedDisplayFields);
-  if (!RUN_DATA || RUN_DATA.run_id !== data.run_id) WORKER3_SELECTED.clear();
+  if (!RUN_DATA || RUN_DATA.run_id !== data.run_id) {
+    WORKER3_SELECTED.clear();
+    clearInterpreterSelection();
+  }
   RUN_DATA = data;
   updateWorker3Selection();
   ALL_SIGS = data.signals;
@@ -860,7 +873,7 @@ function renderPriorityPanel() {
       </div>
       <div class="pp-badges">
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${s.sb_conv_score||0}/8</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}" title="${LEGACY_EV_TITLE}">${formatEv(ev)} ${evLabel(s)}</span>
         ${hint?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${hintC}" title="${LEGACY_EV_TITLE}">LEGACY ${hint}</span>`:''}
         ${qs>0?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)">Q:${qs.toFixed(0)}</span>`:''}
@@ -1138,7 +1151,13 @@ function getMonetisabilityProfitPct(s) {
   return Number.isFinite(value) ? value : Number.NaN;
 }
 
+function targetScenarioNeedsReview(s) {
+  return String(s.evening_evidence_flags||'').includes('TARGET_BEYOND_EXPECTED_MOVE_REVIEW_BAND')
+    || String(s.evening_thesis_bucket||'') === 'EOD_TARGET_FEASIBILITY_REVIEW';
+}
+
 function monetisabilityLabel(s) {
+  if (targetScenarioNeedsReview(s)) return 'TARGET REVIEW';
   const state = getMonetisabilityState(s);
   return {
     MONETISABLE: 'YES', LIMITED: 'LIMITED', NOT_MONETISABLE: 'NO',
@@ -1147,6 +1166,7 @@ function monetisabilityLabel(s) {
 }
 
 function monetisabilityClass(s) {
+  if (targetScenarioNeedsReview(s)) return 'a';
   const state = getMonetisabilityState(s);
   return state === 'MONETISABLE' ? 'g' : state === 'LIMITED' ? 'a' : 'r';
 }
@@ -1608,6 +1628,10 @@ function getEodCandidateStatus(s) {
   ]));
 }
 
+function getEveningThesisBucket(s) {
+  return cleanCategory(s.evening_thesis_bucket);
+}
+
 function getMorningExecutionPermission(s) {
   return cleanCategory(firstSignalValue(s, [
     'display_morning_execution_permission',
@@ -1639,7 +1663,7 @@ function getMorningLabAlignment(s) {
 
 // States added 18 Sep 2026: named for the reader, never re-derived here.
 const STATE_LABELS = {
-  EOD_QUOTE_PENDING_MORNING_REQUOTE: 'EOD QUOTE · AWAITING MORNING RE-QUOTE',
+  EOD_QUOTE_PENDING_MORNING_REQUOTE: 'EOD QUOTE · MORNING THESIS CHECK PENDING',
   RUNWAY_SHORT_REVIEW: 'RUNWAY SHORT · MANUAL REVIEW',
   MANUAL_REVIEW: 'MANUAL REVIEW',
   BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW: 'SPREAD ABOVE LIMIT · MANUAL REVIEW',
@@ -2030,6 +2054,7 @@ function populateCategoryFilter(selectId, filterKey, allLabel, getter, formatter
 function populateDisplayFilters() {
   populateCategoryFilter('exec-filter-select', 'exec', 'All action', getExecutionCategory, shortExecutionCategory);
   populateCategoryFilter('eod-filter-select', 'eod', 'All EOD', getEodCandidateStatus, shortExecutionCategory);
+  populateCategoryFilter('evening-thesis-filter-select', 'eveningThesis', 'All Evening theses', getEveningThesisBucket, shortExecutionCategory);
   populateCategoryFilter('morning-filter-select', 'morning', 'All morning', getMorningExecutionPermission, shortExecutionCategory);
   populateCategoryFilter('opt-route-filter-select', 'optRoute', 'All options routes', getOptionsResearchRoute, shortExecutionCategory);
 }
@@ -2047,6 +2072,7 @@ function filteredData() {
     ].map(cleanCategory).filter(Boolean);
     const execCat = getExecutionCategory(s);
     const eodStatus = getEodCandidateStatus(s);
+    const eveningThesis = getEveningThesisBucket(s);
     const morningPerm = getMorningExecutionPermission(s);
     const optRoute = getOptionsResearchRoute(s);
     const dir = (s.direction || '').toUpperCase();
@@ -2055,12 +2081,15 @@ function filteredData() {
     if (!campaignViewMode && filters.verdict !== 'ALL' && !verdicts.includes(filters.verdict)) return false;
     if (!campaignViewMode && filters.exec !== 'ALL' && execCat !== filters.exec) return false;
     if (!campaignViewMode && filters.eod !== 'ALL' && eodStatus !== filters.eod) return false;
+    if (!campaignViewMode && filters.eveningThesis !== 'ALL' && eveningThesis !== filters.eveningThesis) return false;
     if (!campaignViewMode && filters.morning !== 'ALL' && morningPerm !== filters.morning) return false;
     if (!campaignViewMode && filters.optRoute !== 'ALL' && optRoute !== filters.optRoute) return false;
     if (filters.dir !== 'ALL' && !dir.includes(filters.dir)) return false;
     if (!campaignViewMode && filters.camp !== 'ALL' && camp !== filters.camp) return false;
     if (searchTerm && !String(s.ticker || '').toUpperCase().includes(searchTerm)) return false;
     // Quick filters
+    if (quickFilters.pretradeFocus && String(s.pretrade_focus_lane||'').toUpperCase() !== 'FOCUS_PRIMARY') return false;
+    if (quickFilters.pretradeRepair && String(s.pretrade_focus_lane||'').toUpperCase() !== 'FOCUS_CONTRACT_REPAIR') return false;
     if (quickFilters.monetisable && !['MONETISABLE','LIMITED'].includes(getMonetisabilityState(s))) return false;
     if (quickFilters.ev && (!Number.isFinite(getEv(s)) || getEv(s) <= 0)) return false;
     return true;
@@ -2186,10 +2215,11 @@ function buildTable() {
     const execLbl = shortExecutionCategory(execCat);
     const execClass = executionCategoryClass(execCat);
     const eodStatus = getEodCandidateStatus(s);
+    const eveningThesis = getEveningThesisBucket(s);
     const morningPerm = getMorningExecutionPermission(s);
     const optRoute = getOptionsResearchRoute(s);
     const subRoute = [
-      eodStatus ? `EOD ${shortExecutionCategory(eodStatus)}` : '',
+      eveningThesis ? `EOD thesis ${shortExecutionCategory(eveningThesis)}` : (eodStatus ? `EOD ${shortExecutionCategory(eodStatus)}` : ''),
       morningPerm ? `MV ${shortExecutionCategory(morningPerm)}` : '',
       optRoute ? `OPT ${shortExecutionCategory(optRoute)}` : ''
     ].filter(Boolean).join(' · ');
@@ -2197,12 +2227,14 @@ function buildTable() {
     const isDW = String(s.ev_status||'').toUpperCase()==='DATA_WEAK';
     // Win rate source
     const isBridge = s.win_rate_source==='DISCOVERY_BRIDGE';
+    const pretradeFocus = String(s.pretrade_focus_lane||'').toUpperCase()==='FOCUS_PRIMARY';
+    const pretradeRepair = String(s.pretrade_focus_lane||'').toUpperCase()==='FOCUS_CONTRACT_REPAIR';
     return `<div class="sig-row ${rowClass} ${selClass} ${auditOnly?'audit-row':''}" onclick="openModal('${s.ticker}')">
       <div class="sc" style="display:flex;flex-direction:column;align-items:center;gap:2px">
         <span class="prank ${prCls}">${prLbl}</span>
         <div style="width:28px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div style="height:100%;width:${ps}%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:1px"></div></div>
       </div>
-      <div class="sc"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Worker 3" data-worker3-ticker="${attrSafe(s.ticker)}" ${WORKER3_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectWorker3(this)"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}</div>
+      <div class="sc"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Interpreter report" title="Interpreter report" data-interpreter-ticker="${attrSafe(s.ticker)}" ${INTERPRETER_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectInterpreterTicker(this)"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Worker 3" data-worker3-ticker="${attrSafe(s.ticker)}" ${WORKER3_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectWorker3(this)"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}${pretradeFocus?`<span class="pill p-armed" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Advisory pre-open review; not trade permission')}">FOCUS</span>`:''}${pretradeRepair?`<span class="pill p-watch" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Contract repair review; thesis retained')}">REPAIR</span>`:''}</div>
       <div class="sc"><span class="pill ${vClass}">${labV}</span></div>
       <div class="sc"><span class="pill ${campClass}">${camp.replace('_CAMPAIGN','')}</span></div>
       <div class="sc"><div class="conv-dots">${dots}</div></div>
@@ -2217,7 +2249,7 @@ function buildTable() {
       <div class="sc" title="${attrSafe(horizonMeta)}" style="font-size:10px;color:var(--amber)">${horizon}</div>
       <div class="sc" title="${attrSafe(getTriggerPriceRaw(s) !== '' ? [getTriggerPriceRaw(s), s.trigger_price_source || 'Supplied trigger price'].join(' · ') : 'No numeric trigger price supplied; trigger evidence or strength does not establish a price level.')}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
       <div class="sc" title="${attrSafe([trgEvidence, firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])].filter(Boolean).join(' · '))}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
-      <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.monetisability_reason||'')}">${monetisabilityLabel(s)}${Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
+      <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
       <div class="sc ${evC}">${formatEv(ev)}</div>
       <div class="sc" ${ivpC}>${ivpLbl}</div>
       <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">⚡</span>':''}` : '<span style="color:var(--text3)">—</span>'}</div>
@@ -2282,6 +2314,13 @@ function doSearch(v) { searchTerm = v.toUpperCase(); buildTable(); }
 
 function toggleQuick(key, btn) {
   quickFilters[key] = !quickFilters[key];
+  if (quickFilters[key] && key === 'pretradeFocus') {
+    quickFilters.pretradeRepair = false;
+    document.getElementById('btn-pretrade-repair').classList.remove('active');
+  } else if (quickFilters[key] && key === 'pretradeRepair') {
+    quickFilters.pretradeFocus = false;
+    document.getElementById('btn-pretrade-focus').classList.remove('active');
+  }
   btn.classList.toggle('active', quickFilters[key]);
   buildTable();
 }
@@ -2492,6 +2531,22 @@ function openModal(ticker) {
   // TAB 1: OVERVIEW
   document.getElementById('mp-overview').innerHTML = `
     <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(getMorningLifecycleBanner(s))}</div>
+    <div class="m-sec-hdr" style="margin-top:18px">Evening Thesis Decision — Morning Check Pending</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Evidence Bucket</div><div class="mf-v a">${htmlSafe(s.evening_thesis_bucket||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Target Source</div><div class="mf-v a">${htmlSafe(s.target_price_source||'UNVERIFIED')}</div></div>
+      <div class="m-field"><div class="mf-k">Next Condition</div><div class="mf-v sm">${htmlSafe(s.evening_next_condition||'Complete the Evening evidence check')}</div></div>
+    </div>
+    <div class="m-reason">${htmlSafe(s.evening_thesis_reason||'No reconciled Evening thesis decision published.')} · ${htmlSafe(s.evening_thesis_authority||'ADVISORY ONLY')}</div>
+    <div class="m-reason"><strong>Other evidence:</strong> ${htmlSafe(s.evening_evidence_flags||'NOT EVALUATED')}</div>
+    <div class="m-sec-hdr" style="margin-top:18px">Pre-open Review — Advisory Only</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Focus Lane</div><div class="mf-v a">${htmlSafe(s.pretrade_focus_lane||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">EOD Thesis</div><div class="mf-v c">${htmlSafe(s.pretrade_thesis_state||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Selected Contract Evidence</div><div class="mf-v a">${htmlSafe(s.pretrade_contract_evidence_state||'NOT EVALUATED')}</div></div>
+      <div class="m-field"><div class="mf-k">Entry Quote</div><div class="mf-v a">${htmlSafe(s.pretrade_entry_quote_state||'NOT EVALUATED')}</div></div>
+    </div>
+    <div class="m-reason">${htmlSafe(s.pretrade_focus_reason||'Pre-open focus does not validate the Morning thesis, current contract price, or execution.')}</div>
     <div class="m-sec-hdr" style="margin-top:18px">Frozen Thesis — Completed Evidence</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Completed Session</div><div class="mf-v c">${htmlSafe(s.evidence_session_date||s.completed_session||s.thesis_session_date||'—')}</div></div>
@@ -2601,6 +2656,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Monetisability Check</div><div class="mf-v ${cleanCategory(s.monetisability_status)==='COMPLETE'?'g':'a'}">${s.monetisability_status||'NOT RUN'}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Contract Alignment</div><div class="mf-v ${hasComparableEconomics(s)?'g':'a'}">${hasComparableEconomics(s)?'ALIGNED':'ADVISORY UNAVAILABLE'}</div></div>
       <div class="m-field"><div class="mf-k">Quote Time (UTC)</div><div class="mf-v sm">${s.selected_quote_timestamp_utc||s.contract_quote_timestamp||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v sm">${htmlSafe(s.quote_freshness||s.lab_v4_quote_freshness||'NOT EVALUATED')}<br><span class="dim">Execution context only; does not invalidate the ticker thesis.</span></div></div>
       <div class="m-field"><div class="mf-k">Position Size</div><div class="mf-v a">${sizeLabel}</div></div>
     </div>
     <div class="m-sec-hdr">Liquidity Lifecycle</div>

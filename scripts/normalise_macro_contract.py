@@ -50,6 +50,8 @@ try:
 except Exception:
     from macro_quant_packet import build_macro_quant_packet
 
+from canonical_data.macro_publication import publish_if_authoritative
+
 try:
     from contracts.macro_regime_safety import normalise_macro_regime_fields
 except Exception:
@@ -274,9 +276,17 @@ def normalise(macro_path: Path) -> bool:
 
     # ── Write back ────────────────────────────────────────────────────────────
     try:
-        with open(macro_path, "w", encoding="utf-8") as f:
-            json.dump(macro, f, indent=2)
+        temporary = macro_path.with_name(macro_path.name + ".tmp")
+        with open(temporary, "w", encoding="utf-8") as f:
+            json.dump(macro, f, indent=2, allow_nan=False)
+        temporary.replace(macro_path)
+        projection_receipt = publish_if_authoritative(macro_path)
         log.info(f"\nWritten: {macro_path}")
+        if projection_receipt is not None:
+            log.info(
+                "Synchronized macro projections: %s",
+                projection_receipt["sha256"][:16],
+            )
         log.info(f"normalised_at_utc: {macro['normalised_at_utc']}")
     except Exception as e:
         log.error(f"Failed to write macro JSON: {e}")

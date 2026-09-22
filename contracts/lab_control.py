@@ -44,6 +44,7 @@ from contracts.long_option_policy import (
 )
 from domain.execution_authority import execution_authority_contract_violations
 from domain.quote_units import resolve_spread
+from domain.pretrade_focus import project_evening_thesis
 from canonical_data.dynamic_options_projection import DynamicOptionsProjectionResolver
 
 
@@ -98,6 +99,22 @@ FINAL_BOOK_FIELDS = [
     "execution_authorized",
     "execution_can_grant_capital",
     "eod_candidate_status",
+    "pretrade_thesis_state",
+    "pretrade_contract_evidence_state",
+    "pretrade_entry_quote_state",
+    "pretrade_focus_lane",
+    "pretrade_focus_priority",
+    "pretrade_focus_candidate",
+    "pretrade_focus_reason",
+    "pretrade_focus_authority",
+    "pretrade_focus_policy_version",
+    "evening_thesis_bucket",
+    "evening_thesis_candidate",
+    "evening_thesis_reason",
+    "evening_evidence_flags",
+    "evening_next_condition",
+    "evening_thesis_authority",
+    "evening_thesis_policy_version",
     "execution_category",
     "action_category",
     "campaign_verdict",
@@ -376,6 +393,9 @@ FINAL_BOOK_FIELDS = [
     "option_chain_provider",
     "option_chain_resolution",
     "selected_quote_dataset_id",
+    "monetisability_quote_snapshot_id",
+    "evidence_session_date",
+    "liquidity_thesis_state",
     "liquidity_persistence_status",
     "morning_liquidity_persistence_status",
     "alternative_contract_attempts",
@@ -542,6 +562,7 @@ FINAL_BOOK_FIELDS = [
     "invalidation_state",
     "invalidation_source",
     "target_price",
+    "target_price_source",
     "target_in_play",
     "structural_target",
     # AVS-FIX-001 W1.5: MVP §4 "DTE >= 2 x hold" evaluable from the book.
@@ -2932,6 +2953,22 @@ def opportunity_book_row(
         "execution_authorized": first(sig, "execution_authorized"),
         "execution_can_grant_capital": first(sig, "execution_can_grant_capital"),
         "eod_candidate_status": first(sig, "eod_candidate_status", "lab_execution_status", "candidate_status"),
+        "pretrade_thesis_state": first(sig, "pretrade_thesis_state"),
+        "pretrade_contract_evidence_state": first(sig, "pretrade_contract_evidence_state"),
+        "pretrade_entry_quote_state": first(sig, "pretrade_entry_quote_state"),
+        "pretrade_focus_lane": first(sig, "pretrade_focus_lane"),
+        "pretrade_focus_priority": first(sig, "pretrade_focus_priority"),
+        "pretrade_focus_candidate": first(sig, "pretrade_focus_candidate"),
+        "pretrade_focus_reason": first(sig, "pretrade_focus_reason"),
+        "pretrade_focus_authority": first(sig, "pretrade_focus_authority"),
+        "pretrade_focus_policy_version": first(sig, "pretrade_focus_policy_version"),
+        "evening_thesis_bucket": first(sig, "evening_thesis_bucket"),
+        "evening_thesis_candidate": first(sig, "evening_thesis_candidate"),
+        "evening_thesis_reason": first(sig, "evening_thesis_reason"),
+        "evening_evidence_flags": first(sig, "evening_evidence_flags"),
+        "evening_next_condition": first(sig, "evening_next_condition"),
+        "evening_thesis_authority": first(sig, "evening_thesis_authority"),
+        "evening_thesis_policy_version": first(sig, "evening_thesis_policy_version"),
         "execution_category": first(sig, "execution_category", "morning_execution_route", "morning_execution_lane", "morning_execution_permission", "execution_permission", "lab_verdict"),
         "action_category": first(sig, "lab_execution_status", "eod_candidate_status", "execution_category", "lab_verdict"),
         "campaign_verdict": first(sig, "campaign_verdict", "sb_campaign", "convexity_campaign"),
@@ -3176,6 +3213,9 @@ def opportunity_book_row(
         "execution_viability_spread_pct": first(sig, "execution_viability_spread_pct"),
         "execution_viability_spread_denominator": first(sig, "execution_viability_spread_denominator"),
         "monetisability_status": first(sig, "monetisability_status"),
+        "monetisability_quote_snapshot_id": first(sig, "monetisability_quote_snapshot_id"),
+        "evidence_session_date": first(sig, "evidence_session_date"),
+        "liquidity_thesis_state": first(sig, "liquidity_thesis_state"),
         "monetisability_state": first(sig, "monetisability_state"),
         "monetisability_reason": first(sig, "monetisability_reason"),
         # AVS-FIX-001 W1.5: the governed trading-session DTE, with its absence
@@ -3337,6 +3377,7 @@ def opportunity_book_row(
         # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
         # so a fabricated 0.0 is treated as absent rather than as a price.
         "target_price": first_price(sig, "target_price", "wbs__wall_price", "structural_target", "opt__structural_target", "target_spot"),
+        "target_price_source": first(sig, "target_price_source", "structural_target_state", "opt__structural_target_state"),
         "target_in_play": first(sig, "target_in_play", "opt__target_in_play"),
         "structural_target": first_price(sig, "structural_target", "opt__structural_target", "wbs__wall_price", "target_price", "target_spot"),
         "target_state": first(sig, "target_state"),
@@ -3565,6 +3606,29 @@ def opportunity_book_row(
     provenance["position_size_display"] = (
         "governed_materializer:capital_agnostic_boundary"
     )
+    # Evening preparation is a separate, frozen decision.  It explains the
+    # evidence without changing the Execution Gate or granting entry authority.
+    evening_projection = project_evening_thesis(row)
+    published_evening_bucket = _s(row.get("evening_thesis_bucket"))
+    if (
+        _u(row.get("pipeline_mode")) in {"EOD", "LIVE_EOD", "INTRADAY_EOD"}
+        and _u(row.get("morning_data_state")) != "AVAILABLE"
+        and published_evening_bucket
+        and published_evening_bucket != evening_projection["evening_thesis_bucket"]
+    ):
+        evening_projection.update({
+            "evening_thesis_bucket": "EOD_EVIDENCE_REVIEW",
+            "evening_thesis_candidate": False,
+            "evening_thesis_reason": (
+                "Evening candidate and Lab evidence classifications disagree: "
+                f"{published_evening_bucket} versus "
+                f"{evening_projection['evening_thesis_bucket']}"
+            ),
+            "evening_next_condition": "Reconcile source field lineage before selecting the trade",
+        })
+    row.update(evening_projection)
+    for field in evening_projection:
+        provenance[field] = "governed_materializer:evening_thesis_decision"
     row["field_provenance_json"] = _json_safe(provenance)
     return {key: csv_safe_row(row).get(key, "") for key in FINAL_BOOK_FIELDS}
 
@@ -3620,6 +3684,26 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
     return {
         "priority_score": ["priority_score", "research_priority_score", "options_research_score", "options_research_confidence"],
         "eod_candidate_status": ["eod_candidate_status", "lab_execution_status", "candidate_status"],
+        "pretrade_thesis_state": ["pretrade_thesis_state"],
+        "pretrade_contract_evidence_state": ["pretrade_contract_evidence_state"],
+        "pretrade_entry_quote_state": ["pretrade_entry_quote_state"],
+        "pretrade_focus_lane": ["pretrade_focus_lane"],
+        "pretrade_focus_priority": ["pretrade_focus_priority"],
+        "pretrade_focus_candidate": ["pretrade_focus_candidate"],
+        "pretrade_focus_reason": ["pretrade_focus_reason"],
+        "pretrade_focus_authority": ["pretrade_focus_authority"],
+        "pretrade_focus_policy_version": ["pretrade_focus_policy_version"],
+        "evening_thesis_bucket": ["evening_thesis_bucket"],
+        "evening_thesis_candidate": ["evening_thesis_candidate"],
+        "evening_thesis_reason": ["evening_thesis_reason"],
+        "evening_evidence_flags": ["evening_evidence_flags"],
+        "evening_next_condition": ["evening_next_condition"],
+        "evening_thesis_authority": ["evening_thesis_authority"],
+        "evening_thesis_policy_version": ["evening_thesis_policy_version"],
+        "target_price_source": ["target_price_source", "structural_target_state", "opt__structural_target_state"],
+        "monetisability_quote_snapshot_id": ["monetisability_quote_snapshot_id"],
+        "evidence_session_date": ["evidence_session_date"],
+        "liquidity_thesis_state": ["liquidity_thesis_state"],
         "campaign_verdict": ["campaign_verdict", "sb_campaign", "convexity_campaign"],
         "options_research_route": ["options_research_route", "final_route", "options_route_verdict"],
         "options_research_permission": ["options_research_permission", "execution_permission"],
@@ -3770,6 +3854,10 @@ def _lab_field_source_priority(field: str) -> List[str]:
     This is intentionally field-level. A globally "richest" CSV is not
     allowed to own unrelated data merely because it carries copied columns.
     """
+    if field.startswith("evening_"):
+        return ["morning_validated_trades", "morning_candidates"]
+    if field.startswith("pretrade_") or field in {"monetisability_quote_snapshot_id", "evidence_session_date", "liquidity_thesis_state"}:
+        return ["morning_candidates"]
     if field.startswith("garch_"):
         return ["garch_forecasts"]
     if field.startswith("wbs"):

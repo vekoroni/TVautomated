@@ -159,6 +159,17 @@ except (Worker3ContractError, OSError) as worker3_mount_error:
     WORKER3_ANALYST_REPORTS = None
     print(f"  WARNING Worker 3 advisory reports unavailable: {worker3_mount_error}")
 
+# The Interpreter Desk is a separate advisory path. It reads a frozen EOD
+# snapshot, optionally reconciles the accepted Morning handoff, and never
+# replaces the Lab book or its evidence overlay. Missing GPT configuration
+# affects report generation only; it must not stop the Lab from loading.
+try:
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    install_interpreter_desk(app, RUNS_DIR)
+except Exception as interpreter_desk_mount_error:
+    print(f"  WARNING Interpreter Desk advisory routes unavailable: {interpreter_desk_mount_error}")
+
 _run_cache: dict = {}
 
 PHYSICS_FIELDS = [
@@ -386,8 +397,13 @@ def _latest_manifest():
     run_id = _latest_run_id()
     if not run_id:
         return {}
+    return _read_run_manifest(run_id)
+
+
+def _read_run_manifest(run_id, pipeline_mode=None):
+    """Resolve a run manifest for display without mutating frozen run evidence."""
     manifest = load_final_run_manifest(run_id, RUNS_DIR)
-    return manifest or write_final_run_manifest(run_id, RUNS_DIR)
+    return manifest or build_final_run_manifest(run_id, RUNS_DIR, pipeline_mode)
 
 def _safe_open_journal_positions():
     try:
@@ -2063,7 +2079,7 @@ def _load_run(run_id, force_reload=False):
 
     # Final Lab control layer: resolve tradeability after all enrichment is merged.
     # This is validation/normalisation only; it does not create signals.
-    run_manifest = write_final_run_manifest(run_id, RUNS_DIR, _infer_pipeline_mode(eil_rows, mv_rows))
+    run_manifest = _read_run_manifest(run_id, _infer_pipeline_mode(eil_rows, mv_rows))
     open_trades = _safe_open_journal_positions()
     for sig in result["signals"]:
         apply_lab_resolution(sig, run_manifest, open_trades)
@@ -2670,7 +2686,7 @@ def api_orchestrator_manifest_latest():
 
 @app.route("/api/orchestrator/manifest/<run_id>")
 def api_orchestrator_manifest(run_id):
-    manifest = load_final_run_manifest(run_id, RUNS_DIR) or write_final_run_manifest(run_id, RUNS_DIR)
+    manifest = _read_run_manifest(run_id)
     return jsonify({"ok": True, "manifest": manifest})
 
 @app.route("/api/opportunity_book/latest")
@@ -2747,7 +2763,7 @@ def api_enter_trade():
         if not sig:
             return jsonify({"ok":False,"error":f"{ticker} not in signals"}), 404
 
-        manifest = payload.get("final_run_manifest") or write_final_run_manifest(run_id, RUNS_DIR)
+        manifest = payload.get("final_run_manifest") or _read_run_manifest(run_id)
         resolved = resolve_lab_tradeability(sig, manifest, _safe_open_journal_positions())
         sig.update({
             "lab_verdict": resolved["lab_verdict"],

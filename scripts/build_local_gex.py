@@ -25,6 +25,7 @@ from canonical_data.gamma_exposure_store import (  # noqa: E402
     PhantomOptionChainRepository,
     prepare_gex_greeks,
 )
+from canonical_data.session_clock import session_snapshot  # noqa: E402
 from contracts.macro_file_contract import (  # noqa: E402
     GEX_BY_STRIKE_FILENAME,
     GEX_ERRORS_FILENAME,
@@ -141,7 +142,11 @@ def main() -> int:
     parser.add_argument("--session", default="latest-completed")
     parser.add_argument("--tickers", default="SPY,QQQ")
     args = parser.parse_args()
-    session = None if args.session == "latest-completed" else date.fromisoformat(args.session)
+    session = (
+        session_snapshot(datetime.now(timezone.utc)).last_completed_session
+        if args.session == "latest-completed"
+        else date.fromisoformat(args.session)
+    )
     tickers = tuple(value.strip().upper() for value in args.tickers.split(",") if value.strip())
     try:
         manifest = build_local_gex(

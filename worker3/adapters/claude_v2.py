@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 
 from .claude import ClaudeAdapter, POLICY
 from .bound_output import output_schema
+from .evidence_projection import project_provider_evidence
 from ..domain import ContractError, Section, WorkerJob, canonical
 from ..report_detail import guidance
 from ..v2.assessment import AssessmentContext, PROMPT, SCHEMA, build_evidence, validate_assessment
@@ -87,7 +88,8 @@ class ClaudeV2Adapter(ClaudeAdapter):
             ],
         }
         instructions["detailed_analysis"] = guidance(evidence["catalog"])
-        packet = {"output_contract": output, "field_rules": instructions, "untrusted_bound_evidence": evidence,
+        packet = {"output_contract": output, "field_rules": instructions,
+                  "untrusted_bound_evidence": project_provider_evidence(evidence),
                   "prior_report": self.context.previous.payload if self.context.previous else None,
                   "prior_report_validation": "STRUCTURAL_ONLY" if self.context.previous else "NOT_APPLICABLE"}
         request = {"model": job.model, "max_tokens": self.max_output_tokens,
@@ -101,7 +103,7 @@ class ClaudeV2Adapter(ClaudeAdapter):
         request["output_config"] = {"format": {"type": "json_schema",
                                                "schema": output_schema(output, evidence["catalog"], detailed=True)}}
         if len(canonical(request).encode("utf-8")) > self.max_input_bytes:
-            raise ContractError("v2 complete evidence exceeds byte limit; not truncated")
+            raise ContractError("v2 provider evidence view exceeds byte limit; no further evidence omitted")
         return request
 
     def assess(self):

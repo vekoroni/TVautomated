@@ -63,6 +63,24 @@ class BoundOutputTests(unittest.TestCase):
         self.assertIsNone(re.fullmatch(pattern, '{{slot:unknown}}'))
         self.assertIsNotNone(re.fullmatch(pattern, 'No evidence available.'))
 
+    def test_detailed_schema_uses_provider_supported_constraints(self):
+        schema = output_schema(self.contract, self.catalog, detailed=True)
+        def inspect(value):
+            if isinstance(value, dict):
+                self.assertNotIn('maxItems', value)
+                self.assertNotIn('pattern', value)
+                if 'minItems' in value:
+                    self.assertIn(value['minItems'], (0, 1))
+                for child in value.values():
+                    inspect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    inspect(child)
+        inspect(schema)
+        self.assertEqual(schema['properties']['claims']['minItems'], 1)
+        self.assertEqual(schema['properties']['sections']['items']['properties']['claim_ids']['minItems'], 1)
+        self.assertIn('current:hash:price', schema['properties']['claims']['items']['properties']['supporting_evidence_ids']['items']['enum'])
+
     def test_preflight_includes_schema_and_binds_its_fingerprint(self):
         request = dict(model=MODEL, max_tokens=8192, system='test', messages=[],
                        output_config={'format': {'type': 'json_schema', 'schema': self.schema}})

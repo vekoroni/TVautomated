@@ -134,7 +134,8 @@ ma_cockpit/outputs/
 # Do not remove these lines without first stripping the embedded key.
 # ============================================================
 avshunter_ticker_probe.py
-rapid_rotation_flag.py
+# rapid_rotation_flag.py was remediated to environment-only credentials on
+# 2026-09-20 and is intentionally governable source again.
 position_lifecycle_tracker.py
 md_api_diagnostic.py
 news_terminal/news_terminal_engine.py
@@ -229,3 +230,6 @@ data/canonical/
 # and these files are small, hand-reviewable classification tables, not data.
 # ============================================================
 !audit/pipeline_map/AVS-IMP-FIX-001/*.csv
+
+# Operator-local Claude permissions are not part of the production release.
+/pipeline_interpreter/.claude/settings.local.json

@@ -29,7 +29,8 @@ WHAT IT DOES
    - Message 3: MACRO COMPLETE → strict JSON finalisation
 4. Validates the JSON against macro_contract_v1_0 required fields
 5. Writes macro_intelligence_latest.json to dropbox/macro/
-6. Copies to data/macro/ for immediate pipeline use
+6. Publishes byte-identical compatibility views to data/macro/ and the
+   Pipeline Interpreter input folder
 
 DEPLOY
 ------
@@ -43,7 +44,6 @@ import json
 import glob
 import csv
 import argparse
-import shutil
 import logging
 import re
 from pathlib import Path
@@ -58,10 +58,20 @@ from contracts.us_money_index_contract import (
 )
 from contracts.macro_file_contract import (
     GEX_BY_STRIKE_FILENAME,
+    GEX_MANIFEST_FILENAME,
     GEX_PROXY_FILENAME,
     market_data_directory_from_dropbox,
 )
+from canonical_data.macro_input_manifest import publish_macro_input_manifest
 from canonical_data.macro_packet_archive import archive_macro_packet
+from canonical_data.macro_publication import publish_macro_projections
+from domain.macro_input_governance import (
+    MACRO_AUTHORITY,
+    MacroInputContractError,
+    build_macro_input_manifest,
+    build_macro_prompt_context,
+    validate_manifest_lineage,
+)
 from scripts.macro_quant_packet import build_macro_quant_packet
 
 # ============================================================
@@ -150,7 +160,9 @@ PIPELINE_ALIASES = {
 
 FILE_SPECS = [
     ("report_json",        "report_*.json",                      True),
-    ("macro_csv",          "macro_*.csv",                        True),
+    # The exact capture-shaped glob cannot collide with
+    # macro_series_threshold_flags.csv.
+    ("macro_csv",          "macro_????????_??????.csv",          True),
     ("forward_bias_csv",   "forward_bias_*.csv",                 True),
     ("liquidity_csv",      "avshunter_liquidity_monitor.csv",    False),
     ("fung_hsieh_csv",     "avshunter_macro_filter_summary.csv", False),
@@ -164,6 +176,7 @@ FILE_SPECS = [
     # The proxy summary is the canonical feed and is always written.
     ("gex_proxy_csv",      GEX_PROXY_FILENAME,                    False),
     ("gex_by_strike_csv",  GEX_BY_STRIKE_FILENAME,                False),
+    ("gex_manifest_json",  GEX_MANIFEST_FILENAME,                 False),
     ("threshold_flags_csv","macro_series_threshold_flags.csv",   False),
     ("regime_json",        "avshunter_regime.json",              False),
     ("us_indices_csv",     "us_indices_cash_*.csv",              False),
@@ -176,6 +189,10 @@ FILE_SPECS = [
     ("energy_csv",         "energy_etf_*.csv",                   False),
     ("equity_csv",         "equity_etf_*.csv",                   False),
     ("agriculture_csv",    "agriculture_etf_*.csv",              False),
+    ("breadth_csv",        "breadth_rsp_spy.csv",                False),
+    ("collection_validation_csv", "collection_validation_*.csv", False),
+    ("vix_term_dxy_csv",   "vix_term_dxy_snapshot.csv",          False),
+    ("vol_complex_csv",    "vol_complex_*.csv",                  False),
 ]
 
 FILE_SPEC_KEYS = [key for key, _, _ in FILE_SPECS]
@@ -240,6 +257,11 @@ def check_date_consistency(payload: dict) -> None:
 
 def load_data_payload(market_dir: Path, update_keys=None, prior_macro: dict | None = None) -> dict:
     update_key_set = set(update_keys or [])
+    gex_keys = {"gex_proxy_csv", "gex_by_strike_csv", "gex_manifest_json"}
+    # GEX is one governed publication. A partial refresh of one component must
+    # always reload and revalidate all three components.
+    if update_key_set.intersection(gex_keys):
+        update_key_set.update(gex_keys)
     partial_mode = bool(update_key_set)
     prior_macro = prior_macro or {}
     payload = {
@@ -282,6 +304,38 @@ def load_data_payload(market_dir: Path, update_keys=None, prior_macro: dict | No
             payload["files_missing"].append(pattern)
 
     check_date_consistency(payload)
+    manifest_paths = dict(payload["files_found_by_key"])
+    if partial_mode:
+        prior_manifest = (
+            prior_macro.get("_builder_metadata", {}).get("input_manifest")
+            if isinstance(prior_macro, dict) else None
+        )
+        if prior_manifest:
+            lineage = validate_manifest_lineage(prior_manifest)
+            if not lineage["valid"]:
+                raise RuntimeError(
+                    "partial macro update rejected because prior input lineage changed: "
+                    + "|".join(lineage["errors"])
+                )
+            for entry in prior_manifest.get("entries", []):
+                manifest_paths.setdefault(str(entry.get("key") or ""), str(entry.get("path") or ""))
+    try:
+        payload["input_manifest"] = build_macro_input_manifest(
+            manifest_paths,
+            [item for item in payload["files_missing"] if ":using_prior_macro_json" not in item],
+            data=payload["data"],
+        )
+    except MacroInputContractError as error:
+        raise RuntimeError(f"macro input governance failed closed: {error}") from error
+    if payload["input_manifest"]["gex_validation"]["status"] != "VALIDATED":
+        # The failed publication is retained by hash in the manifest/evidence
+        # archive, but its rows must never reach the model or numeric override.
+        payload["data"].pop("gex_proxy_csv", None)
+        payload["data"].pop("gex_by_strike_csv", None)
+        log.warning(
+            "GEX unavailable: %s; publishing other macro domains without GEX numbers",
+            payload["input_manifest"]["gex_validation"]["status"],
+        )
     log.info("Payload: %d files loaded, %d optional missing",
              len(payload["files_found"]), len(payload["files_missing"]))
     return payload
@@ -314,6 +368,19 @@ def format_data_for_prompt(payload: dict) -> str:
         # Do not duplicate the verbatim source payload in the model context.
         advisory.pop("source_payload", None)
         parts.append(json.dumps(advisory, indent=2, default=str)[:18000])
+
+    # Governed inputs are represented by complete records and semantic
+    # summaries.  This replaces the legacy character slicing that could omit
+    # sectors/flags or cut a CSV row in half.
+    if payload.get("input_manifest"):
+        context = build_macro_prompt_context(payload)
+        parts.append("=== GOVERNED MACRO INPUT CONTEXT ===")
+        parts.append(
+            "AUTHORITY: ADVISORY_ONLY. Missing domains remain explicit and do "
+            "not become neutral observations. All records below are complete."
+        )
+        parts.append(json.dumps(context, indent=2, ensure_ascii=False, default=str))
+        return "\n".join(parts)
 
     if "report_json" in data:
         report = data["report_json"]
@@ -903,6 +970,21 @@ def _select_gex_primary(rows: list[dict]) -> dict:
     )
 
 
+def _select_gex_by_ticker(rows: list[dict]) -> dict[str, dict]:
+    selected: dict[str, dict] = {}
+    for ticker in sorted({str(row.get("Ticker") or "").strip().upper() for row in rows} - {""}):
+        ticker_rows = [row for row in rows if str(row.get("Ticker") or "").strip().upper() == ticker]
+        # Reuse the governed mode/status/recency policy by temporarily mapping
+        # the requested ticker to the primary SPY identity.
+        as_spy = [{**row, "Ticker": "SPY"} for row in ticker_rows]
+        chosen = _select_gex_primary(as_spy)
+        if chosen:
+            chosen = dict(chosen)
+            chosen["Ticker"] = ticker
+            selected[ticker] = chosen
+    return selected
+
+
 def _parse_date(value):
     text = str(value or "").strip()
     if not text:
@@ -1132,6 +1214,7 @@ def extract_market_data_overrides(payload: dict) -> dict:
     usd_jpy = _extract_usd_jpy(payload)
 
     gex_primary = _select_gex_primary(gex_rows)
+    gex_by_ticker = _select_gex_by_ticker(gex_rows)
     sector_tickers = {str(r.get("ticker", "")).upper(): r for r in sectors_rows}
 
     # v4 publishes audited direct/proxy columns; retain legacy aliases for
@@ -1199,6 +1282,7 @@ def extract_market_data_overrides(payload: dict) -> dict:
         "gex_data_status": _first_present(gex_primary, "Data_Status", "Status") or "",
         "gex_run_id": gex_primary.get("Run_Id", ""),
         "gex_as_of": _first_present(gex_primary, "As_Of", "Snapshot_UTC", "Date") or "",
+        "gex_by_ticker": gex_by_ticker,
         "usslind_status": macro_master.get("USSLIND_Status", ""),
         "usslind_quarantined": usslind_quarantined,
         "usslind_source_date": usslind_freshness["source_date"],
@@ -1381,6 +1465,146 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
         "usd_jpy": overrides["usd_jpy_evidence_status"],
     }
     return macro_json
+
+
+def apply_macro_input_governance(macro_json: dict, payload: dict) -> dict:
+    """Bind reconciled advisory output to the exact immutable source package."""
+
+    manifest = payload.get("input_manifest") or {}
+    if not manifest:
+        raise RuntimeError("macro input manifest missing after governed load")
+    lineage = validate_manifest_lineage(manifest)
+    if not lineage["valid"]:
+        raise RuntimeError("macro input lineage changed during build: " + "|".join(lineage["errors"]))
+
+    context = build_macro_prompt_context(payload)
+    overrides = extract_market_data_overrides(payload)
+    extras = macro_json.setdefault("extras", {})
+    macro_json["macro_authority"] = MACRO_AUTHORITY
+    macro_json["macro_candidate_authority"] = "NONE"
+    macro_json["macro_direction_authority"] = "NONE"
+    macro_json["macro_contract_authority"] = "NONE"
+    macro_json["macro_capital_authority"] = "NONE"
+    macro_json["macro_input_manifest_id"] = manifest["manifest_id"]
+    macro_json["macro_input_manifest_sha256"] = manifest["manifest_sha256"]
+    extras["macro_input_coverage"] = context["domain_coverage"]
+    extras["macro_input_lineage"] = {
+        "manifest_id": manifest["manifest_id"],
+        "manifest_sha256": manifest["manifest_sha256"],
+        "gex_validation": manifest.get("gex_validation", {}),
+        "authority": MACRO_AUTHORITY,
+    }
+
+    # Rebuild futures/GEX narrative from the same canonical rows used for the
+    # deterministic numeric override. This prevents an old model narrative
+    # coexisting with a newer extras.gex value.
+    futures = extras.setdefault("futures_bias", {})
+    if manifest.get("gex_validation", {}).get("status") != "VALIDATED":
+        # A partial model update may carry an older GEX narrative. Preserve
+        # unrelated futures context, but remove every unsupported GEX claim.
+        for lane in ("ES_SPY", "NQ_QQQ"):
+            current = futures.get(lane)
+            if not isinstance(current, dict):
+                continue
+            for key in ("gex_regime", "net_gex_bn", "gamma_flip", "call_wall",
+                        "put_wall", "spot_as_of", "gex_as_of", "gex_run_id",
+                        "gex_dataset_id"):
+                current.pop(key, None)
+            if "GEX" in str(current.get("note") or "").upper():
+                current.pop("note", None)
+            current["gex_state"] = "SOURCE_UNAVAILABLE"
+            current["authority"] = MACRO_AUTHORITY
+    for ticker, lane in (("SPY", "ES_SPY"), ("QQQ", "NQ_QQQ")):
+        row = overrides.get("gex_by_ticker", {}).get(ticker)
+        if not row:
+            continue
+        net = _safe_float(row.get("Net_GEX_Bn"))
+        regime = str(row.get("Regime") or "UNKNOWN").upper()
+        current = futures.setdefault(lane, {})
+        current.update({
+            "gex_regime": regime,
+            "net_gex_bn": net,
+            "gamma_flip": _safe_float(row.get("Gamma_Flip")),
+            "call_wall": _safe_float(row.get("Call_Wall")),
+            "put_wall": _safe_float(row.get("Put_Wall")),
+            "spot_as_of": _safe_float(row.get("Spot")),
+            "gex_as_of": _first_present(row, "As_Of", "Snapshot_UTC", "Date") or "",
+            "gex_run_id": row.get("Run_Id") or "",
+            "gex_dataset_id": row.get("Dataset_Id") or "",
+            "authority": MACRO_AUTHORITY,
+            "note": (
+                f"{ticker} governed GEX {regime} at "
+                f"{net:.6f}bn; source={row.get('Run_Id') or 'UNKNOWN'}"
+                if net is not None else f"{ticker} governed GEX unavailable"
+            ),
+        })
+
+    # Consolidate conflict disclosure after deterministic reconciliation.
+    raw_flags: list[str] = []
+    for candidate in (macro_json.get("conflict_flags"), extras.get("conflict_flags")):
+        if isinstance(candidate, list):
+            raw_flags.extend(str(flag) for flag in candidate if str(flag).strip())
+        elif candidate and str(candidate).strip():
+            raw_flags.append(str(candidate))
+    reconciled: list[str] = []
+    for flag in raw_flags:
+        text = flag.upper()
+        if (
+            "GEX" in text
+            and overrides.get("gex_net_bn") is not None
+            and any(token in text for token in ("MISSING", "UNAVAILABLE", "DEFAULT", "IMPUT", "REQUIRED SESSION"))
+        ):
+            continue
+        if any(token in text for token in ("VIX9D", "VIX3M", "TERM STRUCTURE", "VVIX")) and (
+            overrides.get("vix9d") is not None
+            and overrides.get("vix3m") is not None
+            and overrides.get("vvix") is not None
+        ):
+            continue
+        if ("USSLIND" in text or "LEI" in text) and overrides.get("usslind_quarantined"):
+            # Replace inconsistent prose with one canonical quarantine fact.
+            continue
+        if flag not in reconciled:
+            reconciled.append(flag)
+    if overrides.get("gex_net_bn") is not None:
+        reconciled.append("RESOLVED: GEX proxy and by-strike files validated against the completed-session manifest")
+    if overrides.get("usslind_quarantined"):
+        reconciled.append("ACTIVE: USSLIND stale by source cadence and quarantined from calculations")
+    macro_json["conflict_flags"] = list(dict.fromkeys(reconciled))
+    extras["conflict_flags"] = list(macro_json["conflict_flags"])
+    extras["data_reconciliation"] = {
+        "contract_version": "macro_data_reconciliation_v1",
+        "authority": MACRO_AUTHORITY,
+        "vix_source": "vix_engine_csv" if overrides.get("vix") is not None else "UNAVAILABLE",
+        "gex_source": "validated_gex_manifest" if overrides.get("gex_net_bn") is not None else "UNAVAILABLE",
+        "usslind_state": "QUARANTINED" if overrides.get("usslind_quarantined") else "OBSERVED",
+        "output_coherent": True,
+    }
+    return macro_json
+
+
+def validate_macro_output_coherence(macro_json: dict, payload: dict) -> None:
+    """Fail before publication if one output contains competing source truths."""
+
+    manifest = payload.get("input_manifest") or {}
+    if macro_json.get("macro_authority") != MACRO_AUTHORITY:
+        raise RuntimeError("macro authority is not ADVISORY_ONLY")
+    if macro_json.get("macro_input_manifest_sha256") != manifest.get("manifest_sha256"):
+        raise RuntimeError("macro output is not bound to its input manifest")
+    gex_valid = manifest.get("gex_validation", {}).get("status") == "VALIDATED"
+    if gex_valid and not macro_json.get("gex_available"):
+        raise RuntimeError("validated GEX was lost before macro publication")
+    if not gex_valid and (
+        macro_json.get("gex_available")
+        or macro_json.get("gex_regime_score") is not None
+        or macro_json.get("extras", {}).get("gex", {}).get("net_gex_bn") is not None
+    ):
+        raise RuntimeError("unvalidated GEX cannot supply macro numbers")
+    if gex_valid:
+        expected = manifest["gex_validation"].get("run_id")
+        actual = macro_json.get("extras", {}).get("gex", {}).get("run_id")
+        if expected and actual != expected:
+            raise RuntimeError("macro GEX run id does not match the validated manifest")
 
 
 # ============================================================
@@ -1662,6 +1886,7 @@ def main():
     _usmi_path = Path(args.us_money_index).resolve() if args.us_money_index else None
     _usmi = None
     _usmi_error = None
+    manifest_receipt = None
     macro_path.mkdir(parents=True, exist_ok=True)
     update_keys = []
     if args.update_all:
@@ -1723,11 +1948,35 @@ def main():
                 _usmi.get("quality_status"),
                 _usmi.get("authority"),
             )
+            # Re-bind the package after the optional advisory sidecar is
+            # attached so its exact bytes are covered by the same manifest.
+            payload["input_manifest"] = build_macro_input_manifest(
+                payload["files_found_by_key"],
+                [item for item in payload["files_missing"] if ":using_prior_macro_json" not in item],
+                data=payload["data"],
+            )
         data_str = format_data_for_prompt(payload)
         log.info("Formatted data payload: %d chars", len(data_str))
-    except RuntimeError as e:
+    except (RuntimeError, MacroInputContractError) as e:
         log.error("%s", e)
         sys.exit(1)
+
+    # Preserve the validated source bytes before any external synthesis call.
+    # If the provider is unavailable the evidence package remains replayable,
+    # while the old macro pointer is made detectably superseded by lineage.
+    if not args.dry_run:
+        manifest_receipt = publish_macro_input_manifest(
+            payload["input_manifest"],
+            PIPELINE_MACRO_DIR / "input_manifests",
+            macro_path / "macro_input_manifest_latest.json",
+            evidence_root=PIPELINE_MACRO_DIR / "input_evidence",
+        )
+        log.info(
+            "Archived macro evidence: manifest=%s files=%s bytes=%s",
+            manifest_receipt["manifest_id"],
+            manifest_receipt.get("evidence_file_count", "0"),
+            manifest_receipt.get("evidence_bytes", "0"),
+        )
 
     # API call
     log.info("Calling Anthropic API (3-prompt sequence)...")
@@ -1916,6 +2165,7 @@ def main():
     # This prevents fresh VIX9D/VIX3M/VVIX/credit/GEX/sector data from being
     # lost when the model omits a field or the report JSON used a proxy.
     macro_json = apply_market_data_overrides(macro_json, payload)
+    macro_json = apply_macro_input_governance(macro_json, payload)
 
     # Governed advisory sidecar.  Its policy section remains explicitly
     # disabled and it cannot overwrite any core macro or execution field.
@@ -1947,6 +2197,7 @@ def main():
 
     # Normalise horizon routing before validation (ensures 11_20d always present)
     macro_json = normalise_horizon_routing(macro_json)
+    validate_macro_output_coherence(macro_json, payload)
 
     # Validate
     all_pass, missing = validate_macro_json(macro_json)
@@ -1965,12 +2216,34 @@ def main():
         "files_missing": payload["files_missing"],
         "update_mode":   payload.get("update_mode", "FULL"),
         "update_keys":   payload.get("update_keys", []),
+        "input_manifest_id": payload["input_manifest"]["manifest_id"],
+        "input_manifest_sha256": payload["input_manifest"]["manifest_sha256"],
+        "input_manifest": payload["input_manifest"],
+        "input_consumption_status": "COMPLETE",
+        "input_consumption_ledger": build_macro_prompt_context(payload)["input_consumption_ledger"],
         "validation":    "PASS" if all_pass else f"FAIL - missing: {missing}",
     }
 
-    # Write dropbox output
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(macro_json, f, indent=2)
+    # Archive and publish the immutable input identity before advancing the
+    # macro latest pointer.
+    if manifest_receipt is None:
+        manifest_receipt = publish_macro_input_manifest(
+            payload["input_manifest"],
+            PIPELINE_MACRO_DIR / "input_manifests",
+            macro_path / "macro_input_manifest_latest.json",
+            evidence_root=PIPELINE_MACRO_DIR / "input_evidence",
+        )
+    log.info(
+        "Published macro input manifest: %s (%s)",
+        manifest_receipt["manifest_id"], manifest_receipt["manifest_sha256"][:16],
+    )
+
+    # Write the dropbox output atomically. Readers observe either the complete
+    # prior packet or the complete new packet, never a partially written JSON.
+    output_temporary = output_path.with_name(output_path.name + ".tmp")
+    with open(output_temporary, "w", encoding="utf-8") as f:
+        json.dump(macro_json, f, indent=2, allow_nan=False)
+    output_temporary.replace(output_path)
     log.info("Written: %s (%.1f KB)", output_path, output_path.stat().st_size / 1024)
 
     # WP0-06: archive the deterministic advisory packet before publishing a
@@ -1984,14 +2257,15 @@ def main():
         archive_receipt["packet_id"], archive_receipt["sha256"][:16],
     )
 
-    # Copy to pipeline data/macro/
+    # Advance every legacy reader projection from the same authoritative bytes.
     try:
-        PIPELINE_MACRO_DIR.mkdir(parents=True, exist_ok=True)
-        pipeline_out = PIPELINE_MACRO_DIR / OUTPUT_FILENAME
-        shutil.copy2(output_path, pipeline_out)
-        log.info("Copied to pipeline: %s", pipeline_out)
+        projection_receipt = publish_macro_projections(output_path)
+        log.info(
+            "Published synchronized macro projections: %s",
+            projection_receipt["sha256"][:16],
+        )
     except Exception as e:
-        log.warning("Could not copy to pipeline: %s", e)
+        raise RuntimeError(f"macro projection publication failed: {e}") from e
 
     # Summary
     print()

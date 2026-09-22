@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
 from contracts.us_money_index_contract import load_us_money_index_sidecar  # noqa: E402
 from contracts.macro_file_contract import market_data_directory  # noqa: E402
 from scripts.build_local_gex import build_local_gex  # noqa: E402
+from canonical_data.session_clock import session_snapshot  # noqa: E402
 
 
 def main() -> int:
@@ -27,7 +28,11 @@ def main() -> int:
     parser.add_argument("--skip-macro-build", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    session = None if args.session == "latest-completed" else date.fromisoformat(args.session)
+    session = (
+        session_snapshot(datetime.now(timezone.utc)).last_completed_session
+        if args.session == "latest-completed"
+        else date.fromisoformat(args.session)
+    )
     usmi_path = ROOT / "dropbox" / "macro" / "avshunter_us_money_index.json"
     report: dict = {
         "contract_version": "macro_refresh_report_v1",

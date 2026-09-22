@@ -12,6 +12,8 @@ from canonical_data.marketdata_option_chain import MarketDataOptionChainAdapter
 from canonical_data.macro_gex_overlay import (
     apply_completed_gex_overlay,
     invalidate_gex_overlay,
+    load_completed_gex_overlay,
+    materialize_runtime_macro,
 )
 from canonical_data.phantom_option_projection import deliver_phantom_option_events
 from canonical_data.projection_outbox import ProjectionOutbox
@@ -64,6 +66,8 @@ def refresh_completed_session_gex(
     run_id: str,
     session_date: date,
     fetch_chain: Callable[[str], Mapping[str, Any]] | None = None,
+    output_dir: Path | str | None = None,
+    publish_macro_overlay: bool = True,
 ) -> dict[str, Any]:
     """Acquire SPY/QQQ, project them, derive GEX, and refresh macro advisory."""
 
@@ -71,7 +75,7 @@ def refresh_completed_session_gex(
     registry_path = root / "data" / "canonical" / "control_plane.sqlite"
     phantom_path = root / "data" / "phantom" / "phantom_history.db"
     macro_path = root / "dropbox" / "macro" / "macro_intelligence_latest.json"
-    market_dir = root / "dropbox" / "market_data"
+    market_dir = Path(output_dir) if output_dir is not None else root / "dropbox" / "market_data"
     chain_store = CanonicalBenchmarkOptionChainStore(
         registry_path=registry_path,
         payload_root=root / "data" / "canonical" / "market_observations",
@@ -121,12 +125,19 @@ def refresh_completed_session_gex(
             run_id=f"{run_id}:completed-gex",
             source_option_dataset_ids=datasets_by_ticker,
         )
-        overlay = apply_completed_gex_overlay(
-            macro_path=macro_path,
-            proxy_path=market_dir / "avshunter_gex_proxy.csv",
-            manifest_path=market_dir / "avshunter_gex_run_manifest.json",
-            required_session=session_date,
-        )
+        if publish_macro_overlay:
+            overlay = apply_completed_gex_overlay(
+                macro_path=macro_path,
+                proxy_path=market_dir / "avshunter_gex_proxy.csv",
+                manifest_path=market_dir / "avshunter_gex_run_manifest.json",
+                required_session=session_date,
+            )
+        else:
+            overlay = load_completed_gex_overlay(
+                proxy_path=market_dir / "avshunter_gex_proxy.csv",
+                manifest_path=market_dir / "avshunter_gex_run_manifest.json",
+                required_session=session_date,
+            )
         return {
             "contract_version": "completed-session-gex-refresh-v1",
             "status": "COMPLETE",
@@ -140,11 +151,12 @@ def refresh_completed_session_gex(
             "authority": "ADVISORY_ONLY",
         }
     except Exception as error:
-        invalidate_gex_overlay(
-            macro_path=macro_path,
-            required_session=session_date,
-            reason=f"{type(error).__name__}: {error}",
-        )
+        if publish_macro_overlay:
+            invalidate_gex_overlay(
+                macro_path=macro_path,
+                required_session=session_date,
+                reason=f"{type(error).__name__}: {error}",
+            )
         return {
             "contract_version": "completed-session-gex-refresh-v1",
             "status": "UNAVAILABLE",
@@ -154,6 +166,86 @@ def refresh_completed_session_gex(
             "error": f"{type(error).__name__}: {error}",
             "authority": "ADVISORY_ONLY",
         }
+
+
+def synchronise_completed_session_gex(
+    *,
+    repository_root: Path | str,
+    run_id: str,
+    session_date: date,
+    base_macro_path: Path | str,
+    fetch_chain: Callable[[str], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Resolve daily or refreshed GEX into an immutable run-scoped macro view.
+
+    A valid daily publication is reused without provider work or mutable-file
+    rewrites.  If it is stale or invalid, exact-session chains are resolved and
+    derived GEX is written beneath the run directory.  The governed base macro
+    is never rewritten by this service.
+    """
+
+    root = Path(repository_root)
+    market_dir = root / "dropbox" / "market_data"
+    run_macro_dir = root / "data" / "output" / "runs" / run_id / "macro"
+    runtime_path = run_macro_dir / "macro_runtime_gex_synced.json"
+    daily_error = ""
+    try:
+        overlay = load_completed_gex_overlay(
+            proxy_path=market_dir / "avshunter_gex_proxy.csv",
+            manifest_path=market_dir / "avshunter_gex_run_manifest.json",
+            required_session=session_date,
+        )
+        action = "REUSED_DAILY_CURRENT"
+        refresh = {
+            "status": "COMPLETE",
+            "session_date": session_date.isoformat(),
+            "dataset_ids": list(overlay.get("dataset_ids") or ()),
+            "gex_dataset_ids": list(overlay.get("dataset_ids") or ()),
+            "macro_overlay": overlay,
+            "authority": "ADVISORY_ONLY",
+        }
+    except Exception as error:
+        daily_error = f"{type(error).__name__}: {error}"
+        action = "REFRESHED_RUN_SCOPED"
+        refresh = refresh_completed_session_gex(
+            repository_root=root,
+            run_id=run_id,
+            session_date=session_date,
+            fetch_chain=fetch_chain,
+            output_dir=run_macro_dir / "gex_source",
+            publish_macro_overlay=False,
+        )
+        overlay = refresh.get("macro_overlay") if refresh.get("status") == "COMPLETE" else None
+
+    if overlay is not None:
+        materialize_runtime_macro(
+            base_macro_path=base_macro_path,
+            output_path=runtime_path,
+            required_session=session_date,
+            overlay=overlay,
+            source_state=action,
+        )
+    else:
+        action = "UNAVAILABLE_RUN_SCOPED"
+        materialize_runtime_macro(
+            base_macro_path=base_macro_path,
+            output_path=runtime_path,
+            required_session=session_date,
+            overlay=None,
+            source_state=action,
+            unavailable_reason=str(refresh.get("error") or daily_error),
+        )
+    return {
+        **refresh,
+        "publication_action": action,
+        "daily_publication_error": daily_error or None,
+        "runtime_macro_path": str(runtime_path.resolve()),
+        "base_macro_path": str(Path(base_macro_path).resolve()),
+        "base_macro_mutated": False,
+        "lineage_superseded_keys": [
+            "gex_proxy_csv", "gex_by_strike_csv", "gex_manifest_json"
+        ],
+    }
 
 
 def _contract_present(phantom_path: Path, ticker: str, session_date: date, symbol: str) -> bool:
@@ -272,4 +364,8 @@ def capture_open_record_chains(
     return result
 
 
-__all__ = ["capture_open_record_chains", "refresh_completed_session_gex"]
+__all__ = [
+    "capture_open_record_chains",
+    "refresh_completed_session_gex",
+    "synchronise_completed_session_gex",
+]

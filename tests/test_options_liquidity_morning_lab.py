@@ -264,3 +264,23 @@ def test_intelligence_lab_has_trader_facing_liquidity_labels() -> None:
     ):
         assert label in html
     assert "monitoring estimate only — not a probability and cannot authorize entry" in html
+
+
+def test_lab_manifest_reads_never_republish_run_evidence(monkeypatch, tmp_path) -> None:
+    lab = _load_lab_module()
+    run_id = "20990102_083000"
+    run_dir = tmp_path / run_id
+    run_dir.mkdir()
+    manifest_path = run_dir / "final_run_manifest.json"
+    manifest_path.write_text('{"run_id":"20990102_083000"}', encoding="utf-8")
+    before = (manifest_path.read_bytes(), manifest_path.stat().st_mtime_ns)
+    monkeypatch.setattr(lab, "RUNS_DIR", tmp_path)
+    monkeypatch.setattr(lab, "load_final_run_manifest", lambda *_: {"run_id": run_id})
+    monkeypatch.setattr(lab, "write_final_run_manifest", lambda *_: (_ for _ in ()).throw(AssertionError("read republished manifest")))
+    assert lab._read_run_manifest(run_id) == {"run_id": run_id}
+    assert (manifest_path.read_bytes(), manifest_path.stat().st_mtime_ns) == before
+
+    monkeypatch.setattr(lab, "load_final_run_manifest", lambda *_: None)
+    monkeypatch.setattr(lab, "build_final_run_manifest", lambda *_: {"run_id": run_id, "temporary": True})
+    assert lab._read_run_manifest(run_id)["temporary"] is True
+    assert (manifest_path.read_bytes(), manifest_path.stat().st_mtime_ns) == before

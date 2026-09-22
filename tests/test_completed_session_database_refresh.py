@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -8,7 +9,10 @@ import pytest
 
 from canonical_data.benchmark_option_chain import CanonicalBenchmarkOptionChainStore
 from canonical_data.marketdata_option_chain import MarketDataOptionChainAdapter
-from orchestrator.completed_session_gex import refresh_completed_session_gex
+from orchestrator.completed_session_gex import (
+    refresh_completed_session_gex,
+    synchronise_completed_session_gex,
+)
 
 
 SESSION = date(2026, 9, 11)
@@ -320,3 +324,86 @@ def test_failed_required_session_refresh_clears_prior_gex_without_blocking_core(
     assert macro["gex_regime_score"] is None
     assert macro["extras"]["gex"]["session_date"] == SESSION.isoformat()
     assert macro["extras"]["gex"]["state"] == "UNAVAILABLE_REQUIRED_SESSION"
+
+
+def test_gex_sync_reuses_current_daily_publication_without_mutation(tmp_path: Path) -> None:
+    macro_dir = tmp_path / "dropbox" / "macro"
+    macro_dir.mkdir(parents=True)
+    macro_path = macro_dir / "macro_intelligence_latest.json"
+    macro_path.write_text(json.dumps({"extras": {}, "macro_authority": "ADVISORY_ONLY"}), encoding="utf-8")
+    first = refresh_completed_session_gex(
+        repository_root=tmp_path,
+        run_id="DAILY",
+        session_date=SESSION,
+        fetch_chain=_payload,
+    )
+    assert first["status"] == "COMPLETE"
+    market = tmp_path / "dropbox" / "market_data"
+    governed = [
+        macro_path,
+        market / "avshunter_gex_proxy.csv",
+        market / "avshunter_gex_by_strike.csv",
+        market / "avshunter_gex_run_manifest.json",
+    ]
+    before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in governed}
+
+    def must_not_fetch(_: str) -> dict:
+        raise AssertionError("current daily GEX must be reused")
+
+    result = synchronise_completed_session_gex(
+        repository_root=tmp_path,
+        run_id="EVENING",
+        session_date=SESSION,
+        base_macro_path=macro_path,
+        fetch_chain=must_not_fetch,
+    )
+    after = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in governed}
+    assert result["status"] == "COMPLETE"
+    assert result["publication_action"] == "REUSED_DAILY_CURRENT"
+    assert result["base_macro_mutated"] is False
+    assert before == after
+    runtime = json.loads(Path(result["runtime_macro_path"]).read_text(encoding="utf-8"))
+    assert runtime["gex_available"] is True
+    assert runtime["runtime_gex_sync"]["source_state"] == "REUSED_DAILY_CURRENT"
+
+
+def test_gex_sync_refreshes_invalid_daily_source_only_in_run_scope(tmp_path: Path) -> None:
+    macro_dir = tmp_path / "dropbox" / "macro"
+    macro_dir.mkdir(parents=True)
+    macro_path = macro_dir / "macro_intelligence_latest.json"
+    macro_path.write_text(json.dumps({"extras": {}, "macro_authority": "ADVISORY_ONLY"}), encoding="utf-8")
+    first = refresh_completed_session_gex(
+        repository_root=tmp_path,
+        run_id="DAILY",
+        session_date=SESSION,
+        fetch_chain=_payload,
+    )
+    assert first["status"] == "COMPLETE"
+    market = tmp_path / "dropbox" / "market_data"
+    manifest_path = market / "avshunter_gex_run_manifest.json"
+    stale = json.loads(manifest_path.read_text(encoding="utf-8"))
+    stale["session_date"] = "2026-09-10"
+    manifest_path.write_text(json.dumps(stale), encoding="utf-8")
+    governed = [
+        macro_path,
+        market / "avshunter_gex_proxy.csv",
+        market / "avshunter_gex_by_strike.csv",
+        manifest_path,
+    ]
+    before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in governed}
+    result = synchronise_completed_session_gex(
+        repository_root=tmp_path,
+        run_id="EVENING",
+        session_date=SESSION,
+        base_macro_path=macro_path,
+        fetch_chain=_payload,
+    )
+    after = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in governed}
+    assert result["status"] == "COMPLETE", result.get("error")
+    assert result["publication_action"] == "REFRESHED_RUN_SCOPED"
+    assert result["daily_publication_error"]
+    assert before == after
+    runtime = json.loads(Path(result["runtime_macro_path"]).read_text(encoding="utf-8"))
+    assert runtime["gex_available"] is True
+    assert runtime["extras"]["gex"]["session_date"] == SESSION.isoformat()
+    assert runtime["runtime_gex_sync"]["source_state"] == "REFRESHED_RUN_SCOPED"

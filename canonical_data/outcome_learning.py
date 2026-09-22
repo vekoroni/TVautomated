@@ -180,7 +180,8 @@ def load_option_outcome_lookup(
         return {}
     lookup: dict[tuple[str, int], Mapping[str, Any]] = {}
     try:
-        with sqlite3.connect(path) as connection:
+        from contextlib import closing
+        with closing(sqlite3.connect(path)) as connection:
             present = connection.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' "
                 "AND name='doi_outcome_labels'"
@@ -188,11 +189,31 @@ def load_option_outcome_lookup(
             if not present:
                 return {}
             rows = connection.execute(
-                "SELECT assessment_id,horizon_sessions,payload_json "
+                "SELECT assessment_id,horizon_sessions,label_id,payload_json "
                 "FROM doi_outcome_labels ORDER BY outcome_cutoff_utc,label_id"
             ).fetchall()
-        for assessment_id, horizon, payload_json in rows:
-            lookup[(str(assessment_id), int(horizon))] = json.loads(payload_json)
+        grouped: dict[tuple[str, int], list[dict[str, Any]]] = {}
+        for assessment_id, horizon, label_id, payload_json in rows:
+            payload = json.loads(payload_json)
+            payload.setdefault("label_id", label_id)
+            grouped.setdefault((str(assessment_id), int(horizon)), []).append(payload)
+        final_statuses = {
+            "COMPLETE", "COMPLETE_OPTION_PATH_PARTIAL",
+            "COMPLETE_OPTION_RETURN_UNAVAILABLE",
+        }
+        for key, values in grouped.items():
+            superseded = {
+                str(value["supersedes_label_id"])
+                for value in values if value.get("supersedes_label_id")
+            }
+            active = [value for value in values if value.get("label_id") not in superseded]
+            final = [value for value in active if value.get("data_status") in final_statuses]
+            # Ambiguous active final outcomes must not become model labels.
+            if len(final) > 1:
+                continue
+            selected = final[0] if final else (active[-1] if active else None)
+            if selected is not None:
+                lookup[key] = selected
     except (OSError, sqlite3.Error, json.JSONDecodeError):
         return {}
     return lookup

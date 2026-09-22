@@ -1,7 +1,7 @@
 # AVS-W3-SD-003 — Controlled provider activation and advisory projection
 
-Status: functionality implemented; production release installed disabled
-Live provider calls: not authorised
+Status: controlled production release active; validation-failure observability under repair
+Live provider calls: only with an approved job, operator ID and release budget
 Trading authority: none
 
 ## Purpose
@@ -29,8 +29,9 @@ Any invalid pre-dispatch request -> RETRY_WAIT/FAILED without a provider call
 
 ## Controls
 
-- The production release contract is `INSTALLED_DISABLED` and contains no
-  approved model or nonzero pricing schedule. It cannot activate a job.
+- The original installation was `INSTALLED_DISABLED`. The current governed
+  release is `CONTROLLED_ACTIVE`; it still requires an exact approved job,
+  operator ID and bounded model/pricing configuration for each invocation.
 - Enabling requires a versioned `CONTROLLED_ACTIVE` release containing an exact
   model allow-list, token-price schedule, job count, process call count, total
   cost, per-call cost, input byte, output token and timeout ceilings.
@@ -72,7 +73,8 @@ it never grants a fallback advisory or trading authority.
 6. Execute a one-job canary, inspect the semantic findings and Lab report.
 7. Reconcile usage/cost and only then expand the worklist.
 
-Until these steps are accepted, no live model call should be attempted.
+These steps were accepted for the controlled release. They do not authorise an
+automatic retry of a rejected or `UNCERTAIN` job.
 
 ## Implementation verification — 2026-09-07
 
@@ -91,3 +93,39 @@ Until these steps are accepted, no live model call should be attempted.
   production database write was made during verification.
 - The checked-in provider release remains `INSTALLED_DISABLED`; therefore this
   phase installs capability without silently activating paid model execution.
+
+## 2026-09-21 controlled-validation closure slice
+
+The 7 September verification above is historical. The current provider release
+has since been activated under its separate governed release; this paragraph
+does not itself approve further calls. The 21 September VALE job in run
+`20260920_203115` received HTTP 200 (60,220 input and 6,655 output tokens) but
+ended `UNCERTAIN` during structural/semantic validation. Its old receipt records
+the broad failure stage only. The rejected answer was not saved, so its exact
+invalid field cannot be inferred or repaired from that attempt. Never retry or
+relabel this job automatically; reconcile its charged attempt before a new
+operator-approved job is prepared.
+
+The corrective design is additive and fail-closed:
+
+1. Keep the bounded evidence projection and provider-compatible structured
+   schema fixes. They address input size and schema-compilation failures but
+   do not guarantee that a generated answer satisfies cross-field rules.
+2. Validate the provider envelope, v2 structure and semantic review as distinct
+   stages. On a post-dispatch failure, preserve the existing `UNCERTAIN` state,
+   provider-call reservation and no-retry rule.
+3. In the private Worker job store, retain at most one bounded rejected
+   `ProviderResponse` per attempt with a hash, local failure stage and safe
+   validation reason. Keep it out of Lab projection, run books and model
+   prompts. A malformed envelope with no validated `ProviderResponse` records
+   the reason but no invented response.
+4. Offline replay of the quarantined response may diagnose a future validator
+   or prompt repair without another provider call. A rejected response must
+   never be promoted by coercing figures, dropping unsupported claims or
+   weakening identity, citation, authority or evidence-cutoff checks.
+
+Acceptance requires focused and adjacent Worker 3 regression tests, followed
+by a separately approved one-job live canary. The canary must record a durable
+assessment and render a human-review-only report without a second provider
+call. This slice does **not** establish that VALE's lost response was valid or
+that unattended Worker 3 operation is production-ready.

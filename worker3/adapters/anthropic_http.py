@@ -137,6 +137,9 @@ class AnthropicHTTP:
             canonical(result)
             if type(result) is not dict:
                 raise ContractError("provider response must be an object")
+            stop_reason = result.get("stop_reason")
+            if type(stop_reason) is str:
+                receipt["stop_reason"] = stop_reason
             usage = result.get("usage", {})
             if type(usage) is dict:
                 for field in ("input_tokens", "output_tokens"):

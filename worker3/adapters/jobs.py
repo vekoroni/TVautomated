@@ -47,6 +47,10 @@ class JobStore:
           assessment_id TEXT PRIMARY KEY, job_id TEXT NOT NULL UNIQUE,
           run_id TEXT NOT NULL, ticker TEXT NOT NULL, context_hash TEXT NOT NULL,
           evidence_cutoff TEXT NOT NULL, generated_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS rejected_responses (
+          token TEXT PRIMARY KEY, job_id TEXT NOT NULL, at REAL NOT NULL,
+          failure_stage TEXT NOT NULL, failure_code TEXT NOT NULL,
+          response_hash TEXT, provider_response TEXT);
         ''')
         try:
             with self.transaction():
@@ -403,14 +407,46 @@ class JobStore:
         row=self.db.execute("SELECT COALESCE(SUM(cost),0),COALESCE(SUM(CASE WHEN cost IS NULL THEN reserved ELSE 0 END),0),SUM(CASE WHEN cost IS NULL THEN 1 ELSE 0 END) FROM charges").fetchone()
         return {"reported_cost_microusd":row[0],"unknown_cost_reservation_microusd":row[1],"unknown_calls":row[2] or 0}
 
-    def mark_uncertain(self, job_id, token, *, now, receipt=None):
+    def rejected_response_record(self, job_id):
+        row = self.db.execute(
+            """SELECT at,failure_stage,failure_code,response_hash,provider_response
+               FROM rejected_responses WHERE job_id=? ORDER BY at DESC LIMIT 1""",
+            (job_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["provider_response"] = (
+            json.loads(result["provider_response"])
+            if result["provider_response"] is not None else None
+        )
+        return result
+
+    def mark_uncertain(self, job_id, token, *, now, receipt=None,
+                       failure_stage=None, failure_code=None, rejected_response=None):
         usage = canonical(receipt) if receipt is not None else None
+        if rejected_response is not None and (failure_stage is None or failure_code is None):
+            raise ContractError("rejected response requires failure stage and code")
+        if failure_stage is not None:
+            nonempty(failure_stage, "failure stage")
+            nonempty(failure_code, "failure code")
+        raw = canonical(rejected_response) if rejected_response is not None else None
+        if raw is not None and len(raw.encode("utf-8")) > 250_000:
+            raise ContractError("rejected response exceeds durable quarantine limit")
         with self.transaction():
             self.owned(job_id,token,"DISPATCHED",now)
             if usage is not None:
                 self.db.execute("UPDATE charges SET receipt=? WHERE token=?", (usage, token))
+            if failure_stage is not None:
+                self.db.execute(
+                    """INSERT INTO rejected_responses
+                       (token,job_id,at,failure_stage,failure_code,response_hash,provider_response)
+                       VALUES(?,?,?,?,?,?,?)""",
+                    (token,job_id,now,failure_stage,failure_code,
+                     digest(rejected_response) if rejected_response is not None else None, raw),
+                )
             self.db.execute("UPDATE jobs SET status='UNCERTAIN',lease_until=NULL,token=NULL WHERE id=?",(job_id,))
-            self.event(job_id,now,"UNCERTAIN","PROVIDER_OUTCOME_UNCERTAIN")
+            self.event(job_id,now,"UNCERTAIN",failure_code or "PROVIDER_OUTCOME_UNCERTAIN")
 
 
 def execute_one(store, executor, *, clock, lease_seconds=120):

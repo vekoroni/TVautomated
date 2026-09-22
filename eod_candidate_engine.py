@@ -99,6 +99,11 @@ from contracts.selected_contract_economics import (
     parse_occ_symbol,
 )
 from contracts.long_option_policy import evaluate_execution_viability
+from domain.pretrade_focus import (
+    EVENING_EXPORT_FIELDS, EVENING_INPUT_FIELDS, FOCUS_EXPORT_FIELDS,
+    FOCUS_INPUT_FIELDS, FOCUS_PRIMARY, project_evening_thesis,
+    project_pretrade_focus,
+)
 from execution_schema import validate_trigger_handoff_row
 
 try:
@@ -620,7 +625,7 @@ def _candidate_permission_fields(row: dict, eod_status: str) -> dict:
         candidate_permission = "STRUCTURAL_REVIEW_ONLY"
     elif status in EOD_STRUCTURAL_BLOCK_STATUSES:
         candidate_permission = "STRUCTURAL_REVIEW_ONLY"
-    elif status == "EOD_THESIS_READY_REPAIR_AT_OPEN":
+    elif status == "EOD_THESIS_READY_REPAIR_AT_OPEN" and _str(row, "contract_repair_required").upper() in {"TRUE", "1", "YES"}:
         candidate_permission = "CONTRACT_REPAIR_REQUIRED"
     elif live_permission == "EOD_CANDIDATE_ONLY" or status in EOD_CARRY_FORWARD_STATUSES:
         candidate_permission = "MORNING_VALIDATION_REQUIRED"
@@ -1285,7 +1290,9 @@ def _eod_candidate_status(row: dict, tier: str) -> tuple[str, str]:
     if repair_required:
         return "EOD_THESIS_READY_REPAIR_AT_OPEN", _str(row, "contract_repair_reason") or "CONTRACT_REPAIR_REQUIRED"
 
-    if liquidity_state and liquidity_state != "EXECUTABLE_NOW":
+    # A completed-session quote naturally needs a Morning thesis check.  That
+    # state is not itself evidence that the selected contract needs repair.
+    if liquidity_state and liquidity_state not in {"EXECUTABLE_NOW", "EOD_QUOTE_PENDING_MORNING_REQUOTE"}:
         return (
             "EOD_THESIS_READY_REPAIR_AT_OPEN",
             f"CONTRACT_{liquidity_state}:REQUOTE_OR_MONITOR_AT_OPEN",
@@ -2183,6 +2190,7 @@ def build_candidate_manifest(
         "crabel_compression", "crabel_pattern", "crabel_state",
         "phase_evidence_strength", "dominant_event", "ATR_14",
         "wyckoff_phase_bucket", "dominant_trend", "ema_stack",
+        "wyckoff_execution_bias", "wyckoff_entry_trigger",
         "adx_14", "atr_percentile_rank",
         "bar_data_source", "bar_data_asof", "bar_data_days_old",
         "bar_evidence_state", "bar_evidence_reason", "is_stale",
@@ -2374,6 +2382,7 @@ def build_candidate_manifest(
             "signal_price":         _flt(row, "signal_price"),
             # AVS-FIX-001 W1.1: a missing target publishes as null, never 0.0.
             "target_price":         _optional_flt(row, "target_price"),
+            "target_price_source":  _str(row, "structural_target_state") or _str(row, "target_price_source") or "UNVERIFIED_LEGACY",
             "target_state":         _str(row, "target_state") or "UNRESOLVED",
             "target_unresolved_reason": _str(row, "target_unresolved_reason"),
             "sector":               _str(row, "sector"),
@@ -2414,6 +2423,8 @@ def build_candidate_manifest(
             "evidence_session_date": _str(row, "evidence_session_date"),
             "evidence_session_source": _str(row, "evidence_session_source"),
             "liquidity_thesis_state": _str(row, "thesis_state"),
+            "wyckoff_execution_bias": _str(row, "wyckoff_execution_bias"),
+            "wyckoff_entry_trigger": _str(row, "wyckoff_entry_trigger"),
             "lifecycle_contract_version": _str(row, "lifecycle_contract_version"),
             "liquidity_state":      _str(row, "liquidity_state"),
             "morning_transition_state": _str(row, "morning_transition_state"),
@@ -2505,7 +2516,7 @@ def build_candidate_manifest(
             "alternative_contract_2_reason": _first_str(row, "alternative_contract_2_reason"),
             "alternative_contract_3_reason": _first_str(row, "alternative_contract_3_reason"),
             "contract_expression_score": contract_profile["contract_quality_score"],
-            "contract_repair_required_at_open": str(eod_status == "EOD_THESIS_READY_REPAIR_AT_OPEN" or bool(contract_profile["contract_repair_required"])).upper(),
+            "contract_repair_required_at_open": str(bool(contract_profile["contract_repair_required"])).upper(),
             "morning_validation_tasks": morning_tasks,
             "live_validation_required": str(eod_status in EOD_CARRY_FORWARD_STATUSES).upper(),
             "confidence_score":     monetisation["monetisation_fit_score"],
@@ -2714,6 +2725,12 @@ def build_candidate_manifest(
             "pse_score":            _flt(row, "pse_score"),
             "pse_edge_score":       _flt(row, "pse_edge_score"),
             "trigger_primary":      _trigger_text(row, "trigger_primary"),
+            "trigger_price": _first_optional_flt(row, "trigger_price", "wbs_phase_c_trigger"),
+            "trigger_price_source": (
+                "SUPPLIED_TRIGGER_PRICE" if _first_optional_flt(row, "trigger_price") is not None
+                else "WBS_PHASE_C_CONFIRMED_BREAK" if _first_optional_flt(row, "wbs_phase_c_trigger") is not None
+                else ""
+            ),
             "trigger_quality":      _trigger_text(row, "trigger_quality"),
             "trigger_count":        _flt(row, "trigger_count"),
             "trigger_score":        _flt(row, "trigger_score"),
@@ -2727,6 +2744,9 @@ def build_candidate_manifest(
             "win_rate_10d":         _flt(row, "win_rate_10d"),
             "expected_move_5d":     _flt(row, "l3_expected_move_1_5d"),
             "expected_move_10d":    _flt(row, "l3_expected_move_6_10d"),
+            "garch_expected_move_1_5d": _first_optional_flt(row, "l3_expected_move_1_5d"),
+            "garch_expected_move_6_10d": _first_optional_flt(row, "l3_expected_move_6_10d"),
+            "garch_expected_move_11_20d": _first_optional_flt(row, "l3_expected_move_11_20d"),
             "vol_forecast":         _flt(row, "l3_forward_realised_vol"),
             "vol_conf":             _flt(row, "l3_vol_forecast_conf"),
 
@@ -2744,6 +2764,7 @@ def build_candidate_manifest(
             # the thesis remains valid; it must not kill 11-20D purely because
             # the expected payoff window is later.
             "horizon_bucket":       _cand_hb,
+            "time_horizon":         _cand_hb,
             "horizon_action":       _cand_ha,
             "horizon_size_multiplier": _cand_hsm,
             "iv_regime":            (_str(row, "actuarial_iv_regime") or _str(row, "iv_regime")),
@@ -3115,7 +3136,9 @@ def build_candidate_manifest(
         log.info("  Saved from NO_EDGE            : %d", int((preserved_mask & sig_series.eq("NO_EDGE")).sum()))
         log.info("  Saved from TIER_4_FLAT        : %d", int((preserved_mask & tier_series.eq("TIER_4_FLAT")).sum()))
         log.info("  Saved from 11_20d horizon     : %d", int((preserved_mask & hb_series.eq("11_20d")).sum()))
-        log.info("  Contract repair at open       : %d", int(repair_mask.sum()))
+        actual_repair = full_out_df.get("contract_repair_required", pd.Series("", index=full_out_df.index)).astype(str).str.upper().isin({"TRUE", "1", "YES"})
+        log.info("  Legacy repair-labelled status: %d", int(repair_mask.sum()))
+        log.info("  Actual contract repair needed: %d", int(actual_repair.sum()))
         log.info("  True structural/no-options drop: %d", int(structural_drop_mask.sum()))
     if len(full_out_df) >= 500 and execute_like_count < 30:
         log.warning(
@@ -3160,6 +3183,32 @@ def build_candidate_manifest(
             if _schema_col not in out_df.columns:
                 out_df[_schema_col] = pd.Series(dtype=full_out_df[_schema_col].dtype)
 
+    # Preparation is distinct from execution authority.  The EOD quote and
+    # monetisability observation may prioritise a thesis for the next session,
+    # but neither is a current entry quote.  Keep every candidate in the
+    # ordinary manifest, including developing and data-review opportunities.
+    focus_projection = [
+        project_pretrade_focus(row)
+        for row in out_df.reindex(columns=FOCUS_INPUT_FIELDS).to_dict("records")
+    ]
+    for field in (
+        "pretrade_thesis_state", "pretrade_contract_evidence_state",
+        "pretrade_entry_quote_state", "pretrade_focus_lane",
+        "pretrade_focus_priority", "pretrade_focus_candidate",
+        "pretrade_focus_reason", "pretrade_focus_authority",
+        "pretrade_focus_policy_version",
+    ):
+        out_df[field] = [projected[field] for projected in focus_projection]
+
+    # Publish the frozen Evening homework in the same candidate manifest that
+    # Morning Gate copies forward.  It never replaces the Execution Gate.
+    evening_projection = [
+        project_evening_thesis({**row, "pipeline_mode": "EOD"})
+        for row in out_df.reindex(columns=EVENING_INPUT_FIELDS).to_dict("records")
+    ]
+    for field in EVENING_EXPORT_FIELDS:
+        out_df[field] = [projected[field] for projected in evening_projection]
+
     # ── Summary ───────────────────────────────────────────────────────────────
     for _required_summary_col in ("structural_tier", "candidate_status", "eod_candidate_status"):
         if _required_summary_col not in out_df.columns:
@@ -3177,8 +3226,14 @@ def build_candidate_manifest(
             log.info(f"    {state:<30}: {count}")
 
     ready = out_df[out_df["candidate_status"] == "READY_FOR_VALIDATION"]
-    log.info(f"  Ready for morning: {len(ready)}")
-    log.info(f"  Watch only       : {len(out_df) - len(ready)}")
+    thesis_ready = out_df["pretrade_thesis_state"] == "READY_FOR_MORNING_THESIS_CHECK"
+    focus_primary = out_df["pretrade_focus_lane"] == FOCUS_PRIMARY
+    log.info("  Thesis ready for morning check: %d", int(thesis_ready.sum()))
+    log.info("  Primary pre-open focus       : %d", int(focus_primary.sum()))
+    for bucket, count in out_df["evening_thesis_bucket"].value_counts().items():
+        log.info("  Evening thesis %-29s: %d", bucket, count)
+    log.info("  Legacy execution-ready at EOD: %d", len(ready))
+    log.info("  Other retained for review    : %d", len(out_df) - int(thesis_ready.sum()))
 
     if len(out_df) > 0:
         log.info(f"\n  Top 5 candidates:")
@@ -3198,6 +3253,15 @@ def build_candidate_manifest(
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         out_df.to_csv(output_path, index=False)
         log.info(f"\n  Manifest written → {output_path}")
+        focus = out_df.loc[focus_primary].sort_values(
+            ["slate_rank", "ticker"], kind="mergesort"
+        )
+        focus_path = Path(output_path).with_name(f"pretrade_focus_{run_id}.csv")
+        focus.reindex(columns=FOCUS_EXPORT_FIELDS).to_csv(focus_path, index=False)
+        log.info(
+            "  Advisory pre-open focus -> %s | rows=%d (full slate unchanged)",
+            focus_path, len(focus),
+        )
         if str(run_id or "").upper() != "TEST":
             try:
                 import sys as _ma_sys

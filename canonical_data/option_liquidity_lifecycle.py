@@ -19,6 +19,7 @@ from typing import Any, Mapping
 from .contracts import DatasetType, iso_utc, parse_utc, utc_now
 from .errors import DatasetValidationError
 from .registry import CanonicalRegistry
+from .phantom_outcome_source import VerifiedPhantomOutcomeQuote
 from domain.thesis_direction import ThesisState, TERMINAL_THESIS_STATES
 from domain.option_contract_liquidity import (
     ContractLiquidityState,
@@ -297,6 +298,107 @@ class OptionLiquidityLifecycleStore:
 
     def __init__(self, registry: CanonicalRegistry):
         self.registry = registry
+        self._outcome_source_schema_ready = False
+
+    def ensure_outcome_source_schema(self) -> None:
+        """Create the research-only source table only on the opt-in path."""
+        if self._outcome_source_schema_ready:
+            return
+        with self.registry.connection() as connection:
+            connection.executescript("""
+                CREATE TABLE IF NOT EXISTS doi_outcome_source_quotes (
+                    source_id TEXT PRIMARY KEY,
+                    dataset_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    contract_symbol TEXT NOT NULL,
+                    session_date TEXT NOT NULL,
+                    quote_as_of TEXT NOT NULL,
+                    available_at TEXT NOT NULL,
+                    event_id TEXT NOT NULL,
+                    row_content_hash TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    decision_authority TEXT NOT NULL
+                        CHECK(decision_authority='NONE'),
+                    FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
+                );
+                CREATE TRIGGER IF NOT EXISTS trg_doi_outcome_source_no_update
+                BEFORE UPDATE ON doi_outcome_source_quotes BEGIN
+                    SELECT RAISE(ABORT,'DOI outcome source is append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_doi_outcome_source_no_delete
+                BEFORE DELETE ON doi_outcome_source_quotes BEGIN
+                    SELECT RAISE(ABORT,'DOI outcome source is append-only');
+                END;
+            """)
+        self._outcome_source_schema_ready = True
+
+    def record_outcome_source_quote(
+        self, quote: VerifiedPhantomOutcomeQuote,
+    ) -> PersistResult:
+        """Freeze a verified revision for later hypothetical label validation."""
+        point = quote.observation
+        expected_id = "PHANTOM_REV:" + hashlib.sha256(
+            f"{point.dataset_id}|{point.contract_symbol}|{quote.row_content_hash}".encode(
+                "utf-8"
+            )
+        ).hexdigest()
+        if point.observation_id != expected_id:
+            raise DatasetValidationError("outcome source identity disagrees with revision")
+        dataset = self.registry.get_dataset(point.dataset_id)
+        if dataset is None or (
+            dataset.dataset_type is not DatasetType.OPTION_CHAIN
+            or dataset.provider != "MARKETDATA"
+            or dataset.session_date != point.session_date
+            or dataset.content_hash != quote.dataset_content_hash
+            or dataset.completeness_status.value != "COMPLETE"
+            or dataset.observed_at > point.available_at_utc
+            or quote.projected_at_utc > point.available_at_utc
+        ):
+            raise DatasetValidationError("outcome quote conflicts with canonical dataset")
+        payload = {
+            "source_id": point.observation_id,
+            "dataset_id": point.dataset_id,
+            "ticker": dataset.instrument_id,
+            "contract_symbol": point.contract_symbol,
+            "session_date": point.session_date.isoformat(),
+            "quote_as_of": point.quote_at_utc.isoformat(),
+            "available_at": point.available_at_utc.isoformat(),
+            "bid": point.bid, "ask": point.ask,
+            "volume": point.volume, "open_interest": point.open_interest,
+            "iv": point.implied_volatility,
+            "event_id": quote.event_id,
+            "row_content_hash": quote.row_content_hash,
+            "dataset_content_hash": quote.dataset_content_hash,
+            "projected_at_utc": quote.projected_at_utc.isoformat(),
+            "decision_authority": "NONE",
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+        self.ensure_outcome_source_schema()
+        with self.registry.connection() as connection:
+            existing = connection.execute(
+                "SELECT payload_hash FROM doi_outcome_source_quotes WHERE source_id=?",
+                (point.observation_id,),
+            ).fetchone()
+            if existing is not None:
+                if existing["payload_hash"] != digest:
+                    raise OptionLifecycleConflict(
+                        "outcome source identity already has different immutable content"
+                    )
+                return PersistResult(quote, True)
+            connection.execute(
+                """INSERT INTO doi_outcome_source_quotes(
+                    source_id,dataset_id,ticker,contract_symbol,session_date,
+                    quote_as_of,available_at,event_id,row_content_hash,
+                    payload_json,payload_hash,decision_authority
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (point.observation_id, point.dataset_id, dataset.instrument_id,
+                 point.contract_symbol, point.session_date.isoformat(),
+                 point.quote_at_utc.isoformat(), point.available_at_utc.isoformat(),
+                 quote.event_id, quote.row_content_hash, encoded, digest, "NONE"),
+            )
+        return PersistResult(quote, False)
 
     def initialise(self) -> None:
         self.registry.initialise()
@@ -1181,15 +1283,25 @@ class OptionLiquidityLifecycleStore:
         if int(horizon_sessions) <= 0:
             raise DatasetValidationError("horizon_sessions must be positive")
         with self.registry.connection() as connection:
-            row = connection.execute(
+            rows = connection.execute(
                 """
                 SELECT * FROM doi_outcome_labels
                 WHERE assessment_id = ? AND horizon_sessions = ?
-                ORDER BY outcome_cutoff_utc DESC, label_id DESC LIMIT 1
+                ORDER BY outcome_cutoff_utc DESC, label_id DESC
                 """,
                 (_required_text(assessment_id, "assessment_id"), int(horizon_sessions)),
-            ).fetchone()
-        return self._doi_outcome_from_row(row) if row else None
+            ).fetchall()
+        labels = tuple(self._doi_outcome_from_row(row) for row in rows)
+        superseded = {item.supersedes_label_id for item in labels if item.supersedes_label_id}
+        active = [item for item in labels if item.label_id not in superseded]
+        complete = [item for item in active if item.data_status in {
+            OutcomeDataStatus.COMPLETE,
+            OutcomeDataStatus.COMPLETE_OPTION_PATH_PARTIAL,
+            OutcomeDataStatus.COMPLETE_OPTION_RETURN_UNAVAILABLE,
+        }]
+        if len(complete) > 1:
+            raise OptionLifecycleConflict("multiple active completed DOI labels")
+        return complete[0] if complete else (active[0] if active else None)
 
     def doi_outcome_labels(
         self,
@@ -1295,11 +1407,47 @@ class OptionLiquidityLifecycleStore:
             ).fetchone()
             if observation_row is None:
                 raise DatasetValidationError("DOI outcome origin observation does not exist")
-            for observation_id in label.source_option_observation_ids:
-                future_row = connection.execute(
-                    "SELECT contract_symbol, quote_as_of FROM option_contract_observations WHERE observation_id = ?",
-                    (observation_id,),
+            if label.supersedes_label_id:
+                predecessor = connection.execute(
+                    "SELECT assessment_id, horizon_sessions FROM doi_outcome_labels WHERE label_id = ?",
+                    (label.supersedes_label_id,),
                 ).fetchone()
+                if predecessor is None or (
+                    predecessor["assessment_id"] != label.assessment_id
+                    or int(predecessor["horizon_sessions"]) != label.horizon_sessions
+                ):
+                    raise DatasetValidationError("DOI outcome correction predecessor does not match")
+                successors = connection.execute(
+                    """SELECT label_id,payload_json FROM doi_outcome_labels
+                    WHERE assessment_id = ? AND horizon_sessions = ?""",
+                    (label.assessment_id, label.horizon_sessions),
+                ).fetchall()
+                for successor in successors:
+                    payload = json.loads(successor["payload_json"])
+                    if (payload.get("supersedes_label_id") == label.supersedes_label_id
+                            and successor["label_id"] != label.label_id):
+                        raise OptionLifecycleConflict("DOI outcome correction would fork lineage")
+            for observation_id in label.source_option_observation_ids:
+                if observation_id.startswith("PHANTOM_REV:"):
+                    future_row = connection.execute(
+                        """SELECT contract_symbol,quote_as_of,available_at,ticker,dataset_id
+                        FROM doi_outcome_source_quotes WHERE source_id=?""",
+                        (observation_id,),
+                    ).fetchone()
+                    if future_row is not None and (
+                        future_row["ticker"] != label.ticker
+                        or future_row["dataset_id"] not in label.source_option_dataset_ids
+                    ):
+                        raise DatasetValidationError(
+                            "DOI outcome Phantom source conflicts with ticker or dataset"
+                        )
+                else:
+                    future_row = connection.execute(
+                        """SELECT contract_symbol,quote_as_of,
+                                  observed_at AS available_at
+                        FROM option_contract_observations WHERE observation_id=?""",
+                        (observation_id,),
+                    ).fetchone()
                 if future_row is None:
                     raise DatasetValidationError(
                         f"DOI outcome source observation does not exist: {observation_id}"
@@ -1308,6 +1456,10 @@ class OptionLiquidityLifecycleStore:
                     raise DatasetValidationError("DOI outcome source changed exact contract")
                 if parse_utc(future_row["quote_as_of"]) <= label.assessment_cutoff_utc:
                     raise DatasetValidationError("DOI outcome source is not future evidence")
+                if parse_utc(future_row["available_at"]) > label.outcome_cutoff_utc:
+                    raise DatasetValidationError(
+                        "DOI outcome source became available after label cutoff"
+                    )
             existing = connection.execute(
                 "SELECT * FROM doi_outcome_labels WHERE label_id = ?",
                 (label.label_id,),

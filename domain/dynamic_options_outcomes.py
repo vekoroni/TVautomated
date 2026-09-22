@@ -209,6 +209,8 @@ class DOIOutcomeLabel:
     can_change_direction: bool = False
     can_grant_capital: bool = False
     can_close_position: bool = False
+    supersedes_label_id: str | None = None
+    correction_reason: str | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -282,6 +284,13 @@ class DOIOutcomeLabel:
             raise ValueError("DOI outcomes have no decision authority")
         if self.can_change_direction or self.can_grant_capital or self.can_close_position:
             raise ValueError("DOI outcomes cannot possess trading authority")
+        if self.supersedes_label_id:
+            if self.supersedes_label_id == self.label_id:
+                raise ValueError("outcome label cannot supersede itself")
+            if not str(self.correction_reason or "").strip():
+                raise ValueError("outcome correction requires a reason")
+        elif self.correction_reason:
+            raise ValueError("outcome correction reason requires a predecessor")
 
     @classmethod
     def create(cls, **values: Any) -> "DOIOutcomeLabel":
@@ -343,12 +352,16 @@ def outcome_label_identity(
 def _validated_future_paths(
     *,
     assessment_cutoff_utc: datetime,
+    assessment_session_date: date | None,
     evaluation_cutoff_utc: datetime,
     contract_symbol: str,
     option_path: Iterable[OptionPathObservation],
     underlying_path: Iterable[UnderlyingPathObservation],
 ) -> tuple[list[OptionPathObservation], list[UnderlyingPathObservation]]:
     origin = _utc(assessment_cutoff_utc, "assessment_cutoff_utc")
+    origin_session = assessment_session_date or origin.date()
+    if origin_session > origin.date():
+        raise OutcomeLeakageError("assessment market session follows evidence cutoff")
     cutoff = _utc(evaluation_cutoff_utc, "evaluation_cutoff_utc")
     if cutoff < origin:
         raise OutcomeLeakageError("evaluation cutoff precedes assessment cutoff")
@@ -357,12 +370,12 @@ def _validated_future_paths(
     for point in options:
         if point.contract_symbol != contract_symbol.upper():
             raise ValueError("option path changed exact contract identity")
-        if point.session_date <= origin.date() or point.quote_at_utc <= origin:
+        if point.session_date <= origin_session or point.quote_at_utc <= origin:
             raise OutcomeLeakageError("option path includes evidence at or before assessment cutoff")
         if point.available_at_utc > cutoff:
             raise OutcomeLeakageError("option path includes evidence unavailable at evaluation cutoff")
     for point in underlyings:
-        if point.session_date <= origin.date():
+        if point.session_date <= origin_session:
             raise OutcomeLeakageError("underlying path includes assessment-session or earlier evidence")
         if point.available_at_utc > cutoff:
             raise OutcomeLeakageError("underlying path includes evidence unavailable at evaluation cutoff")
@@ -401,6 +414,7 @@ def evaluate_assessment_outcome(
     invalidation_spot: float | None,
     option_path: Iterable[OptionPathObservation],
     underlying_path: Iterable[UnderlyingPathObservation],
+    assessment_session_date: date | None = None,
     policy: OutcomeLabelPolicy = OutcomeLabelPolicy(),
 ) -> DOIOutcomeLabel:
     """Build one point-in-time, no-lookahead label for an exact assessment."""
@@ -419,6 +433,7 @@ def evaluate_assessment_outcome(
         raise ValueError("reference ask cannot be below bid")
     options, underlyings = _validated_future_paths(
         assessment_cutoff_utc=assessment_cutoff_utc,
+        assessment_session_date=assessment_session_date,
         evaluation_cutoff_utc=evaluation_cutoff_utc,
         contract_symbol=contract_symbol,
         option_path=option_path,
@@ -482,6 +497,16 @@ def evaluate_assessment_outcome(
         )
         outcome_cutoff = _utc(evaluation_cutoff_utc, "evaluation_cutoff_utc")
         horizon_end = None
+
+    # The horizon date records *when* the market moved. The label cutoff must
+    # record *when all evidence used by this label became available*. A chain
+    # backfilled after the underlying bar must not be laundered into an earlier
+    # point-in-time outcome.
+    outcome_cutoff = max(
+        outcome_cutoff,
+        *(point.available_at_utc for point in observed_underlyings),
+        *(point.available_at_utc for point in observed_options),
+    )
 
     gaps: list[str] = []
     if not complete:

@@ -20,6 +20,7 @@ from ..adapters.workflow import project_completed
 from ..application import _constant, _pairs
 from ..domain import ContractError, canonical, nonempty
 from ..semantic import review_assessment
+from ..v2.assessment import validate_assessment
 from .coordinator import Worker3Coordinator
 
 
@@ -137,7 +138,16 @@ def _sanitized_receipt(transport):
         "request_hash", "http_status", "input_tokens", "output_tokens",
         "elapsed_ms", "credential_source", "credential_fingerprint",
         "status", "error_type", "failure_stage", "timeout_seconds",
+        "stop_reason",
     )}
+
+
+def _failure_code(exc: Exception) -> str:
+    # ContractError messages originate in local validators. Other exceptions
+    # may contain arbitrary provider or filesystem text and must not be saved.
+    if isinstance(exc, ContractError):
+        return str(exc)[:180] or "CONTRACT_REJECTED"
+    return "UNEXPECTED_VALIDATION_ERROR"
 
 
 class ControlledProviderRuntime:
@@ -257,13 +267,16 @@ class ControlledProviderRuntime:
                 reason_code="PRE_DISPATCH_VALIDATION_FAILED", delay_seconds=0,
             )
             raise ContractError("provider dispatch blocked before send") from None
-        failure_stage = "PROVIDER"
+        failure_stage = "PROVIDER_RESPONSE"
+        response = None
         try:
             # An envelope/transport failure can follow a billable request.
             # Consume the attempt before entering any provider code.
             self.calls += 1
             response = adapter.generate(context.job)
-            failure_stage = "STRUCTURAL_SEMANTIC_VALIDATION"
+            failure_stage = "STRUCTURAL_VALIDATION"
+            validate_assessment(context, response)
+            failure_stage = "SEMANTIC_REVIEW"
             semantic = review_assessment(context, response)
             generated_at = datetime.fromtimestamp(clock(), timezone.utc).isoformat()
             saved = {
@@ -282,11 +295,17 @@ class ControlledProviderRuntime:
                 job_id, claim["token"], now=clock(), response=saved,
                 receipt=receipt, cost_microusd=cost,
             )
-        except Exception:
+        except Exception as exc:
             receipt = _sanitized_receipt(transport)
             receipt["runtime_failure_stage"] = failure_stage
+            receipt["validation_failure_code"] = _failure_code(exc)
+            rejected = asdict(response) if response is not None else None
             try:
-                self.store.mark_uncertain(job_id, claim["token"], now=clock(), receipt=receipt)
+                self.store.mark_uncertain(
+                    job_id, claim["token"], now=clock(), receipt=receipt,
+                    failure_stage=failure_stage, failure_code=_failure_code(exc),
+                    rejected_response=rejected,
+                )
             except ContractError:
                 self.store.recover(now=clock())
             raise ContractError(

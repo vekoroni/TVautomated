@@ -160,13 +160,15 @@ class Phase2AuthorityTests(unittest.TestCase):
         self.assertIsNone(quote_age_seconds(None, as_of_utc=now))
 
     def test_execution_viability_excludes_scenario_economics(self) -> None:
+        quote_time = datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)
         hydrated = {
             "selected_structure_hydration_status": "COMPLETE",
             "selected_structure": "LONG_SINGLE",
             "selected_contract_symbol": "AAPL261016C00200000",
             "selected_long_leg": {"bid": 2.0, "ask": 2.1},
+            "selected_quote_timestamp_utc": quote_time.isoformat(),
         }
-        result = evaluate_execution_viability({}, hydrated)
+        result = evaluate_execution_viability({}, hydrated, as_of_utc=quote_time)
         self.assertEqual(result["execution_viability_state"], "EXECUTABLE_QUOTE")
         self.assertTrue(result["execution_viability_eligible"])
         forbidden_prefixes = ("rr_", "ev_", "monetisability_", "scenario_")

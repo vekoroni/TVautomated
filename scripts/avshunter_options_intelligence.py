@@ -4948,7 +4948,11 @@ def _common_options_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     else:
         signal_row = {}
 
-    fields: Dict[str, Any] = {}
+    fields: Dict[str, Any] = {
+        # Also emitted on STAND_DOWN/no-contract paths: the generated-target
+        # origin must not disappear merely because no option was selected.
+        'structural_target_state': ctx.get('structural_target_state', 'NO_TARGET_SOURCE'),
+    }
     fields.update(_ev3_direction_fields(ctx, direction_arbitration))
     fields.update(direction_arbitration)
     for field in (
@@ -8342,6 +8346,9 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
         # Trade economics
         'structural_target'       : ctx['structural_target'],
+        # Preserve whether this is an observed structural level or a generated
+        # 3R scenario.  Downstream monetisability must not treat them alike.
+        'structural_target_state' : ctx.get('structural_target_state', 'NO_TARGET_SOURCE'),
         'economics_state'         : econ.get('economics_state'),
         'economics_reason'        : econ.get('economics_reason'),
         'target_in_play'          : target_in_play,
@@ -9928,7 +9935,7 @@ def run_options_layer(
         'atr_pct','adx_14','atr_percentile_rank',
         'catalyst_proximity',
         'dominant_trend','ema_stack',
-        'stop_loss','entry_price','structural_target',
+        'stop_loss','entry_price','structural_target','structural_target_state',
         'wyckoff_phase_bucket','wyckoff_score','composite_score',
         'win_probability','vms_score','vms_decision',
         # Sprint 2 — Convexity Strike Map fields

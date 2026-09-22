@@ -57,7 +57,9 @@ class EvidenceCoverageTests(unittest.TestCase):
         request = ClaudeV2Adapter(FakeTransport(ctx), 2048, 500000, 30, ctx).request_for(ctx.job)
         props = request['output_config']['format']['schema']['properties']
         self.assertEqual(props['claims']['items']['properties']['supporting_evidence_ids']['minItems'], 1)
-        self.assertEqual(props['sections']['items']['properties']['claim_ids']['minItems'], 2)
+        # Provider grammar permits minItems=1; local report review still
+        # requires two distinct, substantive claims per section.
+        self.assertEqual(props['sections']['items']['properties']['claim_ids']['minItems'], 1)
         ref, _ = self.metadata(ctx)
         self.assertIn(ref, props['claims']['items']['properties']['supporting_evidence_ids']['items']['enum'])
 

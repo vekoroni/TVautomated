@@ -30,6 +30,8 @@ MACRO_QUANT_CSV_FIELDS = [
     "macro_session_date",
     "macro_plain_language_advisory",
     "macro_authority",
+    "macro_input_manifest_id",
+    "macro_input_manifest_sha256",
     "macro_source_path",
     "macro_contract_version",
     "macro_generated_at_utc",
@@ -800,6 +802,12 @@ def build_macro_quant_packet(
         "macro_session_date": session_date,
         "macro_plain_language_advisory": advisory,
         "macro_authority": "ADVISORY_ONLY",
+        "macro_input_manifest_id": str(
+            find_field(macro, "macro_input_manifest_id", default="") or ""
+        ),
+        "macro_input_manifest_sha256": str(
+            find_field(macro, "macro_input_manifest_sha256", default="") or ""
+        ),
     })
     identity_payload = {
         key: value for key, value in packet.items()
@@ -822,6 +830,8 @@ def missing_macro_quant_packet(source_path: str | Path | None = None) -> Dict[st
             "Macro advisory unavailable; core ticker analysis remains independent."
         ),
         "macro_authority": "ADVISORY_ONLY",
+        "macro_input_manifest_id": "",
+        "macro_input_manifest_sha256": "",
         "macro_quant_contract_version": MACRO_QUANT_CONTRACT_VERSION,
         "macro_source_path": str(source_path or ""),
         "macro_contract_version": "UNKNOWN",

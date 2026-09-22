@@ -76,6 +76,10 @@ from typing import Optional
 # PATHS
 # ============================================================
 BASE_DIR   = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+from domain.scanner_evidence import lead_route, volume_concentration_side
+
 OUTPUT_DIR = BASE_DIR / "data" / "output" / "universe_scanner"
 LOGS_DIR   = BASE_DIR / "data" / "logs"
 DB_DIR     = BASE_DIR / "data" / "cache"
@@ -374,10 +378,11 @@ def run_test_scan(pipeline_universe: set, top_n: int = 10) -> tuple:
                 "tier":                "TEST",
                 # L2-STEP7 / L3-SPRINT2: LSS stubs for test mode (no real data)
                 "lss_score":           None,
-                "lss_decision":        "LEAD_BLOCK",
-                "lss_route":           "EXCLUDED",
-                "lss_reasons":         "TEST_MODE",
-                "sweep_flag":          "NO_DATA",
+                "lss_decision":        "LEAD_INCOMPLETE",
+                "lss_route":           "WATCHLIST_ONLY",
+                "lss_reasons":         "TEST_MODE_NO_LIVE_EVIDENCE",
+                "lss_missing_evidence": "TEST_MODE_NO_LIVE_EVIDENCE",
+                "sweep_flag":          "NO_TRADE_PRINT_DATA",
                 "options_vol_ratio":   None,
                 "sector_rs_flag":      "NO_MAP",
                 "short_interest_pct":  None,
@@ -519,7 +524,8 @@ def _compute_options_volume_anomaly(
         "call_vol_today":      None,
         "put_vol_today":       None,
         "call_put_vol_ratio":  None,
-        "sweep_flag":          "NO_DATA",
+        "volume_concentration_side": "NO_DATA",
+        "sweep_flag":          "NO_TRADE_PRINT_DATA",
     }
     try:
         conn.execute("""
@@ -567,16 +573,9 @@ def _compute_options_volume_anomaly(
                 ratio   = round(total_vol / avg_20d, 2)
                 anomaly = ratio >= 2.0
 
-        cp_ratio = sweep = None
-        if call_vol > 0 and put_vol > 0:
+        cp_ratio = None
+        if put_vol > 0:
             cp_ratio = round(call_vol / put_vol, 2)
-            sweep    = "CALL_SWEEP" if cp_ratio >= 2.0 else ("PUT_SWEEP" if cp_ratio <= 0.5 else "NEUTRAL")
-        elif call_vol > 0:
-            sweep = "CALL_SWEEP"
-        elif put_vol > 0:
-            sweep = "PUT_SWEEP"
-        else:
-            sweep = "NEUTRAL"
 
         return {
             "options_vol_today":   total_vol,
@@ -586,7 +585,8 @@ def _compute_options_volume_anomaly(
             "call_vol_today":      call_vol,
             "put_vol_today":       put_vol,
             "call_put_vol_ratio":  cp_ratio,
-            "sweep_flag":          sweep,
+            "volume_concentration_side": volume_concentration_side(call_vol, put_vol),
+            "sweep_flag":          "NO_TRADE_PRINT_DATA",
         }
     except Exception as exc:
         log.debug("  %s: options_vol_anomaly skipped: %s", ticker, exc)
@@ -1464,12 +1464,12 @@ def compute_sector_relative_strength(ticker: str, ticker_momentum: float) -> dic
 
 def compute_dark_pool_proxy(options_df: pd.DataFrame, price_data: dict) -> dict:
     """
-    L2-STEP5: Dark pool proxy using microstructure signals already fetched.
-    NOT confirmed dark pool data — proxy only (no premium provider required).
+    L2-STEP5: Option activity proxy using available chain and price fields.
+    This contains no dark-pool prints, venue or off-exchange evidence.
 
     Signal 1: Large single contracts — volume * mid > $50k (institutional size)
     Signal 2: Tight spread + high volume — spread_pct < 5% AND vol > 500 (>=3 contracts)
-    Signal 3: Open gap > 2% vs prev_close (block trade signal)
+    Signal 3: Open gap > 2% vs prev_close (underlying movement only)
     """
     proxy_score = 0
     flags: list = []
@@ -1514,7 +1514,7 @@ def compute_dark_pool_proxy(options_df: pd.DataFrame, price_data: dict) -> dict:
 
     return {
         "dark_pool_proxy_score": proxy_score,
-        "dark_pool_proxy_flag":  "DARK_POOL_PROXY" if proxy_score >= 40 else "LOW_SIGNAL",
+        "dark_pool_proxy_flag":  "OPTION_ACTIVITY_PROXY" if proxy_score >= 40 else "LOW_SIGNAL",
         "dark_pool_proxy_notes": " | ".join(flags) if flags else "",
         "dark_pool_data_source": "PROXY_ONLY",
     }
@@ -1588,21 +1588,20 @@ def compute_lead_signal_score(
     etf_flow:    Optional[dict] = None,
 ) -> dict:
     """
-    L3-STEP6 (enhanced): Lead Signal Score (LSS) — primary discovery gate.
+    L3-STEP6 (enhanced): Lead Signal Score (LSS) — advisory discovery ranking.
     Replaces news terminal routing. Microstructure only.
 
     Formula: 30% opts vol anomaly | 20% IV/skew | 15% dark pool proxy
              15% short/borrow (+Form4 modifier) | 10% price-vol structure
              10% sector RS (+ETF flow modifier)
 
-    Score 0-100. LEAD_GO>=75 → FULL_PIPELINE, LEAD_PROBE>=60 → DISCOVERY_ONLY,
-                 LEAD_WATCH>=45 → WATCHLIST_ONLY, LEAD_BLOCK<45 → EXCLUDED
+    Missing evidence is disclosed; neither missingness nor a low weighted
+    score can exclude the ticker from governed thesis assessment.
     """
     reasons: list = []
 
     # ── Component 1: Options Volume Anomaly (30%) ─────────────────────────────
     opts_ratio = vol_anomaly.get("options_vol_ratio")
-    sweep      = vol_anomaly.get("sweep_flag", "NEUTRAL")
     comp1 = 0.0
     if opts_ratio is not None:
         if opts_ratio >= 5.0:
@@ -1615,9 +1614,7 @@ def compute_lead_signal_score(
             comp1 = 35
         else:
             comp1 = 10
-    if sweep in ("CALL_SWEEP", "PUT_SWEEP"):
-        comp1 = min(100, comp1 + 15)
-        reasons.append(f"sweep={sweep}")
+    # No trade prints or aggressor side: chain volume is not a sweep.
 
     # ── Component 2: IV/Skew Distortion (20%) ────────────────────────────────
     iv_rank    = float(vms.get("iv_rank", 0.5) or 0.5)
@@ -1665,7 +1662,7 @@ def compute_lead_signal_score(
         if short_data.get("short_trend") == "RISING":
             comp4 = min(100, comp4 + 10); reasons.append("short_trend=RISING")
     else:
-        comp4 = 25  # neutral — no data, do not penalise
+        comp4 = 0.0  # score contribution only; reported component stays missing
 
     # L3-E2: Form 4 insider modifier (additive onto comp4)
     if form4_data:
@@ -1721,25 +1718,23 @@ def compute_lead_signal_score(
         2,
     )
 
-    if lss >= 75:   decision = "LEAD_GO"
-    elif lss >= 60: decision = "LEAD_PROBE"
-    elif lss >= 45: decision = "LEAD_WATCH"
-    else:           decision = "LEAD_BLOCK"
-
-    route_map = {
-        "LEAD_GO":    "FULL_PIPELINE",
-        "LEAD_PROBE": "DISCOVERY_ONLY",
-        "LEAD_WATCH": "WATCHLIST_ONLY",
-        "LEAD_BLOCK": "EXCLUDED",
-    }
+    missing = []
+    if opts_ratio is None:
+        missing.append("OPTIONS_VOLUME_BASELINE")
+    if not short_data.get("short_data_available"):
+        missing.append("SHORT_DATA")
+    if rs_flag in ("", "NO_MAP", "NO_DATA"):
+        missing.append("SECTOR_RELATIVE_STRENGTH")
+    decision, route = lead_route(lss, tuple(missing))
     return {
         "lss_score":           lss,
         "lss_decision":        decision,
-        "lss_route":           route_map[decision],
+        "lss_route":           route,
+        "lss_missing_evidence": tuple(missing),
         "lss_comp1_opts_vol":  round(comp1, 1),
         "lss_comp2_iv_skew":   round(comp2, 1),
         "lss_comp3_darkpool":  round(comp3, 1),
-        "lss_comp4_short":     round(comp4, 1),
+        "lss_comp4_short":     round(comp4, 1) if short_data.get("short_data_available") else None,
         "lss_comp5_pricevol":  round(comp5, 1),
         "lss_comp6_sector":    round(comp6, 1),
         "lss_reasons":         " | ".join(reasons[:8]),
@@ -2698,11 +2693,14 @@ def run_scan(universe: list, pipeline_universe: set,
                         "lss_comp5_pricevol":  _lss.get("lss_comp5_pricevol"),
                         "lss_comp6_sector":    _lss.get("lss_comp6_sector"),
                         "sweep_flag":          _va.get("sweep_flag"),
+                        "volume_concentration_side": _va.get("volume_concentration_side"),
+                        "call_put_vol_ratio":  _va.get("call_put_vol_ratio"),
                         "options_vol_ratio":   _va.get("options_vol_ratio"),
                         "options_vol_anomaly": _va.get("options_vol_anomaly"),
                         "sector_rs_flag":      _srs.get("sector_rs_flag"),
                         "short_interest_pct":  _sd.get("short_interest_pct"),
                         "short_data_available": _sd.get("short_data_available"),
+                        "lss_missing_evidence": "|".join(_lss.get("lss_missing_evidence", ())),
                         "dark_pool_proxy_flag": _dp.get("dark_pool_proxy_flag"),
                         "dark_pool_proxy_score": _dp.get("dark_pool_proxy_score"),
                         # L3-SPRINT2: new fields
@@ -2855,7 +2853,9 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
         vms_df["scanner_primary_route"] = vms_df.apply(
             lambda r: r.get("lss_route") or _scanner_route(r.get("score", 0), r.get("decision", "BLOCK")), axis=1
         )
-        vms_df["route_source"]       = "SCANNER_VMS"
+        vms_df["route_source"]       = vms_df["lss_route"].apply(
+            lambda value: "SCANNER_LSS" if isinstance(value, str) and value else "SCANNER_VMS"
+        ) if "lss_route" in vms_df.columns else "SCANNER_VMS"
         vms_df["signal_source"]      = "MICROSTRUCTURE"
         vms_df["news_terminal_role"] = "CONFIRMATION_ONLY"
         vms_df["scanner_manifest_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -2912,6 +2912,7 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
             "LEAD_PROBE": int((vms_df["lss_decision"] == "LEAD_PROBE").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
             "LEAD_WATCH": int((vms_df["lss_decision"] == "LEAD_WATCH").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
             "LEAD_BLOCK": int((vms_df["lss_decision"] == "LEAD_BLOCK").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
+            "LEAD_INCOMPLETE": int((vms_df["lss_decision"] == "LEAD_INCOMPLETE").sum()) if not vms_df.empty and "lss_decision" in vms_df.columns else 0,
         },
         # L3-SPRINT2: Form 4 + ETF flow summary
         "form4_signal_counts": {
@@ -2927,12 +2928,11 @@ def write_outputs(contracts_df: pd.DataFrame, vms_df: pd.DataFrame,
     }
 
     # L4-STEP1: Per-ticker signal timestamp dict — consumed by signal_grader.py and orchestrator.
-    # Only includes tickers that passed the LSS gate (not LEAD_BLOCK).
+    # Preserve all scanned tickers for context, even when evidence is incomplete.
     _detected_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     _ticker_rows: dict = {}
     if not vms_df.empty and "lss_decision" in vms_df.columns:
-        _non_block = vms_df[vms_df["lss_decision"] != "LEAD_BLOCK"]
-        for _, _row in _non_block.iterrows():
+        for _, _row in vms_df.iterrows():
             _tk = str(_row.get("ticker", "")).strip().upper()
             if _tk:
                 _ticker_rows[_tk] = {

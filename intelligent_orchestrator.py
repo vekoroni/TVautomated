@@ -177,6 +177,13 @@ except Exception:
         write_json,
     )
 
+from domain.macro_input_governance import MACRO_AUTHORITY, validate_manifest_lineage
+from canonical_data.macro_publication import (
+    authoritative_macro_root,
+    validate_macro_projection_alignment,
+)
+from canonical_data.session_clock import session_snapshot
+
 try:
     from contracts.handoff_contract import (
         PRIORITY_MACRO_QUANT,
@@ -800,6 +807,7 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
     if not scanner["available"] or scanner["vms_df"] is None:
         return
     try:
+        import pandas as _pd
         ctx_dir  = cfg.RUNS_DIR / pipeline_run_id
         ctx_dir.mkdir(parents=True, exist_ok=True)
         vms_df   = scanner["vms_df"]
@@ -907,6 +915,15 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
                 "signal_detected_at": _sig_at,
                 "lss_score":          _lss_sc,
                 "lss_decision":       _lss_dc,
+                # Advisory evidence, never a substitute for the governed thesis.
+                "lss_missing_evidence": str(row.get("lss_missing_evidence") or "")
+                    if _pd.notna(row.get("lss_missing_evidence")) else "",
+                "volume_concentration_side": str(row.get("volume_concentration_side") or "")
+                    if _pd.notna(row.get("volume_concentration_side")) else "",
+                "call_put_vol_ratio": float(row.get("call_put_vol_ratio"))
+                    if _pd.notna(row.get("call_put_vol_ratio")) else None,
+                "sweep_flag": str(row.get("sweep_flag") or "")
+                    if _pd.notna(row.get("sweep_flag")) else "",
                 "signal_grade":       _grade,
                 "signal_grade_route": _final_route,
                 "signal_hours_lead":  _grade_entry.get("hours_lead"),
@@ -1095,7 +1112,74 @@ def _parse_utc_timestamp(value: Any) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
+def _macro_evidence_session(data: dict, flat: dict) -> Optional[date]:
+    """Resolve the market session represented by an advisory macro packet."""
+    lineage = (
+        data.get("extras", {}).get("macro_input_lineage", {})
+        if isinstance(data.get("extras"), dict)
+        else {}
+    )
+    gex_validation = (
+        lineage.get("gex_validation", {})
+        if isinstance(lineage, dict)
+        else {}
+    )
+    candidates = (
+        # A macro may be built on a weekend.  The validated completed-session
+        # lineage is the market clock; report_date is only the build/report day.
+        gex_validation.get("session_date"),
+        flat.get("report_date"),
+        flat.get("as_of_utc"),
+    )
+    for value in candidates:
+        text = str(value or "").strip()
+        if len(text) < 10:
+            continue
+        try:
+            return date.fromisoformat(text[:10])
+        except ValueError:
+            continue
+    return None
+
+
+def _macro_freshness_warning(
+    data: dict,
+    flat: dict,
+    *,
+    now_utc: Optional[datetime] = None,
+) -> Optional[str]:
+    """Return a warning only when macro evidence trails a completed XNYS session.
+
+    Calendar-hour age is misleading across weekends and exchange holidays.  A
+    Friday completed-session packet remains current on Saturday, Sunday and a
+    Monday holiday even though its timestamp is more than 24 hours old.
+    """
+    checked_at = now_utc or datetime.now(timezone.utc)
+    observed_session = _macro_evidence_session(data, flat)
+    if observed_session is not None:
+        expected_session = session_snapshot(checked_at).last_completed_session
+        if observed_session == expected_session:
+            return None
+        relation = "behind" if observed_session < expected_session else "ahead of"
+        return (
+            f"macro evidence session {observed_session.isoformat()} is {relation} "
+            f"the latest completed XNYS session {expected_session.isoformat()}"
+        )
+
+    # Legacy packets without a resolvable market session retain the old
+    # internal-timestamp fallback.  File mtime is never treated as evidence.
+    timestamp = flat.get("generated_at") or flat.get("as_of_utc")
+    as_of = _parse_utc_timestamp(timestamp)
+    age_h = (checked_at - as_of).total_seconds() / 3600
+    if age_h > cfg.MACRO_STALE_HOURS:
+        return f"macro timestamp is {age_h:.0f}h old"
+    return None
+
+
+def check_macro_json(
+    *,
+    allowed_superseded_input_keys: tuple[str, ...] = (),
+) -> Tuple[bool, str, Optional[Path]]:
     """Verify macro_intelligence_latest.json exists, is valid, and contains required fields."""
     if not cfg.MACRO_DIR.exists():
         return (
@@ -1121,6 +1205,47 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
         return False, f"JSON parse error in {macro_file.name}: {e}", None
 
+    declared_authority = str(data.get("macro_authority") or MACRO_AUTHORITY).upper()
+    if declared_authority != MACRO_AUTHORITY:
+        return False, (
+            f"Macro JSON attempted non-advisory authority: {declared_authority}. "
+            "The core pipeline will continue without macro input."
+        ), None
+
+    if authoritative_macro_root(macro_file) is not None:
+        try:
+            projection_alignment = validate_macro_projection_alignment(macro_file)
+        except (OSError, ValueError) as error:
+            return False, f"Macro projection validation failed: {error}", None
+        if not projection_alignment["aligned"]:
+            return False, (
+                "Macro latest projections are not synchronized: "
+                + ", ".join(projection_alignment["stale_or_missing"])
+            ), None
+
+    metadata = data.get("_builder_metadata") if isinstance(data.get("_builder_metadata"), dict) else {}
+    input_manifest = metadata.get("input_manifest")
+    lineage_note = "legacy lineage unavailable"
+    if isinstance(input_manifest, dict):
+        lineage = validate_manifest_lineage(
+            input_manifest,
+            allow_changed_keys=allowed_superseded_input_keys,
+        )
+        if not lineage["valid"]:
+            return False, (
+                "Macro advisory input was superseded or changed after build: "
+                + "|".join(lineage["errors"])
+            ), None
+        if (
+            data.get("macro_input_manifest_sha256")
+            != input_manifest.get("manifest_sha256")
+        ):
+            return False, "Macro output/input-manifest identity mismatch", None
+        superseded = lineage.get("superseded_keys") or []
+        lineage_note = f"lineage={input_manifest.get('manifest_id', 'UNKNOWN')} verified"
+        if superseded:
+            lineage_note += "; runtime GEX supersedes " + ",".join(superseded)
+
     flat = _flatten_macro(data)
 
     required_fields = [
@@ -1136,19 +1261,15 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
             f"   File: {macro_file}"
         ), None
 
-    # Staleness warning (non-blocking)
-    # SPRINT 1: Validate INTERNAL generated_at/as_of_utc timestamp, not file mtime.
-    # A file can be re-saved without content change and still pass an mtime check.
-    # We read the timestamp from inside the JSON — this is the only reliable source.
+    # Freshness warning (non-blocking).  Compare represented evidence sessions,
+    # not calendar-hour age, so weekends and exchange holidays remain correct.
     try:
-        # Prefer generated_at if present (more explicit than as_of_utc)
-        _ts_field = flat.get("generated_at") or flat.get("as_of_utc")
-        as_of = _parse_utc_timestamp(_ts_field)
-        age_h = (datetime.now(timezone.utc) - as_of).total_seconds() / 3600
-        if age_h > cfg.MACRO_STALE_HOURS:
+        freshness_warning = _macro_freshness_warning(data, flat)
+        if freshness_warning:
             return (
                 True,
-                f"WARNING -- macro is {age_h:.0f}h old ({macro_file.name}). Consider updating before running.",
+                f"WARNING -- {freshness_warning} ({macro_file.name}). "
+                "Consider updating before running.",
                 macro_file,
             )
     except Exception as exc:
@@ -1183,7 +1304,7 @@ def check_macro_json() -> Tuple[bool, str, Optional[Path]]:
     except Exception:
         pass
 
-    return True, f"Macro JSON OK: {macro_file.name}", macro_file
+    return True, f"Macro JSON OK: {macro_file.name}; ADVISORY_ONLY; {lineage_note}", macro_file
 
 
 def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price_path,
@@ -1246,7 +1367,13 @@ def refresh_iv_history_after_delivery(run_id: str, evidence_session_date: str) -
         return {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
 
 
-def run_preflight_checks(min_universe: int, target_universe: int, universe_gate_mode: str) -> Tuple[bool, Optional[Path]]:
+def run_preflight_checks(
+    min_universe: int,
+    target_universe: int,
+    universe_gate_mode: str,
+    *,
+    allowed_superseded_macro_keys: tuple[str, ...] = (),
+) -> Tuple[bool, Optional[Path]]:
     """Run all pre-flight checks. Returns (all_ok, macro_path)."""
     logger.info("🔍 Running pre-flight checks...")
     all_ok = True
@@ -1275,7 +1402,9 @@ def run_preflight_checks(min_universe: int, target_universe: int, universe_gate_
         logger.info("   Scripts       : All present")
 
     # Macro JSON
-    macro_ok, macro_msg, macro_path = check_macro_json()
+    macro_ok, macro_msg, macro_path = check_macro_json(
+        allowed_superseded_input_keys=allowed_superseded_macro_keys,
+    )
     if not macro_ok and _macro_core_required():
         logger.error(f"   ❌ Macro JSON  : {macro_msg}")
         all_ok = False
@@ -2580,6 +2709,74 @@ def run_outcome_maturation_stage(run_id: str) -> dict[str, object]:
         )
         summary["status"] = "COMPLETE"
         summary.update(result.to_dict())
+        # MON-004: technical bridge only.  The control plane contains a large
+        # historical backlog, so activation is explicit and each run is capped.
+        # No option label has decision or capital authority.
+        summary["option_outcome_capture"] = {
+            "status": "SKIPPED",
+            "reason": "AVSHUNTER_OPTION_OUTCOME_CAPTURE_ENABLED_NOT_SET",
+            "authority": "OBSERVATION_ONLY",
+            "can_grant_capital": False,
+        }
+        if os.environ.get("AVSHUNTER_OPTION_OUTCOME_CAPTURE_ENABLED", "0").strip().lower() in {
+            "1", "true", "yes",
+        }:
+            try:
+                from canonical_data.registry import CanonicalRegistry
+                from canonical_data.option_liquidity_lifecycle import OptionLiquidityLifecycleStore
+                from canonical_data.option_outcome_maturation import capture_matured_option_batch
+                from canonical_data.phantom_outcome_source import PhantomOutcomeSourceReader
+
+                control_path = cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
+                phantom_path = cfg.BASE_DIR / "data" / "phantom" / "phantom_history.db"
+                if not control_path.is_file():
+                    summary["option_outcome_capture"] = {
+                        "status": "DEFERRED", "reason": "CONTROL_PLANE_UNAVAILABLE",
+                        "authority": "OBSERVATION_ONLY", "can_grant_capital": False,
+                    }
+                elif not phantom_path.is_file():
+                    summary["option_outcome_capture"] = {
+                        "status": "DEFERRED", "reason": "PHANTOM_SOURCE_UNAVAILABLE",
+                        "authority": "OBSERVATION_ONLY", "can_grant_capital": False,
+                    }
+                else:
+                    import shutil
+                    free_bytes = shutil.disk_usage(control_path.parent).free
+                    if free_bytes < 1_073_741_824:
+                        summary["option_outcome_capture"] = {
+                            "status": "DEFERRED", "reason": "DISK_HEADROOM_BELOW_1_GIB",
+                            "disk_free_bytes": free_bytes,
+                            "authority": "OBSERVATION_ONLY", "can_grant_capital": False,
+                        }
+                    else:
+                        control_store = OptionLiquidityLifecycleStore(CanonicalRegistry(control_path))
+                        batch = capture_matured_option_batch(
+                            control_store, price_database,
+                            evaluation_cutoff_utc=datetime.now(timezone.utc),
+                            current_run_id=run_id,
+                            candidate_scan_limit=100, capture_limit=10,
+                            phantom_source_reader=PhantomOutcomeSourceReader(
+                                control_path, phantom_path,
+                            ),
+                        )
+                        summary["option_outcome_capture"] = {
+                            "status": (
+                                "BOUNDED_RESEARCH_BATCH" if not batch.errors
+                                and batch.population_reconciled else "PARTIAL"
+                            ),
+                            "disk_free_bytes": free_bytes,
+                            **batch.to_dict(),
+                        }
+            except Exception as option_capture_error:
+                summary["option_outcome_capture"] = {
+                    "status": "FAILED",
+                    "reason": f"{type(option_capture_error).__name__}: {option_capture_error}",
+                    "authority": "OBSERVATION_ONLY", "can_grant_capital": False,
+                }
+                logger.warning(
+                    "Option outcome capture failed (non-critical): %s",
+                    option_capture_error,
+                )
         governed_constants = cfg.BASE_DIR / "config" / "governed_constants_v1.json"
         learning_snapshot = build_outcome_learning_snapshot(
             DecisionOutcomeLedger(ledger_path),
@@ -5064,17 +5261,21 @@ def evening_workflow(
     # derive exact-session GEX before the advisory macro packet is loaded.  A
     # GEX failure cannot remove a ticker or change direction; the deterministic
     # overlay clears any prior-session numeric value and records UNAVAILABLE.
+    _gex_refresh = None
+    _gex_runtime_path = None
     if _session_authority.evidence_state.value == "COMPLETED_SESSION":
         try:
             from orchestrator.completed_session_gex import (
-                refresh_completed_session_gex,
+                synchronise_completed_session_gex,
             )
 
-            _gex_refresh = refresh_completed_session_gex(
+            _gex_refresh = synchronise_completed_session_gex(
                 repository_root=cfg.BASE_DIR,
                 run_id=session_id,
                 session_date=date.fromisoformat(_evidence_session_date),
+                base_macro_path=cfg.MACRO_FILE,
             )
+            _gex_runtime_path = Path(_gex_refresh["runtime_macro_path"])
             _gex_artifact = (
                 cfg.RUNS_DIR / session_id / "macro" /
                 f"completed_session_gex_refresh_{session_id}.json"
@@ -5083,8 +5284,9 @@ def evening_workflow(
             write_json(_gex_artifact, _gex_refresh)
             if _gex_refresh.get("status") == "COMPLETE":
                 logger.info(
-                    "✅ Completed-session GEX refreshed: session=%s datasets=%d",
+                    "✅ Completed-session GEX synchronised: session=%s action=%s datasets=%d",
                     _gex_refresh.get("session_date"),
+                    _gex_refresh.get("publication_action"),
                     len(_gex_refresh.get("gex_dataset_ids") or ()),
                 )
             else:
@@ -5111,13 +5313,19 @@ def evening_workflow(
     run_dropoff_audit_checkpoint(session_id, "phase0_intake")
     # ─────────────────────────────────────────────────────────────────────────
 
+    _allowed_gex_supersession = tuple(
+        _gex_refresh.get("lineage_superseded_keys") or ()
+    ) if _gex_refresh and _gex_refresh.get("status") == "COMPLETE" else ()
     preflight_ok, macro_path = run_preflight_checks(
         min_universe=min_universe,
         target_universe=target_universe,
         universe_gate_mode=universe_gate_mode,
+        allowed_superseded_macro_keys=_allowed_gex_supersession,
     )
     if not preflight_ok:
         return False
+    if macro_path is not None and _gex_runtime_path is not None and _gex_runtime_path.is_file():
+        macro_path = _gex_runtime_path
     macro_path = _ensure_runtime_macro_path(session_id, macro_path)
 
     # ── SECTOR BIAS MAP — built once, passed to all downstream modules ────────
@@ -7181,6 +7389,25 @@ def evening_workflow(
     # Item 1 (ACK 17 Sep 2026): measure recorded predictions against reality after every
     # completed evening run. Non-critical, observation only.
     run_c12_outcome_scoring_stage(canonical_run_id)
+
+    # Freeze the Interpreter's completed-session parent only after all Evening
+    # stages above have returned, immediately before the terminal success
+    # marker. Morning may later update the same-run manifest and Lab book.
+    # This optional advisory package never changes Evening trading authority.
+    try:
+        from pipeline_interpreter.interactive_snapshot import publish_eod_snapshot
+
+        _eod_review_receipt = publish_eod_snapshot(cfg.RUNS_DIR / canonical_run_id)
+        logger.info(
+            "Interpreter EOD review snapshot: run=%s book_sha256=%s",
+            canonical_run_id,
+            _eod_review_receipt["source_book_sha256"],
+        )
+    except Exception as _eod_review_error:
+        logger.warning(
+            "Interpreter EOD review snapshot unavailable; core Evening flow unchanged: %s",
+            _eod_review_error,
+        )
 
     logger.info("=" * 80)
     logger.info("✅ EVENING WORKFLOW COMPLETE")
