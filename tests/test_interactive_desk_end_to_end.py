@@ -209,8 +209,113 @@ def test_failed_ticker_does_not_fabricate_or_block_other_report(tmp_path):
         "run_id": RUN, "tickers": ["AAA", "BBB"], "confirmed": True,
     })
     assert out.status_code == 200
-    assert out.json["results"][0]["status"] == "FAILED"
+    # An untyped exception after dispatch could have followed a billable call.
+    assert out.json["results"][0]["status"] == "UNKNOWN"
+    assert out.json["results"][0]["retry_allowed"] is False
     assert out.json["results"][1]["ticker"] == "BBB"
+
+
+def test_known_provider_rejection_is_persisted_and_never_retried(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+    from pipeline_interpreter.openai_desk_provider import ProviderRequestRejected
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    class RejectedProvider(FakeProvider):
+        def report(self, digest):
+            self.reports.append(digest)
+            raise ProviderRequestRejected(400, request_id="req_fixture")
+
+    provider = RejectedProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    body = {"run_id": RUN, "tickers": ["AAA"], "confirmed": True}
+    first = client.post("/api/interpreter/reports", json=body).json["results"][0]
+    assert first["status"] == "FAILED"
+    assert first["failure_code"] == "PROVIDER_HTTP_REJECTED"
+    assert first["provider_http_status"] == 400
+    assert first["provider_request_id"] == "req_fixture"
+    assert first["retry_allowed"] is False
+    marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
+    assert json.loads(marker.read_text(encoding="utf-8")) == first
+    assert client.post("/api/interpreter/reports", json=body).json["results"][0] == first
+    assert len(provider.reports) == 1
+
+
+def test_transport_timeout_stays_unknown_without_leaking_or_retrying(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+    from pipeline_interpreter.openai_desk_provider import ProviderOutcomeUnknown
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    class TimeoutProvider(FakeProvider):
+        def report(self, digest):
+            self.reports.append(digest)
+            raise ProviderOutcomeUnknown("private transport detail")
+
+    provider = TimeoutProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    body = {"run_id": RUN, "tickers": ["AAA"], "confirmed": True}
+    first = client.post("/api/interpreter/reports", json=body).json["results"][0]
+    assert first["status"] == "UNKNOWN"
+    assert first["failure_code"] == "PROVIDER_OUTCOME_UNKNOWN"
+    assert first["retry_allowed"] is False
+    assert "private transport detail" not in json.dumps(first)
+    marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
+    assert json.loads(marker.read_text(encoding="utf-8")) == first
+    assert client.post("/api/interpreter/reports", json=body).json["results"][0] == first
+    assert len(provider.reports) == 1
+
+
+def test_invalid_provider_report_persists_controlled_failure(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    class InvalidProvider(FakeProvider):
+        def report(self, digest):
+            self.reports.append(digest)
+            return {"sections": [], "executive_summary": "invalid", "external_events": [], "unresolved": []}
+
+    provider = InvalidProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    body = {"run_id": RUN, "tickers": ["AAA"], "confirmed": True}
+    first = client.post("/api/interpreter/reports", json=body).json["results"][0]
+    assert first["status"] == "FAILED"
+    assert first["failure_code"] == "REPORT_VALIDATION_FAILED"
+    assert first["retry_allowed"] is False
+    marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
+    assert json.loads(marker.read_text(encoding="utf-8")) == first
+    assert client.post("/api/interpreter/reports", json=body).json["results"][0] == first
+    assert len(provider.reports) == 1
+
+
+def test_existing_unknown_marker_is_preserved_without_new_paid_call(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+    from pipeline_interpreter.openai_desk_provider import ProviderOutcomeUnknown
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    class UnknownProvider(FakeProvider):
+        def report(self, digest):
+            self.reports.append(digest)
+            raise ProviderOutcomeUnknown("lost response")
+
+    provider = UnknownProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    body = {"run_id": RUN, "tickers": ["AAA"], "confirmed": True}
+    first = client.post("/api/interpreter/reports", json=body).json["results"][0]
+    marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
+    legacy = {"status": "UNKNOWN", "run_id": RUN, "ticker": "AAA",
+              "report_id": first["report_id"],
+              "error": "Provider outcome not yet reconciled; do not retry automatically."}
+    marker.write_text(json.dumps(legacy), encoding="utf-8")
+    assert client.post("/api/interpreter/reports", json=body).json["results"][0] == legacy
+    assert json.loads(marker.read_text(encoding="utf-8")) == legacy
+    assert len(provider.reports) == 1
 
 
 def test_future_news_cannot_launder_into_frozen_evening_report(tmp_path):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -76,3 +77,40 @@ def test_configured_cost_ceiling_blocks_before_network(monkeypatch):
     assert provider.estimate_report_bound(1000) > provider.max_ticker_usd
     with pytest.raises(module.ProviderUnavailable, match="exceeds per-ticker ceiling"):
         provider.report({"ticker": "AAA"})
+
+
+def test_http_rejection_has_bounded_status_and_request_id(monkeypatch):
+    from pipeline_interpreter import openai_desk_provider as module
+
+    def rejected(request, *, timeout):
+        raise HTTPError(request.full_url, 400, "private provider detail",
+                        {"x-request-id": "req_fixture"}, io.BytesIO(b"private provider body"))
+
+    monkeypatch.setattr(module, "urlopen", rejected)
+    provider = module.OpenAIResponsesProvider(
+        api_key="fake-key", model_id="test-model",
+        input_usd_per_million=1, output_usd_per_million=1,
+        web_search_usd_per_call=0.001, max_ticker_usd=1,
+    )
+    with pytest.raises(module.ProviderRequestRejected) as raised:
+        provider.report({"ticker": "AAA"})
+    assert raised.value.http_status == 400
+    assert raised.value.request_id == "req_fixture"
+    assert "private" not in str(raised.value)
+
+
+def test_transport_loss_remains_uncertain(monkeypatch):
+    from pipeline_interpreter import openai_desk_provider as module
+
+    def disconnected(request, *, timeout):
+        raise URLError("private network detail")
+
+    monkeypatch.setattr(module, "urlopen", disconnected)
+    provider = module.OpenAIResponsesProvider(
+        api_key="fake-key", model_id="test-model",
+        input_usd_per_million=1, output_usd_per_million=1,
+        web_search_usd_per_call=0.001, max_ticker_usd=1,
+    )
+    with pytest.raises(module.ProviderOutcomeUnknown) as raised:
+        provider.report({"ticker": "AAA"})
+    assert "private" not in str(raised.value)

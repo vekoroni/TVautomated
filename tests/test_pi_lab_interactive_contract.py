@@ -12,6 +12,14 @@ import pytest
 RUN_ID = "20260922_000106"
 
 
+def test_lab_discloses_unresolved_interpreter_attempts() -> None:
+    from pathlib import Path
+
+    control = (Path(__file__).resolve().parents[1] / "intelligence-lab" / "static"
+               / "interpreter-desk-controls.js").read_text(encoding="utf-8")
+    assert "require review. No automatic retry." in control
+
+
 def _rows(count: int = 6) -> list[dict[str, str]]:
     return [
         {

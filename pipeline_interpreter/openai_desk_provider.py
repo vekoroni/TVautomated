@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -46,6 +47,19 @@ _ANSWER_SCHEMA = _object({
 
 class ProviderUnavailable(RuntimeError):
     pass
+
+
+class ProviderRequestRejected(ProviderUnavailable):
+    """The provider returned a definite HTTP rejection, not a lost response."""
+
+    def __init__(self, http_status: int, *, request_id: str | None = None):
+        self.http_status = http_status
+        self.request_id = request_id if request_id and re.fullmatch(r"[A-Za-z0-9_-]{1,128}", request_id) else None
+        super().__init__(f"OpenAI Responses HTTP {http_status}; no automatic retry")
+
+
+class ProviderOutcomeUnknown(ProviderUnavailable):
+    """A request may have reached the provider, but no terminal response is known."""
 
 
 class OpenAIResponsesProvider:
@@ -136,10 +150,13 @@ class OpenAIResponsesProvider:
             with urlopen(request, timeout=self.timeout) as stream:
                 response = json.load(stream)
         except HTTPError as exc:
-            raise ProviderUnavailable(f"OpenAI Responses HTTP {exc.code}; no automatic retry") from exc
+            request_id = exc.headers.get("x-request-id") if exc.headers else None
+            raise ProviderRequestRejected(exc.code, request_id=request_id) from exc
         except (URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            raise ProviderUnavailable(f"OpenAI Responses outcome unknown; no automatic retry: {type(exc).__name__}") from exc
+            raise ProviderOutcomeUnknown("OpenAI Responses outcome unknown; no automatic retry") from exc
         if response.get("status") not in ("completed", None):
+            if response.get("status") in ("queued", "in_progress"):
+                raise ProviderOutcomeUnknown("OpenAI Responses has no terminal outcome; no automatic retry")
             raise ProviderUnavailable(f"OpenAI Responses incomplete: {response.get('status')}")
         messages = []
         sources: set[str] = set()

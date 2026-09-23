@@ -148,7 +148,10 @@ async function previewInterpreterDesk() {
       else interpreterText(panel, 'p', `${item.ticker}: ${item.status} — ${item.error || 'report unavailable'}`);
     }
     panel.style.display = 'block';
-    status.textContent = `${completed}/${tickers.length} advisory reports complete. Results stay bound to run ${run}.`;
+    const unresolved = result.results.length - completed;
+    status.textContent = unresolved
+      ? `${completed}/${tickers.length} advisory reports complete for run ${run}; ${unresolved} require review. No automatic retry.`
+      : `${completed}/${tickers.length} advisory reports complete. Results stay bound to run ${run}.`;
   } catch (error) { status.textContent = error.message; }
   finally { INTERPRETER_BUSY = false; updateInterpreterSelection(); }
 }

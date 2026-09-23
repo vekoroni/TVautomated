@@ -9,9 +9,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 import re
+import tempfile
 import time
 from typing import Any, Mapping
 from urllib.parse import urlsplit
@@ -21,6 +23,9 @@ from flask import jsonify, request
 from contracts.interpreter_eod_review import build_eod_review_bundle
 from domain.interpreter_review_selection import ReviewSelectionError, select_review_batch
 from pipeline_interpreter.interactive_snapshot import SnapshotError, load_eod_snapshot
+from pipeline_interpreter.openai_desk_provider import (
+    ProviderOutcomeUnknown, ProviderRequestRejected, ProviderUnavailable,
+)
 
 
 REPORT_VERSION = "interpreter_desk_report_v1"
@@ -218,6 +223,55 @@ def _report_id(digest: Mapping[str, Any], model_id: str) -> str:
     return hashlib.sha256(json.dumps(key, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
+def _persist_attempt(path: Path, record: Mapping[str, Any]) -> None:
+    """Replace the pending marker atomically; never expose a partial receipt."""
+
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent,
+            prefix=".interpreter-attempt-", suffix=".tmp", delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            json.dump(record, handle, ensure_ascii=False, allow_nan=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _report_failure(run_id: str, ticker: str, report_id: str,
+                    stage: str, error: Exception) -> dict[str, Any]:
+    """Classify only provable failures as FAILED; uncertainty never permits retry."""
+
+    receipt: dict[str, Any] = {
+        "run_id": run_id, "ticker": ticker, "report_id": report_id,
+        "authority": "ADVISORY_ONLY", "retry_allowed": False,
+        "failure_stage": stage, "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    if isinstance(error, ProviderRequestRejected):
+        receipt.update(status="FAILED", failure_code="PROVIDER_HTTP_REJECTED",
+                       provider_http_status=error.http_status,
+                       error=f"Provider rejected request (HTTP {error.http_status}); no automatic retry.")
+        if error.request_id:
+            receipt["provider_request_id"] = error.request_id
+    elif isinstance(error, ProviderOutcomeUnknown):
+        receipt.update(status="UNKNOWN", failure_code="PROVIDER_OUTCOME_UNKNOWN",
+                       error="Provider outcome not yet reconciled; do not retry automatically.")
+    elif isinstance(error, ProviderUnavailable):
+        receipt.update(status="FAILED", failure_code="PROVIDER_CONTROLLED_FAILURE",
+                       error="Provider did not return a valid governed report; no automatic retry.")
+    elif stage == "REPORT_VALIDATION" and isinstance(error, DeskError):
+        receipt.update(status="FAILED", failure_code="REPORT_VALIDATION_FAILED",
+                       error="Provider response failed controlled validation; no automatic retry.")
+    else:
+        receipt.update(status="UNKNOWN", failure_code="UNCLASSIFIED_OUTCOME",
+                       error="Report outcome could not be proven; do not retry automatically.")
+    return receipt
+
+
 def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> None:
     """Mount isolated advisory endpoints on the existing Lab Flask app."""
 
@@ -313,6 +367,9 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
             return jsonify({"error": str(exc)}), 400
         results = []
         for choice in choices:
+            error_file: Path | None = None
+            marker_written = False
+            stage = "PREPARE"
             try:
                 row = rows[choice.ticker]
                 bundle = build_eod_review_bundle(
@@ -342,13 +399,20 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                 folder.mkdir(parents=True, exist_ok=True)
                 unknown = {"status": "UNKNOWN", "run_id": root.name,
                            "ticker": choice.ticker, "report_id": report_id,
+                           "authority": "ADVISORY_ONLY", "retry_allowed": False,
+                           "failure_code": "PROVIDER_OUTCOME_PENDING",
                            "error": "Provider outcome not yet reconciled; do not retry automatically."}
                 with error_file.open("x", encoding="utf-8") as handle:
-                    json.dump(unknown, handle)
+                    json.dump(unknown, handle, allow_nan=False)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                marker_written = True
+                stage = "PROVIDER_RESPONSE"
                 started = time.monotonic()
                 raw = provider.report(digest)
                 provider_latency_ms = round((time.monotonic() - started) * 1000)
                 provider_retrieved_at_utc = datetime.now(timezone.utc).isoformat()
+                stage = "REPORT_VALIDATION"
                 content = _validate_report(raw, set(digest["evidence_refs"]), digest["evidence_cutoff_utc"])
                 report = {
                     "schema_version": REPORT_VERSION, "status": "COMPLETE",
@@ -365,14 +429,28 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                     "provider_usage": _clean(raw.get("_provider_usage") or {}),
                     **content,
                 }
+                stage = "PERSIST_REPORT"
                 with report_file.open("x", encoding="utf-8") as handle:
                     json.dump(report, handle, ensure_ascii=False, allow_nan=False)
                 error_file.unlink(missing_ok=True)
                 results.append(report)
             except Exception as exc:
-                failure = {"status": "FAILED", "ticker": choice.ticker,
-                           "run_id": root.name, "authority": "ADVISORY_ONLY",
-                           "error": f"{type(exc).__name__}: {exc}"}
+                if marker_written and error_file is not None:
+                    failure = _report_failure(root.name, choice.ticker, report_id, stage, exc)
+                    try:
+                        _persist_attempt(error_file, failure)
+                    except OSError:
+                        # The pre-dispatch UNKNOWN marker remains authoritative.
+                        failure = {"status": "UNKNOWN", "run_id": root.name,
+                                   "ticker": choice.ticker, "report_id": report_id,
+                                   "authority": "ADVISORY_ONLY", "retry_allowed": False,
+                                   "failure_code": "DURABLE_STATUS_WRITE_FAILED",
+                                   "error": "Durable outcome update failed; inspect the original marker before any retry."}
+                else:
+                    failure = {"status": "FAILED", "ticker": choice.ticker,
+                               "run_id": root.name, "authority": "ADVISORY_ONLY",
+                               "retry_allowed": False, "failure_code": "LOCAL_PREPARATION_FAILED",
+                               "error": "Local report preparation failed; no provider call was made."}
                 results.append(failure)
         return jsonify({"run_id": root.name, "results": results,
                         "authority": "ADVISORY_ONLY"})
