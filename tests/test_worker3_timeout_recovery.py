@@ -67,7 +67,7 @@ class TimeoutRecoveryTests(unittest.TestCase):
         receipt = json.loads(self.store.db.execute("SELECT receipt FROM charges").fetchone()[0])
         self.assertEqual(receipt["error_type"], "TIMEOUT")
         self.assertEqual(receipt["failure_stage"], "AWAITING_HEADERS")
-        self.assertEqual(receipt["runtime_failure_stage"], "PROVIDER")
+        self.assertEqual(receipt["runtime_failure_stage"], "PROVIDER_RESPONSE")
         self.assertNotIn("private exception detail", json.dumps(receipt))
         self.assertNotIn("fixture-only", json.dumps(receipt))
 

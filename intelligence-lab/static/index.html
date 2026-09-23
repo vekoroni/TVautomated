@@ -349,11 +349,9 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <input class="search-inp" type="text" placeholder="Search ticker…" oninput="doSearch(this.value)">
     <div class="f-sep"></div>
     <button class="fb" onclick="exportCSV()" title="Export current filtered view to CSV" style="border-color:rgba(0,229,160,.4);color:var(--green)">⬇ CSV</button>
-    <button class="fb" id="worker3-launch" onclick="previewWorker3()">Worker 3: preview selected (0/5)</button>
     <button class="fb" id="interpreter-launch" onclick="previewInterpreterDesk()" title="Create advisory Interpreter reports for up to five human-selected tickers; no screenshots or trading authority">Interpreter reports (0/5)</button>
     <span id="export-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)"></span>
   </div>
-  <div id="worker3-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
   <div id="interpreter-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
   <div id="interpreter-panel" style="display:none;max-height:480px;overflow:auto;padding:12px 16px;border:1px solid var(--border);margin:0 10px 10px;background:var(--bg2)"></div>
   <div class="sig-list-zone">
@@ -594,7 +592,6 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
   </div>
 </div>
 
-<script src="/static/worker3-controls.js"></script>
 <script src="/static/interpreter-desk-controls.js"></script>
 <script>
 // ═══ STATE ═══════════════════════════════════════════════════════════════
@@ -714,11 +711,9 @@ async function loadRun(runId) {
   if (data.error) throw new Error(data.error);
   data.signals = (data.signals || []).map(populateGovernedDisplayFields);
   if (!RUN_DATA || RUN_DATA.run_id !== data.run_id) {
-    WORKER3_SELECTED.clear();
     clearInterpreterSelection();
   }
   RUN_DATA = data;
-  updateWorker3Selection();
   ALL_SIGS = data.signals;
   if(!SHOW_INVALID){ ALL_SIGS = ALL_SIGS.filter(s => s.sb_schema_ok !== 'N'); }
   SIGNALS  = ALL_SIGS.filter(isActionSignal);
@@ -2234,7 +2229,7 @@ function buildTable() {
         <span class="prank ${prCls}">${prLbl}</span>
         <div style="width:28px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div style="height:100%;width:${ps}%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:1px"></div></div>
       </div>
-      <div class="sc"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Interpreter report" title="Interpreter report" data-interpreter-ticker="${attrSafe(s.ticker)}" ${INTERPRETER_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectInterpreterTicker(this)"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Worker 3" data-worker3-ticker="${attrSafe(s.ticker)}" ${WORKER3_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectWorker3(this)"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}${pretradeFocus?`<span class="pill p-armed" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Advisory pre-open review; not trade permission')}">FOCUS</span>`:''}${pretradeRepair?`<span class="pill p-watch" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Contract repair review; thesis retained')}">REPAIR</span>`:''}</div>
+      <div class="sc"><input type="checkbox" aria-label="Select ${attrSafe(s.ticker)} for Interpreter report" title="Interpreter report" data-interpreter-ticker="${attrSafe(s.ticker)}" ${INTERPRETER_SELECTED.has(s.ticker)?'checked':''} onclick="event.stopPropagation()" onchange="selectInterpreterTicker(this)"><span class="sc-tk">${s.ticker}</span>${isDW?'<span class="dq-flag" title="No actuarial data — structural estimate only">DW</span>':''}${pretradeFocus?`<span class="pill p-armed" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Advisory pre-open review; not trade permission')}">FOCUS</span>`:''}${pretradeRepair?`<span class="pill p-watch" style="font-size:7px;margin-left:3px" title="${attrSafe(s.pretrade_focus_reason||'Contract repair review; thesis retained')}">REPAIR</span>`:''}</div>
       <div class="sc"><span class="pill ${vClass}">${labV}</span></div>
       <div class="sc"><span class="pill ${campClass}">${camp.replace('_CAMPAIGN','')}</span></div>
       <div class="sc"><div class="conv-dots">${dots}</div></div>

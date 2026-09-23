@@ -100,6 +100,7 @@ class Worker3ActivationTests(unittest.TestCase):
         value = json.loads(DISABLED_RELEASE.read_text(encoding="utf-8"))
         value["enabled"] = enabled
         value["status"] = "CONTROLLED_ACTIVE" if enabled else "INSTALLED_DISABLED"
+        value["lab_projection_enabled"] = enabled
         value["allowed_models"] = list(models or (["fixture-model"] if enabled else []))
         value["max_jobs_per_activation"] = max_jobs
         value["max_calls_per_process"] = max_calls
@@ -276,11 +277,12 @@ class Worker3ActivationTests(unittest.TestCase):
         self.assertIsNotNone(spec.loader)
         from worker3.integration.activation import load_provider_release
         disabled = load_provider_release(self._release(enabled=False))
-        with patch("worker3.integration.lab_mount.load_provider_release", return_value=disabled), patch("worker3.integration.browser_launch.install_worker3_browser", return_value=None):
+        with patch("worker3.integration.lab_mount.load_provider_release", return_value=disabled), patch("worker3.integration.browser_launch.install_worker3_browser", side_effect=AssertionError("disabled Worker 3 must not mount browser routes")):
             spec.loader.exec_module(module)
         self.assertIsNone(module.WORKER3_ANALYST_REPORTS)
+        self.assertIsNone(module.WORKER3_BROWSER)
         self.assertFalse(any(
-            "worker3/report" in str(rule) for rule in module.app.url_map.iter_rules()
+            "/worker3/" in str(rule) for rule in module.app.url_map.iter_rules()
         ))
 
 

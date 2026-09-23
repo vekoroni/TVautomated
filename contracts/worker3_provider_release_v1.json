@@ -1,8 +1,8 @@
 {
   "release_id": "AVS-W3-PRODUCTION-20260907-BATCH5",
   "version": "1.0.0",
-  "status": "CONTROLLED_ACTIVE",
-  "enabled": true,
+  "status": "INSTALLED_DISABLED",
+  "enabled": false,
   "provider": "ANTHROPIC",
   "allowed_models": [
     "claude-sonnet-4-6"
@@ -19,7 +19,7 @@
   "require_operator_approval_id": true,
   "require_semantic_review": true,
   "require_human_review": true,
-  "lab_projection_enabled": true,
+  "lab_projection_enabled": false,
   "authority": "ADVISORY_ONLY",
   "can_grant_capital": false,
   "can_reverse_direction": false
