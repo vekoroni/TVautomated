@@ -9,71 +9,24 @@ from __future__ import annotations
 import json
 import math
 import os
-import re
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from pipeline_interpreter.confluence_evidence import CHAIN_KEYS
+from pipeline_interpreter.desk_provider_common import (
+    ANSWER_INSTRUCTIONS,
+    DEEP_REPORT_INSTRUCTIONS_TEMPLATE,
+    REPORT_INSTRUCTIONS_TEMPLATE,
+    ProviderOutcomeUnknown,
+    ProviderRequestRejected,
+    ProviderUnavailable,
+    _ANSWER_SCHEMA,
+    _REPORT_KEYS,
+    _report_schema,
+)
 
-
-_REPORT_KEYS = ["macro", "gamma", "liquidity", "thesis", "chart", "options_flow", "risk", "verdict"]
-
-
-def _object(properties: dict[str, Any]) -> dict[str, Any]:
-    return {"type": "object", "properties": properties, "required": list(properties),
-            "additionalProperties": False}
-
-
-_REPORT_SCHEMA = _object({
-    "executive_summary": {"type": "string"},
-    "evidence_chain_review": {"type": "array", "items": _object({
-        "key": {"type": "string", "enum": list(CHAIN_KEYS)},
-        "status": {"type": "string"},
-        "text": {"type": "string"},
-        "evidence_class": {"type": "string", "enum": ["OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"]},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}},
-    })},
-    "counter_case": _object({
-        "links": {"type": "array", "items": {"type": "string", "enum": list(CHAIN_KEYS)}},
-        "text": {"type": "string"},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}},
-    }),
-    "sections": {"type": "array", "items": _object({
-        "key": {"type": "string", "enum": _REPORT_KEYS},
-        "text": {"type": "string"},
-        "evidence_class": {"type": "string", "enum": ["OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"]},
-        "evidence_refs": {"type": "array", "items": {"type": "string"}},
-    })},
-    "external_events": {"type": "array", "items": _object({
-        "url": {"type": "string"}, "asof_utc": {"type": "string"}, "summary": {"type": "string"},
-    })},
-    "unresolved": {"type": "array", "items": {"type": "string"}},
-})
-
-_ANSWER_SCHEMA = _object({
-    "answer": {"type": "string"},
-    "evidence_class": {"type": "string", "enum": ["OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"]},
-    "evidence_refs": {"type": "array", "items": {"type": "string"}},
-    "limitations": {"type": "array", "items": {"type": "string"}},
-})
-
-
-class ProviderUnavailable(RuntimeError):
-    pass
-
-
-class ProviderRequestRejected(ProviderUnavailable):
-    """The provider returned a definite HTTP rejection, not a lost response."""
-
-    def __init__(self, http_status: int, *, request_id: str | None = None):
-        self.http_status = http_status
-        self.request_id = request_id if request_id and re.fullmatch(r"[A-Za-z0-9_-]{1,128}", request_id) else None
-        super().__init__(f"OpenAI Responses HTTP {http_status}; no automatic retry")
-
-
-class ProviderOutcomeUnknown(ProviderUnavailable):
-    """A request may have reached the provider, but no terminal response is known."""
+_REPORT_SCHEMA = _report_schema(CHAIN_KEYS)
 
 
 class OpenAIResponsesProvider:
@@ -165,7 +118,7 @@ class OpenAIResponsesProvider:
                 response = json.load(stream)
         except HTTPError as exc:
             request_id = exc.headers.get("x-request-id") if exc.headers else None
-            raise ProviderRequestRejected(exc.code, request_id=request_id) from exc
+            raise ProviderRequestRejected(exc.code, request_id=request_id, provider="OpenAI Responses") from exc
         except (URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
             raise ProviderOutcomeUnknown("OpenAI Responses outcome unknown; no automatic retry") from exc
         if response.get("status") not in ("completed", None):
@@ -204,32 +157,31 @@ class OpenAIResponsesProvider:
                 or any(ref not in allowed_refs for ref in evidence_refs)):
             raise ProviderUnavailable("report evidence source identifiers are invalid; no request sent")
         value, sources, usage = self._response(
-            instructions=(
-                "You are AVSHUNTER's advisory Pipeline Interpreter. Explain only the supplied "
-                "governed evidence. Produce all eight analytical sections with specific levels, "
-                "sequence of events, supporting and contradicting facts, uncertainty, and the "
-                "next observation that would change the assessment. The chart section must "
-                "derive its narrative from numeric structure/profile data, never screenshots. "
-                "Produce exactly five evidence_chain_review items in sector, ticker, thesis, "
-                "contract, morning order. Copy each link's status exactly from evidence.confluence; "
-                "cite its evidence_ref and explain what is confirmed, opposed or unknown. "
-                "Sector and ticker relative returns are pre-decision price observations, not "
-                "literal fund inflows or proof of buyer identity. A frozen EOD quote is not a "
-                "live executable quote. An absent catalyst means cause unverified, not no thesis. "
-                "Never turn advisory confluence into execution permission. "
-                "Provide a counter_case naming every confluence link whose status is opposed, "
-                "missing, pending or otherwise not supportive, with the corresponding evidence refs. "
-                "Use web search only "
-                "for point-in-time earnings/news, with URL and event time; otherwise leave "
-                "external_events empty. Distinguish observed facts, derivations, inference and "
-                "unknowns. No screenshots. Do not change ticker, direction, contract, target, "
-                "invalidation, action, size, capital permission or broker state. Hidden orders "
-                "cannot be observed without depth/prints; qualify any location inference. "
-                "Cite only the source identifiers supplied in evidence.evidence_refs: "
-                + ", ".join(evidence_refs) + "."
-            ),
+            instructions=REPORT_INSTRUCTIONS_TEMPLATE.format(evidence_refs=", ".join(evidence_refs)),
             input_value={"evidence": digest, "required_sections": _REPORT_KEYS},
             schema=_REPORT_SCHEMA, name="avshunter_interpreter_report_v1", web_search=True,
+            max_output_tokens=8000,
+        )
+        value["_verified_web_urls"] = sorted(sources)
+        value["_provider_usage"] = usage
+        return value
+
+    def deep_report(self, digest: Mapping[str, Any]) -> dict[str, Any]:
+        """Parity method for the OpenAI fallback path — same schema and
+        validation as report(), wider digest, one call, distinct tool/schema
+        name so a deep-dive result never collides with a standard report's
+        persisted file for the same ticker.
+        """
+        self._require_budget(len(json.dumps(digest, ensure_ascii=False, default=str)))
+        evidence_refs = digest.get("evidence_refs")
+        allowed_refs = {"EOD_BOOK", "MORNING_HANDOFF", "PIT_PRICE_BARS"}
+        if (not isinstance(evidence_refs, list) or not evidence_refs
+                or any(ref not in allowed_refs for ref in evidence_refs)):
+            raise ProviderUnavailable("report evidence source identifiers are invalid; no request sent")
+        value, sources, usage = self._response(
+            instructions=DEEP_REPORT_INSTRUCTIONS_TEMPLATE.format(evidence_refs=", ".join(evidence_refs)),
+            input_value={"evidence": digest, "required_sections": _REPORT_KEYS},
+            schema=_REPORT_SCHEMA, name="avshunter_interpreter_deep_report_v1", web_search=True,
             max_output_tokens=8000,
         )
         value["_verified_web_urls"] = sorted(sources)
@@ -241,12 +193,7 @@ class OpenAIResponsesProvider:
                              + len(json.dumps(report.get("sections") or [], ensure_ascii=False, default=str))
                              + len(question))
         value, _sources, usage = self._response(
-            instructions=(
-                "Answer the human's question about this one frozen AVSHUNTER advisory report. "
-                "Use only supplied evidence and report; do not fetch new facts or mix tickers. "
-                "Explicitly state uncertainty and unavailable order depth/trade prints. "
-                "Do not grant trading, order, position-sizing or capital authority."
-            ),
+            instructions=ANSWER_INSTRUCTIONS,
             input_value={"evidence": digest, "report": {
                 "ticker": report.get("ticker"), "phase": report.get("phase"),
                 "executive_summary": report.get("executive_summary"),

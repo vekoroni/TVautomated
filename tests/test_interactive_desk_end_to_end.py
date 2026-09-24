@@ -285,6 +285,9 @@ def test_transport_timeout_stays_unknown_without_leaking_or_retrying(tmp_path):
     assert first["failure_code"] == "PROVIDER_OUTCOME_UNKNOWN"
     assert first["retry_allowed"] is False
     assert "private transport detail" not in json.dumps(first)
+    # ACK 24 Sep 2026: an unknown outcome is measured, so a timeout is read from the receipt
+    # rather than inferred from file timestamps.
+    assert isinstance(first["provider_elapsed_ms"], int) and first["provider_elapsed_ms"] >= 0
     marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
     assert json.loads(marker.read_text(encoding="utf-8")) == first
     assert client.post("/api/interpreter/reports", json=body).json["results"][0] == first
@@ -655,3 +658,33 @@ def test_report_counter_case_treats_confirmed_morning_as_supportive_and_pending_
         assert "counter-case" in str(error)
     else:
         raise AssertionError("PENDING_TRIGGER Morning must be required in the counter-case")
+
+
+def test_unusable_provider_reply_persists_typed_reason_without_prose(tmp_path):
+    """ACK 24 Sep 2026: a controlled failure names its case in typed fields, never provider text."""
+    from pipeline_interpreter.desk_provider_common import ProviderReplyUnusable
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    class UnusableReplyProvider(FakeProvider):
+        def report(self, digest):
+            self.reports.append(digest)
+            raise ProviderReplyUnusable("NO_STRUCTURED_TOOL_CALL", stop_reason="pause_turn",
+                                        block_types=["text", "server_tool_use"])
+
+    provider = UnusableReplyProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    body = {"run_id": RUN, "tickers": ["AAA"], "confirmed": True}
+    first = client.post("/api/interpreter/reports", json=body).json["results"][0]
+    assert first["status"] == "FAILED"
+    assert first["failure_code"] == "PROVIDER_CONTROLLED_FAILURE"
+    assert first["provider_failure_reason"] == "NO_STRUCTURED_TOOL_CALL"
+    assert first["provider_stop_reason"] == "pause_turn"
+    assert first["provider_block_types"] == ["text", "server_tool_use"]
+    assert first["retry_allowed"] is False
+    marker = next((root / "interpreter" / "interactive_desk" / "AAA").glob("*.error.json"))
+    assert json.loads(marker.read_text(encoding="utf-8")) == first
+    assert client.post("/api/interpreter/reports", json=body).json["results"][0] == first
+    assert len(provider.reports) == 1

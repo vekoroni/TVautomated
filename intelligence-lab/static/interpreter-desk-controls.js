@@ -58,14 +58,15 @@ function showInterpreterReport(report) {
   panel.style.display = 'block';
   const card = document.createElement('section');
   card.style.cssText = 'border:1px solid var(--border);padding:12px;margin-bottom:12px;white-space:pre-wrap';
-  interpreterText(card, 'h3', `${report.ticker} · ${report.phase} · ${report.source_action || 'UNKNOWN'}`);
+  const isDeep = report.mode === 'DEEP_DIVE';
+  interpreterText(card, 'h3', `${isDeep ? 'DEEP DIVE · ' : ''}${report.ticker} · ${report.phase} · ${report.source_action || 'UNKNOWN'}`);
   interpreterText(card, 'p', 'ADVISORY ONLY — not trading or capital permission. Evening thesis remains frozen; Morning evidence is a separate update.');
   if (report.evidence_digest && report.evidence_digest.eod_technical_health !== 'PASS')
     interpreterText(card, 'p', `Evening technical health: ${report.evidence_digest.eod_technical_health}. Review source gaps before acting.`);
   if (report.evidence_digest) {
     const facts = document.createElement('details');
-    interpreterText(facts, 'summary', 'Governed source facts and evidence cutoff');
-    interpreterText(facts, 'p', `Cutoff: ${report.evidence_digest.evidence_cutoff_utc || 'unknown'} · EOD bundle: ${report.eod_bundle_id || 'unknown'} · Morning bundle: ${report.morning_bundle_id || 'none'}`);
+    interpreterText(facts, 'summary', isDeep ? 'Governed source facts (widened set) and evidence cutoff' : 'Governed source facts and evidence cutoff');
+    interpreterText(facts, 'p', `Cutoff: ${report.evidence_digest.evidence_cutoff_utc || 'unknown'} · EOD bundle: ${report.eod_bundle_id || 'unknown'} · Morning bundle: ${report.morning_bundle_id || 'none'} · Fields included: ${report.evidence_digest.included_field_count ?? '?'}`);
     interpreterText(facts, 'pre', JSON.stringify({
       eod: report.evidence_digest.eod_fields,
       morning: report.evidence_digest.morning_evidence,
@@ -88,17 +89,21 @@ function showInterpreterReport(report) {
       interpreterText(card, 'p', `${event.asof_utc} · ${event.summary} · ${event.url}`);
   }
   if ((report.unresolved || []).length) interpreterText(card, 'p', `Unresolved: ${report.unresolved.join(' · ')}`);
-  const label = interpreterText(card, 'label', `Ask about ${report.ticker} (e.g. crowd near a wall, buyers/sellers, evidence conflict): `);
+
+  const controls = document.createElement('div');
+  controls.style.cssText = 'margin-top:10px';
+
+  const label = interpreterText(controls, 'label', `Ask ${report.model_id || 'the model'} about ${report.ticker} (e.g. crowd near a wall, buyers/sellers, evidence conflict): `);
   const input = document.createElement('input');
   input.type = 'text'; input.maxLength = 500; input.style.cssText = 'width:70%;margin:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:7px';
   label.appendChild(input);
-  const ask = interpreterText(card, 'button', 'Ask GPT');
+  const ask = interpreterText(controls, 'button', `Ask ${report.model_id || 'model'}`);
   ask.className = 'fb';
   const answer = document.createElement('div');
   answer.style.cssText = 'padding:8px;color:var(--text2)';
   ask.onclick = async () => {
     if (!input.value.trim()) return;
-    if (!window.confirm(`Ask GPT about ${report.ticker}? This is a paid advisory request using the frozen report; no trading authority is granted.`)) return;
+    if (!window.confirm(`Ask ${report.model_id || 'the model'} about ${report.ticker}? This is a paid advisory request using the frozen report; no trading authority is granted.`)) return;
     ask.disabled = true; answer.textContent = 'Checking the frozen report and its evidence…';
     try {
       const result = await interpreterRequest('ask', {
@@ -112,8 +117,52 @@ function showInterpreterReport(report) {
     } catch (error) { answer.textContent = error.message; }
     finally { ask.disabled = false; }
   };
-  card.appendChild(answer);
+  controls.appendChild(answer);
+
+  if (!isDeep) {
+    const deepStatus = document.createElement('div');
+    deepStatus.style.cssText = 'padding:8px;color:var(--text2)';
+    const deep = interpreterText(controls, 'button', 'Deep dive this ticker');
+    deep.className = 'fb';
+    deep.style.marginLeft = '8px';
+    deep.onclick = () => requestDeepDive(report, deep, deepStatus, panel);
+    controls.appendChild(deepStatus);
+  }
+
+  card.appendChild(controls);
   panel.appendChild(card);
+}
+
+async function requestDeepDive(report, button, statusEl, panel) {
+  if (INTERPRETER_BUSY) return;
+  button.disabled = true;
+  statusEl.textContent = 'Checking provider…';
+  try {
+    const control = await interpreterRequest('control');
+    if (!control.provider_ready) throw new Error('Model provider is not configured on this machine.');
+    if (!control.deep_dive_ready) throw new Error('Configured provider does not support deep-dive reports.');
+    const message = `Deep dive ${report.ticker} (run ${report.run_id})\n` +
+      `Model: ${control.model_id}. Wider evidence, one paid model call, same advisory-only rules.\n` +
+      'No trading, order, position-sizing or capital authority is granted.';
+    if (!window.confirm(message + '\n\nRun this deep dive?')) { statusEl.textContent = ''; return; }
+    INTERPRETER_BUSY = true;
+    statusEl.textContent = 'Running deep dive — this is one larger model call, please wait…';
+    const result = await interpreterRequest('deep_reports', {
+      run_id: report.run_id, tickers: [report.ticker], confirmed: true
+    });
+    const item = result.results[0];
+    if (item && item.status === 'COMPLETE') {
+      showInterpreterReport(item);
+      statusEl.textContent = `Deep dive complete for ${report.ticker}.`;
+    } else {
+      statusEl.textContent = `${report.ticker}: ${item ? item.status : 'FAILED'} — ${item && item.error ? item.error : 'deep dive unavailable'}`;
+    }
+  } catch (error) {
+    statusEl.textContent = error.message;
+  } finally {
+    button.disabled = false;
+    INTERPRETER_BUSY = false;
+  }
 }
 
 async function previewInterpreterDesk() {
@@ -135,7 +184,7 @@ async function previewInterpreterDesk() {
       `Model: ${control.model_id}\nCost: ${cost}. This will make paid provider calls.\n` +
       'Reports are advisory only; no screenshots, orders, or capital permission.';
     status.textContent = message;
-    if (!control.provider_ready) throw new Error('GPT provider is not configured on this machine. Configure OPENAI_API_KEY and AVSHUNTER_INTERPRETER_MODEL locally.');
+    if (!control.provider_ready) throw new Error('Model provider is not configured on this machine. Configure the relevant provider credentials and pricing locally.');
     if (!window.confirm(message + '\n\nLaunch these reports?')) return;
     if (!RUN_DATA || RUN_DATA.run_id !== run) throw new Error('Displayed run changed; select again.');
     status.textContent = `Generating ${tickers.length} report(s), one ticker at a time. Do not resubmit if connection is interrupted.`;

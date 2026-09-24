@@ -24,13 +24,14 @@ from contracts.interpreter_eod_review import build_eod_review_bundle
 from domain.interpreter_review_selection import ReviewSelectionError, select_review_batch
 from pipeline_interpreter.confluence_evidence import CHAIN_KEYS, build_confluence_evidence
 from pipeline_interpreter.interactive_snapshot import SnapshotError, load_eod_snapshot
-from pipeline_interpreter.openai_desk_provider import (
-    ProviderOutcomeUnknown, ProviderRequestRejected, ProviderUnavailable,
+from pipeline_interpreter.desk_provider_common import (
+    ProviderOutcomeUnknown, ProviderReplyUnusable, ProviderRequestRejected, ProviderUnavailable,
 )
 
 
 REPORT_VERSION = "interpreter_desk_report_v2"
 PROMPT_VERSION = "interpreter_desk_prompt_v3"
+DEEP_REPORT_VERSION = "interpreter_desk_deep_report_v1"
 SECTION_KEYS = ("macro", "gamma", "liquidity", "thesis", "chart", "options_flow", "risk", "verdict")
 EVIDENCE_CLASSES = frozenset({"OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"})
 _SAFE_NAME = re.compile(r"^[A-Z0-9.^-]{1,24}$")
@@ -60,6 +61,34 @@ EVIDENCE_FIELDS = (
     "catalyst_date", "catalyst_event_status", "positive_factors", "negative_factors",
 )
 
+# Deep-dive widening — additive only, never used by the standard report/ask
+# routes below. Field names are copied verbatim from where each is written:
+#   - physics_* / *_state_id / *_score etc.: intelligence-lab/intelligence_lab.py PHYSICS_FIELDS
+#   - iv_gex_* / move_theta_* / crowd_arrival_*: mcmillan_advisory_layer.py MCMILLAN_FIELDS
+#   - wbs*: wall_break_scorer.py score_wall_break() output merged into the row
+# A name that isn't actually present on a given row is silently skipped by
+# compile_evidence_digest below (same behaviour as EVIDENCE_FIELDS today) —
+# an unconfirmed or renamed column here costs nothing and breaks nothing.
+DEEP_DIVE_EXTRA_FIELDS = (
+    "physics_state_id", "market_energy_score", "compression_energy",
+    "directional_force", "force_alignment_score", "trend_inertia",
+    "volatility_pressure", "entropy_score", "regime_instability_score",
+    "phase_transition_probability", "shock_sensitivity",
+    "liquidity_friction_score", "hidden_state_label",
+    "state_transition_label", "future_state_5d", "future_state_10d",
+    "future_state_20d", "transition_success_5d",
+    "transition_success_10d", "transition_success_20d",
+    "iv_gex_entry_quality", "iv_gex_entry_quality_label",
+    "iv_gex_entry_quality_narrative", "gamma_island_on_path",
+    "move_theta_ratio", "move_theta_margin_label", "move_theta_narrative",
+    "crowd_arrival_state", "crowd_arrival_score", "crowd_arrival_narrative",
+    "wbs", "wbs_grade", "wbs_wall_price", "wbs_wall_distance_pct",
+    "wbs_phase_b_trigger", "wbs_phase_c_trigger", "wbs_rejection_stop", "wbs_notes",
+)
+EXTENDED_EVIDENCE_FIELDS = EVIDENCE_FIELDS + DEEP_DIVE_EXTRA_FIELDS
+
+DEEP_PROMPT_VERSION = "interpreter_desk_deep_prompt_v1"
+
 
 class DeskError(ValueError):
     pass
@@ -77,12 +106,18 @@ def _clean(value: Any) -> Any:
 
 def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], morning: Mapping[str, Any] | None = None,
                             *, evidence_cutoff_utc: str, eod_technical_health: str,
-                            confluence: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Bound a one-ticker prompt without quietly losing required evidence."""
+                            confluence: Mapping[str, Any] | None = None,
+                            fields: tuple[str, ...] = EVIDENCE_FIELDS,
+                            max_chars: int = 20000) -> dict[str, Any]:
+    """Bound a one-ticker prompt without quietly losing required evidence.
+
+    ``fields``/``max_chars`` default to the standard report/ask bound exactly
+    as before; the deep-dive route is the only caller that overrides them.
+    """
 
     retained: dict[str, Any] = {}
     omitted: list[str] = []
-    for key in EVIDENCE_FIELDS:
+    for key in fields:
         if key not in row:
             continue
         value = _clean(row[key])
@@ -115,8 +150,8 @@ def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], m
         "available_field_count": len(row), "included_field_count": len(retained),
         "unavailable_depth_or_prints": True,
     }
-    if len(json.dumps(digest, ensure_ascii=False, allow_nan=False, default=str)) > 20000:
-        raise DeskError("bounded evidence exceeds 20,000 characters; no silent truncation")
+    if len(json.dumps(digest, ensure_ascii=False, allow_nan=False, default=str)) > max_chars:
+        raise DeskError(f"bounded evidence exceeds {max_chars:,} characters; no silent truncation")
     return digest
 
 
@@ -325,7 +360,7 @@ def _persist_attempt(path: Path, record: Mapping[str, Any]) -> None:
 
 
 def _report_failure(run_id: str, ticker: str, report_id: str,
-                    stage: str, error: Exception) -> dict[str, Any]:
+                    stage: str, error: Exception, *, elapsed_ms: int | None = None) -> dict[str, Any]:
     """Classify only provable failures as FAILED; uncertainty never permits retry."""
 
     receipt: dict[str, Any] = {
@@ -334,17 +369,30 @@ def _report_failure(run_id: str, ticker: str, report_id: str,
         "failure_stage": stage, "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     if isinstance(error, ProviderRequestRejected):
+        message = f"Provider rejected request (HTTP {error.http_status}); no automatic retry."
+        if getattr(error, "detail", None):
+            message = f"{message} Provider said: {error.detail}"
         receipt.update(status="FAILED", failure_code="PROVIDER_HTTP_REJECTED",
-                       provider_http_status=error.http_status,
-                       error=f"Provider rejected request (HTTP {error.http_status}); no automatic retry.")
+                       provider_http_status=error.http_status, error=message)
         if error.request_id:
             receipt["provider_request_id"] = error.request_id
+        if getattr(error, "detail", None):
+            receipt["provider_error_detail"] = error.detail
     elif isinstance(error, ProviderOutcomeUnknown):
         receipt.update(status="UNKNOWN", failure_code="PROVIDER_OUTCOME_UNKNOWN",
                        error="Provider outcome not yet reconciled; do not retry automatically.")
+        if elapsed_ms is not None:
+            # Measured, so a timeout is read from the receipt (ACK 24 Sep 2026).
+            receipt["provider_elapsed_ms"] = int(elapsed_ms)
     elif isinstance(error, ProviderUnavailable):
         receipt.update(status="FAILED", failure_code="PROVIDER_CONTROLLED_FAILURE",
                        error="Provider did not return a valid governed report; no automatic retry.")
+        if isinstance(error, ProviderReplyUnusable):
+            # Typed, bounded fields only (ACK 24 Sep 2026): they name the case
+            # without carrying provider prose, evidence or credentials.
+            receipt.update(provider_failure_reason=error.reason_code,
+                           provider_stop_reason=error.stop_reason,
+                           provider_block_types=list(error.block_types))
     elif stage == "REPORT_VALIDATION" and isinstance(error, DeskError):
         receipt.update(status="FAILED", failure_code="REPORT_VALIDATION_FAILED",
                        error="Provider response failed controlled validation; no automatic retry.")
@@ -354,13 +402,31 @@ def _report_failure(run_id: str, ticker: str, report_id: str,
     return receipt
 
 
+def _default_provider():
+    """Selects the Desk's model transport from AVSHUNTER_INTERPRETER_PROVIDER.
+
+    Defaults to Anthropic (Claude) so the Desk's report/ask endpoints use the
+    same vendor as the terminal Pipeline Interpreter (/triage, /ticker) by
+    default. Set AVSHUNTER_INTERPRETER_PROVIDER=openai to use GPT instead;
+    either way the digest, schemas, validation and failure classification in
+    this module are unchanged — only the transport differs.
+    """
+    choice = os.environ.get("AVSHUNTER_INTERPRETER_PROVIDER", "anthropic").strip().lower()
+    if choice == "openai":
+        from pipeline_interpreter.openai_desk_provider import OpenAIResponsesProvider
+        return OpenAIResponsesProvider.from_environment()
+    if choice == "anthropic":
+        from pipeline_interpreter.anthropic_desk_provider import AnthropicDeskProvider
+        return AnthropicDeskProvider.from_environment()
+    raise DeskError(f"unknown AVSHUNTER_INTERPRETER_PROVIDER: {choice!r} (use 'anthropic' or 'openai')")
+
+
 def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> None:
     """Mount isolated advisory endpoints on the existing Lab Flask app."""
 
     base = Path(runs_dir).resolve()
     if provider is None:
-        from pipeline_interpreter.openai_desk_provider import OpenAIResponsesProvider
-        provider = OpenAIResponsesProvider.from_environment()
+        provider = _default_provider()
 
     def local_request_allowed() -> bool:
         if request.remote_addr not in {"127.0.0.1", "::1", "localhost"}:
@@ -393,7 +459,8 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
             return jsonify({"error": "local Lab origin required"}), 403
         return jsonify({"authority": "ADVISORY_ONLY", "max_tickers": 5,
                         "provider_ready": bool(getattr(provider, "ready", True)),
-                        "model_id": getattr(provider, "model_id", "UNCONFIGURED")})
+                        "model_id": getattr(provider, "model_id", "UNCONFIGURED"),
+                        "deep_dive_ready": hasattr(provider, "deep_report")})
 
     @app.route("/api/interpreter/preview", methods=["POST"])
     def interpreter_preview():
@@ -452,6 +519,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         for choice in choices:
             error_file: Path | None = None
             marker_written = False
+            started: float | None = None
             stage = "PREPARE"
             try:
                 row = rows[choice.ticker]
@@ -521,7 +589,127 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                 results.append(report)
             except Exception as exc:
                 if marker_written and error_file is not None:
-                    failure = _report_failure(root.name, choice.ticker, report_id, stage, exc)
+                    elapsed = round((time.monotonic() - started) * 1000) if started is not None else None
+                    failure = _report_failure(root.name, choice.ticker, report_id, stage, exc,
+                                              elapsed_ms=elapsed)
+                    try:
+                        _persist_attempt(error_file, failure)
+                    except OSError:
+                        # The pre-dispatch UNKNOWN marker remains authoritative.
+                        failure = {"status": "UNKNOWN", "run_id": root.name,
+                                   "ticker": choice.ticker, "report_id": report_id,
+                                   "authority": "ADVISORY_ONLY", "retry_allowed": False,
+                                   "failure_code": "DURABLE_STATUS_WRITE_FAILED",
+                                   "error": "Durable outcome update failed; inspect the original marker before any retry."}
+                else:
+                    failure = {"status": "FAILED", "ticker": choice.ticker,
+                               "run_id": root.name, "authority": "ADVISORY_ONLY",
+                               "retry_allowed": False, "failure_code": "LOCAL_PREPARATION_FAILED",
+                               "error": "Local report preparation failed; no provider call was made."}
+                results.append(failure)
+        return jsonify({"run_id": root.name, "results": results,
+                        "authority": "ADVISORY_ONLY"})
+
+    @app.route("/api/interpreter/deep_reports", methods=["POST"])
+    def interpreter_deep_reports():
+        """Same governed pattern as /reports, widened evidence, one Claude call.
+
+        No junior-briefing layer, no screenshots, no session/triage state —
+        reads the same frozen per-run snapshot as every other Desk route.
+        Deliberately duplicated from interpreter_reports() rather than
+        parameterising it, so nothing here can change that route's behaviour.
+        """
+        if not local_request_allowed():
+            return jsonify({"error": "local Lab origin required"}), 403
+        body = request.get_json(silent=True) or {}
+        if body.get("confirmed") is not True:
+            return jsonify({"error": "explicit paid-request confirmation required"}), 400
+        if not getattr(provider, "ready", True):
+            return jsonify({"error": "model provider not configured; no request sent"}), 503
+        if not hasattr(provider, "deep_report"):
+            return jsonify({"error": "configured provider does not support deep-dive reports"}), 503
+        try:
+            root, frozen, choices, rows = selected(body)
+        except (DeskError, ReviewSelectionError, SnapshotError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 400
+        results = []
+        for choice in choices:
+            error_file: Path | None = None
+            marker_written = False
+            started: float | None = None
+            stage = "PREPARE"
+            try:
+                row = rows[choice.ticker]
+                bundle = build_eod_review_bundle(
+                    run_id=root.name,
+                    source_manifest_sha256=frozen["receipt"]["source_manifest_sha256"],
+                    row=row,
+                    evidence_refs=[{"dataset_id": "EOD_BOOK", "sha256": frozen["receipt"]["source_book_sha256"]}],
+                )
+                morning = _morning_evidence(root, choice.ticker)
+                digest = compile_evidence_digest(
+                    row, bundle, morning,
+                    evidence_cutoff_utc=frozen["receipt"]["evidence_cutoff_utc"],
+                    eod_technical_health=frozen["receipt"]["eod_technical_health"],
+                    confluence=_confluence_for(row, frozen, morning),
+                    fields=EXTENDED_EVIDENCE_FIELDS, max_chars=40000,
+                )
+                report_id = _report_id(digest, getattr(provider, "model_id", "UNKNOWN"))
+                folder = _report_root(root, choice.ticker)
+                report_file = folder / f"{report_id}.json"
+                error_file = folder / f"{report_id}.error.json"
+                if report_file.is_file():
+                    results.append(json.loads(report_file.read_text(encoding="utf-8")))
+                    continue
+                if error_file.is_file():
+                    results.append(json.loads(error_file.read_text(encoding="utf-8")))
+                    continue
+                # Persistent UNKNOWN marker precedes the paid call. An
+                # interrupted request is not silently retried on refresh.
+                folder.mkdir(parents=True, exist_ok=True)
+                unknown = {"status": "UNKNOWN", "run_id": root.name,
+                           "ticker": choice.ticker, "report_id": report_id,
+                           "authority": "ADVISORY_ONLY", "retry_allowed": False,
+                           "failure_code": "PROVIDER_OUTCOME_PENDING",
+                           "error": "Provider outcome not yet reconciled; do not retry automatically."}
+                with error_file.open("x", encoding="utf-8") as handle:
+                    json.dump(unknown, handle, allow_nan=False)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                marker_written = True
+                stage = "PROVIDER_RESPONSE"
+                started = time.monotonic()
+                raw = provider.deep_report(digest)
+                provider_latency_ms = round((time.monotonic() - started) * 1000)
+                provider_retrieved_at_utc = datetime.now(timezone.utc).isoformat()
+                stage = "REPORT_VALIDATION"
+                content = _validate_report(raw, set(digest["evidence_refs"]),
+                                           digest["evidence_cutoff_utc"], digest["confluence"])
+                report = {
+                    "schema_version": DEEP_REPORT_VERSION, "status": "COMPLETE", "mode": "DEEP_DIVE",
+                    "report_id": report_id, "run_id": root.name, "ticker": choice.ticker,
+                    "phase": "MORNING_DELTA" if morning else "EOD_REVIEW",
+                    "authority": "ADVISORY_ONLY", "source_action": choice.source_action,
+                    "selected_contract_symbol": bundle["selected_contract_symbol"],
+                    "eod_bundle_id": bundle["bundle_id"],
+                    "morning_bundle_id": morning["bundle_id"] if morning else None,
+                    "model_id": getattr(provider, "model_id", "UNKNOWN"),
+                    "prompt_version": DEEP_PROMPT_VERSION, "evidence_digest": digest,
+                    "provider_latency_ms": provider_latency_ms,
+                    "provider_retrieved_at_utc": provider_retrieved_at_utc,
+                    "provider_usage": _clean(raw.get("_provider_usage") or {}),
+                    **content,
+                }
+                stage = "PERSIST_REPORT"
+                with report_file.open("x", encoding="utf-8") as handle:
+                    json.dump(report, handle, ensure_ascii=False, allow_nan=False)
+                error_file.unlink(missing_ok=True)
+                results.append(report)
+            except Exception as exc:
+                if marker_written and error_file is not None:
+                    elapsed = round((time.monotonic() - started) * 1000) if started is not None else None
+                    failure = _report_failure(root.name, choice.ticker, report_id, stage, exc,
+                                              elapsed_ms=elapsed)
                     try:
                         _persist_attempt(error_file, failure)
                     except OSError:
