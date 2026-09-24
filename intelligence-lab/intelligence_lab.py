@@ -39,7 +39,7 @@ r"""
 from flask import Flask, jsonify, send_from_directory, request, Response
 from flask.json.provider import DefaultJSONProvider
 from flask_cors import CORS
-import os, csv, json, glob, sys, io, math
+import os, csv, json, glob, sys, io, math, hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from datetime import datetime, timezone
@@ -138,6 +138,7 @@ from contracts.lab_control import (
     resolve_lab_tradeability,
     write_final_run_manifest,
 )
+from domain.contract_observation_status import project_contract_observation_status
 from contracts.lab_evidence_overlay import (
     OverlayValidationError,
     apply_latest_compatible_overlays,
@@ -276,6 +277,7 @@ def _secondary_signal_paths(run_dir, sb_dir, run_id):
         "wall_break": _glob_first(sb_dir, f"wall_break_scores_{run_id}.csv"),
         "garch": _glob_first(run_dir / "qomega", f"garch_forecasts_{run_id}.csv"),
         "final_opportunity_book": run_dir / "intelligence_lab" / f"final_opportunity_book_{run_id}.json",
+        "validation_events": run_dir / "morning_validation" / "validation_events",
         "msi_evidence_overlay": run_dir / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl",
         "ev3_authority_overlay": _glob_first(run_dir / "ev3_shadow", f"ev3_authority_overlay_{run_id}.*"),
         "macro_snapshot": run_dir / "macro_snapshot.json",
@@ -297,6 +299,38 @@ def _lab_cache_signature(run_id):
     paths.update(_primary_signal_paths(run_dir, sb_dir, run_id))
     paths.update(_secondary_signal_paths(run_dir, sb_dir, run_id))
     return {name: _file_signature(path) for name, path in paths.items()}
+
+
+def _overlay_governed_validation_view(run_id, rows):
+    """Read-only compatibility view for Morning books published before event fields.
+
+    Source events and the Morning CSV retain ownership. This adds no trading
+    authority and never rewrites either run artifact.
+    """
+    if not rows or not any(row.get("pipeline_mode") == "MORNING_VALIDATION" for row in rows):
+        return rows
+    if all(row.get("validation_event_id") and row.get("morning_execution_mode") for row in rows):
+        return rows
+    source = RUNS_DIR / run_id / "morning_validation"
+    morning_csv = source / f"morning_validated_trades_{run_id}.csv"
+    modes = {}
+    if morning_csv.is_file():
+        with morning_csv.open("r", encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                key = (str(row.get("ticker") or "").upper(), str(row.get("thesis_id") or ""))
+                modes[key] = str(row.get("morning_execution_mode") or "")
+    from morning_handoff_finalizer import _attach_persisted_validation_events
+    _attach_persisted_validation_events(
+        rows, source / "validation_events", run_id=run_id,
+    )
+    for row in rows:
+        key = (str(row.get("ticker") or "").upper(), str(row.get("thesis_id") or ""))
+        row["morning_execution_mode"] = row.get("morning_execution_mode") or modes.get(key, "")
+        row["lab_projection_integrity_state"] = (
+            "COMPLETE" if row.get("validation_event_id") and row.get("morning_execution_mode")
+            else "PROJECTION_INCOMPLETE"
+        )
+    return rows
 
 def _governed_lab_book(run_id):
     """Return the complete opportunity book with accepted evidence overlaid.
@@ -320,6 +354,7 @@ def _governed_lab_book(run_id):
     full_rows = payload.get("rows") if isinstance(payload.get("rows"), list) else []
     if payload and payload.get("candidate_count") not in (None, len(full_rows)):
         return {}
+    _overlay_governed_validation_view(run_id, full_rows)
     if active_flags().lab_v3_view:
         handoff_path = RUNS_DIR / run_id / "interpreter" / "handoff_manifest.json"
         if handoff_path.is_file():
@@ -335,8 +370,12 @@ def _governed_lab_book(run_id):
                         "candidate_count": len(rows),
                         "rows": rows,
                         "reconciliation": {
+                            # AVS-SD-ILA-003: "status" is the merge's own outcome.
+                            # The manifest's status describes the handoff's
+                            # internal reconciliation and must not mask a
+                            # rejected overlay.
                             **reconciliation,
-                            "status": handoff.manifest.get("reconciliation_status"),
+                            "handoff_reconciliation_status": handoff.manifest.get("reconciliation_status"),
                             "handoff_manifest": str(handoff_path),
                             "hashes_verified": True,
                         },
@@ -346,6 +385,39 @@ def _governed_lab_book(run_id):
                 # The v2 book below remains review-only and grants no new action.
                 pass
     return payload
+
+
+def _project_convexity_basis(book_row, options_row):
+    """Label an existing score only when its exact source can be reconciled.
+
+    The Options producer uses five conditions. A SuperBrain eight-condition
+    score is a different calculation and must not be silently relabelled.
+    This read-model annotation never changes the score or a trade decision.
+    """
+    if book_row.get("convexity_score_max"):
+        return
+    if any(book_row.get(key) in {"Y", "N"} for key in (
+        "sb_c_compression", "sb_c_energy", "sb_c_underpriced_vol",
+        "sb_c_gamma_proximity", "sb_c_runway", "sb_c_vanna_quality",
+        "sb_c_volume_confirmation", "sb_c_sector_alignment",
+    )):
+        book_row["convexity_score_max"] = 8
+        book_row["convexity_score_source"] = "SUPERBRAIN_8_CONDITION"
+        return
+    if not options_row:
+        return
+    book_contract = str(book_row.get("contract_symbol") or "").upper().removeprefix("O:")
+    option_contract = str(options_row.get("recommended_contract") or "").upper().removeprefix("O:")
+    if not book_contract or book_contract != option_contract:
+        return
+    try:
+        book_score = float(book_row.get("convexity_score"))
+        option_score = float(options_row.get("convexity_score"))
+    except (TypeError, ValueError):
+        return
+    if math.isfinite(book_score) and math.isfinite(option_score) and book_score == option_score:
+        book_row["convexity_score_max"] = 5
+        book_row["convexity_score_source"] = "OPTIONS_5_CONDITION"
 
 def _utc_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -2118,6 +2190,13 @@ def _load_run(run_id, force_reload=False):
     governed_book = _governed_lab_book(run_id)
     if governed_book:
         result["signals"] = [dict(row) for row in governed_book.get("rows", [])]
+        for _row in result["signals"]:
+            _project_convexity_basis(
+                _row, opt_map.get(str(_row.get("ticker") or "").upper()),
+            )
+            _row.update(project_contract_observation_status(
+                _row, opt_map.get(str(_row.get("ticker") or "").upper()),
+            ))
         _book_schema = governed_book.get("lab_schema_version", "lab_signal_book_v2")
         result["lab_signal_source"] = (
             "GOVERNED_ALL_OPPORTUNITIES_WITH_ACCEPTED_HANDOFF_V4"
@@ -2125,6 +2204,19 @@ def _load_run(run_id, force_reload=False):
             else "GOVERNED_FINAL_OPPORTUNITY_BOOK_V2"
         )
         result["lab_reconciliation"] = dict(governed_book.get("reconciliation") or {})
+        _rejected = int(result["lab_reconciliation"].get("actionable_rows_rejected") or 0)
+        if _rejected > 0:
+            # A rejected overlay is a visible data-integrity condition (R12),
+            # never a silent PASS. It grants and removes no authority.
+            _flag = f"LAB_HANDOFF_OVERLAY_REJECTED:{_rejected}"
+            _health = dict(result.get("run_health") or {})
+            _health["conflict_flags"] = list(_health.get("conflict_flags") or []) + [_flag]
+            result["run_health"] = _health
+            result["lab_data_notice"] = (
+                (result.get("lab_data_notice") or "")
+                + f" Accepted Interpreter handoff overlay rejected on {_rejected} row(s); "
+                "handoff evidence is not shown for them. Inspect lab_reconciliation."
+            ).strip()
     else:
         # The trader-facing production surface is governed-book only.  Legacy
         # assembly remains useful for diagnostics but cannot be shown as an
@@ -2615,7 +2707,11 @@ def _regime_alerts_from_cached_run(run_id=None):
 
 @app.route("/")
 def index():
-    return send_from_directory("static","index.html")
+    response = send_from_directory(Path(__file__).resolve().parent / "static", "index.html")
+    # The Lab is a live read model. Serving an older page against a newer
+    # governed book can display contradictory Morning and quote states.
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
 
 @app.route("/api/health")
 def api_health():
@@ -2638,6 +2734,19 @@ def api_runs():
 @app.route("/api/run/<run_id>")
 def api_run(run_id):
     return jsonify(_slim_lab_payload(_load_run(run_id)))
+
+@app.route("/api/run/<run_id>/version")
+def api_run_version(run_id):
+    """Cheap, read-only publication check for a browser already viewing a run."""
+    if run_id in {"", ".", ".."} or Path(run_id).name != run_id:
+        return jsonify({"error": "Invalid run ID"}), 400
+    if not (RUNS_DIR / run_id).is_dir():
+        return jsonify({"error": "Run not found"}), 404
+    signature = _lab_cache_signature(run_id)
+    version = hashlib.sha256(
+        json.dumps(signature, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return jsonify({"run_id": run_id, "version": version})
 
 @app.route("/api/run/latest")
 def api_run_latest():

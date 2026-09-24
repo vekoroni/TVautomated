@@ -137,9 +137,13 @@ def load_eod_snapshot(run_root: Path | str) -> dict[str, Any]:
         if receipt.get(key) != _sha(path):
             raise SnapshotError(f"EOD snapshot hash mismatch: {key}")
     manifest = _read_json(package / "eod_final_manifest.json")
+    meta = _read_json(package / "eod_run_meta.json")
     if (manifest.get("run_id") != root.name or manifest.get("pipeline_mode") != "EOD"
             or receipt.get("evidence_cutoff_utc") != manifest.get("created_at_utc")):
         raise SnapshotError("frozen EOD manifest identity mismatch")
+    if (meta.get("canonical_run_id") != root.name or meta.get("pipeline_mode") != "EOD"
+            or meta.get("run_status") != "COMPLETED"):
+        raise SnapshotError("frozen EOD run metadata identity mismatch")
     digest = hashlib.sha256()
     try:
         with gzip.open(package / "book.json.gz", "rb") as handle:
@@ -159,4 +163,4 @@ def load_eod_snapshot(run_root: Path | str) -> dict[str, Any]:
         or book.get("candidate_count") not in (None, len(rows))
     ):
         raise SnapshotError("frozen EOD book population does not reconcile")
-    return {"receipt": receipt, "rows": rows, "book": book, "manifest": manifest}
+    return {"receipt": receipt, "rows": rows, "book": book, "manifest": manifest, "meta": meta}

@@ -14,6 +14,8 @@ from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from pipeline_interpreter.confluence_evidence import CHAIN_KEYS
+
 
 _REPORT_KEYS = ["macro", "gamma", "liquidity", "thesis", "chart", "options_flow", "risk", "verdict"]
 
@@ -25,6 +27,18 @@ def _object(properties: dict[str, Any]) -> dict[str, Any]:
 
 _REPORT_SCHEMA = _object({
     "executive_summary": {"type": "string"},
+    "evidence_chain_review": {"type": "array", "items": _object({
+        "key": {"type": "string", "enum": list(CHAIN_KEYS)},
+        "status": {"type": "string"},
+        "text": {"type": "string"},
+        "evidence_class": {"type": "string", "enum": ["OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"]},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+    })},
+    "counter_case": _object({
+        "links": {"type": "array", "items": {"type": "string", "enum": list(CHAIN_KEYS)}},
+        "text": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+    }),
     "sections": {"type": "array", "items": _object({
         "key": {"type": "string", "enum": _REPORT_KEYS},
         "text": {"type": "string"},
@@ -184,6 +198,11 @@ class OpenAIResponsesProvider:
 
     def report(self, digest: Mapping[str, Any]) -> dict[str, Any]:
         self._require_budget(len(json.dumps(digest, ensure_ascii=False, default=str)))
+        evidence_refs = digest.get("evidence_refs")
+        allowed_refs = {"EOD_BOOK", "MORNING_HANDOFF", "PIT_PRICE_BARS"}
+        if (not isinstance(evidence_refs, list) or not evidence_refs
+                or any(ref not in allowed_refs for ref in evidence_refs)):
+            raise ProviderUnavailable("report evidence source identifiers are invalid; no request sent")
         value, sources, usage = self._response(
             instructions=(
                 "You are AVSHUNTER's advisory Pipeline Interpreter. Explain only the supplied "
@@ -191,13 +210,23 @@ class OpenAIResponsesProvider:
                 "sequence of events, supporting and contradicting facts, uncertainty, and the "
                 "next observation that would change the assessment. The chart section must "
                 "derive its narrative from numeric structure/profile data, never screenshots. "
+                "Produce exactly five evidence_chain_review items in sector, ticker, thesis, "
+                "contract, morning order. Copy each link's status exactly from evidence.confluence; "
+                "cite its evidence_ref and explain what is confirmed, opposed or unknown. "
+                "Sector and ticker relative returns are pre-decision price observations, not "
+                "literal fund inflows or proof of buyer identity. A frozen EOD quote is not a "
+                "live executable quote. An absent catalyst means cause unverified, not no thesis. "
+                "Never turn advisory confluence into execution permission. "
+                "Provide a counter_case naming every confluence link whose status is opposed, "
+                "missing, pending or otherwise not supportive, with the corresponding evidence refs. "
                 "Use web search only "
                 "for point-in-time earnings/news, with URL and event time; otherwise leave "
                 "external_events empty. Distinguish observed facts, derivations, inference and "
                 "unknowns. No screenshots. Do not change ticker, direction, contract, target, "
                 "invalidation, action, size, capital permission or broker state. Hidden orders "
                 "cannot be observed without depth/prints; qualify any location inference. "
-                "Cite only EOD_BOOK or MORNING_HANDOFF evidence identifiers."
+                "Cite only the source identifiers supplied in evidence.evidence_refs: "
+                + ", ".join(evidence_refs) + "."
             ),
             input_value={"evidence": digest, "required_sections": _REPORT_KEYS},
             schema=_REPORT_SCHEMA, name="avshunter_interpreter_report_v1", web_search=True,

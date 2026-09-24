@@ -22,14 +22,15 @@ from flask import jsonify, request
 
 from contracts.interpreter_eod_review import build_eod_review_bundle
 from domain.interpreter_review_selection import ReviewSelectionError, select_review_batch
+from pipeline_interpreter.confluence_evidence import CHAIN_KEYS, build_confluence_evidence
 from pipeline_interpreter.interactive_snapshot import SnapshotError, load_eod_snapshot
 from pipeline_interpreter.openai_desk_provider import (
     ProviderOutcomeUnknown, ProviderRequestRejected, ProviderUnavailable,
 )
 
 
-REPORT_VERSION = "interpreter_desk_report_v1"
-PROMPT_VERSION = "interpreter_desk_prompt_v1"
+REPORT_VERSION = "interpreter_desk_report_v2"
+PROMPT_VERSION = "interpreter_desk_prompt_v3"
 SECTION_KEYS = ("macro", "gamma", "liquidity", "thesis", "chart", "options_flow", "risk", "verdict")
 EVIDENCE_CLASSES = frozenset({"OBSERVED", "DERIVED", "INFERRED", "UNKNOWN"})
 _SAFE_NAME = re.compile(r"^[A-Z0-9.^-]{1,24}$")
@@ -39,10 +40,10 @@ _SAFE_SHA = re.compile(r"^[0-9a-f]{64}$")
 # domain facts go into a model request; omissions are counted and disclosed.
 EVIDENCE_FIELDS = (
     "canonical_direction", "direction", "thesis_id", "thesis_state", "target_price",
-    "invalidation_spot", "planned_hold_sessions", "planned_hold_source", "signal_price",
+    "invalidation_price", "planned_hold_sessions", "planned_hold_source", "signal_price",
     "last_price", "current_price", "evening_thesis_bucket", "evening_thesis_reason",
     "pretrade_thesis_state", "pretrade_focus_lane", "trigger_go_eligible",
-    "trigger_price", "trigger_evidence", "direction_conflict_status", "conflict_state",
+    "trigger_price", "trigger_quality", "trigger_evidence", "direction_conflict_status", "conflict_state",
     "profile_type", "poc", "vah", "val", "market_profile_type", "market_profile_poc",
     "market_profile_vah", "market_profile_val", "vwap", "volume", "relative_volume",
     "wyckoff_phase_bucket", "wyckoff_entry_trigger", "wyckoff_execution_bias",
@@ -51,6 +52,7 @@ EVIDENCE_FIELDS = (
     "gamma_flip", "gex", "contract_symbol", "selected_contract_symbol", "strike",
     "expiry", "contract_dte", "contract_bid", "contract_ask", "contract_delta",
     "contract_gamma", "contract_iv", "contract_oi", "contract_volume",
+    "contract_bid_size", "contract_ask_size",
     "contract_quote_quality", "selected_quote_timestamp_utc", "selected_quote_dataset_id",
     "monetisability_state", "liquidity_thesis_state", "sector", "sector_etf",
     "macro_packet_id", "macro_packet_sha256", "macro_context_state",
@@ -74,7 +76,8 @@ def _clean(value: Any) -> Any:
 
 
 def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], morning: Mapping[str, Any] | None = None,
-                            *, evidence_cutoff_utc: str, eod_technical_health: str) -> dict[str, Any]:
+                            *, evidence_cutoff_utc: str, eod_technical_health: str,
+                            confluence: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """Bound a one-ticker prompt without quietly losing required evidence."""
 
     retained: dict[str, Any] = {}
@@ -88,6 +91,14 @@ def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], m
             omitted.append(f"{key}:oversize")
         else:
             retained[key] = value
+    chain = dict(confluence) if confluence is not None else build_confluence_evidence(
+        row, session_date=None, evidence_cutoff_utc=evidence_cutoff_utc,
+        historical_prices_path=Path(__file__).resolve().parents[1] / "data" / "canonical" / "historical_prices.sqlite",
+        morning=morning,
+    )
+    refs = ["EOD_BOOK"] + (["MORNING_HANDOFF"] if morning else [])
+    if chain.get("price_path", {}).get("state") == "OBSERVED":
+        refs.append("PIT_PRICE_BARS")
     digest = {
         "run_id": bundle["run_id"], "ticker": bundle["ticker"],
         "authority": "ADVISORY_ONLY", "source_action": bundle.get("source_action"),
@@ -95,10 +106,11 @@ def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], m
         "eod_bundle_id": bundle["bundle_id"],
         "eod_manifest_sha256": bundle["source_manifest_sha256"],
         "eod_technical_health": eod_technical_health,
-        "evidence_cutoff_utc": morning.get("evidence_cutoff_utc") if morning else evidence_cutoff_utc,
+        "evidence_cutoff_utc": _latest_accepted_cutoff(evidence_cutoff_utc, morning),
         "eod_fields": retained,
+        "confluence": _clean(chain),
         "morning_evidence": _clean(morning) if morning else None,
-        "evidence_refs": ["EOD_BOOK"] + (["MORNING_HANDOFF"] if morning else []),
+        "evidence_refs": refs,
         "omitted_fields": omitted,
         "available_field_count": len(row), "included_field_count": len(retained),
         "unavailable_depth_or_prints": True,
@@ -118,7 +130,21 @@ def _instant(value: str) -> datetime:
     return parsed
 
 
-def _validate_report(output: Mapping[str, Any], allowed_refs: set[str], evidence_cutoff_utc: str) -> dict[str, Any]:
+def _latest_accepted_cutoff(eod_cutoff_utc: str, morning: Mapping[str, Any] | None) -> str:
+    """Use the newest accepted handoff, never an ungoverned fetch or wall clock."""
+
+    eod_cutoff = _instant(eod_cutoff_utc)
+    if morning is None:
+        return eod_cutoff_utc
+    morning_cutoff_utc = morning.get("evidence_cutoff_utc")
+    morning_cutoff = _instant(morning_cutoff_utc)
+    if morning_cutoff < eod_cutoff:
+        raise DeskError("Morning evidence cutoff predates the frozen Evening run")
+    return morning_cutoff_utc
+
+
+def _validate_report(output: Mapping[str, Any], allowed_refs: set[str], evidence_cutoff_utc: str,
+                     confluence: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(output, Mapping):
         raise DeskError("provider report is not an object")
     sections = output.get("sections")
@@ -141,6 +167,45 @@ def _validate_report(output: Mapping[str, Any], allowed_refs: set[str], evidence
         clean_sections.append({"key": key, "text": text.strip(), "evidence_class": category, "evidence_refs": refs})
     if seen != set(SECTION_KEYS):
         raise DeskError("report sections do not reconcile")
+    chain_review = output.get("evidence_chain_review")
+    if not isinstance(chain_review, list) or len(chain_review) != len(CHAIN_KEYS):
+        raise DeskError("report must account for every confluence link")
+    reviewed = []
+    seen_links: set[str] = set()
+    for item in chain_review:
+        if not isinstance(item, Mapping) or item.get("key") not in CHAIN_KEYS or item["key"] in seen_links:
+            raise DeskError("invalid or duplicate confluence link")
+        key = item["key"]
+        expected = confluence.get(key)
+        refs = item.get("evidence_refs")
+        if (not isinstance(expected, Mapping) or item.get("status") != expected.get("status")
+                or not isinstance(item.get("text"), str) or not item["text"].strip()
+                or len(item["text"]) > 2500 or item.get("evidence_class") not in EVIDENCE_CLASSES
+                or not isinstance(refs, list) or not set(refs).issubset(allowed_refs)
+                or expected.get("evidence_ref") not in refs):
+            raise DeskError("report confluence link contradicts governed evidence contract")
+        seen_links.add(key)
+        reviewed.append({"key": key, "status": item["status"], "text": item["text"].strip(),
+                         "evidence_class": item["evidence_class"], "evidence_refs": refs})
+    counter_case = output.get("counter_case")
+    if not isinstance(counter_case, Mapping):
+        raise DeskError("report counter-case missing")
+    counter_links = counter_case.get("links")
+    counter_refs = counter_case.get("evidence_refs")
+    required_counter_links = {
+        key for key in CHAIN_KEYS
+        if confluence[key]["status"] not in {"SUPPORTS", "STRONG_TRIGGER", "EOD_ACTIVE_QUOTE_TRAIT",
+                                            "THESIS_CONFIRMED"}
+    }
+    if (not isinstance(counter_links, list) or not all(isinstance(key, str) for key in counter_links)
+            or len(counter_links) != len(set(counter_links))
+            or not set(counter_links).issubset(CHAIN_KEYS)
+            or not required_counter_links.issubset(counter_links)
+            or not isinstance(counter_case.get("text"), str) or not counter_case["text"].strip()
+            or len(counter_case["text"]) > 4000 or not isinstance(counter_refs, list)
+            or not set(counter_refs).issubset(allowed_refs)
+            or any(confluence[key]["evidence_ref"] not in counter_refs for key in counter_links)):
+        raise DeskError("report counter-case does not cover opposing or unknown evidence")
     summary = output.get("executive_summary")
     if not isinstance(summary, str) or not summary.strip():
         raise DeskError("report summary missing")
@@ -163,6 +228,9 @@ def _validate_report(output: Mapping[str, Any], allowed_refs: set[str], evidence
         raise DeskError("unresolved evidence list missing")
     return {
         "executive_summary": summary.strip(), "sections": clean_sections,
+        "evidence_chain_review": reviewed,
+        "counter_case": {"links": counter_links, "text": counter_case["text"].strip(),
+                         "evidence_refs": counter_refs},
         "external_events": events, "unresolved": [str(x) for x in unresolved],
     }
 
@@ -202,14 +270,28 @@ def _morning_evidence(root: Path, ticker: str) -> dict[str, Any] | None:
         raise DeskError(f"Morning handoff cannot be trusted: {exc}") from exc
     bundle = dict(resolved.bundle)
     governed = dict(bundle.get("governed_record") or {})
+    # Governed Morning names (validation event owner): transition, reason, event id
+    # and the observed underlying price at validation.
     fields = {key: _clean(governed[key]) for key in (
-        "thesis_state", "final_action", "morning_thesis_result", "current_price",
-        "validation_price", "selected_contract_symbol", "selected_quote_snapshot_id",
+        "thesis_state", "final_action", "validation_transition", "validation_reason",
+        "validation_event_id", "validation_current_price",
+        "selected_contract_symbol", "selected_quote_snapshot_id",
         "selected_quote_timestamp_utc", "quote_change_evidence", "market_structure",
     ) if key in governed}
     return {"bundle_id": bundle.get("bundle_id"), "fields": fields,
             "evidence_cutoff_utc": resolved.manifest.get("morning_gate_completed_utc"),
             "refresh_required": resolved.refresh_required}
+
+
+def _confluence_for(row: Mapping[str, Any], frozen: Mapping[str, Any],
+                    morning: Mapping[str, Any] | None) -> dict[str, Any]:
+    return build_confluence_evidence(
+        row, session_date=frozen["meta"].get("session_date"),
+        evidence_cutoff_utc=_latest_accepted_cutoff(
+            frozen["receipt"]["evidence_cutoff_utc"], morning),
+        historical_prices_path=Path(__file__).resolve().parents[1] / "data" / "canonical" / "historical_prices.sqlite",
+        morning=morning,
+    )
 
 
 def _report_root(root: Path, ticker: str) -> Path:
@@ -333,6 +415,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                     row, bundle, morning,
                     evidence_cutoff_utc=frozen["receipt"]["evidence_cutoff_utc"],
                     eod_technical_health=frozen["receipt"]["eod_technical_health"],
+                    confluence=_confluence_for(row, frozen, morning),
                 )
                 input_chars = len(json.dumps(digest, default=str))
                 estimate = getattr(provider, "estimate_report_bound", None)
@@ -383,6 +466,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                     row, bundle, morning,
                     evidence_cutoff_utc=frozen["receipt"]["evidence_cutoff_utc"],
                     eod_technical_health=frozen["receipt"]["eod_technical_health"],
+                    confluence=_confluence_for(row, frozen, morning),
                 )
                 report_id = _report_id(digest, getattr(provider, "model_id", "UNKNOWN"))
                 folder = _report_root(root, choice.ticker)
@@ -413,7 +497,8 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                 provider_latency_ms = round((time.monotonic() - started) * 1000)
                 provider_retrieved_at_utc = datetime.now(timezone.utc).isoformat()
                 stage = "REPORT_VALIDATION"
-                content = _validate_report(raw, set(digest["evidence_refs"]), digest["evidence_cutoff_utc"])
+                content = _validate_report(raw, set(digest["evidence_refs"]),
+                                           digest["evidence_cutoff_utc"], digest["confluence"])
                 report = {
                     "schema_version": REPORT_VERSION, "status": "COMPLETE",
                     "report_id": report_id, "run_id": root.name, "ticker": choice.ticker,

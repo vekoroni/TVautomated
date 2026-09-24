@@ -89,6 +89,66 @@ def _contract_identity(row: Mapping[str, Any]) -> str:
     return ""
 
 
+def _project_validation_event(
+    row: dict[str, Any], event: Mapping[str, Any], *, run_id: str,
+) -> None:
+    """Attach an already-persisted validation fact; never recompute its verdict."""
+    ticker = str(row.get("ticker") or "").strip().upper()
+    if str(event.get("ticker") or "").strip().upper() != ticker:
+        raise ValueError(f"validation event ticker mismatch: {ticker}")
+    if str(event.get("invocation_id") or "") != run_id:
+        raise ValueError(f"validation event run mismatch: {ticker}")
+    if str(event.get("thesis_id") or "") != str(row.get("thesis_id") or ""):
+        raise ValueError(f"validation event thesis mismatch: {ticker}")
+    event_contract = str(event.get("selected_contract") or "").strip().upper().removeprefix("O:")
+    selected_contract = _contract_identity(row)
+    if event_contract != selected_contract:
+        raise ValueError(f"validation event contract mismatch: {ticker}")
+    event_action = str((event.get("execution_gate_result") or {}).get("final_action") or "").upper()
+    if event_action and event_action != str(row.get("final_action") or "").upper():
+        raise ValueError(f"validation event action mismatch: {ticker}")
+    row.update({
+        "validation_event_id": event.get("validation_event_id"),
+        "validation_transition": event.get("transition"),
+        "validation_reason": event.get("reason"),
+        "validation_data_status": event.get("data_status"),
+        "validation_evidence_cutoff_utc": event.get("evidence_cutoff_utc"),
+        "validation_current_price": event.get("current_price"),
+        "validation_gap_pct": event.get("gap_pct"),
+        "validation_underlying_observation_id": event.get("underlying_observation_id"),
+        "validation_option_quote_observation_id": event.get("option_quote_observation_id"),
+    })
+
+
+def _attach_persisted_validation_events(
+    rows: list[dict[str, Any]], event_dir: Path, *, run_id: str,
+) -> list[str]:
+    """Project matching facts; isolate a missing/bad event to its Lab row."""
+    by_ticker: dict[str, dict[str, Any]] = {}
+    for path in sorted(event_dir.glob("*.json")):
+        event = json.loads(path.read_text(encoding="utf-8-sig"))
+        if str(event.get("invocation_id") or "") != run_id:
+            continue
+        ticker = str(event.get("ticker") or "").strip().upper()
+        current = by_ticker.get(ticker)
+        if current is None or str(event.get("evidence_cutoff_utc") or "") > str(current.get("evidence_cutoff_utc") or ""):
+            by_ticker[ticker] = event
+    issues: list[str] = []
+    for row in rows:
+        ticker = str(row.get("ticker") or "").strip().upper()
+        event = by_ticker.get(ticker)
+        if event is None:
+            row["validation_data_status"] = "EVENT_MISSING_FROM_PROJECTION"
+            issues.append(f"{ticker}:EVENT_MISSING_FROM_PROJECTION")
+            continue
+        try:
+            _project_validation_event(row, event, run_id=run_id)
+        except ValueError as error:
+            row["validation_data_status"] = "EVENT_IDENTITY_CONFLICT"
+            issues.append(f"{ticker}:EVENT_IDENTITY_CONFLICT:{error}")
+    return issues
+
+
 def _execution_lab_mismatches(
     gated_rows: Iterable[Mapping[str, Any]],
     lab_rows: Iterable[Mapping[str, Any]],
@@ -830,6 +890,10 @@ def finalize_morning_handoff(
             destination_dir=morning_dir / "validation_events",
             fallback_evidence_cutoff_utc=completed_at_utc,
         )
+        validation_projection_issues = _attach_persisted_validation_events(
+            gated_rows, morning_dir / "validation_events", run_id=run_id,
+        )
+        validation_event_summary["lab_projection_issues"] = validation_projection_issues
 
     manifest = write_final_run_manifest(
         run_id,

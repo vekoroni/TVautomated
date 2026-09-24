@@ -146,6 +146,10 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
             {
                 "MSI_LAB_V3_VIEW": "0",
                 "MSI_INTERPRETER_RESOLVER": "0",
+                # These legacy fixture rows intentionally have no thesis_id or
+                # selected contract. The enabled validation-event contract is
+                # covered by test_ila_event_projection_v1 instead.
+                "AVSHUNTER_DYNAMIC_VALIDATION_ENABLED": "0",
             },
         )
         self._msi_legacy_mode.start()

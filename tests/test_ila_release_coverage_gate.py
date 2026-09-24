@@ -65,6 +65,9 @@ REQUIRED_GOVERNED_FIELDS = {
     # ILA-RC-07: PCR advisory-authority context.
     "pcr_signal", "pcr_direction_conflict_status", "pcr_direction_conflict_reason",
     "pcr_confidence_weight",
+    # AVS-SD-ILA-003: singular governed contract identity read by the handoff merge,
+    # the materializer, the Interpreter Desk and the browser.
+    "selected_contract_symbol", "selected_contract_identity_state",
 }
 
 # ILA-RC-06: the Interpreter-lifecycle overlay fields use a separate contract

@@ -16,7 +16,7 @@ def test_missing_key_or_model_blocks_before_network(monkeypatch):
     provider = module.OpenAIResponsesProvider(api_key=None, model_id=None)
     assert provider.ready is False
     with pytest.raises(module.ProviderUnavailable, match="Configure OPENAI_API_KEY"):
-        provider.report({"ticker": "AAA"})
+        provider.report({"ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
 
 
 def test_report_uses_bounded_structured_response_and_verified_web_sources(monkeypatch):
@@ -44,7 +44,7 @@ def test_report_uses_bounded_structured_response_and_verified_web_sources(monkey
         input_usd_per_million=1, output_usd_per_million=1,
         web_search_usd_per_call=0.001, max_ticker_usd=1,
     )
-    result = provider.report({"run_id": "20260922_000106", "ticker": "AAA"})
+    result = provider.report({"run_id": "20260922_000106", "ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
     assert calls[0]["model"] == "test-model"
     assert calls[0]["store"] is False
     assert calls[0]["max_output_tokens"] == 8000
@@ -62,7 +62,7 @@ def test_missing_governed_pricing_blocks_paid_request(monkeypatch):
     provider = module.OpenAIResponsesProvider(api_key="fake-key", model_id="test-model")
     assert provider.ready is False
     with pytest.raises(module.ProviderUnavailable, match="verified model/tool pricing"):
-        provider.report({"ticker": "AAA"})
+        provider.report({"ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
 
 
 def test_configured_cost_ceiling_blocks_before_network(monkeypatch):
@@ -76,7 +76,7 @@ def test_configured_cost_ceiling_blocks_before_network(monkeypatch):
     )
     assert provider.estimate_report_bound(1000) > provider.max_ticker_usd
     with pytest.raises(module.ProviderUnavailable, match="exceeds per-ticker ceiling"):
-        provider.report({"ticker": "AAA"})
+        provider.report({"ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
 
 
 def test_http_rejection_has_bounded_status_and_request_id(monkeypatch):
@@ -93,7 +93,7 @@ def test_http_rejection_has_bounded_status_and_request_id(monkeypatch):
         web_search_usd_per_call=0.001, max_ticker_usd=1,
     )
     with pytest.raises(module.ProviderRequestRejected) as raised:
-        provider.report({"ticker": "AAA"})
+        provider.report({"ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
     assert raised.value.http_status == 400
     assert raised.value.request_id == "req_fixture"
     assert "private" not in str(raised.value)
@@ -112,5 +112,5 @@ def test_transport_loss_remains_uncertain(monkeypatch):
         web_search_usd_per_call=0.001, max_ticker_usd=1,
     )
     with pytest.raises(module.ProviderOutcomeUnknown) as raised:
-        provider.report({"ticker": "AAA"})
+        provider.report({"ticker": "AAA", "evidence_refs": ["EOD_BOOK"]})
     assert "private" not in str(raised.value)

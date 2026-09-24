@@ -172,6 +172,8 @@ FINAL_BOOK_FIELDS = [
     "selected_structure",
     "selected_structure_id",
     "selected_contract_symbols",
+    "selected_contract_symbol",
+    "selected_contract_identity_state",
     "selected_quote_snapshot_id",
     "selected_quote_timestamp_utc",
     "doi_projection_version",
@@ -642,7 +644,18 @@ FINAL_BOOK_FIELDS = [
     "wbs_momentum_alignment_state",
     "convexity_data_state",
     "convexity_score",
+    "convexity_score_max",
+    "convexity_score_source",
     "convexity_campaign",
+    "sb_c_compression",
+    "sb_c_energy",
+    "sb_c_underpriced_vol",
+    "sb_c_gamma_proximity",
+    "sb_c_runway",
+    "sb_c_vanna_quality",
+    "sb_c_volume_confirmation",
+    "sb_c_sector_alignment",
+    "sb_conv_detail",
     "readiness_stage",
     "readiness_label",
     "readiness_enter_now",
@@ -678,6 +691,17 @@ FINAL_BOOK_FIELDS = [
     "garch_expected_move_11_20d",
     "garch_price_bars_used",
     "morning_data_state",
+    "lab_projection_integrity_state",
+    "morning_execution_mode",
+    "validation_event_id",
+    "validation_transition",
+    "validation_reason",
+    "validation_data_status",
+    "validation_evidence_cutoff_utc",
+    "validation_current_price",
+    "validation_gap_pct",
+    "validation_underlying_observation_id",
+    "validation_option_quote_observation_id",
     "data_quality_flags",
     "field_provenance_json",
     "pcr_vol_status",
@@ -1475,9 +1499,21 @@ def _economics_identity(
     )
 
     upstream_snapshot_id = _s(sig.get("selected_quote_snapshot_id"))
+    # AVS-SD-ILA-003: the singular governed contract identity is published once,
+    # here, from the governed list. The handoff materializer, the Lab merge, the
+    # Morning finalizer, the Interpreter Desk and the browser read it; none
+    # re-derives it from copied producer aliases. Absence is typed, never blank.
+    if len(selected_symbols) == 1:
+        selected_contract_symbol, selected_contract_identity_state = selected_symbols[0], "SINGLE"
+    elif selected_symbols:
+        selected_contract_symbol, selected_contract_identity_state = "", "MULTI_LEG"
+    else:
+        selected_contract_symbol, selected_contract_identity_state = "", "NOT_SELECTED"
     return {
         "selected_structure_id": selected_id,
         "selected_contract_symbols": _json_safe(selected_symbols),
+        "selected_contract_symbol": selected_contract_symbol,
+        "selected_contract_identity_state": selected_contract_identity_state,
         # The producer's quote identifier is immutable lineage. Regenerate it
         # only for legacy rows that arrived without an upstream identity.
         "selected_quote_snapshot_id": upstream_snapshot_id or _quote_snapshot_id(sig, selected_id),
@@ -1506,6 +1542,9 @@ def _enforce_economics_identity(
         for field in identity:
             if field == "selected_quote_snapshot_id" and upstream_snapshot_id:
                 provenance.setdefault(field, "upstream:selected_quote_snapshot_id")
+                continue
+            if field in {"selected_contract_symbol", "selected_contract_identity_state"}:
+                provenance[field] = "economics_identity:selected_contract_symbols"
                 continue
             provenance[field] = "governed_materializer:contract_economics_identity"
 
@@ -3452,7 +3491,18 @@ def opportunity_book_row(
         "wbs_momentum_alignment_state": first(sig, "wbs_momentum_alignment_state", "momentum_alignment_state"),
         "convexity_data_state": "AVAILABLE" if not _is_missing(first(sig, "convexity_score", "sb_conv_score")) else "NOT_GOVERNED",
         "convexity_score": first(sig, "convexity_score", "sb_conv_score"),
+        "convexity_score_max": first(sig, "convexity_score_max"),
+        "convexity_score_source": first(sig, "convexity_score_source"),
         "convexity_campaign": first(sig, "convexity_campaign", "sb_campaign"),
+        "sb_c_compression": first(sig, "sb_c_compression"),
+        "sb_c_energy": first(sig, "sb_c_energy"),
+        "sb_c_underpriced_vol": first(sig, "sb_c_underpriced_vol"),
+        "sb_c_gamma_proximity": first(sig, "sb_c_gamma_proximity"),
+        "sb_c_runway": first(sig, "sb_c_runway"),
+        "sb_c_vanna_quality": first(sig, "sb_c_vanna_quality"),
+        "sb_c_volume_confirmation": first(sig, "sb_c_volume_confirmation"),
+        "sb_c_sector_alignment": first(sig, "sb_c_sector_alignment"),
+        "sb_conv_detail": first(sig, "sb_conv_detail"),
         "readiness_stage": "",
         "readiness_label": "",
         "readiness_enter_now": False,
@@ -3494,6 +3544,23 @@ def opportunity_book_row(
         "garch_expected_move_11_20d": first(sig, "garch_expected_move_11_20d", "l3_expected_move_11_20d", "garch__l3_expected_move_11_20d"),
         "garch_price_bars_used": first(sig, "garch_price_bars_used", "l3_n_bars", "garch__l3_n_bars"),
         "morning_data_state": "AVAILABLE" if not _is_missing(first(sig, "morning_execution_permission", "mv__morning_execution_permission")) else ("NOT_RUN_EOD" if pipeline_mode in {"EOD", "LIVE_EOD", "INTRADAY_EOD"} else "MISSING_DATA_DEFECT"),
+        "lab_projection_integrity_state": (
+            "NOT_RUN_EOD" if pipeline_mode in {"EOD", "LIVE_EOD", "INTRADAY_EOD"}
+            else "COMPLETE" if all(
+                not _is_missing(first(sig, key))
+                for key in ("morning_execution_mode", "validation_event_id", "validation_transition", "final_action")
+            ) else "PROJECTION_INCOMPLETE"
+        ),
+        "morning_execution_mode": first(sig, "morning_execution_mode"),
+        "validation_event_id": first(sig, "validation_event_id"),
+        "validation_transition": first(sig, "validation_transition"),
+        "validation_reason": first(sig, "validation_reason"),
+        "validation_data_status": first(sig, "validation_data_status"),
+        "validation_evidence_cutoff_utc": first(sig, "validation_evidence_cutoff_utc"),
+        "validation_current_price": first(sig, "validation_current_price"),
+        "validation_gap_pct": first(sig, "validation_gap_pct"),
+        "validation_underlying_observation_id": first(sig, "validation_underlying_observation_id"),
+        "validation_option_quote_observation_id": first(sig, "validation_option_quote_observation_id"),
         "data_quality_flags": first(sig, "data_quality_flags"),
         "field_provenance_json": _json_safe(provenance),
         "pcr_vol_status": first(sig, "pcr_vol_status", "opt__pcr_vol_status"),

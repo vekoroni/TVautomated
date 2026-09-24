@@ -287,7 +287,7 @@ def test_lab_msi_view_contains_all_approved_evidence_groups() -> None:
         encoding="utf-8"
     )
     for label in (
-        "Current Selected-Contract Quote", "Underlying Session Evidence",
+        "Selected-Contract Quote", "Underlying Session Evidence",
         "Market Structure Lifecycle", "Interpreter Assessment — Advisory Only",
         "MICROSTRUCTURE_NOT_OBSERVED",
     ):

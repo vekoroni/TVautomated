@@ -381,7 +381,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
       <div class="slh" onclick="sortBy(22)">Entry Telemetry</div>
       <div class="slh" onclick="sortBy(23)">Quote</div>
       <div class="slh" onclick="sortBy(24)">Fresh</div>
-      <div class="slh" onclick="sortBy(25)" title="Morning Gate verdict: whether the governed swing thesis survived current-price validation">AM Thesis</div>
+      <div class="slh" onclick="sortBy(25)" title="Governed Morning thesis result from the recorded validation event; post-open contract state is separate">Morning Thesis</div>
       <div class="slh" onclick="sortBy(26)">MS Life</div>
       <div class="slh" onclick="sortBy(27)">MS Dir</div>
       <div class="slh" onclick="sortBy(28)">Assess</div>
@@ -597,6 +597,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 // ═══ STATE ═══════════════════════════════════════════════════════════════
 const API = 'http://localhost:5002/api';
 let RUN_DATA = null;   // full loaded run payload
+let LAB_PUBLICATION_VERSION = null;
+let LAB_VERSION_CHECK_RUNNING = false;
 let SHOW_INVALID = false; // show schema-invalid rows
 let SIGNALS  = [];     // actionable subset used by specialist panes
 let ALL_SIGS = [];     // all signals including SD
@@ -707,7 +709,18 @@ function populateGovernedDisplayFields(signal) {
 }
 
 async function loadRun(runId) {
-  const data = await fetch(`${API}/run/${runId}`).then(r => r.json());
+  const versionUrl = `${API}/run/${encodeURIComponent(runId)}/version`;
+  let data, acceptedVersion = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const before = await fetch(versionUrl).then(r => r.json());
+    data = await fetch(`${API}/run/${encodeURIComponent(runId)}`).then(r => r.json());
+    const after = await fetch(versionUrl).then(r => r.json());
+    if (before.version && before.version === after.version) {
+      acceptedVersion = after.version;
+      break;
+    }
+  }
+  if (!acceptedVersion) throw new Error('Lab evidence changed during loading; retry refresh');
   if (data.error) throw new Error(data.error);
   data.signals = (data.signals || []).map(populateGovernedDisplayFields);
   if (!RUN_DATA || RUN_DATA.run_id !== data.run_id) {
@@ -718,6 +731,24 @@ async function loadRun(runId) {
   if(!SHOW_INVALID){ ALL_SIGS = ALL_SIGS.filter(s => s.sb_schema_ok !== 'N'); }
   SIGNALS  = ALL_SIGS.filter(isActionSignal);
   DISCOVERY = data.discovery || [];
+  LAB_PUBLICATION_VERSION = acceptedVersion;
+}
+
+async function refreshIfLabPublicationChanged() {
+  if (LAB_VERSION_CHECK_RUNNING || document.hidden || !RUN_DATA?.run_id) return;
+  LAB_VERSION_CHECK_RUNNING = true;
+  try {
+    const runId = RUN_DATA.run_id;
+    const info = await fetch(`${API}/run/${encodeURIComponent(runId)}/version`).then(r => r.json());
+    if (info.version && LAB_PUBLICATION_VERSION && info.version !== LAB_PUBLICATION_VERSION) {
+      await loadRun(runId);
+      renderAll();
+    } else if (info.version && !LAB_PUBLICATION_VERSION) {
+      LAB_PUBLICATION_VERSION = info.version;
+    }
+  } catch (_) {
+    // A failed poll is not evidence that the thesis changed. Manual refresh remains available.
+  } finally { LAB_VERSION_CHECK_RUNNING = false; }
 }
 
 async function refreshData() {
@@ -867,7 +898,7 @@ function renderPriorityPanel() {
         <div class="pp-bar"><div class="pp-bar-fill" style="width:${ps}%"></div></div>
       </div>
       <div class="pp-badges">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${s.sb_conv_score||0}/8</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${htmlSafe(getConvexitySummary(s))}</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}" title="${LEGACY_EV_TITLE}">${formatEv(ev)} ${evLabel(s)}</span>
         ${hint?`<span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${hintC}" title="${LEGACY_EV_TITLE}">LEGACY ${hint}</span>`:''}
@@ -1075,8 +1106,8 @@ function renderCardPanels(stats, macro, summary) {
       <div class="cmp-head"><span class="cmp-title" style="color:var(--gold)">◆ Core Campaigns</span><button class="cmp-close" onclick="closeCard('c-camp')">✕ Close</button></div>
       <div class="cmp-body">
         <div class="meta-grid">
-          <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_campaign_count||0} tickers — conv ≥ 3/5</span></div>
-          <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} tickers — conv 1-2/5</span></div>
+          <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_campaign_count||0} tickers — producer-labelled campaign</span></div>
+          <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${ALL_SIGS.filter(s=>s.sb_campaign==='STAGED').length} tickers — producer-labelled campaign</span></div>
           <div class="mrow"><span class="mr-k">AVOID</span><span class="mr-v r">${ALL_SIGS.filter(s=>s.sb_campaign==='AVOID').length} tickers</span></div>
           <div class="mrow"><span class="mr-k">Verdicts Changed</span><span class="mr-v a">${stats.verdicts_changed||0}</span></div>
           <div class="mrow"><span class="mr-k">Vetoes Fired</span><span class="mr-v a">${stats.vetoes_fired||0}</span></div>
@@ -1100,7 +1131,7 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Ticker</span><span class="mr-v c">${s.ticker}</span></div>
     <div class="mrow"><span class="mr-k">Verdict</span><span class="mr-v ${canOpenEntry(s)?'g':'a'}">${verdict}</span></div>
     <div class="mrow"><span class="mr-k">Campaign</span><span class="mr-v g">${campaign}</span></div>
-    <div class="mrow"><span class="mr-k">Conviction</span><span class="mr-v a">${s.sb_conv_score||'—'} / 8</span></div>
+    <div class="mrow"><span class="mr-k">Convexity</span><span class="mr-v a">${htmlSafe(getConvexitySummary(s))}</span></div>
     <div class="mrow"><span class="mr-k">Direction</span><span class="mr-v c">${s.direction||'—'}</span></div>
     <div class="mrow"><span class="mr-k">Phase</span><span class="mr-v p">${s.phase||'—'}</span></div>
     <div class="mrow"><span class="mr-k">Instrument</span><span class="mr-v sm">${s.sb_instrument_now||'—'}</span></div>
@@ -1112,7 +1143,8 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Hold Period</span><span class="mr-v c">${opt('hold_label')}</span></div>
     <div class="mrow"><span class="mr-k">Horizon/Hold</span><span class="mr-v ${getHorizonHoldAlignment(s)==='ALIGNED'?'g':'a'}">${getHorizonHoldAlignment(s)}</span></div>
     <div class="mrow"><span class="mr-k">Premium</span><span class="mr-v">${getPremiumDisplay(s)}</span></div>
-    <div class="mrow"><span class="mr-k">Breakeven</span><span class="mr-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</span></div>
+    <div class="mrow"><span class="mr-k">Frozen option breakeven</span><span class="mr-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</span></div>
+    <div class="mrow"><span class="mr-k">Selected-quote expiry breakeven</span><span class="mr-v a">${getSelectedQuoteAskBreakeven(s) === null ? 'UNAVAILABLE' : '$'+getSelectedQuoteAskBreakeven(s).toFixed(2)} · ${htmlSafe(getQuoteFreshnessContext(s).timestamp)}</span></div>
     <div class="mrow"><span class="mr-k">IVP</span><span class="mr-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</span></div>
     <div class="mrow"><span class="mr-k">Monetisability</span><span class="mr-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
     <div class="mrow"><span class="mr-k">Conservative Target Profit</span><span class="mr-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</span></div>
@@ -1357,6 +1389,18 @@ function optField(s, k) {
   return '—';
 }
 
+function formatObservedNumber(value, decimals = 2) {
+  // Source absence is not a measured zero. A real 0 remains visible as 0.
+  if (value === null || value === undefined || String(value).trim() === '') return '—';
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(decimals) : '—';
+}
+function formatObservedFractionPercent(value, decimals = 1) {
+  if (value === null || value === undefined || String(value).trim() === '') return '—';
+  const number = Number(value);
+  return Number.isFinite(number) ? `${(number * 100).toFixed(decimals)}%` : '—';
+}
+
 // ── Price fallback chain ──────────────────────────────────────────────────
 // current_price = 0 in EOD mode. Fall back to signal_price (always populated).
 function getPrice(s) {
@@ -1381,6 +1425,35 @@ function getPremiumDisplay(s) {
   ]);
   const p = parseFloat(raw);
   return (p > 0 && p !== 1) ? `$${p.toFixed(2)}` : '—';
+}
+function getConvexitySummary(s) {
+  const raw = s.convexity_score ?? s.sb_conv_score;
+  if (raw === null || raw === undefined || String(raw).trim() === '') return 'UNAVAILABLE';
+  const max = Number(s.convexity_score_max);
+  const source = String(s.convexity_score_source || '').trim();
+  return Number.isFinite(max) && max > 0 && source
+    ? `${raw} / ${max} · ${source.replace(/_/g, ' ')}`
+    : `${raw} · SCALE/SOURCE NOT VERIFIED`;
+}
+function getSelectedQuoteAskBreakeven(s) {
+  // Illustrative expiry arithmetic only, never the governed target economics.
+  const selected = String(getSelectedContract(s) || '').toUpperCase().replace(/^O:/, '');
+  const morning = String(s.morning_selected_contract_symbol || selected).toUpperCase().replace(/^O:/, '');
+  const strike = Number(getGovernedContractField(s, 'contract_strike', 'strike'));
+  const ask = Number(s.current_contract_ask);
+  const timestamp = s.current_quote_timestamp_utc || s.morning_quote_timestamp_utc;
+  if (!selected || selected !== morning || !timestamp ||
+      !Number.isFinite(strike) || strike <= 0 ||
+      !Number.isFinite(ask) || ask <= 0) return null;
+  const side = String(s.governed_direction || s.direction || '').toUpperCase();
+  if (side === 'CALL') return strike + ask;
+  if (side === 'PUT') return strike - ask;
+  return null;
+}
+function getQuoteFreshnessContext(s) {
+  const state = String(s.quote_freshness || s.lab_v4_quote_freshness || 'UNKNOWN').toUpperCase();
+  const timestamp = s.current_quote_timestamp_utc || s.morning_quote_timestamp_utc || s.selected_quote_timestamp_utc;
+  return {label: `${state} AT CAPTURE`, timestamp: timestamp || 'TIME NOT PUBLISHED'};
 }
 function fNum(v) { return isNaN(parseFloat(v)) ? v : parseFloat(v); }
 function attrSafe(v) {
@@ -1489,6 +1562,10 @@ function isAuditOnlySignal(s) {
 }
 
 function canOpenEntry(s) {
+  // A projection defect is not a thesis veto, but the Lab must not present a
+  // clean one-click entry while its Morning event is missing from this view.
+  if (s.lab_projection_integrity_state === 'PROJECTION_INCOMPLETE' ||
+      (s.pipeline_mode === 'MORNING_VALIDATION' && !s.validation_event_id)) return false;
   const mvPerm = s.morning_execution_permission || s.mv__morning_execution_permission || s.mv_morning_execution_permission || s.mv_execution_permission || s.mv__execution_permission || '';
   if (cleanCategory(mvPerm) === 'BLOCKED') return false;
   if (cleanCategory(s.conflict_state) === 'HARD_CONFLICT') return false;
@@ -1678,19 +1755,23 @@ function formatPriceLevel(value) {
 }
 
 function getMorningDrift(s) {
-  const raw = firstSignalValue(s, ['mv__drift_pct', 'mv_drift_pct']);
+  const raw = firstSignalValue(s, ['validation_gap_pct', 'mv__drift_pct', 'mv_drift_pct']);
   const value = raw === '' ? NaN : Number(raw);
   if (Number.isFinite(value)) return {value, label: `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, reason: 'Morning validation price drift'};
   const notRun = s.morning_data_state === 'NOT_RUN_EOD';
   return {value: null, label: notRun ? 'Not run' : 'Unavailable', reason: notRun ? 'Morning validation has not run; regime drift is a different measure.' : 'No morning drift measurement supplied.'};
 }
 
-function getPreopenThesisState(s) {
-  // ILA-RC-04: this reads ONLY the pre-open thesis-check event (validation_transition).
-  // It must never be read as "Morning did not run" - a row can be fully validated in
-  // POSTOPEN_CONTRACT_REFRESH mode (see getPostopenContractState) while this is absent,
-  // because that mode never produces a validation_transition value. See getMorningEventMode
-  // for which event actually ran on this row.
+function getMorningThesisState(s) {
+  // Use the persisted Morning validation event, regardless of whether the run was
+  // pre-open or post-open. Contract refresh state is shown separately and cannot
+  // substitute for a thesis transition. Missing provenance never implies CONFIRMED.
+  if (s.lab_projection_integrity_state === 'PROJECTION_INCOMPLETE') {
+    return {label: 'INCOMPLETE', valid: false, reason: 'Morning source exists but the Lab event projection is incomplete.'};
+  }
+  if (!s.validation_event_id) {
+    return {label: 'NOT RUN', valid: false, reason: 'No governed Morning validation event is recorded for this row.'};
+  }
   const transition = String(s.validation_transition || '').toUpperCase();
   const governedReason = String(s.validation_reason || '').trim();
   const reason = fallback => governedReason || fallback;
@@ -1701,7 +1782,16 @@ function getPreopenThesisState(s) {
   if (transition === 'DATA_DEFERRED') return {label: 'DEFERRED', valid: false, reason: reason('Morning evidence was not sufficient to validate the thesis.')};
   if (transition === 'NOT_EVALUATED_NON_DIRECTIONAL') return {label: 'N/A', valid: false, reason: reason('Directional Morning validation is not applicable to this thesis.')};
   if (transition) return {label: 'UNKNOWN', valid: false, reason: reason(`Unrecognised governed transition: ${transition}`)};
-  return {label: 'NOT RUN', valid: false, reason: 'This run did not perform a pre-open thesis-validation event (see Morning Event Mode).'};
+  return {label: 'UNRESOLVED', valid: false, reason: 'Morning event exists but has no governed thesis transition.'};
+}
+
+function getPreopenThesisState(s) {
+  // The mode-specific panel must not pretend a pre-open check occurred when this
+  // run performed only the post-open refresh. The grid uses the actual event result.
+  if (String(s.morning_execution_mode || '').toUpperCase() === 'POSTOPEN_CONTRACT_REFRESH') {
+    return {label: 'N/A', valid: false, reason: 'This run did not perform a pre-open thesis-validation event; post-open validation ran. See Morning Thesis and contract state.'};
+  }
+  return getMorningThesisState(s);
 }
 
 const POSTOPEN_CONTRACT_STATE_LABELS = {
@@ -1765,7 +1855,10 @@ function getMorningLifecycleBanner(s) {
   // "CURRENT VALIDATION NOT RUN" claim, which directly contradicts a row's own GO/
   // READY_EXECUTE verdict shown elsewhere on the same dossier whenever Morning ran in
   // POSTOPEN_CONTRACT_REFRESH mode (every observed real run). Fall back mode-aware instead.
-  if (s.lab_status_banner) return s.lab_status_banner;
+  if (s.lab_projection_integrity_state === 'PROJECTION_INCOMPLETE' ||
+      (s.pipeline_mode === 'MORNING_VALIDATION' && !s.validation_event_id)) {
+    return 'MORNING SOURCE RECORDED — LAB PROJECTION INCOMPLETE; INSPECT SOURCE EVENT';
+  }
   const mode = String(s.morning_execution_mode || '').toUpperCase();
   if (mode === 'POSTOPEN_CONTRACT_REFRESH') {
     return `THESIS PREPARED — POST-OPEN CONTRACT REFRESH RAN (${getPostopenContractState(s).label})`;
@@ -1773,6 +1866,7 @@ function getMorningLifecycleBanner(s) {
   if (mode === 'PREOPEN_THESIS_CHECK') {
     return `THESIS PREPARED — PRE-OPEN THESIS CHECK RAN (${getPreopenThesisState(s).label})`;
   }
+  if (s.lab_status_banner) return s.lab_status_banner;
   return 'THESIS PREPARED — MORNING VALIDATION NOT RUN';
 }
 
@@ -2117,7 +2211,7 @@ const sortKeys = [
   s => getEilDisplay(s),                            // 22 EIL
   s => parseFloat(s.current_contract_mid||0),       // 23 Current quote
   s => s.quote_freshness||s.lab_v4_quote_freshness||'', // 24 Quote freshness
-  s => getPreopenThesisState(s).label,               // 25 Morning thesis status
+  s => getMorningThesisState(s).label,               // 25 Governed Morning thesis status
   s => s.ms_lifecycle||'',                          // 26 Structure lifecycle
   s => s.ms_direction_relationship||'',             // 27 Structure relationship
   s => s.interpreter_assessment_status||'',         // 28 Interpreter assessment
@@ -2285,8 +2379,8 @@ function buildTable() {
         return `<span class="pill ${cls}" style="font-size:7px;padding:2px 5px">${lbl}</span>`;
       })()}</div>
       <div class="sc" title="Current exact-contract bid / ask" style="font-size:9px;color:var(--cyan)">${s.current_contract_bid ?? 'MISSING'} / ${s.current_contract_ask ?? 'MISSING'}</div>
-      <div class="sc" title="Provider quote freshness; does not alter thesis validity" style="font-size:8px;color:${String(s.quote_freshness||s.lab_v4_quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${s.quote_freshness || s.lab_v4_quote_freshness || 'UNKNOWN'}</div>
-      <div class="sc" title="${attrSafe(getPreopenThesisState(s).reason)}" style="font-size:8px;color:${getPreopenThesisState(s).valid?'var(--green)':'var(--amber)'}">${getPreopenThesisState(s).label}</div>
+      <div class="sc" title="Quote state at capture: ${attrSafe(getQuoteFreshnessContext(s).timestamp)}; verify a new broker quote before entry" style="font-size:8px;color:${String(s.quote_freshness||s.lab_v4_quote_freshness||'').toUpperCase()==='FRESH'?'var(--green)':'var(--amber)'}">${htmlSafe(getQuoteFreshnessContext(s).label)}</div>
+      <div class="sc" title="${attrSafe(getMorningThesisState(s).reason)}" style="font-size:8px;color:${getMorningThesisState(s).valid?'var(--green)':'var(--amber)'}">${getMorningThesisState(s).label}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_lifecycle || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.ms_direction_relationship || 'INSUFFICIENT_DATA'}</div>
       <div class="sc" style="font-size:8px;color:var(--text2)">${s.interpreter_assessment_status || 'NOT_APPLICABLE'}</div>
@@ -2526,7 +2620,7 @@ function openModal(ticker) {
   // TAB 1: OVERVIEW
   document.getElementById('mp-overview').innerHTML = `
     <div class="m-reason" style="border-color:var(--cyan);color:var(--cyan)"><strong>Lifecycle:</strong> ${htmlSafe(getMorningLifecycleBanner(s))}</div>
-    <div class="m-sec-hdr" style="margin-top:18px">Evening Thesis Decision — Morning Check Pending</div>
+    <div class="m-sec-hdr" style="margin-top:18px">Evening Thesis Decision — Frozen at Completed Session</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Evidence Bucket</div><div class="mf-v a">${htmlSafe(s.evening_thesis_bucket||'NOT EVALUATED')}</div></div>
       <div class="m-field"><div class="mf-k">Target Source</div><div class="mf-v a">${htmlSafe(s.target_price_source||'UNVERIFIED')}</div></div>
@@ -2534,7 +2628,7 @@ function openModal(ticker) {
     </div>
     <div class="m-reason">${htmlSafe(s.evening_thesis_reason||'No reconciled Evening thesis decision published.')} · ${htmlSafe(s.evening_thesis_authority||'ADVISORY ONLY')}</div>
     <div class="m-reason"><strong>Other evidence:</strong> ${htmlSafe(s.evening_evidence_flags||'NOT EVALUATED')}</div>
-    <div class="m-sec-hdr" style="margin-top:18px">Pre-open Review — Advisory Only</div>
+    <div class="m-sec-hdr" style="margin-top:18px">Frozen Pre-open Review — EOD Snapshot, Advisory Only</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Focus Lane</div><div class="mf-v a">${htmlSafe(s.pretrade_focus_lane||'NOT EVALUATED')}</div></div>
       <div class="m-field"><div class="mf-k">EOD Thesis</div><div class="mf-v c">${htmlSafe(s.pretrade_thesis_state||'NOT EVALUATED')}</div></div>
@@ -2575,7 +2669,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Morning/Lab Alignment</div><div class="mf-v ${morningAlign.includes('CONFLICT')?'r':morningAlign.includes('ALIGNED')?'g':'a'}">${displayCategory(morningAlign)}</div></div>
       <div class="m-field"><div class="mf-k">Options Route</div><div class="mf-v c">${displayCategory(optRoute)}</div></div>
       <div class="m-field"><div class="mf-k">Options Permission</div><div class="mf-v sm">${displayCategory(optPermission)}</div></div>
-      <div class="m-field"><div class="mf-k">Convexity Score</div><div class="mf-v a">${s.sb_conv_score||'—'} / 8</div></div>
+      <div class="m-field"><div class="mf-k">Convexity Score</div><div class="mf-v a">${htmlSafe(getConvexitySummary(s))}</div></div>
       <div class="m-field"><div class="mf-k">Sector</div><div class="mf-v c">${s.gics_sector||s.sector_name||s.sector||s.sector_short||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Sector ETF</div><div class="mf-v" style="color:var(--text2)">${s.sector_etf||s.sector_proxy||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Wyckoff Phase</div><div class="mf-v p">${s.phase||'—'}</div></div>
@@ -2642,8 +2736,9 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Contract Code</div><div class="mf-v sm">${getSelectedContract(s)||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Selected Structure</div><div class="mf-v sm">${s.selected_structure||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Premium</div><div class="mf-v">${getPremiumDisplay(s)}${(s.premium_is_synthetic===true||s.premium_is_synthetic==='true'||s.premium_label==='BSM')?'':'/share'}</div></div>
-      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${parseFloat(getGovernedContractField(s,'contract_delta','live_contract_delta')||0).toFixed(3)}</div></div>
-      <div class="m-field"><div class="mf-k">Breakeven Price</div><div class="mf-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</div></div>
+      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${formatObservedNumber(getGovernedContractField(s,'contract_delta','live_contract_delta'), 3)}</div></div>
+      <div class="m-field"><div class="mf-k">Frozen option breakeven</div><div class="mf-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</div></div>
+      <div class="m-field"><div class="mf-k">Selected-quote expiry breakeven</div><div class="mf-v a">${getSelectedQuoteAskBreakeven(s) === null ? 'UNAVAILABLE' : '$'+getSelectedQuoteAskBreakeven(s).toFixed(2)}<br><span class="dim">Illustrative strike ± displayed ask as of ${htmlSafe(getQuoteFreshnessContext(s).timestamp)}, before fees, only if held to expiry; not an early-exit target.</span></div></div>
       <div class="m-field"><div class="mf-k">Monetisability</div><div class="mf-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</div></div>
       <div class="m-field"><div class="mf-k">Conservative Target Profit</div><div class="mf-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}<br><span class="dim">scenario payoff if target is reached — not a probability and cannot authorize entry</span></div></div>
       <div class="m-field"><div class="mf-k">EV3 Advisory</div><div class="mf-v ${evDisplayClass(ev)}">${formatEv(ev)}</div></div>
@@ -2651,7 +2746,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Monetisability Check</div><div class="mf-v ${cleanCategory(s.monetisability_status)==='COMPLETE'?'g':'a'}">${s.monetisability_status||'NOT RUN'}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Contract Alignment</div><div class="mf-v ${hasComparableEconomics(s)?'g':'a'}">${hasComparableEconomics(s)?'ALIGNED':'ADVISORY UNAVAILABLE'}</div></div>
       <div class="m-field"><div class="mf-k">Quote Time (UTC)</div><div class="mf-v sm">${s.selected_quote_timestamp_utc||s.contract_quote_timestamp||'—'}</div></div>
-      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v sm">${htmlSafe(s.quote_freshness||s.lab_v4_quote_freshness||'NOT EVALUATED')}<br><span class="dim">Execution context only; does not invalidate the ticker thesis.</span></div></div>
+      <div class="m-field"><div class="mf-k">Quote Freshness</div><div class="mf-v sm">${htmlSafe(getQuoteFreshnessContext(s).label)} · ${htmlSafe(getQuoteFreshnessContext(s).timestamp)}<br><span class="dim">Historical observation, not a live broker quote. Execution context only; does not invalidate the ticker thesis.</span></div></div>
       <div class="m-field"><div class="mf-k">Position Size</div><div class="mf-v a">${sizeLabel}</div></div>
     </div>
     <div class="m-sec-hdr">Liquidity Lifecycle</div>
@@ -2671,7 +2766,7 @@ function openModal(ticker) {
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Call Wall (Ceiling)</div><div class="mf-v c">$${opt('call_wall')}</div></div>
       <div class="m-field"><div class="mf-k">Put Wall (Floor)</div><div class="mf-v r">$${opt('put_wall')}</div></div>
-      <div class="m-field"><div class="mf-k">Gamma Flip</div><div class="mf-v a">$${parseFloat(opt('gamma_flip')||0).toFixed(2)}</div></div>
+      <div class="m-field"><div class="mf-k">Gamma Flip</div><div class="mf-v a">${formatObservedNumber(opt('gamma_flip'), 2)==='—'?'—':'$'+formatObservedNumber(opt('gamma_flip'), 2)}</div></div>
       <div class="m-field"><div class="mf-k">PCR Signal (OI Positioning — Not Flow)</div><div class="mf-v">${opt('pcr_signal')}${opt('pcr_direction_conflict_reason')!=='—'?`<br><span class="dim">${htmlSafe(opt('pcr_direction_conflict_reason'))}</span>`:''}</div></div>
       <div class="m-field"><div class="mf-k">Target In Play</div><div class="mf-v ${opt('target_in_play')==='True'?'g':'r'}">${opt('target_in_play')||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Max Pain</div><div class="mf-v">$${opt('max_pain')||'—'}</div></div>
@@ -2710,20 +2805,27 @@ function openModal(ticker) {
 
   // TAB 3: OPTIONS
   document.getElementById('mp-options').innerHTML = `
+    <div class="m-sec-hdr" style="margin-top:0">Selected-contract data</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Observation state</div><div class="mf-v a">${displayCategory(s.contract_absence_state||'SOURCE_NOT_PROJECTED')}</div></div>
+      <div class="m-field"><div class="mf-k">Chain request</div><div class="mf-v">${displayCategory(s.contract_chain_request_state||'UNKNOWN')}</div></div>
+      <div class="m-field"><div class="mf-k">Chain / usable quotes / spread-passing</div><div class="mf-v">${s.contract_observed_chain_rows??'—'} / ${s.contract_usable_quote_count??'—'} / ${s.contract_passing_spread_count??'—'}</div></div>
+    </div>
+    ${s.contract_absence_explanation?`<div class="m-reason">${htmlSafe(s.contract_absence_explanation)} <span class="dim">Source: ${htmlSafe(s.contract_absence_source||'UNKNOWN')}</span></div>`:''}
     <div class="m-sec-hdr" style="margin-top:0">Greeks</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${parseFloat(opt('contract_delta')||0).toFixed(4)}</div></div>
-      <div class="m-field"><div class="mf-k">Gamma</div><div class="mf-v">${parseFloat(opt('contract_gamma')||0).toFixed(4)}</div></div>
+      <div class="m-field"><div class="mf-k">Delta</div><div class="mf-v">${formatObservedNumber(opt('contract_delta'), 4)}</div></div>
+      <div class="m-field"><div class="mf-k">Gamma</div><div class="mf-v">${formatObservedNumber(opt('contract_gamma'), 4)}</div></div>
       <div class="m-field"><div class="mf-k">Theta (daily)</div><div class="mf-v r">${opt('contract_theta')}</div></div>
       <div class="m-field"><div class="mf-k">Vega</div><div class="mf-v">${opt('contract_vega')}</div></div>
-      <div class="m-field"><div class="mf-k">Contract IV</div><div class="mf-v">${(parseFloat(opt('contract_iv')||0)*100).toFixed(1)}%</div></div>
+      <div class="m-field"><div class="mf-k">Contract IV</div><div class="mf-v">${formatObservedFractionPercent(opt('contract_iv'), 1)}</div></div>
       <div class="m-field"><div class="mf-k">Options Score</div><div class="mf-v">${opt('options_score')} / 100</div></div>
     </div>
     <div class="m-sec-hdr">Volatility</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">IVP / Label</div><div class="mf-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</div></div>
-      <div class="m-field"><div class="mf-k">ATM IV</div><div class="mf-v">${(parseFloat(opt('atm_iv')||0)*100).toFixed(1)}%</div></div>
-      <div class="m-field"><div class="mf-k">HV 30d</div><div class="mf-v">${(parseFloat(opt('hv_30d')||0)*100).toFixed(1)}%</div></div>
+      <div class="m-field"><div class="mf-k">ATM IV</div><div class="mf-v">${formatObservedFractionPercent(opt('atm_iv'), 1)}</div></div>
+      <div class="m-field"><div class="mf-k">HV 30d</div><div class="mf-v">${formatObservedFractionPercent(opt('hv_30d'), 1)}</div></div>
       <div class="m-field"><div class="mf-k">IV vs HV</div><div class="mf-v">${opt('iv_vs_hv')}</div></div>
       <div class="m-field"><div class="mf-k">Term Structure</div><div class="mf-v a">${opt('term_structure')}</div></div>
       <div class="m-field"><div class="mf-k">Theta Drag %</div><div class="mf-v">${opt('theta_drag_pct')}%</div></div>
@@ -2738,16 +2840,22 @@ function openModal(ticker) {
   // TAB 4: CONVEXITY
   const checks = [
     {name:'Compression',key:'sb_c_compression',desc:'IV rank compressed below 40% — options cheap vs recent history'},
-    {name:'Energy',key:'sb_c_energy',desc:'PCR volume balanced — smart money flow supports directional thesis'},
+    {name:'Energy',key:'sb_c_energy',desc:'Signed-notional balance at the level; PCR alone cannot establish buyer/seller direction'},
     {name:'Underpriced Vol',key:'sb_c_underpriced_vol',desc:'IVP below 20% — vol cheap enough for convexity injection'},
     {name:'Gamma Proximity',key:'sb_c_gamma_proximity',desc:'Price within 7% of call/put wall — gamma acceleration near'},
-    {name:'Runway',key:'sb_c_runway',desc:'Clear space to structural target — at least 2× breakeven distance'}
+    {name:'Runway',key:'sb_c_runway',desc:'Wall/target runway relative to breakeven requirement'},
+    {name:'Vanna Quality',key:'sb_c_vanna_quality',desc:'Vanna direction and magnitude, if observed'},
+    {name:'Volume Confirmation',key:'sb_c_volume_confirmation',desc:'Volume ratio relative to Wyckoff phase'},
+    {name:'Sector Alignment',key:'sb_c_sector_alignment',desc:'Sector regime compared with CALL/PUT direction'}
   ];
   const convexityAvailable = s.convexity_data_state === 'AVAILABLE';
+  const convexityComponentsAvailable = checks.some(c => s[c.key] === 'Y' || s[c.key] === 'N');
+  const showChecks = s.convexity_score_source === 'SUPERBRAIN_8_CONDITION' && convexityComponentsAvailable;
   document.getElementById('mp-convexity').innerHTML = `
-    <div class="m-sec-hdr" style="margin-top:0">Convexity Score: ${convexityAvailable ? (s.sb_conv_score||0)+'/8' : 'NOT GOVERNED / UNAVAILABLE'}</div>
-    <div class="conv-checks">
-      ${checks.map(c => {
+    <div class="m-sec-hdr" style="margin-top:0">Convexity Aggregate: ${convexityAvailable ? htmlSafe(getConvexitySummary(s)) : 'NOT GOVERNED / UNAVAILABLE'}</div>
+    ${convexityAvailable && !convexityComponentsAvailable ? '<div class="m-reason">Aggregate score is supplied, but component evidence is not published to this Lab view. Do not infer which checks passed.</div>' : ''}
+    ${showChecks ? '<div class="conv-checks">' : ''}
+      ${showChecks ? checks.map(c => {
         const state = s[c.key];
         const pass = state === 'Y';
         const available = state === 'Y' || state === 'N';
@@ -2758,8 +2866,8 @@ function openModal(ticker) {
             <div class="cc-detail">${available?c.desc:'No governed producer field was supplied; the Lab did not infer this check.'}</div>
           </div>
         </div>`;
-      }).join('')}
-    </div>
+      }).join('') : ''}
+    ${showChecks ? '</div>' : ''}
     <div class="m-sec-hdr">Convexity Detail</div>
     <div class="m-reason">${s.sb_conv_detail||'No detail available'}</div>`;
 
@@ -2826,7 +2934,21 @@ function openModal(ticker) {
   const mvsRejects = s['mv__hard_rejects']||s['mv_hard_rejects']||'';
   const mvsVwap    = (s['live_vwap']||s['mv__live_vwap']) ? '$'+parseFloat(s['live_vwap']||s['mv__live_vwap']).toFixed(2) : '—';
   const mvsRejCls  = mvsRejects ? 'r' : 'g';
-  document.getElementById('mp-morning').innerHTML = mvVerdict ? `
+  const governedMorningHtml = s.validation_event_id ? `
+    <div class="m-sec-hdr" style="margin-top:0">Governed Morning Validation</div>
+    <div class="m-reason">${htmlSafe(getMorningEventMode(s).label)} · ${htmlSafe(s.validation_transition||'NOT_EVALUATED')}<br>
+      ${htmlSafe(s.validation_reason||'No reason supplied')}</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="mf-k">Validation Event</div><div class="mf-v sm">${htmlSafe(s.validation_event_id)}</div></div>
+      <div class="m-field"><div class="mf-k">Evidence Cutoff (UTC)</div><div class="mf-v sm">${htmlSafe(s.validation_evidence_cutoff_utc||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Price</div><div class="mf-v a">${htmlSafe(s.validation_current_price??'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Change from EOD</div><div class="mf-v">${htmlSafe(getMorningDrift(s).label)}</div></div>
+      <div class="m-field"><div class="mf-k">Selected Quote Time (UTC)</div><div class="mf-v sm">${htmlSafe(s.morning_quote_timestamp_utc||'Unavailable')}</div></div>
+      <div class="m-field"><div class="mf-k">Contract State</div><div class="mf-v">${htmlSafe(getPostopenContractState(s).label)}</div></div>
+      <div class="m-field"><div class="mf-k">Execution Gate Action</div><div class="mf-v">${htmlSafe(s.final_action||'—')}</div></div>
+      <div class="m-field"><div class="mf-k">Data Status</div><div class="mf-v">${htmlSafe(s.validation_data_status||'—')}</div></div>
+    </div>` : '';
+  document.getElementById('mp-morning').innerHTML = governedMorningHtml || (mvVerdict ? `
     <div class="m-sec-hdr" style="margin-top:0">Morning Validation Status</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:4px">
       <span class="pill ${mvPillCls}" style="font-size:13px;padding:6px 16px">${mvVerdict}</span>
@@ -2868,7 +2990,7 @@ function openModal(ticker) {
     <div class="m-sec-hdr">Trigger Reason</div>
     <div class="m-reason" style="color:var(--text2)">${tceReason}</div>
     ` :
-    '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No morning validation data for this signal. Run morning_validation.py to populate.</div>';
+    '<div style="padding:20px;font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3)">No governed Morning validation event is published for this signal.</div>');
 
   // DOI-10: dynamic contract-family ranking.  This is evidence for the human
   // trader and never changes the governed thesis or capital permission.
@@ -2957,7 +3079,7 @@ function openModal(ticker) {
   const em610      = parseFloat(g('expected_move_6_10d')  || 0);
   const em1120     = parseFloat(g('expected_move_11_20d') || 0);
   const jumpFlag   = String(g('jump_risk_flag')||'').toLowerCase() === 'true';
-  const garchMethod= g('method') || '—';
+  const garchMethod= s.garch_method || g('method') || '—';
   const garchConf  = conf > 0 ? conf.toFixed(1) : '—';
   const nBars      = g('n_bars') || '—';
 
@@ -2968,7 +3090,7 @@ function openModal(ticker) {
   // Tailwind explanation
   const tailwindAbs = Math.abs(tailwind * 100).toFixed(1);
   const tailwindExplain = tailwind < -0.03
-    ? `Market IV is ${tailwindAbs}% below AVSHUNTER forecast vol — options underpriced. Buying edge exists.`
+    ? `Market IV is ${tailwindAbs}% below AVSHUNTER forecast vol. This forecast difference may favour long optionality, but is not proof of a buying edge; check jump risk, thesis path, contract pricing and execution.`
     : tailwind > 0.05
     ? `Market IV is ${tailwindAbs}% above AVSHUNTER forecast vol — option premium is a headwind.`
     : `Market IV broadly in line with AVSHUNTER forecast vol. No strong mispricing signal.`;
@@ -3017,11 +3139,14 @@ function openModal(ticker) {
     return htmlSafe(value);
   };
   const msiNum = (value, digits=2, suffix='', missing='MISSING') => {
+    if (value === null || value === undefined || String(value).trim() === '') {
+      return `<span class="a">${missing}</span>`;
+    }
     const number = Number(value);
     return Number.isFinite(number) ? `${number.toFixed(digits)}${suffix}` : `<span class="a">${missing}</span>`;
   };
   document.getElementById('mp-msi').innerHTML = `
-    <div class="m-sec-hdr" style="margin-top:0">Current Selected-Contract Quote</div>
+    <div class="m-sec-hdr" style="margin-top:0">Selected-Contract Quote — source time shown below</div>
     <div class="m-grid">
       <div class="m-field"><div class="mf-k">Selected Contract</div><div class="mf-v sm">${msiVal(getSelectedContract(s),'NOT_APPLICABLE')}</div></div>
       <div class="m-field"><div class="mf-k">Bid / Ask</div><div class="mf-v">${msiNum(s.current_contract_bid)} / ${msiNum(s.current_contract_ask)}</div></div>
@@ -3029,7 +3154,9 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Spread</div><div class="mf-v">${msiNum(s.current_contract_spread_pct,2,'%')}</div></div>
       <div class="m-field"><div class="mf-k">Bid / Ask Size</div><div class="mf-v">${msiVal(s.contract_bid_size)} / ${msiVal(s.contract_ask_size)}</div></div>
       <div class="m-field"><div class="mf-k">Morning Post-Open Contract State</div><div class="mf-v ${getPostopenContractState(s).valid?'g':'a'}">${getPostopenContractState(s).label}<br><span class="dim">${htmlSafe(getPostopenContractState(s).reason)}</span></div></div>
-      <div class="m-field"><div class="mf-k">Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.quote_timestamp_utc,'MISSING')}</div></div>
+      <div class="m-field"><div class="mf-k">Current Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.current_quote_timestamp_utc,'NOT_PUBLISHED')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Selected Quote Timestamp (UTC)</div><div class="mf-v sm">${msiVal(s.morning_quote_timestamp_utc,'MISSING')}</div></div>
+      <div class="m-field"><div class="mf-k">Morning Quote Dataset</div><div class="mf-v sm">${msiVal(s.morning_quote_dataset_id,'MISSING')}</div></div>
       <div class="m-field"><div class="mf-k">Comparison State</div><div class="mf-v a">${msiVal(s.comparison_status,'NOT_APPLICABLE')}</div></div>
     </div>
     <div class="m-sec-hdr">Underlying Session Evidence</div>
@@ -3214,7 +3341,7 @@ function buildArmedList() {
         <div class="aistat"><span class="ais-k">Strike</span><span class="ais-v c">$${opt(s,'contract_strike')}</span></div>
         <div class="aistat"><span class="ais-k">Target</span><span class="ais-v g">$${parseFloat(opt(s,'structural_target')||0).toFixed(2)}</span></div>
         <div class="aistat"><span class="ais-k">Hold</span><span class="ais-v c">${opt(s,'hold_label')}</span></div>
-        <div class="aistat"><span class="ais-k">Conv</span><span class="ais-v a">${s.sb_conv_score||0}/8</span></div>
+        <div class="aistat"><span class="ais-k">Conv</span><span class="ais-v a">${htmlSafe(getConvexitySummary(s))}</span></div>
         <div class="aistat"><span class="ais-k">Size</span><span class="ais-v ${canOpenEntry(s)?'a':'r'}">${displaySize(s)}</span></div>
         <div class="aistat"><span class="ais-k">MV Score</span><span class="ais-v a">${mvPerm} · ${mvScore}</span></div>
       </div>
@@ -3244,9 +3371,13 @@ function buildConvEngine() {
       {label:'ENRG',key:'sb_c_energy'},
       {label:'IVOL',key:'sb_c_underpriced_vol'},
       {label:'GPRX',key:'sb_c_gamma_proximity'},
-      {label:'RUNW',key:'sb_c_runway'}
+      {label:'RUNW',key:'sb_c_runway'},
+      {label:'VANA',key:'sb_c_vanna_quality'},
+      {label:'VOLM',key:'sb_c_volume_confirmation'},
+      {label:'SECT',key:'sb_c_sector_alignment'}
     ];
-    const passed = checks.filter(c=>s[c.key]==='Y').length;
+    const hasChecks = s.convexity_score_source === 'SUPERBRAIN_8_CONDITION' &&
+      checks.some(c => s[c.key] === 'Y' || s[c.key] === 'N');
     const verdict = finalLabVerdict(s);
     const campaign = displayCampaign(s);
     const bC = ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict)?'rgba(0,229,160,.25)':'rgba(0,200,255,.15)';
@@ -3255,13 +3386,13 @@ function buildConvEngine() {
         <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#fff">${s.ticker}</span>
         <span class="pill ${['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(verdict)?'p-exec':'p-armed'}">${verdict}</span>
         <span class="pill ${campaign==='CORE_CAMPAIGN'||campaign==='READY_EXECUTE'?'p-core':'p-staged'}" style="font-size:8px">${campaign||'—'}</span>
-        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:${passed>=3?'var(--green)':passed>=2?'var(--amber)':'var(--red)'};margin-left:auto">${passed}<span style="font-size:13px;color:var(--text3)">/8</span></span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;color:var(--amber);margin-left:auto">${htmlSafe(getConvexitySummary(s))}</span>
       </div>
       <div style="display:flex;gap:5px">
-        ${checks.map(c => `<div style="flex:1;text-align:center;padding:5px 4px;background:${s[c.key]==='Y'?'rgba(0,229,160,.08)':'rgba(255,255,255,.03)'};border:1px solid ${s[c.key]==='Y'?'rgba(0,229,160,.25)':'var(--border)'};border-radius:2px">
+        ${hasChecks ? checks.map(c => `<div style="flex:1;text-align:center;padding:5px 4px;background:${s[c.key]==='Y'?'rgba(0,229,160,.08)':'rgba(255,255,255,.03)'};border:1px solid ${s[c.key]==='Y'?'rgba(0,229,160,.25)':'var(--border)'};border-radius:2px">
           <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:${s[c.key]==='Y'?'var(--green)':'var(--text3)'};">${c.label}</div>
-          <div style="font-size:14px;margin-top:2px">${s[c.key]==='Y'?'✓':'✗'}</div>
-        </div>`).join('')}
+          <div style="font-size:14px;margin-top:2px">${s[c.key]==='Y'?'✓':s[c.key]==='N'?'✗':'?'}</div>
+        </div>`).join('') : '<div class="m-reason">Only the aggregate convexity score was published; component outcomes are unavailable.</div>'}
       </div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);margin-top:7px;line-height:1.5">${(s.sb_conv_detail||'').split('|').slice(0,3).join(' | ')}</div>
     </div>`;
@@ -3601,7 +3732,7 @@ function openETModal(ticker) {
   // Header
   document.getElementById('et-ticker-hdr').textContent = ticker;
   document.getElementById('et-meta-hdr').textContent =
-    `${displayCampaign(s)||'—'} · Phase ${s.phase||'—'} · ${s.sb_instrument_now||'—'} · Conv ${s.sb_conv_score||0}/8`;
+    `${displayCampaign(s)||'—'} · Phase ${s.phase||'—'} · ${s.sb_instrument_now||'—'} · Conv ${getConvexitySummary(s)}`;
 
   // Summary strip
   const ev = getEv(s);
@@ -3612,7 +3743,7 @@ function openETModal(ticker) {
     <div><span style="color:#555">Monetisability</span><br><span class="${monetisabilityClass(s)}" style="font-size:12px">${monetisabilityLabel(s)}</span></div>
     <div><span style="color:#555" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatEv(ev)}</span></div>
     <div><span style="color:#555">Position Size</span><br><span style="color:#f5a623;font-size:12px">${displaySize(s)}</span></div>
-    <div><span style="color:#555">Conviction</span><br><span style="color:#fff;font-size:12px">${s.sb_conv_score||0}/8</span></div>
+    <div><span style="color:#555">Convexity</span><br><span style="color:#fff;font-size:12px">${htmlSafe(getConvexitySummary(s))}</span></div>
     <div><span style="color:#555">Vetoes</span><br><span style="color:${parseInt(s.sb_vetoes_count||0)===0?'#00ff88':'#ff4466'};font-size:12px">${parseInt(s.sb_vetoes_count||0)===0?'✓ CLEAN':'⚠ '+s.sb_vetoes_count}</span></div>
     <div><span style="color:#555">Horizon</span><br><span style="color:#f5a623;font-size:12px">${getTimeHorizon(s)}</span></div>
     <div><span style="color:#555">Hold</span><br><span style="color:#00c8ff;font-size:12px">${getHoldPeriod(s)}</span></div>
@@ -3768,6 +3899,7 @@ function switchLab(name, btn) {
 
 // ═══ BOOT ════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', boot);
+window.setInterval(refreshIfLabPublicationChanged, 60000);
 </script>
 </body>
 </html>
