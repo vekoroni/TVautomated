@@ -568,6 +568,7 @@ FINAL_BOOK_FIELDS = [
     "entry_plan",
     "invalidation_price",
     "invalidation_state",
+    "invalidation_candidate_state",
     "invalidation_source",
     "target_price",
     "target_price_source",
@@ -1820,7 +1821,14 @@ def _thesis_geometry_completeness(
         "population": 0, "missing_target": 0, "missing_invalidation": 0, "missing_both": 0, "complete": 0,
         "actionable_population": 0, "actionable_missing_target": 0, "actionable_missing_invalidation": 0,
         "actionable_missing_both": 0, "actionable_missing_any": 0,
+        # A1 (ACK 25 Sep 2026): a level inside 0.25 x the cumulative expected move for the row's bucket is
+        # degenerate (never a fixed percent); a target beyond 3 x that move is counted as a reachability
+        # question. The expected move is the sum of the legacy per-bucket increments, in percent of spot.
+        "degenerate_vol_relative": 0, "actionable_degenerate_vol_relative": 0, "degenerate_unassessed": 0,
+        "target_beyond_3x_expected_move": 0,
     }
+    missing_invalidation_by_source: Dict[str, int] = {}
+    missing_target_by_source: Dict[str, int] = {}
     for row in candidate_rows:
         direction = _u(
             row.get("governed_direction") or row.get("canonical_direction")
@@ -1841,13 +1849,45 @@ def _thesis_geometry_completeness(
         counts["missing_invalidation"] += missing_invalidation
         counts["missing_both"] += missing_target and missing_invalidation
         counts["complete"] += not missing_target and not missing_invalidation
+        if missing_invalidation:
+            source = _u(row.get("invalidation_source")) or "UNKNOWN"
+            missing_invalidation_by_source[source] = missing_invalidation_by_source.get(source, 0) + 1
+        if missing_target:
+            source = _u(row.get("target_price_source")) or "UNKNOWN"
+            missing_target_by_source[source] = missing_target_by_source.get(source, 0) + 1
         if actionable:
             counts["actionable_population"] += 1
             counts["actionable_missing_target"] += missing_target
             counts["actionable_missing_invalidation"] += missing_invalidation
             counts["actionable_missing_both"] += missing_target and missing_invalidation
             counts["actionable_missing_any"] += missing_target or missing_invalidation
-    return {key: int(value) for key, value in counts.items()}
+        # degenerate / reachability, vol-relative
+        spot = _f(_first_present(row, "signal_price", "underlying_price", "stock_price", "entry_spot"), 0.0)
+        bucket = _u(_first_present(row, "time_horizon", "horizon_bucket")).replace("-", "_")
+        increments = [_f(row.get(k), 0.0) for k in ("garch_expected_move_1_5d", "garch_expected_move_6_10d", "garch_expected_move_11_20d")]
+        present = [not _is_missing(row.get(k)) for k in ("garch_expected_move_1_5d", "garch_expected_move_6_10d", "garch_expected_move_11_20d")]
+        n_inc = 1 if "1_5" in bucket else 2 if "6_10" in bucket else 3
+        if spot <= 0.0 or not all(present[:n_inc]) or (missing_target and missing_invalidation):
+            counts["degenerate_unassessed"] += 1
+            continue
+        move_fraction = sum(increments[:n_inc]) / 100.0
+        threshold = 0.25 * move_fraction
+        degenerate = False
+        if not missing_target and abs(target / spot - 1.0) < threshold:
+            degenerate = True
+        if not missing_invalidation and abs(invalidation / spot - 1.0) < threshold:
+            degenerate = True
+        counts["degenerate_vol_relative"] += degenerate
+        if actionable:
+            counts["actionable_degenerate_vol_relative"] += degenerate
+        if not missing_target and move_fraction > 0 and abs(target / spot - 1.0) > 3.0 * move_fraction:
+            counts["target_beyond_3x_expected_move"] += 1
+    result: Dict[str, Any] = {key: int(value) for key, value in counts.items()}
+    result["missing_invalidation_by_source"] = missing_invalidation_by_source
+    result["missing_target_by_source"] = missing_target_by_source
+    result["expected_move_basis"] = "CUMULATIVE_SUM_OF_LEGACY_INCREMENTS_PCT"
+    result["degenerate_rule"] = "LEVEL_INSIDE_0.25_X_EXPECTED_MOVE"
+    return result
 
 
 def _first_present(row: Dict[str, Any], *keys: str) -> Any:
@@ -3598,6 +3638,8 @@ def opportunity_book_row(
         # WP4 / E7 (DQ-4): side-checked against the thesis reference price.
         "invalidation_price": book_invalidation,
         "invalidation_state": book_invalidation_state,
+        # A1 (25 Sep 2026): what the selector measured (AVAILABLE / DATA_DEFECT_WRONG_SIDE / MISSING ...), passed through.
+        "invalidation_candidate_state": first(sig, "invalidation_candidate_state"),
         "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
         # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
         # so a fabricated 0.0 is treated as absent rather than as a price.
@@ -4037,7 +4079,11 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "garch_expected_move_11_20d": ["garch_expected_move_11_20d", "l3_expected_move_11_20d"],
         "garch_price_bars_used": ["garch_price_bars_used", "l3_n_bars"],
         "target_in_play": ["target_in_play", "opt__target_in_play"],
-        "structural_target": ["structural_target", "opt__structural_target", "target_price", "wbs__wall_price"],
+        # A1 (25 Sep 2026): a computed fallback target lives in target_spot (source in target_price_source);
+        # it was never extracted, so TARGET_3R rows showed no target in the book.
+        "structural_target": ["structural_target", "opt__structural_target", "target_spot", "target_price", "wbs__wall_price"],
+        "target_spot": ["target_spot"],
+        "invalidation_candidate_state": ["invalidation_candidate_state"],
         "underlying_price": ["underlying_price", "opt__underlying_price", "live_underlying_price", "scanner_price", "signal_price"],
         "signal_price": ["signal_price", "scanner_price", "underlying_price", "opt__underlying_price"],
         "scanner_price": ["scanner_price", "signal_price", "underlying_price", "opt__underlying_price"],

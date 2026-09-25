@@ -4957,12 +4957,23 @@ def _ev3_handoff_fields(ctx: Dict[str, Any]) -> Dict[str, Any]:
     )
     barrier_state_key = '|'.join(state_parts) if all(state_parts) else None
 
+    # A1 (ACK 25 Sep 2026): what the selector measured, beside the routing state. A row whose only
+    # candidates lie on the wrong side of spot is DATA_DEFECT_WRONG_SIDE, not MISSING; the routing field
+    # invalidation_state is unchanged so every consumer behaves as before.
+    if direction not in {'CALL', 'PUT'}:
+        invalidation_candidate_state = 'NOT_APPLICABLE_NON_DIRECTIONAL'
+    elif invalidation is not None:
+        invalidation_candidate_state = 'AVAILABLE'
+    else:
+        invalidation_candidate_state = str(ctx.get('stop_state') or invalidation_state or 'MISSING').upper()
+
     return {
         'entry_spot': entry,
         'target_spot': target,
         'invalidation_spot': invalidation,
         'invalidation_source': invalidation_source,
         'invalidation_state': invalidation_state,
+        'invalidation_candidate_state': invalidation_candidate_state,
         'invalidation_policy_version': 'EV3_GOVERNED_STOP_V2',
         'planned_hold_sessions': planned_hold_sessions,
         'planned_hold_source': 'HORIZON_BUCKET_ENDPOINT_V1' if planned_hold_sessions else 'UNROUTED',
@@ -10269,7 +10280,7 @@ def run_options_layer(
         'direction_excluded_evidence_json','governed_direction_record_json',
         'governed_direction_record_sha256',
         'horizon_bucket','horizon_action','horizon_size_multiplier',
-        'entry_spot','target_spot','invalidation_spot','invalidation_source',
+        'entry_spot','target_spot','invalidation_spot','invalidation_source','invalidation_candidate_state',
         'invalidation_policy_version','planned_hold_sessions','planned_hold_source',
         'ev3_handoff_schema_version','contract_quote_timestamp_utc','quote_timestamp_utc',
         'ev3_barrier_state_key','ev3_barrier_state_key_source','ev3_barrier_state_key_version',

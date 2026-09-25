@@ -39,7 +39,9 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          "contract_value_forecast_age_sessions",
                          # A2 (ACK 25 Sep 2026): the policy's own reason and reversibility of a no-quote state.
                          "execution_viability_domain_reason", "execution_viability_reversible",
-                         "execution_viability_recheck"}
+                         "execution_viability_recheck",
+                         # A1 (ACK 25 Sep 2026): what the invalidation selector measured.
+                         "invalidation_candidate_state"}
 
 
 def _publish(tmp_path, *signals):
