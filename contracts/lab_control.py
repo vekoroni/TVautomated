@@ -1858,6 +1858,87 @@ def _first_present(row: Dict[str, Any], *keys: str) -> Any:
     return None
 
 
+_STABILITY_MODES = frozenset({"MORNING_VALIDATION", "LIVE"})
+
+
+def _book_stability(
+    run_id: str,
+    runs_dir: Path,
+    mode: str,
+    run_meta: Dict[str, Any],
+    current_rows: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Book stability, morning to morning, split by cause (D3, ACK 25 Sep 2026). DIAGNOSTIC_ONLY.
+
+    The actionable set is the tickers routed GO / GO_LIMIT. The previous book is the newest older run whose
+    run_meta says a morning mode and whose validated-trades file has rows; EOD folders in between are skipped.
+    A dropped row is attributed to the first matching cause: absent from today's book, geometry missing today,
+    quote not executable (by viability state), routed out (by today's route). Never a flag, never a penalty.
+    """
+    block: Dict[str, Any] = {"basis": "MORNING_VALIDATION_TO_MORNING_VALIDATION", "authority": "DIAGNOSTIC_ONLY"}
+    if mode not in _STABILITY_MODES or not current_rows:
+        return {**block, "state": f"NOT_APPLICABLE_{mode}" if mode not in _STABILITY_MODES else "NO_CURRENT_VALIDATED_ROWS"}
+    previous_id, previous_rows, previous_meta = None, [], {}
+    for candidate in sorted((p.name for p in Path(runs_dir).iterdir() if p.is_dir()), reverse=True):
+        if candidate >= run_id:
+            continue
+        meta = _read_json(Path(runs_dir) / candidate / "run_meta.json")
+        if _u(meta.get("pipeline_mode")) not in _STABILITY_MODES:
+            continue
+        rows = _read_csv_rows(Path(runs_dir) / candidate / "morning_validation" / f"morning_validated_trades_{candidate}.csv")
+        if rows:
+            previous_id, previous_rows, previous_meta = candidate, rows, meta
+            break
+    if previous_id is None:
+        return {**block, "state": "NO_PRIOR_MORNING_BOOK"}
+
+    def actionable(rows: List[Dict[str, Any]]) -> set:
+        return {_u(r.get("ticker")) for r in rows if _u(r.get("morning_execution_route")) in _ACTIONABLE_ROUTES}
+
+    prev_set, cur_set = actionable(previous_rows), actionable(current_rows)
+    current_by_ticker = {_u(r.get("ticker")): r for r in current_rows}
+    causes: Dict[str, Any] = {"ABSENT_FROM_BOOK": 0, "GEOMETRY_MISSING": 0, "QUOTE_NOT_EXECUTABLE": {}, "ROUTED_OUT": {}}
+    for ticker in sorted(prev_set - cur_set):
+        row = current_by_ticker.get(ticker)
+        if row is None:
+            causes["ABSENT_FROM_BOOK"] += 1
+        elif _is_missing(_first_present(row, "target_spot", "structural_target", "target_price")) or \
+                _is_missing(_first_present(row, "invalidation_spot", "invalidation_price")):
+            causes["GEOMETRY_MISSING"] += 1
+        elif _u(row.get("execution_viability_state")) != "EXECUTABLE_QUOTE":
+            state = _u(row.get("execution_viability_state")) or "UNKNOWN"
+            causes["QUOTE_NOT_EXECUTABLE"][state] = causes["QUOTE_NOT_EXECUTABLE"].get(state, 0) + 1
+        else:
+            route = _u(row.get("morning_execution_route")) or "UNKNOWN"
+            causes["ROUTED_OUT"][route] = causes["ROUTED_OUT"].get(route, 0) + 1
+    previous_session = _s(previous_meta.get("session_date"))
+    current_session = _s(run_meta.get("session_date"))
+    sessions_between = None
+    try:
+        from datetime import date as _date
+        from avshunter.shared.xnys_calendar import xnys_sessions_between
+        if previous_session and current_session:
+            sessions_between = int(xnys_sessions_between(_date.fromisoformat(previous_session), _date.fromisoformat(current_session)))
+    except Exception:  # noqa: BLE001 - a missing calendar leaves the age unknown, never invented
+        sessions_between = None
+    retained = len(prev_set & cur_set)
+    return {
+        **block,
+        "state": "COMPUTED",
+        "previous_run_id": previous_id,
+        "previous_session_date": previous_session,
+        "current_session_date": current_session,
+        "sessions_between": sessions_between,
+        "previous_actionable": len(prev_set),
+        "current_actionable": len(cur_set),
+        "retained": retained,
+        "retained_share": round(retained / len(prev_set), 3) if prev_set else None,
+        "new_entrants": len(cur_set - prev_set),
+        "dropped": len(prev_set - cur_set),
+        "dropped_by_cause": causes,
+    }
+
+
 def build_final_run_manifest(
     run_id: str,
     runs_dir: Path | str,
@@ -2158,6 +2239,8 @@ def build_final_run_manifest(
     actionable_geometry_defects = int(thesis_geometry_completeness["actionable_missing_any"])
     if actionable_geometry_defects:
         stale_flags.append(f"ACTIONABLE_GEOMETRY_DEFECTS:{actionable_geometry_defects}")
+    # D3 (ACK 25 Sep 2026): book stability morning to morning, split by cause. Diagnostic only.
+    book_stability = _book_stability(run_id, Path(runs_dir), mode, run_meta, rows_by_phase.get("morning_validation", []))
 
     health = 100
     health -= 30 * len(fatal_flags)
@@ -2263,6 +2346,7 @@ def build_final_run_manifest(
         "semantic_defect_count": semantic_defect_count,
         "missing_selected_handoff": missing_selected_handoff,
         "thesis_geometry_completeness": thesis_geometry_completeness,
+        "book_stability": book_stability,
         "next_action": next_action,
         # Separate operational readiness dimensions. Expected market rejects
         # are not system faults and EV shadow health cannot grant capital use.
