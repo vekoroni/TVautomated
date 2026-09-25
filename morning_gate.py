@@ -2100,6 +2100,36 @@ def _morning_liquidity_lifecycle(
 # Core gate function
 # ---------------------------------------------------------------------------
 
+def postopen_quote_unavailable_override(out: Dict[str, Any], live_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Post-open refresh: a row without a provider-stamped current quote is not executable now.
+
+    A2 (ACK 25 Sep 2026, Enhancements/research/rca/A2_NO_CURRENT_EXECUTABLE_QUOTE_RCA_AND_DESIGN_20260925.md):
+    the legacy block tested only for the timestamp, so a row with no quote at all (204 of 205 on 25 Sep) was
+    labelled PROVIDER_TIMESTAMP_MISSING as if a quote had arrived unstamped. Labels say what was measured:
+    no bid or ask -> NO_CURRENT_EXECUTABLE_QUOTE; a two-sided quote without a timestamp -> PROVIDER_TIMESTAMP_MISSING.
+    The governed policy's own reason is carried beside the label. The state, eligibility and executable_now are
+    exactly the legacy values, so routing is unchanged; the row is reversible and re-enters when a quote appears.
+    """
+    if _u(live_data.get("morning_execution_mode")) != "POSTOPEN_CONTRACT_REFRESH":
+        return {}
+    if _normalise_provider_timestamp(
+        live_data.get("live_contract_provider_updated") or live_data.get("selected_quote_timestamp_utc")
+    ):
+        return {}
+    bid = _f(live_data.get("live_contract_bid", live_data.get("bid")))
+    ask = _f(live_data.get("live_contract_ask", live_data.get("ask")))
+    quoted = bid is not None and ask is not None
+    return {
+        "execution_viability_state": "CONTRACT_QUOTE_UNAVAILABLE",
+        "execution_viability_reason": "PROVIDER_TIMESTAMP_MISSING" if quoted else "NO_CURRENT_EXECUTABLE_QUOTE",
+        "execution_viability_domain_reason": _s(out.get("execution_viability_reason")) or None,
+        "execution_viability_reversible": True,
+        "execution_viability_recheck": "NEXT_QUOTE_REFRESH",
+        "execution_viability_eligible": False,
+        "executable_now": False,
+    }
+
+
 def run_gate(
     row: Dict[str, Any],
     live_data: Dict[str, Any],
@@ -2228,17 +2258,7 @@ def run_gate(
     # through the same policy.  Recompute on every Morning Gate invocation so
     # an EOD viability label can never masquerade as current quote evidence.
     out.update(evaluate_execution_viability(out, live_data))
-    if (
-        _u(live_data.get("morning_execution_mode")) == "POSTOPEN_CONTRACT_REFRESH"
-        and not _normalise_provider_timestamp(
-            live_data.get("live_contract_provider_updated")
-            or live_data.get("selected_quote_timestamp_utc")
-        )
-    ):
-        out["execution_viability_state"] = "CONTRACT_QUOTE_UNAVAILABLE"
-        out["execution_viability_reason"] = "PROVIDER_TIMESTAMP_MISSING"
-        out["execution_viability_eligible"] = False
-        out["executable_now"] = False
+    out.update(postopen_quote_unavailable_override(out, live_data))
 
     previous_contract_symbol = _s(
         out.get("contract_symbol_original")

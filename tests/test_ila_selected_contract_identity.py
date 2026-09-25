@@ -36,7 +36,10 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          "call_wall_state", "put_wall_state", "gamma_flip_state",
                          # B1 (ACK 25 Sep 2026): provenance of the Layer 3 forecast the shadow valuer used.
                          "contract_value_forecast_source", "contract_value_forecast_run_id",
-                         "contract_value_forecast_age_sessions"}
+                         "contract_value_forecast_age_sessions",
+                         # A2 (ACK 25 Sep 2026): the policy's own reason and reversibility of a no-quote state.
+                         "execution_viability_domain_reason", "execution_viability_reversible",
+                         "execution_viability_recheck"}
 
 
 def _publish(tmp_path, *signals):
