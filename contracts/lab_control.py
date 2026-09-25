@@ -1793,6 +1793,71 @@ def _semantic_handoff_health(
     }
 
 
+_GEOMETRY_MISSING_INVALIDATION_STATES = frozenset({
+    "MISSING", "UNAVAILABLE", "MISSING_AUTHORITATIVE_STOP", "MISSING_GOVERNED_INVALIDATION",
+})
+_ACTIONABLE_ROUTES = frozenset({"GO", "GO_LIMIT"})
+
+
+def _thesis_geometry_completeness(
+    candidate_rows: List[Dict[str, Any]],
+    validated_rows: List[Dict[str, Any]],
+) -> Dict[str, int]:
+    """Thesis geometry completeness at the right grain (D2, ACK 25 Sep 2026).
+
+    Every count sits beside its denominator: `population` is the candidate rows with a CALL/PUT direction;
+    `actionable_population` those routed GO / GO_LIMIT. Geometry (target, invalidation) is read from the
+    candidate row; the route from the validated-trades row of the same ticker, falling back to the candidate's
+    own route field. A target is missing when absent or non-positive; an invalidation when absent, non-positive
+    or in the governed missing states. Nothing is a percentage without its denominator.
+    """
+    route_by_ticker: Dict[str, str] = {}
+    for row in validated_rows:
+        ticker = _u(row.get("ticker"))
+        if ticker:
+            route_by_ticker[ticker] = _u(row.get("morning_execution_route"))
+    counts = {
+        "population": 0, "missing_target": 0, "missing_invalidation": 0, "missing_both": 0, "complete": 0,
+        "actionable_population": 0, "actionable_missing_target": 0, "actionable_missing_invalidation": 0,
+        "actionable_missing_both": 0, "actionable_missing_any": 0,
+    }
+    for row in candidate_rows:
+        direction = _u(
+            row.get("governed_direction") or row.get("canonical_direction")
+            or row.get("direction") or row.get("options_direction")
+        )
+        if direction not in {"CALL", "PUT"}:
+            continue
+        target = _f(_first_present(row, "target_spot", "structural_target", "target_price"), 0.0)
+        invalidation = _f(_first_present(row, "invalidation_spot", "invalidation_price"), 0.0)
+        missing_target = target <= 0.0
+        missing_invalidation = (
+            invalidation <= 0.0 or _u(row.get("invalidation_state")) in _GEOMETRY_MISSING_INVALIDATION_STATES
+        )
+        route = route_by_ticker.get(_u(row.get("ticker")), _u(row.get("morning_execution_route")))
+        actionable = route in _ACTIONABLE_ROUTES
+        counts["population"] += 1
+        counts["missing_target"] += missing_target
+        counts["missing_invalidation"] += missing_invalidation
+        counts["missing_both"] += missing_target and missing_invalidation
+        counts["complete"] += not missing_target and not missing_invalidation
+        if actionable:
+            counts["actionable_population"] += 1
+            counts["actionable_missing_target"] += missing_target
+            counts["actionable_missing_invalidation"] += missing_invalidation
+            counts["actionable_missing_both"] += missing_target and missing_invalidation
+            counts["actionable_missing_any"] += missing_target or missing_invalidation
+    return {key: int(value) for key, value in counts.items()}
+
+
+def _first_present(row: Dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = row.get(key)
+        if not _is_missing(value):
+            return value
+    return None
+
+
 def build_final_run_manifest(
     run_id: str,
     runs_dir: Path | str,
@@ -2083,6 +2148,16 @@ def build_final_run_manifest(
         stale_flags.append(
             f"SEMANTIC_HANDOFF_DEFECTS:{semantic_defect_count}"
         )
+    # D2 (ACK 25 Sep 2026): thesis geometry completeness at the right grain, every count beside its
+    # denominator; the actionable rows (routed GO / GO_LIMIT) counted separately. Geometry comes from the
+    # candidate rows; the route from the validated-trades rows by ticker (the candidates file has none).
+    # Additive: missing_selected_handoff and run_tradeable are untouched.
+    thesis_geometry_completeness = _thesis_geometry_completeness(
+        selected_rows, rows_by_phase.get("morning_validation", [])
+    )
+    actionable_geometry_defects = int(thesis_geometry_completeness["actionable_missing_any"])
+    if actionable_geometry_defects:
+        stale_flags.append(f"ACTIONABLE_GEOMETRY_DEFECTS:{actionable_geometry_defects}")
 
     health = 100
     health -= 30 * len(fatal_flags)
@@ -2129,6 +2204,10 @@ def build_final_run_manifest(
         run_prep_permission = "REVIEW_ONLY"
         run_tradeable_label = "LIVE_UAT_REQUIRED"
         manual_review_enabled = True
+    # D2: the label says so when an actionable row lacks a target or an invalidation. Display only:
+    # run_tradeable, the permissions and next_action are exactly as above.
+    if run_tradeable_label == "EXECUTION_READY" and actionable_geometry_defects:
+        run_tradeable_label = "EXECUTION_READY_ACTIONABLE_GEOMETRY_DEFECTS"
 
     if fatal_flags:
         pipeline_technical_health = "FAILED"
@@ -2183,6 +2262,7 @@ def build_final_run_manifest(
         "pipeline_semantic_health": pipeline_semantic_health,
         "semantic_defect_count": semantic_defect_count,
         "missing_selected_handoff": missing_selected_handoff,
+        "thesis_geometry_completeness": thesis_geometry_completeness,
         "next_action": next_action,
         # Separate operational readiness dimensions. Expected market rejects
         # are not system faults and EV shadow health cannot grant capital use.
