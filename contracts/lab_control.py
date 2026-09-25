@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import functools
 import json
 import math
 import re
@@ -212,6 +213,15 @@ FINAL_BOOK_FIELDS = [
     "doi_reach_ratio",
     "doi_reachable_target_spot",
     "doi_scenarios_json",
+    # C1 (25 Sep 2026): scenario disclosure, flattened from doi_scenarios_json for the selected contract.
+    "scenario_state", "scenario_reason", "scenario_contract_symbol", "scenario_basis",
+    "scenario_pricing_model_version", "scenario_valuation_version",
+    "payoff_flat_net_return_fraction", "payoff_1sigma_net_return_fraction", "payoff_2sigma_net_return_fraction",
+    "payoff_reachable_net_return_fraction", "payoff_structural_net_return_fraction",
+    "payoff_invalidation_net_return_fraction", "payoff_reachable_iv_stress_range",
+    "friction_assumption", "friction_spread_cap", "volatility_budget_validation_state",
+    "volatility_budget_bias_multiplier", "breakeven_p_target_two_outcome", "breakeven_basis",
+    "scenario_is_expected_return", "legacy_rr_basis", "legacy_rr_is_expected_return",
     "doi_assessment_calculation_version",
     "structure_evidence_state",
     "structure_evidence_reason",
@@ -3124,6 +3134,105 @@ def _trade_idea_id(row: Dict[str, Any], run_id: str) -> str:
     return f"{run_id}:{ticker}:{direction}:{instrument}:{strike}:{expiry}"
 
 
+SCENARIO_DISCLOSURE_FIELDS = (
+    "scenario_state", "scenario_reason", "scenario_contract_symbol", "scenario_basis",
+    "scenario_pricing_model_version", "scenario_valuation_version",
+    "payoff_flat_net_return_fraction", "payoff_1sigma_net_return_fraction", "payoff_2sigma_net_return_fraction",
+    "payoff_reachable_net_return_fraction", "payoff_structural_net_return_fraction",
+    "payoff_invalidation_net_return_fraction", "payoff_reachable_iv_stress_range",
+    "friction_assumption", "friction_spread_cap", "volatility_budget_validation_state",
+    "volatility_budget_bias_multiplier", "breakeven_p_target_two_outcome", "breakeven_basis",
+    "scenario_is_expected_return", "legacy_rr_basis", "legacy_rr_is_expected_return",
+)
+_SCENARIO_PATH_TO_FIELD = {
+    "FLAT": "payoff_flat_net_return_fraction",
+    "FAVOURABLE_1SIGMA": "payoff_1sigma_net_return_fraction",
+    "FAVOURABLE_2SIGMA": "payoff_2sigma_net_return_fraction",
+    "REACHABLE": "payoff_reachable_net_return_fraction",
+    "STRUCTURAL_DISCLOSURE": "payoff_structural_net_return_fraction",
+    "ADVERSE_INVALIDATION": "payoff_invalidation_net_return_fraction",
+}
+
+
+@functools.lru_cache(maxsize=1)
+def _governed_scenario_constants() -> Dict[str, Any]:
+    """The friction and vol-budget assumptions the scenario values were produced under (fail-soft to UNKNOWN)."""
+    path = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    econ = dict(payload.get("contract_economics") or {})
+    vol = dict(payload.get("volatility_budget") or {})
+    return {
+        "friction_spread_cap": econ.get("friction_spread_cap"),
+        "scenario_valuation_version": econ.get("version"),
+        "volatility_budget_validation_state": vol.get("validation_state"),
+        "volatility_budget_bias_multiplier": vol.get("bias_multiplier"),
+    }
+
+
+def scenario_disclosure_from_row(sig: Dict[str, Any]) -> Dict[str, Any]:
+    """C1 (ACK 25 Sep 2026): the six ALG-04 headline payoffs as flat columns, with their assumptions stated.
+
+    The Lab flattens what DOI computed (`doi_scenarios_json`, LATE timing, BASE IV) for the selected contract
+    only; nothing is valued here. The break-even is review information and a two-outcome lower bound. The
+    legacy rr_predicted is relabelled, not changed. No ranking, verdict or route reads these fields.
+    """
+    constants = _governed_scenario_constants()
+    out: Dict[str, Any] = {field: None for field in SCENARIO_DISCLOSURE_FIELDS}
+    out.update({
+        "scenario_basis": "LATE_TIMING_BASE_IV_AT_GOVERNED_TIME_STOP",
+        "scenario_pricing_model_version": first(sig, "doi_assessment_calculation_version") or None,
+        "scenario_valuation_version": constants.get("scenario_valuation_version") or "UNKNOWN",
+        "friction_assumption": "CURRENT_SPREAD_PROXY_CAPPED",
+        "friction_spread_cap": constants.get("friction_spread_cap"),
+        "volatility_budget_validation_state": constants.get("volatility_budget_validation_state") or "UNKNOWN",
+        "volatility_budget_bias_multiplier": constants.get("volatility_budget_bias_multiplier"),
+        "breakeven_basis": "TWO_OUTCOME_LOWER_BOUND_REACHABLE_VS_INVALIDATION",
+        "scenario_is_expected_return": False,
+        "legacy_rr_basis": "INTRINSIC_AT_STRUCTURAL_TARGET_NO_TIME_VALUE_NO_FRICTION",
+        "legacy_rr_is_expected_return": False,
+    })
+    selected = _contract_symbols(first(sig, "selected_contract_symbol", "contract_symbol"))
+    if not selected:
+        out["scenario_state"] = "NOT_APPLICABLE"
+        return out
+    governed = _contract_symbols(first(sig, "doi_governed_contract_symbol"))
+    raw = first(sig, "doi_scenarios_json")
+    scenarios: List[Dict[str, Any]] = []
+    if not _is_missing(raw):
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+            scenarios = [s for s in parsed if isinstance(s, dict)] if isinstance(parsed, list) else []
+        except (TypeError, ValueError):
+            scenarios = []
+    if not scenarios:
+        out["scenario_state"] = "NOT_ASSESSED"
+        out["scenario_reason"] = first(sig, "doi_projection_reason", "doi_projection_state") or "DOI_SCENARIOS_ABSENT"
+        return out
+    if governed and governed != selected:
+        out["scenario_state"] = "CONTRACT_MISMATCH"
+        out["scenario_reason"] = "DOI_GOVERNED_CONTRACT_DIFFERS_FROM_SELECTED"
+        return out
+    late = {}
+    for s in scenarios:
+        if _u(s.get("timing")) != "LATE":
+            continue
+        late[(_u(s.get("path")), _u(s.get("iv_stress")))] = _f(s.get("net_return_fraction"), None)
+    for path, field in _SCENARIO_PATH_TO_FIELD.items():
+        value = late.get((path, "BASE"))
+        out[field] = None if value is None else round(value, 6)
+    lo, hi = late.get(("REACHABLE", "CONTRACTED")), late.get(("REACHABLE", "EXPANDED"))
+    out["payoff_reachable_iv_stress_range"] = [round(lo, 6), round(hi, 6)] if lo is not None and hi is not None else None
+    reach, inval = out["payoff_reachable_net_return_fraction"], out["payoff_invalidation_net_return_fraction"]
+    if reach is not None and inval is not None and reach > inval:
+        out["breakeven_p_target_two_outcome"] = -inval / (reach - inval)
+    out["scenario_state"] = "AVAILABLE"
+    out["scenario_contract_symbol"] = first(sig, "selected_contract_symbol", "contract_symbol")
+    return out
+
+
 def opportunity_book_row(
     sig: Dict[str, Any],
     run_id: str,
@@ -3640,6 +3749,8 @@ def opportunity_book_row(
         "invalidation_state": book_invalidation_state,
         # A1 (25 Sep 2026): what the selector measured (AVAILABLE / DATA_DEFECT_WRONG_SIDE / MISSING ...), passed through.
         "invalidation_candidate_state": first(sig, "invalidation_candidate_state"),
+        # C1 (25 Sep 2026): the six ALG-04 headline payoffs for the selected contract with their assumptions.
+        **scenario_disclosure_from_row(sig),
         "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
         # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
         # so a fabricated 0.0 is treated as absent rather than as a price.

@@ -41,7 +41,17 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          "execution_viability_domain_reason", "execution_viability_reversible",
                          "execution_viability_recheck",
                          # A1 (ACK 25 Sep 2026): what the invalidation selector measured.
-                         "invalidation_candidate_state"}
+                         "invalidation_candidate_state",
+                         # C1 (ACK 25 Sep 2026): scenario disclosure with its assumptions.
+                         "scenario_state", "scenario_reason", "scenario_contract_symbol", "scenario_basis",
+                         "scenario_pricing_model_version", "scenario_valuation_version",
+                         "payoff_flat_net_return_fraction", "payoff_1sigma_net_return_fraction",
+                         "payoff_2sigma_net_return_fraction", "payoff_reachable_net_return_fraction",
+                         "payoff_structural_net_return_fraction", "payoff_invalidation_net_return_fraction",
+                         "payoff_reachable_iv_stress_range", "friction_assumption", "friction_spread_cap",
+                         "volatility_budget_validation_state", "volatility_budget_bias_multiplier",
+                         "breakeven_p_target_two_outcome", "breakeven_basis", "scenario_is_expected_return",
+                         "legacy_rr_basis", "legacy_rr_is_expected_return"}
 
 
 def _publish(tmp_path, *signals):
