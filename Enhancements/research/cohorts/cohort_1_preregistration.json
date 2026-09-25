@@ -38,14 +38,35 @@
   },
   "logged_per_decision_record": {
     "already_in_ledger_or_book": [
-      "run_id", "ticker", "thesis_id", "governed_direction", "final_action", "drop_reason",
-      "morning_execution_route", "lab_verdict", "selected_contract_symbol", "selected_quote_snapshot_id",
-      "target_price", "invalidation_spot", "invalidation_state", "planned_hold_sessions",
-      "execution_viability_state", "execution_viability_reason", "execution_viability_domain_reason",
-      "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
-      "contract_value_score_choice_symbol", "contract_value_best_symbol", "contract_value_best_r_central",
-      "contract_value_alternatives", "contract_value_forecast_source", "contract_value_forecast_run_id",
-      "contract_value_forecast_age_sessions", "thesis_geometry_completeness (manifest)", "book_stability (manifest)"
+      "run_id",
+      "ticker",
+      "thesis_id",
+      "governed_direction",
+      "final_action",
+      "drop_reason",
+      "morning_execution_route",
+      "lab_verdict",
+      "selected_contract_symbol",
+      "selected_quote_snapshot_id",
+      "target_price",
+      "invalidation_spot",
+      "invalidation_state",
+      "planned_hold_sessions",
+      "execution_viability_state",
+      "execution_viability_reason",
+      "execution_viability_domain_reason",
+      "contract_value_selection_mode",
+      "contract_value_basis",
+      "contract_value_quality_flag",
+      "contract_value_score_choice_symbol",
+      "contract_value_best_symbol",
+      "contract_value_best_r_central",
+      "contract_value_alternatives",
+      "contract_value_forecast_source",
+      "contract_value_forecast_run_id",
+      "contract_value_forecast_age_sessions",
+      "thesis_geometry_completeness (manifest)",
+      "book_stability (manifest)"
     ],
     "to_be_added_to_the_ledger_before_scoring (F1.b, code, test-first)": [
       "legacy_contract_bid_ask_timestamp_at_morning_requote",
@@ -125,5 +146,23 @@
     "reporting": "weekly summary to ACK; independent human quant review before any authority decision (note 06 s7)",
     "authority_decision": "only after H1-H3 pass on the forward cohort AND the historical walk-forward through the production services passes (G4)",
     "this_file": "immutable once committed; corrections are appended as a dated amendment block, never edited in place"
-  }
+  },
+  "amendments": [
+    {
+      "date": "2026-09-25",
+      "reason": "F1.b: the Lab extract alias map gains the twelve contract_value_* fields and the ledger candidate event gains selection_pair and prospective_cohort. Book field set and ledger record only; no selection, viability or valuation rule changed, so cohort 1 continues.",
+      "sha256_after": {
+        "contracts/lab_control.py": "3ab1a83d94f19e68d3b54b027f8dd2693d29106a0a2ea92396f24cd6113c8947",
+        "canonical_data/decision_outcome_ledger.py": "68238a9909c952c93671acebbc4a55245ee384fce404e631d980af0a5321f010"
+      },
+      "frozen_rule_files_unchanged": [
+        "scripts/avshunter_options_intelligence.py",
+        "morning_gate.py",
+        "domain/long_option_execution.py",
+        "empirical_option_ev.py",
+        "config/governed_constants_v1.json",
+        "config/calibration/volatility_range_calibration_v1.json"
+      ]
+    }
+  ]
 }

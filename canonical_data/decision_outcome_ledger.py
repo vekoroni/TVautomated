@@ -287,6 +287,89 @@ def fill_record_v1(
     )
 
 
+#: F1 (ACK 25 Sep 2026): the prospective shadow cohort every candidate event is recorded under. Changing this
+#: constant is a cohort change by definition (Enhancements/research/cohorts/cohort_1_preregistration.json).
+PROSPECTIVE_COHORT: Mapping[str, Any] = {
+    "cohort_id": "COHORT_1_SHADOW_SELECTOR_20260925",
+    "registration": "Enhancements/research/cohorts/cohort_1_preregistration.json",
+    "variant_counter": 15,
+}
+
+
+def _finite_or_none(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number and number not in (float("inf"), float("-inf")) else None
+
+
+def selection_pair_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """The cohort pair, recorded before the outcome (F1.b, ACK 25 Sep 2026).
+
+    Legacy = the score-selected contract with its quote: the morning requote when the viability quote is
+    present, else the evening chain quote. Shadow = the value selector's best contract with ask and spread from
+    the alternatives entry; its bid is derived (bid = ask x (2 - s) / (2 + s)) and says so, because the shadow
+    contract is not requoted today. Nothing is invented: a missing shadow is SHADOW_UNAVAILABLE, a missing
+    legacy quote is LEGACY_QUOTE_MISSING.
+    """
+    legacy_symbol = _first_present(row, "selected_contract_symbol", "contract_value_score_choice_symbol", "contract_symbol")
+    requote_bid = _finite_or_none(row.get("execution_viability_bid"))
+    requote_ask = _finite_or_none(row.get("execution_viability_ask"))
+    if requote_bid is not None and requote_ask is not None:
+        legacy_bid, legacy_ask = requote_bid, requote_ask
+        legacy_ts = _first_present(row, "execution_viability_quote_provider_timestamp_utc", "selected_quote_timestamp_utc")
+        legacy_basis = "MORNING_REQUOTE"
+    else:
+        legacy_bid, legacy_ask = _finite_or_none(row.get("contract_bid")), _finite_or_none(row.get("contract_ask"))
+        legacy_ts = _first_present(row, "selected_quote_timestamp_utc", "quote_provider_timestamp_utc")
+        legacy_basis = "EVENING_CHAIN" if legacy_bid is not None and legacy_ask is not None else None
+    shadow_symbol = _first_present(row, "contract_value_best_symbol")
+    shadow: dict[str, Any] = {
+        "shadow_contract_symbol": shadow_symbol, "shadow_bid": None, "shadow_ask": None,
+        "shadow_quote_timestamp_utc": None, "shadow_quote_basis": None,
+    }
+    if shadow_symbol:
+        try:
+            alternatives = json.loads(str(row.get("contract_value_alternatives") or "[]"))
+        except (TypeError, ValueError):
+            alternatives = []
+        entry = next((a for a in alternatives if isinstance(a, Mapping) and str(a.get("symbol") or "").strip() == str(shadow_symbol).strip()), None)
+        if entry is not None:
+            ask = _finite_or_none(entry.get("ask"))
+            spread = _finite_or_none(entry.get("spread_pct"))
+            if ask is not None and spread is not None and spread >= 0:
+                shadow.update(shadow_ask=ask, shadow_bid=ask * (2.0 - spread) / (2.0 + spread),
+                              shadow_quote_timestamp_utc=_first_present(row, "selected_quote_timestamp_utc", "quote_provider_timestamp_utc"),
+                              shadow_quote_basis="EVENING_CHAIN_DERIVED_BID")
+    if not shadow_symbol:
+        pair_state = "SHADOW_UNAVAILABLE"
+    elif legacy_bid is None or legacy_ask is None:
+        pair_state = "LEGACY_QUOTE_MISSING"
+    else:
+        pair_state = "PAIR_RECORDED"
+    return {
+        "pair_state": pair_state,
+        "legacy_contract_symbol": legacy_symbol,
+        "legacy_bid": legacy_bid, "legacy_ask": legacy_ask,
+        "legacy_quote_timestamp_utc": legacy_ts, "legacy_quote_basis": legacy_basis,
+        **shadow,
+        "shadow_basis": _first_present(row, "contract_value_basis"),
+        "shadow_quality_flag": _first_present(row, "contract_value_quality_flag"),
+        "shadow_r_central": _finite_or_none(row.get("contract_value_best_r_central")),
+        "shadow_forecast_source": _first_present(row, "contract_value_forecast_source"),
+        "shadow_forecast_run_id": _first_present(row, "contract_value_forecast_run_id"),
+        "shadow_forecast_age_sessions": (
+            int(_finite_or_none(row.get("contract_value_forecast_age_sessions")))
+            if _finite_or_none(row.get("contract_value_forecast_age_sessions")) is not None else None
+        ),
+        "symbols_differ": (
+            None if not shadow_symbol or not legacy_symbol
+            else str(shadow_symbol).strip().upper() != str(legacy_symbol).strip().upper()
+        ),
+    }
+
+
 def candidate_events_from_rows(
     rows: Iterable[Mapping[str, Any]],
     *,
@@ -379,6 +462,9 @@ def candidate_events_from_rows(
             "usmi_sector_alignment": row.get("usmi_sector_alignment"),
             "usmi_scenario": row.get("usmi_scenario"),
             "usmi_authority": row.get("usmi_authority"),
+            # F1.b (ACK 25 Sep 2026): the cohort pair and the cohort identity, written before the outcome.
+            "selection_pair": selection_pair_from_row(row),
+            "prospective_cohort": dict(PROSPECTIVE_COHORT),
         }
         events.append(make_ledger_event(
             event_type=LedgerEventType.CANDIDATE_DECISION.value,
