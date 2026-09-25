@@ -5,8 +5,19 @@ let INTERPRETER_BUSY = false;
 function updateInterpreterSelection() {
   const button = document.getElementById('interpreter-launch');
   if (!button) return;
+  let saved = document.getElementById('interpreter-saved');
+  if (!saved) {
+    saved = document.createElement('button');
+    saved.id = 'interpreter-saved';
+    saved.className = 'fb';
+    saved.title = 'View stored Interpreter reports for selected tickers; no model call or charge';
+    saved.textContent = 'View saved reports';
+    saved.onclick = viewSavedInterpreterReports;
+    button.insertAdjacentElement('afterend', saved);
+  }
   button.textContent = `Interpreter reports (${INTERPRETER_SELECTED.size}/5)`;
   button.disabled = INTERPRETER_BUSY;
+  saved.disabled = INTERPRETER_BUSY;
 }
 
 function clearInterpreterSelection() {
@@ -131,6 +142,50 @@ function showInterpreterReport(report) {
 
   card.appendChild(controls);
   panel.appendChild(card);
+}
+
+async function viewSavedInterpreterReports() {
+  if (INTERPRETER_BUSY) return;
+  const status = document.getElementById('interpreter-status');
+  const panel = document.getElementById('interpreter-panel');
+  const run = RUN_DATA && RUN_DATA.run_id;
+  const tickers = [...INTERPRETER_SELECTED];
+  if (!run || !tickers.length || tickers.length > 5) {
+    status.textContent = 'Load a run and select one to five tickers to view saved reports.';
+    return;
+  }
+  INTERPRETER_BUSY = true; updateInterpreterSelection();
+  try {
+    const listing = await interpreterRequest('saved_reports', {run_id: run, tickers});
+    if (!RUN_DATA || RUN_DATA.run_id !== run) throw new Error('Displayed run changed; select again.');
+    panel.replaceChildren();
+    panel.style.display = 'block';
+    if (!listing.reports.length) {
+      interpreterText(panel, 'p', 'No completed Interpreter reports are saved for these tickers in this run. No model call was made.');
+    }
+    for (const item of listing.reports) {
+      const open = interpreterText(panel, 'button',
+        `${item.ticker} · ${item.phase || 'REPORT'} · ${item.model_id || 'model unknown'} · ${item.provider_retrieved_at_utc || 'time unknown'}`);
+      open.className = 'fb';
+      open.style.margin = '4px';
+      open.onclick = async () => {
+        open.disabled = true;
+        try {
+          if (!RUN_DATA || RUN_DATA.run_id !== run) throw new Error('Displayed run changed; select again.');
+          const path = `report/${encodeURIComponent(run)}/${encodeURIComponent(item.ticker)}/${encodeURIComponent(item.report_id)}`;
+          const report = await interpreterRequest(path);
+          if (report.run_id !== run || report.ticker !== item.ticker || report.report_id !== item.report_id || report.status !== 'COMPLETE')
+            throw new Error('Stored report identity did not reconcile.');
+          panel.replaceChildren();
+          showInterpreterReport(report);
+          status.textContent = `Viewing saved ${item.ticker} report. No model call was made.`;
+        } catch (error) { status.textContent = error.message; }
+        finally { open.disabled = false; }
+      };
+    }
+    status.textContent = `${listing.reports.length} saved report(s) found for run ${run}. Viewing is read-only and makes no model call.`;
+  } catch (error) { status.textContent = error.message; }
+  finally { INTERPRETER_BUSY = false; updateInterpreterSelection(); }
 }
 
 async function requestDeepDive(report, button, statusEl, panel) {

@@ -1978,6 +1978,9 @@ def process_signal(signal: Dict, dashboard: Dict) -> Dict:
             "ev_final":         _f(signal, "ev_adjusted") or _f(signal, "structural_ev"),
             "options_score":    _f(signal, "options_score"),
             "rr_options":       _f(signal, "rr_options"),
+            "rr_options_state": _s(signal, "rr_options_state"),
+            "rr_options_tradeability": _s(signal, "rr_options_tradeability"),
+            "rr_options_spread_fraction": _f(signal, "rr_options_spread_fraction"),
             "ev_adjusted":      _f(signal, "ev_adjusted"),
             # FIX (2026-04-18): sb_verdict_changed must be present in ALL return
             # paths — the stats loop at run_superbrain() does a hard key lookup.
@@ -2128,6 +2131,9 @@ def process_signal(signal: Dict, dashboard: Dict) -> Dict:
         'rr':                   _f(signal, 'rr_underlying') or _f(signal, 'rr'),
         'rr_underlying':        _f(signal, 'rr_underlying'),
         'rr_options':           _f(signal, 'rr_options'),
+        'rr_options_state':     _s(signal, 'rr_options_state'),
+        'rr_options_tradeability': _s(signal, 'rr_options_tradeability'),
+        'rr_options_spread_fraction': _f(signal, 'rr_options_spread_fraction'),
         'rr_premium_expected':  _f(signal, 'rr_premium_expected'),
         'max_convex_r_multiple':_f(signal, 'max_convex_r_multiple'),
         'ivp':                  _ivp(signal, dashboard),

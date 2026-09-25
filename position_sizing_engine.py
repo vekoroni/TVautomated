@@ -378,12 +378,17 @@ def _options_multiplier(row: dict) -> float:
       - spread_pct      (wide spread = execution cost tax)
       - contract_iv     (absolute IV level)
     """
-    # FIX-IV-RANK-COL (2026-04-23): Pipeline stores IVP as ivp_252d / iv_percentile.
-    # "iv_rank" is often NaN in EOD mode, causing the IV penalty to silently not fire.
-    # Fallback chain: iv_rank → ivp_252d (0-100, normalise) → iv_percentile → 0.50.
-    _iv_raw = row.get("iv_rank")
-    if _iv_raw is None or (isinstance(_iv_raw, float) and (_iv_raw != _iv_raw)):
-        _iv_raw = row.get("ivp_252d") or row.get("iv_percentile")
+    # Fix Spec D5 (24 Sep 2026): the penalty is on the IV *percentile*. Since Fix 2 the
+    # engine publishes iv_rank as a range statistic (iv_rank_definition='RANGE_IV_HISTORY'),
+    # so it is read only when that marker is absent (legacy books: percentile x 100).
+    # Chain: iv_percentile -> ivp_252d -> legacy iv_rank -> 0.50.
+    def _present(value):
+        return value is not None and not (isinstance(value, float) and value != value) and value != ""
+    _iv_raw = row.get("iv_percentile")
+    if not _present(_iv_raw):
+        _iv_raw = row.get("ivp_252d")
+    if not _present(_iv_raw) and str(row.get("iv_rank_definition") or "").strip() == "":
+        _iv_raw = row.get("iv_rank")
     iv_rank = _safe(_iv_raw, 0.50)
     # Normalise: ivp_252d is 0-100 scale; iv_rank expected 0-1
     if iv_rank > 1.0:

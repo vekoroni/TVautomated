@@ -33,10 +33,13 @@
 ║    contract_delta        : delta                                             ║
 ║    contract_theta        : theta (daily decay)                               ║
 ║    contract_vega         : vega                                              ║
-║    iv_rank               : 0-100 (< 30 = cheap, > 70 = expensive)           ║
-║    iv_percentile         : 0-1                                               ║
-║    ivp_label             : CHEAP / FAIR / EXPENSIVE                         ║
-║    gamma_flip            : price level where dealer hedging flips            ║
+║    iv_rank               : 0-100 range statistic (IV-low)/(high-low) over   ║
+║                            IV history; iv_rank_definition says which        ║
+║    iv_percentile         : 0-1 share of the ticker's IV history below today  ║
+║    ivp_label             : CHEAP <= 0.40 / FAIR / EXPENSIVE > 0.65 on the    ║
+║                            percentile; ivp_source names the winning path    ║
+║    gamma_flip            : re-priced dealer-gamma crossing nearest spot, or  ║
+║                            None with gamma_flip_state                       ║
 ║    gamma_flip_gap_pct    : % distance from entry to gamma flip               ║
 ║    call_wall             : highest OI call strike                            ║
 ║    put_wall              : highest OI put strike                             ║
@@ -1860,22 +1863,20 @@ def enrich_contract_with_real_quotes(contract: Dict) -> Dict:
             enriched['contract_multiplier'] = float(multiplier)
             enriched['contract_multiplier_source'] = 'marketdata.app'
 
-        # MD-IV-FIX: Extract ivRank and ivPercentile directly from MarketData response.
-        # These are reliable fields returned by MD on options/chain/ and /quotes/ endpoints.
-        # Using MD for IV rank is correct — Polygon chain does not return implied_vol.
-        # This replaces the compute_iv_context() Polygon-based calculation which fails
-        # when Polygon returns chains without IV data (the primary source of iv_rank=NaN).
+        # Fix 2b (24 Sep 2026): MarketData's per-contract ivRank / ivPercentile are kept as a
+        # *candidate* under their own names. The governed iv_rank / iv_percentile / ivp_label
+        # are published once, by resolve_iv_ownership, with the declared precedence
+        # (IV history > realised-vol range proxy > this contract value > unavailable).
+        # Options are MarketData-only; Polygon options access is decommissioned.
         iv_rank_md = _md("ivRank")
         iv_pct_md  = _md("ivPercentile")
         if iv_rank_md is not None:
             try:
                 _ivr = float(iv_rank_md)
                 # MD returns ivRank as 0-100 scale
-                enriched['iv_rank']       = _ivr
-                enriched['iv_percentile'] = float(iv_pct_md) if iv_pct_md is not None else _ivr / 100.0
-                enriched['ivp_label']     = ('CHEAP' if _ivr < 30 else
-                                             'EXPENSIVE' if _ivr > 70 else 'FAIR')
-                enriched['ivp_source']    = 'marketdata.app'
+                enriched['iv_rank_marketdata']       = _ivr
+                enriched['iv_percentile_marketdata'] = float(iv_pct_md) if iv_pct_md is not None else _ivr / 100.0
+                enriched['ivp_source_marketdata']    = 'marketdata.app'
             except (TypeError, ValueError):
                 pass
 
@@ -3043,12 +3044,114 @@ def fetch_chain(ticker: str) -> pd.DataFrame:
     print(f"  [{ticker}] MarketData chain unavailable — STAND_DOWN (Polygon options disabled)")
     return pd.DataFrame()
 
+GAMMA_FLIP_METHOD = 'GRID_REPRICED_NEAREST_SPOT'
+GAMMA_FLIP_GRID_HALF_WIDTH = 0.25     # hypothetical spot levels from -25% to +25% of spot
+GAMMA_FLIP_GRID_STEP = 0.005          # 0.5% steps
+GAMMA_FLIP_STATE_CROSSING = 'GRID_REPRICED_CROSSING'
+GAMMA_FLIP_STATE_NO_CROSSING = 'NO_GEX_CROSSING_WITHIN_GRID'
+GAMMA_FLIP_STATE_INSUFFICIENT = 'INSUFFICIENT_CHAIN_DATA'
+
+
+def _legacy_first_sign_change_flip(gex_df: pd.DataFrame) -> Optional[float]:
+    """The pre-Fix-4 flip: first per-strike sign change scanning from the lowest strike, else the
+    smallest-|GEX| strike. Published under its own name for one release, consumed by nothing."""
+    if gex_df.empty:
+        return None
+    x, y = gex_df['strike'].values, gex_df['gex'].values
+    s = np.sign(y)
+    for i in range(len(s) - 1):
+        if s[i] * s[i + 1] < 0 and (y[i + 1] - y[i]) != 0:
+            return float(x[i] - y[i] * (x[i + 1] - x[i]) / (y[i + 1] - y[i]))
+    return float(x[np.argmin(np.abs(y))]) if len(y) else None
+
+
+def dealer_gamma_profile(df: pd.DataFrame, spot: float,
+                         r: float = RISK_FREE_RATE) -> Tuple[np.ndarray, np.ndarray]:
+    """Total signed dealer gamma (calls +, puts -) re-priced on a grid of spot levels.
+
+    Each contract's own implied volatility and time to expiry are used; the scale is
+    gamma x open interest x level, which is all a zero crossing needs. Empty arrays when
+    the chain lacks IV, expiry or open interest.
+    """
+    empty = (np.array([]), np.array([]))
+    if df is None or df.empty or spot is None or not np.isfinite(spot) or spot <= 0:
+        return empty
+    needed = {'right', 'strike', 'open_interest', 'implied_vol', 'dte'}
+    if not needed.issubset(df.columns):
+        return empty
+    sub = df[['right', 'strike', 'open_interest', 'implied_vol', 'dte']].copy()
+    sub['open_interest'] = pd.to_numeric(sub['open_interest'], errors='coerce').fillna(0.0)
+    sub['implied_vol'] = pd.to_numeric(sub['implied_vol'], errors='coerce')
+    sub['dte'] = pd.to_numeric(sub['dte'], errors='coerce')
+    sub['strike'] = pd.to_numeric(sub['strike'], errors='coerce')
+    sub = sub[(sub['open_interest'] > 0) & (sub['implied_vol'] > 0) & (sub['implied_vol'] < 5.0)
+              & (sub['dte'] > 0) & (sub['strike'] > 0)]
+    if sub.empty:
+        return empty
+    sign = np.where(sub['right'].astype(str).str.upper().str[0] == 'C', 1.0, -1.0)
+    K = sub['strike'].to_numpy(dtype=float)
+    T = sub['dte'].to_numpy(dtype=float) / 365.0
+    sigma = sub['implied_vol'].to_numpy(dtype=float)
+    oi = sub['open_interest'].to_numpy(dtype=float)
+    steps = int(round(GAMMA_FLIP_GRID_HALF_WIDTH / GAMMA_FLIP_GRID_STEP))
+    grid = spot * (1.0 + np.arange(-steps, steps + 1) * GAMMA_FLIP_GRID_STEP)
+    S = grid[:, None]
+    vol_t = sigma * np.sqrt(T)
+    d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / vol_t
+    pdf = np.exp(-0.5 * d1 ** 2) / np.sqrt(2.0 * np.pi)
+    gamma = pdf / (S * vol_t)
+    totals = (sign * gamma * oi * S).sum(axis=1)
+    return grid, totals
+
+
+def compute_gamma_flip(df: pd.DataFrame, spot: float) -> Dict[str, Any]:
+    """Fix 4 (24 Sep 2026, D4): the flip is the re-priced crossing nearest spot, or nothing.
+
+    Never a fallback strike: with no sign change inside the grid the flip is None and the
+    state says so. The legacy first-sign-change value is kept under its own name.
+    """
+    legacy = None
+    try:
+        if not df.empty and 'gamma' in df.columns and not df['gamma'].isna().all():
+            sub = df.dropna(subset=['gamma'])
+            sign = np.where(sub['right'].astype(str).str.upper().str[0] == 'C', 1.0, -1.0)
+            mult = spot * 100.0 if spot and spot > 0 else 100.0
+            legacy_df = (pd.DataFrame({'strike': sub['strike'].values,
+                                       'gex': sign * sub['gamma'].to_numpy(dtype=float)
+                                              * sub['open_interest'].fillna(0).to_numpy(dtype=float) * mult})
+                         .groupby('strike', as_index=False).sum().sort_values('strike'))
+            legacy = _legacy_first_sign_change_flip(legacy_df)
+    except Exception:  # noqa: BLE001 - the legacy comparison value never takes a ticker down
+        legacy = None
+    grid, totals = dealer_gamma_profile(df, spot)
+    if len(grid) == 0:
+        return {'gamma_flip': None, 'gamma_flip_state': GAMMA_FLIP_STATE_INSUFFICIENT,
+                'gamma_flip_method': GAMMA_FLIP_METHOD, 'gamma_flip_legacy_first_sign_change': legacy}
+    s = np.sign(totals)
+    crossings = []
+    for i in range(len(s) - 1):
+        if s[i] * s[i + 1] < 0:
+            level = float(grid[i] - totals[i] * (grid[i + 1] - grid[i]) / (totals[i + 1] - totals[i]))
+            crossings.append(level)
+        elif s[i] == 0 and s[i + 1] != 0:
+            crossings.append(float(grid[i]))
+    if not crossings:
+        return {'gamma_flip': None, 'gamma_flip_state': GAMMA_FLIP_STATE_NO_CROSSING,
+                'gamma_flip_method': GAMMA_FLIP_METHOD, 'gamma_flip_legacy_first_sign_change': legacy}
+    flip = min(crossings, key=lambda level: abs(level - spot))
+    return {'gamma_flip': round(flip, 4), 'gamma_flip_state': GAMMA_FLIP_STATE_CROSSING,
+            'gamma_flip_method': GAMMA_FLIP_METHOD, 'gamma_flip_legacy_first_sign_change': legacy}
+
+
 def compute_gex(df: pd.DataFrame, spot: float) -> Tuple[pd.DataFrame, Optional[float], float]:
     """
     Compute GEX by strike. Returns (gex_df, gamma_flip_price, flip_confidence).
-    GEX = sign(right) × gamma × OI × spot × 100
-    Positive GEX → dealers long gamma → price-damping (pin risk).
-    Negative GEX → dealers short gamma → price-amplifying (trending).
+    GEX = sign(right) x gamma x OI x spot x 100
+    Positive GEX -> dealers long gamma -> price-damping (pin risk).
+    Negative GEX -> dealers short gamma -> price-amplifying (trending).
+
+    Fix 4 (24 Sep 2026): the flip comes from compute_gamma_flip (re-priced crossing nearest
+    spot, None when there is none); the per-strike surface below is unchanged.
     """
     if df.empty or df['gamma'].isna().all():
         return pd.DataFrame(columns=['strike','gex']), None, 0.0
@@ -3062,18 +3165,9 @@ def compute_gex(df: pd.DataFrame, spot: float) -> Tuple[pd.DataFrame, Optional[f
               .groupby('strike', as_index=False).sum()
               .sort_values('strike'))
 
-    # Find gamma flip
-    x, y = gex_df['strike'].values, gex_df['gex'].values
-    s    = np.sign(y)
-    flip = None
-    for i in range(len(s)-1):
-        if s[i]*s[i+1] < 0 and (y[i+1]-y[i]) != 0:
-            flip = float(x[i] - y[i]*(x[i+1]-x[i])/(y[i+1]-y[i]))
-            break
-    if flip is None:
-        flip = float(x[np.argmin(np.abs(y))]) if len(y) else None
+    flip = compute_gamma_flip(df, spot)['gamma_flip']
 
-    # Flip confidence
+    # Flip confidence (ad hoc local density; 0.0 without a flip)
     conf = 0.0
     if flip and spot > 0:
         band  = 0.025*spot
@@ -3202,15 +3296,47 @@ def compute_gamma_island(
     })
     return result
 
-def compute_oi_walls(df: pd.DataFrame) -> Dict:
-    """Call wall, put wall, max pain."""
+WALL_STATE_NO_CHAIN = 'NO_CHAIN_DATA'
+WALL_STATE_SPOT_UNAVAILABLE = 'SPOT_UNAVAILABLE'
+WALL_STATE_CALL = 'OI_MAX_ABOVE_SPOT'
+WALL_STATE_PUT = 'OI_MAX_BELOW_SPOT'
+WALL_STATE_NO_STRIKE_ABOVE = 'NO_STRIKE_ABOVE_SPOT'
+WALL_STATE_NO_STRIKE_BELOW = 'NO_STRIKE_BELOW_SPOT'
+WALL_STATE_NO_OI_ABOVE = 'NO_OPEN_INTEREST_ABOVE_SPOT'
+WALL_STATE_NO_OI_BELOW = 'NO_OPEN_INTEREST_BELOW_SPOT'
+
+
+def _oi_wall_on_side(by_strike: "pd.Series", *, above: bool, spot: float) -> Tuple[Optional[float], str]:
+    """Strongest open-interest strike strictly on one side of spot, or a typed absence."""
+    side = by_strike[by_strike.index > spot] if above else by_strike[by_strike.index < spot]
+    if side.empty:
+        return None, (WALL_STATE_NO_STRIKE_ABOVE if above else WALL_STATE_NO_STRIKE_BELOW)
+    side = side[side > 0]
+    if side.empty:
+        return None, (WALL_STATE_NO_OI_ABOVE if above else WALL_STATE_NO_OI_BELOW)
+    return float(side.idxmax()), (WALL_STATE_CALL if above else WALL_STATE_PUT)
+
+
+def compute_oi_walls(df: pd.DataFrame, spot: Optional[float] = None) -> Dict:
+    """Call wall above spot, put wall below spot, max pain; raw per-side maxima kept by name.
+
+    Fix 3 (24 Sep 2026, D3): a wall is a level the price has not yet reached, so the call
+    wall is the strongest call-OI strike strictly above spot and the put wall the strongest
+    put-OI strike strictly below it. The unconstrained per-side maxima the old definition
+    published (which coincided on 96 of 1,550 rows and sat on the wrong side of spot on 558
+    of 1,379 on run 20260922_223221) stay available as oi_max_call_strike / oi_max_put_strike.
+    Without a usable spot no side can be judged and both walls are absent with that state.
+    """
+    absent = {'call_wall': None, 'put_wall': None, 'max_pain': None,
+              'call_wall_state': WALL_STATE_NO_CHAIN, 'put_wall_state': WALL_STATE_NO_CHAIN,
+              'oi_max_call_strike': None, 'oi_max_put_strike': None}
     if df.empty:
-        return {'call_wall': None, 'put_wall': None, 'max_pain': None}
+        return absent
     calls = df[df['right'].str.upper()=='C'].groupby('strike')['open_interest'].sum()
     puts  = df[df['right'].str.upper()=='P'].groupby('strike')['open_interest'].sum()
 
-    call_wall = float(calls.idxmax()) if not calls.empty else None
-    put_wall  = float(puts.idxmax())  if not puts.empty  else None
+    oi_max_call = float(calls.idxmax()) if not calls.empty else None
+    oi_max_put  = float(puts.idxmax())  if not puts.empty  else None
 
     # Max pain
     strikes = sorted(df['strike'].unique())
@@ -3220,7 +3346,19 @@ def compute_oi_walls(df: pd.DataFrame) -> Dict:
             for K in strikes]
     max_pain = min(pain, key=lambda z:z[1])[0] if pain else None
 
-    return {'call_wall': call_wall, 'put_wall': put_wall, 'max_pain': max_pain}
+    spot_value = _oi_float(spot)
+    if spot_value is None or not math.isfinite(spot_value) or spot_value <= 0:
+        call_wall, call_state = None, WALL_STATE_SPOT_UNAVAILABLE
+        put_wall, put_state = None, WALL_STATE_SPOT_UNAVAILABLE
+    else:
+        call_wall, call_state = (_oi_wall_on_side(calls, above=True, spot=spot_value)
+                                 if not calls.empty else (None, WALL_STATE_NO_STRIKE_ABOVE))
+        put_wall, put_state = (_oi_wall_on_side(puts, above=False, spot=spot_value)
+                               if not puts.empty else (None, WALL_STATE_NO_STRIKE_BELOW))
+
+    return {'call_wall': call_wall, 'put_wall': put_wall, 'max_pain': max_pain,
+            'call_wall_state': call_state, 'put_wall_state': put_state,
+            'oi_max_call_strike': oi_max_call, 'oi_max_put_strike': oi_max_put}
 
 def _pcr_bucket(value: Any) -> str:
     """Describe a put/call ratio without inferring buyer or seller direction."""
@@ -3841,28 +3979,105 @@ def iv_percentile_from_history(atm_iv: float, history: List[float]) -> Optional[
     return float(sum(1 for v in history if v < atm_iv) / len(history))
 
 
+IV_RANK_DEFINITION = 'RANGE_IV_HISTORY'   # Fix 2a: (IV - low) / (high - low) over the ticker's own IV history
+
+
+def iv_rank_from_history(atm_iv: Optional[float], history: List[float]) -> Optional[float]:
+    """Industry-standard IV Rank on [0, 1]: where today's IV sits in its own history's range.
+
+    None when the history is too short to measure or has no range (flat); never a neutral value.
+    """
+    if atm_iv is None or not len(history) >= IV_PERCENTILE_MIN_SAMPLES:
+        return None
+    low, high = min(history), max(history)
+    if not high > low:
+        return None
+    return float(min(1.0, max(0.0, (atm_iv - low) / (high - low))))
+
+
 def _ivp_label(ivp: Optional[float]) -> str:
     if ivp is None:
         return 'UNKNOWN'
     return 'CHEAP' if ivp <= IVP_CHEAP_MAX else 'EXPENSIVE' if ivp > IVP_EXPENSIVE else 'FAIR'
 
 
+def resolve_iv_ownership(iv_ctx: Dict, contract: Optional[Dict] = None) -> Dict:
+    """The one writer of iv_percentile, iv_rank, ivp_label and ivp_source (Fix 2b, 24 Sep 2026).
+
+    Precedence for the percentile: the ticker's own IV history (C) > IV against its realised-vol
+    range (B, a proxy kept under its own name) > MarketData's per-contract ivRank (A) > unavailable.
+    The rank is the range statistic from IV history; a realised-vol range is not an IV range, so
+    the proxy yields no rank. Proxies from the IV engine or absolute IV level never become the
+    governed fields. Suppressed candidates are named so a reader can see what was not used.
+    """
+    contract = contract or {}
+    candidates: List[str] = []
+    history_pct = iv_ctx.get('iv_percentile_history')
+    proxy_pct = iv_ctx.get('iv_vs_rv_range_primary')
+    md_pct = contract.get('iv_percentile_marketdata')
+    if history_pct is not None:
+        candidates.append('IV_HISTORY_252D')
+    if proxy_pct is not None:
+        candidates.append('RV_RANGE_PROXY')
+    if md_pct is not None:
+        candidates.append('MARKETDATA_CONTRACT_IVRANK')
+    if iv_ctx.get('iv_engine_proxy_pct') is not None:
+        candidates.append('IV_ENGINE_PROXY')
+    if iv_ctx.get('iv_level_bucket_pct') is not None:
+        candidates.append('ABSOLUTE_IV_LEVEL_BUCKET')
+
+    if history_pct is not None:
+        source = 'IV_HISTORY_252D'
+        percentile = round(float(history_pct), 3)
+        rank_unit = iv_ctx.get('iv_rank_history')
+        rank = round(float(rank_unit) * 100.0, 1) if rank_unit is not None else None
+        rank_definition = IV_RANK_DEFINITION
+        window = iv_ctx.get('iv_history_samples')
+    elif proxy_pct is not None:
+        source = 'RV_RANGE_PROXY'
+        percentile = round(float(proxy_pct), 3)
+        rank, rank_definition, window = None, None, None
+    elif md_pct is not None:
+        source = 'MARKETDATA_CONTRACT_IVRANK'
+        percentile = round(float(md_pct), 3)
+        md_rank = contract.get('iv_rank_marketdata')
+        rank = round(float(md_rank), 1) if md_rank is not None else None
+        rank_definition = 'MARKETDATA_CONTRACT_IVRANK' if rank is not None else None
+        window = None
+    else:
+        source, percentile, rank, rank_definition, window = 'UNAVAILABLE', None, None, None, None
+
+    iv_ctx['iv_percentile'] = percentile
+    iv_ctx['iv_rank'] = rank
+    iv_ctx['ivp_label'] = _ivp_label(percentile)
+    iv_ctx['ivp_source'] = source
+    iv_ctx['iv_percentile_source'] = source
+    iv_ctx['iv_rank_definition'] = rank_definition
+    iv_ctx['iv_rank_window_sessions'] = window
+    iv_ctx['ivp_suppressed_sources'] = [c for c in candidates if c != source]
+    return iv_ctx
+
+
 def _apply_true_iv_percentile(result: Dict, ticker: str, atm_iv: float, as_of: date) -> None:
-    """Rank today's ATM IV against the ticker's own IV history; keep the realised-range measure by its name."""
+    """Measure today's ATM IV against the ticker's own IV history, then publish through the one owner.
+
+    The realised-range measure computed earlier is kept under its own name (`iv_vs_rv_range_*`)
+    and offered to the resolver only as a fallback proxy.
+    """
     result['iv_vs_rv_range_252d'] = result.get('ivp_252d')
     result['iv_vs_rv_range_30d'] = result.get('ivp_30d')
+    if result.get('iv_vs_rv_range_primary') is None and result.get('iv_percentile') is not None:
+        # Legacy callers may hand in the proxy under the governed name; treat it as the proxy candidate.
+        result['iv_vs_rv_range_primary'] = result.get('iv_percentile')
     history = [v for _, v in _iv_history_samples(ticker, as_of.isoformat())]
     result['iv_history_samples'] = len(history)
     true_ivp = iv_percentile_from_history(atm_iv, history)
-    if true_ivp is None:
-        result['iv_percentile_source'] = 'RV_RANGE_PROXY' if result.get('iv_percentile') is not None else 'UNAVAILABLE'
-        return
-    result['iv_percentile'] = round(true_ivp, 3)
-    result['ivp_252d'] = round(true_ivp, 3)
-    result['ivp_30d'] = None
-    result['iv_rank'] = round(true_ivp * 100, 1)
-    result['ivp_label'] = _ivp_label(true_ivp)
-    result['iv_percentile_source'] = 'IV_HISTORY_252D'
+    result['iv_percentile_history'] = round(true_ivp, 3) if true_ivp is not None else None
+    result['iv_rank_history'] = iv_rank_from_history(atm_iv, history)
+    if true_ivp is not None:
+        result['ivp_252d'] = round(true_ivp, 3)
+        result['ivp_30d'] = None
+    resolve_iv_ownership(result, None)
 
 
 def compute_iv_skew(chain_df: pd.DataFrame, spot: float) -> Dict:
@@ -4180,9 +4395,9 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
             _iv_eng_result = _iv_eng_proxy(_proxy_row)
             if _iv_eng_result:
                 _proxy_iv = _iv_eng_result.iv_current
-                result['iv_rank']       = min(80, max(20, int(_iv_eng_result.iv_current_pct * 2)))
-                result['iv_percentile'] = min(0.80, max(0.20, _iv_eng_result.iv_current_pct / 100))
-                result['ivp_label']     = _iv_eng_result.vrp_signal
+                # Fix 2b: a clamped engine proxy is not a measured percentile; keep it under its own name.
+                result['iv_engine_proxy_pct'] = min(0.80, max(0.20, _iv_eng_result.iv_current_pct / 100))
+                result['iv_engine_vrp_signal'] = _iv_eng_result.vrp_signal
                 result['atm_iv']        = round(_iv_eng_result.iv_current, 4)
                 result['iv_regime']     = ('STRUCTURAL_BUILD' if _iv_eng_result.vrp_signal == 'BUY_EDGE'
                                            else 'EVENT_PRICING' if _iv_eng_result.vrp_signal == 'SELL_EDGE'
@@ -4196,11 +4411,10 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
             pass
 
         if _proxy_iv is None:
-            result['iv_rank']       = 50
-            result['iv_percentile'] = 0.50
-            result['ivp_label']     = 'FAIR'
+            # Fix 2b: no IV at all is unavailable, never a neutral 50 / FAIR (R1).
             result['atm_iv']        = None
         result.pop('_rv_series', None)   # clean temp key before return
+        resolve_iv_ownership(result, None)
         return result
 
     result['atm_iv'] = round(atm_iv, 4)
@@ -4210,12 +4424,9 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
         result['iv_vs_hv'] = round(atm_iv / result['hv_30d'], 3)
 
     if len(closes) < 60:
-        # Fallback absolute-level estimate from atm_iv level
-        if atm_iv < 0.25:   result['iv_rank'] = 20; result['iv_percentile'] = 0.20
-        elif atm_iv < 0.40: result['iv_rank'] = 40; result['iv_percentile'] = 0.40
-        elif atm_iv < 0.60: result['iv_rank'] = 60; result['iv_percentile'] = 0.60
-        else:               result['iv_rank'] = 80; result['iv_percentile'] = 0.80
-        result['ivp_label'] = _ivp_label(result['iv_percentile'])
+        # Fix 2b: an absolute-level bucket is not a percentile; kept under its own name only.
+        result['iv_level_bucket_pct'] = (0.20 if atm_iv < 0.25 else 0.40 if atm_iv < 0.40
+                                         else 0.60 if atm_iv < 0.60 else 0.80)
     else:
         returns = np.diff(np.log(closes))
         win = 21
@@ -4248,16 +4459,11 @@ def compute_iv_context(chain_df: pd.DataFrame, ticker: str,
 
             result['ivp_252d']      = round(ivp_252, 3)
             result['ivp_30d']       = round(ivp_30, 3)
-            result['iv_percentile'] = round(ivp_primary, 3)
-            result['iv_rank']       = round(ivp_primary * 100, 1)
-
-            # CHEAP requires BOTH windows agree — prevents false cheap readings
-            if ivp_252 <= IVP_CHEAP_MAX and ivp_30 <= IVP_CHEAP_MAX:
-                result['ivp_label'] = 'CHEAP'
-            elif ivp_primary > IVP_EXPENSIVE:
-                result['ivp_label'] = 'EXPENSIVE'
-            else:
-                result['ivp_label'] = 'FAIR'
+            # Fix 2b: IV against its realised-vol range is a proxy, offered to the owner
+            # under its own name; both-window agreement is kept as a disclosed flag.
+            result['iv_vs_rv_range_primary'] = round(ivp_primary, 3)
+            result['iv_vs_rv_range_cheap_both_windows'] = bool(
+                ivp_252 <= IVP_CHEAP_MAX and ivp_30 <= IVP_CHEAP_MAX)
 
             # Window divergence warning
             if abs(ivp_252 - ivp_30) > 0.20:
@@ -6297,6 +6503,69 @@ def _annotate_ev3_handoff_frame(frame: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+RR_STATE_NOT_EVALUATED = 'NOT_EVALUATED'
+RR_STATE_MARK_UNPRICED = 'MARK_UNPRICED'
+RR_STATE_QUOTE_MISSING = 'QUOTE_MISSING'
+RR_STATE_ABOVE_BREAKEVEN = 'PRICED_TARGET_ABOVE_BREAKEVEN'
+RR_STATE_INSIDE_BREAKEVEN = 'PRICED_TARGET_INSIDE_BREAKEVEN'
+RR_STATE_STRIKE_BEYOND_TARGET = 'STRIKE_BEYOND_TARGET'
+RR_TRADEABILITY_WITHIN = 'WITHIN_TICKET_SPREAD_LIMIT'
+RR_TRADEABILITY_ABOVE = 'ABOVE_TICKET_SPREAD_LIMIT'
+RR_TRADEABILITY_QUOTE_UNAVAILABLE = 'QUOTE_UNAVAILABLE'
+RR_TRADEABILITY_LIMIT_UNAVAILABLE = 'TICKET_LIMIT_UNAVAILABLE'
+_TICKET_SPREAD_LIMIT_CACHE: Dict[str, Optional[float]] = {}
+
+
+def ticket_spread_limit_fraction() -> Optional[float]:
+    """Governed ticket tradeability limit on (ask - bid) / mid, read from the configuration registry.
+
+    None when the registry cannot be read; the row then says the limit was unavailable
+    rather than borrowing a literal.
+    """
+    if 'value' in _TICKET_SPREAD_LIMIT_CACHE:
+        return _TICKET_SPREAD_LIMIT_CACHE['value']
+    try:
+        from avshunter.config.adapters import load_registry
+        snapshot = load_registry().resolve(_iv_evidence_session())
+        value = float(snapshot.get("outcome.signal.max_entry_spread_fraction").value)
+    except Exception:  # noqa: BLE001 - reported as unavailable, never defaulted
+        value = None
+    _TICKET_SPREAD_LIMIT_CACHE['value'] = value
+    return value
+
+
+def _rr_options_tradeability(bid: Optional[float], ask: Optional[float]) -> Tuple[Optional[float], str]:
+    """Entry spread as a fraction of mid, judged against the governed ticket limit."""
+    if bid is None or ask is None or bid <= 0 or ask <= 0 or ask < bid:
+        return None, RR_TRADEABILITY_QUOTE_UNAVAILABLE
+    mid = (bid + ask) / 2.0
+    if mid <= 0:
+        return None, RR_TRADEABILITY_QUOTE_UNAVAILABLE
+    fraction = round((ask - bid) / mid, 6)
+    limit = ticket_spread_limit_fraction()
+    if limit is None:
+        return fraction, RR_TRADEABILITY_LIMIT_UNAVAILABLE
+    return fraction, (RR_TRADEABILITY_ABOVE if fraction > limit else RR_TRADEABILITY_WITHIN)
+
+
+def _economics_not_evaluated(reason: str, iv_ctx: Dict, *, rr_state: str = RR_STATE_NOT_EVALUATED,
+                             tradeability: str = RR_STATE_NOT_EVALUATED) -> Dict:
+    """Economics that cannot be computed: every number absent, every absence named."""
+    return {
+        'economics_state': 'NOT_EVALUATED',
+        'economics_reason': reason,
+        'premium_total': None, 'breakeven_price': None, 'breakeven_pct': None,
+        'target_gain_underlying': None, 'option_value_at_target': None,
+        'option_gain': None, 'rr_options': None, 'rr_premium_expected': None,
+        'rr_options_state': rr_state, 'rr_options_tradeability': tradeability,
+        'rr_options_spread_fraction': None,
+        'max_convex_r_multiple': None, 'ev_structural': None,
+        'ev_ratio': None, 'ev_adjusted': None, 'theta_total_cost': None,
+        'theta_drag_pct': None, 'vega_risk_pct': None, 'iv_factor': None,
+        'iv_alignment': (iv_ctx or {}).get('ivp_label', 'UNKNOWN'),
+    }
+
+
 def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     """
     Compute full trade economics using AVSHUNTER structural targets.
@@ -6309,38 +6578,32 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     direction = str(ctx.get('direction') or '').upper()
 
     if direction not in GOVERNED_DIRECTED_SIDES:
-        return {
-            'economics_state': 'NOT_EVALUATED',
-            'economics_reason': LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value,
-            'premium_total': None, 'breakeven_price': None, 'breakeven_pct': None,
-            'target_gain_underlying': None, 'option_value_at_target': None,
-            'option_gain': None, 'rr_options': None, 'rr_premium_expected': None,
-            'max_convex_r_multiple': None, 'ev_structural': None,
-            'ev_ratio': None, 'ev_adjusted': None, 'theta_total_cost': None,
-            'theta_drag_pct': None, 'vega_risk_pct': None, 'iv_factor': None,
-            'iv_alignment': iv_ctx.get('ivp_label', 'UNKNOWN'),
-        }
+        return _economics_not_evaluated(
+            LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value, iv_ctx)
     if target is None or target <= 0 or not math.isfinite(target):
-        return {
-            'economics_state': 'NOT_EVALUATED',
-            'economics_reason': DataExceptionReason.STRUCTURAL_TARGET_UNRESOLVED.value,
-            'premium_total': None, 'breakeven_price': None, 'breakeven_pct': None,
-            'target_gain_underlying': None, 'option_value_at_target': None,
-            'option_gain': None, 'rr_options': None, 'rr_premium_expected': None,
-            'max_convex_r_multiple': None, 'ev_structural': None,
-            'ev_ratio': None, 'ev_adjusted': None, 'theta_total_cost': None,
-            'theta_drag_pct': None, 'vega_risk_pct': None, 'iv_factor': None,
-            'iv_alignment': iv_ctx.get('ivp_label', 'UNKNOWN'),
-        }
+        return _economics_not_evaluated(
+            DataExceptionReason.STRUCTURAL_TARGET_UNRESOLVED.value, iv_ctx)
 
-    mark    = contract.get('mark', 0)
+    # Fix 1b (24 Sep 2026, D1): an unpriced mark is declined, never floored to $0.01 and
+    # divided by; a contract with no quote at all is declined too. Both are stated.
+    mark    = _oi_float(contract.get('mark'))
+    bid_q   = _oi_float(contract.get('bid'))
+    ask_q   = _oi_float(contract.get('ask'))
+    if mark is None or not math.isfinite(mark) or mark <= 0:
+        return _economics_not_evaluated(RR_STATE_MARK_UNPRICED, iv_ctx,
+                                        rr_state=RR_STATE_MARK_UNPRICED,
+                                        tradeability=RR_TRADEABILITY_QUOTE_UNAVAILABLE)
+    if not (bid_q and bid_q > 0) and not (ask_q and ask_q > 0):
+        return _economics_not_evaluated(RR_STATE_QUOTE_MISSING, iv_ctx,
+                                        rr_state=RR_STATE_QUOTE_MISSING,
+                                        tradeability=RR_TRADEABILITY_QUOTE_UNAVAILABLE)
+    spread_fraction, tradeability = _rr_options_tradeability(bid_q, ask_q)
     strike  = contract.get('strike', entry)
     theta   = contract.get('theta', -0.01)
     vega    = contract.get('vega', 0.05)
     delta   = abs(contract.get('delta', 0.35))
     dte     = contract.get('dte', 30)
 
-    if mark <= 0: mark = 0.01
     premium_total = mark * 100   # per contract
 
     # Breakeven
@@ -6368,7 +6631,14 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
         target_gain_underlying = 0
 
     option_gain = max(option_value_at_target - mark, -mark)
-    rr_options  = option_gain / mark if mark > 0 else 0
+    rr_options  = option_gain / mark
+    # Fix 1b: the geometry behind the number, identical in mechanism for calls and puts.
+    if option_value_at_target <= 0:
+        rr_options_state = RR_STATE_STRIKE_BEYOND_TARGET        # worthless at target: -1.0
+    elif option_gain > 0:
+        rr_options_state = RR_STATE_ABOVE_BREAKEVEN
+    else:
+        rr_options_state = RR_STATE_INSIDE_BREAKEVEN            # partial loss at target
 
     # OI-01 (FIX-02): Separate R:R metrics so EOD tier assignment uses the right one.
     # rr_premium_expected = option premium appreciation R:R (what the option itself returns)
@@ -6414,6 +6684,9 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
         'option_value_at_target': round(option_value_at_target, 2),
         'option_gain'          : round(option_gain, 2),
         'rr_options'           : round(rr_options, 3),
+        'rr_options_state'     : rr_options_state,
+        'rr_options_tradeability': tradeability,
+        'rr_options_spread_fraction': spread_fraction,
         'rr_premium_expected'  : round(rr_premium_expected, 3),
         'max_convex_r_multiple': round(max_convex_r_multiple, 3),
         'ev_structural'        : round(ev_structural, 4),
@@ -6587,9 +6860,11 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
         neg.append("TRANSITIONAL regime + expensive vol — noted, not scored (macro is display-only)")
 
     # ── [C] TRADE ECONOMICS (22 pts) ──────────────────────────────────────────
-    rr     = econ.get('rr_options', 0)
-    theta_pct = econ.get('theta_drag_pct', 100)
-    be_pct = abs(econ.get('breakeven_pct', 10))
+    rr     = econ.get('rr_options')
+    theta_pct = econ.get('theta_drag_pct')
+    theta_pct = 100 if theta_pct is None else theta_pct
+    _be_raw = econ.get('breakeven_pct')
+    be_pct = abs(10 if _be_raw is None else _be_raw)
 
     # IV bonus for EV requires BOTH windows agree (252d must confirm)
     ivp_252_ok = ivp_252 is None or ivp_252 <= IVP_CHEAP_MAX
@@ -6599,15 +6874,18 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
         iv_factor = 0.75
     else:
         iv_factor = 1.0
-    ev_adj_final = econ.get('ev_ratio', 0) * iv_factor
+    _ev_ratio = econ.get('ev_ratio')
+    ev_adj_final = (0.0 if _ev_ratio is None else _ev_ratio) * iv_factor   # Fix 1b: absent EV scores nothing
 
     # Legacy premium R:R is a labelled expiry-intrinsic research scenario.
     # It contributes zero points and cannot promote or demote the Options
     # verdict for a 1-20 session thesis.
-    if rr >= 0:
-        pos.append(f"R:R research scenario={rr:.2f} (advisory; zero authority)")
+    if rr is None:
+        neg.append(f"R:R research scenario not computable: {econ.get('rr_options_state') or RR_STATE_NOT_EVALUATED} (advisory; zero authority)")
+    elif rr >= 0:
+        pos.append(f"R:R research scenario={rr:.2f} · {econ.get('rr_options_state') or ''} (advisory; zero authority)")
     else:
-        neg.append(f"R:R research scenario={rr:.3f} (advisory; zero authority)")
+        neg.append(f"R:R research scenario={rr:.3f} · {econ.get('rr_options_state') or ''} (advisory; zero authority)")
 
     # EV is diagnostic evidence, not capital authority.  Keep a fixed two-point
     # economics-computation credit so removing the former variable EV bonus does
@@ -7609,7 +7887,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     # ── 2. GEX + walls + PCR ───────────────────────────────────────────────
     gex_df, gamma_flip, flip_conf = compute_gex(chain, spot)
-    walls = compute_oi_walls(chain)
+    gamma_flip_meta = compute_gamma_flip(chain, spot)   # Fix 4: state, method, legacy comparison value
+    walls = compute_oi_walls(chain, spot)
     pcr_val, pcr_signal = compute_pcr(chain)
     gamma_surface_source = "MARKETDATA_CHAIN_GEX_BY_STRIKE"
     try:
@@ -7649,11 +7928,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                    'CONTANGO'      if _sc_term < -0.01 else 'FLAT')
         iv_ctx = {
             'atm_iv':           round(_sc_atm_iv, 4),
-            'iv_rank':          round(_sc_iv_rank * 100, 1),
-            'iv_percentile':    round(_sc_iv_rank, 4),
-            'ivp_30d':          round(_sc_iv_rank, 4),
-            'ivp_252d':         round(_sc_iv_rank, 4),
-            'ivp_label':        _ivp_lbl(_sc_iv_rank),
+            # Fix 2b: the scanner's value is a range rank, not a percentile; the governed
+            # fields are published by resolve_iv_ownership after the chain context below.
+            'iv_rank_scanner':  round(_sc_iv_rank, 4),
+            'iv_rank_scanner_source': _sc_iv_src,
             'hv_30d':           round(_sc_hv_30d, 4),
             'iv_vs_hv':         round(_sc_atm_iv / _sc_hv_30d, 3) if _sc_hv_30d > 0 else None,
             'term_structure':   _ts,
@@ -7737,16 +8015,28 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     if not contract:
         _chain_has_data = chain is not None and (hasattr(chain, '__len__') and len(chain) > 0)
+        resolve_iv_ownership(iv_ctx, None)   # Fix 2b: one owner, also when no contract is selected
         _base_no_contract = {**_stand_down(ctx, 'No contract passed quality gates'),
                 **_chain_lineage,
                 'iv_rank'        : iv_ctx.get('iv_rank'),
                 'iv_percentile'  : iv_ctx.get('iv_percentile'),
                 'ivp_label'      : iv_ctx.get('ivp_label'),
+                'ivp_source'     : iv_ctx.get('ivp_source'),
+                'iv_rank_definition': iv_ctx.get('iv_rank_definition'),
+                'iv_rank_window_sessions': iv_ctx.get('iv_rank_window_sessions'),
+                'ivp_suppressed_sources': iv_ctx.get('ivp_suppressed_sources'),
                 'gamma_flip'     : gamma_flip,
+                'gamma_flip_state': gamma_flip_meta.get('gamma_flip_state'),
+                'gamma_flip_method': gamma_flip_meta.get('gamma_flip_method'),
+                'gamma_flip_legacy_first_sign_change': gamma_flip_meta.get('gamma_flip_legacy_first_sign_change'),
                 'gamma_flip_gap_pct': flip_gap_pct,
                 **gamma_island,
                 'call_wall'      : walls.get('call_wall'),
                 'put_wall'       : walls.get('put_wall'),
+                'call_wall_state': walls.get('call_wall_state'),
+                'put_wall_state' : walls.get('put_wall_state'),
+                'oi_max_call_strike': walls.get('oi_max_call_strike'),
+                'oi_max_put_strike': walls.get('oi_max_put_strike'),
                 'max_pain'       : walls.get('max_pain'),
                 'pcr_oi'         : pcr_val,
                 'pcr_signal'     : pcr_signal,
@@ -7855,16 +8145,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         if _md_iv_f > 5.0:
             _md_iv_f = _md_iv_f / 100.0
         iv_ctx['atm_iv'] = round(_md_iv_f, 4)
-        # Absolute-level proxy iv_rank (same logic as IV-FIX-001 fallback)
-        if iv_ctx.get('iv_rank') is None:
-            if   _md_iv_f < 0.25: iv_ctx['iv_rank'] = 20; iv_ctx['iv_percentile'] = 0.20
-            elif _md_iv_f < 0.40: iv_ctx['iv_rank'] = 40; iv_ctx['iv_percentile'] = 0.40
-            elif _md_iv_f < 0.60: iv_ctx['iv_rank'] = 60; iv_ctx['iv_percentile'] = 0.60
-            else:                  iv_ctx['iv_rank'] = 80; iv_ctx['iv_percentile'] = 0.80
-            iv_ctx['ivp_label'] = (
-                'CHEAP'     if iv_ctx['iv_percentile'] <= 0.30 else
-                'EXPENSIVE' if iv_ctx['iv_percentile'] >  0.70 else 'FAIR'
-            )
+        # Fix 2b: an absolute-level bucket is not a percentile; kept under its own name only.
+        if iv_ctx.get('iv_level_bucket_pct') is None:
+            iv_ctx['iv_level_bucket_pct'] = (0.20 if _md_iv_f < 0.25 else 0.40 if _md_iv_f < 0.40
+                                             else 0.60 if _md_iv_f < 0.60 else 0.80)
 
     # ── IV-ENGINE-CONNECT: Wire iv_engine.py into pipeline ──────────────────
     # iv_engine.py is deployed to root but was never called. Wire it here after
@@ -7887,15 +8171,15 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             contract['iv_engine_expected_move_$'] = _iv_result.expected_move_usd
             contract['iv_engine_expected_move_%'] = _iv_result.expected_move_pct
             contract['iv_engine_data_quality']    = _iv_result.data_quality
-            # If iv_engine computed VRP, use it to refine ivp_label
-            if _iv_result.vrp_signal == 'BUY_EDGE' and iv_ctx.get('ivp_label') == 'FAIR':
-                iv_ctx['ivp_label'] = 'CHEAP'
-            elif _iv_result.vrp_signal == 'SELL_EDGE' and iv_ctx.get('ivp_label') == 'FAIR':
-                iv_ctx['ivp_label'] = 'EXPENSIVE'
+            # Fix 2b: the VRP signal is published on the contract; it never rewrites ivp_label.
     except ImportError:
         pass  # iv_engine.py not found — non-fatal, pipeline continues
     except Exception:
         pass  # iv_engine call failed — non-fatal
+
+    # Fix 2b: publish the governed IV fields once, now that every candidate (IV history,
+    # realised-vol proxy, MarketData contract ivRank) is known for this ticker and contract.
+    resolve_iv_ownership(iv_ctx, contract)
 
     if was_synthetic and not contract.get('mark_synthetic', True):
         print(f"  [{ticker}] ✅ Real quote obtained — BSM synthetic replaced "
@@ -8231,6 +8515,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'iv_direction_pct'        : iv_ctx.get('iv_direction_pct'),
         # F2 (19 Sep 2026): what the IV percentile measured, and the IV-vs-realised range kept by its own name.
         'iv_percentile_source'    : iv_ctx.get('iv_percentile_source'),
+        'ivp_source'              : iv_ctx.get('ivp_source'),
+        'iv_rank_definition'      : iv_ctx.get('iv_rank_definition'),
+        'iv_rank_window_sessions' : iv_ctx.get('iv_rank_window_sessions'),
+        'ivp_suppressed_sources'  : iv_ctx.get('ivp_suppressed_sources'),
         'iv_history_samples'      : iv_ctx.get('iv_history_samples'),
         'iv_vs_rv_range_252d'     : iv_ctx.get('iv_vs_rv_range_252d'),
         'iv_vs_rv_range_30d'      : iv_ctx.get('iv_vs_rv_range_30d'),
@@ -8249,6 +8537,9 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
         # GEX + structure
         'gamma_flip'              : gamma_flip,
+        'gamma_flip_state'        : gamma_flip_meta.get('gamma_flip_state'),
+        'gamma_flip_method'       : gamma_flip_meta.get('gamma_flip_method'),
+        'gamma_flip_legacy_first_sign_change': gamma_flip_meta.get('gamma_flip_legacy_first_sign_change'),
         'gamma_flip_conf'         : round(flip_conf, 3),
         'gamma_flip_gap_pct'      : flip_gap_pct,
         'gamma_island_on_path'    : gamma_island.get('gamma_island_on_path'),
@@ -8262,6 +8553,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'gamma_island_note'       : gamma_island.get('gamma_island_note'),
         'call_wall'               : walls.get('call_wall'),
         'put_wall'                : walls.get('put_wall'),
+        'call_wall_state'         : walls.get('call_wall_state'),
+        'put_wall_state'          : walls.get('put_wall_state'),
+        'oi_max_call_strike'      : walls.get('oi_max_call_strike'),
+        'oi_max_put_strike'       : walls.get('oi_max_put_strike'),
         'max_pain'                : walls.get('max_pain'),
         'pcr_oi'                  : pcr_val,
         'pcr_signal'              : pcr_signal,
@@ -8356,6 +8651,9 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'breakeven_price'         : econ.get('breakeven_price'),
         'breakeven_pct'           : econ.get('breakeven_pct'),
         'rr_options'              : econ.get('rr_options'),
+        'rr_options_state'        : econ.get('rr_options_state'),
+        'rr_options_tradeability' : econ.get('rr_options_tradeability'),
+        'rr_options_spread_fraction': econ.get('rr_options_spread_fraction'),
         'rr_premium_expected'     : econ.get('rr_premium_expected'),
         'max_convex_r_multiple'   : econ.get('max_convex_r_multiple'),
         'ev_structural'           : econ.get('ev_structural'),
@@ -9827,12 +10125,15 @@ def run_options_layer(
         'spread_source','options_spread_source','contract_spread_source','contract_delta',
         'contract_iv','contract_volume',
         'contract_theta','contract_vega','iv_rank','iv_percentile',
-        'ivp_label','gamma_flip','gamma_island_on_path','gamma_island_label',
+        'ivp_label','gamma_flip','gamma_flip_state','gamma_flip_method',
+        'gamma_flip_legacy_first_sign_change','gamma_island_on_path','gamma_island_label',
         'gamma_island_level','gamma_island_distance_pct',
         'gamma_island_strength_share','gamma_island_isolation_ratio',
         'gamma_island_gex_sign','gamma_island_source','gamma_island_note',
-        'call_wall','put_wall','pcr_signal',
-        'target_in_play','breakeven_pct','rr_options','ev_adjusted',
+        'call_wall','put_wall','call_wall_state','put_wall_state',
+        'oi_max_call_strike','oi_max_put_strike','pcr_signal',
+        'target_in_play','breakeven_pct','rr_options','rr_options_state',
+        'rr_options_tradeability','rr_options_spread_fraction','ev_adjusted',
         'theta_drag_pct','options_score','stand_down_reason',
         'options_session_exception','options_session_exception_reason',
         'options_session_expected','options_session_actual',
@@ -9926,11 +10227,13 @@ def run_options_layer(
         # iv_engine fields
         'hv_30d','atm_iv','iv_vs_hv','iv_direction','iv_regime',
         'iv_percentile_source','iv_history_samples','iv_vs_rv_range_252d','iv_vs_rv_range_30d',
+        'ivp_source','iv_rank_definition','iv_rank_window_sessions','ivp_suppressed_sources',
         # PIPELINE-01 (2026-05-03): Single source of truth — discovery structural fields
         # must survive the full pipeline to EOD/morning validation. These were written
         # by discovery but dropped here, causing rr_underlying=0.00 in morning manifest
         # and actuarial state misses (missing macro_regime, atr_pct, adx_14).
         'rr_underlying','rr_confidence','rr_source','rr',
+        'rr_options_state','rr_options_tradeability','rr_options_spread_fraction',
         'macro_regime','active_regime',
         'atr_pct','adx_14','atr_percentile_rank',
         'catalyst_proximity',

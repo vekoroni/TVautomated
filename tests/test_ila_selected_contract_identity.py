@@ -31,6 +31,9 @@ from test_ila_release_coverage_gate import OCC, RUN_ID, _base_signal  # noqa: E4
 MANIFEST = {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []}
 GOLDEN = ROOT / "tests" / "fixtures" / "ila003_prefix_book_rows.json"
 NEW_FIELDS = {"selected_contract_symbol", "selected_contract_identity_state"}
+# Additive book fields published after the ILA-003 golden was captured (Fix Spec Fix 2, 24 Sep 2026).
+LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
+                         "call_wall_state", "put_wall_state", "gamma_flip_state"}
 
 
 def _publish(tmp_path, *signals):
@@ -181,11 +184,13 @@ def test_fix_adds_only_the_two_identity_fields(tmp_path):
         _base_signal(ticker="BBB", thesis_id="TH-2", trade_idea_id="TI-2"),
     )["rows"]
     volatile = set(golden["volatile_keys"])
-    assert set(rows[0]) - set(golden["rows"][0]) == NEW_FIELDS
+    assert set(rows[0]) - set(golden["rows"][0]) == NEW_FIELDS | LATER_ADDITIVE_FIELDS
     for published, expected in zip(rows, golden["rows"]):
-        actual = {k: v for k, v in published.items() if k not in volatile and k not in NEW_FIELDS}
+        actual = {k: v for k, v in published.items()
+                  if k not in volatile and k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS}
         # Provenance gains exactly the two new labels and nothing else.
-        actual_provenance = {k: v for k, v in _provenance(published).items() if k not in NEW_FIELDS}
+        actual_provenance = {k: v for k, v in _provenance(published).items()
+                             if k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS}
         expected_provenance = json.loads(expected.pop("field_provenance_json", "{}"))
         actual.pop("field_provenance_json", None)
         assert actual_provenance == expected_provenance

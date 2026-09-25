@@ -2005,17 +2005,9 @@ def _load_run(run_id, force_reload=False):
             if k == "ticker": continue
             clean_key = k[3:] if k.startswith("mv_") else k
             sig.setdefault(f"mv__{clean_key}", v)
-        # FIX-IVP: overwrite IV fields from live morning data
-        _live_iv = mv.get("live_iv") or mv.get("mv_live_iv")
-        if _live_iv and str(_live_iv) not in ("","None","nan","0","0.0"):
-            try:
-                _iv_f = float(_live_iv)
-                _iv_pct = _iv_f * 100 if _iv_f < 1 else _iv_f
-                sig["opt__iv_rank"]   = round(_iv_pct, 1)
-                sig["opt__ivp_label"] = "CHEAP" if _iv_pct < 20 else "FAIR" if _iv_pct < 50 else "RICH"
-                sig["iv_rank"]        = round(_iv_pct, 1)
-                sig["ivp_label"]      = sig["opt__ivp_label"]
-            except: pass
+        # Fix 2 (24 Sep 2026): the Lab is a reader. The Morning live IV level stays visible
+        # as mv__live_iv; it is not a rank or a percentile and never overwrites the governed
+        # iv_rank / ivp_label published by the options owner.
         # TCE field aliases
         for bare_key, (pfx_key, raw_key) in {
             "tce_trigger_state":  ("mv__tce_trigger_state",  "mv_tce_trigger_state"),
@@ -2436,7 +2428,8 @@ _LAB_COMPACT_BASE_FIELDS = {
     "ev2_ev_conf_adj", "ev2_quality_score", "fd_ev_used", "win_rate", "win_rate_20d",
     "win_rate_source", "composite", "current_price", "signal_price", "spot_price",
     "underlying_price", "live_vwap", "strike", "premium", "premium_mid", "premium_label",
-    "premium_is_synthetic", "ivp", "ivp_label", "qomega_gate", "qomega_gate_reason",
+    "premium_is_synthetic", "ivp", "ivp_label", "iv_rank", "iv_percentile", "ivp_source",
+    "iv_rank_definition", "iv_rank_window_sessions", "qomega_gate", "qomega_gate_reason",
     "tce_entry_type", "tce_trigger_reason", "tce_trigger_score", "tce_trigger_state",
     "physics_state_id", "hidden_state_label", "state_transition_label", "phase_transition_probability",
     "precor_intent", "sector", "sector_short", "gics_sector", "sector_name", "sector_etf", "sector_proxy", "industry", "macro_regime", "macro_regime_label",
@@ -2515,6 +2508,10 @@ def _governed_ui_projection(sig):
         "opt__options_score": ("options_score",),
         "opt__iv_rank": ("iv_rank",),
         "opt__ivp_label": ("ivp_label",),
+        "opt__iv_percentile": ("iv_percentile",),
+        "opt__ivp_source": ("ivp_source",),
+        "opt__iv_rank_definition": ("iv_rank_definition",),
+        "opt__iv_rank_window_sessions": ("iv_rank_window_sessions",),
         "opt__atm_iv": ("atm_iv",),
         "opt__hv_30d": ("hv_30d",),
         "opt__iv_vs_hv": ("iv_vs_hv",),

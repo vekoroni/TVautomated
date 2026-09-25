@@ -778,6 +778,46 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         except Exception as exc:
             return jsonify({"error": f"controlled question failure: {type(exc).__name__}: {exc}"}), 502
 
+    @app.route("/api/interpreter/saved_reports", methods=["POST"])
+    def interpreter_saved_reports():
+        """List existing completed JSON reports; never dispatch a provider request."""
+        if not local_request_allowed():
+            return jsonify({"error": "local Lab origin required"}), 403
+        body = request.get_json(silent=True) or {}
+        run_id = str(body.get("run_id") or "").strip()
+        tickers = body.get("tickers")
+        if (not re.fullmatch(r"\d{8}_\d{6}", run_id)
+                or not isinstance(tickers, list) or not 1 <= len(tickers) <= 5
+                or any(not isinstance(t, str) or not _SAFE_NAME.fullmatch(t) for t in tickers)
+                or len(set(tickers)) != len(tickers)):
+            return jsonify({"error": "valid run and one to five distinct tickers required"}), 400
+        reports = []
+        for ticker in tickers:
+            folder = _report_root(base / run_id, ticker)
+            if not folder.is_dir():
+                continue
+            # Bound the listing without touching error receipts or the JSON files.
+            paths = sorted(folder.glob("*.json"), key=lambda path: path.stat().st_mtime,
+                           reverse=True)[:50]
+            for path in paths:
+                if not _SAFE_SHA.fullmatch(path.stem):
+                    continue
+                try:
+                    value = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    continue
+                if (not isinstance(value, dict) or value.get("status") != "COMPLETE"
+                        or value.get("run_id") != run_id or value.get("ticker") != ticker
+                        or value.get("report_id") != path.stem):
+                    continue
+                reports.append({
+                    "run_id": run_id, "ticker": ticker, "report_id": path.stem,
+                    "phase": value.get("phase"), "mode": value.get("mode", "STANDARD"),
+                    "model_id": value.get("model_id"),
+                    "provider_retrieved_at_utc": value.get("provider_retrieved_at_utc"),
+                })
+        return jsonify({"run_id": run_id, "reports": reports, "authority": "ADVISORY_ONLY"})
+
     @app.route("/api/interpreter/report/<run_id>/<ticker>/<report_id>")
     def interpreter_get_report(run_id, ticker, report_id):
         if not local_request_allowed():

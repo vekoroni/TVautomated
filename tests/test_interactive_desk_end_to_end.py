@@ -111,6 +111,59 @@ def test_preview_cost_and_paid_question_require_confirmation(tmp_path):
     assert provider.questions == []
 
 
+def test_saved_reports_can_be_listed_and_reopened_without_provider_call(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    root = _fixture(tmp_path)
+    app = Flask(__name__)
+    provider = FakeProvider()
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    assert client.post("/api/interpreter/saved_reports", json={
+        "run_id": RUN, "tickers": ["AAA"],
+    }).json["reports"] == []
+
+    report = client.post("/api/interpreter/reports", json={
+        "run_id": RUN, "tickers": ["AAA"], "confirmed": True,
+    }).json["results"][0]
+    assert report["status"] == "COMPLETE"
+    folder = root / "interpreter" / "interactive_desk" / "AAA"
+    (folder / ("b" * 64 + ".error.json")).write_text("{}", encoding="utf-8")
+    (folder / ("c" * 64 + ".json")).write_text(json.dumps({
+        "status": "COMPLETE", "run_id": "other", "ticker": "AAA",
+        "report_id": "c" * 64,
+    }), encoding="utf-8")
+    saved = client.post("/api/interpreter/saved_reports", json={
+        "run_id": RUN, "tickers": ["AAA", "BBB"],
+    })
+    assert saved.status_code == 200
+    assert saved.json["reports"] == [{
+        "run_id": RUN, "ticker": "AAA", "report_id": report["report_id"],
+        "phase": report["phase"], "mode": report.get("mode", "STANDARD"),
+        "model_id": report["model_id"],
+        "provider_retrieved_at_utc": report["provider_retrieved_at_utc"],
+    }]
+    reopened = client.get(f"/api/interpreter/report/{RUN}/AAA/{report['report_id']}")
+    assert reopened.status_code == 200
+    assert reopened.json == report
+    assert len(provider.reports) == 1
+
+
+def test_saved_report_listing_rejects_unsafe_or_oversized_selection(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    _fixture(tmp_path)
+    app = Flask(__name__)
+    install_interpreter_desk(app, tmp_path, provider=FakeProvider())
+    client = app.test_client()
+    for body in (
+        {"run_id": "../other", "tickers": ["AAA"]},
+        {"run_id": RUN, "tickers": ["../AAA"]},
+        {"run_id": RUN, "tickers": ["AAA"] * 6},
+    ):
+        assert client.post("/api/interpreter/saved_reports", json=body).status_code == 400
+
+
 def test_large_lab_row_is_bounded_without_discarding_governed_facts():
     from pipeline_interpreter.interactive_desk import compile_evidence_digest
 

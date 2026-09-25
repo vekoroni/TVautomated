@@ -1473,6 +1473,7 @@ _DIRECTION_DEPENDENT_CONTRACT_FIELDS = (
     "contract_mid", "contract_spread_pct", "contract_delta", "contract_gamma",
     "contract_theta", "contract_vega", "contract_iv", "contract_oi",
     "contract_volume", "rr_options", "rr_premium_expected", "option_gain_at_target",
+    "rr_options_state", "rr_options_tradeability", "rr_options_spread_fraction",
     "ev_predicted", "ev3_evaluation_id",
 )
 
@@ -2204,7 +2205,8 @@ def build_candidate_manifest(
     van_map: dict[str, dict] = {}
     VAN_MERGE_COLS = [
         "rr_underlying", "rr_confidence", "rr_source", "rr", "rr_flag",
-        "rr_options", "atr_pct", "vol_regime", "structure_quality",
+        "rr_options", "rr_options_state", "rr_options_tradeability", "rr_options_spread_fraction",
+        "atr_pct", "vol_regime", "structure_quality",
         "macro_regime", "layer2__vol_regime", "layer2__structure_quality",
         "layer2__trend_maturity",
         *MACRO_QUANT_CSV_FIELDS,

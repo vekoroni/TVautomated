@@ -20,6 +20,17 @@ def test_lab_discloses_unresolved_interpreter_attempts() -> None:
     assert "require review. No automatic retry." in control
 
 
+def test_lab_can_reopen_saved_interpreter_json_without_launching_provider() -> None:
+    from pathlib import Path
+
+    control = (Path(__file__).resolve().parents[1] / "intelligence-lab" / "static"
+               / "interpreter-desk-controls.js").read_text(encoding="utf-8")
+    assert "View saved reports" in control
+    assert "interpreterRequest('saved_reports'" in control
+    assert "interpreterRequest(path)" in control
+    assert "showInterpreterReport(report)" in control
+
+
 def _rows(count: int = 6) -> list[dict[str, str]]:
     return [
         {

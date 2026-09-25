@@ -260,6 +260,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
   <div class="loader-msg" id="loader-msg">Connecting to pipeline...</div>
   <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
   <div class="loader-err" id="loader-err"></div>
+  <button id="loader-dismiss" onclick="dismissLoader()" style="display:none;font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--amber);border-radius:2px;color:var(--amber);cursor:pointer">Continue with the run already displayed</button>
 </div>
 
 <!-- HEADER -->
@@ -353,6 +354,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <span id="export-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3)"></span>
   </div>
   <div id="interpreter-status" role="status" style="padding:8px 16px;white-space:pre-wrap"></div>
+  <div id="refresh-error" role="alert" style="display:none;padding:6px 16px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red)"></div>
   <div id="interpreter-panel" style="display:none;max-height:480px;overflow:auto;padding:12px 16px;border:1px solid var(--border);margin:0 10px 10px;background:var(--bg2)"></div>
   <div class="sig-list-zone">
     <div class="sig-list-head">
@@ -680,6 +682,19 @@ function showLoaderError(msg) {
   document.getElementById('loader-fill').style.width = '100%';
   document.getElementById('loader-fill').style.background = 'var(--red)';
   document.getElementById('loader-err').textContent = msg;
+  // 24 Sep 2026: the loader is a full-screen overlay (z-index 9999). Left up after a failed
+  // refresh it swallowed every click on the page. It is now dismissable, and when a run is
+  // already displayed it steps aside on its own; the failure stays visible as a banner.
+  const dismiss = document.getElementById('loader-dismiss');
+  if (dismiss) dismiss.style.display = 'inline-block';
+  if (typeof RUN_DATA !== 'undefined' && RUN_DATA && RUN_DATA.run_id) {
+    const banner = document.getElementById('refresh-error');
+    if (banner) { banner.textContent = `${msg} — run ${RUN_DATA.run_id} is still displayed; refresh again later.`; banner.style.display = 'block'; }
+    setTimeout(() => document.getElementById('loader').classList.add('hidden'), 4000);
+  }
+}
+function dismissLoader() {
+  document.getElementById('loader').classList.add('hidden');
 }
 
 function populateGovernedDisplayFields(signal) {
@@ -732,6 +747,8 @@ async function loadRun(runId) {
   SIGNALS  = ALL_SIGS.filter(isActionSignal);
   DISCOVERY = data.discovery || [];
   LAB_PUBLICATION_VERSION = acceptedVersion;
+  const refreshBanner = document.getElementById('refresh-error');
+  if (refreshBanner) refreshBanner.style.display = 'none';
 }
 
 async function refreshIfLabPublicationChanged() {
@@ -1145,15 +1162,15 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Premium</span><span class="mr-v">${getPremiumDisplay(s)}</span></div>
     <div class="mrow"><span class="mr-k">Frozen option breakeven</span><span class="mr-v a">$${opt('breakeven_price')} (+${opt('breakeven_pct')}%)</span></div>
     <div class="mrow"><span class="mr-k">Selected-quote expiry breakeven</span><span class="mr-v a">${getSelectedQuoteAskBreakeven(s) === null ? 'UNAVAILABLE' : '$'+getSelectedQuoteAskBreakeven(s).toFixed(2)} · ${htmlSafe(getQuoteFreshnessContext(s).timestamp)}</span></div>
-    <div class="mrow"><span class="mr-k">IVP</span><span class="mr-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</span></div>
+    <div class="mrow" title="${attrSafe(getIvSourceTitle(s))}"><span class="mr-k">IV Rank · IV Percentile</span><span class="mr-v g">${htmlSafe(getIvRankDisplay(s))} · ${htmlSafe(getIvPercentileDisplay(s))} · ${htmlSafe(getIvpLabelDisplay(s))}</span></div>
     <div class="mrow"><span class="mr-k">Monetisability</span><span class="mr-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
     <div class="mrow"><span class="mr-k">Conservative Target Profit</span><span class="mr-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</span></div>
     <div class="mrow"><span class="mr-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="mr-v ${evDisplayClass(getEv(s))}">${formatEv(getEv(s))}</span></div>
     <div class="mrow"><span class="mr-k">Theta Drag</span><span class="mr-v g">${opt('theta_drag_pct')}%</span></div>
     <div class="mrow"><span class="mr-k">Size</span><span class="mr-v a">${displaySize(s)}</span></div>
     <div class="mrow"><span class="mr-k">Vetoes</span><span class="mr-v g">${s.sb_vetoes_count||0} · ${s.sb_vetoes||'NONE'}</span></div>
-    <div class="mrow"><span class="mr-k">Call Wall</span><span class="mr-v c">$${opt('call_wall')}</span></div>
-    <div class="mrow"><span class="mr-k">Gamma Flip</span><span class="mr-v a">$${parseFloat(opt('gamma_flip')||0).toFixed(2)}</span></div>
+    <div class="mrow"><span class="mr-k">Call Wall (above spot)</span><span class="mr-v c">${htmlSafe(getWallDisplay(s, 'call'))}</span></div>
+    <div class="mrow"><span class="mr-k">Gamma Flip</span><span class="mr-v a">${htmlSafe(getGammaFlipDisplay(s))}</span></div>
     <div class="mrow"><span class="mr-k">Execution Readiness</span><span class="mr-v sm">${s.sb_ladder_summary||'—'}</span></div>
     <div class="mrow"><span class="mr-k">Priority Score</span><span class="mr-v ${parseFloat(s.priority_score||0)>=60?'g':parseFloat(s.priority_score||0)>=40?'a':'r'}">${parseFloat(s.priority_score||0).toFixed(1)} / 100 (Rank #${s.priority_rank||'—'})</span></div>
     <div class="mrow"><span class="mr-k">EV3 State</span><span class="mr-v a">${s.ev3_absolute_state||s.ev3_status||s.ev3_data_state||'NOT EVALUATED'}</span></div>
@@ -1168,6 +1185,47 @@ function execCardHTML(s) {
 
 // ═══ SIGNAL TABLE ════════════════════════════════════════════════════════
 function getOpt(s, k) { return s[`opt__${k}`] || s[k] || ''; }
+// Fix 2 (24 Sep 2026): IV Rank (range statistic) and IV Percentile are two governed numbers
+// published by the options owner with their source. The page displays them; it never derives
+// a label from a number or substitutes the Morning live IV level for either.
+function getIvRankDisplay(s) {
+  const v = getOpt(s, 'iv_rank');
+  if (v === '' || v === null || v === undefined) return '—';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return getOpt(s, 'iv_rank_definition') ? n.toFixed(1) : `${n.toFixed(1)} (definition not published)`;
+}
+function getIvPercentileDisplay(s) {
+  const v = getOpt(s, 'iv_percentile');
+  if (v === '' || v === null || v === undefined) return '—';
+  const n = Number(v);
+  return Number.isFinite(n) ? `${(n * 100).toFixed(0)}%` : '—';
+}
+function getIvpLabelDisplay(s) {
+  const raw = String(getOpt(s, 'ivp_label') || '').trim().toUpperCase();
+  return (raw && !['UNKNOWN', 'N/A', 'NONE'].includes(raw)) ? raw : '—';
+}
+// Fix 3 (24 Sep 2026): walls are side-constrained by spot; an absent wall shows its reason.
+function getWallDisplay(s, side) {
+  const raw = getOpt(s, `${side}_wall`);
+  const n = Number(raw);
+  if (raw !== '' && raw !== null && raw !== undefined && Number.isFinite(n)) return `$${n.toFixed(2)}`;
+  const state = String(getOpt(s, `${side}_wall_state`) || '').trim();
+  return state ? state.replace(/_/g, ' ') : '—';
+}
+// Fix 4 (24 Sep 2026): the gamma flip is a re-priced crossing near spot or nothing; absence shows its reason.
+function getGammaFlipDisplay(s) {
+  const raw = getOpt(s, 'gamma_flip');
+  const n = Number(raw);
+  if (raw !== '' && raw !== null && raw !== undefined && Number.isFinite(n)) return `$${n.toFixed(2)}`;
+  const state = String(getOpt(s, 'gamma_flip_state') || '').trim();
+  return state ? state.replace(/_/g, ' ') : '—';
+}
+function getIvSourceTitle(s) {
+  const src = getOpt(s, 'ivp_source') || 'SOURCE NOT PUBLISHED';
+  const win = getOpt(s, 'iv_rank_window_sessions');
+  return `IV source: ${src}${win ? ` · window ${win} sessions` : ''} · rank = (IV − low) / (high − low); percentile = share of history below today`;
+}
 
 function getMonetisabilityState(s) {
   return cleanCategory(firstSignalValue(s, ['monetisability_state'])) || 'DATA_MISSING';
@@ -2201,7 +2259,7 @@ const sortKeys = [
   s => triggerEvidenceSortValue(s),                 // 12 Trigger Evidence
   s => getMonetisabilityProfitPct(s),               // 13 conservative target profit
   s => getEv(s),                                    // 14 EV
-  s => parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||0),  // 15 IVP
+  s => parseFloat(getOpt(s,'iv_rank')||0),          // 15 IV Rank (range)
   s => parseFloat(s['garch__l3_iv_tailwind_score']||s.garch_iv_tailwind_score||0), // 16 Vol State
   s => getOpt(s,'hold_label'),                      // 17 Hold
   s => s['wbs__wbs_grade']||'',                      // 18 WBS
@@ -2257,7 +2315,7 @@ function buildTable() {
   const tableHtml = data.map(s => {
     const monProfit = getMonetisabilityProfitPct(s);
     const ev = getEv(s);
-    const ivr = parseFloat(getOpt(s,'iv_rank')||s['mv__iv_pct']||s.ivp||0);
+    const ivr = parseFloat(getOpt(s,'iv_rank')||0);
     const evC = !Number.isFinite(ev)?'':ev>=0?'ev-p':'ev-n';
     const dir = (s.final_direction||s.direction||s.canonical_direction||'—').toUpperCase();
     const dirBadge = directionResolutionBadge(s);
@@ -2272,9 +2330,7 @@ function buildTable() {
     const selClass = selectedTicker===s.ticker?'selected-row':'';
     const checks = ['sb_c_compression','sb_c_energy','sb_c_underpriced_vol','sb_c_gamma_proximity','sb_c_runway'];
     const dots = checks.map(k => `<div class="cdot ${s[k]==='Y'?'on':'off'}"></div>`).join('');
-    const _ivpRaw = (getOpt(s,'ivp_label')||s['mv__ivp_label']||s['ivp_label']||'').trim();
-    const ivpLbl = (_ivpRaw && !['UNKNOWN','N/A','NONE'].includes(_ivpRaw.toUpperCase()))
-      ? _ivpRaw : (ivr >= 1 ? (ivr < 20 ? 'CHEAP' : ivr < 50 ? 'FAIR' : 'RICH') : '—');
+    const ivpLbl = getIvpLabelDisplay(s);
     const ivpC = ivpLbl==='CHEAP'?'style="color:var(--green)"':ivpLbl==='EXPENSIVE'?'style="color:var(--red)"':'';
 
     // Q-OMEGA vol state from GARCH Layer 3
@@ -2340,7 +2396,7 @@ function buildTable() {
       <div class="sc" title="${attrSafe([trgEvidence, firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])].filter(Boolean).join(' · '))}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
       <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
       <div class="sc ${evC}">${formatEv(ev)}</div>
-      <div class="sc" ${ivpC}>${ivpLbl}</div>
+      <div class="sc" ${ivpC} title="${attrSafe(getIvSourceTitle(s))}">${ivpLbl}<br><span style="font-size:8px;color:var(--text3)">R ${htmlSafe(getIvRankDisplay(s))} · P ${htmlSafe(getIvPercentileDisplay(s))}</span></div>
       <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">⚡</span>':''}` : '<span style="color:var(--text3)">—</span>'}</div>
       <div class="sc" style="font-size:10px;color:var(--cyan)">${hold}</div>
       <div class="sc">${(() => {
@@ -2480,8 +2536,10 @@ function buildExportColumns() {
     ['EV_Decision',     s => s.ev2_decision_hint || ''],
     ['EV_Quality',      s => s.ev2_quality_score || ''],
     ['Win_Rate_20d',    s => s.win_rate_20d || ''],
-    ['IVP',             s => getOpt(s,'iv_rank') || s.ivp || ''],
+    ['IV_Rank',         s => getOpt(s,'iv_rank') || ''],
+    ['IV_Percentile',   s => getOpt(s,'iv_percentile') || ''],
     ['IVP_Label',       s => getOpt(s,'ivp_label') || ''],
+    ['IV_Source',       s => getOpt(s,'ivp_source') || ''],
     ['Priority_Rank',   s => s.priority_rank ?? ''],
     ['Lab_Action_Bucket_Label', s => s.lab_action_bucket_label || ''],
     ['Priority_Score',  s => parseFloat(s.priority_score||0).toFixed(1)],
@@ -2764,9 +2822,9 @@ function openModal(ticker) {
     </div>
     <div class="m-sec-hdr">GEX Levels</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">Call Wall (Ceiling)</div><div class="mf-v c">$${opt('call_wall')}</div></div>
-      <div class="m-field"><div class="mf-k">Put Wall (Floor)</div><div class="mf-v r">$${opt('put_wall')}</div></div>
-      <div class="m-field"><div class="mf-k">Gamma Flip</div><div class="mf-v a">${formatObservedNumber(opt('gamma_flip'), 2)==='—'?'—':'$'+formatObservedNumber(opt('gamma_flip'), 2)}</div></div>
+      <div class="m-field"><div class="mf-k">Call Wall (Ceiling, above spot)</div><div class="mf-v c">${htmlSafe(getWallDisplay(s, 'call'))}</div></div>
+      <div class="m-field"><div class="mf-k">Put Wall (Floor, below spot)</div><div class="mf-v r">${htmlSafe(getWallDisplay(s, 'put'))}</div></div>
+      <div class="m-field"><div class="mf-k">Gamma Flip (re-priced crossing near spot)</div><div class="mf-v a">${htmlSafe(getGammaFlipDisplay(s))}</div></div>
       <div class="m-field"><div class="mf-k">PCR Signal (OI Positioning — Not Flow)</div><div class="mf-v">${opt('pcr_signal')}${opt('pcr_direction_conflict_reason')!=='—'?`<br><span class="dim">${htmlSafe(opt('pcr_direction_conflict_reason'))}</span>`:''}</div></div>
       <div class="m-field"><div class="mf-k">Target In Play</div><div class="mf-v ${opt('target_in_play')==='True'?'g':'r'}">${opt('target_in_play')||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Max Pain</div><div class="mf-v">$${opt('max_pain')||'—'}</div></div>
@@ -2823,7 +2881,8 @@ function openModal(ticker) {
     </div>
     <div class="m-sec-hdr">Volatility</div>
     <div class="m-grid">
-      <div class="m-field"><div class="mf-k">IVP / Label</div><div class="mf-v g">${opt('iv_rank')}% · ${opt('ivp_label')}</div></div>
+      <div class="m-field"><div class="mf-k">IV Rank (range)</div><div class="mf-v g">${htmlSafe(getIvRankDisplay(s))}<br><span class="dim">${htmlSafe(getIvSourceTitle(s))}</span></div></div>
+      <div class="m-field"><div class="mf-k">IV Percentile / Label</div><div class="mf-v g">${htmlSafe(getIvPercentileDisplay(s))} · ${htmlSafe(getIvpLabelDisplay(s))}</div></div>
       <div class="m-field"><div class="mf-k">ATM IV</div><div class="mf-v">${formatObservedFractionPercent(opt('atm_iv'), 1)}</div></div>
       <div class="m-field"><div class="mf-k">HV 30d</div><div class="mf-v">${formatObservedFractionPercent(opt('hv_30d'), 1)}</div></div>
       <div class="m-field"><div class="mf-k">IV vs HV</div><div class="mf-v">${opt('iv_vs_hv')}</div></div>
@@ -3316,8 +3375,8 @@ function buildArmedList() {
     const evC = evDisplayColor(ev);
     const watch = s.requires_live_validation ? 'LIVE CHECK' : (s.execution_lock_reason || (rr>=2&&ev>0 ? 'WATCH' : parseInt(s.sb_vetoes_count||0)>0 ? 'VETOED' : 'MONITOR'));
     const watchColor = s.requires_live_validation ? 'var(--amber)' : rr>=2&&ev>0 ? 'var(--green)' : parseInt(s.sb_vetoes_count||0)>0 ? 'var(--amber)' : 'var(--text3)';
-    const ivpLbl = (opt(s,'ivp_label')||s['mv__ivp_label']||'').replace(/unknown|n\/a|none/i,'').trim() || '—';
-    const ivr = opt(s,'iv_rank') || s['mv__iv_pct'] || 0;
+    const ivpLbl = getIvpLabelDisplay(s);
+    const ivr = getIvRankDisplay(s);
     const mvState = s.mv_live_validation_state || s.mv__live_validation_state || 'PENDING';
     const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : '—');
     const mvScore = s.mv_validation_score || s.mv__validation_score || '—';
@@ -3337,7 +3396,7 @@ function buildArmedList() {
         <div class="aistat"><span class="ais-k">Rank</span><span class="ais-v ${parseInt(s.priority_rank||9999)<=10?'g':'a'}">#${s.priority_rank||'—'} · ${parseFloat(s.priority_score||0).toFixed(0)}</span></div>
         <div class="aistat"><span class="ais-k">Monetisable</span><span class="ais-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
         <div class="aistat"><span class="ais-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="ais-v" style="color:${evC}">${formatEv(ev)}</span></div>
-        <div class="aistat"><span class="ais-k">IVP</span><span class="ais-v g">${ivpLbl} (${parseFloat(ivr||0).toFixed(0)}%)</span></div>
+        <div class="aistat" title="${attrSafe(getIvSourceTitle(s))}"><span class="ais-k">IV</span><span class="ais-v g">${htmlSafe(ivpLbl)} · rank ${htmlSafe(ivr)} · pct ${htmlSafe(getIvPercentileDisplay(s))}</span></div>
         <div class="aistat"><span class="ais-k">Strike</span><span class="ais-v c">$${opt(s,'contract_strike')}</span></div>
         <div class="aistat"><span class="ais-k">Target</span><span class="ais-v g">$${parseFloat(opt(s,'structural_target')||0).toFixed(2)}</span></div>
         <div class="aistat"><span class="ais-k">Hold</span><span class="ais-v c">${opt(s,'hold_label')}</span></div>
