@@ -163,6 +163,31 @@
         "config/governed_constants_v1.json",
         "config/calibration/volatility_range_calibration_v1.json"
       ]
+    },
+    {
+      "date": "2026-09-25",
+      "commits": [
+        "fd35594 (A1)",
+        "6c4a361 (C1)"
+      ],
+      "reason": "A1 adds the additive field invalidation_candidate_state to the Options Intelligence handoff and CSV (invalidation_state, invalidation_source and routing unchanged; the selector contracts/thesis_geometry.py is untouched). C1 adds scenario disclosure fields to the Lab projection (presentation only). No selection, viability, valuation or friction rule changed, so cohort 1 continues.",
+      "sha256_after": {
+        "scripts/avshunter_options_intelligence.py": "704773cc1db40725f1377ccbb17bff49fb3df2be229c8e9be5b8367de5d8e622",
+        "contracts/lab_control.py": "5d1b80c0dc266914cdd0ce69c469e057e1966ebe6ecf792aea67b074818a1c7a"
+      },
+      "frozen_rule_files_unchanged": [
+        "morning_gate.py",
+        "domain/long_option_execution.py",
+        "empirical_option_ev.py",
+        "config/governed_constants_v1.json",
+        "config/calibration/volatility_range_calibration_v1.json"
+      ],
+      "variants_appended": [
+        {
+          "date": "2026-09-25",
+          "variant": "ALG-10 forecast validation as specified (C3), 1 variant, no alternatives tried"
+        }
+      ]
     }
   ]
 }
