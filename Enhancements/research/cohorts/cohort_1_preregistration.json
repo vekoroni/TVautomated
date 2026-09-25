@@ -1,0 +1,129 @@
+{
+  "cohort_id": "COHORT_1_SHADOW_SELECTOR_20260925",
+  "registered_at_utc": "2026-09-25",
+  "registered_by": "ACK (protocol drafted by Claude Fable 5.1, frozen on ACK instruction 'carry on with F1')",
+  "status": "PRE_REGISTERED_FROZEN",
+  "authority": "MEASUREMENT_ONLY",
+  "purpose": "Forward shadow comparison of the current (score) contract selector against the value-based shadow selector, and disclosure of scenario values, without changing any production decision.",
+  "starts_with_run": "the first evening run after commit bb4cf50 (expected run id 20260926_06xxxx, US session 2026-09-25)",
+  "frozen_rule": {
+    "git_head": "bb4cf5018d565d24deaa87eebe3cccb003187393",
+    "sha256": {
+      "config/governed_constants_v1.json": "8a12cdf5bfd965ef0ab19cb8feb9d233acc27e7dfa5b29948c32086d2410b249",
+      "config/calibration/volatility_range_calibration_v1.json": "580f23c9e38375da9dd2149602107c9cdabfbdd0211ef53b12e715610f47a565",
+      "scripts/avshunter_options_intelligence.py": "8d87b6cb034f4b2634b5f238fe7ee76561c15152dff22e198883dcee6ab7daf6",
+      "morning_gate.py": "5b92f23e4ee4c3db05642e08ab5411dec82d5d2a1a52eb0e78266e84f8c2fcf0",
+      "contracts/lab_control.py": "237a1718fb64ed2245d8237b93b5fad9743f88f5ff9f529743485a2500be2560",
+      "domain/long_option_execution.py": "53b40edef149eca95496667b7d9e7f1f08f0ad4b9bd14dd10e6f42d5c485a341",
+      "empirical_option_ev.py": "c67757be0d4bb9aa7b81cffbe413213afe8943e193d70c0c98258d9111987a53"
+    },
+    "authority_states": {
+      "long_option_contract_selection.value_selection_mode": "SHADOW",
+      "volatility_budget.bias_multiplier_approved": false,
+      "empirical_path_valuation.validation_state": "SHADOW_NO_AUTHORITY"
+    },
+    "selection_rule_under_test": "value_selection_mode=SHADOW, shortlist BEST_SCORE_PER_EXPIRY, eligibility COVERS_PLANNED_HOLD, measure emp_path_r_central; forecast source L3_ON_DISK with age recorded (B1)",
+    "any_change_to_these_starts_a_new_cohort": true
+  },
+  "population": {
+    "unit": "one (run, ticker, thesis) decision record in a MORNING_VALIDATION run",
+    "inclusion": [
+      "governed direction CALL or PUT",
+      "legacy selected contract with a two-sided provider-stamped quote at the morning requote",
+      "shadow best contract recorded (contract_value_best_symbol) with contract_value_quality_flag = OK",
+      "target_price and invalidation_spot present and non-degenerate (each further than 0.25 x the hold-window vol-budget move from spot)"
+    ],
+    "pair_definition": "legacy contract vs shadow contract for the same decision record; pairs where the two symbols are identical are recorded but contribute zero difference",
+    "exclusion_is_recorded_never_silent": true
+  },
+  "logged_per_decision_record": {
+    "already_in_ledger_or_book": [
+      "run_id", "ticker", "thesis_id", "governed_direction", "final_action", "drop_reason",
+      "morning_execution_route", "lab_verdict", "selected_contract_symbol", "selected_quote_snapshot_id",
+      "target_price", "invalidation_spot", "invalidation_state", "planned_hold_sessions",
+      "execution_viability_state", "execution_viability_reason", "execution_viability_domain_reason",
+      "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
+      "contract_value_score_choice_symbol", "contract_value_best_symbol", "contract_value_best_r_central",
+      "contract_value_alternatives", "contract_value_forecast_source", "contract_value_forecast_run_id",
+      "contract_value_forecast_age_sessions", "thesis_geometry_completeness (manifest)", "book_stability (manifest)"
+    ],
+    "to_be_added_to_the_ledger_before_scoring (F1.b, code, test-first)": [
+      "legacy_contract_bid_ask_timestamp_at_morning_requote",
+      "shadow_contract_bid_ask_timestamp_at_morning_requote",
+      "scenario_values_alg04 (flat, 1sigma, reachable, structural, invalidation; LATE/BASE) with friction_assumption and validation_state=UNVALIDATED",
+      "breakeven_p_target (two-outcome lower bound) as review information",
+      "macro_overlay_alignment (ALIGNED/NEUTRAL/AGAINST) as display",
+      "variant_counter_at_decision"
+    ]
+  },
+  "outcome_scoring": {
+    "entry": "ask of the contract at the morning requote of the decision run",
+    "exit": "bid of the same contract at the earliest of: underlying TARGET_FIRST session, STOP_FIRST session, exit-policy time stop (Day 20 by the frozen D2 window), last_exit_session (expiry minus exit buffer)",
+    "exact_contract_quotes_required": true,
+    "if_the_exit_bid_is_not_captured": "the pair is UNSCORED and counted; never modelled, never filled from a later snapshot (A3 dependency)",
+    "metrics_per_pair": [
+      "net_return_on_premium (exit_bid - entry_ask) / entry_ask for legacy and shadow",
+      "paired_difference shadow - legacy",
+      "realised_spread_cost vs modelled haircut min(spread/2, 0.15)",
+      "sessions_held, exit_reason, MFE, MAE at bid marks"
+    ],
+    "underlying_outcome_recorded_regardless": "TARGET_FIRST / STOP_FIRST / TIMEOUT / AMBIGUOUS with first_touch_session (C12)"
+  },
+  "pre_registered_tests": {
+    "H1_primary": {
+      "hypothesis": "The shadow selector's contract earns a higher net return on premium than the legacy contract on the same decision.",
+      "statistic": "median paired difference (shadow - legacy) in net return on premium",
+      "interval": "95% block bootstrap by decision session (blocks = sessions), 2000 resamples, seed 20260925",
+      "pass": "lower bound of the interval > 0 and median difference > 0",
+      "minimum_sample": "the later of 60 decision sessions and 200 scored pairs, at least 40 of them with different symbols",
+      "variants_tried_for_this_test": 1
+    },
+    "H2_downside": {
+      "hypothesis": "The shadow contract does not worsen the downside.",
+      "statistic": "p10 of net return on premium, shadow vs legacy",
+      "pass": "shadow p10 >= legacy p10 - 0.05 (net return units)",
+      "minimum_sample": "as H1"
+    },
+    "H3_friction": {
+      "hypothesis": "The friction model does not understate realised round-trip cost.",
+      "statistic": "median (realised_spread_cost - modelled_haircut)",
+      "pass": "<= 0; failure re-opens friction_model_v1, it does not re-tune it inside this cohort"
+    },
+    "H4_breakeven_secondary": {
+      "hypothesis": "Rows with breakeven_p_target <= 0.40 realise a higher net return than rows above it (research only; no threshold is tuned inside the cohort).",
+      "statistic": "difference in median net return on premium between the two groups",
+      "interval": "95% block bootstrap by session",
+      "reporting_only": true
+    },
+    "H5_stability": {
+      "hypothesis": "retained_share (D3) rises after A1 lands; GEOMETRY_MISSING drops fall to zero.",
+      "reporting_only": true
+    }
+  },
+  "comparators": {
+    "matched_alternatives": [
+      "long shares of the same ticker over the same window, entry at the morning open, exit at the same session close as the option (computable from bars now)",
+      "sector ETF option of the same direction and horizon (when its quotes are captured; otherwise UNSCORED)",
+      "desk-gate list vs harness Tier A list (research only; no authority)"
+    ]
+  },
+  "multiple_testing_disclosure": {
+    "pre_cohort_exploratory_variants_tried_on_the_same_books_25_sep": 15,
+    "list": [
+      "hold convention x2 (planned 20 / horizon bucket)",
+      "vol-budget bias x4 (0.70, 0.85, 1.00, 1.15)",
+      "asymmetry thresholds x4 (spread 0.15/0.10 x reach 2/3 x p* 0.40)",
+      "exit policies x3 (Day 5/10/20)",
+      "DTE rule x1 (anticipated move)",
+      "contract re-selection x1 (grid EV)"
+    ],
+    "rule": "every further variant is appended here with a date before it is run; none is run on cohort outcomes",
+    "deflated_statistics": "reported with 15 pre-cohort variants + any appended"
+  },
+  "governance": {
+    "no_tuning_on_the_cohort": "thresholds, selection rules, friction model and calibration are frozen; a change starts COHORT_2 with its own registration",
+    "reporting": "weekly summary to ACK; independent human quant review before any authority decision (note 06 s7)",
+    "authority_decision": "only after H1-H3 pass on the forward cohort AND the historical walk-forward through the production services passes (G4)",
+    "this_file": "immutable once committed; corrections are appended as a dated amendment block, never edited in place"
+  }
+}
