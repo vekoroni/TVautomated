@@ -174,6 +174,15 @@ try:
 except Exception as interpreter_desk_mount_error:
     print(f"  WARNING Interpreter Desk advisory routes unavailable: {interpreter_desk_mount_error}")
 
+# Optional, provider-free view over an already-saved Interpreter report.
+# It neither changes Morning Gate nor the governed Lab opportunity book.
+try:
+    from pipeline_interpreter.war_view import install_war_view
+
+    install_war_view(app, RUNS_DIR, BASE_DIR)
+except Exception as war_view_mount_error:
+    print(f"  WARNING Interpreter WAR view unavailable: {war_view_mount_error}")
+
 _run_cache: dict = {}
 
 PHYSICS_FIELDS = [

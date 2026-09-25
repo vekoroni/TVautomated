@@ -140,6 +140,43 @@ function showInterpreterReport(report) {
     controls.appendChild(deepStatus);
   }
 
+  const warStatus = document.createElement('div');
+  warStatus.style.cssText = 'padding:8px;color:var(--text2)';
+  const war = interpreterText(controls, 'button', 'Generate WAR assessment');
+  war.className = 'fb';
+  war.style.marginLeft = '8px';
+  war.title = 'Use this saved Interpreter report and run-bound evidence; no model or broker call';
+  war.onclick = async () => {
+    if (INTERPRETER_BUSY) return;
+    if (!RUN_DATA || RUN_DATA.run_id !== report.run_id) {
+      warStatus.textContent = 'Displayed run changed; reopen the saved Interpreter report.';
+      return;
+    }
+    war.disabled = true;
+    warStatus.textContent = 'Assembling the saved evidence; no provider call…';
+    try {
+      const result = await interpreterRequest('war', {
+        run_id: report.run_id, ticker: report.ticker, report_id: report.report_id
+      });
+      if (!RUN_DATA || RUN_DATA.run_id !== report.run_id) {
+        warStatus.textContent = 'Displayed run changed; reopen the saved WAR assessment from its original run.';
+        return;
+      }
+      warStatus.replaceChildren();
+      interpreterText(warStatus, 'p',
+        `WAR assessment saved · option quote ${result.quote_freshness || 'unavailable'} · ` +
+        `${result.coverage_gaps.length} disclosed evidence gap(s). Advisory only.`);
+      const open = document.createElement('a');
+      open.href = result.html_url;
+      open.target = '_blank';
+      open.rel = 'noopener';
+      open.textContent = 'Open saved WAR assessment';
+      warStatus.appendChild(open);
+    } catch (error) { warStatus.textContent = error.message; }
+    finally { war.disabled = false; }
+  };
+  controls.appendChild(warStatus);
+
   card.appendChild(controls);
   panel.appendChild(card);
 }
