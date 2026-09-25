@@ -1,0 +1,57 @@
+{
+  "harness_version": "merged_5_7_8_harness_v0.1",
+  "run_id": "20260924_085940",
+  "state": "EXPLORATORY_NO_AUTHORITY",
+  "hold_source": "horizon",
+  "vol_budget_bias_sensitivity": 1.0,
+  "rate": 0.04,
+  "scope": "ALL",
+  "rows_in_scope": 1532,
+  "rows_valued": 1097,
+  "indeterminate_reasons": {
+    "HOLD_BEYOND_EXPIRY": 1,
+    "QUOTE_NOT_TWO_SIDED": 9,
+    "MISSING:strike,dte,iv,bid,ask,target": 8,
+    "MISSING:target": 41,
+    "MISSING:strike,dte,iv,bid,ask": 1,
+    "MISSING:target,invalidation": 184,
+    "MISSING:strike,dte,iv,bid,ask,target,invalidation": 1,
+    "MISSING:strike,dte,iv,bid,ask,target,invalidation,direction": 127,
+    "MISSING:strike,dte,iv,bid,ask,invalidation,direction": 63
+  },
+  "decision_grid": {
+    "NO_POSITIVE_EDGE_GRID": 1003,
+    "NET_POSITIVE_GRID": 94
+  },
+  "p_source": {
+    "layer2__adjusted_prob_target_hit": 1097
+  },
+  "friction_assumption": {
+    "CURRENT_SPREAD_PROXY_CAPPED": 714,
+    "FRICTION_OUT_OF_RANGE": 383
+  },
+  "by_direction": {
+    "PUT": 319,
+    "CALL": 778
+  },
+  "medians": {
+    "payoff_flat_base_net_return_fraction": -0.3759,
+    "payoff_favourable_1sigma_base_net_return_fraction": 0.0945,
+    "payoff_favourable_reachable_base_net_return_fraction": 0.363,
+    "payoff_favourable_structural_base_net_return_fraction": 1.0037,
+    "payoff_adverse_invalidation_base_net_return_fraction": -0.7241,
+    "ev_grid_net_return_fraction": -0.2848,
+    "p_positive_net_exit_grid": 0.3005,
+    "spread_fraction_mid": 0.1782,
+    "iv_minus_forecast_vol": 0.0203,
+    "structural_vs_reachable_gap": 0.6309
+  },
+  "ev_grid_quantiles": {
+    "p10": -0.5953,
+    "p50": -0.2848,
+    "p90": -0.0256
+  },
+  "utility_alg07_shape_median": -0.206,
+  "iv_above_forecast_share": 0.6326,
+  "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\Enhancements\\research\\output\\20260924_085940\\merged_5_7_8_hold-horizon_bias-1.0_20260925T094557Z.csv"
+}

@@ -1,0 +1,46 @@
+{
+  "harness_version": "merged_5_7_8_harness_v0.1",
+  "run_id": "20260924_085940",
+  "state": "EXPLORATORY_NO_AUTHORITY",
+  "hold_source": "horizon",
+  "vol_budget_bias_sensitivity": 1.0,
+  "rate": 0.04,
+  "scope": "GO,GO_LIMIT",
+  "rows_in_scope": 401,
+  "rows_valued": 401,
+  "indeterminate_reasons": {},
+  "decision_grid": {
+    "NO_POSITIVE_EDGE_GRID": 370,
+    "NET_POSITIVE_GRID": 31
+  },
+  "p_source": {
+    "layer2__adjusted_prob_target_hit": 401
+  },
+  "friction_assumption": {
+    "CURRENT_SPREAD_PROXY_CAPPED": 401
+  },
+  "by_direction": {
+    "PUT": 133,
+    "CALL": 268
+  },
+  "medians": {
+    "payoff_flat_base_net_return_fraction": -0.2839,
+    "payoff_favourable_1sigma_base_net_return_fraction": 0.2419,
+    "payoff_favourable_reachable_base_net_return_fraction": 0.5617,
+    "payoff_favourable_structural_base_net_return_fraction": 2.0924,
+    "payoff_adverse_invalidation_base_net_return_fraction": -0.6941,
+    "ev_grid_net_return_fraction": -0.1771,
+    "p_positive_net_exit_grid": 0.3005,
+    "spread_fraction_mid": 0.0948,
+    "iv_minus_forecast_vol": 0.0047,
+    "structural_vs_reachable_gap": 1.3504
+  },
+  "ev_grid_quantiles": {
+    "p10": -0.3071,
+    "p50": -0.1771,
+    "p90": -0.0289
+  },
+  "utility_alg07_shape_median": -0.0865,
+  "iv_above_forecast_share": 0.5411,
+  "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\Enhancements\\research\\output\\20260924_085940\\merged_5_7_8_hold-horizon_bias-1.0_20260925T094715Z.csv"
+}

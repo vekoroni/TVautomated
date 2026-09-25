@@ -1,0 +1,43 @@
+{
+  "run_id": "20260924_085940",
+  "state": "EXPLORATORY_NO_AUTHORITY",
+  "rows_actionable": 401,
+  "rows_compared": 367,
+  "excluded": {
+    "NO_VALUABLE_CANDIDATE": 34
+  },
+  "contract_changed": 327,
+  "changed_share": 0.891,
+  "median_ev_gain_all": 0.051,
+  "median_ev_gain_changed": 0.0539,
+  "sel_positive": 24,
+  "best_positive": 19,
+  "sel_asym_ge2_spread_le15": 261,
+  "best_asym_ge2_spread_le15": 284,
+  "median_sel": {
+    "spread": 0.1013,
+    "dte": 57.0,
+    "moneyness": 0.0259,
+    "ev": -0.108,
+    "asym": 3.319
+  },
+  "median_best": {
+    "spread": 0.0531,
+    "dte": 57.0,
+    "moneyness": -0.0339,
+    "ev": -0.0472,
+    "asym": 4.118
+  },
+  "best_contract_pipeline_gate": {
+    "null": 85,
+    "REJECT_DELTA_BAND": 242
+  },
+  "r_lt1_tickers": {
+    "n": 145,
+    "changed": 133,
+    "median_ev_gain": 0.0537,
+    "sel_positive": 2,
+    "best_positive": 2
+  },
+  "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\Enhancements\\research\\output\\20260924_085940\\contract_reselection_20260925T100832Z.csv"
+}

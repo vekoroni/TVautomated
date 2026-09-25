@@ -1,0 +1,44 @@
+{
+  "run_id": "20260924_085940",
+  "state": "EXPLORATORY_NO_AUTHORITY",
+  "rows_actionable": 401,
+  "rows_compared": 305,
+  "excluded": {
+    "NO_AM_CONTRACT_IN_BAND_WITH_USABLE_QUOTE": 92,
+    "IV_UNSOLVABLE": 4
+  },
+  "floors_days": {
+    "1_5d": 19,
+    "6_10d": 26,
+    "window": 40
+  },
+  "same_strike_share": 0.711,
+  "medians": {
+    "w_dte": 57.0,
+    "am_dte": 22.0,
+    "premium_saving_fraction": 0.3904,
+    "w_spread": 0.0813,
+    "am_spread": 0.1818,
+    "w_iv_solved": 0.5351,
+    "am_iv_solved": 0.4584,
+    "w_flat": -0.1759,
+    "am_flat": -0.3426,
+    "w_reach": 0.6172,
+    "am_reach": 1.0868,
+    "w_inval": -0.6005,
+    "am_inval": -0.841,
+    "w_ev_grid": -0.0984,
+    "am_ev_grid": -0.1474,
+    "ev_delta_am_minus_w": -0.0404,
+    "w_ppos": 0.3005,
+    "am_ppos": 0.3005,
+    "w_best_policy_ev": -0.0876
+  },
+  "iv_solved_vs_book_median_abs_gap": 0.0652,
+  "count_am_better_at_horizon": 97,
+  "count_am_positive": 37,
+  "count_w_positive": 24,
+  "count_w_best_policy_positive": 48,
+  "count_am_better_than_w_best_policy": 76,
+  "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\Enhancements\\research\\output\\20260924_085940\\dte_rule_comparison_20260925T095349Z.csv"
+}
