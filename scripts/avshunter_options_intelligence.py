@@ -5472,7 +5472,91 @@ CONTRACT_VALUE_FIELDS = (
     "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
     "contract_value_r_central", "contract_value_r_cautious", "contract_value_score_choice_symbol",
     "contract_value_best_symbol", "contract_value_best_r_central", "contract_value_alternatives",
+    # B1 (ACK 25 Sep 2026): where the Layer 3 forecast the valuer used came from, and how old it is.
+    "contract_value_forecast_source", "contract_value_forecast_run_id", "contract_value_forecast_age_sessions",
 )
+
+# ── B1 (ACK 25 Sep 2026): the Layer 3 forecast the valuer needs is produced by garch_runner in Phase 10a,
+# AFTER this stage, so no signal row carries it at selection time and the shadow valued nothing since
+# 18 Sep (Enhancements/research/rca/B1_SHADOW_CONTRACT_VALUER_RCA_AND_DESIGN_20260925.md). The valuer
+# may read the most recent Layer 3 forecast already on disk for the ticker -- the active run's own file
+# (a morning run has the evening's) or an earlier run's -- never a future run's, and records source and
+# age on the row (fresh or flagged). Layer 3 stays the one owner of the number: it is read, not recomputed.
+_L3_RUNS_DIR: Path = Path(__file__).resolve().parents[1] / "data" / "output" / "runs"
+_L3_FORECAST_CACHE: Dict[str, Dict[str, Tuple[float, str]]] = {}
+
+
+def _l3_forecast_file(run_id: str) -> Dict[str, Tuple[float, str]]:
+    """ticker -> (raw forecast, state) for one run's garch_forecasts file; cached per run, {} when absent."""
+    if run_id in _L3_FORECAST_CACHE:
+        return _L3_FORECAST_CACHE[run_id]
+    table: Dict[str, Tuple[float, str]] = {}
+    path = _L3_RUNS_DIR / run_id / "qomega" / f"garch_forecasts_{run_id}.csv"
+    if path.exists():
+        import csv as _csv
+        with path.open(encoding="utf-8") as handle:
+            for row in _csv.DictReader(handle):
+                ticker = str(row.get("ticker") or "").strip().upper()
+                try:
+                    raw = float(row.get("l3_forward_realised_vol_raw") or "")
+                except (TypeError, ValueError):
+                    continue
+                if ticker and math.isfinite(raw) and raw > 0:
+                    table[ticker] = (raw, str(row.get("l3_forecast_state") or ""))
+    _L3_FORECAST_CACHE[run_id] = table
+    return table
+
+
+def _run_session_date(run_id: str) -> Optional[date]:
+    """The US session a run processed: run_meta.json `session_date`, else the run-id date.
+
+    The run-id date is the local date, one day after the session it processed on this machine, so across
+    a Friday-to-Saturday boundary it undercounts the age by a session; run_meta is the authority when present.
+    """
+    meta = _L3_RUNS_DIR / run_id / "run_meta.json"
+    if meta.exists():
+        try:
+            value = json.loads(meta.read_text(encoding="utf-8")).get("session_date")
+            if value:
+                return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+        except (OSError, ValueError, TypeError):
+            pass
+    try:
+        return datetime.strptime(str(run_id)[:8], "%Y%m%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _l3_forecast_on_disk(ticker: str) -> Optional[Dict[str, Any]]:
+    """The newest usable Layer 3 forecast on disk for `ticker`, no newer than the active run.
+
+    Returns {"forecast_vol", "source_run_id", "age_sessions"} or None. A clipped forecast is never used for
+    value (ACK 17 Sep 2026). Age is XNYS sessions between the source run's date and the active run's date
+    (0 for the active run itself).
+    """
+    symbol = str(ticker or "").strip().upper()
+    if not symbol or not _L3_RUNS_DIR.exists():
+        return None
+    active = _ACTIVE_RUN_ID
+    candidates = sorted((p.name for p in _L3_RUNS_DIR.iterdir() if p.is_dir()), reverse=True)
+    if active:
+        candidates = [run for run in candidates if run <= active]
+    for run_id in candidates:
+        entry = _l3_forecast_file(run_id).get(symbol)
+        if entry is None:
+            continue
+        raw, state = entry
+        if not state.startswith("FORECAST_OK"):
+            return None            # the newest forecast is clipped: unusable, not replaced by an older one
+        source_date = _run_session_date(run_id)
+        active_date = _CDS_V2_SESSION if isinstance(_CDS_V2_SESSION, date) else (_run_session_date(active) if active else None)
+        if run_id == active or source_date is None or active_date is None:
+            age = 0 if run_id == active else None
+        else:
+            from avshunter.shared.xnys_calendar import xnys_sessions_between
+            age = int(xnys_sessions_between(source_date, active_date))
+        return {"forecast_vol": raw, "source_run_id": run_id, "age_sessions": age}
+    return None
 
 
 @functools.lru_cache(maxsize=1)
@@ -5500,6 +5584,14 @@ def _default_contract_valuer(ctx: Dict):
         {**row, "final_direction": ctx.get('direction')}, thesis_window_sessions=governed_thesis_window_sessions())
     side = inputs["side"]
     spot, target, stop = ctx.get('spot'), ctx.get('structural_target'), ctx.get('invalidation_spot')
+    # B1 (ACK 25 Sep 2026): the signal row never carries the Layer 3 forecast at this stage (it is
+    # produced in Phase 10a); read the newest usable forecast on disk, flagged with source and age.
+    forecast_source, forecast_run_id, forecast_age = "SIGNAL_ROW_L3", _ACTIVE_RUN_ID, 0
+    if inputs["forecast_vol"] is None:
+        on_disk = _l3_forecast_on_disk(ctx.get('ticker') or row.get('ticker'))
+        if on_disk is not None:
+            inputs["forecast_vol"], inputs["forecast_source"] = on_disk["forecast_vol"], "L3_ON_DISK"
+            forecast_source, forecast_run_id, forecast_age = "L3_ON_DISK", on_disk["source_run_id"], on_disk["age_sessions"]
     if not side or inputs["forecast_vol"] is None or not spot or target is None or stop is None:
         return None
     settings = model["settings"]
@@ -5511,6 +5603,8 @@ def _default_contract_valuer(ctx: Dict):
             target=float(target), invalidation=float(stop), hold_sessions=inputs["hold_sessions"],
             forecast_vol=inputs["forecast_vol"], calibration=model["calibration"],
             paths=settings["paths"], seed=settings["seed"])
+    # B1: provenance of the forecast rides on the valuer so the selection row can record it.
+    valuer.forecast_source, valuer.forecast_run_id, valuer.forecast_age_sessions = forecast_source, forecast_run_id, forecast_age
     return valuer
 
 
@@ -5574,6 +5668,10 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
         "contract_value_best_symbol": best[0]['symbol'] if best else None,
         "contract_value_best_r_central": best[1]["emp_path_r_central"] if best else None,
         "contract_value_alternatives": json.dumps(alternatives, default=str),
+        # B1 (ACK 25 Sep 2026): the forecast's provenance, or UNAVAILABLE when no valuer could be built.
+        "contract_value_forecast_source": getattr(valuer, "forecast_source", "UNAVAILABLE") if valuer else "UNAVAILABLE",
+        "contract_value_forecast_run_id": getattr(valuer, "forecast_run_id", None) if valuer else None,
+        "contract_value_forecast_age_sessions": getattr(valuer, "forecast_age_sessions", None) if valuer else None,
     }
 
 

@@ -33,7 +33,10 @@ GOLDEN = ROOT / "tests" / "fixtures" / "ila003_prefix_book_rows.json"
 NEW_FIELDS = {"selected_contract_symbol", "selected_contract_identity_state"}
 # Additive book fields published after the ILA-003 golden was captured (Fix Spec Fix 2, 24 Sep 2026).
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
-                         "call_wall_state", "put_wall_state", "gamma_flip_state"}
+                         "call_wall_state", "put_wall_state", "gamma_flip_state",
+                         # B1 (ACK 25 Sep 2026): provenance of the Layer 3 forecast the shadow valuer used.
+                         "contract_value_forecast_source", "contract_value_forecast_run_id",
+                         "contract_value_forecast_age_sessions"}
 
 
 def _publish(tmp_path, *signals):
