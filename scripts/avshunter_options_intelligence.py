@@ -6631,15 +6631,24 @@ def ticket_spread_limit_fraction() -> Optional[float]:
     None when the registry cannot be read; the row then says the limit was unavailable
     rather than borrowing a literal.
     """
-    if 'value' in _TICKET_SPREAD_LIMIT_CACHE:
-        return _TICKET_SPREAD_LIMIT_CACHE['value']
+    # The registry accepts XNYS sessions, not weekend/holiday calendar dates.
+    # Standalone Options runs must use the last completed session as the main
+    # orchestrator does; do not cache a failed Saturday lookup for every row.
+    try:
+        from avshunter.shared.xnys_calendar import xnys_session_on_or_before
+        session = xnys_session_on_or_before(_iv_evidence_session())
+    except Exception:  # noqa: BLE001 - no policy value can be asserted
+        return None
+    cache_key = session.isoformat()
+    if cache_key in _TICKET_SPREAD_LIMIT_CACHE:
+        return _TICKET_SPREAD_LIMIT_CACHE[cache_key]
     try:
         from avshunter.config.adapters import load_registry
-        snapshot = load_registry().resolve(_iv_evidence_session())
+        snapshot = load_registry().resolve(session)
         value = float(snapshot.get("outcome.signal.max_entry_spread_fraction").value)
     except Exception:  # noqa: BLE001 - reported as unavailable, never defaulted
-        value = None
-    _TICKET_SPREAD_LIMIT_CACHE['value'] = value
+        return None
+    _TICKET_SPREAD_LIMIT_CACHE[cache_key] = value
     return value
 
 
