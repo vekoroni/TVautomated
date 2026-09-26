@@ -294,6 +294,9 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
         )
 
     def test_provider_cannot_persist_bar_after_authorised_completed_session(self) -> None:
+        # The price-ingestion boundary must not change with pytest import order
+        # or require the independently assembled macro regime.
+        self.assertTrue(backfill._DCV_AVAILABLE)
         packages = self.temp_path / "packages"
         packages.mkdir()
         package_path = packages / "BP.package.json"
@@ -332,12 +335,15 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
                 completed_session=required,
             )
 
-        self.assertTrue(success)
+        self.assertTrue(success, reason)
         self.assertEqual(reason, "POLYGON")
         self.assertEqual(fetch.call_args.kwargs["end"], required.isoformat())
         stored = self.database.read("BP", completed_only=False)
         self.assertEqual(stored["date"].max().date(), required)
         repaired = json.loads(package_path.read_text(encoding="utf-8"))
+        self.assertTrue(repaired["data_contract"]["has_ohlcv_daily"])
+        self.assertEqual(repaired["data_contract"]["price_history_validation_state"], "VALID")
+        self.assertEqual(repaired["data_contract"]["dcv_reason"], "MISSING_REGIME")
         self.assertEqual(repaired["bar_data_as_of"], required.isoformat())
         self.assertEqual(
             repaired["data_contract"]["evidence_session_date"],
@@ -346,6 +352,21 @@ class HistoricalPriceDatabaseTests(unittest.TestCase):
         self.assertEqual(
             repaired["data_contract"]["session_authority_version"],
             "SESSION_AUTHORITY_V1",
+        )
+
+    def test_price_validation_excludes_regime_but_not_missing_prices(self) -> None:
+        from scripts.data_contract_validator import DataContractValidator
+
+        rows = recent_bars(130).to_dict(orient="records")
+        for row in rows:
+            row["date"] = str(row["date"])[:10]
+        package = {"ohlcv_daily": rows}
+        self.assertEqual(DataContractValidator.validate_price_history(package), (True, "VALID"))
+        self.assertEqual(DataContractValidator.validate(package), (False, "MISSING_REGIME"))
+        rows[-1]["close"] = None
+        self.assertEqual(
+            DataContractValidator.validate_price_history(package),
+            (False, "NULLS_IN_CRITICAL_COLS (close)"),
         )
 
     def test_shadow_observation_never_replaces_legacy_frame(self) -> None:

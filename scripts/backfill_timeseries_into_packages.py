@@ -50,24 +50,19 @@ import urllib.parse
 import urllib.request
 import pandas as pd
 
-# Data contract validator — single source of truth for data integrity
-try:
-    from data_contract_validator import DataContractValidator as DCV
-    _DCV_AVAILABLE = True
-except ImportError:
-    _DCV_AVAILABLE = False
-
 log = logging.getLogger("backfill_timeseries")
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[1]
 # Direct execution sets sys.path[0] to ``scripts``.  Add the repository root
-# before the lazy CDS imports used by backfill_package, without changing the
-# pre-existing optional-validator import behavior above.
+# before imports used by backfill_package and the required validator.
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from canonical_data.history_bridge import DEFAULT_HISTORY_MAX_STALENESS_DAYS
+from scripts.data_contract_validator import DataContractValidator as DCV
+
+_DCV_AVAILABLE = True  # Compatibility for callers; validation is not optional.
 
 RUNS_ROOT = REPO / "data" / "output" / "runs"
 LATEST_RUN_PTR = REPO / "data" / "output" / "latest.json"
@@ -800,17 +795,18 @@ def backfill_package(
             "intraday_source":    _intraday_source if _intraday_appended else "",
         })
 
-        if _DCV_AVAILABLE:
-            pkg = DCV.annotate(pkg)
-            ok_dcv, dcv_reason = DCV.validate(pkg)
-            if not ok_dcv:
-                dc.update({"has_ohlcv_daily": False, "timeseries_source": "POLYGON_DCV_FAIL",
-                           "dcv_fail_reason": dcv_reason})
-                if actuarial_snapshot is not None:
-                    pkg["actuarial"] = actuarial_snapshot
-                pkg = _stamp_actuarial_data_quality(pkg, ohlcv_ok=False)
-                write_json(pkg_path, pkg)
-                return False, f"DCV_FAIL:{dcv_reason}"
+        pkg = DCV.annotate(pkg)
+        ok_dcv, dcv_reason = DCV.validate_price_history(pkg)
+        dc["price_history_validation_state"] = "VALID" if ok_dcv else "INVALID"
+        dc["price_history_validation_reason"] = dcv_reason
+        if not ok_dcv:
+            dc.update({"has_ohlcv_daily": False, "timeseries_source": "POLYGON_DCV_FAIL",
+                       "dcv_fail_reason": dcv_reason})
+            if actuarial_snapshot is not None:
+                pkg["actuarial"] = actuarial_snapshot
+            pkg = _stamp_actuarial_data_quality(pkg, ohlcv_ok=False)
+            write_json(pkg_path, pkg)
+            return False, f"DCV_FAIL:{dcv_reason}"
 
         # Re-inject actuarial block and stamp quality before final write
         if actuarial_snapshot is not None:

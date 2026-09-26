@@ -66,6 +66,22 @@ class DataContractValidator:
           STALE_DATA                last bar older than MAX_STALENESS_DAYS
           MISSING_REGIME            regime_snapshot absent or empty
         """
+        ok, reason = cls.validate_price_history(package)
+        if not ok:
+            return ok, reason
+
+        if not cls._has_regime(package):
+            return False, "MISSING_REGIME"
+
+        return True, "VALID"
+
+    @classmethod
+    def validate_price_history(cls, package: Dict[str, Any]) -> Tuple[bool, str]:
+        """Validate the OHLCV evidence owned by the price-ingestion stage.
+
+        Full package validation additionally requires a regime, which is
+        assembled independently and must not make valid price history vanish.
+        """
         ohlcv = cls._resolve_ohlcv(package)
 
         if not ohlcv:
@@ -81,9 +97,6 @@ class DataContractValidator:
         stale, stale_reason = cls._check_staleness(ohlcv)
         if stale:
             return False, stale_reason
-
-        if not cls._has_regime(package):
-            return False, "MISSING_REGIME"
 
         return True, "VALID"
 

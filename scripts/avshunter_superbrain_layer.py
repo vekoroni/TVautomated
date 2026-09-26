@@ -223,12 +223,15 @@ if hasattr(sys.stdout, 'reconfigure'):
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple
 
-# Data contract validator — prevents fake EXECUTE signals from bad data
-try:
-    from data_contract_validator import DataContractValidator as DCV
-    _DCV_AVAILABLE = True
-except ImportError:
-    _DCV_AVAILABLE = False
+# Direct script execution starts with scripts/ on sys.path; add the repository
+# root before loading governed modules so package and script imports agree.
+_SB_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _SB_ROOT not in sys.path:
+    sys.path.insert(0, _SB_ROOT)
+
+# Data contract validation is required before Superbrain may claim a signal.
+from scripts.data_contract_validator import DataContractValidator as DCV
+_DCV_AVAILABLE = True
 
 # ── EV Engine v2 (single source of truth for expectancy) ──────────────────────
 # PATCH: replaced EVEngine v1 (ev_engine1204old / vanguard.ev_engine) with
@@ -242,10 +245,6 @@ except ImportError:
 # sys.path[0], not the root — so "from ev_engine_v2 import" fails silently,
 # _EV_ENGINE_V2_AVAILABLE = False, and ev_final falls back to V1 (-0.64 range).
 # Fix: explicitly add the root directory (parent of scripts\) to sys.path.
-_SB_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _SB_ROOT not in sys.path:
-    sys.path.insert(0, _SB_ROOT)
-
 try:
     from ev_engine_v2 import EVEngineV2, ev_inputs_from_row as _ev_inputs_from_row
     _EV_ENGINE_V2 = EVEngineV2()

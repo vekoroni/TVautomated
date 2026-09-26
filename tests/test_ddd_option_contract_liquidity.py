@@ -110,10 +110,22 @@ def test_composite_domain_evaluator_remains_symmetric(side: str) -> None:
         thesis_spot=100.0, current_spot=101.0 if call else 99.0,
         structural_target=110.0 if call else 90.0,
         invalidation_spot=95.0 if call else 105.0,
+        quote_age_seconds=1.0,
     ))
     assert result["liquidity_state"] == "EXECUTABLE_NOW"
     assert result["maturation_execution_authority"] is False
     assert result["remaining_runway_state"] == "GAP_CONFIRMATION_WITH_RUNWAY"
+
+
+def test_composite_evaluator_does_not_claim_execution_without_quote_time() -> None:
+    result = evaluate_options_liquidity_lifecycle(LifecycleInputs(
+        side="CALL", spot=100.0, strike=102.0, delta=0.45,
+        bid=2.0, ask=2.2, dte=30.0, remaining_hold_sessions=10.0,
+        forecast_vol_annual=0.30, thesis_spot=100.0, current_spot=101.0,
+        structural_target=110.0, invalidation_spot=95.0,
+    ))
+    assert result["liquidity_state"] == "QUOTE_TIMESTAMP_UNAVAILABLE"
+    assert result["current_quote_executable"] is False
 
 
 def test_domain_modules_do_not_depend_on_adapters_or_persistence() -> None:

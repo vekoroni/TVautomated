@@ -41,6 +41,7 @@ def row(direction="CALL", **overrides):
         "monetisability_state": "MONETISABLE",
         "monetisability_state_timevalue": "MONETISABLE",
         "spread_pct": 0.10,
+        "spread_unit": "FRACTION_OF_MID",
         "time_horizon": "1_5d",
         "contract_dte": 14.0,
         "planned_hold_sessions": 5.0,
@@ -60,6 +61,13 @@ class Tier1(unittest.TestCase):
                 tier, reason = derive_tier(row(direction))
                 self.assertEqual(tier, TIER_1)
                 self.assertEqual(reason, "ALL_GOVERNED_EVIDENCE_PRESENT_AND_STRONG")
+
+    def test_legacy_spread_without_unit_cannot_be_tier_1(self) -> None:
+        candidate = row()
+        candidate.pop("spread_unit")
+        tier, reason = derive_tier(candidate)
+        self.assertEqual(tier, TIER_2)
+        self.assertEqual(reason, "UNEVALUABLE_SPREAD")
 
 
 class Tier2SingleNamedWeakness(unittest.TestCase):

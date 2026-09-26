@@ -66,12 +66,9 @@ except Exception:
         build_truth_packet_from_row,
     )
 
-# Data contract validator — enforces package integrity at build time
-try:
-    from data_contract_validator import DataContractValidator as DCV
-    _DCV_AVAILABLE = True
-except ImportError:
-    _DCV_AVAILABLE = False
+# Data contract validation is required; an import failure must not disable it.
+from scripts.data_contract_validator import DataContractValidator as DCV
+_DCV_AVAILABLE = True
 
 log = logging.getLogger("build_packages")
 
@@ -503,21 +500,10 @@ def build_package(
 
 
 def enforce_data_contract(package: Dict[str, Any]) -> Dict[str, Any]:
-    if _DCV_AVAILABLE:
-        package, repaired, reason = DCV.attempt_repair(package)
-        if repaired:
-            package.setdefault("data_contract", {})["build_repair"] = reason
-        package = DCV.annotate(package)
-    else:
-        if package.get("ohlcv") is None:
-            ts = (package.get("timeseries") or {}).get("ohlcv_daily")
-            if ts and len(ts) > 0:
-                package["ohlcv"] = ts
-                package["daily_df"] = ts
-                package["data_repaired"] = True
-            else:
-                package["data_failure"] = True
-    return package
+    package, repaired, reason = DCV.attempt_repair(package)
+    if repaired:
+        package.setdefault("data_contract", {})["build_repair"] = reason
+    return DCV.annotate(package)
 
 
 def main() -> int:

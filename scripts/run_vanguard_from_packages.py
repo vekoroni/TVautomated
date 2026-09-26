@@ -155,19 +155,9 @@ except Exception:
     def _validate_truth_packet(block: Dict[str, Any]) -> bool:  # type: ignore
         return True
 
-# Data contract validator — hard gate before Vanguard modelling
-try:
-    from data_contract_validator import DataContractValidator as DCV
-    _DCV_AVAILABLE = True
-except ImportError:
-    _DCV_AVAILABLE = False
-    class DCV:  # type: ignore
-        @staticmethod
-        def validate(pkg): return True, 'VALID'
-        @staticmethod
-        def attempt_repair(pkg): return pkg, False, 'NO_DCV'
-        @staticmethod
-        def confidence_level(pkg): return 'HIGH'
+# Data contract validator is a hard gate: never substitute a permissive stub.
+from scripts.data_contract_validator import DataContractValidator as DCV
+_DCV_AVAILABLE = True
 
 
 # ------------------------- helpers: IO & flattening -------------------------
