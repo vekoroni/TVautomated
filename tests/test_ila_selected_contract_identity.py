@@ -33,6 +33,9 @@ GOLDEN = ROOT / "tests" / "fixtures" / "ila003_prefix_book_rows.json"
 NEW_FIELDS = {"selected_contract_symbol", "selected_contract_identity_state"}
 # Additive book fields published after the ILA-003 golden was captured (Fix Spec Fix 2, 24 Sep 2026).
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
+                         # INT-001: canonical cumulative move and its horizon convention.
+                         "expected_move_5d_fraction", "expected_move_10d_fraction",
+                         "expected_move_20d_fraction", "horizon_convention",
                          "call_wall_state", "put_wall_state", "gamma_flip_state",
                          # B1 (ACK 25 Sep 2026): provenance of the Layer 3 forecast the shadow valuer used.
                          "contract_value_forecast_source", "contract_value_forecast_run_id",
@@ -211,5 +214,10 @@ def test_fix_adds_only_the_two_identity_fields(tmp_path):
                              if k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS}
         expected_provenance = json.loads(expected.pop("field_provenance_json", "{}"))
         actual.pop("field_provenance_json", None)
+        # INT-001 represents absent/unqualified convexity as JSON null rather
+        # than the old empty string; both are missing, neither is measured zero.
+        for key in ("convexity_score", "convexity_score_max"):
+            if actual.get(key) is None and expected.get(key) == "":
+                actual[key] = ""
         assert actual_provenance == expected_provenance
         assert actual == expected

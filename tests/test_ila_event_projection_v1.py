@@ -192,8 +192,10 @@ def test_convexity_score_basis_requires_matching_options_evidence():
     book = {"ticker": "AAA", "contract_symbol": "AAA990119C00100000", "convexity_score": "3.0"}
     options = {"ticker": "AAA", "recommended_contract": book["contract_symbol"], "convexity_score": "3.0"}
     lab._project_convexity_basis(book, options)
-    assert book["convexity_score_max"] == 5
-    assert book["convexity_score_source"] == "OPTIONS_5_CONDITION"
+    assert book["convexity_score"] is None
+    assert not book["convexity_score_max"]
+    assert not book["convexity_score_source"]
+    assert book["convexity_data_state"] == "UNVERIFIED_SOURCE"
     mismatched = dict(book, convexity_score_max="", convexity_score_source="")
     lab._project_convexity_basis(mismatched, dict(options, recommended_contract="AAA990119P00100000"))
     assert not mismatched["convexity_score_max"]

@@ -397,36 +397,26 @@ def _governed_lab_book(run_id):
 
 
 def _project_convexity_basis(book_row, options_row):
-    """Label an existing score only when its exact source can be reconciled.
+    """Preserve an explicit score basis; never invent one from equal numbers.
 
-    The Options producer uses five conditions. A SuperBrain eight-condition
-    score is a different calculation and must not be silently relabelled.
-    This read-model annotation never changes the score or a trade decision.
+    Legacy Options output called an eight-condition calculation a five-condition
+    score and the historic book can carry a verdict-derived number. A matching
+    number or one component flag cannot establish calculation provenance.
+    This read-model repair does not rewrite the archived book or trade verdict.
     """
-    if book_row.get("convexity_score_max"):
-        return
-    if any(book_row.get(key) in {"Y", "N"} for key in (
-        "sb_c_compression", "sb_c_energy", "sb_c_underpriced_vol",
-        "sb_c_gamma_proximity", "sb_c_runway", "sb_c_vanna_quality",
-        "sb_c_volume_confirmation", "sb_c_sector_alignment",
-    )):
-        book_row["convexity_score_max"] = 8
-        book_row["convexity_score_source"] = "SUPERBRAIN_8_CONDITION"
-        return
-    if not options_row:
-        return
-    book_contract = str(book_row.get("contract_symbol") or "").upper().removeprefix("O:")
-    option_contract = str(options_row.get("recommended_contract") or "").upper().removeprefix("O:")
-    if not book_contract or book_contract != option_contract:
-        return
+    source = str(book_row.get("convexity_score_source") or "").strip()
     try:
-        book_score = float(book_row.get("convexity_score"))
-        option_score = float(options_row.get("convexity_score"))
+        score = float(book_row.get("convexity_score"))
+        scale = float(book_row.get("convexity_score_max"))
     except (TypeError, ValueError):
+        score = scale = float("nan")
+    if source in {"SUPERBRAIN_8_CONDITION", "OPTIONS_8_CONDITION"} and math.isfinite(score) and scale == 8 and 0 <= score <= scale:
         return
-    if math.isfinite(book_score) and math.isfinite(option_score) and book_score == option_score:
-        book_row["convexity_score_max"] = 5
-        book_row["convexity_score_source"] = "OPTIONS_5_CONDITION"
+    if book_row.get("convexity_score") not in (None, ""):
+        book_row["convexity_data_state"] = "UNVERIFIED_SOURCE"
+    book_row["convexity_score"] = None
+    book_row["convexity_score_max"] = None
+    book_row["convexity_score_source"] = ""
 
 def _utc_iso():
     return datetime.now(timezone.utc).isoformat()

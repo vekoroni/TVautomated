@@ -19,6 +19,39 @@ EVENING_THESIS_POLICY_VERSION = "evening-thesis-v1"
 # An extreme target is sent to human review, never called invalid.  This is a
 # conservative scenario-quality diagnostic, not a forecast probability.
 TARGET_EXPECTED_MOVE_REVIEW_MULTIPLE = 3.0
+
+
+def _cumulative_expected_move_pct(row: Mapping[str, Any], horizon: str) -> float | None:
+    """Return the hold-window 1-sigma move in display percent, never a band increment.
+
+    The canonical Stage 2 budget is a fraction. Legacy Layer 3 fields are
+    percentages for consecutive *increments* (1–5, 6–10, 11–20 sessions),
+    so the relevant increments must be present and summed before comparison.
+    """
+    fields = {
+        "1_5D": ("expected_move_5d_fraction", 1),
+        "6_10D": ("expected_move_10d_fraction", 2),
+        "11_20D": ("expected_move_20d_fraction", 3),
+    }
+    selected = fields.get(horizon)
+    if selected is None:
+        return None
+    canonical_field, count = selected
+    convention = _token(row.get("horizon_convention")).upper()
+    if convention and convention != "CUMULATIVE_1SIGMA":
+        return None
+    if _token(row.get(canonical_field)):
+        canonical = _number(row.get(canonical_field))
+        return canonical * 100.0 if canonical is not None and 0 < canonical <= 3.0 else None
+    legacy_fields = (
+        "garch_expected_move_1_5d",
+        "garch_expected_move_6_10d",
+        "garch_expected_move_11_20d",
+    )[:count]
+    increments = [_number(row.get(name)) for name in legacy_fields]
+    if any(value is None or value <= 0 for value in increments):
+        return None
+    return sum(increments)
 EVENING_INPUT_FIELDS = (
     "pipeline_mode", "evening_thesis_bucket", "evening_thesis_reason",
     "evening_evidence_flags",
@@ -33,6 +66,8 @@ EVENING_INPUT_FIELDS = (
     "direction_resolution_put_score", "direction_resolution_evidence_json",
     "monetisability_state",
     "contract_repair_required", "time_horizon",
+    "expected_move_5d_fraction", "expected_move_10d_fraction",
+    "expected_move_20d_fraction", "horizon_convention",
     "garch_expected_move_1_5d", "garch_expected_move_6_10d",
     "garch_expected_move_11_20d", "trigger_primary", "trigger_price",
     "wyckoff_execution_bias",
@@ -245,12 +280,7 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
     if quote_id and economics_quote_id and quote_id != economics_quote_id:
         flags.append("QUOTE_ID_MISMATCH")
     horizon = _token(row.get("time_horizon")).upper()
-    move_field = {
-        "1_5D": "garch_expected_move_1_5d",
-        "6_10D": "garch_expected_move_6_10d",
-        "11_20D": "garch_expected_move_11_20d",
-    }.get(horizon)
-    expected_move = _number(row.get(move_field)) if move_field else None
+    expected_move = _cumulative_expected_move_pct(row, horizon)
     target_move = abs(target / spot - 1.0) * 100.0 if target and spot else None
     if target_move is not None and expected_move and target_move > TARGET_EXPECTED_MOVE_REVIEW_MULTIPLE * expected_move:
         flags.append("TARGET_BEYOND_EXPECTED_MOVE_REVIEW_BAND")

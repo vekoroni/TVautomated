@@ -714,6 +714,10 @@ FINAL_BOOK_FIELDS = [
     "garch_iv_tailwind_score",
     "garch_jump_risk_flag",
     "garch_forecast_confidence",
+    "expected_move_5d_fraction",
+    "expected_move_10d_fraction",
+    "expected_move_20d_fraction",
+    "horizon_convention",
     "garch_expected_move_1_5d",
     "garch_expected_move_6_10d",
     "garch_expected_move_11_20d",
@@ -860,6 +864,26 @@ def _canonical_spread_observation(sig: Dict[str, Any]):
 def _is_missing(value: Any) -> bool:
     text = _u(value)
     return text in {"", "NONE", "UNKNOWN", "MISSING", "N/A", "NA", "NAN", "NULL"}
+
+
+def _qualified_convexity(sig: Dict[str, Any]) -> tuple[float | None, float | None, str, str]:
+    """Do not publish a numeric score without its actual calculation owner/scale."""
+    raw_score = first(sig, "convexity_score", "sb_conv_score")
+    if _is_missing(raw_score):
+        return None, None, "", "NOT_GOVERNED"
+    source = _u(first(sig, "convexity_score_source"))
+    raw_max = first(sig, "convexity_score_max")
+    # Campaign verdicts are categorical labels, not eight-condition scores.
+    if source not in {"SUPERBRAIN_8_CONDITION", "OPTIONS_8_CONDITION"} or _is_missing(raw_max):
+        return None, None, "", "UNVERIFIED_SOURCE"
+    try:
+        score = float(raw_score)
+        scale = float(raw_max)
+    except (TypeError, ValueError):
+        return None, None, "", "DATA_DEFECT"
+    if not all(math.isfinite(value) for value in (score, scale)) or scale != 8 or not 0 <= score <= scale:
+        return None, None, "", "DATA_DEFECT"
+    return score, scale, source, "AVAILABLE"
 
 
 def _canonical_json_value(value: Any) -> Any:
@@ -3261,6 +3285,7 @@ def opportunity_book_row(
     )
     if invalidation_flag:
         lab_coherence_flags = _append_flag(lab_coherence_flags, invalidation_flag)
+    convexity_score, convexity_max, convexity_source, convexity_state = _qualified_convexity(sig)
 
     contract_selected = not _is_missing(aligned_contract)
     # WP2 / E4: the generic quote, greek, size and contract-economics fields
@@ -3836,10 +3861,10 @@ def opportunity_book_row(
         "wbs_data_state": "AVAILABLE" if not _is_missing(first(sig, "wbs_grade", "wbs")) else "NOT_APPLICABLE_NOT_SCORED",
         "wbs_break_direction": first(sig, "wbs_break_direction", "break_direction"),
         "wbs_momentum_alignment_state": first(sig, "wbs_momentum_alignment_state", "momentum_alignment_state"),
-        "convexity_data_state": "AVAILABLE" if not _is_missing(first(sig, "convexity_score", "sb_conv_score")) else "NOT_GOVERNED",
-        "convexity_score": first(sig, "convexity_score", "sb_conv_score"),
-        "convexity_score_max": first(sig, "convexity_score_max"),
-        "convexity_score_source": first(sig, "convexity_score_source"),
+        "convexity_data_state": convexity_state,
+        "convexity_score": convexity_score,
+        "convexity_score_max": convexity_max,
+        "convexity_score_source": convexity_source,
         "convexity_campaign": first(sig, "convexity_campaign", "sb_campaign"),
         "sb_c_compression": first(sig, "sb_c_compression"),
         "sb_c_energy": first(sig, "sb_c_energy"),
@@ -3886,6 +3911,10 @@ def opportunity_book_row(
         "garch_iv_tailwind_score": first(sig, "garch_iv_tailwind_score", "l3_iv_tailwind_score", "garch__l3_iv_tailwind_score"),
         "garch_jump_risk_flag": first(sig, "garch_jump_risk_flag", "l3_jump_risk_flag", "garch__l3_jump_risk_flag"),
         "garch_forecast_confidence": first(sig, "garch_forecast_confidence", "l3_forecast_confidence", "garch__l3_forecast_confidence"),
+        "expected_move_5d_fraction": first(sig, "expected_move_5d_fraction"),
+        "expected_move_10d_fraction": first(sig, "expected_move_10d_fraction"),
+        "expected_move_20d_fraction": first(sig, "expected_move_20d_fraction"),
+        "horizon_convention": first(sig, "horizon_convention"),
         "garch_expected_move_1_5d": first(sig, "garch_expected_move_1_5d", "l3_expected_move_1_5d", "garch__l3_expected_move_1_5d"),
         "garch_expected_move_6_10d": first(sig, "garch_expected_move_6_10d", "l3_expected_move_6_10d", "garch__l3_expected_move_6_10d"),
         "garch_expected_move_11_20d": first(sig, "garch_expected_move_11_20d", "l3_expected_move_11_20d", "garch__l3_expected_move_11_20d"),

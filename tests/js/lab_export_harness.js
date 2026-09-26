@@ -37,7 +37,9 @@ function loadLabExportContext() {
     style: {}, innerHTML: '', textContent: '',
   };
   const sandbox = {
-    window: { addEventListener: noop, location: { href: '' } },
+    // The Lab registers a publication-refresh timer at load time. Do not run
+    // timers in the export harness; only provide the browser API it expects.
+    window: { addEventListener: noop, setInterval: () => 1, location: { href: '' } },
     document: {
       addEventListener: noop,
       getElementById: () => stubEl,

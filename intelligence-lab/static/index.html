@@ -1485,13 +1485,13 @@ function getPremiumDisplay(s) {
   return (p > 0 && p !== 1) ? `$${p.toFixed(2)}` : '—';
 }
 function getConvexitySummary(s) {
-  const raw = s.convexity_score ?? s.sb_conv_score;
-  if (raw === null || raw === undefined || String(raw).trim() === '') return 'UNAVAILABLE';
+  const raw = s.convexity_score;
   const max = Number(s.convexity_score_max);
   const source = String(s.convexity_score_source || '').trim();
-  return Number.isFinite(max) && max > 0 && source
-    ? `${raw} / ${max} · ${source.replace(/_/g, ' ')}`
-    : `${raw} · SCALE/SOURCE NOT VERIFIED`;
+  if (!source || !Number.isFinite(max) || max <= 0 ||
+      raw === null || raw === undefined || String(raw).trim() === '' ||
+      !Number.isFinite(Number(raw))) return 'UNAVAILABLE · SOURCE NOT VERIFIED';
+  return `${raw} / ${max} · ${source.replace(/_/g, ' ')}`;
 }
 function getSelectedQuoteAskBreakeven(s) {
   // Illustrative expiry arithmetic only, never the governed target economics.
@@ -2248,7 +2248,7 @@ const sortKeys = [
   s => s.ticker,                                    // 1  Ticker
   s => finalLabVerdict(s),                          // 2  Lab Verdict
   s => displayCampaign(s),                          // 3  Campaign
-  s => parseFloat(s.sb_conv_score||0),              // 4  Conv
+  s => s.convexity_score_source ? Number(s.convexity_score) : -1, // 4  verified Conv only
   s => getExecutionCategory(s),                     // 5  Exec Cat
   s => s.direction,                                 // 6  Dir
   s => s.sb_instrument_now,                         // 7  Instrument
@@ -2508,7 +2508,7 @@ function buildExportColumns() {
     ['Direction_Confidence', s => s.direction_resolution_confidence || ''],
     ['Governed_Direction', s => s.governed_direction || ''],
     ['Discovery_Preliminary_Direction', s => s.discovery_direction_preliminary || ''],
-    ['Conv_Score',      s => s.sb_conv_score],
+    ['Conv_Score',      s => getConvexitySummary(s)],
     ['Execution_Mode',  s => displayExecutionMode(s)],
     ['Instrument',      s => s.sb_instrument_now],
     ['Strike',          s => getOpt(s,'contract_strike') || s.strike || ''],
