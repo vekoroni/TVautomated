@@ -266,7 +266,9 @@ def _neutral_macro_payload() -> dict:
         "confirm_required": [],
     }
     return {
+        "contract_version": "macro_contract_v1_0",
         "schema_version": "macro_advisory_fallback_v1",
+        "macro_authority": MACRO_AUTHORITY,
         "generated_at": generated,
         "as_of_utc": generated,
         "report_date": datetime.now(timezone.utc).date().isoformat(),
@@ -311,6 +313,27 @@ def _ensure_runtime_macro_path(session_id: str, macro_path: Optional[Path]) -> P
         fallback,
     )
     return fallback
+
+
+def _run_scoped_macro_copy(session_id: str, source: Path) -> Path:
+    """Keep Evening annotations off the authoritative macro and its projections."""
+    target = cfg.RUNS_DIR / session_id / "macro" / "macro_runtime_base.json"
+    source = Path(source)
+    if source.resolve() == target.resolve():
+        return target
+    content = source.read_bytes()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        if target.read_bytes() != content:
+            raise RuntimeError("run-scoped macro already exists with different evidence")
+        return target
+    temporary = target.with_name(target.name + f".tmp-{os.getpid()}")
+    try:
+        temporary.write_bytes(content)
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return target
 
 
 PHASE2_LAYER2_FIELDS = [
@@ -3027,14 +3050,21 @@ def pin_run_directory(
         }
     meta["macro_packet_id"] = macro_quant_packet.get("macro_packet_id")
     meta["macro_packet_sha256"] = macro_quant_packet.get("macro_packet_sha256")
-    try:
-        from canonical_data.macro_packet_archive import archive_macro_packet
-        meta["macro_packet_archive"] = archive_macro_packet(
-            macro_quant_packet, cfg.BASE_DIR / "data" / "macro" / "archive"
-        )
-    except Exception as error:
-        logger.error("Cannot bind immutable macro packet archive: %s", error)
-        return False
+    if macro_data.get("macro_availability") == "UNAVAILABLE_NEUTRAL_FALLBACK":
+        # Absence is explicit evidence, not an invented archived macro packet.
+        meta["macro_packet_archive"] = {
+            "state": "UNAVAILABLE_NEUTRAL_FALLBACK",
+            "source_sha256": hashlib.sha256(Path(macro_path).read_bytes()).hexdigest(),
+        }
+    else:
+        try:
+            from canonical_data.macro_packet_archive import archive_macro_packet
+            meta["macro_packet_archive"] = archive_macro_packet(
+                macro_quant_packet, cfg.BASE_DIR / "data" / "macro" / "archive"
+            )
+        except Exception as error:
+            logger.error("Cannot bind immutable macro packet archive: %s", error)
+            return False
     try:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
@@ -5257,6 +5287,18 @@ def evening_workflow(
     logger.info(f"    Session ID : {session_id}  (orchestrator start — logging only)")
     logger.info("=" * 80 + "\n")
 
+    # A present but incoherent macro publication is not the same as an absent
+    # optional advisory. Catch it before GEX acquisition or Discovery spend.
+    if cfg.MACRO_FILE.is_file():
+        _macro_ready, _macro_reason, _ = check_macro_json(
+            allowed_superseded_input_keys=(
+                "gex_proxy_csv", "gex_by_strike_csv", "gex_manifest_json"
+            ),
+        )
+        if not _macro_ready:
+            logger.error("MACRO_PUBLICATION_PREFLIGHT_FAILED: %s", _macro_reason)
+            return False
+
     # DATA-PROJECTION-001: refresh the two market-reference option chains and
     # derive exact-session GEX before the advisory macro packet is loaded.  A
     # GEX failure cannot remove a ticker or change direction; the deterministic
@@ -5324,8 +5366,20 @@ def evening_workflow(
     )
     if not preflight_ok:
         return False
+    if cfg.MACRO_FILE.is_file() and macro_path is None:
+        logger.error(
+            "MACRO_PUBLICATION_CHANGED_DURING_PREFLIGHT: present macro was "
+            "rejected; refusing a silent fallback after GEX acquisition"
+        )
+        return False
     if macro_path is not None and _gex_runtime_path is not None and _gex_runtime_path.is_file():
         macro_path = _gex_runtime_path
+    elif macro_path is not None:
+        try:
+            macro_path = _run_scoped_macro_copy(session_id, macro_path)
+        except (OSError, RuntimeError) as copy_error:
+            logger.error("RUN_SCOPED_MACRO_FAILED: %s", copy_error)
+            return False
     macro_path = _ensure_runtime_macro_path(session_id, macro_path)
 
     # ── SECTOR BIAS MAP — built once, passed to all downstream modules ────────
@@ -5798,7 +5852,7 @@ def evening_workflow(
     # accessing _sig._raw directly on a RoutedSignal dataclass. Fixed by
     # _ticker_to_raw lookup pattern already present in run_horizon_router().
     # Phase 1B is fully operational — do NOT disable again.
-    _hr_result = run_horizon_router(cfg.MACRO_FILE, canonical_run_id)
+    _hr_result = run_horizon_router(macro_path, canonical_run_id)
 
     # ── PATCH-HORIZON Phase 1B-B: Stamp horizon fields into OI CSV ────────────
     # SuperBrain passthrough copies OI → superbrain_enriched. If OI carries

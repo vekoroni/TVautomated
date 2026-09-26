@@ -84,10 +84,17 @@ def test_legacy_evening_command_reaches_preflight_during_regular_session(
     monkeypatch, tmp_path
 ) -> None:
     import intelligent_orchestrator as orchestrator
+    import orchestrator.completed_session_gex as completed_gex
 
     reached_preflight = {"value": False}
 
     monkeypatch.setattr(orchestrator.cfg, "RUNS_DIR", tmp_path / "runs")
+    monkeypatch.setattr(orchestrator.cfg, "MACRO_FILE", tmp_path / "missing_macro.json")
+
+    def skip_gex(**_kwargs):
+        raise RuntimeError("offline test: no provider acquisition")
+
+    monkeypatch.setattr(completed_gex, "synchronise_completed_session_gex", skip_gex)
     monkeypatch.setattr(orchestrator, "load_scanner_manifest", lambda: {})
     monkeypatch.setattr(orchestrator, "load_manual_ticker_upload", lambda: {})
     monkeypatch.setattr(orchestrator, "merge_scanner_inputs", lambda *_: {})
