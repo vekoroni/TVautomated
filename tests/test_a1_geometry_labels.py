@@ -136,7 +136,7 @@ def test_geometry_counts_by_source_degenerate_and_reachability(tmp_path):
     assert g["actionable_degenerate_vol_relative"] == 1         # DEG is routed GO_LIMIT
     assert g["degenerate_unassessed"] == 1                      # NOEM
     assert g["target_beyond_3x_expected_move"] == 1             # FAR
-    assert g["expected_move_basis"] == "CUMULATIVE_SUM_OF_LEGACY_INCREMENTS_PCT"
+    assert g["expected_move_basis"] == "CUMULATIVE_1SIGMA_CANONICAL_OR_COMPLETE_LEGACY_PCT"
     # nothing routes on these counts
-    assert m["run_tradeable"] is True and m["run_tradeable_label"] == "EXECUTION_READY"
+    assert m["run_tradeable"] is True and m["run_tradeable_label"] == "REVIEW_REQUIRED_SEMANTIC_HANDOFF_DEFECTS"
     assert not any("DEGENERATE" in f for f in m["stale_flags"])

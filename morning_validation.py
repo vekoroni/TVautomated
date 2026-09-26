@@ -426,8 +426,6 @@ def compute_exit_plan(candidate: dict[str, Any]) -> dict[str, Any]:
     garch_10d = spot * move_10_pct / 100.0 if spot and move_10_pct is not None else None
     if garch_5d is None:
         garch_5d = _flt(candidate, "expected_move_price", None)
-    if garch_10d is None:
-        garch_10d = garch_5d
     grade = _str(candidate, "wbs_grade").upper()
     vanna = _flt(candidate, "wbs_f1_vanna", 0.0) or 0.0
 
@@ -448,13 +446,15 @@ def compute_exit_plan(candidate: dict[str, Any]) -> dict[str, Any]:
         mode = "RIDE_THROUGH_WALL"
         t1, p1 = phase_b, 40
         t2, p2 = phase_c, 35
-        t3, p3 = wall + sign * (garch_10d or wall_dist * 0.25), 25
+        t3 = wall + sign * garch_10d if garch_10d is not None else None
+        p3 = 25 if t3 is not None else 0
         rationale = "WBS probable with vanna support; scale but allow wall continuation."
     elif garch_covers_pct >= 40:
         mode = "SCALE_AT_WALL"
         t1, p1 = phase_b, 60
         t2, p2 = phase_c, 25
-        t3, p3 = wall + sign * max(wall_dist * 0.15, (garch_10d or 0.0) * 0.15), 15
+        t3 = wall + sign * max(wall_dist * 0.15, garch_10d * 0.15) if garch_10d is not None else None
+        p3 = 15 if t3 is not None else 0
         rationale = "GARCH covers at least 40% of wall distance; scale into wall and hold a runner."
     else:
         mode = "EXIT_BEFORE_WALL"
@@ -463,6 +463,10 @@ def compute_exit_plan(candidate: dict[str, Any]) -> dict[str, Any]:
         t2, p2 = spot + sign * move * 0.85, 35
         t3, p3 = spot + sign * move * 1.05, 15
         rationale = "Expected move does not cover enough wall distance; harvest before the wall."
+
+    runner_budget_missing = mode in {"RIDE_THROUGH_WALL", "SCALE_AT_WALL"} and t3 is None
+    if runner_budget_missing:
+        rationale += " Ten-session budget unavailable; runner target requires review."
 
     invalidation = _flt(candidate, "exit_invalidation_price", None) or _flt(candidate, "invalidation_level", None)
     if invalidation is None:
@@ -476,6 +480,8 @@ def compute_exit_plan(candidate: dict[str, Any]) -> dict[str, Any]:
         "exit_t2_pct": p2,
         "exit_t3_price": round(float(t3), 4) if t3 is not None else "",
         "exit_t3_pct": p3,
+        "exit_runner_target_state": "HORIZON_BUDGET_MISSING" if runner_budget_missing else "AVAILABLE",
+        "exit_plan_complete": not runner_budget_missing,
         "exit_garch_covers_pct": garch_covers_pct,
         "exit_rationale": rationale,
         "exit_invalidation_price": round(float(invalidation), 4) if invalidation is not None else "",

@@ -7,7 +7,8 @@ rows, and decides run_tradeable without semantic health, so EXECUTION_READY sits
 Business rules (ACK, reviewer amendment "grain-correct D2"):
 - Distinct counts for missing target, missing invalidation and both, each beside its denominator.
 - The actionable rows (routed GO / GO_LIMIT) are counted separately.
-- The label says so only when an actionable row lacks geometry; run_tradeable and the permissions never change.
+- The label cannot claim global execution readiness when selected handoff has missing geometry;
+  actionable geometry has the more specific review label. Row authority and permissions do not change.
 """
 
 from __future__ import annotations
@@ -95,12 +96,12 @@ def test_counts_are_reported_by_grain_with_denominators(tmp_path):
     assert g["actionable_missing_both"] == 0
 
 
-def test_the_legacy_count_is_unchanged_and_the_label_stays_when_no_actionable_row_is_affected(tmp_path):
+def test_selected_handoff_defects_downgrade_the_run_label_even_without_an_actionable_defect(tmp_path):
     _make_run(tmp_path, MIXED)
     m = build_final_run_manifest(RUN, tmp_path, pipeline_mode=MODE)
     assert m["missing_selected_handoff"]["invalidation_spot"] == 2      # as today: DDD, EEE
     assert m["run_tradeable"] is True
-    assert m["run_tradeable_label"] == "EXECUTION_READY"
+    assert m["run_tradeable_label"] == "REVIEW_REQUIRED_SEMANTIC_HANDOFF_DEFECTS"
     assert not any(f.startswith("ACTIONABLE_GEOMETRY_DEFECTS") for f in m["stale_flags"])
 
 
@@ -109,7 +110,7 @@ def test_the_label_says_so_when_an_actionable_row_lacks_geometry_and_nothing_els
     m = build_final_run_manifest(RUN, tmp_path, pipeline_mode=MODE)
     g = m["thesis_geometry_completeness"]
     assert g["actionable_population"] == 2 and g["actionable_missing_invalidation"] == 1
-    assert m["run_tradeable_label"] == "EXECUTION_READY_ACTIONABLE_GEOMETRY_DEFECTS"
+    assert m["run_tradeable_label"] == "REVIEW_REQUIRED_ACTIONABLE_GEOMETRY_DEFECTS"
     assert "ACTIONABLE_GEOMETRY_DEFECTS:1" in m["stale_flags"]
     # routing preserved
     assert m["run_tradeable"] is True
@@ -123,7 +124,7 @@ def test_the_block_is_present_and_zero_when_there_are_no_candidates(tmp_path):
     m = build_final_run_manifest(RUN, tmp_path, pipeline_mode=MODE)
     g = m["thesis_geometry_completeness"]
     assert g["population"] == 0 and g["actionable_population"] == 0
-    assert m["run_tradeable_label"] != "EXECUTION_READY_ACTIONABLE_GEOMETRY_DEFECTS"
+    assert m["run_tradeable_label"] != "REVIEW_REQUIRED_ACTIONABLE_GEOMETRY_DEFECTS"
 
 
 def test_the_block_survives_a_json_round_trip(tmp_path):

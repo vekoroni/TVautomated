@@ -46,6 +46,7 @@ from contracts.long_option_policy import (
 from domain.execution_authority import execution_authority_contract_violations
 from domain.quote_units import resolve_spread
 from domain.pretrade_focus import project_evening_thesis
+from domain.volatility_budget import cumulative_expected_move_pct
 from canonical_data.dynamic_options_projection import DynamicOptionsProjectionResolver
 
 
@@ -1858,7 +1859,8 @@ def _thesis_geometry_completeness(
         "actionable_missing_both": 0, "actionable_missing_any": 0,
         # A1 (ACK 25 Sep 2026): a level inside 0.25 x the cumulative expected move for the row's bucket is
         # degenerate (never a fixed percent); a target beyond 3 x that move is counted as a reachability
-        # question. The expected move is the sum of the legacy per-bucket increments, in percent of spot.
+        # question. The expected move comes from the same cumulative resolver as
+        # the Evening thesis, which rejects contradictory conventions and partial paths.
         "degenerate_vol_relative": 0, "actionable_degenerate_vol_relative": 0, "degenerate_unassessed": 0,
         "target_beyond_3x_expected_move": 0,
     }
@@ -1899,13 +1901,11 @@ def _thesis_geometry_completeness(
         # degenerate / reachability, vol-relative
         spot = _f(_first_present(row, "signal_price", "underlying_price", "stock_price", "entry_spot"), 0.0)
         bucket = _u(_first_present(row, "time_horizon", "horizon_bucket")).replace("-", "_")
-        increments = [_f(row.get(k), 0.0) for k in ("garch_expected_move_1_5d", "garch_expected_move_6_10d", "garch_expected_move_11_20d")]
-        present = [not _is_missing(row.get(k)) for k in ("garch_expected_move_1_5d", "garch_expected_move_6_10d", "garch_expected_move_11_20d")]
-        n_inc = 1 if "1_5" in bucket else 2 if "6_10" in bucket else 3
-        if spot <= 0.0 or not all(present[:n_inc]) or (missing_target and missing_invalidation):
+        move_pct = cumulative_expected_move_pct(row, bucket)
+        if spot <= 0.0 or move_pct is None or (missing_target and missing_invalidation):
             counts["degenerate_unassessed"] += 1
             continue
-        move_fraction = sum(increments[:n_inc]) / 100.0
+        move_fraction = move_pct / 100.0
         threshold = 0.25 * move_fraction
         degenerate = False
         if not missing_target and abs(target / spot - 1.0) < threshold:
@@ -1920,7 +1920,7 @@ def _thesis_geometry_completeness(
     result: Dict[str, Any] = {key: int(value) for key, value in counts.items()}
     result["missing_invalidation_by_source"] = missing_invalidation_by_source
     result["missing_target_by_source"] = missing_target_by_source
-    result["expected_move_basis"] = "CUMULATIVE_SUM_OF_LEGACY_INCREMENTS_PCT"
+    result["expected_move_basis"] = "CUMULATIVE_1SIGMA_CANONICAL_OR_COMPLETE_LEGACY_PCT"
     result["degenerate_rule"] = "LEVEL_INSIDE_0.25_X_EXPECTED_MOVE"
     return result
 
@@ -2362,10 +2362,14 @@ def build_final_run_manifest(
         run_prep_permission = "REVIEW_ONLY"
         run_tradeable_label = "LIVE_UAT_REQUIRED"
         manual_review_enabled = True
-    # D2: the label says so when an actionable row lacks a target or an invalidation. Display only:
-    # run_tradeable, the permissions and next_action are exactly as above.
-    if run_tradeable_label == "EXECUTION_READY" and actionable_geometry_defects:
-        run_tradeable_label = "EXECUTION_READY_ACTIONABLE_GEOMETRY_DEFECTS"
+    # D2: run-level readiness cannot conceal a selected-handoff semantic gap.
+    # This changes the label only; per-row authority, permissions and next_action
+    # remain as calculated above. Actionable geometry receives the specific label.
+    if run_tradeable_label == "EXECUTION_READY":
+        if actionable_geometry_defects:
+            run_tradeable_label = "REVIEW_REQUIRED_ACTIONABLE_GEOMETRY_DEFECTS"
+        elif semantic_defect_count:
+            run_tradeable_label = "REVIEW_REQUIRED_SEMANTIC_HANDOFF_DEFECTS"
 
     if fatal_flags:
         pipeline_technical_health = "FAILED"

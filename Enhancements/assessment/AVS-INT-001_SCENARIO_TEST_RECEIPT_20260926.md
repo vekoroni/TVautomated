@@ -1,0 +1,60 @@
+# AVS-INT-001 — scenario test receipt, 26 September 2026
+
+**Status:** offline scenario and replay testing of the 26 Sep INT-001 truth slice at HEAD `a550573`; no pipeline run, provider call, broker call, database write, universe edit or production-code change. Tracked files were not modified. New test files are untracked (`TESTED_UNCOMMITTED`).
+
+**Scope tested, macro to Interpreter:** macro publication and preflight → run-scoped macro copy → Interpreter macro packet and manifest session check → volatility budget through every Evening/Morning consumer → Evening thesis reasoning → contract economics model → Lab book materialisation, publication and API → Morning event append → options ticket policy on non-session dates → staged data contract → competing-risk outcome labels → exact-contract quote join → saved-report WAR view → read-only replay of stored TEST run `20260925_061649`.
+
+## 1. What was run
+
+| Pack | Command shape | Result |
+|---|---|---|
+| Existing INT-001 and adjacent regression (16 files) | `venv\Scripts\python.exe -m pytest -p no:cacheprovider --basetemp=%TEMP%\avs_int\… tests\test_avs_int001_*.py …` | **161 passed** |
+| DOI / valuation / outcome regression (10 files) | same form | **125 passed** |
+| New scenario suites 1–7 (fast, 6 files) | `tests\test_avs_int001_scenario_{macro_chain,horizon_parity,evening_to_lab,policy_dcv_outcomes,interpreter_war,contract_economics}.py` | **88 passed, 2 strict xfailed** (H1, H2 below) |
+| New scenario suite 8, stored-run replay | `tests\test_avs_int001_scenario_stored_run_replay.py` (read-only, 14 min 25 s) | **9 passed, 1 strict xfailed** (D2 below). Stored files unchanged (hash-checked). |
+| Broad regression batch (124 files: macro, Lab, ILA, Morning, WAR, Interpreter, handoff, EOD, DDD, MSI, fixspec) | same form | **956 passed, 2 skipped, 24 subtests passed** in 12 min 36 s (68 NumPy warnings from empty-history Layer 3 tests, no failures) |
+| Orchestrator dry run | `python intelligent_orchestrator.py --evening --plan-only` | Resolved last completed session 2026-09-25, `NORMAL_COMPLETED_SESSION`, 0 provider requests, stages DISCOVERY → COMPLETED_MARKET_PROFILE → VANGUARD → OPTIONS → PUBLISH_THESIS. Plain `--plan-only` fails closed (mode required). |
+
+Environment note: the venv Python 3.14 runs pytest directly; `--basetemp` under `%TEMP%` is required (the default temp directory is inaccessible).
+
+## 2. Scenarios and what they proved
+
+**Macro chain (suite 1, 8 tests).** A packet claiming capital authority is refused and projections stay byte-identical. A drifted legacy projection fails `check_macro_json` preflight until republished. The run-scoped copy is immutable per run: a mid-run re-drop raises rather than silently re-using different bytes, and a new run picks up the new packet. The run-frozen snapshot becomes the Interpreter packet; a later on-disk edit is caught by hash, a packet outside the run root is refused, STALE and conflict flags become typed `STALE_CONTEXT` / `CONFLICTING_SOURCES`. The manifest calls a packet from a different session `INVALID` with `trading_authority=False` and accepts a session-aligned one as `AVAILABLE` while an empty run is still not execution-ready. Row advisory fields carry the full advisory statement, `macro_data_role=ADVISORY_ONLY`, no authority key, and an unmapped sector is `UNMAPPED`, never `FAVOURED`.
+
+**Volatility budget parity (suite 2, 14 tests).** One ticker (spot 48.20, 42% annual vol) with canonical fractions and consistent legacy increments. Evening thesis, EOD exit fallback (CALL and PUT, 6–10D and 11–20D), trigger EV, execution package, Lab book and Morning exit plan all resolve the same cumulative move in their own units; a contradictory `horizon_convention` or an incomplete legacy path sends the Evening consumers to UNKNOWN together. The manifest's degenerate rule is vol-relative (a 1% stop is degenerate at 42% vol and not at 12%). Fraction/percent unit guards hold at the 300% boundary.
+
+**Evening to Lab (suite 3, 9 tests).** Eight realistic rows: idiosyncratic CALL with sector headwind (stays `EOD_ACTION_SETUP_READY`), clean PUT, CALL with opposing independent price/flow evidence (`EOD_DIRECTION_EVIDENCE_REVIEW`, direction preserved), no two-sided quote (`EOD_EVIDENCE_REVIEW`, recovers to ready when a quote arrives with the direction unchanged), generated 3R target, explicitly invalidated thesis, missing invalidation, wrong-side PUT stop. The book keeps all eight with unique identities; only source-qualified side-checked stops get the `invalidation_spot` alias with provenance; missing or wrong-side stops block `lab_tradeable`; verdict-encoded convexity is withheld on every row without losing target or budget; scenario fields are typed and `scenario_is_expected_return=False`. `write_final_opportunity_book` → `read_final_opportunity_book` → Lab `/api/opportunity_book/<run>?full=1` serve identical rows and counts. Morning `THESIS_INVALIDATED` appends a dated event while the frozen EOD direction, target and stop remain; an event naming a different contract is an identity conflict that keeps the row visible as `PROJECTION_INCOMPLETE`; a Morning row never re-judges the frozen Evening bucket.
+
+**Policy, data contract, outcomes (suite 4, 23 tests).** The ticket-spread policy resolves Saturday/Sunday/Thanksgiving to the last completed XNYS session (0.10 from the governed registry, cached by session); a session before the policy's effective date (Labor Day → 2026-09-04) is typed unavailable, not defaulted; a registry failure is not cached. DCV: price history can pass while the regime is pending; NO_OHLCV, short, NaN and stale histories are typed rejections that repair never fabricates; timeseries promotion is disclosed. C12 first passage: CALL target-first with R multiple, PUT stop-first with gap fill at the open, same-session ambiguity, censoring, data gap, timeout, no-target and wrong-side geometry, and consistent scoring across 1/5/10/20-session windows.
+
+**Interpreter and WAR (suite 5, 27 tests).** Exact-contract identity is a join on symbol + ticker + run (RUN_MISMATCH, AMBIGUOUS, NOT_FOUND typed); one-sided, crossed, size-missing, no-size, halted and no-quote states block `EXECUTABLE_NOW` without dropping the match; freshness is judged at report generation. The WAR view builds with sockets disabled (provider-free), refuses generation earlier than the saved report, keeps a post-EOD quote out of the frozen EOD thesis, escapes hostile markup and instruction text in saved prose, states a missing contract as a gap, persists once and does not rewrite a frozen view when the quote store changes. All five saved reports in the stored TEST run (BULL, EWG ×2, SOFI, XLF) project read-only as `ADVISORY_ONLY` / `HUMAN_REVIEW_ONLY` with a typed, non-executable quote state, and HTML is a pure function of the saved JSON.
+
+**Contract economics (suite 7, 9 tests).** Pricing model parity, bounds and monotonicity; DOI-5 grid orders paths, timing and IV stress as a long option must (a deep-ITM put at positive rates is flagged `OUT_OF_DISTRIBUTION` for American exercise); economics v2 headline payoffs are theoretical value net of stated friction against the ask, utility and convexity reproduce their documented formulas, typed states for missing/crossed/wide/short-expiry quotes, the profit floor changes only the label and only when approved, and the Lab's six LATE/BASE payoffs equal the engine's with a two-outcome break-even and no expectancy claim; a grid for another governed contract is `CONTRACT_MISMATCH`.
+
+**Stored-run replay (suite 8, 10 tests, read-only).** The pre-fix book is as the receipts describe (1,549 rows, unique identities, `invalidation_spot` blank on all, 1,180 numeric `invalidation_price`, 1,549 unsourced convexity numbers, Morning event fields on every row). Re-materialising every row from its frozen `source_payload_json` through the current materialiser preserves all 1,549 identities and directions; the A1 alias now covers exactly the 1,180 side-checked, sourced, `AVAILABLE` stops with provenance and never a wrong-side one; replay never widens `lab_tradeable` and every tradeable row has a sourced stop and passes direction integrity; convexity is withheld on the whole population while targets survive; the horizon audit reproduces the receipt's 334 comparable / 88 legacy-false-review / 101 not-comparable 6–10D counts; the rebuilt manifest reconciles row counts, 175 missing `invalidation_spot`, semantic health DEGRADED, no fatal flags, and the Interpreter macro packet typed `INVALID` for the session mismatch.
+
+## 3. Findings (no production change made)
+
+| ID | Where | What the scenario showed | Recorded as |
+|---|---|---|---|
+| **H1** | `morning_validation.compute_exit_plan` | With only a 5-session budget, `garch_10d` is set to `garch_5d`, so the RIDE_THROUGH_WALL runner target is priced off the wrong horizon. Contradicts the HORIZON_UNIT_REPAIR receipt sentence that a missing complete budget stays unknown. | strict xfail in suite 2 |
+| **H2** | `contracts.lab_control._thesis_geometry_completeness` | Manifest geometry sums only legacy `garch_expected_move_*` increments; canonical-only rows count as `degenerate_unassessed` while the Evening thesis judged them; a contradictory convention is summed silently. Two owners for one fact. | strict xfail in suite 2 |
+| **D2** | `build_final_run_manifest` label | TEST run label is `EXECUTION_READY` with 175 selected-handoff rows lacking `invalidation_spot` and semantic health DEGRADED; the geometry-defect suffix only reads candidate-file rows. Design §5 D2 remains open. | strict xfail in suite 8 |
+| **Obs-1** | stored run `20260925_061649` | `worker3_market_environment.status=INVALID`: packet session 2026-09-25 vs governed session 2026-09-24. Correct fail-closed typing; the next completed-session run must show AVAILABLE. | assertion in suites 1 and 8 |
+| **Obs-2** | `intelligent_orchestrator.py` | `--plan-only` without `--evening/--morning` fails closed; CLAUDE.md wording implies the bare flag works. Documentation only. | none |
+
+## 3a. Post-fix regression (later on 26 Sep 2026)
+
+After the first pass, H1, H2 and D2 were repaired in the working tree (`morning_validation.py`: no 5-session substitute, runner target typed `HORIZON_BUDGET_MISSING` with `exit_plan_complete=False`; `contracts/lab_control.py`: manifest geometry now uses `cumulative_expected_move_pct`, basis `CUMULATIVE_1SIGMA_CANONICAL_OR_COMPLETE_LEGACY_PCT`, and an `EXECUTION_READY` label becomes `REVIEW_REQUIRED_SEMANTIC_HANDOFF_DEFECTS` or `REVIEW_REQUIRED_ACTIONABLE_GEOMETRY_DEFECTS`). The xfail markers were removed from the scenario suites. Regression against the fixed tree:
+
+| Pack | Result |
+|---|---|
+| Horizon parity, consumers, red, Evening→Lab, geometry labels (6 files) | **58 passed**, no xfail |
+| Stored-run replay manifest tests r7–r9 | **3 passed**; rebuilt TEST-run label is now `REVIEW_REQUIRED_SEMANTIC_HANDOFF_DEFECTS` |
+| Morning, Lab, ILA, MSI, handoff, D2/D3 manifest, fixspec, INT-001 (73 files) | **526 passed, 1 skipped, 3 subtests** |
+
+Consumer check: no production code string-matches the old `EXECUTION_READY_ACTIONABLE_GEOMETRY_DEFECTS` label (the Lab passes `run_tradeable_label` through); no non-test consumer reads `exit_t3_*`. `Enhancements/research/rca/D2_MANIFEST_GEOMETRY_GRAIN_RCA_AND_DESIGN_20260925.md` still names the superseded label and should be amended when the slice is closed. Status of the three fixes: **TESTED_UNCOMMITTED**; live proving (normal completed-session Evening and Morning, operator-started) remains the acceptance gate and was not started.
+
+## 4. Boundaries
+
+These are offline, deterministic tests and a read-only replay of a TEST-condition run. They do not attest a completed-session live Evening/Morning cycle, browser rendering, provider finality, or any prospective outcome. WAR v2 components remain untracked and untested here beyond the existing advisory guard. Worker 3, capital and order authority were not touched. The new test files are uncommitted; commit is ACK's call.
