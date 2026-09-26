@@ -740,18 +740,19 @@ def _build_signal_pkg(row: Dict[str, Any]) -> Dict[str, Any]:
     # as a flat column. The GARCH layer (Phase L3) writes l3_expected_move_6_10d and
     # l3_expected_move_1_5d in percentage terms (e.g. 8.3 = 8.3%). Divide by 100 to
     # convert to decimal (e.g. 0.083) so EV = win_rate * expected_move is meaningful.
-    # Fallback chain: actuarial_expected_move_10d → expected_move_10d → l3 6-10d → l3 1-5d
+    # Fallback chain: authoritative actuarial fraction → canonical budget →
+    # complete Layer 3 increments → legacy decimal fraction only. An EOD
+    # display percentage must never become a 700% expected return.
     def _em_10d() -> Optional[float]:
-        v = _f("actuarial_expected_move_10d") or _f("expected_move_10d")
-        if v is not None:
+        v = _f("actuarial_expected_move_10d")
+        if v is not None and 0 < v <= 1:
             return v
-        # GARCH forecasts are in % — convert to decimal fraction
-        l3_6_10 = _f("l3_expected_move_6_10d")
-        if l3_6_10 is not None:
-            return l3_6_10 / 100.0
-        l3_1_5 = _f("l3_expected_move_1_5d")
-        if l3_1_5 is not None:
-            return l3_1_5 / 100.0
+        from domain.volatility_budget import cumulative_expected_move_pct
+        move_pct = cumulative_expected_move_pct(row, "6_10d")
+        if move_pct is not None:
+            return move_pct / 100.0
+        # The unqualified expected_move_10d alias has carried both display
+        # percent and decimal fraction. Its magnitude cannot establish units.
         return None
 
     # Actuarial block — may be flat-prefixed in CSV

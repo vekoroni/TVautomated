@@ -104,6 +104,7 @@ from domain.pretrade_focus import (
     FOCUS_INPUT_FIELDS, FOCUS_PRIMARY, project_evening_thesis,
     project_pretrade_focus,
 )
+from domain.volatility_budget import cumulative_expected_move_pct
 from execution_schema import validate_trigger_handoff_row
 
 try:
@@ -1598,13 +1599,12 @@ def _monetisation_fit(row: dict, tier: str, contract_profile: dict, direction_in
     label = "ASYMMETRIC_EXECUTE" if score >= 72 else "ASYMMETRIC_REVIEW" if score >= 55 else "WATCH_ONLY"
     return {"monetisation_fit_score": round(max(0.0, min(100.0, score)), 2), "monetisation_fit_label": label}
 
-def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[float], wall_price: float, target_price: float) -> dict:
+def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[float], wall_price: float, target_price: float, *, horizon: str = "") -> dict:
     direction_u = str(direction or "").upper()
     entry = _flt(row, "signal_price") or _flt(row, "underlying_price") or _flt(row, "current_price")
     target = target_price or _flt(row, "target_price")
-    expected_move_pct = (
-        _first_flt(row, "l3_expected_move_1_5d", "l3_expected_move_6_10d", "expected_move_pct", "expected_move")
-        or 0.0
+    expected_move_pct = cumulative_expected_move_pct(
+        row, horizon or _str(row, "time_horizon") or _str(row, "horizon_bucket")
     )
     wbs_grade = _str(row, "wbs_grade").upper()
     if wbs_grade == "PROBABLE":
@@ -1617,8 +1617,8 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         mode = "SCALE_AT_WALL"
         scale = "60/25/15"
 
-    if not target and entry and direction_u in GOVERNED_DIRECTED_SIDES:
-        move = abs(expected_move_pct) / 100.0 if abs(expected_move_pct) > 1 else abs(expected_move_pct)
+    if not target and entry and direction_u in GOVERNED_DIRECTED_SIDES and expected_move_pct is not None:
+        move = expected_move_pct / 100.0
         target = entry * (1 + move) if direction_u == "CALL" else entry * (1 - move)
     if not wall_price:
         wall_price = target
@@ -1647,7 +1647,7 @@ def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[fl
         "exit_plan_reason": (
             LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value
             if direction_u not in GOVERNED_DIRECTED_SIDES
-            else f"WBS={wbs_grade or 'NONE'}; GARCH/expected move={expected_move_pct}"
+            else f"WBS={wbs_grade or 'NONE'}; cumulative horizon expected move={expected_move_pct if expected_move_pct is not None else 'UNAVAILABLE'}%"
         ),
     }
 
@@ -2316,11 +2316,18 @@ def build_candidate_manifest(
         dte            = _flt(row, "dte", 30)
         _contract_dte_value, _contract_dte_state = _governed_contract_dte(row)
         move_window    = _expected_move_window(dte)
+        # Resolve the thesis horizon before any expected-move consumer. DTE is
+        # contract runway, not the intended 1-20-session holding period.
+        _hctx = _horizon_map.get(ticker, {})
+        _cand_hb = _hctx.get("horizon_bucket") or str(row.get("horizon_bucket", "")).strip() or "unrouted"
+        _cand_ha = _hctx.get("horizon_action") or str(row.get("horizon_action", "")).strip() or "UNKNOWN"
+        _cand_hsm = float(_hctx.get("horizon_size_multiplier") or row.get("horizon_size_multiplier") or 1.0)
+        move_window = _horizon_trade_window(_cand_hb, move_window)
         setup_type     = _setup_type(row)
         invalidation   = _invalidation_level(row)
         wall_price     = _flt(row, "wbs_wall_price") or _flt(row, "put_wall") or _flt(row, "call_wall")
         wall_dist      = _flt(row, "wbs_wall_dist_pct") or _flt(row, "runway_to_wall_pct")
-        exit_plan      = _exit_intelligence_plan(row, direction, invalidation, wall_price, _flt(row, "target_price"))
+        exit_plan      = _exit_intelligence_plan(row, direction, invalidation, wall_price, _flt(row, "target_price"), horizon=_cand_hb)
         eod_status, eod_reason = _eod_candidate_status(row, tier)
         # A conflict remains part of the signal lineage after structure resolves
         # the trade side.  This flag is diagnostic and never blocks the route.
@@ -2334,17 +2341,6 @@ def build_candidate_manifest(
         thesis_state = _thesis_state_from_eod_status(eod_status)
         morning_tasks = _morning_tasks_for_status(row, eod_status, eod_reason)
         eod_monetisability = _eod_selected_contract_monetisability(row, direction)
-
-        # ── v4.1: Resolve horizon context ────────────────────────────────────
-        # Priority: Phase 1B horizon CSV > EIL enriched row column > default
-        _hctx = _horizon_map.get(ticker, {})
-        _cand_hb  = _hctx.get("horizon_bucket") or str(row.get("horizon_bucket","")).strip() or "unrouted"
-        _cand_ha  = _hctx.get("horizon_action") or str(row.get("horizon_action","")).strip() or "UNKNOWN"
-        _cand_hsm = float(_hctx.get("horizon_size_multiplier") or
-                          row.get("horizon_size_multiplier") or
-                          1.0)
-        move_window = _horizon_trade_window(_cand_hb, move_window)
-        # ── End horizon context resolution ───────────────────────────────────
 
         candidate = {
             # ── Identity ──────────────────────────────────────────────────────
@@ -2491,7 +2487,7 @@ def build_candidate_manifest(
             "option_chain_resolution": _str(row, "option_chain_resolution"),
             "thesis_summary":       f"{direction or 'UNKNOWN'} {setup_type} | {move_window} | {eod_status}: {eod_reason}",
             "expected_holding_window": move_window,
-            "expected_move":        _first_flt(row, "expected_move_pct", "expected_move", "l3_expected_move_6_10d", "l3_expected_move_1_5d"),
+            "expected_move":        cumulative_expected_move_pct(row, _cand_hb),
             "target_zone":          _str(row, "target_zone") or _str(row, "target_price") or _str(row, "wbs_wall_price"),
             "exit_mode":            exit_plan["exit_mode"],
             "exit_scale_plan":      exit_plan["exit_scale_plan"],
@@ -2745,7 +2741,13 @@ def build_candidate_manifest(
             "win_rate_5d":          _flt(row, "win_rate_5d"),
             "win_rate_10d":         _flt(row, "win_rate_10d"),
             "expected_move_5d":     _flt(row, "l3_expected_move_1_5d"),
-            "expected_move_10d":    _flt(row, "l3_expected_move_6_10d"),
+            "expected_move_10d":    cumulative_expected_move_pct(row, "6_10d"),
+            "expected_move_5d_fraction": _first_optional_flt(row, "expected_move_5d_fraction"),
+            "expected_move_10d_fraction": _first_optional_flt(row, "expected_move_10d_fraction"),
+            "expected_move_20d_fraction": _first_optional_flt(row, "expected_move_20d_fraction"),
+            "horizon_convention": _str(row, "horizon_convention"),
+            "volatility_budget_version": _str(row, "volatility_budget_version"),
+            "forecast_horizon_basis": _str(row, "forecast_horizon_basis"),
             "garch_expected_move_1_5d": _first_optional_flt(row, "l3_expected_move_1_5d"),
             "garch_expected_move_6_10d": _first_optional_flt(row, "l3_expected_move_6_10d"),
             "garch_expected_move_11_20d": _first_optional_flt(row, "l3_expected_move_11_20d"),

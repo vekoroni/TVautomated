@@ -76,6 +76,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import requests
+from domain.volatility_budget import cumulative_expected_move_pct
 
 from trigger_confirmation_engine import (
     TriggerConfirmationEngine,
@@ -417,19 +418,18 @@ def compute_exit_plan(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     phase_b = _flt(candidate, "wbs_phase_b_trigger", None) or _flt(candidate, "phase_b_trigger", None)
     phase_c = _flt(candidate, "wbs_phase_c_trigger", None) or _flt(candidate, "phase_c_trigger", None)
-    garch_5d = (
-        _flt(candidate, "l3_expected_move_1_5d", None)
-        or _flt(candidate, "expected_move_price", None)
-        or _flt(candidate, "expected_move_pct", None)
-    )
-    garch_10d = _flt(candidate, "l3_expected_move_6_10d", None) or garch_5d
+    # The canonical/Layer 3 move is a percentage of the underlying, whereas
+    # wall/trigger distances are dollars. Never infer units from magnitude.
+    move_5_pct = cumulative_expected_move_pct(candidate, "1_5d")
+    move_10_pct = cumulative_expected_move_pct(candidate, "6_10d")
+    garch_5d = spot * move_5_pct / 100.0 if spot and move_5_pct is not None else None
+    garch_10d = spot * move_10_pct / 100.0 if spot and move_10_pct is not None else None
+    if garch_5d is None:
+        garch_5d = _flt(candidate, "expected_move_price", None)
+    if garch_10d is None:
+        garch_10d = garch_5d
     grade = _str(candidate, "wbs_grade").upper()
     vanna = _flt(candidate, "wbs_f1_vanna", 0.0) or 0.0
-
-    if spot and garch_5d and garch_5d < 1.0:
-        garch_5d = spot * garch_5d
-    if spot and garch_10d and garch_10d < 1.0:
-        garch_10d = spot * garch_10d
 
     if not spot:
         spot = 0.0

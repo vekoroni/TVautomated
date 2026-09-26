@@ -4599,16 +4599,20 @@ def merge_garch_into_enriched(run_id: str) -> bool:
         garch = pd.read_csv(garch_path)
         sb    = pd.read_csv(sb_path)
 
-        # Keep only l3_ columns plus the join key
+        from domain.volatility_budget import CANONICAL_VOL_BUDGET_FIELDS
+        # Keep the canonical cumulative budget alongside the legacy l3_
+        # increments; dropping it silently forced every consumer to fallback.
         l3_cols = [c for c in garch.columns if c.startswith("l3_")]
         if not l3_cols:
             logger.warning("⚠️  GARCH CSV has no l3_ columns — merge skipped")
             return True
 
-        garch_slim = garch[["ticker"] + l3_cols].copy()
+        canonical_cols = [c for c in CANONICAL_VOL_BUDGET_FIELDS if c in garch.columns]
+        forecast_cols = l3_cols + canonical_cols
+        garch_slim = garch[["ticker"] + forecast_cols].copy()
 
         # Drop any l3_ columns already in superbrain (avoid _x/_y suffix collision)
-        existing_l3 = [c for c in sb.columns if c.startswith("l3_")]
+        existing_l3 = [c for c in sb.columns if c.startswith("l3_") or c in CANONICAL_VOL_BUDGET_FIELDS]
         if existing_l3:
             sb = sb.drop(columns=existing_l3)
 
@@ -4637,7 +4641,7 @@ def merge_garch_into_enriched(run_id: str) -> bool:
         if eil_path.exists():
             try:
                 eil = pd.read_csv(eil_path)
-                existing_l3_eil = [c for c in eil.columns if c.startswith("l3_")]
+                existing_l3_eil = [c for c in eil.columns if c.startswith("l3_") or c in CANONICAL_VOL_BUDGET_FIELDS]
                 if existing_l3_eil:
                     eil = eil.drop(columns=existing_l3_eil)
                 eil_merged = eil.merge(garch_slim, on="ticker", how="left")
@@ -4663,7 +4667,7 @@ def merge_garch_into_enriched(run_id: str) -> bool:
         if options_path.exists():
             options = pd.read_csv(options_path, low_memory=False)
             options = options.drop(
-                columns=[c for c in options.columns if c.startswith("l3_")],
+                columns=[c for c in options.columns if c.startswith("l3_") or c in CANONICAL_VOL_BUDGET_FIELDS],
                 errors="ignore",
             )
             options_merged = options.merge(garch_slim, on="ticker", how="left")
@@ -4677,7 +4681,7 @@ def merge_garch_into_enriched(run_id: str) -> bool:
         if execution_path.exists():
             try:
                 execution = pd.read_csv(execution_path)
-                existing_l3_execution = [c for c in execution.columns if c.startswith("l3_")]
+                existing_l3_execution = [c for c in execution.columns if c.startswith("l3_") or c in CANONICAL_VOL_BUDGET_FIELDS]
                 if existing_l3_execution:
                     execution = execution.drop(columns=existing_l3_execution)
                 execution_merged = execution.merge(garch_slim, on="ticker", how="left")
@@ -6756,13 +6760,15 @@ def evening_workflow(
                         )
             except Exception as _b1_err:
                 logger.warning("B1 FIX: Contract Greek join failed — manifest unchanged: %s", _b1_err)
-            # B4 FIX: Include all l3_ GARCH fields in morning manifest export
+            # B4 FIX: Include the incremental Layer 3 fields and their
+            # canonical cumulative budget in the Morning manifest export.
             # l3_jump_risk_flag is critical — 22 EOD_CANDIDATE_ONLY tickers carry jump risk
             try:
                 import pandas as _pd_b4
+                from domain.volatility_budget import CANONICAL_VOL_BUDGET_FIELDS as _B4_BUDGET_FIELDS
                 if _eil_csv.exists() and _morning_csv_path.exists():
                     _eil_b4 = _pd_b4.read_csv(_eil_csv, low_memory=False)
-                    _l3_cols = [c for c in _eil_b4.columns if c.startswith("l3_")]
+                    _l3_cols = [c for c in _eil_b4.columns if c.startswith("l3_") or c in _B4_BUDGET_FIELDS]
                     if _l3_cols and "ticker" in _eil_b4.columns:
                         _morning_b4 = _pd_b4.read_csv(_morning_csv_path, low_memory=False)
                         _l3_missing = [c for c in _l3_cols if c not in _morning_b4.columns]

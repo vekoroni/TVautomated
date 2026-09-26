@@ -31,10 +31,10 @@ of EOD signals via a false positive:
   produced values of 0.10–0.30x, far below the 1.0x block threshold,
   causing EV BLOCK on every signal including DIA, XLP, ABT, MCD, WM, WCN.
 
-FIX: The exec_edge gate now only fires when expected_move_pct >= 0.15
-(i.e. 15% of stock price — indicating it is calibrated as an option
-return estimate, not a structural stock move). Below that threshold,
-the gate falls through to the M3-aligned static spread check.
+The execution-edge gate now requires an explicit OPTION_RETURN_FRACTION
+basis. Magnitude cannot establish units: a 25% stock move is still not
+an option-return forecast. Without that provenance the gate uses the
+M3-aligned static spread check.
 
 This preserves the EV-aware gate for live intraday runs where
 expected_move_pct comes from a proper option return estimate, while
@@ -153,16 +153,15 @@ def run(ctx: ExecutionContext) -> StrategyResult:
             # OPTION price (e.g. 15.7%). Dividing gives exec_edge ≈ 0.18x which
             # false-fires the EV BLOCK on every signal including DIA, ABT, MCD.
             #
-            # Guard: only apply exec_edge when expected_move_pct >= 0.15
-            # (15% of stock = plausible option return estimate, not structural move).
-            # Below that threshold → fall through to M3-aligned static check.
+            # A stock move and an option spread have different denominators.
+            # The explicit basis, not a 15% magnitude heuristic, controls use.
             spread_dec = spread_pct / 100.0
             expected_move = getattr(ctx, 'expected_move_pct', None)
 
             # Is this a valid option-return level expected move?
             ev_gate_valid = (
                 expected_move is not None
-                and expected_move >= 0.15     # OTT-06: must be ≥15% to be option-level
+                and getattr(ctx, 'expected_move_basis', '') == 'OPTION_RETURN_FRACTION'
                 and spread_dec > 0
             )
 
@@ -201,8 +200,8 @@ def run(ctx: ExecutionContext) -> StrategyResult:
                     )
             else:
                 # OTT-06: M3-aligned static thresholds
-                # Used when: no expected_move, OR expected_move is structural
-                # (stock-level %, not option-return level %).
+                # Used when the expected move is absent or is an underlying
+                # move rather than a sourced option-return estimate.
                 # Thresholds match M3 LiquidityFilter verdict matrix exactly.
                 is_liquid_name    = ticker in LIQUID_NAMES
                 clean_threshold   = 3.0 if is_liquid_name else (SPREAD_PCT_CLEAN_STATIC * 100)    # 3% liquid, 6% general

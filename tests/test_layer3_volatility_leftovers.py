@@ -198,7 +198,10 @@ def test_v6_orchestrator_merge_carries_missing_state_rows(monkeypatch, tmp_path)
     assert orchestrator.merge_garch_into_enriched("RID") is True
     merged = pd.read_csv(runs / "RID" / "superbrain" / "superbrain_enriched_RID.csv").set_index("ticker")
     assert merged.loc["A", "l3_forecast_state"] == "FORECAST_OK"
+    assert merged.loc["A", "horizon_convention"] == "CUMULATIVE_1SIGMA"
+    assert merged.loc["A", "expected_move_10d_fraction"] > merged.loc["A", "expected_move_5d_fraction"]
     assert merged.loc["B", "l3_forecast_state"] == "MISSING_PRICE_HISTORY"
+    assert pd.isna(merged.loc["B", "expected_move_10d_fraction"])
     assert pd.isna(merged.loc["B", "l3_forward_realised_vol"])
     assert pd.isna(merged.loc["B", "l3_jump_risk_flag"])
     assert pd.isna(merged.loc["C", "l3_forecast_state"])     # not requested from the runner: absent, not invented

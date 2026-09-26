@@ -7,8 +7,63 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from typing import Any, Mapping
 
 VOLATILITY_BUDGET_VERSION = "vol_budget_v2"
+CANONICAL_VOL_BUDGET_FIELDS = (
+    "volatility_budget_version", "expected_move_5d_fraction",
+    "expected_move_10d_fraction", "expected_move_20d_fraction",
+    "horizon_convention", "forecast_horizon_basis", "vol_validation_state",
+    "bias_multiplier", "bias_multiplier_applied", "validation_report_id",
+    "held_out_validation_passed",
+)
+
+
+def cumulative_expected_move_pct(row: Mapping[str, Any], horizon: str) -> float | None:
+    """Hold-window one-sigma stock move in percent, never a band increment.
+
+    Canonical budgets are fractions; legacy Layer 3 fields are incremental
+    display percentages for 1-5, 6-10, and 11-20 sessions respectively.
+    Missing or invalid components cannot be replaced by a shorter horizon.
+    """
+    selected = {
+        "1_5D": ("expected_move_5d_fraction", 1),
+        "6_10D": ("expected_move_10d_fraction", 2),
+        "11_20D": ("expected_move_20d_fraction", 3),
+    }.get(str(horizon or "").strip().upper())
+    if selected is None:
+        return None
+    canonical_field, count = selected
+    convention = str(row.get("horizon_convention") or "").strip().upper()
+    if convention and convention != "CUMULATIVE_1SIGMA":
+        return None
+
+    def positive(value: Any) -> float | None:
+        try:
+            result = float(value)
+        except (TypeError, ValueError):
+            return None
+        return result if math.isfinite(result) and result > 0 else None
+
+    raw = row.get(canonical_field)
+    if raw is not None and str(raw).strip() != "":
+        fraction = positive(raw)
+        return fraction * 100.0 if fraction is not None and fraction <= 3.0 else None
+    fields = (
+        "l3_expected_move_1_5d",
+        "l3_expected_move_6_10d",
+        "l3_expected_move_11_20d",
+    )[:count]
+    increments = []
+    for name in fields:
+        raw = row.get("garch_expected_move_" + name.removeprefix("l3_expected_move_"))
+        if raw is None or str(raw).strip() == "":
+            raw = row.get(name)
+        value = positive(raw)
+        if value is None:
+            return None
+        increments.append(value)
+    return sum(increments)
 
 
 @dataclass(frozen=True, slots=True)

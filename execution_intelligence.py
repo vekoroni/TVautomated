@@ -33,10 +33,9 @@ FIX-05  POC DERIVATION: poc_price was never set. Derived from structural_target
         if available (Wyckoff target = effective POC proxy). price_vs_poc
         computed from underlying_price and poc_price when absent.
 
-FIX-06  EXPECTED MOVE: fallback chain extended to include l3_expected_move_1_5d
-        and l3_expected_move_6_10d which ARE present in the pipeline output.
-        These are stored as percentages (e.g. 3.08 = 3.08%) and converted to
-        decimal for the EV-aware spread gate in S1.
+FIX-06  EXPECTED MOVE: Layer 3 moves are underlying percentages, converted
+        to fractions for display. They are explicitly marked UNDERLYING_FRACTION
+        and cannot activate the option-return execution-edge gate in S1.
 
 FIX-07  L2 BOOK: l2_bid_size / l2_ask_size are not available in EOD mode.
         S4 (OBI) gracefully handles None — it falls back to GEX+wall synthesis,
@@ -710,6 +709,7 @@ def build_execution_context_from_row(
         # Structural context
         adx_value            = adx_value,
         expected_move_pct    = expected_move_pct,
+        expected_move_basis  = "UNDERLYING_FRACTION" if expected_move_pct is not None else "UNASSESSED",
 
         # EV pass-through
         ev_v2_raw            = ev_v2_raw if ev_v2_raw != 0.0 else None,

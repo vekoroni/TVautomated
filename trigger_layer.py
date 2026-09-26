@@ -315,9 +315,8 @@ def _compute_ev(row: Dict) -> float:
 
     Fallback chain:
         1. actuarial.win_rate_10d × actuarial.expected_move_10d  (package JSON path)
-        2. win_rate_10d × l3_expected_move_6_10d / 100           (GARCH 6-10d, preferred)
-        3. win_rate_10d × l3_expected_move_1_5d / 100            (GARCH 1-5d, fallback)
-        4. 0.0 (no data)
+        2. win_rate_10d × cumulative 10-session volatility budget
+        3. 0.0 when the complete hold-window budget is unavailable
     """
     # Path 1: authoritative EV from EIL/EVEngineV2. This is the current
     # field contract from execution_intelligence_runner.py; recompute only
@@ -342,17 +341,10 @@ def _compute_ev(row: Dict) -> float:
     if not wr:
         return 0.0
 
-    em_10_fraction = _flt(row, "expected_move_10d_fraction")
-    if em_10_fraction:
-        return round(wr * em_10_fraction, 8)
-
-    em_6_10 = _flt(row, "l3_expected_move_6_10d")
-    if em_6_10:
-        return round(wr * (em_6_10 / 100.0), 8)
-
-    em_1_5 = _flt(row, "l3_expected_move_1_5d")
-    if em_1_5:
-        return round(wr * (em_1_5 / 100.0), 8)
+    from domain.volatility_budget import cumulative_expected_move_pct
+    em_10_pct = cumulative_expected_move_pct(row, "6_10d")
+    if em_10_pct is not None:
+        return round(wr * (em_10_pct / 100.0), 8)
 
     return 0.0
 

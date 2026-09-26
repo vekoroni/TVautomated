@@ -181,6 +181,9 @@ class ExecutionContext:
     # ── Actuarial / structural context ───────────────────────────────────────
     adx_value: Optional[float]           = None
     expected_move_pct: Optional[float]   = None
+    # The spread gate may compare only OPTION_RETURN_FRACTION with option spread.
+    # Layer 3 GARCH is an underlying-price move, regardless of its magnitude.
+    expected_move_basis: str             = "UNASSESSED"
 
     # ── EVEngineV2 outputs (pass-through audit — v3.0) ───────────────────────
     # Set by runner after EVEngineV2.evaluate(); available to strategies

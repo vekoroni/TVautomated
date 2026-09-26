@@ -12,6 +12,8 @@ import math
 import json
 from typing import Any, Mapping
 
+from domain.volatility_budget import cumulative_expected_move_pct
+
 
 POLICY_VERSION = "pretrade-focus-v1"
 FOCUS_PRIMARY = "FOCUS_PRIMARY"
@@ -22,36 +24,7 @@ TARGET_EXPECTED_MOVE_REVIEW_MULTIPLE = 3.0
 
 
 def _cumulative_expected_move_pct(row: Mapping[str, Any], horizon: str) -> float | None:
-    """Return the hold-window 1-sigma move in display percent, never a band increment.
-
-    The canonical Stage 2 budget is a fraction. Legacy Layer 3 fields are
-    percentages for consecutive *increments* (1–5, 6–10, 11–20 sessions),
-    so the relevant increments must be present and summed before comparison.
-    """
-    fields = {
-        "1_5D": ("expected_move_5d_fraction", 1),
-        "6_10D": ("expected_move_10d_fraction", 2),
-        "11_20D": ("expected_move_20d_fraction", 3),
-    }
-    selected = fields.get(horizon)
-    if selected is None:
-        return None
-    canonical_field, count = selected
-    convention = _token(row.get("horizon_convention")).upper()
-    if convention and convention != "CUMULATIVE_1SIGMA":
-        return None
-    if _token(row.get(canonical_field)):
-        canonical = _number(row.get(canonical_field))
-        return canonical * 100.0 if canonical is not None and 0 < canonical <= 3.0 else None
-    legacy_fields = (
-        "garch_expected_move_1_5d",
-        "garch_expected_move_6_10d",
-        "garch_expected_move_11_20d",
-    )[:count]
-    increments = [_number(row.get(name)) for name in legacy_fields]
-    if any(value is None or value <= 0 for value in increments):
-        return None
-    return sum(increments)
+    return cumulative_expected_move_pct(row, horizon)
 EVENING_INPUT_FIELDS = (
     "pipeline_mode", "evening_thesis_bucket", "evening_thesis_reason",
     "evening_evidence_flags",
