@@ -577,6 +577,7 @@ FINAL_BOOK_FIELDS = [
     "eil_composite_eod",
     "entry_plan",
     "invalidation_price",
+    "invalidation_spot",
     "invalidation_state",
     "invalidation_candidate_state",
     "invalidation_source",
@@ -3283,6 +3284,12 @@ def opportunity_book_row(
     book_invalidation, book_invalidation_state, invalidation_flag = _book_invalidation(
         sig, canonical_direction
     )
+    book_invalidation_source = first(sig, "invalidation_source", "ev3_invalidation_source")
+    book_invalidation_qualified = (
+        _u(book_invalidation_state) == "AVAILABLE"
+        and _f(book_invalidation, 0.0) > 0
+        and not _is_missing(book_invalidation_source)
+    )
     if invalidation_flag:
         lab_coherence_flags = _append_flag(lab_coherence_flags, invalidation_flag)
     convexity_score, convexity_max, convexity_source, convexity_state = _qualified_convexity(sig)
@@ -3771,12 +3778,13 @@ def opportunity_book_row(
         "entry_plan": first(sig, "entry_plan", "trigger_primary", "scenario_entry_trigger", "wbs__entry_guidance"),
         # WP4 / E7 (DQ-4): side-checked against the thesis reference price.
         "invalidation_price": book_invalidation,
+        "invalidation_spot": book_invalidation if book_invalidation_qualified else "",
         "invalidation_state": book_invalidation_state,
         # A1 (25 Sep 2026): what the selector measured (AVAILABLE / DATA_DEFECT_WRONG_SIDE / MISSING ...), passed through.
         "invalidation_candidate_state": first(sig, "invalidation_candidate_state"),
         # C1 (25 Sep 2026): the six ALG-04 headline payoffs for the selected contract with their assumptions.
         **scenario_disclosure_from_row(sig),
-        "invalidation_source": first(sig, "invalidation_source", "ev3_invalidation_source"),
+        "invalidation_source": book_invalidation_source,
         # AVS-FIX-001 W1.1 (QT-D04): price fields resolve through first_price,
         # so a fabricated 0.0 is treated as absent rather than as a price.
         "target_price": first_price(sig, "target_price", "wbs__wall_price", "structural_target", "opt__structural_target", "target_spot"),
@@ -4017,11 +4025,14 @@ def opportunity_book_row(
     # A valid directional row may be displayed for research without a
     # governed invalidation, but it must never be presented as executable.
     # Direction integrity takes precedence when both contracts are absent.
+    if book_invalidation_qualified:
+        provenance["invalidation_spot"] = "governed_materializer:side_checked_invalidation_alias"
     invalidation_state = _u(row.get("invalidation_state"))
     invalidation_price = _f(row.get("invalidation_price"), default=0.0)
     directional = _side_from_value(row.get("canonical_direction")) in {"CALL", "PUT"}
     if direction_valid and directional and (
         invalidation_state != "AVAILABLE" or invalidation_price <= 0.0
+        or _is_missing(row.get("invalidation_source"))
     ):
         row["lab_tradeable"] = False
         row["lab_verdict"] = "BLOCKED"

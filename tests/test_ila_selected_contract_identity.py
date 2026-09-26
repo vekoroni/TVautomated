@@ -36,6 +36,8 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",
                          "expected_move_20d_fraction", "horizon_convention",
+                         # INT-001 A1: side-checked, source-qualified stop alias.
+                         "invalidation_spot",
                          "call_wall_state", "put_wall_state", "gamma_flip_state",
                          # B1 (ACK 25 Sep 2026): provenance of the Layer 3 forecast the shadow valuer used.
                          "contract_value_forecast_source", "contract_value_forecast_run_id",
