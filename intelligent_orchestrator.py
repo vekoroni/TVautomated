@@ -476,6 +476,9 @@ class OrchestratorConfig:
     APPLY_MACRO_ENRICHMENT_DISCOVERY = SCRIPTS_DIR / "apply_macro_enrichment_to_discovery.py"
     APPLY_EXTERNAL_INTEL_REVIEW_LANE = SCRIPTS_DIR / "apply_external_intel_review_lane.py"
     BACKFILL_TIMESERIES = SCRIPTS_DIR / "backfill_timeseries_into_packages.py"
+    # AVS-PKG-002 P1: the run input manifest (canonical data design v1 s4.1 item 5), written
+    # beside the packages after the bars are settled; consumers still read packages.
+    BUILD_CANONICAL_MANIFEST = SCRIPTS_DIR / "build_canonical_manifest.py"
     BUILD_COMPLETED_PROFILES = SCRIPTS_DIR / "build_completed_market_profiles.py"
     RUN_VANGUARD        = SCRIPTS_DIR / "run_vanguard_from_packages.py"
     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
@@ -3512,6 +3515,15 @@ def run_vanguard_pipeline(
             f"   python scripts\\{cfg.BACKFILL_TIMESERIES.name} {' '.join(backfill_args)}\n"
         )
         return False
+
+    # AVS-PKG-002 P1: cite what this run consumed (discovery, macro, canonical history,
+    # actuarial) by hash with a typed per-ticker history verdict. Non-critical in P1: a
+    # failure is logged and the run continues on packages; nothing downstream reads it yet.
+    _run(
+        "Build Canonical Manifest",
+        [sys.executable, str(cfg.BUILD_CANONICAL_MANIFEST), "--run-id", run_id],
+        critical=False,
+    )
 
     # AVS-SD-002 Phase 4: build a completed-session profile from canonical
     # intraday bars before Vanguard. Disabled until controlled promotion; when
