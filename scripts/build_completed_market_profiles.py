@@ -53,6 +53,10 @@ def _load_api_token(base_dir: Path) -> str:
 
 def _package_paths(run_dir: Path, base_dir: Path = ROOT) -> list[Path]:
     index_path = run_dir / "packages" / "index.json"
+    if not index_path.is_file():
+        # AVS-PKG-002 P4: runs no longer carry package files; this stage's own manifest-based
+        # input is part of its promotion work (AVS-SD-002 Phase 4), not fabricated here.
+        return []
     payload = json.loads(index_path.read_text(encoding="utf-8-sig"))
     paths = []
     for item in payload.get("packages") or []:

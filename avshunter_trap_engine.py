@@ -316,16 +316,54 @@ def _compute_tle_inner(pkg: Dict) -> Dict[str, Any]:
 
 # ── Orchestrator entry point ─────────────────────────────────────────────────
 
-def run_trap_layer(run_id: str, runs_dir: Path) -> bool:
+def _run_trap_layer_from_manifest(run_id: str, run_dir: Path) -> bool:
+    """AVS-PKG-002 P4: compute TLE from in-memory packages built by reference; ledger only."""
+    from avshunter.c0_run.thin_package import ThinPackageFactory, load_run_reference
+    from contracts.enrichment_ledger import write_enrichment_ledger
+
+    try:
+        factory = ThinPackageFactory(load_run_reference(run_dir))
+    except Exception as exc:
+        logger.error("TLE: manifest input unavailable for run %s: %s", run_id, exc)
+        return False
+    records = []
+    verdict_counts: Dict[str, int] = {}
+    err_count = 0
+    for ticker in factory.tickers():
+        try:
+            tle_fields = _compute_tle(factory.build(ticker))
+        except Exception as exc:
+            logger.warning("TLE: failed on %s: %s", ticker, exc)
+            err_count += 1
+            continue
+        verdict = tle_fields.get("tle_verdict", "NO_TRADE")
+        verdict_counts[verdict] = verdict_counts.get(verdict, 0) + 1
+        records.append({"ticker": ticker, "calculation_version": "trap_to_launch_v1", "payload": tle_fields})
+    write_enrichment_ledger(run_dir, run_id, "trap", records)
+    logger.info(
+        "TLE (manifest input): complete — OK=%d ERR=%d | verdicts: %s",
+        len(records), err_count, " | ".join(f"{k}={v}" for k, v in sorted(verdict_counts.items())),
+    )
+    return True
+
+
+def run_trap_layer(run_id: str, runs_dir: Path, input_mode: Optional[str] = None) -> bool:
     """
     Phase 5.5 — enrich all packages in a run with TLE fields.
     Called by intelligent_orchestrator.py after backfill, before VANGUARD.
     Returns True even on partial failures so the pipeline continues.
+
+    AVS-PKG-002 P4: with ``input_mode="manifest"`` (or when no packages folder exists) the
+    fields are computed from packages built in memory by reference and recorded only in
+    this stage's ledger.
     """
-    packages_dir = Path(runs_dir) / run_id / "packages"
-    if not packages_dir.exists():
-        logger.error("TLE: packages dir not found: %s", packages_dir)
-        return False
+    run_dir = Path(runs_dir) / run_id
+    packages_dir = run_dir / "packages"
+    if input_mode == "manifest" or not packages_dir.exists():
+        if not (run_dir / "canonical_manifest.json").exists():
+            logger.error("TLE: neither canonical_manifest.json nor packages dir found in %s", run_dir)
+            return False
+        return _run_trap_layer_from_manifest(run_id, run_dir)
 
     pkg_files = sorted(packages_dir.glob("*.package.json"))
     if not pkg_files:

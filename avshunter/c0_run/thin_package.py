@@ -142,6 +142,10 @@ class ThinPackageFactory:
     def tickers(self) -> Iterator[str]:
         yield from self.reference.ordered_tickers
 
+    def runtime_macro_payload(self) -> dict[str, Any]:
+        """The macro payload the injector writes into every package (one run-level document)."""
+        return copy.deepcopy(self._runtime_macro)
+
     def build(self, ticker: str) -> dict[str, Any]:
         ticker = ticker.strip().upper()
         row = self._rows.get(ticker)

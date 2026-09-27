@@ -634,6 +634,19 @@ class OrchestratorConfig:
 cfg = OrchestratorConfig()
 
 
+def vanguard_input_mode() -> str:
+    """AVS-PKG-002 P4: how Vanguard receives its inputs.
+
+    ``manifest`` (default): the run input manifest plus the canonical stores, by reference;
+    no package files are written. ``packages``: the pre-P4 package files (rollback path).
+    Anything else is a configuration error, never a silent default.
+    """
+    mode = os.environ.get("AVSHUNTER_VANGUARD_INPUT_MODE", "manifest").strip().lower() or "manifest"
+    if mode not in {"manifest", "packages"}:
+        raise ValueError(f"AVSHUNTER_VANGUARD_INPUT_MODE must be 'manifest' or 'packages', got {mode!r}")
+    return mode
+
+
 def completed_profile_stage_enabled() -> bool:
     """Resolve the independent acquisition capability at invocation time."""
     from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
@@ -3406,42 +3419,14 @@ def _backfill_failure_is_systemic(
     return failure_ratio > max_failure_ratio, ok_count, fail_count, failure_ratio
 
 
-def run_vanguard_pipeline(
+def _run_package_input_phases(
     run_id: str,
     macro_path: Path,
-    data_mode: str = "EOD",
-    evidence_session_date: str | None = None,
-    run_plan: Optional["RunPlan"] = None,
+    data_mode: str,
+    evidence_session_date: str | None,
+    governed_package_input: Optional[Path],
 ) -> bool:
-    """Build packages, inject macro, backfill bars, run Vanguard."""
-    logger.info("=" * 80)
-    logger.info("PHASES 5–8: VANGUARD PIPELINE")
-    logger.info("=" * 80)
-    logger.info(f"   Using discovery run ID: {run_id}")
-    logger.info(f"   Using macro path      : {macro_path}")
-
-    if not pin_run_directory(run_id, macro_path, run_plan=run_plan):
-        logger.error("❌ VANGUARD pipeline aborted — could not pin run directory\n")
-        return False
-
-    # CDS-3 shadow: persist the authority set, but do not alter production flow.
-    publication_session = (
-        date.fromisoformat(evidence_session_date) if evidence_session_date else None
-    )
-    publication_ok = publish_cds3_discovery_worklist(
-        run_id, session_date=publication_session
-    )
-    stage_gating = os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower()
-    stage_gating_enabled = stage_gating in {"1", "true", "yes", "on"}
-    if stage_gating_enabled and not publication_ok:
-        logger.error("CDS-3 enforced Packages build aborted: worklist publication failed")
-        return False
-    try:
-        governed_package_input = prepare_cds3_governed_package_input(run_id)
-    except Exception as error:
-        logger.error("CDS-3 enforced Packages build aborted: %s", error)
-        return False
-
+    """Pre-P4 package input: build, inject macro, backfill bars (rollback path only)."""
     package_args = ["--run-id", run_id]
     if governed_package_input is not None:
         package_args += ["--discovery-csv", str(governed_package_input)]
@@ -3516,14 +3501,66 @@ def run_vanguard_pipeline(
         )
         return False
 
+    return True
+
+
+def run_vanguard_pipeline(
+    run_id: str,
+    macro_path: Path,
+    data_mode: str = "EOD",
+    evidence_session_date: str | None = None,
+    run_plan: Optional["RunPlan"] = None,
+) -> bool:
+    """Build packages, inject macro, backfill bars, run Vanguard."""
+    logger.info("=" * 80)
+    logger.info("PHASES 5–8: VANGUARD PIPELINE")
+    logger.info("=" * 80)
+    logger.info(f"   Using discovery run ID: {run_id}")
+    logger.info(f"   Using macro path      : {macro_path}")
+
+    if not pin_run_directory(run_id, macro_path, run_plan=run_plan):
+        logger.error("❌ VANGUARD pipeline aborted — could not pin run directory\n")
+        return False
+
+    # CDS-3 shadow: persist the authority set, but do not alter production flow.
+    publication_session = (
+        date.fromisoformat(evidence_session_date) if evidence_session_date else None
+    )
+    publication_ok = publish_cds3_discovery_worklist(
+        run_id, session_date=publication_session
+    )
+    stage_gating = os.environ.get("AVSHUNTER_STAGE_GATING_ENFORCED", "0").strip().lower()
+    stage_gating_enabled = stage_gating in {"1", "true", "yes", "on"}
+    if stage_gating_enabled and not publication_ok:
+        logger.error("CDS-3 enforced Packages build aborted: worklist publication failed")
+        return False
+    try:
+        governed_package_input = prepare_cds3_governed_package_input(run_id)
+    except Exception as error:
+        logger.error("CDS-3 enforced Packages build aborted: %s", error)
+        return False
+
+    _input_mode = vanguard_input_mode()
+    if _input_mode == "packages":
+        if not _run_package_input_phases(run_id, macro_path, data_mode, evidence_session_date, governed_package_input):
+            return False
+    else:
+        logger.info("Package input phases skipped: Vanguard input mode is MANIFEST (canonical stores by reference)")
+
     # AVS-PKG-002 P1: cite what this run consumed (discovery, macro, canonical history,
     # actuarial) by hash with a typed per-ticker history verdict. Non-critical in P1: a
     # failure is logged and the run continues on packages; nothing downstream reads it yet.
-    _run(
+    _manifest_ok = _run(
         "Build Canonical Manifest",
         [sys.executable, str(cfg.BUILD_CANONICAL_MANIFEST), "--run-id", run_id, "--macro-path", str(macro_path)],
-        critical=False,
+        critical=(_input_mode == "manifest"),   # P4: it is the input; a failure aborts before Vanguard
     )
+    if _input_mode == "manifest" and not _manifest_ok:
+        logger.error(
+            "VANGUARD pipeline aborted at: Build Canonical Manifest (manifest input mode). "
+            f"Re-run manually: python scripts/{cfg.BUILD_CANONICAL_MANIFEST.name} --run-id {run_id}"
+        )
+        return False
 
     # AVS-SD-002 Phase 4: build a completed-session profile from canonical
     # intraday bars before Vanguard. Disabled until controlled promotion; when
@@ -3568,7 +3605,7 @@ def run_vanguard_pipeline(
             _tle_spec = _tle_ilu.spec_from_file_location("avshunter_trap_engine", str(_tle_path))
             _tle_mod = _tle_ilu.module_from_spec(_tle_spec)
             _tle_spec.loader.exec_module(_tle_mod)
-            _tle_ok = _tle_mod.run_trap_layer(run_id=run_id, runs_dir=cfg.RUNS_DIR)
+            _tle_ok = _tle_mod.run_trap_layer(run_id=run_id, runs_dir=cfg.RUNS_DIR, input_mode=_input_mode)
             if _tle_ok:
                 logger.info("✅ Phase 5.5 — Trap-to-Launch Engine complete")
             else:
@@ -3579,16 +3616,21 @@ def run_vanguard_pipeline(
         logger.warning("⚠️  Phase 5.5 — Trap-to-Launch Engine skipped (non-critical): %s", _tle_err)
     # ─────────────────────────────────────────────────────────────────────────
 
-    # Defence-in-depth
-    index_path = cfg.RUNS_DIR / run_id / "packages" / "index.json"
-    if not index_path.exists():
+    # Defence-in-depth: the run must hold the input record Vanguard will read.
+    if _input_mode == "manifest":
+        input_record = cfg.RUNS_DIR / run_id / "canonical_manifest.json"
+        input_label = "canonical_manifest.json"
+    else:
+        input_record = cfg.RUNS_DIR / run_id / "packages" / "index.json"
+        input_label = "packages/index.json"
+    if not input_record.exists():
         logger.error(
-            f"❌ VANGUARD ABORTED — RUN_INVALID: packages/index.json missing.\n"
-            f"   Expected: {index_path}\n"
+            f"❌ VANGUARD ABORTED — RUN_INVALID: {input_label} missing.\n"
+            f"   Expected: {input_record}\n"
         )
         return False
 
-    ok = _run("Run VANGUARD", [sys.executable, str(cfg.RUN_VANGUARD), "--run-id", run_id], critical=True)
+    ok = _run("Run VANGUARD", [sys.executable, str(cfg.RUN_VANGUARD), "--run-id", run_id, "--input-mode", _input_mode], critical=True)
     if not ok:
         logger.error(
             "❌ VANGUARD pipeline aborted at: Run VANGUARD\n"
@@ -4933,11 +4975,14 @@ def prune_old_runs() -> None:
 
 def write_latest_json(discovery_run_id: str, workflow_run_id: str) -> None:
     """Write data/output/latest.json (points to canonical run_id)."""
+    # AVS-PKG-002 P4: the run input manifest is the run's input record; the package index
+    # is only the pre-P4 fallback.
+    manifest_path = cfg.RUNS_DIR / discovery_run_id / "canonical_manifest.json"
     index_path = cfg.RUNS_DIR / discovery_run_id / "packages" / "index.json"
-    if not index_path.exists():
+    if not manifest_path.exists() and not index_path.exists():
         logger.warning(
-            f"⚠️  latest.json NOT written — packages/index.json missing for run {discovery_run_id}.\n"
-            f"   Expected: {index_path}"
+            f"latest.json NOT written: neither canonical_manifest.json nor packages/index.json "
+            f"exists for run {discovery_run_id}. Expected: {manifest_path}"
         )
         return
 

@@ -534,7 +534,22 @@ def load_package_macro_contexts(run_id: str, output_dir: str) -> Dict[str, Dict[
     contexts: Dict[str, Dict[str, Any]] = {}
     run_dir = os.path.abspath(os.path.join(os.path.abspath(output_dir), os.pardir))
     packages_dir = os.path.join(run_dir, "packages")
+
+    def _has_enrichment(payload: Any) -> bool:
+        extras = payload.get("extras") if isinstance(payload, dict) and isinstance(payload.get("extras"), dict) else {}
+        return bool(extras.get("macro_enrichment_delta") or extras.get("macro_exposure_index"))
+
     if not os.path.isdir(packages_dir):
+        # AVS-PKG-002 P4: the run-level macro the injector would have written is one document;
+        # resolve it once by reference and cite it for every manifest ticker.
+        try:
+            from avshunter.c0_run.thin_package import ThinPackageFactory, load_run_reference
+            factory = ThinPackageFactory(load_run_reference(run_dir))
+            payload = factory.runtime_macro_payload()
+            if _has_enrichment(payload):
+                return {ticker: payload for ticker in factory.tickers()}
+        except Exception:
+            return contexts
         return contexts
 
     for name in os.listdir(packages_dir):
@@ -547,10 +562,8 @@ def load_package_macro_contexts(run_id: str, output_dir: str) -> Dict[str, Dict[
             ticker = str(pkg.get("ticker") or name.split(".")[0]).strip().upper()
             macro_block = pkg.get("macro") if isinstance(pkg.get("macro"), dict) else {}
             payload = macro_block.get("payload") if isinstance(macro_block, dict) else None
-            if ticker and isinstance(payload, dict):
-                extras = payload.get("extras") if isinstance(payload.get("extras"), dict) else {}
-                if extras.get("macro_enrichment_delta") or extras.get("macro_exposure_index"):
-                    contexts[ticker] = payload
+            if ticker and isinstance(payload, dict) and _has_enrichment(payload):
+                contexts[ticker] = payload
         except Exception:
             continue
     return contexts

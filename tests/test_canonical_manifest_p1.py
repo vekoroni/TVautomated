@@ -280,10 +280,15 @@ def test_evening_writes_the_manifest_after_backfill_without_making_it_critical()
 
     assert orch.cfg.BUILD_CANONICAL_MANIFEST.name == "build_canonical_manifest.py"
     assert orch.cfg.BUILD_CANONICAL_MANIFEST.is_file()
+    # P4: the package phases (build, inject, backfill) live in the rollback-only helper; the
+    # pipeline runs that helper only in packages mode, then builds the manifest, then Vanguard.
+    helper = inspect.getsource(orch._run_package_input_phases)
+    assert "BACKFILL_TIMESERIES" in helper and "BUILD_PACKAGES" in helper and "INJECT_MACRO" in helper
     source = inspect.getsource(orch.run_vanguard_pipeline)
-    backfill = source.index("BACKFILL_TIMESERIES")
+    phases = source.index("_run_package_input_phases(")
     hook = source.index("BUILD_CANONICAL_MANIFEST")
     vanguard = source.index("RUN_VANGUARD")
-    assert backfill < hook < vanguard, "manifest is built after the bars are settled and before Vanguard reads"
-    hook_call = source[hook - 200: hook + 200]
-    assert "critical=False" in hook_call, "P1: a manifest failure is logged, never aborts the Evening run"
+    assert phases < hook < vanguard, "manifest is built after any package phases and before Vanguard reads"
+    hook_call = source[hook - 200: hook + 300]
+    # P1 kept the hook non-critical beside the packages; P4 makes it the input in manifest mode.
+    assert 'critical=(_input_mode == "manifest")' in hook_call

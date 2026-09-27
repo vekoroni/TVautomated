@@ -958,6 +958,28 @@ def _patch_package(
     return (ticker, outcome)
 
 
+def _enrich_in_memory(run_dir: Path, run_id: str, ticker: str, vanguard_row: Optional[Dict[str, Any]]) -> Tuple[str, str]:
+    """AVS-PKG-002 P4: the same enrichment as ``_patch_package`` over an in-memory package
+    (deferred actuarial block, as at build time); the result is recorded only in the ledger."""
+    pkg = {"ticker": ticker, "run_id": run_id, "actuarial": {
+        "available": False, "deferred": True, "reason": "Awaiting Phase 8.5 actuarial_enrichment_pass",
+        "no_match": False, "penalty_multiplier": 1.0, "win_rate_10d": 0.0, "efficiency_10d": 0.0,
+        "expected_move_10d": 0.0, "risk_10d": 0.0}}
+    # _patch_package is file-based; give it a scratch file whose grandparent is the run
+    # directory (the ledger is keyed off that), then discard the scratch copy.
+    scratch_dir = run_dir / ".actuarial_scratch"
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    scratch = scratch_dir / f"{ticker}.package.json"
+    try:
+        scratch.write_text(json.dumps(pkg), encoding="utf-8")
+        return _patch_package(scratch, vanguard_row)
+    finally:
+        try:
+            scratch.unlink()
+        except OSError:
+            pass
+
+
 def _record_actuarial_fact(pkg_path: Path, pkg: Dict[str, Any], ticker: str, block: Dict[str, Any]) -> None:
     """AVS-PKG-002 P3: this pass owns its facts in the run's actuarial ledger (append-only)."""
     try:
@@ -989,12 +1011,13 @@ def run_actuarial_enrichment_pass(
     run_dir  = base_dir / "data" / "output" / "runs" / run_id
     pkg_dir  = run_dir / "packages"
     index_path = pkg_dir / "index.json"
+    manifest_path = run_dir / "canonical_manifest.json"
 
-    if not pkg_dir.exists():
-        return {"success": False, "reason": f"packages dir not found: {pkg_dir}"}
-
-    if not index_path.exists():
-        return {"success": False, "reason": f"index.json not found: {index_path}"}
+    # AVS-PKG-002 P4: without package files the pass runs over the manifest's tickers and
+    # records its facts only in its ledger.
+    manifest_mode = not pkg_dir.exists() or not index_path.exists()
+    if manifest_mode and not manifest_path.exists():
+        return {"success": False, "reason": f"neither packages/index.json nor canonical_manifest.json found in {run_dir}"}
 
     # Load actuarial cache
     if not _load_actuarial():
@@ -1011,14 +1034,21 @@ def run_actuarial_enrichment_pass(
             "reason": "Vanguard signals CSV not found — run Vanguard first",
         }
 
-    # Load package index for the list of built packages
-    with index_path.open("r", encoding="utf-8") as f:
-        index = json.load(f)
-
-    packages = [p for p in index.get("packages", []) if p.get("status") == "BUILT"]
+    # Load the ticker population: the package index, or the manifest without packages
+    if manifest_mode:
+        with manifest_path.open("r", encoding="utf-8-sig") as f:
+            _manifest = json.load(f)
+        packages = [{"ticker": row.get("ticker"), "package_path": None}
+                    for row in _manifest.get("tickers") or [] if row.get("ticker")]
+        index = None
+    else:
+        with index_path.open("r", encoding="utf-8") as f:
+            index = json.load(f)
+        packages = [p for p in index.get("packages", []) if p.get("status") == "BUILT"]
 
     if not packages:
-        return {"success": False, "reason": "No BUILT packages in index.json"}
+        return {"success": False, "reason": ("No tickers in canonical_manifest.json" if manifest_mode
+                                             else "No BUILT packages in index.json")}
 
     # Process each package
     outcomes: Dict[str, int] = {
@@ -1039,6 +1069,14 @@ def run_actuarial_enrichment_pass(
     for rec in packages:
         ticker    = str(rec.get("ticker") or "").upper()
         pkg_path  = rec.get("package_path")
+
+        if manifest_mode:
+            vg_row = vanguard_index.get(ticker)
+            _, outcome = _enrich_in_memory(run_dir, run_id, ticker, vg_row)
+            patched_count += 1
+            matched_key = next((k for k in outcomes if outcome.startswith(k)), "LOOKUP_FAILED")
+            outcomes[matched_key] = outcomes.get(matched_key, 0) + 1
+            continue
 
         if not pkg_path:
             continue
@@ -1066,6 +1104,8 @@ def run_actuarial_enrichment_pass(
     _usable    = outcomes["EXACT_MATCH"] + outcomes["FALLBACK_MATCH"]
     _match_rate = _usable / patched_count if patched_count else 0.0
 
+    if index is None:
+        index = {}
     index["actuarial_enrichment_pass"] = {
         "run_at":                datetime.now(timezone.utc).isoformat(),
         "vanguard_tickers":      len(vanguard_index),
@@ -1083,8 +1123,9 @@ def run_actuarial_enrichment_pass(
         "cache_validation":      _CACHE_VALIDATION.to_dict() if _CACHE_VALIDATION else None,
         "force_catalyst_none":   _FORCE_CATALYST_NONE,
     }
-    with index_path.open("w", encoding="utf-8") as f:
-        json.dump(index, f, indent=2, ensure_ascii=False)
+    if not manifest_mode:
+        with index_path.open("w", encoding="utf-8") as f:
+            json.dump(index, f, indent=2, ensure_ascii=False)
 
     log.info(
         "Actuarial enrichment pass complete — "

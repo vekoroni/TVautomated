@@ -883,9 +883,9 @@ def patch_run_packages(
     base_dir = pathlib.Path(base_dir)
     pkg_dir  = base_dir / "data" / "output" / "runs" / run_id / "packages"
 
-    if not pkg_dir.exists():
-        log.warning("Trigger Layer: package directory not found — %s", pkg_dir)
-        return {"patched": 0}
+    # AVS-PKG-002 P4: without package files the trigger blocks are built from the Vanguard
+    # rows and recorded only in this stage's ledger (plus the sidecar CSV).
+    manifest_mode = not pkg_dir.exists()
 
     vanguard_map: Dict[str, Dict] = {}
     if vanguard_csv_path:
@@ -918,15 +918,27 @@ def patch_run_packages(
     sidecar_rows: List[Dict[str, Any]] = []
     ledger_records: List[Dict[str, Any]] = []
 
-    for pkg_path in sorted(pkg_dir.glob("*.package.json")):
+    if manifest_mode:
+        items = [(ticker, None) for ticker in sorted(vanguard_map)]
+        if not items:
+            log.warning("Trigger Layer: no package directory and no Vanguard rows — %s", pkg_dir.parent)
+            return {"patched": 0}
+    else:
+        items = [(None, pkg_path) for pkg_path in sorted(pkg_dir.glob("*.package.json"))]
+
+    for _ticker_hint, pkg_path in items:
         try:
-            with open(pkg_path, encoding="utf-8") as f:
-                pkg = json.load(f)
+            if pkg_path is not None:
+                with open(pkg_path, encoding="utf-8") as f:
+                    pkg = json.load(f)
+            else:
+                pkg = {"ticker": _ticker_hint, "run_id": run_id}
             ticker       = str(pkg.get("ticker", "")).strip().upper()
             vanguard_row = vanguard_map.get(ticker)
             patch_package(pkg, vanguard_row)
-            with open(pkg_path, "w", encoding="utf-8") as f:
-                json.dump(pkg, f, indent=2)
+            if pkg_path is not None:
+                with open(pkg_path, "w", encoding="utf-8") as f:
+                    json.dump(pkg, f, indent=2)
 
             stats["patched"] += 1
             trig = pkg["triggers"]
@@ -970,7 +982,7 @@ def patch_run_packages(
             })
 
         except Exception as e:
-            log.warning("Trigger Layer: failed to patch %s — %s", pkg_path.name, e)
+            log.warning("Trigger Layer: failed to patch %s — %s", pkg_path.name if pkg_path else _ticker_hint, e)
 
     # AVS-PKG-002 P3: the trigger blocks are this stage's facts; keep them in its own ledger.
     try:
