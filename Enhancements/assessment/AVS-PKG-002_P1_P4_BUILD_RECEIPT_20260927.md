@@ -32,6 +32,19 @@
 - Morning: unchanged (it never read packages), but must complete against the manifest-built Evening.
 - Runtime: the three removed phases took 64 minutes on 26 Sep; the Evening should be shorter by about that.
 
+## Full-population run (appended 27 Sep, 22:00)
+
+Manifest-mode Vanguard over the complete retained run `20260926_173730`, output to a temporary folder, the real run untouched:
+
+| Measure | Manifest mode (27 Sep) | Stored Evening from packages (26 Sep) |
+|---|---|---|
+| PASS rows | 1,616 | 1,616 |
+| Rejects | 50, all `DATA_FAILURE_NO_OHLCV` | 50, all `DATA_FAILURE_NO_OHLCV` |
+| Unique `state_hash` | 131 / 1,616 | n/a |
+| Vanguard wall-clock | 98 min (5,883 s) | 44 min |
+
+Coverage and reject reasons are identical to the stored Evening. The wall-clock figure is an **upper bound**, not a like-for-like: for most of the run a runaway single-threaded Python process (a stray from this session, since killed) held one core at ~90 %, and a 92-file regression batch ran concurrently. Even so, per-ticker cost in manifest mode is higher than reading a pre-built file, because each package is built in memory (builder, truth packet, macro injection, canonical bars from SQLite). Net Evening effect is still expected to be positive (the three removed phases took 64 min on 26 Sep), but it must be **measured in live proving**, and the in-memory build is the first optimisation candidate (**finding PKG-F3**): the truth packet is rebuilt twice per ticker (builder and injector) and the SQLite read is per ticker; a single ordered read and a once-per-run truth-packet prefix would remove most of it.
+
 ## Not done
 
 P5 (delete the package readers/writers, retire the three scripts and the `packages` mode, update docs and the field owner matrix) follows live proving of P4, not before. The S0 import-closure test still fails on three untracked TEV-001 modules imported by the orchestrator's foreign working-tree edits (not part of this programme).
