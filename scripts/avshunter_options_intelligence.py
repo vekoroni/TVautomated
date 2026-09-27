@@ -562,25 +562,13 @@ def load_package_tle_contexts(run_id: str, output_dir: str) -> Dict[str, Dict[st
     Reads tle_ fields written by avshunter_trap_engine.py (Phase 5.5) from package JSONs.
     Returns {ticker: tle_dict} for all packages that have a tle block.
     """
-    contexts: Dict[str, Dict[str, Any]] = {}
     run_dir = os.path.abspath(os.path.join(os.path.abspath(output_dir), os.pardir))
-    packages_dir = os.path.join(run_dir, "packages")
-    if not os.path.isdir(packages_dir):
-        return contexts
-    for name in os.listdir(packages_dir):
-        if not name.endswith(".package.json"):
-            continue
-        path = os.path.join(packages_dir, name)
-        try:
-            with open(path, "r", encoding="utf-8") as fh:
-                pkg = json.load(fh)
-            ticker = str(pkg.get("ticker") or name.split(".")[0]).strip().upper()
-            tle_block = pkg.get("tle")
-            if ticker and isinstance(tle_block, dict) and tle_block.get("tle_verdict"):
-                contexts[ticker] = tle_block
-        except Exception:
-            continue
-    return contexts
+    # AVS-PKG-002 P3: the trap engine's ledger is the source; package files are the fallback.
+    try:
+        from contracts.enrichment_ledger import load_trap_contexts
+        return load_trap_contexts(run_dir)
+    except Exception:
+        return {}
 
 
 def options_macro_alignment_adjustment(

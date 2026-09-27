@@ -6091,17 +6091,22 @@ def evening_workflow(
         _not_eligible_flagged = 0
         try:
             import json as _json
+            # AVS-PKG-002 P3: eligibility comes from the trigger layer's own ledger (package
+            # blocks are the fallback); the package flag is still mirrored while packages exist.
+            from contracts.enrichment_ledger import load_trigger_blocks
+            _trigger_blocks = load_trigger_blocks(cfg.RUNS_DIR / canonical_run_id)
+            _not_eligible_flagged = sum(
+                1 for _blk in _trigger_blocks.values() if not bool(_blk.get("go_eligible", False))
+            )
             _pkg_dir2 = cfg.RUNS_DIR / canonical_run_id / "packages"
             if _pkg_dir2.exists():
                 for _pp in _pkg_dir2.glob("*.package.json"):
                     try:
                         with open(_pp, encoding="utf-8") as _pf2:
                             _p2 = _json.load(_pf2)
-                        _trigger_block = _p2.get("triggers") or {}
-                        _eligible = bool(_trigger_block.get("go_eligible", False))
-                        _p2["eligible_for_trade"] = _eligible
-                        if not _eligible:
-                            _not_eligible_flagged += 1
+                        _ticker2 = str(_p2.get("ticker") or _pp.name.split(".")[0]).strip().upper()
+                        _trigger_block = _trigger_blocks.get(_ticker2) or _p2.get("triggers") or {}
+                        _p2["eligible_for_trade"] = bool(_trigger_block.get("go_eligible", False))
                         with open(_pp, "w", encoding="utf-8") as _pf2:
                             _json.dump(_p2, _pf2, indent=2)
                     except Exception:
@@ -7765,22 +7770,12 @@ def inject_actuarial_into_eil_csv(run_id: str) -> None:
         if not _eil_path.exists():
             logger.warning("inject_actuarial: eil_enriched not found — skipping")
             return
-        if not _pkg_dir.exists():
-            logger.warning("inject_actuarial: packages dir not found — skipping")
+        # AVS-PKG-002 P3: the actuarial pass's own ledger is the source; packages are the fallback.
+        from contracts.enrichment_ledger import ledger_path, load_actuarial_map
+        if not _pkg_dir.exists() and not ledger_path(cfg.RUNS_DIR / run_id, "actuarial").exists():
+            logger.warning("inject_actuarial: neither actuarial ledger nor packages dir found — skipping")
             return
-
-        # Build actuarial map from packages
-        actuarial_map = {}
-        for _pf in _glob.glob(str(_pkg_dir / "*.package.json")):
-            try:
-                with open(_pf, "r", encoding="utf-8") as f:
-                    _pkg = json.load(f)
-                _ticker = str(_pkg.get("ticker", "")).strip().upper()
-                _act    = _pkg.get("actuarial", {})
-                if _ticker and isinstance(_act, dict) and _act.get("enriched_by"):
-                    actuarial_map[_ticker] = _act
-            except Exception:
-                pass
+        actuarial_map = load_actuarial_map(cfg.RUNS_DIR / run_id)
 
         if not actuarial_map:
             logger.warning(

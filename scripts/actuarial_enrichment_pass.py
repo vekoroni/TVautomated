@@ -871,6 +871,7 @@ def _patch_package(
                 json.dump(pkg, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
+        _record_actuarial_fact(pkg_path, pkg, ticker, act)
         return (ticker, "NO_VANGUARD_ROW")
 
     # Derive state from vanguard row
@@ -953,7 +954,20 @@ def _patch_package(
     except Exception as e:
         return (ticker, f"ERROR_WRITE:{e}")
 
+    _record_actuarial_fact(pkg_path, pkg, ticker, actuarial_block)
     return (ticker, outcome)
+
+
+def _record_actuarial_fact(pkg_path: Path, pkg: Dict[str, Any], ticker: str, block: Dict[str, Any]) -> None:
+    """AVS-PKG-002 P3: this pass owns its facts in the run's actuarial ledger (append-only)."""
+    try:
+        from contracts.enrichment_ledger import append_enrichment_record
+        run_dir = pkg_path.resolve().parents[1]
+        append_enrichment_record(run_dir, str(pkg.get("run_id") or run_dir.name), "actuarial", {
+            "ticker": ticker, "calculation_version": "actuarial_enrichment_pass", "payload": block,
+        })
+    except Exception as e:  # never blocks the pass
+        log.warning("Actuarial ledger not written for %s: %s", ticker, e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

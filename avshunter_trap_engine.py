@@ -336,6 +336,7 @@ def run_trap_layer(run_id: str, runs_dir: Path) -> bool:
     ok_count = 0
     err_count = 0
     verdict_counts: Dict[str, int] = {}
+    ledger_records: list = []
 
     for pkg_path in pkg_files:
         try:
@@ -351,10 +352,23 @@ def run_trap_layer(run_id: str, runs_dir: Path) -> bool:
             v = tle_fields.get("tle_verdict", "NO_TRADE")
             verdict_counts[v] = verdict_counts.get(v, 0) + 1
             ok_count += 1
+            ledger_records.append({
+                "ticker": str(pkg.get("ticker") or pkg_path.name.split(".")[0]),
+                "calculation_version": "trap_to_launch_v1",
+                "payload": tle_fields,
+            })
 
         except Exception as exc:
             logger.warning("TLE: failed on %s: %s", pkg_path.name, exc)
             err_count += 1
+
+    # AVS-PKG-002 P3: this stage owns its facts in its own ledger; the package patch above
+    # continues while packages exist. Options reads the ledger first.
+    try:
+        from contracts.enrichment_ledger import write_enrichment_ledger
+        write_enrichment_ledger(packages_dir.parent, run_id, "trap", ledger_records)
+    except Exception as exc:
+        logger.warning("TLE: enrichment ledger not written: %s", exc)
 
     logger.info(
         "TLE: complete — OK=%d ERR=%d | verdicts: %s",

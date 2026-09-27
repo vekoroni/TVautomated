@@ -916,6 +916,7 @@ def patch_run_packages(
     }
 
     sidecar_rows: List[Dict[str, Any]] = []
+    ledger_records: List[Dict[str, Any]] = []
 
     for pkg_path in sorted(pkg_dir.glob("*.package.json")):
         try:
@@ -929,6 +930,7 @@ def patch_run_packages(
 
             stats["patched"] += 1
             trig = pkg["triggers"]
+            ledger_records.append({"ticker": ticker, "calculation_version": "trigger_layer_v2_2", "payload": trig})
             if trig.get("stale"):
                 stats["stale_filtered"] += 1
             if trig.get("context_state") != "ELIGIBLE":
@@ -969,6 +971,13 @@ def patch_run_packages(
 
         except Exception as e:
             log.warning("Trigger Layer: failed to patch %s — %s", pkg_path.name, e)
+
+    # AVS-PKG-002 P3: the trigger blocks are this stage's facts; keep them in its own ledger.
+    try:
+        from contracts.enrichment_ledger import write_enrichment_ledger
+        write_enrichment_ledger(pkg_dir.parent, run_id, "trigger", ledger_records)
+    except Exception as e:
+        log.warning("Trigger Layer: enrichment ledger not written — %s", e)
 
     log.info(
         "Trigger Layer v2.2 complete — %d patched | "

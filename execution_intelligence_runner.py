@@ -3533,20 +3533,11 @@ if __name__ == "__main__":
             # Keyed by ticker for O(1) lookup during merge.
             _pkg_dir = os.path.join(base, "packages") if base else None
             actuarial_map = {}
-            if _pkg_dir and os.path.isdir(_pkg_dir):
+            if base:
                 try:
-                    import glob as _glob
-                    _pkg_files = _glob.glob(os.path.join(_pkg_dir, "*.package.json"))
-                    for _pf in _pkg_files:
-                        try:
-                            with open(_pf, "r", encoding="utf-8") as _pjf:
-                                _pkg = json.load(_pjf)
-                            _pt = str(_pkg.get("ticker", "")).strip().upper()
-                            _act = _pkg.get("actuarial", {})
-                            if _pt and isinstance(_act, dict) and _act.get("enriched_by"):
-                                actuarial_map[_pt] = _act
-                        except Exception:
-                            pass
+                    # AVS-PKG-002 P3: the actuarial pass's ledger is the source; packages are the fallback.
+                    from contracts.enrichment_ledger import load_actuarial_map
+                    actuarial_map = load_actuarial_map(base)
                     if actuarial_map:
                         logger.info(
                             f"Actuarial map loaded: {len(actuarial_map)} packages "
