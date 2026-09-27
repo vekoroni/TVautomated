@@ -24,10 +24,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--runs-dir", default=str(REPO / "data" / "output" / "runs"))
+    parser.add_argument("--macro-path", default=None,
+                        help="Runtime macro the injector wrote into the packages (default: the run's GEX-synced copy)")
     args = parser.parse_args()
     run_dir = Path(args.runs_dir) / args.run_id
     try:
-        inputs = collect_canonical_inputs(run_dir=run_dir, repo_root=REPO)
+        inputs = collect_canonical_inputs(run_dir=run_dir, repo_root=REPO, macro_runtime_path=args.macro_path)
         manifest = build_canonical_manifest(inputs, created_at_utc=datetime.now(timezone.utc))
         path = write_canonical_manifest(run_dir, manifest)
         check = validate_canonical_manifest(path)

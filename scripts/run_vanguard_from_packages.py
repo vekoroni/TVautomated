@@ -37,6 +37,7 @@ import contextlib
 import csv
 import io
 import json
+import os
 import sys
 import traceback
 from dataclasses import dataclass
@@ -1323,6 +1324,19 @@ def main() -> int:
         action="store_true",
         help="Verbose Vanguard diagnostics and error traces per ticker",
     )
+    # AVS-PKG-002 P2: read inputs by reference (run manifest + canonical stores) instead of
+    # the package files. Default stays "packages" until parity is proven and ACK cuts over.
+    parser.add_argument(
+        "--input-mode",
+        choices=("packages", "manifest"),
+        default=os.environ.get("AVSHUNTER_VANGUARD_INPUT_MODE", "packages").strip().lower() or "packages",
+        help="packages (default): read packages/*.package.json; manifest: build each package in memory from the run's canonical_manifest.json",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Write vanguard_signals/rejects/summary here instead of the run's vanguard folder (parity runs only)",
+    )
     args = parser.parse_args()
 
     root = Path(".").resolve()
@@ -1356,13 +1370,37 @@ def main() -> int:
     # ─────────────────────────────────────────────────────────────────────────
 
     rp = resolve_run_paths(root, args.run_id)
+    if args.output_dir:
+        _out_dir = Path(args.output_dir).resolve()
+        _out_dir.mkdir(parents=True, exist_ok=True)
+        rp = RunPaths(
+            root=rp.root, run_id=rp.run_id, run_dir=rp.run_dir, packages_index=rp.packages_index,
+            output_csv=_out_dir / "vanguard_signals.csv", rejects_csv=_out_dir / "vanguard_rejects.csv",
+            summary_json=_out_dir / "vanguard_run_summary.json",
+        )
 
-    if not rp.packages_index.exists():
-        print(f"ERROR: packages index not found: {rp.packages_index}")
-        return 3
-
-    idx = read_json(rp.packages_index)
-    package_paths = load_package_paths(idx, rp.root)
+    # Each item is (ticker, package_path); package_path is None in manifest mode and the
+    # package is then built in memory from the cited sources by the same owners.
+    _thin_factory = None
+    if args.input_mode == "manifest":
+        _manifest_path = rp.run_dir / "canonical_manifest.json"
+        if not _manifest_path.exists():
+            print(f"ERROR: canonical_manifest.json not found for manifest input mode: {_manifest_path}")
+            return 3
+        try:
+            from avshunter.c0_run.thin_package import ThinPackageFactory, load_run_reference
+            _thin_factory = ThinPackageFactory(load_run_reference(rp.run_dir))
+        except Exception as e:
+            print(f"ERROR: manifest input mode could not resolve the run's cited sources: {e}")
+            return 3
+        package_paths = [(t, None) for t in _thin_factory.tickers()]
+        print(f"[INPUT] manifest mode: {len(package_paths)} tickers from {_manifest_path.name}")
+    else:
+        if not rp.packages_index.exists():
+            print(f"ERROR: packages index not found: {rp.packages_index}")
+            return 3
+        idx = read_json(rp.packages_index)
+        package_paths = [(p.stem, p) for p in load_package_paths(idx, rp.root)]
 
     if args.limit and args.limit > 0:
         package_paths = package_paths[: args.limit]
@@ -1385,10 +1423,10 @@ def main() -> int:
     # Feature: if adapter supports deterministic outcomes, use it.
     use_adapt_result = hasattr(adapter, "adapt_result")
 
-    for i, pkg_path in enumerate(package_paths, start=1):
-        ticker_guess = pkg_path.stem
+    for i, (ticker_guess, pkg_path) in enumerate(package_paths, start=1):
+        pkg_ref = str(pkg_path) if pkg_path is not None else f"manifest:{ticker_guess}"
         try:
-            pkg = read_json(pkg_path)
+            pkg = read_json(pkg_path) if pkg_path is not None else _thin_factory.build(ticker_guess)
             ticker = _normalise_ticker(pkg.get("ticker") or ticker_guess)
 
             # ── DATA CONTRACT GATE ───────────────────────────────────────────
@@ -1400,7 +1438,7 @@ def main() -> int:
             if not _dcv_ok:
                 reject_rows.append({
                     "ticker": ticker,
-                    "package_path": str(pkg_path),
+                    "package_path": pkg_ref,
                     "reason_code": f"DATA_FAILURE_{_dcv_reason}",
                     "reason_codes": f"DATA_FAILURE_{_dcv_reason}",
                     "error": f"DCV hard gate: {_dcv_reason}",
@@ -1448,7 +1486,7 @@ def main() -> int:
                     reason_codes = getattr(out, "reason_codes", None) or ["ADAPTER_REJECT"]
                     reject_rows.append({
                         "ticker": ticker,
-                        "package_path": str(pkg_path),
+                        "package_path": pkg_ref,
                         "reason_code": reason_codes[0],
                         "reason_codes": ",".join(reason_codes),
                         "error": getattr(out, "error", "adapter rejected input"),
@@ -1496,7 +1534,7 @@ def main() -> int:
             reason = _short_reason(e)
             reject_rows.append({
                 "ticker": ticker_guess,
-                "package_path": str(pkg_path),
+                "package_path": pkg_ref,
                 "reason_code": reason,
                 "error": str(e),
                 "exception_type": e.__class__.__name__,

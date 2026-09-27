@@ -3521,7 +3521,7 @@ def run_vanguard_pipeline(
     # failure is logged and the run continues on packages; nothing downstream reads it yet.
     _run(
         "Build Canonical Manifest",
-        [sys.executable, str(cfg.BUILD_CANONICAL_MANIFEST), "--run-id", run_id],
+        [sys.executable, str(cfg.BUILD_CANONICAL_MANIFEST), "--run-id", run_id, "--macro-path", str(macro_path)],
         critical=False,
     )
 

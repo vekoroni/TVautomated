@@ -36,7 +36,9 @@ from scripts.data_contract_validator import DataContractValidator
 CONTRACT_VERSION = "canonical_manifest_v1"
 MANIFEST_FILENAME = "canonical_manifest.json"
 AUTHORITY = "INPUT_CITATION_ONLY"
-HASHED_SOURCES = ("discovery", "macro_snapshot", "macro_quant_packet", "actuarial_database")
+HASHED_SOURCES = ("discovery", "macro_snapshot", "macro_quant_packet", "macro_runtime", "actuarial_database")
+#: The macro the injector actually writes into packages (GEX-synced runtime copy), when present.
+RUNTIME_MACRO_FILENAME = "macro_runtime_gex_synced.json"
 _CRITICAL = ("open", "high", "low", "close")
 
 HistoryReader = Callable[[str], "pd.DataFrame | None"]
@@ -65,6 +67,7 @@ class CanonicalInputs:
     macro_snapshot: SourceCitation
     macro_regime_present: bool
     macro_quant_packet: SourceCitation
+    macro_runtime: SourceCitation
     actuarial_database: SourceCitation
     historical_prices: SourceCitation
     history_reader: HistoryReader
@@ -163,8 +166,14 @@ def collect_canonical_inputs(
     actuarial_path: Path | str | None = None,
     worklist: Sequence[str] | None = None,
     environment: Mapping[str, str] | None = None,
+    macro_runtime_path: Path | str | None = None,
 ) -> CanonicalInputs:
-    """Read the run's inputs and open the canonical stores read-only. No provider access."""
+    """Read the run's inputs and open the canonical stores read-only. No provider access.
+
+    The discovery input cited is the one the packages are built from: the CDS-3 governed
+    file when it exists, otherwise the ultimate candidates file. ``macro_runtime_path`` is
+    the macro the injector wrote into the packages (default: the run's GEX-synced copy).
+    """
     run_dir = Path(run_dir)
     repo_root = Path(repo_root)
     run_id = run_dir.name
@@ -177,11 +186,26 @@ def collect_canonical_inputs(
         raise ValueError(f"run_meta.json has no last_completed_session for run {run_id}")
     evidence_session = date.fromisoformat(session_text[:10])
 
-    discovery_path = run_dir / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
+    governed_path = run_dir / "discovery" / f"discovery_candidates_cds3_{run_id}.csv"
+    ultimate_path = run_dir / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
+    governed_input = governed_path.is_file()
+    discovery_path = governed_path if governed_input else ultimate_path
     if not discovery_path.is_file():
         raise FileNotFoundError(discovery_path)
     with discovery_path.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = tuple({str(k): str(v) for k, v in row.items()} for row in csv.DictReader(handle))
+
+    if macro_runtime_path is None:
+        macro_runtime_path = run_dir / "macro" / RUNTIME_MACRO_FILENAME
+    # The injector's stamp: macro age and freshness were judged at this instant. While packages
+    # still exist it is read from them; once they are gone the manifest build time stands in.
+    injected_utc = ""
+    for package in sorted((run_dir / "packages").glob("*.package.json"))[:1]:
+        try:
+            injected_utc = str((_read_json(package).get("macro") or {}).get("ingested_utc") or "")
+        except (OSError, ValueError):
+            injected_utc = ""
+    macro_runtime_citation = _citation(Path(macro_runtime_path), ingested_utc=injected_utc)
 
     macro_path = run_dir / "macro_snapshot.json"
     if not macro_path.is_file():
@@ -227,9 +251,11 @@ def collect_canonical_inputs(
         run_id=run_id, evidence_session=evidence_session,
         as_of_utc=str(plan.get("evidence_cutoff_utc") or meta.get("evidence_cutoff_utc") or ""),
         run_condition=str(plan.get("run_condition") or meta.get("run_condition") or "UNKNOWN"),
-        discovery_rows=rows, discovery=_citation(discovery_path, row_count=len(rows)),
+        discovery_rows=rows,
+        discovery=_citation(discovery_path, row_count=len(rows), governed_input=governed_input),
         macro_snapshot=macro_citation, macro_regime_present=bool(str(macro.get("regime_state") or "").strip()),
         macro_quant_packet=_citation(run_dir / "macro_quant_packet.json"),
+        macro_runtime=macro_runtime_citation,
         actuarial_database=actuarial_citation, historical_prices=history_citation,
         history_reader=reader,
         worklist=tuple(str(t).strip().upper() for t in worklist) if worklist is not None else None,
@@ -289,6 +315,7 @@ def build_canonical_manifest(inputs: CanonicalInputs, *, created_at_utc: datetim
             "discovery": discovery_source,
             "macro_snapshot": inputs.macro_snapshot.to_dict(),
             "macro_quant_packet": inputs.macro_quant_packet.to_dict(),
+            "macro_runtime": inputs.macro_runtime.to_dict(),
             "actuarial_database": inputs.actuarial_database.to_dict(),
             "historical_prices": inputs.historical_prices.to_dict(),
         },

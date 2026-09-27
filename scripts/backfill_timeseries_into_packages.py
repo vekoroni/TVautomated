@@ -399,6 +399,65 @@ def validate_series(rows: List[Dict[str, Any]], min_bars: int,
 # -----------------------------
 # Main backfill per package
 # -----------------------------
+def attach_canonical_bars(
+    pkg: Dict[str, Any],
+    canonical: pd.DataFrame,
+    *,
+    actuarial_snapshot: Optional[Dict[str, Any]],
+    today: date,
+) -> Dict[str, Any]:
+    """Materialise fresh canonical daily bars into one package dict.
+
+    The canonical branch of ``backfill_package`` (AVS-PKG-002 P2: shared with the
+    in-memory reference loader so both produce the same package content). Writes the
+    bars to every alias the readers accept and stamps provenance; never fabricates.
+    """
+    ts = pkg.setdefault("timeseries", {})
+    dc = pkg.setdefault("data_contract", {})
+    canonical = canonical.copy()
+    canonical["date"] = pd.to_datetime(canonical["date"]).dt.strftime("%Y-%m-%d")
+    rows = canonical.to_dict(orient="records")
+    closes = [float(row["close"]) for row in rows]
+    returns = compute_returns(closes)
+    returns_rows = [
+        {"date": rows[index]["date"], "ret": returns[index]}
+        for index in range(len(rows))
+    ]
+    last_bar_date = rows[-1]["date"]
+    as_of = last_bar_date + "T00:00:00Z"
+    ts.update({
+        "ohlcv_daily": rows,
+        "returns_daily": returns_rows,
+        "source": "CANONICAL_HISTORICAL_PRICE_DB",
+        "as_of_utc": as_of,
+        "last_bar_utc": as_of,
+    })
+    pkg["ohlcv_daily"] = rows
+    pkg["daily_df"] = rows
+    pkg["ohlcv"] = rows
+    pkg["as_of_utc"] = as_of
+    pkg["bar_data_as_of"] = last_bar_date
+    pkg["bar_data_source"] = "CANONICAL_HISTORICAL_PRICE_DB"
+    pkg["intraday_partial"] = False
+    pkg["intraday_source"] = ""
+    dc.update({
+        "has_ohlcv_daily": True,
+        "has_returns_daily": True,
+        "timeseries_source": "CANONICAL_HISTORICAL_PRICE_DB",
+        "canonical_freshness_status": "FRESH_REUSED",
+        "intraday_partial": False,
+        "intraday_source": "",
+    })
+    try:
+        last_date = datetime.strptime(last_bar_date, "%Y-%m-%d").date()
+        pkg["bar_data_days_old"] = (today - last_date).days
+    except Exception:
+        pkg["bar_data_days_old"] = -1
+    if actuarial_snapshot is not None:
+        pkg["actuarial"] = actuarial_snapshot
+    return _stamp_actuarial_data_quality(pkg, ohlcv_ok=True)
+
+
 def backfill_package(
     pkg_path: Path,
     min_bars: int,
@@ -504,50 +563,11 @@ def backfill_package(
             and canonical_last.date() == required_completed_session
         )
         if canonical is not None and len(canonical) >= min_bars and canonical_fresh:
-            canonical = canonical.copy()
-            canonical["date"] = pd.to_datetime(canonical["date"]).dt.strftime("%Y-%m-%d")
-            rows = canonical.to_dict(orient="records")
-            closes = [float(row["close"]) for row in rows]
-            returns = compute_returns(closes)
-            returns_rows = [
-                {"date": rows[index]["date"], "ret": returns[index]}
-                for index in range(len(rows))
-            ]
-            last_bar_date = rows[-1]["date"]
-            as_of = last_bar_date + "T00:00:00Z"
-            ts.update({
-                "ohlcv_daily": rows,
-                "returns_daily": returns_rows,
-                "source": "CANONICAL_HISTORICAL_PRICE_DB",
-                "as_of_utc": as_of,
-                "last_bar_utc": as_of,
-            })
-            pkg["ohlcv_daily"] = rows
-            pkg["daily_df"] = rows
-            pkg["ohlcv"] = rows
-            pkg["as_of_utc"] = as_of
-            pkg["bar_data_as_of"] = last_bar_date
-            pkg["bar_data_source"] = "CANONICAL_HISTORICAL_PRICE_DB"
-            pkg["intraday_partial"] = False
-            pkg["intraday_source"] = ""
-            dc.update({
-                "has_ohlcv_daily": True,
-                "has_returns_daily": True,
-                "timeseries_source": "CANONICAL_HISTORICAL_PRICE_DB",
-                "canonical_freshness_status": "FRESH_REUSED",
-                "intraday_partial": False,
-                "intraday_source": "",
-            })
-            try:
-                last_date = datetime.strptime(last_bar_date, "%Y-%m-%d").date()
-                pkg["bar_data_days_old"] = (
-                    datetime.now(timezone.utc).date() - last_date
-                ).days
-            except Exception:
-                pkg["bar_data_days_old"] = -1
-            if actuarial_snapshot is not None:
-                pkg["actuarial"] = actuarial_snapshot
-            pkg = _stamp_actuarial_data_quality(pkg, ohlcv_ok=True)
+            pkg = attach_canonical_bars(
+                pkg, canonical,
+                actuarial_snapshot=actuarial_snapshot,
+                today=datetime.now(timezone.utc).date(),
+            )
             write_json(pkg_path, pkg)
             return True, "CANONICAL_HISTORICAL_PRICE_DB"
 

@@ -128,6 +128,63 @@ def build_regime_snapshot(macro: dict, injected_at: str, macro_quant_packet: dic
     }
 
 
+def inject_macro_into_package(
+    pkg: Dict[str, Any],
+    *,
+    macro: Dict[str, Any],
+    macro_path: Path,
+    enrichment_path: Path | None,
+    ingested_utc: str,
+    macro_quant_packet: Dict[str, Any],
+    run_id: str,
+) -> Dict[str, Any]:
+    """Write the run's macro into one package dict (the per-package step of this script).
+
+    AVS-PKG-002 P2: shared by the on-disk injection loop below and by the in-memory
+    reference loader, so both produce the same package content.
+    """
+    # Write macro in the two forms that run_vanguard_from_packages.py requires:
+    #   1. pkg["macro"]["payload"]  — read at line ~290 by OrchestratorAdapter
+    #   2. pkg["regime_snapshot"]   — fail-closed gate at line 175-176
+    pkg["macro"] = {
+        "source_path": str(macro_path),
+        "enrichment_delta_path": str(enrichment_path) if enrichment_path else "",
+        "ingested_utc": ingested_utc,
+        "payload": macro,
+        "quant_packet": macro_quant_packet,
+        "us_money_index": macro_quant_packet.get("us_money_index", {}),
+    }
+    pkg["macro_quant_packet"] = macro_quant_packet
+    # PERMANENT FIX: write flat 6-field dict, not raw nested macro blob
+    pkg["regime_snapshot"] = build_regime_snapshot(macro, ingested_utc, macro_quant_packet)
+
+    truth_seed: Dict[str, Any] = {}
+    if isinstance(pkg.get("discovery"), dict):
+        truth_seed.update(pkg["discovery"])
+    truth_seed.update({
+        "ticker": pkg.get("ticker"),
+        "run_id": pkg.get("run_id") or run_id,
+        "run_mode": "EVENING",
+    })
+    truth_packet = build_truth_packet_from_row(
+        truth_seed,
+        source="PACKAGE_EXISTING",
+        priority=PRIORITY_PACKAGE_EXISTING,
+        run_id=run_id,
+        run_mode="EVENING",
+    )
+    for _k, _v in macro_quant_packet.items():
+        truth_packet.add_field(
+            _k,
+            _v,
+            source="MACRO_QUANT",
+            status="MISSING" if _v in (None, "", "UNKNOWN", "MISSING") else "CONFIRMED",
+            priority=PRIORITY_MACRO_QUANT,
+        )
+    pkg["truth_packet"] = truth_packet.to_json_dict()
+    return pkg
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -203,45 +260,15 @@ def main() -> int:
             skipped += 1
             continue
 
-        # Write macro in the two forms that run_vanguard_from_packages.py requires:
-        #   1. pkg["macro"]["payload"]  — read at line ~290 by OrchestratorAdapter
-        #   2. pkg["regime_snapshot"]   — fail-closed gate at line 175-176
-        pkg["macro"] = {
-            "source_path": str(macro_path),
-            "enrichment_delta_path": str(enrichment_path) if enrichment_path else "",
-            "ingested_utc": ingested_utc,
-            "payload": macro,
-            "quant_packet": macro_quant_packet,
-            "us_money_index": macro_quant_packet.get("us_money_index", {}),
-        }
-        pkg["macro_quant_packet"] = macro_quant_packet
-        # PERMANENT FIX: write flat 6-field dict, not raw nested macro blob
-        pkg["regime_snapshot"] = build_regime_snapshot(macro, ingested_utc, macro_quant_packet)
-
-        truth_seed: Dict[str, Any] = {}
-        if isinstance(pkg.get("discovery"), dict):
-            truth_seed.update(pkg["discovery"])
-        truth_seed.update({
-            "ticker": pkg.get("ticker"),
-            "run_id": pkg.get("run_id") or args.run_id,
-            "run_mode": "EVENING",
-        })
-        truth_packet = build_truth_packet_from_row(
-            truth_seed,
-            source="PACKAGE_EXISTING",
-            priority=PRIORITY_PACKAGE_EXISTING,
+        pkg = inject_macro_into_package(
+            pkg,
+            macro=macro,
+            macro_path=macro_path,
+            enrichment_path=enrichment_path,
+            ingested_utc=ingested_utc,
+            macro_quant_packet=macro_quant_packet,
             run_id=args.run_id,
-            run_mode="EVENING",
         )
-        for _k, _v in macro_quant_packet.items():
-            truth_packet.add_field(
-                _k,
-                _v,
-                source="MACRO_QUANT",
-                status="MISSING" if _v in (None, "", "UNKNOWN", "MISSING") else "CONFIRMED",
-                priority=PRIORITY_MACRO_QUANT,
-            )
-        pkg["truth_packet"] = truth_packet.to_json_dict()
 
         save_json(p, pkg)
         updated += 1
