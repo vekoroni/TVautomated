@@ -150,7 +150,7 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime, timezone, time as dtime
+from datetime import date, datetime, timedelta, timezone, time as dtime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
@@ -629,6 +629,10 @@ class OrchestratorConfig:
 
     # Retention: number of evening runs to keep in data/output/runs/
     RUNS_RETENTION_DAYS = 90
+
+    # Retention: calendar days of run copies kept in data/archive/, counted back from the current
+    # run's date (ACK, 4 Oct 2026).
+    ARCHIVE_RETENTION_DAYS = 14
 
 
 cfg = OrchestratorConfig()
@@ -5068,6 +5072,39 @@ def prune_old_runs() -> None:
     logger.info(f"✅ Pruned {pruned} old runs" + (f" ({errors} errors)" if errors else "") + "\n")
 
 
+def _run_id_date(name: str) -> Optional[date]:
+    try:
+        return datetime.strptime(name[:8], "%Y%m%d").date()
+    except ValueError:
+        return None
+
+
+def prune_old_archives(run_id: str) -> None:
+    """Delete archive copies of runs older than ARCHIVE_RETENTION_DAYS before the current run (ACK, 4 Oct 2026).
+
+    The window is counted from the current run's date, not the wall clock, so a re-run prunes the same set.
+    Folders not named as a run are never touched.
+    """
+    current = _run_id_date(run_id)
+    if current is None or not cfg.ARCHIVE_DIR.exists():
+        logger.info(f"⏭️  Archive retention skipped (run date unreadable or no archive): {run_id}\n")
+        return
+    cutoff = current - timedelta(days=cfg.ARCHIVE_RETENTION_DAYS)
+    pruned = errors = 0
+    for folder in sorted(cfg.ARCHIVE_DIR.iterdir()):
+        folder_date = _run_id_date(folder.name)
+        if not folder.is_dir() or folder_date is None or folder_date >= cutoff:
+            continue
+        try:
+            shutil.rmtree(folder)
+            pruned += 1
+        except Exception as e:
+            logger.warning(f"   ⚠️  Could not prune archive {folder.name}: {e}")
+            errors += 1
+    logger.info(f"✅ Archive retention ({cfg.ARCHIVE_RETENTION_DAYS} days, before {cutoff}): pruned {pruned}"
+                + (f" ({errors} errors)" if errors else "") + "\n")
+
+
 def write_latest_json(discovery_run_id: str, workflow_run_id: str) -> None:
     """Write data/output/latest.json (points to canonical run_id)."""
     # AVS-PKG-002 P4: the run input manifest is the run's input record; the package index
@@ -7585,6 +7622,7 @@ def evening_workflow(
         logger.warning("Final run manifest refresh failed (non-critical): %s", _manifest_refresh_err)
 
     archive_outputs(canonical_run_id)
+    prune_old_archives(canonical_run_id)
     prune_old_runs()
     generate_report(summary, canonical_run_id, session_id)
 
