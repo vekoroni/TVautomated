@@ -104,7 +104,9 @@ def test_validator_requires_governed_horizon_endpoint() -> None:
     result = validate_ev3_input(row, now_utc="2026-08-10T12:05:00Z")
     assert not result.accepted
     assert result.reason_code == "REJECT_HORIZON"
-    assert "requires endpoint=10" in result.detail
+    # ACK 28 Sep 2026 (option 3): the hold need not equal the thesis bucket's endpoint, but it must
+    # be a horizon the barrier sidecar materialised (tests/test_ev3_hold_and_move_window.py).
+    assert "materialised=5,10,20" in result.detail
 
 
 def test_dataframe_diagnostics_are_stable_and_complete() -> None:
@@ -118,9 +120,13 @@ def test_dataframe_diagnostics_are_stable_and_complete() -> None:
     assert diagnostics["ev3_reason_code"].tolist() == ["ACCEPTED", "REJECT_DIRECTION_UNRESOLVED"]
 
 
-def test_validator_enforces_freshness_spread_dte_and_multiplier() -> None:
-    stale = _valid_row()
-    assert validate_ev3_input(stale, now_utc="2026-08-12T12:00:00Z").reason_code == "REJECT_QUOTE_STALE"
+def test_validator_enforces_timestamp_spread_dte_and_multiplier() -> None:
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
+    old = validate_ev3_input(_valid_row(), now_utc="2026-08-12T12:00:00Z")
+    assert old.reason_code != "REJECT_QUOTE_STALE"
+    assert old.canonical["quote_age_state"] == "BEYOND_FEED_WINDOW"
+    future = validate_ev3_input(_valid_row(), now_utc="2026-08-10T11:00:00Z")
+    assert future.reason_code == "REJECT_QUOTE_TIMESTAMP_FUTURE"
 
     spread = _valid_row()
     spread["contract_bid"] = 0.1

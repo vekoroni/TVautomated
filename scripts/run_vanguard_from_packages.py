@@ -173,6 +173,16 @@ def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def stamp_governance(rows: List[Dict[str, Any]], governance: Dict[str, Dict[str, Any]]) -> None:
+    """ACK, 1 Oct 2026: a held ticker is evaluated as new; the governance verdict on its
+    open Trade Contract travels with its row as attributes, never as a skip."""
+    for row in rows:
+        result = governance.get(str(row.get("ticker") or "").upper())
+        row["governance__open_contract"] = result is not None
+        row["governance__verdict"] = "" if result is None else str(result.get("verdict") or "")
+        row["governance__reason"] = "" if result is None else str(result.get("reason") or "")
+
+
 def write_csv(path: Path, rows: List[Dict[str, Any]], minimum_headers: Optional[List[str]] = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -749,6 +759,8 @@ def build_orchestrator_like_payload(pkg: Dict[str, Any]) -> Dict[str, Any]:
 
     payload: Dict[str, Any] = {
         "ticker": ticker,
+        "discovery": dict(pkg.get("discovery") or {}),
+        "bar_data_as_of": pkg.get("bar_data_as_of") or disc.get("bar_data_asof"),
         "current_price": current_price,
         "market_profile_evidence": pkg.get("market_profile_evidence"),
         # The governed profile contract is a protection, not an optional
@@ -1043,6 +1055,7 @@ def signal_to_row(
     disc: dict = None,
     actuarial: dict = None,
     macro_quant_packet: dict = None,
+    thesis_context: Any = None,
 ) -> Dict[str, Any]:
     """
     Convert VanguardSignal to a flat CSV row with Layer-2 headline fields guaranteed.
@@ -1062,6 +1075,14 @@ def signal_to_row(
     row: Dict[str, Any] = {
         "ticker": s.get("ticker"),
         "timestamp": s.get("timestamp"),
+        "thesis__side": disc.get("thesis__side"),
+        "thesis__direction_status": disc.get("thesis__direction_status"),
+        "thesis__side_assignment_policy_version": disc.get("thesis__side_assignment_policy_version"),
+        "thesis_context_status": getattr(thesis_context, "status", "NOT_EVALUATED"),
+        "thesis_context_reason": getattr(
+            thesis_context, "reason",
+            "THESIS_CONTEXT_NOT_PASSED" if disc.get("thesis__side") else "THESIS_CONTEXT_MISSING",
+        ),
         "verdict": s.get("verdict"),
         "final_recommendation": s.get("final_recommendation"),
         "reasoning": s.get("reasoning"),
@@ -1074,6 +1095,9 @@ def signal_to_row(
         "confidence_level": safe_get(l2, "confidence_level"),
         "has_edge": safe_get(l2, "has_edge"),
         "edge_direction": safe_get(l2, "edge_direction"),
+        # DIR-002 VNG-02: Vanguard casts no side; legacy quality is upside-only.
+        "edge_direction_status": safe_get(l2, "edge_direction_status") or "RETIRED_USE_SIDE_EVIDENCE",
+        "edge_quality_side_basis": safe_get(l2, "edge_quality_side_basis") or "BULL_ONLY_LEGACY",
         "failed_gate": safe_get(l2, "failed_gate"),
         "no_edge_reason": safe_get(l2, "no_edge_reason"),
         # Schema versioning — from state_calculator constants, written to every row
@@ -1209,7 +1233,13 @@ def signal_to_row(
 
     # Optional: fully flatten layers for debugging / post-mortems
     row.update({f"layer1__{k}": v for k, v in flatten_dict(l1).items()})
-    row.update({f"layer2__{k}": v for k, v in flatten_dict(l2).items()})
+    _side_prefixes = ("side_bull__", "side_bear__", "side_assigned__", "side_block_")
+    row.update({
+        f"layer2__{k}": v for k, v in flatten_dict(l2).items()
+        if not str(k).startswith(_side_prefixes)
+    })
+    # DIR-002 V-A: descriptive side blocks keep their canonical names.
+    row.update({k: v for k, v in l2.items() if str(k).startswith(_side_prefixes)})
     if isinstance(l3, dict):
         row.update({f"layer3__{k}": v for k, v in flatten_dict(l3).items()})
 
@@ -1361,12 +1391,13 @@ def main() -> int:
         if _open_tickers:
             print(f"\n[GOVERNANCE] {len(_open_tickers)} open contract(s): "
                   f"{sorted(_open_tickers)}")
-            print("[GOVERNANCE] These tickers route to governance — scanner cannot override.")
+            print("[GOVERNANCE] Governance evaluates their contracts; the tickers are still read as new.")
         else:
             print("[GOVERNANCE] No open contracts — all tickers run discovery.")
     except ImportError:
         _open_tickers      = set()
         _governance_engine = None
+    _governance_by_ticker: Dict[str, Dict[str, Any]] = {}
     # ─────────────────────────────────────────────────────────────────────────
 
     rp = resolve_run_paths(root, args.run_id)
@@ -1455,8 +1486,9 @@ def main() -> int:
             # ── END DATA CONTRACT GATE ───────────────────────────────────────
 
             # ── GOVERNANCE ROUTING ────────────────────────────────────────────
-            # If this ticker has an open Trade Contract, route to governance.
-            # RULE: scanner cannot override campaign logic.
+            # ACK, 1 Oct 2026: a ticker re-enters the line as new every run, even
+            # when a trade is open. Governance asks whether the open thesis is
+            # invalidated; its verdict travels with the row and never skips it.
             if _governance_engine and ticker in _open_tickers:
                 current_price = float(
                     (pkg.get("discovery") or {}).get("stock_price") or 0.0
@@ -1471,10 +1503,10 @@ def main() -> int:
                     reason  = gov_result["reason"]
                     icon    = {"HOLD": "✓", "TIGHTEN": "⚠", "EXIT": "✗"}.get(verdict, "?")
                     print(f"[{i}/{len(package_paths)}] [{icon}] GOVERNANCE {ticker} "
-                          f"→ {verdict}: {reason}")
+                          f"→ {verdict}: {reason} (ticker still evaluated as new)")
                     if verdict == "EXIT":
                         _open_tickers.discard(ticker)
-                    continue   # Do NOT run discovery on this ticker
+                    _governance_by_ticker[str(ticker).upper()] = {"verdict": verdict, "reason": reason}
             # ── END GOVERNANCE ROUTING ────────────────────────────────────────
 
             o_payload = build_orchestrator_like_payload(pkg)
@@ -1526,6 +1558,7 @@ def main() -> int:
                 disc=_disc_row,
                 actuarial=pkg.get("actuarial"),
                 macro_quant_packet=packet_from_package(pkg),
+                thesis_context=v_input.thesis_context,
             ))
 
             print(f"[{i}/{len(package_paths)}] PASS {ticker}")
@@ -1542,6 +1575,9 @@ def main() -> int:
             print(f"[{i}/{len(package_paths)}] REJECT {ticker_guess}: {reason} | {e}")
             if args.verbose:
                 traceback.print_exc()
+
+    stamp_governance(pass_rows, _governance_by_ticker)
+    stamp_governance(reject_rows, _governance_by_ticker)
 
     physics_valid = sum(1 for r in pass_rows if r.get("physics_state_id") and r.get("state_transition_label"))
     physics_missing = max(0, len(pass_rows) - physics_valid)

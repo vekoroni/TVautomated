@@ -13,6 +13,20 @@ class VanguardInputError(ValueError):
     """Raised when a required governed input contract is explicitly disabled."""
 
 
+@dataclass(frozen=True)
+class ThesisContext:
+    """Read-only Discovery thesis evidence; Vanguard must not assign its side."""
+
+    status: str = "NOT_EVALUATED"
+    reason: str = "THESIS_CONTEXT_MISSING"
+    side: Optional[str] = None
+    direction_status: Optional[str] = None
+    policy_version: Optional[str] = None
+    evidence_session: Optional[str] = None
+    bull_geometry: Dict = field(default_factory=dict)
+    bear_geometry: Dict = field(default_factory=dict)
+
+
 @dataclass
 class CalendarData:
     """
@@ -207,6 +221,7 @@ class VanguardInput:
     
     # === OPTIONAL: AVSHUNTER OUTPUT (for comparison) ===
     avshunter_signal: Optional[Dict] = None
+    thesis_context: ThesisContext = field(default_factory=ThesisContext)
 
     # Governed Market Profile packet. When the contract is required, Layer 1
     # must never reconstruct a profile from daily OHLCV or treat absence as

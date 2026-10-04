@@ -384,6 +384,7 @@ def validation_event_from_morning_row(
         "WAIT_FOR_PULLBACK",
         "GAP_CONFIRMATION_EXTENDED",
         "EOD_PENDING_MORNING_REQUOTE",
+        "THESIS_UNDER_PRESSURE",   # XLU-D11: moved against the thesis is never CONFIRMED
     }:
         transition = ValidationTransition.PENDING_TRIGGER.value
     elif morning_state in {

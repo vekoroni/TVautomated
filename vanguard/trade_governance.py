@@ -236,8 +236,12 @@ class TradeGovernanceEngine:
                     "reason": "Q1 PASS: No price data — cannot evaluate, holding"}
 
         invalidation_price = contract.get("invalidation_price", 0)
-        direction          = contract.get("direction", "CALL")
+        # DIR-002 VNG-11: a contract must state its side; never assume CALL.
+        direction          = str(contract.get("direction") or "").upper()
         entry_price        = contract.get("entry_price", 0)
+        if direction not in {"CALL", "PUT"}:
+            return {"gate": gate, "breach": False,
+                    "reason": "Q1 NOT_EVALUATED: CONTRACT_DIRECTION_MISSING — side-correct check impossible"}
 
         if direction == "CALL":
             # Long thesis: invalidated if price falls below stop

@@ -1,0 +1,10 @@
+{
+  "version": "dir002_vanguard_side_evidence_v1",
+  "authority_state": "SHADOW_DESCRIPTIVE_ONLY",
+  "note": "DIR-002 V-A side blocks from the existing v7 matched cohort. Descriptive only: no gate, rank, scope, trade-ready label or calibrated probability may be derived from these fields until v8 point-in-time validation and a separate authority decision.",
+  "horizons_sessions": [5, 10, 20],
+  "touch_horizon_sessions": 20,
+  "touch_log_distances": [0.04879016416943205, 0.09531017980432493],
+  "label_embargo_sessions": 20,
+  "min_sample": 30
+}

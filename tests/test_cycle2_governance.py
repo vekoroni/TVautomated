@@ -37,7 +37,7 @@ def test_exit_rules_do_not_consume_legacy_stop_aliases() -> None:
         "invalidation_level": 95.0,
     })
     assert result["exit_stop_price"] is None
-    assert result["exit_rr_valid"] is False
+    assert result["exit_rr_valid"] is None          # ACK 3 Oct 2026 (step 5): stop-based R:R retired
 
 
 def test_morning_invalidation_fails_closed_for_missing_and_non_directional() -> None:

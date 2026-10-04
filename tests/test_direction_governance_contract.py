@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pandas as pd
 
 from contracts.direction_governance import (
-    DIR_CALC_VERSION,
+    LEGACY_DIR_CALC_VERSION,
     preliminary_discovery_direction,
     resolve_governed_direction,
     structural_direction,
@@ -310,4 +310,4 @@ def test_morning_gate_routes_unresolved_direction_to_stand_down() -> None:
 
 
 def test_contract_version_is_explicit() -> None:
-    assert _record("CALL")["dir_calc_version"] == DIR_CALC_VERSION
+    assert _record("CALL")["dir_calc_version"] == LEGACY_DIR_CALC_VERSION

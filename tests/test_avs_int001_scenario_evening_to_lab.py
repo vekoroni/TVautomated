@@ -62,6 +62,7 @@ def _base(ticker: str, side: str, spot: float, *, target: float, stop: float, **
         "trigger_primary": "RANGE_BREAK",
         "trigger_price": spot * (0.995 if side == "CALL" else 1.005),
         "wyckoff_execution_bias": "BULLISH" if side == "CALL" else "BEARISH",
+        "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
         "lab_verdict": "GO", "lab_tradeable": True, "final_action": "BUY_NOW",
         "priority_score": 70.0, "sector": "Technology",
         "convexity_score": 3.0, "convexity_campaign": "CORE_CAMPAIGN",  # verdict-encoded, unsourced

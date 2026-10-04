@@ -97,6 +97,12 @@
     "share_spread_min_sessions": 20,
     "option_exit_buffer_sessions": 2
   },
+  "gex_chain_resolution": {
+    "threshold_version": "gex_chain_resolution_v1",
+    "forward_roll_max_sessions": 5,
+    "backward_roll_max_sessions": 5,
+    "evidence": "AVSHUNTER GEX investigation 20260914: Phantom chain snapshots arrive by Colab pull and can lag the requested session by a long weekend plus a holiday. Five XNYS sessions covers every observed gap in the recorded store without reaching back into a different volatility regime."
+  },
   "schema_version": "governed_constants_v1",
   "option_quote_feed": {
     "provider": "MARKETDATA",
@@ -130,5 +136,32 @@
     "value_selection_approval": "ACK 18 Sep 2026: choose the contract by central return per dollar of premium; SHADOW until proven (rule 5), ACK switches to ACTIVE",
     "missing_horizon_runway_hold_sessions": 20,
     "rationale": "One delta preference (the union of the former per-horizon ranges) and one spread limit (the reviewable ceiling) for every horizon. Runway is a floor: anticipated move + monitor + exit buffer sessions in calendar days; a contract short of it is flagged, a longer one is mildly penalised per extra day so the nearest covering expiry wins ties, never excluded. A missing horizon uses the full 20-session thesis window (ACK: buy more runway) and is reported. Evidence: 17 Sep evening run, 838 of 1,359 searches found no contract."
+  },
+  "morning_runway": {
+    "confirmation_min_expected_move_fraction": 0.5,
+    "version": "morning_runway_v1",
+    "note": "XLU-D11 (ACK 2 Oct 2026): a Morning move confirms (or pressures) the thesis only when it is at least this fraction of the one-session expected move. Engineering starting point recorded before evaluation; to be calibrated with the outcome scorer on recorded Morning moves."
+  },
+  "trigger_vol_compression": {
+    "options_cheap_labels": [
+      "CHEAP",
+      "FAIR"
+    ],
+    "version": "trigger_vol_compression_v1",
+    "note": "XLU-D04 (ACK 2 Oct 2026, flag only): VOL_COMPRESSION's 'options cheap' premise is checked on ivp_label (implied vol vs the ticker's own history, owned by Options). EXPENSIVE gives VOL_COMPRESSION_IV_RICH, a missing label VOL_COMPRESSION_IV_UNVERIFIED. Both keep the same weight and GO eligibility; the label is the flag. IV/HV is not used: it is mechanically high during realised compression."
+  },
+  "anticipated_move": {
+    "version": "anticipated_move_v1",
+    "sessions_per_bar": {
+      "1d": 1.0,
+      "1w": 5.0,
+      "1mo": 21.0,
+      "60m": 0.1538,
+      "15m": 0.0385,
+      "5m": 0.0128
+    },
+    "calendar_days_per_session": 1.4484,
+    "authority": "DISPLAY_ONLY",
+    "note": "ACK 3 Oct 2026 (design AVS_ANTICIPATED_MOVE_DESIGN_20261003): converts BEH-001 duration evidence (own-timeframe bars) to XNYS sessions (6.5 h per session for intraday bars); calendar_days_per_session (365/252) converts elapsed sessions for option time value. Display only until the replay validation (design \u00a77)."
   }
 }

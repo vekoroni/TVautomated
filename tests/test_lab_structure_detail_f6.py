@@ -23,7 +23,7 @@ def _discovery(folder: Path, rows: list[dict]) -> Path:
 
 
 def test_the_book_field_list_names_every_structure_detail_field():
-    assert len(lab.STRUCTURE_DETAIL_FIELDS) == 35
+    assert len(lab.STRUCTURE_DETAIL_FIELDS) == 45   # 35 + 8 Phase/Event (XLU-D10) + 2 Wyckoff score bases (B7, 3 Oct 2026)
     for field in (*lab.STRUCTURE_DETAIL_FIELDS, "structure_detail_state"):
         assert field in lab.FINAL_BOOK_FIELDS, field
 

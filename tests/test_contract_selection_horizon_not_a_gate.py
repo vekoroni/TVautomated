@@ -148,13 +148,14 @@ def test_delta_preference_is_the_same_for_every_horizon():
 @pytest.mark.parametrize("horizon", [None, "", "UNKNOWN"])
 def test_missing_horizon_is_reported_and_uses_the_full_thesis_window_not_the_shortest(horizon):
     ctx = _structural_context(horizon)
-    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
+    # Step 4b (ACK 3 Oct 2026): the governed basis now also states why no evidence runway applied.
+    assert ctx["contract_runway_basis"].startswith("THESIS_WINDOW_D2|HORIZON_UNAVAILABLE")
     assert ctx["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
 
 
 def test_known_horizon_is_the_runway_basis_and_stays_descriptive():
     ctx = _structural_context("6_10d")
-    assert ctx["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON:6_10d"
+    assert ctx["contract_runway_basis"].startswith("THESIS_WINDOW_D2|HORIZON:6_10d")
     assert ctx["dte_config"]["planned_hold_sessions"] == 10          # the horizon is still carried
 
 

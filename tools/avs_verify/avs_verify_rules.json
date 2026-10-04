@@ -1,0 +1,350 @@
+{
+  "_contract": "avs_verify_rules_v1_2",
+  "_note": "Calibrated 28 Sep 2026 against run 20260927_205123 (final_opportunity_book 705 cols, morning_validated_trades 1,024 cols). '{run_id}' in file patterns is substituted. Check the report's Column map on every schema change.",
+  "manifest_files": [
+    "final_run_manifest.json",
+    "run_manifest.json"
+  ],
+  "phases": {
+    "evening": {
+      "book_files": [
+        "intelligence_lab/final_opportunity_book_{run_id}.csv",
+        "intelligence_lab/lab_signal_book_v4.csv",
+        "intelligence_lab/lab_signal_book_v3.csv"
+      ],
+      "run_time_source": "run_id",
+      "tradeable": {
+        "column": "final_action",
+        "values": [
+          "BUY_NOW",
+          "BUY_SMALL",
+          "GO",
+          "GO_LIMIT",
+          "PROBE"
+        ]
+      }
+    },
+    "morning": {
+      "book_files": [
+        "morning_validation/morning_validated_trades_{run_id}.csv",
+        "morning_validated_trades.csv"
+      ],
+      "run_time_source": "manifest.created_at_utc",
+      "tradeable": {
+        "column": "morning_gate_verdict",
+        "values": [
+          "GO",
+          "GO_LIMIT",
+          "PROBE"
+        ]
+      }
+    }
+  },
+  "timing": {
+    "run_id_utc_offset_hours": 0,
+    "evening_earliest_et": "16:15",
+    "rth_open_et": "09:30",
+    "morning_quote_window_et": [
+      "09:35",
+      "09:45"
+    ],
+    "quote_max_age_minutes": 15
+  },
+  "columns": {
+    "ticker": {
+      "critical": true,
+      "names": [
+        "ticker"
+      ]
+    },
+    "direction": {
+      "critical": true,
+      "names": [
+        "governed_direction",
+        "final_direction",
+        "direction"
+      ]
+    },
+    "ref_spot": {
+      "critical": true,
+      "names": [
+        "signal_price",
+        "forecast_reference_spot",
+        "underlying_price"
+      ]
+    },
+    "live_spot": {
+      "critical": false,
+      "names": [
+        "live_price",
+        "validation_current_price"
+      ]
+    },
+    "target": {
+      "critical": true,
+      "names": [
+        "target_price",
+        "structural_target",
+        "forecast_target_spot"
+      ]
+    },
+    "stop": {
+      "critical": true,
+      "names": [
+        "invalidation_spot",
+        "invalidation_price",
+        "exit_stop_price"
+      ]
+    },
+    "contract": {
+      "critical": true,
+      "names": [
+        "selected_contract_symbol",
+        "contract_symbol"
+      ]
+    },
+    "bid": {
+      "critical": false,
+      "names": [
+        "contract_bid",
+        "current_contract_bid"
+      ]
+    },
+    "ask": {
+      "critical": false,
+      "names": [
+        "contract_ask",
+        "current_contract_ask"
+      ]
+    },
+    "mid": {
+      "critical": false,
+      "names": [
+        "contract_mid",
+        "current_contract_mid"
+      ]
+    },
+    "delta": {
+      "critical": false,
+      "names": [
+        "contract_delta",
+        "live_contract_delta"
+      ]
+    },
+    "dte": {
+      "critical": false,
+      "names": [
+        "selected_contract_dte",
+        "contract_dte",
+        "dte"
+      ]
+    },
+    "hold": {
+      "critical": false,
+      "names": [
+        "remaining_hold_sessions",
+        "planned_hold_sessions"
+      ]
+    },
+    "spread": {
+      "critical": false,
+      "names": [
+        "spread_pct",
+        "contract_spread_pct"
+      ]
+    },
+    "spread_unit": {
+      "critical": false,
+      "names": [
+        "spread_unit"
+      ]
+    },
+    "quote_ts": {
+      "critical": false,
+      "names": [
+        "selected_quote_timestamp_utc",
+        "current_quote_timestamp_utc",
+        "quote_provider_timestamp_utc"
+      ]
+    },
+    "quote_age_s": {
+      "critical": false,
+      "names": [
+        "quote_age_seconds",
+        "execution_viability_quote_age_seconds"
+      ]
+    },
+    "quote_fresh": {
+      "critical": false,
+      "names": [
+        "quote_freshness"
+      ]
+    },
+    "em_5d": {
+      "critical": false,
+      "names": [
+        "expected_move_5d_fraction"
+      ]
+    },
+    "em_10d": {
+      "critical": false,
+      "names": [
+        "expected_move_10d_fraction"
+      ]
+    },
+    "em_20d": {
+      "critical": false,
+      "names": [
+        "expected_move_20d_fraction"
+      ]
+    },
+    "garch_1_5": {
+      "critical": false,
+      "names": [
+        "garch_expected_move_1_5d"
+      ]
+    },
+    "garch_6_10": {
+      "critical": false,
+      "names": [
+        "garch_expected_move_6_10d"
+      ]
+    },
+    "garch_11_20": {
+      "critical": false,
+      "names": [
+        "garch_expected_move_11_20d"
+      ]
+    },
+    "tier": {
+      "critical": false,
+      "names": [
+        "opportunity_tier"
+      ]
+    },
+    "macro_align": {
+      "critical": false,
+      "names": [
+        "usmi_alignment_reason"
+      ]
+    },
+    "win_prob": {
+      "critical": false,
+      "names": [
+        "win_prob_predicted"
+      ]
+    }
+  },
+  "spread_unit_values": {
+    "PCT_OF_MID": "percent",
+    "FRACTION_OF_MID": "fraction"
+  },
+  "contradictions": [
+    {
+      "id": "LAB_VERDICT_VS_FINAL_ACTION",
+      "a": "final_action",
+      "a_in": [
+        "BUY_NOW",
+        "BUY_SMALL"
+      ],
+      "b": "lab_verdict",
+      "b_in": [
+        "BLOCKED",
+        "BLOCK"
+      ]
+    },
+    {
+      "id": "TIER_BLOCK_VS_TRADEABLE",
+      "a": "final_action",
+      "a_in": [
+        "BUY_NOW",
+        "BUY_SMALL"
+      ],
+      "b": "opportunity_tier",
+      "b_in": [
+        "BLOCK"
+      ]
+    },
+    {
+      "id": "GATE_GO_VS_TIER_BLOCK",
+      "a": "morning_gate_verdict",
+      "a_in": [
+        "GO",
+        "GO_LIMIT"
+      ],
+      "b": "opportunity_tier",
+      "b_in": [
+        "BLOCK"
+      ]
+    }
+  ],
+  "manifest_self_report": {
+    "fail_if": {
+      "run_tradeable": [
+        false
+      ],
+      "morning_capital_permission": [
+        "BLOCKED_REPAIR_REQUIRED",
+        "BLOCKED"
+      ],
+      "run_execution_permission": [
+        "BLOCKED_REPAIR_REQUIRED",
+        "BLOCKED"
+      ],
+      "pipeline_technical_health": [
+        "FAILED"
+      ]
+    },
+    "fail_if_nonempty": [
+      "fatal_flags"
+    ],
+    "warn_if": {
+      "pipeline_semantic_health": [
+        "DEGRADED"
+      ],
+      "ev_functional_health": [
+        "DEGRADED_NO_EVALUATIONS"
+      ]
+    },
+    "warn_if_nonempty": [
+      "stale_flags",
+      "conflict_flags"
+    ],
+    "row_count_key": {
+      "evening": "row_counts.morning_validation",
+      "morning": "row_counts.morning_validation"
+    }
+  },
+  "known_defects": {
+    "_note": "Rules listed here still report, but as a P1 caveat instead of P0. Remove the entry once the fix is CLOSED with a run artefact.",
+    "R17_GARCH_MONOTONIC": "AVS-DESK-GATE D1 \u2014 GARCH window fields are differences of cumulative moves (layer3_forward_variance.py:515-517)",
+    "R22_MACRO_JOIN": "AVS-VAL-THESIS-001 \u2014 USMI join on empty gics_sector",
+    "R15_HOLD_DERIVED": "Hold broadcast from registry outcome.window_sessions to every row (intelligent_orchestrator.py:4109); should be analysis-determined per trade (ACK 28 Sep)"
+  },
+  "thresholds": {
+    "spread_warn_fraction": 0.1,
+    "spread_fail_fraction": 0.25,
+    "target_vs_move_warn": 1.5,
+    "target_vs_move_fail": 3.0,
+    "delta_abs_min": 0.15,
+    "delta_abs_max": 0.85,
+    "critical_null_rate_fail": 0.02,
+    "macro_unmapped_rate_warn": 0.5,
+    "systemic_rate": 0.5,
+    "session_to_calendar": 1.4,
+    "constant_columns": [
+      "convexity_score",
+      "catalyst_truth_score"
+    ]
+  },
+  "hold_derivation": {
+    "_note": "ACK 28 Sep 2026: hold is an analysis output per trade, intraday to 20+ sessions. No cap. A single value on every row, or a config-constant source, is a defect.",
+    "source_column": "planned_hold_source",
+    "constant_sources": [
+      "THESIS_WINDOW_D2",
+      "THESIS_WINDOW_UNAVAILABLE",
+      "ROUTED_HORIZON_UPPER_BOUND"
+    ],
+    "min_rows_for_constant_test": 20
+  }
+}

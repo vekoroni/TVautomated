@@ -1,0 +1,40 @@
+tests/test_ev3_options_handoff.py: 38 passed in 61.15s (0:01:01)
+tests/test_ev3_orchestrator_order.py: 5 passed in 4.96s
+tests/test_ev3_shadow_phase.py: 6 passed in 18.14s
+tests/test_ev3_stage0.py: 13 passed in 15.56s
+tests/test_evening_thesis_decision.py: 17 passed in 41.03s
+tests/test_fixspec_iv_lab_display.py: 4 passed in 11.47s
+tests/test_fixspec_rr_options_direction.py: 15 passed in 25.20s
+tests/test_fixspec_rr_options_state.py: 25 passed in 41.17s
+tests/test_handoff_conflict_guard.py: 2 passed in 27.70s
+tests/test_handoff_contract.py: 15 passed in 14.26s
+tests/test_handoff_contract_audit.py: 3 passed in 13.38s
+tests/test_ila_interpreter_lifecycle_visibility.py: 6 passed in 15.54s
+tests/test_ila_morning_state_separation.py: 5 passed in 2.81s
+tests/test_ila_optional_capability_labeling.py: 4 passed in 2.32s
+tests/test_intelligence_lab_strict_json.py: 5 passed in 34.49s
+tests/test_interactive_desk_end_to_end.py: 28 passed in 27.15s
+tests/test_interactive_desk_snapshot.py: 5 passed in 6.79s
+tests/test_interpreter_macro_advisory_handoff.py: 6 passed in 14.98s
+tests/test_interpreter_war_view.py: 5 passed in 20.88s
+tests/test_lab_cache_signature.py: 2 passed in 53.50s
+tests/test_lab_ev3_move_window_book.py: 1 passed in 19.09s
+tests/test_lab_export_mapper_js.py: 13 passed in 10.99s
+tests/test_lab_governed_handoff.py: 19 passed in 61.23s (0:01:01)
+tests/test_lab_journal_handoff.py: 3 passed in 46.23s
+tests/test_lab_legacy_ev_retired.py: 2 passed in 24.71s
+tests/test_lab_loader_error_does_not_block_page.py: 1 passed in 3.50s
+tests/test_lab_monetisation_gate.py: 6 passed in 27.83s
+tests/test_lab_priority_and_journal_ev_no_legacy.py: 8 passed in 35.58s
+tests/test_lab_qa_audit_harness.py: 2 passed in 12.85s
+tests/test_lab_ranking_basis_export.py: 2 passed in 48.03s
+tests/test_lab_signal_tickets_and_display.py: 5 passed in 35.88s
+tests/test_lab_strangle_direction.py: 9 passed in 82.25s (0:01:22)
+tests/test_lab_structure_detail_f6.py: 1 failed, 4 passed in 16.06s
+tests/test_macro_builder_governed_integration.py: 1 failed, 6 passed in 94.49s (0:01:34)
+tests/test_macro_domain_enhancements.py: 14 passed in 48.20s
+tests/test_macro_enrichment_delta.py: 15 passed in 10.53s
+tests/test_macro_enrichment_discovery_options.py: 1 passed in 49.15s
+tests/test_macro_evening_publication_boundary.py: 4 passed in 23.23s
+tests/test_macro_input_governance.py: 10 passed in 16.68s
+tests/test_macro_layer_fixes.py: 5 passed in 1.98s

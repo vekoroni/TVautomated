@@ -66,6 +66,26 @@ def _select_preferred_horizon(outcomes) -> str:
     return best[0]
 
 
+def _side_block_fields(outcomes, vanguard_input) -> dict:
+    """Publish V-A side blocks and the assigned-side alias (no side chosen)."""
+    blocks = dict(getattr(outcomes, "side_evidence_blocks", None) or {
+        "side_block_status": "NOT_EVALUATED", "side_block_reason": "OUTCOMES_UNAVAILABLE",
+    })
+    context = getattr(vanguard_input, "thesis_context", None)
+    side = str(getattr(context, "side", "") or "").upper()
+    blocks["side_block_thesis_side"] = side or "NOT_EVALUATED"
+    if side in {"BULL", "BEAR"}:
+        prefix = f"side_{side.lower()}__"
+        for key, value in list(blocks.items()):
+            if key.startswith(prefix):
+                blocks["side_assigned__" + key[len(prefix):]] = value
+        blocks["side_assigned__status"] = blocks.get("side_block_status")
+    else:
+        blocks["side_assigned__status"] = "NOT_APPLICABLE_UNASSIGNED"
+    blocks["side_assigned__authority"] = "SHADOW_DESCRIPTIVE_ONLY"
+    return blocks
+
+
 def analyze_ticker(vanguard_input: VanguardInput, actuarial_db_path: Optional[str] = None) -> VanguardSignal:
     """
     Convenience function so package imports remain stable.
@@ -192,7 +212,10 @@ class VanguardEngine:
         # =========================
         print("\n[LAYER 2] Statistical Context")
         state = self.state_calculator.calculate_state(vanguard_input, auction)
-        outcomes = self.actuarial_engine.query(state)
+        # DIR-002 VNG-05/12: the evidence session is the point-in-time cut.
+        outcomes = self.actuarial_engine.query(
+            state, as_of=getattr(vanguard_input, "analysis_timestamp", None)
+        )
 
         # Fix 2: compute sample confidence and preferred horizon immediately.
         # Both are defined here regardless of outcomes None/non-None so that
@@ -521,6 +544,12 @@ class VanguardEngine:
                 # --- edge assessment ---
                 "has_edge":         statistical_has_edge,
                 "edge_direction":   edge.edge_direction,
+                "edge_direction_status": getattr(edge, "edge_direction_status", "RETIRED_USE_SIDE_EVIDENCE"),
+                # Legacy edge quality uses upside-only labels (DIR-002 §4.6.3).
+                "edge_quality_side_basis": "BULL_ONLY_LEGACY",
+                # DIR-002 V-A: mirrored descriptive blocks for both sides plus
+                # an alias for the frozen Discovery side. Shadow only.
+                **_side_block_fields(outcomes, vanguard_input),
                 "edge_quality":     exported_edge_quality,
                 "legacy_edge_quality": edge_quality,
                 "failed_gate":      active_failed_gate,

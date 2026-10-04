@@ -194,8 +194,10 @@ def test_missing_sdk_is_a_named_reason_and_sends_nothing(monkeypatch):
 
     monkeypatch.setenv("ANTHROPIC_WORKSPACE_ID", "wrkspc_configured")
     monkeypatch.setitem(sys.modules, "anthropic", None)          # import anthropic -> ImportError
+    provider = _provider(module)
+    assert provider.sdk_available is False
     with pytest.raises(module.ProviderReplyUnusable) as info:
-        _provider(module).report(DIGEST)
+        provider.report(DIGEST)
     assert info.value.reason_code == "SDK_MISSING"
 
 

@@ -298,10 +298,23 @@ def _v2_sector_routing(state: Mapping[str, Any]) -> dict[str, Any]:
         "RELATIVE_WEAKNESS_NAMES": ("RELATIVE_WEAKNESS_NAMES",),
     }
 
+    # XLU-D03 (ACK 2 Oct 2026): a free-text theme routes every sector category its words name
+    # (config/sector_etf_map_v1.json theme_tokens), beside the exact aliases above.
+    from domain.sector_resolution import sector_map
+    theme_tokens = sector_map()["theme_tokens"]
+
+    def categories(theme: str) -> list[str]:
+        found = list(broad_aliases.get(theme, (theme,)))
+        words = theme.replace("-", "_").split("_")
+        for token, cats in theme_tokens.items():
+            if any(word.startswith(token) for word in words):
+                found.extend(c for c in cats if c not in found)
+        return found
+
     def add(direction: str, raw_values: list[Any]) -> None:
         for index, raw_value in enumerate(raw_values, start=1):
             theme = _required_text(raw_value, f"options_monetisation.{direction.lower()}_priority[{index - 1}]").upper()
-            for category in broad_aliases.get(theme, (theme,)):
+            for category in categories(theme):
                 existing = routes[direction].get(category)
                 if existing is None or index < int(existing["priority"]):
                     routes[direction][category] = {

@@ -1,0 +1,1847 @@
+{
+  "research_state": "EXPLORATORY_NO_AUTHORITY",
+  "protocol_sha256": "d3a995d41e8c3e56b1fd6b82ea04e693f8af00c87ef74ff2658f0c7898ea3967",
+  "price_db_metadata": {
+    "bytes": 1046511616,
+    "modified_ns": 1789733751314689900
+  },
+  "splits": {
+    "train_end": "2024-11-29",
+    "calibration": [
+      "2025-01-15",
+      "2025-11-28"
+    ],
+    "holdout_start": "2026-01-15"
+  },
+  "universe_results": {
+    "1": {
+      "train_rows": 242950,
+      "train_sessions": 160,
+      "splits": {
+        "calibration_2025": {
+          "rows": 73488,
+          "sessions": 44,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": 0.001385,
+                "median": 0.000651,
+                "hit_rate": 0.512,
+                "ci90": [
+                  -0.001509,
+                  0.00434
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": 0.000811,
+                "median": 3e-06,
+                "hit_rate": 0.5001,
+                "ci90": [
+                  0.000284,
+                  0.001344
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5189,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.000264,
+                "median": -0.000878,
+                "hit_rate": 0.4749,
+                "ci90": [
+                  -0.001938,
+                  0.001429
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": 0.000675,
+                "median": 0.000301,
+                "hit_rate": 0.5084,
+                "ci90": [
+                  -9.5e-05,
+                  0.001468
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.4829,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.001032,
+                "median": -0.000629,
+                "hit_rate": 0.482,
+                "ci90": [
+                  -0.002416,
+                  0.000298
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.000423,
+                "median": -7.1e-05,
+                "hit_rate": 0.4973,
+                "ci90": [
+                  -0.001231,
+                  0.000358
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.7058,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.000827,
+                "median": -0.001879,
+                "hit_rate": 0.4518,
+                "ci90": [
+                  -0.003747,
+                  0.002355
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": 0.000506,
+                "median": -4.5e-05,
+                "hit_rate": 0.4979,
+                "ci90": [
+                  -7.3e-05,
+                  0.00107
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.626,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.00199,
+                "median": -0.001666,
+                "hit_rate": 0.4572,
+                "ci90": [
+                  -0.004454,
+                  0.000569
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.000384,
+                "median": -3.1e-05,
+                "hit_rate": 0.4982,
+                "ci90": [
+                  -0.001017,
+                  0.000231
+                ]
+              },
+              "brier": 0.256181,
+              "roc_auc": 0.447112,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 14722,
+                  "sessions": 44,
+                  "mean": -0.003566,
+                  "median": -0.002361,
+                  "hit_rate": 0.4423,
+                  "ci90": [
+                    -0.007889,
+                    0.001029
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14722,
+                  "sessions": 44,
+                  "mean": -0.00175,
+                  "median": -0.000528,
+                  "hit_rate": 0.4853,
+                  "ci90": [
+                    -0.004609,
+                    0.001086
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.5123,
+              "signed_return": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.002361,
+                "median": -0.001383,
+                "hit_rate": 0.4632,
+                "ci90": [
+                  -0.005244,
+                  0.000426
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73488,
+                "sessions": 44,
+                "mean": -0.000838,
+                "median": -0.000159,
+                "hit_rate": 0.495,
+                "ci90": [
+                  -0.001397,
+                  -0.000286
+                ]
+              },
+              "brier": 0.267983,
+              "roc_auc": 0.47187,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 14722,
+                  "sessions": 44,
+                  "mean": -0.002685,
+                  "median": -0.001514,
+                  "hit_rate": 0.4609,
+                  "ci90": [
+                    -0.005753,
+                    0.000381
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14722,
+                  "sessions": 44,
+                  "mean": -0.001239,
+                  "median": -0.000829,
+                  "hit_rate": 0.4756,
+                  "ci90": [
+                    -0.002742,
+                    0.000305
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "holdout_2026": {
+          "rows": 65929,
+          "sessions": 33,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.000154,
+                "median": 7.6e-05,
+                "hit_rate": 0.5003,
+                "ci90": [
+                  -0.002839,
+                  0.002611
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.000165,
+                "median": 0.0,
+                "hit_rate": 0.4999,
+                "ci90": [
+                  -0.001045,
+                  0.000669
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5413,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.000875,
+                "median": -0.000679,
+                "hit_rate": 0.4811,
+                "ci90": [
+                  -0.002217,
+                  0.000535
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.000317,
+                "median": -0.000368,
+                "hit_rate": 0.4912,
+                "ci90": [
+                  -0.001292,
+                  0.000762
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.4869,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": 0.001702,
+                "median": 0.001401,
+                "hit_rate": 0.5296,
+                "ci90": [
+                  0.000192,
+                  0.00318
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": 0.001055,
+                "median": 0.000851,
+                "hit_rate": 0.5203,
+                "ci90": [
+                  -0.000154,
+                  0.002273
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.6151,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.003165,
+                "median": -0.002471,
+                "hit_rate": 0.4421,
+                "ci90": [
+                  -0.005739,
+                  -0.00061
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -1.7e-05,
+                "median": -2.7e-05,
+                "hit_rate": 0.4988,
+                "ci90": [
+                  -0.000892,
+                  0.000832
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.5378,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": -0.001674,
+                "median": -0.001512,
+                "hit_rate": 0.462,
+                "ci90": [
+                  -0.004223,
+                  0.00065
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": 0.000692,
+                "median": 0.000406,
+                "hit_rate": 0.5095,
+                "ci90": [
+                  -0.000387,
+                  0.001794
+                ]
+              },
+              "brier": 0.254547,
+              "roc_auc": 0.455455,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 13208,
+                  "sessions": 33,
+                  "mean": -0.000744,
+                  "median": -0.000146,
+                  "hit_rate": 0.4909,
+                  "ci90": [
+                    -0.00562,
+                    0.004144
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 13208,
+                  "sessions": 33,
+                  "mean": 0.001821,
+                  "median": 0.001123,
+                  "hit_rate": 0.5276,
+                  "ci90": [
+                    -0.002081,
+                    0.005805
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.5667,
+              "signed_return": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": 0.000918,
+                "median": 0.000236,
+                "hit_rate": 0.5029,
+                "ci90": [
+                  -0.001594,
+                  0.003459
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65929,
+                "sessions": 33,
+                "mean": 0.000464,
+                "median": 0.000191,
+                "hit_rate": 0.5044,
+                "ci90": [
+                  -0.000475,
+                  0.00133
+                ]
+              },
+              "brier": 0.269239,
+              "roc_auc": 0.491461,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 13208,
+                  "sessions": 33,
+                  "mean": 0.001814,
+                  "median": 0.000539,
+                  "hit_rate": 0.5089,
+                  "ci90": [
+                    -0.001522,
+                    0.005473
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 13208,
+                  "sessions": 33,
+                  "mean": 0.00111,
+                  "median": 0.000317,
+                  "hit_rate": 0.5079,
+                  "ci90": [
+                    -0.001826,
+                    0.004454
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "3": {
+      "train_rows": 242895,
+      "train_sessions": 160,
+      "splits": {
+        "calibration_2025": {
+          "rows": 73468,
+          "sessions": 44,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.004254,
+                "median": 0.00194,
+                "hit_rate": 0.5231,
+                "ci90": [
+                  -0.000593,
+                  0.009214
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.001436,
+                "median": 9e-06,
+                "hit_rate": 0.5002,
+                "ci90": [
+                  0.000516,
+                  0.002352
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5189,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.004317,
+                "median": -0.003308,
+                "hit_rate": 0.4541,
+                "ci90": [
+                  -0.007928,
+                  -0.001216
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.00061,
+                "median": -0.000253,
+                "hit_rate": 0.4959,
+                "ci90": [
+                  -0.002008,
+                  0.000721
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.483,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.003624,
+                "median": 0.001908,
+                "hit_rate": 0.5232,
+                "ci90": [
+                  0.001099,
+                  0.006551
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.001317,
+                "median": 0.000536,
+                "hit_rate": 0.5084,
+                "ci90": [
+                  0.00029,
+                  0.002416
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.7057,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.005612,
+                "median": -0.004704,
+                "hit_rate": 0.4354,
+                "ci90": [
+                  -0.010474,
+                  -0.000739
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.000329,
+                "median": -1.9e-05,
+                "hit_rate": 0.4993,
+                "ci90": [
+                  -0.000685,
+                  0.001277
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.674,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.003874,
+                "median": -0.000996,
+                "hit_rate": 0.4842,
+                "ci90": [
+                  -0.007909,
+                  -0.000323
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.000424,
+                "median": 0.000661,
+                "hit_rate": 0.5109,
+                "ci90": [
+                  -0.001228,
+                  0.000388
+                ]
+              },
+              "brier": 0.252861,
+              "roc_auc": 0.484306,
+              "high_confidence": {
+                "coverage": 0.2004,
+                "signed_return": {
+                  "n": 14721,
+                  "sessions": 44,
+                  "mean": -0.007452,
+                  "median": -0.001193,
+                  "hit_rate": 0.4813,
+                  "ci90": [
+                    -0.013519,
+                    -0.002011
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14721,
+                  "sessions": 44,
+                  "mean": -0.002984,
+                  "median": 7.5e-05,
+                  "hit_rate": 0.5015,
+                  "ci90": [
+                    -0.005553,
+                    -0.000476
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.5627,
+              "signed_return": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": 0.000549,
+                "median": 0.000663,
+                "hit_rate": 0.5071,
+                "ci90": [
+                  -0.004281,
+                  0.005521
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73468,
+                "sessions": 44,
+                "mean": -0.000241,
+                "median": 4e-06,
+                "hit_rate": 0.5001,
+                "ci90": [
+                  -0.001167,
+                  0.000686
+                ]
+              },
+              "brier": 0.261155,
+              "roc_auc": 0.508261,
+              "high_confidence": {
+                "coverage": 0.2004,
+                "signed_return": {
+                  "n": 14721,
+                  "sessions": 44,
+                  "mean": -0.000628,
+                  "median": 0.001044,
+                  "hit_rate": 0.51,
+                  "ci90": [
+                    -0.005557,
+                    0.004543
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14721,
+                  "sessions": 44,
+                  "mean": -0.001281,
+                  "median": 0.000807,
+                  "hit_rate": 0.5117,
+                  "ci90": [
+                    -0.003868,
+                    0.001417
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "holdout_2026": {
+          "rows": 65895,
+          "sessions": 33,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.004205,
+                "median": 0.001557,
+                "hit_rate": 0.5172,
+                "ci90": [
+                  -0.000591,
+                  0.009017
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.001364,
+                "median": -6.3e-05,
+                "hit_rate": 0.4987,
+                "ci90": [
+                  -0.00024,
+                  0.002878
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5412,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": -0.002349,
+                "median": -0.001733,
+                "hit_rate": 0.4785,
+                "ci90": [
+                  -0.005157,
+                  0.000458
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": -0.001493,
+                "median": -0.00143,
+                "hit_rate": 0.4817,
+                "ci90": [
+                  -0.003642,
+                  0.000705
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.487,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.002436,
+                "median": 0.00169,
+                "hit_rate": 0.5182,
+                "ci90": [
+                  -0.000701,
+                  0.005826
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.002445,
+                "median": 0.001863,
+                "hit_rate": 0.5229,
+                "ci90": [
+                  -8.5e-05,
+                  0.005151
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.615,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": -0.006465,
+                "median": -0.006133,
+                "hit_rate": 0.429,
+                "ci90": [
+                  -0.011175,
+                  -0.00199
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": -0.0006,
+                "median": -8.7e-05,
+                "hit_rate": 0.4983,
+                "ci90": [
+                  -0.002182,
+                  0.000909
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.6772,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": -0.000372,
+                "median": -0.00051,
+                "hit_rate": 0.4926,
+                "ci90": [
+                  -0.003161,
+                  0.002351
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.000587,
+                "median": 0.000507,
+                "hit_rate": 0.5064,
+                "ci90": [
+                  -0.000639,
+                  0.001718
+                ]
+              },
+              "brier": 0.251267,
+              "roc_auc": 0.494125,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 13200,
+                  "sessions": 33,
+                  "mean": -0.001322,
+                  "median": 0.000368,
+                  "hit_rate": 0.5035,
+                  "ci90": [
+                    -0.005996,
+                    0.003163
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 13200,
+                  "sessions": 33,
+                  "mean": 0.001288,
+                  "median": 0.002682,
+                  "hit_rate": 0.5301,
+                  "ci90": [
+                    -0.002675,
+                    0.005321
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.6302,
+              "signed_return": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.003601,
+                "median": 0.001366,
+                "hit_rate": 0.5148,
+                "ci90": [
+                  -0.001019,
+                  0.008516
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 65895,
+                "sessions": 33,
+                "mean": 0.001935,
+                "median": 0.0,
+                "hit_rate": 0.5,
+                "ci90": [
+                  0.0005,
+                  0.003331
+                ]
+              },
+              "brier": 0.259337,
+              "roc_auc": 0.510164,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 13200,
+                  "sessions": 33,
+                  "mean": 0.002707,
+                  "median": 0.001856,
+                  "hit_rate": 0.52,
+                  "ci90": [
+                    -0.003531,
+                    0.009425
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 13200,
+                  "sessions": 33,
+                  "mean": 0.001577,
+                  "median": 1.6e-05,
+                  "hit_rate": 0.5004,
+                  "ci90": [
+                    -0.00356,
+                    0.006935
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "5": {
+      "train_rows": 242837,
+      "train_sessions": 160,
+      "splits": {
+        "calibration_2025": {
+          "rows": 73443,
+          "sessions": 44,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.003092,
+                "median": 0.001887,
+                "hit_rate": 0.5173,
+                "ci90": [
+                  -0.003728,
+                  0.009712
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.002048,
+                "median": 1.3e-05,
+                "hit_rate": 0.5002,
+                "ci90": [
+                  0.000992,
+                  0.003038
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5188,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": -5.7e-05,
+                "median": -0.000705,
+                "hit_rate": 0.492,
+                "ci90": [
+                  -0.004318,
+                  0.004059
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": -4.6e-05,
+                "median": 3e-06,
+                "hit_rate": 0.5,
+                "ci90": [
+                  -0.001533,
+                  0.001418
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.4831,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.000706,
+                "median": 0.000736,
+                "hit_rate": 0.5062,
+                "ci90": [
+                  -0.002398,
+                  0.003788
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.000792,
+                "median": 0.000196,
+                "hit_rate": 0.5024,
+                "ci90": [
+                  -0.000697,
+                  0.002258
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.7058,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.002022,
+                "median": 0.0,
+                "hit_rate": 0.4978,
+                "ci90": [
+                  -0.004586,
+                  0.008832
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.001056,
+                "median": -7.2e-05,
+                "hit_rate": 0.4987,
+                "ci90": [
+                  -8.6e-05,
+                  0.002225
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.6811,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": -0.001705,
+                "median": 0.000153,
+                "hit_rate": 0.5006,
+                "ci90": [
+                  -0.004478,
+                  0.001127
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": -0.001245,
+                "median": 6.7e-05,
+                "hit_rate": 0.5009,
+                "ci90": [
+                  -0.00261,
+                  9.9e-05
+                ]
+              },
+              "brier": 0.250324,
+              "roc_auc": 0.499013,
+              "high_confidence": {
+                "coverage": 0.2004,
+                "signed_return": {
+                  "n": 14715,
+                  "sessions": 44,
+                  "mean": -0.004227,
+                  "median": 0.000968,
+                  "hit_rate": 0.5087,
+                  "ci90": [
+                    -0.008069,
+                    -0.000346
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14715,
+                  "sessions": 44,
+                  "mean": -0.002464,
+                  "median": 0.00057,
+                  "hit_rate": 0.5062,
+                  "ci90": [
+                    -0.006306,
+                    0.001452
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.5383,
+              "signed_return": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.000525,
+                "median": 0.000802,
+                "hit_rate": 0.5065,
+                "ci90": [
+                  -0.004808,
+                  0.005986
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 73443,
+                "sessions": 44,
+                "mean": 0.001012,
+                "median": 0.000825,
+                "hit_rate": 0.509,
+                "ci90": [
+                  -0.000372,
+                  0.002466
+                ]
+              },
+              "brier": 0.262036,
+              "roc_auc": 0.501332,
+              "high_confidence": {
+                "coverage": 0.2004,
+                "signed_return": {
+                  "n": 14715,
+                  "sessions": 44,
+                  "mean": -0.000346,
+                  "median": 0.00187,
+                  "hit_rate": 0.5208,
+                  "ci90": [
+                    -0.006283,
+                    0.005726
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 14715,
+                  "sessions": 44,
+                  "mean": -0.000124,
+                  "median": 0.001651,
+                  "hit_rate": 0.5194,
+                  "ci90": [
+                    -0.003806,
+                    0.003575
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "holdout_2026": {
+          "rows": 63398,
+          "sessions": 32,
+          "rules": {
+            "ALWAYS_CALL": {
+              "direction_mix_call": 1.0,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.002571,
+                "median": 0.00087,
+                "hit_rate": 0.5064,
+                "ci90": [
+                  -0.002948,
+                  0.00837
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.001393,
+                "median": 0.00011,
+                "hit_rate": 0.5011,
+                "ci90": [
+                  -0.000595,
+                  0.003308
+                ]
+              }
+            },
+            "MOMENTUM_20": {
+              "direction_mix_call": 0.5515,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": -0.001324,
+                "median": -0.001242,
+                "hit_rate": 0.4875,
+                "ci90": [
+                  -0.004511,
+                  0.001832
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": -0.000541,
+                "median": -0.00083,
+                "hit_rate": 0.4923,
+                "ci90": [
+                  -0.002921,
+                  0.001895
+                ]
+              }
+            },
+            "MEAN_REVERSION_5": {
+              "direction_mix_call": 0.4774,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.000109,
+                "median": 0.000291,
+                "hit_rate": 0.5014,
+                "ci90": [
+                  -0.003399,
+                  0.003616
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.001115,
+                "median": 0.001358,
+                "hit_rate": 0.5117,
+                "ci90": [
+                  -0.001497,
+                  0.003847
+                ]
+              }
+            },
+            "SPY_REGIME": {
+              "direction_mix_call": 0.6376,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": -0.00339,
+                "median": -0.003242,
+                "hit_rate": 0.4706,
+                "ci90": [
+                  -0.008977,
+                  0.002413
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": -0.000472,
+                "median": 1.9e-05,
+                "hit_rate": 0.5002,
+                "ci90": [
+                  -0.002483,
+                  0.001501
+                ]
+              }
+            },
+            "LOGISTIC_V1": {
+              "direction_mix_call": 0.7463,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.001422,
+                "median": 0.001285,
+                "hit_rate": 0.51,
+                "ci90": [
+                  -0.001585,
+                  0.004521
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.000894,
+                "median": 0.000796,
+                "hit_rate": 0.5074,
+                "ci90": [
+                  -0.000808,
+                  0.002461
+                ]
+              },
+              "brier": 0.249853,
+              "roc_auc": 0.51801,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 12700,
+                  "sessions": 32,
+                  "mean": 0.000817,
+                  "median": 0.001733,
+                  "hit_rate": 0.5196,
+                  "ci90": [
+                    -0.003049,
+                    0.004645
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 12700,
+                  "sessions": 32,
+                  "mean": 0.000786,
+                  "median": 0.002056,
+                  "hit_rate": 0.5215,
+                  "ci90": [
+                    -0.003032,
+                    0.004648
+                  ]
+                }
+              }
+            },
+            "HGB_V1": {
+              "direction_mix_call": 0.601,
+              "signed_return": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.007583,
+                "median": 0.006195,
+                "hit_rate": 0.5512,
+                "ci90": [
+                  0.0024,
+                  0.012593
+                ]
+              },
+              "signed_market_adjusted": {
+                "n": 63398,
+                "sessions": 32,
+                "mean": 0.002037,
+                "median": 0.000372,
+                "hit_rate": 0.5033,
+                "ci90": [
+                  -0.000481,
+                  0.00449
+                ]
+              },
+              "brier": 0.253388,
+              "roc_auc": 0.555897,
+              "high_confidence": {
+                "coverage": 0.2003,
+                "signed_return": {
+                  "n": 12700,
+                  "sessions": 32,
+                  "mean": 0.011357,
+                  "median": 0.006511,
+                  "hit_rate": 0.5653,
+                  "ci90": [
+                    0.005523,
+                    0.017856
+                  ]
+                },
+                "signed_market_adjusted": {
+                  "n": 12700,
+                  "sessions": 32,
+                  "mean": 0.004474,
+                  "median": 0.000672,
+                  "hit_rate": 0.5064,
+                  "ci90": [
+                    -0.000906,
+                    0.01077
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "h_candidate_comparison": {
+    "1": {
+      "matched": 8943,
+      "sessions": 9,
+      "rules": {
+        "CURRENT_H": {
+          "direction_mix_call": 0.6401,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 9.5e-05,
+            "median": -0.000133,
+            "hit_rate": 0.4939,
+            "ci90": [
+              -0.001603,
+              0.001991
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.000337,
+            "median": 3e-06,
+            "hit_rate": 0.5002,
+            "ci90": [
+              -0.000997,
+              0.00174
+            ]
+          }
+        },
+        "ALWAYS_CALL": {
+          "direction_mix_call": 1.0,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -0.001704,
+            "median": -0.001598,
+            "hit_rate": 0.4608,
+            "ci90": [
+              -0.006291,
+              0.003079
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.000682,
+            "median": 1.9e-05,
+            "hit_rate": 0.5007,
+            "ci90": [
+              -0.001134,
+              0.002703
+            ]
+          }
+        },
+        "MOMENTUM_20": {
+          "direction_mix_call": 0.3206,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -5.6e-05,
+            "median": 0.000258,
+            "hit_rate": 0.5032,
+            "ci90": [
+              -0.002017,
+              0.001969
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -0.000461,
+            "median": -9.4e-05,
+            "hit_rate": 0.4961,
+            "ci90": [
+              -0.002042,
+              0.00093
+            ]
+          }
+        },
+        "MEAN_REVERSION_5": {
+          "direction_mix_call": 0.6751,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.001744,
+            "median": 0.000696,
+            "hit_rate": 0.5122,
+            "ci90": [
+              -0.001494,
+              0.005082
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.001902,
+            "median": 0.001045,
+            "hit_rate": 0.5239,
+            "ci90": [
+              -0.000741,
+              0.004722
+            ]
+          }
+        },
+        "SPY_REGIME": {
+          "direction_mix_call": 0.1035,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -0.001081,
+            "median": -0.000529,
+            "hit_rate": 0.4862,
+            "ci90": [
+              -0.005895,
+              0.003815
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -0.001245,
+            "median": -0.000322,
+            "hit_rate": 0.4903,
+            "ci90": [
+              -0.003088,
+              0.00058
+            ]
+          }
+        },
+        "LOGISTIC_V1": {
+          "direction_mix_call": 0.1095,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.000217,
+            "median": 0.000258,
+            "hit_rate": 0.5032,
+            "ci90": [
+              -0.003741,
+              0.004054
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": -0.000582,
+            "median": 7.3e-05,
+            "hit_rate": 0.5023,
+            "ci90": [
+              -0.002795,
+              0.00147
+            ]
+          }
+        },
+        "HGB_V1": {
+          "direction_mix_call": 0.8812,
+          "signed_return": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.001098,
+            "median": 0.000652,
+            "hit_rate": 0.5107,
+            "ci90": [
+              -0.003726,
+              0.00594
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 8943,
+            "sessions": 9,
+            "mean": 0.001657,
+            "median": 0.000454,
+            "hit_rate": 0.5119,
+            "ci90": [
+              -5.7e-05,
+              0.00338
+            ]
+          }
+        }
+      }
+    },
+    "3": {
+      "matched": 7777,
+      "sessions": 8,
+      "rules": {
+        "CURRENT_H": {
+          "direction_mix_call": 0.6376,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.002422,
+            "median": -0.003237,
+            "hit_rate": 0.462,
+            "ci90": [
+              -0.004949,
+              0.000845
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.000935,
+            "median": -0.000367,
+            "hit_rate": 0.4934,
+            "ci90": [
+              -0.00277,
+              0.000749
+            ]
+          }
+        },
+        "ALWAYS_CALL": {
+          "direction_mix_call": 1.0,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.0082,
+            "median": -0.008859,
+            "hit_rate": 0.394,
+            "ci90": [
+              -0.015386,
+              -0.001424
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.001257,
+            "median": -0.001289,
+            "hit_rate": 0.4814,
+            "ci90": [
+              -0.003221,
+              0.000902
+            ]
+          }
+        },
+        "MOMENTUM_20": {
+          "direction_mix_call": 0.3317,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.001258,
+            "median": 0.003441,
+            "hit_rate": 0.5386,
+            "ci90": [
+              -0.002941,
+              0.004359
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.001517,
+            "median": -0.000597,
+            "hit_rate": 0.4913,
+            "ci90": [
+              -0.004872,
+              0.000968
+            ]
+          }
+        },
+        "MEAN_REVERSION_5": {
+          "direction_mix_call": 0.6722,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.003049,
+            "median": 0.000426,
+            "hit_rate": 0.5032,
+            "ci90": [
+              -0.000666,
+              0.007016
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.004746,
+            "median": 0.002468,
+            "hit_rate": 0.5309,
+            "ci90": [
+              0.00112,
+              0.008314
+            ]
+          }
+        },
+        "SPY_REGIME": {
+          "direction_mix_call": 0.1191,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.00877,
+            "median": 0.009739,
+            "hit_rate": 0.6136,
+            "ci90": [
+              0.002157,
+              0.015754
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.000892,
+            "median": 0.001229,
+            "hit_rate": 0.5173,
+            "ci90": [
+              -0.001296,
+              0.002937
+            ]
+          }
+        },
+        "LOGISTIC_V1": {
+          "direction_mix_call": 0.4669,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.003801,
+            "median": 0.003456,
+            "hit_rate": 0.537,
+            "ci90": [
+              0.000342,
+              0.007298
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.002807,
+            "median": 0.002163,
+            "hit_rate": 0.5276,
+            "ci90": [
+              0.000215,
+              0.00535
+            ]
+          }
+        },
+        "HGB_V1": {
+          "direction_mix_call": 0.819,
+          "signed_return": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": -0.005687,
+            "median": -0.007783,
+            "hit_rate": 0.409,
+            "ci90": [
+              -0.013694,
+              0.002189
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 7777,
+            "sessions": 8,
+            "mean": 0.000661,
+            "median": -0.000605,
+            "hit_rate": 0.4903,
+            "ci90": [
+              -0.001541,
+              0.002898
+            ]
+          }
+        }
+      }
+    },
+    "5": {
+      "matched": 5535,
+      "sessions": 6,
+      "rules": {
+        "CURRENT_H": {
+          "direction_mix_call": 0.6193,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.004128,
+            "median": -0.006688,
+            "hit_rate": 0.4428,
+            "ci90": [
+              -0.006926,
+              -0.000961
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.001387,
+            "median": -0.001448,
+            "hit_rate": 0.4838,
+            "ci90": [
+              -0.003088,
+              0.000602
+            ]
+          }
+        },
+        "ALWAYS_CALL": {
+          "direction_mix_call": 1.0,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.016099,
+            "median": -0.016086,
+            "hit_rate": 0.3371,
+            "ci90": [
+              -0.023129,
+              -0.008045
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.002745,
+            "median": -0.002812,
+            "hit_rate": 0.4714,
+            "ci90": [
+              -0.004847,
+              -0.000217
+            ]
+          }
+        },
+        "MOMENTUM_20": {
+          "direction_mix_call": 0.3709,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -1.2e-05,
+            "median": 0.004023,
+            "hit_rate": 0.5346,
+            "ci90": [
+              -0.005456,
+              0.004545
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.0036,
+            "median": -0.001439,
+            "hit_rate": 0.4838,
+            "ci90": [
+              -0.007812,
+              -0.000307
+            ]
+          }
+        },
+        "MEAN_REVERSION_5": {
+          "direction_mix_call": 0.6343,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.001287,
+            "median": -0.001413,
+            "hit_rate": 0.4851,
+            "ci90": [
+              -0.001679,
+              0.004584
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.003944,
+            "median": 0.001335,
+            "hit_rate": 0.5164,
+            "ci90": [
+              0.001532,
+              0.007
+            ]
+          }
+        },
+        "SPY_REGIME": {
+          "direction_mix_call": 0.1673,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.014474,
+            "median": 0.014727,
+            "hit_rate": 0.6439,
+            "ci90": [
+              0.004739,
+              0.02312
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.001878,
+            "median": 0.001966,
+            "hit_rate": 0.522,
+            "ci90": [
+              -0.000998,
+              0.004467
+            ]
+          }
+        },
+        "LOGISTIC_V1": {
+          "direction_mix_call": 0.4598,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.005163,
+            "median": 0.003063,
+            "hit_rate": 0.5266,
+            "ci90": [
+              0.001532,
+              0.008696
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": 0.004056,
+            "median": 0.003423,
+            "hit_rate": 0.536,
+            "ci90": [
+              0.000616,
+              0.007701
+            ]
+          }
+        },
+        "HGB_V1": {
+          "direction_mix_call": 0.75,
+          "signed_return": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.007537,
+            "median": -0.00938,
+            "hit_rate": 0.4107,
+            "ci90": [
+              -0.019957,
+              0.006219
+            ]
+          },
+          "signed_market_adjusted": {
+            "n": 5535,
+            "sessions": 6,
+            "mean": -0.001093,
+            "median": -0.001548,
+            "hit_rate": 0.4818,
+            "ci90": [
+              -0.004668,
+              0.002653
+            ]
+          }
+        }
+      }
+    }
+  },
+  "constraints": [
+    "The 2026 holdout was opened only after the protocol was written.",
+    "No model or threshold was tuned on holdout results.",
+    "Direction results do not imply option profitability.",
+    "No production model is activated."
+  ]
+}

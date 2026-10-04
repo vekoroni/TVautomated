@@ -134,18 +134,9 @@ def route_scenario(row: dict) -> dict:
                 'Deploy avshunter_discovery_ULTIMATE.py with DISC-01 to enable alignment routing.'
             ),
         )
-        return _result(
-            path        = 'OBSERVE_ONLY',
-            alignment   = alignment,
-            dte         = 0,
-            size_mult   = SIZE_OBSERVE,
-            entry_type  = 'NO_ENTRY',
-            trigger     = 'swing_fusion intent=OBSERVE_ONLY or direction=NONE',
-            rationale   = (
-                f"No actionable path: intent={intent}, direction={direction}. "
-                "Signal preserved as WATCH."
-            ),
-        )
+    # XLU-D10 (ACK 2 Oct 2026): fusion intent OBSERVE_ONLY is not a decision (the former
+    # intent branch here was unreachable after the return above and is removed); the
+    # alignment score selects the path and the lowest path is CONSERVATIVE, never OBSERVE_ONLY.
 
     # Path selection by alignment score
     if alignment >= AGGRESSIVE_THRESHOLD:
@@ -194,14 +185,17 @@ def route_scenario(row: dict) -> dict:
         )
 
     else:
-        path      = 'OBSERVE_ONLY'
-        dte       = 0
-        size_mult = SIZE_OBSERVE
-        entry_type = 'NO_ENTRY'
-        trigger   = f"alignment={alignment:.0f} < {CONSERVATIVE_THRESHOLD} — no path"
+        path      = 'CONSERVATIVE'
+        dte       = DTE_CONSERVATIVE
+        size_mult = SIZE_CONSERVATIVE
+        entry_type = 'CONDITIONAL'
+        trigger   = (
+            f"alignment={alignment:.0f} < {CONSERVATIVE_THRESHOLD}: enter only on observed structure "
+            f"confirmation. Phase {phase}."
+        )
         rationale = (
-            f"OBSERVE_ONLY: alignment={alignment:.0f} below all thresholds. "
-            "No entry. Watch for structural improvement."
+            f"CONSERVATIVE (lowest path): alignment={alignment:.0f} below {CONSERVATIVE_THRESHOLD}; "
+            "Phase and Event categorise the trade (no OBSERVE_ONLY decision, XLU-D10)."
         )
 
     # Tier 0 (early position) always gets Conservative path regardless of alignment

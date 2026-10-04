@@ -61,3 +61,42 @@ def test_proceeds_and_completes_when_headroom_is_sufficient(run_tree):
 def test_missing_run_directory_is_still_reported_as_aborted(run_tree):
     result = orch.archive_outputs("NOT_A_REAL_RUN_ID")
     assert result is False
+
+
+# ---------------------------------------------------------------------------
+# ACK, 27 Sep 2026: the archive copy is a retention record of the run's decisions and evidence,
+# not of the per-ticker package files. Packages are ~85% of a run (4.85 GB of 5.9 GB), are
+# reproducible from the canonical stores, and the original run keeps them for its 90-day
+# retention. Archiving them doubled the disk cost of every Evening run.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def run_tree_with_packages(run_tree):
+    packages = run_tree.run_dir / "packages"
+    packages.mkdir()
+    (packages / "AAPL.package.json").write_bytes(b"p" * 4096)
+    (packages / "index.json").write_bytes(b"{}")
+    (run_tree.run_dir / "intelligence_lab").mkdir()
+    (run_tree.run_dir / "intelligence_lab" / "final_opportunity_book.json").write_bytes(b"b" * 1024)
+    return run_tree
+
+
+def test_archive_keeps_decisions_and_evidence_but_not_the_package_files(run_tree_with_packages):
+    tree = run_tree_with_packages
+    plenty = 10**10
+    with patch.object(shutil, "disk_usage", return_value=(10**12, 10**12 - plenty, plenty)):
+        assert orch.archive_outputs(tree.run_id) is True
+    dest = tree.archive_dir / tree.run_id / "runs" / tree.run_id
+    assert (dest / "options" / "options_intelligence.csv").is_file()
+    assert (dest / "intelligence_lab" / "final_opportunity_book.json").is_file()
+    assert not (dest / "packages").exists()
+    # The original run is never touched by archiving.
+    assert (tree.run_dir / "packages" / "AAPL.package.json").is_file()
+
+
+def test_headroom_check_measures_only_what_will_be_copied(run_tree_with_packages):
+    tree = run_tree_with_packages
+    # Free space covers the 3 KB of non-package files (x1.2) but not the 7 KB run including packages.
+    free = int((2048 + 1024) * orch.ARCHIVE_HEADROOM_MARGIN) + 100
+    with patch.object(shutil, "disk_usage", return_value=(10**12, 10**12 - free, free)):
+        assert orch.archive_outputs(tree.run_id) is True

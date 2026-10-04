@@ -58,6 +58,14 @@ class AnthropicDeskProvider:
     ):
         self._api_key = api_key or ""
         self.model_id = model_id or "UNCONFIGURED"
+        # The Lab may run in its own venv. Surface a missing SDK in /control
+        # before the user commits a report attempt; _call still records the
+        # typed SDK_MISSING outcome if the environment changes after startup.
+        try:
+            import anthropic  # noqa: F401
+            self.sdk_available = True
+        except ImportError:
+            self.sdk_available = False
         self.timeout = timeout
         self.input_usd_per_million = input_usd_per_million
         self.output_usd_per_million = output_usd_per_million

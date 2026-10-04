@@ -1,0 +1,5 @@
+FAILED tests/test_vanguard_reference_input_p2.py::test_thin_package_reproduces_the_stored_package_except_declared_stamps[AAPL]
+FAILED tests/test_vanguard_reference_input_p2.py::test_thin_package_reproduces_the_stored_package_except_declared_stamps[VST]
+FAILED tests/test_vanguard_reference_input_p2.py::test_thin_package_reproduces_the_stored_package_except_declared_stamps[XLF]
+3 failed, 3 passed in 624.57s (0:10:24)
+10 passed in 694.63s (0:11:34)

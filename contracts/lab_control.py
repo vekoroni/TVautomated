@@ -37,7 +37,11 @@ from contracts.selected_contract_economics import (
     economics_evaluation_id as selected_economics_evaluation_id,
     normalise_occ_symbol as normalise_selected_occ_symbol,
     parse_occ_symbol as parse_selected_occ_symbol,
+    CONTRACT_ANALYTICS_FIELDS,
 )
+from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
+from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS
+from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
 from contracts.long_option_policy import (
     LONG_OPTION_ALLOWED_INSTRUMENTS,
     LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
@@ -80,6 +84,36 @@ FINAL_BOOK_FIELDS = [
     "pipeline_mode",
     "run_id",
     "ticker",
+    "forecast_packet_state",
+    "forecast_version",
+    "forecast_state",
+    "forecast_direction",
+    "forecast_reference_spot",
+    "forecast_target_spot",
+    "forecast_invalidation_spot",
+    "forecast_thesis_id",
+    "forecast_reason",
+    "forecast_source",
+    "forecast_authority",
+    "forecast_vanguard_state",
+    "forecast_vanguard_reason",
+    "forecast_auction_state",
+    "forecast_auction_control",
+    "forecast_legacy_statistical_context",
+    "forecast_structure_stage",
+    "forecast_compression_state",
+    "forecast_evidence_state",
+    "forecast_scenarios_json",
+    "forecast_countercase",
+    "c4_reliability_state",
+    "option_expression_state",
+    "option_expression_candidate_count",
+    "option_expression_packet_state",
+    "c8_valuation_state",
+    "c8_numeric_ev",
+    "research_ev_state",
+    "research_ev_candidate_count",
+    "research_ev_contracts_json",
     "trade_idea_id",
     "lab_rank",
     "priority_rank",
@@ -362,6 +396,7 @@ FINAL_BOOK_FIELDS = [
     "crabel_score",
     "crabel_state",
     "wyckoff_entry_trigger",
+    "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category",
     "wyckoff_execution_bias",
     "wyckoff_mode",
     "wyckoff_phase_bucket",
@@ -383,6 +418,8 @@ FINAL_BOOK_FIELDS = [
     "wyckoff_validation_phase_correctness_score",
     "wyckoff_validation_phase_maturity_score",
     "wyckoff_validation_phase_probability",
+    "wyckoff_validation_probability_fields_basis",   # B7: heuristic scores, not probabilities
+    "wyckoff_validation_expected_bars_remaining_basis",
     "wyckoff_validation_phase_status",
     "wyckoff_validation_structural_invalidation_level",
     "wyckoff_validation_timeframe_alignment",
@@ -436,6 +473,8 @@ FINAL_BOOK_FIELDS = [
     "sector_etf",
     "rr_predicted",
     "rr_underlying",
+    # Lab trade card (ACK 2 Oct 2026): decision fields from the D01/D13/D04 fixes and governance.
+    "target_reachable", "target_reachable_state", "target_reach_ratio", "rr_options_reachable", "rr_underlying_reachable", "rr_basis", "target_3r_scenario", "governance__open_contract", "governance__verdict", "governance__reason", "trigger_go_eligible",
     "rr_premium_expected",
     "rr_contract_symbol",
     "rr_evaluation_id",
@@ -512,6 +551,17 @@ FINAL_BOOK_FIELDS = [
     "ev3_ev_conservative_return",
     "ev3_ev_lower_bound_return",
     "ev3_uncertainty_total_return",
+    # ACK 28 Sep 2026 (option 3): the same contract valued at the thesis move window (advisory).
+    "ev3_hold_sessions",
+    "ev3_move_window_sessions",
+    "ev3_move_window_source",
+    "ev3_move_window_status",
+    "ev3_move_window_reason_code",
+    "ev3_move_window_ev_conservative_return",
+    "ev3_move_window_ev_lower_bound_return",
+    "ev3_move_window_p_target",
+    "ev3_move_window_p_stop",
+    "ev3_move_window_p_timeout",
     "win_prob_predicted",
     "actuarial_match_method",
     "actuarial_match_type",
@@ -611,6 +661,11 @@ FINAL_BOOK_FIELDS = [
     "contract_gamma",
     "contract_theta",
     "contract_vega",
+    "contract_greeks_source",
+    *CONTRACT_ANALYTICS_FIELDS,          # AVS options analytics slice 2 (display only)
+    *EARNINGS_DISCLOSURE_FIELDS,         # earnings disclosure, ACK 3 Oct 2026 (display only, never a gate)
+    *THESIS_EVIDENCE_FIELDS,             # trade-side event level and duration evidence (ACK 3 Oct 2026)
+    *ANTICIPATED_MOVE_FIELDS,            # anticipated move replacing R:R (ACK 3 Oct 2026, display only)
     "contract_iv",
     "contract_bid",
     "contract_ask",
@@ -1328,7 +1383,9 @@ def _apply_reselected_chain_quote(
         })
     else:
         try:
-            requirement = calculate_dte_requirement(hold)
+            # Step 4b (ACK 3 Oct 2026): a hold sourced from a daily event's duration evidence is accepted.
+            hold_is_evidence = str(first(sig, "planned_hold_source") or "").startswith("DURATION_EVIDENCE")
+            requirement = calculate_dte_requirement(hold, evidence_hold=hold_is_evidence)
             moneyness = classify_moneyness(side, spot=spot, strike=strike, delta=delta)
             liquidity = classify_current_executability(
                 bid=bid, ask=ask, bid_size=quote.get("bid_size"), ask_size=quote.get("ask_size"),
@@ -1758,6 +1815,26 @@ def _output_files(run_dir: Path, run_id: str) -> Dict[str, str]:
         "morning_validation": str(morning_validated or ""),
         "morning_candidates": str(morning_candidates or ""),
         "morning_validation_packet": str(morning_packet or ""),
+        "ticker_forecast_descriptive": str(
+            run_dir / "forecast" / "ticker_forecast_descriptive_v1" / "packet.json"
+            if (run_dir / "forecast" / "ticker_forecast_descriptive_v1" / "packet.json").is_file()
+            else ""
+        ),
+        "behavioural_candidate_packet": str(
+            run_dir / "forecast" / "behavioural_candidate_packet_v1" / "status.json"
+            if (run_dir / "forecast" / "behavioural_candidate_packet_v1" / "status.json").is_file()
+            else ""
+        ),
+        "expression_candidates": str(
+            run_dir / "forecast" / "expression_candidates_v1" / "packet.json"
+            if (run_dir / "forecast" / "expression_candidates_v1" / "packet.json").is_file()
+            else ""
+        ),
+        "expression_valuation": str(
+            run_dir / "forecast" / "expression_valuation_v1" / "packet.json"
+            if (run_dir / "forecast" / "expression_valuation_v1" / "packet.json").is_file()
+            else ""
+        ),
         "core_intel": str(_glob_latest(core, f"core_intel_dossiers_{run_id}.json") or ""),
         "summary": str(_glob_latest(superbrain, "superbrain_summary_*.json") or ""),
         "dropoff_audit": str(_glob_latest(diagnostics, f"dropoff_audit_{run_id}.csv") or ""),
@@ -2842,17 +2919,8 @@ def resolve_lab_tradeability(
         soft.append("V5_PROBE_WITHOUT_BUY_NOW")
     # R:R is retained only as research telemetry. It does not decide Lab
     # permission; Morning permission comes exclusively from final_action.
-    # These EV fields come from the legacy v2.1.0 heuristic engine. EV3
-    # authority is retired and v2 is not a valid expected value, so the flags
-    # are labelled LEGACY_EV_* and must not be read as real EV evidence.
-    if _f(first(sig, "ev2_ev_conf_adj", "eil_ev_net", "ev"), 0.0) < 0:
-        advisory.append("LEGACY_EV_NEGATIVE")
-    if source["ev_decision_hint"] == "AVOID" or source["ev_status"] in {"AVOID", "FAIL", "NEGATIVE_EV"}:
-        advisory.append("LEGACY_EV_AVOID")
-    elif source["ev_decision_hint"] == "WEAK":
-        advisory.append("LEGACY_EV_WEAK")
-    elif source["ev_decision_hint"] not in {"STRONG", "MODERATE"}:
-        advisory.append("LEGACY_EV_NOT_EVALUATED")
+    # ACK 30 Sep 2026 (options analytics slice 1d): the legacy v2.1.0 EV is retired from the Lab. Its
+    # LEGACY_EV_* advisory flags are no longer raised; they never decided permission.
     for stale in manifest.get("stale_flags") or []:
         if stale not in soft:
             soft.append(stale)
@@ -3538,6 +3606,8 @@ def opportunity_book_row(
         "contract_selection_reason": first(sig, "contract_selection_reason", "contract_repair_reason"),
         # Display only (18 Sep 2026): the selector's runway and spread facts and the 20-session valuation,
         # passed through exactly as recorded upstream.
+        # Lab trade card (ACK 2 Oct 2026): pass the 2 Oct decision fields through as recorded upstream.
+        **{field: sig.get(field) for field in ("target_reachable", "target_reachable_state", "target_reach_ratio", "rr_options_reachable", "rr_underlying_reachable", "rr_basis", "target_3r_scenario", "governance__open_contract", "governance__verdict", "governance__reason", "trigger_go_eligible")},
         **{field: sig.get(field) for field in (
             "anticipated_move_sessions", "anticipated_move_source", "planned_hold_sessions", "planned_hold_source",
             "contract_runway_floor_days", "contract_runway_basis", "contract_runway_state", "spread_above_limit",
@@ -3689,7 +3759,8 @@ def opportunity_book_row(
         "rr_calculation_version": first(sig, "rr_calculation_version"),
         "rr_entry_debit_per_share": first(sig, "rr_entry_debit_per_share"),
         "rr_target_value_per_share": first(sig, "rr_target_value_per_share"),
-        "ev_predicted": first(sig, "ev3_ev_conservative_return", "ev_predicted", "ev2_ev_conf_adj", "eil_ev_net", "ev"),
+        # ACK 30 Sep 2026 (options analytics slice 1d): legacy EV v2 retired; EV3 (advisory) only.
+        "ev_predicted": first(sig, "ev3_ev_conservative_return", "ev_predicted"),
         "ev3_data_state": "AVAILABLE" if ev3_status else "MISSING_DATA_DEFECT",
         "ev3_status": ev3_status,
         "ev3_reason_code": sig.get("ev3_reason_code", ""),
@@ -3707,6 +3778,16 @@ def opportunity_book_row(
         "ev3_ev_conservative_return": sig.get("ev3_ev_conservative_return", ""),
         "ev3_ev_lower_bound_return": sig.get("ev3_ev_lower_bound_return", ""),
         "ev3_uncertainty_total_return": sig.get("ev3_uncertainty_total_return", ""),
+        "ev3_hold_sessions": sig.get("ev3_hold_sessions", ""),
+        "ev3_move_window_sessions": sig.get("ev3_move_window_sessions", ""),
+        "ev3_move_window_source": sig.get("ev3_move_window_source", ""),
+        "ev3_move_window_status": sig.get("ev3_move_window_status", ""),
+        "ev3_move_window_reason_code": sig.get("ev3_move_window_reason_code", ""),
+        "ev3_move_window_ev_conservative_return": sig.get("ev3_move_window_ev_conservative_return", ""),
+        "ev3_move_window_ev_lower_bound_return": sig.get("ev3_move_window_ev_lower_bound_return", ""),
+        "ev3_move_window_p_target": sig.get("ev3_move_window_p_target", ""),
+        "ev3_move_window_p_stop": sig.get("ev3_move_window_p_stop", ""),
+        "ev3_move_window_p_timeout": sig.get("ev3_move_window_p_timeout", ""),
         "win_prob_predicted": first(sig, "win_prob_predicted", "ev2_p_win_blended", "win_rate_20d", "win_rate_10d"),
         "actuarial_match_method": first(sig, "actuarial_match_method", "layer2__state_match_method", "vg__layer2__state_match_method"),
         "actuarial_match_type": first(sig, "actuarial_match_type", "vg__actuarial_match_type"),
@@ -3815,6 +3896,10 @@ def opportunity_book_row(
         "contract_gamma": first(sig, "contract_gamma", "opt__contract_gamma", "gamma") if quote_owned else "",
         "contract_theta": first(sig, "contract_theta", "opt__contract_theta", "theta") if quote_owned else "",
         "contract_vega": first(sig, "contract_vega", "opt__contract_vega", "vega") if quote_owned else "",
+        "contract_greeks_source": first(sig, "contract_greeks_source", "opt__contract_greeks_source") if quote_owned else "",
+        **{field: (sig.get(field, "") if quote_owned else "") for field in CONTRACT_ANALYTICS_FIELDS},
+        **{field: sig.get(field, "") for field in EARNINGS_DISCLOSURE_FIELDS},   # ticker fact, not contract-owned
+        **{field: sig.get(field, "") for field in (*THESIS_EVIDENCE_FIELDS, *ANTICIPATED_MOVE_FIELDS)},
         "contract_iv": first(sig, "contract_iv", "opt__contract_iv", "iv") if quote_owned else "",
         "contract_bid": first(sig, "contract_bid", "opt__contract_bid", "bid") if quote_owned else "",
         "contract_ask": first_price(sig, "contract_ask", "opt__contract_ask", "ask") if quote_owned else "",
@@ -4195,7 +4280,7 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "contract_value_forecast_source": ["contract_value_forecast_source"],
         "contract_value_forecast_run_id": ["contract_value_forecast_run_id"],
         "contract_value_forecast_age_sessions": ["contract_value_forecast_age_sessions"],
-        "ev_predicted": ["ev3_ev_conservative_return", "ev_predicted", "ev2_ev_conf_adj", "eil_ev_net", "ev"],
+        "ev_predicted": ["ev3_ev_conservative_return", "ev_predicted"],
         "ev3_status": ["ev3_status"],
         "ev3_reason_code": ["ev3_reason_code"],
         "ev3_reason_detail": ["ev3_reason_detail"],
@@ -4212,6 +4297,16 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "ev3_ev_conservative_return": ["ev3_ev_conservative_return"],
         "ev3_ev_lower_bound_return": ["ev3_ev_lower_bound_return"],
         "ev3_uncertainty_total_return": ["ev3_uncertainty_total_return"],
+        "ev3_hold_sessions": ["ev3_hold_sessions"],
+        "ev3_move_window_sessions": ["ev3_move_window_sessions"],
+        "ev3_move_window_source": ["ev3_move_window_source"],
+        "ev3_move_window_status": ["ev3_move_window_status"],
+        "ev3_move_window_reason_code": ["ev3_move_window_reason_code"],
+        "ev3_move_window_ev_conservative_return": ["ev3_move_window_ev_conservative_return"],
+        "ev3_move_window_ev_lower_bound_return": ["ev3_move_window_ev_lower_bound_return"],
+        "ev3_move_window_p_target": ["ev3_move_window_p_target"],
+        "ev3_move_window_p_stop": ["ev3_move_window_p_stop"],
+        "ev3_move_window_p_timeout": ["ev3_move_window_p_timeout"],
         "trigger_primary": ["trigger_primary"],
         "trigger_quality": ["trigger_quality"],
         "trigger_score": ["trigger_score", "trigger_count"],
@@ -4257,6 +4352,7 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "contract_gamma": ["contract_gamma", "opt__contract_gamma", "gamma"],
         "contract_theta": ["contract_theta", "opt__contract_theta", "theta"],
         "contract_vega": ["contract_vega", "opt__contract_vega", "vega"],
+        "contract_greeks_source": ["contract_greeks_source", "opt__contract_greeks_source"],
         "contract_iv": ["contract_iv", "opt__contract_iv", "iv"],
         "contract_bid": ["contract_bid", "opt__contract_bid", "bid"],
         "contract_ask": ["contract_ask", "opt__contract_ask", "ask"],
@@ -4483,11 +4579,10 @@ def _recompute_governed_lab_fields(row: Dict[str, Any], provenance: Dict[str, st
             row["wbs_momentum_alignment_state"] = "ALIGNED" if aligned else "NOT_ALIGNED"
         provenance["wbs_momentum_alignment_state"] = "governed_materializer"
 
-    if _is_missing(row.get("win_rate_source")):
-        if not _is_missing(row.get("actuarial_sample_size")) or not _is_missing(row.get("actuarial_match_method")):
-            row["win_rate_source"] = "ACTUARIAL"
-        else:
-            row["win_rate_source"] = "UNAVAILABLE"
+    if _is_missing(row.get("win_rate_source")) or str(row.get("win_rate_source")).upper() == "ACTUARIAL":
+        # B2 (ACK 3 Oct 2026): the label carries the match method; unmeasured is NOT_ESTIMABLE.
+        from domain.statistics_provenance import win_rate_source_label
+        row["win_rate_source"] = win_rate_source_label(row)
         provenance["win_rate_source"] = "governed_materializer"
 
     pipeline_mode = _u(row.get("pipeline_mode"))
@@ -4693,6 +4788,7 @@ STRUCTURE_DETAIL_FIELDS = (
     "crabel_score",
     "crabel_state",
     "wyckoff_entry_trigger",
+    "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category",
     "wyckoff_execution_bias",
     "wyckoff_mode",
     "wyckoff_phase_bucket",
@@ -4714,6 +4810,8 @@ STRUCTURE_DETAIL_FIELDS = (
     "wyckoff_validation_phase_correctness_score",
     "wyckoff_validation_phase_maturity_score",
     "wyckoff_validation_phase_probability",
+    "wyckoff_validation_probability_fields_basis",   # B7: heuristic scores, not probabilities
+    "wyckoff_validation_expected_bars_remaining_basis",
     "wyckoff_validation_phase_status",
     "wyckoff_validation_structural_invalidation_level",
     "wyckoff_validation_timeframe_alignment",
@@ -4831,19 +4929,65 @@ def write_final_opportunity_book(
             trigger_primary=row.get("trigger_primary"),
         ))
         if macro_packet_for_v4:
+            from domain.sector_resolution import resolve_sector
             row.update(project_usmi_context(
                 packet=macro_packet_for_v4,
-                sector=str(first(row, "gics_sector", "sector", default="")),
+                sector=resolve_sector(row),   # XLU-D03: placeholder sector resolves through the ETF
                 industry=str(first(row, "industry", "industry_group", default="")),
                 direction=str(first(row, "governed_direction", "direction", default="")),
             ))
     from domain.lab_signal_book_v4 import project_lab_signal_v4
     rows[:] = [{**row, **project_lab_signal_v4(row)} for row in rows]
+    # C5 is frozen from the pre-option Discovery packet. Morning reads the
+    # same packet; neither selected contracts nor legacy EV can fill its facts.
+    from contracts.descriptive_forecast_packet import (
+        load_or_publish_descriptive_packet, project_lab_descriptive_rows,
+    )
+    packet_root = Path(runs_dir) / run_id
+    packet_dir = packet_root / "forecast" / "ticker_forecast_descriptive_v1"
+    discovery_source = packet_root / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
+    packet = None
+    if packet_dir.exists() or (
+        _u((run_manifest or {}).get("pipeline_mode")) == "EOD"
+        and discovery_source.is_file()
+        and (packet_root / "run_meta.json").is_file()
+    ):
+        packet = load_or_publish_descriptive_packet(packet_root)
+    expression_packet = None
+    expression_path = packet_root / "forecast" / "expression_candidates_v1" / "packet.json"
+    if expression_path.is_file():
+        expression_packet = json.loads(expression_path.read_text(encoding="utf-8"))
+        frozen_path = packet_dir / "packet.json"
+        if (packet is None or expression_packet.get("run_id") != run_id
+                or expression_packet.get("frozen_forecast_sha256") != hashlib.sha256(frozen_path.read_bytes()).hexdigest()
+                or expression_packet.get("row_count") != len(expression_packet.get("rows") or [])):
+            raise RuntimeError("C6 expression packet does not reconcile with frozen C5")
+    valuation_packet = None
+    valuation_path = packet_root / "forecast" / "expression_valuation_v1" / "packet.json"
+    if valuation_path.is_file():
+        valuation_packet = json.loads(valuation_path.read_text(encoding="utf-8"))
+        if (expression_packet is None or packet is None
+                or valuation_packet.get("run_id") != run_id
+                or valuation_packet.get("frozen_forecast_sha256") != hashlib.sha256((packet_dir / "packet.json").read_bytes()).hexdigest()
+                or valuation_packet.get("candidate_packet_sha256") != hashlib.sha256(expression_path.read_bytes()).hexdigest()
+                or valuation_packet.get("row_count") != len(valuation_packet.get("rows") or [])
+                or valuation_packet.get("numeric_valuation_count") != 0):
+            raise RuntimeError("C8 valuation packet does not reconcile with C5/C6")
+    forecast_population_before = len(rows)
+    rows[:] = project_lab_descriptive_rows(rows, packet, expression_packet, valuation_packet)
     for row in rows:
         provenance = json.loads(row.get("field_provenance_json") or "{}")
         for field in FINAL_BOOK_FIELDS:
             if field.startswith("doi_") and not _is_missing(row.get(field)):
                 provenance[field] = "canonical_doi_projection_read_only"
+            if field.startswith("forecast_") or field == "c4_reliability_state":
+                provenance[field] = "frozen_discovery_descriptive_packet" if packet else "descriptive_packet_unavailable"
+            elif field in {"option_expression_state", "option_expression_candidate_count",
+                           "option_expression_packet_state"}:
+                provenance[field] = "run_linked_c6_packet" if expression_packet else "c6_packet_unavailable"
+            elif field in {"c8_valuation_state", "c8_numeric_ev", "research_ev_state",
+                           "research_ev_candidate_count", "research_ev_contracts_json"}:
+                provenance[field] = "run_linked_c8_packet" if valuation_packet else "c8_packet_unavailable"
         row["field_provenance_json"] = _json_safe(provenance)
 
     # R:R is retained in upstream research artefacts only.  It is neither a
@@ -4908,11 +5052,44 @@ def write_final_opportunity_book(
             for verdict in ("GO", "GO_LIMIT", "PROBE", "MANUAL_LIQUIDITY_REVIEW", "CONTRACT_REPAIR", "MORNING_VALIDATION_REQUIRED", "ARMED", "WAIT", "BLOCKED")
         },
         "rows": rows,
-        "source_manifest": assembly.get("sources", {}),
+        "source_manifest": {
+            **assembly.get("sources", {}),
+            "ticker_forecast_descriptive": (
+                str(packet_dir / "packet.json") if packet else None
+            ),
+            "expression_candidates": str(expression_path) if expression_packet else None,
+            "expression_valuation": str(valuation_path) if valuation_packet else None,
+        },
         "source_errors": assembly.get("source_errors", []),
         "reconciliation": {
             "input_rows": len(rows),
             "output_rows": len(rows),
+            "forecast_projected_rows": sum(
+                1 for row in rows if row.get("forecast_packet_state") in {"AVAILABLE", "UNAVAILABLE"}
+            ),
+            "forecast_descriptive_rows": sum(
+                1 for row in rows if row.get("forecast_state") == "DESCRIPTIVE_ONLY"
+            ),
+            "forecast_insufficient_rows": sum(
+                1 for row in rows if row.get("forecast_state") == "DATA_INSUFFICIENT"
+            ),
+            "c8_not_valued_rows": sum(
+                1 for row in rows if row.get("c8_valuation_state") == "NOT_VALUED_STATISTICAL_SUPPORT"
+            ),
+            "c6_candidate_tickers": sum(
+                1 for row in rows if int(row.get("option_expression_candidate_count") or 0) > 0
+            ),
+            "c6_candidate_contracts": sum(
+                int(row.get("option_expression_candidate_count") or 0) for row in rows
+            ),
+            "research_ev_candidate_contracts_in_lab": sum(
+                int(row.get("research_ev_candidate_count") or 0) for row in rows
+            ),
+            "research_ev_candidate_contracts_full_forecast": (
+                int(valuation_packet.get("research_ev_count") or 0)
+                if valuation_packet else 0
+            ),
+            "forecast_population_preserved": len(rows) == forecast_population_before,
             "unique_trade_idea_ids": len({row.get("trade_idea_id") for row in rows}),
             "duplicate_trade_idea_ids": len(rows) - len({row.get("trade_idea_id") for row in rows}),
             "selected_contract_rows": sum(1 for row in rows if row.get("contract_data_state") == "AVAILABLE"),

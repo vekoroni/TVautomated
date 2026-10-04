@@ -1,0 +1,1275 @@
+{
+  "research_state": "EXPLORATORY_NO_AUTHORITY",
+  "trial_family": "SOLUTION_TOURNAMENT_ROUND1",
+  "population": "H_PRE_FIX",
+  "input_manifest_sha256": "e839616a8b2d487a8880bc5850350fc180f49cbb8e92ba7699f60f041c5446d3",
+  "direction_alternatives": {
+    "1": {
+      "current": {
+        "n": 8950,
+        "sessions": 9,
+        "mean": 8.4e-05,
+        "median": -0.000141,
+        "hit_rate": 0.4937,
+        "ci90": [
+          -0.001633,
+          0.001896
+        ]
+      },
+      "mom5": {
+        "n": 8950,
+        "sessions": 9,
+        "mean": -0.001726,
+        "median": -0.000645,
+        "hit_rate": 0.4818,
+        "ci90": [
+          -0.005233,
+          0.001762
+        ]
+      },
+      "mom20": {
+        "n": 8950,
+        "sessions": 9,
+        "mean": -5.7e-05,
+        "median": 0.000242,
+        "hit_rate": 0.5027,
+        "ci90": [
+          -0.001968,
+          0.002023
+        ]
+      },
+      "meanrev5": {
+        "n": 8950,
+        "sessions": 9,
+        "mean": 0.001726,
+        "median": 0.000645,
+        "hit_rate": 0.5109,
+        "ci90": [
+          -0.001762,
+          0.005233
+        ]
+      },
+      "consensus": {
+        "n": 6181,
+        "sessions": 9,
+        "mean": -0.001298,
+        "median": -0.000285,
+        "hit_rate": 0.4913,
+        "ci90": [
+          -0.004416,
+          0.002039
+        ]
+      }
+    },
+    "3": {
+      "current": {
+        "n": 7784,
+        "sessions": 8,
+        "mean": -0.002441,
+        "median": -0.003262,
+        "hit_rate": 0.4618,
+        "ci90": [
+          -0.005053,
+          0.000918
+        ]
+      },
+      "mom5": {
+        "n": 7784,
+        "sessions": 8,
+        "mean": -0.002994,
+        "median": -0.000284,
+        "hit_rate": 0.4933,
+        "ci90": [
+          -0.007152,
+          0.000674
+        ]
+      },
+      "mom20": {
+        "n": 7784,
+        "sessions": 8,
+        "mean": 0.001325,
+        "median": 0.003427,
+        "hit_rate": 0.5384,
+        "ci90": [
+          -0.002749,
+          0.004359
+        ]
+      },
+      "meanrev5": {
+        "n": 7784,
+        "sessions": 8,
+        "mean": 0.002994,
+        "median": 0.000284,
+        "hit_rate": 0.5017,
+        "ci90": [
+          -0.000674,
+          0.007152
+        ]
+      },
+      "consensus": {
+        "n": 5337,
+        "sessions": 8,
+        "mean": -0.001251,
+        "median": 0.0023,
+        "hit_rate": 0.5254,
+        "ci90": [
+          -0.006768,
+          0.002977
+        ]
+      }
+    },
+    "5": {
+      "current": {
+        "n": 5539,
+        "sessions": 6,
+        "mean": -0.004172,
+        "median": -0.006705,
+        "hit_rate": 0.4425,
+        "ci90": [
+          -0.007148,
+          -0.001135
+        ]
+      },
+      "mom5": {
+        "n": 5539,
+        "sessions": 6,
+        "mean": -0.001246,
+        "median": 0.001381,
+        "hit_rate": 0.5124,
+        "ci90": [
+          -0.004568,
+          0.001577
+        ]
+      },
+      "mom20": {
+        "n": 5539,
+        "sessions": 6,
+        "mean": 9e-05,
+        "median": 0.004001,
+        "hit_rate": 0.5342,
+        "ci90": [
+          -0.005339,
+          0.004618
+        ]
+      },
+      "meanrev5": {
+        "n": 5539,
+        "sessions": 6,
+        "mean": 0.001246,
+        "median": -0.001381,
+        "hit_rate": 0.4835,
+        "ci90": [
+          -0.001577,
+          0.004568
+        ]
+      },
+      "consensus": {
+        "n": 3651,
+        "sessions": 6,
+        "mean": -0.000975,
+        "median": 0.004243,
+        "hit_rate": 0.5371,
+        "ci90": [
+          -0.004534,
+          0.002378
+        ]
+      }
+    }
+  },
+  "pricing_alternatives": {
+    "1": {
+      "all_selected_contracts": {
+        "n": 8427,
+        "sessions": 9,
+        "mean": -0.406301,
+        "median": -0.418367,
+        "hit_rate": 0.114,
+        "ci90": [
+          -0.429723,
+          -0.38636
+        ],
+        "share_ge_50pct": 0.0174,
+        "share_ge_100pct": 0.0036,
+        "share_ge_200pct": 0.0002,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.163
+      },
+      "spread_le_5pct": {
+        "n": 207,
+        "sessions": 9,
+        "mean": -0.057171,
+        "median": -0.10119,
+        "hit_rate": 0.372,
+        "ci90": [
+          -0.115281,
+          0.006365
+        ],
+        "share_ge_50pct": 0.0676,
+        "share_ge_100pct": 0.0145,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.5957,
+        "tail_contribution_ge_100pct": 0.1586
+      },
+      "spread_le_10pct": {
+        "n": 723,
+        "sessions": 9,
+        "mean": -0.101971,
+        "median": -0.139535,
+        "hit_rate": 0.3043,
+        "ci90": [
+          -0.129028,
+          -0.066416
+        ],
+        "share_ge_50pct": 0.0429,
+        "share_ge_100pct": 0.0097,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.5957,
+        "tail_contribution_ge_100pct": 0.1337
+      },
+      "spread_le_15pct": {
+        "n": 1469,
+        "sessions": 9,
+        "mean": -0.144475,
+        "median": -0.179747,
+        "hit_rate": 0.26,
+        "ci90": [
+          -0.164963,
+          -0.115807
+        ],
+        "share_ge_50pct": 0.0388,
+        "share_ge_100pct": 0.0095,
+        "share_ge_200pct": 0.0007,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1877
+      },
+      "forecast_iv_ratio_ge_075": {
+        "n": 7419,
+        "sessions": 9,
+        "mean": -0.365018,
+        "median": -0.384615,
+        "hit_rate": 0.1268,
+        "ci90": [
+          -0.387729,
+          -0.344505
+        ],
+        "share_ge_50pct": 0.0193,
+        "share_ge_100pct": 0.004,
+        "share_ge_200pct": 0.0003,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1658
+      },
+      "forecast_iv_ratio_ge_100": {
+        "n": 4468,
+        "sessions": 9,
+        "mean": -0.332734,
+        "median": -0.3567,
+        "hit_rate": 0.1493,
+        "ci90": [
+          -0.353534,
+          -0.314523
+        ],
+        "share_ge_50pct": 0.0246,
+        "share_ge_100pct": 0.0058,
+        "share_ge_200pct": 0.0004,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.192
+      },
+      "forecast_iv_ratio_ge_125": {
+        "n": 1309,
+        "sessions": 9,
+        "mean": -0.334003,
+        "median": -0.357143,
+        "hit_rate": 0.1597,
+        "ci90": [
+          -0.362551,
+          -0.310651
+        ],
+        "share_ge_50pct": 0.029,
+        "share_ge_100pct": 0.0084,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7674,
+        "tail_contribution_ge_100pct": 0.2254
+      },
+      "near_money_2_5pct": {
+        "n": 6049,
+        "sessions": 9,
+        "mean": -0.376751,
+        "median": -0.393939,
+        "hit_rate": 0.1275,
+        "ci90": [
+          -0.402555,
+          -0.354151
+        ],
+        "share_ge_50pct": 0.0188,
+        "share_ge_100pct": 0.0043,
+        "share_ge_200pct": 0.0003,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1802
+      },
+      "near_money_5pct": {
+        "n": 7594,
+        "sessions": 9,
+        "mean": -0.390653,
+        "median": -0.403509,
+        "hit_rate": 0.1204,
+        "ci90": [
+          -0.415759,
+          -0.368961
+        ],
+        "share_ge_50pct": 0.0184,
+        "share_ge_100pct": 0.0037,
+        "share_ge_200pct": 0.0003,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1604
+      },
+      "price_aware_strict": {
+        "n": 474,
+        "sessions": 9,
+        "mean": -0.088736,
+        "median": -0.138261,
+        "hit_rate": 0.3291,
+        "ci90": [
+          -0.123342,
+          -0.046191
+        ],
+        "share_ge_50pct": 0.0506,
+        "share_ge_100pct": 0.0148,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.5957,
+        "tail_contribution_ge_100pct": 0.1797
+      },
+      "price_aware_broad": {
+        "n": 1335,
+        "sessions": 9,
+        "mean": -0.14029,
+        "median": -0.179747,
+        "hit_rate": 0.2682,
+        "ci90": [
+          -0.162061,
+          -0.109795
+        ],
+        "share_ge_50pct": 0.0397,
+        "share_ge_100pct": 0.0097,
+        "share_ge_200pct": 0.0007,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1884
+      }
+    },
+    "3": {
+      "all_selected_contracts": {
+        "n": 7224,
+        "sessions": 8,
+        "mean": -0.436561,
+        "median": -0.515959,
+        "hit_rate": 0.1517,
+        "ci90": [
+          -0.472297,
+          -0.403813
+        ],
+        "share_ge_50pct": 0.0404,
+        "share_ge_100pct": 0.0136,
+        "share_ge_200pct": 0.0019,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3357
+      },
+      "spread_le_5pct": {
+        "n": 176,
+        "sessions": 8,
+        "mean": -0.146438,
+        "median": -0.229821,
+        "hit_rate": 0.3295,
+        "ci90": [
+          -0.205674,
+          -0.093927
+        ],
+        "share_ge_50pct": 0.0909,
+        "share_ge_100pct": 0.0398,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7854,
+        "tail_contribution_ge_100pct": 0.39
+      },
+      "spread_le_10pct": {
+        "n": 634,
+        "sessions": 8,
+        "mean": -0.173462,
+        "median": -0.258662,
+        "hit_rate": 0.317,
+        "ci90": [
+          -0.202313,
+          -0.142077
+        ],
+        "share_ge_50pct": 0.0836,
+        "share_ge_100pct": 0.0221,
+        "share_ge_200pct": 0.0016,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.7812,
+        "tail_contribution_ge_100pct": 0.2623
+      },
+      "spread_le_15pct": {
+        "n": 1290,
+        "sessions": 8,
+        "mean": -0.210154,
+        "median": -0.290995,
+        "hit_rate": 0.2775,
+        "ci90": [
+          -0.230537,
+          -0.18198
+        ],
+        "share_ge_50pct": 0.0667,
+        "share_ge_100pct": 0.0233,
+        "share_ge_200pct": 0.0023,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.33
+      },
+      "forecast_iv_ratio_ge_075": {
+        "n": 6391,
+        "sessions": 8,
+        "mean": -0.400255,
+        "median": -0.484375,
+        "hit_rate": 0.1659,
+        "ci90": [
+          -0.431239,
+          -0.372359
+        ],
+        "share_ge_50pct": 0.0444,
+        "share_ge_100pct": 0.0149,
+        "share_ge_200pct": 0.0022,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3353
+      },
+      "forecast_iv_ratio_ge_100": {
+        "n": 3912,
+        "sessions": 8,
+        "mean": -0.361852,
+        "median": -0.444444,
+        "hit_rate": 0.1846,
+        "ci90": [
+          -0.393523,
+          -0.332057
+        ],
+        "share_ge_50pct": 0.0527,
+        "share_ge_100pct": 0.0181,
+        "share_ge_200pct": 0.0023,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3522
+      },
+      "forecast_iv_ratio_ge_125": {
+        "n": 1157,
+        "sessions": 8,
+        "mean": -0.35843,
+        "median": -0.454545,
+        "hit_rate": 0.1936,
+        "ci90": [
+          -0.394667,
+          -0.325245
+        ],
+        "share_ge_50pct": 0.0605,
+        "share_ge_100pct": 0.0199,
+        "share_ge_200pct": 0.0017,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4186,
+        "tail_contribution_ge_100pct": 0.3526
+      },
+      "near_money_2_5pct": {
+        "n": 5195,
+        "sessions": 8,
+        "mean": -0.410843,
+        "median": -0.5,
+        "hit_rate": 0.1661,
+        "ci90": [
+          -0.447882,
+          -0.37738
+        ],
+        "share_ge_50pct": 0.0462,
+        "share_ge_100pct": 0.0156,
+        "share_ge_200pct": 0.0023,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3443
+      },
+      "near_money_5pct": {
+        "n": 6528,
+        "sessions": 8,
+        "mean": -0.422434,
+        "median": -0.505744,
+        "hit_rate": 0.1595,
+        "ci90": [
+          -0.457097,
+          -0.389768
+        ],
+        "share_ge_50pct": 0.043,
+        "share_ge_100pct": 0.0144,
+        "share_ge_200pct": 0.0018,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3327
+      },
+      "price_aware_strict": {
+        "n": 412,
+        "sessions": 8,
+        "mean": -0.169724,
+        "median": -0.226444,
+        "hit_rate": 0.3228,
+        "ci90": [
+          -0.22836,
+          -0.117108
+        ],
+        "share_ge_50pct": 0.0971,
+        "share_ge_100pct": 0.0218,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7854,
+        "tail_contribution_ge_100pct": 0.2334
+      },
+      "price_aware_broad": {
+        "n": 1178,
+        "sessions": 8,
+        "mean": -0.210035,
+        "median": -0.292572,
+        "hit_rate": 0.2784,
+        "ci90": [
+          -0.231333,
+          -0.178358
+        ],
+        "share_ge_50pct": 0.0696,
+        "share_ge_100pct": 0.0229,
+        "share_ge_200pct": 0.0025,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3252
+      }
+    },
+    "5": {
+      "all_selected_contracts": {
+        "n": 5074,
+        "sessions": 6,
+        "mean": -0.485002,
+        "median": -0.633866,
+        "hit_rate": 0.1462,
+        "ci90": [
+          -0.535163,
+          -0.438048
+        ],
+        "share_ge_50pct": 0.0601,
+        "share_ge_100pct": 0.0254,
+        "share_ge_200pct": 0.0045,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.4804
+      },
+      "spread_le_5pct": {
+        "n": 124,
+        "sessions": 6,
+        "mean": -0.225756,
+        "median": -0.375906,
+        "hit_rate": 0.2258,
+        "ci90": [
+          -0.298907,
+          -0.187979
+        ],
+        "share_ge_50pct": 0.1048,
+        "share_ge_100pct": 0.0403,
+        "share_ge_200pct": 0.0242,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4255,
+        "tail_contribution_ge_100pct": 0.5109
+      },
+      "spread_le_10pct": {
+        "n": 435,
+        "sessions": 6,
+        "mean": -0.21727,
+        "median": -0.354167,
+        "hit_rate": 0.2529,
+        "ci90": [
+          -0.235468,
+          -0.195114
+        ],
+        "share_ge_50pct": 0.1057,
+        "share_ge_100pct": 0.0437,
+        "share_ge_200pct": 0.0138,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 3.1406,
+        "tail_contribution_ge_100pct": 0.4937
+      },
+      "spread_le_15pct": {
+        "n": 895,
+        "sessions": 6,
+        "mean": -0.256838,
+        "median": -0.383721,
+        "hit_rate": 0.2346,
+        "ci90": [
+          -0.277206,
+          -0.227616
+        ],
+        "share_ge_50pct": 0.1006,
+        "share_ge_100pct": 0.0413,
+        "share_ge_200pct": 0.0089,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.3158,
+        "tail_contribution_ge_100pct": 0.4868
+      },
+      "forecast_iv_ratio_ge_075": {
+        "n": 4451,
+        "sessions": 6,
+        "mean": -0.447738,
+        "median": -0.598616,
+        "hit_rate": 0.1602,
+        "ci90": [
+          -0.496804,
+          -0.401732
+        ],
+        "share_ge_50pct": 0.0661,
+        "share_ge_100pct": 0.0276,
+        "share_ge_200pct": 0.0052,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.4801
+      },
+      "forecast_iv_ratio_ge_100": {
+        "n": 2760,
+        "sessions": 6,
+        "mean": -0.416421,
+        "median": -0.571429,
+        "hit_rate": 0.1714,
+        "ci90": [
+          -0.468404,
+          -0.369015
+        ],
+        "share_ge_50pct": 0.0739,
+        "share_ge_100pct": 0.0319,
+        "share_ge_200pct": 0.0062,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.5005
+      },
+      "forecast_iv_ratio_ge_125": {
+        "n": 855,
+        "sessions": 6,
+        "mean": -0.427403,
+        "median": -0.579545,
+        "hit_rate": 0.1696,
+        "ci90": [
+          -0.481761,
+          -0.380532
+        ],
+        "share_ge_50pct": 0.0772,
+        "share_ge_100pct": 0.0351,
+        "share_ge_200pct": 0.0047,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.875,
+        "tail_contribution_ge_100pct": 0.5202
+      },
+      "near_money_2_5pct": {
+        "n": 3639,
+        "sessions": 6,
+        "mean": -0.454425,
+        "median": -0.611111,
+        "hit_rate": 0.1632,
+        "ci90": [
+          -0.510048,
+          -0.403303
+        ],
+        "share_ge_50pct": 0.0701,
+        "share_ge_100pct": 0.0289,
+        "share_ge_200pct": 0.0049,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.4772
+      },
+      "near_money_5pct": {
+        "n": 4597,
+        "sessions": 6,
+        "mean": -0.469758,
+        "median": -0.625,
+        "hit_rate": 0.1551,
+        "ci90": [
+          -0.519425,
+          -0.422302
+        ],
+        "share_ge_50pct": 0.0648,
+        "share_ge_100pct": 0.027,
+        "share_ge_200pct": 0.0046,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.4769
+      },
+      "price_aware_strict": {
+        "n": 282,
+        "sessions": 6,
+        "mean": -0.258655,
+        "median": -0.397872,
+        "hit_rate": 0.227,
+        "ci90": [
+          -0.29206,
+          -0.230004
+        ],
+        "share_ge_50pct": 0.0957,
+        "share_ge_100pct": 0.0319,
+        "share_ge_200pct": 0.0142,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4255,
+        "tail_contribution_ge_100pct": 0.4333
+      },
+      "price_aware_broad": {
+        "n": 817,
+        "sessions": 6,
+        "mean": -0.259209,
+        "median": -0.4,
+        "hit_rate": 0.235,
+        "ci90": [
+          -0.280909,
+          -0.224461
+        ],
+        "share_ge_50pct": 0.1016,
+        "share_ge_100pct": 0.0428,
+        "share_ge_200pct": 0.0098,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.3158,
+        "tail_contribution_ge_100pct": 0.504
+      }
+    }
+  },
+  "expression_alternatives": {
+    "1": {
+      "bullish_shares_all_calls": {
+        "n": 5729,
+        "sessions": 9,
+        "mean": -0.001277,
+        "median": -0.001238,
+        "hit_rate": 0.4659,
+        "ci90": [
+          -0.005885,
+          0.003326
+        ]
+      },
+      "long_option_all": {
+        "n": 8427,
+        "sessions": 9,
+        "mean": -0.406301,
+        "median": -0.418367,
+        "hit_rate": 0.114,
+        "ci90": [
+          -0.429723,
+          -0.38636
+        ],
+        "share_ge_50pct": 0.0174,
+        "share_ge_100pct": 0.0036,
+        "share_ge_200pct": 0.0002,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.163
+      },
+      "long_option_price_aware_strict": {
+        "n": 474,
+        "sessions": 9,
+        "mean": -0.088736,
+        "median": -0.138261,
+        "hit_rate": 0.3291,
+        "ci90": [
+          -0.123342,
+          -0.046191
+        ],
+        "share_ge_50pct": 0.0506,
+        "share_ge_100pct": 0.0148,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.5957,
+        "tail_contribution_ge_100pct": 0.1797
+      },
+      "long_option_price_aware_broad": {
+        "n": 1335,
+        "sessions": 9,
+        "mean": -0.14029,
+        "median": -0.179747,
+        "hit_rate": 0.2682,
+        "ci90": [
+          -0.162061,
+          -0.109795
+        ],
+        "share_ge_50pct": 0.0397,
+        "share_ge_100pct": 0.0097,
+        "share_ge_200pct": 0.0007,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7895,
+        "tail_contribution_ge_100pct": 0.1884
+      },
+      "no_trade_when_price_not_favourable": {
+        "strict_trade_coverage": 0.0533,
+        "broad_trade_coverage": 0.1508
+      }
+    },
+    "3": {
+      "bullish_shares_all_calls": {
+        "n": 4964,
+        "sessions": 8,
+        "mean": -0.008368,
+        "median": -0.008935,
+        "hit_rate": 0.388,
+        "ci90": [
+          -0.015536,
+          -0.000279
+        ]
+      },
+      "long_option_all": {
+        "n": 7224,
+        "sessions": 8,
+        "mean": -0.436561,
+        "median": -0.515959,
+        "hit_rate": 0.1517,
+        "ci90": [
+          -0.472297,
+          -0.403813
+        ],
+        "share_ge_50pct": 0.0404,
+        "share_ge_100pct": 0.0136,
+        "share_ge_200pct": 0.0019,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3357
+      },
+      "long_option_price_aware_strict": {
+        "n": 412,
+        "sessions": 8,
+        "mean": -0.169724,
+        "median": -0.226444,
+        "hit_rate": 0.3228,
+        "ci90": [
+          -0.22836,
+          -0.117108
+        ],
+        "share_ge_50pct": 0.0971,
+        "share_ge_100pct": 0.0218,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7854,
+        "tail_contribution_ge_100pct": 0.2334
+      },
+      "long_option_price_aware_broad": {
+        "n": 1178,
+        "sessions": 8,
+        "mean": -0.210035,
+        "median": -0.292572,
+        "hit_rate": 0.2784,
+        "ci90": [
+          -0.231333,
+          -0.178358
+        ],
+        "share_ge_50pct": 0.0696,
+        "share_ge_100pct": 0.0229,
+        "share_ge_200pct": 0.0025,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.8421,
+        "tail_contribution_ge_100pct": 0.3252
+      },
+      "no_trade_when_price_not_favourable": {
+        "strict_trade_coverage": 0.0545,
+        "broad_trade_coverage": 0.1566
+      }
+    },
+    "5": {
+      "bullish_shares_all_calls": {
+        "n": 3431,
+        "sessions": 6,
+        "mean": -0.016385,
+        "median": -0.016562,
+        "hit_rate": 0.3224,
+        "ci90": [
+          -0.024235,
+          -0.008558
+        ]
+      },
+      "long_option_all": {
+        "n": 5074,
+        "sessions": 6,
+        "mean": -0.485002,
+        "median": -0.633866,
+        "hit_rate": 0.1462,
+        "ci90": [
+          -0.535163,
+          -0.438048
+        ],
+        "share_ge_50pct": 0.0601,
+        "share_ge_100pct": 0.0254,
+        "share_ge_200pct": 0.0045,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.7143,
+        "tail_contribution_ge_100pct": 0.4804
+      },
+      "long_option_price_aware_strict": {
+        "n": 282,
+        "sessions": 6,
+        "mean": -0.258655,
+        "median": -0.397872,
+        "hit_rate": 0.227,
+        "ci90": [
+          -0.29206,
+          -0.230004
+        ],
+        "share_ge_50pct": 0.0957,
+        "share_ge_100pct": 0.0319,
+        "share_ge_200pct": 0.0142,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4255,
+        "tail_contribution_ge_100pct": 0.4333
+      },
+      "long_option_price_aware_broad": {
+        "n": 817,
+        "sessions": 6,
+        "mean": -0.259209,
+        "median": -0.4,
+        "hit_rate": 0.235,
+        "ci90": [
+          -0.280909,
+          -0.224461
+        ],
+        "share_ge_50pct": 0.1016,
+        "share_ge_100pct": 0.0428,
+        "share_ge_200pct": 0.0098,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 4.3158,
+        "tail_contribution_ge_100pct": 0.504
+      },
+      "no_trade_when_price_not_favourable": {
+        "strict_trade_coverage": 0.056,
+        "broad_trade_coverage": 0.1591
+      }
+    }
+  },
+  "ranking_alternatives": {
+    "1": {
+      "cautious_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.282986,
+        "median": -0.29697,
+        "hit_rate": 0.1333,
+        "ci90": [
+          -0.36327,
+          -0.196173
+        ],
+        "share_ge_50pct": 0.0,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.4771,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "central_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.32108,
+        "median": -0.327869,
+        "hit_rate": 0.1111,
+        "ci90": [
+          -0.406067,
+          -0.236438
+        ],
+        "share_ge_50pct": 0.0,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.3253,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "upside_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.339783,
+        "median": -0.344262,
+        "hit_rate": 0.1778,
+        "ci90": [
+          -0.452547,
+          -0.237259
+        ],
+        "share_ge_50pct": 0.0444,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.7742,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "iv_cheapness_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.346976,
+        "median": -0.3875,
+        "hit_rate": 0.0889,
+        "ci90": [
+          -0.424082,
+          -0.268232
+        ],
+        "share_ge_50pct": 0.0444,
+        "share_ge_100pct": 0.0222,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7674,
+        "tail_contribution_ge_100pct": 0.7121
+      },
+      "tight_spread_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.028603,
+        "median": -0.061818,
+        "hit_rate": 0.4222,
+        "ci90": [
+          -0.110857,
+          0.065461
+        ],
+        "share_ge_50pct": 0.0444,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.8644,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "exploratory_composite_top5": {
+        "n": 45,
+        "sessions": 9,
+        "mean": -0.185414,
+        "median": -0.229412,
+        "hit_rate": 0.2667,
+        "ci90": [
+          -0.279314,
+          -0.101267
+        ],
+        "share_ge_50pct": 0.0,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.4771,
+        "tail_contribution_ge_100pct": 0.0
+      }
+    },
+    "3": {
+      "cautious_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.301077,
+        "median": -0.306677,
+        "hit_rate": 0.275,
+        "ci90": [
+          -0.424302,
+          -0.198949
+        ],
+        "share_ge_50pct": 0.0,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.4865,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "central_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.335439,
+        "median": -0.306677,
+        "hit_rate": 0.2,
+        "ci90": [
+          -0.445646,
+          -0.238591
+        ],
+        "share_ge_50pct": 0.025,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.8725,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "upside_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.339749,
+        "median": -0.376832,
+        "hit_rate": 0.225,
+        "ci90": [
+          -0.459522,
+          -0.239512
+        ],
+        "share_ge_50pct": 0.05,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.9399,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "iv_cheapness_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.319524,
+        "median": -0.497525,
+        "hit_rate": 0.275,
+        "ci90": [
+          -0.456593,
+          -0.177557
+        ],
+        "share_ge_50pct": 0.05,
+        "share_ge_100pct": 0.05,
+        "share_ge_200pct": 0.025,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4186,
+        "tail_contribution_ge_100pct": 0.7081
+      },
+      "tight_spread_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.140939,
+        "median": -0.322981,
+        "hit_rate": 0.35,
+        "ci90": [
+          -0.233685,
+          -0.044044
+        ],
+        "share_ge_50pct": 0.1,
+        "share_ge_100pct": 0.025,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7854,
+        "tail_contribution_ge_100pct": 0.3013
+      },
+      "exploratory_composite_top5": {
+        "n": 40,
+        "sessions": 8,
+        "mean": -0.184823,
+        "median": -0.148954,
+        "hit_rate": 0.3,
+        "ci90": [
+          -0.363069,
+          -0.048796
+        ],
+        "share_ge_50pct": 0.05,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.913,
+        "tail_contribution_ge_100pct": 0.0
+      }
+    },
+    "5": {
+      "cautious_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.409804,
+        "median": -0.59806,
+        "hit_rate": 0.2,
+        "ci90": [
+          -0.537601,
+          -0.284677
+        ],
+        "share_ge_50pct": 0.1,
+        "share_ge_100pct": 0.0,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 0.9746,
+        "tail_contribution_ge_100pct": 0.0
+      },
+      "central_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.459721,
+        "median": -0.648997,
+        "hit_rate": 0.1667,
+        "ci90": [
+          -0.685145,
+          -0.209563
+        ],
+        "share_ge_50pct": 0.0667,
+        "share_ge_100pct": 0.0333,
+        "share_ge_200pct": 0.0333,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4286,
+        "tail_contribution_ge_100pct": 0.626
+      },
+      "upside_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.361046,
+        "median": -0.648997,
+        "hit_rate": 0.2,
+        "ci90": [
+          -0.708245,
+          0.009346
+        ],
+        "share_ge_50pct": 0.1,
+        "share_ge_100pct": 0.1,
+        "share_ge_200pct": 0.0667,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.4286,
+        "tail_contribution_ge_100pct": 0.8949
+      },
+      "iv_cheapness_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.409579,
+        "median": -0.522731,
+        "hit_rate": 0.1667,
+        "ci90": [
+          -0.58667,
+          -0.222746
+        ],
+        "share_ge_50pct": 0.0667,
+        "share_ge_100pct": 0.0667,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7674,
+        "tail_contribution_ge_100pct": 0.7624
+      },
+      "tight_spread_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.291506,
+        "median": -0.361767,
+        "hit_rate": 0.1667,
+        "ci90": [
+          -0.444981,
+          -0.098912
+        ],
+        "share_ge_50pct": 0.0667,
+        "share_ge_100pct": 0.0333,
+        "share_ge_200pct": 0.0333,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 2.0822,
+        "tail_contribution_ge_100pct": 0.6121
+      },
+      "exploratory_composite_top5": {
+        "n": 30,
+        "sessions": 6,
+        "mean": -0.310527,
+        "median": -0.347213,
+        "hit_rate": 0.1667,
+        "ci90": [
+          -0.4989,
+          -0.152687
+        ],
+        "share_ge_50pct": 0.0667,
+        "share_ge_100pct": 0.0333,
+        "share_ge_200pct": 0.0,
+        "share_ge_500pct": 0.0,
+        "largest_winner": 1.7642,
+        "tail_contribution_ge_100pct": 0.5324
+      }
+    }
+  },
+  "interpretation_constraints": [
+    "Nine H sessions are not enough for promotion.",
+    "All alternatives are paired on the same recorded selected contracts.",
+    "The composite rank is exploratory and was not pre-registered for confirmation.",
+    "Shares and options are reported separately; no capital-weighted blend is inferred.",
+    "Contract-family re-selection, intraday timing, and tail opportunity recall are later rounds."
+  ]
+}

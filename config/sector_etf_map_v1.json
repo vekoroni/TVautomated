@@ -1,0 +1,32 @@
+{
+  "version": "sector_etf_map_v1",
+  "note": "XLU-D03 (ACK 2 Oct 2026): a placeholder sector (ETF, FUND, blank) resolves through the ticker's sector ETF to its GICS sector. Theme tokens map Money Index priority themes to the sector categories they name. Advisory only.",
+  "placeholder_sectors": ["", "ETF", "FUND", "N/A", "NA", "NONE", "NAN", "UNKNOWN", "INDEX"],
+  "etf_to_sector": {
+    "XLU": "UTILITIES", "XLRE": "REAL ESTATE", "XLK": "INFORMATION TECHNOLOGY", "XLE": "ENERGY",
+    "XLF": "FINANCIALS", "XLV": "HEALTH CARE", "XLI": "INDUSTRIALS", "XLB": "MATERIALS",
+    "XLP": "CONSUMER STAPLES", "XLY": "CONSUMER DISCRETIONARY", "XLC": "COMMUNICATION SERVICES",
+    "SMH": "INFORMATION TECHNOLOGY", "SOXX": "INFORMATION TECHNOLOGY", "KRE": "FINANCIALS", "KBE": "FINANCIALS",
+    "XBI": "HEALTH CARE", "IBB": "HEALTH CARE", "XOP": "ENERGY", "OIH": "ENERGY", "ITB": "CONSUMER DISCRETIONARY",
+    "XHB": "CONSUMER DISCRETIONARY", "VNQ": "REAL ESTATE", "IYR": "REAL ESTATE", "GDX": "MATERIALS"
+  },
+  "theme_tokens": {
+    "UTILITIES": ["UTILITIES"],
+    "REITS": ["RATE_SENSITIVE_REITS"],
+    "HOMEBUILDERS": ["HOMEBUILDERS"],
+    "SEMI": ["SEMICONDUCTORS"],
+    "SOFTWARE": ["SOFTWARE"],
+    "ENERGY": ["ENERGY"],
+    "REFINER": ["ENERGY"],
+    "FINANCIAL": ["FINANCIALS"],
+    "BANK": ["FINANCIALS"],
+    "INDUSTRIAL": ["INDUSTRIALS"],
+    "MATERIAL": ["MATERIALS"],
+    "AIRLINE": ["TRANSPORT_TRAVEL", "INDUSTRIALS"],
+    "TRANSPORT": ["TRANSPORT_TRAVEL", "INDUSTRIALS"],
+    "CONSUMER": ["WEAK_CONSUMER_DISCRETIONARY"],
+    "DISCRETIONARY": ["WEAK_CONSUMER_DISCRETIONARY"],
+    "STAPLES": ["CONSUMER_STAPLES"],
+    "HEALTH": ["HEALTH_CARE"]
+  }
+}

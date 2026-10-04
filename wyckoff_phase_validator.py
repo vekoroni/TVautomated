@@ -10,6 +10,7 @@ validator is intentionally stricter so downstream pipeline stages can separate
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
@@ -88,6 +89,61 @@ def _mode(precor_data: Optional[Dict[str, Any]], wyckoff_data: Dict[str, Any]) -
     if control == "SELLERS":
         return "DISTRIBUTION"
     return "ACCUMULATION"
+
+
+def _observed_mode(precor_data: Optional[Dict[str, Any]], wyckoff_data: Dict[str, Any]) -> str:
+    """New mode observation: absence of evidence is not accumulation."""
+    text = str((precor_data or {}).get("wyckoff_mode") or wyckoff_data.get("wyckoff_mode") or "").upper()
+    if "DISTRIBUTION" in text or text in {"MARKDOWN", "SELLERS"}:
+        return "DISTRIBUTION"
+    if "ACCUMULATION" in text or text in {"MARKUP", "BUYERS"}:
+        return "ACCUMULATION"
+    control = str(wyckoff_data.get("control_state") or (precor_data or {}).get("control_state") or "").upper()
+    if control == "SELLERS":
+        return "DISTRIBUTION"
+    if control == "BUYERS":
+        return "ACCUMULATION"
+    return "UNKNOWN"
+
+
+def _candidate_invalidations(bars: Optional[pd.DataFrame]) -> Dict[str, Any]:
+    """Publish both structural invalidations from the prior 40-bar range.
+
+    The last row is the assessed bar, not part of its own prior range. This
+    shadow observation does not replace the legacy mode-specific field.
+    """
+    result: Dict[str, Any] = {
+        "candidate_bull_invalidation": None,
+        "candidate_bear_invalidation": None,
+        "candidate_invalidation_source": "NONE",
+        "candidate_invalidation_status": "INSUFFICIENT_PRIOR_BARS",
+        "candidate_bull_target": None,
+        "candidate_bear_target": None,
+        "candidate_target_source": "NONE",
+    }
+    if bars is None or not {"high", "low"}.issubset(bars.columns) or len(bars) < 41:
+        return result
+    prior = bars.iloc[-41:-1]
+    highs = pd.to_numeric(prior["high"], errors="coerce")
+    lows = pd.to_numeric(prior["low"], errors="coerce")
+    if highs.isna().any() or lows.isna().any() or (highs < lows).any():
+        result["candidate_invalidation_status"] = "INVALID_PRIOR_BARS"
+        return result
+    high = float(highs.max())
+    low = float(lows.min())
+    if not all(math.isfinite(value) and value > 0 for value in (high, low)) or low > high:
+        result["candidate_invalidation_status"] = "INVALID_PRIOR_BARS"
+        return result
+    result.update(
+        candidate_bull_invalidation=round(low, 4),
+        candidate_bear_invalidation=round(high, 4),
+        candidate_invalidation_source="WYCKOFF_VALIDATION",
+        candidate_invalidation_status="OBSERVED_PRIOR_RANGE",
+        candidate_bull_target=round(high, 4),
+        candidate_bear_target=round(low, 4),
+        candidate_target_source="PRIOR_RANGE_EXTREME",
+    )
+    return result
 
 
 def _required_events(mode: str, phase: str) -> set[str]:
@@ -288,6 +344,8 @@ def validate_wyckoff_phase(
 
     return {
         "wyckoff_structure": mode,
+        "wyckoff_structure_v2": _observed_mode(precor_data, wyckoff_data),
+        **_candidate_invalidations(bars),
         "wyckoff_phase": phase,
         "phase_probability": round(phase_prob / 100.0, 3),
         "alternative_phase": alt_phase,
@@ -304,6 +362,10 @@ def validate_wyckoff_phase(
         "transition_probability_10_bars": round(p10, 3),
         "transition_probability_20_bars": round(p20, 3),
         "expected_bars_remaining": f"{bars_remaining_low}-{bars_remaining_high}",
+        # B7 (ACK 3 Oct 2026): the *_probability fields above are weighted heuristic scores with fixed transforms,
+        # not calibrated probabilities; the expected-bars range is derived from them. Display only.
+        "probability_fields_basis": "HEURISTIC_SCORES_NOT_CALIBRATED_PROBABILITIES",
+        "expected_bars_remaining_basis": "DERIVED_FROM_HEURISTIC_SCORES",
         "next_expected_event": next_expected_event,
         "structural_invalidation_level": _invalidation_level(bars, phase, mode, wyckoff_data),
         "timeframe_alignment": "UNASSESSED",

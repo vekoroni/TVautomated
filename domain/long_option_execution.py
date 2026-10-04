@@ -162,6 +162,37 @@ def quote_feed_state() -> str:
     return QUOTE_FEED_DELAYED if QUOTE_FEED_DELAY_SECONDS > 0 else QUOTE_FEED_REAL_TIME
 
 
+QUOTE_REQUOTE_INSTRUCTION = "REQUOTE_AT_BROKER_BEFORE_ENTRY"
+
+
+def quote_age_disclosure(
+    effective_age_seconds: float | None,
+    *,
+    raw_age_seconds: float | None = None,
+    window_seconds: float = EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS,
+) -> dict[str, Any]:
+    """Quote age is disclosed, never a gate (ACK 17 Sep 2026; reaffirmed 3 Oct 2026).
+
+    The pipeline always trades on old quotes (EOD close, delayed morning feed); the human re-quotes at
+    the broker before entry. ``effective_age_seconds`` is net of the disclosed feed delay; the minutes
+    shown are the raw age, i.e. how old the price the trader is looking at really is.
+    """
+    effective = _finite(effective_age_seconds)
+    raw = _finite(raw_age_seconds)
+    shown = raw if raw is not None else effective
+    if effective is None:
+        state = "UNKNOWN"
+    elif effective > window_seconds:
+        state = "BEYOND_FEED_WINDOW"
+    else:
+        state = "WITHIN_FEED_WINDOW"
+    return {
+        "quote_age_state": state,
+        "quote_age_minutes": round(shown / 60.0, 1) if shown is not None else None,
+        "quote_requote_instruction": QUOTE_REQUOTE_INSTRUCTION,
+    }
+
+
 def evaluate_execution_viability(
     row: Mapping[str, Any],
     hydrated: Mapping[str, Any],
@@ -274,13 +305,9 @@ def evaluate_execution_viability(
         "execution_viability_quote_age_seconds": age,
         "execution_viability_quote_raw_age_seconds": raw_age,
         "execution_viability_quote_feed_state": quote_feed_state(),
+        # Age is disclosed, never a gate (ACK 3 Oct 2026): the quote is judged on its book below.
+        **{f"execution_viability_{k}": v for k, v in quote_age_disclosure(age, raw_age_seconds=raw_age).items()},
     }
-    if age > EXECUTION_QUOTE_FRESHNESS_MAX_SECONDS:
-        return {
-            **details,
-            "execution_viability_state": "REQUOTE_REQUIRED",
-            "execution_viability_reason": "PROVIDER_QUOTE_OUTSIDE_FRESHNESS_WINDOW",
-        }
     if bid == 0:
         return {
             **details,

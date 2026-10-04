@@ -6,7 +6,10 @@ Business rules:
   loader reproduces the same inputs.
 - A thin, in-memory package built from the cited sources by the SAME owners (package builder,
   macro injector, canonical backfill) equals the stored package except declared wall-clock
-  stamps and the stored package's stale DCV annotation (finding PKG-F1).
+  stamps, the stored package's stale DCV annotation (finding PKG-F1), and provider revisions
+  that a later Discovery write-through recorded in the canonical revision ledger
+  (`ohlcv_daily_revisions`) after the package was built: canonical history is corrected in
+  place, and the ledger must explain every such difference.
 - `run_vanguard_from_packages.py` keeps `packages` as its default input mode; `manifest` mode
   is opt-in, fails closed without a manifest, and produces the same Vanguard rows and rejects.
 """
@@ -38,6 +41,49 @@ REAL_DIR = ROOT / "data" / "output" / "runs" / REAL_RUN
 RUNNER = ROOT / "scripts" / "run_vanguard_from_packages.py"
 PY = ROOT / "venv" / "Scripts" / "python.exe"
 needs_real_run = pytest.mark.skipif(not (REAL_DIR / "packages").is_dir(), reason="retained package run not present")
+CANONICAL_DB = ROOT / "data" / "canonical" / "historical_prices.sqlite"
+
+
+def _revisions_after(ticker: str, since_utc: str) -> dict[str, dict[str, tuple]]:
+    """{trading_date: {field: (previous, replacement)}} recorded in the canonical revision ledger after ``since_utc``.
+
+    Read-only: the live canonical database is opened with ``mode=ro``.
+    """
+    import sqlite3
+    if not CANONICAL_DB.is_file():
+        return {}
+    con = sqlite3.connect(f"file:{CANONICAL_DB.as_posix()}?mode=ro", uri=True)
+    try:
+        rows = con.execute(
+            "select trading_date, previous_values_json, replacement_values_json from ohlcv_daily_revisions "
+            "where ticker=? and revised_at>? order by revised_at", (ticker, since_utc)).fetchall()
+    finally:
+        con.close()
+    out: dict[str, dict[str, tuple]] = {}
+    for trading_date, previous, replacement in rows:
+        previous, replacement = json.loads(previous), json.loads(replacement)
+        for field, before in previous.items():
+            if before != replacement.get(field):
+                out.setdefault(trading_date, {})[field] = (before, replacement[field])
+    return out
+
+
+def _bring_forward(bars: list[dict], revisions: dict[str, dict[str, tuple]]) -> list[dict]:
+    """The stored bars with each later-recorded provider revision applied.
+
+    Asserts the ledger explains the change: the stored value must be the revision's recorded
+    previous value (or already its replacement); anything else is an unexplained difference.
+    """
+    out = []
+    for bar in bars:
+        revision = revisions.get(bar["date"])
+        if revision:
+            bar = dict(bar)
+            for field, (previous, replacement) in revision.items():
+                assert bar[field] in (previous, replacement), (bar["date"], field, bar[field], previous, replacement)
+                bar[field] = replacement
+        out.append(bar)
+    return out
 
 
 # ------------------------------------------------------------------ P1 amendment: cite what was really used
@@ -90,8 +136,15 @@ def test_thin_package_reproduces_the_stored_package_except_declared_stamps(ticke
     )
     assert hashlib.sha256(stored_path.read_bytes()).hexdigest() == before  # read-only
     assert thin["ticker"] == ticker and thin["run_id"] == REAL_RUN
-    assert thin["ohlcv_daily"] == stored["ohlcv_daily"]
+    # Canonical history may have been corrected since the package was built (e.g. the Evening of
+    # 27 Sep 2026 recorded a Polygon volume revision of the 25 Sep bar for 767 tickers); the
+    # revision ledger must explain every bar difference.
+    built_utc = datetime.fromtimestamp(stored_path.stat().st_mtime, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    expected_bars = _bring_forward(stored["ohlcv_daily"], _revisions_after(ticker, built_utc))
+    assert thin["ohlcv_daily"] == expected_bars
     assert thin["daily_df"] == thin["ohlcv"] == thin["timeseries"]["ohlcv_daily"] == thin["ohlcv_daily"]
+    stored = {**stored, "ohlcv_daily": expected_bars, "ohlcv": expected_bars, "daily_df": expected_bars,
+              "timeseries": {**stored["timeseries"], "ohlcv_daily": expected_bars}}
     assert thin["macro"]["payload"] == stored["macro"]["payload"]
     assert thin["macro_quant_packet"] == stored["macro_quant_packet"]
     assert thin["discovery"] == stored["discovery"]
@@ -139,8 +192,10 @@ def _reset_to_vanguard_time(pkg: dict) -> dict:
     from scripts.build_packages_from_discovery import _ACTUARIAL_DEFERRED_BLOCK
     out = dict(pkg)
     out["actuarial"] = dict(_ACTUARIAL_DEFERRED_BLOCK)
+    # The completed market profile is NOT reset: the profile stage patches it BEFORE Vanguard and
+    # Vanguard reads it (PKG-F5). Both modes must carry it, so the gate compares Layer-1 as well.
     for key in list(out):
-        if key in POST_VANGUARD_KEYS or key.startswith("market_profile_"):
+        if key in POST_VANGUARD_KEYS:
             out.pop(key, None)
     dc = dict(out.get("data_contract") or {})
     for key in list(dc):

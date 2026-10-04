@@ -155,7 +155,8 @@ def test_missing_displayed_size_can_be_governed_as_recoverable() -> None:
     assert result["recovery_disposition"] == "MONITOR"
 
 
-def test_stale_quote_cannot_be_executable_even_when_spread_is_tight() -> None:
+def test_old_quote_with_tight_spread_is_executable_and_disclosed() -> None:
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
     result = classify_current_executability(
         bid=4.80,
         ask=5.00,
@@ -164,8 +165,9 @@ def test_stale_quote_cannot_be_executable_even_when_spread_is_tight() -> None:
         minimum_required_dte=15,
         moneyness_treatment="PREFERRED_EXECUTION",
     )
-    assert result["liquidity_state"] == "QUOTE_STALE"
-    assert result["executable_now"] is False
+    assert result["liquidity_state"] == "EXECUTABLE_NOW"
+    assert result["quote_age_state"] == "BEYOND_FEED_WINDOW"
+    assert result["quote_requote_instruction"] == "REQUOTE_AT_BROKER_BEFORE_ENTRY"
 
 
 def test_short_dte_repairs_contract_family_instead_of_invalidating_thesis() -> None:
@@ -226,6 +228,7 @@ def test_remaining_runway_distinguishes_confirmation_from_realized_move() -> Non
         structural_target=115,
         invalidation_spot=95,
         one_session_expected_move_abs=6,
+        confirmation_min_expected_move_fraction=0.5,   # XLU-D11: a 4-point move on a 6-point EM is material
     )
     realized = classify_remaining_runway(
         "CALL",

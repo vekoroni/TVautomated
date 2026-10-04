@@ -4,16 +4,15 @@ AVSHUNTER Trade Brief Builder
 Takes a fully-enriched interpreter row (including dcr_* and alt_*
 fields from Sprint 2) and produces a structured trade brief.
 
-The interpreter always produces a trade. The three possible
+The interpreter presents the governed pipeline side. The three possible
 outcomes are:
 
   TRADE_NOW     - gate is GO, direction confirmed, contract liquid
   TRADE_ON_CONDITION - direction clear, waiting for one trigger
-  NO_EDGE       - both directions have equal evidence (rare),
-                  skip this ticker
+  NO_EDGE       - no governed directional thesis; skip this ticker
 
-There is no AVOID or DO_NOT_ENTER output. If the pipeline
-misdiagnosed, the alternative trade is the recommendation.
+Interpreter counter-evidence is advisory; it cannot replace the pipeline
+side or select an opposite contract.
 """
 
 from __future__ import annotations
@@ -49,8 +48,7 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
     ticker = _s(row.get("ticker", "UNKNOWN")).upper()
 
     # â”€â”€ Direction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # Use dominant direction from conflict resolver if available,
-    # otherwise fall back to pipeline direction
+    # The conflict resolver is commentary, not a direction authority.
     dcr_dominant   = _s(row.get("dcr_dominant_direction"))
     dcr_misdiag    = str(row.get("dcr_misdiagnosed", "")).upper() == "TRUE"
     pipeline_dir   = _s(
@@ -59,10 +57,11 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         or row.get("direction")
     ).upper()
 
-    if dcr_dominant and dcr_dominant != "UNCLEAR":
-        direction = dcr_dominant
-        direction_source = "CONFLICT_RESOLVER" if dcr_misdiag else "PIPELINE_CONFIRMED"
-    elif pipeline_dir:
+    advisory_conflict = bool(
+        dcr_misdiag and dcr_dominant in {"CALL", "PUT"}
+        and dcr_dominant != pipeline_dir
+    )
+    if pipeline_dir:
         direction = pipeline_dir
         direction_source = "PIPELINE"
     else:
@@ -76,7 +75,15 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         or row.get("live_selected_contract_symbol")
         or row.get("alternative_contract_1")
     )
-    if repair_contract:
+    if direction not in {"CALL", "PUT"}:
+        contract        = ""
+        contract_bid    = None
+        contract_ask    = None
+        contract_mid    = None
+        contract_delta  = None
+        contract_iv     = None
+        contract_source = "NO_GOVERNED_SIDE"
+    elif repair_contract:
         contract        = repair_contract
         contract_bid    = _f(row.get("live_contract_bid") or row.get("contract_bid"))
         contract_ask    = _f(row.get("live_contract_ask") or row.get("contract_ask"))
@@ -84,14 +91,6 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         contract_delta  = _f(row.get("live_delta") or row.get("contract_delta"))
         contract_iv     = _f(row.get("live_iv") or row.get("contract_iv"))
         contract_source = "REPAIR_ALTERNATIVE"
-    elif dcr_misdiag and _s(row.get("alt_contract_symbol")):
-        contract        = _s(row.get("alt_contract_symbol"))
-        contract_bid    = _f(row.get("alt_bid"))
-        contract_ask    = _f(row.get("alt_ask"))
-        contract_mid    = _f(row.get("alt_mid"))
-        contract_delta  = _f(row.get("alt_delta"))
-        contract_iv     = _f(row.get("alt_iv"))
-        contract_source = "ALTERNATIVE"
     else:
         contract        = _s(
             row.get("evening_contract_symbol")
@@ -145,9 +144,9 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
     exit_t2 = _f(row.get("exit_t2") or row.get("target_2") or row.get("t2"))
 
     # â”€â”€ Recommended action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    if direction == "UNCLEAR":
+    if direction not in {"CALL", "PUT"}:
         action = "NO_EDGE"
-        action_reason = "Evidence equally split across directions. Skip this ticker."
+        action_reason = "No governed directional thesis. Interpreter cannot assign one."
     elif gate_verdict == "GO" and contract:
         action = "TRADE_NOW"
         action_reason = (
@@ -171,14 +170,8 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         action_reason = f"Gate {gate_verdict}. Await trigger before entry."
 
     # â”€â”€ Confidence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    dcr_call_score = _f(row.get("dcr_call_score", 0)) or 0.0
-    dcr_put_score  = _f(row.get("dcr_put_score", 0)) or 0.0
-    total_score    = dcr_call_score + dcr_put_score
-    if total_score > 0:
-        dominant_score = max(dcr_call_score, dcr_put_score)
-        confidence_pct = round((dominant_score / total_score) * 100, 1)
-    else:
-        confidence_pct = None
+    # Vote balance is not a calibrated probability of a profitable trade.
+    confidence_pct = None
 
     # â”€â”€ Assemble brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     brief = {
@@ -186,7 +179,8 @@ def build_trade_brief(row: Dict[str, Any]) -> Dict[str, Any]:
         "action":               action,
         "direction":            direction,
         "direction_source":     direction_source,
-        "misdiagnosed":         dcr_misdiag,
+        "misdiagnosed":         False,
+        "advisory_conflict":    advisory_conflict,
         "contract":             contract,
         "contract_source":      contract_source,
         "contract_bid":         contract_bid,
@@ -228,8 +222,8 @@ def format_trade_brief(brief: Dict[str, Any]) -> str:
 
     lines.append(f"  DIRECTION  : {brief.get('direction', '?')}  [{brief.get('direction_source', '?')}]")
 
-    if brief.get("misdiagnosed"):
-        lines.append(f"  NOTE       : Pipeline direction overridden - evidence supports {brief.get('direction')}")
+    if brief.get("advisory_conflict"):
+        lines.append("  NOTE       : Interpreter counter-evidence requires review; pipeline direction unchanged")
 
     contract = brief.get("contract")
     if contract:

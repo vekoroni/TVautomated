@@ -233,11 +233,12 @@ def test_breakeven_feasibility_is_advisory_in_research_route():
     assert result["breakeven_info_flag"] == "BREAKEVEN_FEASIBILITY_LT_1"
 
 
-def test_estimated_r_is_advisory_in_research_route():
+def test_estimated_r_is_not_a_route_flag():
+    # ACK 3 Oct 2026 (step 6/D-C): R:R retired from every score - no ranking information on the holdout replay.
     result = _route(econ=_econ(rr_options=0.5))
 
     assert result["final_route"] == oi.OPTIONS_GO_ROUTE
-    assert "ESTIMATED_R_LT_1" in result["contract_review_flags"]
+    assert "ESTIMATED_R" not in result["contract_review_flags"]
 
 
 def test_no_trigger_is_visible_without_becoming_capital_authority():

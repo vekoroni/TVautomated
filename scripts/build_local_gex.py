@@ -7,6 +7,7 @@ import argparse
 from datetime import date, datetime, timezone
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import sys
@@ -22,7 +23,9 @@ if str(ROOT) not in sys.path:
 
 from canonical_data.gamma_exposure_store import (  # noqa: E402
     CanonicalGammaExposureStore,
+    ChainResolution,
     PhantomOptionChainRepository,
+    load_chain_resolution_policy,
     prepare_gex_greeks,
 )
 from canonical_data.session_clock import session_snapshot  # noqa: E402
@@ -37,6 +40,8 @@ from macro_domain.gamma_exposure import GammaExposureConfig, calculate_gamma_exp
 
 
 DEFAULT_OUTPUT_DIR = market_data_directory(ROOT)
+
+LOGGER = logging.getLogger("avshunter.local_gex")
 
 
 def _atomic_csv(path: Path, frame: pd.DataFrame) -> None:
@@ -53,6 +58,38 @@ def _atomic_json(path: Path, payload: dict) -> None:
     os.replace(temporary, path)
 
 
+def _unavailable_manifest(
+    *,
+    requested_session: date,
+    tickers: tuple[str, ...],
+    invocation: str,
+    scope: str,
+    database_path: Path,
+) -> dict:
+    """The GEX_UNAVAILABLE sentinel: labelled absence, never a silent neutral."""
+
+    return {
+        "contract_version": "avshunter_local_gex_manifest_v1",
+        "status": "GEX_UNAVAILABLE",
+        "reason": "no_chain_in_store",
+        "fallback": True,
+        "fallback_used": True,
+        "fallback_direction": "NONE",
+        "sessions_rolled": 0,
+        "session": requested_session.isoformat(),
+        "session_date": None,
+        "requested_session_date": requested_session.isoformat(),
+        "tickers": {},
+        "requested_tickers": list(tickers),
+        "run_id": invocation,
+        "scope": scope,
+        "source": str(database_path.resolve()),
+        "provider_requests": 0,
+        "dataset_ids": [],
+        "source_option_dataset_ids": {},
+    }
+
+
 def build_local_gex(
     *,
     database_path: Path,
@@ -64,11 +101,47 @@ def build_local_gex(
     run_id: str | None = None,
     config: GammaExposureConfig | None = None,
     source_option_dataset_ids: Mapping[str, str] | None = None,
+    fallback: bool = True,
 ) -> dict:
     cfg = config or GammaExposureConfig()
     invocation = run_id or f"LOCAL_GEX_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
     repository = PhantomOptionChainRepository(database_path)
-    session_date = session or repository.latest_common_session(tickers)
+    requested_session = session or repository.latest_common_session(tickers)
+    resolution = ChainResolution(requested_session, requested_session, "EXACT", 0)
+    if fallback:
+        resolution = repository.resolve_session(
+            tickers, requested_session, policy=load_chain_resolution_policy()
+        )
+        if not resolution.available:
+            LOGGER.error(
+                "no GEX chain available for any expiry near %s "
+                "— writing GEX_UNAVAILABLE sentinel",
+                requested_session.isoformat(),
+            )
+            manifest = _unavailable_manifest(
+                requested_session=requested_session,
+                tickers=tickers,
+                invocation=invocation,
+                scope=cfg.scope_name,
+                database_path=database_path,
+            )
+            _atomic_json(output_dir / GEX_MANIFEST_FILENAME, manifest)
+            return manifest
+        if resolution.direction == "FORWARD":
+            LOGGER.warning(
+                "chain %s/%s unavailable — rolling forward to %s/%s",
+                ",".join(tickers),
+                requested_session.isoformat(),
+                ",".join(tickers),
+                resolution.resolved_session.isoformat(),
+            )
+        elif resolution.direction == "BACKWARD":
+            LOGGER.warning(
+                "no forward chain found — rolling backward to %s/%s",
+                ",".join(tickers),
+                resolution.resolved_session.isoformat(),
+            )
+    session_date = resolution.resolved_session or requested_session
     store = CanonicalGammaExposureStore(registry_path=registry_path, payload_root=canonical_root)
     summaries: list[dict] = []
     strike_frames: list[pd.DataFrame] = []
@@ -113,6 +186,10 @@ def build_local_gex(
         "contract_version": "avshunter_local_gex_manifest_v1",
         "run_id": invocation,
         "session_date": session_date.isoformat(),
+        "requested_session_date": requested_session.isoformat(),
+        "fallback_used": resolution.fallback_used,
+        "fallback_direction": resolution.direction,
+        "sessions_rolled": resolution.sessions_rolled,
         "scope": cfg.scope_name,
         "source": str(database_path.resolve()),
         "provider_requests": 0,
@@ -141,7 +218,25 @@ def main() -> int:
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--session", default="latest-completed")
     parser.add_argument("--tickers", default="SPY,QQQ")
+    parser.add_argument(
+        "--fallback",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="roll to the nearest stored chain session and degrade gracefully "
+             "when none is in range; --no-fallback restores the hard failure",
+    )
     args = parser.parse_args()
+    # The governed fallback messages carry an em dash; a cp1252 console would
+    # mangle it and obscure the warning the operator must read.
+    for stream in (sys.stderr, sys.stdout):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s: %(message)s",
+        stream=sys.stderr,
+    )
     session = (
         session_snapshot(datetime.now(timezone.utc)).last_completed_session
         if args.session == "latest-completed"
@@ -156,6 +251,7 @@ def main() -> int:
             output_dir=Path(args.output_dir),
             tickers=tickers,
             session=session,
+            fallback=args.fallback,
         )
     except Exception as error:
         print(f"LOCAL GEX FAILED: {error}", file=sys.stderr)

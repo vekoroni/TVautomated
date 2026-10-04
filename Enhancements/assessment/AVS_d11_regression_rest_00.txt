@@ -1,0 +1,14 @@
+tests/test_beh001_candidate_ledger.py: 12 passed in 35.11s
+tests/test_beh001_candidate_packet.py: 7 passed in 21.14s
+tests/test_beh001_duration.py: 7 passed in 17.92s
+tests/test_beh001_handoff_sources.py: 2 passed in 6.13s
+tests/test_beh001_intraday_degradation.py: 8 passed in 49.42s
+tests/test_beh001_no_upstream_constraints.py: 3 passed in 25.69s
+tests/test_dynamic_options_ranking.py: 14 passed in 69.57s (0:01:09)
+tests/test_eod_options_research_handoff.py: 5 passed in 36.39s
+tests/test_eod_probe_uniform_window.py: 6 passed in 22.92s
+tests/test_ev3_authority.py: 3 passed in 51.95s
+tests/test_ev3_cache_promotion.py: 2 passed in 6.79s
+tests/test_ev3_calibration_report.py: 2 passed in 5.33s
+tests/test_ev3_hold_and_move_window.py: 14 passed in 8.05s
+tests/test_ev3_monetisation_authority.py: 3 passed in 1.44s

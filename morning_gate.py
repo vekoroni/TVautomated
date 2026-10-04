@@ -40,6 +40,7 @@ import csv
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 import time
@@ -58,6 +59,8 @@ from contracts.direction_governance import (
 from contracts.selected_contract_economics import (
     contract_symbols as selected_contract_symbols_from_value,
     economics_evaluation_id as selected_economics_evaluation_id,
+    CONTRACT_ANALYTICS_FIELDS,
+    contract_analytics,
     evaluate_long_option_monetisability,
     hydrate_selected_structure,
     parse_occ_symbol,
@@ -105,7 +108,6 @@ _SKEW_EXPIRY_WINDOW_DAYS = 30   # days forward to target expiry for skew chain f
 _SKEW_CALL_HIGH          = 1.10  # call_iv / put_iv above this = CALL_SKEW_HIGH
 _SKEW_PUT_HIGH           = 0.90  # call_iv / put_iv below this = PUT_SKEW_HIGH
 
-POLYGON_API_KEY    = os.getenv("POLYGON_API_KEY", "").strip()
 MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
 
 # Backward-compatible argument default. All spread decisions are resolved
@@ -114,6 +116,8 @@ MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
 DEFAULT_SPREAD_THRESHOLD = LONG_OPTION_EXECUTION_POLICY["reviewable_spread_max_pct"]
 LIVE_FETCH_WORKERS       = 8     # increased for AG-03 skew fetch (2 extra calls per ticker)
 LIVE_FETCH_TIMEOUT       = 10.0  # seconds per ticker
+LIVE_STOCK_PRICE_MAX_AGE_SECONDS = 300  # source observation, not HTTP fetch time
+LIVE_STOCK_PRICE_FUTURE_TOLERANCE_SECONDS = 30
 EV3_BARRIER_CACHE_PATH   = Path(os.getenv(
     "EV3_BARRIER_CACHE_PATH",
     r"C:\Users\ACKVerissimo\vanguard\data\ev3_barrier_outcome_cache.parquet",
@@ -791,44 +795,71 @@ def _latest_run_id() -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Live data fetch â€” equity price only (Polygon)
+# Morning underlying price: MarketData SmartMid. It is a midpoint, not a trade.
 # ---------------------------------------------------------------------------
 
+def _parse_marketdata_stock_price(
+    payload: Dict[str, Any], ticker: str, *, now_utc: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Accept only the exact symbol's recent provider-timestamped SmartMid."""
+    source = "MARKETDATA_SMARTMID"
+    rejected = lambda reason: {"live_data_source": source, "live_fetch_error": reason}
+    if not isinstance(payload, dict) or payload.get("s") != "ok":
+        return rejected("PROVIDER_NO_DATA_OR_ERROR")
+    symbols = payload.get("symbol")
+    mids = payload.get("mid")
+    updated = payload.get("updated")
+    if not all(isinstance(values, list) for values in (symbols, mids, updated)):
+        return rejected("INVALID_PROVIDER_SHAPE")
+    matches = [i for i, symbol in enumerate(symbols) if _u(symbol) == _u(ticker)]
+    if len(matches) != 1:
+        return rejected("SYMBOL_MISMATCH")
+    index = matches[0]
+    if index >= len(mids) or index >= len(updated):
+        return rejected("INVALID_PROVIDER_SHAPE")
+    midpoint = _f(mids[index])
+    if midpoint is None or not math.isfinite(midpoint) or midpoint <= 0:
+        return rejected("INVALID_MIDPOINT")
+    observed_at = _normalise_provider_timestamp(updated[index])
+    if observed_at is None:
+        return rejected("MISSING_PROVIDER_TIMESTAMP")
+    now = now_utc or datetime.now(timezone.utc)
+    observed = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+    age_seconds = (now - observed).total_seconds()
+    if age_seconds < -LIVE_STOCK_PRICE_FUTURE_TOLERANCE_SECONDS:
+        return rejected("FUTURE_PROVIDER_TIMESTAMP")
+    if age_seconds > LIVE_STOCK_PRICE_MAX_AGE_SECONDS:
+        return rejected("STALE_PROVIDER_PRICE")
+    return {
+        "live_price": midpoint,
+        "live_price_kind": "SMARTMID_MIDPOINT",
+        "live_price_updated_utc": observed_at,
+        "live_price_age_seconds": round(max(age_seconds, 0.0), 1),
+        "live_data_source": source,
+        "live_fetched_at": now.isoformat().replace("+00:00", "Z"),
+    }
+
+
 def _fetch_live_price(ticker: str) -> Dict[str, Any]:
-    """Fetch live equity snapshot from Polygon. Returns dict with live_price etc."""
+    """Fetch one current MarketData stock midpoint; never substitute delayed quotes."""
+    import urllib.parse
     import urllib.request
-    url = (
-        f"https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/"
-        f"{ticker}?apiKey={POLYGON_API_KEY}"
+
+    if not MARKETDATA_API_KEY:
+        return {"live_data_source": "MARKETDATA_SMARTMID", "live_fetch_error": "MISSING_API_KEY"}
+    symbol = _u(ticker)
+    if not re.fullmatch(r"[A-Z0-9.\-]+", symbol):
+        return {"live_data_source": "MARKETDATA_SMARTMID", "live_fetch_error": "INVALID_SYMBOL"}
+    url = f"https://api.marketdata.app/v1/stocks/prices/{urllib.parse.quote(symbol)}/?extended=true"
+    request = urllib.request.Request(
+        url, headers={"Authorization": f"Token {MARKETDATA_API_KEY}"}
     )
     try:
-        with urllib.request.urlopen(url, timeout=LIVE_FETCH_TIMEOUT) as resp:
-            data = json.loads(resp.read().decode())
-        ticker_data = data.get("ticker", {})
-        day  = ticker_data.get("day", {})
-        prev = ticker_data.get("prevDay", {})
-        last_quote = ticker_data.get("lastQuote", {}) or {}
-        return {
-            "live_price":      _f(ticker_data.get("lastTrade", {}).get("p"))
-                               or _f(day.get("c")),
-            "live_open":       _f(day.get("o")),
-            "live_high":       _f(day.get("h")),
-            "live_low":        _f(day.get("l")),
-            "live_prev_close": _f(prev.get("c")),
-            "live_volume":     _f(day.get("v")),
-            "live_vwap":       _f(day.get("vw")),
-            "underlying_bid":  _f(last_quote.get("p")),
-            "underlying_ask":  _f(last_quote.get("P")),
-            "underlying_bid_size": _f(last_quote.get("s")),
-            "underlying_ask_size": _f(last_quote.get("S")),
-            "underlying_quote_updated": _normalise_provider_timestamp(last_quote.get("t")),
-            "live_data_source": "POLYGON_SNAPSHOT",
-            "live_fetched_at": _utc_now(),
-            # AG-01: earnings announcement date from snapshot (no extra API call)
-            "live_earnings_announcement": _s(ticker_data.get("earningsAnnouncement", "")),
-        }
+        with urllib.request.urlopen(request, timeout=LIVE_FETCH_TIMEOUT) as resp:
+            payload = json.loads(resp.read().decode())
+        return _parse_marketdata_stock_price(payload, symbol)
     except Exception as exc:
-        return {"live_fetch_error": str(exc), "live_data_source": "POLYGON_FAILED"}
+        return {"live_fetch_error": str(exc), "live_data_source": "MARKETDATA_SMARTMID_FAILED"}
 
 
 def _fetch_live_contract(occ_symbol: str) -> Dict[str, Any]:
@@ -1283,8 +1314,11 @@ def _fetch_all_live(
                 ticker, data = future.result()
                 results[ticker] = data
                 price = data.get("live_price", "N/A")
-                log.info("  %-6s  price=%-10s  options=%s",
-                         ticker, price, data.get("live_options_source", "NONE"))
+                log.info("  %-6s  price=%-10s  price_source=%s  price_as_of=%s  price_error=%s  options=%s",
+                         ticker, price, data.get("live_data_source", "NONE"),
+                         data.get("live_price_updated_utc", "N/A"),
+                         data.get("live_fetch_error", "NONE"),
+                         data.get("live_options_source", "NONE"))
             except Exception as exc:
                 log.warning("Live fetch failed: %s", exc)
 
@@ -1911,6 +1945,13 @@ def _morning_forecast_vol(row: Dict[str, Any], live_data: Dict[str, Any]) -> Opt
     return None
 
 
+def _morning_confirmation_fraction() -> float:
+    """XLU-D11: governed materiality threshold for a Morning confirmation (config morning_runway)."""
+    path = Path(__file__).resolve().parent / "config" / "governed_constants_v1.json"
+    return float(json.loads(path.read_text(encoding="utf-8-sig"))["morning_runway"]
+                 ["confirmation_min_expected_move_fraction"])
+
+
 def _morning_liquidity_lifecycle(
     row: Dict[str, Any],
     live_data: Dict[str, Any],
@@ -1923,7 +1964,8 @@ def _morning_liquidity_lifecycle(
         row.get("final_direction") or row.get("canonical_direction")
         or row.get("direction") or row.get("options_direction")
     )
-    current_spot = _f(live_data.get("live_price") or row.get("live_price"))
+    # An Evening/earlier Morning row price is not a current observation.
+    current_spot = _f(live_data.get("live_price"))
     thesis_spot = _f(
         row.get("thesis_spot") or row.get("signal_price")
         or row.get("underlying_price") or row.get("entry_price") or row.get("entry")
@@ -1932,7 +1974,18 @@ def _morning_liquidity_lifecycle(
         live_data.get("selected_long_leg", {}).get("strike")
         if isinstance(live_data.get("selected_long_leg"), dict) else None
     ) or _f(row.get("contract_strike") or row.get("strike"))
-    target = _f(row.get("structural_target") or row.get("target_price") or row.get("target"))
+    # Step 4e (ACK 3 Oct 2026): progress is measured toward the anticipated level (evidence-based move) when
+    # present; otherwise the D01 chain below. No target is invented.
+    target = _f(row.get("anticipated_level"))
+    runway_target_basis = "ANTICIPATED_LEVEL" if target is not None else None
+    if target is None:
+        target = _f(row.get("structural_target") or row.get("target_price") or row.get("target"))
+        # XLU-D01 (ACK 2 Oct 2026): no target is invented upstream; without a structural target the
+        # runway is measured to the volatility-reachable target and the basis is recorded.
+        runway_target_basis = "STRUCTURAL" if target is not None else None
+    if target is None:
+        target = _f(row.get("target_reachable"))
+        runway_target_basis = "REACHABLE" if target is not None else "MISSING"
     invalidation = _f(
         row.get("invalidation_spot") or row.get("invalidation_price")
         or row.get("invalidation_level") or row.get("stop_loss") or row.get("stop")
@@ -1966,6 +2019,7 @@ def _morning_liquidity_lifecycle(
             else "MORNING_EXACT_CONTRACT_REQUOTE"
         ),
         "quote_as_of": live_data.get("live_contract_provider_updated"),
+        "runway_target_basis": runway_target_basis,
         "maturation_score_is_probability": False,
         "maturation_execution_authority": False,
     }
@@ -2032,11 +2086,14 @@ def _morning_liquidity_lifecycle(
             ask=ask,
             dte=float(required["dte"]),
             remaining_hold_sessions=float(required["hold"]),
+            # Step 4b: a hold sourced from a daily event's duration evidence (planned_hold_source) is accepted.
+            hold_is_evidence=str(row.get("planned_hold_source") or "").startswith("DURATION_EVIDENCE"),
             forecast_vol_annual=float(required["forecast_vol"]),
             thesis_spot=float(required["thesis_spot"]),
             current_spot=float(required["current_spot"]),
             structural_target=float(required["target"]),
             invalidation_spot=float(required["invalidation"]),
+            confirmation_min_expected_move_fraction=_morning_confirmation_fraction(),
             quote_age_seconds=effective_quote_age_seconds(
                 live_data.get("live_contract_provider_updated")
                 or live_data.get("quote_provider_timestamp_utc")
@@ -2070,6 +2127,9 @@ def _morning_liquidity_lifecycle(
         transition = "LIQUIDITY_STILL_PENDING"
     elif runway_state == "GAP_CONFIRMATION_WITH_RUNWAY":
         transition = "GAP_CONFIRMATION_WITH_RUNWAY"
+    elif runway_state == "THESIS_UNDER_PRESSURE":
+        # XLU-D11: a material move against the thesis is flagged, never relabelled executable.
+        transition = "THESIS_UNDER_PRESSURE"
     else:
         transition = "EXECUTABLE_NOW"
 
@@ -2154,6 +2214,8 @@ def run_gate(
     # Stamp live data
     for k, v in live_data.items():
         out[k] = v
+    if live_price is None:
+        out["live_price"] = ""
 
     repaired_contract = _s(live_data.get("morning_repair_contract_symbol"))
     if repaired_contract:
@@ -2451,12 +2513,28 @@ def run_gate(
         out["volume_anomaly_ratio"] = ""
         out["volume_anomaly_flag"]  = "NO_DATA"
 
-    # AG-01: Earnings catalyst calendar â€” from Polygon snapshot earningsAnnouncement field
-    # No extra API call â€” extracted from existing live price fetch
+    # AG-01: Earnings catalyst calendar. SmartMid has no earnings field;
+    # retain only a separately sourced announcement already on the row.
     try:
-        from earnings_calendar_enricher import enrich_from_announcement_str
-        _earnings_str = _s(live_data.get("live_earnings_announcement") or row.get("earnings_announcement") or "")
+        from earnings_calendar_enricher import earnings_disclosure, enrich_from_announcement_str
+        # ACK 3 Oct 2026: the Evening stamps the MarketData report date (EARNINGS_DISCLOSURE_FIELDS); the
+        # Morning recomputes the timing against today's session, the hold and the contract. No second fetch.
+        # Disclosure only - it never changes the verdict.
+        if _s(row.get("earnings_state")):
+            out.update(earnings_disclosure(
+                {"state": row.get("earnings_state"), "date": row.get("earnings_date"),
+                 "report_time": row.get("earnings_report_time"),
+                 "fiscal_quarter": row.get("earnings_fiscal_quarter"),
+                 "reason": row.get("earnings_unknown_reason"), "source": row.get("earnings_source")},
+                as_of=datetime.now(timezone.utc).date(),
+                hold_sessions=row.get("planned_hold_sessions"),
+                expiry=row.get("contract_expiry") or row.get("selected_contract_expiry") or row.get("expiry"),
+            ))
+        _earnings_str = _s(live_data.get("live_earnings_announcement") or row.get("earnings_announcement")
+                           or (row.get("earnings_date") if _s(row.get("earnings_state")) == "SCHEDULED" else "") or "")
         _earnings_fields = enrich_from_announcement_str(_earnings_str)
+        if _s(row.get("earnings_state")):
+            _earnings_fields.pop("earnings_date", None)       # the disclosure above owns the date
         out.update(_earnings_fields)
         # AG-01 Step 3: pre-earnings IV note for Options Intelligence display
         if _earnings_fields.get("earnings_catalyst_flag") == "TRUE":
@@ -2723,6 +2801,48 @@ def run_gate(
         lane = "MODEL_RISK_REVIEW"
         entry_action = "MANUAL_REVIEW"
         unlock_condition = model_risk["reason"]
+    elif _u(row.get("anticipated_pays_state")) == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
+        # D-B (ACK 3 Oct 2026, amended): the contract is worth less than its premium at the median anticipated
+        # time - no GO; the row stays visible. NOT_COMPUTED does not block on its own.
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "MOVE_DOES_NOT_PAY"
+        route = "REVIEW_CONTRACT_OR_SKIP"
+        lane = "MOVE_DOES_NOT_PAY_AT_ANTICIPATED_TIME"
+        entry_action = "NO_TRADE"
+        unlock_condition = (
+            f"The anticipated move values this contract at {row.get('anticipated_value_multiple_q50')}x its premium at "
+            "the median anticipated time; choose a contract the move pays, or skip"
+        )
+        flag_reasons.append("MOVE_DOES_NOT_PAY_AT_ANTICIPATED_TIME")
+    elif _u(row.get("candidate_status")) == "WATCH_ONLY":
+        # N1 (3 Oct 2026): GO was a fall-through. An EOD watch-only candidate stays visible, never GO.
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "WATCH_ONLY"
+        route = "WATCH_ONLY"
+        lane = "EOD_WATCH_ONLY"
+        entry_action = "NO_TRADE"
+        unlock_condition = (
+            f"EOD classified this candidate watch-only ({row.get('eod_candidate_reason') or 'reason not recorded'})"
+        )
+        flag_reasons.append("EOD_WATCH_ONLY")
+    elif str(row.get("trigger_go_eligible", "")).strip().lower() not in {"true", "1", "1.0"}:
+        # N1: GO needs a GO-eligible trigger (owned by the trigger layer). Missing eligibility is not
+        # eligibility (R1); the row stays in the book with the trigger state stated.
+        _eligibility = str(row.get("trigger_go_eligible", "")).strip()
+        _trigger = str(row.get("trigger_primary") or "").strip() or "NOT_RECORDED"
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "AWAITING_TRIGGER"
+        route = "AWAIT_TRIGGER"
+        lane = "TRIGGER_NOT_GO_ELIGIBLE"
+        entry_action = "NO_TRADE"
+        unlock_condition = f"Wait for a GO-eligible trigger (trigger_primary={_trigger})"
+        flag_reasons.append(
+            "TRIGGER_NOT_GO_ELIGIBLE" if _eligibility and _eligibility.lower() not in {"nan", "none"}
+            else "TRIGGER_ELIGIBILITY_NOT_RECORDED"
+        )
     elif flag_reasons:
         verdict = "FLAG"
         permission = "ARMED"
@@ -3947,6 +4067,35 @@ def _replace_contract_describing_fields(
             row[field] = ""
 
 
+def _write_selected_contract_identity(row: Dict[str, Any], live_data: Dict[str, Any]) -> None:
+    """Carry the hydrated contract's strike, expiry and DTE onto the row as one unit.
+
+    Finding 28 Sep 2026: a Morning contract swap left the Evening contract's strike, expiry and DTE
+    beside the new symbol and quote. The hydrator publishes the identity atomically; ``dte`` is its
+    calendar figure and ``contract_dte`` stays the governed trading-session count from the evidence
+    session to the contract's own expiry (owner: eod_candidate_engine._governed_contract_dte).
+    """
+    strike = _f(live_data.get("selected_contract_strike"))
+    expiry = _s(live_data.get("selected_contract_expiry"))
+    dte = live_data.get("selected_contract_dte")
+    if strike is not None:
+        for field in ("strike", "contract_strike"):
+            row[field] = strike
+    if expiry:
+        for field in ("expiry", "contract_expiry"):
+            row[field] = expiry
+    if dte not in (None, ""):
+        row["dte"] = dte
+    if strike is None or not expiry:
+        return
+    from eod_candidate_engine import _governed_contract_dte
+
+    sessions, state = _governed_contract_dte(row)
+    row["contract_dte"] = sessions if sessions is not None else ""
+    row["contract_dte_state"] = state
+    row["contract_dte_basis"] = "XNYS_TRADING_SESSIONS_TO_OCC_EXPIRY"
+
+
 def _recompute_selected_contract_economics(
     row: Dict[str, Any],
     live_data: Dict[str, Any],
@@ -3969,6 +4118,15 @@ def _recompute_selected_contract_economics(
         "ev_predicted", "ev3_ev_conservative_return", "ev3_ev_lower_bound_return",
         "ev3_uncertainty_total_return", "ev3_p_target", "ev3_p_stop",
         "ev3_p_timeout", "ev3_evaluation_id",
+        # ACK 28 Sep 2026 (option 3): the move-window value belongs to the same evaluation.
+        "ev3_hold_sessions", "ev3_move_window_sessions", "ev3_move_window_source",
+        "ev3_move_window_status", "ev3_move_window_reason_code", "ev3_move_window_reason_detail",
+        "ev3_move_window_absolute_state", "ev3_move_window_ev_base_return",
+        "ev3_move_window_ev_stress_return", "ev3_move_window_ev_conservative_return",
+        "ev3_move_window_ev_lower_bound_return", "ev3_move_window_p_target",
+        "ev3_move_window_p_stop", "ev3_move_window_p_timeout", "ev3_move_window_n_effective",
+        "ev3_move_window_uncertainty_total_return",
+        *CONTRACT_ANALYTICS_FIELDS,                 # slice 2: the block describes the quoted contract only
     ):
         row[stale_field] = ""
 
@@ -4005,6 +4163,7 @@ def _recompute_selected_contract_economics(
     ).replace("O:", "")
     row["recommended_contract"] = row["contract_symbol"]
     row["morning_selected_contract_symbol"] = row["contract_symbol"]
+    _write_selected_contract_identity(row, live_data)
 
     live_to_contract = {
         "live_contract_bid": "contract_bid",
@@ -4030,6 +4189,22 @@ def _recompute_selected_contract_economics(
             value = live_data.get(source_field)
             if value is not None and value != "":
                 row[contract_field] = value
+    # AVS options analytics slice 1e (30 Sep 2026): the Greeks now shown are the provider's live Morning Greeks.
+    if live_data.get("live_contract_delta") not in (None, ""):
+        row["contract_greeks_source"] = "PROVIDER_MORNING_QUOTE"
+    elif contract_changed:
+        row["contract_greeks_source"] = "UNAVAILABLE"
+    # AVS options analytics slice 2 (30 Sep 2026): the standard analytics of the contract actually quoted.
+    long_leg = live_data.get("selected_long_leg")
+    if _u(live_data.get("selected_structure")) == "LONG_SINGLE" and isinstance(long_leg, dict):
+        row.update(contract_analytics(
+            direction=row.get("canonical_direction") or row.get("direction"),
+            spot=live_data.get("live_price") or row.get("live_price"),
+            strike=long_leg.get("strike"), bid=long_leg.get("bid"), ask=long_leg.get("ask"),
+            delta=long_leg.get("delta"), theta=long_leg.get("theta"), vega=long_leg.get("vega"),
+            iv=long_leg.get("iv"), dte_calendar=long_leg.get("dte"),
+            hold_sessions=row.get("planned_hold_sessions"), iv_source="PROVIDER_MORNING_QUOTE",
+        ))
     row["premium_mid"] = live_data.get("live_contract_mid", "")
 
     # R:R remains available for research exports, but never gates permission.
@@ -4146,8 +4321,8 @@ def main() -> int:
         cds_runtime["stage_gating_enforced"],
     )
 
-    if not POLYGON_API_KEY or not MARKETDATA_API_KEY:
-        log.error("POLYGON_API_KEY and MARKETDATA_API_KEY must be set in .env â€” aborting")
+    if not MARKETDATA_API_KEY:
+        log.error("MARKETDATA_API_KEY must be set in .env â€” aborting")
         return 1
 
     run_id = args.run_id or _latest_run_id()

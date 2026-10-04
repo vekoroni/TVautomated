@@ -18,9 +18,11 @@ from scripts import avshunter_options_intelligence as oi
 
 
 def _ctx(direction: str, mode: str, *, entry: float = 100.0, stop: float | None = 95.0,
-         target: float | None = 115.0, target_state: str = "TARGET_3R") -> dict:
+         target: float | None = 115.0, target_state: str = "DISCOVERY_TARGET",
+         scenario_state: str = "SCENARIO_3R_DISCLOSURE_ONLY") -> dict:
     return {"direction": direction, "entry": entry, "stop": stop, "structural_target": target,
-            "structural_target_state": target_state, "_signal_row": {"wyckoff_mode": mode}}
+            "structural_target_state": target_state, "target_3r_scenario_state": scenario_state,
+            "_signal_row": {"wyckoff_mode": mode}}
 
 
 @pytest.mark.parametrize("direction,mode", [("CALL", "DISTRIBUTION"), ("PUT", "ACCUMULATION")])
@@ -33,7 +35,8 @@ def test_direction_against_the_wyckoff_structure_is_labelled_for_review(directio
 
 def test_a_put_whose_stop_is_too_distant_for_a_target_is_labelled_for_review():
     review = oi.thesis_geometry_review(_ctx("PUT", "DISTRIBUTION", entry=10.0, stop=14.4, target=None,
-                                            target_state="TARGET_3R_NON_POSITIVE"))
+                                            target_state="NO_STRUCTURAL_TARGET",
+                                            scenario_state="SCENARIO_3R_NON_POSITIVE"))
     assert review["thesis_geometry_review_state"] == "STOP_TOO_DISTANT_NO_TARGET"
     assert "44.0%" in review["thesis_geometry_review_reason"]
 

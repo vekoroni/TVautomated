@@ -1,0 +1,14 @@
+{
+  "version": "beh001_handoff_v1",
+  "authority_state": "DISPLAY_AND_MEASUREMENT_ONLY",
+  "design": "Enhancements/decision_map/AVS_SD_BEH_001_PHASE2_CANDIDATE_HANDOFF_DESIGN_20261001.md",
+  "live_states": ["DETECTED", "ACTIVATED"],
+  "monitoring_states": ["MONITOR", "OUTCOME_REACHED"],
+  "vanguard_fields": ["verdict", "final_recommendation", "layer2__edge_quality", "layer2__probability_verdict",
+                      "layer2__sample_size", "edge_direction_status",
+                      "governance__open_contract", "governance__verdict", "governance__reason"],
+  "expression": {
+    "max_candidates_per_run": 2000,
+    "note": "2B capacity for per-candidate expression search. Candidates beyond it are DEFERRED_RESOURCE with their rank: a resource deferral, never a behavioural rejection (C-07). Order: ACTIVATED first, then DETECTED by shortest median remaining time to activation, then Candidate_ID (behaviour and time only; no unvalidated score)."
+  }
+}

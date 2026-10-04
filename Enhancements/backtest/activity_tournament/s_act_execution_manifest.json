@@ -1,0 +1,39 @@
+{
+  "created_at_utc": "2026-09-20T09:03:17.259543+00:00",
+  "research_state": "EXPLORATORY_NO_AUTHORITY",
+  "production_authority": "NONE",
+  "base_scenario": "D0_CURRENT|E0_RECORDED",
+  "target_return": 0.25,
+  "top_fraction": 0.2,
+  "denominator_floors": [
+    1.0,
+    10.0,
+    50.0
+  ],
+  "liquidity_aware_floor": 50.0,
+  "primary_population": "all recorded-contract rows except explicit TEST/dirty runs",
+  "rows": 19989,
+  "candidate_ids": 7808,
+  "sessions": [
+    "2026-08-31",
+    "2026-09-01",
+    "2026-09-02",
+    "2026-09-04",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-16"
+  ],
+  "hashes": {
+    "scenario_register": "52cf8ac6b50d288edffb86dfb487d5d0f47db05a24dc4923dddf916c07668dcc",
+    "s_act_addendum": "b601efcf1a57ccd01f324def387f3231a5c14f1151b33028a152808d74181e17",
+    "round4_rows": "65c727a9b336495b85d32a24b671e6d1465c66607cd6d5974569886c15846ccd",
+    "run_manifest": "e839616a8b2d487a8880bc5850350fc180f49cbb8e92ba7699f60f041c5446d3",
+    "phantom_schema": "04134c36d4d23de4984cd1fdb702f2d18847daea26c1c3904ba9a549ce086604"
+  },
+  "constraints": [
+    "PCR is positioning/activity context, not signed flow.",
+    "S-ACT-8 next-session OI is future information and is not used to score entry-session rows.",
+    "No result changes production ranking, filtering, direction, or execution authority."
+  ]
+}

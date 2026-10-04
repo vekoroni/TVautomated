@@ -96,6 +96,8 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "actuarial_horizon_bucket",
     ),
     "planned_hold_sessions": (
+        # Step 4b (ACK 3 Oct 2026): the governed window EV3 values at (ACK 28 Sep), never a daily evidence runway.
+        "ev3_planned_hold_sessions",
         "planned_hold_sessions",
         "horizon_hold_sessions",
     ),
@@ -355,19 +357,30 @@ def validate_ev3_input(
             provenance,
             f"horizon={horizon or 'MISSING'}, planned_hold_sessions={hold}",
         )
-    # The barrier sidecar is materialised only at the governed policy endpoints.
-    # Accepting an intermediate value here merely delays the same rejection to
-    # cache lookup and makes coverage diagnostics misleading.
-    horizon_endpoint = {"1_5D": 5, "6_10D": 10, "11_20D": 20}
-    expected_hold = horizon_endpoint[horizon]
-    if int(hold) != expected_hold:
+    # ACK 18 Sep 2026: the planned hold is the governed thesis window, independent of
+    # the thesis horizon; ACK 28 Sep 2026 (option 3): the contract is valued at that
+    # hold and, beside it, at the move window. The hold must still be a horizon the
+    # barrier sidecar materialised - accepting another value only delays the same
+    # rejection to cache lookup and makes coverage diagnostics misleading.
+    if int(hold) not in DEFAULT_HORIZONS:
         return EV3ValidationResult(
             False,
             "REJECT_HORIZON",
             canonical,
             provenance,
-            f"planned_hold_sessions={int(hold)}; {horizon} requires endpoint={expected_hold}",
+            f"planned_hold_sessions={int(hold)}; materialised="
+            + ",".join(str(value) for value in DEFAULT_HORIZONS),
         )
+    horizon_endpoint = {"1_5D": 5, "6_10D": 10, "11_20D": 20}
+    anticipated = _number(row.get("anticipated_move_sessions"))
+    if anticipated is not None and anticipated.is_integer() and anticipated > 0:
+        canonical["move_window_sessions"] = int(anticipated)
+        canonical["move_window_source"] = "ANTICIPATED_MOVE_SESSIONS"
+        provenance["move_window_sessions"] = "anticipated_move_sessions"
+    else:
+        canonical["move_window_sessions"] = horizon_endpoint[horizon]
+        canonical["move_window_source"] = "HORIZON_BUCKET_ENDPOINT"
+        provenance["move_window_sessions"] = provenance.get("horizon_bucket", "horizon_bucket")
 
     for horizon_days in (5, 10, 20):
         value, source = _first_present(
@@ -447,13 +460,18 @@ def validate_ev3_input(
     quote_age = (now_stamp - quote_stamp).total_seconds()
     canonical["quote_age_seconds"] = quote_age
     canonical["quote_freshness_limit_seconds"] = max_quote_age_seconds
-    if quote_age < 0 or quote_age > max_quote_age_seconds:
+    # Age is disclosed, never a gate (ACK 17 Sep, reaffirmed 3 Oct 2026): the delayed feed makes every
+    # morning quote older than 15 minutes; the human re-quotes at the broker. The limit only labels age.
+    canonical["quote_age_state"] = (
+        "BEYOND_FEED_WINDOW" if quote_age > max_quote_age_seconds else "WITHIN_FEED_WINDOW"
+    )
+    if quote_age < 0:
         return EV3ValidationResult(
             False,
-            "REJECT_QUOTE_STALE",
+            "REJECT_QUOTE_TIMESTAMP_FUTURE",
             canonical,
             provenance,
-            f"quote_age_seconds={quote_age:.1f}, maximum={max_quote_age_seconds}",
+            f"quote timestamp is {-quote_age:.1f}s after the evaluation time",
         )
 
     for name in ("bid", "ask", "dte_calendar", "delta", "gamma", "theta", "vega", "implied_volatility", "open_interest", "volume"):

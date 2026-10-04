@@ -256,4 +256,6 @@ def test_c4_lab_priority_score_gives_missing_tailwind_no_neutral_credit():
     fair = lab._compute_priority_score({"garch__l3_iv_tailwind_score": "0.0"})
     missing = lab._compute_priority_score({})
     # A measured fair tailwind earns 0.5 x 0.05 x 100 = 2.5 points; missing earns nothing, never the neutral half.
-    assert fair - missing == pytest.approx(2.5)
+    # ACK 30 Sep 2026: EV v2 (0.10) left the score and the remaining weights are scaled by 1/0.90, so the same
+    # half-weight is 2.5 / 0.90 = 2.78 points (scores are rounded to 0.1).
+    assert fair - missing == pytest.approx(2.5 / 0.90, abs=0.06)

@@ -1,0 +1,62 @@
+{
+  "started_utc": "2026-09-28T07:41:01.063268+00:00",
+  "root": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence",
+  "files_discovered": 1344,
+  "files_parsed": 1344,
+  "functions": 11127,
+  "logic_records": 102722,
+  "imports": 10115,
+  "calls": 143842,
+  "errors": [],
+  "skipped": [],
+  "enumeration_exit_code": 2,
+  "enumeration_warnings": [
+    "rg: ./_quarantine\\20260916_tidy\\_temp_dirs\\.pt_release: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_tmp: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_stage0_final: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_release: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_regfix2: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_regfix: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_provider: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_full2: Access is denied. (os error 5)",
+    "rg: ./audit\\avs_fix_002\\stage1\\pytest_finalfocus: Access is denied. (os error 5)",
+    "rg: ./.pytest_tmp_stage1: Access is denied. (os error 5)"
+  ],
+  "strings_redacted": true,
+  "production_execution": false,
+  "coverage": "All readable enumerated first-party Python; not a runtime trace; SQL/frontend not AST parsed.",
+  "completed_utc": "2026-09-28T07:45:08.313734+00:00",
+  "git_head": "03fd4689534943daa61a46f0149f14d4e6f1be3e",
+  "git_head_source": "Independent PowerShell git rev-parse HEAD; extractor subprocess returned no head.",
+  "register_record_counts": {
+    "source_manifest.jsonl": 1344,
+    "function_register.jsonl": 11127,
+    "calculation_condition_register.jsonl": 102722,
+    "dependency_call_register.jsonl": 153957
+  },
+  "categories": {
+    "ROOT_OR_OTHER_SOURCE_CALL_REACHABILITY_REQUIRES_REVIEW": 222,
+    "RESEARCH_DOCUMENTATION_OR_RETAINED_COPY": 339,
+    "RUNTIME_CANDIDATE_CALL_REACHABILITY_REQUIRES_REVIEW": 432,
+    "TEST_SUPPORT_NOT_PRODUCTION": 351
+  },
+  "changed_since_extraction_at_verification": [],
+  "artefacts": {
+    "source_manifest.jsonl": {
+      "bytes": 427661,
+      "sha256": "4407dbc42380385a061657cbd124d771773225c715eb95c0069801ef4d41e309"
+    },
+    "function_register.jsonl": {
+      "bytes": 3665802,
+      "sha256": "932d1baf0805ca8f6c226572681bf01fc16b482b65d18da8826e23b0cfe63ed6"
+    },
+    "calculation_condition_register.jsonl": {
+      "bytes": 31970373,
+      "sha256": "972ea850c8b1e9a833cbb6445e5cd93d92a6782bdb8e7fa6c0afac378f610c9e"
+    },
+    "dependency_call_register.jsonl": {
+      "bytes": 50372923,
+      "sha256": "ed73fc923462dff9ab904cf11fe12b3d2f9ed381895e56e97dd8401b3722a603"
+    }
+  }
+}

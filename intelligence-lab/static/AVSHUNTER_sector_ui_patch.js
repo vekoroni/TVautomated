@@ -131,9 +131,6 @@
           ${sectorBadgeHTML(s.sector_short)}
           <span class="avs-sector-name">${s.sector}</span>
           <span class="avs-sector-count">${s.execute_count}E ${s.ewr_count > 0 ? '+' + s.ewr_count + 'EWR' : ''} | ${s.put_count}P/${s.call_count}C</span>
-          <span class="avs-sector-ev ${s.avg_ev > 0 ? 'avs-ev-pos' : 'avs-ev-neg'}">
-            Legacy EV ${s.avg_ev > 0 ? '+' : ''}${s.avg_ev.toFixed(3)}
-          </span>
           <span class="avs-conc-${s.concentration_flag.toLowerCase()}">
             ${s.concentration_pct}%${s.concentration_flag === 'HIGH' ? ' ⚠' : ''}
           </span>

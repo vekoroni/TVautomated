@@ -40,7 +40,7 @@ Component               Weight   Source
 ───────────────────────────────────────────────────────────
 Options Intelligence    25%      options_score (0-41 observed max)
 Scenario asymmetry      advisory  retained for research, never tier/capital authority
-Wyckoff/EV Structural   20%      ev2_ev_structural + composite
+Wyckoff/EV Structural   20%      composite (EV v2 retired 3 Oct 2026)
 WBS Wall Strength       15%      wbs (0-60) + wbs_grade
 Campaign Quality        10%      sb_conv_score (0-4) + sb_campaign
 Superbrain Veto Load    10%      inverse of sb_warnings_count
@@ -90,7 +90,11 @@ from contracts.governed_states import GovernedDataState, LifecycleEvaluationStat
 from contracts.thesis_geometry import invalidation_on_thesis_side
 from datetime import date, datetime, timezone
 from canonical_data.session_clock import session_snapshot, xnys_sessions_between
+from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
+from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields
+from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
 from contracts.selected_contract_economics import (
+    CONTRACT_ANALYTICS_FIELDS,
     MONETISABILITY_AUTHORITY,
     MONETISABILITY_CALCULATION_VERSION,
     economics_evaluation_id,
@@ -571,24 +575,26 @@ def _is_structural_eod_failure(row: dict, reason: str = "") -> bool:
     return _eod_failure_class(row, reason) in {"STRUCTURAL_BLOCK", "NO_OPTIONS_ROUTE"}
 
 def _thesis_state_from_eod_status(eod_status: str) -> str:
+    """The thesis stage only; it never claims validity (XLU-D10, ACK 2 Oct 2026). Phase and
+    Event (thesis_category, from Discovery) categorise the trade beside it."""
     status = str(eod_status or "").upper()
     if status == "EOD_THESIS_READY":
-        return "VALID_THESIS_READY"
+        return "THESIS_READY"
     if status == "EOD_THESIS_READY_REPAIR_AT_OPEN":
-        return "VALID_THESIS_REPAIR_AT_OPEN"
+        return "THESIS_REPAIR_AT_OPEN"
     if status == "EOD_TRIGGER_READY":
-        return "VALID_THESIS_TRIGGER_PENDING"
+        return "THESIS_TRIGGER_PENDING"
     if status == "EOD_WATCHLIST_MONETISABLE":
-        return "VALID_THESIS_WATCHLIST"
+        return "THESIS_WATCHLIST"
     if status == "EOD_PROBE_CANDIDATE":
-        return "VALID_THESIS_PROBE"
+        return "THESIS_PROBE"
     if status == "EOD_DATA_INSUFFICIENT_REVIEW":
-        return "VALID_THESIS_DATA_REVIEW"
+        return "THESIS_DATA_REVIEW"
     if status == "EOD_NO_OPTIONS_ROUTE":
         return "NO_OPTIONS_ROUTE"
     if status == "EOD_STRUCTURAL_BLOCK":
         return "STRUCTURAL_BLOCK"
-    return "VALID_THESIS_REVIEW"
+    return "THESIS_REVIEW"
 
 def _morning_tasks_for_status(row: dict, eod_status: str, reason: str = "") -> str:
     tasks = ["confirm thesis live", "check price vs invalidation", "validate preferred contract"]
@@ -1088,6 +1094,20 @@ def _direction_arbitration(row: dict) -> dict:
             "direction_arbitration_reason": f"Structure leads: {intent or 'UNKNOWN'} maps to {option_side}; Vanguard has no directional edge",
             "direction_conflict_gate": "NONE",
         }
+    if _str(row, "dir_calc_version") == "dir_v1.3.0":
+        # DIR-002: Vanguard supplies descriptive counter-evidence, never a
+        # second direction authority or a VWAP veto on the frozen thesis.
+        aligned = option_side == vanguard_side
+        return {
+            "direction_arbitration_status": (
+                "SIDE_OBSERVATION_ALIGNED" if aligned else "OPPOSING_SIDE_OBSERVATION"
+            ),
+            "direction_arbitration_reason": (
+                f"Discovery thesis {option_side}; Vanguard observed {vanguard_side} "
+                "(descriptive, no direction authority)"
+            ),
+            "direction_conflict_gate": "NONE",
+        }
     if option_side == vanguard_side:
         return {
             "direction_arbitration_status": "AGREEMENT",
@@ -1476,6 +1496,8 @@ _DIRECTION_DEPENDENT_CONTRACT_FIELDS = (
     "contract_volume", "rr_options", "rr_premium_expected", "option_gain_at_target",
     "rr_options_state", "rr_options_tradeability", "rr_options_spread_fraction",
     "ev_predicted", "ev3_evaluation_id",
+    # AVS options analytics slices 1e/2: they describe the same (now voided) contract.
+    "contract_greeks_source", *CONTRACT_ANALYTICS_FIELDS,
 )
 
 
@@ -1556,10 +1578,7 @@ def _contract_repair_profile(row: dict, direction_info: dict) -> dict:
         reasons.append("DELTA_REPAIR_NEEDED")
     else:
         reasons.append("DELTA_UNKNOWN")
-    if rr_options >= 1.0 or gain_at_target > 0:
-        score += 10
-    else:
-        reasons.append("BREAKEVEN_OR_RR_CAUTION")
+    # R:R retired from contract quality (ACK 3 Oct 2026, step 6: no ranking information on the holdout replay).
     if selected_side and resolved_side and selected_side != resolved_side:
         reasons.append("SIDE_REPAIR_NEEDED")
 
@@ -1585,7 +1604,9 @@ def _contract_repair_profile(row: dict, direction_info: dict) -> dict:
 
 def _monetisation_fit(row: dict, tier: str, contract_profile: dict, direction_info: dict) -> dict:
     ois = min(20.0, _flt(row, "options_score") / 2.5)
-    rr = min(20.0, max(0.0, (_flt(row, "rr_underlying") or _flt(row, "rr") or _flt(row, "rr_options")) * 8.0))
+    # XLU-D13: score the R:R at the volatility-reachable target only; a structural or
+    # invented-target R:R never falls through into the score.
+    rr = 0.0   # R:R retired from the fit score (ACK 3 Oct 2026); recorded in the audit tier only
     trigger = 15.0 if _str(row, "trigger_quality").upper() == "STRONG" else 8.0 if _str(row, "trigger_quality").upper() == "SINGLE" else 0.0
     catalyst = min(15.0, _flt(row, "catalyst_truth_score") / 3.0)
     contract = min(20.0, float(contract_profile.get("contract_quality_score", 0.0)) / 2.25)
@@ -1598,6 +1619,43 @@ def _monetisation_fit(row: dict, tier: str, contract_profile: dict, direction_in
         score -= 10
     label = "ASYMMETRIC_EXECUTE" if score >= 72 else "ASYMMETRIC_REVIEW" if score >= 55 else "WATCH_ONLY"
     return {"monetisation_fit_score": round(max(0.0, min(100.0, score)), 2), "monetisation_fit_label": label}
+
+def anticipated_exit_plan(*, direction: str, entry: Optional[float], anticipated_level: Optional[float],
+                          structural_level: Optional[float], invalidation: Optional[float], call_wall: Optional[float],
+                          put_wall: Optional[float], wbs_grade: str = "") -> dict:
+    """Exit plan from the anticipated move (step 4d, ACK 3 Oct 2026; inventory A2).
+
+    T2 is the anticipated level; T1 a wall on the trade's side lying between entry and T2, else T2; T3 the
+    structural level only when it lies beyond a volatility-capped anticipated level. Nothing is invented: no
+    expected-move target, no wall := target, no +3% third target, no opposite-side wall. The invalidation is
+    the thesis exit.
+    """
+    side = str(direction or "").upper()
+    grade = str(wbs_grade or "").upper()
+    mode, scale = (("RIDE_THROUGH_WALL", "40/35/25") if grade == "PROBABLE" else
+                   ("EXIT_BEFORE_WALL", "50/35/15") if grade == "UNLIKELY" else ("SCALE_AT_WALL", "60/25/15"))
+    out = {"exit_mode": mode, "exit_scale_plan": scale, "exit_t1": 0.0, "exit_t2": 0.0, "exit_t3": 0.0,
+           "exit_invalidation_price": round(float(invalidation), 4) if invalidation else 0.0}
+    if side not in GOVERNED_DIRECTED_SIDES:
+        out.update(exit_mode="NOT_APPLICABLE", exit_scale_plan="NOT_APPLICABLE",
+                   exit_plan_reason=LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value)
+        return out
+    level = float(anticipated_level) if anticipated_level else None
+    if not level or not entry:
+        out["exit_plan_reason"] = "NO_ANTICIPATED_LEVEL: no exit target is invented; manage on the thesis exit"
+        return out
+    sign = 1.0 if side == "CALL" else -1.0
+    wall = call_wall if side == "CALL" else put_wall
+    on_path = wall is not None and wall > 0 and 0 < sign * (float(wall) - entry) < sign * (level - entry)
+    t1 = float(wall) if on_path else level
+    beyond = (structural_level is not None and structural_level > 0
+              and sign * (float(structural_level) - level) > 0)
+    out.update(exit_t1=round(t1, 4), exit_t2=round(level, 4),
+               exit_t3=round(float(structural_level), 4) if beyond else 0.0,
+               exit_plan_reason=(f"ANTICIPATED_LEVEL; T1 {'trade-side wall on the path' if on_path else '= T2'}; "
+                                 f"T3 {'structural level beyond the capped anticipated level' if beyond else 'none'}"))
+    return out
+
 
 def _exit_intelligence_plan(row: dict, direction: str, invalidation: Optional[float], wall_price: float, target_price: float, *, horizon: str = "") -> dict:
     direction_u = str(direction or "").upper()
@@ -1720,13 +1778,7 @@ def _shadow_opportunity_score(row: dict) -> tuple[float, str, str]:
         score += 10
         reasons.append("OPTIONS_CONTEXT_PRESENT")
 
-    rr = _flt(row, "rr")
-    if rr >= 2.0:
-        score += 20
-        reasons.append("ASYMMETRIC_RR")
-    elif rr >= 1.25:
-        score += 12
-        reasons.append("POSITIVE_RR")
+    # R:R retired from the shadow score (ACK 3 Oct 2026, step 6); recorded in the audit tier only.
 
     eil = _str(row, "eil_v3_verdict").upper()
     if eil:
@@ -1794,28 +1846,19 @@ def _structural_conviction_score_legacy(row: dict) -> tuple[float, dict]:
     bd["options_intelligence"] = f"{ois:.0f}/41 → {pts}pts"
 
     # ── 2. Risk/Reward Quality (20pts) ───────────────────────────────────────
-    rr = _flt(row, "rr_underlying") or _flt(row, "rr")
-    if rr >= 2.5:
-        pts = 20
-    elif rr >= 1.5:
-        pts = 15
-    elif rr >= 1.0:
-        pts = 8
-    elif rr > 0:
-        pts = 3
-    else:
-        pts = 0
-    score += pts
-    bd["rr_quality"] = f"{rr:.2f}x → {pts}pts"
+    # XLU-D13 (ACK 2 Oct 2026): score the underlying R:R to the reachable target only.
+    # R:R retired (ACK 3 Oct 2026): no ranking information (holdout IC ~0.015); audit only.
+    pts = 0
+    bd["rr_quality"] = "R:R retired (ACK 3 Oct 2026): no ranking information (holdout IC ~0.015); audit only"
 
     # ── 3. Structural EV + Composite (20pts) ─────────────────────────────────
-    ev_struct  = _flt(row, "ev2_ev_structural")
+    # EV v2 retired from scoring (ACK 3 Oct 2026; CLAUDE.md rule 5): it is not an expected value.
     composite  = _flt(row, "composite")
-    ev_pts     = min(10, max(0, ev_struct * 80))   # 0.125 ev_struct → 10pts
+    ev_pts = 0
     comp_pts   = 10 if composite >= 70 else (7 if composite >= 55 else (4 if composite >= 40 else 0))
     pts = round(ev_pts + comp_pts, 1)
     score += pts
-    bd["structural_ev"] = f"ev_struct={ev_struct:.4f} composite={composite:.0f} → {pts}pts"
+    bd["structural_ev"] = f"EV v2 retired (not an EV); composite={composite:.0f} → {pts}pts"
 
     # ── 4. Wall Break Score (15pts) ───────────────────────────────────────────
     wbs      = _flt(row, "wbs")
@@ -1908,27 +1951,18 @@ def structural_conviction_score(row: dict) -> tuple[float, dict]:
     score += pts
     bd["options_intelligence"] = f"{ois:.0f}/41 -> {pts}pts"
 
-    rr = _flt(row, "rr_underlying") or _flt(row, "rr")
-    if rr >= 2.5:
-        pts = 20
-    elif rr >= 1.5:
-        pts = 15
-    elif rr >= 1.0:
-        pts = 8
-    elif rr > 0:
-        pts = 3
-    else:
-        pts = 0
-    score += pts
-    bd["rr_quality"] = f"{rr:.2f}x -> {pts}pts"
+    # XLU-D13 (ACK 2 Oct 2026): score the underlying R:R to the reachable target only.
+    # R:R retired (ACK 3 Oct 2026): no ranking information (holdout IC ~0.015); audit only.
+    pts = 0
+    bd["rr_quality"] = "R:R retired (ACK 3 Oct 2026): no ranking information (holdout IC ~0.015); audit only"
 
-    ev_struct = _flt(row, "ev2_ev_structural")
+    # EV v2 retired from scoring (ACK 3 Oct 2026; CLAUDE.md rule 5): it is not an expected value.
     composite = _flt(row, "composite")
-    ev_pts = min(10, max(0, ev_struct * 80))
+    ev_pts = 0
     comp_pts = 10 if composite >= 70 else (7 if composite >= 55 else (4 if composite >= 40 else 0))
     pts = round(ev_pts + comp_pts, 1)
     score += pts
-    bd["structural_ev"] = f"ev_struct={ev_struct:.4f} composite={composite:.0f} -> {pts}pts"
+    bd["structural_ev"] = f"EV v2 retired (not an EV); composite={composite:.0f} -> {pts}pts"
 
     wbs = _flt(row, "wbs")
     wbs_g = _str(row, "wbs_grade")
@@ -2192,6 +2226,8 @@ def build_candidate_manifest(
         "phase_evidence_strength", "dominant_event", "ATR_14",
         "wyckoff_phase_bucket", "dominant_trend", "ema_stack",
         "wyckoff_execution_bias", "wyckoff_entry_trigger",
+        "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category",
+        *THESIS_EVIDENCE_FIELDS,   # the trade-side event's level and duration evidence (anticipated move)
         "adx_14", "atr_percentile_rank",
         "bar_data_source", "bar_data_asof", "bar_data_days_old",
         "bar_evidence_state", "bar_evidence_reason", "is_stale",
@@ -2206,6 +2242,8 @@ def build_candidate_manifest(
     VAN_MERGE_COLS = [
         "rr_underlying", "rr_confidence", "rr_source", "rr", "rr_flag",
         "rr_options", "rr_options_state", "rr_options_tradeability", "rr_options_spread_fraction",
+        "rr_options_reachable", "rr_underlying_reachable", "target_reachable", "rr_basis",
+        "target_reachable_vol_annual",   # the governed volatility owner, reused by the anticipated move
         "atr_pct", "vol_regime", "structure_quality",
         "macro_regime", "layer2__vol_regime", "layer2__structure_quality",
         "layer2__trend_maturity",
@@ -2380,6 +2418,10 @@ def build_candidate_manifest(
             "signal_price":         _flt(row, "signal_price"),
             # AVS-FIX-001 W1.1: a missing target publishes as null, never 0.0.
             "target_price":         _optional_flt(row, "target_price"),
+            # XLU-D01/D13: the reachable target travels to Morning (runway when no structural target).
+            "target_reachable":     _optional_flt(row, "target_reachable"),
+            "rr_options_reachable": _optional_flt(row, "rr_options_reachable"),
+            "rr_underlying_reachable": _optional_flt(row, "rr_underlying_reachable"),
             "target_price_source":  _str(row, "structural_target_state") or _str(row, "target_price_source") or "UNVERIFIED_LEGACY",
             "target_state":         _str(row, "target_state") or "UNRESOLVED",
             "target_unresolved_reason": _str(row, "target_unresolved_reason"),
@@ -2433,6 +2475,8 @@ def build_candidate_manifest(
             "minimum_required_dte": _first_optional_flt(row, "minimum_required_dte"),
             "remaining_hold_sessions": _first_optional_flt(row, "remaining_hold_sessions"),
             "planned_hold_sessions": _first_optional_flt(row, "planned_hold_sessions"),
+            # EV3 values at the governed window (ACK 28 Sep); step 4b keeps it apart from a daily evidence runway.
+            "ev3_planned_hold_sessions": _first_optional_flt(row, "ev3_planned_hold_sessions"),
             "planned_hold_source": _str(row, "planned_hold_source"),
             "dte_buffer_sessions":  _first_optional_flt(row, "dte_buffer_sessions"),
             "atm_distance_sigma":   _first_optional_flt(row, "atm_distance_sigma"),
@@ -2798,6 +2842,45 @@ def build_candidate_manifest(
             candidate[catalyst_col] = row.get(catalyst_col, "")
         for ev3_col in ev3_authority_columns:
             candidate[ev3_col] = row.get(ev3_col, "")
+        # AVS options analytics slices 1e/2 (30 Sep 2026): the selected contract's Greeks source and analytics block
+        # travel with the contract into the candidate book (display only; the Morning recomputes or clears them).
+        for analytics_col in ("contract_greeks_source", *CONTRACT_ANALYTICS_FIELDS):
+            candidate[analytics_col] = row.get(analytics_col, "")
+        # Earnings disclosure (ACK 3 Oct 2026): ticker facts, travel with the row; the Morning recomputes timing.
+        for earnings_col in EARNINGS_DISCLOSURE_FIELDS:
+            candidate[earnings_col] = row.get(earnings_col, "")
+        # Anticipated move (ACK 3 Oct 2026, design AVS_ANTICIPATED_MOVE_DESIGN_20261003 §9 step 2): display
+        # only - no score, gate or rank reads these fields until the replay validation and D-C switch.
+        for evidence_col in THESIS_EVIDENCE_FIELDS:
+            candidate[evidence_col] = row.get(evidence_col, "")
+        candidate.update(anticipated_move_fields(
+            direction=direction,
+            spot=candidate.get("signal_price"),
+            outcome_level=row.get("thesis_outcome_level"),
+            outcome_definition=row.get("thesis_outcome_definition"),
+            timeframe=row.get("thesis_event_timeframe"),
+            duration={"test": row.get("thesis_duration_test"), "status": row.get("thesis_duration_status"),
+                      "n": row.get("thesis_duration_n"), "q50_bars": row.get("thesis_duration_q50_bars"),
+                      "q80_bars": row.get("thesis_duration_q80_bars"),
+                      "p_event": row.get("thesis_p_outcome_by_limit"),
+                      "p_invalidation": row.get("thesis_p_invalidation_by_limit")},
+            vol_annual=row.get("target_reachable_vol_annual"),
+            contract={"strike": candidate.get("strike"), "ask": candidate.get("contract_ask"),
+                      "iv": candidate.get("contract_iv"), "expiry": candidate.get("expiry"),
+                      "as_of": row.get("bar_data_asof")},
+            governed_window_sessions=candidate.get("planned_hold_sessions"),
+            earnings={"earnings_state": row.get("earnings_state"),
+                      "earnings_sessions_to_event": row.get("earnings_sessions_to_event")},
+            trade_side_event=str(row.get("thesis_structure_alignment") or "").upper() == "ALIGNED",
+        ))
+        # Step 4d: the exit plan follows the anticipated move (replaces the earlier plan's invented targets).
+        candidate.update(anticipated_exit_plan(
+            direction=direction, entry=candidate.get("signal_price"),
+            anticipated_level=candidate.get("anticipated_level"),
+            structural_level=candidate.get("anticipated_structural_level"),
+            invalidation=invalidation, call_wall=_flt(row, "call_wall") or None, put_wall=_flt(row, "put_wall") or None,
+            wbs_grade=_str(row, "wbs_grade"),
+        ))
         candidate.update(eod_monetisability)
         candidates.append(candidate)
 

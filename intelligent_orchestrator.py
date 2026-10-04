@@ -1934,6 +1934,7 @@ def run_discovery(
     augmented_universe_path: Optional[Path] = None,
     scanner_context_path: Optional[Path] = None,
     run_id: Optional[str] = None,
+    macro_source_path: Optional[Path] = None,
 ) -> Tuple[bool, Optional[dict], Optional[str]]:
     """Run ULTIMATE discovery script. Returns (ok, summary, discovery_run_id)."""
     logger.info("=" * 80)
@@ -1954,6 +1955,10 @@ def run_discovery(
     ]
     if run_id:
         cmd += ["--run-id", run_id]
+    # DIR-002 DSC-21: Discovery reads the same run-scoped macro snapshot as
+    # the post-Discovery advisory rewrite (display only, rule 6).
+    if macro_source_path and Path(macro_source_path).exists():
+        cmd += ["--macro-path", str(macro_source_path)]
 
     # DISC-02: Pass scanner context so discovery can inject VMS scores into composite scoring.
     if scanner_context_path and scanner_context_path.exists():
@@ -3002,6 +3007,17 @@ def pin_run_directory(
             "Expected: %s",
             flat_lifecycle,
         )
+
+    # BEH-001: behavioural signal candidates (one row per candidate).
+    flat_behaviour = cfg.OUTPUT_DIR / f"behavioural_candidates_{discovery_run_id}.csv"
+    if flat_behaviour.exists():
+        try:
+            shutil.copy2(flat_behaviour, discovery_dir / flat_behaviour.name)
+            logger.info(f"   Behavioural candidates: {flat_behaviour.name}  ✔")
+        except Exception as e:
+            logger.warning(f"⚠️  Could not stage behavioural candidates CSV: {e}")
+    else:
+        logger.warning("⚠️  Behavioural candidates CSV not found. Expected: %s", flat_behaviour)
 
     flat_external_review = (
         cfg.OUTPUT_DIR / f"external_intel_review_candidates_{discovery_run_id}.csv"
@@ -4112,6 +4128,23 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         patched["planned_hold_source"] = (
             "THESIS_WINDOW_D2" if _window is not None else "THESIS_WINDOW_UNAVAILABLE"
         )
+        # EV3 values at the governed window (ACK 28 Sep 2026); a daily evidence runway never becomes its horizon.
+        patched["ev3_planned_hold_sessions"] = _pd_hp.array([_window] * len(patched), dtype="Int64")
+        # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level is the runway
+        # (planned hold); its median is the anticipated move time. Other rows keep the governed window, and
+        # the source says why. Options intelligence stamped the evidence on the row before this patch.
+        if "evidence_runway_sessions" in patched.columns:
+            _ev_hold = _pd_hp.to_numeric(patched["evidence_runway_sessions"], errors="coerce")
+            _ev_move = _pd_hp.to_numeric(patched.get("evidence_move_sessions"), errors="coerce")
+            _ev_basis = patched.get("evidence_runway_basis", _pd_hp.Series("", index=patched.index)).fillna("").astype(str)
+            _has_hold = _ev_hold.notna()
+            patched.loc[_has_hold, "planned_hold_sessions"] = _ev_hold[_has_hold].round().astype("Int64")
+            patched.loc[_has_hold, "planned_hold_source"] = _ev_basis[_has_hold]
+            _labelled = ~_has_hold & _ev_basis.ne("") & patched["planned_hold_source"].astype(str).eq("THESIS_WINDOW_D2")
+            patched.loc[_labelled, "planned_hold_source"] = "THESIS_WINDOW_D2|" + _ev_basis[_labelled]
+            _has_move = _ev_move.notna()
+            patched.loc[_has_move, "anticipated_move_sessions"] = _ev_move[_has_move].round().astype("Int64")
+            patched.loc[_has_move, "anticipated_move_source"] = "DURATION_EVIDENCE_Q50"
 
         patched.to_csv(target_csv, index=False)
 
@@ -4124,6 +4157,58 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
 
     except Exception as _hp_err:
         logger.warning("⚠️  Horizon patch failed for %s — %s", label, _hp_err)
+        return False
+
+
+def patch_earnings_fields_into_csv(run_id: str, target_csv: Path, label: str, *, fetcher=None) -> bool:
+    """Earnings disclosure (ACK 3 Oct 2026; design AVS_ANTICIPATED_MOVE_DESIGN_20261003 §9 step 1).
+
+    Stamps EARNINGS_DISCLOSURE_FIELDS onto the options CSV after the horizon patch, so the planned hold and
+    the contract expiry are known. One MarketData fetch per ticker per run (session cache). Catalysts are
+    bonuses: these fields are disclosure only and never feed a gate or score. A failure leaves the rows
+    UNKNOWN (stated), never empty and never "no catalyst".
+    """
+    try:
+        import pandas as _pd_ed
+        from avshunter.shared.xnys_calendar import xnys_session_on_or_before
+        from canonical_data.marketdata_earnings import fetch_marketdata_earnings
+        from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS, earnings_disclosure
+
+        if not target_csv.exists():
+            logger.warning("Earnings patch skipped for %s - target CSV not found: %s", label, target_csv)
+            return False
+        frame = _pd_ed.read_csv(target_csv, low_memory=False)
+        if frame.empty or "ticker" not in frame.columns:
+            logger.warning("Earnings patch skipped for %s - no ticker rows", label)
+            return False
+        as_of = xnys_session_on_or_before(date(int(run_id[:4]), int(run_id[4:6]), int(run_id[6:8])))
+        tickers = frame["ticker"].astype(str).str.strip().str.upper()
+        if fetcher is None:
+            cache_dir = Path(cfg.RUNS_DIR).parents[1] / "cache" / "marketdata_earnings"
+            calendar = fetch_marketdata_earnings(tickers.unique(), as_of=as_of, cache_dir=cache_dir)
+        else:
+            calendar = fetcher(list(tickers.unique()), as_of)
+
+        def _first(row, *names):
+            for name in names:
+                value = row.get(name)
+                if value is not None and str(value).strip() not in ("", "nan", "NaN", "None"):
+                    return value
+            return None
+
+        rows = [earnings_disclosure(calendar.get(t) or {"state": "UNKNOWN", "reason": "NOT_FETCHED"},
+                                    as_of=as_of,
+                                    hold_sessions=_first(r, "planned_hold_sessions"),
+                                    expiry=_first(r, "contract_expiry", "expiry", "selected_contract_expiry"))
+                for t, r in zip(tickers, frame.to_dict("records"))]
+        disclosed = _pd_ed.DataFrame(rows, columns=list(EARNINGS_DISCLOSURE_FIELDS), index=frame.index)
+        frame = frame.drop(columns=[c for c in EARNINGS_DISCLOSURE_FIELDS if c in frame.columns])
+        _pd_ed.concat([frame, disclosed], axis=1).to_csv(target_csv, index=False)
+        counts = disclosed["earnings_state"].value_counts().to_dict()
+        logger.info("Earnings disclosure -> %s | %s | file=%s", label, counts, target_csv.name)
+        return True
+    except Exception as _ed_err:  # noqa: BLE001 - disclosure never stops the pipeline
+        logger.warning("Earnings patch failed for %s - %s: %s", label, type(_ed_err).__name__, _ed_err)
         return False
 
 
@@ -4887,8 +4972,18 @@ def run_premarket_intelligence() -> bool:
 ARCHIVE_HEADROOM_MARGIN = 1.2
 
 
-def _dir_size_bytes(path: Path) -> int:
-    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+# ACK, 27 Sep 2026: the archive is a retention record of a run's decisions and evidence. The
+# per-ticker package files (~85% of a run's bytes) are reproducible from the canonical stores and
+# remain in the original run for its retention window, so they are neither measured nor copied.
+ARCHIVE_EXCLUDED_DIRS = ("packages",)
+
+
+def _dir_size_bytes(path: Path, *, exclude_dirs: tuple[str, ...] = ()) -> int:
+    total = 0
+    for f in path.rglob("*"):
+        if f.is_file() and not any(part in exclude_dirs for part in f.relative_to(path).parts[:-1]):
+            total += f.stat().st_size
+    return total
 
 
 def archive_outputs(run_id: str) -> bool:
@@ -4904,7 +4999,7 @@ def archive_outputs(run_id: str) -> bool:
 
     # Root cause (run 20260919_205844): Phase 10 failed mid-copytree with [WinError 112], leaving a
     # partially-populated archive directory. Check headroom before creating anything.
-    required_bytes = int(_dir_size_bytes(current_run_dir) * ARCHIVE_HEADROOM_MARGIN)
+    required_bytes = int(_dir_size_bytes(current_run_dir, exclude_dirs=ARCHIVE_EXCLUDED_DIRS) * ARCHIVE_HEADROOM_MARGIN)
     # cfg.ARCHIVE_DIR itself may not exist yet on a first run; its parent always does (repo root).
     _, _, free_bytes = shutil.disk_usage(cfg.ARCHIVE_DIR.parent)
     if free_bytes < required_bytes:
@@ -4930,7 +5025,7 @@ def archive_outputs(run_id: str) -> bool:
     dest_run = archive_session / "runs" / run_id
     if dest_run.exists():
         shutil.rmtree(dest_run)
-    shutil.copytree(current_run_dir, dest_run)
+    shutil.copytree(current_run_dir, dest_run, ignore=shutil.ignore_patterns(*ARCHIVE_EXCLUDED_DIRS))
     copied += sum(1 for _ in dest_run.rglob("*") if _.is_file())
 
     logger.info(f"✅ Archived {copied} files → {archive_session}\n")
@@ -5283,6 +5378,149 @@ def _record_dynamic_thesis_receipt(run_plan: "RunPlan") -> Path:
     receipt_path = run_dir / f"completed_thesis_receipt_{run_plan.invocation_id}.json"
     logger.info("DDD completed-thesis receipt: %s hash=%s", receipt_path, receipt.receipt_hash)
     return receipt_path
+
+
+ACTUARIAL_PRE_EIL_MIN_FILL_RATE = 0.80   # soft gate: below this the run is labelled ACTUARIAL_DEGRADED, never aborted
+
+# Columns EIL ev_engine_v2 ev_inputs_from_row() reads directly. MUST use these exact names —
+# ev_inputs_from_row() tries win_rate_10d first (no scaling), then layer2__win_rate_10d (/100).
+_SUPERBRAIN_ACTUARIAL_COLUMNS: list[tuple[str, str]] = [
+    ("win_rate_5d",        "win_rate_5d"),
+    ("win_rate_10d",       "win_rate_10d"),
+    ("win_rate_20d",       "win_rate_20d"),
+    ("expected_move_5d",   "expected_move_5d"),
+    ("expected_move_10d",  "expected_move_10d"),
+    ("expected_move_20d",  "expected_move_20d"),
+    ("efficiency_10d",     "efficiency_10d"),
+    ("penalty_multiplier", "penalty_multiplier"),
+    # Prefixed aliases for audit trail
+    ("actuarial_win_rate_10d",      "win_rate_10d"),
+    ("actuarial_expected_move_10d", "expected_move_10d"),
+    ("actuarial_efficiency_10d",    "efficiency_10d"),
+    ("actuarial_penalty",           "penalty_multiplier"),
+    ("actuarial_enriched_by",       "enriched_by"),
+    # V2 Signal Intelligence (Sprint 3)
+    ("actuarial_signal_type",           "signal_type"),
+    ("actuarial_momentum_tier",         "momentum_tier"),
+    ("actuarial_forward_momentum_conf", "forward_momentum_confidence"),
+    ("actuarial_phase_v2",              "phase_v2"),
+    ("actuarial_momentum_bucket",       "momentum_bucket"),
+    # 9-dim match dimensions (2026-05-20)
+    ("actuarial_wyckoff_phase_bucket",  "wyckoff_phase_bucket"),
+    ("actuarial_trend_maturity",        "trend_maturity"),
+    ("actuarial_iv_regime",             "iv_regime"),
+    ("actuarial_crabel_state",          "crabel_state"),
+    ("actuarial_horizon_bucket",        "horizon_bucket"),
+    ("actuarial_volume_bucket",         "volume_bucket"),
+]
+_SUPERBRAIN_ACTUARIAL_TEXT_COLUMNS = {
+    "actuarial_enriched_by", "actuarial_signal_type", "actuarial_momentum_tier", "actuarial_phase_v2",
+    "actuarial_momentum_bucket", "layer2__sample_confidence_bucket", "layer2__preferred_horizon",
+    "layer2__state_match_method", "layer2__state_match_stage", "layer2__state_match_dimensions",
+    "layer2__state_match_quality",
+}
+
+
+def inject_actuarial_into_superbrain_pre_eil(run_id: str) -> dict:
+    """Stamp the run's actuarial facts into superbrain_enriched BEFORE the EIL subprocess scores it.
+
+    ROOT CAUSE (v3.3): EIL reads superbrain_enriched; the post-hoc patch into eil_enriched arrives after
+    EIL has already scored with hit_rate=0.0. P4b (AVS-PKG-002, 28 Sep 2026): the facts come from the
+    actuarial enrichment ledger first and from package files only as a fallback, so a package-free
+    Evening is stamped exactly as a packaged one was.
+
+    Never raises. Returns a typed summary: source LEDGER | PACKAGES | NONE, patched, total_rows,
+    fill_rate, loaded_before_eil (fill_rate at or above ACTUARIAL_PRE_EIL_MIN_FILL_RATE) and reason.
+    """
+    result: dict = {"run_id": run_id, "source": "NONE", "patched": 0, "total_rows": 0,
+                    "fill_rate": 0.0, "loaded_before_eil": False, "reason": ""}
+    try:
+        import pandas as pd
+        from contracts.enrichment_ledger import load_actuarial_map, read_enrichment_ledger
+
+        run_dir = cfg.RUNS_DIR / str(run_id)
+        sb_path = run_dir / "superbrain" / f"superbrain_enriched_{run_id}.csv"
+        if not sb_path.exists():
+            result["reason"] = "SUPERBRAIN_MISSING"
+            logger.warning("⚠️  FIX-ACTUARIAL-SEQ: superbrain_enriched missing — skipping pre-EIL injection. "
+                           "EIL proceeds without actuarial edge.")
+            return result
+
+        act_map = load_actuarial_map(run_dir)
+        ledger_present = read_enrichment_ledger(run_dir, "actuarial")["status"] == "PRESENT"
+        if not act_map:
+            result["reason"] = "NO_ACTUARIAL_FACTS"
+            logger.warning("⚠️  FIX-ACTUARIAL-SEQ: no enriched actuarial facts (ledger=%s, packages fallback empty) — "
+                           "Phase 8.5 may not have run or produced 0 matches. EIL will score with zero actuarial edge.",
+                           "PRESENT" if ledger_present else "ABSENT")
+            return result
+        result["source"] = "LEDGER" if ledger_present else "PACKAGES"
+
+        columns = _SUPERBRAIN_ACTUARIAL_COLUMNS + [(field, field) for field in PHASE2_LAYER2_FIELDS]
+        df = pd.read_csv(sb_path)
+        df["ticker_upper"] = df["ticker"].astype(str).str.strip().str.upper()
+        for col, _ in columns:
+            if col not in df.columns:
+                df[col] = None
+        for text_col in _SUPERBRAIN_ACTUARIAL_TEXT_COLUMNS:
+            if text_col in df.columns:
+                df[text_col] = df[text_col].astype(object)
+
+        patched = 0
+        for idx, row in df.iterrows():
+            ticker = row.get("ticker_upper", "")
+            if ticker not in act_map:
+                continue
+            act = act_map[ticker]
+            baton = act.get("phase2_baton")
+            if isinstance(baton, dict):
+                act = {**baton, **act}
+            for col, key in columns:
+                value = act.get(key)
+                if value is None:
+                    continue
+                try:
+                    dtype = df[col].dtype
+                    if dtype == "float64":
+                        df.at[idx, col] = float(value)
+                    elif dtype == "int64":
+                        df.at[idx, col] = int(value)
+                    elif dtype == "bool":
+                        df.at[idx, col] = str(value).strip().lower() in {"1", "true", "yes", "y"}
+                    else:
+                        df.at[idx, col] = str(value)
+                except (ValueError, TypeError):
+                    df[col] = df[col].astype(object)
+                    df.at[idx, col] = str(value)
+            patched += 1
+
+        df["actuarial_injected_ts"] = datetime.now(timezone.utc).isoformat()
+        df["actuarial_loaded_pre_eil"] = True
+        df = df.drop(columns=["ticker_upper"], errors="ignore")
+        df.to_csv(sb_path, index=False)
+
+        total = int(len(df))
+        filled = int(df["actuarial_win_rate_10d"].notna().sum()) if "actuarial_win_rate_10d" in df.columns else 0
+        fill_rate = round(filled / total, 4) if total > 0 else 0.0
+        result.update(patched=patched, total_rows=total, fill_rate=fill_rate)
+        logger.info("✅ FIX-ACTUARIAL-SEQ: %d rows patched into superbrain_enriched BEFORE EIL from %s | "
+                    "fill_rate=%.1f%% (%d/%d)", patched, result["source"], fill_rate * 100, filled, total)
+
+        # SOFT GATE: never raise (that would kill the Evening); the manifest inherits DEGRADED instead.
+        if fill_rate < ACTUARIAL_PRE_EIL_MIN_FILL_RATE:
+            result["reason"] = "FILL_RATE_BELOW_GATE"
+            logger.critical(
+                "⛔ ACTUARIAL GATE: fill_rate=%.1f%% below %.0f%% threshold. EIL will score with partial actuarial "
+                "edge. Candidate manifest will be marked ACTUARIAL_DEGRADED. Check: (1) actuarial_cache_builder.py "
+                "run after backfill, (2) 9-dim cache has correct STATE_COLS, (3) SIDEWAYS_RANGING added to "
+                "actuarial_database.parquet.", fill_rate * 100, ACTUARIAL_PRE_EIL_MIN_FILL_RATE * 100)
+        else:
+            result["loaded_before_eil"] = True
+    except Exception as seq_err:      # noqa: BLE001 - recorded, never raised
+        result["reason"] = f"FAILED: {type(seq_err).__name__}: {seq_err}"
+        logger.warning("⚠️  FIX-ACTUARIAL-SEQ: pre-EIL injection failed — pipeline continues. Error: %s", seq_err)
+    return result
+
 
 def evening_workflow(
     run_id: Optional[str] = None,
@@ -5776,6 +6014,7 @@ def evening_workflow(
         augmented_universe_path = _effective_universe,
         scanner_context_path    = _scanner_ctx_latest,
         run_id                  = session_id,
+        macro_source_path       = Path(macro_path) if macro_path else None,
     )
     if not success or not summary or not discovery_run_id:
         return False
@@ -5851,6 +6090,39 @@ def evening_workflow(
         logger.error("❌ EVENING WORKFLOW ABORTED — VANGUARD pipeline failed\n")
         return False
 
+    # Ticker-level catalyst truth may enrich Discovery/Vanguard evidence. It
+    # must finish before freezing C5, while still preceding option acquisition.
+    run_catalyst_truth_layer(canonical_run_id, stage="pre_options")
+
+    # Freeze the option-neutral ticker assessment before any chain, selected
+    # contract or option-derived target can influence its source population.
+    # This is descriptive evidence only; it publishes no C4 probability or C8 EV.
+    try:
+        from contracts.descriptive_forecast_packet import load_or_publish_descriptive_packet
+        _forecast_root = cfg.RUNS_DIR / canonical_run_id
+        if not (_forecast_root / "vanguard" / "vanguard_run_summary.json").is_file():
+            raise RuntimeError("Vanguard terminal summary missing before forecast publication")
+        _forecast_packet = load_or_publish_descriptive_packet(_forecast_root)
+        logger.info(
+            "Frozen pre-option ticker description: rows=%d Vanguard present=%d rejected=%d",
+            _forecast_packet["row_count"],
+            _forecast_packet["vanguard_present_count"],
+            _forecast_packet["vanguard_rejected_count"],
+        )
+    except Exception as _forecast_error:
+        logger.error("Evening workflow aborted: pre-option forecast publication failed: %s", _forecast_error)
+        return False
+
+    # BEH-001 phase 2A: behavioural candidate packet beside the C5 ticker packet.
+    # Display and measurement only; a failure is recorded, never an abort.
+    try:
+        from contracts.behavioural_candidate_packet import publish_candidate_packet_safely
+        _candidate_status = publish_candidate_packet_safely(cfg.RUNS_DIR / canonical_run_id)
+    except Exception as _candidate_error:
+        _candidate_status = f"CANDIDATE_PACKET_UNAVAILABLE:{type(_candidate_error).__name__}"
+    (logger.info if _candidate_status.startswith("PUBLISHED") else logger.warning)(
+        "Behavioural candidate packet: %s", _candidate_status)
+
     # ── PHASE 8a: Options Intelligence ──────────────────────────────────────
     # DEF-001 FIX (v3.0): MUST run BEFORE Phase 8.5.
     # Catalyst Truth must run before Options Intelligence as well as after it.
@@ -5858,8 +6130,6 @@ def evening_workflow(
     # widen the Options scope for high-truth catalyst names that Vanguard marks
     # WEAK/NEGATIVE. This pre-options pass patches discovery/vanguard artifacts
     # so the options layer can give those names a monetisation review lane.
-    run_catalyst_truth_layer(canonical_run_id, stage="pre_options")
-
     run_position_lock_check(canonical_run_id)
     if not run_options_intelligence(
         canonical_run_id,
@@ -5868,6 +6138,27 @@ def evening_workflow(
         logger.error(
             "Evening workflow aborted: governed Options acquisition did not complete"
         )
+        return False
+
+    try:
+        from contracts.expression_candidate_packet import publish_expression_candidates
+        _c6_packet = publish_expression_candidates(
+            cfg.RUNS_DIR / canonical_run_id,
+            registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
+        )
+        logger.info("C6 advisory candidate set: %d ticker rows; no C8 valuation authority", _c6_packet["row_count"])
+        from contracts.expression_valuation_packet import publish_expression_valuations
+        _c8_packet = publish_expression_valuations(
+            cfg.RUNS_DIR / canonical_run_id,
+            price_database_path=cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite",
+        )
+        logger.info(
+            "C8 disposition: rows=%d qualified_EV=%d research_EV=%d (no capital authority)",
+            _c8_packet["row_count"], _c8_packet["numeric_valuation_count"],
+            _c8_packet["research_ev_count"],
+        )
+    except Exception as _c6_error:
+        logger.error("Evening workflow aborted: C6 candidate publication failed: %s", _c6_error)
         return False
 
     # Every canonical chain acquired for the candidate population becomes
@@ -5933,6 +6224,8 @@ def evening_workflow(
             "EV-1.5 will fail closed for rows without a governed horizon; "
             "the production pipeline remains non-authoritative for EV3."
         )
+    # Earnings disclosure after the hold is stamped (ACK 3 Oct 2026): display only, travels to the book.
+    patch_earnings_fields_into_csv(canonical_run_id, _oi_horizon_target, "options_intelligence_OI")
 
     # EV3 must evaluate the final governed horizon, never the provisional
     # Options Intelligence horizon. Running this before the router created a
@@ -6229,172 +6522,13 @@ def evening_workflow(
     run_wall_break_scorer(canonical_run_id)        # non-critical | Layer 4b
     # GARCH moved to AFTER EIL (see below) — l3_ fields must reach eil_enriched
 
-    # ── FIX-ACTUARIAL-SEQ (v3.3): Inject actuarial into superbrain BEFORE EIL ──
-    # ROOT CAUSE: EIL subprocess reads superbrain_enriched CSV for scoring.
-    # Phase 8.5 patches package JSONs only — the subprocess cannot reliably
-    # read them (timing/encoding in subprocess context, per inject_actuarial docstring).
-    # inject_actuarial_into_eil_csv() is a POST-HOC patch that arrives after EIL
-    # has already scored with hit_rate=0.0 on every row → 0% block rate.
-    #
-    # THE FIX: patch actuarial cols (win_rate_10d, expected_move_10d, etc.)
-    # directly into superbrain_enriched CSV HERE, before EIL subprocess fires.
-    # EIL ev_engine_v2 ev_inputs_from_row() reads win_rate_10d directly — if
-    # the column is present in the CSV, actuarial edge flows through correctly.
-    # ──────────────────────────────────────────────────────────────────────────
-    _actuarial_loaded_before_eil = False
-    _actuarial_fill_rate         = 0.0
-    try:
-        import glob as _glob_seq
-        import pandas as _pd_seq
-
-        _sb_path_seq  = cfg.RUNS_DIR / canonical_run_id / "superbrain" / f"superbrain_enriched_{canonical_run_id}.csv"
-        _pkg_dir_seq  = cfg.RUNS_DIR / canonical_run_id / "packages"
-
-        if _sb_path_seq.exists() and _pkg_dir_seq.exists():
-            # Build actuarial map from package JSONs (already enriched by Phase 8.5)
-            _act_map_seq: dict = {}
-            for _pf_seq in _glob_seq.glob(str(_pkg_dir_seq / "*.package.json")):
-                try:
-                    with open(_pf_seq, "r", encoding="utf-8") as _pfh:
-                        _pkg_seq = json.load(_pfh)
-                    _tk_seq  = str(_pkg_seq.get("ticker", "")).strip().upper()
-                    _act_seq = _pkg_seq.get("actuarial", {})
-                    if _tk_seq and isinstance(_act_seq, dict) and _act_seq.get("enriched_by"):
-                        _act_map_seq[_tk_seq] = _act_seq
-                except Exception:
-                    pass
-
-            if _act_map_seq:
-                _sb_df_seq = _pd_seq.read_csv(_sb_path_seq)
-                _sb_df_seq["ticker_upper"] = _sb_df_seq["ticker"].str.strip().str.upper()
-
-                # Columns EIL ev_engine_v2 ev_inputs_from_row() reads directly.
-                # MUST use these exact names — ev_inputs_from_row() tries
-                # win_rate_10d first (no scaling), then layer2__win_rate_10d (/100).
-                _SB_ACT_MAP = [
-                    ("win_rate_5d",        "win_rate_5d"),
-                    ("win_rate_10d",       "win_rate_10d"),
-                    ("win_rate_20d",       "win_rate_20d"),
-                    ("expected_move_5d",   "expected_move_5d"),
-                    ("expected_move_10d",  "expected_move_10d"),
-                    ("expected_move_20d",  "expected_move_20d"),
-                    ("efficiency_10d",     "efficiency_10d"),
-                    ("penalty_multiplier", "penalty_multiplier"),
-                    # Prefixed aliases for audit trail
-                    ("actuarial_win_rate_10d",      "win_rate_10d"),
-                    ("actuarial_expected_move_10d", "expected_move_10d"),
-                    ("actuarial_efficiency_10d",    "efficiency_10d"),
-                    ("actuarial_penalty",           "penalty_multiplier"),
-                    ("actuarial_enriched_by",       "enriched_by"),
-                    # ── V2 Signal Intelligence (Sprint 3) ──────────────────
-                    ("actuarial_signal_type",           "signal_type"),
-                    ("actuarial_momentum_tier",         "momentum_tier"),
-                    ("actuarial_forward_momentum_conf", "forward_momentum_confidence"),
-                    ("actuarial_phase_v2",              "phase_v2"),
-                    ("actuarial_momentum_bucket",       "momentum_bucket"),
-                    # ── 9-dim match dimensions (2026-05-20) ──────────────────
-                    ("actuarial_wyckoff_phase_bucket",  "wyckoff_phase_bucket"),
-                    ("actuarial_trend_maturity",        "trend_maturity"),
-                    ("actuarial_iv_regime",             "iv_regime"),
-                    ("actuarial_crabel_state",          "crabel_state"),
-                    ("actuarial_horizon_bucket",        "horizon_bucket"),
-                    ("actuarial_volume_bucket",         "volume_bucket"),
-                ] + [(field, field) for field in PHASE2_LAYER2_FIELDS]
-
-                for _col, _ in _SB_ACT_MAP:
-                    if _col not in _sb_df_seq.columns:
-                        _sb_df_seq[_col] = None
-                _SB_ACT_TEXT_COLS = {
-                    "actuarial_enriched_by",
-                    "actuarial_signal_type",
-                    "actuarial_momentum_tier",
-                    "actuarial_phase_v2",
-                    "actuarial_momentum_bucket",
-                    "layer2__sample_confidence_bucket",
-                    "layer2__preferred_horizon",
-                    "layer2__state_match_method",
-                    "layer2__state_match_stage",
-                    "layer2__state_match_dimensions",
-                    "layer2__state_match_quality",
-                }
-                for _text_col in _SB_ACT_TEXT_COLS:
-                    if _text_col in _sb_df_seq.columns:
-                        _sb_df_seq[_text_col] = _sb_df_seq[_text_col].astype(object)
-
-                _patched_seq = 0
-                for _idx_seq, _row_seq in _sb_df_seq.iterrows():
-                    _tk = _row_seq.get("ticker_upper", "")
-                    if _tk in _act_map_seq:
-                        _act_data = _act_map_seq[_tk]
-                        _phase2_baton = _act_data.get("phase2_baton")
-                        if isinstance(_phase2_baton, dict):
-                            _act_data = {**_phase2_baton, **_act_data}
-                        for _col, _act_key in _SB_ACT_MAP:
-                            _v = _act_data.get(_act_key)
-                            if _v is not None:
-                                try:
-                                    _expected_dtype = _sb_df_seq[_col].dtype
-                                    if _expected_dtype == "float64":
-                                        _sb_df_seq.at[_idx_seq, _col] = float(_v)
-                                    elif _expected_dtype == "int64":
-                                        _sb_df_seq.at[_idx_seq, _col] = int(_v)
-                                    elif _expected_dtype == "bool":
-                                        _sb_df_seq.at[_idx_seq, _col] = str(_v).strip().lower() in {"1", "true", "yes", "y"}
-                                    else:
-                                        _sb_df_seq.at[_idx_seq, _col] = str(_v)
-                                except (ValueError, TypeError):
-                                    _sb_df_seq[_col] = _sb_df_seq[_col].astype(object)
-                                    _sb_df_seq.at[_idx_seq, _col] = str(_v)
-                        _patched_seq += 1
-
-                # Stamp injection timestamp and rescore marker for audit trail
-                from datetime import datetime as _dt_seq, timezone as _tz_seq
-                _sb_df_seq["actuarial_injected_ts"]  = _dt_seq.now(_tz_seq.utc).isoformat()
-                _sb_df_seq["actuarial_loaded_pre_eil"] = True
-
-                _sb_df_seq = _sb_df_seq.drop(columns=["ticker_upper"], errors="ignore")
-                _sb_df_seq.to_csv(_sb_path_seq, index=False)
-
-                _filled_seq = _sb_df_seq["actuarial_win_rate_10d"].notna().sum() if "actuarial_win_rate_10d" in _sb_df_seq.columns else 0
-                _total_seq  = len(_sb_df_seq)
-                _actuarial_fill_rate = round(_filled_seq / _total_seq, 4) if _total_seq > 0 else 0.0
-
-                logger.info(
-                    "✅ FIX-ACTUARIAL-SEQ: %d rows patched into superbrain_enriched BEFORE EIL | "
-                    "fill_rate=%.1f%% (%d/%d)",
-                    _patched_seq, _actuarial_fill_rate * 100, _filled_seq, _total_seq,
-                )
-
-                # ── SOFT GATE: warn loudly if fill rate is too low ──────────
-                # We do NOT raise RuntimeError — that would kill the evening run.
-                # Instead: log CRITICAL, set flag, manifest will inherit DEGRADED state.
-                if _actuarial_fill_rate < 0.80:
-                    logger.critical(
-                        "⛔ ACTUARIAL GATE: fill_rate=%.1f%% below 80%% threshold. "
-                        "EIL will score with partial actuarial edge. "
-                        "Candidate manifest will be marked ACTUARIAL_DEGRADED. "
-                        "Check: (1) actuarial_cache_builder.py run after backfill, "
-                        "(2) 9-dim cache has correct STATE_COLS, "
-                        "(3) SIDEWAYS_RANGING added to actuarial_database.parquet.",
-                        _actuarial_fill_rate * 100,
-                    )
-                    _actuarial_loaded_before_eil = False   # degraded = not trusted
-                else:
-                    _actuarial_loaded_before_eil = True
-            else:
-                logger.warning(
-                    "⚠️  FIX-ACTUARIAL-SEQ: No enriched packages found — "
-                    "Phase 8.5 may not have run or produced 0 matches. "
-                    "EIL will score with zero actuarial edge."
-                )
-        else:
-            logger.warning(
-                "⚠️  FIX-ACTUARIAL-SEQ: superbrain_enriched or packages dir missing — "
-                "skipping pre-EIL injection. EIL proceeds without actuarial edge."
-            )
-    except Exception as _seq_err:
-        logger.warning("⚠️  FIX-ACTUARIAL-SEQ: pre-EIL injection failed — pipeline continues. Error: %s", _seq_err)
-    # ──────────────────────────────────────────────────────────────────────────
+    # ── FIX-ACTUARIAL-SEQ (v3.3, P4b 28 Sep 2026): actuarial facts into superbrain BEFORE EIL ──
+    # EIL scores from superbrain_enriched; the actuarial pass records its facts in the run's
+    # enrichment ledger (P3). The stamp is a function so it reads the ledger like every other
+    # consumer (package files only as fallback) and never depends on a packages/ folder.
+    _seq_result = inject_actuarial_into_superbrain_pre_eil(canonical_run_id)
+    _actuarial_loaded_before_eil = bool(_seq_result.get("loaded_before_eil", False))
+    _actuarial_fill_rate         = float(_seq_result.get("fill_rate", 0.0) or 0.0)
 
     # WS2: Trigger Layer must publish onto the single EIL input spine before
     # execution_v3_5 is written.  A missing or malformed trigger block is a

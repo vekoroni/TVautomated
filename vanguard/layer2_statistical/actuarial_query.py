@@ -7,6 +7,9 @@ UPDATED: Multi-horizon outcomes (5d, 10d, 20d) now computed and returned.
          All existing fields preserved -- fully backward compatible.
 """
 
+import math
+
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Optional
@@ -90,6 +93,118 @@ ACTUARIAL_QUERY_COLUMNS = [
     "adx_delta",
     "early_candidate",
 ]
+
+ACTUARIAL_QUERY_COLUMNS += [
+    # DIR-002 VNG-03/05: identity, label availability and both excursions.
+    "ticker",
+    "date",
+    "label_asof_date",
+    "outcome_max_gain_5d",
+    "outcome_max_gain_10d",
+    "outcome_max_gain_20d",
+]
+
+SIDE_BLOCK_POLICY_PATH = (
+    Path(__file__).resolve().parents[2] / "config" / "dir002_vanguard_side_evidence_v1.json"
+)
+
+
+def load_side_block_policy(path: Optional[Path] = None) -> dict:
+    """Versioned V-A configuration; incomplete policy fails closed."""
+    import json as _json
+
+    policy = _json.loads(Path(path or SIDE_BLOCK_POLICY_PATH).read_text(encoding="utf-8"))
+    if policy.get("version") != "dir002_vanguard_side_evidence_v1":
+        raise ValueError("Unsupported Vanguard side-evidence policy")
+    for key in ("horizons_sessions", "touch_horizon_sessions", "touch_log_distances",
+                "label_embargo_sessions", "min_sample"):
+        if policy.get(key) in (None, []):
+            raise ValueError(f"Vanguard side-evidence policy missing {key}")
+    return policy
+
+
+def side_evidence_blocks(sample: pd.DataFrame, *, as_of, match_attrs: dict, policy: dict) -> dict:
+    """DIR-002 §4.6.3 V-A: mirrored BULL/BEAR descriptive blocks, point-in-time.
+
+    One rule evaluated with a side sign. Labels must have been observable at
+    the evidence session minus the embargo. Empty, thin or undated cohorts are
+    NOT_EVALUATED; no field is a measured zero by default. Shadow only.
+    """
+    horizons = [int(h) for h in policy["horizons_sessions"]]
+    touch_h = int(policy["touch_horizon_sessions"])
+    distances = [float(k) for k in policy["touch_log_distances"]]
+    attrs = match_attrs or {}
+    out: dict = {
+        "side_block_status": "NOT_EVALUATED",
+        "side_block_reason": None,
+        "side_block_policy_version": policy.get("version"),
+        "side_block_as_of": None if as_of is None else str(pd.Timestamp(as_of).date()),
+        "side_block_sample_size": 0,
+        "side_block_excluded_not_observable": 0,
+        "side_block_match_method": str(attrs.get("state_match_method") or "UNKNOWN"),
+        "side_block_is_exact": bool(attrs.get("state_match_is_exact", False)),
+        "side_block_dims": str(attrs.get("state_match_dimensions") or ""),
+    }
+    for side in ("bull", "bear"):
+        for h in horizons:
+            out[f"side_{side}__p_close_favourable_{h}d"] = None
+            out[f"side_{side}__p_close_favourable_{h}d_basis"] = "CLOSE_TO_CLOSE"
+            out[f"side_{side}__signed_mean_return_close_{h}d"] = None
+            out[f"side_{side}__signed_mean_log_return_close_{h}d"] = None
+            out[f"side_{side}__signed_mean_return_close_{h}d_basis"] = "CLOSE_TO_CLOSE_RESEARCH"
+        for i, k in enumerate(distances):
+            out[f"side_{side}__p_touch_favourable_k{i}"] = None
+            out[f"side_{side}__p_touch_adverse_k{i}"] = None
+            out[f"side_{side}__p_touch_favourable_k{i}_basis"] = "TOUCH_ONLY_UNORDERED"
+            out[f"side_{side}__touch_log_distance_k{i}"] = k
+    if as_of is None:
+        out["side_block_reason"] = "AS_OF_MISSING"
+        return out
+    if sample is None or sample.empty:
+        out["side_block_reason"] = "NO_MATCH"
+        return out
+    if "label_asof_date" not in sample.columns:
+        out["side_block_reason"] = "LABEL_DATE_MISSING"
+        return out
+    cut = pd.Timestamp(as_of).normalize() - pd.offsets.BDay(int(policy["label_embargo_sessions"]))
+    observed = pd.to_datetime(sample["label_asof_date"], errors="coerce")
+    usable = sample.loc[observed.notna() & (observed <= cut)]
+    out["side_block_excluded_not_observable"] = int(len(sample) - len(usable))
+    out["side_block_sample_size"] = int(len(usable))
+    if len(usable) < int(policy["min_sample"]):
+        out["side_block_reason"] = "THIN_SAMPLE" if len(usable) else "NO_MATCH"
+        return out
+
+    def column(name: str) -> pd.Series:
+        if name not in usable.columns:
+            return pd.Series(dtype=float)
+        return pd.to_numeric(usable[name], errors="coerce").dropna()
+
+    for side, sign in (("bull", 1.0), ("bear", -1.0)):
+        for h in horizons:
+            ret = column(f"outcome_{h}d_return")
+            ret = ret[ret > -1.0]
+            if ret.empty:
+                continue
+            out[f"side_{side}__p_close_favourable_{h}d"] = float((sign * ret > 0).mean())
+            out[f"side_{side}__signed_mean_return_close_{h}d"] = float(sign * ret.mean())
+            out[f"side_{side}__signed_mean_log_return_close_{h}d"] = float(sign * np.log1p(ret).mean())
+        gain = column(f"outcome_max_gain_{touch_h}d")
+        loss = column(f"outcome_max_drawdown_{touch_h}d")
+        favourable, adverse = (gain, loss) if sign > 0 else (loss, gain)
+        for i, k in enumerate(distances):
+            up_level, down_level = math.expm1(k), math.expm1(-k)
+            if not favourable.empty:
+                out[f"side_{side}__p_touch_favourable_k{i}"] = float(
+                    ((favourable >= up_level) if sign > 0 else (favourable <= down_level)).mean()
+                )
+            if not adverse.empty:
+                out[f"side_{side}__p_touch_adverse_k{i}"] = float(
+                    ((adverse <= down_level) if sign > 0 else (adverse >= up_level)).mean()
+                )
+    out["side_block_status"] = "SHADOW_DESCRIPTIVE_ONLY"
+    return out
+
 
 ACTUARIAL_CATEGORY_COLUMNS = [
     "vol_regime",
@@ -295,7 +410,28 @@ class ActuarialQueryEngine:
             print(f"Warning: Could not load actuarial database: {e}")
             self.df = None
 
-    def query(self, state: StateVector) -> ActuarialOutcomes:
+    def query(self, state: StateVector, as_of=None) -> ActuarialOutcomes:
+        """Legacy outcomes plus DIR-002 V-A side blocks for the same cohort.
+
+        ``as_of`` is the evidence session. The legacy upside-only fields are
+        unchanged (v7 parity, BULL_ONLY_LEGACY); the side blocks use only labels
+        observable before ``as_of`` and are NOT_EVALUATED without it.
+        """
+        outcomes = self._query_legacy(state)
+        try:
+            policy = load_side_block_policy()
+            sample = getattr(self, "_last_similar_states", None)
+            attrs = getattr(sample, "attrs", {}) if sample is not None else {}
+            blocks = side_evidence_blocks(sample, as_of=as_of, match_attrs=attrs, policy=policy)
+            if self.df is None or len(self.df) == 0:
+                blocks["side_block_reason"] = "DATABASE_UNAVAILABLE"
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            blocks = {"side_block_status": "NOT_EVALUATED",
+                      "side_block_reason": f"SIDE_BLOCK_ERROR:{type(exc).__name__}"}
+        outcomes.side_evidence_blocks = blocks
+        return outcomes
+
+    def _query_legacy(self, state: StateVector) -> ActuarialOutcomes:
         """
         Query database for historical outcomes matching this state.
         WITH HYBRID ADJUSTMENTS based on intraday context.
@@ -303,6 +439,7 @@ class ActuarialQueryEngine:
         Returns ActuarialOutcomes with multi-horizon fields populated
         where database columns are available. NEVER returns None.
         """
+        self._last_similar_states = None
         if self.df is None or len(self.df) == 0:
             return _empty_outcomes()
 
@@ -311,6 +448,7 @@ class ActuarialQueryEngine:
         except Exception as e:
             print(f"  Warning: _find_similar_states failed: {e}")
             return _empty_outcomes()
+        self._last_similar_states = similar_states
 
         _match_attrs = getattr(similar_states, 'attrs', {}) if similar_states is not None else {}
         if similar_states is None or len(similar_states) < 10:
@@ -900,12 +1038,13 @@ class ActuarialQueryEngine:
                 extra_attrs={
                     "signal_type": signal_type,
                     "momentum_tier": self._momentum_tier_from_sample(signal_type, values, relaxed),
-                    "state_match_similarity": 1.0,
+                    # B3 (ACK 3 Oct 2026): a relaxed match drops dimensions; no similarity is measured - never 1.0.
+                    "state_match_similarity": None,
                     **self._confidence_attrs(
                         method="RELAXED",
                         sample_size=len(relaxed),
                         preferred_horizon=preferred_horizon,
-                        similarity=1.0,
+                        similarity=None,
                     ),
                     "preferred_horizon": preferred_horizon or "",
                     "matched_state_key": self._matched_key_from_sample(relaxed, relaxed_dims),

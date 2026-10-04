@@ -1,0 +1,16 @@
+{
+  "scenario": "S-ELIG-3",
+  "population": "discovery output from 27 run folders, 15 Aug - 19 Sep 2026 (STOP_TOO_DISTANT_NO_TARGET rows, thesis_geometry_review's own rule replicated via _governed_structural_target, l1_far omitted - not present historically)",
+  "n_stop_too_distant_rows": 7,
+  "direction_split": {
+    "PUT": 7
+  },
+  "n_with_swing_pivot_found": 7,
+  "n_where_nearer_stop_makes_3r_usable": 2,
+  "outcome_counts": {
+    "STOP_FIRST": 1
+  },
+  "stop_first_excl_ambiguous": 1,
+  "target_first_excl_ambiguous": 0,
+  "win_rate_target_first_vs_stop_first": 0.0
+}

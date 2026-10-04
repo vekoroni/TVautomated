@@ -1,0 +1,102 @@
+{
+  "research_state": "EXPLORATORY_NO_AUTHORITY",
+  "baseline_commit": "f808cb434bd75be9169d5b1c6cb2b95803d42caf",
+  "production_changed": false,
+  "tests": {
+    "path": "Enhancements/backtest/solution_tournament/test_round1_solution_tournament.py",
+    "result": "14 passed"
+  },
+  "artifacts": [
+    {
+      "path": "Enhancements/backtest/solution_tournament/BACKTEST_SOLUTION_THESIS_20260919.md",
+      "sha256": "d09c8c70d975f4ab3d766fcf110c90b5308fa2da2e3eac527b17f3490ad497f4",
+      "bytes": 15194
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND1_VALIDATION_REPORT_20260919.md",
+      "sha256": "a1b21d25e156814cd7807708a12cc898d9f6ed4aad62101fe9161e2f228aaeaf",
+      "bytes": 3208
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round1_results.json",
+      "sha256": "73f669f8b79e298df8027c1259766fe78fbef778f8bf5810f812e7c2bb96ba4d",
+      "bytes": 33506
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND2_PROTOCOL_20260919.md",
+      "sha256": "18b7bbfb8a628f143136e82fb644fa62369540d5ec4fc79ed697b15f586acf6d",
+      "bytes": 3898
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND2_VALIDATION_REPORT_20260919.md",
+      "sha256": "ccd523de5acda89336a0dec57b8d8176845c1b4fedaf788e0ddc8fbd3b18ba20",
+      "bytes": 3751
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round2_contract_family_results.json",
+      "sha256": "d4f6a7e3905ee8baa816c0a9a4f9c71d6073c19a5bddf9f9f8a63e9f20656f2f",
+      "bytes": 64768
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round2_validation.json",
+      "sha256": "2e02de1e76ba0662ed54b1a43541f29a079858014031c3023af9c2107155e125",
+      "bytes": 115262
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND3_DIRECTION_PROTOCOL_20260919.md",
+      "sha256": "d3a995d41e8c3e56b1fd6b82ea04e693f8af00c87ef74ff2658f0c7898ea3967",
+      "bytes": 2670
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND3_DIRECTION_REPORT_20260919.md",
+      "sha256": "049ce4c0b7a5bffe0183116c997a123bb1c1d1865fa5b739759c3ac73c416ad5",
+      "bytes": 2144
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round3_direction_results.json",
+      "sha256": "4fd00ba02f1d34f679fc65e0191672ec61fe33fa5a903d710e808d4d10e3cf40",
+      "bytes": 53159
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND4_END_TO_END_STRESS_PROTOCOL_20260919.md",
+      "sha256": "dd2be2ee306bbb2aed2c2082166a10bee5da92914ddf01947b9d9a3bb0ececbd",
+      "bytes": 4971
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND4_END_TO_END_STRESS_REPORT_20260919.md",
+      "sha256": "4b5025aefd13d932120a400cd632a4507cb3c10bbcfb94c2966a678ad94970f1",
+      "bytes": 3187
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/ROUND4_DIAGNOSTIC_FINDINGS_20260919.md",
+      "sha256": "a98ab1714379c124c791e055be183f1a9970ba41d7e7a59c7b4515485cd94a9f",
+      "bytes": 5983
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round4_end_to_end_stress_results.json",
+      "sha256": "b1ec202ce6d2d9ec3aa18b57030bb9b4aebe6aa88e6977f2f6a3c97f89c25f1e",
+      "bytes": 556704
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round4_end_to_end_stress.py",
+      "sha256": "a635b4fb8c5a3334d68b0461299b504488f35ed901c91ebf34f817cb8d155988",
+      "bytes": 24357
+    },
+    {
+      "path": "Enhancements/backtest/solution_tournament/round4_recompute_resolved.py",
+      "sha256": "85ca325d75099a6825a70ae133daa1b5633330258f027e5136b3605a01f570c0",
+      "bytes": 6048
+    }
+  ],
+  "large_generated_rows": [
+    "Enhancements/backtest/solution_tournament/round1_panel.csv",
+    "Enhancements/backtest/solution_tournament/round2_contract_family_rows.csv",
+    "Enhancements/backtest/solution_tournament/round3_direction_holdout_rows.csv",
+    "Enhancements/backtest/solution_tournament/round4_end_to_end_rows.csv"
+  ],
+  "notes": [
+    "Large row-level outputs are reproducible from the scripts and remain outside production authority.",
+    "The working tree contained unrelated pre-existing untracked test artifacts; this research did not modify them.",
+    "No production configuration, database, run output, or decision authority was changed."
+  ]
+}

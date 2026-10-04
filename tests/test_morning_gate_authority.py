@@ -23,6 +23,7 @@ def _row(**overrides):
         "capital_permission": "EOD_CANDIDATE_ONLY",
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "eod_candidate_authorized": True,
+        "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
         "execution_authorized": False,
         "final_route": "OPTIONS_GO_REVIEW",

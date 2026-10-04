@@ -23,7 +23,7 @@ from enum import Enum
 import math
 from typing import Any, Dict, Mapping, Sequence
 
-from .long_option_execution import quote_spread_percent
+from .long_option_execution import quote_age_disclosure, quote_spread_percent
 
 
 OPTIONS_LIQUIDITY_LIFECYCLE_VERSION = "options-liquidity-lifecycle-v2"
@@ -202,6 +202,7 @@ def calculate_dte_requirement(
     *,
     monitor_sessions: Any = DEFAULT_MONITOR_SESSIONS,
     exit_buffer_sessions: Any = DEFAULT_EXIT_BUFFER_SESSIONS,
+    evidence_hold: bool = False,
 ) -> Dict[str, Any]:
     """Runway the contract should have: hold + monitor + exit buffer sessions, in calendar days.
 
@@ -217,7 +218,11 @@ def calculate_dte_requirement(
         raise ValueError("DTE requirement inputs must be finite numbers")
     if hold < 0 or monitor < 0 or exit_buffer < 0:
         raise ValueError("DTE requirement inputs cannot be negative")
-    if hold not in GOVERNED_HOLD_SESSIONS:
+    if evidence_hold:
+        # Step 4b (ACK 3 Oct 2026): a daily event's q80 time to its level (duration evidence) may size the runway.
+        if hold < 1 or hold != int(hold):
+            raise ValueError("an evidence hold must be a positive whole number of sessions")
+    elif hold not in GOVERNED_HOLD_SESSIONS:
         raise ValueError(
             "remaining_hold_sessions must be a governed routed hold in {5, 10, 20}"
         )
@@ -512,13 +517,8 @@ def _classify_current_executability(
             "MONITOR",
             reasons=("PROVIDER_QUOTE_TIMESTAMP_REQUIRED",),
         )
-    if age > freshness_limit:
-        return _liquidity_result(
-            "QUOTE_STALE",
-            "MONITOR",
-            reasons=("QUOTE_OUTSIDE_FRESHNESS_WINDOW",),
-            quote_age_seconds=age,
-        )
+    # Age is disclosed, never a gate (ACK 3 Oct 2026): an old quote is classified on its book.
+    age_disclosure = quote_age_disclosure(age, window_seconds=freshness_limit)
     spread_pct = quote_spread_percent(bid_value, ask_value)
     if spread_pct is None:
         return _liquidity_result(
@@ -540,6 +540,7 @@ def _classify_current_executability(
         "ask": ask_value,
         "spread_pct": round(spread_pct, 6),
         "quote_age_seconds": age,
+        **age_disclosure,
         "dte": dte_value,
         "minimum_required_dte": minimum_dte,
         "displayed_size_available": not displayed_size_missing,
@@ -579,8 +580,16 @@ def classify_remaining_runway(
     invalidation_spot: Any,
     one_session_expected_move_abs: Any = None,
     min_remaining_runway_factor: float = DEFAULT_MIN_REMAINING_RUNWAY_FACTOR,
+    confirmation_min_expected_move_fraction: Any = None,
 ) -> Dict[str, Any]:
-    """Classify whether an overnight move leaves enough thesis runway."""
+    """Classify whether an overnight move leaves enough thesis runway.
+
+    XLU-D11 (ACK 2 Oct 2026): a move confirms (GAP_CONFIRMATION_*) or pressures
+    (THESIS_UNDER_PRESSURE) the thesis only when it is material, i.e. at least
+    ``confirmation_min_expected_move_fraction`` x the one-session expected move (governed
+    config ``morning_runway``). Without a measurable expected move nothing is confirmed and an
+    adverse move stays flagged as pressure.
+    """
     option_side = canonical_option_side(side)
     origin = _finite_number(thesis_spot)
     current = _finite_number(current_spot)
@@ -610,20 +619,24 @@ def classify_remaining_runway(
 
     consumed_factor = realised_move / total_move
     remaining_factor = _clamp(1.0 - consumed_factor)
-    favourable_move = realised_move > 0
     gap_abs = abs(current - origin)
+    fraction = _finite_number(confirmation_min_expected_move_fraction)
+    measurable = expected_move is not None and expected_move > 0 and fraction is not None and fraction >= 0
+    material = measurable and gap_abs >= fraction * expected_move
+    favourable_move = realised_move > 0 and material
+    adverse_move = realised_move < 0 and (material or not measurable)
 
     if invalidated:
         state = "THESIS_INVALIDATED"
     elif consumed_factor >= 1.0 or remaining_factor < minimum_remaining:
         state = "MOVE_ALREADY_REALIZED"
-    elif favourable_move and expected_move is not None and expected_move > 0 and gap_abs >= expected_move:
+    elif realised_move > 0 and expected_move is not None and expected_move > 0 and gap_abs >= expected_move:
         state = "WAIT_FOR_PULLBACK"
     elif favourable_move and consumed_factor >= 0.50:
         state = "GAP_CONFIRMATION_EXTENDED"
     elif favourable_move:
         state = "GAP_CONFIRMATION_WITH_RUNWAY"
-    elif realised_move < 0:
+    elif adverse_move:
         state = "THESIS_UNDER_PRESSURE"
     else:
         state = "THESIS_ACTIVE"
@@ -635,6 +648,8 @@ def classify_remaining_runway(
         "thesis_move_consumed_factor": round(consumed_factor, 6),
         "remaining_runway_factor": round(remaining_factor, 6),
         "minimum_remaining_runway_factor": minimum_remaining,
+        "confirmation_min_expected_move_fraction": fraction,
+        "move_is_material": bool(material),
         "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
     }
 
@@ -758,6 +773,8 @@ class LifecycleInputs:
     listed_market: bool = True
     neighbouring_contract_liquidity_score: float | None = None
     one_session_expected_move_abs: float | None = None
+    confirmation_min_expected_move_fraction: float | None = None
+    hold_is_evidence: bool = False      # step 4b: the hold is a daily event's q80 time (duration evidence)
 
 
 def evaluate_options_liquidity_lifecycle(
@@ -773,6 +790,7 @@ def evaluate_options_liquidity_lifecycle(
         values["remaining_hold_sessions"],
         monitor_sessions=monitor_sessions,
         exit_buffer_sessions=exit_buffer_sessions,
+        evidence_hold=bool(values.get("hold_is_evidence")),
     )
     moneyness = classify_moneyness(
         values["side"],
@@ -809,6 +827,7 @@ def evaluate_options_liquidity_lifecycle(
         structural_target=values["structural_target"],
         invalidation_spot=values["invalidation_spot"],
         one_session_expected_move_abs=expected_move,
+        confirmation_min_expected_move_fraction=values.get("confirmation_min_expected_move_fraction"),
     )
     thesis_active = runway["remaining_runway_state"] not in {
         "THESIS_INVALIDATED",

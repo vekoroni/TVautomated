@@ -23,6 +23,7 @@ def _ready_row(**overrides):
             '[{"family":"PRICE_FLOW","side":"CALL","direction_independent":true}]',
         "trigger_primary": "RANGE_BREAK", "trigger_price": 99.0,
         "wyckoff_execution_bias": "BULLISH",
+        "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
         "garch_expected_move_1_5d": 5.0,
         "garch_expected_move_6_10d": 2.0,
         "garch_expected_move_11_20d": 2.0,

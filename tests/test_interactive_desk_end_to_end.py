@@ -83,6 +83,35 @@ class FakeProvider:
                 "limitations": ["No depth or trade prints were supplied."]}
 
 
+def test_control_does_not_advertise_provider_when_sdk_missing(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    app = Flask(__name__)
+    provider = FakeProvider()
+    provider.ready = True
+    provider.sdk_available = False
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    response = app.test_client().get("/api/interpreter/control")
+    assert response.status_code == 200
+    assert response.get_json()["provider_ready"] is False
+
+
+def test_paid_interpreter_routes_refuse_missing_sdk_before_dispatch(tmp_path):
+    from pipeline_interpreter.interactive_desk import install_interpreter_desk
+
+    app = Flask(__name__)
+    provider = FakeProvider()
+    provider.ready = True
+    provider.sdk_available = False
+    install_interpreter_desk(app, tmp_path, provider=provider)
+    client = app.test_client()
+    for route in ("/api/interpreter/reports", "/api/interpreter/deep_reports", "/api/interpreter/ask"):
+        response = client.post(route, json={"confirmed": True})
+        assert response.status_code == 503
+    assert provider.reports == []
+    assert provider.questions == []
+
+
 class PricedFakeProvider(FakeProvider):
     def estimate_report_bound(self, input_chars):
         return 0.05

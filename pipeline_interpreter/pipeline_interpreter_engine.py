@@ -100,8 +100,8 @@ def build_chart_evidence_block(ticker: str, pipeline_row: dict) -> str:
             "wyckoff_structure", "wyckoff_phase", "wyckoff_bias",
             "wyckoff_event", "wyckoff_status", "phase_status",
             "phase_correctness_score", "phase_maturity_score",
-            "transition_probability_5_bars", "transition_probability_10_bars",
-            "transition_probability_20_bars", "next_expected_event",
+            # B7 (ACK 3 Oct 2026): transition "probabilities" are heuristic scores, not given to the model.
+            "next_expected_event",
             "structural_invalidation_level",
         ]),
         ("Volatility, volume, and liquidity", [

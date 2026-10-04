@@ -40,14 +40,14 @@ log = logging.getLogger("orchestrator_adapter")
 try:
     from ..schemas.input_schema import (
         VanguardInput, TechnicalData, MacroData,
-        OptionsData, CalendarData, MicrostructureData, VanguardInputError,
+        OptionsData, CalendarData, MicrostructureData, VanguardInputError, ThesisContext,
     )
     _SCHEMAS_OK = True
 except ImportError:
     try:
         from vanguard.schemas.input_schema import (
             VanguardInput, TechnicalData, MacroData,
-            OptionsData, CalendarData, MicrostructureData, VanguardInputError,
+            OptionsData, CalendarData, MicrostructureData, VanguardInputError, ThesisContext,
         )
         _SCHEMAS_OK = True
     except ImportError:
@@ -159,12 +159,62 @@ class OrchestratorAdapter:
             disc  = payload.get("discovery") or {}
             price = _f(disc.get("stock_price") or disc.get("price"), 0.0)
 
-        ts_raw = payload.get("as_of_utc") or payload.get("analysis_timestamp")
+        disc = payload.get("discovery") or {}
+        evidence_session = str(
+            payload.get("bar_data_as_of") or disc.get("bar_data_asof") or ""
+        ).strip()
+        if not evidence_session:
+            # Direct-adapter callers may provide bars without a package. Their
+            # latest dated completed bar is still an evidence-session anchor;
+            # it is never replaced with the execution wall clock.
+            raw_bars = (payload.get("technical_data") or {}).get("ohlcv") or payload.get("ohlcv_daily") or []
+            if isinstance(raw_bars, list):
+                dated = [str(bar.get("date") or "")[:10] for bar in raw_bars if isinstance(bar, dict)]
+                dated = [value for value in dated if value]
+                evidence_session = max(dated, default="")
+        if not evidence_session:
+            raise _Reject(["EVIDENCE_SESSION_MISSING"], "No completed evidence session in package")
         try:
-            ts = datetime.fromisoformat(str(ts_raw).replace("Z", "+00:00")) \
-                 if ts_raw else datetime.now(timezone.utc)
+            # Date anchor, not a claim that the bar was available at midnight.
+            ts = datetime.fromisoformat(evidence_session[:10]).replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
-            ts = datetime.now(timezone.utc)
+            raise _Reject(["EVIDENCE_SESSION_INVALID"], f"Invalid evidence session: {evidence_session}")
+
+        def _thesis_token(value: Any) -> str:
+            if value is None:
+                return ""
+            token = str(value).strip()
+            return "" if token.lower() in {"nan", "null"} else token
+
+        side = _thesis_token(disc.get("thesis__side")).upper()
+        if side:
+            if side not in {"BULL", "BEAR", "UNASSIGNED"}:
+                raise _Reject(["THESIS_SIDE_INVALID"], f"Invalid thesis__side: {side}")
+            direction_status = _thesis_token(disc.get("thesis__direction_status"))
+            policy_version = _thesis_token(disc.get("thesis__side_assignment_policy_version"))
+            if not direction_status or not policy_version:
+                thesis_context = ThesisContext(
+                    reason="THESIS_CONTEXT_INCOMPLETE", evidence_session=evidence_session[:10]
+                )
+            else:
+                thesis_context = ThesisContext(
+                    status="AVAILABLE", reason="", side=side,
+                    direction_status=direction_status,
+                    policy_version=policy_version,
+                    evidence_session=evidence_session[:10],
+                    bull_geometry={
+                        "invalidation": disc.get("sym_bull_invalidation"),
+                        "target": disc.get("sym_bull_target"),
+                        "sigma": disc.get("sym_bull_sigma"),
+                    },
+                    bear_geometry={
+                        "invalidation": disc.get("sym_bear_invalidation"),
+                        "target": disc.get("sym_bear_target"),
+                        "sigma": disc.get("sym_bear_sigma"),
+                    },
+                )
+        else:
+            thesis_context = ThesisContext(evidence_session=evidence_session[:10])
 
         tech     = self._tech(payload, ticker)
         macro    = self._macro(payload)
@@ -173,6 +223,7 @@ class OrchestratorAdapter:
         return VanguardInput(
             ticker              = ticker,
             analysis_timestamp  = ts,
+            thesis_context      = thesis_context,
             current_price       = price,
             technical           = tech,
             macro               = macro,

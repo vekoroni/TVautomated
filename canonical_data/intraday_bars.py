@@ -440,3 +440,71 @@ class CanonicalMinuteBarResolver:
             except Exception as error:
                 failed.append(ticker); exceptions[ticker] = f"{type(error).__name__}:{error}"
         return IntradayBatchResult(results, exceptions, requested, tuple(sorted(results)), tuple(blocked), tuple(failed))
+
+
+class CompletedIntradayIndex:
+    """Read-only view of completed regular-session intraday bars (BEH-001).
+
+    Built once per run from the registry (one query), then serves each ticker.
+    It never raises for a ticker: unusable data is reported as a status so the
+    caller can fall back to other timeframes (ACK amendment, 1 Oct 2026).
+    Statuses: OK, NO_INTRADAY_DATA, STALE_INTRADAY, INCOMPLETE_SESSIONS, READ_ERROR.
+    No provider call is ever made.
+    """
+
+    def __init__(self, entries, *, reader=None, interval: str = "5min", segment: str = "REGULAR") -> None:
+        self._by_ticker: dict[str, dict] = {}
+        self._reader = reader or (lambda e: CanonicalMinuteBarResolver._read(e["record"]))
+        for e in entries:
+            if e.get("interval") != interval or e.get("segment") != segment:
+                continue
+            day = e["session_date"].isoformat() if hasattr(e["session_date"], "isoformat") else str(e["session_date"])
+            sessions = self._by_ticker.setdefault(str(e["ticker"]).upper(), {})
+            current = sessions.get(day)
+            # Keep the latest COMPLETE record per session; PARTIAL only if nothing better.
+            rank = (e.get("completeness") == "COMPLETE", str(e.get("as_of")))
+            if current is None or rank > (current.get("completeness") == "COMPLETE", str(current.get("as_of"))):
+                sessions[day] = e
+
+    @classmethod
+    def from_registry(cls, registry_path: Path, **kwargs) -> "CompletedIntradayIndex":
+        try:
+            records = CanonicalRegistry(registry_path).list_dataset_records(DatasetType.INTRADAY_BAR)
+        except Exception:
+            records = ()
+        entries = []
+        for r in records:
+            extra = dict(r.scope.extra) if not isinstance(r.scope.extra, dict) else r.scope.extra
+            entries.append({"ticker": r.instrument_id, "session_date": r.session_date,
+                            "completeness": r.completeness_status.value, "interval": extra.get("interval"),
+                            "segment": extra.get("session_segment"), "as_of": r.as_of.isoformat(),
+                            "record": r})
+        return cls(entries, **kwargs)
+
+    def bars_for(self, ticker: str, *, through_session: str, sessions: int,
+                 expected_sessions=None) -> tuple[pd.DataFrame | None, str]:
+        known = self._by_ticker.get(str(ticker).upper(), {})
+        usable = sorted(day for day, e in known.items()
+                        if day <= through_session and e.get("completeness") == "COMPLETE")
+        if not usable:
+            return None, "NO_INTRADAY_DATA"
+        window = usable[-int(sessions):]
+        frames = []
+        for day in window:
+            try:
+                frame = self._reader(known[day])
+            except Exception:
+                return None, "READ_ERROR"
+            if frame is None or len(frame) == 0:
+                return None, "READ_ERROR"
+            frames.append(frame)
+        bars = pd.concat(frames, ignore_index=True)
+        bars["timestamp_utc"] = pd.to_datetime(bars["timestamp_utc"], utc=True)
+        bars = bars.drop_duplicates("timestamp_utc").sort_values("timestamp_utc").reset_index(drop=True)
+        if window[-1] < through_session:
+            return bars, "STALE_INTRADAY"
+        if expected_sessions is not None:
+            wanted = sorted(d for d in expected_sessions if d <= through_session)[-int(sessions):]
+            if any(d not in usable for d in wanted):
+                return bars, "INCOMPLETE_SESSIONS"
+        return bars, "OK"

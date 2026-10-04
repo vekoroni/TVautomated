@@ -1,0 +1,29 @@
+{
+  "version": "side_assign_v1",
+  "authority_state": "IMPLEMENTED_FOR_REPLICATION",
+  "owner": "Thesis policy (contracts/direction_governance.assign_thesis_side); written by Discovery under ACK DEC-9",
+  "production_direction_source": "beh001_v1",
+  "rollback_value": "legacy_rollback",
+  "calibration": {
+    "status": "CALIBRATED_CALIBRATION_WINDOW",
+    "evidence": "Enhancements/outcomes/dir002/calibration_v1_A1.json",
+    "preregistration": "Enhancements/assessment/AVS_DIR002_SIDE_ASSIGNMENT_CALIBRATION_PREREGISTRATION_20261001.md (Amendment A1)",
+    "window": "cuts 2022-09-01..2024-12-31, 500 tickers, 9,229 matured survivor rows",
+    "frozen_utc": "2026-10-01",
+    "note": "Frozen before the held-out cohort was read. Drift-adjusted side discrimination on the calibration window is ~0 (-0.006 sigma). ACK switched production to beh001_v1 on 2 Oct 2026 (see cutover)."
+  },
+  "event_strength_min": 0.7,
+  "control_margin_min": 0.1,
+  "control_full_scale": 0.8,
+  "contested_margin": 0.05,
+  "min_observation_quality": 0.65,
+  "trend_min_bars": 200,
+  "cutover": {
+    "date": "2026-10-02",
+    "decided_by": "ACK",
+    "decision": "Move the fixes out of shadow into production so production bugs are fixed where they occur.",
+    "conditions_met": "XLU-D10 (Phase/Event categorisation), XLU-D01/D13 (no invented target; reachable R:R scored), target source label (audit finding 5); regression clean except known baseline failures",
+    "evidence": "Shadow vs production 1 Oct: 41% agreement; 80% of disagreement traced to the Precor Spring rule (wyckoff_crabel_precor_logic_v2.py:470-490). Enhancements/assessment/AVS_BEH001_PHASE2_20261001/AVS_BEH001_PHASE2_RECEIPT_20261001.md",
+    "rollback": "set production_direction_source to legacy_rollback"
+  }
+}

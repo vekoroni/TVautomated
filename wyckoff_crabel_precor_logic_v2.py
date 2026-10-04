@@ -31,7 +31,7 @@ Original design principles preserved:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Mapping, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -771,7 +771,9 @@ class WyckoffCrabelStateMachine:
 
         if phase == "C":
             # After spring/utad, next is D if follow-through exists
-            if net_dir >= 2 and control in {"BUYERS", "SELLERS"}:
+            if (net_dir >= 2 and control == "BUYERS") or (
+                net_dir <= -2 and control == "SELLERS"
+            ):
                 return "D", 78.0, ["Post-event follow-through building â†’ Phase D"]
             return "D", 70.0, ["Phase C often transitions to D with confirmation"]
 
@@ -889,3 +891,242 @@ def process_precore_signal(ticker: str, bars: pd.DataFrame) -> Dict:
     out = _STATE_MACHINE.analyse(bars)
     out["ticker"] = ticker
     return out
+
+
+# -----------------------------------------------------------------------------
+# DIR-002 symmetric Precor intent (DSC-07/08/24; §4.3 step 3-4).
+#
+# A log-space, side-parameterised restatement of the legacy state machine
+# above. The legacy outputs are unchanged (display, v7 actuarial key); this
+# function is the only Precor intent the DIR-002 side assignment reads. Mode is
+# UNKNOWN when there is no evidence (never ACCUMULATION by default), there is
+# no BUY fallback, and an exact tie between opposite events is AMBIGUOUS.
+# -----------------------------------------------------------------------------
+
+
+_SYM_EVENT_SIDE = {"SPRING": 1, "SC": 1, "SOS": 1, "UTAD": -1, "BC": -1, "SOW": -1}
+
+
+def _sym_log_slope(values: np.ndarray, lookback: int) -> float:
+    if len(values) < lookback:
+        return 0.0
+    y = values[-lookback:]
+    if np.std(y) == 0:
+        return 0.0
+    return float(np.polyfit(np.arange(len(y)), y, 1)[0])
+
+
+def _sym_control(lf: pd.DataFrame, cfg: Mapping) -> str:
+    r = lf.tail(int(cfg["control_window_bars"]))
+    slope21 = _sym_log_slope(r["lema21"].to_numpy(), 20)
+    slope50 = _sym_log_slope(r["lema50"].to_numpy(), 20)
+    evr = (r["vol_ratio"] > 1.4) & (r["ltr_ratio"] < 0.85)
+    evr_buy = int((evr & (r["lpoc"] > 0.65)).sum())
+    evr_sell = int((evr & (r["lpoc"] < 0.35)).sum())
+    lc, lh, ll = r["lc"].to_numpy(), r["lh"].to_numpy(), r["ll"].to_numpy()
+    fail_down = fail_up = 0
+    for i in range(2, len(r) - 1):
+        if lc[i] < ll[i - 1] and lc[i + 1] > lc[i]:
+            fail_down += 1
+        if lc[i] > lh[i - 1] and lc[i + 1] < lc[i]:
+            fail_up += 1
+    buyers = sellers = 0.0
+    if slope21 > 0 and slope50 > 0:
+        buyers += 2
+    if slope21 < 0 and slope50 < 0:
+        sellers += 2
+    buyers += evr_buy * 0.8 + fail_down * 0.7
+    sellers += evr_sell * 0.8 + fail_up * 0.7
+    diff = buyers - sellers
+    if diff >= float(cfg["control_resolve_points"]):
+        return "BUYERS"
+    if diff <= -float(cfg["control_resolve_points"]):
+        return "SELLERS"
+    if abs(diff) <= float(cfg["control_equilibrium_points"]):
+        return "EQUILIBRIUM"
+    return "SHIFTING"
+
+
+def _sym_compressed(lf: pd.DataFrame, cfg: Mapping) -> bool:
+    r = lf.tail(40)
+    tr = r["ltr"].to_numpy()
+    score = 0
+    if len(tr) >= 7:
+        score += 2 * int(tr[-1] == tr[-7:].min()) + int(tr[-1] == tr[-4:].min())
+    atr = r["ltr"].rolling(14).mean().dropna()
+    if len(atr) > 20 and float(atr.rank(pct=True).iloc[-1]) < 0.25:
+        score += 2
+    inside = 0
+    lh, ll = r["lh"].to_numpy(), r["ll"].to_numpy()
+    for i in range(1, min(6, len(r))):
+        if lh[-i] <= lh[-i - 1] and ll[-i] >= ll[-i - 1]:
+            inside += 1
+        else:
+            break
+    if inside >= 2:
+        score += 2
+    return score >= int(cfg["compression_score_min"])
+
+
+def _sym_events(lf: pd.DataFrame, cfg: Mapping) -> str:
+    rw = lf.tail(40).reset_index(drop=True)
+    lh, ll, lc = rw["lh"].to_numpy(), rw["ll"].to_numpy(), rw["lc"].to_numpy()
+    poc, vr, tr = rw["lpoc"].to_numpy(), rw["vol_ratio"].to_numpy(), rw["ltr_ratio"].to_numpy()
+    direction = np.sign(np.diff(lc, prepend=lc[0]))
+    sweep = float(cfg["sweep_log_distance"])
+    breakout = float(cfg["breakout_log_distance"])
+    reclaim = int(cfg["reclaim_within_bars"])
+    follow = int(cfg["followthrough_bars"])
+    support = pd.Series(ll).rolling(20).min().shift(1).to_numpy()
+    resistance = pd.Series(lh).rolling(20).max().shift(1).to_numpy()
+    events: List[Tuple[int, float, str]] = []
+    n = len(rw)
+    for i in range(max(0, n - 20), n):
+        if vr[i] >= 1.8 and tr[i] >= 1.4:
+            if direction[i] < 0 and poc[i] >= 0.45:
+                events.append((i, 78.0, "SC"))
+            if direction[i] > 0 and poc[i] <= 0.55:
+                events.append((i, 78.0, "BC"))
+    for i in range(25, n - 1):
+        sup, res = support[i], resistance[i]
+        if np.isnan(sup) or np.isnan(res):
+            continue
+        quiet = 76.0 if vr[i] < 1.0 else 82.0
+        if ll[i] < sup - sweep and any(lc[j] > sup for j in range(i + 1, min(n, i + reclaim + 1))):
+            events.append((i, quiet, "SPRING"))
+        if lh[i] > res + sweep and any(lc[j] < res for j in range(i + 1, min(n, i + reclaim + 1))):
+            events.append((i, quiet, "UTAD"))
+    for i in range(25, n - follow):
+        sup, res = support[i], resistance[i]
+        if np.isnan(sup) or np.isnan(res):
+            continue
+        if lc[i] > res + breakout and poc[i] > 0.65 and (lc[i + 1:i + 1 + follow] >= lc[i]).any():
+            events.append((i, 80.0, "SOS"))
+        if lc[i] < sup - breakout and poc[i] < 0.35 and (lc[i + 1:i + 1 + follow] <= lc[i]).any():
+            events.append((i, 80.0, "SOW"))
+    if not events:
+        return "NONE"
+    top = sorted({(i, c) for i, c, _ in events})[-1]
+    names = {name for i, c, name in events if (i, c) == top}
+    sides = {_SYM_EVENT_SIDE[name] for name in names}
+    if len(sides) > 1:
+        return "AMBIGUOUS"
+    return sorted(names)[0]
+
+
+def _sym_phase(lf: pd.DataFrame, event: str, control: str, cfg: Mapping) -> str:
+    r = lf.tail(120)
+    slope = _sym_log_slope(r["lema21"].to_numpy(), 30)
+    ema_sep = float(r["lema21"].iloc[-1] - r["lema50"].iloc[-1])
+    dirs = np.sign(np.diff(r["lc"].to_numpy()))[-39:]
+    flips = int(np.sum(dirs[1:] != dirs[:-1]))
+    w = r.tail(50)
+    hi, lo = float(w["lh"].max()), float(w["ll"].min())
+    size = max(1e-12, hi - lo)
+    closes = w["lc"].to_numpy()
+    mid_closes = int(((closes >= lo + 0.30 * size) & (closes <= hi - 0.30 * size)).sum())
+    distance = abs(closes[-1] - (hi + lo) / 2) / size
+    if event in {"SPRING", "UTAD"}:
+        return "C"
+    if event in {"SOS", "SOW"}:
+        return "D"
+    if event in {"SC", "BC"}:
+        return "A"
+    strong, emerging = float(cfg["slope_strong"]), float(cfg["slope_emerging"])
+    if abs(slope) > strong and abs(ema_sep) > strong and distance > float(cfg["phase_e_distance_from_mid"]):
+        return "E"
+    if abs(slope) > emerging and abs(ema_sep) > emerging:
+        return "D"
+    if flips >= int(cfg["range_flips_min"]) and mid_closes >= int(cfg["range_mid_closes_min"]):
+        return "B"
+    tr = r["ltr"].to_numpy()
+    if tr[-10:].mean() < tr[-30:-10].mean() * 0.8 and flips >= 12:
+        return "A"
+    if control == "BUYERS" and slope >= 0:
+        return "D"
+    if control == "SELLERS" and slope <= 0:
+        return "D"
+    return "B"
+
+
+def _sym_mode(lf: pd.DataFrame, event: str, phase: str, control: str) -> str:
+    side = _SYM_EVENT_SIDE.get(event)
+    if side is not None:
+        return "ACCUMULATION" if side > 0 else "DISTRIBUTION"
+    if phase in {"D", "E"} and control in {"BUYERS", "SELLERS"}:
+        return "ACCUMULATION" if control == "BUYERS" else "DISTRIBUTION"
+    closes = lf["lc"].to_numpy()[-60:]
+    drift = closes[-1] - closes[0]
+    if drift > 0:
+        return "ACCUMULATION"
+    if drift < 0:
+        return "DISTRIBUTION"
+    return "UNKNOWN"
+
+
+def _sym_intent(phase: str, mode: str, event: str, control: str, compressed: bool) -> str:
+    """Mirror-symmetric phase/mode/event/control → intent (no BUY fallback)."""
+    if phase == "A":
+        return "WAIT"
+    if phase == "B":
+        return "TRANSITION" if compressed else "WAIT"
+    for sign, setup, spring, breakout, bull_mode, own in (
+        (1, "BUY_SETUP", "SPRING", "SOS", "ACCUMULATION", "BUYERS"),
+        (-1, "SELL_SETUP", "UTAD", "SOW", "DISTRIBUTION", "SELLERS"),
+    ):
+        if phase == "C" and ((event == spring and mode == bull_mode) or (control == own and mode == bull_mode)):
+            return setup
+        if phase == "D" and (event == breakout or (mode == bull_mode and control == own)):
+            return setup
+        if phase == "E" and mode == bull_mode and control in {own, "EQUILIBRIUM"}:
+            return setup
+    if phase in {"C", "D"}:
+        return "TRANSITION"
+    return "WAIT"
+
+
+def symmetric_precor_intent(bars: pd.DataFrame, policy: Mapping) -> Dict:
+    """DIR-002 side-symmetric Precor state; legacy ``analyse`` is unchanged."""
+    result = {
+        "status": "EVALUATED", "intent": "WAIT", "mode": "UNKNOWN", "phase": "UNKNOWN",
+        "control": "UNKNOWN", "primary_event": "NONE", "compressed": False,
+        "intent_basis": "NONE",
+        "policy_version": policy.get("version") if isinstance(policy, Mapping) else None,
+    }
+    try:
+        cfg = policy["intent"]
+        lookback, minimum = int(cfg["lookback_bars"]), int(cfg["min_bars"])
+    except (KeyError, TypeError, ValueError):
+        result["status"] = "NOT_EVALUATED_POLICY_INVALID"
+        return result
+    if bars is None or len(bars) < minimum:
+        result["status"] = "NOT_EVALUATED_INSUFFICIENT_BARS"
+        return result
+    from WyckoffEngine_3101_v2 import side_log_frame
+
+    lf = side_log_frame(bars.tail(lookback).reset_index(drop=True))
+    if lf is None:
+        result["status"] = "NOT_EVALUATED_INVALID_BARS"
+        return result
+    lf["lema21"] = lf["lc"].ewm(span=21, adjust=False).mean()
+    lf["lema50"] = lf["lc"].ewm(span=50, adjust=False).mean()
+    control = _sym_control(lf, cfg)
+    compressed = _sym_compressed(lf, cfg)
+    event = _sym_events(lf, cfg)
+    phase = _sym_phase(lf, event, control, cfg)
+    mode = _sym_mode(lf, event, phase, control)
+    intent = _sym_intent(phase, mode, event, control, compressed)
+    # DEC-1: a setup from a trend phase (D without SOS/SOW, or E) is trend
+    # context, not structural support. Only an event-anchored setup counts.
+    if intent in {"BUY_SETUP", "SELL_SETUP"}:
+        anchored = (phase == "C" and event in {"SPRING", "UTAD"}) or (
+            phase == "D" and event in {"SOS", "SOW"}
+        )
+        basis = "EVENT" if anchored else "TREND_PHASE"
+    else:
+        basis = "NONE"
+    result.update(
+        intent=intent, intent_basis=basis,
+        mode=mode, phase=phase, control=control, primary_event=event, compressed=compressed,
+    )
+    return result

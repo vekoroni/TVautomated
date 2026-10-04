@@ -124,6 +124,10 @@ def refresh_completed_session_gex(
             session=session_date,
             run_id=f"{run_id}:completed-gex",
             source_option_dataset_ids=datasets_by_ticker,
+            # This path has already proven the exact-session chains reached
+            # Phantom, and the macro overlay admits only that session. A rolled
+            # chain must never be registered here, so the roll stays off.
+            fallback=False,
         )
         if publish_macro_overlay:
             overlay = apply_completed_gex_overlay(

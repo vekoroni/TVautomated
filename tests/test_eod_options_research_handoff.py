@@ -38,6 +38,7 @@ def _row(ticker: str, *, route: str, vetoes: str = "") -> dict:
         "options_score": 82.0,
         "rr_underlying": 2.1,
         "rr_options": 3.0,
+        "rr_options_reachable": 3.0,   # XLU-D13: contract quality reads the reachable R:R
         "composite": 72.0,
         "ev2_ev_structural": 0.15,
         "sb_conv_score": 3.0,

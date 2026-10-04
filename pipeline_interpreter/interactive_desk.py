@@ -47,7 +47,9 @@ EVIDENCE_FIELDS = (
     "trigger_price", "trigger_quality", "trigger_evidence", "direction_conflict_status", "conflict_state",
     "profile_type", "poc", "vah", "val", "market_profile_type", "market_profile_poc",
     "market_profile_vah", "market_profile_val", "vwap", "volume", "relative_volume",
-    "wyckoff_phase_bucket", "wyckoff_entry_trigger", "wyckoff_execution_bias",
+    # XLU-D10/D09: Phase and Event categorise the trade; the legacy OBSERVE_ONLY bias and the
+    # fallback phase bucket are not sent (ACK 2 Oct 2026).
+    "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category", "wyckoff_entry_trigger",
     "wyckoff_validation_last_confirmed_event", "wyckoff_validation_next_expected_event",
     "wyckoff_validation_contradicting_evidence", "call_wall", "put_wall",
     "gamma_flip", "gex", "contract_symbol", "selected_contract_symbol", "strike",
@@ -134,6 +136,15 @@ def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], m
     refs = ["EOD_BOOK"] + (["MORNING_HANDOFF"] if morning else [])
     if chain.get("price_path", {}).get("state") == "OBSERVED":
         refs.append("PIT_PRICE_BARS")
+    if chain.get("contract", {}).get("evidence_ref") == "MORNING_QUOTE":
+        refs.append("MORNING_QUOTE")
+    # XLU-D07/D08/D14/D02 (ACK 2 Oct 2026): deterministic governed facts, never model inference.
+    from pipeline_interpreter.governed_facts import gamma_provenance, level_relations, macro_rates
+    morning_fields = (morning or {}).get("fields") or {}
+    live_spot = morning_fields.get("live_price") or morning_fields.get("validation_current_price")
+    spot_source = "MORNING_LIVE_PRICE" if live_spot not in (None, "") else "EOD_SIGNAL_PRICE"
+    spot_value = live_spot if live_spot not in (None, "") else (row.get("current_price") or row.get("last_price")
+                                                                 or row.get("signal_price"))
     digest = {
         "run_id": bundle["run_id"], "ticker": bundle["ticker"],
         "authority": "ADVISORY_ONLY", "source_action": bundle.get("source_action"),
@@ -145,6 +156,9 @@ def compile_evidence_digest(row: Mapping[str, Any], bundle: Mapping[str, Any], m
         "eod_fields": retained,
         "confluence": _clean(chain),
         "morning_evidence": _clean(morning) if morning else None,
+        "level_relations": _clean(level_relations(row, spot=spot_value, spot_source=spot_source)),
+        "gamma_provenance": _clean(gamma_provenance(row)),
+        "macro_rates": _clean(macro_rates(row, morning_fields)),
         "evidence_refs": refs,
         "omitted_fields": omitted,
         "available_field_count": len(row), "included_field_count": len(retained),
@@ -270,6 +284,19 @@ def _validate_report(output: Mapping[str, Any], allowed_refs: set[str], evidence
     }
 
 
+def governed_number_check(content: Mapping[str, Any], digest: Mapping[str, Any]) -> dict[str, Any]:
+    """XLU-D02 (ACK 2 Oct 2026): flag rate figures in the narrative that the governed macro
+    facts do not hold. Advisory: the report is kept and the flag travels with it."""
+    from pipeline_interpreter.governed_facts import unverified_rate_claims
+    texts = [content.get("executive_summary", "")]
+    texts += [section.get("text", "") for section in content.get("sections", [])]
+    texts += [item.get("text", "") for item in content.get("evidence_chain_review", [])]
+    texts.append((content.get("counter_case") or {}).get("text", ""))
+    flagged = unverified_rate_claims(texts, digest.get("macro_rates") or {})
+    return {"state": "UNVERIFIED_RATE_FIGURES" if flagged else "PASS", "unverified_rate_figures": flagged,
+            "basis": "evidence.macro_rates"}
+
+
 def _validate_answer(value: Mapping[str, Any], allowed_refs: set[str], question: str) -> dict[str, Any]:
     if (not isinstance(value, Mapping) or not isinstance(value.get("answer"), str)
             or not value["answer"].strip() or len(value["answer"]) > 6000):
@@ -312,6 +339,11 @@ def _morning_evidence(root: Path, ticker: str) -> dict[str, Any] | None:
         "validation_event_id", "validation_current_price",
         "selected_contract_symbol", "selected_quote_snapshot_id",
         "selected_quote_timestamp_utc", "quote_change_evidence", "market_structure",
+        # XLU-D06: the refreshed Morning quote for the exact contract; XLU-D02: governed macro rates.
+        "live_price", "live_price_updated_utc", "live_contract_symbol", "morning_selected_contract_symbol",
+        "live_contract_bid", "live_contract_ask", "live_contract_mid", "live_contract_spread_pct",
+        "live_contract_delta", "live_contract_iv", "live_contract_quote_timestamp", "quote_freshness",
+        "quote_age_seconds", "t10y", "macro_context_state", "macro_rates_context", "macro_packet_id",
     ) if key in governed}
     return {"bundle_id": bundle.get("bundle_id"), "fields": fields,
             "evidence_cutoff_utc": resolved.manifest.get("morning_gate_completed_utc"),
@@ -440,6 +472,11 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         except ValueError:
             return False
 
+    def provider_can_dispatch() -> bool:
+        return bool(getattr(provider, "ready", True)) and bool(
+            getattr(provider, "sdk_available", True)
+        )
+
     def selected(body):
         run_id = str(body.get("run_id") or "").strip()
         if not re.fullmatch(r"\d{8}_\d{6}", run_id):
@@ -458,7 +495,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         if not local_request_allowed():
             return jsonify({"error": "local Lab origin required"}), 403
         return jsonify({"authority": "ADVISORY_ONLY", "max_tickers": 5,
-                        "provider_ready": bool(getattr(provider, "ready", True)),
+                        "provider_ready": provider_can_dispatch(),
                         "model_id": getattr(provider, "model_id", "UNCONFIGURED"),
                         "deep_dive_ready": hasattr(provider, "deep_report")})
 
@@ -509,7 +546,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         body = request.get_json(silent=True) or {}
         if body.get("confirmed") is not True:
             return jsonify({"error": "explicit paid-request confirmation required"}), 400
-        if not getattr(provider, "ready", True):
+        if not provider_can_dispatch():
             return jsonify({"error": "GPT provider not configured; no request sent"}), 503
         try:
             root, frozen, choices, rows = selected(body)
@@ -567,6 +604,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                 stage = "REPORT_VALIDATION"
                 content = _validate_report(raw, set(digest["evidence_refs"]),
                                            digest["evidence_cutoff_utc"], digest["confluence"])
+                content["governed_number_check"] = governed_number_check(content, digest)
                 report = {
                     "schema_version": REPORT_VERSION, "status": "COMPLETE",
                     "report_id": report_id, "run_id": root.name, "ticker": choice.ticker,
@@ -624,7 +662,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         body = request.get_json(silent=True) or {}
         if body.get("confirmed") is not True:
             return jsonify({"error": "explicit paid-request confirmation required"}), 400
-        if not getattr(provider, "ready", True):
+        if not provider_can_dispatch():
             return jsonify({"error": "model provider not configured; no request sent"}), 503
         if not hasattr(provider, "deep_report"):
             return jsonify({"error": "configured provider does not support deep-dive reports"}), 503
@@ -685,6 +723,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
                 stage = "REPORT_VALIDATION"
                 content = _validate_report(raw, set(digest["evidence_refs"]),
                                            digest["evidence_cutoff_utc"], digest["confluence"])
+                content["governed_number_check"] = governed_number_check(content, digest)
                 report = {
                     "schema_version": DEEP_REPORT_VERSION, "status": "COMPLETE", "mode": "DEEP_DIVE",
                     "report_id": report_id, "run_id": root.name, "ticker": choice.ticker,
@@ -735,7 +774,7 @@ def install_interpreter_desk(app, runs_dir: Path | str, *, provider=None) -> Non
         body = request.get_json(silent=True) or {}
         if body.get("confirmed") is not True:
             return jsonify({"error": "explicit paid-question confirmation required"}), 400
-        if not getattr(provider, "ready", True):
+        if not provider_can_dispatch():
             return jsonify({"error": "GPT provider not configured; no request sent"}), 503
         run_id = str(body.get("run_id") or "")
         ticker = str(body.get("ticker") or "").upper()

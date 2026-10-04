@@ -1,0 +1,3199 @@
+{
+  "as_of": "2026-09-24",
+  "scorer_version": "c12-outcome-scorer-v1.0.0",
+  "base_rate_version": "c12-base-rate-v1.0.0",
+  "condition_version": "c12-conditions-v1.0.0",
+  "config_snapshot_id": "0cf80a4fff424d5f1a70e13920a5a7a888042f9365024ab9d73bfbb17855bfce",
+  "coverage": {
+    "provenance_class": {
+      "RECORDED_AT_RUN": 30639,
+      "RETROSPECTIVE_UNVERIFIED": 414
+    },
+    "evidence_session_source": {
+      "DERIVED_FROM_RUN_ID": 9965,
+      "THESIS_ID": 19603,
+      "RUN_META": 1485
+    },
+    "invalidation_state": {
+      "VALID": 26776,
+      "MISSING": 4277
+    },
+    "target_state": {
+      "LEVEL": 18198,
+      "INVALID_LEGACY": 8100,
+      "NONE": 4755
+    },
+    "contract_state": {
+      "VALID": 23310,
+      "SIDE_MISMATCH": 1361,
+      "MISSING": 6382
+    },
+    "direction": {
+      "BULL": 21559,
+      "BEAR": 7664,
+      "None": 1830
+    },
+    "base_state": {
+      "OK": 25585,
+      "NO_ATR": 11,
+      "NOT_SCORABLE": 3908,
+      "None": 1549
+    },
+    "macro_freshness": {
+      "CURRENT": 30360,
+      "STALE": 693
+    },
+    "outcome_state": {
+      "STOP_FIRST": 10649,
+      "TARGET_FIRST": 1544,
+      "TIMEOUT": 2847,
+      "DATA_GAP": 27,
+      "AMBIGUOUS": 307,
+      "OPEN_CENSORED": 10222,
+      "NOT_SCORABLE": 3908,
+      "NOT_YET_SCORED": 1549
+    }
+  },
+  "timing": {
+    "STOP_FIRST": {
+      "1": 2524,
+      "2": 1665,
+      "11": 253,
+      "4": 985,
+      "3": 1303,
+      "6": 494,
+      "15": 142,
+      "16": 147,
+      "13": 204,
+      "10": 214,
+      "5": 730,
+      "14": 161,
+      "7": 470,
+      "9": 310,
+      "12": 227,
+      "8": 388,
+      "20": 72,
+      "18": 119,
+      "19": 88,
+      "17": 153
+    },
+    "TARGET_FIRST": {
+      "4": 149,
+      "1": 519,
+      "5": 80,
+      "9": 58,
+      "3": 188,
+      "8": 42,
+      "10": 30,
+      "11": 30,
+      "12": 25,
+      "17": 15,
+      "2": 246,
+      "16": 12,
+      "6": 51,
+      "7": 44,
+      "20": 4,
+      "14": 12,
+      "19": 3,
+      "18": 11,
+      "13": 21,
+      "15": 4
+    },
+    "AMBIGUOUS": {
+      "1": 304,
+      "2": 3
+    }
+  },
+  "groups": [
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "ALL",
+      "predictions": 25210,
+      "sessions": 25,
+      "target": [
+        0.06858595309588073,
+        0.0790043139758744,
+        0.09226432140609692
+      ],
+      "base_target": 0.0804632041863064,
+      "excess_target": [
+        -0.005430796951589508,
+        -0.0014588902104319956,
+        0.0025305312718633998
+      ],
+      "stop": [
+        0.5688904437890199,
+        0.6060163090273633,
+        0.6361552744126517
+      ],
+      "base_stop": 0.5803004874045581,
+      "excess_stop": [
+        0.01879658926577572,
+        0.02571582162280517,
+        0.03284272001608615
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "direction=BEAR",
+      "predictions": 6340,
+      "sessions": 24,
+      "target": [
+        0.060475371054940344,
+        0.08052236775895429,
+        0.10677574348864066
+      ],
+      "base_target": 0.09437873663443026,
+      "excess_target": [
+        -0.023037513487816824,
+        -0.013856368875475977,
+        -0.003417674275044988
+      ],
+      "stop": [
+        0.3123613855416121,
+        0.3531451566639759,
+        0.4105443577278064
+      ],
+      "base_stop": 0.3275617053609867,
+      "excess_stop": [
+        0.0105987593925746,
+        0.02558345130298917,
+        0.04034007728700932
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "direction=BULL",
+      "predictions": 18870,
+      "sessions": 24,
+      "target": [
+        0.06899246406082248,
+        0.08134868879299229,
+        0.09511923275421166
+      ],
+      "base_target": 0.08028017135939826,
+      "excess_target": [
+        -0.0034587385778812054,
+        0.0010685174335940267,
+        0.0052667403500341456
+      ],
+      "stop": [
+        0.617799240603594,
+        0.6629557430339765,
+        0.7050955429127155
+      ],
+      "base_stop": 0.6387519407356868,
+      "excess_stop": [
+        0.016810402850187624,
+        0.024203802298289778,
+        0.033005105730281335
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "ev3_absolute_state=INDETERMINATE",
+      "predictions": 8,
+      "sessions": 3,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.14262299984782625,
+      "excess_target": [
+        -0.1619753340905886,
+        -0.14262299984782625,
+        -0.10856847751107569
+      ],
+      "stop": [
+        0.2727272727272727,
+        0.375,
+        0.6
+      ],
+      "base_stop": 0.2769896793706607,
+      "excess_stop": [
+        0.03984724381818852,
+        0.09801032062933929,
+        0.22805313022527152
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "ev3_absolute_state=NEGATIVE_EV",
+      "predictions": 1644,
+      "sessions": 9,
+      "target": [
+        0.06476948492610074,
+        0.10460160840883308,
+        0.15553671518780743
+      ],
+      "base_target": 0.13259854633240123,
+      "excess_target": [
+        -0.07784207611833974,
+        -0.027996937923568152,
+        0.007297799024730817
+      ],
+      "stop": [
+        0.4211352526425933,
+        0.47565975115309966,
+        0.9335339084784056
+      ],
+      "base_stop": 0.5374277470644458,
+      "excess_stop": [
+        -0.07057516930004434,
+        -0.061767995911346185,
+        0.35557809388235945
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "ev3_absolute_state=NOT_APPLICABLE",
+      "predictions": 889,
+      "sessions": 15,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.001320528226890141,
+      "excess_target": [
+        -0.0017821826940437287,
+        -0.001320528226890141,
+        -0.00011233777375320256
+      ],
+      "stop": [
+        0.5338387528385552,
+        0.6593955404236321,
+        0.822701766078644
+      ],
+      "base_stop": 0.5795872485519594,
+      "excess_stop": [
+        -0.02442979635504733,
+        0.07980829187167271,
+        0.23154496084010506
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "ev3_absolute_state=UNVALIDATED",
+      "predictions": 13143,
+      "sessions": 14,
+      "target": [
+        0.06250712178380538,
+        0.12356406382914918,
+        0.15366796508809838
+      ],
+      "base_target": 0.1417694062340732,
+      "excess_target": [
+        -0.030977744873201065,
+        -0.01820534240492401,
+        -0.0065514946716634815
+      ],
+      "stop": [
+        0.453252141784312,
+        0.545418941754629,
+        0.6019569122568543
+      ],
+      "base_stop": 0.4867564055368513,
+      "excess_stop": [
+        0.03177969600100754,
+        0.05866253621777773,
+        0.0917491133628683
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "final_action=BLOCK",
+      "predictions": 1896,
+      "sessions": 12,
+      "target": [
+        0.05339734707714449,
+        0.15787532615547686,
+        0.258801503034622
+      ],
+      "base_target": 0.16608236074581703,
+      "excess_target": [
+        -0.025113895870079398,
+        -0.008207034590340168,
+        0.03464885263901779
+      ],
+      "stop": [
+        0.45099109556899963,
+        0.5145039919813398,
+        0.7259505823615219
+      ],
+      "base_stop": 0.4872188742760958,
+      "excess_stop": [
+        -0.012909544001033635,
+        0.027285117705244,
+        0.17693828312847437
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "final_action=BUY_NOW",
+      "predictions": 6,
+      "sessions": 3,
+      "target": [
+        0.0,
+        0.2777777777777778,
+        0.4285714285714286
+      ],
+      "base_target": 0.2663450219750902,
+      "excess_target": [
+        -0.130432966278396,
+        0.0114327558026876,
+        0.12023906866591438
+      ],
+      "stop": [
+        0.0,
+        0.7222222222222223,
+        0.8
+      ],
+      "base_stop": 0.7151006326524003,
+      "excess_stop": [
+        -0.5738364426924358,
+        0.007121589569822007,
+        0.05366399515579379
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "final_action=BUY_SMALL",
+      "predictions": 199,
+      "sessions": 8,
+      "target": [
+        0.0,
+        0.02890087542708445,
+        0.09592535740469205
+      ],
+      "base_target": 0.10425213925850182,
+      "excess_target": [
+        -0.08973210633622335,
+        -0.07535126383141738,
+        -0.01915058059730594
+      ],
+      "stop": [
+        0.21229969014332525,
+        0.6721635971045742,
+        0.7667841330080419
+      ],
+      "base_stop": 0.5655874886877034,
+      "excess_stop": [
+        -0.07737927485350192,
+        0.10657610841687082,
+        0.12409827206163371
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "final_action=CONTRACT_REPAIR",
+      "predictions": 947,
+      "sessions": 12,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.015989382922368418,
+      "excess_target": [
+        -0.038960449767255524,
+        -0.015989382922368418,
+        -8.37749964083463e-05
+      ],
+      "stop": [
+        0.44489298709969105,
+        0.5818428249638199,
+        0.6567252035018524
+      ],
+      "base_stop": 0.5438581216427696,
+      "excess_stop": [
+        0.016777566235243964,
+        0.037984703321050306,
+        0.10463881230256217
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "final_action=MANUAL_REVIEW",
+      "predictions": 12635,
+      "sessions": 14,
+      "target": [
+        0.06850653981671212,
+        0.0836245018833578,
+        0.10895152825831518
+      ],
+      "base_target": 0.11871610371997308,
+      "excess_target": [
+        -0.052683442636568614,
+        -0.03509160183661529,
+        -0.011107509687778086
+      ],
+      "stop": [
+        0.4544820988035496,
+        0.6759675401113046,
+        0.7926270666011219
+      ],
+      "base_stop": 0.5261439679047566,
+      "excess_stop": [
+        0.03033502811436554,
+        0.14982357220654796,
+        0.2447835073175296
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=BLOCKED",
+      "predictions": 2908,
+      "sessions": 20,
+      "target": [
+        0.057786139043244575,
+        0.09209705205308386,
+        0.2132856524090403
+      ],
+      "base_target": 0.09392998080562229,
+      "excess_target": [
+        -0.03218556928279192,
+        -0.001832928752538432,
+        0.018328954287716342
+      ],
+      "stop": [
+        0.5153108712823116,
+        0.6374052463728319,
+        0.6924137733720845
+      ],
+      "base_stop": 0.6158484550376102,
+      "excess_stop": [
+        -0.011415067004789331,
+        0.021556791335221703,
+        0.040544124785493116
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=CONTRACT_REPAIR",
+      "predictions": 957,
+      "sessions": 13,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0124170452571024,
+      "excess_target": [
+        -0.03418898178197085,
+        -0.0124170452571024,
+        -6.944850569969982e-05
+      ],
+      "stop": [
+        0.5025230832855822,
+        0.6619138115011826,
+        0.8016641999280691
+      ],
+      "base_stop": 0.6100621386925544,
+      "excess_stop": [
+        0.02288207261214358,
+        0.051851672808628124,
+        0.1895134209151382
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=GO",
+      "predictions": 6,
+      "sessions": 3,
+      "target": [
+        0.0,
+        0.2777777777777778,
+        0.4285714285714286
+      ],
+      "base_target": 0.2663450219750902,
+      "excess_target": [
+        -0.130432966278396,
+        0.0114327558026876,
+        0.12023906866591438
+      ],
+      "stop": [
+        0.0,
+        0.7222222222222223,
+        0.8
+      ],
+      "base_stop": 0.7151006326524003,
+      "excess_stop": [
+        -0.5738364426924358,
+        0.007121589569822007,
+        0.05366399515579379
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=GO_LIMIT",
+      "predictions": 224,
+      "sessions": 9,
+      "target": [
+        0.0,
+        0.07341777804239102,
+        0.12658784674976317
+      ],
+      "base_target": 0.1638003981112294,
+      "excess_target": [
+        -0.11571860415443508,
+        -0.09038262006883838,
+        -0.024031549105752295
+      ],
+      "stop": [
+        0.3118565916622699,
+        0.6191850155834204,
+        0.6990086377280629
+      ],
+      "base_stop": 0.4742670689428513,
+      "excess_stop": [
+        0.0018148022380359932,
+        0.14491794664056912,
+        0.20460759845457316
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=MANUAL_REVIEW",
+      "predictions": 12635,
+      "sessions": 14,
+      "target": [
+        0.06850653981671212,
+        0.0836245018833578,
+        0.10895152825831518
+      ],
+      "base_target": 0.11871610371997308,
+      "excess_target": [
+        -0.052683442636568614,
+        -0.03509160183661529,
+        -0.011107509687778086
+      ],
+      "stop": [
+        0.4544820988035496,
+        0.6759675401113046,
+        0.7926270666011219
+      ],
+      "base_stop": 0.5261439679047566,
+      "excess_stop": [
+        0.03033502811436554,
+        0.14982357220654796,
+        0.2447835073175296
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "lab_verdict=MORNING_VALIDATION_REQUIRED",
+      "predictions": 8480,
+      "sessions": 8,
+      "target": [
+        0.06755796084466628,
+        0.07990510277370075,
+        0.09468571938157436
+      ],
+      "base_target": 0.07835970818206463,
+      "excess_target": [
+        -0.003693581118926364,
+        0.0015453945916361206,
+        0.007813301422848069
+      ],
+      "stop": [
+        0.5694023203502645,
+        0.613311759158952,
+        0.6477253295939244
+      ],
+      "base_stop": 0.5960660449706634,
+      "excess_stop": [
+        0.008032045971732339,
+        0.017245714188288574,
+        0.025253482325870102
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "target_state=INVALID_LEGACY",
+      "predictions": 7558,
+      "sessions": 19,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.600119212435906,
+        0.647166260187207,
+        0.6837661330612158
+      ],
+      "base_stop": 0.6278780865283126,
+      "excess_stop": [
+        0.012763557154862526,
+        0.01928817365889446,
+        0.026256410459143478
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "target_state=LEVEL",
+      "predictions": 16563,
+      "sessions": 23,
+      "target": [
+        0.15419725274222487,
+        0.17820365368479052,
+        0.21647233220486373
+      ],
+      "base_target": 0.18099141096665392,
+      "excess_target": [
+        -0.011363598767172935,
+        -0.0027877572818633956,
+        0.006554887817558818
+      ],
+      "stop": [
+        0.5449365939551497,
+        0.5700744577568047,
+        0.5936194609303375
+      ],
+      "base_stop": 0.542280535975636,
+      "excess_stop": [
+        0.014416172153335755,
+        0.027793921781168685,
+        0.04125191789860369
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "target_state=NONE",
+      "predictions": 1089,
+      "sessions": 11,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.40353572405448823,
+        0.5632106424146632,
+        0.6104459672633824
+      ],
+      "base_stop": 0.44472317610886963,
+      "excess_stop": [
+        0.031426274826276364,
+        0.1184874663057936,
+        0.1717036840014769
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=ACTIVE",
+      "predictions": 3754,
+      "sessions": 9,
+      "target": [
+        0.042208798914002636,
+        0.1069950296610215,
+        0.12090472838533078
+      ],
+      "base_target": 0.13679945540229524,
+      "excess_target": [
+        -0.06732633775793626,
+        -0.029804425741273732,
+        -0.005230660914642023
+      ],
+      "stop": [
+        0.3983109081133624,
+        0.7522202808322136,
+        0.8244427689041754
+      ],
+      "base_stop": 0.5548088722295558,
+      "excess_stop": [
+        0.04144412811031052,
+        0.19741140860265782,
+        0.2344048965764714
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=DATA_INCOMPLETE",
+      "predictions": 136,
+      "sessions": 9,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0001012189709365825,
+      "excess_target": [
+        -0.00015535136592304157,
+        -0.0001012189709365825,
+        0.0
+      ],
+      "stop": [
+        0.011627906976744186,
+        0.7110020553576323,
+        0.7830910631473438
+      ],
+      "base_stop": 0.379082762528592,
+      "excess_stop": [
+        -0.003239566869472712,
+        0.33191929282904026,
+        0.340951190580521
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=INVALIDATED",
+      "predictions": 109,
+      "sessions": 8,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.2111047594735299,
+      "excess_target": [
+        -0.2774099172068301,
+        -0.2111047594735299,
+        -0.1636089745837154
+      ],
+      "stop": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "base_stop": 0.7836987748529297,
+      "excess_stop": [
+        0.17133438640361845,
+        0.2163012251470703,
+        0.2884911328768023
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=LEGACY_NOT_EVALUATED",
+      "predictions": 32,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.001972138301443438,
+      "excess_target": [
+        -0.001972138301443438,
+        -0.001972138301443438,
+        -0.001972138301443438
+      ],
+      "stop": [
+        0.34375,
+        0.34375,
+        0.34375
+      ],
+      "base_stop": 0.371443856998993,
+      "excess_stop": [
+        -0.027693856998993016,
+        -0.027693856998993016,
+        -0.027693856998993016
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=TARGET_REALIZED",
+      "predictions": 73,
+      "sessions": 8,
+      "target": [
+        0.65,
+        0.821917808219178,
+        0.876627824230564
+      ],
+      "base_target": 0.31082098957466053,
+      "excess_target": [
+        0.40746547181800313,
+        0.5110968186445175,
+        0.5579339019780752
+      ],
+      "stop": [
+        0.12337217576943603,
+        0.17808219178082196,
+        0.35
+      ],
+      "base_stop": 0.6871218654539946,
+      "excess_stop": [
+        -0.5532909263764743,
+        -0.5090396736731726,
+        -0.40095885298297335
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=VALID_THESIS_DATA_REVIEW",
+      "predictions": 23,
+      "sessions": 9,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.015266321609917113,
+      "excess_target": [
+        -0.064939432882217,
+        -0.015266321609917113,
+        0.0
+      ],
+      "stop": [
+        0.08,
+        0.36086956521739133,
+        0.7037749287749288
+      ],
+      "base_stop": 0.3508529481018779,
+      "excess_stop": [
+        -0.21240069633147296,
+        0.010016617115513438,
+        0.21610673408545414
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=VALID_THESIS_READY",
+      "predictions": 63,
+      "sessions": 6,
+      "target": [
+        0.0,
+        0.17481379801215077,
+        0.4820736434108527
+      ],
+      "base_target": 0.049890531200784224,
+      "excess_target": [
+        -0.011736573286810636,
+        0.12492326681136655,
+        0.3936831652558595
+      ],
+      "stop": [
+        0.18,
+        0.26594473677521036,
+        0.3167076966610073
+      ],
+      "base_stop": 0.3559950597987661,
+      "excess_stop": [
+        -0.14858514840435794,
+        -0.09005032302355576,
+        0.039063849887548185
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=VALID_THESIS_REPAIR_AT_OPEN",
+      "predictions": 7923,
+      "sessions": 12,
+      "target": [
+        0.06676815930387653,
+        0.12094480682406869,
+        0.14832103313421
+      ],
+      "base_target": 0.12164803129114124,
+      "excess_target": [
+        -0.016790521912163618,
+        -0.0007032244670725496,
+        0.00654766006761337
+      ],
+      "stop": [
+        0.48488361806777136,
+        0.5614484145581514,
+        0.5893199281316897
+      ],
+      "base_stop": 0.5268395537827653,
+      "excess_stop": [
+        0.012150105898685929,
+        0.03460886077538616,
+        0.06505975387654236
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=VALID_THESIS_TRIGGER_PENDING",
+      "predictions": 3400,
+      "sessions": 12,
+      "target": [
+        0.06044303798468243,
+        0.14182421747119645,
+        0.2076280715936889
+      ],
+      "base_target": 0.17088773732483115,
+      "excess_target": [
+        -0.04096822496417166,
+        -0.0290635198536347,
+        -0.0005210340760870533
+      ],
+      "stop": [
+        0.37839319555224715,
+        0.4321622762493042,
+        0.4970994655569587
+      ],
+      "base_stop": 0.39777865696826975,
+      "excess_stop": [
+        0.016350361282962217,
+        0.03438361928103445,
+        0.08355691073485964
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "thesis_state=VALID_THESIS_WATCHLIST",
+      "predictions": 170,
+      "sessions": 5,
+      "target": [
+        0.022026431718061675,
+        0.2165266106442577,
+        0.3548387096774194
+      ],
+      "base_target": 0.23088586377653122,
+      "excess_target": [
+        -0.32301501304744773,
+        -0.014359253132273514,
+        0.14442712780030326
+      ],
+      "stop": [
+        0.16455696202531647,
+        0.2288515406162465,
+        0.24998233768330963
+      ],
+      "base_stop": 0.6262580416208504,
+      "excess_stop": [
+        -0.4501210162252427,
+        -0.39740650100460395,
+        -0.0315742828007306
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=0",
+      "predictions": 526,
+      "sessions": 1,
+      "target": [
+        0.03041825095057034,
+        0.03041825095057034,
+        0.03041825095057034
+      ],
+      "base_target": 0.058095159108888135,
+      "excess_target": [
+        -0.027676908158317796,
+        -0.027676908158317796,
+        -0.027676908158317796
+      ],
+      "stop": [
+        0.4695817490494297,
+        0.4695817490494297,
+        0.4695817490494297
+      ],
+      "base_stop": 0.4139842294638526,
+      "excess_stop": [
+        0.05559751958557707,
+        0.05559751958557707,
+        0.05559751958557707
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=1",
+      "predictions": 253,
+      "sessions": 1,
+      "target": [
+        0.031620553359683785,
+        0.031620553359683785,
+        0.031620553359683785
+      ],
+      "base_target": 0.07097249117966947,
+      "excess_target": [
+        -0.03935193781998569,
+        -0.03935193781998569,
+        -0.03935193781998569
+      ],
+      "stop": [
+        0.3557312252964427,
+        0.3557312252964427,
+        0.3557312252964427
+      ],
+      "base_stop": 0.3222723293630793,
+      "excess_stop": [
+        0.033458895933363375,
+        0.033458895933363375,
+        0.033458895933363375
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=2",
+      "predictions": 327,
+      "sessions": 1,
+      "target": [
+        0.01529051987767584,
+        0.01529051987767584,
+        0.01529051987767584
+      ],
+      "base_target": 0.024380682634484736,
+      "excess_target": [
+        -0.009090162756808896,
+        -0.009090162756808896,
+        -0.009090162756808896
+      ],
+      "stop": [
+        0.3241590214067278,
+        0.3241590214067278,
+        0.3241590214067278
+      ],
+      "base_stop": 0.26638651150380716,
+      "excess_stop": [
+        0.057772509902920655,
+        0.057772509902920655,
+        0.057772509902920655
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=A",
+      "predictions": 3242,
+      "sessions": 12,
+      "target": [
+        0.07818823702818538,
+        0.20595590620432822,
+        0.2341477267742822
+      ],
+      "base_target": 0.1479311628336965,
+      "excess_target": [
+        -0.01244201805896981,
+        0.05802474337063171,
+        0.07553359560280334
+      ],
+      "stop": [
+        0.3961905238567188,
+        0.46228190545560244,
+        0.5679284426028267
+      ],
+      "base_stop": 0.525360680007798,
+      "excess_stop": [
+        -0.11723019751432406,
+        -0.06307877455219557,
+        0.0473201289582907
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=B",
+      "predictions": 2492,
+      "sessions": 13,
+      "target": [
+        0.0949624425537523,
+        0.16066614831498235,
+        0.1993109357969095
+      ],
+      "base_target": 0.17899381123173216,
+      "excess_target": [
+        -0.03491906066553307,
+        -0.01832766291674981,
+        0.020067332301134933
+      ],
+      "stop": [
+        0.4230470216396253,
+        0.5620090328528341,
+        0.6044987732796102
+      ],
+      "base_stop": 0.5179494316423292,
+      "excess_stop": [
+        -0.04876380597350284,
+        0.044059601210504895,
+        0.06665517717139971
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=C",
+      "predictions": 6870,
+      "sessions": 13,
+      "target": [
+        0.05884692320867309,
+        0.1186990215700039,
+        0.14748225469200774
+      ],
+      "base_target": 0.13076879284905196,
+      "excess_target": [
+        -0.029166044136289853,
+        -0.01206977127904807,
+        -0.003938971241732831
+      ],
+      "stop": [
+        0.47356794658155327,
+        0.6045609606510411,
+        0.6807859762584823
+      ],
+      "base_stop": 0.4896789436563688,
+      "excess_stop": [
+        0.04738066305638717,
+        0.11488201699467232,
+        0.16053814374396844
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "headline",
+      "group": "tier=WATCH",
+      "predictions": 1974,
+      "sessions": 15,
+      "target": [
+        0.0214351847531838,
+        0.038101872593247176,
+        0.0790577342486371
+      ],
+      "base_target": 0.06797307604154225,
+      "excess_target": [
+        -0.04405975661838807,
+        -0.029871203448295074,
+        -0.0036213207357223562
+      ],
+      "stop": [
+        0.38889841461207214,
+        0.50139754609239,
+        0.6570052762096847
+      ],
+      "base_stop": 0.46226343642908874,
+      "excess_stop": [
+        -0.026628898813561286,
+        0.03913410966330122,
+        0.18244685010684722
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "ALL",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "direction=BEAR",
+      "predictions": 83,
+      "sessions": 1,
+      "target": [
+        0.024096385542168676,
+        0.024096385542168676,
+        0.024096385542168676
+      ],
+      "base_target": 0.026791269706592975,
+      "excess_target": [
+        -0.0026948841644242987,
+        -0.0026948841644242987,
+        -0.0026948841644242987
+      ],
+      "stop": [
+        0.024096385542168676,
+        0.024096385542168676,
+        0.024096385542168676
+      ],
+      "base_stop": 0.04093234103415676,
+      "excess_stop": [
+        -0.016835955491988082,
+        -0.016835955491988082,
+        -0.016835955491988082
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "direction=BULL",
+      "predictions": 292,
+      "sessions": 1,
+      "target": [
+        0.010273972602739725,
+        0.010273972602739725,
+        0.010273972602739725
+      ],
+      "base_target": 0.010304980568341558,
+      "excess_target": [
+        -3.100796560183243e-05,
+        -3.100796560183243e-05,
+        -3.100796560183243e-05
+      ],
+      "stop": [
+        0.3184931506849315,
+        0.3184931506849315,
+        0.3184931506849315
+      ],
+      "base_stop": 0.31342621941695825,
+      "excess_stop": [
+        0.0050669312679732514,
+        0.0050669312679732514,
+        0.0050669312679732514
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "ev3_absolute_state=UNVALIDATED",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "final_action=BLOCK",
+      "predictions": 38,
+      "sessions": 1,
+      "target": [
+        0.13157894736842105,
+        0.13157894736842105,
+        0.13157894736842105
+      ],
+      "base_target": 0.06603657029898692,
+      "excess_target": [
+        0.06554237706943412,
+        0.06554237706943412,
+        0.06554237706943412
+      ],
+      "stop": [
+        0.868421052631579,
+        0.868421052631579,
+        0.868421052631579
+      ],
+      "base_stop": 0.8396342970101309,
+      "excess_stop": [
+        0.028786755621448057,
+        0.028786755621448057,
+        0.028786755621448057
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "final_action=BUY_NOW",
+      "predictions": 2,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0005030181086519115,
+      "excess_target": [
+        -0.0005030181086519115,
+        -0.0005030181086519115,
+        -0.0005030181086519115
+      ],
+      "stop": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_stop": 0.008886653252850436,
+      "excess_stop": [
+        -0.008886653252850436,
+        -0.008886653252850436,
+        -0.008886653252850436
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "final_action=BUY_SMALL",
+      "predictions": 30,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.005756762799016322,
+      "excess_target": [
+        -0.005756762799016322,
+        -0.005756762799016322,
+        -0.005756762799016322
+      ],
+      "stop": [
+        0.30000000000000004,
+        0.30000000000000004,
+        0.30000000000000004
+      ],
+      "base_stop": 0.25365526492287055,
+      "excess_stop": [
+        0.046344735077129495,
+        0.046344735077129495,
+        0.046344735077129495
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "final_action=CONTRACT_REPAIR",
+      "predictions": 3,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "base_stop": 0.2356360384529399,
+      "excess_stop": [
+        0.09769729488039341,
+        0.09769729488039341,
+        0.09769729488039341
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "final_action=MANUAL_REVIEW",
+      "predictions": 302,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.008442487152495556,
+      "excess_target": [
+        -0.008442487152495556,
+        -0.008442487152495556,
+        -0.008442487152495556
+      ],
+      "stop": [
+        0.17218543046357615,
+        0.17218543046357615,
+        0.17218543046357615
+      ],
+      "base_stop": 0.18105098582665968,
+      "excess_stop": [
+        -0.008865555363083533,
+        -0.008865555363083533,
+        -0.008865555363083533
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "lab_verdict=BLOCKED",
+      "predictions": 38,
+      "sessions": 1,
+      "target": [
+        0.13157894736842105,
+        0.13157894736842105,
+        0.13157894736842105
+      ],
+      "base_target": 0.06603657029898692,
+      "excess_target": [
+        0.06554237706943412,
+        0.06554237706943412,
+        0.06554237706943412
+      ],
+      "stop": [
+        0.868421052631579,
+        0.868421052631579,
+        0.868421052631579
+      ],
+      "base_stop": 0.8396342970101309,
+      "excess_stop": [
+        0.028786755621448057,
+        0.028786755621448057,
+        0.028786755621448057
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "lab_verdict=CONTRACT_REPAIR",
+      "predictions": 3,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "base_stop": 0.2356360384529399,
+      "excess_stop": [
+        0.09769729488039341,
+        0.09769729488039341,
+        0.09769729488039341
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "lab_verdict=GO",
+      "predictions": 2,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0005030181086519115,
+      "excess_target": [
+        -0.0005030181086519115,
+        -0.0005030181086519115,
+        -0.0005030181086519115
+      ],
+      "stop": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_stop": 0.008886653252850436,
+      "excess_stop": [
+        -0.008886653252850436,
+        -0.008886653252850436,
+        -0.008886653252850436
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "lab_verdict=GO_LIMIT",
+      "predictions": 30,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.005756762799016322,
+      "excess_target": [
+        -0.005756762799016322,
+        -0.005756762799016322,
+        -0.005756762799016322
+      ],
+      "stop": [
+        0.30000000000000004,
+        0.30000000000000004,
+        0.30000000000000004
+      ],
+      "base_stop": 0.25365526492287055,
+      "excess_stop": [
+        0.046344735077129495,
+        0.046344735077129495,
+        0.046344735077129495
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "lab_verdict=MANUAL_REVIEW",
+      "predictions": 302,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.008442487152495556,
+      "excess_target": [
+        -0.008442487152495556,
+        -0.008442487152495556,
+        -0.008442487152495556
+      ],
+      "stop": [
+        0.17218543046357615,
+        0.17218543046357615,
+        0.17218543046357615
+      ],
+      "base_stop": 0.18105098582665968,
+      "excess_stop": [
+        -0.008865555363083533,
+        -0.008865555363083533,
+        -0.008865555363083533
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "target_state=LEVEL",
+      "predictions": 372,
+      "sessions": 1,
+      "target": [
+        0.013440860215053764,
+        0.013440860215053764,
+        0.013440860215053764
+      ],
+      "base_target": 0.014066477719362782,
+      "excess_target": [
+        -0.0006256175043090183,
+        -0.0006256175043090183,
+        -0.0006256175043090183
+      ],
+      "stop": [
+        0.25268817204301075,
+        0.25268817204301075,
+        0.25268817204301075
+      ],
+      "base_stop": 0.25325519424792486,
+      "excess_stop": [
+        -0.0005670222049141138,
+        -0.0005670222049141138,
+        -0.0005670222049141138
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "target_state=NONE",
+      "predictions": 3,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "base_stop": 0.2356360384529399,
+      "excess_stop": [
+        0.09769729488039341,
+        0.09769729488039341,
+        0.09769729488039341
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "thesis_state=ACTIVE",
+      "predictions": 334,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.008153712695333683,
+      "excess_target": [
+        -0.008153712695333683,
+        -0.008153712695333683,
+        -0.008153712695333683
+      ],
+      "stop": [
+        0.18263473053892215,
+        0.18263473053892215,
+        0.18263473053892215
+      ],
+      "base_stop": 0.18654140411330244,
+      "excess_stop": [
+        -0.003906673574380293,
+        -0.003906673574380293,
+        -0.003906673574380293
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "thesis_state=DATA_INCOMPLETE",
+      "predictions": 3,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0,
+      "excess_target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stop": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "base_stop": 0.2356360384529399,
+      "excess_stop": [
+        0.09769729488039341,
+        0.09769729488039341,
+        0.09769729488039341
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "thesis_state=INVALIDATED",
+      "predictions": 28,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.047954393024815564,
+      "excess_target": [
+        -0.047954393024815564,
+        -0.047954393024815564,
+        -0.047954393024815564
+      ],
+      "stop": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "base_stop": 0.8258599214333621,
+      "excess_stop": [
+        0.17414007856663793,
+        0.17414007856663793,
+        0.17414007856663793
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "thesis_state=TARGET_REALIZED",
+      "predictions": 10,
+      "sessions": 1,
+      "target": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "base_target": 0.11666666666666665,
+      "excess_target": [
+        0.38333333333333336,
+        0.38333333333333336,
+        0.38333333333333336
+      ],
+      "stop": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "base_stop": 0.8782025486250838,
+      "excess_stop": [
+        -0.37820254862508385,
+        -0.37820254862508385,
+        -0.37820254862508385
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "tier=A",
+      "predictions": 116,
+      "sessions": 1,
+      "target": [
+        0.017241379310344827,
+        0.017241379310344827,
+        0.017241379310344827
+      ],
+      "base_target": 0.02001954254261201,
+      "excess_target": [
+        -0.0027781632322671813,
+        -0.0027781632322671813,
+        -0.0027781632322671813
+      ],
+      "stop": [
+        0.29310344827586204,
+        0.29310344827586204,
+        0.29310344827586204
+      ],
+      "base_stop": 0.29215812114063694,
+      "excess_stop": [
+        0.0009453271352251047,
+        0.0009453271352251047,
+        0.0009453271352251047
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "tier=B",
+      "predictions": 68,
+      "sessions": 1,
+      "target": [
+        0.014705882352941176,
+        0.014705882352941176,
+        0.014705882352941176
+      ],
+      "base_target": 0.015199037361423442,
+      "excess_target": [
+        -0.0004931550084822656,
+        -0.0004931550084822656,
+        -0.0004931550084822656
+      ],
+      "stop": [
+        0.29411764705882354,
+        0.29411764705882354,
+        0.29411764705882354
+      ],
+      "base_stop": 0.2663135676805932,
+      "excess_stop": [
+        0.027804079378230317,
+        0.027804079378230317,
+        0.027804079378230317
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "tier=C",
+      "predictions": 186,
+      "sessions": 1,
+      "target": [
+        0.010752688172043012,
+        0.010752688172043012,
+        0.010752688172043012
+      ],
+      "base_target": 0.010087406157374357,
+      "excess_target": [
+        0.0006652820146686549,
+        0.0006652820146686549,
+        0.0006652820146686549
+      ],
+      "stop": [
+        0.21505376344086022,
+        0.21505376344086022,
+        0.21505376344086022
+      ],
+      "base_stop": 0.22623014070083577,
+      "excess_stop": [
+        -0.011176377259975556,
+        -0.011176377259975556,
+        -0.011176377259975556
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Legacy labels",
+      "scope": "retrospective",
+      "group": "tier=WATCH",
+      "predictions": 5,
+      "sessions": 1,
+      "target": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "base_target": 0.0001341381623071764,
+      "excess_target": [
+        -0.0001341381623071764,
+        -0.0001341381623071764,
+        -0.0001341381623071764
+      ],
+      "stop": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "base_stop": 0.16787391012743125,
+      "excess_stop": [
+        0.032126089872568764,
+        0.032126089872568764,
+        0.032126089872568764
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "direction=BEAR x market_trend_state=ABOVE_BOTH",
+      "predictions": 4991,
+      "sessions": 21,
+      "target": [
+        0.06056414920605469,
+        0.08472592449619494,
+        0.11753071443443831
+      ],
+      "base_target": 0.10210409129224676,
+      "excess_target": [
+        -0.025975073679665544,
+        -0.017378166796051822,
+        -0.006622654436060997
+      ],
+      "stop": [
+        0.31705404025587686,
+        0.36121178290963074,
+        0.4213501252131517
+      ],
+      "base_stop": 0.3363992072499618,
+      "excess_stop": [
+        0.007694713850502794,
+        0.024812575659668934,
+        0.04306872938530966
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "direction=BEAR x market_trend_state=ABOVE_LONG_ONLY",
+      "predictions": 1349,
+      "sessions": 3,
+      "target": [
+        0.025391529978685948,
+        0.04759123306760191,
+        0.04934611108169642
+      ],
+      "base_target": 0.04204831645972076,
+      "excess_target": [
+        -0.01176869279217864,
+        0.00554291660788115,
+        0.007773648764643169
+      ],
+      "stop": [
+        0.17964824120603018,
+        0.4123820819148745,
+        0.5285599356395817
+      ],
+      "base_stop": 0.3665136704501524,
+      "excess_stop": [
+        0.010319034365020907,
+        0.04586841146472215,
+        0.04586841146472215
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "direction=BULL x market_trend_state=ABOVE_BOTH",
+      "predictions": 15924,
+      "sessions": 21,
+      "target": [
+        0.061033749129295656,
+        0.07240230594273687,
+        0.08567896157549854
+      ],
+      "base_target": 0.07162114195456869,
+      "excess_target": [
+        -0.004412200892602854,
+        0.0007811639881681876,
+        0.005792844286658411
+      ],
+      "stop": [
+        0.6390711661676848,
+        0.6840536004276325,
+        0.7224329237317995
+      ],
+      "base_stop": 0.6598856458717296,
+      "excess_stop": [
+        0.015332668169477143,
+        0.024167954555902926,
+        0.03385084579432467
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "direction=BULL x market_trend_state=ABOVE_LONG_ONLY",
+      "predictions": 2946,
+      "sessions": 3,
+      "target": [
+        0.10674846625766872,
+        0.12628083975958715,
+        0.14288694943543884
+      ],
+      "base_target": 0.12380369906469223,
+      "excess_target": [
+        -0.002241993044481694,
+        0.002477140694894922,
+        0.011919691838958552
+      ],
+      "stop": [
+        0.4665341661934506,
+        0.516261505234543,
+        0.5290032930316473
+      ],
+      "base_stop": 0.5002858514788798,
+      "excess_stop": [
+        0.003309949492606823,
+        0.015975653755663122,
+        0.031480782655682826
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "macro_freshness=CURRENT",
+      "predictions": 24537,
+      "sessions": 24,
+      "target": [
+        0.06592381053170264,
+        0.07573471036251833,
+        0.08696950448524549
+      ],
+      "base_target": 0.07695053816501066,
+      "excess_target": [
+        -0.005406969550072269,
+        -0.0012158278024923252,
+        0.002877302834452134
+      ],
+      "stop": [
+        0.5709016022557191,
+        0.608509837928987,
+        0.6398083485796973
+      ],
+      "base_stop": 0.5841124465212827,
+      "excess_stop": [
+        0.017371124970419972,
+        0.02439739140770436,
+        0.0316839306780206
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "macro_freshness=STALE",
+      "predictions": 673,
+      "sessions": 3,
+      "target": [
+        0.06887755102040817,
+        0.1770511110360664,
+        0.2677379893238434
+      ],
+      "base_target": 0.18266608808032714,
+      "excess_target": [
+        -0.017803758520098523,
+        -0.005614977044260727,
+        0.007469303936614269
+      ],
+      "stop": [
+        0.4423076923076923,
+        0.5132927529379981,
+        0.5547354076765842
+      ],
+      "base_stop": 0.45859889789308667,
+      "excess_stop": [
+        0.051175015876799235,
+        0.05469385504491148,
+        0.06254851998571809
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_breadth_state=HIGH",
+      "predictions": 4515,
+      "sessions": 4,
+      "target": [
+        0.05841718333375732,
+        0.06873005555638935,
+        0.08040483891995147
+      ],
+      "base_target": 0.06996805244188194,
+      "excess_target": [
+        -0.004633935109433315,
+        -0.0012379968854925871,
+        0.002745668810507862
+      ],
+      "stop": [
+        0.6079115164465572,
+        0.636437315233947,
+        0.6612320438191375
+      ],
+      "base_stop": 0.6200512315402826,
+      "excess_stop": [
+        0.010417547168455332,
+        0.016386083693664344,
+        0.02142599901883857
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_breadth_state=LOW",
+      "predictions": 14252,
+      "sessions": 10,
+      "target": [
+        0.03937185724527143,
+        0.055620425295901915,
+        0.06738842991154449
+      ],
+      "base_target": 0.06175114133406115,
+      "excess_target": [
+        -0.012280757225816978,
+        -0.006130716038159234,
+        -0.0011667233110170619
+      ],
+      "stop": [
+        0.38776238386128997,
+        0.41394707087210536,
+        0.42521314955788736
+      ],
+      "base_stop": 0.3894252860720931,
+      "excess_stop": [
+        -0.007740429516615632,
+        0.02452178480001227,
+        0.03324897883281523
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_breadth_state=MID",
+      "predictions": 6443,
+      "sessions": 11,
+      "target": [
+        0.07569906289003676,
+        0.1005891651395838,
+        0.13315836578968993
+      ],
+      "base_target": 0.0949165753505056,
+      "excess_target": [
+        -0.0028182172780836863,
+        0.005672589789078197,
+        0.014807386605716899
+      ],
+      "stop": [
+        0.5222887482154455,
+        0.5912353538142773,
+        0.6475338203792519
+      ],
+      "base_stop": 0.5713937593149172,
+      "excess_stop": [
+        0.005419122417234712,
+        0.01984159449936007,
+        0.03410583281611119
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_trend_state=ABOVE_BOTH",
+      "predictions": 20915,
+      "sessions": 22,
+      "target": [
+        0.062130531841666364,
+        0.07344890743864171,
+        0.0884779572737616
+      ],
+      "base_target": 0.07584170334431695,
+      "excess_target": [
+        -0.006913140558779133,
+        -0.0023927959056752324,
+        0.0023211045534455373
+      ],
+      "stop": [
+        0.594611105258693,
+        0.6270301282226379,
+        0.6531870701790593
+      ],
+      "base_stop": 0.601295733838868,
+      "excess_stop": [
+        0.017915769570221108,
+        0.0257343943837699,
+        0.03374956398340314
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_trend_state=ABOVE_LONG_ONLY",
+      "predictions": 4295,
+      "sessions": 3,
+      "target": [
+        0.07853403141361257,
+        0.10114311146441123,
+        0.12116892765011376
+      ],
+      "base_target": 0.09846637185799273,
+      "excess_target": [
+        0.0005951920655082321,
+        0.002676739606418496,
+        0.009112944722465932
+      ],
+      "stop": [
+        0.36554021894336036,
+        0.4690164380516058,
+        0.4779580519394716
+      ],
+      "base_stop": 0.45178827412703576,
+      "excess_stop": [
+        0.008364191053080172,
+        0.01722816392457005,
+        0.030974909494651537
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_vol_state=HIGH",
+      "predictions": 3325,
+      "sessions": 3,
+      "target": [
+        0.06263755601834908,
+        0.07315251016176842,
+        0.08335971907049394
+      ],
+      "base_target": 0.0725389326106126,
+      "excess_target": [
+        -0.0020537416775652795,
+        0.0006135775511558195,
+        0.0034895166719676324
+      ],
+      "stop": [
+        0.5966702001254425,
+        0.6248398413706514,
+        0.6509433135505439
+      ],
+      "base_stop": 0.6082343289605092,
+      "excess_stop": [
+        0.01025390609464627,
+        0.016605512410142187,
+        0.022484153022328646
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_vol_state=LOW",
+      "predictions": 14192,
+      "sessions": 15,
+      "target": [
+        0.06375650620185573,
+        0.11974237397872498,
+        0.1454679470676889
+      ],
+      "base_target": 0.13487166030481568,
+      "excess_target": [
+        -0.02928061490362219,
+        -0.015129286326090702,
+        -0.005444718572516753
+      ],
+      "stop": [
+        0.4631952728915987,
+        0.5374928939475203,
+        0.6260135261771212
+      ],
+      "base_stop": 0.4911975008580216,
+      "excess_stop": [
+        0.012118034663548244,
+        0.046295393089498704,
+        0.11983870656131608
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "market_vol_state=MID",
+      "predictions": 7693,
+      "sessions": 7,
+      "target": [
+        0.06109254473182313,
+        0.07767947718687358,
+        0.09787365215068561
+      ],
+      "base_target": 0.07732891462800491,
+      "excess_target": [
+        -0.00700357844473945,
+        0.00035056255886867227,
+        0.008839078177864737
+      ],
+      "stop": [
+        0.5694037440277735,
+        0.6306560125870647,
+        0.6794634196328312
+      ],
+      "base_stop": 0.6103865323798053,
+      "excess_stop": [
+        0.00905213252222269,
+        0.020269480207259383,
+        0.03032957258035973
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "regime_label=TRANSITIONAL",
+      "predictions": 2138,
+      "sessions": 3,
+      "target": [
+        0.04091816367265469,
+        0.07066779200531864,
+        0.09694322035633594
+      ],
+      "base_target": 0.07619861427333255,
+      "excess_target": [
+        -0.01238454905383797,
+        -0.005530822268013907,
+        0.0022791504327071
+      ],
+      "stop": [
+        0.6524552067952661,
+        0.6865608692635121,
+        0.725049900199601
+      ],
+      "base_stop": 0.6603543874510439,
+      "excess_stop": [
+        0.024679344351936194,
+        0.026206481812468208,
+        0.029514026771258806
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "regime_label=TRANSITIONAL_BEARISH",
+      "predictions": 8429,
+      "sessions": 9,
+      "target": [
+        0.06331724433262456,
+        0.08083815908637831,
+        0.09573199227206385
+      ],
+      "base_target": 0.08420574669874223,
+      "excess_target": [
+        -0.010016311654768106,
+        -0.003367587612363915,
+        0.0029328848440293444
+      ],
+      "stop": [
+        0.438829429062191,
+        0.5706666956727573,
+        0.6457150526727209
+      ],
+      "base_stop": 0.5369586623715968,
+      "excess_stop": [
+        0.018847506462990247,
+        0.033708033301160456,
+        0.05114248908409313
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "regime_label=TRANSITIONAL_BULLISH",
+      "predictions": 14643,
+      "sessions": 15,
+      "target": [
+        0.06413531446729312,
+        0.07888683526855556,
+        0.10313849139346863
+      ],
+      "base_target": 0.07858996269055983,
+      "excess_target": [
+        -0.004494896061365401,
+        0.0002968725779957243,
+        0.006397824725981498
+      ],
+      "stop": [
+        0.5693911691983652,
+        0.6098587362764625,
+        0.6389629507102436
+      ],
+      "base_stop": 0.5911402324817073,
+      "excess_stop": [
+        0.010243873500335815,
+        0.018718503794755148,
+        0.028233939576871852
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "risk_on_off_switch=SELECTIVE_RISK_ON",
+      "predictions": 1722,
+      "sessions": 1,
+      "target": [
+        0.0406587765259945,
+        0.0406587765259945,
+        0.0406587765259945
+      ],
+      "base_target": 0.03514622383935826,
+      "excess_target": [
+        0.005512552686636238,
+        0.005512552686636238,
+        0.005512552686636238
+      ],
+      "stop": [
+        0.25522309297021784,
+        0.25522309297021784,
+        0.25522309297021784
+      ],
+      "base_stop": 0.24892521992193228,
+      "excess_stop": [
+        0.006297873048285552,
+        0.006297873048285552,
+        0.006297873048285552
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "headline",
+      "group": "risk_on_off_switch=SELECTIVE_RISK_ON_REDUCED_SIZE",
+      "predictions": 23488,
+      "sessions": 24,
+      "target": [
+        0.0677298615669685,
+        0.07905401267700993,
+        0.09269925140705265
+      ],
+      "base_target": 0.08084651715165483,
+      "excess_target": [
+        -0.005679032638050564,
+        -0.001792504474644907,
+        0.002066914258444293
+      ],
+      "stop": [
+        0.5682004023697049,
+        0.6052885104116981,
+        0.637215238580601
+      ],
+      "base_stop": 0.5792418907951971,
+      "excess_stop": [
+        0.019060608527912293,
+        0.02604661961650101,
+        0.033423665261965246
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "direction=BEAR x market_trend_state=ABOVE_BOTH",
+      "predictions": 83,
+      "sessions": 1,
+      "target": [
+        0.024096385542168676,
+        0.024096385542168676,
+        0.024096385542168676
+      ],
+      "base_target": 0.026791269706592975,
+      "excess_target": [
+        -0.0026948841644242987,
+        -0.0026948841644242987,
+        -0.0026948841644242987
+      ],
+      "stop": [
+        0.024096385542168676,
+        0.024096385542168676,
+        0.024096385542168676
+      ],
+      "base_stop": 0.04093234103415676,
+      "excess_stop": [
+        -0.016835955491988082,
+        -0.016835955491988082,
+        -0.016835955491988082
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "direction=BULL x market_trend_state=ABOVE_BOTH",
+      "predictions": 292,
+      "sessions": 1,
+      "target": [
+        0.010273972602739725,
+        0.010273972602739725,
+        0.010273972602739725
+      ],
+      "base_target": 0.010304980568341558,
+      "excess_target": [
+        -3.100796560183243e-05,
+        -3.100796560183243e-05,
+        -3.100796560183243e-05
+      ],
+      "stop": [
+        0.3184931506849315,
+        0.3184931506849315,
+        0.3184931506849315
+      ],
+      "base_stop": 0.31342621941695825,
+      "excess_stop": [
+        0.0050669312679732514,
+        0.0050669312679732514,
+        0.0050669312679732514
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "macro_freshness=CURRENT",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "market_breadth_state=LOW",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "market_trend_state=ABOVE_BOTH",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "market_vol_state=LOW",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "regime_label=TRANSITIONAL_BULLISH",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Conditions",
+      "scope": "retrospective",
+      "group": "risk_on_off_switch=SELECTIVE_RISK_ON_REDUCED_SIZE",
+      "predictions": 375,
+      "sessions": 1,
+      "target": [
+        0.013333333333333334,
+        0.013333333333333334,
+        0.013333333333333334
+      ],
+      "base_target": 0.01395394589760788,
+      "excess_target": [
+        -0.000620612564274545,
+        -0.000620612564274545,
+        -0.000620612564274545
+      ],
+      "stop": [
+        0.2533333333333333,
+        0.2533333333333333,
+        0.2533333333333333
+      ],
+      "base_stop": 0.25311424100156504,
+      "excess_stop": [
+        0.00021909233176825582,
+        0.00021909233176825582,
+        0.00021909233176825582
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "ALL",
+      "marked": 6405,
+      "sessions": 23,
+      "win_rate": 0.12271662763466042,
+      "median_return_on_premium": -0.5601851851851852,
+      "mean_return_on_premium": [
+        -0.48370084426479987,
+        -0.4483744789236838,
+        -0.41252651882100255
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "direction=BEAR",
+      "marked": 1295,
+      "sessions": 23,
+      "win_rate": 0.24864864864864866,
+      "median_return_on_premium": -0.4,
+      "mean_return_on_premium": [
+        -0.29388244683339093,
+        -0.2204864484143643,
+        -0.15248648059493422
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "direction=BULL",
+      "marked": 5110,
+      "sessions": 23,
+      "win_rate": 0.09080234833659491,
+      "median_return_on_premium": -0.5862068965517242,
+      "mean_return_on_premium": [
+        -0.5433268843956732,
+        -0.506126925011662,
+        -0.4677323298325667
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "entry_source=CHAIN_ASK_EVIDENCE_SESSION",
+      "marked": 222,
+      "sessions": 3,
+      "win_rate": 0.20270270270270271,
+      "median_return_on_premium": -0.7344924812030076,
+      "mean_return_on_premium": [
+        -0.4533366583225858,
+        -0.41924848150465366,
+        -0.4118704925495396
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "entry_source=RECORDED_ASK",
+      "marked": 6183,
+      "sessions": 23,
+      "win_rate": 0.11984473556525958,
+      "median_return_on_premium": -0.5540540540540542,
+      "mean_return_on_premium": [
+        -0.4866937578899584,
+        -0.44942024496395955,
+        -0.41213646321350644
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "exit_reason=CONTRACT_LAST_USABLE",
+      "marked": 840,
+      "sessions": 10,
+      "win_rate": 0.2726190476190476,
+      "median_return_on_premium": -0.6270328358208955,
+      "mean_return_on_premium": [
+        -0.4310688709416264,
+        -0.29317082367314673,
+        -0.2027302556004078
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "exit_reason=RESOLUTION",
+      "marked": 5353,
+      "sessions": 23,
+      "win_rate": 0.0902297776947506,
+      "median_return_on_premium": -0.5555555555555556,
+      "mean_return_on_premium": [
+        -0.5275781734526227,
+        -0.4860135177432448,
+        -0.4400694824955959
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "exit_reason=TIMEOUT",
+      "marked": 212,
+      "sessions": 6,
+      "win_rate": 0.3490566037735849,
+      "median_return_on_premium": -0.45490716180371354,
+      "mean_return_on_premium": [
+        -0.24955670006846273,
+        -0.11294662802435283,
+        -0.005104528032634555
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=BLOCKED",
+      "marked": 1235,
+      "sessions": 18,
+      "win_rate": 0.11578947368421053,
+      "median_return_on_premium": -0.6451612903225806,
+      "mean_return_on_premium": [
+        -0.5760532257984291,
+        -0.49396843305949356,
+        -0.33134219958986766
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=CONTRACT_REPAIR",
+      "marked": 24,
+      "sessions": 4,
+      "win_rate": 0.25,
+      "median_return_on_premium": -0.5892268041237113,
+      "mean_return_on_premium": [
+        -0.8292433412634633,
+        -0.39323705057182384,
+        -0.11324515423473784
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=GO",
+      "marked": 3,
+      "sessions": 1,
+      "win_rate": 0.3333333333333333,
+      "median_return_on_premium": -0.3076923076923077,
+      "mean_return_on_premium": [
+        0.3648363407592942,
+        0.3648363407592942,
+        0.3648363407592942
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=GO_LIMIT",
+      "marked": 56,
+      "sessions": 8,
+      "win_rate": 0.19642857142857142,
+      "median_return_on_premium": -0.44928053662230877,
+      "mean_return_on_premium": [
+        -0.4874306079792495,
+        -0.26626224014779387,
+        -0.09413968392970258
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=MANUAL_REVIEW",
+      "marked": 4380,
+      "sessions": 13,
+      "win_rate": 0.10342465753424658,
+      "median_return_on_premium": -0.5333333333333334,
+      "mean_return_on_premium": [
+        -0.49669319855633415,
+        -0.4628959592833894,
+        -0.4360955034758062
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "lab_verdict=MORNING_VALIDATION_REQUIRED",
+      "marked": 707,
+      "sessions": 8,
+      "win_rate": 0.24328147100424327,
+      "median_return_on_premium": -0.63,
+      "mean_return_on_premium": [
+        -0.34576892834880213,
+        -0.2985139397125214,
+        -0.2531286065431768
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "target_state=INVALID_LEGACY",
+      "marked": 282,
+      "sessions": 11,
+      "win_rate": 0.2127659574468085,
+      "median_return_on_premium": -0.6742424242424243,
+      "mean_return_on_premium": [
+        -0.4474372430977,
+        -0.3991521154187545,
+        -0.3213397841541145
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "target_state=LEVEL",
+      "marked": 6028,
+      "sessions": 23,
+      "win_rate": 0.11712010617120105,
+      "median_return_on_premium": -0.5526315789473684,
+      "mean_return_on_premium": [
+        -0.4875480862445654,
+        -0.4504402946566006,
+        -0.4127694185867925
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "target_state=NONE",
+      "marked": 95,
+      "sessions": 4,
+      "win_rate": 0.21052631578947367,
+      "median_return_on_premium": -0.825,
+      "mean_return_on_premium": [
+        -0.8620323129251701,
+        -0.46340573440123967,
+        -0.4451456426679329
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=0",
+      "marked": 252,
+      "sessions": 1,
+      "win_rate": 0.04365079365079365,
+      "median_return_on_premium": -0.6666666666666667,
+      "mean_return_on_premium": [
+        -0.6108800987090056,
+        -0.6108800987090056,
+        -0.6108800987090056
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=1",
+      "marked": 87,
+      "sessions": 1,
+      "win_rate": 0.08045977011494253,
+      "median_return_on_premium": -0.7333333333333334,
+      "mean_return_on_premium": [
+        -0.6087815210187213,
+        -0.6087815210187213,
+        -0.6087815210187213
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=2",
+      "marked": 98,
+      "sessions": 1,
+      "win_rate": 0.02040816326530612,
+      "median_return_on_premium": -0.8333333333333334,
+      "mean_return_on_premium": [
+        -0.760994366195462,
+        -0.760994366195462,
+        -0.760994366195462
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=A",
+      "marked": 1162,
+      "sessions": 12,
+      "win_rate": 0.12134251290877797,
+      "median_return_on_premium": -0.42713804713804715,
+      "mean_return_on_premium": [
+        -0.40322031806595054,
+        -0.37290098680647804,
+        -0.33457895340013616
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=B",
+      "marked": 1147,
+      "sessions": 13,
+      "win_rate": 0.16216216216216217,
+      "median_return_on_premium": -0.4590163934426229,
+      "mean_return_on_premium": [
+        -0.43211934515202255,
+        -0.3787300390554281,
+        -0.32876836804394777
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=C",
+      "marked": 2415,
+      "sessions": 13,
+      "win_rate": 0.07743271221532091,
+      "median_return_on_premium": -0.5909090909090909,
+      "mean_return_on_premium": [
+        -0.562409886574864,
+        -0.5168764553201061,
+        -0.4790190524598698
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "tier=WATCH",
+      "marked": 397,
+      "sessions": 13,
+      "win_rate": 0.11586901763224182,
+      "median_return_on_premium": -0.6545454545454545,
+      "mean_return_on_premium": [
+        -0.623202243706437,
+        -0.53216239258871,
+        -0.4781157989922874
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=AMBIGUOUS",
+      "marked": 280,
+      "sessions": 15,
+      "win_rate": 0.07142857142857142,
+      "median_return_on_premium": -0.34441379310344833,
+      "mean_return_on_premium": [
+        -0.43267353757254734,
+        -0.390891874283001,
+        -0.3547269356671686
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=NOT_SCORABLE",
+      "marked": 167,
+      "sessions": 6,
+      "win_rate": 0.2215568862275449,
+      "median_return_on_premium": -0.6630434782608695,
+      "mean_return_on_premium": [
+        -0.6587796811497498,
+        -0.3932051858141731,
+        -0.22585269905999808
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=OPEN_CENSORED",
+      "marked": 673,
+      "sessions": 10,
+      "win_rate": 0.2852897473997028,
+      "median_return_on_premium": -0.6168224299065421,
+      "mean_return_on_premium": [
+        -0.44566021309824777,
+        -0.268348032473219,
+        -0.1341479113626509
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=STOP_FIRST",
+      "marked": 4188,
+      "sessions": 23,
+      "win_rate": 0.002387774594078319,
+      "median_return_on_premium": -0.6407670454545454,
+      "mean_return_on_premium": [
+        -0.6886569205097126,
+        -0.6310262518653574,
+        -0.576923910197106
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=TARGET_FIRST",
+      "marked": 885,
+      "sessions": 23,
+      "win_rate": 0.511864406779661,
+      "median_return_on_premium": 0.019379844961240345,
+      "mean_return_on_premium": [
+        0.08317201563258572,
+        0.17012125099634817,
+        0.2872583866893068
+      ],
+      "verdict": "OK"
+    },
+    {
+      "section": "Expressions",
+      "group": "underlying_state=TIMEOUT",
+      "marked": 212,
+      "sessions": 6,
+      "win_rate": 0.3490566037735849,
+      "median_return_on_premium": -0.45490716180371354,
+      "mean_return_on_premium": [
+        -0.24955670006846273,
+        -0.11294662802435283,
+        -0.005104528032634555
+      ],
+      "verdict": "INSUFFICIENT_SESSIONS"
+    }
+  ]
+}

@@ -45,6 +45,9 @@ class EdgeAssessment:
     # Default WEAK — safe for all existing callers that do not pass this field.
     bucket_edge_quality: str = "WEAK"
 
+    # DIR-002 VNG-02: Vanguard casts no side. The Discovery thesis owns it.
+    edge_direction_status: str = "RETIRED_USE_SIDE_EVIDENCE"
+
 
 @dataclass
 class TradeScenario:

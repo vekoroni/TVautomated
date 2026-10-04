@@ -190,6 +190,58 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
             self.assertTrue((interpreter_dir / f"final_opportunity_book_{RUN_ID}.csv").exists())
             self.assertTrue(Path(summary["summary_path"]).exists())
 
+    def test_fresh_direction_policy_reconciles_after_version_crossover(self) -> None:
+        def fresh_record(ticker: str, side: str) -> dict:
+            return resolve_governed_direction(
+                ticker=ticker,
+                run_id=RUN_ID,
+                discovery_direction=side,
+                governed_direction=side,
+                governed_basis="Discovery structural thesis",
+                authority="DISCOVERY_GOVERNED",
+                row={
+                    "thesis__side": "BULL" if side == "CALL" else "BEAR",
+                    "vanguard_edge_direction": "PUT" if side == "CALL" else "CALL",
+                },
+                decided_at_utc="2099-01-01T01:01:01+00:00",
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            with patch(f"{__name__}._governed_direction", side_effect=fresh_record):
+                runs_dir, rows, _, patches = _fixture(Path(directory))
+            with patches[0], patches[1], patches[2], patches[3], patches[4]:
+                summary = finalize_morning_handoff(RUN_ID, rows, runs_dir=runs_dir)
+            self.assertEqual(summary["status"], "PASS")
+            self.assertEqual(summary["reconciliation"]["direction_version"], "dir_v1.3.0")
+            self.assertTrue(summary["reconciliation"]["direction_version_uniform"])
+
+    def test_mixed_direction_policy_releases_fail_morning_handoff(self) -> None:
+        legacy_record = _governed_direction
+        calls = 0
+
+        def mixed_record(ticker: str, side: str) -> dict:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return legacy_record(ticker, side)
+            return resolve_governed_direction(
+                ticker=ticker,
+                run_id=RUN_ID,
+                discovery_direction=side,
+                governed_direction=side,
+                governed_basis="Discovery structural thesis",
+                authority="DISCOVERY_GOVERNED",
+                row={"thesis__side": "BULL" if side == "CALL" else "BEAR"},
+                decided_at_utc="2099-01-01T01:01:01+00:00",
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            with patch(f"{__name__}._governed_direction", side_effect=mixed_record):
+                runs_dir, rows, _, patches = _fixture(Path(directory))
+            with patches[0], patches[1], patches[2], patches[3], patches[4]:
+                with self.assertRaisesRegex(MorningHandoffError, "DIRECTION_POLICY_TUPLE_MIXED"):
+                    finalize_morning_handoff(RUN_ID, rows, runs_dir=runs_dir)
+
     def test_deferred_sync_publishes_only_after_explicit_release(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             tmp_path = Path(directory)

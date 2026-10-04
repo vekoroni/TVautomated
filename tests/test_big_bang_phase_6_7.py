@@ -226,7 +226,9 @@ def test_manifest_and_resolver() -> None:
         )
         assert weak_ev["lab_verdict"] == "GO"
         assert weak_ev["lab_tradeable"] is True
-        assert "LEGACY_EV_WEAK" in weak_ev["advisory_flags"]
+        # ACK 30 Sep 2026 (options analytics slice 1d): EV v2 retired from the Lab; it never decided permission
+        # (the verdict above is unchanged) and no LEGACY_EV_* flag is raised any more.
+        assert not any(f.startswith("LEGACY_EV_") for f in weak_ev["advisory_flags"])
 
         legacy_negative_rr = resolve_lab_tradeability(
             {

@@ -2,8 +2,10 @@
 
 The stage is intentionally explicit and independently runnable. It publishes
 its authorised worklist, resolves five-minute bars through CDS, persists the
-derived advisory evidence, and atomically attaches only the evidence reference
-to each existing package.
+derived advisory evidence, and publishes the evidence reference for each ticker: into the
+run's ``market_profile`` enrichment ledger (AVS-PKG-002 P4c, finding PKG-F5) and, while a run
+still carries package files, atomically into each package as before. Without a package index
+the worklist is the run manifest's tickers and ATR14 comes from canonical daily bars.
 """
 
 from __future__ import annotations
@@ -35,8 +37,13 @@ from canonical_data import (
     session_bounds,
     session_snapshot,
 )
+from canonical_data.historical_prices import HistoricalPriceDatabase
+from canonical_data.history_bridge import database_path as history_database_path
 from contracts.dynamic_session_contract import DataExceptionReason, EvidenceState
-from market_structure.completed_profile import CanonicalProfileEvidenceStore, build_profile_evidence
+from contracts.enrichment_ledger import append_enrichment_record
+from market_structure.completed_profile import (
+    PROFILE_ALGORITHM_VERSION, CanonicalProfileEvidenceStore, build_profile_evidence,
+)
 
 
 def _load_api_token(base_dir: Path) -> str:
@@ -54,8 +61,6 @@ def _load_api_token(base_dir: Path) -> str:
 def _package_paths(run_dir: Path, base_dir: Path = ROOT) -> list[Path]:
     index_path = run_dir / "packages" / "index.json"
     if not index_path.is_file():
-        # AVS-PKG-002 P4: runs no longer carry package files; this stage's own manifest-based
-        # input is part of its promotion work (AVS-SD-002 Phase 4), not fabricated here.
         return []
     payload = json.loads(index_path.read_text(encoding="utf-8-sig"))
     paths = []
@@ -65,6 +70,46 @@ def _package_paths(run_dir: Path, base_dir: Path = ROOT) -> list[Path]:
         if path.exists() and str(item.get("status", "BUILT")).upper() == "BUILT":
             paths.append(path)
     return paths
+
+
+def _worklist(run_dir: Path, base_dir: Path = ROOT) -> list[tuple[str, Path | None]]:
+    """(ticker, package path or None): the package index while a run carries packages, else the
+    run manifest's tickers (AVS-PKG-002 P4c). An empty list means neither input exists."""
+    packages = _package_paths(run_dir, base_dir)
+    if packages:
+        return [(path.name.removesuffix(".package.json").upper(), path) for path in packages]
+    manifest_path = run_dir / "canonical_manifest.json"
+    if not manifest_path.is_file():
+        return []
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    seen: set[str] = set()
+    out: list[tuple[str, Path | None]] = []
+    for item in manifest.get("tickers") or []:
+        ticker = str((item or {}).get("ticker") or "").strip().upper()
+        if ticker and ticker not in seen:
+            seen.add(ticker)
+            out.append((ticker, None))
+    return out
+
+
+def _atr14_from_canonical(ticker: str, session_date: date) -> float:
+    """ATR14 over canonical daily bars up to the evidence session (the manifest-mode bar owner)."""
+    db_path = history_database_path()
+    if not db_path.is_file():
+        return 0.0
+    frame = HistoricalPriceDatabase(db_path).read(ticker, end_date=session_date)
+    if frame.empty:
+        return 0.0
+    return _atr14({"daily_df": frame.to_dict(orient="records")})
+
+
+def _stamp(run_dir: Path, run_id: str, ticker: str, path: Path | None, payload: dict[str, Any]) -> None:
+    """Publish the ticker's market-profile facts: ledger always, package patch while one exists."""
+    if path is not None:
+        _atomic_patch(path, payload)
+    append_enrichment_record(run_dir, run_id, "market_profile", {
+        "ticker": ticker, "calculation_version": PROFILE_ALGORITHM_VERSION, "payload": payload,
+    })
 
 
 def _atr14(package: dict[str, Any]) -> float:
@@ -177,8 +222,8 @@ def build_completed_profiles(
     if not 0.0 <= float(max_failure_ratio) <= 1.0:
         raise ValueError("max_failure_ratio must be in [0,1]")
     run_dir = base_dir / "data" / "output" / "runs" / run_id
-    packages = _package_paths(run_dir, base_dir)
-    tickers = tuple(path.name.removesuffix(".package.json").upper() for path in packages)
+    worklist = _worklist(run_dir, base_dir)
+    tickers = tuple(ticker for ticker, _ in worklist)
     registry_path = base_dir / "data" / "canonical" / "control_plane.sqlite"
     payload_root = base_dir / "data" / "canonical" / "payloads"
     registry = CanonicalRegistry(registry_path); registry.initialise()
@@ -249,17 +294,19 @@ def build_completed_profiles(
 
     def _count_exception(reason: str) -> None:
         exception_reasons[reason] = exception_reasons.get(reason, 0) + 1
-    package_by_ticker = {path.name.removesuffix(".package.json").upper(): path for path in packages}
+    package_by_ticker: dict[str, Path | None] = dict(worklist)
     future_session = session_date > session_snapshot(datetime.now(timezone.utc)).last_completed_session
     for ticker in tickers:
         path = package_by_ticker[ticker]
-        package = json.loads(path.read_text(encoding="utf-8-sig"))
-        atr = _atr14(package)
+        if path is not None:
+            atr = _atr14(json.loads(path.read_text(encoding="utf-8-sig")))
+        else:
+            atr = _atr14_from_canonical(ticker, session_date)
         try:
             if future_session:
                 deferred += 1
                 _count_deferral(DataExceptionReason.NOT_YET_OBSERVABLE.value)
-                _atomic_patch(path, {
+                _stamp(run_dir, run_id, ticker, path, {
                     "market_profile_contract_required": True,
                     "market_profile_evidence": None,
                     "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
@@ -299,7 +346,7 @@ def build_completed_profiles(
                 # zero published profiles.
                 partial_session_count += 1
                 excluded += 1
-                _atomic_patch(path, {
+                _stamp(run_dir, run_id, ticker, path, {
                     "market_profile_contract_required": True,
                     "market_profile_evidence": None,
                     "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
@@ -329,7 +376,7 @@ def build_completed_profiles(
                 calculated_at_utc=close_utc,
             )
             evidence_record = store.persist(evidence, source_run_id=run_id)
-            _atomic_patch(path, {
+            _stamp(run_dir, run_id, ticker, path, {
                 "market_profile_contract_required": True,
                 "market_profile_evidence": evidence.to_dict(),
                 "market_profile_dataset_id": evidence_record.dataset_id,
@@ -351,7 +398,7 @@ def build_completed_profiles(
                 "provider_status": str(response.payload.get("s", "")),
                 "provider_headers": dict(response.headers),
             }
-            _atomic_patch(path, {
+            _stamp(run_dir, run_id, ticker, path, {
                 "market_profile_contract_required": True,
                 "market_profile_evidence": None,
                 "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
@@ -372,7 +419,7 @@ def build_completed_profiles(
                 reason = DataExceptionReason.ENTITLEMENT_DENIED.value
             elif response.http_status == 429:
                 reason = DataExceptionReason.RATE_LIMITED.value
-            _atomic_patch(path, {
+            _stamp(run_dir, run_id, ticker, path, {
                 "market_profile_contract_required": True,
                 "market_profile_evidence": None,
                 "market_profile_evidence_state": EvidenceState.UNAVAILABLE_PROVIDER.value,
@@ -382,7 +429,7 @@ def build_completed_profiles(
             _count_exception(reason)
             exceptions.append({"ticker": ticker, "classification": "PROVIDER_FAILURE", "reason": reason})
         except Exception as error:
-            _atomic_patch(path, {
+            _stamp(run_dir, run_id, ticker, path, {
                 "market_profile_contract_required": True,
                 "market_profile_evidence": None,
                 "market_profile_exception": f"{type(error).__name__}:{error}",

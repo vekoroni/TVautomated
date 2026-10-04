@@ -23,6 +23,7 @@ def test_blank_primary_contract_promotes_live_repair_alternative(monkeypatch) ->
         "capital_permission": "EOD_CANDIDATE_ONLY",
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "eod_candidate_authorized": True,
+        "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
         "contract_repair_action": "ALTERNATIVES_AVAILABLE",
         "alternative_contract_1": "AAA260116C00100000",
@@ -128,6 +129,7 @@ def test_missing_live_price_can_never_produce_go() -> None:
         "capital_permission": "EOD_CANDIDATE_ONLY",
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "eod_candidate_authorized": True,
+        "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
     }
     live = {
@@ -173,6 +175,7 @@ def _go_row(**overrides) -> dict:
         "capital_permission": "EOD_CANDIDATE_ONLY",
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "eod_candidate_authorized": True,
+        "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
     }
     row.update(overrides)

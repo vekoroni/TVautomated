@@ -1,0 +1,514 @@
+{
+  "start": "2021-06-01",
+  "end": "2026-09-17",
+  "universe_rule": {
+    "min_dollar_volume": 5000000.0,
+    "min_price": 5.0,
+    "integrity_lookback": 260
+  },
+  "results": [
+    {
+      "signal": "reversal_5d",
+      "horizon": 1,
+      "sessions": 1258,
+      "mean_ic": 0.01181,
+      "t_non_overlapping": 2.56,
+      "ic_by_year": {
+        "2021": 0.02145,
+        "2022": 0.00925,
+        "2023": 0.00741,
+        "2024": 0.01277,
+        "2025": 0.01282,
+        "2026": 0.01463
+      },
+      "same_sign_years": 6,
+      "decile_mean_returns_bps": [
+        -5.7,
+        -2.3,
+        0.3,
+        0.7,
+        0.9,
+        0.3,
+        0.8,
+        1.1,
+        2.1,
+        1.8
+      ],
+      "top_minus_bottom_bps": 7.4,
+      "round_trip_cost_bps": 65.1,
+      "top_minus_bottom_net_bps": -57.7
+    },
+    {
+      "signal": "reversal_5d",
+      "horizon": 3,
+      "sessions": 1256,
+      "mean_ic": 0.01423,
+      "t_non_overlapping": 2.03,
+      "ic_by_year": {
+        "2021": 0.02029,
+        "2022": 0.02068,
+        "2023": 0.00752,
+        "2024": 0.01408,
+        "2025": 0.01327,
+        "2026": 0.01342
+      },
+      "same_sign_years": 6,
+      "decile_mean_returns_bps": [
+        -17.7,
+        -6.1,
+        -1.1,
+        1.8,
+        3.1,
+        0.6,
+        3.3,
+        4.0,
+        7.0,
+        5.2
+      ],
+      "top_minus_bottom_bps": 22.8,
+      "round_trip_cost_bps": 65.1,
+      "top_minus_bottom_net_bps": -42.3
+    },
+    {
+      "signal": "reversal_5d",
+      "horizon": 5,
+      "sessions": 1254,
+      "mean_ic": 0.01209,
+      "t_non_overlapping": 1.95,
+      "ic_by_year": {
+        "2021": -0.00097,
+        "2022": 0.0253,
+        "2023": -0.00199,
+        "2024": 0.01666,
+        "2025": 0.01256,
+        "2026": 0.01179
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -23.7,
+        -7.8,
+        -0.7,
+        2.7,
+        4.1,
+        2.2,
+        6.6,
+        6.0,
+        8.8,
+        1.8
+      ],
+      "top_minus_bottom_bps": 25.5,
+      "round_trip_cost_bps": 65.1,
+      "top_minus_bottom_net_bps": -39.6
+    },
+    {
+      "signal": "reversal_5d",
+      "horizon": 10,
+      "sessions": 1249,
+      "mean_ic": 0.0059,
+      "t_non_overlapping": 0.6,
+      "ic_by_year": {
+        "2021": -0.01245,
+        "2022": 0.01554,
+        "2023": -0.00801,
+        "2024": 0.01438,
+        "2025": 0.01214,
+        "2026": -0.00132
+      },
+      "same_sign_years": 3,
+      "decile_mean_returns_bps": [
+        -24.8,
+        -5.7,
+        2.6,
+        3.9,
+        7.6,
+        5.0,
+        8.6,
+        8.8,
+        6.8,
+        -12.8
+      ],
+      "top_minus_bottom_bps": 12.0,
+      "round_trip_cost_bps": 65.1,
+      "top_minus_bottom_net_bps": -53.1
+    },
+    {
+      "signal": "low_52w_distance",
+      "horizon": 1,
+      "sessions": 1073,
+      "mean_ic": 0.00402,
+      "t_non_overlapping": 0.73,
+      "ic_by_year": {
+        "2022": -0.01269,
+        "2023": 0.00364,
+        "2024": 0.00652,
+        "2025": 0.00994,
+        "2026": 0.00626
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -0.8,
+        -0.0,
+        -0.4,
+        -0.9,
+        0.4,
+        -0.2,
+        1.7,
+        0.9,
+        0.3,
+        -1.3
+      ],
+      "top_minus_bottom_bps": -0.5,
+      "round_trip_cost_bps": 64.0,
+      "top_minus_bottom_net_bps": -64.5
+    },
+    {
+      "signal": "low_52w_distance",
+      "horizon": 3,
+      "sessions": 1071,
+      "mean_ic": 0.00358,
+      "t_non_overlapping": 0.28,
+      "ic_by_year": {
+        "2022": -0.03355,
+        "2023": -0.00172,
+        "2024": 0.01368,
+        "2025": 0.01891,
+        "2026": 0.00524
+      },
+      "same_sign_years": 3,
+      "decile_mean_returns_bps": [
+        -4.2,
+        -0.0,
+        -1.7,
+        -1.5,
+        1.9,
+        0.9,
+        4.6,
+        2.5,
+        1.3,
+        -4.4
+      ],
+      "top_minus_bottom_bps": -0.2,
+      "round_trip_cost_bps": 64.0,
+      "top_minus_bottom_net_bps": -64.2
+    },
+    {
+      "signal": "low_52w_distance",
+      "horizon": 5,
+      "sessions": 1069,
+      "mean_ic": 0.00455,
+      "t_non_overlapping": 0.24,
+      "ic_by_year": {
+        "2022": -0.04086,
+        "2023": -0.00238,
+        "2024": 0.01619,
+        "2025": 0.02695,
+        "2026": 0.00306
+      },
+      "same_sign_years": 3,
+      "decile_mean_returns_bps": [
+        -7.6,
+        -2.3,
+        -2.5,
+        -1.9,
+        3.9,
+        1.8,
+        6.6,
+        5.0,
+        2.5,
+        -6.1
+      ],
+      "top_minus_bottom_bps": 1.5,
+      "round_trip_cost_bps": 64.0,
+      "top_minus_bottom_net_bps": -62.6
+    },
+    {
+      "signal": "low_52w_distance",
+      "horizon": 10,
+      "sessions": 1064,
+      "mean_ic": 0.00788,
+      "t_non_overlapping": 0.58,
+      "ic_by_year": {
+        "2022": -0.04198,
+        "2023": -0.00529,
+        "2024": 0.02389,
+        "2025": 0.04155,
+        "2026": -0.00392
+      },
+      "same_sign_years": 2,
+      "decile_mean_returns_bps": [
+        -22.0,
+        -6.3,
+        -7.8,
+        -4.0,
+        8.7,
+        6.2,
+        12.6,
+        10.3,
+        8.4,
+        -5.3
+      ],
+      "top_minus_bottom_bps": 16.7,
+      "round_trip_cost_bps": 64.0,
+      "top_minus_bottom_net_bps": -47.3
+    },
+    {
+      "signal": "momentum_12_1",
+      "horizon": 1,
+      "sessions": 1020,
+      "mean_ic": 0.01808,
+      "t_non_overlapping": 2.96,
+      "ic_by_year": {
+        "2022": 0.02722,
+        "2023": 0.00541,
+        "2024": 0.02621,
+        "2025": 0.02148,
+        "2026": 0.01489
+      },
+      "same_sign_years": 5,
+      "decile_mean_returns_bps": [
+        -4.3,
+        -1.5,
+        -1.5,
+        0.4,
+        -0.3,
+        1.1,
+        1.1,
+        1.6,
+        2.2,
+        1.4
+      ],
+      "top_minus_bottom_bps": 5.7,
+      "round_trip_cost_bps": 72.4,
+      "top_minus_bottom_net_bps": -66.6
+    },
+    {
+      "signal": "momentum_12_1",
+      "horizon": 3,
+      "sessions": 1018,
+      "mean_ic": 0.0205,
+      "t_non_overlapping": 2.17,
+      "ic_by_year": {
+        "2022": 0.03455,
+        "2023": -0.0004,
+        "2024": 0.03627,
+        "2025": 0.0222,
+        "2026": 0.01792
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -12.1,
+        -4.7,
+        -4.6,
+        -0.1,
+        -0.2,
+        3.5,
+        3.7,
+        5.0,
+        5.8,
+        4.4
+      ],
+      "top_minus_bottom_bps": 16.5,
+      "round_trip_cost_bps": 72.4,
+      "top_minus_bottom_net_bps": -55.9
+    },
+    {
+      "signal": "momentum_12_1",
+      "horizon": 5,
+      "sessions": 1016,
+      "mean_ic": 0.01874,
+      "t_non_overlapping": 1.63,
+      "ic_by_year": {
+        "2022": 0.03148,
+        "2023": -0.00586,
+        "2024": 0.03942,
+        "2025": 0.02133,
+        "2026": 0.0137
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -18.1,
+        -7.1,
+        -7.6,
+        -0.3,
+        -0.9,
+        5.9,
+        5.8,
+        8.9,
+        9.5,
+        5.9
+      ],
+      "top_minus_bottom_bps": 24.0,
+      "round_trip_cost_bps": 72.4,
+      "top_minus_bottom_net_bps": -48.4
+    },
+    {
+      "signal": "momentum_12_1",
+      "horizon": 10,
+      "sessions": 1011,
+      "mean_ic": 0.01796,
+      "t_non_overlapping": 1.59,
+      "ic_by_year": {
+        "2022": 0.02367,
+        "2023": -0.00877,
+        "2024": 0.04854,
+        "2025": 0.01924,
+        "2026": 0.00688
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -32.6,
+        -14.5,
+        -13.8,
+        1.9,
+        -2.2,
+        9.5,
+        11.4,
+        18.8,
+        17.3,
+        10.0
+      ],
+      "top_minus_bottom_bps": 42.6,
+      "round_trip_cost_bps": 72.3,
+      "top_minus_bottom_net_bps": -29.7
+    },
+    {
+      "signal": "composite",
+      "horizon": 1,
+      "sessions": 1020,
+      "mean_ic": 0.01671,
+      "t_non_overlapping": 3.07,
+      "ic_by_year": {
+        "2022": 0.01983,
+        "2023": 0.0067,
+        "2024": 0.02251,
+        "2025": 0.0212,
+        "2026": 0.01465
+      },
+      "same_sign_years": 5,
+      "decile_mean_returns_bps": [
+        -4.2,
+        -2.0,
+        -1.0,
+        0.0,
+        0.7,
+        1.1,
+        -0.5,
+        1.4,
+        2.1,
+        2.5
+      ],
+      "top_minus_bottom_bps": 6.8,
+      "round_trip_cost_bps": 68.7,
+      "top_minus_bottom_net_bps": -61.9
+    },
+    {
+      "signal": "composite",
+      "horizon": 3,
+      "sessions": 1018,
+      "mean_ic": 0.01796,
+      "t_non_overlapping": 2.27,
+      "ic_by_year": {
+        "2022": 0.0205,
+        "2023": 0.00158,
+        "2024": 0.03079,
+        "2025": 0.02265,
+        "2026": 0.01486
+      },
+      "same_sign_years": 5,
+      "decile_mean_returns_bps": [
+        -13.3,
+        -7.2,
+        -1.7,
+        0.7,
+        2.3,
+        2.0,
+        0.4,
+        3.2,
+        7.0,
+        7.3
+      ],
+      "top_minus_bottom_bps": 20.7,
+      "round_trip_cost_bps": 68.7,
+      "top_minus_bottom_net_bps": -48.0
+    },
+    {
+      "signal": "composite",
+      "horizon": 5,
+      "sessions": 1016,
+      "mean_ic": 0.01678,
+      "t_non_overlapping": 1.52,
+      "ic_by_year": {
+        "2022": 0.02638,
+        "2023": -0.00847,
+        "2024": 0.03553,
+        "2025": 0.02344,
+        "2026": 0.01131
+      },
+      "same_sign_years": 4,
+      "decile_mean_returns_bps": [
+        -19.1,
+        -9.6,
+        -2.8,
+        1.4,
+        3.3,
+        3.2,
+        2.3,
+        3.0,
+        9.2,
+        10.7
+      ],
+      "top_minus_bottom_bps": 29.8,
+      "round_trip_cost_bps": 68.7,
+      "top_minus_bottom_net_bps": -38.9
+    },
+    {
+      "signal": "composite",
+      "horizon": 10,
+      "sessions": 1011,
+      "mean_ic": 0.01289,
+      "t_non_overlapping": 1.12,
+      "ic_by_year": {
+        "2022": 0.01448,
+        "2023": -0.01483,
+        "2024": 0.04003,
+        "2025": 0.0275,
+        "2026": -0.00917
+      },
+      "same_sign_years": 3,
+      "decile_mean_returns_bps": [
+        -23.9,
+        -11.8,
+        -3.6,
+        0.2,
+        2.8,
+        3.4,
+        4.5,
+        5.5,
+        11.0,
+        17.0
+      ],
+      "top_minus_bottom_bps": 40.9,
+      "round_trip_cost_bps": 68.6,
+      "top_minus_bottom_net_bps": -27.7
+    }
+  ],
+  "calibrated_drift": {
+    "horizon_sessions": 5,
+    "signal": "composite",
+    "decile_expected_move_bps": [
+      -19.1,
+      -9.6,
+      -2.8,
+      1.4,
+      3.3,
+      3.2,
+      2.3,
+      3.0,
+      9.2,
+      10.7
+    ],
+    "mean_ic": 0.01678,
+    "t_non_overlapping": 1.52,
+    "net_top_minus_bottom_bps": -38.9
+  }
+}

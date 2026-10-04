@@ -1,0 +1,73 @@
+{
+  "version": "dir002_side_evidence_v1",
+  "authority_state": "IMPLEMENTED_FOR_REPLICATION",
+  "owner": "C3 structure (WyckoffEngine_3101_v2 / wyckoff_crabel_precor_logic_v2)",
+  "note": "Side-parameterised structural evidence in log-price space (DIR-002 section 4.2). Every threshold is a symmetric log distance or a side-free ratio, so reflected bars give mirrored evidence. Values marked provisional are engineering starting points recorded before calibration; side assignment thresholds live in config/dir002_side_assignment_v1.json.",
+  "break_log_distance": 0.01980262729617973,
+  "event_lookback_bars": 10,
+  "anchor": {
+    "range_window_bars": 20,
+    "min_prior_bars": 10,
+    "anchor_log_distance": 0.01980262729617973
+  },
+  "control": {
+    "fail_back_weight": 3.0,
+    "fail_back_count_cap": 3,
+    "failed_thrust_weight": 2.0,
+    "failed_thrust_count_cap": 2,
+    "absorption_weight": 2.0,
+    "absorption_count_cap": 3,
+    "poc_bias_weight": 1.0,
+    "absorption_volume_ratio_min": 1.5,
+    "absorption_spread_ratio_max": 0.8,
+    "absorption_poc_high": 0.7,
+    "absorption_poc_low": 0.3,
+    "average_poc_high": 0.65,
+    "average_poc_low": 0.35
+  },
+  "events": {
+    "reclaim_within_bars": 5,
+    "breakout_poc_min": 0.65,
+    "retest_log_distance": 0.01980262729617973,
+    "climax_lookback_bars": 20,
+    "climax_volume_ratio_min": 1.8,
+    "climax_range_ratio_min": 1.4,
+    "climax_close_off_extreme_poc": 0.45,
+    "test_volume_fraction_max": 0.7,
+    "test_log_distance": 0.03922071315328133,
+    "base_strength": {
+      "SPRING": 0.8,
+      "SOS": 0.8,
+      "LPS": 0.7,
+      "SC_TEST": 0.7
+    },
+    "recency_decay": 0.5,
+    "followthrough_bars": 3
+  },
+  "intent": {
+    "min_bars": 50,
+    "lookback_bars": 180,
+    "sweep_log_distance": 0.005982071677547469,
+    "breakout_log_distance": 0.006975613736425242,
+    "reclaim_within_bars": 5,
+    "followthrough_bars": 3,
+    "control_window_bars": 30,
+    "control_resolve_points": 2.5,
+    "control_equilibrium_points": 1.0,
+    "slope_strong": 0.0015,
+    "slope_emerging": 0.001,
+    "phase_e_distance_from_mid": 0.4,
+    "range_flips_min": 18,
+    "range_mid_closes_min": 18,
+    "compression_score_min": 2
+  },
+  "trend": {
+    "spans": [
+      9,
+      21,
+      50,
+      200
+    ],
+    "min_completed_bars": 200
+  }
+}

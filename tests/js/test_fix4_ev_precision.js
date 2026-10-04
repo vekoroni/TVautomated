@@ -1,6 +1,7 @@
 'use strict';
 /**
- * FIX-4 — EV rounded to 4dp loses sign on small magnitudes.
+ * FIX-4 — EV rounded to 4dp loses sign on small magnitudes. (Inputs moved to the EV3 field on 30 Sep 2026 when the
+ * legacy EV v2 was retired from the Lab; the precision rule is unchanged.)
  *
  * True EV magnitudes in this pipeline run 1.1e-5 to 4.9e-5 (see
  * LAB_QA_REPORT.md F3 / BASELINE.md). At 4dp, |EV| < 0.00005 rounds to
@@ -28,20 +29,20 @@ function run() {
   const cols = ctx.buildExportColumns();
   const ev = findCol(cols, 'EV');
 
-  const negTiny = ev({ ev2_ev_conf_adj: '-2.8e-05' });
+  const negTiny = ev({ ev3_selected_contract_aligned: 'True', ev3_ev_conservative_return: '-2.8e-05' });
   assert.ok(parseFloat(negTiny) < 0, `EV of -2.8e-05 must parse strictly negative, got '${negTiny}'`);
 
-  const posTiny = ev({ ev2_ev_conf_adj: '4.1e-05' });
+  const posTiny = ev({ ev3_selected_contract_aligned: 'True', ev3_ev_conservative_return: '4.1e-05' });
   assert.ok(parseFloat(posTiny) > 0, `EV of 4.1e-05 must parse strictly positive, got '${posTiny}'`);
 
   // A genuine zero must still be exactly zero (not turned into noise).
-  const zero = ev({ ev2_ev_conf_adj: '0' });
+  const zero = ev({ ev3_selected_contract_aligned: 'True', ev3_ev_conservative_return: '0' });
   assert.strictEqual(parseFloat(zero), 0);
 
   // Larger, "normal" EV values must still read sanely (not scientific notation,
   // which a naive downstream float() parses fine, but keep it fixed-decimal
   // per the fix spec so no consumer is surprised).
-  const normal = ev({ ev2_ev_conf_adj: '0.12' });
+  const normal = ev({ ev3_selected_contract_aligned: 'True', ev3_ev_conservative_return: '0.12' });
   assert.ok(!/e/i.test(normal), `EV must not use scientific notation, got '${normal}'`);
   assert.ok(Math.abs(parseFloat(normal) - 0.12) < 1e-6);
 

@@ -1,0 +1,118 @@
+{
+  "version": "beh001_behaviour_v1",
+  "authority_state": "IMPLEMENTED_FOR_REPLICATION",
+  "design": "Enhancements/decision_map/AVS_SD_BEH_001_BEHAVIOURAL_SIGNAL_CANDIDATES_20261001.md",
+  "note": "One rule set for every ticker. Distances are log units divided by log-ATR; ratios are side-free. Values are engineering starting points recorded before evaluation; they are calibrated, never tuned per ticker. Weekly and monthly bars are built from completed daily bars (ACK, 1 Oct 2026: read every timeframe available).",
+  "atr_bars": 14,
+  "swing_reversal_atr": {
+    "minor": 1.5,
+    "major": 3.0
+  },
+  "acceptance": {
+    "closes": 2,
+    "min_beyond_atr": 0.25
+  },
+  "sot_tolerance": 0.15,
+  "repair": {
+    "shallow_retrace_max": 0.382,
+    "deep_retrace_min": 0.786
+  },
+  "events": {
+    "break_min_atr": 0.25,
+    "reclaim_within_bars": 5,
+    "effective_thrust_min_atr": 2.0,
+    "abnormal_counter_move_ratio": 1.0,
+    "absorption_volume_ratio_min": 1.5,
+    "absorption_result_max_atr": 0.75,
+    "absorption_min_bars": 2,
+    "lookback_major_pivots": 6
+  },
+  "range": {
+    "min_pivots": 4,
+    "boundary_tolerance_atr": 0.5,
+    "max_width_atr": 12.0
+  },
+  "compression": {
+    "tr_ratio_short": 5,
+    "tr_ratio_long": 20,
+    "tr_ratio_max": 0.75,
+    "nr_windows": [
+      2,
+      3,
+      4,
+      7
+    ]
+  },
+  "maturity": {
+    "early": 1,
+    "developing": 2,
+    "mature": 3
+  },
+  "timeframes": {
+    "1mo": {
+      "role": "MONTHLY_CAMPAIGN",
+      "min_bars": 36,
+      "source": "1d",
+      "rule": "ME"
+    },
+    "1w": {
+      "role": "WEEKLY_CAMPAIGN",
+      "min_bars": 60,
+      "source": "1d",
+      "rule": "W-FRI"
+    },
+    "1d": {
+      "role": "CAMPAIGN_CONTEXT",
+      "min_bars": 120
+    },
+    "60m": {
+      "role": "SWING_SEQUENCE",
+      "min_bars": 60,
+      "source_interval_minutes": 5,
+      "sessions": 20
+    },
+    "15m": {
+      "role": "SETUP_STRUCTURE",
+      "min_bars": 60,
+      "source_interval_minutes": 5,
+      "sessions": 10
+    },
+    "5m": {
+      "role": "TRIGGER_AND_RESPONSE",
+      "min_bars": 60,
+      "source_interval_minutes": 5,
+      "sessions": 4
+    }
+  },
+  "ledger": {
+    "path": "data/canonical/behavioural_candidate_ledger.sqlite",
+    "level_revision_rel_tol": 1e-06,
+    "note": "C-03 core / RQ-2 (A2 Part 4): append-only candidate life cycle. A level change smaller than the relative tolerance is float noise, not a revision. Reaching an outcome or failing ends a stage, not the ticker (ACK, 1 Oct). Only a ticker that stops trading ends its life cycle: last bar more than not_trading_after_sessions business days behind the run's latest bar gives TICKER_NOT_TRADING; new bars later give REAPPEARED.",
+    "not_trading_after_sessions": 5
+  },
+  "outcome": {
+    "reached_closes": 1,
+    "note": "RQ-1: after activation, this many consecutive closes at or beyond Outcome_Level (before invalidation is accepted) end the candidate as OUTCOME_REACHED. The expected behaviour happened, so it is no longer a fresh opportunity (A2 eval_v2: about half of ACTIVATED candidates had already reached their outcome)."
+  },
+  "duration": {
+    "evidence_path": "config/beh001_duration_evidence_v3.json",
+    "age_bucket_edges": [
+      0,
+      3,
+      6,
+      11,
+      21
+    ],
+    "min_n": 100,
+    "note": "C-04/C-05/RQ-3 (A2 Part 4): remaining time to activation (DETECTED) and to outcome (ACTIVATED) from comparable replayed candidates on the same timeframe, conditioned on age in own-timeframe bars. Used only when the evidence's data_end is before the candidate's As_Of (causal). Display and measurement only; never a gate. A group below min_n stays UNESTIMATED."
+  },
+  "handoff": {
+    "conflict_resolution": "NONE",
+    "higher_timeframes": [
+      "1mo",
+      "1w"
+    ],
+    "evidence": "Enhancements/outcomes/beh001/eval_v4_holdout/two_sided_resolution.json",
+    "note": "ACK 3 Oct 2026: switched off. HIGHER_TIMEFRAME_ONE_SIDED (ACK 1 Oct, +2.1 pt in-sample, best of four rules) did not replicate on a 500-ticker holdout with refreshed bars: +0.5 pt vs same-day drift, 95% [-1.0, +2.0]; pooled +1.2 [+0.0, +2.5] (eval_v4*). A two-sided daily reading stays UNASSIGNED with CONFLICTING_DAILY_CANDIDATES or RANGE_EDGES_TWO_SIDED. Setting HIGHER_TIMEFRAME_ONE_SIDED re-enables the mechanism. The empty-daily extension also failed its holdout (+0.0 pt) and is not built."
+  }
+}

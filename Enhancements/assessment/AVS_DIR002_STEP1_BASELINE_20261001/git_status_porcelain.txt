@@ -1,0 +1,216 @@
+ M Enhancements/assessment/AVS-PKG-002_P1_P4_BUILD_RECEIPT_20260927.md
+ M WyckoffEngine_3101_v2.py
+ M avshunter/c0_run/thin_package.py
+ M avshunter_discovery_ULTIMATE.py
+ M canonical_data/option_liquidity_lifecycle.py
+ M contracts/direction_governance.py
+ M contracts/enrichment_ledger.py
+ M contracts/lab_control.py
+ M contracts/selected_contract_economics.py
+ M domain/thesis_direction.py
+ M enums_structural.py
+ M eod_candidate_engine.py
+ M ev_engine_v2.py
+ M intelligence-lab/intelligence_lab.py
+ M intelligence-lab/static/AVSHUNTER_sector_ui_patch.js
+ M intelligence-lab/static/index.html
+ M intelligent_orchestrator.py
+ M morning_gate.py
+ M morning_handoff_finalizer.py
+ M pipeline_interpreter/automation_v2/lab_structured.py
+ M pipeline_interpreter/direction_conflict_resolver.py
+ M pipeline_interpreter/trade_brief_builder.py
+ M scripts/avshunter_options_intelligence.py
+ M scripts/build_completed_market_profiles.py
+ M scripts/ev_engine.py
+ M scripts/run_vanguard_from_packages.py
+ M swing_fusion.py
+ M tests/js/test_fix4_ev_precision.js
+ M tests/test_archive_disk_headroom.py
+ M tests/test_big_bang_phase_6_7.py
+ M tests/test_direction_governance_contract.py
+ M tests/test_ev3_stage0.py
+ M tests/test_ila_selected_contract_identity.py
+ M tests/test_lab_governed_handoff.py
+ M tests/test_layer3_volatility_integrity.py
+ M tests/test_morning_handoff_finalizer.py
+ M tests/test_option_liquidity_lifecycle.py
+ M tests/test_package_free_evening_p4.py
+ M tests/test_vanguard_reference_input_p2.py
+ M vanguard/ev3_stage0.py
+ M vanguard/ev_engine_v3.py
+ M vanguard/integration/orchestrator_adapter.py
+ M vanguard/schemas/input_schema.py
+ M vanguard/trade_contract.py
+ M wyckoff_crabel_precor_logic_v2.py
+ M wyckoff_phase_validator.py
+?? .claude_scratch/
+?? .testdeps/
+?? Enhancements/assessment/AVS-EV3-OPT3_AND_CONTRACT_IDENTITY_BUILD_RECEIPT_20260928.md
+?? Enhancements/assessment/AVS-PKG-001_PACKAGE_REUSE_TECHNICAL_ANALYSIS_20260927.md
+?? Enhancements/assessment/AVS-PKG-002_RETIRE_PACKAGE_PROCESS_DESIGN_PROPOSAL_20260927.md
+?? Enhancements/assessment/AVS-PKG-003_PACKAGE_RETIREMENT_IMPACT_AND_ORCHESTRATOR_REVIEW_20260927.md
+?? Enhancements/assessment/AVS_CURRENT_CALCULATION_INVENTORY_20260928/
+?? Enhancements/assessment/AVS_DIR002_BUILD_REGISTER_20261001.md
+?? Enhancements/assessment/AVS_DIR002_STEP1_BASELINE_20261001/
+?? Enhancements/assessment/AVS_HISTORICAL_REPLAY_STUDY_PREREGISTRATION_20260929.md
+?? Enhancements/assessment/AVS_OPTIONS_ANALYTICS_SLICE1_RECEIPT_20260930.md
+?? Enhancements/assessment/AVS_OPTIONS_ANALYTICS_SLICE2_RECEIPT_20260930.md
+?? Enhancements/assessment/AVS_OPTION_ANALYTICS_FRAMEWORK_REVIEW_20260929.md
+?? Enhancements/assessment/AVS_TICKER_EDGE_AND_HOLD_STUDY_20260928.md
+?? Enhancements/assessment/AVS_VOLATILITY_LEAD_REAL_PRICE_TEST_PREREGISTRATION_20260929.md
+?? Enhancements/assessment/DATA_INTEGRITY_REMEDIATION_20260924.md
+?? Enhancements/assessment/EDGE_FUNCTIONALITY_DEEP_DIVE_20260918.md
+?? Enhancements/assessment/MACRO_FOLDER_IMPACT_ASSESSMENT_20260918.md
+?? Enhancements/assessment/dossier_field_integrity_gate.py
+?? Enhancements/backtest/BACKTEST_STRESS_TEST_OUTCOME_REPORT_20260920.md
+?? Enhancements/backtest/SCENARIO_REGISTER_ADDENDUM_CEX_20260920.md
+?? Enhancements/backtest/SCENARIO_REGISTER_ADDENDUM_S_ACT_20260920.md
+?? Enhancements/backtest/activity_contract_combo.py
+?? Enhancements/backtest/activity_tournament/
+?? Enhancements/backtest/cex9_path_oracle.py
+?? Enhancements/backtest/cex_feasibility_bounds.py
+?? Enhancements/backtest/contract_execution_tournament.py
+?? Enhancements/backtest/contract_execution_tournament/
+?? Enhancements/backtest/elig3_nearer_stop.json
+?? Enhancements/backtest/elig3_nearer_stop.py
+?? Enhancements/backtest/s_act_activity_tournament.py
+?? Enhancements/backtest/solution_tournament/
+?? Enhancements/backtest/test_activity_contract_combo.py
+?? Enhancements/backtest/test_contract_execution_tournament.py
+?? Enhancements/backtest/test_s_act_activity_tournament.py
+?? Enhancements/decision_map/AVS-SD-POB-001_BROKER_SCANNER_OUTCOME_INTEGRATION.md
+?? Enhancements/decision_map/AVS_OPTIONS_ANALYTICS_FRAMEWORK_BUILD_PLAN_20260930.md
+?? Enhancements/decision_map/AVS_SD_DIR_002_DIRECTION_AGNOSTIC_DISCOVERY_SIDE_CORRECT_VANGUARD_20260930.md
+?? Enhancements/decision_map/AVS_SD_DIR_002_EVIDENCE_A_DISCOVERY_AUDIT.md
+?? Enhancements/decision_map/AVS_SD_DIR_002_EVIDENCE_B_VANGUARD_AUDIT.md
+?? Enhancements/decision_map/AVS_SD_DIR_002_EVIDENCE_C_CONSUMERS_TESTS_RULES.md
+?? Enhancements/decision_map/AVS_SD_SECOND_ORDER_DISCOVERY_VANGUARD_20260927.md
+?? Enhancements/decision_map/AVS_SD_TICKER_FORECAST_TO_OPTION_VALUATION_20260927.md
+?? Enhancements/decision_map/AVS_TEV001_BUILD_PLAN_20260927.md
+?? Enhancements/direction_evidence/ticker_edge_replay_20260929.py
+?? Enhancements/direction_evidence/ticker_edge_replay_analysis_20260929.py
+?? Enhancements/direction_evidence/ticker_edge_replay_exploratory_20260929.py
+?? Enhancements/direction_evidence/volatility_lead_real_price_analysis_20260929.py
+?? Enhancements/direction_evidence/volatility_lead_real_price_test_20260929.py
+?? Enhancements/expression_forensics/expression_loss_records.jsonl
+?? Enhancements/outcomes/
+?? Enhancements/research/drift_calibration.py
+?? Enhancements/research/drift_calibration_summary.json
+?? Enhancements/research/drift_calibration_summary_250m.json
+?? Enhancements/research/drift_calibration_summary_50m.json
+?? Enhancements/research/legacy_signal_scoring.py
+?? Enhancements/research/legacy_signals/LEGACY_SIGNAL_SCORING_20260918.md
+?? Enhancements/research/legacy_signals/_stage2_gap_tickers.txt
+?? Enhancements/research/legacy_signals/backfill_all_commands.ps1
+?? Enhancements/research/legacy_signals/backfill_full_universe_full_year.ps1
+?? Enhancements/research/legacy_signals/backfill_stage2_gap_tickers.ps1
+?? Enhancements/research/legacy_signals/backfill_stage3_core_universe.ps1
+?? Enhancements/research/legacy_signals/backfill_top10_commands.ps1
+?? Enhancements/research/legacy_signals/inputs_manifest.json
+?? audit/AVS_SOR001_BUILD_RECEIPT_20260927.md
+?? audit/AVS_TEV001_BUILD_IN_PROGRESS_20260927.md
+?? audit/AVS_TEV001_DESCRIPTIVE_PATH_BUILD_RECEIPT_20260927.md
+?? audit/AVS_TEV001_S0_BASELINE_20260927.md
+?? audit/AVS_TEV001_STRUCTURAL_COHORT_20260927.md
+?? audit/avs_tev001_research_ev_canary.py
+?? audit/avs_tev001_s0_support_audit.py
+?? audit/avs_tev001_structural_cohort.py
+?? audit/intelligence_lab/
+?? audit/macro_input/
+?? audit/verify/
+?? canonical_data/forecast_outcome_panel.py
+?? canonical_data/forecast_path_reader.py
+?? canonical_data/structure_feature_reader.py
+?? claude_skills/
+?? config/dir002_symmetry_shadow_v1.json
+?? contracts/descriptive_forecast_packet.py
+?? contracts/expression_candidate_packet.py
+?? contracts/expression_valuation_packet.py
+?? contracts/forecast_morning_revision.py
+?? contracts/supplemental_broker_observation_writer.py
+?? contracts/war_report_assembler.py
+?? data/governance/
+?? data/phantom/staging/phantom_spy_qqq_20260918_pre_greeks_20260920_164214.json.gz
+?? data/phantom/staging/phantom_spy_qqq_20260918_pre_greeks_20260920_164214.json.gz.manifest.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260920_maintenance.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260920_preflight.json
+?? data/universe/universe_remediation_log_2026-09-23.md
+?? domain/candidate_expression.py
+?? domain/competing_path_estimator.py
+?? domain/descriptive_forecast_handoff.py
+?? domain/forecast_path_label.py
+?? domain/option_path_valuation.py
+?? domain/research_path_baseline.py
+?? domain/structure_episode.py
+?? domain/structure_mode_phase.py
+?? domain/ticker_forecast.py
+?? domain/vectorized_research_ev.py
+?? domain/war_corroboration.py
+?? domain/war_coverage_summary.py
+?? domain/war_report_provenance.py
+?? domain/war_temporal_truth.py
+?? domain/war_transmission_chain.py
+?? run_evening_scheduled.ps1
+?? run_premarket_scheduled.ps1
+?? tests/js/test_fix10_hold_and_move_window.js
+?? tests/js/test_fix11_breakeven_sign.js
+?? tests/js/test_fix12_legacy_ev_retired.js
+?? tests/js/test_fix13_contract_analytics_display.js
+?? tests/test_avs_dir002_control_symmetry.py
+?? tests/test_avs_dir002_direction_policy_crossover.py
+?? tests/test_avs_dir002_direction_vocabulary.py
+?? tests/test_avs_dir002_duplicate_ev_explicit_side.py
+?? tests/test_avs_dir002_eligibility_reasons.py
+?? tests/test_avs_dir002_ev_v2_explicit_side.py
+?? tests/test_avs_dir002_geometry_boundary.py
+?? tests/test_avs_dir002_interpreter_no_direction_vote.py
+?? tests/test_avs_dir002_lab_direction_authority.py
+?? tests/test_avs_dir002_legacy_adapter.py
+?? tests/test_avs_dir002_no_synthetic_target.py
+?? tests/test_avs_dir002_options_thesis_side.py
+?? tests/test_avs_dir002_precor_followthrough_mirror.py
+?? tests/test_avs_dir002_side_assignment.py
+?? tests/test_avs_dir002_symmetry_kernel.py
+?? tests/test_avs_dir002_vanguard_no_direction_vote.py
+?? tests/test_avs_dir002_vanguard_thesis_handoff.py
+?? tests/test_avs_sor001_crabel_fusion_contract.py
+?? tests/test_avs_sor001_feature_window.py
+?? tests/test_avs_sor001_mode_phase_identity.py
+?? tests/test_avs_sor001_wyckoff_range.py
+?? tests/test_avs_tev001_candidate_expression.py
+?? tests/test_avs_tev001_canonical_price_path_reader.py
+?? tests/test_avs_tev001_forecast_path_label.py
+?? tests/test_avs_tev001_offline_vertical_slice.py
+?? tests/test_avs_tev001_structural_cohort.py
+?? tests/test_avs_tev001_ticker_forecast.py
+?? tests/test_contract_analytics_slice2.py
+?? tests/test_descriptive_forecast_handoff.py
+?? tests/test_dossier_field_integrity_gate.py
+?? tests/test_ev3_hold_and_move_window.py
+?? tests/test_expression_candidate_packet_schema.py
+?? tests/test_fixspec_gamma_flip.py
+?? tests/test_fixspec_iv_lab_display.py
+?? tests/test_fixspec_iv_single_owner.py
+?? tests/test_fixspec_oi_walls_side.py
+?? tests/test_fixspec_position_sizing_iv.py
+?? tests/test_fixspec_rr_options_direction.py
+?? tests/test_lab_ev3_move_window_book.py
+?? tests/test_lab_legacy_ev_retired.py
+?? tests/test_lab_loader_error_does_not_block_page.py
+?? tests/test_lab_priority_and_journal_ev_no_legacy.py
+?? tests/test_market_profile_manifest_p4c.py
+?? tests/test_morning_selected_contract_identity.py
+?? tests/test_options_analytics_slice1.py
+?? tests/test_pre_eil_actuarial_injection_p4b.py
+?? tests/test_research_only_option_ev.py
+?? tests/test_supplemental_broker_observation_writer.py
+?? tests/test_vectorized_research_ev.py
+?? tests/test_war_advisory_only_authority.py
+?? tests/test_war_corroboration.py
+?? tests/test_war_coverage_summary.py
+?? tests/test_war_report_assembler.py
+?? tests/test_war_report_provenance.py
+?? tests/test_war_temporal_truth.py
+?? tests/test_war_transmission_chain.py
+?? tools/avs_verify/

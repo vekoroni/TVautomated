@@ -67,6 +67,7 @@ def _ticker_row(direction: str = "CALL", horizon: str = "6_10d", *, canonical: b
         "trigger_primary": "RANGE_BREAK",
         "trigger_price": SPOT * (0.99 if direction == "CALL" else 1.01),
         "wyckoff_execution_bias": "BULLISH" if direction == "CALL" else "BEARISH",
+        "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
     }
     if canonical:
         row.update(CANON)

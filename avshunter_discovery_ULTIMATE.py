@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import logging
 import os
 import re
@@ -44,7 +45,16 @@ from WyckoffEngine_3101_v2 import WyckoffEngine_3101_v2 as WyckoffEngine
 from polygon_data_fetcher import PolygonDataFetcher
 from wyckoff_crabel_precor_logic_v2 import process_precore_signal
 from wyckoff_phase_validator import prefixed_validation_fields, validate_wyckoff_phase
-from contracts.direction_governance import resolve_discovery_thesis_direction
+from contracts.direction_governance import (
+    assess_thesis_geometry,
+    candidate_geometry_shadow_fields,
+    legacy_direction_adapter_v1,
+    resolve_discovery_thesis_direction,
+    side_assignment_runtime,
+)
+from domain.structure_behaviour.engine import analyse_ticker as analyse_behaviour
+from domain.structure_behaviour.policy import load_policy as load_behaviour_policy
+from domain.structure_mode_phase import resolve_mode_phase_identity
 try:
     from scripts.macro_quant_packet import (
         build_macro_quant_packet,
@@ -346,8 +356,15 @@ def crabel_compression(df: pd.DataFrame, cfg: UltimateConfig) -> Dict:
     A compression_ratio of 0.70 means different things for NVDA vs a utility.
     Percentile < 25 = genuinely unusual compression for THIS stock.
     """
+    def _typed_state(result: Dict, state: str) -> Dict:
+        result["state"] = state
+        return result
+
     if len(df) < cfg.min_bars:
-        return {"passed": False, "reason": "INSUFFICIENT_BARS", "compression": np.nan, "score": 0}
+        return _typed_state(
+            {"passed": False, "reason": "INSUFFICIENT_BARS", "compression": np.nan, "score": 0},
+            "DATA_INSUFFICIENT",
+        )
     
     tmp = df[["high", "low", "volume"]].copy()
     tmp["range"] = tmp["high"] - tmp["low"]
@@ -358,8 +375,17 @@ def crabel_compression(df: pd.DataFrame, cfg: UltimateConfig) -> Dict:
     cur = tmp.iloc[-1]
     comp = float(cur["compression"]) if not pd.isna(cur["compression"]) else np.nan
     
-    if pd.isna(comp) or comp > cfg.compression_max:
-        return {"passed": False, "reason": "NO_COMPRESSION", "compression": comp, "score": 0}
+    if pd.isna(comp):
+        return _typed_state(
+            {"passed": False, "reason": "NO_VALID_COMPRESSION",
+             "compression": comp, "score": 0},
+            "DATA_INSUFFICIENT",
+        )
+    if comp > cfg.compression_max:
+        return _typed_state(
+            {"passed": False, "reason": "NO_COMPRESSION", "compression": comp, "score": 0},
+            "NONE",
+        )
     
     # Enhancement 2: Universe-relative percentile rank of compression
     # How compressed is this stock vs its own 60-day history?
@@ -412,7 +438,7 @@ def crabel_compression(df: pd.DataFrame, cfg: UltimateConfig) -> Dict:
     if vol_pct_rank < 25:
         score = min(100, score + 5)
     
-    return {
+    result = {
         "passed": True,
         "reason": "OK",
         "compression": comp,
@@ -423,6 +449,11 @@ def crabel_compression(df: pd.DataFrame, cfg: UltimateConfig) -> Dict:
         "comp_pct_rank": round(comp_pct_rank, 1),
         "vol_pct_rank": round(vol_pct_rank, 1),
     }
+    # A qualifying NR7 or extreme ratio is READY; other qualifying
+    # compression is COILING. These are structural hypotheses, not EV claims.
+    return _typed_state(
+        result, "READY" if is_nr7 or comp < cfg.extreme_compression else "COILING"
+    )
 
 
 # ============================= EARLY POSITION DETECTION ====================
@@ -1263,18 +1294,100 @@ def get_sector(ticker: str, sic_code: str = "", base_dir: Optional[Path] = None)
 
 # ============================= MAIN SCAN LOGIC =============================
 
+_BEH001_RUNTIME: Optional[tuple] = None
+
+
+def _beh001_runtime() -> tuple:
+    """Load the BEH-001 policy and the production direction source once.
+
+    A missing or invalid policy is a release defect and fails loudly; it is
+    never replaced by a default side (decide before depend; R1).
+    """
+    global _BEH001_RUNTIME
+    if _BEH001_RUNTIME is None:
+        _BEH001_RUNTIME = (load_behaviour_policy(), side_assignment_runtime())
+    return _BEH001_RUNTIME
+
+
+def _beh001_reading(ticker: str, df: pd.DataFrame, cfg, policy) -> dict:
+    """All timeframes for one ticker; intraday problems degrade, never raise."""
+    index = getattr(cfg, 'beh001_intraday_index', None)
+    intraday, status = None, 'NO_INTRADAY_DATA'
+    dates = pd.to_datetime(df['date']) if 'date' in df.columns else None
+    if index is not None and dates is not None:
+        try:
+            sessions = max(int(tf.get('sessions', 0)) for tf in policy['timeframes'].values())
+            intraday, status = index.bars_for(
+                ticker, through_session=str(dates.iloc[-1].date()), sessions=sessions,
+                expected_sessions=[str(d.date()) for d in dates.tail(sessions + 5)],
+            )
+        except Exception:
+            intraday, status = None, 'READ_ERROR'
+    columns = [c for c in ('date', 'open', 'high', 'low', 'close', 'volume') if c in df.columns]
+    return analyse_behaviour(ticker, df[columns].reset_index(drop=True), intraday, policy,
+                             intraday_status=status)
+
+
+def _beh001_summary_fields(beh: dict) -> dict:
+    """Flat per-timeframe reading for the Discovery row (one row per ticker)."""
+    out = {'beh__intraday_status': beh.get('intraday_status'),
+           'beh__candidate_count': len(beh['candidates']),
+           'beh__directed_candidate_count': sum(
+               1 for c in beh['candidates'] if c['Direction'] in {'BULL', 'BEAR'})}
+    for tf, reading in beh['readings'].items():
+        out.update({
+            f'beh__{tf}_status': reading['Status'],
+            f'beh__{tf}_phase': reading.get('Wyckoff_Phase'),
+            f'beh__{tf}_phase_confidence': reading.get('Phase_Confidence'),
+            f'beh__{tf}_controller': reading.get('Controller'),
+            f'beh__{tf}_local_phase': reading.get('Local_Phase'),
+            f'beh__{tf}_local_controller': reading.get('Local_Controller'),
+            f'beh__{tf}_maturity': reading.get('Movement_Maturity'),
+        })
+    primary = beh['handoff'].get('primary') or {}
+    for key in ('Signal_Type', 'Signal_State', 'Structure_Scope', 'Trigger', 'Invalidation',
+                'Expected_Behaviour', 'Next_Anticipated_Logic', 'Warning'):
+        out[f'beh__primary_{key.lower()}'] = primary.get(key)
+    return out
+
+
+def _daily_log_sigma(df: pd.DataFrame, window: int = 20) -> Optional[float]:
+    closes = pd.to_numeric(df["close"], errors="coerce").tail(window + 1)
+    if len(closes) < window + 1 or (closes <= 0).any() or closes.isna().any():
+        return None
+    sigma = float(np.diff(np.log(closes.to_numpy(dtype=float))).std(ddof=1))
+    return sigma if math.isfinite(sigma) and sigma > 0 else None
+
+
+def _sigma_distance(level: Any, reference: float, sigma: Optional[float]) -> Optional[float]:
+    try:
+        value = float(level)
+    except (TypeError, ValueError):
+        return None
+    if sigma is None or not math.isfinite(value) or value <= 0 or reference <= 0:
+        return None
+    return round(abs(math.log(value / reference)) / sigma, 3)
+
+
 def scan_ticker_ultimate(
     ticker: str,
     df: pd.DataFrame,
     cfg: UltimateConfig,
     wyckoff_engine: WyckoffEngine,
+    *,
+    eligibility_diagnostic: Optional[dict] = None,
 ) -> Optional[dict]:
     """
     ULTIMATE scan combining v15 + early detection + Crabel/Precor
     """
     
-    if len(df) < cfg.min_bars:
+    def _reject(reason_code: str) -> None:
+        if eligibility_diagnostic is not None:
+            eligibility_diagnostic["reason_code"] = reason_code
         return None
+
+    if len(df) < cfg.min_bars:
+        return _reject("ELIG_INSUFFICIENT_BARS")
     
     # Add EMAs
     for span in [9, 21, 50, 200]:
@@ -1285,11 +1398,11 @@ def scan_ticker_ultimate(
     px = float(last["close"])
     
     if not (cfg.min_price <= px <= cfg.max_price):
-        return None
+        return _reject("ELIG_PRICE_RANGE")
     
     vol20 = df["volume"].tail(20).mean()
     if vol20 < cfg.min_avg_vol20:
-        return None
+        return _reject("ELIG_AVG_VOLUME")
 
     # Enhancement 4: Options viability proxy filters
     # Reject names that are structurally interesting but economically useless for options.
@@ -1299,11 +1412,11 @@ def scan_ticker_ultimate(
     adv_dollars = px * vol20  # avg daily dollar volume
 
     if adv_dollars < cfg.min_adv_dollars:
-        return None  # Insufficient dollar liquidity for options
+        return _reject("ELIG_ADV_DOLLARS_OPTION_PROXY")
     if atr_14_val < cfg.min_atr_dollars:
-        return None  # Insufficient dollar movement
+        return _reject("ELIG_ATR_DOLLARS_OPTION_PROXY")
     if atr_pct_val < cfg.min_atr_pct:
-        return None  # Insufficient percentage movement
+        return _reject("ELIG_ATR_PCT_OPTION_PROXY")
     
     # === WYCKOFF ANALYSIS ===
     wyckoff_data = wyckoff_engine.analyze(ticker, df, trend_context="UNKNOWN")
@@ -1445,6 +1558,12 @@ def scan_ticker_ultimate(
                                   precor_data.get('transition_confidence', 0.0) or 0.0)
         _wyckoff_mode     = str(precor_data.get('wyckoff_mode',           'UNKNOWN') or 'UNKNOWN')
 
+    _mode_phase_key, _mode_phase_source = resolve_mode_phase_identity(
+        _wyckoff_mode,
+        precor_data.get('wyckoff_phase') if precor_data else None,
+        wyckoff_data.get('current_phase'),
+    )
+
     # ── Component 2: Phase quality score — evidence-convergence driven ────────
     #
     # Formula:
@@ -1502,6 +1621,7 @@ def scan_ticker_ultimate(
         wyckoff_data=wyckoff_data,
         precor_data=precor_data,
     )
+    _shadow_candidate_geometry = candidate_geometry_shadow_fields(px, wyckoff_validation)
 
     _wyk_phase_raw  = str(wyckoff_data.get('current_phase', '')).upper().strip()
     _pre_phase_raw  = str(precor_data.get('wyckoff_phase', '') if precor_data else '').upper().strip()
@@ -1559,6 +1679,107 @@ def scan_ticker_ultimate(
         dominant_trend,
     )
 
+    # ── BEH-001 §7: behavioural signal candidates set the Thesis side ───────
+    # Bars -> Sequences -> Behaviour -> Control -> Phase -> Event -> Transition
+    # -> Signal, on daily plus any stored completed intraday bars (missing
+    # intraday never fails the ticker). The daily campaign reading sets
+    # thesis__side; the legacy adapter derives the old fields (ACK DEC-9).
+    # The legacy resolver output is kept in legacy_* columns and governs only
+    # under the explicit legacy_rollback control.
+    _legacy_direction = _candidate_direction
+    _legacy_direction_status = _discovery_direction_status
+    _legacy_direction_basis = _discovery_direction_basis
+    _beh_policy, _assign_runtime = _beh001_runtime()
+    _beh = _beh001_reading(ticker, df, cfg, _beh_policy)
+    _handoff = _beh['handoff']
+    _primary = _handoff.get('primary')
+    _thesis_side = _handoff['thesis__side']
+    _sigma_d = _daily_log_sigma(df)
+    _side_geometry = {
+        _side: assess_thesis_geometry(
+            thesis_side=_side,
+            reference_price=px,
+            invalidation_price=wyckoff_validation.get(f'candidate_{_side.lower()}_invalidation'),
+            invalidation_source=wyckoff_validation.get('candidate_invalidation_source'),
+            target_price=wyckoff_validation.get(f'candidate_{_side.lower()}_target'),
+            target_source=wyckoff_validation.get('candidate_target_source'),
+        )
+        for _side in ('BULL', 'BEAR')
+    }
+    if _thesis_side in {'BULL', 'BEAR'} and _primary is not None:
+        _assigned_geometry = assess_thesis_geometry(
+            thesis_side=_thesis_side, reference_price=px,
+            invalidation_price=_primary.get('Invalidation_Level'),
+            invalidation_source='BEHAVIOURAL_STRUCTURE',
+            target_price=_side_geometry[_thesis_side]['target_price'],
+            target_source=_side_geometry[_thesis_side]['target_source'],
+        )
+    else:
+        _assigned_geometry = assess_thesis_geometry(
+            thesis_side='UNASSIGNED', reference_price=px, invalidation_price=None,
+            invalidation_source=None, target_price=None, target_source=None,
+        )
+    _thesis_basis = json.dumps({
+        'policy_version': _beh_policy['version'],
+        'primary_candidate_id': _primary.get('Candidate_ID') if _primary else None,
+        'signal_type': _primary.get('Signal_Type') if _primary else None,
+        'signal_state': _primary.get('Signal_State') if _primary else None,
+        'scope': _primary.get('Structure_Scope') if _primary else None,
+        'trigger': _primary.get('Trigger') if _primary else None,
+        'invalidation': _primary.get('Invalidation') if _primary else None,
+    }, sort_keys=True, separators=(',', ':'))
+    _adapter = legacy_direction_adapter_v1(
+        thesis_side=_thesis_side,
+        direction_status=_handoff['thesis__direction_status'],
+        direction_basis=_thesis_basis,
+        unassigned_reason=_handoff['thesis__unassigned_reason'],
+        geometry=_assigned_geometry,
+    )
+    _thesis_governs = _assign_runtime['production_direction_source'] == 'beh001_v1'
+    if _thesis_governs:
+        _candidate_direction = _adapter['direction']
+        _discovery_direction_status = _adapter['discovery_direction_status']
+        _discovery_direction_basis = _adapter['discovery_direction_basis']
+    _thesis_fields = {
+        'thesis__side': _thesis_side,
+        'thesis__direction_status': _handoff['thesis__direction_status'],
+        'thesis__direction_basis': _thesis_basis,
+        'thesis__unassigned_reason': _handoff['thesis__unassigned_reason'],
+        'thesis__side_assignment_policy_version': _beh_policy['version'],
+        'thesis__evidence_independence': 'SINGLE_FAMILY_OHLCV',
+        'thesis__production_direction_source': _assign_runtime['production_direction_source'],
+        'geometry_status': _adapter['geometry_status'],
+        'target_state': _adapter['target_state'],
+        **_beh001_summary_fields(_beh),
+        'legacy_direction': _legacy_direction,
+        'legacy_discovery_direction_status': _legacy_direction_status,
+        'legacy_discovery_direction_basis': _legacy_direction_basis,
+    }
+    for _side, _geo in _side_geometry.items():
+        _p = _side.lower()
+        _thesis_fields.update({
+            f'{_p}_geometry_status': _geo['geometry_status'],
+            f'{_p}_invalidation': _geo['invalidation_price'],
+            f'{_p}_invalidation_source': _geo['invalidation_source'],
+            f'{_p}_invalidation_reason': _geo['invalidation_reason'],
+            f'{_p}_invalidation_sigma': _sigma_distance(_geo['invalidation_price'], px, _sigma_d),
+            f'{_p}_target_state': _geo['target_state'],
+            f'{_p}_target': _geo['target_price'],
+            f'{_p}_target_source': _geo['target_source'],
+            f'{_p}_target_reason': _geo['target_reason'],
+            f'{_p}_target_sigma': _sigma_distance(_geo['target_price'], px, _sigma_d),
+        })
+    _thesis_fields['sigma_daily_log_20'] = round(_sigma_d, 6) if _sigma_d is not None else None
+    if not _thesis_governs:
+        # R-8 rollback: the legacy resolver governs. The behavioural thesis is
+        # still published, under shadow names, so no consumer reads it as the
+        # governed side (Options rejects a thesis/legacy mismatch).
+        _thesis_fields = {
+            (f'shadow_{key}' if key.startswith('thesis__') or key in {'geometry_status', 'target_state'}
+             else key): value
+            for key, value in _thesis_fields.items()
+        }
+
     # ── Component 3: neutral compatibility baseline ──────────────────────────
     # Fixed across all macro payloads so external macro cannot alter the score.
     regime_align = 0.5
@@ -1608,7 +1829,7 @@ def scan_ticker_ultimate(
     
     # Skip rejected tickers (tier 4)
     if tier == 4 and not early_signal:
-        return None
+        return _reject("ELIG_TIER4_LOW_COMPOSITE")
     
     # === CALCULATE INDICATORS ===
     # atr_14_val already computed above for options viability check
@@ -1811,6 +2032,27 @@ def scan_ticker_ultimate(
         _governed_invalidation_spot = round(float(structural_stop), 4)
         _governed_invalidation_source = str(_stop_source)
 
+    # DIR-002 §4.5 / DSC-12/13: under the corrected policy every legacy level
+    # field is derived from the assigned side's structural geometry. No ATR,
+    # 0.97 or 20-bar ×1.05 formula becomes a stop or target; a missing level
+    # stays missing (INCOMPLETE_GEOMETRY / target_state NONE).
+    _thesis_fields.update({
+        'legacy_stop_loss': structural_stop,
+        'legacy_structural_stop_source': _stop_source,
+        'legacy_structural_target': structural_target,
+        'legacy_structural_target_source': _target_source,
+        'legacy_governed_invalidation_spot': _governed_invalidation_spot,
+        'legacy_governed_invalidation_source': _governed_invalidation_source,
+    })
+    if _thesis_governs:
+        structural_stop = _adapter['structural_stop']
+        stop_loss = _adapter['stop_loss']
+        _stop_source = _adapter['structural_stop_source']
+        structural_target = _adapter['structural_target']
+        _target_source = _adapter['structural_target_source']
+        _governed_invalidation_spot = _adapter['governed_invalidation_spot']
+        _governed_invalidation_source = _adapter['governed_invalidation_source']
+
     # Sector / industry lookup — SIC code comes from universe CSV if present
     _sic = ""
     _base_dir = Path(__file__).resolve().parent
@@ -1940,7 +2182,14 @@ def scan_ticker_ultimate(
         and current_price > 0
     ):
         _governed_risk = abs(current_price - _governed_invalidation_spot)
-        if _governed_risk > 0:
+        if _thesis_governs and _thesis_side in {'BULL', 'BEAR'}:
+            # DSC-12: signed per side; a wrong-side level can never hide in abs().
+            _sign = 1.0 if _thesis_side == 'BULL' else -1.0
+            _reward = _sign * (structural_target - current_price)
+            _risk = _sign * (current_price - _governed_invalidation_spot)
+            if _risk > 0:
+                _governed_rr_underlying = round(_reward / _risk, 2)
+        elif _governed_risk > 0:
             _governed_rr_underlying = round(
                 abs(structural_target - current_price) / _governed_risk,
                 2,
@@ -2004,8 +2253,12 @@ def scan_ticker_ultimate(
         'data_source':              _data_source_attr,
         'is_stale':                 bool(_is_stale),
         'win_probability': round(win_probability, 1),
+        # B1 (ACK 3 Oct 2026): 40 + 0.25 x composite, clamped 35-75 - a rescaled score, not a probability.
+        'win_probability_basis': 'COMPOSITE_RESCALED_NOT_A_PROBABILITY',
         'wyckoff_phase_bucket':   phase_bucket,           # broad bucket — actuarial DB state hash
         'wyckoff_phase_granular': phase_bucket_granular,  # sub-phase — setup quality scoring
+        'wyckoff_mode_phase_key': _mode_phase_key,  # v2 structural identity; not legacy actuarial bucket
+        'wyckoff_mode_phase_source': _mode_phase_source,
         'atr_pct': round(atr_pct_val, 2),                     # Enhancement 4: for viability audit
         'adv_dollars': round(adv_dollars, 0),                  # Enhancement 4: for viability audit
         'adx_14': adx_14_val,                                  # State hash dim 6 — ADX raw value
@@ -2020,10 +2273,24 @@ def scan_ticker_ultimate(
         'dominant_event':         wyckoff_data.get('dominant_event', ''),
         'event_evidence_strength': round(float(wyckoff_data.get('event_evidence_strength', 0)), 1),
         'control_state':          wyckoff_data.get('control_state', ''),
+        # DIR-002: mirrored range-break observations are shadow evidence only.
+        'sym_range_break_authority': wyckoff_data.get('sym_range_break_authority'),
+        'sym_range_break_status': wyckoff_data.get('sym_range_break_status'),
+        'sym_range_break_policy_version': wyckoff_data.get('sym_range_break_policy_version'),
+        'sym_bull_break_count': wyckoff_data.get('sym_bull_break_count'),
+        'sym_bull_fail_back_count': wyckoff_data.get('sym_bull_fail_back_count'),
+        'sym_bear_break_count': wyckoff_data.get('sym_bear_break_count'),
+        'sym_bear_fail_back_count': wyckoff_data.get('sym_bear_fail_back_count'),
+        'sym_phase_c_event_candidate': wyckoff_data.get('sym_phase_c_event_candidate'),
+        'sym_control_status': wyckoff_data.get('sym_control_status'),
+        'sym_bull_control_score': wyckoff_data.get('sym_bull_control_score'),
+        'sym_bear_control_score': wyckoff_data.get('sym_bear_control_score'),
+        'sym_upward_failed_thrust_count': wyckoff_data.get('sym_upward_failed_thrust_count'),
+        'sym_downward_failed_thrust_count': wyckoff_data.get('sym_downward_failed_thrust_count'),
         # Evidence quality fields — drive phase_align and EIL/MVE confidence
         'truth_confidence':       round(_truth_conf, 1),
         'wyckoff_setup_quality':  _wyk_setup_qual,
-        'wyckoff_execution_bias': _exec_bias,
+        **_wyckoff_bias_fields(_exec_bias),
         'wyckoff_mode':           _wyckoff_mode,
         'phase_convergence':      round(_convergence_score, 3),
         'event_quality':          (
@@ -2042,6 +2309,8 @@ def scan_ticker_ultimate(
         'wyckoff_transition_conf': round(_wyk_trans_conf, 1),
         'precor_transition_to':   _precor_trans_to,
         **prefixed_validation_fields(wyckoff_validation),
+        **_shadow_candidate_geometry,
+        **_thesis_fields,
 
         # Direction governance Stage 0. The thesis direction is frozen here;
         # downstream stages may challenge/invalidate it but not silently flip it.
@@ -2049,6 +2318,8 @@ def scan_ticker_ultimate(
         'discovery_direction_status': _discovery_direction_status,
         'discovery_direction_basis': _discovery_direction_basis,
         'direction':             _candidate_direction,
+        # XLU-D10 (ACK 2 Oct 2026): Phase and Event categorise the trade on its own side.
+        **_thesis_category_fields(_beh, _candidate_direction),
         'direction_authority':   'DISCOVERY_GOVERNED',
         'governed_invalidation_spot': _governed_invalidation_spot,
         'governed_invalidation_source': _governed_invalidation_source,
@@ -2203,7 +2474,10 @@ def scan_ticker_ultimate(
     # Cap output at MAX_RR=50x and stamp rr_flag so the anomaly is visible in the manifest.
     _MAX_RR = 50.0
     _rr_raw = signal.get('rr_underlying')
-    if _rr_raw is None or _rr_raw == 0:
+    if _rr_raw is None and _thesis_governs:
+        # Missing structural target/invalidation is not a zero-risk anomaly.
+        signal['rr_flag'] = 'RR_NOT_ASSESSABLE'
+    elif _rr_raw is None or _rr_raw == 0:
         signal['rr_flag'] = 'RR_ANOMALY_ZERO_RISK'
     elif abs(_rr_raw) > _MAX_RR:
         signal['rr_flag'] = f'RR_ANOMALY_CAPPED_FROM_{round(abs(_rr_raw), 1)}'
@@ -2213,9 +2487,21 @@ def scan_ticker_ultimate(
     else:
         signal['rr_flag'] = 'RR_OK'
 
-    # Add early position fields if applicable
+    signal['_beh001_candidates'] = _beh['candidates']
+
+    # Add early position fields if applicable. DSC-13: under the corrected
+    # policy the Tier-0 heuristic never overwrites the structural stop (a
+    # long-only price x 0.97), Wyckoff control or phase; it keeps its own
+    # early_* fields.
     if early_signal:
-        signal.update(early_signal)
+        if _thesis_governs:
+            _early = dict(early_signal)
+            for _key in ('stop_loss', 'stop_pct', 'phase', 'phase_strength', 'control_state'):
+                if _key in _early:
+                    _early[f'early_{_key}'] = _early.pop(_key)
+            signal.update(_early)
+        else:
+            signal.update(early_signal)
 
     return signal
 
@@ -2331,6 +2617,92 @@ def _enrich_with_activist_signals(
 # ==============================================================================
 
 
+def _beh001_candidates_for_drop(ticker, df, cfg, outcome: dict, read: Optional[set] = None) -> list:
+    """BEH-001 (ACK, 1 Oct): a ticker that Discovery does not pass on is still
+    read on every timeframe; its candidates carry the Discovery outcome as an
+    attribute for downstream owners. Never raises. A ticker read successfully
+    is added to ``read`` (the candidate ledger's evidence of absence)."""
+    try:
+        policy, _ = _beh001_runtime()
+        beh = _beh001_reading(ticker, df, cfg, policy)
+    except Exception:
+        return []
+    if read is not None:
+        read.add(str(ticker).strip().upper())
+    for candidate in beh["candidates"]:
+        candidate["Discovery_Outcome"] = outcome.get("outcome")
+        candidate["Discovery_Reason"] = outcome.get("reason_code")
+        candidate["Discovery_Tier"] = outcome.get("tier", "")
+    return beh["candidates"]
+
+
+def _thesis_category_fields(beh, direction) -> dict:
+    """Phase/Event categorisation from the BEH-001 readings; never raises (XLU-D10)."""
+    from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS, FIELDS, thesis_category
+    try:
+        return thesis_category((beh or {}).get('readings') or {}, direction)
+    except Exception as exc:
+        out = {field: None for field in (*FIELDS, *EVIDENCE_FIELDS)}
+        out['thesis_structure_alignment'] = f'NOT_EVALUATED_ERROR:{type(exc).__name__}'
+        return out
+
+
+def _wyckoff_bias_fields(legacy_bias) -> dict:
+    """XLU-D10 (ACK 2 Oct 2026): OBSERVE_ONLY is not a decision. The legacy value is kept as
+    lineage; the published bias is directional or NO_DIRECTIONAL_BIAS."""
+    legacy = str(legacy_bias or 'OBSERVE_ONLY').strip().upper()
+    return {'wyckoff_execution_bias': legacy if legacy in {'BULLISH', 'BEARISH'} else 'NO_DIRECTIONAL_BIAS',
+            'legacy_wyckoff_execution_bias': legacy}
+
+
+def _beh001_record_ledger(candidates: list, read_tickers, run_id: str, path, last_bar=None) -> str:
+    """C-03 core / RQ-2: append this run's candidate life cycle. Never fails
+    Discovery: on any error the candidates are marked LEDGER_UNAVAILABLE and the
+    status is returned for the manifest."""
+    try:
+        from canonical_data.behavioural_candidate_ledger import BehaviouralCandidateLedger
+        BehaviouralCandidateLedger(path).record_run(run_id, candidates, read_tickers, ticker_last_bar=last_bar)
+        return "RECORDED"
+    except Exception as exc:
+        for candidate in candidates:
+            candidate["Lifecycle_Event"] = "LEDGER_UNAVAILABLE"
+            candidate.setdefault("First_Seen_Run", None)
+            candidate.setdefault("First_Seen_As_Of", None)
+        logging.getLogger("AVSHUNTER_ULTIMATE").warning(
+            "BEH-001 candidate ledger not recorded: %s: %s", type(exc).__name__, exc)
+        return f"LEDGER_ERROR:{type(exc).__name__}"
+
+
+def _scan_with_lifecycle(ticker, df, cfg, wyckoff_engine):
+    """DSC-20: scan one ticker; an exception is a visible ERROR row, not a crash.
+
+    Returns (signal, None) for a survivor, or (None, lifecycle_row) for an
+    eligibility DROP (typed reason) or a per-ticker ERROR.
+    """
+    diagnostic: dict = {}
+    row = {"ticker": str(ticker).strip().upper(), "next_stage": "", "horizon_bucket": "", "tier": ""}
+    try:
+        signal = scan_ticker_ultimate(ticker, df, cfg, wyckoff_engine, eligibility_diagnostic=diagnostic)
+    except Exception as exc:
+        return None, {**row, "outcome": "ERROR", "lifecycle_state": "ERROR_STAGE",
+                      "reason_code": f"SCAN_EXCEPTION_{type(exc).__name__}"}
+    if signal is None:
+        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE",
+                      "reason_code": diagnostic.get("reason_code", "NO_SIGNAL_AT_ANY_HORIZON")}
+    return signal, None
+
+
+def _macro_source_path(explicit: str = "") -> Path:
+    """DSC-21: Discovery and the post-Discovery macro rewrite read one snapshot.
+
+    The orchestrator passes its run-scoped macro copy; standalone runs fall
+    back to the dropbox base file. Macro remains display-only (rule 6).
+    """
+    if explicit:
+        return Path(explicit)
+    return Path(__file__).resolve().parent / "dropbox" / "macro" / "macro_intelligence_latest.json"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--universe", default="config/tickers.csv")
@@ -2343,6 +2715,11 @@ def main() -> None:
     # DISC-02: VMS scanner context — written by orchestrator Phase 0
     ap.add_argument("--scanner-context", default="",
                     help="Path to scanner_context_{run_id}.json — injects VMS scores into composite scoring")
+    ap.add_argument(
+        "--macro-path",
+        default="",
+        help="Run-scoped macro snapshot (display/advisory only); defaults to the dropbox base file",
+    )
     ap.add_argument(
         "--run-id",
         default="",
@@ -2363,7 +2740,7 @@ def main() -> None:
     # volume thresholds are invariant to the file's presence or contents.
     try:
         from regime_threshold_injector import apply_regime_to_config
-        macro_path = Path(__file__).resolve().parent / "dropbox" / "macro" / "macro_intelligence_latest.json"
+        macro_path = _macro_source_path(args.macro_path)
         cfg = apply_regime_to_config(cfg, macro_path)
 
         # ENHANCEMENT 3: Load sector signals from macro JSON (2026-04-16)
@@ -2396,9 +2773,7 @@ def main() -> None:
         cfg.active_regime = "TRANSITIONAL"
         cfg.active_regime_label = "DEFAULT (injection error)"
         cfg.macro_sector_signals = {}
-        cfg.macro_quant_packet = missing_macro_quant_packet(
-            Path(__file__).resolve().parent / "dropbox" / "macro" / "macro_intelligence_latest.json"
-        )
+        cfg.macro_quant_packet = missing_macro_quant_packet(_macro_source_path(args.macro_path))
 
     # DISC-02: Load VMS scanner context (written by orchestrator Phase 0).
     # Fields injected per ticker: vms_score, vms_decision, iv_rank, vol_spread.
@@ -2462,6 +2837,18 @@ def main() -> None:
 
     wyckoff_engine = WyckoffEngine(min_bars=20)
 
+    # BEH-001: stored completed intraday bars (read-only, no provider call).
+    # Any failure here means "no intraday", never a failed run (ACK, 1 Oct).
+    try:
+        from canonical_data.intraday_bars import CompletedIntradayIndex
+        cfg.beh001_intraday_index = CompletedIntradayIndex.from_registry(
+            Path(__file__).resolve().parent / "data" / "canonical" / "control_plane.sqlite"
+        )
+        logger.info("BEH-001 intraday index loaded (completed regular-session 5-minute bars)")
+    except Exception as _intraday_error:
+        cfg.beh001_intraday_index = None
+        logger.warning("BEH-001 intraday index unavailable; daily timeframe only: %s", _intraday_error)
+
     logger.info("=" * 80)
     logger.info("AVSHUNTER DISCOVERY ULTIMATE v1.0")
     logger.info("=" * 80)
@@ -2476,6 +2863,9 @@ def main() -> None:
     logger.info("-" * 80)
 
     all_signals = []
+    behavioural_candidates = []
+    beh001_read_tickers: set = set()
+    beh001_last_bar: dict = {}
     discovery_outcomes = []
     tickers_with_data = 0
     
@@ -2496,8 +2886,24 @@ def main() -> None:
             continue
         
         tickers_with_data += 1
+        try:
+            beh001_last_bar[str(t).strip().upper()] = str(pd.to_datetime(df["date"]).max().date())
+        except Exception:
+            pass  # unknown last bar: the ledger then never infers "not trading" for it
 
-        signal = scan_ticker_ultimate(t, df, cfg, wyckoff_engine)
+        signal, scan_outcome = _scan_with_lifecycle(t, df, cfg, wyckoff_engine)
+        if scan_outcome is not None:
+            # Eligibility drop or a per-ticker scan error (DSC-15 / DSC-20).
+            discovery_outcomes.append(scan_outcome)
+            logger.debug("%s: %s", scan_outcome["reason_code"], t)
+            # Behaviour is still read and published (no upstream option filter).
+            behavioural_candidates.extend(
+                _beh001_candidates_for_drop(t, df, cfg, scan_outcome, read=beh001_read_tickers))
+        _ticker_candidates = signal.pop('_beh001_candidates', []) if signal else []
+        if signal:
+            beh001_read_tickers.add(str(t).strip().upper())
+            for _c in _ticker_candidates:
+                _c["Discovery_Tier"] = signal.get("tier", "")
 
         if signal:
             # FIX 3: Stamp horizon_bucket and discovery_basis using three-horizon router
@@ -2505,6 +2911,9 @@ def main() -> None:
             if _horizon is None:
                 # Genuine no-signal at any horizon — only legitimate discard
                 logger.debug("NO_SIGNAL_AT_ANY_HORIZON: %s", t)
+                for _c in _ticker_candidates:
+                    _c["Discovery_Outcome"], _c["Discovery_Reason"] = "DROP", "NO_SIGNAL_AT_ANY_HORIZON"
+                behavioural_candidates.extend(_ticker_candidates)
                 discovery_outcomes.append({
                     "ticker": str(t).strip().upper(),
                     "outcome": "DROP",
@@ -2524,6 +2933,9 @@ def main() -> None:
                 if _horizon in ("6_10d", "11_20d"):
                     signal.setdefault("opportunity_label", "WATCH_FOR_REGIME_FLIP")
                 all_signals.append(signal)
+                for _c in _ticker_candidates:
+                    _c["Discovery_Outcome"], _c["Discovery_Reason"] = "SURVIVE", "DISCOVERY_SURVIVOR"
+                behavioural_candidates.extend(_ticker_candidates)
                 discovery_outcomes.append({
                     "ticker": str(t).strip().upper(),
                     "outcome": "SURVIVE",
@@ -2537,17 +2949,6 @@ def main() -> None:
             tier = signal['tier']
             if tier in tier_counts:
                 tier_counts[tier] += 1
-        else:
-            logger.debug("NO_SIGNAL_AT_ANY_HORIZON: %s", t)
-            discovery_outcomes.append({
-                "ticker": str(t).strip().upper(),
-                "outcome": "DROP",
-                "lifecycle_state": "DROPPED_STAGE",
-                "reason_code": "NO_SIGNAL_AT_ANY_HORIZON",
-                "next_stage": "",
-                "horizon_bucket": "",
-                "tier": "",
-            })
 
         if args.progress_every and i % int(args.progress_every) == 0:
             logger.info(
@@ -2561,6 +2962,15 @@ def main() -> None:
     out_watchlist = out_dir / f"final_watchlist_ultimate_{ts}.csv"
     out_summary = out_dir / f"discovery_summary_ultimate_{ts}.json"
     out_lifecycle = out_dir / f"discovery_lifecycle_{ts}.csv"
+    out_behaviour = out_dir / f"behavioural_candidates_{ts}.csv"
+
+    # C-03 core / RQ-2: life cycle across runs (append-only; never fails the run).
+    _ledger_path = Path(__file__).resolve().parent / _beh001_runtime()[0]["ledger"]["path"]
+    beh001_ledger_status = _beh001_record_ledger(behavioural_candidates, beh001_read_tickers, ts, _ledger_path,
+                                                  last_bar=beh001_last_bar)
+
+    # BEH-001 design §7: one row per candidate (all timeframes and scopes).
+    pd.DataFrame(behavioural_candidates).to_csv(out_behaviour, index=False)
 
     # CDS-3: exact stage reconciliation.  This is additive output only; current
     # signal selection remains unchanged until governed gating is promoted.
@@ -2644,7 +3054,11 @@ def main() -> None:
             "watchlist_csv": str(out_watchlist.name) if out_watchlist.exists() else None,
             "summary_json": str(out_summary.name) if out_summary.exists() else None,
             "lifecycle_csv": str(out_lifecycle.name) if out_lifecycle.exists() else None,
+            "behavioural_candidates_csv": str(out_behaviour.name) if out_behaviour.exists() else None,
         },
+        "behavioural_candidate_ledger": {"status": beh001_ledger_status,
+                                         "tickers_read": len(beh001_read_tickers),
+                                         "candidates": len(behavioural_candidates)},
         "counts": {
             "universe_size": len(tickers),
             "tickers_scanned": tickers_with_data,

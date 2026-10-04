@@ -365,15 +365,16 @@ class MonetisationPolicy:
                     ))
 
         # ── Minimum observable trade-geometry floor ─────────────────────────
-        # Premium RR is authority; modelled EV is not. Negative premium RR is
-        # structurally untradeable regardless of any EV estimate.
+        # Retired 3 Oct 2026 (ACK D-B): premium R:R measured to a stop-derived target is
+        # not a gate; it is recorded for audit only.
         if hard_block is None and x.premium is not None:
             _rr_raw  = _safe_float_local(getattr(x, 'rr_raw',  None), 0.0)
             if _rr_raw < 0:
-                events.append(RuleEvent("OPT_014", Severity.FATAL, False,
+                # ACK 3 Oct 2026 (D-B, step 5): stop/target R:R is retired - it never blocks. Whether the move pays
+                # is decided on the anticipated move (value at the anticipated time), downstream.
+                events.append(RuleEvent("OPT_014", Severity.INFO, True,
                     value=_rr_raw, threshold=0.0,
-                    note="Negative premium RR — no positive payoff geometry", bucket="economics"))
-                hard_block = (DecisionState.BLOCK_ECONOMICS, "Negative premium RR")
+                    note="Stop-based premium R:R retired (not a gate); see the anticipated move", bucket="economics"))
 
         if hard_block is None and x.spread_pct is not None:
             hard_spread = self.HARD_DATA_LIVE_SPREAD_BLOCK if x.quote_source_live else self.HARD_SPREAD_BLOCK
@@ -589,8 +590,14 @@ def map_options_row_to_policy_input(row: Dict) -> PolicyInput:
             return None
 
     def _int(k: str) -> Optional[int]:
+        # Invented-values inventory F1 (3 Oct 2026): the conversion had drifted below _bool's
+        # return, so every integer (DTE, tier, contradictions) read as None and OPT_001 never fired.
         v = row.get(k)
         if v in (None, "", "nan", "NaN", "N/A"):
+            return None
+        try:
+            return int(float(v))
+        except Exception:
             return None
 
     def _bool(k: str) -> bool:
@@ -598,10 +605,6 @@ def map_options_row_to_policy_input(row: Dict) -> PolicyInput:
         if isinstance(value, bool):
             return value
         return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
-        try:
-            return int(float(v))
-        except Exception:
-            return None
 
     quote_source = str(row.get("quote_source") or row.get("md_quote_source") or "").lower()
 

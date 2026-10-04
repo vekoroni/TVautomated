@@ -1,0 +1,29 @@
+tests/test_pipeline_interpreter_automation_v2_package_publisher.py: 5 passed in 5.61s
+tests/test_pipeline_interpreter_automation_v2_package_shadow.py: 1 passed in 3.57s
+tests/test_pipeline_interpreter_automation_v2_phase3.py: 9 passed in 2.74s
+tests/test_pipeline_interpreter_automation_v2_phase4.py: 7 passed in 11.62s
+tests/test_pipeline_interpreter_automation_v2_phase5.py: 8 passed in 10.12s
+tests/test_pipeline_interpreter_automation_v2_production_deploy.py: 2 passed in 3.35s
+tests/test_pipeline_interpreter_automation_v2_report.py: 1 passed in 2.74s
+tests/test_pipeline_interpreter_capture_v1.py: 7 passed in 4.36s
+tests/test_pipeline_interpreter_capture_v1_attended_workflow.py: 2 passed in 2.96s
+tests/test_pipeline_interpreter_capture_v1_batch.py: 2 passed in 41.76s
+tests/test_pipeline_interpreter_capture_v1_crop.py: 1 passed in 2.37s
+tests/test_pipeline_interpreter_capture_v1_dpi.py: 1 passed in 1.84s
+tests/test_pipeline_interpreter_capture_v1_market_screen.py: 5 passed, 6 subtests passed in 35.96s
+tests/test_pipeline_interpreter_capture_v1_navigation.py: 7 passed in 5.60s
+tests/test_pipeline_interpreter_capture_v1_noii_cross.py: 3 passed in 14.51s
+tests/test_pipeline_interpreter_capture_v1_ticker.py: 4 passed in 22.64s
+tests/test_pipeline_interpreter_capture_v1_ticker_batch.py: 3 passed in 89.95s (0:01:29)
+tests/test_pipeline_interpreter_capture_v1_ticker_market_screen.py: 8 passed in 91.56s (0:01:31)
+tests/test_pipeline_interpreter_lab_authority.py: 3 passed in 16.34s
+tests/test_pipeline_interpreter_trusted_source.py: 3 passed in 15.32s
+tests/test_pre_evening_production_repairs.py: 10 passed, 13 subtests passed in 14.21s
+tests/test_pretrade_focus_handoff.py: 9 passed in 18.08s
+tests/test_thesis_geometry_review_labels.py: 9 passed in 51.37s
+tests/test_trigger_layer_governance.py: 8 passed in 20.46s
+tests/test_vanguard_production_fixes.py: 6 passed in 12.74s
+tests/test_vanguard_reference_input_p2.py: .F
+tests/test_wbs_eod_advisory_contract.py: 3 passed in 9.24s
+tests/test_worker3_macro_orchestrator.py: 2 passed in 9.20s
+tests/test_worker3_macro_ticker_context.py: 20 passed in 1.41s

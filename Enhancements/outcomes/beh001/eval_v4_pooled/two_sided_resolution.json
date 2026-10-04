@@ -1,0 +1,49 @@
+{
+ "ACTIVATION": {
+  "picks": 5668,
+  "coverage_of_two_sided": 0.317,
+  "bull_share": 0.541,
+  "hit_rate": 0.4924,
+  "drift_ref": 0.4958,
+  "excess": -0.0034,
+  "excess_lo95": -0.0172,
+  "excess_hi95": 0.0116,
+  "hit_CROSS_TIMEFRAME": "0.486 vs 0.485 (n=1400)",
+  "hit_SAME_TIMEFRAME": "0.494 vs 0.499 (n=4268)"
+ },
+ "TIMEFRAME": {
+  "picks": 10530,
+  "coverage_of_two_sided": 0.589,
+  "bull_share": 0.599,
+  "hit_rate": 0.5148,
+  "drift_ref": 0.5028,
+  "excess": 0.012,
+  "excess_lo95": 0.0003,
+  "excess_hi95": 0.0245,
+  "hit_CROSS_TIMEFRAME": "0.502 vs 0.505 (n=4609)",
+  "hit_SAME_TIMEFRAME": "0.525 vs 0.501 (n=5921)"
+ },
+ "SCOPE": {
+  "picks": 1523,
+  "coverage_of_two_sided": 0.085,
+  "bull_share": 0.505,
+  "hit_rate": 0.5154,
+  "drift_ref": 0.5117,
+  "excess": 0.0037,
+  "excess_lo95": -0.0229,
+  "excess_hi95": 0.0312,
+  "hit_SAME_TIMEFRAME": "0.515 vs 0.512 (n=1523)"
+ },
+ "PROXIMITY": {
+  "picks": 14462,
+  "coverage_of_two_sided": 0.808,
+  "bull_share": 0.464,
+  "hit_rate": 0.4891,
+  "drift_ref": 0.4944,
+  "excess": -0.0053,
+  "excess_lo95": -0.0142,
+  "excess_hi95": 0.0039,
+  "hit_CROSS_TIMEFRAME": "0.494 vs 0.495 (n=3670)",
+  "hit_SAME_TIMEFRAME": "0.487 vs 0.494 (n=10792)"
+ }
+}

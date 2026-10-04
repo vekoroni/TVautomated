@@ -214,6 +214,8 @@ def test_latest_pointer_is_gated_on_the_manifest_not_the_package_index(package_f
     assert latest["run_id"] == RUN
 
 
-def test_market_profile_stage_tolerates_a_run_without_packages(package_free_run):
-    from scripts.build_completed_market_profiles import _package_paths
-    assert _package_paths(package_free_run["run_dir"], package_free_run["base"]) == []
+def test_market_profile_stage_takes_its_worklist_from_the_manifest_without_packages(package_free_run):
+    # PKG-F5 (28 Sep 2026): the earlier "tolerant" rule (empty worklist) built 0 profiles and made
+    # the run fatal for the Lab. The worklist is the manifest's tickers; package paths are None.
+    from scripts.build_completed_market_profiles import _worklist
+    assert _worklist(package_free_run["run_dir"], package_free_run["base"]) == [("AAA", None), ("BBB", None)]

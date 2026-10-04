@@ -1,0 +1,143 @@
+[
+ {
+  "run_id": "20260930_083504",
+  "lifecycle_rows": 3320,
+  "replayed": 3320,
+  "stored_survivors": 1669,
+  "replay_survivors": 1619,
+  "survivor_set_mismatch": 50,
+  "no_bar_at_session": 326,
+  "fields": {
+   "direction": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "discovery_direction_status": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "tier": {
+    "compared": 1619,
+    "mismatch": 12
+   },
+   "stop_loss": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "structural_target": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "governed_invalidation_spot": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "current_phase": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "dominant_event": {
+    "compared": 1619,
+    "mismatch": 0
+   },
+   "precor_intent": {
+    "compared": 1619,
+    "mismatch": 0
+   }
+  }
+ },
+ {
+  "run_id": "20260927_205123",
+  "lifecycle_rows": 3320,
+  "replayed": 3320,
+  "stored_survivors": 1666,
+  "replay_survivors": 1616,
+  "survivor_set_mismatch": 50,
+  "no_bar_at_session": 334,
+  "fields": {
+   "direction": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "discovery_direction_status": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "tier": {
+    "compared": 1616,
+    "mismatch": 126
+   },
+   "stop_loss": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "structural_target": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "governed_invalidation_spot": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "current_phase": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "dominant_event": {
+    "compared": 1616,
+    "mismatch": 0
+   },
+   "precor_intent": {
+    "compared": 1616,
+    "mismatch": 0
+   }
+  }
+ },
+ {
+  "run_id": "20260926_173730",
+  "lifecycle_rows": 3321,
+  "replayed": 3321,
+  "stored_survivors": 1666,
+  "replay_survivors": 1616,
+  "survivor_set_mismatch": 50,
+  "no_bar_at_session": 334,
+  "fields": {
+   "direction": {
+    "compared": 1616,
+    "mismatch": 207
+   },
+   "discovery_direction_status": {
+    "compared": 1616,
+    "mismatch": 444
+   },
+   "tier": {
+    "compared": 1616,
+    "mismatch": 444
+   },
+   "stop_loss": {
+    "compared": 1616,
+    "mismatch": 213
+   },
+   "structural_target": {
+    "compared": 1616,
+    "mismatch": 444
+   },
+   "governed_invalidation_spot": {
+    "compared": 1616,
+    "mismatch": 427
+   },
+   "current_phase": {
+    "compared": 1616,
+    "mismatch": 1308
+   },
+   "dominant_event": {
+    "compared": 1616,
+    "mismatch": 1054
+   },
+   "precor_intent": {
+    "compared": 1616,
+    "mismatch": 2
+   }
+  }
+ }
+]

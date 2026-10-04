@@ -1,0 +1,116 @@
+{
+ "pairs_with_candidates": 47769,
+ "empty_daily_with_htf": 10876,
+ "share_of_pairs": 0.228,
+ "one_sided_daily": 29924,
+ "two_sided_daily": 6969,
+ "rule_coverage_of_population": 0.835,
+ "abstain_two_sided_htf": 1792,
+ "by_k": {
+  "1": {
+   "all": {
+    "n": 8974,
+    "hit_rate": 0.5091,
+    "drift_ref": 0.497,
+    "excess": 0.0122,
+    "lo95": -0.0004,
+    "hi95": 0.0246
+   },
+   "bull_share": 0.607
+  },
+  "2": {
+   "all": {
+    "n": 8894,
+    "hit_rate": 0.5031,
+    "drift_ref": 0.4955,
+    "excess": 0.0077,
+    "lo95": -0.0061,
+    "hi95": 0.0214
+   },
+   "bull_share": 0.607,
+   "tf_1mo": {
+    "n": 4119,
+    "hit_rate": 0.5127,
+    "drift_ref": 0.4991,
+    "excess": 0.0137,
+    "lo95": -0.0029,
+    "hi95": 0.0293
+   },
+   "tf_1w": {
+    "n": 4775,
+    "hit_rate": 0.4949,
+    "drift_ref": 0.4924,
+    "excess": 0.0025,
+    "lo95": -0.0155,
+    "hi95": 0.0205
+   },
+   "activated": {
+    "n": 1638,
+    "hit_rate": 0.4786,
+    "drift_ref": 0.4911,
+    "excess": -0.0124,
+    "lo95": -0.0429,
+    "hi95": 0.0183
+   },
+   "detected": {
+    "n": 7256,
+    "hit_rate": 0.5087,
+    "drift_ref": 0.4965,
+    "excess": 0.0122,
+    "lo95": -0.0024,
+    "hi95": 0.0269
+   },
+   "period_2022_24": {
+    "n": 3501,
+    "hit_rate": 0.4847,
+    "drift_ref": 0.4922,
+    "excess": -0.0075,
+    "lo95": -0.0288,
+    "hi95": 0.0144
+   },
+   "period_2024_26": {
+    "n": 5393,
+    "hit_rate": 0.5151,
+    "drift_ref": 0.4976,
+    "excess": 0.0175,
+    "lo95": -0.0004,
+    "hi95": 0.0343
+   },
+   "eligible": {
+    "n": 6669,
+    "hit_rate": 0.5002,
+    "drift_ref": 0.4946,
+    "excess": 0.0056,
+    "lo95": -0.01,
+    "hi95": 0.0219
+   },
+   "bull": {
+    "n": 5403,
+    "hit_rate": 0.5304,
+    "drift_ref": 0.5205,
+    "excess": 0.0099,
+    "lo95": -0.004,
+    "hi95": 0.0252
+   },
+   "bear": {
+    "n": 3491,
+    "hit_rate": 0.4609,
+    "drift_ref": 0.4567,
+    "excess": 0.0042,
+    "lo95": -0.0147,
+    "hi95": 0.0221
+   }
+  },
+  "3": {
+   "all": {
+    "n": 8421,
+    "hit_rate": 0.5126,
+    "drift_ref": 0.501,
+    "excess": 0.0117,
+    "lo95": -0.0018,
+    "hi95": 0.026
+   },
+   "bull_share": 0.606
+  }
+ }
+}

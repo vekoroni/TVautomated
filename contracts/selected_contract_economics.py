@@ -754,6 +754,95 @@ def evaluate_timevalue_monetisability(
     }
 
 
+CONTRACT_ANALYTICS_VERSION = "avs-contract-analytics-v1"
+CONTRACT_ANALYTICS_FIELDS = (
+    "ca_version", "ca_state", "ca_missing_fields", "ca_contracts", "ca_intrinsic_per_share", "ca_mid_per_share",
+    "ca_extrinsic_at_mid_per_share", "ca_extrinsic_at_ask_per_share", "ca_extrinsic_share_of_ask_pct",
+    "ca_breakeven_expiry_spot", "ca_breakeven_stock_move_pct", "ca_max_loss_per_position_usd",
+    "ca_delta_share_equivalent", "ca_dollar_delta_usd", "ca_theta_usd_per_position_per_calendar_day",
+    "ca_vega_usd_per_position_per_iv_point", "ca_spread_pct_of_mid", "ca_implied_move_to_expiry_pct",
+    "ca_implied_move_over_hold_pct", "ca_iv_source",
+)
+
+
+def contract_analytics(
+    *,
+    direction: Any,
+    spot: Any,
+    strike: Any,
+    bid: Any,
+    ask: Any,
+    delta: Any,
+    theta: Any,
+    vega: Any,
+    iv: Any,
+    dte_calendar: Any,
+    hold_sessions: Any = None,
+    iv_source: str = "",
+    multiplier: float = 100.0,
+    contracts: int = 1,
+) -> Dict[str, Any]:
+    """The standard analytics of one long call or put (AVS options analytics slice 2, ACK 30 Sep 2026).
+
+    Display only. Breakeven and maximum loss use the ask (the price paid); extrinsic value is shown at the mid and
+    the ask. Theta and vega arrive per share (vega per IV point) and are published per position. The market-implied
+    move is IV x sqrt(days / 365), to expiry and over the planned hold (sessions x 7/5 calendar days). A missing
+    input blanks only the figures that need it and is named in ``ca_missing_fields`` (state PARTIAL); a
+    non-directional row or a non-positive spot/strike is NOT_APPLICABLE.
+    """
+    out: Dict[str, Any] = {field: None for field in CONTRACT_ANALYTICS_FIELDS}
+    side = _text(direction).upper()
+    side = "CALL" if "CALL" in side else "PUT" if "PUT" in side else ""
+    s, k = _number(spot), _number(strike)
+    out.update(ca_version=CONTRACT_ANALYTICS_VERSION, ca_contracts=int(contracts), ca_iv_source=_text(iv_source),
+               ca_missing_fields="")
+    if side not in {"CALL", "PUT"} or s is None or k is None or s <= 0 or k <= 0:
+        out["ca_state"] = "NOT_APPLICABLE"
+        return out
+
+    b, a, d, th, vg, vol, dte, hold = (
+        _number(bid), _number(ask), _number(delta), _number(theta), _number(vega), _number(iv),
+        _number(dte_calendar), _number(hold_sessions),
+    )
+    a = a if a is not None and a > 0 else None
+    b = b if b is not None and b >= 0 else None
+    vol = vol if vol is not None and vol > 0 else None
+    missing = [name for name, value in (("bid", b), ("ask", a), ("delta", d), ("theta", th), ("vega", vg),
+                                        ("iv", vol), ("dte_calendar", dte), ("hold_sessions", hold))
+               if value is None]
+    scale = float(multiplier) * int(contracts)
+
+    intrinsic = max(s - k, 0.0) if side == "CALL" else max(k - s, 0.0)
+    out["ca_intrinsic_per_share"] = intrinsic
+    mid = (a + b) / 2.0 if a is not None and b is not None else None
+    if mid is not None:
+        out["ca_mid_per_share"] = mid
+        out["ca_extrinsic_at_mid_per_share"] = max(mid - intrinsic, 0.0)
+        spread = quote_spread_fraction(b, a)                 # the one spread owner: (ask - bid) / mid
+        out["ca_spread_pct_of_mid"] = spread * 100.0 if spread is not None else None
+    if a is not None:
+        out["ca_extrinsic_at_ask_per_share"] = max(a - intrinsic, 0.0)
+        out["ca_extrinsic_share_of_ask_pct"] = max(a - intrinsic, 0.0) / a * 100.0
+        breakeven = k + a if side == "CALL" else k - a
+        out["ca_breakeven_expiry_spot"] = breakeven
+        out["ca_breakeven_stock_move_pct"] = (breakeven / s - 1.0) * 100.0
+        out["ca_max_loss_per_position_usd"] = a * scale
+    if d is not None:
+        out["ca_delta_share_equivalent"] = d * scale
+        out["ca_dollar_delta_usd"] = d * scale * s
+    if th is not None:
+        out["ca_theta_usd_per_position_per_calendar_day"] = th * scale
+    if vg is not None:
+        out["ca_vega_usd_per_position_per_iv_point"] = vg * scale
+    if vol is not None and dte is not None and dte > 0:
+        out["ca_implied_move_to_expiry_pct"] = vol * math.sqrt(dte / 365.0) * 100.0
+    if vol is not None and hold is not None and hold > 0:
+        out["ca_implied_move_over_hold_pct"] = vol * math.sqrt(hold * 7.0 / 5.0 / 365.0) * 100.0
+    out["ca_missing_fields"] = "|".join(missing)
+    out["ca_state"] = "PARTIAL" if missing else "COMPLETE"
+    return out
+
+
 def evaluate_long_option_monetisability(
     row: Mapping[str, Any],
     hydrated: Mapping[str, Any],

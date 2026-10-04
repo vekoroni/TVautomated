@@ -1,0 +1,42 @@
+tests/test_a1_geometry_labels.py: 7 passed in 49.84s
+tests/test_anthropic_desk_provider.py: 12 passed in 10.90s
+tests/test_avs_d01_d13_target_reachability.py: 9 passed in 33.85s
+tests/test_avs_d10_phase_event_thesis.py: 9 passed in 48.71s
+tests/test_avs_d11_morning_confirmation.py: 9 passed in 95.10s (0:01:35)
+tests/test_avs_d13_rr_underlying_reachable.py: 5 passed in 55.73s
+tests/test_avs_dir002_c5_thesis_handoff.py: 8 passed in 5.60s
+tests/test_avs_dir002_control_symmetry.py: 4 passed in 17.65s
+tests/test_avs_dir002_direction_policy_crossover.py: 7 passed in 17.97s
+tests/test_avs_dir002_direction_vocabulary.py: 20 passed in 9.51s
+tests/test_avs_dir002_discovery_ticker_error.py: 2 passed in 39.73s
+tests/test_avs_dir002_duplicate_ev_explicit_side.py: 6 passed in 7.20s
+tests/test_avs_dir002_eligibility_reasons.py: 6 passed in 28.09s
+tests/test_avs_dir002_ev_v2_explicit_side.py: 7 passed in 4.66s
+tests/test_avs_dir002_geometry_boundary.py: 12 passed in 41.77s
+tests/test_avs_dir002_interpreter_no_direction_vote.py: 3 passed in 3.20s
+tests/test_avs_dir002_lab_direction_authority.py: 4 passed in 58.18s
+tests/test_avs_dir002_legacy_adapter.py: 9 passed in 7.89s
+tests/test_avs_dir002_macro_advisory_namespace.py: 1 passed in 4.96s
+tests/test_avs_dir002_no_synthetic_target.py: 6 passed in 50.50s
+tests/test_avs_dir002_open_contract_reconciliation.py: 3 passed in 24.16s
+tests/test_avs_dir002_options_thesis_side.py: 6 passed in 55.27s
+tests/test_avs_dir002_precor_followthrough_mirror.py: 2 passed in 16.31s
+tests/test_avs_dir002_side_assignment.py: 15 passed in 4.31s
+tests/test_avs_dir002_side_evidence_kernel.py: 20 passed in 32.83s
+tests/test_avs_dir002_side_evidence_wiring.py: 12 passed in 20.65s
+tests/test_avs_dir002_symmetry_kernel.py: 9 passed in 17.68s
+tests/test_avs_dir002_vanguard_direction_retired.py: 5 passed in 62.42s (0:01:02)
+tests/test_avs_dir002_vanguard_no_direction_vote.py: 3 passed in 58.18s
+tests/test_avs_dir002_vanguard_side_blocks.py: 7 passed in 23.32s
+tests/test_avs_dir002_vanguard_thesis_handoff.py: 8 passed in 8.95s
+tests/test_avs_direction_source_beh001.py: 1 passed in 2.29s
+tests/test_avs_int001_invalidation_alias.py: 4 passed in 19.19s
+tests/test_avs_int001_scenario_contract_economics.py: 9 passed in 9.08s
+tests/test_avs_int001_scenario_evening_to_lab.py: 9 passed in 42.14s
+tests/test_avs_int001_scenario_horizon_parity.py: 20 passed in 16.86s
+tests/test_avs_int001_scenario_interpreter_war.py: 27 passed in 15.90s
+tests/test_avs_int001_scenario_macro_chain.py: 8 passed in 34.89s
+tests/test_avs_int001_scenario_policy_dcv_outcomes.py: 23 passed in 92.22s (0:01:32)
+tests/test_avs_target_source_label.py: 4 passed in 8.96s
+tests/test_avs_tev001_forecast_path_label.py: 12 passed in 7.10s
+tests/test_beh001_behaviour_control.py: 8 passed in 20.99s

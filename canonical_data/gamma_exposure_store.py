@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 import os
 from pathlib import Path
 import sqlite3
-from typing import Iterable
+from typing import Iterable, Mapping
 from uuid import uuid4
 
 import pandas as pd
@@ -18,7 +19,7 @@ from scripts.compute_greeks_bs import compute_greeks_from_row
 
 from .contracts import CompletenessStatus, DataScope, DatasetRecord, DatasetType
 from .registry import CanonicalRegistry
-from .session_clock import session_bounds
+from .session_clock import is_xnys_session, session_bounds
 
 
 GEX_SCHEMA_VERSION = "gamma_exposure_v1"
@@ -38,6 +39,80 @@ def _atomic_json(path: Path, payload: dict) -> None:
     temporary = path.with_suffix(path.suffix + f".tmp-{uuid4().hex}")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
     os.replace(temporary, path)
+
+
+GOVERNED_CONSTANTS_PATH = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+
+
+@dataclass(frozen=True, slots=True)
+class ChainResolutionPolicy:
+    """Governed window for rolling to a neighbouring stored chain session."""
+
+    forward_roll_max_sessions: int
+    backward_roll_max_sessions: int
+    threshold_version: str = "UNCONFIGURED"
+
+
+@dataclass(frozen=True, slots=True)
+class ChainResolution:
+    """What chain session was asked for, what was found, and how far away."""
+
+    requested_session: date
+    resolved_session: date | None
+    direction: str
+    sessions_rolled: int
+
+    @property
+    def available(self) -> bool:
+        return self.resolved_session is not None
+
+    @property
+    def fallback_used(self) -> bool:
+        return self.direction != "EXACT"
+
+
+def load_chain_resolution_policy(
+    path: Path | str = GOVERNED_CONSTANTS_PATH,
+) -> ChainResolutionPolicy:
+    """Load the governed roll window fail-closed; never guess a window."""
+
+    payload = json.loads(Path(path).read_bytes().decode("utf-8-sig"))
+    if payload.get("schema_version") != "governed_constants_v1":
+        raise ValueError("unsupported governed constants schema")
+    values = payload.get("gex_chain_resolution")
+    if not isinstance(values, Mapping):
+        raise ValueError("governed constants omit gex_chain_resolution")
+    if values.get("threshold_version") != "gex_chain_resolution_v1":
+        raise ValueError("unsupported gex chain resolution threshold version")
+
+    def sessions(name: str) -> int:
+        value = int(values[name])
+        if value < 0:
+            raise ValueError(f"gex chain resolution {name} must not be negative")
+        return value
+
+    return ChainResolutionPolicy(
+        forward_roll_max_sessions=sessions("forward_roll_max_sessions"),
+        backward_roll_max_sessions=sessions("backward_roll_max_sessions"),
+        threshold_version=str(values["threshold_version"]),
+    )
+
+
+def _xnys_walk(anchor: date, *, step: int, limit: int) -> Iterable[tuple[int, date]]:
+    """Yield (sessions_rolled, session) away from an anchor of any kind.
+
+    The anchor itself is never yielded and need not be a session, so a weekend
+    or holiday request still rolls correctly.
+    """
+
+    rolled = 0
+    candidate = anchor
+    while rolled < limit:
+        candidate += timedelta(days=step)
+        if not is_xnys_session(candidate):
+            continue
+        rolled += 1
+        yield rolled, candidate
 
 
 class PhantomOptionChainRepository:
@@ -77,6 +152,52 @@ class PhantomOptionChainRepository:
         if row is None:
             raise ValueError(f"no common completed option session for {','.join(names)}")
         return date.fromisoformat(str(row[0])[:10])
+
+    def has_chain(self, tickers: Iterable[str], session_date: date) -> bool:
+        """True when every requested ticker has a stored chain for the session."""
+
+        names = tuple(sorted({str(value).strip().upper() for value in tickers if str(value).strip()}))
+        if not names:
+            raise ValueError("at least one ticker is required")
+        placeholders = ",".join("?" for _ in names)
+        with self._connection() as connection:
+            row = connection.execute(
+                f"""
+                SELECT COUNT(DISTINCT ticker)
+                FROM chain_snapshots
+                WHERE ticker IN ({placeholders}) AND quote_date=?
+                """,
+                (*names, session_date.isoformat()),
+            ).fetchone()
+        return bool(row) and int(row[0]) == len(names)
+
+    def resolve_session(
+        self,
+        tickers: Iterable[str],
+        session_date: date,
+        *,
+        policy: ChainResolutionPolicy | None = None,
+    ) -> ChainResolution:
+        """Resolve the requested chain session, rolling forward then backward.
+
+        A roll is reported, never hidden: the caller labels the session actually
+        measured so downstream authority checks still compare against reality.
+        """
+
+        window = policy or load_chain_resolution_policy()
+        if self.has_chain(tickers, session_date):
+            return ChainResolution(session_date, session_date, "EXACT", 0)
+        for rolled, candidate in _xnys_walk(
+            session_date, step=1, limit=window.forward_roll_max_sessions
+        ):
+            if self.has_chain(tickers, candidate):
+                return ChainResolution(session_date, candidate, "FORWARD", rolled)
+        for rolled, candidate in _xnys_walk(
+            session_date, step=-1, limit=window.backward_roll_max_sessions
+        ):
+            if self.has_chain(tickers, candidate):
+                return ChainResolution(session_date, candidate, "BACKWARD", rolled)
+        return ChainResolution(session_date, None, "NONE", 0)
 
     def read(self, ticker: str, session_date: date, *, dataset_id: str | None = None) -> pd.DataFrame:
         with self._connection() as connection:

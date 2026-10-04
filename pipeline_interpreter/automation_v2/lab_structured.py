@@ -14,6 +14,22 @@ from .veto import evaluate_sovereign_veto
 
 
 SECTION_FIELDS = {
+    "ticker_forecast": (
+        "forecast_packet_state", "forecast_version", "forecast_state",
+        "forecast_direction", "forecast_reference_spot",
+        "forecast_target_spot", "forecast_invalidation_spot",
+        "forecast_thesis_id", "forecast_reason", "forecast_source",
+        "forecast_authority", "forecast_vanguard_state", "forecast_vanguard_reason",
+        "forecast_auction_state", "forecast_auction_control",
+        "forecast_legacy_statistical_context", "c4_reliability_state",
+        "forecast_structure_stage", "forecast_compression_state",
+        "forecast_evidence_state", "forecast_scenarios_json", "forecast_countercase",
+    ),
+    "expression_valuation_status": (
+        "option_expression_state", "option_expression_candidate_count",
+        "option_expression_packet_state", "c8_valuation_state", "c8_numeric_ev",
+        "research_ev_state", "research_ev_candidate_count", "research_ev_contracts_json",
+    ),
     "overview": (
         "lab_rank", "lab_verdict", "lab_tradeable", "lab_status",
         "lab_execution_status", "execution_category", "display_execution_mode",

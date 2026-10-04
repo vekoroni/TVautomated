@@ -45,7 +45,7 @@ COVERAGE_ALIASES: dict[str, tuple[str, ...]] = {
     "entry_spot": ("entry_spot", "signal_price", "underlying_price", "current_price"),
     "target_spot": ("target_spot", "target_price", "structural_target", "target_in_play"),
     "invalidation_spot": ("invalidation_spot", "invalidation_price", "invalidation_level"),
-    "planned_hold_sessions": ("planned_hold_sessions", "horizon_hold_sessions"),
+    "planned_hold_sessions": ("ev3_planned_hold_sessions", "planned_hold_sessions", "horizon_hold_sessions"),
     "state_key": ("ev3_barrier_state_key", "state_key", "layer2__matched_state_key"),
     "canonical_state_key": ("ev3_barrier_state_key",),
     "contract_symbol": ("contract_occ_symbol", "recommended_contract", "contract_symbol"),

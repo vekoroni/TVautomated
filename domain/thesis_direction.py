@@ -87,9 +87,9 @@ def normalise_direction(value: Any, *, strangle_for_non_directional: bool = Fals
         if strangle_for_non_directional and text == ThesisDirection.NON_DIRECTIONAL.value:
             return ThesisDirection.STRANGLE.value
         return text
-    if any(token in text for token in ("PUT", "SELL", "BEAR", "SHORT")):
+    if text in {"PUT", "SELL", "BEAR", "BEARISH", "SHORT", "SELL_SETUP"}:
         return ThesisDirection.PUT.value
-    if any(token in text for token in ("CALL", "BUY", "BULL", "LONG")):
+    if text in {"CALL", "BUY", "BULL", "BULLISH", "LONG", "BUY_SETUP"}:
         return ThesisDirection.CALL.value
     if text in {"STRADDLE", "MIXED", "TRANSITION"}:
         return (

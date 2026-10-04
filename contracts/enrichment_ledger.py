@@ -17,7 +17,7 @@ from typing import Any, Iterable, Mapping
 
 LEDGER_DIRNAME = "enrichment"
 LEDGER_CONTRACT_VERSION = "enrichment_ledger_v1"
-STAGES = ("trap", "actuarial", "trigger")
+STAGES = ("trap", "actuarial", "trigger", "market_profile")
 
 
 def ledger_path(run_dir: Path | str, stage: str) -> Path:
@@ -150,6 +150,29 @@ def load_trigger_blocks(run_dir: Path | str) -> dict[str, dict[str, Any]]:
     return out
 
 
+MARKET_PROFILE_KEYS = (
+    "market_profile_contract_required", "market_profile_evidence", "market_profile_dataset_id",
+    "market_profile_evidence_state", "market_profile_exception", "market_profile_quality",
+)
+
+
+def load_market_profile_stamps(run_dir: Path | str) -> dict[str, dict[str, Any]]:
+    """{ticker: market_profile_* facts} the completed-profile stage published for the run (P4c).
+
+    Ledger first, then the package files (the stage patched the same keys into them before P4c).
+    Absence means the stage did not run for that ticker; readers type it NOT_EVALUATED, never
+    fabricate a profile.
+    """
+    ledger = read_enrichment_ledger(run_dir, "market_profile")
+    if ledger["status"] == "PRESENT":
+        return {t: dict(b) for t, b in ledger["by_ticker"].items() if isinstance(b, dict)}
+    out: dict[str, dict[str, Any]] = {}
+    for ticker, pkg in _packages(Path(run_dir)):
+        if "market_profile_evidence_state" in pkg or "market_profile_evidence" in pkg:
+            out[ticker] = {k: pkg.get(k) for k in MARKET_PROFILE_KEYS if k in pkg}
+    return out
+
+
 def load_actuarial_map(run_dir: Path | str) -> dict[str, dict[str, Any]]:
     """{ticker: actuarial block} for tickers the enrichment pass actually enriched (``enriched_by``)."""
     ledger = read_enrichment_ledger(run_dir, "actuarial")
@@ -165,6 +188,7 @@ def load_actuarial_map(run_dir: Path | str) -> dict[str, dict[str, Any]]:
 
 __all__ = [
     "LEDGER_CONTRACT_VERSION", "LEDGER_DIRNAME", "STAGES", "append_enrichment_record", "ledger_path",
-    "load_actuarial_map", "load_trap_contexts", "load_trigger_blocks", "read_enrichment_ledger",
+    "load_actuarial_map", "load_market_profile_stamps", "load_trap_contexts", "load_trigger_blocks",
+    "read_enrichment_ledger", "MARKET_PROFILE_KEYS",
     "write_enrichment_ledger",
 ]

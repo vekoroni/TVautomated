@@ -1,0 +1,56 @@
+{
+ "candidates": 29385,
+ "cuts": 96,
+ "results": {
+  "R20": {
+   "cuts_with_ic": 96,
+   "mean_ic": {
+    "OLD_RR": 0.0174,
+    "NEW_MOVE": 0.0161,
+    "NEW_COVER": 0.0112
+   },
+   "NEW_MOVE_minus_OLD": {
+    "diff": -0.0014,
+    "lo95": -0.0217,
+    "hi95": 0.0193,
+    "pass": false
+   },
+   "NEW_COVER_minus_OLD": {
+    "diff": -0.0062,
+    "lo95": -0.0216,
+    "hi95": 0.0087,
+    "pass": false
+   },
+   "top_minus_bottom_quintile": {
+    "OLD_RR": 0.0074,
+    "NEW_MOVE": 0.0089,
+    "NEW_COVER": 0.0078
+   }
+  },
+  "HIT2X": {
+   "cuts_with_ic": 96,
+   "mean_ic": {
+    "OLD_RR": 0.0028,
+    "NEW_MOVE": 0.0013,
+    "NEW_COVER": -0.0012
+   },
+   "NEW_MOVE_minus_OLD": {
+    "diff": -0.0015,
+    "lo95": -0.0212,
+    "hi95": 0.0189,
+    "pass": false
+   },
+   "NEW_COVER_minus_OLD": {
+    "diff": -0.004,
+    "lo95": -0.0176,
+    "hi95": 0.0102,
+    "pass": false
+   },
+   "top_minus_bottom_quintile": {
+    "OLD_RR": 0.0146,
+    "NEW_MOVE": 0.0234,
+    "NEW_COVER": 0.0069
+   }
+  }
+ }
+}

@@ -346,7 +346,8 @@ def _conviction_label(score: float, conf: float, eil_reason: str) -> str:
 # SOVEREIGN EVENT GATE (v4.1 — FINAL)
 # ─────────────────────────────────────────────────────────────────────────────
 
-GO_ELIGIBLE_PRIMARIES = {"VOL_COMPRESSION", "RANGE_BREAK_EARLY", "RANGE_BREAK", "TRAP"}
+GO_ELIGIBLE_PRIMARIES = {"VOL_COMPRESSION", "VOL_COMPRESSION_IV_RICH", "VOL_COMPRESSION_IV_UNVERIFIED",
+                         "RANGE_BREAK_EARLY", "RANGE_BREAK", "TRAP"}   # XLU-D04: IV variants are flags only
 
 def sovereign_event_gate(result):
     """

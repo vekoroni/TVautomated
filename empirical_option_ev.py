@@ -213,7 +213,7 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
     matching this pipeline's existing field-lookup convention):
       state_match_method / layer2__state_match_method   -- EXACT/RELAXED/ANALOGUE/UNKNOWN
       bid, ask                                            -- contract quote (options_bid/options_ask also tried)
-      quote_age_minutes                                   -- optional; None = unknown, gate not evaluated
+      quote_age_minutes                                   -- not used: quote age is disclosed, never a gate (ACK 3 Oct 2026)
       forecast_vol / l3_forward_realised_vol              -- optional; paired with live_iv for the vol-divergence gate
       live_iv / contract_iv                               -- option's current implied vol (also used for BS repricing)
       preferred_horizon / layer2__preferred_horizon        -- "5D"/"10D"/"20D"
@@ -247,13 +247,8 @@ def compute_empirical_option_ev(candidate: dict, n_obs_floor: int = DEFAULT_N_OB
     if bid is None or bid <= 0 or ask is None or ask <= 0:
         return _null_result(QUALITY_NO_MARKET)
 
-    quote_age_minutes = g("quote_age_minutes")
-    if quote_age_minutes is not None:
-        try:
-            if float(quote_age_minutes) > 30:
-                return _null_result(QUALITY_STALE_QUOTE)
-        except (TypeError, ValueError):
-            pass
+    # Quote age is disclosed, never a gate (ACK 3 Oct 2026); the former 30-minute null is removed.
+    # QUALITY_STALE_QUOTE stays defined so older records keep their meaning.
 
     live_iv = g("live_iv", "contract_iv")
     forecast_vol = g("forecast_vol", "l3_forward_realised_vol")

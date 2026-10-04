@@ -106,7 +106,8 @@ def test_fetch_time_is_not_accepted_as_provider_quote_time() -> None:
     assert snapshot.timestamp_utc is None
 
 
-def test_stale_provider_quote_requires_requote_without_touching_thesis() -> None:
+def test_old_provider_quote_is_classified_and_disclosed_without_touching_thesis() -> None:
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
     result = evaluate_execution_viability(
         {"instrument": "LONG_CALL"},
         {
@@ -119,5 +120,6 @@ def test_stale_provider_quote_requires_requote_without_touching_thesis() -> None
         },
         as_of_utc="2026-09-10T10:00:00+00:00",
     )
-    assert result["execution_viability_state"] == "REQUOTE_REQUIRED"
-    assert result["execution_viability_eligible"] is False
+    assert result["execution_viability_state"] == "EXECUTABLE_QUOTE"
+    assert result["execution_viability_quote_age_state"] == "BEYOND_FEED_WINDOW"
+    assert result["execution_viability_quote_requote_instruction"] == "REQUOTE_AT_BROKER_BEFORE_ENTRY"

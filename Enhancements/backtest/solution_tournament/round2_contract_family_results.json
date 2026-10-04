@@ -1,0 +1,2025 @@
+{
+  "research_state": "EXPLORATORY_NO_AUTHORITY",
+  "protocol_sha256": "18b7bbfb8a628f143136e82fb644fa62369540d5ec4fc79ed697b15f586acf6d",
+  "candidate_rows_sha256": "9edc35966efd7974aa3747a77d825aa8ce5cde6eede23921eea6e8b781758e0d",
+  "rows_file_sha256": "660a602aeff6cbaa5ec87efc6fd8741c8c1d8859d3da8fa879d7c484144a8dac",
+  "populations": {
+    "all_h_pre_fix": {
+      "rows": 133638,
+      "sessions": 9,
+      "runs": [
+        "20260831_010309",
+        "20260901_082437",
+        "20260902_232526",
+        "20260906_213931",
+        "20260909_071646",
+        "20260910_150045",
+        "20260913_143230",
+        "20260914_214012",
+        "20260916_223756"
+      ],
+      "horizons": {
+        "1": {
+          "F0_RECORDED": {
+            "opportunities": 8950,
+            "selected": 8401,
+            "exit_marked": 8193,
+            "ask_to_bid": {
+              "n": 8193,
+              "sessions": 9,
+              "mean": -0.404742,
+              "median": -0.411765,
+              "hit_rate": 0.1075,
+              "ci90": [
+                -0.425449,
+                -0.387045
+              ],
+              "share_ge_50pct": 0.0135,
+              "share_ge_100pct": 0.0024,
+              "share_ge_200pct": 0.0002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 8193,
+              "sessions": 9,
+              "mean": 0.005949,
+              "median": -0.028169,
+              "hit_rate": 0.4339,
+              "ci90": [
+                -0.008979,
+                0.025235
+              ],
+              "share_ge_50pct": 0.072,
+              "share_ge_100pct": 0.0165,
+              "share_ge_200pct": 0.0021,
+              "share_ge_500pct": 0.0004
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.4688,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 8950,
+            "selected": 8634,
+            "exit_marked": 7769,
+            "ask_to_bid": {
+              "n": 7769,
+              "sessions": 9,
+              "mean": -0.246656,
+              "median": -0.220588,
+              "hit_rate": 0.1361,
+              "ci90": [
+                -0.262128,
+                -0.232924
+              ],
+              "share_ge_50pct": 0.0053,
+              "share_ge_100pct": 0.001,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 7769,
+              "sessions": 9,
+              "mean": 0.0034,
+              "median": -0.01087,
+              "hit_rate": 0.4584,
+              "ci90": [
+                -0.008196,
+                0.01558
+              ],
+              "share_ge_50pct": 0.0254,
+              "share_ge_100pct": 0.0046,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0988,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.25,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 8950,
+            "selected": 2497,
+            "exit_marked": 2251,
+            "ask_to_bid": {
+              "n": 2251,
+              "sessions": 9,
+              "mean": -0.12054,
+              "median": -0.134328,
+              "hit_rate": 0.2537,
+              "ci90": [
+                -0.141427,
+                -0.098436
+              ],
+              "share_ge_50pct": 0.0129,
+              "share_ge_100pct": 0.0013,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2251,
+              "sessions": 9,
+              "mean": 0.002376,
+              "median": -0.020408,
+              "hit_rate": 0.4594,
+              "ci90": [
+                -0.017556,
+                0.024684
+              ],
+              "share_ge_50pct": 0.0284,
+              "share_ge_100pct": 0.0036,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1065,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.0938,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 8950,
+            "selected": 2754,
+            "exit_marked": 2437,
+            "ask_to_bid": {
+              "n": 2437,
+              "sessions": 9,
+              "mean": -0.116384,
+              "median": -0.13,
+              "hit_rate": 0.2585,
+              "ci90": [
+                -0.137383,
+                -0.094768
+              ],
+              "share_ge_50pct": 0.016,
+              "share_ge_100pct": 0.0029,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2437,
+              "sessions": 9,
+              "mean": 0.002295,
+              "median": -0.020073,
+              "hit_rate": 0.4571,
+              "ci90": [
+                -0.01763,
+                0.023648
+              ],
+              "share_ge_50pct": 0.0336,
+              "share_ge_100pct": 0.0045,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1038,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.2188,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 8950,
+            "selected": 4279,
+            "exit_marked": 3916,
+            "ask_to_bid": {
+              "n": 3916,
+              "sessions": 9,
+              "mean": -0.124247,
+              "median": -0.137121,
+              "hit_rate": 0.2308,
+              "ci90": [
+                -0.138597,
+                -0.108723
+              ],
+              "share_ge_50pct": 0.0128,
+              "share_ge_100pct": 0.0018,
+              "share_ge_200pct": 0.0003,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 3916,
+              "sessions": 9,
+              "mean": 0.003924,
+              "median": -0.013423,
+              "hit_rate": 0.465,
+              "ci90": [
+                -0.010033,
+                0.019448
+              ],
+              "share_ge_50pct": 0.0289,
+              "share_ge_100pct": 0.0033,
+              "share_ge_200pct": 0.0008,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0858,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.2188,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 8950,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 32,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        },
+        "3": {
+          "F0_RECORDED": {
+            "opportunities": 7784,
+            "selected": 7235,
+            "exit_marked": 6952,
+            "ask_to_bid": {
+              "n": 6952,
+              "sessions": 8,
+              "mean": -0.42959,
+              "median": -0.506761,
+              "hit_rate": 0.147,
+              "ci90": [
+                -0.459386,
+                -0.400433
+              ],
+              "share_ge_50pct": 0.0411,
+              "share_ge_100pct": 0.0135,
+              "share_ge_200pct": 0.002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 6952,
+              "sessions": 8,
+              "mean": -0.023482,
+              "median": -0.116052,
+              "hit_rate": 0.3944,
+              "ci90": [
+                -0.05693,
+                0.020722
+              ],
+              "share_ge_50pct": 0.1381,
+              "share_ge_100pct": 0.0508,
+              "share_ge_200pct": 0.0093,
+              "share_ge_500pct": 0.0006
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.604,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.45,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 7784,
+            "selected": 7474,
+            "exit_marked": 7274,
+            "ask_to_bid": {
+              "n": 7274,
+              "sessions": 8,
+              "mean": -0.275077,
+              "median": -0.27555,
+              "hit_rate": 0.1749,
+              "ci90": [
+                -0.297449,
+                -0.251925
+              ],
+              "share_ge_50pct": 0.0203,
+              "share_ge_100pct": 0.004,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 7274,
+              "sessions": 8,
+              "mean": -0.024285,
+              "median": -0.050581,
+              "hit_rate": 0.4182,
+              "ci90": [
+                -0.046704,
+                0.004761
+              ],
+              "share_ge_50pct": 0.0621,
+              "share_ge_100pct": 0.0132,
+              "share_ge_200pct": 0.0015,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1002,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.2871,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.2,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 7784,
+            "selected": 2158,
+            "exit_marked": 2103,
+            "ask_to_bid": {
+              "n": 2103,
+              "sessions": 8,
+              "mean": -0.163845,
+              "median": -0.2,
+              "hit_rate": 0.2758,
+              "ci90": [
+                -0.18628,
+                -0.135322
+              ],
+              "share_ge_50pct": 0.0404,
+              "share_ge_100pct": 0.0081,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2103,
+              "sessions": 8,
+              "mean": -0.039691,
+              "median": -0.083871,
+              "hit_rate": 0.4089,
+              "ci90": [
+                -0.061347,
+                -0.010964
+              ],
+              "share_ge_50pct": 0.0775,
+              "share_ge_100pct": 0.0166,
+              "share_ge_200pct": 0.001,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1098,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.1683,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.05,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 7784,
+            "selected": 2394,
+            "exit_marked": 2329,
+            "ask_to_bid": {
+              "n": 2329,
+              "sessions": 8,
+              "mean": -0.159845,
+              "median": -0.2,
+              "hit_rate": 0.2791,
+              "ci90": [
+                -0.184822,
+                -0.129369
+              ],
+              "share_ge_50pct": 0.0455,
+              "share_ge_100pct": 0.0107,
+              "share_ge_200pct": 0.0009,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2329,
+              "sessions": 8,
+              "mean": -0.038233,
+              "median": -0.084034,
+              "hit_rate": 0.4113,
+              "ci90": [
+                -0.062939,
+                -0.007906
+              ],
+              "share_ge_50pct": 0.0824,
+              "share_ge_100pct": 0.0198,
+              "share_ge_200pct": 0.0013,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1057,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.2475,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.1,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 7784,
+            "selected": 3682,
+            "exit_marked": 3581,
+            "ask_to_bid": {
+              "n": 3581,
+              "sessions": 8,
+              "mean": -0.161404,
+              "median": -0.191489,
+              "hit_rate": 0.2681,
+              "ci90": [
+                -0.184214,
+                -0.133777
+              ],
+              "share_ge_50pct": 0.0397,
+              "share_ge_100pct": 0.0075,
+              "share_ge_200pct": 0.0008,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 3581,
+              "sessions": 8,
+              "mean": -0.029584,
+              "median": -0.058099,
+              "hit_rate": 0.4225,
+              "ci90": [
+                -0.051589,
+                -0.001731
+              ],
+              "share_ge_50pct": 0.0737,
+              "share_ge_100pct": 0.0142,
+              "share_ge_200pct": 0.0017,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0875,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.2673,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.15,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 7784,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 101,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 20,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        },
+        "5": {
+          "F0_RECORDED": {
+            "opportunities": 5539,
+            "selected": 4990,
+            "exit_marked": 4659,
+            "ask_to_bid": {
+              "n": 4659,
+              "sessions": 6,
+              "mean": -0.478184,
+              "median": -0.619048,
+              "hit_rate": 0.1496,
+              "ci90": [
+                -0.526117,
+                -0.434483
+              ],
+              "share_ge_50pct": 0.0549,
+              "share_ge_100pct": 0.0243,
+              "share_ge_200pct": 0.0032,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 4659,
+              "sessions": 6,
+              "mean": -0.074488,
+              "median": -0.224138,
+              "hit_rate": 0.3488,
+              "ci90": [
+                -0.120403,
+                -0.030997
+              ],
+              "share_ge_50pct": 0.1608,
+              "share_ge_100pct": 0.0753,
+              "share_ge_200pct": 0.0174,
+              "share_ge_500pct": 0.0009
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.6881,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.3333,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 5539,
+            "selected": 5237,
+            "exit_marked": 5004,
+            "ask_to_bid": {
+              "n": 5004,
+              "sessions": 6,
+              "mean": -0.313905,
+              "median": -0.34375,
+              "hit_rate": 0.1882,
+              "ci90": [
+                -0.345306,
+                -0.282164
+              ],
+              "share_ge_50pct": 0.0326,
+              "share_ge_100pct": 0.0078,
+              "share_ge_200pct": 0.0002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 5004,
+              "sessions": 6,
+              "mean": -0.055403,
+              "median": -0.108132,
+              "hit_rate": 0.3823,
+              "ci90": [
+                -0.086295,
+                -0.023299
+              ],
+              "share_ge_50pct": 0.0909,
+              "share_ge_100pct": 0.0224,
+              "share_ge_200pct": 0.0032,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0985,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.3578,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0417,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 5539,
+            "selected": 1403,
+            "exit_marked": 1349,
+            "ask_to_bid": {
+              "n": 1349,
+              "sessions": 6,
+              "mean": -0.176056,
+              "median": -0.25,
+              "hit_rate": 0.2809,
+              "ci90": [
+                -0.208202,
+                -0.134873
+              ],
+              "share_ge_50pct": 0.0749,
+              "share_ge_100pct": 0.017,
+              "share_ge_200pct": 0.0007,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1349,
+              "sessions": 6,
+              "mean": -0.05465,
+              "median": -0.138173,
+              "hit_rate": 0.3862,
+              "ci90": [
+                -0.086562,
+                -0.013511
+              ],
+              "share_ge_50pct": 0.1216,
+              "share_ge_100pct": 0.0348,
+              "share_ge_200pct": 0.0015,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1012,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.211,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0417,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 5539,
+            "selected": 1534,
+            "exit_marked": 1480,
+            "ask_to_bid": {
+              "n": 1480,
+              "sessions": 6,
+              "mean": -0.169803,
+              "median": -0.24069,
+              "hit_rate": 0.2885,
+              "ci90": [
+                -0.201362,
+                -0.13094
+              ],
+              "share_ge_50pct": 0.0784,
+              "share_ge_100pct": 0.0203,
+              "share_ge_200pct": 0.002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1480,
+              "sessions": 6,
+              "mean": -0.052501,
+              "median": -0.133585,
+              "hit_rate": 0.3818,
+              "ci90": [
+                -0.083129,
+                -0.013664
+              ],
+              "share_ge_50pct": 0.1257,
+              "share_ge_100pct": 0.0358,
+              "share_ge_200pct": 0.002,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0965,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.2752,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.125,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 5539,
+            "selected": 2366,
+            "exit_marked": 2278,
+            "ask_to_bid": {
+              "n": 2278,
+              "sessions": 6,
+              "mean": -0.17583,
+              "median": -0.230769,
+              "hit_rate": 0.2752,
+              "ci90": [
+                -0.203844,
+                -0.143692
+              ],
+              "share_ge_50pct": 0.0645,
+              "share_ge_100pct": 0.0154,
+              "share_ge_200pct": 0.0009,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2278,
+              "sessions": 6,
+              "mean": -0.047255,
+              "median": -0.109634,
+              "hit_rate": 0.4012,
+              "ci90": [
+                -0.075576,
+                -0.01387
+              ],
+              "share_ge_50pct": 0.1084,
+              "share_ge_100pct": 0.0277,
+              "share_ge_200pct": 0.0013,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0672,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.3211,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0833,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 5539,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        }
+      }
+    },
+    "exclude_explicit_test_or_dirty": {
+      "rows": 119934,
+      "sessions": 8,
+      "runs": [
+        "20260831_010309",
+        "20260901_082437",
+        "20260902_232526",
+        "20260906_213931",
+        "20260909_071646",
+        "20260910_150045",
+        "20260913_143230",
+        "20260916_223756"
+      ],
+      "horizons": {
+        "1": {
+          "F0_RECORDED": {
+            "opportunities": 7808,
+            "selected": 7259,
+            "exit_marked": 7196,
+            "ask_to_bid": {
+              "n": 7196,
+              "sessions": 8,
+              "mean": -0.407433,
+              "median": -0.419355,
+              "hit_rate": 0.1099,
+              "ci90": [
+                -0.431017,
+                -0.388495
+              ],
+              "share_ge_50pct": 0.0143,
+              "share_ge_100pct": 0.0028,
+              "share_ge_200pct": 0.0003,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 7196,
+              "sessions": 8,
+              "mean": 0.009858,
+              "median": -0.02381,
+              "hit_rate": 0.4386,
+              "ci90": [
+                -0.006297,
+                0.031957
+              ],
+              "share_ge_50pct": 0.0749,
+              "share_ge_100pct": 0.0172,
+              "share_ge_200pct": 0.0021,
+              "share_ge_500pct": 0.0004
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.5172,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 7808,
+            "selected": 7495,
+            "exit_marked": 7404,
+            "ask_to_bid": {
+              "n": 7404,
+              "sessions": 8,
+              "mean": -0.245336,
+              "median": -0.21875,
+              "hit_rate": 0.1368,
+              "ci90": [
+                -0.260772,
+                -0.230879
+              ],
+              "share_ge_50pct": 0.0051,
+              "share_ge_100pct": 0.0009,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 7404,
+              "sessions": 8,
+              "mean": 0.003858,
+              "median": -0.010005,
+              "hit_rate": 0.4592,
+              "ci90": [
+                -0.008614,
+                0.016834
+              ],
+              "share_ge_50pct": 0.0253,
+              "share_ge_100pct": 0.0045,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0978,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.2414,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 7808,
+            "selected": 2122,
+            "exit_marked": 2101,
+            "ask_to_bid": {
+              "n": 2101,
+              "sessions": 8,
+              "mean": -0.117349,
+              "median": -0.131579,
+              "hit_rate": 0.2604,
+              "ci90": [
+                -0.139222,
+                -0.093733
+              ],
+              "share_ge_50pct": 0.0129,
+              "share_ge_100pct": 0.0014,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2101,
+              "sessions": 8,
+              "mean": 0.004973,
+              "median": -0.017442,
+              "hit_rate": 0.4669,
+              "ci90": [
+                -0.016502,
+                0.028654
+              ],
+              "share_ge_50pct": 0.029,
+              "share_ge_100pct": 0.0038,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1051,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.1034,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 7808,
+            "selected": 2313,
+            "exit_marked": 2290,
+            "ask_to_bid": {
+              "n": 2290,
+              "sessions": 8,
+              "mean": -0.113088,
+              "median": -0.126316,
+              "hit_rate": 0.2651,
+              "ci90": [
+                -0.134434,
+                -0.090427
+              ],
+              "share_ge_50pct": 0.0148,
+              "share_ge_100pct": 0.0031,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2290,
+              "sessions": 8,
+              "mean": 0.004602,
+              "median": -0.015474,
+              "hit_rate": 0.4651,
+              "ci90": [
+                -0.016202,
+                0.027153
+              ],
+              "share_ge_50pct": 0.0336,
+              "share_ge_100pct": 0.0048,
+              "share_ge_200pct": 0.0004,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1033,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.2414,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 7808,
+            "selected": 3611,
+            "exit_marked": 3571,
+            "ask_to_bid": {
+              "n": 3571,
+              "sessions": 8,
+              "mean": -0.122611,
+              "median": -0.134529,
+              "hit_rate": 0.2338,
+              "ci90": [
+                -0.138668,
+                -0.106064
+              ],
+              "share_ge_50pct": 0.0123,
+              "share_ge_100pct": 0.0017,
+              "share_ge_200pct": 0.0003,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 3571,
+              "sessions": 8,
+              "mean": 0.004938,
+              "median": -0.011976,
+              "hit_rate": 0.4674,
+              "ci90": [
+                -0.010672,
+                0.021538
+              ],
+              "share_ge_50pct": 0.0286,
+              "share_ge_100pct": 0.0034,
+              "share_ge_200pct": 0.0008,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0803,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.2069,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.25,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 7808,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 29,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 4,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        },
+        "3": {
+          "F0_RECORDED": {
+            "opportunities": 6642,
+            "selected": 6093,
+            "exit_marked": 5904,
+            "ask_to_bid": {
+              "n": 5904,
+              "sessions": 7,
+              "mean": -0.431352,
+              "median": -0.515388,
+              "hit_rate": 0.1501,
+              "ci90": [
+                -0.463375,
+                -0.396422
+              ],
+              "share_ge_50pct": 0.0429,
+              "share_ge_100pct": 0.0149,
+              "share_ge_200pct": 0.0022,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 5904,
+              "sessions": 7,
+              "mean": -0.016768,
+              "median": -0.116473,
+              "hit_rate": 0.3965,
+              "ci90": [
+                -0.05691,
+                0.036742
+              ],
+              "share_ge_50pct": 0.1455,
+              "share_ge_100pct": 0.0557,
+              "share_ge_200pct": 0.0103,
+              "share_ge_500pct": 0.0007
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.6364,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.4444,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 6642,
+            "selected": 6335,
+            "exit_marked": 6229,
+            "ask_to_bid": {
+              "n": 6229,
+              "sessions": 7,
+              "mean": -0.281021,
+              "median": -0.285714,
+              "hit_rate": 0.1776,
+              "ci90": [
+                -0.3034,
+                -0.254392
+              ],
+              "share_ge_50pct": 0.022,
+              "share_ge_100pct": 0.0043,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 6229,
+              "sessions": 7,
+              "mean": -0.022838,
+              "median": -0.052632,
+              "hit_rate": 0.4193,
+              "ci90": [
+                -0.04892,
+                0.012952
+              ],
+              "share_ge_50pct": 0.0669,
+              "share_ge_100pct": 0.0146,
+              "share_ge_200pct": 0.0016,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0993,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.3068,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.1667,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 6642,
+            "selected": 1783,
+            "exit_marked": 1756,
+            "ask_to_bid": {
+              "n": 1756,
+              "sessions": 7,
+              "mean": -0.16213,
+              "median": -0.203845,
+              "hit_rate": 0.2853,
+              "ci90": [
+                -0.188471,
+                -0.126863
+              ],
+              "share_ge_50pct": 0.0438,
+              "share_ge_100pct": 0.0097,
+              "share_ge_200pct": 0.0006,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1756,
+              "sessions": 7,
+              "mean": -0.035889,
+              "median": -0.080982,
+              "hit_rate": 0.418,
+              "ci90": [
+                -0.062141,
+                0.000262
+              ],
+              "share_ge_50pct": 0.0831,
+              "share_ge_100pct": 0.0194,
+              "share_ge_200pct": 0.0011,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1088,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.1932,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.0556,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 6642,
+            "selected": 1953,
+            "exit_marked": 1922,
+            "ask_to_bid": {
+              "n": 1922,
+              "sessions": 7,
+              "mean": -0.160196,
+              "median": -0.204682,
+              "hit_rate": 0.2903,
+              "ci90": [
+                -0.189141,
+                -0.122143
+              ],
+              "share_ge_50pct": 0.0499,
+              "share_ge_100pct": 0.012,
+              "share_ge_200pct": 0.0005,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1922,
+              "sessions": 7,
+              "mean": -0.037926,
+              "median": -0.08439,
+              "hit_rate": 0.4157,
+              "ci90": [
+                -0.06722,
+                0.000364
+              ],
+              "share_ge_50pct": 0.089,
+              "share_ge_100pct": 0.0219,
+              "share_ge_200pct": 0.001,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1055,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.2614,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.0556,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 6642,
+            "selected": 3014,
+            "exit_marked": 2968,
+            "ask_to_bid": {
+              "n": 2968,
+              "sessions": 7,
+              "mean": -0.160811,
+              "median": -0.191489,
+              "hit_rate": 0.2756,
+              "ci90": [
+                -0.187631,
+                -0.125922
+              ],
+              "share_ge_50pct": 0.0411,
+              "share_ge_100pct": 0.0084,
+              "share_ge_200pct": 0.0003,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2968,
+              "sessions": 7,
+              "mean": -0.028474,
+              "median": -0.057925,
+              "hit_rate": 0.4282,
+              "ci90": [
+                -0.055133,
+                0.006309
+              ],
+              "share_ge_50pct": 0.0772,
+              "share_ge_100pct": 0.0155,
+              "share_ge_200pct": 0.0013,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0813,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.2841,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.0556,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 6642,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 88,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 18,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        },
+        "5": {
+          "F0_RECORDED": {
+            "opportunities": 5539,
+            "selected": 4990,
+            "exit_marked": 4659,
+            "ask_to_bid": {
+              "n": 4659,
+              "sessions": 6,
+              "mean": -0.478184,
+              "median": -0.619048,
+              "hit_rate": 0.1496,
+              "ci90": [
+                -0.526117,
+                -0.434483
+              ],
+              "share_ge_50pct": 0.0549,
+              "share_ge_100pct": 0.0243,
+              "share_ge_200pct": 0.0032,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 4659,
+              "sessions": 6,
+              "mean": -0.074488,
+              "median": -0.224138,
+              "hit_rate": 0.3488,
+              "ci90": [
+                -0.120403,
+                -0.030997
+              ],
+              "share_ge_50pct": 0.1608,
+              "share_ge_100pct": 0.0753,
+              "share_ge_200pct": 0.0174,
+              "share_ge_500pct": 0.0009
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.6881,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.3333,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 5539,
+            "selected": 5237,
+            "exit_marked": 5004,
+            "ask_to_bid": {
+              "n": 5004,
+              "sessions": 6,
+              "mean": -0.313905,
+              "median": -0.34375,
+              "hit_rate": 0.1882,
+              "ci90": [
+                -0.345306,
+                -0.282164
+              ],
+              "share_ge_50pct": 0.0326,
+              "share_ge_100pct": 0.0078,
+              "share_ge_200pct": 0.0002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 5004,
+              "sessions": 6,
+              "mean": -0.055403,
+              "median": -0.108132,
+              "hit_rate": 0.3823,
+              "ci90": [
+                -0.086295,
+                -0.023299
+              ],
+              "share_ge_50pct": 0.0909,
+              "share_ge_100pct": 0.0224,
+              "share_ge_200pct": 0.0032,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0985,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.3578,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0417,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 5539,
+            "selected": 1403,
+            "exit_marked": 1349,
+            "ask_to_bid": {
+              "n": 1349,
+              "sessions": 6,
+              "mean": -0.176056,
+              "median": -0.25,
+              "hit_rate": 0.2809,
+              "ci90": [
+                -0.208202,
+                -0.134873
+              ],
+              "share_ge_50pct": 0.0749,
+              "share_ge_100pct": 0.017,
+              "share_ge_200pct": 0.0007,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1349,
+              "sessions": 6,
+              "mean": -0.05465,
+              "median": -0.138173,
+              "hit_rate": 0.3862,
+              "ci90": [
+                -0.086562,
+                -0.013511
+              ],
+              "share_ge_50pct": 0.1216,
+              "share_ge_100pct": 0.0348,
+              "share_ge_200pct": 0.0015,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1012,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.211,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0417,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 5539,
+            "selected": 1534,
+            "exit_marked": 1480,
+            "ask_to_bid": {
+              "n": 1480,
+              "sessions": 6,
+              "mean": -0.169803,
+              "median": -0.24069,
+              "hit_rate": 0.2885,
+              "ci90": [
+                -0.201362,
+                -0.13094
+              ],
+              "share_ge_50pct": 0.0784,
+              "share_ge_100pct": 0.0203,
+              "share_ge_200pct": 0.002,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1480,
+              "sessions": 6,
+              "mean": -0.052501,
+              "median": -0.133585,
+              "hit_rate": 0.3818,
+              "ci90": [
+                -0.083129,
+                -0.013664
+              ],
+              "share_ge_50pct": 0.1257,
+              "share_ge_100pct": 0.0358,
+              "share_ge_200pct": 0.002,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0965,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.2752,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.125,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 5539,
+            "selected": 2366,
+            "exit_marked": 2278,
+            "ask_to_bid": {
+              "n": 2278,
+              "sessions": 6,
+              "mean": -0.17583,
+              "median": -0.230769,
+              "hit_rate": 0.2752,
+              "ci90": [
+                -0.203844,
+                -0.143692
+              ],
+              "share_ge_50pct": 0.0645,
+              "share_ge_100pct": 0.0154,
+              "share_ge_200pct": 0.0009,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2278,
+              "sessions": 6,
+              "mean": -0.047255,
+              "median": -0.109634,
+              "hit_rate": 0.4012,
+              "ci90": [
+                -0.075576,
+                -0.01387
+              ],
+              "share_ge_50pct": 0.1084,
+              "share_ge_100pct": 0.0277,
+              "share_ge_200pct": 0.0013,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0672,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.3211,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0833,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 5539,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 109,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 24,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        }
+      }
+    },
+    "certified_normal_completed_only": {
+      "rows": 20232,
+      "sessions": 2,
+      "runs": [
+        "20260913_143230",
+        "20260916_223756"
+      ],
+      "horizons": {
+        "1": {
+          "F0_RECORDED": {
+            "opportunities": 2269,
+            "selected": 2269,
+            "exit_marked": 2209,
+            "ask_to_bid": {
+              "n": 2209,
+              "sessions": 2,
+              "mean": -0.404652,
+              "median": -0.416667,
+              "hit_rate": 0.1109,
+              "ci90": [
+                -0.409287,
+                -0.400079
+              ],
+              "share_ge_50pct": 0.0122,
+              "share_ge_100pct": 0.0018,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2209,
+              "sessions": 2,
+              "mean": -0.014151,
+              "median": -0.031496,
+              "hit_rate": 0.4215,
+              "ci90": [
+                -0.019473,
+                -0.008901
+              ],
+              "share_ge_50pct": 0.0602,
+              "share_ge_100pct": 0.0122,
+              "share_ge_200pct": 0.0009,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.3333,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 2269,
+            "selected": 2258,
+            "exit_marked": 2171,
+            "ask_to_bid": {
+              "n": 2171,
+              "sessions": 2,
+              "mean": -0.214918,
+              "median": -0.188119,
+              "hit_rate": 0.129,
+              "ci90": [
+                -0.224463,
+                -0.205728
+              ],
+              "share_ge_50pct": 0.0037,
+              "share_ge_100pct": 0.0009,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 2171,
+              "sessions": 2,
+              "mean": -0.001286,
+              "median": -0.006472,
+              "hit_rate": 0.4579,
+              "ci90": [
+                -0.014407,
+                0.011348
+              ],
+              "share_ge_50pct": 0.0184,
+              "share_ge_100pct": 0.0046,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.0961,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.1667,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 2269,
+            "selected": 719,
+            "exit_marked": 699,
+            "ask_to_bid": {
+              "n": 699,
+              "sessions": 2,
+              "mean": -0.137347,
+              "median": -0.137255,
+              "hit_rate": 0.2346,
+              "ci90": [
+                -0.161983,
+                -0.108997
+              ],
+              "share_ge_50pct": 0.0086,
+              "share_ge_100pct": 0.0014,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 699,
+              "sessions": 2,
+              "mean": -0.019169,
+              "median": -0.028933,
+              "hit_rate": 0.4421,
+              "ci90": [
+                -0.039868,
+                0.00465
+              ],
+              "share_ge_50pct": 0.0258,
+              "share_ge_100pct": 0.0029,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1127,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.0833,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 2269,
+            "selected": 779,
+            "exit_marked": 757,
+            "ask_to_bid": {
+              "n": 757,
+              "sessions": 2,
+              "mean": -0.128681,
+              "median": -0.135135,
+              "hit_rate": 0.2351,
+              "ci90": [
+                -0.154583,
+                -0.097912
+              ],
+              "share_ge_50pct": 0.0119,
+              "share_ge_100pct": 0.0026,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 757,
+              "sessions": 2,
+              "mean": -0.012836,
+              "median": -0.026549,
+              "hit_rate": 0.4306,
+              "ci90": [
+                -0.032515,
+                0.010541
+              ],
+              "share_ge_50pct": 0.0304,
+              "share_ge_100pct": 0.004,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1168,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.1667,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 2269,
+            "selected": 1245,
+            "exit_marked": 1206,
+            "ask_to_bid": {
+              "n": 1206,
+              "sessions": 2,
+              "mean": -0.130738,
+              "median": -0.138559,
+              "hit_rate": 0.2139,
+              "ci90": [
+                -0.152818,
+                -0.106019
+              ],
+              "share_ge_50pct": 0.0149,
+              "share_ge_100pct": 0.0017,
+              "share_ge_200pct": 0.0008,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1206,
+              "sessions": 2,
+              "mean": -0.005282,
+              "median": -0.015877,
+              "hit_rate": 0.4527,
+              "ci90": [
+                -0.022256,
+                0.01372
+              ],
+              "share_ge_50pct": 0.0307,
+              "share_ge_100pct": 0.0041,
+              "share_ge_200pct": 0.0008,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1052,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.1667,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.3333,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 2269,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 12,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        },
+        "3": {
+          "F0_RECORDED": {
+            "opportunities": 1103,
+            "selected": 1103,
+            "exit_marked": 1011,
+            "ask_to_bid": {
+              "n": 1011,
+              "sessions": 1,
+              "mean": -0.45478,
+              "median": -0.521739,
+              "hit_rate": 0.1405,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0237,
+              "share_ge_100pct": 0.003,
+              "share_ge_200pct": 0.001,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1011,
+              "sessions": 1,
+              "mean": -0.053641,
+              "median": -0.12069,
+              "hit_rate": 0.3719,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.1068,
+              "share_ge_100pct": 0.0297,
+              "share_ge_200pct": 0.0059,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 1.0,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.2727,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.3333,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F1_TIGHTEST_SPREAD": {
+            "opportunities": 1103,
+            "selected": 1098,
+            "exit_marked": 1007,
+            "ask_to_bid": {
+              "n": 1007,
+              "sessions": 1,
+              "mean": -0.271561,
+              "median": -0.269231,
+              "hit_rate": 0.149,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0099,
+              "share_ge_100pct": 0.001,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 1007,
+              "sessions": 1,
+              "mean": -0.047427,
+              "median": -0.071013,
+              "hit_rate": 0.3813,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0348,
+              "share_ge_100pct": 0.007,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1029,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.0909,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F2_NEAR_MONEY": {
+            "opportunities": 1103,
+            "selected": 380,
+            "exit_marked": 356,
+            "ask_to_bid": {
+              "n": 356,
+              "sessions": 1,
+              "mean": -0.199889,
+              "median": -0.230915,
+              "hit_rate": 0.2416,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0112,
+              "share_ge_100pct": 0.0,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 356,
+              "sessions": 1,
+              "mean": -0.067076,
+              "median": -0.086913,
+              "hit_rate": 0.3848,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0393,
+              "share_ge_100pct": 0.0028,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1368,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F3_DELTA_CORE": {
+            "opportunities": 1103,
+            "selected": 419,
+            "exit_marked": 390,
+            "ask_to_bid": {
+              "n": 390,
+              "sessions": 1,
+              "mean": -0.200979,
+              "median": -0.222187,
+              "hit_rate": 0.2385,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0154,
+              "share_ge_100pct": 0.0026,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 390,
+              "sessions": 1,
+              "mean": -0.071464,
+              "median": -0.091507,
+              "hit_rate": 0.3949,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0487,
+              "share_ge_100pct": 0.0051,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1384,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.0909,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F4_VALUE_COMPOSITE": {
+            "opportunities": 1103,
+            "selected": 648,
+            "exit_marked": 605,
+            "ask_to_bid": {
+              "n": 605,
+              "sessions": 1,
+              "mean": -0.201693,
+              "median": -0.222222,
+              "hit_rate": 0.2298,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0231,
+              "share_ge_100pct": 0.0033,
+              "share_ge_200pct": 0.0,
+              "share_ge_500pct": 0.0
+            },
+            "mid_to_mid": {
+              "n": 605,
+              "sessions": 1,
+              "mean": -0.0633,
+              "median": -0.089202,
+              "hit_rate": 0.3967,
+              "ci90": [
+                null,
+                null
+              ],
+              "share_ge_50pct": 0.0595,
+              "share_ge_100pct": 0.0083,
+              "share_ge_200pct": 0.0017,
+              "share_ge_500pct": 0.0
+            },
+            "same_as_recorded_rate": 0.1327,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.1818,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          },
+          "F5_CONVEX_SATELLITE": {
+            "opportunities": 1103,
+            "selected": 0,
+            "exit_marked": 0,
+            "ask_to_bid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "mid_to_mid": {
+              "n": 0,
+              "sessions": 0,
+              "mean": null,
+              "median": null,
+              "hit_rate": null,
+              "ci90": [
+                null,
+                null
+              ]
+            },
+            "same_as_recorded_rate": null,
+            "oracle_families_ge_100pct": 11,
+            "recall_ge_100pct": 0.0,
+            "oracle_families_ge_200pct": 3,
+            "recall_ge_200pct": 0.0,
+            "oracle_families_ge_500pct": 0,
+            "recall_ge_500pct": null
+          }
+        }
+      }
+    }
+  },
+  "constraints": [
+    "Entry selection uses the exact same-session chain only.",
+    "Oracle results are not tradable and measure only family opportunity availability.",
+    "Midpoint results are diagnostic, not executable.",
+    "Nine sessions cannot promote a production rule."
+  ]
+}

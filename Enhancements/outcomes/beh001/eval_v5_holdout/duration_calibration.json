@@ -1,0 +1,265 @@
+{
+ "evidence": "Enhancements/outcomes/beh001/eval_v5/duration_evidence.json",
+ "holdout_records": 129030,
+ "matched_to_published_group": 127587,
+ "timing_pooled": {
+  "events": 53516,
+  "share_le_q50": 0.5841,
+  "share_le_q80": 0.8331
+ },
+ "probability_bands": [
+  {
+   "band": 0.0,
+   "n": 596,
+   "predicted": 0.0915,
+   "observed": 0.0805
+  },
+  {
+   "band": 0.1,
+   "n": 9336,
+   "predicted": 0.1449,
+   "observed": 0.145
+  },
+  {
+   "band": 0.2,
+   "n": 16217,
+   "predicted": 0.2387,
+   "observed": 0.2452
+  },
+  {
+   "band": 0.3,
+   "n": 20769,
+   "predicted": 0.352,
+   "observed": 0.358
+  },
+  {
+   "band": 0.4,
+   "n": 20654,
+   "predicted": 0.456,
+   "observed": 0.4577
+  },
+  {
+   "band": 0.5,
+   "n": 18314,
+   "predicted": 0.559,
+   "observed": 0.5517
+  },
+  {
+   "band": 0.6,
+   "n": 19996,
+   "predicted": 0.6406,
+   "observed": 0.6133
+  },
+  {
+   "band": 0.7,
+   "n": 11108,
+   "predicted": 0.7373,
+   "observed": 0.7057
+  },
+  {
+   "band": 0.8,
+   "n": 1228,
+   "predicted": 0.8463,
+   "observed": 0.7866
+  },
+  {
+   "band": 0.9,
+   "n": 102,
+   "predicted": 0.9077,
+   "observed": 0.7451
+  }
+ ],
+ "pass_timing": true,
+ "pass_probability": false,
+ "by_test": {
+  "ACTIVATION": {
+   "events": 28272,
+   "share_le_q50": 0.5975,
+   "share_le_q80": 0.832,
+   "bands": [
+    {
+     "band": 0.2,
+     "n": 4897,
+     "predicted": 0.2512,
+     "observed": 0.2524
+    },
+    {
+     "band": 0.3,
+     "n": 7191,
+     "predicted": 0.3332,
+     "observed": 0.3363
+    },
+    {
+     "band": 0.4,
+     "n": 5704,
+     "predicted": 0.4509,
+     "observed": 0.4851
+    },
+    {
+     "band": 0.5,
+     "n": 11797,
+     "predicted": 0.5638,
+     "observed": 0.5743
+    },
+    {
+     "band": 0.6,
+     "n": 15100,
+     "predicted": 0.6395,
+     "observed": 0.6232
+    },
+    {
+     "band": 0.7,
+     "n": 7145,
+     "predicted": 0.7312,
+     "observed": 0.6945
+    },
+    {
+     "band": 0.8,
+     "n": 883,
+     "predicted": 0.8447,
+     "observed": 0.7973
+    }
+   ]
+  },
+  "OUTCOME": {
+   "events": 5802,
+   "share_le_q50": 0.5627,
+   "share_le_q80": 0.8314,
+   "bands": [
+    {
+     "band": 0.3,
+     "n": 785,
+     "predicted": 0.352,
+     "observed": 0.3414
+    },
+    {
+     "band": 0.4,
+     "n": 1217,
+     "predicted": 0.4525,
+     "observed": 0.4692
+    },
+    {
+     "band": 0.5,
+     "n": 1738,
+     "predicted": 0.5446,
+     "observed": 0.5305
+    },
+    {
+     "band": 0.6,
+     "n": 2200,
+     "predicted": 0.6457,
+     "observed": 0.6132
+    },
+    {
+     "band": 0.7,
+     "n": 3358,
+     "predicted": 0.7511,
+     "observed": 0.7317
+    },
+    {
+     "band": 0.8,
+     "n": 304,
+     "predicted": 0.8473,
+     "observed": 0.773
+    }
+   ]
+  },
+  "OUTCOME_FROM_DETECTION": {
+   "events": 19442,
+   "share_le_q50": 0.5711,
+   "share_le_q80": 0.8353,
+   "bands": [
+    {
+     "band": 0.0,
+     "n": 596,
+     "predicted": 0.0915,
+     "observed": 0.0805
+    },
+    {
+     "band": 0.1,
+     "n": 9336,
+     "predicted": 0.1449,
+     "observed": 0.145
+    },
+    {
+     "band": 0.2,
+     "n": 11320,
+     "predicted": 0.2332,
+     "observed": 0.2421
+    },
+    {
+     "band": 0.3,
+     "n": 12793,
+     "predicted": 0.3626,
+     "observed": 0.3712
+    },
+    {
+     "band": 0.4,
+     "n": 13733,
+     "predicted": 0.4585,
+     "observed": 0.4453
+    },
+    {
+     "band": 0.5,
+     "n": 4779,
+     "predicted": 0.5525,
+     "observed": 0.5037
+    },
+    {
+     "band": 0.6,
+     "n": 2696,
+     "predicted": 0.6423,
+     "observed": 0.5582
+    },
+    {
+     "band": 0.7,
+     "n": 605,
+     "predicted": 0.733,
+     "observed": 0.6942
+    },
+    {
+     "band": 0.8,
+     "n": 41,
+     "predicted": 0.8752,
+     "observed": 0.6585
+    },
+    {
+     "band": 0.9,
+     "n": 102,
+     "predicted": 0.9077,
+     "observed": 0.7451
+    }
+   ]
+  }
+ },
+ "by_timeframe": {
+  "1d": {
+   "events": 22579,
+   "share_le_q50": 0.5548,
+   "share_le_q80": 0.8166
+  },
+  "1mo": {
+   "events": 9234,
+   "share_le_q50": 0.6491,
+   "share_le_q80": 0.8745
+  },
+  "1w": {
+   "events": 21703,
+   "share_le_q50": 0.587,
+   "share_le_q80": 0.8328
+  }
+ },
+ "by_period": {
+  "false": {
+   "events": 32212,
+   "share_le_q50": 0.6019,
+   "share_le_q80": 0.8456
+  },
+  "true": {
+   "events": 21304,
+   "share_le_q50": 0.5574,
+   "share_le_q80": 0.8143
+  }
+ },
+ "pass": false
+}

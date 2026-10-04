@@ -72,13 +72,13 @@ def test_t5_no_qualifying_contract_is_reported_by_the_taxonomy():
 @pytest.mark.parametrize(
     "direction, entry, discovery, l1_far, stop_dist, expected, state",
     [
-        ("PUT", 10.0, None, None, 4.0, None, "TARGET_3R_NON_POSITIVE"),          # 10 - 12 = -2
-        ("PUT", 10.0, None, None, 3.4, None, "TARGET_3R_NON_POSITIVE"),          # 10 - 10.2 = -0.2
-        ("PUT", 10.0, None, None, 2.0, 4.0, "TARGET_3R"),
+        ("PUT", 10.0, None, None, 4.0, None, "NO_STRUCTURAL_TARGET"),  # superseded 2 Oct 2026 (XLU-D01, ACK: no invented target; 3R is disclosure only)
+        ("PUT", 10.0, None, None, 3.4, None, "NO_STRUCTURAL_TARGET"),  # superseded 2 Oct 2026 (XLU-D01, ACK: no invented target; 3R is disclosure only)
+        ("PUT", 10.0, None, None, 2.0, None, "NO_STRUCTURAL_TARGET"),  # superseded 2 Oct 2026 (XLU-D01, ACK: no invented target; 3R is disclosure only)
         ("PUT", 10.0, 8.0, None, 2.0, 8.0, "DISCOVERY_TARGET"),
         ("PUT", 10.0, 12.0, 9.0, 2.0, 9.0, "L1_FAR"),                            # discovery on wrong side
-        ("CALL", 10.0, None, None, 1.0, 13.0, "TARGET_3R"),
-        ("CALL", 10.0, 9.0, None, 1.0, 13.0, "TARGET_3R"),                       # discovery on wrong side
+        ("CALL", 10.0, None, None, 1.0, None, "NO_STRUCTURAL_TARGET"),  # superseded 2 Oct 2026 (XLU-D01, ACK: no invented target; 3R is disclosure only)
+        ("CALL", 10.0, 9.0, None, 1.0, None, "NO_STRUCTURAL_TARGET"),  # superseded 2 Oct 2026 (XLU-D01, ACK: no invented target; 3R is disclosure only)
         ("CALL", 10.0, None, None, None, None, "NO_TARGET_SOURCE"),
     ],
 )

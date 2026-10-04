@@ -83,6 +83,7 @@ class CrabelState:
     READY         = "READY"          # canonical (was CRABEL_READY in precor)
     CRABEL_READY  = "CRABEL_READY"   # legacy alias — normalise() maps → READY
     NONE          = "NONE"
+    DATA_INSUFFICIENT = "DATA_INSUFFICIENT"
 
     COMPRESSED_STATES = {COILING, READY, CRABEL_READY}
 
@@ -91,7 +92,7 @@ class CrabelState:
         s = str(raw).strip().upper()
         if s == cls.CRABEL_READY:
             return cls.READY
-        if s in {cls.COILING, cls.READY, cls.NONE}:
+        if s in {cls.COILING, cls.READY, cls.NONE, cls.DATA_INSUFFICIENT}:
             return s
         return cls.NONE
 

@@ -36,12 +36,191 @@ Original architecture retained:
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+import json
+import math
+from pathlib import Path
+from typing import Dict, List, Mapping, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 
 # Canonical enum strings — prevents drift vs fusion/precor modules
 from enums_structural import ControlState
+
+
+def range_break(
+    bars: pd.DataFrame,
+    prior_range: Mapping[str, float],
+    side: str,
+    policy: Mapping[str, object],
+) -> Dict[str, int]:
+    """Count side-specific range breaks and next-bar fail-backs symmetrically.
+
+    This is a structural observation, not a direction vote. The caller supplies
+    a range fixed before the event bars and a versioned shadow policy.
+    """
+    if side not in {"BULL", "BEAR"}:
+        raise ValueError(f"Invalid structural side: {side!r}")
+    try:
+        distance = float(policy["break_log_distance"])
+        lookback = int(policy["event_lookback_bars"])
+        lower = float(prior_range["low"])
+        upper = float(prior_range["high"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("Incomplete DIR-002 range-break policy or range") from exc
+    if (
+        not all(math.isfinite(value) for value in (distance, lower, upper))
+        or distance <= 0
+        or lookback <= 0
+        or lower <= 0
+        or upper < lower
+    ):
+        raise ValueError("Invalid DIR-002 range-break policy or range")
+    if not {"high", "low", "close"}.issubset(bars.columns):
+        raise ValueError("Range-break bars must include high, low and close")
+
+    boundary = lower * math.exp(-distance) if side == "BULL" else upper * math.exp(distance)
+    breaks = 0
+    fail_backs = 0
+    for index in range(max(0, len(bars) - lookback), len(bars)):
+        row = bars.iloc[index]
+        high = float(row["high"])
+        low = float(row["low"])
+        close = float(row["close"])
+        if (
+            not all(math.isfinite(value) for value in (high, low, close))
+            or low <= 0
+            or low > high
+            or not low <= close <= high
+        ):
+            raise ValueError("Invalid DIR-002 bar OHLC geometry")
+        extreme = float(row["low"] if side == "BULL" else row["high"])
+        breached = extreme < boundary if side == "BULL" else extreme > boundary
+        if not breached:
+            continue
+        breaks += 1
+        if index + 1 < len(bars):
+            next_close = float(bars["close"].iloc[index + 1])
+            if not math.isfinite(next_close) or next_close <= 0:
+                raise ValueError("Invalid DIR-002 next-bar close")
+            failed = next_close > lower if side == "BULL" else next_close < upper
+            fail_backs += int(failed)
+    return {"break_count": breaks, "fail_back_count": fail_backs}
+
+
+def phase_c_event_candidate(
+    bull_fail_back_count: Optional[int],
+    bear_fail_back_count: Optional[int],
+) -> str:
+    """Describe Phase-C tests by breach location, never by a control vote."""
+    if bull_fail_back_count is None or bear_fail_back_count is None:
+        return "NOT_EVALUATED"
+    if bull_fail_back_count < 0 or bear_fail_back_count < 0:
+        raise ValueError("Phase-C fail-back counts cannot be negative")
+    if bull_fail_back_count and bear_fail_back_count:
+        return "AMBIGUOUS_TEST"
+    if bull_fail_back_count:
+        return "SPRING_CANDIDATE"
+    if bear_fail_back_count:
+        return "UTAD_CANDIDATE"
+    return "NONE"
+
+
+def symmetric_control_scores(
+    bars: pd.DataFrame,
+    bull_fail_back_count: int,
+    bear_fail_back_count: int,
+    policy: Mapping[str, object],
+) -> Dict[str, float]:
+    """Compute mirrored, capped C3 control observations without a trade vote.
+
+    Fail-back, failed thrust, absorption and point-of-close location are one
+    correlated STRUCTURE family. The returned 0–1 scores describe that family;
+    they are not independent probabilities or an approved direction decision.
+    """
+    try:
+        cfg = policy["control"]
+        weights = {
+            name: float(cfg[name]) for name in (
+                "fail_back_weight", "failed_thrust_weight", "absorption_weight",
+                "poc_bias_weight", "absorption_volume_ratio_min",
+                "absorption_spread_ratio_max", "absorption_poc_high",
+                "absorption_poc_low", "average_poc_high", "average_poc_low",
+            )
+        }
+        caps = {name: int(cfg[name]) for name in (
+            "fail_back_count_cap", "failed_thrust_count_cap", "absorption_count_cap",
+        )}
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("Incomplete DIR-002 control policy") from exc
+    if (
+        not all(math.isfinite(v) and v >= 0 for v in weights.values())
+        or not all(v > 0 for v in caps.values())
+        or not 0 < weights["absorption_poc_low"] < 0.5 < weights["absorption_poc_high"] < 1
+        or not 0 < weights["average_poc_low"] < 0.5 < weights["average_poc_high"] < 1
+        or not isinstance(bull_fail_back_count, int)
+        or not isinstance(bear_fail_back_count, int)
+        or min(bull_fail_back_count, bear_fail_back_count) < 0
+    ):
+        raise ValueError("Invalid DIR-002 control policy or fail-back count")
+    required = {"high", "low", "close", "poc", "vol_ratio", "spread_ratio"}
+    if len(bars) < 3 or not required.issubset(bars.columns):
+        raise ValueError("Incomplete DIR-002 control bars")
+    recent = bars.tail(20)
+    for row in recent.itertuples(index=False):
+        high, low, close = (float(getattr(row, key)) for key in ("high", "low", "close"))
+        poc, vol_ratio, spread_ratio = (
+            float(getattr(row, key)) for key in ("poc", "vol_ratio", "spread_ratio")
+        )
+        if (
+            not all(math.isfinite(v) for v in (high, low, close, poc, vol_ratio, spread_ratio))
+            or low <= 0 or not low <= close <= high
+            or not 0 <= poc <= 1 or vol_ratio < 0 or spread_ratio < 0
+        ):
+            raise ValueError("Invalid DIR-002 control bar")
+
+    upward_failed = downward_failed = 0
+    first = max(1, len(bars) - 10)
+    for i in range(first, len(bars) - 1):
+        close = float(bars["close"].iloc[i])
+        if close > float(bars["high"].iloc[i - 1]) and float(bars["close"].iloc[i + 1]) < close:
+            upward_failed += 1
+        if close < float(bars["low"].iloc[i - 1]) and float(bars["close"].iloc[i + 1]) > close:
+            downward_failed += 1
+
+    absorption = recent.loc[
+        (recent["vol_ratio"] > weights["absorption_volume_ratio_min"])
+        & (recent["spread_ratio"] < weights["absorption_spread_ratio_max"])
+    ]
+    bull_absorption = int((absorption["poc"] > weights["absorption_poc_high"]).sum())
+    bear_absorption = int((absorption["poc"] < weights["absorption_poc_low"]).sum())
+    mean_poc = float(recent["poc"].mean())
+    maximum = (
+        caps["fail_back_count_cap"] * weights["fail_back_weight"]
+        + caps["failed_thrust_count_cap"] * weights["failed_thrust_weight"]
+        + caps["absorption_count_cap"] * weights["absorption_weight"]
+        + weights["poc_bias_weight"]
+    )
+    if maximum <= 0:
+        raise ValueError("DIR-002 control policy has no measurable weight")
+
+    def score(fail_backs: int, failed_thrusts: int, absorption_count: int, poc_bias: bool) -> float:
+        points = (
+            min(fail_backs, caps["fail_back_count_cap"]) * weights["fail_back_weight"]
+            + min(failed_thrusts, caps["failed_thrust_count_cap"]) * weights["failed_thrust_weight"]
+            + min(absorption_count, caps["absorption_count_cap"]) * weights["absorption_weight"]
+            + int(poc_bias) * weights["poc_bias_weight"]
+        )
+        return points / maximum
+
+    return {
+        "bull_score": score(bull_fail_back_count, downward_failed, bull_absorption,
+                            mean_poc > weights["average_poc_high"]),
+        "bear_score": score(bear_fail_back_count, upward_failed, bear_absorption,
+                            mean_poc < weights["average_poc_low"]),
+        "upward_failed_thrust_count": upward_failed,
+        "downward_failed_thrust_count": downward_failed,
+        "policy_version": str(policy["version"]),
+    }
 
 
 @dataclass
@@ -100,7 +279,13 @@ class WyckoffEngine_3101_v2:
     
     def __init__(self, min_bars: int = 20):  # Lowered for CSV data
         self.min_bars = min_bars
-        
+
+        # DIR-002 side-evidence kernel policy (versioned config; fails closed).
+        try:
+            self._side_policy = load_side_evidence_policy()
+        except (OSError, ValueError):
+            self._side_policy = None
+
         # Event thresholds (relaxed for detection)
         self.climax_volume_mult = 1.8
         self.climax_spread_mult = 1.4
@@ -121,6 +306,7 @@ class WyckoffEngine_3101_v2:
         
         # Extract features
         features = self._extract_features(df)
+        features.update(self._side_evidence_fields(bars))
         
         # Control state
         control = self._determine_control(df, features)
@@ -278,6 +464,22 @@ class WyckoffEngine_3101_v2:
             "entry_trigger":           entry_trigger,
             "stop_loss":               stop,
             "initial_target":          target,
+
+            # DIR-002 structural observations; never a direction or gate vote.
+            "sym_range_break_authority": "IMPLEMENTED_FOR_REPLICATION",
+            "sym_range_break_status": features.get("sym_range_break_status"),
+            "sym_range_break_policy_version": features.get("sym_range_break_policy_version"),
+            "sym_bull_break_count": features.get("sym_bull_break_count"),
+            "sym_bull_fail_back_count": features.get("sym_bull_fail_back_count"),
+            "sym_bear_break_count": features.get("sym_bear_break_count"),
+            "sym_bear_fail_back_count": features.get("sym_bear_fail_back_count"),
+            "sym_phase_c_event_candidate": features.get("sym_phase_c_event_candidate"),
+            "sym_control_status": features.get("sym_control_status"),
+            "sym_bull_control_score": features.get("sym_bull_control_score"),
+            "sym_bear_control_score": features.get("sym_bear_control_score"),
+            "sym_upward_failed_thrust_count": features.get("sym_upward_failed_thrust_count"),
+            "sym_downward_failed_thrust_count": features.get("sym_downward_failed_thrust_count"),
+            "side_evidence":           features.get("side_evidence"),
             
             # Regime conflicts (flags — macro_micro_block is a flag, NOT a hard veto)
             "regime_conflicts":        conflicts,
@@ -287,6 +489,30 @@ class WyckoffEngine_3101_v2:
             "timestamp":               datetime.now().isoformat()
         }
     
+    def _side_evidence_fields(self, bars: pd.DataFrame) -> Dict:
+        """Publish the DIR-002 kernel as namespaced observations (no vote)."""
+        if self._side_policy is None:
+            evidence = _side_unevaluated("NOT_EVALUATED_POLICY_INVALID", None, len(bars))
+        else:
+            evidence = side_structural_evidence(bars, self._side_policy)
+        evaluated = evidence["status"] == "EVALUATED"
+        bull, bear = evidence["bull"], evidence["bear"]
+        return {
+            "side_evidence": evidence,
+            "sym_range_break_status": "AVAILABLE_SHADOW" if evaluated else evidence["status"],
+            "sym_range_break_policy_version": evidence["policy_version"],
+            "sym_bull_break_count": bull["break_count"],
+            "sym_bull_fail_back_count": bull["fail_back_count"],
+            "sym_bear_break_count": bear["break_count"],
+            "sym_bear_fail_back_count": bear["fail_back_count"],
+            "sym_phase_c_event_candidate": evidence["phase_c_event_candidate"],
+            "sym_control_status": "AVAILABLE_SHADOW" if evaluated else evidence["status"],
+            "sym_bull_control_score": bull["control_score"],
+            "sym_bear_control_score": bear["control_score"],
+            "sym_upward_failed_thrust_count": bear["failed_thrust_count"],
+            "sym_downward_failed_thrust_count": bull["failed_thrust_count"],
+        }
+
     # ==================== DATA PREPARATION ====================
     
     def _prepare_dataframe(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
@@ -320,9 +546,24 @@ class WyckoffEngine_3101_v2:
         """Extract Wyckoff features"""
         features = {}
         
-        # Range boundaries
-        features['range_high'] = df['high'].max()
-        features['range_low'] = df['low'].min()
+        event_start = max(1, len(df) - 10)
+        # Freeze a local range *before* the first material recent test.
+        # The event bar may not set the reference boundary it is tested against.
+        anchor_index = len(df) - 1
+        for i in range(event_start, len(df)):
+            prior = df.iloc[max(0, i - 20):i]
+            if len(prior) < 10:
+                continue
+            prior_high = float(prior['high'].max())
+            prior_low = float(prior['low'].min())
+            if (float(df['high'].iloc[i]) > prior_high * 1.02 or
+                    float(df['low'].iloc[i]) < prior_low * 0.98):
+                anchor_index = i
+                break
+        anchor = df.iloc[max(0, anchor_index - 20):anchor_index]
+        features['range_high'] = anchor['high'].max()
+        features['range_low'] = anchor['low'].min()
+        features['range_anchor_index'] = anchor_index
         features['range_width'] = features['range_high'] - features['range_low']
         features['range_width_pct'] = features['range_width'] / df['close'].mean()
         
@@ -334,14 +575,15 @@ class WyckoffEngine_3101_v2:
         # Break/reclaim counts
         features['break_count'] = 0
         features['reclaim_count'] = 0
-        for i in range(len(df) - 10, len(df)):
+        for i in range(event_start, len(df)):
             if i < 1:
                 continue
             if df['low'].iloc[i] < features['range_low'] * 0.98:
                 features['break_count'] += 1
                 if i < len(df) - 1 and df['close'].iloc[i+1] > features['range_low']:
                     features['reclaim_count'] += 1
-        
+
+
         # Follow-through fail rate
         ft_fails = 0
         ft_attempts = 0
@@ -1085,6 +1327,7 @@ class WyckoffEngine_3101_v2:
             "entry_trigger": f"Insufficient data ({self.min_bars} bars minimum)",
             "stop_loss": None,
             "initial_target": None,
+            "side_evidence": None,
             "regime_conflicts": [f"Insufficient bars (need {self.min_bars})"],
             "macro_micro_block": True,
             "warnings": [f"Need {self.min_bars} bars minimum"],
@@ -1094,3 +1337,241 @@ class WyckoffEngine_3101_v2:
     def _error(self, ticker: str, msg: str) -> Dict:
         """Error - still force outputs"""
         return self._insufficient_data(ticker)
+
+
+# =============================================================================
+# DIR-002 symmetric side-evidence kernel (§4.2-4.3).
+#
+# One side-parameterised rule per observation, evaluated in log-price space.
+# BEAR evidence is computed by the *same* BULL rule on the negated log series,
+# so a log-reflected chart yields exactly the mirrored evidence (R-2a). These
+# are C3 structure observations: no side is chosen here, nothing defaults to a
+# side, and missing or invalid bars are NOT_EVALUATED, never measured zeros.
+# =============================================================================
+
+_SIDE_EVENT_NAMES = {
+    "BULL": {"SPRING": "SPRING", "SOS": "SOS", "LPS": "LPS", "SC_TEST": "SC_TEST"},
+    "BEAR": {"SPRING": "UTAD", "SOS": "SOW", "LPS": "LPSY", "SC_TEST": "BC_TEST"},
+}
+
+
+def load_side_evidence_policy(path: Optional[Path] = None) -> Dict:
+    """Load the versioned DIR-002 structure-kernel policy, failing closed."""
+    policy_path = path or Path(__file__).resolve().parent / "config" / "dir002_side_evidence_v1.json"
+    policy = json.loads(Path(policy_path).read_text(encoding="utf-8"))
+    if policy.get("version") != "dir002_side_evidence_v1" or policy.get(
+        "authority_state"
+    ) != "IMPLEMENTED_FOR_REPLICATION":
+        raise ValueError("DIR-002 side-evidence policy version or authority invalid")
+    for section in ("anchor", "control", "events", "intent", "trend"):
+        if not isinstance(policy.get(section), dict):
+            raise ValueError(f"DIR-002 side-evidence policy section missing: {section}")
+    return policy
+
+
+def side_log_frame(bars: pd.DataFrame) -> Optional[pd.DataFrame]:
+    """Log OHLC features that mirror exactly under log reflection.
+
+    Returns None when any bar is missing or geometrically invalid; callers
+    publish NOT_EVALUATED rather than a measured value.
+    """
+    required = ("open", "high", "low", "close", "volume")
+    if bars is None or not set(required).issubset(bars.columns):
+        return None
+    values = bars.loc[:, list(required)].apply(pd.to_numeric, errors="coerce")
+    array = values.to_numpy(dtype=float)
+    if not np.isfinite(array).all() or (array[:, :4] <= 0).any() or (array[:, 4] < 0).any():
+        return None
+    o, h, l, c, v = (array[:, i] for i in range(5))
+    if (l > np.minimum(o, c)).any() or (h < np.maximum(o, c)).any():
+        return None
+    lo, lh, ll, lc = np.log(o), np.log(h), np.log(l), np.log(c)
+    prev = np.concatenate([[lc[0]], lc[:-1]])
+    ltr = np.maximum(lh - ll, np.maximum(np.abs(lh - prev), np.abs(ll - prev)))
+    span = lh - ll
+    lpoc = np.where(span > 0, (lc - ll) / np.where(span > 0, span, 1.0), 0.5)
+    frame = pd.DataFrame({"lo": lo, "lh": lh, "ll": ll, "lc": lc, "ltr": ltr,
+                          "lpoc": lpoc, "volume": v})
+    vol_mean = frame["volume"].rolling(20, min_periods=1).mean()
+    tr_mean = frame["ltr"].rolling(20, min_periods=1).mean()
+    frame["vol_ratio"] = np.where(vol_mean > 0, frame["volume"] / vol_mean.where(vol_mean > 0, 1.0), 1.0)
+    frame["ltr_ratio"] = np.where(tr_mean > 0, frame["ltr"] / tr_mean.where(tr_mean > 0, 1.0), 1.0)
+    return frame
+
+
+def _side_prior_range(lf: pd.DataFrame, policy: Mapping) -> Tuple[float, float, int]:
+    """Prior range frozen before the first material recent test (log units)."""
+    anchor_cfg = policy["anchor"]
+    window = int(anchor_cfg["range_window_bars"])
+    min_prior = int(anchor_cfg["min_prior_bars"])
+    k = float(anchor_cfg["anchor_log_distance"])
+    lookback = int(policy["event_lookback_bars"])
+    lh, ll = lf["lh"].to_numpy(), lf["ll"].to_numpy()
+    n = len(lf)
+    anchor = n - 1
+    for i in range(max(1, n - lookback), n):
+        lo_i = max(0, i - window)
+        if i - lo_i < min_prior:
+            continue
+        if lh[i] > lh[lo_i:i].max() + k or ll[i] < ll[lo_i:i].min() - k:
+            anchor = i
+            break
+    lo_a = max(0, anchor - window)
+    return float(ll[lo_a:anchor].min()), float(lh[lo_a:anchor].max()), anchor
+
+
+def _side_arrays(lf: pd.DataFrame, range_low: float, range_high: float, side: str) -> Dict:
+    """Express one side's question in BULL orientation (negated logs for BEAR)."""
+    if side == "BULL":
+        return {
+            "high": lf["lh"].to_numpy(), "low": lf["ll"].to_numpy(), "close": lf["lc"].to_numpy(),
+            "poc": lf["lpoc"].to_numpy(), "range_low": range_low, "range_high": range_high,
+        }
+    return {
+        "high": -lf["ll"].to_numpy(), "low": -lf["lh"].to_numpy(), "close": -lf["lc"].to_numpy(),
+        "poc": 1.0 - lf["lpoc"].to_numpy(), "range_low": -range_high, "range_high": -range_low,
+    }
+
+
+def _side_best_event(lf: pd.DataFrame, arrays: Dict, policy: Mapping) -> Tuple[str, Optional[int], float]:
+    """Strongest confirmed BULL-orientation event: (generic type, bar index, strength)."""
+    cfg = policy["events"]
+    k_break = float(policy["break_log_distance"])
+    lookback = int(policy["event_lookback_bars"])
+    reclaim = int(cfg["reclaim_within_bars"])
+    follow = int(cfg["followthrough_bars"])
+    climax_lookback = int(cfg["climax_lookback_bars"])
+    base = {name: float(value) for name, value in cfg["base_strength"].items()}
+    decay = float(cfg["recency_decay"])
+    high, low, close, poc = arrays["high"], arrays["low"], arrays["close"], arrays["poc"]
+    lower, upper = arrays["range_low"], arrays["range_high"]
+    volume = lf["volume"].to_numpy()
+    vol_ratio = lf["vol_ratio"].to_numpy()
+    tr_ratio = lf["ltr_ratio"].to_numpy()
+    n = len(close)
+    start = max(1, n - lookback)
+    candidates: List[Tuple[str, int, int]] = []  # (type, event index, window)
+
+    for i in range(start, n):
+        if low[i] < lower - k_break:
+            for j in range(i + 1, min(n, i + reclaim + 1)):
+                if close[j] > lower:
+                    candidates.append(("SPRING", i, lookback))
+                    break
+    sos_bars: List[int] = []
+    for i in range(start, n - 1):
+        if close[i] > upper + k_break and poc[i] >= float(cfg["breakout_poc_min"]):
+            later = close[i + 1:]
+            if (later > upper).all() and (close[i + 1:i + 1 + follow] >= close[i]).any():
+                candidates.append(("SOS", i, lookback))
+                sos_bars.append(i)
+    for i in sos_bars:
+        for j in range(n - 1, i, -1):
+            if low[j] <= upper + float(cfg["retest_log_distance"]) and close[j] > upper:
+                candidates.append(("LPS", j, lookback))
+                break
+    for c in range(max(1, n - climax_lookback), n - 1):
+        if (vol_ratio[c] >= float(cfg["climax_volume_ratio_min"])
+                and tr_ratio[c] >= float(cfg["climax_range_ratio_min"])
+                and close[c] < close[c - 1]
+                and poc[c] >= float(cfg["climax_close_off_extreme_poc"])):
+            for j in range(n - 1, c + 1, -1):
+                if (low[j] >= low[c]
+                        and low[j] <= low[c] + float(cfg["test_log_distance"])
+                        and volume[j] <= float(cfg["test_volume_fraction_max"]) * volume[c]):
+                    candidates.append(("SC_TEST", j, climax_lookback))
+                    break
+
+    best: Tuple[str, Optional[int], float] = ("NONE", None, 0.0)
+    for name, index, window in candidates:
+        age = n - 1 - index
+        strength = base[name] * max(0.0, 1.0 - decay * age / float(window))
+        if strength > best[2]:
+            best = (name, index, strength)
+    return best
+
+
+def _side_trend(lf: pd.DataFrame, policy: Mapping) -> Tuple[str, bool, bool]:
+    cfg = policy["trend"]
+    spans = [int(span) for span in cfg["spans"]]
+    if len(lf) < int(cfg["min_completed_bars"]):
+        return "TREND_INSUFFICIENT_HISTORY", False, False
+    ema = [float(lf["lc"].ewm(span=span, adjust=False).mean().iloc[-1]) for span in spans]
+    bull = all(a > b for a, b in zip(ema, ema[1:]))
+    bear = all(a < b for a, b in zip(ema, ema[1:]))
+    return "EVALUATED", bull, bear
+
+
+def _side_unevaluated(status: str, policy_version: Optional[str], bars_count: int) -> Dict:
+    empty = {
+        "event_type": "NOT_EVALUATED", "event_strength": None, "event_session": "",
+        "control_score": None, "break_count": None, "fail_back_count": None,
+        "failed_thrust_count": None, "trend_aligned": False,
+    }
+    return {
+        "status": status, "policy_version": policy_version,
+        "trend_status": "NOT_EVALUATED", "trend_history_bars": bars_count,
+        "range_low": None, "range_high": None, "range_anchor_session": "",
+        "phase_c_event_candidate": "NOT_EVALUATED",
+        "bull": dict(empty), "bear": dict(empty),
+    }
+
+
+def side_structural_evidence(bars: pd.DataFrame, policy: Mapping) -> Dict:
+    """Per-side C3 evidence vectors for DIR-002 assignment (no side chosen)."""
+    version = policy.get("version") if isinstance(policy, Mapping) else None
+    try:
+        window = int(policy["anchor"]["range_window_bars"]) + int(policy["event_lookback_bars"])
+    except (KeyError, TypeError, ValueError):
+        return _side_unevaluated("NOT_EVALUATED_POLICY_INVALID", version, 0 if bars is None else len(bars))
+    count = 0 if bars is None else len(bars)
+    if count < window:
+        return _side_unevaluated("NOT_EVALUATED_INSUFFICIENT_BARS", version, count)
+    lf = side_log_frame(bars)
+    if lf is None:
+        return _side_unevaluated("NOT_EVALUATED_INVALID_BARS", version, count)
+    dates = (
+        pd.to_datetime(bars["date"]).dt.strftime("%Y-%m-%d").tolist()
+        if "date" in bars.columns else [str(i) for i in range(count)]
+    )
+    range_low, range_high, anchor = _side_prior_range(lf, policy)
+    price_bars = pd.DataFrame({
+        "high": np.exp(lf["lh"]), "low": np.exp(lf["ll"]), "close": np.exp(lf["lc"]),
+        "poc": lf["lpoc"], "vol_ratio": lf["vol_ratio"], "spread_ratio": lf["ltr_ratio"],
+    })
+    price_range = {"low": math.exp(range_low), "high": math.exp(range_high)}
+    breaks = {side: range_break(price_bars, price_range, side, policy) for side in ("BULL", "BEAR")}
+    control = symmetric_control_scores(
+        price_bars, breaks["BULL"]["fail_back_count"], breaks["BEAR"]["fail_back_count"], policy
+    )
+    trend_status, bull_trend, bear_trend = _side_trend(lf, policy)
+    result = {
+        "status": "EVALUATED",
+        "policy_version": version,
+        "trend_status": trend_status,
+        "trend_history_bars": count,
+        "range_low": math.exp(range_low),
+        "range_high": math.exp(range_high),
+        "range_anchor_session": dates[anchor],
+        "phase_c_event_candidate": phase_c_event_candidate(
+            breaks["BULL"]["fail_back_count"], breaks["BEAR"]["fail_back_count"]
+        ),
+    }
+    for side, trend_aligned, score_key, thrust_key in (
+        ("BULL", bull_trend, "bull_score", "downward_failed_thrust_count"),
+        ("BEAR", bear_trend, "bear_score", "upward_failed_thrust_count"),
+    ):
+        generic, index, strength = _side_best_event(
+            lf, _side_arrays(lf, range_low, range_high, side), policy
+        )
+        result[side.lower()] = {
+            "event_type": _SIDE_EVENT_NAMES[side].get(generic, "NONE"),
+            "event_strength": float(strength),
+            "event_session": dates[index] if index is not None else "",
+            "control_score": float(control[score_key]),
+            "break_count": int(breaks[side]["break_count"]),
+            "fail_back_count": int(breaks[side]["fail_back_count"]),
+            "failed_thrust_count": int(control[thrust_key]),
+            "trend_aligned": bool(trend_aligned),
+        }
+    return result

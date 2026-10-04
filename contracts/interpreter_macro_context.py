@@ -42,6 +42,15 @@ FORBIDDEN_AUTHORITY_KEYS = frozenset({
 })
 
 
+
+def _sector_bias_lookup(sector_bias: Mapping[str, Any], sector: str, row: Mapping[str, Any]) -> str:
+    """XLU-D03: case-insensitive bias lookup on the resolved sector, then the sector ETF."""
+    folded = {str(key).strip().upper(): value for key, value in sector_bias.items()}
+    for key in (sector, _text(row.get("sector_etf")).upper()):
+        if key and folded.get(key) not in (None, ""):
+            return _text(folded[key])
+    return ""
+
 def _text(value: Any) -> str:
     return str(value or "").strip()
 
@@ -436,9 +445,8 @@ def advisory_fields_for_row(
     """Return display-only macro fields for one governed Lab row."""
 
     ticker = _text(row.get("ticker")).upper()
-    sector = _text(
-        row.get("gics_sector_norm") or row.get("gics_sector") or row.get("sector")
-    )
+    from domain.sector_resolution import resolve_sector
+    sector = resolve_sector(row)   # XLU-D03: a placeholder sector resolves through the ETF
     quant = _mapping(packet.get("macro_quant_packet"))
     rotation = _mapping(packet.get("sector_rotation"))
     sector_bias = _mapping(rotation.get("sector_bias_map"))
@@ -487,7 +495,7 @@ def advisory_fields_for_row(
         "macro_data_quality": packet.get("quality", "UNKNOWN"),
         "macro_context_state": packet.get("macro_context_state", "NEUTRAL"),
         "macro_regime": packet.get("regime_state") or quant.get("macro_regime_label") or "",
-        "macro_sector_alignment": _text(sector_bias.get(sector)) or "UNMAPPED",
+        "macro_sector_alignment": _sector_bias_lookup(sector_bias, sector, row) or "UNMAPPED",
         "macro_ticker_alignment": " | ".join(roles) if roles else "NO_TICKER_SPECIFIC_OVERLAY",
         "macro_rates_context": json.dumps(_mapping(packet.get("rates")), separators=(",", ":"), default=str),
         "macro_usd_context": json.dumps(_mapping(packet.get("usd")), separators=(",", ":"), default=str),

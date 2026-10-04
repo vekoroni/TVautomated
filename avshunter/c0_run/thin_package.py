@@ -18,7 +18,10 @@ from typing import Any, Iterator, Mapping
 
 import pandas as pd
 
+from canonical_data import CanonicalRegistry, CompletenessStatus, DatasetType
 from canonical_data.historical_prices import HistoricalPriceDatabase
+from contracts.dynamic_session_contract import EvidenceState
+from contracts.enrichment_ledger import load_market_profile_stamps
 from canonical_data.history_bridge import canonical_history_is_fresh, database_path as history_database_path
 from contracts.macro_enrichment_delta import (
     find_macro_enrichment_delta, load_macro_enrichment_delta, merge_macro_enrichment_delta,
@@ -44,13 +47,17 @@ DECLARED_STAMP_KEYS = frozenset({
     "data_contract.dcv_bars", "data_contract.dcv_last_bar",
     "truth_packet.<stamp>",
     "<post_vanguard_patch>",
+    # Per-fetch diagnostics of the completed-profile stage (dataset ids, coverage); the ledger
+    # carries them, the canonical profile store does not. Not a Vanguard input.
+    "market_profile_quality",
 })
 _STAMP_SUFFIXES = ("_utc", "_at", "timestamp")
 #: Blocks that later Evening phases patch INTO the stored package after Vanguard has read it
-#: (trap engine 5.5, actuarial 8.5, trigger layer 8.6, market profiles). At Vanguard time they
-#: hold their build-time values, which is what the thin package carries.
+#: (trap engine 5.5, actuarial 8.5, trigger layer 8.6). At Vanguard time they hold their
+#: build-time values, which is what the thin package carries. The completed market profile is
+#: NOT among them: it is patched BEFORE Vanguard and Vanguard reads it (PKG-F5).
 POST_VANGUARD_PATCH_PREFIXES = ("actuarial.", "tle.", "tle", "triggers.", "triggers", "eligible_for_trade",
-                                "market_profile_", "data_contract.actuarial_")
+                                "data_contract.actuarial_")
 
 
 @dataclass(frozen=True)
@@ -72,6 +79,10 @@ class RunReference:
     @property
     def ordered_tickers(self) -> list[str]:
         return [str(row.get("ticker") or "").strip().upper() for row in self.discovery_rows]
+
+    @property
+    def control_plane_path(self) -> Path:
+        return self.price_db_path.parent / "control_plane.sqlite"
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -132,6 +143,11 @@ class ThinPackageFactory:
         self._runtime_quant = quant
         self._rows = {str(r.get("ticker") or "").strip().upper(): r for r in reference.discovery_rows}
         self._db = HistoricalPriceDatabase(reference.price_db_path) if reference.price_db_path.is_file() else None
+        # P4c (PKG-F5): the completed-profile stage's facts for this run, ledger first (packages
+        # as fallback inside the loader); read once per run.
+        self._profile_stamps = load_market_profile_stamps(reference.run_dir)
+        self._registry = (CanonicalRegistry(reference.control_plane_path)
+                          if reference.control_plane_path.is_file() else None)
         self._meta = PackageMeta(
             run_id=reference.run_id,
             as_of_utc=str(reference.macro_snapshot.get("as_of_utc") or ""),
@@ -187,7 +203,51 @@ class ThinPackageFactory:
             pkg["data_failure"] = True
         # The data-contract verdict is computed over what the package actually holds (PKG-F1).
         DataContractValidator.annotate(pkg)
+        # 4. the completed market profile the stage published BEFORE Vanguard (PKG-F5)
+        pkg.update(self._market_profile_stamps(ticker))
         return pkg
+
+    def _market_profile_stamps(self, ticker: str) -> dict[str, Any]:
+        """The run's market-profile facts for the ticker: ledger, else the canonical profile store
+        for the evidence session (runs profiled before P4c), else typed NOT_EVALUATED."""
+        stamps = self._profile_stamps.get(ticker)
+        if stamps:
+            return dict(stamps)
+        evidence = self._profile_from_store(ticker)
+        if evidence is not None:
+            payload, dataset_id = evidence
+            return {
+                "market_profile_contract_required": True,
+                "market_profile_evidence": payload,
+                "market_profile_dataset_id": dataset_id,
+                "market_profile_evidence_state": EvidenceState.COMPLETED_SESSION.value,
+                "market_profile_exception": "",
+            }
+        return {
+            "market_profile_contract_required": True,
+            "market_profile_evidence": None,
+            "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
+            "market_profile_exception": "PROFILE_NOT_PUBLISHED_FOR_RUN",
+        }
+
+    def _profile_from_store(self, ticker: str) -> tuple[dict[str, Any], str] | None:
+        if self._registry is None:
+            return None
+        session = self.reference.evidence_session
+        candidates = [
+            record for record in self._registry.list_dataset_records(DatasetType.MARKET_STRUCTURE, instrument_id=ticker)
+            if record.session_date == session and record.completeness_status == CompletenessStatus.COMPLETE
+        ]
+        for record in reversed(candidates):   # newest as_of last in registry order
+            path = Path(record.storage_uri)
+            if path.is_file():
+                try:
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    continue
+                if isinstance(payload, dict):
+                    return payload, record.dataset_id
+        return None
 
 
 def build_thin_package_from_run(run_dir: Path | str, ticker: str, *, ingested_utc: str | None = None,

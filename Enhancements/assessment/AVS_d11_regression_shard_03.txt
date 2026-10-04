@@ -1,0 +1,36 @@
+tests/test_options_liquidity_morning_lab.py: 7 passed in 54.88s
+tests/test_options_research_contract.py: 11 passed in 33.24s
+tests/test_options_session_exception_quarantine.py: 6 passed in 50.87s
+tests/test_package_free_evening_p4.py: 9 passed in 110.88s (0:01:50)
+tests/test_pi_lab_interactive_contract.py: 13 passed in 3.13s
+tests/test_pipeline_interpreter_automation_v2.py: 9 passed in 5.65s
+tests/test_pipeline_interpreter_automation_v2_adapter.py: 8 passed in 4.67s
+tests/test_pipeline_interpreter_automation_v2_e2e_orchestrator.py: 2 passed in 9.32s
+tests/test_pipeline_interpreter_automation_v2_evidence_package.py: 2 passed in 8.62s
+tests/test_pipeline_interpreter_automation_v2_lab_batch.py: 3 passed in 5.72s
+tests/test_pipeline_interpreter_automation_v2_lab_structured.py: 2 passed in 13.95s
+tests/test_pipeline_interpreter_automation_v2_package_publisher.py: 5 passed in 8.34s
+tests/test_pipeline_interpreter_automation_v2_package_shadow.py: 1 passed in 14.30s
+tests/test_pipeline_interpreter_automation_v2_phase3.py: 9 passed in 4.45s
+tests/test_pipeline_interpreter_automation_v2_phase4.py: 7 passed in 8.32s
+tests/test_pipeline_interpreter_automation_v2_phase5.py: 8 passed in 6.15s
+tests/test_pipeline_interpreter_automation_v2_production_deploy.py: 2 passed in 6.00s
+tests/test_pipeline_interpreter_automation_v2_report.py: 1 passed in 6.45s
+tests/test_pipeline_interpreter_capture_v1.py: 7 passed in 12.11s
+tests/test_pipeline_interpreter_capture_v1_attended_workflow.py: 2 passed in 5.21s
+tests/test_pipeline_interpreter_capture_v1_batch.py: 2 passed in 59.74s
+tests/test_pipeline_interpreter_capture_v1_crop.py: 1 passed in 4.17s
+tests/test_pipeline_interpreter_capture_v1_dpi.py: 1 passed in 3.30s
+tests/test_pipeline_interpreter_capture_v1_market_screen.py: 5 passed, 6 subtests passed in 49.86s
+tests/test_pipeline_interpreter_capture_v1_navigation.py: 7 passed in 10.34s
+tests/test_pipeline_interpreter_capture_v1_noii_cross.py: 3 passed in 19.35s
+tests/test_pipeline_interpreter_capture_v1_ticker.py: 4 passed in 16.92s
+tests/test_pipeline_interpreter_capture_v1_ticker_batch.py: 3 passed in 107.32s (0:01:47)
+tests/test_pipeline_interpreter_capture_v1_ticker_market_screen.py: 8 passed in 119.21s (0:01:59)
+tests/test_pipeline_interpreter_lab_authority.py: 3 passed in 30.70s
+tests/test_pipeline_interpreter_trusted_source.py: 3 passed in 26.14s
+tests/test_pre_evening_production_repairs.py: 10 passed, 13 subtests passed in 15.95s
+tests/test_pretrade_focus_handoff.py: 9 passed in 26.68s
+tests/test_thesis_geometry_review_labels.py: 9 passed in 25.78s
+tests/test_trigger_layer_governance.py: 8 passed in 13.22s
+tests/test_vanguard_production_fixes.py: 6 passed in 7.02s

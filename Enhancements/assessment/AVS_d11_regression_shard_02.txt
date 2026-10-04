@@ -1,0 +1,35 @@
+tests/test_interactive_desk_end_to_end.py: 28 passed in 46.70s
+tests/test_interactive_desk_snapshot.py: 5 passed in 4.57s
+tests/test_interpreter_macro_advisory_handoff.py: 6 passed in 11.50s
+tests/test_interpreter_war_view.py: 5 passed in 19.89s
+tests/test_lab_cache_signature.py: 2 passed in 82.53s (0:01:22)
+tests/test_lab_ev3_move_window_book.py: 1 passed in 38.45s
+tests/test_lab_export_mapper_js.py: 13 passed in 15.40s
+tests/test_lab_governed_handoff.py: 19 passed in 98.14s (0:01:38)
+tests/test_lab_journal_handoff.py: 3 passed in 112.44s (0:01:52)
+tests/test_lab_legacy_ev_retired.py: 2 passed in 32.02s
+tests/test_lab_loader_error_does_not_block_page.py: 1 passed in 4.52s
+tests/test_lab_monetisation_gate.py: 6 passed in 43.30s
+tests/test_lab_priority_and_journal_ev_no_legacy.py: 8 passed in 61.14s (0:01:01)
+tests/test_lab_qa_audit_harness.py: 2 passed in 21.67s
+tests/test_lab_ranking_basis_export.py: 2 passed in 42.62s
+tests/test_lab_signal_tickets_and_display.py: 5 passed in 62.09s (0:01:02)
+tests/test_lab_strangle_direction.py: 9 passed in 123.03s (0:02:03)
+tests/test_lab_structure_detail_f6.py: 5 passed in 28.60s
+tests/test_macro_builder_governed_integration.py: 1 failed, 6 passed in 76.15s (0:01:16)
+tests/test_macro_domain_enhancements.py: 14 passed in 62.76s (0:01:02)
+tests/test_macro_enrichment_delta.py: 15 passed in 27.79s
+tests/test_macro_enrichment_discovery_options.py: 1 passed in 19.41s
+tests/test_macro_evening_publication_boundary.py: 4 passed in 22.39s
+tests/test_macro_input_governance.py: 10 passed in 11.34s
+tests/test_macro_layer_fixes.py: 5 passed in 2.14s
+tests/test_macro_publication_alignment.py: 5 passed in 10.76s
+tests/test_macro_quant_packet.py: 14 passed in 7.80s
+tests/test_missing_invalidation_authority_withheld.py: 4 passed in 11.46s
+tests/test_morning_gate_authority.py: 20 passed in 10.43s
+tests/test_morning_gate_bond_freshness.py: 1 passed in 13.65s
+tests/test_morning_gate_cds_bootstrap.py: 3 passed in 25.75s
+tests/test_morning_gate_contract_repair.py: 7 passed in 38.26s
+tests/test_morning_gate_quote_evidence_pointer.py: 5 passed in 28.08s
+tests/test_morning_gate_quote_reuse.py: 3 passed in 30.99s
+tests/test_morning_handoff_finalizer.py: 11 passed, 3 subtests passed in 38.14s

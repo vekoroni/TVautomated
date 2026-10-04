@@ -22,6 +22,13 @@ SECTOR_ALIASES = {
     "XLE": "ENERGY",
     "XLRE": "RATE_SENSITIVE_REITS",
     "XLY": "WEAK_CONSUMER_DISCRETIONARY",
+    # XLU-D03 (ACK 2 Oct 2026): sectors the Money Index themes name but had no alias.
+    "UTILITIES": "UTILITIES",
+    "XLU": "UTILITIES",
+    "MATERIALS": "MATERIALS",
+    "XLB": "MATERIALS",
+    "CONSUMER STAPLES": "CONSUMER_STAPLES",
+    "XLP": "CONSUMER_STAPLES",
 }
 
 
@@ -115,7 +122,10 @@ def sector_advisory(
                     "priority": route.get("priority"),
                     "reason": str(route.get("reason") or "USMI_SECTOR_ROUTING"),
                 }
-    return {"alignment": "NEUTRAL", "priority": None, "reason": "SECTOR_UNMAPPED"}
+    # XLU-D03: a resolved sector the Money Index does not prioritise is neutral by content, not a
+    # failed lookup; SECTOR_UNMAPPED is kept for a row whose sector could not be resolved.
+    return {"alignment": "NEUTRAL", "priority": None,
+            "reason": "SECTOR_NOT_IN_USMI_PRIORITIES" if sector_text else "SECTOR_UNMAPPED"}
 
 
 __all__ = ["SECTOR_ALIASES", "evaluate_scenarios", "sector_advisory"]

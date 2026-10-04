@@ -41,7 +41,7 @@ def create_contract(
     direction:                str,    # CALL | PUT
     horizon_type:             str,    # 5D | 10D | 20D
     edge_quality:             str,    # STRONG | MODERATE | WEAK
-    entry_ev:                 float,
+    entry_ev:                 Optional[float],   # EV3 advisory at entry; None when not valued
     entry_win_rate:           float,
     entry_state_hash:         str,
     entry_vol_regime:         str,
@@ -80,7 +80,7 @@ def create_contract(
         "horizon_type":              horizon_type,
         "horizon_expiry_date":       _calc_expiry(entry_date, horizon_type),
         "edge_quality":              edge_quality,
-        "entry_ev":                  round(entry_ev, 6),
+        "entry_ev":                  round(entry_ev, 6) if entry_ev is not None else None,
         "entry_win_rate":            round(entry_win_rate, 6),
         "entry_state_hash":          entry_state_hash,
         "entry_vol_regime":          entry_vol_regime,
@@ -106,7 +106,7 @@ def create_contract(
     path = _contract_path(ticker, entry_date)
     path.write_text(json.dumps(contract, indent=2))
     print(f"[CONTRACT] Created: {path.name} | {direction} {horizon_type} | "
-          f"EV={entry_ev:.2%} | Invalidation={invalidation_price:.2f}")
+          f"EV={'n/a' if entry_ev is None else f'{entry_ev:.2%}'} | Invalidation={invalidation_price:.2f}")
     return contract
 
 

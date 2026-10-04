@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
-from contracts.direction_governance import DIR_CALC_VERSION, validate_direction_record
+from contracts.direction_governance import direction_policy_uniformity, validate_direction_record
 from contracts.options_liquidity_execution_guard import (
     action_is_within_guard,
     evaluate_olm_execution_guard,
@@ -913,16 +913,33 @@ def finalize_morning_handoff(
             f"Intelligence Lab reconciliation failed: input={len(source_rows)} "
             f"lab={len(lab_rows)}"
         )
+    frozen_forecast = Path(runs_dir) / run_id / "forecast" / "ticker_forecast_descriptive_v1" / "packet.json"
+    if frozen_forecast.is_file():
+        from contracts.forecast_morning_revision import publish_morning_revisions
+        publish_morning_revisions(
+            Path(runs_dir) / run_id,
+            lab_rows,
+            observation_cutoff_utc=completed_at_utc,
+        )
+    else:
+        # Historical pre-cutover runs did not publish C5. Never reconstruct a
+        # frozen Evening thesis from a later Morning or option-stage row.
+        log.warning("Morning run %s has no frozen C5 packet; revision unavailable", run_id)
 
     authority_mismatches = _execution_lab_mismatches(gated_rows, lab_rows)
-    direction_versions = {
-        str(row.get("dir_calc_version", "") or "").strip()
+    direction_uniform, direction_uniform_reason = direction_policy_uniformity(gated_rows)
+    direction_tuples = {
+        (
+            str(row.get("dir_calc_version", "") or "").strip(),
+            str(row.get("direction_policy_version", "") or "").strip(),
+            str(row.get("direction_policy_sha256", "") or "").strip(),
+        )
         for row in gated_rows
     }
-    if direction_versions != {DIR_CALC_VERSION}:
+    if not direction_uniform:
         authority_mismatches.append(
-            "RUN:DIRECTION_VERSION_SET_INVALID:"
-            + ",".join(sorted(value or "MISSING" for value in direction_versions))
+            "RUN:" + direction_uniform_reason + ":"
+            + ",".join(sorted("/".join(parts) for parts in direction_tuples))
         )
     if authority_mismatches:
         preview = "; ".join(authority_mismatches[:12])
@@ -998,8 +1015,10 @@ def finalize_morning_handoff(
             "morning_authority_preserved": not source_go or lab_actionable > 0,
             "execution_lab_exact_match": not authority_mismatches,
             "execution_lab_mismatch_count": len(authority_mismatches),
-            "direction_version": DIR_CALC_VERSION,
-            "direction_version_uniform": direction_versions == {DIR_CALC_VERSION},
+            "direction_version": next(iter(direction_tuples))[0],
+            "direction_policy_version": next(iter(direction_tuples))[1],
+            "direction_policy_sha256": next(iter(direction_tuples))[2],
+            "direction_version_uniform": direction_uniform,
         },
     }
     summary_path = morning_dir / f"morning_handoff_summary_{run_id}.json"

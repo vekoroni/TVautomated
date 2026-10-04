@@ -1,0 +1,26 @@
+tests/test_canonical_manifest_p1.py :: 1 failed, 7 passed in 527.88s (0:08:47)
+tests/test_direction_geometry_semantic_repairs.py :: 9 passed in 23.08s
+tests/test_ila_event_projection_v1.py :: 10 passed in 4.15s
+tests/test_ila_selected_contract_identity.py :: 1 failed, 6 passed in 8.63s
+tests/test_lab_cache_signature.py :: 2 passed in 3.45s
+tests/test_lab_governed_handoff.py :: 19 passed in 5.75s
+tests/test_macro_builder_governed_integration.py :: 1 failed, 6 passed in 5.64s
+vanguard/tests/test_phase2_baton_validation.py :: 1 error in 1.98s
+tests/test_avs_fix_002_stage0.py :: 1 failed, 3 passed in 77.01s (0:01:17)
+tests/test_avs_int001_scenario_stored_run_replay.py :: 10 passed in 577.76s (0:09:37)
+tests/test_dynamic_session_phase2.py :: 15 passed in 8.82s
+tests/test_morning_thesis_validator.py :: 1 skipped in 0.45s
+tests/test_vanguard_reference_input_p2.py :: 3 failed, 3 passed in 402.77s (0:06:42)
+tests/test_wp1_expression_tradeability_rules.py :: 13 passed in 7.03s
+tests/test_avs_int001_stage0.py :: 1 failed, 5 passed in 5.96s
+tests/test_intelligence_lab_strict_json.py :: 5 passed in 3.08s
+tests/test_lab_priority_and_journal_ev_no_legacy.py :: 8 passed in 3.63s
+tests/test_lab_signal_tickets_and_display.py :: 5 passed in 6.48s
+tests/test_layer3_volatility_leftovers.py :: 27 passed, 18 warnings in 3.72s
+tests/test_worker3_activation.py :: 13 passed in 23.82s
+tests/test_worker3_browser_launch.py :: 11 passed in 31.41s
+tests/test_worker3_detailed_reports.py :: 10 passed in 20.57s
+tests/test_worker3_macro_orchestrator.py :: 2 passed in 2.21s
+tests/test_worker3_paused_surface.py :: 2 passed in 0.49s
+tests/test_worker3_timeout_recovery.py :: 3 passed in 6.60s
+vanguard/tests/test_actuarial_match_ladder.py :: 6 failed, 2 passed in 1.76s

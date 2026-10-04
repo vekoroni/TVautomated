@@ -136,6 +136,7 @@ from contracts.options_liquidity_lifecycle import (
 from contracts.governed_states import GovernedDataState, LifecycleEvaluationState
 from contracts.dynamic_session_contract import DataExceptionReason
 from contracts.thesis_geometry import select_directional_invalidation
+from contracts.selected_contract_economics import contract_analytics
 from msi_runtime import active_flags as active_msi_flags
 
 _CDS_CHAIN_SERVICE = None
@@ -432,6 +433,26 @@ def _direction_arbitration_oi(ctx: Dict[str, Any]) -> Dict[str, str]:
                 f"Structural direction remains {governed}; directional resolution required"
             ),
             "direction_conflict_gate": "DIRECTION_RESOLUTION_REQUIRED",
+        }
+    if str(ctx.get("dir_calc_version") or "") == "dir_v1.3.0":
+        # The observed Vanguard side is a counter-case, not a vote. This
+        # branch deliberately precedes the legacy BUY/SELL conflict gates.
+        if vg_edge_dir not in {"CALL", "PUT"}:
+            return {
+                "direction_arbitration_status": "NO_PROBABILITY_OPINION",
+                "direction_arbitration_reason": "Vanguard supplied no governed side observation",
+                "direction_conflict_gate": "NONE",
+            }
+        return {
+            "direction_arbitration_status": (
+                "SIDE_OBSERVATION_ALIGNED" if vg_edge_dir == final_direction
+                else "OPPOSING_SIDE_OBSERVATION"
+            ),
+            "direction_arbitration_reason": (
+                f"Discovery thesis {final_direction}; Vanguard observed {vg_edge_dir} "
+                "(descriptive, no direction authority)"
+            ),
+            "direction_conflict_gate": "NONE",
         }
     if intent == "SELL_SETUP" and vg_edge_dir == "CALL":
         return {
@@ -884,35 +905,58 @@ def _calc_regime_sensitivity_oi(signal_row: dict, warnings_list: list) -> int:
     elif theta > 40: score += 5
     return min(max(score, 0), 100)
 
-def compute_time_stop_oi(signal_row: dict) -> dict:
-    """Time-stop calculator. Migrated from SuperBrain. Uses OI output fields."""
+def compute_time_stop_oi(signal_row: dict, *, contract: Optional[dict] = None,
+                         evidence_move_sessions: Any = None, evidence_runway_sessions: Any = None,
+                         anticipated_level: Any = None) -> dict:
+    """Time stop on the selected contract (step 4d, ACK 3 Oct 2026).
+
+    The expiry is the selected contract's own (never today + a row DTE). With daily level evidence the
+    checkpoint is the median time to the level and the stop the 80% time, never later than expiry minus the
+    exit buffer; otherwise the governed fractions of the real contract life, labelled. The rule names the
+    anticipated level, never the retired 3R target.
+    """
     from datetime import datetime, timedelta
-    def _flt(r, k):
-        try: return float(r.get(k) or 0)
-        except: return 0.0
-    dte   = _flt(signal_row, 'contract_dte') or _flt(signal_row, 'dte')
-    spot  = _flt(signal_row, 'contract_strike') or _flt(signal_row, 'stock_price')
-    target = _flt(signal_row, 'structural_target')
-    asof  = str(signal_row.get('asof_date') or signal_row.get('data_as_of') or '')[:10]
+    from domain.option_contract_liquidity import DEFAULT_EXIT_BUFFER_SESSIONS
+    asof = str(signal_row.get('asof_date') or signal_row.get('data_as_of') or '')[:10]
     try:
         now = datetime.strptime(asof, '%Y-%m-%d') if asof else datetime.now()
         anchor = 'signal_date' if asof else 'wall_clock_FALLBACK'
     except ValueError:
         now = datetime.now()
         anchor = 'wall_clock_FALLBACK'
+    expiry = None
+    try:
+        expiry = datetime.strptime(str((contract or {}).get('expiry') or '')[:10], '%Y-%m-%d')
+    except ValueError:
+        expiry = None
+    dte = (expiry - now).days if expiry is not None else 0
     if dte <= 0:
         return {'time_stop_date': 'N/A', 'time_stop_days': 0,
-                'checkpoint_date': 'N/A', 'checkpoint_rule': 'DTE unavailable',
+                'checkpoint_date': 'N/A', 'checkpoint_rule': 'No selected contract expiry - set the time stop manually',
                 'expiry_date': 'N/A', 'dte_remaining_at_stop': 0,
-                'time_stop_auto': 'N', 'dte_used': 0, 'time_anchor': anchor}
-    stop_days = max(1, int(dte * TIME_STOP_FRACTION))
-    chk_days  = max(1, int(dte * CHECKPOINT_FRACTION))
+                'time_stop_auto': 'N', 'dte_used': 0, 'time_anchor': anchor,
+                'time_stop_basis': 'NO_SELECTED_CONTRACT'}
+    per_session = float(json.loads((Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json")
+                                   .read_text(encoding="utf-8-sig"))["anticipated_move"]["calendar_days_per_session"])
+    latest = max(1, int(dte - DEFAULT_EXIT_BUFFER_SESSIONS * per_session))
+    q50, q80 = _repair_alt_float(evidence_move_sessions), _repair_alt_float(evidence_runway_sessions)
+    if q50 is not None and q80 is not None:
+        chk_days = max(1, min(int(round(q50 * per_session)), latest))
+        stop_days = max(chk_days, min(int(round(q80 * per_session)), latest))
+        basis = 'DURATION_EVIDENCE_Q50_Q80'
+    else:
+        stop_days = max(1, int(dte * TIME_STOP_FRACTION))
+        chk_days = max(1, int(dte * CHECKPOINT_FRACTION))
+        basis = 'GOVERNED_FRACTION_OF_CONTRACT_LIFE'
     time_stop = now + timedelta(days=stop_days)
     checkpoint = now + timedelta(days=chk_days)
-    if spot > 0 and target > 0 and target != spot:
-        min_p = spot + (target - spot) * 0.40
-        rule = (f'By {checkpoint.strftime("%d %b")}: confirm bias. '
-                f'By {time_stop.strftime("%d %b")}: price >= ${min_p:.2f} — else EXIT.')
+    level = _repair_alt_float(anticipated_level)
+    if level is not None and level > 0:
+        rule = (f'By {checkpoint.strftime("%d %b")}: expect progress toward ${level:.2f} (median time). '
+                f'By {time_stop.strftime("%d %b")}: not reached - EXIT (80% of comparable cases had arrived).'
+                if basis == 'DURATION_EVIDENCE_Q50_Q80' else
+                f'By {checkpoint.strftime("%d %b")}: confirm bias toward ${level:.2f}. '
+                f'By {time_stop.strftime("%d %b")}: exit if not profitable.')
     else:
         rule = (f'By {checkpoint.strftime("%d %b")}: confirm bias. '
                 f'By {time_stop.strftime("%d %b")}: exit if not profitable.')
@@ -920,9 +964,10 @@ def compute_time_stop_oi(signal_row: dict) -> dict:
             'time_stop_days': stop_days,
             'checkpoint_date': checkpoint.strftime('%Y-%m-%d'),
             'checkpoint_rule': rule,
-            'expiry_date': (now + timedelta(days=int(dte))).strftime('%Y-%m-%d'),
+            'expiry_date': expiry.strftime('%Y-%m-%d'),
             'dte_remaining_at_stop': max(0, int(dte - stop_days)),
-            'time_stop_auto': 'N', 'dte_used': int(dte), 'time_anchor': anchor}
+            'time_stop_auto': 'N', 'dte_used': int(dte), 'time_anchor': anchor,
+            'time_stop_basis': basis}
 
 def _tier_size_multiplier(tier) -> float:
     """Position sizing by tier. Tier 0=full, 1=75%, 2=50%, 3=25%.
@@ -1279,7 +1324,31 @@ def governed_thesis_window_sessions(on: Optional[date] = None) -> int:
     return int(load_registry().resolve(session).get("outcome.window_sessions").value)
 
 
-def contract_runway_policy(horizon: object) -> Dict[str, Any]:
+def decay_hold_sessions(*, evidence_move_sessions: Any, governed_window: Any) -> Tuple[int, str]:
+    """Hold for decay and range checks (step 4c, ACK 3 Oct 2026), in XNYS sessions.
+
+    The anticipated move time (duration evidence q50) when the trade-side event has level evidence; otherwise the
+    governed window, labelled. Never the DTE-window midpoint, Vanguard's actuarial hold or a constant (C3).
+    """
+    evidence = _repair_alt_float(evidence_move_sessions)
+    if evidence is not None and evidence >= 1:
+        return int(round(evidence)), "DURATION_EVIDENCE_Q50"
+    return int(governed_window), "GOVERNED_WINDOW_NO_EVIDENCE"
+
+
+def theta_drag_pct(*, theta_per_calendar_day: Any, hold_sessions: Any, mark: Any) -> Optional[float]:
+    """Theta decay over the hold as % of premium. Theta is per calendar day; the hold is in sessions (R3)."""
+    theta, hold, premium = (_repair_alt_float(theta_per_calendar_day), _repair_alt_float(hold_sessions),
+                            _repair_alt_float(mark))
+    if theta is None or hold is None or premium is None or premium <= 0:
+        return None
+    days_per_session = float(json.loads((Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json")
+                                        .read_text(encoding="utf-8-sig"))["anticipated_move"]["calendar_days_per_session"])
+    return round(abs(theta) * hold * days_per_session / premium * 100.0, 4)
+
+
+def contract_runway_policy(horizon: object, *, evidence_hold: Optional[int] = None,
+                           evidence_basis: Optional[str] = None) -> Dict[str, Any]:
     """Runway floor for the contract: the planned hold, in calendar days - a floor, never a ceiling.
 
     ACK 18 Sep 2026 decision (a): the contract must outlast the planned hold (the thesis window), not only
@@ -1289,9 +1358,17 @@ def contract_runway_policy(horizon: object) -> Dict[str, Any]:
     text = str(horizon or "").lower().replace("-", "_").replace(" ", "")
     key = ("1_5d" if "1_5" in text else "6_10d" if "6_10" in text else "11_20d" if "11_20" in text
            else text if text in DTE_CONFIG else None)
-    hold = governed_thesis_window_sessions()
-    basis = f"THESIS_WINDOW_D2|HORIZON:{key}" if key is not None else "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
-    requirement = calculate_dte_requirement(hold)
+    if evidence_hold:
+        # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level sizes the runway.
+        hold = int(evidence_hold)
+        basis = str(evidence_basis or "DURATION_EVIDENCE_Q80")
+        requirement = calculate_dte_requirement(hold, evidence_hold=True)
+    else:
+        hold = governed_thesis_window_sessions()
+        basis = f"THESIS_WINDOW_D2|HORIZON:{key}" if key is not None else "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
+        if evidence_basis:
+            basis = f"{basis}|{evidence_basis}"
+        requirement = calculate_dte_requirement(hold)
     return {
         "contract_runway_floor_days": int(requirement["minimum_required_dte"]),
         "contract_min_holdable_dte": int(requirement["minimum_holdable_dte"]),
@@ -3821,6 +3898,33 @@ def _legacy_fetch_sector_regime(ticker: str, _map_only: bool = False) -> Dict:
     return result
 
 
+def contract_greeks_source(contract: Dict) -> str:
+    """Where the published contract Greeks came from (AVS options analytics slice 1e, 30 Sep 2026).
+
+    When Heston calibrates, enrich_contract_with_heston_greeks replaces the provider's Greeks with Heston/BSM Greeks
+    at the at-the-money variance, which ignores the contract's own IV and skew. The source travels with the Greeks.
+    """
+    if not contract or contract.get("delta") is None:
+        return "UNAVAILABLE"
+    return "HESTON_ATM_VARIANCE_MODEL" if contract.get("heston_used") else "PROVIDER_EOD_CHAIN"
+
+
+def evening_contract_analytics(contract: Dict, ctx: Dict) -> Dict:
+    """The standard analytics block for the Evening's selected contract (AVS options analytics slice 2).
+
+    Uses the chain's real bid/ask; when the mark is synthetic (no real quote) bid and ask are treated as missing so
+    breakeven and maximum loss are never priced from a fabricated quote. Hold = the governed thesis window.
+    """
+    synthetic = bool(contract.get("mark_synthetic", False))
+    return contract_analytics(
+        direction=ctx.get("direction"), spot=ctx.get("spot"), strike=contract.get("strike"),
+        bid=None if synthetic else contract.get("bid"), ask=None if synthetic else contract.get("ask"),
+        delta=contract.get("delta"), theta=contract.get("theta"), vega=contract.get("vega"),
+        iv=contract.get("iv"), dte_calendar=contract.get("dte"),
+        hold_sessions=governed_thesis_window_sessions(), iv_source="PROVIDER_EOD_CHAIN",
+    )
+
+
 def enrich_contract_with_heston_greeks(contract: Dict,
                                         heston_params: Optional[Dict],
                                         spot: float,
@@ -4515,11 +4619,14 @@ _select_directional_invalidation = select_directional_invalidation
 
 
 def _governed_structural_target(direction: str, entry: float, discovery_target: Optional[float],
-                                l1_far: Any, stop_dist: Optional[float]) -> Tuple[Optional[float], str]:
+                                l1_far: Any, stop_dist: Optional[float],
+                                *, target_state: Optional[str] = None) -> Tuple[Optional[float], str]:
     """Return (target, state). A target is positive and on the thesis side of entry, or absent.
 
-    Preference: Discovery structural target, L1 far trigger, then entry +/- 3 x invalidation distance.
-    States: DISCOVERY_TARGET | L1_FAR | TARGET_3R | TARGET_3R_NON_POSITIVE | NO_TARGET_SOURCE.
+    A declared thesis target state is authoritative. Rows without one use Discovery, then the
+    L1 far trigger. No target is invented: the former 3R fallback (entry +/- 3 x stop distance)
+    is a labelled disclosure only (``three_r_scenario``; XLU-D01, ACK 2 Oct 2026).
+    States: DISCOVERY_TARGET | L1_FAR | NO_STRUCTURAL_TARGET | NO_TARGET_SOURCE.
     """
     sign = 1 if direction == 'CALL' else -1 if direction == 'PUT' else 0
     if sign == 0 or entry is None or not entry > 0:
@@ -4534,6 +4641,15 @@ def _governed_structural_target(direction: str, entry: float, discovery_target: 
             return None
         return number
 
+    declared = str(target_state or "").strip().upper()
+    if declared == "NONE":
+        return None, "NONE"
+    if declared == "LEVEL":
+        discovery = _usable(discovery_target)
+        return (discovery, "DISCOVERY_TARGET") if discovery is not None else (None, "INVALID_DECLARED_TARGET")
+    if declared:
+        return None, "INVALID_TARGET_STATE"
+
     discovery = _usable(discovery_target)
     if discovery is not None:
         return discovery, 'DISCOVERY_TARGET'
@@ -4542,10 +4658,89 @@ def _governed_structural_target(direction: str, entry: float, discovery_target: 
         return far, 'L1_FAR'
     if stop_dist is None:
         return None, 'NO_TARGET_SOURCE'
-    three_r = entry + sign * 3 * stop_dist
-    if _usable(three_r) is None:
-        return None, 'TARGET_3R_NON_POSITIVE'
-    return three_r, 'TARGET_3R'
+    return None, 'NO_STRUCTURAL_TARGET'
+
+
+def three_r_scenario(direction: str, entry: Optional[float], stop_dist: Optional[float]) -> Tuple[Optional[float], str]:
+    """The 3R scenario level, disclosed with its label and never used as a target (XLU-D01)."""
+    sign = 1 if direction == 'CALL' else -1 if direction == 'PUT' else 0
+    if sign == 0 or entry is None or stop_dist is None:
+        return None, 'SCENARIO_3R_NO_STOP'
+    level = entry + sign * 3 * stop_dist
+    if not math.isfinite(level) or level <= 0:
+        return None, 'SCENARIO_3R_NON_POSITIVE'
+    return level, 'SCENARIO_3R_DISCLOSURE_ONLY'
+
+
+def rr_underlying_reachable(direction: str, entry: Optional[float], stop: Optional[float],
+                            reachable: Optional[float]) -> Optional[float]:
+    """Underlying R:R to the volatility-reachable target (XLU-D13 completion, ACK 2 Oct 2026):
+    signed move from entry to the reachable target over the signed risk from entry to the stop.
+    None when any input is missing or the stop is on the wrong side; never a structural fallback."""
+    sign = 1.0 if direction == 'CALL' else -1.0 if direction == 'PUT' else 0.0
+    values = [entry, stop, reachable]
+    if sign == 0.0 or any(v is None for v in values):
+        return None
+    try:
+        entry_f, stop_f, reach_f = (float(v) for v in values)
+    except (TypeError, ValueError):
+        return None
+    if not all(math.isfinite(v) and v > 0 for v in (entry_f, stop_f, reach_f)):
+        return None
+    risk = sign * (entry_f - stop_f)
+    if risk <= 0:
+        return None
+    return round(sign * (reach_f - entry_f) / risk, 4)
+
+
+def reachable_target_fields(direction: str, spot: Optional[float], structural_target: Optional[float],
+                            sigma_daily_log: Optional[float], *, hold_sessions: int) -> Dict[str, Any]:
+    """Volatility-reachable target over the planned hold (XLU-D01/D13, ACK 2 Oct 2026).
+
+    spot x (1 +/- k x sigma x sqrt(hold/252)) with the governed volatility budget
+    (domain.volatility_budget) and k = contract_economics.sigma_multiple
+    (config/governed_constants_v1.json). Missing volatility is stated, never defaulted.
+    """
+    from domain.volatility_budget import calculate_volatility_budget
+    out = {'target_reachable': None, 'target_reachable_state': 'NOT_EVALUATED_DATA_MISSING',
+           'target_reach_ratio': None, 'target_reachable_sigma_multiple': None,
+           'target_reachable_hold_sessions': hold_sessions, 'target_reachable_vol_annual': None}
+    if direction not in ('CALL', 'PUT'):
+        out['target_reachable_state'] = 'NOT_APPLICABLE_NON_DIRECTIONAL'
+        return out
+    if spot is None or not spot > 0:
+        return out
+    try:
+        sigma = float(sigma_daily_log)
+    except (TypeError, ValueError):
+        return out
+    if not math.isfinite(sigma) or sigma <= 0:
+        return out
+    constants = json.loads((Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json")
+                           .read_text(encoding="utf-8-sig"))
+    vol_cfg = constants.get("volatility_budget") or {}
+    econ_cfg = constants.get("contract_economics") or {}
+    annual = sigma * math.sqrt(float(vol_cfg.get("sessions_per_year", 252)))
+    budget = calculate_volatility_budget(
+        annual, max(1, min(20, int(hold_sessions))),
+        bias_multiplier=float(vol_cfg.get("bias_multiplier", 1.0)),
+        validation_state=str(vol_cfg.get("validation_state", "UNVALIDATED")),
+        multiplier_approved=bool(vol_cfg.get("bias_multiplier_approved", False)),
+        validation_report_id=vol_cfg.get("validation_report_id"),
+        held_out_validation_passed=bool(vol_cfg.get("held_out_validation_passed", False)),
+    )
+    move = budget.expected_move_fraction
+    if move is None:
+        out['target_reachable_state'] = budget.quality_state
+        return out
+    multiple = float(econ_cfg["sigma_multiple"])
+    sign = 1.0 if direction == 'CALL' else -1.0
+    out.update({'target_reachable': round(float(spot) * (1.0 + sign * multiple * move), 4),
+                'target_reachable_state': f'REACHABLE_{budget.validation_state}',
+                'target_reachable_sigma_multiple': multiple, 'target_reachable_vol_annual': round(annual, 6)})
+    if structural_target is not None and structural_target > 0:
+        out['target_reach_ratio'] = round(abs(float(structural_target) - float(spot)) / float(spot) / move, 3)
+    return out
 
 
 def parse_structural_context(signal_row: pd.Series) -> Dict:
@@ -4584,7 +4779,8 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     # the thesis is not yet evaluable.
     stop        = float(_raw_stop) if _stop_authoritative else None
     composite   = float(_f('composite_score', 50) or 50)
-    win_prob    = float(_f('win_probability', 50) or 50)
+    # B1 (ACK 3 Oct 2026): a rescaled composite, not a probability; missing is None, never 50.
+    win_prob    = _repair_alt_float(_f('win_probability'))
     crabel      = str(_f('crabel_pattern', '') or '')
     vwap_bias   = str(_f('vwap_bias', '') or '')
     vol_ratio   = float(_f('volume_ratio', 1.0) or 1.0)
@@ -4615,14 +4811,42 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         or _f('raw_prob_down_20d', 0)
         or 0
     )
-    l2_edge_direction = str(
+    thesis_side = str(_f('thesis__side', '') or '').upper().strip()
+    if thesis_side and thesis_side not in {'BULL', 'BEAR', 'UNASSIGNED'}:
+        raise ValueError(f'Invalid governed thesis side: {thesis_side}')
+    if thesis_side:
+        expected_legacy_side = {
+            'BULL': 'CALL', 'BEAR': 'PUT',
+            'UNASSIGNED': (
+                'STRANGLE' if str(_f('thesis__unassigned_reason', '') or '').upper().strip()
+                == 'TRANSITION_MIXED_TREND' else 'UNRESOLVED'
+            ),
+        }[thesis_side]
+        for legacy_field in ('direction', 'discovery_direction_preliminary'):
+            actual = str(_f(legacy_field, '') or '').upper().strip()
+            if actual != expected_legacy_side:
+                raise ValueError(
+                    f'thesis/legacy side mismatch: {legacy_field}={actual!r}, '
+                    f'thesis__side={thesis_side!r}'
+                )
+    # New thesis rows carry an assigned side, not a second Vanguard direction
+    # vote. Keep the legacy read only for historical rows without thesis__side.
+    l2_edge_direction = 'NONE' if thesis_side else str(
         _f('vanguard_edge_direction', '')
         or _f('edge_direction', '')
         or _f('layer2__edge_direction', '')
         or _f('layer2__probability_direction', '')
         or ''
     ).upper().strip()
-    if l2_edge_direction not in {"CALL", "PUT"}:
+    # DIR-002 DWN-02: a current Vanguard row has retired its side vote; never
+    # fabricate one from up/down probabilities. Only historical replay rows
+    # (no thesis side, no retirement status) keep the legacy fallback.
+    vanguard_side_retired = str(
+        _f('edge_direction_status', '') or _f('layer2__edge_direction_status', '') or ''
+    ).upper().strip() == 'RETIRED_USE_SIDE_EVIDENCE'
+    if vanguard_side_retired:
+        l2_edge_direction = 'NONE'
+    if not thesis_side and not vanguard_side_retired and l2_edge_direction not in {"CALL", "PUT"}:
         raw_prob_up = float(_f('raw_prob_up_10d', 0) or _f('raw_prob_up_20d', 0) or l2_prob_up or 0)
         raw_prob_down = l2_prob_down
         if raw_prob_up > raw_prob_down and raw_prob_up > 0:
@@ -4652,12 +4876,15 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     # Stage 1 has a closed, fail-closed structural table.  The previous WAIT,
     # transition and asymmetric L1/L2 repairs were hidden writers of direction;
     # they are replaced by the audited independent-evidence protocol below.
-    discovery_preliminary = str(
-        _f('discovery_direction_preliminary', '')
-        or _f('direction', '')
-        or _f('fusion_direction', '')
-        or ''
-    ).upper().strip()
+    discovery_preliminary = (
+        expected_legacy_side
+        if thesis_side else str(
+            _f('discovery_direction_preliminary', '')
+            or _f('direction', '')
+            or _f('fusion_direction', '')
+            or ''
+        ).upper().strip()
+    )
     discovery_authority = str(_f('direction_authority', '') or '').upper().strip()
     structural_candidate, structural_basis = structural_direction(intent, trend)
     if discovery_authority == 'DISCOVERY_GOVERNED':
@@ -4734,14 +4961,28 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     _horizon_dte_cfg = governed_dte_config(_horizon_key)
     if _horizon_dte_cfg:
         dte_window = governed_dte_window(_horizon_key)
+    # Step 4b (ACK 3 Oct 2026, option B): Discovery's trade-side event evidence (merged into this row) sizes the
+    # runway for daily events; otherwise the governed window, labelled. Display of the move time for any timeframe.
+    from domain.anticipated_move import evidence_runway
+    _ev_runway = evidence_runway(
+        timeframe=signal_row.get('thesis_event_timeframe'),
+        alignment=signal_row.get('thesis_structure_alignment'),
+        status=signal_row.get('thesis_duration_status'),
+        q50_bars=_f('thesis_duration_q50_bars'), q80_bars=_f('thesis_duration_q80_bars'),
+        n=signal_row.get('thesis_duration_n'),
+    )
     _contract_runway = contract_runway_policy(
         signal_row.get('horizon_bucket')
         or signal_row.get('expected_move_window')
-        or signal_row.get('macro_preferred_horizon')
+        or signal_row.get('macro_preferred_horizon'),
+        evidence_hold=_ev_runway['evidence_runway_sessions'],
+        evidence_basis=_ev_runway['evidence_runway_basis'],
     )
 
     # Expected hold days — use L2 if available, else DTE target
-    hold_days = l2_hold_days if l2_hold_days > 0 else dte_window[1]
+    # Step 4c (ACK 3 Oct 2026): the evidence move time (sessions), else the governed window - labelled.
+    hold_days, hold_days_basis = decay_hold_sessions(
+        evidence_move_sessions=_ev_runway['evidence_move_sessions'], governed_window=governed_thesis_window_sessions())
 
     # ── Hold duration enrichment ───────────────────────────────────────────────
     # Wyckoff phase sets the structural hold window. Theta cap prevents holding
@@ -4807,7 +5048,15 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         discovery_target = None
     structural_target, structural_target_state = _governed_structural_target(
         direction, entry, discovery_target, l1_far, stop_dist,
+        target_state=_f('thesis__target_state') or _f('target_state'),
     )
+    target_3r_scenario, target_3r_scenario_state = three_r_scenario(direction, entry, stop_dist)
+    try:
+        _reach_fields = reachable_target_fields(direction, spot, structural_target, _f('sigma_daily_log_20'),
+                                                hold_sessions=governed_thesis_window_sessions())
+    except Exception as _reach_error:   # never takes a ticker down; the absence is stated
+        _reach_fields = {'target_reachable': None,
+                         'target_reachable_state': f'NOT_EVALUATED_ERROR:{type(_reach_error).__name__}'}
 
     return {
         '_signal_row'        : signal_row,   # FIX (2026-03-07): raw row stash for asof_date in _stand_down
@@ -4837,6 +5086,9 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'target_3r'          : target_3r,
         'structural_target'  : structural_target,
         'structural_target_state': structural_target_state,
+        'target_3r_scenario'     : target_3r_scenario,
+        'target_3r_scenario_state': target_3r_scenario_state,
+        **_reach_fields,
         'composite'          : composite,
         'win_prob'           : win_prob,
         'crabel'             : crabel,
@@ -4848,7 +5100,9 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'dte_window'         : dte_window,
         'dte_config'         : _horizon_dte_cfg,
         **_contract_runway,
+        **_ev_runway,
         'hold_days'          : hold_days,
+        'hold_days_basis'    : hold_days_basis,
         'hold_label'         : hold_label,
         'hold_urgency'       : hold_urgency,
         'theta_constrained'  : _theta_constrained,
@@ -5136,7 +5390,7 @@ def thesis_geometry_review(ctx: Dict[str, Any]) -> Dict[str, str]:
     if _STRUCTURE_SIDE.get(mode) not in (None, direction):
         return {"thesis_geometry_review_state": "DIRECTION_CONTRADICTS_STRUCTURE",
                 "thesis_geometry_review_reason": f"{facts}: structural invalidation lies on the wrong side"}
-    if stop is not None and target is None and ctx.get('structural_target_state') == 'TARGET_3R_NON_POSITIVE':
+    if stop is not None and target is None and ctx.get('target_3r_scenario_state') == 'SCENARIO_3R_NON_POSITIVE':
         distance = abs(float(stop) - float(entry)) / float(entry) if entry else None
         shown = f"{distance:.1%}" if distance is not None else "UNKNOWN"
         return {"thesis_geometry_review_state": "STOP_TOO_DISTANT_NO_TARGET",
@@ -5328,7 +5582,7 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # intrinsic value at target). For PUTs, only keep strikes ABOVE
         # structural_target. If no contracts pass this filter, fall back to the
         # best available strike closest to the structural target on the correct side.
-        structural_target = ctx.get('structural_target')
+        structural_target = ctx.get('structural_target') or ctx.get('target_reachable')
         if structural_target and right == 'C' and not leg_df.empty:
             reachable = leg_df[leg_df['strike'] <= structural_target].copy()
             if not reachable.empty:
@@ -5385,7 +5639,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                             - max(0.0, dte_val - floor_days) * float(CONTRACT_SELECTION['runway_excess_score_per_day']))
 
             # 3. Theta efficiency: theta/mark ratio — lower is better (20%)
-            theta_drain_pct = abs(theta)*ctx['hold_days'] / mark if mark > 0 else 1.0
+            _drag = theta_drag_pct(theta_per_calendar_day=theta, hold_sessions=ctx['hold_days'], mark=mark)
+            theta_drain_pct = _drag / 100.0 if _drag is not None else 1.0
             theta_score = max(0, 100 - theta_drain_pct*200)
 
             # 4. Vega quality: want positive vega exposure (15%)
@@ -5435,6 +5690,11 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'contract_score'  : round(composite, 2),
                 'contract_runway_floor_days': runway['contract_runway_floor_days'],
                 'contract_runway_basis': runway['contract_runway_basis'],
+                'contract_runway_hold_sessions': runway.get('contract_runway_hold_sessions'),
+                # Step 4b: the evidence behind the runway, carried for the hold patch and display.
+                'evidence_runway_sessions': ctx.get('evidence_runway_sessions'),
+                'evidence_move_sessions': ctx.get('evidence_move_sessions'),
+                'evidence_runway_basis': ctx.get('evidence_runway_basis'),
                 'contract_runway_state': 'RUNWAY_COVERED' if dte_val >= floor_days else 'RUNWAY_SHORT',
                 'spread_above_limit': spread_above_limit,
                 'selection_reason': (
@@ -5908,6 +6168,10 @@ def _options_liquidity_lifecycle_fields(
         # The selector's runway and spread facts, carried to the output row for display (18 Sep 2026).
         "contract_runway_floor_days": contract.get("contract_runway_floor_days"),
         "contract_runway_basis": contract.get("contract_runway_basis"),
+        "contract_runway_hold_sessions": contract.get("contract_runway_hold_sessions"),
+        "evidence_runway_sessions": contract.get("evidence_runway_sessions"),
+        "evidence_move_sessions": contract.get("evidence_move_sessions"),
+        "evidence_runway_basis": contract.get("evidence_runway_basis"),
         "contract_runway_state": contract.get("contract_runway_state"),
         "spread_above_limit": contract.get("spread_above_limit"),
         **{field: contract.get(field) for field in CONTRACT_VALUE_FIELDS},
@@ -5944,11 +6208,14 @@ def _options_liquidity_lifecycle_fields(
         # Lifecycle and contract selection must consume the same routed
         # horizon.  layer2__recommended_hold_days is an actuarial outcome
         # window, not the governed planned holding period for this trade.
-        "remaining_hold_sessions": _repair_alt_float(
-            governed_handoff.get("planned_hold_sessions")
-        ),
+        # Step 4b (ACK 3 Oct 2026): a daily event's evidence runway is the hold selection used; the lifecycle
+        # must consume the same one (hold_is_evidence below).
+        "remaining_hold_sessions": (_repair_alt_float(ctx.get("evidence_runway_sessions"))
+                                    or _repair_alt_float(governed_handoff.get("planned_hold_sessions"))),
         "forecast_vol_annual": forecast_vol,
-        "structural_target": _repair_alt_float(ctx.get("structural_target")),
+        # XLU-D01: no invented target; the runway uses the reachable target when there is no structural one.
+        "structural_target": (_repair_alt_float(ctx.get("structural_target"))
+                              or _repair_alt_float(ctx.get("target_reachable"))),
         # The EV3 handoff owns direction-correct invalidation geometry.  Using
         # ctx.stop here caused PUT rows to be assessed against the opposite
         # side of their published invalidation.
@@ -5984,11 +6251,15 @@ def _options_liquidity_lifecycle_fields(
                 ask=_repair_alt_float(contract.get("ask")),
                 dte=float(required["dte"]),
                 remaining_hold_sessions=float(required["remaining_hold_sessions"]),
+                hold_is_evidence=_repair_alt_float(ctx.get("evidence_runway_sessions")) is not None,
                 forecast_vol_annual=float(required["forecast_vol_annual"]),
                 thesis_spot=float(required["spot"]),
                 current_spot=float(required["spot"]),
                 structural_target=float(required["structural_target"]),
                 invalidation_spot=float(required["invalidation_spot"]),
+                confirmation_min_expected_move_fraction=float(
+                    json.loads((Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json")
+                               .read_text(encoding="utf-8-sig"))["morning_runway"]["confirmation_min_expected_move_fraction"]),
                 quote_age_seconds=quote_age_seconds,
                 listed_market=True,
             )
@@ -6693,15 +6964,24 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     spot   = ctx['spot']
     entry  = ctx['entry']
     target = _repair_alt_float(ctx.get('structural_target'))
+    reachable_target = _repair_alt_float(ctx.get('target_reachable'))
     hold   = ctx['hold_days']
     direction = str(ctx.get('direction') or '').upper()
 
     if direction not in GOVERNED_DIRECTED_SIDES:
         return _economics_not_evaluated(
             LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value, iv_ctx)
-    if target is None or target <= 0 or not math.isfinite(target):
+    if target is not None and (target <= 0 or not math.isfinite(target)):
+        target = None
+    if reachable_target is not None and (reachable_target <= 0 or not math.isfinite(reachable_target)):
+        reachable_target = None
+    if target is None and reachable_target is None:
         return _economics_not_evaluated(
             DataExceptionReason.STRUCTURAL_TARGET_UNRESOLVED.value, iv_ctx)
+    # XLU-D01/D13: the structural R:R is disclosure; the reachable R:R is the scored one.
+    structural_available = target is not None
+    if target is None:
+        target = reachable_target
 
     # Fix 1b (24 Sep 2026, D1): an unpriced mark is declined, never floored to $0.01 and
     # divided by; a contract with no quote at all is declined too. Both are stated.
@@ -6765,22 +7045,33 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     # max_convex_r_multiple = theoretical maximum R at expiry given premium paid and delta
     #   = intrinsic value at full structural target / mark (ceiling convexity case)
     rr_premium_expected = rr_options   # premium appreciation R:R
+
+    def _rr_at(level: Optional[float]) -> Optional[float]:
+        if level is None:
+            return None
+        value = max(level - strike, 0) if direction == 'CALL' else max(strike - level, 0)
+        return round(max(value - mark, -mark) / mark, 3)
+    rr_options_reachable = _rr_at(reachable_target)
     if mark > 0 and option_value_at_target > 0:
         max_convex_r_multiple = round(option_value_at_target / mark, 3)
     else:
         max_convex_r_multiple = 0.0
 
-    # EV using structural win probability
-    win_prob = ctx['win_prob'] / 100.0
-    ev_structural = win_prob * option_gain - (1-win_prob) * mark
-    ev_ratio      = ev_structural / mark if mark > 0 else 0
+    # B1 (ACK 3 Oct 2026): no EV from Discovery's win_probability - it is 40 + 0.25 x composite, not a
+    # probability. The options layer's EV fields are not computed (None, stated by economics_ev_state).
+    ev_structural = None
+    ev_ratio      = None
 
     # Theta drag over hold period
-    theta_total  = abs(theta) * hold
-    theta_pct    = (theta_total / mark) * 100 if mark > 0 else 100
+    # Step 4c: theta per calendar day charged over the hold sessions in calendar days (R3).
+    _drag = theta_drag_pct(theta_per_calendar_day=theta, hold_sessions=hold, mark=mark)
+    theta_pct    = _drag if _drag is not None else 100
+    theta_total  = theta_pct / 100.0 * mark if mark > 0 else 0.0
 
-    # Vega risk: what if IV drops 10%?
-    iv_crush_loss = abs(vega) * 0.10 * 100   # 10 vol pts × vega × 100
+    # Vega risk: premium lost if IV drops 10 points. Provider vega is per one IV point per share, so the loss per
+    # contract is vega x 10 x 100 against a premium of mark x 100 (AVS options analytics slice 1a, 30 Sep 2026:
+    # the previous vega x 0.10 x 100 was a per-share figure over a per-contract premium, 100x too small).
+    iv_crush_loss = abs(vega) * 10.0 * 100.0
     vega_risk_pct = (iv_crush_loss / premium_total) * 100 if premium_total > 0 else 0
 
     # IV alignment bonus/penalty
@@ -6791,26 +7082,30 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
         if ivp <= IVP_CHEAP_MAX:   iv_factor = 1.15   # cheap vol → EV boost
         elif ivp > IVP_EXPENSIVE:  iv_factor = 0.75   # expensive → EV penalty
 
-    ev_adjusted = ev_ratio * iv_factor
+    ev_adjusted = None
 
     return {
         'economics_state'        : 'EVALUATED',
         'economics_reason'       : 'OK',
+        'economics_ev_state'     : 'NOT_COMPUTED_NO_MEASURED_PROBABILITY',
         'premium_total'        : round(premium_total, 2),
         'breakeven_price'      : round(breakeven_price, 2),
         'breakeven_pct'        : round(breakeven_pct, 2),
         'target_gain_underlying': round(target_gain_underlying, 2),
         'option_value_at_target': round(option_value_at_target, 2),
         'option_gain'          : round(option_gain, 2),
-        'rr_options'           : round(rr_options, 3),
-        'rr_options_state'     : rr_options_state,
+        'rr_options'           : round(rr_options, 3) if structural_available else None,
+        'rr_options_state'     : rr_options_state if structural_available else 'NO_STRUCTURAL_TARGET',
+        'rr_options_reachable' : rr_options_reachable,
+        'rr_basis'             : ('STRUCTURAL_DISCLOSURE|REACHABLE_SCORED' if structural_available
+                                  else 'REACHABLE_SCORED_NO_STRUCTURAL_TARGET'),
         'rr_options_tradeability': tradeability,
         'rr_options_spread_fraction': spread_fraction,
         'rr_premium_expected'  : round(rr_premium_expected, 3),
         'max_convex_r_multiple': round(max_convex_r_multiple, 3),
-        'ev_structural'        : round(ev_structural, 4),
-        'ev_ratio'             : round(ev_ratio, 4),
-        'ev_adjusted'          : round(ev_adjusted, 4),
+        'ev_structural'        : ev_structural,
+        'ev_ratio'             : ev_ratio,
+        'ev_adjusted'          : ev_adjusted,
         'theta_total_cost'     : round(theta_total, 4),
         'theta_drag_pct'       : round(theta_pct, 2),
         'vega_risk_pct'        : round(vega_risk_pct, 2),
@@ -6822,6 +7117,30 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECTION 9 — OPTIONS INTELLIGENCE SCORE (OIS)
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def actuarial_sample_quality(n_obs: Any, match_method: Any) -> Tuple[int, str, bool]:
+    """B6 (ACK 3 Oct 2026): OIS points and text for the actuarial sample; says what was measured.
+
+    Missing / zero is NOT_ESTIMABLE and scores like the thinnest band; only an EXACT match with N >= 200 is called
+    robust; a fallback (RELAXED / ANALOGUE / unknown) N is the pooled fallback sample, never this exact state.
+    Returns (points, text, is_positive_factor).
+    """
+    n = _repair_alt_float(n_obs)
+    method = str(match_method or "").strip().upper() or "METHOD_UNKNOWN"
+    if n is None or n <= 0:
+        return -15, "No actuarial sample - NOT_ESTIMABLE; stats unavailable (-15)", False
+    n = int(n)
+    exact = method == "EXACT"
+    tag = "exact match" if exact else f"{method} fallback match"
+    if n < 50:
+        return -15, f"Actuarial N={n} ({tag}) - extremely thin sample; stats unreliable (-15)", False
+    if n < 100:
+        return -10, f"Actuarial N={n} ({tag}) - thin sample; treat edge quality with caution (-10)", False
+    if n < 200 or not exact:
+        why = "moderate sample; edge less certain" if exact or n < 200 else               "N is the pooled fallback sample, not this exact state; edge less certain"
+        return -5, f"Actuarial N={n} ({tag}) - {why} (-5)", False
+    return 0, f"Actuarial N={n} (exact match) - robust sample", True
+
 
 def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
                 gex_flip: Optional[float], walls: Dict,
@@ -6854,16 +7173,10 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
 
     # ── [0] ACTUARIAL SAMPLE QUALITY (applied before all scoring) ─────────────
     # Penalise thin actuarial buckets — STRONG label on N<200 is unreliable
-    l2_n_obs = ctx.get('l2_n_obs', 0) or 0
-    if l2_n_obs > 0:
-        if l2_n_obs < 50:
-            score -= 15; neg.append(f"Actuarial N={l2_n_obs} — extremely thin sample; stats unreliable (-15)")
-        elif l2_n_obs < 100:
-            score -= 10; neg.append(f"Actuarial N={l2_n_obs} — thin sample; treat edge quality with caution (-10)")
-        elif l2_n_obs < 200:
-            score -= 5; neg.append(f"Actuarial N={l2_n_obs} — moderate sample; edge less certain (-5)")
-        else:
-            pos.append(f"Actuarial N={l2_n_obs} — robust sample size")
+    # B6 (ACK 3 Oct 2026): the sample says what it measured (match method); missing is never better than thin.
+    _sq_pts, _sq_text, _sq_positive = actuarial_sample_quality(ctx.get('l2_n_obs'), ctx.get('actuarial_match_type'))
+    score += _sq_pts
+    (pos if _sq_positive else neg).append(_sq_text)
 
     # ── [A] VOL ENVIRONMENT (22 pts) ──────────────────────────────────────────
     ivp     = iv_ctx.get('iv_percentile')
@@ -7012,7 +7325,10 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
     # in the output for ranking, review, and later model calibration, but it can
     # neither promote nor demote the options verdict.
     score += 2
-    if ev_adj_final < 0:
+    if _ev_ratio is None:
+        # B1 (ACK 3 Oct 2026): no measured probability, so no EV factor text (never a misleading "EV=0.00").
+        neg.append("EV not computed: no measured win probability (advisory)")
+    elif ev_adj_final < 0:
         neg.append(f"EV/premium={ev_adj_final:.2f} negative — advisory only")
     else:
         pos.append(f"EV/premium={ev_adj_final:.2f} — advisory only")
@@ -7712,12 +8028,8 @@ def build_options_research_contract(
     else:
         breakeven_info_flag = ""
 
+    # R:R retired from the route (ACK 3 Oct 2026): recorded, never a review flag or missing-data reason.
     estimated_r = _oi_float(econ.get("rr_options"))
-    if estimated_r is None:
-        missing_data.append("estimated_R")
-        soft_review_flags.append("ESTIMATED_R_MISSING")
-    elif estimated_r < OPTIONS_MIN_R_MULTIPLE:
-        soft_review_flags.append("ESTIMATED_R_LT_1")
 
     theta_decay_expected = _oi_float(econ.get("theta_drag_pct"))
     theta_info_flag = ""
@@ -7735,14 +8047,15 @@ def build_options_research_contract(
     direction_fit_score = 100.0 if ctx.get("direction") in {"CALL", "PUT"} and str(ctx.get("preferred_strategy", "")).endswith(str(ctx.get("direction"))) else 70.0
     liquidity_score = 0.0 if spread_pct is None else (100.0 if spread_pct <= OPTIONS_SPREAD_PASS_PCT else _score_linear(spread_pct, OPTIONS_SPREAD_HARD_PCT, OPTIONS_SPREAD_PASS_PCT))
     breakeven_score = _score_linear(breakeven_feasibility, 0.75, 1.5)
-    payoff_score = _score_linear(estimated_r, 1.0, 5.0)
     ivp = _oi_float(iv_ctx.get("iv_percentile"))
     if ivp is None:
         ivp = (_oi_float(iv_ctx.get("iv_rank")) or 50.0) / 100.0
     iv_score = round(float(np.clip(100.0 - max(0.0, ivp - 0.30) * 120.0, 0.0, 100.0)), 2)
     theta_score = 0.0 if theta_decay_expected is None else round(float(np.clip(100.0 - theta_decay_expected * 2.0, 0.0, 100.0)), 2)
     runway_score = 50.0 if runway_to_wall_pct is None else _score_linear(runway_to_wall_pct, 1.0, 5.0)
-    path_score = _score_linear(ctx.get("win_prob"), 45.0, 70.0)
+    # B1 / R:R (ACK 3 Oct 2026): neither the composite-derived win probability nor stop-based R:R scores the route.
+    path_score = None
+    payoff_score = None
     trigger_score_map = {
         "TRIGGER_CONFIRMED": 100.0,
         "TRIGGER_ARMED": 75.0,
@@ -7752,15 +8065,14 @@ def build_options_research_contract(
     }
     trigger_score = trigger_score_map.get(trigger_state, 0.0)
 
+    # Remaining components renormalised (weights sum 0.80) so the GO/ARMED/PROBE thresholds keep their scale.
     options_research_score = round(
-        0.20 * direction_fit_score +
-        0.15 * liquidity_score +
-        0.15 * breakeven_score +
-        0.15 * payoff_score +
-        0.10 * iv_score +
-        0.10 * theta_score +
-        0.10 * runway_score +
-        0.05 * path_score,
+        (0.20 * direction_fit_score +
+         0.15 * liquidity_score +
+         0.15 * breakeven_score +
+         0.10 * iv_score +
+         0.10 * theta_score +
+         0.10 * runway_score) / 0.80,
         2,
     )
 
@@ -8590,6 +8902,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'contract_charm'          : contract.get('charm'),
         'contract_heston_used'    : contract.get('heston_used', False),
         'contract_heston_price'   : contract.get('heston_price'),
+        'contract_greeks_source'  : contract_greeks_source(contract),
+        **evening_contract_analytics(contract, ctx),
         'contract_iv'             : contract.get('iv'),
         'contract_oi'             : contract.get('oi'),
         'contract_volume'         : contract.get('volume'),
@@ -8771,6 +9085,19 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'breakeven_pct'           : econ.get('breakeven_pct'),
         'rr_options'              : econ.get('rr_options'),
         'rr_options_state'        : econ.get('rr_options_state'),
+        'rr_options_reachable'    : econ.get('rr_options_reachable'),
+        'rr_basis'                : econ.get('rr_basis'),
+        'target_reachable'        : ctx.get('target_reachable'),
+        'rr_underlying_reachable' : rr_underlying_reachable(ctx.get('direction'), ctx.get('entry'),
+                                                            ctx.get('stop'), ctx.get('target_reachable')),
+        'target_reachable_state'  : ctx.get('target_reachable_state'),
+        'target_reach_ratio'      : ctx.get('target_reach_ratio'),
+        # The reach's inputs, published so the anticipated move can apply its volatility cap (D-A, ACK 3 Oct 2026).
+        'target_reachable_vol_annual'    : ctx.get('target_reachable_vol_annual'),
+        'target_reachable_sigma_multiple': ctx.get('target_reachable_sigma_multiple'),
+        'target_reachable_hold_sessions' : ctx.get('target_reachable_hold_sessions'),
+        'target_3r_scenario'      : ctx.get('target_3r_scenario'),
+        'target_3r_scenario_state': ctx.get('target_3r_scenario_state'),
         'rr_options_tradeability' : econ.get('rr_options_tradeability'),
         'rr_options_spread_fraction': econ.get('rr_options_spread_fraction'),
         'rr_premium_expected'     : econ.get('rr_premium_expected'),
@@ -8790,7 +9117,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'regime_sensitivity'      : _calc_regime_sensitivity_oi(dict(signal_row), []),
         'convexity_campaign'      : compute_convexity_score_oi(dict(signal_row), {})[0],
         'convexity_score'         : compute_convexity_score_oi(dict(signal_row), {})[2],
-        **{f'ts_{k}': v for k,v in compute_time_stop_oi(dict(signal_row)).items()},
+        **{f'ts_{k}': v for k,v in compute_time_stop_oi(
+            dict(signal_row), contract=contract, evidence_move_sessions=ctx.get('evidence_move_sessions'),
+            evidence_runway_sessions=ctx.get('evidence_runway_sessions'),
+            anticipated_level=ctx.get('anticipated_level')).items()},
         'hold_urgency'            : ctx.get('hold_urgency'),
         'theta_constrained'       : ctx.get('theta_constrained'),
 
@@ -8976,10 +9306,18 @@ def build_convexity_strike_map(
     _too_late_reason = ""
     if structural_target and spot and spot > 0:
         _sr = signal_row if signal_row is not None else {}
-        _stop = _oi_float(
-            _sr.get("stop_loss") or _sr.get("structural_support") or _sr.get("invalidation_price")
-            or walls.get("put_wall") if direction == "CALL" else walls.get("call_wall")
-        )
+        # AVS options analytics slice 1b (30 Sep 2026): the side choice binds only the wall fallback. Operator
+        # precedence previously made every PUT use the call wall and ignore its recorded stop and invalidation.
+        # Structural support sits on the wrong side of a put, so puts skip it.
+        if direction == "CALL":
+            _stop = _oi_float(
+                _sr.get("stop_loss") or _sr.get("structural_support") or _sr.get("invalidation_price")
+                or walls.get("put_wall")
+            )
+        else:
+            _stop = _oi_float(
+                _sr.get("stop_loss") or _sr.get("invalidation_price") or walls.get("call_wall")
+            )
         if _stop and structural_target != _stop:
             if direction == "CALL" and structural_target > _stop:
                 _completed = (spot - _stop) / (structural_target - _stop)
@@ -9749,6 +10087,31 @@ def _persist_options_lifecycle_result(result: Dict[str, Any], run_id: str) -> No
         result["liquidity_persistence_status"] = "PERSISTED"
 
 
+def _run_candidate_expression_lane(vanguard_csv: str, eligible: pd.DataFrame, results: List[Dict],
+                                   run_id: str, output_dir: str) -> Optional[str]:
+    """BEH-001 phase 2B (design AVS_SD_BEH_001_PHASE2_CANDIDATE_HANDOFF_DESIGN_20261001 §3 2B)."""
+    from scripts.options_candidate_lane import evaluate_candidate_expressions
+    run_root = Path(vanguard_csv).resolve().parent.parent
+    packet_path = run_root / "forecast" / "behavioural_candidate_packet_v1" / "packet.json"
+    if not packet_path.is_file():
+        print(f"[CANDIDATE LANE] no behavioural candidate packet at {packet_path}")
+        return None
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    policy = json.loads((Path(__file__).resolve().parents[1] / "config" / "beh001_handoff_v1.json")
+                        .read_text(encoding="utf-8"))
+    rows_by_ticker = {str(r["ticker"]).upper(): r for _, r in eligible.iterrows()}
+    results_by_ticker = {str(r.get("ticker") or "").upper(): r for r in results}
+    lane = evaluate_candidate_expressions(
+        packet.get("records", []), rows_by_ticker, results_by_ticker,
+        fetch_chain=fetch_chain, parse_context=parse_structural_context, select_contract=select_best_contract,
+        max_candidates=int(policy["expression"]["max_candidates_per_run"]))
+    path = os.path.join(output_dir, f"options_candidate_expressions_{run_id}.csv")
+    pd.DataFrame(lane).to_csv(path, index=False)
+    found = sum(1 for r in lane if r.get("Expression_Status") == "CONTRACT_FOUND")
+    print(f"[SAVE] {path} (candidates={len(lane)}, contract_found={found})")
+    return path
+
+
 def run_options_layer(
     discovery_csv: str,
     vanguard_csv: str,
@@ -10175,6 +10538,13 @@ def run_options_layer(
     latest_path = os.path.join(output_dir, 'options_intelligence_latest.csv')
     out_df.to_csv(latest_path, index=False)
     print(f"[SAVE] {latest_path}")
+
+    # BEH-001 phase 2B: expression search per behavioural candidate. A separate pass
+    # after the per-ticker outputs; measurement only and never fails the Options run.
+    try:
+        _run_candidate_expression_lane(vanguard_csv, eligible, results, run_id, output_dir)
+    except Exception as _lane_error:
+        print(f"[CANDIDATE LANE] not produced: {type(_lane_error).__name__}: {_lane_error}")
     direction_record_columns = [
         column for column in (
             'ticker', 'run_id', 'dir_calc_version', 'direction_policy_version',
@@ -10306,7 +10676,8 @@ def run_options_layer(
         'maturation_score_1d','maturation_score_2d','maturation_score_3d',
         'maturation_score_is_probability','maturation_execution_authority',
         'previous_contract_symbol','contract_changed','contract_selection_reason',
-        'contract_runway_floor_days','contract_runway_basis','contract_runway_state','spread_above_limit',
+        'contract_runway_floor_days','contract_runway_basis','contract_runway_state','contract_runway_hold_sessions',
+        'evidence_runway_sessions','evidence_move_sessions','evidence_runway_basis','spread_above_limit',
         *CONTRACT_VALUE_FIELDS,
         *THESIS_GEOMETRY_REVIEW_FIELDS,
         'quote_as_of','quote_freshness','liquidity_persistence_status',

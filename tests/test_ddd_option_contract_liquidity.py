@@ -111,6 +111,7 @@ def test_composite_domain_evaluator_remains_symmetric(side: str) -> None:
         structural_target=110.0 if call else 90.0,
         invalidation_spot=95.0 if call else 105.0,
         quote_age_seconds=1.0,
+        confirmation_min_expected_move_fraction=0.5,   # XLU-D11: governed materiality threshold
     ))
     assert result["liquidity_state"] == "EXECUTABLE_NOW"
     assert result["maturation_execution_authority"] is False

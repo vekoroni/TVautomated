@@ -29,9 +29,8 @@ r"""
 ║    options_score    (8%)  wbs              (5%)  garch_tailwind    (5%)    ║
 ║                                                                             ║
 ║  START:                                                                     ║
-║    cd C:\Users\ACKVerissimo\intelligence-lab                                ║
-║    .\venv\Scripts\Activate.ps1                                              ║
-║    python intelligence_lab.py                                               ║
+║    cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence                          ║
+║    .\Start-IntelligenceLab.ps1                                               ║
 ║  OPEN:  http://localhost:5002                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -43,6 +42,26 @@ import os, csv, json, glob, sys, io, math, hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from datetime import datetime, timezone
+
+
+def _dir002_lab_direction(sig):
+    """Return new-policy thesis side; None delegates only historical replay.
+
+    A contract, momentum factor, trend or Vanguard side must not manufacture
+    direction for an unassigned or incomplete canonical thesis.
+    """
+    if str(sig.get("dir_calc_version") or "").strip() != "dir_v1.3.0":
+        return None
+    thesis = str(sig.get("thesis__side") or "").strip().upper()
+    governed = str(sig.get("governed_direction") or "").strip().upper()
+    thesis_side = {"BULL": "CALL", "BEAR": "PUT", "UNASSIGNED": ""}.get(thesis)
+    if thesis and thesis_side is None:
+        return ""
+    if thesis == "UNASSIGNED":
+        return ""
+    if thesis_side and governed in {"CALL", "PUT"} and thesis_side != governed:
+        return ""
+    return thesis_side or (governed if governed in {"CALL", "PUT"} else "")
 
 
 def _configure_console_encoding(stream):
@@ -1095,6 +1114,22 @@ def _garch_stats(garch_rows):
     }
 
 
+_PRIORITY_WEIGHT_TOTAL = 0.90   # sum of the remaining weights after EV v2 (0.10) was removed, ACK 30 Sep 2026
+
+
+def _journal_ev(sig):
+    """EV recorded on a journal entry: the EV3 advisory value the Lab book published for this row, else None.
+
+    ACK 30 Sep 2026: the legacy EV v2 is retired. The book sets ev_predicted only when EV3 valued the selected
+    contract, so it is the one EV the journal may record; a missing value stays missing (never 0).
+    """
+    try:
+        value = float(str(sig.get("ev_predicted", "")).strip())
+    except (TypeError, ValueError):
+        return None
+    return value if value == value and value not in (float("inf"), float("-inf")) else None
+
+
 def _compute_priority_score(sig):
     """
     Priority score built entirely from new pipeline fields.
@@ -1106,11 +1141,13 @@ def _compute_priority_score(sig):
       campaign_verdict   0.16  — campaign readiness
       execution_verdict  0.12  — execution gate
       eil_composite      0.14  — EIL execution quality
-      ev2_ev_conf_adj    0.10  — EV engine (post-fix: 0.003–0.625)
       rr_options         0.08  — risk/reward
       options_score      0.08  — options contract quality
       wbs                0.05  — wall break score (icing)
       garch_tailwind     0.05  — vol state from GARCH
+
+    ACK 30 Sep 2026: the legacy EV v2 (ev2_ev_conf_adj, formerly 0.10) is removed — it is not an expected value.
+    The remaining weights sum to 0.90 and are scaled by 1 / 0.90, so a row that maxes every dimension scores 100.
     """
     def _f(key, default=0.0):
         try:
@@ -1129,8 +1166,7 @@ def _compute_priority_score(sig):
     cv     = _s("campaign_verdict") or _s("eil__campaign_verdict")
     ev     = _s("execution_verdict") or _s("eil__execution_verdict")
     eil_c  = _f("eil_composite_score") or _f("eil__composite_score")
-    ev_adj = _f("ev2_ev_conf_adj") or _f("eil__ev2_ev_conf_adj")
-    rr     = _f("rr_options") or _f("opt__rr_options")
+    rr     = _f("rr_options_reachable") or _f("opt__rr_options_reachable")   # XLU-D13: reachable R:R only
     opt_s  = _f("options_score") or _f("opt__options_score")
     wbs_g  = _s("wbs__wbs_grade") or _s("wbs__grade")
     wbs_s  = _f("wbs__wbs") or _f("wbs__wbs_score")
@@ -1148,9 +1184,6 @@ def _compute_priority_score(sig):
 
     # EIL composite
     w_eil = min(eil_c / 100, 1.0) * 0.14
-
-    # EV engine — range is 0.002–0.025 pre-fix, 0.003–0.625 post-fix
-    w_ev2 = min(max((ev_adj + 0.25) / 0.50, 0), 1) * 0.10
 
     # RR
     w_rr = (min(rr / 3.0, 1.0) if rr > 0 else 0) * 0.08
@@ -1170,7 +1203,7 @@ def _compute_priority_score(sig):
     else:
         w_gar = (1.0 if tail < -0.03 else 0.5 if abs(tail) <= 0.03 else 0.1) * 0.05
 
-    raw = (w_ov + w_cv + w_ev + w_eil + w_ev2 + w_rr + w_opt + w_wbs + w_gar) * 100
+    raw = (w_ov + w_cv + w_ev + w_eil + w_rr + w_opt + w_wbs + w_gar) / _PRIORITY_WEIGHT_TOTAL * 100
     return round(min(raw, 100), 1)
 
 def _lab_token(value):
@@ -1666,6 +1699,9 @@ def _load_run(run_id, force_reload=False):
         return _is_explicit_nondirectional(authoritative)
 
     def _normalise_direction_value(sig):
+        governed_display = _dir002_lab_direction(sig)
+        if governed_display is not None:
+            return governed_display
         # options_direction is the authoritative signal for whether this
         # setup is single-sided at all. If it explicitly says otherwise
         # (STRANGLE), stop here -- do not let a downstream candidate like
@@ -1925,7 +1961,9 @@ def _load_run(run_id, force_reload=False):
         sig.setdefault("current_price",     sig.get("underlying_price",""))
         sig.setdefault("signal_price",      sig.get("underlying_price",""))
         sig.setdefault("composite",         sig.get("eil_composite_score",""))
-        sig.setdefault("win_rate_source",   "ACTUARIAL" if float(sig.get("ev2_p_win_blended",0) or 0) > 0 else "STRUCTURAL")
+        if not sig.get("win_rate_source") or str(sig.get("win_rate_source")).upper() == "ACTUARIAL":
+            from domain.statistics_provenance import win_rate_source_label   # B2: match method, else NOT_ESTIMABLE
+            sig["win_rate_source"] = win_rate_source_label(sig)
 
         # map verdict aliases so filter buttons work
         sig.setdefault("sb_campaign",      sig.get("campaign_verdict",""))
@@ -2731,6 +2769,59 @@ def api_runs():
 def api_run(run_id):
     return jsonify(_slim_lab_payload(_load_run(run_id)))
 
+
+@app.route("/api/forecast_book/<run_id>")
+def api_forecast_book(run_id):
+    """All frozen C5 tickers, including names with no option/Lab row."""
+    if run_id in {"", ".", ".."} or Path(run_id).name != run_id:
+        return jsonify({"error": "invalid run identity"}), 400
+    root = RUNS_DIR / run_id
+    if not root.is_dir():
+        return jsonify({"error": "run unavailable"}), 404
+    from contracts.descriptive_forecast_packet import load_descriptive_packet
+    try:
+        packet = load_descriptive_packet(root)
+    except (OSError, ValueError):
+        return jsonify({"run_id": run_id, "state": "FORECAST_PACKET_UNAVAILABLE", "rows": []})
+    c6_path = root / "forecast" / "expression_candidates_v1" / "packet.json"
+    c8_path = root / "forecast" / "expression_valuation_v1" / "packet.json"
+    c6 = c8 = None
+    try:
+        if c6_path.is_file():
+            c6 = json.loads(c6_path.read_text(encoding="utf-8"))
+            if (c6.get("run_id") != run_id or c6.get("row_count") != len(c6.get("rows", []))
+                    or c6.get("frozen_forecast_sha256") != hashlib.sha256((root / "forecast" / "ticker_forecast_descriptive_v1" / "packet.json").read_bytes()).hexdigest()):
+                raise ValueError("C6/C5 identity mismatch")
+        if c8_path.is_file():
+            c8 = json.loads(c8_path.read_text(encoding="utf-8"))
+            if (c6 is None or c8.get("run_id") != run_id
+                    or c8.get("row_count") != len(c8.get("rows", []))
+                    or c8.get("candidate_packet_sha256") != hashlib.sha256(c6_path.read_bytes()).hexdigest()):
+                raise ValueError("C8/C6 identity mismatch")
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        return jsonify({"error": f"forecast expression integrity failed: {error}"}), 409
+    c6_by_ticker = {row["ticker"]: row for row in c6["rows"]} if c6 else {}
+    c8_by_ticker = {row["ticker"]: row for row in c8["rows"]} if c8 else {}
+    rows = []
+    for claim in packet["rows"]:
+        ticker = claim["ticker"]
+        expression = c6_by_ticker.get(ticker)
+        valuation = c8_by_ticker.get(ticker)
+        rows.append({**claim,
+                     "option_expression_state": expression["expression_state"] if expression else "NOT_ASSESSED",
+                     "option_expression_candidate_count": len(expression["candidates"]) if expression else 0,
+                     "c8_valuation_state": valuation["valuation_state"] if valuation else "NOT_ASSESSED",
+                     "research_ev_candidate_count": sum(
+                         1 for item in (valuation or {}).get("expressions", [])
+                         if item.get("research_ev", {}).get("state") == "RESEARCH_EV_UNCALIBRATED"
+                     ),
+                     "c8_numeric_ev": None})
+    return jsonify({"run_id": run_id, "state": "AVAILABLE", "row_count": len(rows),
+                    "c6_state": "AVAILABLE" if c6 else "UNAVAILABLE",
+                    "c8_state": "AVAILABLE" if c8 else "UNAVAILABLE",
+                    "research_ev_count": c8.get("research_ev_count", 0) if c8 else 0,
+                    "authority": "ADVISORY_ONLY", "rows": rows})
+
 @app.route("/api/run/<run_id>/version")
 def api_run_version(run_id):
     """Cheap, read-only publication check for a browser already viewing a run."""
@@ -2934,7 +3025,7 @@ def api_enter_trade():
         horizon_hold_alignment = _horizon_hold_alignment(sig)
         execution_category = _extract_execution_category(sig)
 
-        ev       = _f_new("ev2_ev_conf_adj") or _f_new("ev")
+        ev       = _journal_ev(sig)          # EV3 advisory or None (EV v2 retired, ACK 30 Sep 2026)
         win_rate = _f_new("ev2_p_win_blended") or 0.5
         edge_q   = "HIGH" if float(sig.get("eil_composite_score",0) or 0) >= 80 else "MODERATE"
         vanguard_contract_status = "skipped_existing"
@@ -3044,7 +3135,7 @@ def api_enter_trade():
         if "SHORT" in instrument.upper():  horizon = "5D"
         elif "STANDARD" in instrument.upper(): horizon = "10D"
 
-        ev       = _f("ev2_ev_conf_adj") or _f("ev")
+        ev       = _journal_ev(sig)          # EV3 advisory or None (EV v2 retired, ACK 30 Sep 2026)
         win_rate = _f("ev2_p_win_blended") or 0.5
         edge_q   = "HIGH" if float(sig.get("eil_composite_score",0) or 0) >= 80 else "MODERATE"
         contract = create_contract(

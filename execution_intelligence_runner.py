@@ -375,6 +375,20 @@ _EIL_TOKEN_NORMALISE = {
 }
 
 # â”€â”€ FIX-06: MonetisationPolicy integration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def _eil_not_evaluated_without_quote(row: dict, eil_ctx) -> None:
+    """E5 (ACK 3 Oct 2026): no options quote -> the EIL is NOT_EVALUATED and has no composite.
+
+    Without a bid/ask the EIL components score from no-data defaults (liquidity spread 85, IV 70), which built a
+    74.75 composite and EXECUTE claims for rows with no option chain; the composite then earned Lab ranking credit.
+    Missing is never neutral: such rows carry no EIL score at all.
+    """
+    bid, ask = getattr(eil_ctx, "options_bid", None), getattr(eil_ctx, "options_ask", None)
+    if bid is None or ask is None or not (ask > 0):
+        row["eil_v3_verdict"] = "NOT_EVALUATED"
+        row["eil_composite_score"] = None
+        row["eil_not_evaluated_reason"] = "NO_OPTIONS_QUOTE"
+
+
 _MP_AVAILABLE = False
 _mp_engine    = None
 _mp_from_row  = None
@@ -1357,6 +1371,7 @@ def _process_row(
             row["eil_ev_score"]          = eil_result.eil_ev_score
             row["eil_advisory_only"]     = True
             row["eil_schema_version"]    = eil_result.eil_schema_version
+            _eil_not_evaluated_without_quote(row, eil_ctx)   # E5: no quote -> no EIL score
             # â”€â”€ OTT-04: write eil_spread_pct_live from live eil_ctx â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             # The quote fallback may have already set this from contract columns.
             # Here we compute it from the actual ctx values used by EIL so it
@@ -3613,27 +3628,9 @@ if __name__ == "__main__":
                         if col in eil_row:
                             merged[col] = eil_row[col]
 
-                    # â”€â”€ DISPLAY FIX 1: overwrite stale superbrain EV fields â”€â”€â”€â”€â”€â”€
-                    # EVResult.to_row_dict() writes ev2_ev_conf_adj (authoritative)
-                    # but the superbrain ev_final (-1.2 range from v1 fallback) was
-                    # already in the row and to_row_dict does NOT overwrite bare
-                    # ev_final â€” it uses ev2_ prefix. The Intelligence Lab reads
-                    # ev / ev_final for display. Overwrite them here so the Lab
-                    # shows the correct EVEngineV2 value (+0.02 range, all positive).
-                    _correct_ev = eil_row.get("ev2_ev_conf_adj") or eil_row.get("fd_ev_used")
-                    if _correct_ev is not None:
-                        try:
-                            _ev_val = float(_correct_ev)
-                            merged["ev"]       = round(_ev_val, 6)
-                            merged["ev_conf_adj"] = round(_ev_val, 6)
-                            merged["ev_final"] = round(_ev_val, 6)
-                            merged["ev_net"]   = round(_ev_val, 6)
-                            # ev_base = ev_structural (regime-free structural quality)
-                            _ev_struct = eil_row.get("ev2_ev_structural")
-                            if _ev_struct is not None:
-                                merged["ev_base"] = round(float(_ev_struct), 6)
-                        except (TypeError, ValueError):
-                            pass
+                    # EV v2 retired 3 Oct 2026 (ACK; CLAUDE.md rule 5): it is never written into the plain
+                    # ev / ev_final / ev_net / ev_base fields, which would present a legacy figure as EV. It
+                    # stays under its own ev2_* names (audit, legacy).
 
                     # â”€â”€ DISPLAY FIX 2: ensure current_price / spot_price is set â”€â”€
                     # The Intelligence Lab price column reads current_price or

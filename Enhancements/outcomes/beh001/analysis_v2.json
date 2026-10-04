@@ -1,0 +1,612 @@
+{
+ "rows": 24923,
+ "distributions": {
+  "local | B | TWO-SIDED": 10692,
+  "handoff | UNASSIGNED": 9452,
+  "handoff | BULL": 8678,
+  "campaign | B | TWO-SIDED": 7112,
+  "handoff | BEAR": 6793,
+  "cand | CAMPAIGN | Crabel Compression Breakout | None | MONITOR": 5822,
+  "campaign | B | CONTROL SHIFTING": 5115,
+  "campaign | E | BUYERS": 4687,
+  "local | E | BUYERS": 3541,
+  "cand | LOCAL | SOS -> LPS continuation | BULL | DETECTED": 3040,
+  "cand | LOCAL | SOW -> LPSY continuation | BEAR | DETECTED": 2877,
+  "campaign | E | SELLERS": 2865,
+  "local | D | BUYERS": 2779,
+  "local | D | SELLERS": 2675,
+  "local | B | CONTROL SHIFTING": 2646,
+  "cand | CAMPAIGN | Hinge / Apex Expansion | None | MONITOR": 2598,
+  "local | E | SELLERS": 2590,
+  "cand | CAMPAIGN | SOS -> LPS continuation | BULL | DETECTED": 2460,
+  "cand | CAMPAIGN | Buyer Absorption Breakout | BULL | DETECTED": 2418,
+  "cand | CAMPAIGN | Failed Upthrust Continuation | BULL | ACTIVATED": 2371,
+  "cand | CAMPAIGN | Seller Absorption Breakdown | BEAR | DETECTED": 2071,
+  "cand | CAMPAIGN | SOW -> LPSY continuation | BEAR | DETECTED": 2013,
+  "cand | CAMPAIGN | Upthrust Candidate | BEAR | DETECTED": 1853,
+  "campaign | D | BUYERS": 1802,
+  "cand | CAMPAIGN | Failed Spring Continuation | BEAR | ACTIVATED": 1736,
+  "campaign | D | SELLERS": 1728,
+  "cand | CAMPAIGN | Spring Candidate | BULL | DETECTED": 1686,
+  "cand | CAMPAIGN | Mature Trend Exhaustion | None | MONITOR": 1565,
+  "cand | CAMPAIGN | SOS -> LPS continuation | BULL | ACTIVATED": 1478,
+  "cand | CAMPAIGN | Crabel Compression Breakout | BULL | DETECTED": 1455,
+  "campaign | C | TWO-SIDED": 1325,
+  "cand | LOCAL | SOS -> LPS continuation | BULL | ACTIVATED": 1206,
+  "cand | CAMPAIGN | Hinge / Apex Expansion | BULL | DETECTED": 1024,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BULL | DETECTED": 999,
+  "cand | CAMPAIGN | Crabel Compression Breakout | BEAR | DETECTED": 998,
+  "cand | CAMPAIGN | SOW -> LPSY continuation | BEAR | ACTIVATED": 974,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BULL | DETECTED": 949,
+  "cand | LOCAL | SOW -> LPSY continuation | BEAR | ACTIVATED": 822,
+  "cand | CAMPAIGN | Hinge / Apex Expansion | BEAR | DETECTED": 793,
+  "cand | CAMPAIGN | Spring Candidate | BULL | ACTIVATED": 790,
+  "cand | CAMPAIGN | Upthrust Candidate | BEAR | ACTIVATED": 744,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BEAR | DETECTED": 626,
+  "cand | CAMPAIGN | Change-of-Behaviour Reversal | BULL | DETECTED": 622,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BULL | ACTIVATED": 614,
+  "cand | CAMPAIGN | Change-of-Behaviour Reversal | BEAR | DETECTED": 576,
+  "cand | CAMPAIGN | Failed Upthrust Continuation | BULL | DETECTED": 428,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BEAR | DETECTED": 422,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BULL | ACTIVATED": 352,
+  "cand | CAMPAIGN | Failed Spring Continuation | BEAR | DETECTED": 300,
+  "campaign | A | CONTROL SHIFTING": 289,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BEAR | ACTIVATED": 236,
+  "cand | CAMPAIGN | SOW -> LPSY continuation | BEAR | FAILED": 229,
+  "cand | LOCAL | SOW -> LPSY continuation | BEAR | FAILED": 206,
+  "cand | CAMPAIGN | SOS -> LPS continuation | BULL | FAILED": 204,
+  "cand | CAMPAIGN | Failed Upthrust Continuation | BULL | FAILED": 202,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BEAR | ACTIVATED": 200,
+  "cand | CAMPAIGN | Failed Spring Continuation | BEAR | FAILED": 193,
+  "cand | LOCAL | SOS -> LPS continuation | BULL | FAILED": 193,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BULL | FAILED": 37,
+  "cand | LOCAL | Trend Continuation after Shallow Test | BEAR | FAILED": 28,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BULL | FAILED": 22,
+  "cand | CAMPAIGN | Trend Continuation after Shallow Test | BEAR | FAILED": 16,
+  "cand | CAMPAIGN | UTAD Test | BEAR | ACTIVATED": 2,
+  "cand | CAMPAIGN | UTAD Test | BEAR | DETECTED": 1
+ },
+ "directed_handoff_share": 0.6208,
+ "mirror_mismatches": {},
+ "mirror_rows": 24923,
+ "sanity": {
+  "live_bull_spring_with_failed_spring_event": 99
+ },
+ "evaluation": {
+  "CAMPAIGN | Buyer Absorption Breakout": {
+   "detected": {
+    "n": 2418,
+    "TRIGGER_FIRST": 1754,
+    "INVALIDATION_FIRST": 577,
+    "NEITHER": 81,
+    "CENSORED": 6,
+    "trigger_first_share_of_decided": 0.752
+   }
+  },
+  "CAMPAIGN | Change-of-Behaviour Reversal": {
+   "detected": {
+    "n": 1198,
+    "TRIGGER_FIRST": 1096,
+    "INVALIDATION_FIRST": 60,
+    "NEITHER": 38,
+    "CENSORED": 4,
+    "trigger_first_share_of_decided": 0.948
+   }
+  },
+  "CAMPAIGN | Crabel Compression Breakout": {
+   "detected": {
+    "n": 2453,
+    "TRIGGER_FIRST": 1344,
+    "INVALIDATION_FIRST": 1045,
+    "NEITHER": 49,
+    "CENSORED": 15,
+    "trigger_first_share_of_decided": 0.563
+   }
+  },
+  "CAMPAIGN | Failed Spring Continuation": {
+   "detected": {
+    "n": 300,
+    "TRIGGER_FIRST": 259,
+    "INVALIDATION_FIRST": 41,
+    "trigger_first_share_of_decided": 0.863
+   },
+   "activated": {
+    "z5": {
+     "n": 1661,
+     "blocks": 50,
+     "mean": -0.1041,
+     "lo95": -0.2877,
+     "hi95": 0.0743
+    },
+    "z10": {
+     "n": 1661,
+     "blocks": 50,
+     "mean": -0.0961,
+     "lo95": -0.2799,
+     "hi95": 0.0945
+    },
+    "z20": {
+     "n": 1661,
+     "blocks": 50,
+     "mean": -0.1283,
+     "lo95": -0.3415,
+     "hi95": 0.0917
+    },
+    "xz20": {
+     "n": 1661,
+     "blocks": 50,
+     "mean": 0.026,
+     "lo95": -0.0457,
+     "hi95": 0.1096
+    },
+    "fav_touch_rate": 0.28,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | Failed Upthrust Continuation": {
+   "detected": {
+    "n": 428,
+    "TRIGGER_FIRST": 402,
+    "INVALIDATION_FIRST": 26,
+    "trigger_first_share_of_decided": 0.939
+   },
+   "activated": {
+    "z5": {
+     "n": 2354,
+     "blocks": 50,
+     "mean": -0.0426,
+     "lo95": -0.1512,
+     "hi95": 0.0668
+    },
+    "z10": {
+     "n": 2354,
+     "blocks": 50,
+     "mean": -0.0113,
+     "lo95": -0.1187,
+     "hi95": 0.1081
+    },
+    "z20": {
+     "n": 2354,
+     "blocks": 50,
+     "mean": 0.0124,
+     "lo95": -0.1161,
+     "hi95": 0.1484
+    },
+    "xz20": {
+     "n": 2354,
+     "blocks": 50,
+     "mean": 0.0032,
+     "lo95": -0.0544,
+     "hi95": 0.0664
+    },
+    "fav_touch_rate": 0.312,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | Hinge / Apex Expansion": {
+   "detected": {
+    "n": 1817,
+    "TRIGGER_FIRST": 1089,
+    "INVALIDATION_FIRST": 700,
+    "NEITHER": 21,
+    "CENSORED": 7,
+    "trigger_first_share_of_decided": 0.609
+   }
+  },
+  "CAMPAIGN | SOS -> LPS continuation": {
+   "detected": {
+    "n": 2460,
+    "TRIGGER_FIRST": 1043,
+    "INVALIDATION_FIRST": 868,
+    "NEITHER": 528,
+    "CENSORED": 21,
+    "trigger_first_share_of_decided": 0.546
+   },
+   "activated": {
+    "z5": {
+     "n": 1463,
+     "blocks": 50,
+     "mean": -0.0193,
+     "lo95": -0.1071,
+     "hi95": 0.0715
+    },
+    "z10": {
+     "n": 1463,
+     "blocks": 50,
+     "mean": 0.0155,
+     "lo95": -0.0878,
+     "hi95": 0.1121
+    },
+    "z20": {
+     "n": 1463,
+     "blocks": 50,
+     "mean": 0.0103,
+     "lo95": -0.1138,
+     "hi95": 0.1345
+    },
+    "xz20": {
+     "n": 1463,
+     "blocks": 50,
+     "mean": 0.0097,
+     "lo95": -0.0603,
+     "hi95": 0.0821
+    },
+    "fav_touch_rate": 0.305,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | SOW -> LPSY continuation": {
+   "detected": {
+    "n": 2013,
+    "INVALIDATION_FIRST": 814,
+    "TRIGGER_FIRST": 685,
+    "NEITHER": 488,
+    "CENSORED": 26,
+    "trigger_first_share_of_decided": 0.457
+   },
+   "activated": {
+    "z5": {
+     "n": 944,
+     "blocks": 50,
+     "mean": -0.0945,
+     "lo95": -0.2931,
+     "hi95": 0.1122
+    },
+    "z10": {
+     "n": 944,
+     "blocks": 50,
+     "mean": -0.0818,
+     "lo95": -0.2785,
+     "hi95": 0.1296
+    },
+    "z20": {
+     "n": 944,
+     "blocks": 50,
+     "mean": -0.1718,
+     "lo95": -0.404,
+     "hi95": 0.0933
+    },
+    "xz20": {
+     "n": 944,
+     "blocks": 50,
+     "mean": -0.0054,
+     "lo95": -0.1048,
+     "hi95": 0.101
+    },
+    "fav_touch_rate": 0.257,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | Seller Absorption Breakdown": {
+   "detected": {
+    "n": 2071,
+    "TRIGGER_FIRST": 1347,
+    "INVALIDATION_FIRST": 612,
+    "NEITHER": 83,
+    "CENSORED": 29,
+    "trigger_first_share_of_decided": 0.688
+   }
+  },
+  "CAMPAIGN | Spring Candidate": {
+   "detected": {
+    "n": 1686,
+    "TRIGGER_FIRST": 1048,
+    "INVALIDATION_FIRST": 575,
+    "NEITHER": 48,
+    "CENSORED": 15,
+    "trigger_first_share_of_decided": 0.646
+   },
+   "activated": {
+    "z5": {
+     "n": 786,
+     "blocks": 50,
+     "mean": 0.069,
+     "lo95": -0.0821,
+     "hi95": 0.2066
+    },
+    "z10": {
+     "n": 786,
+     "blocks": 50,
+     "mean": 0.0646,
+     "lo95": -0.0983,
+     "hi95": 0.2132
+    },
+    "z20": {
+     "n": 786,
+     "blocks": 50,
+     "mean": 0.0605,
+     "lo95": -0.1207,
+     "hi95": 0.2243
+    },
+    "xz20": {
+     "n": 786,
+     "blocks": 50,
+     "mean": -0.0432,
+     "lo95": -0.1414,
+     "hi95": 0.0429
+    },
+    "fav_touch_rate": 0.359,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | Trend Continuation after Shallow Test": {
+   "detected": {
+    "n": 1421,
+    "TRIGGER_FIRST": 702,
+    "INVALIDATION_FIRST": 517,
+    "NEITHER": 176,
+    "CENSORED": 26,
+    "trigger_first_share_of_decided": 0.576
+   },
+   "activated": {
+    "z5": {
+     "n": 836,
+     "blocks": 50,
+     "mean": 0.0202,
+     "lo95": -0.0912,
+     "hi95": 0.1282
+    },
+    "z10": {
+     "n": 836,
+     "blocks": 50,
+     "mean": 0.0473,
+     "lo95": -0.0853,
+     "hi95": 0.1755
+    },
+    "z20": {
+     "n": 836,
+     "blocks": 50,
+     "mean": 0.0382,
+     "lo95": -0.1264,
+     "hi95": 0.2104
+    },
+    "xz20": {
+     "n": 836,
+     "blocks": 50,
+     "mean": 0.0793,
+     "lo95": -0.0539,
+     "hi95": 0.2051
+    },
+    "fav_touch_rate": 0.319,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | UTAD Test": {
+   "detected": {
+    "n": 1,
+    "NEITHER": 1,
+    "trigger_first_share_of_decided": null
+   },
+   "activated": {
+    "z5": {
+     "n": 2,
+     "blocks": 2,
+     "mean": -0.0592,
+     "lo95": -1.4089,
+     "hi95": 1.2904
+    },
+    "z10": {
+     "n": 2,
+     "blocks": 2,
+     "mean": 0.3605,
+     "lo95": 0.2609,
+     "hi95": 0.4602
+    },
+    "z20": {
+     "n": 2,
+     "blocks": 2,
+     "mean": -0.6,
+     "lo95": -1.5805,
+     "hi95": 0.3805
+    },
+    "xz20": {
+     "n": 2,
+     "blocks": 2,
+     "mean": -0.5766,
+     "lo95": -1.1491,
+     "hi95": -0.0042
+    },
+    "fav_touch_rate": 0.0,
+    "estimability": "NOT_ESTIMABLE"
+   }
+  },
+  "CAMPAIGN | Upthrust Candidate": {
+   "detected": {
+    "n": 1853,
+    "TRIGGER_FIRST": 1102,
+    "INVALIDATION_FIRST": 697,
+    "NEITHER": 46,
+    "CENSORED": 8,
+    "trigger_first_share_of_decided": 0.613
+   },
+   "activated": {
+    "z5": {
+     "n": 712,
+     "blocks": 50,
+     "mean": -0.0069,
+     "lo95": -0.1558,
+     "hi95": 0.1392
+    },
+    "z10": {
+     "n": 712,
+     "blocks": 50,
+     "mean": 0.0028,
+     "lo95": -0.1469,
+     "hi95": 0.1471
+    },
+    "z20": {
+     "n": 712,
+     "blocks": 50,
+     "mean": -0.0585,
+     "lo95": -0.2341,
+     "hi95": 0.1068
+    },
+    "xz20": {
+     "n": 712,
+     "blocks": 50,
+     "mean": 0.0146,
+     "lo95": -0.0576,
+     "hi95": 0.0919
+    },
+    "fav_touch_rate": 0.323,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "LOCAL | SOS -> LPS continuation": {
+   "detected": {
+    "n": 3040,
+    "TRIGGER_FIRST": 1540,
+    "INVALIDATION_FIRST": 1316,
+    "NEITHER": 170,
+    "CENSORED": 14,
+    "trigger_first_share_of_decided": 0.539
+   },
+   "activated": {
+    "z5": {
+     "n": 1202,
+     "blocks": 49,
+     "mean": 0.0186,
+     "lo95": -0.1248,
+     "hi95": 0.1631
+    },
+    "z10": {
+     "n": 1202,
+     "blocks": 49,
+     "mean": 0.0454,
+     "lo95": -0.0934,
+     "hi95": 0.1802
+    },
+    "z20": {
+     "n": 1202,
+     "blocks": 49,
+     "mean": -0.0048,
+     "lo95": -0.147,
+     "hi95": 0.1313
+    },
+    "xz20": {
+     "n": 1202,
+     "blocks": 49,
+     "mean": 0.0055,
+     "lo95": -0.0569,
+     "hi95": 0.0726
+    },
+    "fav_touch_rate": 0.3,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "LOCAL | SOW -> LPSY continuation": {
+   "detected": {
+    "n": 2877,
+    "INVALIDATION_FIRST": 1351,
+    "TRIGGER_FIRST": 1323,
+    "NEITHER": 165,
+    "CENSORED": 38,
+    "trigger_first_share_of_decided": 0.495
+   },
+   "activated": {
+    "z5": {
+     "n": 767,
+     "blocks": 50,
+     "mean": -0.1347,
+     "lo95": -0.3358,
+     "hi95": 0.1013
+    },
+    "z10": {
+     "n": 767,
+     "blocks": 50,
+     "mean": -0.0894,
+     "lo95": -0.2796,
+     "hi95": 0.143
+    },
+    "z20": {
+     "n": 767,
+     "blocks": 50,
+     "mean": -0.1792,
+     "lo95": -0.4084,
+     "hi95": 0.0985
+    },
+    "xz20": {
+     "n": 767,
+     "blocks": 50,
+     "mean": 0.0271,
+     "lo95": -0.0814,
+     "hi95": 0.1661
+    },
+    "fav_touch_rate": 0.284,
+    "estimability": "ESTIMABLE"
+   }
+  },
+  "LOCAL | Trend Continuation after Shallow Test": {
+   "detected": {
+    "n": 1575,
+    "TRIGGER_FIRST": 841,
+    "INVALIDATION_FIRST": 678,
+    "NEITHER": 40,
+    "CENSORED": 16,
+    "trigger_first_share_of_decided": 0.554
+   },
+   "activated": {
+    "z5": {
+     "n": 532,
+     "blocks": 50,
+     "mean": -0.0749,
+     "lo95": -0.2674,
+     "hi95": 0.1184
+    },
+    "z10": {
+     "n": 532,
+     "blocks": 50,
+     "mean": 0.041,
+     "lo95": -0.1332,
+     "hi95": 0.2196
+    },
+    "z20": {
+     "n": 532,
+     "blocks": 50,
+     "mean": 0.0053,
+     "lo95": -0.1655,
+     "hi95": 0.1886
+    },
+    "xz20": {
+     "n": 532,
+     "blocks": 50,
+     "mean": 0.0207,
+     "lo95": -0.0982,
+     "hi95": 0.1506
+    },
+    "fav_touch_rate": 0.295,
+    "estimability": "ESTIMABLE"
+   }
+  }
+ },
+ "evaluation_all_activated": {
+  "z5": {
+   "n": 11259,
+   "blocks": 50,
+   "mean": -0.0396,
+   "lo95": -0.1199,
+   "hi95": 0.0406
+  },
+  "z10": {
+   "n": 11259,
+   "blocks": 50,
+   "mean": -0.0124,
+   "lo95": -0.0875,
+   "hi95": 0.0631
+  },
+  "z20": {
+   "n": 11259,
+   "blocks": 50,
+   "mean": -0.0386,
+   "lo95": -0.1307,
+   "hi95": 0.0586
+  },
+  "xz20": {
+   "n": 11259,
+   "blocks": 50,
+   "mean": 0.0124,
+   "lo95": -0.0344,
+   "hi95": 0.0646
+  }
+ }
+}

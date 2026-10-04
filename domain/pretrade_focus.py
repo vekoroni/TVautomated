@@ -262,9 +262,12 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
     trigger_crossed = trigger_price is not None and ((side == "CALL" and spot is not None and spot >= trigger_price) or (side == "PUT" and spot is not None and spot <= trigger_price))
     if trigger != "RANGE_BREAK" or not trigger_crossed:
         flags.append("TRIGGER_NOT_PRICE_CONFIRMED")
-    wyckoff = _token(row.get("wyckoff_execution_bias")).upper()
-    if wyckoff == "OBSERVE_ONLY":
-        flags.append("WYCKOFF_OBSERVE_ONLY")
+    # XLU-D10 (ACK 2 Oct 2026): the trade is categorised by Phase and Event; the legacy
+    # Wyckoff OBSERVE_ONLY bias is not a decision. Missing alignment is never neutral.
+    structure = _token(row.get("thesis_structure_alignment")).upper() or "NOT_EVALUATED"
+    category = _token(row.get("thesis_category")) or "MISSING"
+    if structure != "ALIGNED":
+        flags.append("NO_BEHAVIOURAL_EVENT_ON_TRADE_SIDE")
 
     def result(bucket: str, reason: str, next_condition: str) -> dict[str, Any]:
         return {
@@ -331,9 +334,9 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
     if target_move > TARGET_EXPECTED_MOVE_REVIEW_MULTIPLE * expected_move:
         return result("EOD_TARGET_FEASIBILITY_REVIEW", f"Target move {target_move:.1f}% exceeds the supported {horizon} scenario", "Review target plausibility before using target-based option profit")
 
-    wyckoff_aligned = wyckoff == ("BULLISH" if side == "CALL" else "BEARISH")
-    if trigger != "RANGE_BREAK" or not trigger_crossed or not wyckoff_aligned or aligned_score <= 0:
+    structure_aligned = structure == "ALIGNED"
+    if trigger != "RANGE_BREAK" or not trigger_crossed or not structure_aligned or aligned_score <= 0:
         next_level = f"{side} price confirmation at {trigger_price:g}" if trigger_price is not None else "an observed directional price trigger"
-        return result("EOD_TRIGGER_WATCH", f"Thesis retained; trigger={trigger or 'MISSING'}, price_crossed={trigger_crossed}, Wyckoff={wyckoff or 'MISSING'}", f"Watch for {next_level} and aligned independent evidence")
+        return result("EOD_TRIGGER_WATCH", f"Thesis retained; trigger={trigger or 'MISSING'}, price_crossed={trigger_crossed}, structure={category}", f"Watch for {next_level} and aligned independent evidence")
 
     return result("EOD_ACTION_SETUP_READY", "Target, exact contract, direction evidence and observed trigger reconcile", "Morning checks thesis change and current entry conditions; human decides execution")

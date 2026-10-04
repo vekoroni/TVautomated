@@ -195,9 +195,10 @@ def test_wider_spread_cannot_improve_robust_ev() -> None:
     assert wide_result["ev3_ev_lower_bound_return"] < tight_result["ev3_ev_lower_bound_return"]
 
 
-def test_stale_quote_rejects_and_shadow_never_grants_capital() -> None:
-    stale = evaluate_contract(_row(), _cache(), now_utc="2026-08-12T12:00:00Z")
-    assert stale["ev3_reason_code"] == "REJECT_QUOTE_STALE"
+def test_old_quote_is_not_rejected_and_shadow_never_grants_capital() -> None:
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
+    old = evaluate_contract(_row(), _cache(), now_utc="2026-08-12T12:00:00Z")
+    assert old["ev3_reason_code"] != "REJECT_QUOTE_STALE"
     live = evaluate_contract(_row(), _cache(), now_utc=NOW)
     assert live["ev3_capital_eligible"] is False
 
@@ -251,18 +252,19 @@ def test_selector_enforces_twelve_contract_scope_cap() -> None:
 
 
 def test_selector_reports_child_rejection_counts_when_no_contract_is_evaluable() -> None:
-    stale = _row(symbol="STALE")
-    illiquid = _row(symbol="ILLIQUID")
-    illiquid["contract_volume"] = 0
+    # ACK 3 Oct 2026: age no longer rejects, so two illiquid contracts provide the child rejections.
+    first = _row(symbol="ILLIQUID1")
+    second = _row(symbol="ILLIQUID2")
+    first["contract_volume"] = second["contract_volume"] = 0
     selected, evaluations = select_contract(
-        [stale, illiquid],
+        [first, second],
         _cache(),
-        now_utc="2026-08-12T12:00:00Z",
+        now_utc=NOW,
     )
     assert selected["ev3_reason_code"] == "REJECT_NO_EVALUABLE_CONTRACT"
     assert "child_rejections=" in selected["ev3_reason_detail"]
-    assert "REJECT_QUOTE_STALE:2" in selected["ev3_reason_detail"]
-    assert selected["ev3_child_rejection_counts_json"] == '{"REJECT_QUOTE_STALE": 2}'
+    assert "REJECT_LIQUIDITY:2" in selected["ev3_reason_detail"]
+    assert selected["ev3_child_rejection_counts_json"] == '{"REJECT_LIQUIDITY": 2}'
     assert len(evaluations) == 2
 
 

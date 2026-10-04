@@ -1,0 +1,10 @@
+governed 20-session runway floor (calendar days): 40
+                                        count   25%   50%   75%    max
+tf  basis                                                             
+1d  DURATION_EVIDENCE_Q80              1935.0  37.0  49.0  84.0  227.0
+    GOVERNED_WINDOW_NO_LEVEL_EVIDENCE    56.0  40.0  40.0  40.0   40.0
+1mo GOVERNED_WINDOW_NON_DAILY_EVENT    1390.0  40.0  40.0  40.0   40.0
+    GOVERNED_WINDOW_NO_LEVEL_EVIDENCE    93.0  40.0  40.0  40.0   40.0
+1w  GOVERNED_WINDOW_NON_DAILY_EVENT    1809.0  40.0  40.0  40.0   40.0
+    GOVERNED_WINDOW_NO_LEVEL_EVIDENCE    26.0  40.0  40.0  40.0   40.0
+daily evidence rows: shorter than governed 0.306 | same 0.095 | longer 0.599

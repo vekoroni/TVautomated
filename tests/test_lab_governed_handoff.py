@@ -708,8 +708,10 @@ def test_ui_has_no_synthetic_call_default_and_ev_is_advisory_only():
     assert "EV3 Advisory State" in html
     # A legacy v2 value must never be displayed under an EV3 label.
     assert "EV3 Conservative EV" not in html
-    assert "Legacy EV (not real EV)" in html
-    assert "LEGACY v2 — NOT A REAL EV" in html
+    # ACK 30 Sep 2026 (options analytics slice 1d): the legacy EV v2 is retired from the Lab entirely, so no legacy
+    # EV label or value is offered any more (tests/js/test_fix12_legacy_ev_retired.js).
+    assert "Legacy EV (not real EV)" not in html
+    assert "LEGACY v2 — NOT A REAL EV" not in html
     assert "economics_comparable" in html
     assert "NOT COMPARABLE" in html
     assert "Quote Hydration" in html

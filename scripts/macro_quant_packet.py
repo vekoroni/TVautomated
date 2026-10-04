@@ -499,15 +499,17 @@ def _ticker_alignment(packet: Mapping[str, Any], row: Optional[Mapping[str, Any]
         text = "" if value is None else str(value).strip().upper()
         return "" if text in {"", "NAN", "NONE", "NULL"} else text
 
-    sector = next((_present(row.get(key)) for key in ("gics_sector", "sector", "sector_etf", "sector_etf_mapped")
-                   if _present(row.get(key))), "")
-    if not sector:
+    # XLU-D03: a placeholder sector (e.g. "ETF") resolves through the ETF; the ETF symbol is kept
+    # as a second candidate so packet lists naming either still match.
+    from domain.sector_resolution import resolve_sector
+    candidates = [c for c in [resolve_sector(row)] + [_present(row.get(key)) for key in ("sector_etf", "sector_etf_mapped")] if c]
+    if not candidates:
         return "UNKNOWN", 0.0
     preferred = [v.upper() for v in _as_list(packet.get("preferred_sectors"))]
     avoid = [v.upper() for v in _as_list(packet.get("avoid_sectors"))]
-    if any(sector in p or p in sector for p in preferred):
+    if any(c in p or p in c for c in candidates for p in preferred):
         return "ALIGNED", 100.0
-    if any(sector in a or a in sector for a in avoid):
+    if any(c in a or a in c for c in candidates for a in avoid):
         return "CONFLICTED", 0.0
     return "NEUTRAL", 50.0
 

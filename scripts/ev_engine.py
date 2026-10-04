@@ -37,7 +37,7 @@ class DataQualityWarning(UserWarning): pass
 
 @dataclass
 class EVInputs:
-    ticker:str="UNKNOWN"; direction:str="CALL"; horizon_days:int=10
+    direction:str; ticker:str="UNKNOWN"; horizon_days:int=10
     hit_rate_5d:float=0.0; hit_rate_10d:float=0.0; hit_rate_20d:float=0.0
     expected_move_5d:float=0.0; expected_move_10d:float=0.0; expected_move_20d:float=0.0
     predictability_score:float=50.0; bmps:float=50.0
@@ -73,6 +73,9 @@ class EVResult:
 
 def ev_inputs_from_row(row:dict) -> EVInputs:
     """PATCHED: fixes win rate normalisation, expected_move fallback, horizon, option_mid."""
+    direction = str(row.get('direction') or '').strip().upper()
+    if direction not in {'CALL', 'PUT'}:
+        raise ValueError('EV v2 requires an explicit CALL or PUT direction')
     def f(k,d=0.0): return _safe(row.get(k),d)
     def s(k,d=""): v=row.get(k,d); return str(v).strip() if v is not None else d
     def b(k,d=True):
@@ -123,7 +126,7 @@ def ev_inputs_from_row(row:dict) -> EVInputs:
         _be = 5.0   # absolute floor — prevents zero-division in runway calcs
 
     return EVInputs(
-        ticker=s('ticker','UNKNOWN'), direction=s('direction','CALL').upper(),
+        ticker=s('ticker','UNKNOWN'), direction=direction,
         horizon_days=horizon,
         hit_rate_5d=hr5, hit_rate_10d=hr10, hit_rate_20d=hr20,
         expected_move_5d=em5, expected_move_10d=em10, expected_move_20d=em20,
@@ -350,14 +353,14 @@ if __name__=="__main__":
     print("\nPatch validation v2.2.0:")
 
     # PATCH-01: actuarial win rate 0-1 scale
-    r1=ev_inputs_from_row({'ticker':'TERN','signal_price':25,'win_rate_10d':0.61,
+    r1=ev_inputs_from_row({'ticker':'TERN','direction':'CALL','signal_price':25,'win_rate_10d':0.61,
         'median_gain_if_up':0.07,'delta':0.45,'theta':0.03,'option_mid':1.20,
         'dte':18,'spread_pct':0.06,'regime_state':'RISK_ON','runway_pct':3.5})
     assert 0<r1.hit_rate_10d<1, f"FAIL P01: {r1.hit_rate_10d}"
     print(f"P01 ✓ hit_rate_10d={r1.hit_rate_10d:.3f}")
 
     # PATCH-01b: L2 100-scale win rate
-    r2=ev_inputs_from_row({'ticker':'NVDA','signal_price':875,'layer2__win_rate_10d':61.0,
+    r2=ev_inputs_from_row({'ticker':'NVDA','direction':'CALL','signal_price':875,'layer2__win_rate_10d':61.0,
         'layer2__median_gain_if_up_10d':0.065,'delta':0.42,'option_mid':12.5,
         'dte':14,'spread_pct':0.07,'regime_state':'TRANSITIONAL','runway_pct':2.5})
     assert 0<r2.hit_rate_10d<1, f"FAIL P01b: {r2.hit_rate_10d}"
@@ -368,23 +371,23 @@ if __name__=="__main__":
     print(f"P02 ✓ expected_move_20d={r1.expected_move_20d:.4f}")
 
     # PATCH-03: horizon from DTE
-    r3=ev_inputs_from_row({'signal_price':100,'dte':5})
+    r3=ev_inputs_from_row({'direction':'CALL','signal_price':100,'dte':5})
     assert r3.horizon_days==5, f"FAIL P03: {r3.horizon_days}"
     print(f"P03 ✓ dte=5 → horizon={r3.horizon_days}")
 
     # PATCH-04: mark fallback for option_mid
-    r4=ev_inputs_from_row({'signal_price':100,'mark':2.5,'dte':30})
+    r4=ev_inputs_from_row({'direction':'PUT','signal_price':100,'mark':2.5,'dte':30})
     assert r4.option_mid==2.5, f"FAIL P04: {r4.option_mid}"
     print(f"P04 ✓ option_mid from mark={r4.option_mid:.2f}")
 
     # PATCH-05: breakeven fallback from structural geometry (EOD signal, no breakeven_pct)
-    r5=ev_inputs_from_row({'ticker':'AAPL','signal_price':195.0,'target_price':210.0,
+    r5=ev_inputs_from_row({'ticker':'AAPL','direction':'CALL','signal_price':195.0,'target_price':210.0,
         'stop_price':185.0,'win_rate_10d':0.62,'dte':28,'delta':0.42,'option_mid':3.5})
     assert r5.breakeven_pct>0, f"FAIL P05: breakeven_pct={r5.breakeven_pct}"
     print(f"P05 ✓ EOD breakeven_pct estimated={r5.breakeven_pct:.2f}% (structural geometry)")
 
     # PATCH-06: option_mid=1.0 fallback must not trigger NO_CONTRACT_PRICE
-    r6=ev_inputs_from_row({'ticker':'MSFT','signal_price':420.0,'target_price':445.0,
+    r6=ev_inputs_from_row({'ticker':'MSFT','direction':'CALL','signal_price':420.0,'target_price':445.0,
         'stop_price':405.0,'win_rate_10d':0.58,'dte':35,'delta':0.40})
     assert r6.option_mid==1.0, f"FAIL P06: option_mid={r6.option_mid}"
     blocked,reason=eng._hard_gates(r6)
@@ -393,7 +396,7 @@ if __name__=="__main__":
 
     # PATCH-07: regime multiplier does NOT change ev_final — only sizing and quality
     # Same signal, two regime states — ev_final must be identical, size must differ
-    base_row={'ticker':'TEST','signal_price':100,'target_price':115,'stop_price':92,
+    base_row={'ticker':'TEST','direction':'CALL','signal_price':100,'target_price':115,'stop_price':92,
               'win_rate_10d':0.60,'median_gain_if_up':0.08,'delta':0.42,'option_mid':2.0,
               'dte':30,'spread_pct':0.06,'runway_pct':3.0}
     r_risk_on  = ev_inputs_from_row({**base_row,'regime_state':'RISK_ON', 'regime_drift_status':'Stable'})

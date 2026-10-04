@@ -67,6 +67,10 @@ TRIGGER_WEIGHTS: Dict[str, float] = {
     "VWAP_RECLAIM":         1.5,
     "VWAP_LOSS":            1.5,
     "TRAP":                 2.5,   # highest weight — hardest to fake
+    # XLU-D04 (ACK 2 Oct 2026, "flag only"): realised compression whose options-cheap premise
+    # is false or unverified. Same weight and GO eligibility; the label is the flag.
+    "VOL_COMPRESSION_IV_RICH":       2.0,
+    "VOL_COMPRESSION_IV_UNVERIFIED": 2.0,
 }
 
 # Quality thresholds based on weighted score
@@ -74,7 +78,8 @@ QUALITY_STRONG_MIN  = 3.5   # e.g. TRAP alone (2.5) + VWAP (1.5) = 4.0 → STRON
 QUALITY_SINGLE_MIN  = 1.5   # any single trigger passes minimum bar
 
 # GO-eligible primary triggers (Fix 6 — primary quality filter)
-GO_ELIGIBLE_PRIMARIES = {"VOL_COMPRESSION", "RANGE_BREAK_EARLY", "RANGE_BREAK", "TRAP"}
+GO_ELIGIBLE_PRIMARIES = {"VOL_COMPRESSION", "VOL_COMPRESSION_IV_RICH", "VOL_COMPRESSION_IV_UNVERIFIED",
+                         "RANGE_BREAK_EARLY", "RANGE_BREAK", "TRAP"}   # XLU-D04: IV variants are flags only
 
 # ─────────────────────────────────────────────────────────────────────────────
 # THRESHOLDS
@@ -318,15 +323,8 @@ def _compute_ev(row: Dict) -> float:
         2. win_rate_10d × cumulative 10-session volatility budget
         3. 0.0 when the complete hold-window budget is unavailable
     """
-    # Path 1: authoritative EV from EIL/EVEngineV2. This is the current
-    # field contract from execution_intelligence_runner.py; recompute only
-    # when the sovereign EV fields are absent.
-    for ev_key in ("ev2_ev_conf_adj", "fd_ev_used", "ev_conf_adj", "eil_ev_net", "ev_final"):
-        if ev_key in row and row.get(ev_key) not in (None, "", "nan", "None"):
-            try:
-                return round(float(row.get(ev_key)), 8)
-            except (TypeError, ValueError):
-                pass
+    # Path 1 retired 3 Oct 2026 (ACK): EV v2 (ev2_ev_conf_adj / fd_ev_used / ev_conf_adj / eil_ev_net /
+    # ev_final) is not an expected value (CLAUDE.md rule 5) and is never read as one here.
 
     # Path 2: nested actuarial block (package JSON mode)
     act = row.get("actuarial", {})
@@ -353,7 +351,26 @@ def _compute_ev(row: Dict) -> float:
 # TRIGGER EVALUATORS
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _options_cheap_labels() -> set:
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parent / "config" / "governed_constants_v1.json"
+    cfg = json.loads(path.read_text(encoding="utf-8-sig"))["trigger_vol_compression"]
+    return {str(v).upper() for v in cfg["options_cheap_labels"]}
+
+
 def _t1_vol_compression(row: Dict) -> Optional[str]:
+    """Realised compression, with its options-cheap premise checked (XLU-D04)."""
+    realised = _t1_realised_compression(row)
+    if realised is None:
+        return None
+    label = _str(row, "ivp_label").upper()
+    if not label or label in {"UNKNOWN", "NONE", "NAN"}:
+        return "VOL_COMPRESSION_IV_UNVERIFIED"
+    return "VOL_COMPRESSION" if label in _options_cheap_labels() else "VOL_COMPRESSION_IV_RICH"
+
+
+def _t1_realised_compression(row: Dict) -> Optional[str]:
     """
     T1: Volatility Compression → Expansion
     Energy stored, options cheap. Compression confirmed by Crabel + ATR.

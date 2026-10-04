@@ -1,0 +1,12 @@
+tests/test_ila_optional_capability_labeling.py: 4 passed in 4.05s
+tests/test_intelligence_lab_strict_json.py: 5 passed in 56.92s
+tests/test_morning_market_structure_restart.py: 2 passed in 23.27s
+tests/test_morning_marketdata_stock_price.py: 5 passed in 25.31s
+tests/test_morning_selected_contract_identity.py: 3 passed in 28.97s
+tests/test_morning_thesis_validator.py: 1 skipped in 1.53s
+tests/test_msi_handoff_materializer.py: 8 passed in 33.93s
+tests/test_msi_interpreter_handoff.py: 10 passed in 29.68s
+tests/test_msi_morning_capture.py: 5 passed in 25.13s
+tests/test_msi_options_chain_v2_integration.py: 2 passed in 56.07s
+tests/test_msi_orchestrator_run_meta.py: 7 passed in 44.89s
+tests/test_normalise_macro_contract_scores.py: 2 passed in 8.28s

@@ -358,26 +358,9 @@ def evaluate(ctx: ExecutionContext) -> ExecutionVerdict:
         s5.score * WEIGHT_POC
     )
 
-    # ── Macro enrichment modifier (from apply_macro_enrichment_to_discovery.py)
-    _macro_bias    = getattr(ctx, "_macro_bias",    "NEUTRAL")
-    _macro_abstain = getattr(ctx, "_macro_abstain", False)
-
-    _enrichment_score_modifier = 0.0
-    if _macro_bias == "CALL_TAILWIND":
-        _enrichment_score_modifier = +10.0
-    elif _macro_bias == "PUT_HEADWIND":
-        _enrichment_score_modifier = -15.0
-    # CONTEXT_ONLY and NEUTRAL: no modifier
-
-    _sector_headwind_applies = not _macro_abstain
-
-    if _macro_abstain:
-        _eil_logger.info("MACRO_ABSTAIN: sector headwind bypassed, scoring on structure only")
-
-    if _enrichment_score_modifier != 0.0 and not hard_block:
-        composite = composite + _enrichment_score_modifier
-        _eil_logger.info(f"ENRICHMENT_MOD: bias={_macro_bias} modifier={_enrichment_score_modifier:+.2f}")
-    # ── End macro enrichment modifier ────────────────────────────────────────
+    # Macro enrichment modifier removed 3 Oct 2026 (ACK; CLAUDE.md rule 6): macro never moves a gate, score or
+    # rank. It added +10 (CALL_TAILWIND) / -15 (PUT_HEADWIND) to this composite - direction-blind, since
+    # PUT_HEADWIND marks a weak sector (a tailwind for a put). macro_bias stays on the row for display only.
 
     # ── Final verdict ─────────────────────────────────────────────────────────
     raw_verdict    = _composite_verdict(composite, hard_block)

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import importlib.util
+import argparse
 import io
 import os
 from pathlib import Path
@@ -23,7 +24,6 @@ from dotenv import dotenv_values
 
 REPO = Path(__file__).resolve().parents[3]
 SCRIPT = REPO / "scripts" / "backfill_polygon_daily_v7.py"
-MANIFEST = REPO / "data" / "daily_history_v7" / "_source_manifest.json"
 REDACTED = "<REDACTED_POLYGON_API_KEY>"
 REPLACE_ATTEMPTS = 20
 REPLACE_WAIT_SECONDS = 0.25
@@ -59,6 +59,12 @@ def retrying_replace(source, target) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Refresh adjusted actuarial source bars")
+    parser.add_argument("--end", required=True, help="Last completed session, YYYY-MM-DD")
+    parser.add_argument("--output", type=Path, default=REPO / "data" / "daily_history_v7")
+    args = parser.parse_args()
+    output = args.output.resolve()
+    manifest = output / "_source_manifest.json"
     key = (dotenv_values(REPO / ".env").get("POLYGON_API_KEY") or "").strip()
     if not key:
         print("POLYGON_API_KEY missing from .env", flush=True)
@@ -77,8 +83,8 @@ def main() -> int:
     sys.argv = [
         str(SCRIPT),
         "--universe", "Enhancements/phase0/actuarial_refresh/universe_20260917.csv",
-        "--start", "2021-08-01", "--end", "2026-09-16",
-        "--output", "data/daily_history_v7", "--workers", "8",
+        "--start", "2021-08-01", "--end", args.end,
+        "--output", str(output), "--workers", "8",
     ]
     os.chdir(REPO)
     code = 0
@@ -90,11 +96,11 @@ def main() -> int:
         print(f"FETCH FAILED: {type(error).__name__}: {error}", flush=True)
         code = 1
     finally:
-        if MANIFEST.exists():
-            original = MANIFEST.read_text(encoding="utf-8")
+        if manifest.exists():
+            original = manifest.read_text(encoding="utf-8")
             cleaned = scrub(original, key)
             if cleaned != original:
-                MANIFEST.write_text(cleaned, encoding="utf-8")
+                manifest.write_text(cleaned, encoding="utf-8")
                 print("manifest scrubbed of API key occurrences", flush=True)
     return code
 

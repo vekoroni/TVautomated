@@ -1,0 +1,406 @@
+{
+ "rows": 8565,
+ "policy": {
+  "version": "side_assign_v1",
+  "event_strength_min": 0.7,
+  "control_margin_min": 0.1,
+  "control_full_scale": 0.8,
+  "contested_margin": 0.05,
+  "min_observation_quality": 0.65,
+  "trend_min_bars": 200
+ },
+ "event_anchored": {
+  "status_counts": {
+   "SINGLE_SOURCE_STRUCTURE": 3886,
+   "CONFIRMED_STRUCTURE": 2036,
+   "CONTESTED_DIRECTION": 1108,
+   "TREND_ONLY": 787,
+   "TRANSITION_MIXED_TREND": 352,
+   "NO_DIRECTIONAL_EVIDENCE": 344,
+   "CONFLICT_REVIEW": 52
+  },
+  "BULL": {
+   "coverage_new": 3408,
+   "coverage_legacy": 4464,
+   "new": {
+    "n": 3408,
+    "blocks": 20,
+    "mean": -0.009783345048775522,
+    "lo95": -0.05217544794611904,
+    "hi95": 0.031346563376904425
+   },
+   "legacy": {
+    "n": 4464,
+    "blocks": 20,
+    "mean": -0.00023761558651595594,
+    "lo95": -0.03233734401867975,
+    "hi95": 0.031990110864094756
+   },
+   "paired": {
+    "diff": -0.009545729462259556,
+    "lo95": -0.04717622226117983,
+    "hi95": 0.03460200771162146,
+    "blocks": 20,
+    "n_new": 3408,
+    "n_legacy": 4464
+   },
+   "raw_new": {
+    "n": 3408,
+    "blocks": 20,
+    "mean": -0.01134162856571714,
+    "lo95": -0.25850299221607037,
+    "hi95": 0.21835526161172375
+   },
+   "raw_legacy": {
+    "n": 4464,
+    "blocks": 20,
+    "mean": -0.01753059087008714,
+    "lo95": -0.22977033471408628,
+    "hi95": 0.18369903928203665
+   },
+   "paired_raw": {
+    "diff": 0.006188962304369987,
+    "lo95": -0.06415714190644774,
+    "hi95": 0.06819841302253567,
+    "blocks": 20,
+    "n_new": 3408,
+    "n_legacy": 4464
+   },
+   "favourable_first_new": 0.31220657276995306,
+   "favourable_first_legacy": 0.324820788530466,
+   "adverse_first_new": 0.2890258215962441,
+   "adverse_first_legacy": 0.31137992831541217,
+   "adverse_outcome_rate_new": 0.13438967136150234,
+   "adverse_outcome_rate_legacy": 0.13732078853046595,
+   "mean_signed_z5_new": 0.02784682555210607,
+   "mean_signed_z5_legacy": 0.01997701236738371,
+   "mean_signed_z10_new": -0.003345149174822002,
+   "mean_signed_z10_legacy": -0.017545621732571695,
+   "non_inferiority": "PASS"
+  },
+  "BEAR": {
+   "coverage_new": 3622,
+   "coverage_legacy": 2182,
+   "new": {
+    "n": 3622,
+    "blocks": 20,
+    "mean": -0.0026606531043558536,
+    "lo95": -0.032251069644431175,
+    "hi95": 0.027374835426872687
+   },
+   "legacy": {
+    "n": 2182,
+    "blocks": 20,
+    "mean": 0.003509368911560989,
+    "lo95": -0.04443811079829653,
+    "hi95": 0.052295659848394536
+   },
+   "paired": {
+    "diff": -0.006170022015916843,
+    "lo95": -0.05178056904207059,
+    "hi95": 0.04292272443885609,
+    "blocks": 20,
+    "n_new": 3622,
+    "n_legacy": 2182
+   },
+   "raw_new": {
+    "n": 3622,
+    "blocks": 20,
+    "mean": 0.0007963430103780069,
+    "lo95": -0.16612917366542146,
+    "hi95": 0.1762655185901448
+   },
+   "raw_legacy": {
+    "n": 2182,
+    "blocks": 20,
+    "mean": -0.0016775995230882748,
+    "lo95": -0.16812677664845613,
+    "hi95": 0.18064561213777924
+   },
+   "paired_raw": {
+    "diff": 0.0024739425334662805,
+    "lo95": -0.055726355163746286,
+    "hi95": 0.05571153599524349,
+    "blocks": 20,
+    "n_new": 3622,
+    "n_legacy": 2182
+   },
+   "favourable_first_new": 0.31943677526228603,
+   "favourable_first_legacy": 0.2946837763519707,
+   "adverse_first_new": 0.30480397570403095,
+   "adverse_first_legacy": 0.2983501374885426,
+   "adverse_outcome_rate_new": 0.14743235781336278,
+   "adverse_outcome_rate_legacy": 0.1310724106324473,
+   "mean_signed_z5_new": -0.03906792542961531,
+   "mean_signed_z5_legacy": -0.059762226311043914,
+   "mean_signed_z10_new": -0.0010448213223802042,
+   "mean_signed_z10_legacy": -0.02474392896246284,
+   "non_inferiority": "FAIL"
+  },
+  "ALL": {
+   "coverage_new": 7030,
+   "coverage_legacy": 6646,
+   "new": {
+    "n": 7030,
+    "blocks": 20,
+    "mean": -0.006113588260341947,
+    "lo95": -0.039949969598837176,
+    "hi95": 0.027781646246909347
+   },
+   "legacy": {
+    "n": 6646,
+    "blocks": 20,
+    "mean": 0.0009925860648237798,
+    "lo95": -0.03457909800493642,
+    "hi95": 0.036523158915872246
+   },
+   "paired": {
+    "diff": -0.007106174325165729,
+    "lo95": -0.044241284848280105,
+    "hi95": 0.03611150909233863,
+    "blocks": 20,
+    "n_new": 7030,
+    "n_legacy": 6646
+   },
+   "raw_new": {
+    "n": 7030,
+    "blocks": 20,
+    "mean": -0.005087896979854184,
+    "lo95": -0.08216500334220207,
+    "hi95": 0.06622722899374711
+   },
+   "raw_legacy": {
+    "n": 6646,
+    "blocks": 20,
+    "mean": -0.012325771863293348,
+    "lo95": -0.1083758627280649,
+    "hi95": 0.08099236454447817
+   },
+   "paired_raw": {
+    "diff": 0.007237874883439165,
+    "lo95": -0.0650058832047194,
+    "hi95": 0.09100433701620554,
+    "blocks": 20,
+    "n_new": 7030,
+    "n_legacy": 6646
+   },
+   "favourable_first_new": 0.3159317211948791,
+   "favourable_first_legacy": 0.31492627144146856,
+   "adverse_first_new": 0.2971550497866287,
+   "adverse_first_legacy": 0.30710201625037614,
+   "adverse_outcome_rate_new": 0.1411095305832148,
+   "adverse_outcome_rate_legacy": 0.13526933493830876,
+   "mean_signed_z5_new": -0.006629024811449383,
+   "mean_signed_z5_legacy": -0.0062027978637822665,
+   "mean_signed_z10_new": -0.0021599731461528437,
+   "mean_signed_z10_legacy": -0.01990895401900301,
+   "non_inferiority": "PASS"
+  },
+  "missed_large_winners": 40,
+  "large_winner_opportunities_legacy_correct": 271,
+  "transitions": {
+   "changed_side": 1320,
+   "same_side": 4463,
+   "newly_directed": 1247,
+   "newly_unassigned": 863,
+   "both_undirected": 672
+  }
+ },
+ "any_setup_transparency": {
+  "status_counts": {
+   "SINGLE_SOURCE_STRUCTURE": 4069,
+   "CONFIRMED_STRUCTURE": 2126,
+   "CONTESTED_DIRECTION": 1132,
+   "TREND_ONLY": 617,
+   "TRANSITION_MIXED_TREND": 352,
+   "NO_DIRECTIONAL_EVIDENCE": 217,
+   "CONFLICT_REVIEW": 52
+  },
+  "BULL": {
+   "coverage_new": 3563,
+   "coverage_legacy": 4464,
+   "new": {
+    "n": 3563,
+    "blocks": 20,
+    "mean": -0.008982492578340403,
+    "lo95": -0.04475956595810505,
+    "hi95": 0.027281769490338812
+   },
+   "legacy": {
+    "n": 4464,
+    "blocks": 20,
+    "mean": -0.00023761558651595594,
+    "lo95": -0.03233734401867975,
+    "hi95": 0.031990110864094756
+   },
+   "paired": {
+    "diff": -0.008744876991824434,
+    "lo95": -0.03860523748892624,
+    "hi95": 0.02379076142936687,
+    "blocks": 20,
+    "n_new": 3563,
+    "n_legacy": 4464
+   },
+   "raw_new": {
+    "n": 3563,
+    "blocks": 20,
+    "mean": -0.010420038885434559,
+    "lo95": -0.25159335314425935,
+    "hi95": 0.21233313507754883
+   },
+   "raw_legacy": {
+    "n": 4464,
+    "blocks": 20,
+    "mean": -0.01753059087008714,
+    "lo95": -0.22977033471408628,
+    "hi95": 0.18369903928203665
+   },
+   "paired_raw": {
+    "diff": 0.007110551984652578,
+    "lo95": -0.04930478050921578,
+    "hi95": 0.05569116903969603,
+    "blocks": 20,
+    "n_new": 3563,
+    "n_legacy": 4464
+   },
+   "favourable_first_new": 0.3132191973056413,
+   "favourable_first_legacy": 0.324820788530466,
+   "adverse_first_new": 0.29132753297782765,
+   "adverse_first_legacy": 0.31137992831541217,
+   "adverse_outcome_rate_new": 0.134717934325007,
+   "adverse_outcome_rate_legacy": 0.13732078853046595,
+   "mean_signed_z5_new": 0.025174302166622836,
+   "mean_signed_z5_legacy": 0.01997701236738371,
+   "mean_signed_z10_new": -0.008507978862103777,
+   "mean_signed_z10_legacy": -0.017545621732571695,
+   "non_inferiority": "PASS"
+  },
+  "BEAR": {
+   "coverage_new": 3764,
+   "coverage_legacy": 2182,
+   "new": {
+    "n": 3764,
+    "blocks": 20,
+    "mean": 0.002487825489577175,
+    "lo95": -0.025991035416104452,
+    "hi95": 0.032108500800462826
+   },
+   "legacy": {
+    "n": 2182,
+    "blocks": 20,
+    "mean": 0.003509368911560989,
+    "lo95": -0.04443811079829653,
+    "hi95": 0.052295659848394536
+   },
+   "paired": {
+    "diff": -0.0010215434219838062,
+    "lo95": -0.04367204831921401,
+    "hi95": 0.043515045248208435,
+    "blocks": 20,
+    "n_new": 3764,
+    "n_legacy": 2182
+   },
+   "raw_new": {
+    "n": 3764,
+    "blocks": 20,
+    "mean": 0.001633221479417514,
+    "lo95": -0.16318453877391081,
+    "hi95": 0.17528235446454513
+   },
+   "raw_legacy": {
+    "n": 2182,
+    "blocks": 20,
+    "mean": -0.0016775995230882748,
+    "lo95": -0.16812677664845613,
+    "hi95": 0.18064561213777924
+   },
+   "paired_raw": {
+    "diff": 0.0033108210025057875,
+    "lo95": -0.05161554708647026,
+    "hi95": 0.0523068039478638,
+    "blocks": 20,
+    "n_new": 3764,
+    "n_legacy": 2182
+   },
+   "favourable_first_new": 0.31827842720510097,
+   "favourable_first_legacy": 0.2946837763519707,
+   "adverse_first_new": 0.3057917109458023,
+   "adverse_first_legacy": 0.2983501374885426,
+   "adverse_outcome_rate_new": 0.14638682252922422,
+   "adverse_outcome_rate_legacy": 0.1310724106324473,
+   "mean_signed_z5_new": -0.04465695269099198,
+   "mean_signed_z5_legacy": -0.059762226311043914,
+   "mean_signed_z10_new": -0.006719662644399008,
+   "mean_signed_z10_legacy": -0.02474392896246284,
+   "non_inferiority": "PASS"
+  },
+  "ALL": {
+   "coverage_new": 7327,
+   "coverage_legacy": 6646,
+   "new": {
+    "n": 7327,
+    "blocks": 20,
+    "mean": -0.0030900021719473614,
+    "lo95": -0.03430577245667106,
+    "hi95": 0.02965470482770949
+   },
+   "legacy": {
+    "n": 6646,
+    "blocks": 20,
+    "mean": 0.0009925860648237798,
+    "lo95": -0.03457909800493642,
+    "hi95": 0.036523158915872246
+   },
+   "paired": {
+    "diff": -0.00408258823677115,
+    "lo95": -0.036024868358801254,
+    "hi95": 0.03045185146132406,
+    "blocks": 20,
+    "n_new": 7327,
+    "n_legacy": 6646
+   },
+   "raw_new": {
+    "n": 7327,
+    "blocks": 20,
+    "mean": -0.004228081465849029,
+    "lo95": -0.07275549755296928,
+    "hi95": 0.06119283766521896
+   },
+   "raw_legacy": {
+    "n": 6646,
+    "blocks": 20,
+    "mean": -0.012325771863293348,
+    "lo95": -0.1083758627280649,
+    "hi95": 0.08099236454447817
+   },
+   "paired_raw": {
+    "diff": 0.008097690397444318,
+    "lo95": -0.06159212335534299,
+    "hi95": 0.08297871336782768,
+    "blocks": 20,
+    "n_new": 7327,
+    "n_legacy": 6646
+   },
+   "favourable_first_new": 0.31581820663300125,
+   "favourable_first_legacy": 0.31492627144146856,
+   "adverse_first_new": 0.2987580182885219,
+   "adverse_first_legacy": 0.30710201625037614,
+   "adverse_outcome_rate_new": 0.14071243346526546,
+   "adverse_outcome_rate_legacy": 0.13526933493830876,
+   "mean_signed_z5_new": -0.010699158087787175,
+   "mean_signed_z5_legacy": -0.0062027978637822665,
+   "mean_signed_z10_new": -0.007589291508010595,
+   "mean_signed_z10_legacy": -0.01990895401900301,
+   "non_inferiority": "PASS"
+  },
+  "missed_large_winners": 24,
+  "large_winner_opportunities_legacy_correct": 271,
+  "transitions": {
+   "changed_side": 1306,
+   "same_side": 4719,
+   "newly_directed": 1302,
+   "newly_unassigned": 621,
+   "both_undirected": 617
+  }
+ }
+}

@@ -440,6 +440,63 @@ def evaluate_vertical_debit(
     if cell is None:
         return _rejection(reason, detail, ev3_contract_symbol=str(row.get("contract_symbol") or row.get("symbol") or ""))
 
+    value = _value_vertical(long_c, short_c, cell, policy, entry_debit=entry_debit, width=width)
+    rate_defaulted, dividend_defaulted = value["rate_defaulted"], value["dividend_defaulted"]
+    rate, dividend = value["rate"], value["dividend"]
+    returns, spread_mids, leg_mids = value["returns"], value["spread_mids"], value["leg_mids"]
+    probabilities = value["probabilities"]
+    ev_base, ev_stress, ev_conservative = value["ev_base"], value["ev_stress"], value["ev_conservative"]
+    n_effective = value["n_effective"]
+    probability_uncertainty = value["probability_uncertainty"]
+    liquidity_uncertainty = value["liquidity_uncertainty"]
+    max_quote_age = value["max_quote_age"]
+    quote_uncertainty = value["quote_uncertainty"]
+    default_uncertainty = value["default_uncertainty"]
+    state_fallback_uncertainty = value["state_fallback_uncertainty"]
+    exit_session_default_uncertainty = value["exit_session_default_uncertainty"]
+    uncertainty_total, lower_bound = value["uncertainty_total"], value["lower_bound"]
+    absolute_state = value["absolute_state"]
+    multiplier = float(long_c["contract_multiplier"])
+    composite_symbol = str(row.get("contract_symbol") or row.get("symbol") or f"{structure}:{long_c['contract_symbol']}/{short_c['contract_symbol']}")
+    output = _vertical_output(
+        row, long_c, short_c, cell, policy, structure=structure, direction=direction,
+        long_strike=long_strike, short_strike=short_strike, width=width, entry_debit=entry_debit,
+        multiplier=multiplier, composite_symbol=composite_symbol, probabilities=probabilities,
+        n_effective=n_effective, ev_base=ev_base, ev_stress=ev_stress, ev_conservative=ev_conservative,
+        probability_uncertainty=probability_uncertainty, liquidity_uncertainty=liquidity_uncertainty,
+        quote_uncertainty=quote_uncertainty, default_uncertainty=default_uncertainty,
+        state_fallback_uncertainty=state_fallback_uncertainty,
+        exit_session_default_uncertainty=exit_session_default_uncertainty,
+        uncertainty_total=uncertainty_total, lower_bound=lower_bound, absolute_state=absolute_state,
+        max_quote_age=max_quote_age, rate=rate, dividend=dividend, rate_defaulted=rate_defaulted,
+        dividend_defaulted=dividend_defaulted,
+    )
+    for key, number in returns.items():
+        output[f"ev3_return_{key}"] = number
+    for key, number in spread_mids.items():
+        output[f"ev3_exit_mid_{key}"] = number
+    for key, number in leg_mids.items():
+        output[f"ev3_exit_mid_{key}"] = number
+    output.update(_move_window_fields(
+        long_c, barrier_cache,
+        lambda window_cell: _value_vertical(
+            long_c, short_c, window_cell, policy, entry_debit=entry_debit, width=width,
+        ),
+        hold_value=value,
+    ))
+    return output
+
+
+def _value_vertical(
+    long_c: Mapping[str, Any],
+    short_c: Mapping[str, Any],
+    cell: Mapping[str, Any],
+    policy: EV3Policy,
+    *,
+    entry_debit: float,
+    width: float,
+) -> dict[str, Any]:
+    """Value one validated vertical debit against one barrier cell (one horizon)."""
     rate_defaulted = long_c.get("risk_free_rate") is None
     dividend_defaulted = long_c.get("dividend_yield") is None
     rate = policy.default_risk_free_rate if rate_defaulted else float(long_c["risk_free_rate"])
@@ -507,9 +564,56 @@ def evaluate_vertical_debit(
     absolute_state = "NEGATIVE_EV" if ev_conservative <= 0 else (
         "INDETERMINATE" if lower_bound <= policy.capital_hurdle_return else "POSITIVE_UNVALIDATED"
     )
-    multiplier = float(long_c["contract_multiplier"])
-    composite_symbol = str(row.get("contract_symbol") or row.get("symbol") or f"{structure}:{long_c['contract_symbol']}/{short_c['contract_symbol']}")
-    output: dict[str, Any] = {
+    return {
+        "rate_defaulted": rate_defaulted, "dividend_defaulted": dividend_defaulted,
+        "rate": rate, "dividend": dividend, "returns": returns, "spread_mids": spread_mids,
+        "leg_mids": leg_mids, "probabilities": probabilities, "ev_base": ev_base, "ev_stress": ev_stress,
+        "ev_conservative": ev_conservative, "n_effective": n_effective,
+        "probability_uncertainty": probability_uncertainty, "liquidity_uncertainty": liquidity_uncertainty,
+        "max_quote_age": max_quote_age, "quote_uncertainty": quote_uncertainty,
+        "default_uncertainty": default_uncertainty, "state_fallback_uncertainty": state_fallback_uncertainty,
+        "exit_session_default_uncertainty": exit_session_default_uncertainty,
+        "uncertainty_total": uncertainty_total, "lower_bound": lower_bound, "absolute_state": absolute_state,
+    }
+
+
+def _vertical_output(
+    row: Mapping[str, Any],
+    long_c: Mapping[str, Any],
+    short_c: Mapping[str, Any],
+    cell: Mapping[str, Any],
+    policy: EV3Policy,
+    *,
+    structure: str,
+    direction: str,
+    long_strike: float,
+    short_strike: float,
+    width: float,
+    entry_debit: float,
+    multiplier: float,
+    composite_symbol: str,
+    probabilities: Any,
+    n_effective: float,
+    ev_base: float,
+    ev_stress: float,
+    ev_conservative: float,
+    probability_uncertainty: float,
+    liquidity_uncertainty: float,
+    quote_uncertainty: float,
+    default_uncertainty: float,
+    state_fallback_uncertainty: float,
+    exit_session_default_uncertainty: float,
+    uncertainty_total: float,
+    lower_bound: float,
+    absolute_state: str,
+    max_quote_age: float,
+    rate: float,
+    dividend: float,
+    rate_defaulted: bool,
+    dividend_defaulted: bool,
+) -> dict[str, Any]:
+    """The published vertical-debit evaluation at the governed hold (unchanged field set)."""
+    return {
         "ev3_engine_version": EV3_ENGINE_VERSION,
         "ev3_policy_version": policy.policy_version,
         "ev3_status": EV3_EVALUATED_STATUS,
@@ -571,13 +675,6 @@ def evaluate_vertical_debit(
         "ev3_rate_defaulted": rate_defaulted,
         "ev3_dividend_yield_defaulted": dividend_defaulted,
     }
-    for key, value in returns.items():
-        output[f"ev3_return_{key}"] = value
-    for key, value in spread_mids.items():
-        output[f"ev3_exit_mid_{key}"] = value
-    for key, value in leg_mids.items():
-        output[f"ev3_exit_mid_{key}"] = value
-    return output
 
 
 def evaluate_contract(
@@ -635,57 +732,20 @@ def evaluate_contract(
     if cell is None:
         return _rejection(reason, detail, ev3_contract_symbol=c.get("contract_symbol"))
 
-    rate_defaulted = c.get("risk_free_rate") is None
-    dividend_defaulted = c.get("dividend_yield") is None
-    rate = policy.default_risk_free_rate if rate_defaulted else float(c["risk_free_rate"])
-    dividend = policy.default_dividend_yield if dividend_defaulted else float(c["dividend_yield"])
-    base_iv = float(c["implied_volatility"])
-    stress_iv = base_iv * (1.0 - policy.iv_stress_fraction)
-    exits = {
-        "target": (float(c["target_spot"]), float(cell["target_exit_session_mean"])),
-        "stop": (float(c["invalidation_spot"]), float(cell["stop_exit_session_mean_conservative"])),
-        "timeout": (float(c["entry_spot"]), float(cell["timeout_exit_session"])),
-    }
-    returns: dict[str, float] = {}
-    anchored: dict[str, float] = {}
-    for scenario, (spot, sessions) in exits.items():
-        for label, vol in (("base", base_iv), ("stress", stress_iv)):
-            value, exit_mid = _exit_return(
-                c, exit_spot=spot, exit_sessions=sessions,
-                current_volatility=base_iv, exit_volatility=vol,
-                rate=rate, dividend_yield=dividend, policy=policy,
-            )
-            returns[f"{scenario}_{label}"] = value
-            anchored[f"{scenario}_{label}"] = exit_mid
-
-    probabilities = np.array([cell["p_target_first"], cell["p_stop_first"], cell["p_timeout"]], dtype=float)
-    base_outcomes = np.array([returns["target_base"], returns["stop_base"], returns["timeout_base"]])
-    stress_outcomes = np.array([returns["target_stress"], returns["stop_stress"], returns["timeout_stress"]])
-    ev_base = float(np.dot(probabilities, base_outcomes))
-    ev_stress = float(np.dot(probabilities, stress_outcomes))
-    ev_conservative = min(ev_base, ev_stress)
-    chosen_outcomes = base_outcomes if ev_base <= ev_stress else stress_outcomes
-    n_effective = max(float(cell["n_effective"]), 1.0)
-    outcome_variance = float(np.dot(probabilities, (chosen_outcomes - ev_conservative) ** 2))
-    probability_uncertainty = policy.one_sided_z * math.sqrt(max(outcome_variance, 0.0) / n_effective)
-    liquidity_uncertainty = min(float(c["spread_fraction_mid"]) * 0.10, 0.10)
-    freshness_fraction = float(c["quote_age_seconds"]) / max(float(c["quote_freshness_limit_seconds"]), 1.0)
-    quote_uncertainty = min(max(freshness_fraction, 0.0) * 0.01, 0.01)
-    default_uncertainty = policy.default_input_uncertainty_return * int(rate_defaulted or dividend_defaulted)
-    state_fallback_uncertainty = float(cell.get("state_fallback_penalty_return", 0.0))
-    exit_session_default_uncertainty = float(cell.get("exit_session_default_penalty_return", 0.0))
-    uncertainty_total = (
-        probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty
-        + quote_uncertainty + default_uncertainty + state_fallback_uncertainty
-        + exit_session_default_uncertainty
-    )
-    lower_bound = ev_conservative - uncertainty_total
-    if ev_conservative <= 0:
-        absolute_state = "NEGATIVE_EV"
-    elif lower_bound <= policy.capital_hurdle_return:
-        absolute_state = "INDETERMINATE"
-    else:
-        absolute_state = "POSITIVE_UNVALIDATED"
+    value = _value_long_single(c, cell, policy)
+    rate_defaulted, dividend_defaulted = value["rate_defaulted"], value["dividend_defaulted"]
+    rate, dividend = value["rate"], value["dividend"]
+    returns, anchored, probabilities = value["returns"], value["anchored"], value["probabilities"]
+    ev_base, ev_stress, ev_conservative = value["ev_base"], value["ev_stress"], value["ev_conservative"]
+    n_effective = value["n_effective"]
+    probability_uncertainty = value["probability_uncertainty"]
+    liquidity_uncertainty = value["liquidity_uncertainty"]
+    quote_uncertainty = value["quote_uncertainty"]
+    default_uncertainty = value["default_uncertainty"]
+    state_fallback_uncertainty = value["state_fallback_uncertainty"]
+    exit_session_default_uncertainty = value["exit_session_default_uncertainty"]
+    uncertainty_total, lower_bound = value["uncertainty_total"], value["lower_bound"]
+    absolute_state = value["absolute_state"]
 
     entry_debit_per_share = float(c["ask"]) + float(c["mid"]) * policy.slippage_fraction_of_mid_each_side
     output: dict[str, Any] = {
@@ -747,9 +807,142 @@ def evaluate_contract(
         "ev3_risk_unit_premium": entry_debit_per_share * float(c["contract_multiplier"]),
         "ev3_quote_age_seconds": float(c["quote_age_seconds"]),
     }
-    for key, value in anchored.items():
-        output[f"ev3_exit_mid_{key}"] = value
+    for key, exit_mid in anchored.items():
+        output[f"ev3_exit_mid_{key}"] = exit_mid
+    output.update(_move_window_fields(
+        c, barrier_cache, lambda window_cell: _value_long_single(c, window_cell, policy), hold_value=value,
+    ))
     return output
+
+
+def _value_long_single(c: Mapping[str, Any], cell: Mapping[str, Any], policy: EV3Policy) -> dict[str, Any]:
+    """Value one validated long single contract against one barrier cell (one horizon)."""
+    rate_defaulted = c.get("risk_free_rate") is None
+    dividend_defaulted = c.get("dividend_yield") is None
+    rate = policy.default_risk_free_rate if rate_defaulted else float(c["risk_free_rate"])
+    dividend = policy.default_dividend_yield if dividend_defaulted else float(c["dividend_yield"])
+    base_iv = float(c["implied_volatility"])
+    stress_iv = base_iv * (1.0 - policy.iv_stress_fraction)
+    exits = {
+        "target": (float(c["target_spot"]), float(cell["target_exit_session_mean"])),
+        "stop": (float(c["invalidation_spot"]), float(cell["stop_exit_session_mean_conservative"])),
+        "timeout": (float(c["entry_spot"]), float(cell["timeout_exit_session"])),
+    }
+    returns: dict[str, float] = {}
+    anchored: dict[str, float] = {}
+    for scenario, (spot, sessions) in exits.items():
+        for label, vol in (("base", base_iv), ("stress", stress_iv)):
+            value, exit_mid = _exit_return(
+                c, exit_spot=spot, exit_sessions=sessions,
+                current_volatility=base_iv, exit_volatility=vol,
+                rate=rate, dividend_yield=dividend, policy=policy,
+            )
+            returns[f"{scenario}_{label}"] = value
+            anchored[f"{scenario}_{label}"] = exit_mid
+
+    probabilities = np.array([cell["p_target_first"], cell["p_stop_first"], cell["p_timeout"]], dtype=float)
+    base_outcomes = np.array([returns["target_base"], returns["stop_base"], returns["timeout_base"]])
+    stress_outcomes = np.array([returns["target_stress"], returns["stop_stress"], returns["timeout_stress"]])
+    ev_base = float(np.dot(probabilities, base_outcomes))
+    ev_stress = float(np.dot(probabilities, stress_outcomes))
+    ev_conservative = min(ev_base, ev_stress)
+    chosen_outcomes = base_outcomes if ev_base <= ev_stress else stress_outcomes
+    n_effective = max(float(cell["n_effective"]), 1.0)
+    outcome_variance = float(np.dot(probabilities, (chosen_outcomes - ev_conservative) ** 2))
+    probability_uncertainty = policy.one_sided_z * math.sqrt(max(outcome_variance, 0.0) / n_effective)
+    liquidity_uncertainty = min(float(c["spread_fraction_mid"]) * 0.10, 0.10)
+    freshness_fraction = float(c["quote_age_seconds"]) / max(float(c["quote_freshness_limit_seconds"]), 1.0)
+    quote_uncertainty = min(max(freshness_fraction, 0.0) * 0.01, 0.01)
+    default_uncertainty = policy.default_input_uncertainty_return * int(rate_defaulted or dividend_defaulted)
+    state_fallback_uncertainty = float(cell.get("state_fallback_penalty_return", 0.0))
+    exit_session_default_uncertainty = float(cell.get("exit_session_default_penalty_return", 0.0))
+    uncertainty_total = (
+        probability_uncertainty + policy.model_uncertainty_return + liquidity_uncertainty
+        + quote_uncertainty + default_uncertainty + state_fallback_uncertainty
+        + exit_session_default_uncertainty
+    )
+    lower_bound = ev_conservative - uncertainty_total
+    if ev_conservative <= 0:
+        absolute_state = "NEGATIVE_EV"
+    elif lower_bound <= policy.capital_hurdle_return:
+        absolute_state = "INDETERMINATE"
+    else:
+        absolute_state = "POSITIVE_UNVALIDATED"
+    return {
+        "rate_defaulted": rate_defaulted, "dividend_defaulted": dividend_defaulted,
+        "rate": rate, "dividend": dividend, "returns": returns, "anchored": anchored,
+        "probabilities": probabilities, "ev_base": ev_base, "ev_stress": ev_stress,
+        "ev_conservative": ev_conservative, "n_effective": n_effective,
+        "probability_uncertainty": probability_uncertainty, "liquidity_uncertainty": liquidity_uncertainty,
+        "quote_uncertainty": quote_uncertainty, "default_uncertainty": default_uncertainty,
+        "state_fallback_uncertainty": state_fallback_uncertainty,
+        "exit_session_default_uncertainty": exit_session_default_uncertainty,
+        "uncertainty_total": uncertainty_total, "lower_bound": lower_bound, "absolute_state": absolute_state,
+    }
+
+
+#: Values published for the move-window valuation (ACK option 3, 28 Sep 2026).
+MOVE_WINDOW_VALUE_FIELDS = (
+    "ev_base_return", "ev_stress_return", "ev_conservative_return", "ev_lower_bound_return",
+    "p_target", "p_stop", "p_timeout", "n_effective", "uncertainty_total_return",
+)
+
+
+def _move_window_fields(
+    c: Mapping[str, Any],
+    barrier_cache: EV3BarrierCache,
+    value_at: Any,
+    *,
+    hold_value: Mapping[str, Any],
+) -> dict[str, Any]:
+    """The same contract valued at the thesis move window, published beside the hold value.
+
+    ACK 28 Sep 2026 (option 3): the lead value is the governed hold (ev3_ev_*); this is the
+    second, descriptive value. It is typed NOT_EVALUATED with its reason when the window cannot
+    be valued and never borrows the hold value.
+    """
+    hold = int(c["planned_hold_sessions"])
+    window = c.get("move_window_sessions")
+    fields: dict[str, Any] = {
+        "ev3_hold_sessions": hold,
+        "ev3_move_window_sessions": window,
+        "ev3_move_window_source": c.get("move_window_source", ""),
+        "ev3_move_window_status": "NOT_EVALUATED",
+        "ev3_move_window_reason_code": "",
+        "ev3_move_window_reason_detail": "",
+        "ev3_move_window_absolute_state": "",
+        **{f"ev3_move_window_{name}": None for name in MOVE_WINDOW_VALUE_FIELDS},
+    }
+    if window is None:
+        fields["ev3_move_window_reason_code"] = "MOVE_WINDOW_UNAVAILABLE"
+        return fields
+    if int(window) == hold:
+        value = hold_value
+    else:
+        cell, reason, detail = barrier_cache.lookup(
+            c["state_key"], c["canonical_direction"], int(window),
+            c["target_distance_fraction"], c["stop_distance_fraction"],
+        )
+        if cell is None:
+            fields["ev3_move_window_reason_code"] = reason
+            fields["ev3_move_window_reason_detail"] = detail
+            return fields
+        value = value_at(cell)
+    probabilities = value["probabilities"]
+    fields.update({
+        "ev3_move_window_status": "EVALUATED",
+        "ev3_move_window_absolute_state": value["absolute_state"],
+        "ev3_move_window_ev_base_return": value["ev_base"],
+        "ev3_move_window_ev_stress_return": value["ev_stress"],
+        "ev3_move_window_ev_conservative_return": value["ev_conservative"],
+        "ev3_move_window_ev_lower_bound_return": value["lower_bound"],
+        "ev3_move_window_p_target": float(probabilities[0]),
+        "ev3_move_window_p_stop": float(probabilities[1]),
+        "ev3_move_window_p_timeout": float(probabilities[2]),
+        "ev3_move_window_n_effective": value["n_effective"],
+        "ev3_move_window_uncertainty_total_return": value["uncertainty_total"],
+    })
+    return fields
 
 
 def select_contract(

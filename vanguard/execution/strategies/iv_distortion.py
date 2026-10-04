@@ -95,7 +95,7 @@ def run(ctx: ExecutionContext) -> StrategyResult:
             strategy_name  = "S2_IV_DISTORTION",
             score          = 70.0,
             passed         = True,
-            verdict        = "CLEAN",
+            verdict        = "NO_DATA",   # E5 (ACK 3 Oct 2026): no IV data is not a clean surface
             detail         = "No IV data — cannot assess distortion",
             size_multiplier= 1.0,
             block          = False,

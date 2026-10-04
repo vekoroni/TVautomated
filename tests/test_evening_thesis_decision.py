@@ -41,6 +41,9 @@ def _row(**overrides):
         "trigger_price": 99.0,
         "trigger_price_source": "WBS_PHASE_C_CONFIRMED_BREAK",
         "wyckoff_execution_bias": "BULLISH",
+        # XLU-D10 (ACK 2 Oct 2026): readiness needs a behavioural event on the trade side.
+        "thesis_structure_alignment": "ALIGNED",
+        "thesis_category": "Phase D · SOS -> LPS continuation (activated, 1d)",
         "wyckoff_entry_trigger": "Enter LONG on bullish confirmation",
         "garch_expected_move_1_5d": 5.0,
         "time_horizon": "1_5d",
@@ -125,13 +128,14 @@ def test_primary_reason_does_not_hide_secondary_evidence():
         target_price=180.0,
         trigger_primary="VOL_COMPRESSION",
         wyckoff_execution_bias="OBSERVE_ONLY",
+        thesis_structure_alignment="OPPOSING_ONLY",
         direction_resolution_call_score=0.0,
         direction_resolution_put_score=1.0,
     ))
     assert result["evening_thesis_bucket"] == "EOD_DIRECTION_EVIDENCE_REVIEW"
     assert "TARGET_BEYOND_EXPECTED_MOVE_REVIEW_BAND" in result["evening_evidence_flags"]
     assert "TRIGGER_NOT_PRICE_CONFIRMED" in result["evening_evidence_flags"]
-    assert "WYCKOFF_OBSERVE_ONLY" in result["evening_evidence_flags"]
+    assert "NO_BEHAVIOURAL_EVENT_ON_TRADE_SIDE" in result["evening_evidence_flags"]   # XLU-D10
 
 
 def test_explicit_terminal_thesis_is_invalid_but_missing_data_is_not():

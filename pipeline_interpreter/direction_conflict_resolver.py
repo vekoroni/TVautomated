@@ -44,6 +44,8 @@ def _score_layer(layer_name: str, row: dict) -> tuple[str, str]:
 
     if layer_name == "actuarial":
         verdict = _get_str(row, "probability_verdict", "actuarial_direction", "prob_direction")
+        if _get_str(row, "thesis__side") in {"BULL", "BEAR", "UNASSIGNED"}:
+            return "NEUTRAL", f"actuarial_verdict={verdict or 'missing'} advisory_only; not a direction vote"
         if "POSITIVE_EDGE" in verdict or verdict == "CALL":
             return "CALL", f"probability_verdict={verdict}"
         if "NEGATIVE_EDGE" in verdict or verdict == "PUT":

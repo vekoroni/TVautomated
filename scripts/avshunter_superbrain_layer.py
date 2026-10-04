@@ -231,6 +231,7 @@ if _SB_ROOT not in sys.path:
 
 # Data contract validation is required before Superbrain may claim a signal.
 from scripts.data_contract_validator import DataContractValidator as DCV
+from domain.statistics_provenance import win_rate_source_label  # B2 (ACK 3 Oct 2026)
 _DCV_AVAILABLE = True
 
 # ── EV Engine v2 (single source of truth for expectancy) ──────────────────────
@@ -1332,87 +1333,20 @@ def assemble_execution_plan(
     # Gate threshold 0.5 is calibrated for structural R:R — using rr_options caused
     # virtually every signal to score below threshold and downgrade to EXECUTE_WITH_RISK.
     # rr_options is preserved separately for premium sizing context.
-    rr_val        = float(_f(signal, 'rr_underlying') or _f(signal, 'rr') or 0)
+    # XLU-D13 (ACK 2 Oct 2026): the R:R gate reads the underlying R:R to the volatility-reachable
+    # target; a structural-target R:R never falls through into it.
+    rr_val        = float(_f(signal, 'rr_underlying_reachable') or 0)
     rr_options_val = float(_f(signal, 'rr_options') or 0)
-    ev_val        = float(_f(signal, 'ev_final') or _f(signal, 'ev_adj') or _f(signal, 'ev_adjusted') or 0)
     composite_val = float(_f(signal, 'composite') or 0)
 
-    EV_GATE_FLOOR = -0.10   # matches EVEngineV2 WEAK_PASS / FAIL boundary
 
-    # ── HARD GATE 0a: DATA_WEAK — EVEngineV2 v2.3.0 PATCH-08 ────────────────────
-    # ev_status='DATA_WEAK' means all actuarial hit rates were zero and
-    # data_quality_score was capped to 39 by EVEngineV2. The signal has no
-    # real actuarial backing — it is a structural estimate only.
-    # Action: surface as WARNING (standard weight 1.0) so the risk_label
-    # weighted scorer elevates risk to EXECUTE_WITH_RISK rather than EXECUTE.
-    # Do NOT hard-block — Wyckoff structure may still be valid.
-    # Routes through WARNING_WEIGHTS['DATA_WEAK'] = 1.0 defined below.
-    ev_status_val = (
-        _s(signal, 'ev_status') or
-        _s(signal, 'ev2_ev_status') or ''
-    ).upper().strip()
-    if ev_status_val == 'DATA_WEAK' and base not in ('STAND_DOWN', 'DATA_FAILURE'):
-        warnings.append(
-            f'DATA_WEAK: No actuarial hit rate data for this ticker. '
-            f'EVEngineV2 used structural fallback (a=0.30, dq_score=39). '
-            f'Wyckoff structure may be valid — verify before sizing up. '
-            f'ev_final={ev_val:.3f} | Composite={composite_val:.1f}'
-        )
+    # ── HARD GATE 0a (EV v2 DATA_WEAK) and the negative-EV gate retired 3 Oct 2026 ─────────────────
+    # ACK 30 Sep / 3 Oct: EV v2 is not an expected value (CLAUDE.md rule 5) and invents its inputs
+    # (target/stop, premium, data quality). It neither gates nor warns; it is recorded as legacy.
 
-    if ev_val < EV_GATE_FLOOR and base not in ('STAND_DOWN', 'DATA_FAILURE'):
-        return (
-            'EXECUTE_WITH_RISK',
-            f'GATE_NEGATIVE_EV: ev_final={ev_val:.3f} (FAIL class, < {EV_GATE_FLOOR}) — '
-            f'structural EV is deeply negative. Economics do not support entry. '
-            f'R:R={rr_val:.3f}x | Composite={composite_val:.1f}',
-            'HIGH',
-            0
-        )
-
-    # ── HARD GATE 0b: Sub-threshold R:R — reward too small to justify risk ───────
-    # R:R < 0.5 means risk $1 to make less than $0.50 — economically meaningless.
-    # Catches signals like ROK (R:R 0.168x) that pass EV gate but fail geometry.
-    if 0 < rr_val < 0.5 and base not in ('STAND_DOWN', 'DATA_FAILURE'):
-        return (
-            'EXECUTE_WITH_RISK',
-            f'GATE_LOW_RR: rr={rr_val:.3f}x below 0.5x minimum threshold — '
-            f'reward does not justify premium risk at current contract structure. '
-            f'EV={ev_val:.3f} | Composite={composite_val:.1f}',
-            'HIGH',
-            0
-        )
-
-    # ── GATE 0b2: R:R below EXECUTE floor ──────────────────────────────────────
-    # FIX-PARALYSIS-01: In EOD/package mode, rr is BSM-derived and unreliable
-    # as a hard gate. BSM rr frequently comes through at 0.8–1.4 even for
-    # structurally strong setups because premium is synthetic, not quoted.
-    #
-    # Live mode  (real chain fetched): R:R < 1.5 → EXECUTE_WITH_RISK (hard cap)
-    # EOD mode   (synthetic mark):    R:R < 1.5 → WARN, continue scoring
-    #
-    # This prevents BSM-price artefacts from capping the entire EOD batch.
-    _is_eod_rr = (
-        str(signal.get('data_mode', '')).upper() in ('EOD', 'AUTO') or
-        str(signal.get('data_source', '')).upper() in ('EOD_PACKAGE', 'EOD', 'BACKFILL', 'VANGUARD') or
-        str(_s(signal, 'mark_synthetic') or _s(signal, 'contract_mark_synthetic') or '').lower()
-            in ('true', '1', 'yes')
-    )
-    if 0 < rr_val < 1.5 and base not in ('STAND_DOWN', 'DATA_FAILURE'):
-        if not _is_eod_rr:
-            # Live mode: hard cap — A2 gate alignment
-            return (
-                'EXECUTE_WITH_RISK',
-                f'GATE_RR_FLOOR: rr={rr_val:.3f}x below EXECUTE floor (1.5x) — '
-                f'live A2 gate alignment. EV={ev_val:.3f} | Capped at EXECUTE_WITH_RISK.',
-                'HIGH',
-                0
-            )
-        else:
-            # EOD mode: warn and continue — BSM rr not reliable as hard gate
-            warnings.append(
-                f'WARN_LOW_RR_EOD: rr={rr_val:.3f}x below 1.5x floor — '
-                f'BSM-derived R:R unreliable in EOD mode. Verify at market open.'
-            )
+    # ── HARD GATES 0b / 0b2 (R:R) retired 3 Oct 2026 (ACK: "remove R:R points") ───────────────
+    # Stop-based R:R carried no ranking information on the holdout replay (IC ~0.015, anticipated-move
+    # design step 6). Whether the move pays is decided on the anticipated move downstream (D-B).
 
     # ── HARD GATE 0b3: OIS below EXECUTE threshold ───────────────────────────────
     # Options intelligence A3 gate requires OIS ≥ 55 for EXECUTE.
@@ -1606,7 +1540,6 @@ def assemble_execution_plan(
         'GATE_MISSING_OIS_EOD':  0.2,   # EOD mode, OIS absent — data quality note
         # v2.3.0 additions — EVEngineV2 PATCH-08 data quality signals
         'DATA_WEAK':             1.0,   # no actuarial hit rates — standard weight, prevents EXECUTE
-        'WARN_LOW_RR_EOD':       0.3,   # EOD BSM R:R unreliable — data quality note
         'WARN_LOW_OIS_EOD':      0.3,   # EOD OIS below threshold — verify at open
     }
 
@@ -1810,26 +1743,8 @@ def _compute_unified_ev(signal: Dict, dashboard: Dict) -> Dict[str, float]:
     #
     # Priority: actuarial win_rate_20d > discovery win_probability > EVEngineV2 default.
     # This bridge is automatically overridden when real win rates flow through.
-    _wr20 = _f(merged_row, 'win_rate_20d')
-    _wr10 = _f(merged_row, 'win_rate_10d')
-    _wr5  = _f(merged_row, 'win_rate_5d')
-    if _wr20 == 0.0 and _wr10 == 0.0 and _wr5 == 0.0:
-        _disc_win = (_f(merged_row, 'win_probability') or
-                     _f(merged_row, 'discovery_win_probability') or
-                     _f(merged_row, 'vanguard_win_probability') or 0.0)
-        if _disc_win > 0.0:
-            # Normalise: Discovery writes as percentage (57.8) or fraction (0.578)
-            if _disc_win > 1.0:
-                _disc_win = _disc_win / 100.0
-            _disc_win = max(0.30, min(0.80, _disc_win))  # sanity clamp
-            merged_row['win_rate_20d'] = _disc_win
-            merged_row['win_rate_10d'] = _disc_win
-            merged_row['win_rate_5d']  = _disc_win
-            # GAP-4 (v2.3.0): tag bridge activation so process_signal can
-            # pass the source through to the output row audit trail.
-            # DISCOVERY_BRIDGE = Wyckoff structural estimate, not actuarial.
-            # ACTUARIAL = real historical outcomes from the actuarial DB.
-            merged_row['win_rate_source'] = 'DISCOVERY_BRIDGE'
+    # B2 (ACK 3 Oct 2026): the Discovery bridge is retired. win_probability is a rescaled composite score, not a
+    # probability; unmeasured win rates stay NOT_ESTIMABLE and are never filled from it.
 
     if _EV_ENGINE_V2_AVAILABLE and _ev_inputs_from_row is not None:
         try:
@@ -2159,9 +2074,9 @@ def process_signal(signal: Dict, dashboard: Dict) -> Dict:
         # ── Economic quality gates (hard gate summary for trader awareness) ──
         # ev_gate uses -0.10 floor (EVEngineV2 WEAK_PASS/FAIL boundary)
         # not 0.0 — WEAK_PASS signals are valid trades sized down by regime.
-        'ev_gate':              'PASS' if unified_ev['ev_final'] >= -0.10 else 'FAIL_NEGATIVE_EV',
+        'ev_gate':              'RETIRED',   # ACK 3 Oct 2026: EV v2 is not a gate
         # DEP-02: rr_gate uses rr_underlying (structural R:R), not rr_options (premium R:R)
-        'rr_gate':              'PASS' if (_f(signal, 'rr_underlying') or _f(signal, 'rr')) >= 0.5 else 'FAIL_LOW_RR',
+        'rr_gate':              'RETIRED',   # ACK 3 Oct 2026: R:R is not a gate
         'composite_gate':       'PASS' if _f(signal, 'composite') >= 35 else 'FAIL_LOW_COMPOSITE',
         # ── Regime sensitivity score ──────────────────────────────────────────
         'regime_sensitivity_score': _calc_regime_sensitivity(signal, warnings),
@@ -2256,7 +2171,7 @@ def process_signal(signal: Dict, dashboard: Dict) -> Dict:
         # ── GAP-4 (v2.3.0): Win rate source audit trail ───────────────────────
         # Tags whether win rates came from the actuarial DB or the discovery bridge.
         # ACTUARIAL = real historical outcomes; DISCOVERY_BRIDGE = Wyckoff structural.
-        'win_rate_source':      _s(signal, 'win_rate_source') or 'ACTUARIAL',
+        'win_rate_source':      win_rate_source_label(signal),   # B2: carries the match method; else NOT_ESTIMABLE
     }
 
 

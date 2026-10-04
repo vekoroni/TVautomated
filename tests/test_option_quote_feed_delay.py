@@ -8,7 +8,7 @@ Rules:
   Q1 the disclosed feed delay and the freshness window are governed configuration (option_quote_feed), fail-closed;
   Q2 quote freshness is judged on effective age = raw age - disclosed delay (never below zero); raw age is kept;
   Q3 a quote within the window on effective age is not REQUOTE_REQUIRED and is flagged DELAYED_PROVIDER_FEED;
-  Q4 a quote older than delay + window is still REQUOTE_REQUIRED (genuine staleness is not excused);
+  Q4 a quote older than delay + window is disclosed BEYOND_FEED_WINDOW, not blocked (ACK 3 Oct 2026);
   Q5 the morning liquidity lifecycle uses the same effective age. EV3 (retired, advisory only) is deliberately
      unchanged (ACK 17 Sep 2026) and still reports these quotes as REJECT_QUOTE_STALE — a known false label.
 """
@@ -59,10 +59,12 @@ def test_q3_delayed_quote_within_window_is_executable_and_flagged():
     assert out["execution_viability_quote_feed_state"] == "DELAYED_PROVIDER_FEED"
 
 
-def test_q4_genuinely_stale_quote_still_requires_requote():
+def test_q4_quote_beyond_the_window_is_disclosed_not_blocked():
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
     out = policy.evaluate_execution_viability({}, hydrated(900 + 901), as_of_utc=NOW)
-    assert out["execution_viability_state"] == "REQUOTE_REQUIRED"
-    assert out["execution_viability_reason"] == "PROVIDER_QUOTE_OUTSIDE_FRESHNESS_WINDOW"
+    assert out["execution_viability_state"] == "EXECUTABLE_QUOTE"
+    assert out["execution_viability_quote_age_state"] == "BEYOND_FEED_WINDOW"
+    assert out["execution_viability_quote_age_minutes"] == pytest.approx(30.0, abs=0.1)
 
 
 def test_q5_morning_gate_lifecycle_imports_effective_age():

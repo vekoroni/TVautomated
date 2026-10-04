@@ -120,9 +120,10 @@ def test_no_market_when_bid_missing():
     assert out["emp_quality_flag"] == QUALITY_NO_MARKET
 
 
-def test_stale_quote_emits_nulls():
+def test_old_quote_is_valued_not_nulled():
+    # ACK 3 Oct 2026 (build step 2): quote age is disclosed, never a gate; this test pinned the retired staleness block.
     out = compute_empirical_option_ev(_base_candidate(quote_age_minutes=45))
-    assert out["emp_quality_flag"] == QUALITY_STALE_QUOTE
+    assert out["emp_quality_flag"] != QUALITY_STALE_QUOTE
 
 
 def test_fresh_quote_does_not_trigger_stale_gate():

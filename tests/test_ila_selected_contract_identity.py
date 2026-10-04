@@ -26,12 +26,38 @@ from contracts.lab_control import (  # noqa: E402
     FINAL_BOOK_FIELDS, _economics_identity, write_final_opportunity_book,
 )
 from domain.dynamic_options_projection import merge_all_opportunities  # noqa: E402
+from contracts.selected_contract_economics import CONTRACT_ANALYTICS_FIELDS  # noqa: E402
 from test_ila_release_coverage_gate import OCC, RUN_ID, _base_signal  # noqa: E402
 
 MANIFEST = {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []}
 GOLDEN = ROOT / "tests" / "fixtures" / "ila003_prefix_book_rows.json"
 NEW_FIELDS = {"selected_contract_symbol", "selected_contract_identity_state"}
 # Additive book fields published after the ILA-003 golden was captured (Fix Spec Fix 2, 24 Sep 2026).
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD = {
+    # TEV-001 (ticker forecast / option expression / research EV), additive advisory fields.
+    "forecast_auction_control", "forecast_auction_state", "forecast_candidate_geometry_json",
+    "forecast_compression_state", "forecast_countercase", "forecast_evidence_state",
+    "forecast_legacy_statistical_basis", "forecast_legacy_statistical_context", "forecast_scenarios_json",
+    "forecast_structure_stage", "forecast_thesis_status", "forecast_trade_plan_state",
+    "forecast_vanguard_reason", "forecast_vanguard_state", "option_expression_candidate_count",
+    "option_expression_packet_state", "research_ev_candidate_count", "research_ev_contracts_json",
+    "research_ev_state",
+    # Lab trade card schema (ACK 2 Oct 2026): D01/D13 reachable target, D10 Phase/Event, governance, trigger.
+    "target_3r_scenario", "target_reach_ratio", "target_reachable", "target_reachable_state",
+    "thesis_category", "thesis_event", "thesis_event_candidate_id", "thesis_event_scope", "thesis_event_state",
+    "thesis_event_timeframe", "thesis_phase", "thesis_structure_alignment",
+    "governance__open_contract", "governance__reason", "governance__verdict", "trigger_go_eligible",
+    # Earnings disclosure (ACK 3 Oct 2026): display only, never a gate.
+    "earnings_state", "earnings_date", "earnings_report_time", "earnings_fiscal_quarter",
+    "earnings_sessions_to_event", "earnings_inside_hold", "earnings_inside_expiry", "earnings_unknown_reason",
+    "earnings_source", "earnings_disclosure", "earnings_authority",
+}
+# Anticipated move and the trade-side event's evidence (ACK 3 Oct 2026): display only, additive.
+from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS as _AM
+from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as _TE
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD = LATER_ADDITIVE_FIELDS_TEV_AND_CARD | set(_AM) | set(_TE)
+# B7 (ACK 3 Oct 2026): the basis of the Wyckoff heuristic scores.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"wyckoff_validation_probability_fields_basis", "wyckoff_validation_expected_bars_remaining_basis"}
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",
@@ -56,7 +82,22 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          "payoff_reachable_iv_stress_range", "friction_assumption", "friction_spread_cap",
                          "volatility_budget_validation_state", "volatility_budget_bias_multiplier",
                          "breakeven_p_target_two_outcome", "breakeven_basis", "scenario_is_expected_return",
-                         "legacy_rr_basis", "legacy_rr_is_expected_return"}
+                         "legacy_rr_basis", "legacy_rr_is_expected_return",
+                         # TEV-001: additive, advisory ticker description and separate option status.
+                         "forecast_packet_state", "forecast_version", "forecast_state",
+                         "forecast_direction", "forecast_reference_spot", "forecast_target_spot",
+                         "forecast_invalidation_spot", "forecast_thesis_id", "forecast_reason",
+                         "forecast_source", "forecast_authority", "c4_reliability_state",
+                         "option_expression_state", "c8_valuation_state", "c8_numeric_ev",
+                         # EV3 option 3 (ACK 28 Sep 2026): valuation at the move window beside the hold value.
+                         "ev3_hold_sessions", "ev3_move_window_sessions", "ev3_move_window_source",
+                         "ev3_move_window_status", "ev3_move_window_reason_code",
+                         "ev3_move_window_ev_conservative_return", "ev3_move_window_ev_lower_bound_return",
+                         "ev3_move_window_p_target", "ev3_move_window_p_stop", "ev3_move_window_p_timeout",
+                         # AVS options analytics slices 1e/2 (ACK 30 Sep 2026): Greeks provenance and the contract
+                         # analytics block (display only).
+                         "contract_greeks_source",
+                         *CONTRACT_ANALYTICS_FIELDS}
 
 
 def _publish(tmp_path, *signals):
@@ -207,13 +248,15 @@ def test_fix_adds_only_the_two_identity_fields(tmp_path):
         _base_signal(ticker="BBB", thesis_id="TH-2", trade_idea_id="TI-2"),
     )["rows"]
     volatile = set(golden["volatile_keys"])
-    assert set(rows[0]) - set(golden["rows"][0]) == NEW_FIELDS | LATER_ADDITIVE_FIELDS
+    assert set(rows[0]) - set(golden["rows"][0]) == NEW_FIELDS | LATER_ADDITIVE_FIELDS | LATER_ADDITIVE_FIELDS_TEV_AND_CARD
     for published, expected in zip(rows, golden["rows"]):
         actual = {k: v for k, v in published.items()
-                  if k not in volatile and k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS}
+                  if k not in volatile and k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS
+                  and k not in LATER_ADDITIVE_FIELDS_TEV_AND_CARD}
         # Provenance gains exactly the two new labels and nothing else.
         actual_provenance = {k: v for k, v in _provenance(published).items()
-                             if k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS}
+                             if k not in NEW_FIELDS and k not in LATER_ADDITIVE_FIELDS
+                             and k not in LATER_ADDITIVE_FIELDS_TEV_AND_CARD}
         expected_provenance = json.loads(expected.pop("field_provenance_json", "{}"))
         actual.pop("field_provenance_json", None)
         # INT-001 represents absent/unqualified convexity as JSON null rather
@@ -221,5 +264,12 @@ def test_fix_adds_only_the_two_identity_fields(tmp_path):
         for key in ("convexity_score", "convexity_score_max"):
             if actual.get(key) is None and expected.get(key) == "":
                 actual[key] = ""
+        # B2 (ACK 3 Oct 2026): an unmeasured win rate is labelled NOT_ESTIMABLE (formerly UNAVAILABLE).
+        if expected.get("win_rate_source") == "UNAVAILABLE" and actual.get("win_rate_source") == "NOT_ESTIMABLE":
+            actual["win_rate_source"] = "UNAVAILABLE"
+        # D10 (ACK 2 Oct 2026) adds the Phase/Event alignment flag to the evening evidence; additive only.
+        flags = str(actual.get("evening_evidence_flags") or "")
+        actual["evening_evidence_flags"] = "|".join(
+            f for f in flags.split("|") if f != "NO_BEHAVIOURAL_EVENT_ON_TRADE_SIDE") if flags else flags
         assert actual_provenance == expected_provenance
         assert actual == expected

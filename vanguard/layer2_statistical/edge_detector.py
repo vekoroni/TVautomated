@@ -24,7 +24,7 @@ ZERO REGRESSION GUARANTEE:
 PRESERVED:
   - REGIME_EV_FLOORS, EXHAUSTION_PROXIMITY, EARNINGS_BLACKOUT_DAYS constants
   - _check_trend_exhaustion(), _check_options_viability() — unchanged
-  - _determine_direction(), _calculate_confidence(), _calculate_right_side_score()
+  - _legacy_determine_direction() (retired, DIR-002 VNG-02), _calculate_confidence(), _calculate_right_side_score()
   - _generate_rationale(), _no_edge(), _has_edge(), _setup_forming() — unchanged
   - All imports and class structure — unchanged
 """
@@ -117,8 +117,9 @@ def _scaled_ev_floor(base_floor: float, n_observations: int) -> float:
     because the actuarial history is thin rather than because the edge is weak.
     Logic: confidence = min(1.0, n/500); floor = base * (0.65 + 0.35*confidence)
     """
-    conf = min(1.0, n_observations / 500.0)
-    return base_floor * (0.65 + 0.35 * conf)
+    # B5 (ACK 3 Oct 2026): retired. Thinner evidence must never face a lower bar than fuller evidence; the full
+    # floor applies at every sample size (the former 65%-at-n=50 discount is removed).
+    return base_floor
 
 # ========================= TREND EXHAUSTION THRESHOLDS =======================
 
@@ -500,7 +501,13 @@ class EdgeDetector:
     # DIRECTION, CONFIDENCE, RIGHT-SIDE SCORE (UNCHANGED)
     # ------------------------------------------------------------------
 
-    def _determine_direction(self, state, outcomes, auction):
+    def _legacy_determine_direction(self, state, outcomes, auction):
+        """RETIRED (DIR-002 VNG-02). Not called by any production path.
+
+        Characterised by tests: it defaulted neutral evidence to CALL and read
+        PUT from the absence of upside. Kept only for the rollback drill and
+        removed at Stage 6 retirement.
+        """
         score = 0.0
         if auction.control.controller == "BUYERS":
             score += 40 * auction.control.confidence
@@ -607,7 +614,7 @@ class EdgeDetector:
         ev_floor, wr_floor = REGIME_EV_FLOORS.get(macro_regime, REGIME_EV_FLOORS["TRANSITIONAL"])
 
         parts = [
-            f"EDGE DETECTED: {direction}S", "",
+            "EDGE DETECTED (statistical; side owned by the Discovery thesis)", "",
             "=== EXPECTED VALUE (NET) ===",
             f"Gross EV:        {outcomes.expected_value_20d:.2%}",
             f"Trading Costs:  -{cost:.2%} (spread + slippage)" if cost is not None else "",
@@ -682,7 +689,10 @@ class EdgeDetector:
             or getattr(outcomes, "n_observations", 0)
             or 0
         )
-        high_sample = sample_size >= 100 and match_quality in {"HIGH", "HIGH_SAMPLE", "MEDIUM_HIGH"}
+        # B5 (ACK 3 Oct 2026): only an EXACT match is a high sample; a relaxed/analogue N is a pooled fallback sample.
+        match_method = str(getattr(outcomes, "state_match_method", "") or "").upper()
+        high_sample = (sample_size >= 100 and match_quality in {"HIGH", "HIGH_SAMPLE", "MEDIUM_HIGH"}
+                       and match_method == "EXACT")
 
         future_expansion = bucket in ("HIGH", "EXTREME")
         future_mid       = bucket == "MID"
@@ -704,7 +714,7 @@ class EdgeDetector:
 
     def _has_edge(self, state, outcomes, auction_verdict, net_ev, cost,
                   verdict_tier, macro_regime='TRANSITIONAL', intraday_warning=None):
-        edge_direction = self._determine_direction(state, outcomes, auction_verdict)
+        edge_direction = "NONE"  # DIR-002 VNG-02: no Vanguard side vote
         confidence = self._calculate_confidence(state, outcomes, auction_verdict)
         right_side_score = self._calculate_right_side_score(state, outcomes, auction_verdict)
         bucket_edge_quality = self._bucket_edge_quality(state, outcomes)
@@ -728,11 +738,12 @@ class EdgeDetector:
 
     def _setup_forming(self, state, outcomes, auction_verdict, net_ev, cost,
                        reason, intraday_warning=None):
-        edge_direction = self._determine_direction(state, outcomes, auction_verdict)
+        edge_direction = "NONE"  # DIR-002 VNG-02: no Vanguard side vote
         confidence = self._calculate_confidence(state, outcomes, auction_verdict) * 0.7
         right_side_score = self._calculate_right_side_score(state, outcomes, auction_verdict)
         rationale = (
-            f"SETUP FORMING ({edge_direction})\n\n{reason}\n\n"
+            "SETUP FORMING (statistical; side owned by the Discovery thesis)\n\n"
+            f"{reason}\n\n"
             + self._generate_rationale(state, outcomes, auction_verdict, edge_direction, net_ev, cost)
         )
         if intraday_warning:

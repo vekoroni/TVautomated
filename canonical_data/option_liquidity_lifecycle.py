@@ -2398,8 +2398,14 @@ class OptionLiquidityLifecycleStore:
                     )
 
                     def _same_value(left: Any, right: Any) -> bool:
+                        # A value one capture never held (the EOD chain snapshot carries no
+                        # bid/ask sizes; the Morning exact quote does) is an added fact, not
+                        # contradicting content. Live proving 28 Sep 2026: the Morning re-quote
+                        # of an illiquid contract under an unchanged provider timestamp must
+                        # replay the Evening observation, not fail closed. Only content both
+                        # captures hold can conflict.
                         if left is None or right is None:
-                            return left is None and right is None
+                            return True
                         if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                             return math.isclose(float(left), float(right), rel_tol=1e-12, abs_tol=1e-12)
                         return str(left) == str(right)

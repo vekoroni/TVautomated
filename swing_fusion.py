@@ -161,6 +161,8 @@ def _compute_alignment_score(
         crabel_state == CrabelState.READY and phase in {WyckoffPhase.C, WyckoffPhase.D}
     ):
         score += 20
+    elif crabel_state == CrabelState.DATA_INSUFFICIENT:
+        notes.append("Crabel data insufficient — compression synergy unassessed")
     else:
         notes.append(
             f"Crabel({crabel_state}) / phase({phase}) synergy absent — no alignment bonus"

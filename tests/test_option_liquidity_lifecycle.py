@@ -563,6 +563,44 @@ class OptionLiquidityLifecycleTests(unittest.TestCase):
                 liquidity_state=ContractLiquidityState.EXECUTABLE_NOW,
             )
 
+    def test_morning_requote_of_an_unchanged_eod_quote_adds_sizes_the_eod_capture_never_held(self) -> None:
+        """Live proving 28 Sep 2026 (Morning on Evening 20260927_205123, ticker FA).
+
+        The Evening persists the selected contract's EOD quote WITHOUT bid/ask sizes (the EOD
+        chain snapshot does not carry them). When the Morning re-quotes an illiquid contract
+        and the provider still reports the same quote timestamp, the observation identity is
+        the same market observation. Sizes the EOD capture never held are added facts, not
+        contradicting content: the store must replay, not fail closed. Content that BOTH
+        captures hold and that differs (bid, ask, iv, ...) still fails closed.
+        """
+        self._thesis()
+        chain_id = self._dataset()
+        exact_id = self._dataset(dataset_type=DatasetType.EXACT_OPTION_QUOTE, suffix="-morning")
+        common = dict(
+            thesis_id="BP-PUT-1", run_id=RUN_ID, ticker="BP", contract_symbol="BP260918P00040000",
+            option_side="PUT", quote_as_of=QUOTE_TIME, strike=40.0, expiration=date(2026, 9, 18),
+            delta=-0.32, bid=0.15, ask=2.95, spread_pct=(2.95 - 0.15) / ((2.95 + 0.15) / 2),
+            volume=0.0, open_interest=19, iv=0.9085,
+        )
+        eod = self.store.record_contract_observation(
+            **common, source_dataset_id=chain_id, spot=19.6, dte=20, bid_size=None, ask_size=None,
+            liquidity_state=ContractLiquidityState.EOD_QUOTE_PENDING_MORNING_REQUOTE,
+            calculation_version="options-liquidity-lifecycle-v2",
+        )
+        morning = self.store.record_contract_observation(
+            **common, source_dataset_id=exact_id, spot=19.72, dte=18, bid_size=1225, ask_size=145,
+            liquidity_state=ContractLiquidityState.LIQUIDITY_PENDING,
+            calculation_version="options-liquidity-morning-v2",
+        )
+        self.assertTrue(morning.reused_existing)
+        self.assertEqual(morning.record.observation_id, eod.record.observation_id)
+        with self.assertRaises(OptionLifecycleConflict):
+            self.store.record_contract_observation(
+                **{**common, "bid": 0.20}, source_dataset_id=exact_id, spot=19.72, dte=18,
+                bid_size=1225, ask_size=145, liquidity_state=ContractLiquidityState.LIQUIDITY_PENDING,
+                calculation_version="options-liquidity-morning-v2",
+            )
+
     def test_active_monitor_reuses_fresh_data_and_fetches_only_missing_or_stale(self) -> None:
         self._thesis()
         missing = self.store.should_fetch(

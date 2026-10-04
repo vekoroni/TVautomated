@@ -29,13 +29,27 @@ def _f(row: dict, *keys: str, default: float = 0.0) -> float:
     return default
 
 
+def _expiry(row: dict):
+    for key in ("contract_expiry", "selected_contract_expiry", "expiry"):
+        text = str(row.get(key) or "")[:10]
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            continue
+    return None
+
+
 def compute_exit_rules(row: dict) -> dict:
     try:
         live_price   = _f(row, "live_price", "signal_price")
-        target       = _f(row, "structural_target")
+        # Step 4d (ACK 3 Oct 2026): the exit target is the anticipated level; the retired 3R / structural
+        # target is never an exit. The invalidation is the thesis exit.
+        target       = _f(row, "anticipated_level")
         stop         = _f(row, "invalidation_spot", "ev3_invalidation_spot")
         theta        = abs(_f(row, "contract_theta"))
-        dte          = _f(row, "dte", "contract_dte")
+        # Step 4d: DTE from the selected contract's own expiry (calendar days), never a row default.
+        expiry       = _expiry(row)
+        dte          = float((expiry - date.today()).days) if expiry is not None else 0.0
         contract_mid = _f(row, "contract_mid")
         direction    = str(
             row.get("canonical_direction") or row.get("primary_direction") or ""
@@ -49,21 +63,13 @@ def compute_exit_rules(row: dict) -> dict:
         if theta > 0 and contract_mid > 0:
             theta_days = int(contract_mid * 0.5 / theta)
             theta_days = max(1, min(theta_days, int(dte) if dte > 0 else _MAX_THETA_DAYS))
-            exit_theta_date = (date.today() + timedelta(days=theta_days)).isoformat()
+            theta_exit = date.today() + timedelta(days=theta_days)
+            exit_theta_date = (min(theta_exit, expiry) if expiry is not None else theta_exit).isoformat()
 
         exit_max_dte = int(dte * 0.5) if dte > 0 else None
 
-        rr_ok = False
-        if live_price and exit_target and exit_stop:
-            if direction == "CALL":
-                reward = exit_target - live_price
-                risk   = live_price  - exit_stop
-            elif direction == "PUT":
-                reward = live_price  - exit_target
-                risk   = exit_stop   - live_price
-            else:
-                reward = risk = 0.0
-            rr_ok = direction in {"CALL", "PUT"} and risk > 0 and (reward / risk) >= 1.5
+        # ACK 3 Oct 2026 (D-B, step 5): no stop-based R:R; the exit plan states whether the move pays.
+        move_pays = str(row.get("anticipated_pays_state") or "NOT_COMPUTED").upper()
 
         parts = []
         if exit_target:
@@ -74,15 +80,16 @@ def compute_exit_rules(row: dict) -> dict:
             parts.append(f"THETA_EXIT {exit_theta_date}")
         if exit_max_dte:
             parts.append(f"MAX_DTE -{exit_max_dte}d")
-        if not rr_ok and exit_target and exit_stop:
-            parts.append("RR_BELOW_1.5_REVIEW")
+        if move_pays == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
+            parts.append("MOVE_DOES_NOT_PAY_REVIEW")
 
         return {
             "exit_target_price": exit_target,
             "exit_stop_price":   exit_stop,
             "exit_theta_date":   exit_theta_date,
             "exit_max_dte":      exit_max_dte,
-            "exit_rr_valid":     bool(rr_ok),
+            "exit_rr_valid":     None,          # legacy stop-based R:R, retired (audit only)
+            "exit_move_pays":    move_pays,
             "exit_rule_summary": (
                 LifecycleEvaluationState.NOT_EVALUATED_NON_DIRECTIONAL.value
                 if direction not in {"CALL", "PUT"}
@@ -96,6 +103,7 @@ def compute_exit_rules(row: dict) -> dict:
             "exit_theta_date":   None,
             "exit_max_dte":      None,
             "exit_rr_valid":     None,
+            "exit_move_pays":    None,
             "exit_rule_summary": "ERROR",
         }
 
