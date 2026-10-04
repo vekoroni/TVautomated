@@ -22,6 +22,8 @@ from typing import Any, Iterable, Mapping
 from . import signals as sig
 
 DECISION_STAGE = "SIGNAL_TICKET"
+# Step 3b (ACK 4 Oct 2026): the same ticket scored over the fixed governed window, for comparison only.
+COMPARISON_STAGE = "SIGNAL_TICKET_FIXED_WINDOW_COMPARISON"
 NOT_YET_RECORDED, NOT_PRESENTED = "NOT_YET_RECORDED", "NOT_PRESENTED"
 DEFAULT_LEDGER = Path(__file__).resolve().parents[2] / "data" / "canonical" / "decision_outcome_ledger.sqlite"
 
@@ -65,6 +67,11 @@ def issued_presentations(ledger, as_of: date) -> list:
             and str(e.payload.get("issue_session") or "9999") <= as_of.isoformat()]
 
 
+def comparison_outcomes(ledger) -> list:
+    """Fixed-window comparison outcomes (step 3b); never part of the ticket track record."""
+    return [e for e in ledger.events_by_type("OUTCOME") if e.payload.get("decision_stage") == COMPARISON_STAGE]
+
+
 def signal_outcomes(ledger) -> list:
     return [e for e in ledger.events_by_type("OUTCOME") if e.payload.get("decision_stage") == DECISION_STAGE]
 
@@ -101,6 +108,7 @@ def open_records(ledger, session: date) -> list[OpenRecord]:
 def ticket_from_payload(payload: Mapping[str, Any]) -> sig.SignalTicket:
     names = sig.SignalTicket.__dataclass_fields__.keys()
     data = {k: payload.get(k) for k in names}
+    data["hold_basis"] = data.get("hold_basis") or ""          # tickets issued before step 3b (4 Oct 2026)
     for key in ("evidence_session", "issue_session", "expiry", "last_usable_session"):
         data[key] = date.fromisoformat(data[key]) if data[key] else None
     data["h9r_gap_up_event"] = bool(data["h9r_gap_up_event"])
@@ -108,9 +116,10 @@ def ticket_from_payload(payload: Mapping[str, Any]) -> sig.SignalTicket:
 
 
 def outcome_event(*, presentation, outcome: sig.SignalOutcome, ticket: sig.SignalTicket, sessions_held: int | None,
-                  now: datetime, config_snapshot_id: str):
+                  now: datetime, config_snapshot_id: str, stage: str | None = None):
     from canonical_data.decision_outcome_ledger import make_ledger_event
-    payload = {"decision_stage": DECISION_STAGE, "trade_id": None, "is_counterfactual": True,
+    payload = {"decision_stage": stage or DECISION_STAGE, "trade_id": None, "is_counterfactual": True,
+               "hold_basis": getattr(ticket, "hold_basis", ""),
                "horizon_sessions": ticket.hold_sessions, "outcome_horizon_sessions": sessions_held,
                "signal_version": ticket.signal_version, "ticket_id": ticket.ticket_id, "state": outcome.state,
                "exit_session": _plain(outcome.exit_session), "exit_reason": outcome.exit_reason,

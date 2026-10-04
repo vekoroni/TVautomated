@@ -80,6 +80,22 @@ function tcAnticipatedLevel(s) {
   return `${tcEsc(tcNum(s.anticipated_level))} <span class="tc-note">${tcEsc(s.anticipated_level_basis)} · ${tcEsc(tcNum(s.anticipated_move_pct))}% in the trade's direction</span>${p}`;
 }
 
+// Trade lane (ACK 4 Oct 2026): A trade now / B early entry / C watch - never mixed.
+function tcPct(value) {
+  return tcBlank(value) || Number.isNaN(Number(value)) ? '?' : `${Math.round(Number(value) * 100)}%`;
+}
+
+function tcLane(s) {
+  const lane = String(s.trade_lane || '').toUpperCase();
+  const setup = tcBlank(s.trade_lane_setup) ? '' : ` · ${tcEsc(String(s.trade_lane_setup).replaceAll('|', ' · '))}`;
+  const hits = `${tcPct(s.trade_lane_hit_original)} / ${tcPct(s.trade_lane_hit_holdout)} reached the level first (original / held out)`;
+  if (lane === 'A') return `<strong>Lane A · trade now</strong>${setup} <span class="tc-note">${hits}</span>`;
+  if (lane === 'B') return `<strong>Lane B · early entry</strong>${setup} <span class="tc-missing">about 1 in 4 fail</span> `
+    + `<span class="tc-note">${hits}; offered only if the option is worth at least ${tcEsc(tcNum(s.trade_lane_required_multiple))}× premium at the anticipated time</span>`;
+  if (lane === 'C') return `<strong>Lane C · watch</strong>${setup} <span class="tc-note">awaiting trigger or your judgement · ${tcEsc(s.trade_lane_basis)}</span>`;
+  return tcShow(null, 'not assigned in this run');
+}
+
 function renderTradeCard(s, profile) {
   const dir = String(s.direction || s.final_direction || 'UNRESOLVED').toUpperCase();
   const spot = s.live_price || s.current_price || s.signal_price || s.underlying_price;
@@ -88,6 +104,7 @@ function renderTradeCard(s, profile) {
       tcRow('Ticker / side', `<strong>${tcEsc(s.ticker)}</strong> · ${tcEsc(dir)} · tier ${tcShow(s.tier)}`),
       tcRow('Structure (Phase · Event)', tcShow(s.thesis_category, 'not categorised in this run'),
             tcBlank(s.thesis_structure_alignment) ? '' : `alignment ${tcEsc(s.thesis_structure_alignment)}`),
+      tcRow('Lane', tcLane(s), tcBlank(s.intake_flags) || s.intake_flags === 'NONE' ? '' : `intake labels ${tcEsc(s.intake_flags)}`),
     ]),
     tcSection('2 · Why now', [
       tcRow('Trigger', tcTrigger(s), tcBlank(s.trigger_go_eligible) ? '' : `GO-eligible trigger: ${tcEsc(s.trigger_go_eligible)}`),
@@ -180,6 +197,8 @@ function tradeCardSavedReports(ticker) {
 
 const TC_CARD_FIELDS = new Set([
   'ticker', 'direction', 'tier', 'thesis_category', 'thesis_structure_alignment', 'trigger_primary', 'trigger_quality',
+  'trade_lane', 'trade_lane_basis', 'trade_lane_setup', 'trade_lane_hit_original', 'trade_lane_hit_holdout',
+  'trade_lane_required_multiple', 'intake_flags', 'price_band',
   'trigger_go_eligible', 'validation_transition', 'remaining_runway_state', 'invalidation_price',
   'anticipated_move_state', 'anticipated_level', 'anticipated_level_basis', 'anticipated_move_pct',
   'anticipated_structural_level', 'anticipated_structural_definition', 'anticipated_p_outcome_by_limit',

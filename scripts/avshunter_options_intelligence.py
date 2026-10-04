@@ -1324,16 +1324,26 @@ def governed_thesis_window_sessions(on: Optional[date] = None) -> int:
     return int(load_registry().resolve(session).get("outcome.window_sessions").value)
 
 
-def decay_hold_sessions(*, evidence_move_sessions: Any, governed_window: Any) -> Tuple[int, str]:
+def decay_hold_sessions(*, evidence_move_sessions: Any) -> Tuple[Optional[int], str]:
     """Hold for decay and range checks (step 4c, ACK 3 Oct 2026), in XNYS sessions.
 
-    The anticipated move time (duration evidence q50) when the trade-side event has level evidence; otherwise the
-    governed window, labelled. Never the DTE-window midpoint, Vanguard's actuarial hold or a constant (C3).
+    The anticipated move time (duration evidence q50) when the trade-side event has level evidence; otherwise not
+    estimable (step 3, ACK 4 Oct 2026: no fixed 20-session fallback). Never the DTE-window midpoint, Vanguard's
+    actuarial hold or a constant (C3).
     """
     evidence = _repair_alt_float(evidence_move_sessions)
     if evidence is not None and evidence >= 1:
         return int(round(evidence)), "DURATION_EVIDENCE_Q50"
-    return int(governed_window), "GOVERNED_WINDOW_NO_EVIDENCE"
+    return None, "NO_EVIDENCE_HOLD"
+
+
+def planned_hold_from_evidence(ctx: Dict) -> Optional[int]:
+    """The planned hold for valuation: the evidence runway (q80 sessions) or None - never a fixed window.
+
+    Step 3 (ACK 4 Oct 2026): "if we have this why are we still relying on the 20 session hold dynamics".
+    """
+    hold = _repair_alt_float((ctx or {}).get("evidence_runway_sessions"))
+    return int(round(hold)) if hold is not None and hold >= 1 else None
 
 
 def theta_drag_pct(*, theta_per_calendar_day: Any, hold_sessions: Any, mark: Any) -> Optional[float]:
@@ -3921,7 +3931,7 @@ def evening_contract_analytics(contract: Dict, ctx: Dict) -> Dict:
         bid=None if synthetic else contract.get("bid"), ask=None if synthetic else contract.get("ask"),
         delta=contract.get("delta"), theta=contract.get("theta"), vega=contract.get("vega"),
         iv=contract.get("iv"), dte_calendar=contract.get("dte"),
-        hold_sessions=governed_thesis_window_sessions(), iv_source="PROVIDER_EOD_CHAIN",
+        hold_sessions=planned_hold_from_evidence(ctx), iv_source="PROVIDER_EOD_CHAIN",
     )
 
 
@@ -4981,8 +4991,7 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
 
     # Expected hold days — use L2 if available, else DTE target
     # Step 4c (ACK 3 Oct 2026): the evidence move time (sessions), else the governed window - labelled.
-    hold_days, hold_days_basis = decay_hold_sessions(
-        evidence_move_sessions=_ev_runway['evidence_move_sessions'], governed_window=governed_thesis_window_sessions())
+    hold_days, hold_days_basis = decay_hold_sessions(evidence_move_sessions=_ev_runway['evidence_move_sessions'])
 
     # ── Hold duration enrichment ───────────────────────────────────────────────
     # Wyckoff phase sets the structural hold window. Theta cap prevents holding
@@ -5640,8 +5649,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
 
             # 3. Theta efficiency: theta/mark ratio — lower is better (20%)
             _drag = theta_drag_pct(theta_per_calendar_day=theta, hold_sessions=ctx['hold_days'], mark=mark)
-            theta_drain_pct = _drag / 100.0 if _drag is not None else 1.0
-            theta_score = max(0, 100 - theta_drain_pct*200)
+            # Step 3: no evidence hold -> theta drag not computed; left out and renormalised, never worst case.
+            theta_score = None if _drag is None else max(0, 100 - (_drag / 100.0) * 200)
 
             # 4. Vega quality: want positive vega exposure (15%)
             vega_score = min(100, vega*300) if vega else 0
@@ -5653,8 +5662,11 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             spread_pen = min(50, max(0, spread*200))
             liq_final  = min(100, max(0, liq_score - spread_pen))
 
-            composite = (0.30*delta_score + 0.20*dte_score + 0.20*theta_score +
-                         0.15*vega_score + 0.15*liq_final)
+            if theta_score is None:
+                composite = (0.30*delta_score + 0.20*dte_score + 0.15*vega_score + 0.15*liq_final) / 0.80
+            else:
+                composite = (0.30*delta_score + 0.20*dte_score + 0.20*theta_score +
+                             0.15*vega_score + 0.15*liq_final)
 
             scores.append({
                 'symbol'          : row.get('symbol'),
@@ -5853,7 +5865,7 @@ def _default_contract_valuer(ctx: Dict):
     raw_row = ctx.get('_signal_row')
     row = raw_row.to_dict() if isinstance(raw_row, pd.Series) else dict(raw_row or {})
     inputs = model["module"].path_inputs_from_options_row(
-        {**row, "final_direction": ctx.get('direction')}, thesis_window_sessions=governed_thesis_window_sessions())
+        {**row, "final_direction": ctx.get('direction')}, thesis_window_sessions=planned_hold_from_evidence(ctx))
     side = inputs["side"]
     spot, target, stop = ctx.get('spot'), ctx.get('structural_target'), ctx.get('invalidation_spot')
     # B1 (ACK 25 Sep 2026): the signal row never carries the Layer 3 forecast at this stage (it is
@@ -7065,8 +7077,8 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
     # Theta drag over hold period
     # Step 4c: theta per calendar day charged over the hold sessions in calendar days (R3).
     _drag = theta_drag_pct(theta_per_calendar_day=theta, hold_sessions=hold, mark=mark)
-    theta_pct    = _drag if _drag is not None else 100
-    theta_total  = theta_pct / 100.0 * mark if mark > 0 else 0.0
+    theta_pct    = _drag      # None when there is no evidence hold (step 3): not computed, never 100%
+    theta_total  = None if theta_pct is None else (theta_pct / 100.0 * mark if mark > 0 else 0.0)
 
     # Vega risk: premium lost if IV drops 10 points. Provider vega is per one IV point per share, so the loss per
     # contract is vega x 10 x 100 against a premium of mark x 100 (AVS options analytics slice 1a, 30 Sep 2026:
@@ -7106,8 +7118,8 @@ def compute_trade_economics(contract: Dict, ctx: Dict, iv_ctx: Dict) -> Dict:
         'ev_structural'        : ev_structural,
         'ev_ratio'             : ev_ratio,
         'ev_adjusted'          : ev_adjusted,
-        'theta_total_cost'     : round(theta_total, 4),
-        'theta_drag_pct'       : round(theta_pct, 2),
+        'theta_total_cost'     : None if theta_total is None else round(theta_total, 4),
+        'theta_drag_pct'       : None if theta_pct is None else round(theta_pct, 2),
         'vega_risk_pct'        : round(vega_risk_pct, 2),
         'iv_factor'            : iv_factor,
         'iv_alignment'         : iv_label,
@@ -7293,8 +7305,7 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
 
     # ── [C] TRADE ECONOMICS (22 pts) ──────────────────────────────────────────
     rr     = econ.get('rr_options')
-    theta_pct = econ.get('theta_drag_pct')
-    theta_pct = 100 if theta_pct is None else theta_pct
+    theta_pct = econ.get('theta_drag_pct')     # None: not computed (no evidence hold) - not scored
     _be_raw = econ.get('breakeven_pct')
     be_pct = abs(10 if _be_raw is None else _be_raw)
 
@@ -7333,13 +7344,14 @@ def compute_ois(ctx: Dict, iv_ctx: Dict, econ: Dict,
     else:
         pos.append(f"EV/premium={ev_adj_final:.2f} — advisory only")
 
-    if theta_pct < 20:   score += 6; pos.append(f"Theta drag={theta_pct:.0f}% low (+6)")
+    if theta_pct is None: neg.append("Theta drag not computed — no evidence hold (not scored)")
+    elif theta_pct < 20:   score += 6; pos.append(f"Theta drag={theta_pct:.0f}% low (+6)")
     elif theta_pct < 40: score += 3; pos.append(f"Theta drag={theta_pct:.0f}% manageable (+3)")
     elif theta_pct > 60: neg.append(f"Theta drag={theta_pct:.0f}% — decay will erode position")
 
     atr = ctx['atr']
     hold = ctx['hold_days']
-    if atr > 0 and hold > 0:
+    if atr > 0 and hold is not None and hold > 0:
         expected_range = atr * sqrt(hold) * 0.6
         if spot > 0:
             be_dollar = abs(be_pct/100*spot)
@@ -7487,7 +7499,7 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
     ivp       = iv_ctx.get('iv_percentile')
     ivp_252   = iv_ctx.get('ivp_252d')
     iv_vs_hv  = iv_ctx.get('iv_vs_hv')
-    theta_pct = econ.get('theta_drag_pct', 100)
+    theta_pct = econ.get('theta_drag_pct')     # None: not computed (no evidence hold)
     iv_regime = iv_ctx.get('iv_regime', 'UNKNOWN')
 
     # ── HARD GATES: True execution infeasibility — only 5 gates ─────────────────
@@ -7519,7 +7531,7 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
     # theta is an overestimate. The correct control is contract re-selection
     # (lower strike, longer DTE) not signal termination. 92% guards only against
     # truly unworkable DTE<=3 positions held to expiry.
-    if theta_pct > 70:
+    if theta_pct is not None and theta_pct > 70:
         neg_factors.append(f"Theta drag={theta_pct:.0f}% — decay will erode position")
 
     # Gate 4: Binary event within 3 days AND event already priced — lottery ticket not directional bet
@@ -7844,8 +7856,8 @@ def _estimate_expected_move_pct(ctx: Dict, iv_ctx: Dict, contract: Dict) -> Tupl
         components.append(abs(target - entry) / entry * 100.0)
 
     atr = _oi_float(ctx.get("atr"))
-    hold_days = max(1.0, _oi_float(ctx.get("hold_days"), 5.0) or 5.0)
-    if atr is not None and atr > 0:
+    hold_days = _oi_float(ctx.get("hold_days"))          # step 3: no assumed 5-day hold
+    if atr is not None and atr > 0 and hold_days is not None and hold_days >= 1:
         components.append((atr * math.sqrt(hold_days) / spot) * 100.0)
 
     iv_expected = _oi_float(contract.get("iv_engine_expected_move_%"))

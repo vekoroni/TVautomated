@@ -19,11 +19,11 @@ def test_scan_exception_becomes_error_outcome(monkeypatch):
 
 def test_reason_code_from_eligibility_is_preserved(monkeypatch):
     def reject(ticker, df, cfg, engine, *, eligibility_diagnostic):
-        eligibility_diagnostic["reason_code"] = "ELIG_PRICE_RANGE"
+        eligibility_diagnostic["reason_code"] = "ELIG_INSUFFICIENT_BARS"
         return None
 
     monkeypatch.setattr(discovery, "scan_ticker_ultimate", reject)
-    signal, outcome = discovery._scan_with_lifecycle("LOWP", pd.DataFrame(), None, None)
+    signal, outcome = discovery._scan_with_lifecycle("FEWB", pd.DataFrame(), None, None)
     assert signal is None
     assert outcome["outcome"] == "DROP"
-    assert outcome["reason_code"] == "ELIG_PRICE_RANGE"
+    assert outcome["reason_code"] == "ELIG_INSUFFICIENT_BARS"

@@ -1369,6 +1369,49 @@ def _sigma_distance(level: Any, reference: float, sigma: Optional[float]) -> Opt
     return round(abs(math.log(value / reference)) / sigma, 3)
 
 
+def _intake_measures(df: pd.DataFrame) -> Tuple[float, float, float, float]:
+    """Last close, 20-day average volume, 14-day ATR in dollars and in percent of price."""
+    px = float(df.iloc[-1]["close"])
+    vol20 = float(df["volume"].tail(20).mean())
+    atr_last = atr(df, 14).iloc[-1]
+    atr_dollars = 0.0 if pd.isna(atr_last) else float(atr_last)
+    atr_pct = (atr_dollars / px * 100) if px > 0 else 0.0
+    return px, vol20, atr_dollars, atr_pct
+
+
+def price_band(px: float, cfg: "UltimateConfig") -> str:
+    """Disclosed share-price band; never a reason to drop a ticker (ACK, 4 Oct 2026)."""
+    if px < cfg.min_price:
+        return f"BELOW_{cfg.min_price:g}"
+    if px > cfg.max_price:
+        return f"ABOVE_{cfg.max_price:g}"
+    return f"{cfg.min_price:g}_TO_{cfg.max_price:g}"
+
+
+def intake_flags(df: pd.DataFrame, cfg: "UltimateConfig") -> List[str]:
+    """Share-trading filters a ticker falls outside of. Labels only: the ticker is still analysed.
+
+    ACK, 4 Oct 2026: "we should have the ability to trade even penny stocks if we want to". The price band,
+    volume, dollar-volume and ATR floors were share-trading proxies applied before analysis; tradability is
+    decided from the setup, the anticipated move and the instrument, not from these.
+    """
+    px, vol20, atr_dollars, atr_pct = _intake_measures(df)
+    flags = []
+    if px < cfg.min_price:
+        flags.append("PRICE_BELOW_MIN")
+    if px > cfg.max_price:
+        flags.append("PRICE_ABOVE_MAX")
+    if vol20 < cfg.min_avg_vol20:
+        flags.append("AVG_VOLUME_BELOW_MIN")
+    if px * vol20 < cfg.min_adv_dollars:
+        flags.append("ADV_DOLLARS_BELOW_MIN")
+    if atr_dollars < cfg.min_atr_dollars:
+        flags.append("ATR_DOLLARS_BELOW_MIN")
+    if atr_pct < cfg.min_atr_pct:
+        flags.append("ATR_PCT_BELOW_MIN")
+    return flags
+
+
 def scan_ticker_ultimate(
     ticker: str,
     df: pd.DataFrame,
@@ -1393,31 +1436,13 @@ def scan_ticker_ultimate(
     for span in [9, 21, 50, 200]:
         df[f"EMA{span}"] = ema(df["close"], span)
     
-    # Liquidity filters (basic — price and volume)
+    # Share price, volume and ATR are disclosed, never reasons to drop (ACK, 4 Oct 2026; supersedes the
+    # DSC-15 ELIG_PRICE_RANGE / ELIG_AVG_VOLUME / ELIG_*_OPTION_PROXY exclusions).
     last = df.iloc[-1]
-    px = float(last["close"])
-    
-    if not (cfg.min_price <= px <= cfg.max_price):
-        return _reject("ELIG_PRICE_RANGE")
-    
-    vol20 = df["volume"].tail(20).mean()
-    if vol20 < cfg.min_avg_vol20:
-        return _reject("ELIG_AVG_VOLUME")
-
-    # Enhancement 4: Options viability proxy filters
-    # Reject names that are structurally interesting but economically useless for options.
-    atr_14_series = atr(df, 14)
-    atr_14_val = float(atr_14_series.iloc[-1]) if not pd.isna(atr_14_series.iloc[-1]) else 0.0
-    atr_pct_val = (atr_14_val / px * 100) if px > 0 else 0.0
+    px, vol20, atr_14_val, atr_pct_val = _intake_measures(df)
     adv_dollars = px * vol20  # avg daily dollar volume
+    _intake_flags = intake_flags(df, cfg)
 
-    if adv_dollars < cfg.min_adv_dollars:
-        return _reject("ELIG_ADV_DOLLARS_OPTION_PROXY")
-    if atr_14_val < cfg.min_atr_dollars:
-        return _reject("ELIG_ATR_DOLLARS_OPTION_PROXY")
-    if atr_pct_val < cfg.min_atr_pct:
-        return _reject("ELIG_ATR_PCT_OPTION_PROXY")
-    
     # === WYCKOFF ANALYSIS ===
     wyckoff_data = wyckoff_engine.analyze(ticker, df, trend_context="UNKNOWN")
     wyckoff_score = float(wyckoff_data.get('wyckoff_score', 0))
@@ -2393,6 +2418,7 @@ def scan_ticker_ultimate(
         'scanner_rvol': _vms_ticker_data.get('scanner_rvol', ''),
         'scanner_watchlist_lane': _vms_ticker_data.get('scanner_watchlist_lane', ''),
         'scanner_age_hrs': _vms_ticker_data.get('scanner_age_hrs', ''),
+        'scanner_stale': _vms_ticker_data.get('scanner_stale', ''),
         # L1-CHANGE-2: Scanner routing fields — scanner takes precedence over news terminal.
         'scanner_primary_route': _vms_ticker_data.get('scanner_primary_route', ''),
         'route_source':   _vms_ticker_data.get('route_source', 'DEFAULT'),
@@ -2488,6 +2514,11 @@ def scan_ticker_ultimate(
         signal['rr_flag'] = 'RR_OK'
 
     signal['_beh001_candidates'] = _beh['candidates']
+    signal['intake_flags'] = "|".join(_intake_flags) if _intake_flags else "NONE"
+    signal['price_band'] = price_band(px, cfg)
+    # Trade lane (ACK, 4 Oct 2026): A trade now / B early entry / C awaiting trigger; NO_LIVE_SETUP drops.
+    from domain.structure_behaviour.trade_lane import ticker_lane
+    signal.update(ticker_lane(_beh['candidates'], price=px, atr_daily=atr_14_val))
 
     # Add early position fields if applicable. DSC-13: under the corrected
     # policy the Tier-0 heuristic never overwrites the structural stop (a
@@ -2689,6 +2720,10 @@ def _scan_with_lifecycle(ticker, df, cfg, wyckoff_engine):
     if signal is None:
         return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE",
                       "reason_code": diagnostic.get("reason_code", "NO_SIGNAL_AT_ANY_HORIZON")}
+    if signal.get("trade_lane") == "NO_LIVE_SETUP":
+        # Nothing to trade or watch this run (ACK, 4 Oct 2026); the reading already made travels with the drop.
+        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE", "reason_code": "NO_LIVE_SETUP",
+                      "tier": signal.get("tier", ""), "_beh001_candidates": signal.get("_beh001_candidates", [])}
     return signal, None
 
 
@@ -2792,6 +2827,7 @@ def main() -> None:
                         _ctx.setdefault('scanner_run_id', _vms_raw.get('scanner_run_id', ''))
                         _ctx.setdefault('scanner_timestamp_utc', _vms_raw.get('scanner_timestamp_utc', ''))
                         _ctx.setdefault('scanner_age_hrs', _vms_raw.get('scanner_age_hrs', ''))
+                        _ctx.setdefault('scanner_stale', _vms_raw.get('scanner_stale', ''))
                         _ctx.setdefault('scanner_score', _ctx.get('vms_score', 0))
                         _ctx.setdefault('scanner_signal_type', _ctx.get('vms_decision', 'UNKNOWN'))
                         _ctx.setdefault('scanner_decision', _ctx.get('vms_decision', 'UNKNOWN'))
@@ -2893,12 +2929,20 @@ def main() -> None:
 
         signal, scan_outcome = _scan_with_lifecycle(t, df, cfg, wyckoff_engine)
         if scan_outcome is not None:
-            # Eligibility drop or a per-ticker scan error (DSC-15 / DSC-20).
+            # Eligibility drop, no live setup, or a per-ticker scan error (DSC-15 / DSC-20).
+            _read_candidates = scan_outcome.pop("_beh001_candidates", None)
             discovery_outcomes.append(scan_outcome)
             logger.debug("%s: %s", scan_outcome["reason_code"], t)
             # Behaviour is still read and published (no upstream option filter).
-            behavioural_candidates.extend(
-                _beh001_candidates_for_drop(t, df, cfg, scan_outcome, read=beh001_read_tickers))
+            if _read_candidates is not None:
+                for _c in _read_candidates:
+                    _c["Discovery_Outcome"], _c["Discovery_Reason"] = "DROP", scan_outcome["reason_code"]
+                    _c["Discovery_Tier"] = scan_outcome.get("tier", "")
+                behavioural_candidates.extend(_read_candidates)
+                beh001_read_tickers.add(str(t).strip().upper())
+            else:
+                behavioural_candidates.extend(
+                    _beh001_candidates_for_drop(t, df, cfg, scan_outcome, read=beh001_read_tickers))
         _ticker_candidates = signal.pop('_beh001_candidates', []) if signal else []
         if signal:
             beh001_read_tickers.add(str(t).strip().upper())

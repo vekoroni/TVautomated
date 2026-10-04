@@ -235,3 +235,30 @@ console.log(JSON.stringify({no: no.includes('does not pay at the anticipated tim
     out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"no": True, "yes": True}
+
+
+def test_book_carries_the_trade_lane():
+    from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS
+    for field in TRADE_LANE_FIELDS:
+        assert field in FINAL_BOOK_FIELDS, field
+    row = opportunity_book_row({"ticker": "L", "trade_lane": "B", "trade_lane_basis": "EARLY_ENTRY_MEASURED",
+                                "price_band": "ABOVE_500"}, "RUN", 1)
+    assert row["trade_lane"] == "B" and row["price_band"] == "ABOVE_500"
+
+
+def test_card_states_the_lane_and_warns_on_early_entry():
+    # ACK 4 Oct 2026: lanes never mixed; lane B shows its failure rate and the payoff it needs.
+    script = (ROOT / "intelligence-lab" / "static" / "trade-card.js").read_text(encoding="utf-8")
+    probe = script + """
+const a = renderTradeCard({ticker:'A', direction:'CALL', trade_lane:'A', trade_lane_setup:'1d|SOS -> LPS continuation|ACTIVATED',
+  trade_lane_hit_original:0.726, trade_lane_hit_holdout:0.678});
+const b = renderTradeCard({ticker:'B', direction:'CALL', trade_lane:'B', trade_lane_setup:'1d|Spring Candidate|DETECTED',
+  trade_lane_hit_original:0.74, trade_lane_hit_holdout:0.76, trade_lane_required_multiple:1.35});
+const c = renderTradeCard({ticker:'C', direction:'PUT', trade_lane:'C', trade_lane_basis:'NO_TESTED_EVIDENCE'});
+console.log(JSON.stringify({a: a.includes('Lane A') && a.includes('trade now'),
+  b: b.includes('Lane B') && b.includes('about 1 in 4 fail') && b.includes('1.35'),
+  c: c.includes('Lane C') && c.includes('watch') && c.includes('NO_TESTED_EVIDENCE')}));
+"""
+    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr
+    assert json.loads(out.stdout.strip().splitlines()[-1]) == {"a": True, "b": True, "c": True}

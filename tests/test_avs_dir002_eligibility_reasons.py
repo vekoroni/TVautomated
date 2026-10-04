@@ -1,4 +1,8 @@
-"""DIR-002 DSC-15: an eligibility exclusion is not a missing signal."""
+"""DIR-002 DSC-15: an eligibility exclusion is not a missing signal.
+
+Superseded in part 4 Oct 2026 (ACK): price, volume, dollar-volume and ATR are now labels, not exclusions
+(tests/test_avs_intake_labels_not_gates.py). Only the hard data rule remains an exclusion here.
+"""
 
 import pandas as pd
 import pytest
@@ -20,11 +24,6 @@ def bars() -> pd.DataFrame:
     ("change", "config", "reason"),
     [
         (lambda frame: frame, {"min_bars": 41}, "ELIG_INSUFFICIENT_BARS"),
-        (lambda frame: frame.assign(close=2.0), {}, "ELIG_PRICE_RANGE"),
-        (lambda frame: frame.assign(volume=100), {}, "ELIG_AVG_VOLUME"),
-        (lambda frame: frame, {"min_adv_dollars": 200_000_000}, "ELIG_ADV_DOLLARS_OPTION_PROXY"),
-        (lambda frame: frame, {"min_atr_dollars": 5.0}, "ELIG_ATR_DOLLARS_OPTION_PROXY"),
-        (lambda frame: frame, {"min_atr_pct": 5.0}, "ELIG_ATR_PCT_OPTION_PROXY"),
     ],
 )
 def test_each_ticker_eligibility_exclusion_has_its_own_reason(change, config, reason):

@@ -41,6 +41,7 @@ from contracts.selected_contract_economics import (
 )
 from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
 from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS
+from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS
 from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
 from contracts.long_option_policy import (
     LONG_OPTION_ALLOWED_INSTRUMENTS,
@@ -666,6 +667,7 @@ FINAL_BOOK_FIELDS = [
     *EARNINGS_DISCLOSURE_FIELDS,         # earnings disclosure, ACK 3 Oct 2026 (display only, never a gate)
     *THESIS_EVIDENCE_FIELDS,             # trade-side event level and duration evidence (ACK 3 Oct 2026)
     *ANTICIPATED_MOVE_FIELDS,            # anticipated move replacing R:R (ACK 3 Oct 2026, display only)
+    *TRADE_LANE_FIELDS,                  # trade lane A / B / C and intake labels (ACK 4 Oct 2026)
     "contract_iv",
     "contract_bid",
     "contract_ask",
@@ -1372,8 +1374,12 @@ def _apply_reselected_chain_quote(
     )
     strike = _f(quote.get("strike"), None)
     hold = _f(first(sig, "planned_hold_sessions", "remaining_hold_sessions"), None)
+    # Step 3 (ACK 4 Oct 2026, decision 2): without an evidence hold the runway is checked against the contract
+    # selection floor (labelled), never flagged for repair for lacking a fixed window.
+    selection_floor = _f(first(sig, "contract_runway_floor_days"), None) if hold is None else None
     required = {"side": side if side in {"CALL", "PUT"} else None, "spot": spot,
-                "strike": strike, "dte": dte, "remaining_hold_sessions": hold}
+                "strike": strike, "dte": dte,
+                "remaining_hold_sessions": hold if hold is not None else selection_floor}
     missing = [key for key, value in required.items() if value is None]
     if missing:
         row.update({
@@ -1385,7 +1391,12 @@ def _apply_reselected_chain_quote(
         try:
             # Step 4b (ACK 3 Oct 2026): a hold sourced from a daily event's duration evidence is accepted.
             hold_is_evidence = str(first(sig, "planned_hold_source") or "").startswith("DURATION_EVIDENCE")
-            requirement = calculate_dte_requirement(hold, evidence_hold=hold_is_evidence)
+            if hold is None:
+                requirement = {"minimum_required_dte": selection_floor,
+                               "minimum_holdable_dte": _f(first(sig, "contract_min_holdable_dte"), None) or selection_floor}
+                row["runway_check_basis"] = "SELECTION_FLOOR_NO_EVIDENCE_HOLD"
+            else:
+                requirement = calculate_dte_requirement(hold, evidence_hold=hold_is_evidence)
             moneyness = classify_moneyness(side, spot=spot, strike=strike, delta=delta)
             liquidity = classify_current_executability(
                 bid=bid, ask=ask, bid_size=quote.get("bid_size"), ask_size=quote.get("ask_size"),
@@ -3899,7 +3910,7 @@ def opportunity_book_row(
         "contract_greeks_source": first(sig, "contract_greeks_source", "opt__contract_greeks_source") if quote_owned else "",
         **{field: (sig.get(field, "") if quote_owned else "") for field in CONTRACT_ANALYTICS_FIELDS},
         **{field: sig.get(field, "") for field in EARNINGS_DISCLOSURE_FIELDS},   # ticker fact, not contract-owned
-        **{field: sig.get(field, "") for field in (*THESIS_EVIDENCE_FIELDS, *ANTICIPATED_MOVE_FIELDS)},
+        **{field: sig.get(field, "") for field in (*THESIS_EVIDENCE_FIELDS, *ANTICIPATED_MOVE_FIELDS, *TRADE_LANE_FIELDS)},
         "contract_iv": first(sig, "contract_iv", "opt__contract_iv", "iv") if quote_owned else "",
         "contract_bid": first(sig, "contract_bid", "opt__contract_bid", "bid") if quote_owned else "",
         "contract_ask": first_price(sig, "contract_ask", "opt__contract_ask", "ask") if quote_owned else "",

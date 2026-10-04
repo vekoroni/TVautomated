@@ -268,6 +268,8 @@ def test_morning_ev3_adapter_normalises_expected_move_percent_points() -> None:
         contract_symbol=symbol,
         expected_move_5d=3.78,
         expected_move_10d=1.57,
+        ev3_planned_hold_sessions=10,
+        ev3_hold_basis="EV3_GRID_10_OF_13",
     )
     monkey_quote = lambda _symbol: _quote(bid=4.8, ask=5.0, delta=0.45)
     from contracts.selected_contract_economics import hydrate_selected_structure
@@ -286,7 +288,8 @@ def test_morning_ev3_adapter_normalises_expected_move_percent_points() -> None:
     assert round(candidate["expected_move_10d"], 6) == 0.0157
     assert candidate["morning_expected_move_5d_unit_source"] == "PERCENT_POINTS_TO_FRACTION"
     assert candidate["planned_hold_sessions"] == 10
-    assert candidate["morning_ev3_hold_source"] == "ROUTED_HORIZON_UPPER_BOUND"
+    # Superseded 4 Oct 2026 (ACK decision 1a): the evening's EV3 grid hold, never a horizon-bucket bound.
+    assert candidate["morning_ev3_hold_source"] == "EV3_GRID_10_OF_13"
 
 
 def test_composite_repair_is_hydrated_but_not_promoted_to_production(monkeypatch) -> None:

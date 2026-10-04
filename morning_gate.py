@@ -3943,21 +3943,11 @@ def _ev3_candidate_from_hydration(
         or row.get("layer2__matched_state_key")
         or row.get("layer2__outcomes__matched_state_key")
     )
-    hold = _f(row.get("planned_hold_sessions") or row.get("ev3_horizon_sessions"))
-    hold_source = "planned_hold_sessions" if _f(row.get("planned_hold_sessions")) is not None else "ev3_horizon_sessions"
-    if hold is None:
-        horizon_text = _u(
-            row.get("horizon_bucket")
-            or row.get("preferred_horizon")
-            or row.get("expected_holding_window")
-        ).replace("-", "_")
-        if "1_5" in horizon_text:
-            hold = 5.0
-        elif "6_10" in horizon_text:
-            hold = 10.0
-        elif "11_20" in horizon_text:
-            hold = 20.0
-        hold_source = "ROUTED_HORIZON_UPPER_BOUND" if hold is not None else "MISSING"
+    # Step 3 (ACK 4 Oct 2026, decision 1a): EV3's grid hold from the evening (nearest grid point at or below the
+    # evidence hold); never a horizon-bucket upper bound. Missing stays missing.
+    hold = _f(row.get("ev3_planned_hold_sessions"))
+    hold_source = _s(row.get("ev3_hold_basis")) or "ev3_planned_hold_sessions" if hold is not None else (
+        _s(row.get("ev3_hold_basis")) or "MISSING")
     candidate["planned_hold_sessions"] = int(hold) if hold is not None and float(hold).is_integer() else hold
     candidate["morning_ev3_hold_source"] = hold_source
     # Morning handoff expected-move columns are percentage points (for example

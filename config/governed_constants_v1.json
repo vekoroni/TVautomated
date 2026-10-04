@@ -162,6 +162,12 @@
     },
     "calendar_days_per_session": 1.4484,
     "authority": "DISPLAY_ONLY",
-    "note": "ACK 3 Oct 2026 (design AVS_ANTICIPATED_MOVE_DESIGN_20261003): converts BEH-001 duration evidence (own-timeframe bars) to XNYS sessions (6.5 h per session for intraday bars); calendar_days_per_session (365/252) converts elapsed sessions for option time value. Display only until the replay validation (design \u00a77)."
+    "note": "ACK 3 Oct 2026 (design AVS_ANTICIPATED_MOVE_DESIGN_20261003): converts BEH-001 duration evidence (own-timeframe bars) to XNYS sessions (6.5 h per session for intraday bars); calendar_days_per_session (365/252) converts elapsed sessions for option time value. Display only until the replay validation (design \u00a77).",
+    "runway_tested_timeframes": [
+      "1d",
+      "1w",
+      "1mo"
+    ],
+    "runway_tested_timeframes_basis": "ACK 4 Oct 2026: weekly/monthly are core. Held-out timing (eval_v5_holdout duration_calibration by_timeframe): 1d 55.5%/81.7%, 1w 58.7%/83.3%, 1mo 64.9%/87.5% by q50/q80. Intraday untested."
   }
 }

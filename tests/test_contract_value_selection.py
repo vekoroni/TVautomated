@@ -40,6 +40,8 @@ def _ctx(valuer=None) -> dict:
     structural = oi.parse_structural_context(row)
     ctx = {"ticker": "TEST", "direction": "CALL", "spot": 100.0, "horizon_bucket": "1_5d",
            "structural_target": 110.0, "invalidation_spot": 95.0, "hold_days": 5,
+           # Step 3 (ACK 4 Oct 2026): valuation holds come from the evidence runway (no fixed window).
+           "evidence_runway_sessions": 20,
            "dte_window": oi.governed_dte_window("1_5d"), "dte_config": oi.governed_dte_config("1_5d"),
            "_signal_row": {"l3_forward_realised_vol_raw": 0.35},
            **{k: structural[k] for k in ("contract_runway_floor_days", "contract_min_holdable_dte",

@@ -1257,13 +1257,28 @@ def fetch_options_chain(ticker: str, direction_side: str = "all") -> Optional[li
 # TIER 1 FOCUSED UNIVERSE BUILDER
 # ============================================================
 
+SCANNER_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "scanner_v1.json"
+
+
+def tier2_remaining(already_scanned) -> list:
+    """Tier 2 names not already scanned this run (the daily tier now covers the whole list)."""
+    done = {str(t).upper() for t in already_scanned or []}
+    return [t for t in TIER2_UNIVERSE if t.upper() not in done]
+
+
 def build_tier1_universe() -> list:
     """
-    Return the focused, high-activity portion of the built-in liquid universe.
+    The daily tier: the whole built-in list by default (ACK, 4 Oct 2026: "scan the whole list daily"; it was
+    the first 75 names by list position). The count lives in config/scanner_v1.json as a credit safeguard.
     MarketData.app does not expose a global active-underlyings enumeration API.
     """
-    focused = TIER2_UNIVERSE[:75]
-    log.info("Tier 1: MarketData-focused universe = %d tickers", len(focused))
+    size = None
+    try:
+        size = json.loads(Path(SCANNER_CONFIG_PATH).read_text(encoding="utf-8")).get("daily_tier_size")
+    except (OSError, ValueError) as exc:
+        log.warning("Tier 1: scanner config unreadable (%s) - scanning the whole list", exc)
+    focused = list(TIER2_UNIVERSE) if size is None else list(TIER2_UNIVERSE)[:int(size)]
+    log.info("Tier 1: daily universe = %d of %d tickers", len(focused), len(TIER2_UNIVERSE))
     return focused
 
 
@@ -3161,6 +3176,7 @@ def main():
         all_vms       = pd.concat([all_vms, v_df],       ignore_index=True)
         tiers_run.append("CUSTOM")
 
+    t1 = []
     if args.tier1:
         t1 = build_tier1_universe()
         if t1:
@@ -3172,9 +3188,11 @@ def main():
             log.warning("Tier 1: No universe returned — check API access")
 
     if args.tier2:
-        c_df, v_df = run_scan(TIER2_UNIVERSE, pipeline_universe, "TIER2", args.top_n, conn)
-        all_contracts = pd.concat([all_contracts, c_df], ignore_index=True)
-        all_vms       = pd.concat([all_vms, v_df],       ignore_index=True)
+        t2 = tier2_remaining(t1)
+        if t2:
+            c_df, v_df = run_scan(t2, pipeline_universe, "TIER2", args.top_n, conn)
+            all_contracts = pd.concat([all_contracts, c_df], ignore_index=True)
+            all_vms       = pd.concat([all_vms, v_df],       ignore_index=True)
         tiers_run.append("TIER2")
 
     conn.close()

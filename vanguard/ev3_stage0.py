@@ -41,6 +41,28 @@ DEFAULT_STOP_GRID: tuple[float, ...] = (
 )
 DEFAULT_HORIZONS: tuple[int, ...] = (5, 10, 20)
 
+
+def grid_hold_for(evidence_hold, horizons: tuple[int, ...] = DEFAULT_HORIZONS) -> tuple:
+    """EV3's hold for a row: the nearest grid point at or below the evidence hold, with its basis.
+
+    ACK 4 Oct 2026 (option a): the barrier grid holds only these horizons; the evidence hold is never replaced
+    by a fixed window, and EV3 states which grid point it valued at.
+    """
+    try:
+        hold = None if evidence_hold is None else float(evidence_hold)
+    except (TypeError, ValueError):
+        hold = None
+    if hold is None or hold != hold:
+        return None, "NO_EVIDENCE_HOLD"
+    shown = int(round(hold))
+    fitting = [h for h in horizons if h <= hold]
+    if not fitting:
+        return None, f"BELOW_EV3_GRID_{shown}"
+    chosen = max(fitting)
+    if hold > max(horizons):
+        return chosen, f"EV3_GRID_CAP_{chosen}_OF_{shown}"
+    return chosen, f"EV3_GRID_{chosen}_OF_{shown}"
+
 ACCEPTED_DIRECTION_STATES = {
     "RESOLVED",
     "NO_CONFLICT",

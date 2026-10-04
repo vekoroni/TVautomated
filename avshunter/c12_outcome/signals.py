@@ -123,6 +123,10 @@ class SignalTicket:
     o4_stance: str                 # WITH | AGAINST | MIDDLE | UNAVAILABLE (information only)
     o2_state: str                  # UNAVAILABLE until the pipeline records a same-strike call-put IV spread
     h9r_gap_up_event: bool
+    # Step 3b (ACK 4 Oct 2026): the hold's source, and the fixed governed window kept as a comparison. Defaults keep
+    # tickets already in the ledger loadable.
+    hold_basis: str = ""
+    comparison_hold_sessions: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,10 +156,35 @@ class Prepared:
     iv: float | None
     iv_source: str
     path_inputs: dict              # keyword arguments for empirical_option_ev.compute_path_expression_ev
+    hold_basis: str = ""
 
 
 def replace_ticket(ticket: SignalTicket, **changes) -> SignalTicket:
     return replace(ticket, **changes)
+
+
+def evidence_hold(book: Mapping, s: "SignalSettings") -> tuple[int, str]:
+    """A ticket's hold (step 3b, ACK 4 Oct 2026): the book's evidence hold, else the governed window - labelled."""
+    source = _text(book.get("planned_hold_source"))
+    hold = _num(book.get("planned_hold_sessions"))
+    if source.startswith("DURATION_EVIDENCE") and hold is not None and hold >= 1:
+        return int(round(hold)), source
+    return s.thesis_window_sessions, "NO_EVIDENCE_HOLD_SCORED_AT_FIXED_WINDOW"
+
+
+def comparison_hold_needed(t: SignalTicket) -> bool:
+    """A fixed-window comparison outcome is written only when it differs from the ticket's own hold."""
+    return t.comparison_hold_sessions is not None and int(t.comparison_hold_sessions) != int(t.hold_sessions)
+
+
+def comparison_ticket(t: SignalTicket) -> SignalTicket:
+    """The same ticket held over the fixed governed window (comparison only; never issues or ranks)."""
+    return replace(t, hold_sessions=int(t.comparison_hold_sessions))
+
+
+def asdict_ticket(t: SignalTicket) -> dict:
+    from dataclasses import asdict
+    return asdict(t)
 
 
 def _num(value) -> float | None:
@@ -246,9 +275,10 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
     target = _num(valuation.get("structural_target"))
     if target is None:
         target = _num(valuation.get("target_spot"))
-    # ACK D2(a), 18 Sep 2026: the plan is the thesis window, capped per contract by its last exit session; the
-    # actuarial recommended hold (a fallback default in most rows) is not a hold.
-    hold = s.thesis_window_sessions
+    # Step 3b (ACK 4 Oct 2026; supersedes D2(a) of 18 Sep): the plan is the book's evidence hold, capped per contract
+    # by its last exit session; without evidence it is the governed window, labelled. The actuarial recommended hold
+    # (a fallback default in most rows) is still not a hold.
+    hold, hold_basis = evidence_hold(book, s)
     if stop is None or target is None or stop <= 0 or target <= 0 or (target - stop) * (1 if direction == "CALL" else -1) <= 0:
         return "STOP_OR_TARGET_UNDEFINED", None
     live = _num(gate.get("live_price"))
@@ -298,7 +328,8 @@ def prepare(book: Mapping, gate: Mapping | None, valuation: Mapping | None, spot
         live_spot_utc=_text(gate.get("live_fetched_at")) or None, stop=stop, target=target,
         hold_sessions=hold, quote_bid=raw_bid, quote_ask=raw_ask, quote_timestamp_utc=quote_ts,
         quote_state=quote_state, adjustment_state=adjustment, spot_at_quote=spot_at_quote, delta=delta, shift=shift,
-        bid=bid, ask=ask, option_executable=executable, iv=iv, iv_source=iv_source, path_inputs=path_inputs)
+        bid=bid, ask=ask, option_executable=executable, iv=iv, iv_source=iv_source, path_inputs=path_inputs,
+        hold_basis=hold_basis)
 
 
 def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | None, dict]:
@@ -326,6 +357,7 @@ def decide(p: Prepared, revaluation: Mapping, s: SignalSettings) -> tuple[str | 
                       expiry=p.expiry, last_usable_session=p.last_usable_session, limit_price=(p.bid + p.ask) / 2.0,
                       scored_entry=p.ask, reference_spot=p.live_spot, reference_spot_utc=p.live_spot_utc,
                       stop_spot=p.stop, target_spot=p.target, hold_sessions=p.hold_sessions, r_cautious=cautious,
+                      hold_basis=p.hold_basis, comparison_hold_sessions=s.thesis_window_sessions,
                       r_central=_num(revaluation.get("emp_path_r_central")),
                       r_upside=_num(revaluation.get("emp_path_r_upside")),
                       p_target_first=_num(revaluation.get("emp_path_p_target_first_central")),

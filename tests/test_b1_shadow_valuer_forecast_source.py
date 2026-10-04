@@ -51,6 +51,9 @@ def _production_ctx() -> dict:
     structural = oi.parse_structural_context(row)
     return {"ticker": "TEST", "direction": "CALL", "spot": 100.0, "horizon_bucket": "1_5d",
             "structural_target": 110.0, "invalidation_spot": 95.0, "hold_days": 5,
+            # Step 3 (ACK 4 Oct 2026): the valuer's hold is the evidence runway; a row without one is BAD_INPUT
+            # by design (no fixed window). This test is about the forecast source, so the row carries evidence.
+            "evidence_runway_sessions": 20,
             "dte_window": oi.governed_dte_window("1_5d"), "dte_config": oi.governed_dte_config("1_5d"),
             "_signal_row": {"ticker": "TEST", "final_direction": "CALL", "underlying_price": 100.0,
                             "structural_target": 110.0, "invalidation_spot": 95.0},

@@ -101,11 +101,13 @@ def test_no_direction_or_invalid_prices_is_not_applicable():
 
 def test_the_evening_block_uses_the_selected_contracts_real_quote(monkeypatch):
     from scripts import avshunter_options_intelligence as oi
-    monkeypatch.setattr(oi, "governed_thesis_window_sessions", lambda *a, **k: 20)
+    # Step 3 (ACK 4 Oct 2026): the hold is the row's evidence runway, not the governed window.
     contract = {"strike": 100.0, "bid": 6.8, "ask": 7.2, "delta": 0.62, "theta": -0.05, "vega": 0.12, "iv": 0.30,
                 "dte": 45, "mark_synthetic": False}
-    a = oi.evening_contract_analytics(contract, {"direction": "CALL", "spot": 105.0})
+    a = oi.evening_contract_analytics(contract, {"direction": "CALL", "spot": 105.0, "evidence_runway_sessions": 20})
     assert a["ca_state"] == "COMPLETE"
+    no_evidence = oi.evening_contract_analytics(contract, {"direction": "CALL", "spot": 105.0})
+    assert no_evidence["ca_state"] == "PARTIAL"            # stated, never valued over a fixed 20
     assert a["ca_breakeven_expiry_spot"] == pytest.approx(107.2)
     assert a["ca_iv_source"] == "PROVIDER_EOD_CHAIN"
 

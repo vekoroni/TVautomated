@@ -1,0 +1,21 @@
+{
+  "run_id": "intraday_backfill_20260803_20260828",
+  "plan": {
+    "tickers": 1,
+    "sessions_in_range": 20,
+    "sessions_wanted": 20,
+    "sessions_already_stored": 0,
+    "sessions_to_fetch": 20,
+    "tickers_needing_fetch": 1,
+    "provider_requests_estimate": 1,
+    "storage_estimate_gb": 0.0
+  },
+  "counts": {
+    "tickers_done": 1,
+    "sessions_written": 20,
+    "sessions_no_bars": 0,
+    "ticker_errors": 0
+  },
+  "errors": [],
+  "finished_utc": "2026-10-04T21:08:15.549058+00:00"
+}

@@ -1,0 +1,174 @@
+{
+  "version": "beh001_lanes_v1",
+  "approved": "ACK 4 Oct 2026: three lanes, line 50% on both panels, never raised; weekly/monthly/intraday are core and get their own evidence; setups without an obvious trade stay visible for human judgement",
+  "evidence": "Enhancements/outcomes/beh001/eval_v5 and eval_v5_holdout duration_records.jsonl (OUTCOME = from activation, OUTCOME_FROM_DETECTION = from detection); reached outcome level before invalidation",
+  "receipt": "Enhancements/assessment/AVS_LAB_DATA_VALIDATION_20261003/AVS_INVENTED_VALUES_INVENTORY_20261003.md",
+  "hit_line": 0.5,
+  "live_states": [
+    "DETECTED",
+    "ACTIVATED"
+  ],
+  "lane_a_trade_now": {
+    "1d": [
+      {
+        "state": "ACTIVATED",
+        "type": "SOS -> LPS continuation",
+        "hit": [
+          0.726,
+          0.678
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "SOW -> LPSY continuation",
+        "hit": [
+          0.657,
+          0.686
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "Spring Candidate",
+        "hit": [
+          0.517,
+          0.522
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "Failed Upthrust Continuation",
+        "hit": [
+          0.551,
+          0.623
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "Failed Spring Continuation",
+        "hit": [
+          0.506,
+          0.523
+        ]
+      },
+      {
+        "state": "DETECTED",
+        "type": "Change-of-Behaviour Reversal",
+        "hit": [
+          0.612,
+          0.615
+        ]
+      }
+    ],
+    "1w": [
+      {
+        "state": "ACTIVATED",
+        "type": "SOS -> LPS continuation",
+        "hit": [
+          0.668,
+          0.66
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "SOW -> LPSY continuation",
+        "hit": [
+          0.667,
+          0.68
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "Failed Upthrust Continuation",
+        "hit": [
+          0.52,
+          0.612
+        ]
+      },
+      {
+        "state": "DETECTED",
+        "type": "Change-of-Behaviour Reversal",
+        "hit": [
+          0.587,
+          0.551
+        ]
+      }
+    ],
+    "1mo": [
+      {
+        "state": "ACTIVATED",
+        "type": "SOS -> LPS continuation",
+        "hit": [
+          0.612,
+          0.667
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "SOW -> LPSY continuation",
+        "hit": [
+          0.669,
+          0.547
+        ]
+      },
+      {
+        "state": "ACTIVATED",
+        "type": "Failed Upthrust Continuation",
+        "hit": [
+          0.584,
+          0.507
+        ]
+      }
+    ]
+  },
+  "lane_b_early_entry": {
+    "note": "ACK 4 Oct 2026: reduce failures to about 1 in 3 before building. Detected Spring / SOS->LPS / Buyer Absorption (daily) qualify only when the outcome level is within 2 daily ATR and the invalidation at least 2 ATR away (rule R2, chosen on the original panel, confirmed held out). Everything else goes to lane C as continuous improvement. Offered only when the option's value multiple at the anticipated time is >= 1 / hit.",
+    "study": "Enhancements/assessment/AVS_LAB_DATA_VALIDATION_20261003/AVS_INVENTED_VALUES_INVENTORY_20261003.md (Lane B study)",
+    "geometry": {
+      "max_level_distance_atr": 2.0,
+      "min_invalidation_distance_atr": 2.0
+    },
+    "1d": [
+      {
+        "state": "DETECTED",
+        "type": "Spring Candidate",
+        "hit": [
+          0.74,
+          0.76
+        ],
+        "mean_result_pct": [
+          0.18,
+          0.71
+        ]
+      },
+      {
+        "state": "DETECTED",
+        "type": "SOS -> LPS continuation",
+        "hit": [
+          0.74,
+          0.76
+        ],
+        "mean_result_pct": [
+          0.18,
+          0.71
+        ]
+      },
+      {
+        "state": "DETECTED",
+        "type": "Buyer Absorption Breakout",
+        "hit": [
+          0.74,
+          0.76
+        ],
+        "mean_result_pct": [
+          0.18,
+          0.71
+        ]
+      }
+    ]
+  },
+  "untested_timeframes": [
+    "60m",
+    "15m",
+    "5m"
+  ]
+}

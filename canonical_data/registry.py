@@ -378,98 +378,110 @@ class CanonicalRegistry:
         projection_names: tuple[str, ...] = (),
     ) -> None:
         with self.connection() as connection:
-            existing_row = connection.execute(
-                "SELECT * FROM dataset_registry WHERE dataset_id = ?",
-                (record.dataset_id,),
-            ).fetchone()
-            dataset_already_registered = existing_row is not None
-            if existing_row is not None:
-                existing = self._record_from_row(existing_row)
-                if existing == record:
-                    pass
-                # Dataset IDs are content identities, while ``source_run_id``
-                # records the run that first registered that immutable object.
-                # A later run may legitimately observe and reuse the identical
-                # dataset.  Preserve the original provenance and make that
-                # repeat registration idempotent; every other field remains
-                # part of the immutability comparison below.
-                #
-                # AVS-SD-MON-003 item D (ACK, 20 Sep 2026): completeness_status,
-                # as_of and expires_at are metadata about *how* and *when* the
-                # content was observed, not part of the content itself - they
-                # are deliberately excluded from dataset_id's hash (which is
-                # derived from content_hash). Re-observing byte-identical
-                # content later (e.g. a PARTIAL->COMPLETE completeness
-                # upgrade) is the same object, not a conflict. Decision: keep
-                # the first-observed record unchanged (idempotent no-op), not
-                # a supersession - the later, possibly-more-complete metadata
-                # is discarded, matching how source_run_id/observed_at already
-                # behave. A genuine content_hash mismatch under the same
-                # dataset_id (data corruption, not a legitimate re-observation)
-                # still raises below.
-                elif replace(
-                    record,
-                    source_run_id=existing.source_run_id,
-                    # A content-derived dataset may be observed again after its
-                    # freshness window.  Keep the first-observed provenance;
-                    # the later physical request is recorded in the ledger.
-                    observed_at=existing.observed_at,
-                    completeness_status=existing.completeness_status,
-                    as_of=existing.as_of,
-                    expires_at=existing.expires_at,
-                ) == existing:
-                    pass
-                else:
-                    raise DatasetValidationError(
-                        f"dataset_id {record.dataset_id} is immutable and already registered"
-                    )
-            if not dataset_already_registered:
-                connection.execute(
-                    """
-                    INSERT INTO dataset_registry(
-                        dataset_id, dataset_type, instrument_id, session_date,
-                        scope_fingerprint, scope_json, provider,
-                        adjustment_convention, schema_version, content_hash,
-                        completeness_status, storage_uri, observed_at, as_of,
-                        expires_at, quality_flags_json, parent_dataset_ids_json,
-                        source_run_id, registered_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        record.dataset_id,
-                        record.dataset_type.value,
-                        record.instrument_id,
-                        record.session_date.isoformat(),
-                        record.scope.fingerprint,
-                        json.dumps(record.scope.to_dict(), sort_keys=True),
-                        record.provider,
-                        record.adjustment_convention,
-                        record.schema_version,
-                        record.content_hash,
-                        record.completeness_status.value,
-                        record.storage_uri,
-                        iso_utc(record.observed_at),
-                        iso_utc(record.as_of),
-                        iso_utc(record.expires_at),
-                        json.dumps(record.quality_flags),
-                        json.dumps(record.parent_dataset_ids),
-                        record.source_run_id,
-                        iso_utc(utc_now()),
-                    ),
+            self._register_dataset_on(connection, record, projection_names)
+
+    def register_datasets(self, records, *, projection_names: tuple[str, ...] = ()) -> None:
+        """Register many datasets in one transaction (bulk history backfill, ACK 4 Oct 2026).
+
+        Same rules as ``register_dataset`` - immutable, idempotent - for every record; all or nothing.
+        """
+        with self.connection() as connection:
+            for record in records:
+                self._register_dataset_on(connection, record, projection_names)
+
+    def _register_dataset_on(self, connection, record: DatasetRecord, projection_names: tuple[str, ...]) -> None:
+        existing_row = connection.execute(
+            "SELECT * FROM dataset_registry WHERE dataset_id = ?",
+            (record.dataset_id,),
+        ).fetchone()
+        dataset_already_registered = existing_row is not None
+        if existing_row is not None:
+            existing = self._record_from_row(existing_row)
+            if existing == record:
+                pass
+            # Dataset IDs are content identities, while ``source_run_id``
+            # records the run that first registered that immutable object.
+            # A later run may legitimately observe and reuse the identical
+            # dataset.  Preserve the original provenance and make that
+            # repeat registration idempotent; every other field remains
+            # part of the immutability comparison below.
+            #
+            # AVS-SD-MON-003 item D (ACK, 20 Sep 2026): completeness_status,
+            # as_of and expires_at are metadata about *how* and *when* the
+            # content was observed, not part of the content itself - they
+            # are deliberately excluded from dataset_id's hash (which is
+            # derived from content_hash). Re-observing byte-identical
+            # content later (e.g. a PARTIAL->COMPLETE completeness
+            # upgrade) is the same object, not a conflict. Decision: keep
+            # the first-observed record unchanged (idempotent no-op), not
+            # a supersession - the later, possibly-more-complete metadata
+            # is discarded, matching how source_run_id/observed_at already
+            # behave. A genuine content_hash mismatch under the same
+            # dataset_id (data corruption, not a legitimate re-observation)
+            # still raises below.
+            elif replace(
+                record,
+                source_run_id=existing.source_run_id,
+                # A content-derived dataset may be observed again after its
+                # freshness window.  Keep the first-observed provenance;
+                # the later physical request is recorded in the ledger.
+                observed_at=existing.observed_at,
+                completeness_status=existing.completeness_status,
+                as_of=existing.as_of,
+                expires_at=existing.expires_at,
+            ) == existing:
+                pass
+            else:
+                raise DatasetValidationError(
+                    f"dataset_id {record.dataset_id} is immutable and already registered"
                 )
-            for projection_name in tuple(dict.fromkeys(projection_names)):
-                event = canonical_dataset_committed(
-                    projection_name=projection_name,
-                    dataset_id=record.dataset_id,
-                    dataset_type=record.dataset_type.value,
-                    instrument_id=record.instrument_id,
-                    session_date=record.session_date,
-                    content_hash=record.content_hash,
-                    storage_uri=record.storage_uri,
-                    dataset_as_of_utc=record.as_of,
-                    source_run_id=record.source_run_id,
-                )
-                enqueue_projection_event(connection, event)
+        if not dataset_already_registered:
+            connection.execute(
+                """
+                INSERT INTO dataset_registry(
+                    dataset_id, dataset_type, instrument_id, session_date,
+                    scope_fingerprint, scope_json, provider,
+                    adjustment_convention, schema_version, content_hash,
+                    completeness_status, storage_uri, observed_at, as_of,
+                    expires_at, quality_flags_json, parent_dataset_ids_json,
+                    source_run_id, registered_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record.dataset_id,
+                    record.dataset_type.value,
+                    record.instrument_id,
+                    record.session_date.isoformat(),
+                    record.scope.fingerprint,
+                    json.dumps(record.scope.to_dict(), sort_keys=True),
+                    record.provider,
+                    record.adjustment_convention,
+                    record.schema_version,
+                    record.content_hash,
+                    record.completeness_status.value,
+                    record.storage_uri,
+                    iso_utc(record.observed_at),
+                    iso_utc(record.as_of),
+                    iso_utc(record.expires_at),
+                    json.dumps(record.quality_flags),
+                    json.dumps(record.parent_dataset_ids),
+                    record.source_run_id,
+                    iso_utc(utc_now()),
+                ),
+            )
+        for projection_name in tuple(dict.fromkeys(projection_names)):
+            event = canonical_dataset_committed(
+                projection_name=projection_name,
+                dataset_id=record.dataset_id,
+                dataset_type=record.dataset_type.value,
+                instrument_id=record.instrument_id,
+                session_date=record.session_date,
+                content_hash=record.content_hash,
+                storage_uri=record.storage_uri,
+                dataset_as_of_utc=record.as_of,
+                source_run_id=record.source_run_id,
+            )
+            enqueue_projection_event(connection, event)
 
     @staticmethod
     def _record_from_row(row: sqlite3.Row) -> DatasetRecord:

@@ -31,14 +31,25 @@ def test_short_history_makes_higher_timeframes_not_evaluated_not_failed():
     assert result["readings"]["1mo"]["Status"].startswith("NOT_EVALUATED")
 
 
-def test_ineligible_ticker_still_gets_its_behavioural_reading():
+def test_penny_illiquid_ticker_is_analysed_with_its_behavioural_reading():
+    # Superseded 4 Oct 2026 (ACK, no price gate): a $2, illiquid ticker is no longer dropped. It is analysed,
+    # its BEH-001 reading travels with it, and what it falls outside of is disclosed.
     daily = long_daily(TREND_DOWN)
     daily[["open", "high", "low", "close"]] = daily[["open", "high", "low", "close"]] / 40  # ~$2 stock
     daily["volume"] = 10_000.0                                                          # illiquid
     cfg = discovery.UltimateConfig()
     signal, outcome = discovery._scan_with_lifecycle("PENNY", daily, cfg, discovery.WyckoffEngine(min_bars=20))
-    assert signal is None and outcome["outcome"] == "DROP"
-    candidates = discovery._beh001_candidates_for_drop("PENNY", daily, cfg, outcome)
+    assert outcome is None and signal is not None
+    assert "PRICE_BELOW_MIN" in signal["intake_flags"] and "AVG_VOLUME_BELOW_MIN" in signal["intake_flags"]
+    assert isinstance(signal.get("_beh001_candidates"), list)
+
+
+def test_hard_data_drop_still_gets_its_behavioural_reading():
+    daily = long_daily(TREND_DOWN)
+    cfg = discovery.UltimateConfig(min_bars=len(daily) + 1)
+    signal, outcome = discovery._scan_with_lifecycle("FEWB", daily, cfg, discovery.WyckoffEngine(min_bars=20))
+    assert signal is None and outcome["reason_code"] == "ELIG_INSUFFICIENT_BARS"
+    candidates = discovery._beh001_candidates_for_drop("FEWB", daily, cfg, outcome)
     assert isinstance(candidates, list)
     for c in candidates:
         assert c["Discovery_Outcome"] == "DROP"

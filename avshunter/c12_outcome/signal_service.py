@@ -216,46 +216,66 @@ def _ticket_page(tickets, counts: Counter, run_id: str, issue_session: date, now
 def score_signals(ledger, as_of: date, snapshot: ConfigSnapshot, now: datetime, *,
                   chain_db: Path = chains.DEFAULT_CHAIN_DB, price_db: Path = prices.DEFAULT_PRICE_DB,
                   settings_override: sig.SignalSettings | None = None) -> dict:
-    """Score issued tickets at real prices; each result is a counterfactual OUTCOME chained to its presentation."""
+    """Score issued tickets at real prices; each result is a counterfactual OUTCOME chained to its presentation.
+
+    Step 3b (ACK 4 Oct 2026): a ticket is scored over its own (evidence) hold; when that differs from the fixed
+    governed window, the same ticket held over the window is written as a comparison outcome under its own stage
+    (``COMPARISON_STAGE``) - never part of the track record, the open-record list or the "already scored" check.
+    """
     s = settings_override or sig.settings_from_snapshot(snapshot)
     done = {e.previous_event_id for e in ledger_io.signal_outcomes(ledger)}
-    open_items = [(e, ledger_io.ticket_from_payload(e.payload)) for e in ledger_io.issued_presentations(ledger, as_of)
-                  if e.event_id not in done]
+    done_comparison = {e.previous_event_id for e in ledger_io.comparison_outcomes(ledger)}
+    issued = [(e, ledger_io.ticket_from_payload(e.payload)) for e in ledger_io.issued_presentations(ledger, as_of)]
+    open_items = [(e, t) for e, t in issued if e.event_id not in done]
+    comparison_items = [(e, sig.comparison_ticket(t)) for e, t in issued
+                        if e.event_id not in done_comparison and sig.comparison_hold_needed(t)]
     counts: Counter = Counter()
-    if not open_items:
-        return {"open_tickets": 0, "new_outcomes": 0, "states": {}, "waiting_on_mark": []}
-    start = min(t.issue_session for _, t in open_items)
-    bars = prices.load_bars({t.ticker for _, t in open_items}, start, as_of, price_db)
+    if not open_items and not comparison_items:
+        return {"open_tickets": 0, "new_outcomes": 0, "states": {}, "waiting_on_mark": [], "new_comparison_outcomes": 0}
+    every = open_items + comparison_items
+    start = min(t.issue_session for _, t in every)
+    bars = prices.load_bars({t.ticker for _, t in every}, start, as_of, price_db)
     quotes = chains.ChainQuotes(chain_db)
-    events, waiting = [], []
+    events, comparison_events, waiting = [], [], []
+
+    def _score(presentation, t, *, stage=None):
+        have = {b.session: b for b in bars.get(t.ticker, [])}
+        contiguous = []
+        for session in _sessions(t.issue_session, as_of):
+            if session not in have:
+                break
+            contiguous.append(have[session])
+        plan = sig.plan_exit(t, contiguous, as_of)
+        bid = quotes.bid(t.ticker, t.contract_symbol, plan.session) if (
+            plan.state == sig.EXITED and t.expression == sig.OPTION) else None
+        outcome = sig.mark_signal(t, plan, bid, s.contract_multiplier)
+        if outcome.state != sig.CLOSED:
+            return outcome, None, plan
+        held = len([d for d in _sessions(t.issue_session, outcome.exit_session) if d > t.issue_session])
+        return outcome, ledger_io.outcome_event(presentation=presentation, outcome=outcome, ticket=t,
+                                                sessions_held=held, now=now,
+                                                config_snapshot_id=snapshot.snapshot_id, stage=stage), plan
+
     try:
         for presentation, t in open_items:
-            have = {b.session: b for b in bars.get(t.ticker, [])}
-            contiguous = []
-            for session in _sessions(t.issue_session, as_of):
-                if session not in have:
-                    break
-                contiguous.append(have[session])
-            plan = sig.plan_exit(t, contiguous, as_of)
-            bid = quotes.bid(t.ticker, t.contract_symbol, plan.session) if (
-                plan.state == sig.EXITED and t.expression == sig.OPTION) else None
-            outcome = sig.mark_signal(t, plan, bid, s.contract_multiplier)
+            outcome, event, plan = _score(presentation, t)
             counts[outcome.state] += 1
             if outcome.state == sig.MARK_UNAVAILABLE:
                 # Exact-session mark missing: listed, never substituted by a nearby date (P0-4, RC3).
                 waiting.append({"ticket_id": t.ticket_id, "ticker": t.ticker, "contract": t.contract_symbol,
                                 "mark_session": plan.session.isoformat() if plan.session else None})
-            if outcome.state != sig.CLOSED:
-                continue
-            held = len([d for d in _sessions(t.issue_session, outcome.exit_session) if d > t.issue_session])
-            events.append(ledger_io.outcome_event(presentation=presentation, outcome=outcome, ticket=t,
-                                                  sessions_held=held, now=now,
-                                                  config_snapshot_id=snapshot.snapshot_id))
+            if event is not None:
+                events.append(event)
+        for presentation, t in comparison_items:
+            _, event, _ = _score(presentation, t, stage=ledger_io.COMPARISON_STAGE)
+            if event is not None:
+                comparison_events.append(event)
     finally:
         quotes.close()
     written = ledger.append_many(events)
+    written_comparison = ledger.append_many(comparison_events)
     return {"open_tickets": len(open_items), "new_outcomes": written, "states": dict(counts),
-            "waiting_on_mark": waiting}
+            "waiting_on_mark": waiting, "new_comparison_outcomes": written_comparison}
 
 
 def _sessions(start: date, end: date) -> list[date]:

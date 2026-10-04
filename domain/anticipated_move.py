@@ -187,10 +187,10 @@ def anticipated_move_fields(
 
 def evidence_runway(*, timeframe: Any, alignment: Any, status: Any, q50_bars: Any, q80_bars: Any,
                     n: Any = None) -> Dict[str, Any]:
-    """Contract runway from the level evidence (ACK 3 Oct 2026, step 4b option B).
+    """Contract runway from the level evidence (ACK 3 Oct 2026 step 4b; extended 4 Oct 2026 to weekly/monthly).
 
-    Daily trade-side events with level evidence size the runway from q80 (sessions). Weekly/monthly events
-    and events without evidence keep the governed window (the caller's), and the basis says why. The median
+    Trade-side events with level evidence on a tested timeframe (1d / 1w / 1mo) size the runway from q80
+    (sessions). Untested timeframes and events without evidence get no evidence runway; the basis says why. The median
     move time is published for any timeframe (display). A runway is a floor, never a ceiling.
     """
     per_bar = _num(_constants()["anticipated_move"]["sessions_per_bar"].get(str(timeframe or "")))
@@ -204,9 +204,10 @@ def evidence_runway(*, timeframe: Any, alignment: Any, status: Any, q50_bars: An
         out["evidence_runway_basis"] = "GOVERNED_WINDOW_NO_TRADE_SIDE_EVENT"
     elif not estimated:
         out["evidence_runway_basis"] = "GOVERNED_WINDOW_NO_LEVEL_EVIDENCE"
-    elif str(timeframe) != "1d":
-        out["evidence_runway_basis"] = f"GOVERNED_WINDOW_NON_DAILY_EVENT:{timeframe}"
+    elif str(timeframe) not in _constants()["anticipated_move"]["runway_tested_timeframes"]:
+        out["evidence_runway_basis"] = f"NO_TESTED_EVIDENCE_TIMEFRAME:{timeframe}"
     else:
+        # ACK 4 Oct 2026: daily, weekly and monthly events size the runway from their own q80 (held-out timing).
         out["evidence_runway_sessions"] = max(1, round(q80 * per_bar))
-        out["evidence_runway_basis"] = f"DURATION_EVIDENCE_Q80:1d:n={n}"
+        out["evidence_runway_basis"] = f"DURATION_EVIDENCE_Q80:{timeframe}:n={n}"
     return out

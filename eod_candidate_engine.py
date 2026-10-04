@@ -93,6 +93,7 @@ from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
 from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields
 from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
+from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS, confirm_early_entry
 from contracts.selected_contract_economics import (
     CONTRACT_ANALYTICS_FIELDS,
     MONETISABILITY_AUTHORITY,
@@ -2228,6 +2229,7 @@ def build_candidate_manifest(
         "wyckoff_execution_bias", "wyckoff_entry_trigger",
         "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category",
         *THESIS_EVIDENCE_FIELDS,   # the trade-side event's level and duration evidence (anticipated move)
+        *TRADE_LANE_FIELDS,        # trade lane A / B / C and the intake labels (ACK 4 Oct 2026)
         "adx_14", "atr_percentile_rank",
         "bar_data_source", "bar_data_asof", "bar_data_days_old",
         "bar_evidence_state", "bar_evidence_reason", "is_stale",
@@ -2882,6 +2884,9 @@ def build_candidate_manifest(
             wbs_grade=_str(row, "wbs_grade"),
         ))
         candidate.update(eod_monetisability)
+        # Trade lane (ACK 4 Oct 2026): lane B holds only when the option's value multiple covers the failures.
+        candidate.update(confirm_early_entry({col: row.get(col, "") for col in TRADE_LANE_FIELDS},
+                                             candidate.get("anticipated_value_multiple_q50")))
         candidates.append(candidate)
 
     out_df = pd.DataFrame(candidates)

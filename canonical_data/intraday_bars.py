@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Mapping
 from uuid import uuid4
 
 import pandas as pd
@@ -267,6 +267,12 @@ class CanonicalMinuteBarResolver:
         return frame
 
     def _persist(self, request: DatasetRequest, frame: pd.DataFrame, provider: str, quality: IntradayQuality) -> DatasetRecord:
+        record = self._write_payload(request, frame, provider, quality)
+        self.registry.register_dataset(record); return record
+
+    def _write_payload(self, request: DatasetRequest, frame: pd.DataFrame, provider: str,
+                       quality: IntradayQuality) -> DatasetRecord:
+        """Write the session's parquet payload (content-addressed) and build its record; registration is separate."""
         target_dir = self.payload_root / "intraday_bar" / request.session_date.isoformat() / request.instrument_id
         target_dir.mkdir(parents=True, exist_ok=True)
         temporary = target_dir / f".{uuid4().hex}.tmp.parquet"; frame.to_parquet(temporary, index=False)
@@ -284,7 +290,77 @@ class CanonicalMinuteBarResolver:
                                request.scope, provider, content_hash, status, str(target.resolve()), observed, as_of,
                                adjustment_convention=request.adjustment_convention, schema_version=request.schema_version,
                                quality_flags=quality.quality_flags, source_run_id=self.run_id)
-        self.registry.register_dataset(record); return record
+        return record
+
+    def persist_completed_sessions(self, *, ticker: str, sessions: Mapping[date, pd.DataFrame], provider: str,
+                                   interval_minutes: int, adjustment_convention: str, physical_requests: int,
+                                   session_segment: str = "REGULAR", acquired_at_utc: datetime | None = None
+                                   ) -> list[DatasetRecord]:
+        """Bulk-store completed historical sessions for one ticker (history backfill, ACK 4 Oct 2026).
+
+        Writes exactly the records ``resolve`` would write for each session (same validation, files, hashes, scopes
+        and completeness), but validates the ticker's bars once, registers every session in one transaction and
+        records one request-ledger row for the provider request(s) that fetched them. Authorised through the
+        ticker's lifecycle like any acquisition.
+        """
+        decision = self.lifecycle.authorise(self.run_id, self.requesting_stage, ticker, DatasetType.INTRADAY_BAR)
+        if not decision.authorised:
+            raise FetchNotAuthorised(decision.reason)
+        interval = int(interval_minutes)
+        schema = intraday_schema_version(interval)
+        days = sorted(d for d, f in sessions.items() if f is not None and len(f))
+        if not days:
+            return []
+        acquired = acquired_at_utc or datetime.now(timezone.utc)
+        combined = pd.concat([sessions[d] for d in days], ignore_index=True)
+        if "acquired_at_utc" not in combined:
+            combined["acquired_at_utc"] = acquired          # carried like a provider frame's own column
+        normalised = normalise_intraday_bars(combined, ticker=ticker, interval_minutes=interval,
+                                             session_segment=session_segment, adjustment_convention=adjustment_convention,
+                                             provider=provider)
+        # The session is the exchange-local date of each regular-session bar (as a per-session call would stamp it).
+        normalised["session_date"] = (normalised["timestamp_utc"].dt.tz_convert("America/New_York").dt.date
+                                      .map(lambda d: d.isoformat()))
+        records: list[DatasetRecord] = []
+        for day in days:
+            frame = normalised[normalised["session_date"] == day.isoformat()].reset_index(drop=True)
+            # VWAP is a running total within a session: restart it at the open, with the normaliser's own formula.
+            typical = (frame["high"] + frame["low"] + frame["close"]) / 3.0
+            regular = frame["session_segment"].eq("REGULAR")
+            numerator = (typical.where(regular, 0.0) * frame["volume"].where(regular, 0.0)).cumsum()
+            denominator = frame["volume"].where(regular, 0.0).cumsum()
+            frame["vwap_canonical"] = numerator.div(denominator.where(denominator > 0))
+            open_utc, close_utc = session_bounds(day)
+            plan, _ = self.plan(session_date=day, start_utc=_utc_minute(open_utc), end_utc=_utc_minute(close_utc),
+                                interval_minutes=interval, available=set(), session_segment=session_segment)
+            for gap_start, gap_end in plan.missing_ranges:
+                part = frame[(frame["timestamp_utc"] >= gap_start) & (frame["timestamp_utc"] <= gap_end)].reset_index(drop=True)
+                quality = assess_intraday_quality(part, pd.date_range(gap_start, gap_end, freq=f"{interval}min"),
+                                                  interval_minutes=interval)
+                if quality.duplicate_count:
+                    raise ValueError("provider returned duplicate intraday timestamps")
+                scope = self._scope(gap_start, gap_end, interval_minutes=interval, session_segment=session_segment,
+                                    evidence_state="COMPLETED_SESSION")
+                request = DatasetRequest(self.run_id, self.requesting_stage, DatasetType.INTRADAY_BAR, ticker, day,
+                                         scope=scope, accepted_providers=(provider,),
+                                         adjustment_convention=adjustment_convention, schema_version=schema,
+                                         invocation_id=self.invocation_id,
+                                         evidence_cutoff_utc=self.evidence_cutoff_utc or gap_end,
+                                         exchange_calendar=self.exchange_calendar, evidence_state="COMPLETED_SESSION")
+                records.append(self._write_payload(request, part, provider, quality))
+        first_open, _ = session_bounds(days[0]); _, last_close = session_bounds(days[-1])
+        span = DatasetRequest(self.run_id, self.requesting_stage, DatasetType.INTRADAY_BAR, ticker, days[-1],
+                              scope=self._scope(_utc_minute(first_open), _utc_minute(last_close), interval_minutes=interval,
+                                                session_segment=session_segment, evidence_state="COMPLETED_SESSION"),
+                              accepted_providers=(provider,), adjustment_convention=adjustment_convention,
+                              schema_version=schema, invocation_id=self.invocation_id,
+                              evidence_cutoff_utc=self.evidence_cutoff_utc or _utc_minute(last_close),
+                              exchange_calendar=self.exchange_calendar, evidence_state="COMPLETED_SESSION")
+        ledger_id = self.ledger.start(span, provider=provider)
+        self.registry.register_datasets(records)
+        self.ledger.finish(ledger_id, RequestResolution.PROVIDER_FETCH, physical_request_count=int(physical_requests),
+                           reason=json.dumps({"bulk_history": True, "sessions": len(days), "records": len(records)}))
+        return records
 
     def plan(self, *, session_date: date, start_utc: datetime, end_utc: datetime, interval_minutes: int,
              available: set[pd.Timestamp], session_segment: str = "REGULAR",

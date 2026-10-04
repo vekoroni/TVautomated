@@ -666,7 +666,7 @@ def load_scanner_manifest() -> dict:
         "available": False, "go_new": [], "go_known": [],
         "probe_new": [], "probe_known": [], "all_new": [],
         "vms_df": None, "run_id": None, "timestamp_utc": None,
-        "age_hrs": None, "tiers_run": [],
+        "age_hrs": None, "tiers_run": [], "all_scanned": [], "scanner_stale": None,
     }
     if not cfg.UNIVERSE_SCANNER_MANIFEST.exists():
         logger.info("Phase 0: No scanner manifest — pipeline runs without scanner input")
@@ -674,17 +674,28 @@ def load_scanner_manifest() -> dict:
     try:
         with open(cfg.UNIVERSE_SCANNER_MANIFEST, "r", encoding="utf-8") as f:
             manifest = json.load(f)
-        ts      = datetime.fromisoformat(manifest["timestamp"])
-        age_hrs = (datetime.now(timezone.utc).replace(tzinfo=None) - ts.replace(tzinfo=None)).total_seconds() / 3600
+        # Age in UTC (4 Oct 2026): "timestamp" is the scanner's local time; comparing it with UTC added an hour
+        # in UK summer time. Prefer the UTC stamp; otherwise read the local stamp as local time.
+        if manifest.get("scanner_manifest_at"):
+            ts = datetime.fromisoformat(str(manifest["scanner_manifest_at"]).replace("Z", "+00:00"))
+        else:
+            ts = datetime.fromisoformat(manifest["timestamp"])
+        if ts.tzinfo is None:
+            ts = ts.astimezone()
+        age_hrs = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
         max_age = manifest.get("max_age_hours", cfg.SCANNER_MAX_AGE_HOURS)
-        if age_hrs > max_age:
-            logger.warning("Phase 0: Scanner manifest %.1fh old (max=%dh) — stale", age_hrs, max_age)
-            return empty
+        # ACK, 4 Oct 2026: an old scan is used and flagged, never discarded (fresh or flagged).
+        scanner_stale = age_hrs > max_age
+        if scanner_stale:
+            logger.warning("Phase 0: Scanner manifest %.1fh old (max=%dh) — used, flagged stale", age_hrs, max_age)
         go_new      = manifest.get("go_new", [])
         go_known    = manifest.get("go_known", [])
         probe_new   = manifest.get("probe_new", [])
         probe_known = manifest.get("probe_known", [])
         all_new     = list(dict.fromkeys(go_new + probe_new))
+        # ACK, 4 Oct 2026: every scanned ticker runs the line, whatever its VMS decision or universe membership.
+        all_scanned = _ordered_unique_strings(list(manifest.get("tickers", {}) or {})
+                                              + go_new + go_known + probe_new + probe_known)
         import pandas as _pd
         vms_path = Path(manifest.get("files", {}).get("vms_scoreboard", ""))
         vms_df   = _pd.read_csv(vms_path) if vms_path.exists() else None
@@ -695,14 +706,15 @@ def load_scanner_manifest() -> dict:
                     age_hrs, manifest.get("tiers_run", []), manifest.get("run_id", "?"))
         logger.info("   GO new=%d known=%d | PROBE new=%d known=%d",
                     len(go_new), len(go_known), len(probe_new), len(probe_known))
-        logger.info("   %d NEW tickers injected into discovery", len(all_new))
+        logger.info("   %d scanned tickers enter the run (%d NEW GO/PROBE)", len(all_scanned), len(all_new))
         logger.info("\u2705 Phase 0: Scanner output loaded\n")
         return {
             "available": True, "go_new": go_new, "go_known": go_known,
             "probe_new": probe_new, "probe_known": probe_known, "all_new": all_new,
             "vms_df": vms_df, "run_id": manifest.get("run_id"),
-            "timestamp_utc": manifest.get("timestamp"),
+            "timestamp_utc": ts.astimezone(timezone.utc).isoformat(),   # was the scanner's local time
             "age_hrs": round(age_hrs, 1), "tiers_run": manifest.get("tiers_run", []),
+            "all_scanned": all_scanned, "scanner_stale": scanner_stale,
             # L4-STEP1: Per-ticker signal timestamp data from scanner manifest
             "manifest_tickers": manifest.get("tickers", {}),
         }
@@ -716,7 +728,7 @@ def _scanner_empty() -> dict:
         "available": False, "go_new": [], "go_known": [],
         "probe_new": [], "probe_known": [], "all_new": [],
         "vms_df": None, "run_id": None, "timestamp_utc": None,
-        "age_hrs": None, "tiers_run": [],
+        "age_hrs": None, "tiers_run": [], "all_scanned": [], "scanner_stale": None,
     }
 
 
@@ -779,6 +791,7 @@ def merge_scanner_inputs(scanner: dict, manual: dict) -> dict:
     for key in ("go_new", "go_known", "probe_new", "probe_known"):
         merged[key] = _ordered_unique_strings((scanner.get(key) or []) + (manual.get(key) or []))
     merged["all_new"] = _ordered_unique_strings((scanner.get("all_new") or []) + (manual.get("all_new") or []))
+    merged["all_scanned"] = _ordered_unique_strings((scanner.get("all_scanned") or []) + (manual.get("all_new") or []))
     merged["tiers_run"] = _ordered_unique_strings((scanner.get("tiers_run") or []) + (manual.get("tiers_run") or []))
     merged["run_id"] = f"{scanner.get('run_id') or 'scanner'}+manual_upload"
     ages = [x for x in [scanner.get("age_hrs"), manual.get("age_hrs")] if x is not None]
@@ -806,16 +819,17 @@ def merge_scanner_inputs(scanner: dict, manual: dict) -> dict:
 
 
 def build_augmented_universe(scanner: dict, pipeline_run_id: str) -> Optional[Path]:
-    """Phase 0 — Prepend NEW scanner tickers to pipeline universe for this run only."""
-    if not scanner["available"] or not scanner["all_new"]:
+    """Phase 0 — Prepend every scanned ticker missing from the pipeline universe, for this run only."""
+    scanned = scanner.get("all_scanned") or scanner.get("all_new") or []
+    if not scanner["available"] or not scanned:
         return None
     try:
         import pandas as _pd
         if not cfg.UNIVERSE_FILE.exists():
             return None
         existing     = _pd.read_csv(cfg.UNIVERSE_FILE)
-        existing_set = set(existing.iloc[:, 0].dropna().str.strip().tolist())
-        truly_new    = [t for t in scanner["all_new"] if t not in existing_set]
+        existing_set = set(existing.iloc[:, 0].dropna().astype(str).str.strip().str.upper().tolist())
+        truly_new    = [t for t in scanned if t not in existing_set]
         if not truly_new:
             return None
         new_rows  = _pd.DataFrame({existing.columns[0]: truly_new})
@@ -884,6 +898,7 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
             "scanner_source": "UNIVERSE_SCANNER",
             "scanner_timestamp_utc": scanner.get("timestamp_utc"),
             "scanner_age_hrs": scanner.get("age_hrs"),
+            "scanner_stale": scanner.get("scanner_stale"),
             "tiers_run": scanner.get("tiers_run", []),
             "tickers": {}
         }
@@ -923,6 +938,7 @@ def write_scanner_context(scanner: dict, pipeline_run_id: str) -> None:
                 "scanner_run_id":      _scanner_run_id,
                 "scanner_timestamp_utc": scanner.get("timestamp_utc"),
                 "scanner_age_hrs":     scanner.get("age_hrs"),
+                "scanner_stale":       scanner.get("scanner_stale"),
                 "scanner_signal_type": str(row.get("decision", "UNKNOWN")),
                 "scanner_decision":    str(row.get("decision", "UNKNOWN")),
                 "scanner_direction":   str(row.get("direction", "")),
@@ -4125,15 +4141,10 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         patched["anticipated_move_source"] = _thesis_bucket.map(
             {bucket: "DISCOVERY_THESIS_HORIZON" for bucket in _hold_by_bucket}
         ).fillna("HORIZON_UNAVAILABLE")
-        _window = _governed_thesis_window_sessions(run_id)
-        patched["planned_hold_sessions"] = _pd_hp.array(
-            [_window] * len(patched), dtype="Int64"
-        )
-        patched["planned_hold_source"] = (
-            "THESIS_WINDOW_D2" if _window is not None else "THESIS_WINDOW_UNAVAILABLE"
-        )
-        # EV3 values at the governed window (ACK 28 Sep 2026); a daily evidence runway never becomes its horizon.
-        patched["ev3_planned_hold_sessions"] = _pd_hp.array([_window] * len(patched), dtype="Int64")
+        # Step 3 (ACK 4 Oct 2026, decision 2): the planned hold is the evidence runway or nothing - never the
+        # governed 20. Rows without evidence carry no hold, and the source says why.
+        patched["planned_hold_sessions"] = _pd_hp.array([_pd_hp.NA] * len(patched), dtype="Int64")
+        patched["planned_hold_source"] = "NO_EVIDENCE_HOLD"
         # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level is the runway
         # (planned hold); its median is the anticipated move time. Other rows keep the governed window, and
         # the source says why. Options intelligence stamped the evidence on the row before this patch.
@@ -4144,11 +4155,16 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             _has_hold = _ev_hold.notna()
             patched.loc[_has_hold, "planned_hold_sessions"] = _ev_hold[_has_hold].round().astype("Int64")
             patched.loc[_has_hold, "planned_hold_source"] = _ev_basis[_has_hold]
-            _labelled = ~_has_hold & _ev_basis.ne("") & patched["planned_hold_source"].astype(str).eq("THESIS_WINDOW_D2")
-            patched.loc[_labelled, "planned_hold_source"] = "THESIS_WINDOW_D2|" + _ev_basis[_labelled]
+            _labelled = ~_has_hold & _ev_basis.ne("")
+            patched.loc[_labelled, "planned_hold_source"] = "NO_EVIDENCE_HOLD|" + _ev_basis[_labelled]
             _has_move = _ev_move.notna()
             patched.loc[_has_move, "anticipated_move_sessions"] = _ev_move[_has_move].round().astype("Int64")
             patched.loc[_has_move, "anticipated_move_source"] = "DURATION_EVIDENCE_Q50"
+        # Step 3 (ACK 4 Oct 2026, decision 1a): EV3 values at the nearest grid point at or below the evidence hold.
+        from vanguard.ev3_stage0 import grid_hold_for
+        _ev3 = [grid_hold_for(None if _pd_hp.isna(h) else h) for h in patched["planned_hold_sessions"]]
+        patched["ev3_planned_hold_sessions"] = _pd_hp.array([h for h, _ in _ev3], dtype="Int64")
+        patched["ev3_hold_basis"] = [b for _, b in _ev3]
 
         patched.to_csv(target_csv, index=False)
 
@@ -6012,12 +6028,14 @@ def evening_workflow(
                 "scanner_source": "UNIVERSE_SCANNER",
                 "scanner_timestamp_utc": _scanner.get("timestamp_utc"),
                 "scanner_age_hrs": _scanner.get("age_hrs"),
+                "scanner_stale": _scanner.get("scanner_stale"),
                 "tickers": {
                     str(row.get("ticker", "")).strip(): {
                         "scanner_source":      "UNIVERSE_SCANNER",
                         "scanner_run_id":      _scanner.get("run_id"),
                         "scanner_timestamp_utc": _scanner.get("timestamp_utc"),
                         "scanner_age_hrs":     _scanner.get("age_hrs"),
+                        "scanner_stale":       _scanner.get("scanner_stale"),
                         "scanner_signal_type": str(row.get("decision", "") or ""),
                         "scanner_decision":    str(row.get("decision", "") or ""),
                         "scanner_direction":   str(row.get("direction", "") or ""),

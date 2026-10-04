@@ -331,3 +331,195 @@ The audit's "feeds a gate" ranking did not separate live from dead paths. Livene
 **Resolved 3 Oct 2026 (ACK "yes, remove it and run the full suite"):** the EIL macro modifier is removed from `execution_intelligence.py`. Macro bias no longer moves the composite in any state. It was also direction-blind: PUT_HEADWIND marks a weak sector, which is a tailwind for a put. `ctx._macro_bias` stays as display only. Live effect: none, because it fired on 0 rows on 1 Oct. New test `tests/test_avs_eil_macro_never_scores.py`: red first, then green. EIL tests (E5) pass. Full-suite receipt below.
 
 **Full suite, 3 Oct 2026, after the macro removal:** 402 files, one process each; 3,349 tests passed, 1 skipped, 6 failed. All 6 failures are known baselines: the DCV clock in `test_vanguard_reference_input_p2` (3) and in `test_canonical_manifest_p1` (1) is parked, and the untracked-modules check in `test_avs_fix_002_stage0` and `test_avs_int001_stage0` (1 each) clears on commit. No new failures.
+
+## Governance exception, 4 Oct 2026 (ACK)
+
+ACK: "bypass the claude.md, for these round of fixes, so we can implement these changes effectively." Scope: this round only.
+- Discovery drop rules: no price gate; volume and ATR gates replaced by evidence rules; a tradable-now rule by setup type and state; move-fits; instrument tradable.
+- Every scanned ticker enters the run, and an old scan is used with its age stated.
+- The fixed 20-session hold is retired in favour of the evidence hold.
+
+Rules may take decision authority without a shadow period or gates G1–G4. Unchanged: API keys are never printed; ACK runs the pipelines and asks for commits and pushes; test-first and replays stay as working practice.
+
+## Open items register (started 4 Oct 2026)
+
+Deferred items are tracked here so they are not lost in design documents.
+
+| # | Item | Source | Status |
+|---|---|---|---|
+| O1 | DEC-2(b): option-motivated Discovery filters moved out of ticker eligibility | DIR-002, 30 Sep | In this round |
+| O2 | Scanner discards contracts beyond 60 DTE (conflicts with the contract-runway rule) | Scanner read, 4 Oct | Open |
+| O3 | Scanner daily tier = first 75 names of a fixed list | Scanner read, 4 Oct | ACK 4 Oct: scan the whole list (235) daily; count in config, default all. Build as step 2b |
+| O4 | Volatility route: scanner cheap-vol to call plus put, with no Discovery direction | 4 Oct | Open, needs design |
+| O5 | Scanner age clock uses local time, not UTC | 4 Oct | In this round |
+| O11 | `avshunter/c0_run/thin_package.py` read the wall clock outside the clock adapter (package purity) | tests_rebuild, 4 Oct | FIXED 4 Oct: reads `adapters.clock.wall_clock_utc`; tests_rebuild 169 pass |
+| O6 | Vanguard BULL_ONLY_LEGACY edge; G1 circular breakeven; desk phase_transition_probability; N5; N6; REJECT_STALE_QUOTE name; DCV clock | Earlier inventory | Open |
+| O7 | Duration-evidence probabilities fail holdout calibration in the upper bands (recalibrate) | Step 2, 3 Oct | Open |
+
+## Discovery rules replay on run 20261003_213716 (4 Oct 2026)
+
+**Tradable-now set.** Daily BEH-001 setup type and state pairs that reached the outcome level before invalidation at least 50% of the time on both eval_v5 panels (original / holdout):
+
+| State | Setup | Original | Holdout |
+|---|---|---|---|
+| Activated | SOS→LPS | 72.6% | 67.8% |
+| Activated | SOW→LPSY | 65.7% | 68.6% |
+| Activated | Spring | 51.7% | 52.2% |
+| Activated | Failed Upthrust continuation | 55.1% | 62.3% |
+| Activated | Failed Spring continuation | 50.6% | 52.3% |
+| Detected | Change-of-Behaviour Reversal | 61.2% | 61.5% |
+
+All other pairs fall below 50% (detected setups 16–44%; activated Upthrust 40% / 37%; activated trend continuation 53% / 43%).
+
+**Funnel, out of 3,320 tickers:**
+- 140 hard-data drops.
+- 250 tickers tradable now: 218 of today's 1,672 survivors plus 32 that today's share gates dropped (20 ATR, 7 volume, 5 price; for example AMAT, SMH, SOXX, JOBY).
+- 1,454 of today's survivors have no tradable-now daily setup.
+- Among the 218 overlapping rows that reached options: 126 PAYS, 36 DOES_NOT_PAY, 47 not computed, 9 not present.
+- Scanner: 19 of 225 scanned tickers are tradable now; 61 have no daily setup at all.
+
+**Limits:**
+- Move-fits and instrument-tradable rules cannot be replayed for newly admitted tickers, because we hold no chain for them.
+- Hit rate is level-before-invalidation, not option P&L.
+- These figures are from one session.
+
+## Step 1 receipt: Discovery intake (4 Oct 2026, ACK "go ahead with step 1")
+
+- **1a/1b.** Price band, 20-day volume, dollar volume and ATR floors no longer drop a ticker before analysis. They are published as `intake_flags` (`PRICE_BELOW_MIN`, `PRICE_ABOVE_MAX`, `AVG_VOLUME_BELOW_MIN`, `ADV_DOLLARS_BELOW_MIN`, `ATR_DOLLARS_BELOW_MIN`, `ATR_PCT_BELOW_MIN`) and `price_band`. The hard data rule (too few bars) and no price data still drop. Test: `tests/test_avs_intake_labels_not_gates.py` (9), red first, then green. Superseded cases removed from `test_avs_dir002_eligibility_reasons.py`; `test_avs_dir002_discovery_ticker_error.py` example code changed.
+- **1c.** Every scanned ticker enters the run, whatever its VMS decision or universe membership (`all_scanned`; the augmented universe adds those missing from `polygon_liquid_universe.csv`).
+- **1d.** An old scan is used, not discarded. `scanner_stale` is carried to the context and the rows. Age is measured in UTC from `scanner_manifest_at`. `scanner_timestamp_utc` is now UTC (it was the scanner's local time).
+- Test for 1c/1d: `tests/test_avs_scanner_intake_every_ticker.py` (3), red first, then green.
+- **Expected effect** until step 2 (lanes) lands: Discovery passes about 3,000 tickers downstream instead of 1,672. Do not run the Evening pipeline between step 1 and step 2 unless the longer run is acceptable.
+
+## Lane B study: from two in three failing to about one in four (4 Oct 2026, ACK "reduce the number to 1 in 3")
+
+**Method.**
+- Data: daily detected setups of the three lane-B types (Spring, SOS→LPS, Buyer Absorption), measured at detection.
+- Features known at detection:
+  - distance to the outcome level in daily ATR (`gain_atr`);
+  - distance to the invalidation in ATR (`loss_atr`);
+  - distance to the trigger in ATR;
+  - age in bars;
+  - scope;
+  - agreement or disagreement from a live weekly or monthly setup.
+- Search: 560 rules of 1–3 conditions, chosen on the original panel only, requiring at least 60% hit and a positive average result.
+- Confirmation: held-out panel.
+- Panel builder: `Enhancements/direction_evidence/laneb_feature_panel.py`.
+
+**Single features are not enough.**
+- A near level raises the hit rate (72% when under 1 ATR away) but loses money on average.
+- Higher-timeframe agreement, scope and age barely change the rate.
+
+**Chosen rule (R2): the level is within 2 ATR and the invalidation is at least 2 ATR away.**
+
+| Panel | Rows | Hit | Average result |
+|---|---|---|---|
+| Original | 1,068 | 74.0% | +0.18% |
+| Held out | 1,157 | 76.0% | +0.71% |
+
+- By type, held out: Spring 81% (n 63), SOS→LPS 78% (n 616), Buyer Absorption 72% (n 478).
+- By year, hit / average result: 2022 80% / +0.86%; 2023 76% / +0.55%; 2024 73% / +0.28%; 2025 79% / +1.03%; **2026 70% / −0.27%** (weaker; watch in C12).
+- Coverage: about 11–12% of lane-B-type detected rows. Last night: 34 of 399 tickers (examples ARW, BIIB, CIEN, CSCO, NVDA, QRVO, STM).
+- Required option value multiple: 1 ÷ 0.74 = 1.35×. Setups whose level is nearly reached (gain under 0.1 ATR) will fail that test downstream, as they should.
+
+**Rest of lane B goes to lane C** (continuous improvement, per ACK).
+
+**Caution.** Rules were chosen from 560 searched. The held-out confirmation and the simple two-condition form limit overfitting, but the 2026 weakening must be watched forward.
+
+**Correction to the run compression (4 Oct 2026).** Nine compressed runs are stored-run replay fixtures for tests (`test_avs_fix_002_stages2_5` and `test_avs_fix_002_stage6_outcome_learning`, among others). They were restored from their zips: 20260901_064425, 20260904_004338, 20260905_151448, 20260906_213931, 20260909_071646, 20260910_150045, 20260911_115904, 20260918_112522 and 20260919_205844. Rule for any future compression or retention: never compress or prune a run ID that appears in `tests/*.py`.
+
+## Step 2 / 2b receipt: trade lanes and full-list daily scan (4 Oct 2026)
+
+**What was built.**
+- Lane table: `config/beh001_lanes_v1.json`.
+- Rule: `domain/structure_behaviour/trade_lane.py` (`ticker_lane`, `confirm_early_entry`, `TRADE_LANE_FIELDS`).
+- Discovery stamps `trade_lane` / `_basis` / `_setup` / `_hit_original` / `_hit_holdout` and drops `NO_LIVE_SETUP`. The candidates already read travel with the drop, so a ticker is not read twice.
+- EOD engine: merges the lane and intake fields, then confirms lane B against `anticipated_value_multiple_q50` (at least 1 / hit, i.e. 1.35×).
+- Book (`lab_control`): carries the fields. The trade card shows a Lane row: A "trade now"; B "about 1 in 4 fail", with the payoff it needs; C "watch", with its basis.
+- 2b: scanner daily tier is the whole list (`config/scanner_v1.json`, `daily_tier_size` null = all 235). Tier 2 never rescans what tier 1 scanned.
+
+**Tests.** All seen red first, then green.
+- `test_avs_trade_lanes` (10).
+- `test_avs_discovery_trade_lane` (3).
+- `test_avs_lab_trade_card` (+2, now 17).
+- `test_avs_scanner_full_list_daily` (3).
+- Allowlist extended in `test_ila_selected_contract_identity`.
+
+**Lane replay on run 20261003_213716 (3,320 tickers).**
+
+| Lane | Count | Notes |
+|---|---|---|
+| A | 536 | 1d 207, 1w 227, 1mo 102 |
+| B | 27 | Before the payoff test |
+| C | 1,321 | Below the line 1,184; intraday untested 80; B geometry not met or unknown 57 |
+| NO_LIVE_SETUP | 1,296 | 1,262 were already dropped by the old gates |
+| Hard data | 140 | |
+
+Downstream: 1,884 tickers against 1,672 (+13%). Scanner tickers: A 49, B 1, C 140, no live setup 29.
+
+**Caveat.** For tickers the old gates dropped, the replay uses their drop-path BEH-001 reading and has no ATR or price, so their lane B geometry is unknown. The first Evening run gives the true counts.
+
+## Step 3 receipt, part 1: retire the fixed 20-session hold (4 Oct 2026, ACK "carry on with step 3")
+
+**Built.**
+- Evidence runway (q80) now covers weekly and monthly events as well as daily. Held-out timing by timeframe, by q50 / by q80: 1d 55.5% / 81.7%; 1w 58.7% / 83.3%; 1mo 64.9% / 87.5% (monthly events arrive earlier than predicted, which is conservative). Intraday events have no tested runway (`NO_TESTED_EVIDENCE_TIMEFRAME`). Config: `anticipated_move.runway_tested_timeframes`.
+- Options intelligence:
+  - `planned_hold_from_evidence(ctx)` (q80 runway or None) feeds contract analytics and the empirical path EV.
+  - The decay hold is the q50 evidence or `NO_EVIDENCE_HOLD` (no 20 fallback).
+  - A missing theta drag is published as None and left out of scores and verdict factors. It was 100% (worst case) in four places; the contract ranking renormalises without it.
+  - The expected-move estimate no longer assumes a 5-day hold.
+- Tests: `test_avs_step3_no_fixed_hold` (4) and the superseded `test_avs_4c_decay_hold` / `test_avs_4b_evidence_runway` cases, all seen red first, then green. All options, lifecycle and monetisation test files pass.
+
+**Left as is, labelled.** `target_reachable` (D01/D13 reach) still uses the volatility budget's tested 1–20 session range. It is a legacy audit field, superseded by the anticipated move's own q80 reach.
+
+**Open, for ACK.**
+- (1) EV3's barrier grid holds only 5/10/20-session horizons (`REJECT_HORIZON` otherwise).
+- (2) The hold patch still stamps the governed 20 as `planned_hold_sessions` on rows without evidence. Blanking it touches the Lab lifecycle (`CONTRACT_REPAIR` on a missing hold), the Morning EV3 hold (5/10/20 by bucket) and the EOD time-value default (−1).
+
+## Step 3 receipt, part 2: ACK decisions 1a and 2 (4 Oct 2026)
+
+- **1a. EV3 grid hold.** `vanguard.ev3_stage0.grid_hold_for`: EV3 values at the nearest grid point at or below the evidence hold, with `ev3_hold_basis` (`EV3_GRID_10_OF_13`, `EV3_GRID_CAP_20_OF_27`, `BELOW_EV3_GRID_n`, `NO_EVIDENCE_HOLD`). The hold patch writes it. The Morning EV3 adapter reads it and no longer falls back to horizon-bucket upper bounds (5/10/20).
+- **2. No fixed hold.** The hold patch no longer stamps the governed 20 as `planned_hold_sessions`. A row without evidence carries none, with source `NO_EVIDENCE_HOLD|<basis>`. The Lab runway check uses the contract-selection floor for such rows (`runway_check_basis = SELECTION_FLOOR_NO_EVIDENCE_HOLD`) instead of flagging `CONTRACT_REPAIR`. The governed window remains only as the labelled contract-selection floor (`contract_runway_basis THESIS_WINDOW_D2|…`).
+- **Tests.** `test_avs_step3_no_fixed_hold` grows to 9 (red first, then green). Superseded and updated with notes: `test_avs_4b_evidence_runway` (2), `test_ev3_orchestrator_order` (1), `test_horizon_single_owner` (5), `test_morning_gate_contract_repair` (1).
+- **Open items added.**
+  - O8: EOD time-value check rejects holds over 20 as `PLANNED_HOLD_SESSIONS_INVALID`. Its volatility budget is tested for 1–20 sessions; about half of evidence holds exceed 20.
+  - O9 (step 3b): C12 scores each ticket at its own evidence hold plus the fixed 20 for comparison. This needs a second outcome per ticket in the decision ledger (record shape plus migration check).
+  - O10: horizon-bucket `anticipated_move_sessions` (5/10/20) remains for rows without q50 evidence.
+
+## Step 3b receipt: C12 scores each ticket at its own hold (4 Oct 2026, ACK "carry on with 3b")
+
+**Built.**
+- `signals.evidence_hold`: a ticket's hold is the book's evidence hold (`planned_hold_source DURATION_EVIDENCE_*`). Without evidence it is the governed window, labelled `NO_EVIDENCE_HOLD_SCORED_AT_FIXED_WINDOW`. Supersedes D2(a) of 18 Sep.
+- Tickets carry `hold_basis` and `comparison_hold_sessions` (the fixed window). Both fields have defaults, so tickets already in the ledger load unchanged.
+- `score_signals` also scores the ticket over the fixed window when it differs, and writes that outcome under its own decision stage `SIGNAL_TICKET_FIXED_WINDOW_COMPARISON`. The track record, open-record list and already-scored checks (all filtered on `SIGNAL_TICKET`) never see it. `signal_ledger.comparison_outcomes()` reads it.
+- Outcome payloads record `hold_basis`.
+
+**Tests.**
+- `tests_rebuild/test_c12_signal_evidence_hold.py` (8), red first, then green. Includes an end-to-end test: 1-session ticket plus 3-session comparison gives two outcomes, nothing double-written on re-run.
+- `tests_rebuild/test_c12_signals.py`: 42 pass unchanged.
+- `tests_rebuild`: 168 pass, 1 fail — `test_package_purity::test_no_wall_clock_in_rebuild_package` on `avshunter/c0_run/thin_package.py:133-134`. That failure predates step 3b: the file arrived in commit d1ee309. Logged as O11.
+
+**Not yet.** The report does not compare own-hold against fixed-window results side by side. The data is now recorded; a report section can be added once comparison outcomes exist.
+
+## Step 4 prep: Polygon intraday history backfill (4 Oct 2026, ACK "b", then "build (a)")
+
+**Script.** `scripts/backfill_polygon_intraday.py`.
+- Polygon 5-minute stock bars, regular session only, into the existing canonical intraday store. Options stay MarketData-only.
+- Own run in `run_registry`, with tickers registered at stage `INTRADAY_HISTORY_BACKFILL` and capability INTRADAY_BAR only.
+- Resumable; `--plan-only` makes no calls and no writes. Key read from `.env`, never printed. Receipt in `Enhancements/outcomes/intraday_backfill/`.
+
+**Pilot 1.** Failed with "FOREIGN KEY constraint failed": the run was not registered before the lifecycle. Fixed; an end-to-end test against a temporary store now covers it.
+
+**Pilot 2 (AAPL, Aug 2026).**
+- 20/20 sessions, all COMPLETE, 78 bars each.
+- Intraday high and low equal the daily bar exactly; last 5-minute close within ±0.06% of the official close.
+- 0.23 s per session, so about 54 hours for one year.
+
+**Profile.** About 16 SQLite connections, two ledger rows and one pandas validation per session.
+
+**Option (a), built.**
+- `CanonicalRegistry.register_datasets` (one transaction; shares the single-record write body).
+- `CanonicalMinuteBarResolver.persist_completed_sessions`: validates once per ticker, VWAP restarted per session with the normaliser's own formula, one ledger row per provider fetch, authorised through the lifecycle.
+- Records are byte-identical to the per-session path (same dataset ids, content hashes, scopes, completeness).
+- Tests: `test_avs_intraday_bulk_persist` (6, including identity, VWAP reset, ledger granularity, idempotence, authorisation, under 80 ms per session); `test_avs_polygon_intraday_backfill` (6).
+- Canonical, intraday, market-profile and GEX tests pass; tests_rebuild 169 pass.

@@ -35,6 +35,7 @@ from scripts.data_contract_validator import DataContractValidator
 from scripts.inject_macro_into_packages import inject_macro_into_package
 from scripts.macro_quant_packet import build_macro_quant_packet
 
+from .adapters.clock import wall_clock_utc
 from .canonical_manifest import MANIFEST_FILENAME
 
 #: Keys (dotted paths) that legitimately differ between the stored package and the thin one.
@@ -129,9 +130,11 @@ class ThinPackageFactory:
         self.reference = reference
         # Injection time: explicit > the stamp the manifest recorded > now. Macro age/freshness
         # in the quant packet are judged at this instant, exactly as the on-disk injector does.
+        # O11 (4 Oct 2026): the wall clock is read only through the clock adapter (package purity).
+        now = wall_clock_utc()
         self.ingested_utc = (ingested_utc or reference.injected_utc
-                             or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
-        self.today = today or datetime.now(timezone.utc).date()
+                             or now.isoformat().replace("+00:00", "Z"))
+        self.today = today or now.date()
         injected_at = datetime.fromisoformat(self.ingested_utc.replace("Z", "+00:00"))
         macro = copy.deepcopy(reference.runtime_macro)
         quant = build_macro_quant_packet(macro, reference.runtime_macro_path, now=injected_at)

@@ -1,0 +1,6 @@
+{
+  "version": "scanner_v1",
+  "approved": "ACK 4 Oct 2026: scan the whole list daily",
+  "daily_tier_size": null,
+  "note": "null = the whole TIER2_UNIVERSE list (235 names). Lower it here only as a MarketData credit safeguard; the scanner and options intelligence share the daily budget."
+}

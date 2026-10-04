@@ -14,9 +14,10 @@ import pytest
 import scripts.avshunter_options_intelligence as oi
 
 
-def test_hold_comes_from_evidence_else_the_governed_window():
-    assert oi.decay_hold_sessions(evidence_move_sessions=8, governed_window=20) == (8, "DURATION_EVIDENCE_Q50")
-    assert oi.decay_hold_sessions(evidence_move_sessions=None, governed_window=20) == (20, "GOVERNED_WINDOW_NO_EVIDENCE")
+def test_hold_comes_from_evidence_else_it_is_not_estimable():
+    # Superseded 4 Oct 2026 (ACK, step 3): no fixed 20-session fallback; a missing hold is stated.
+    assert oi.decay_hold_sessions(evidence_move_sessions=8) == (8, "DURATION_EVIDENCE_Q50")
+    assert oi.decay_hold_sessions(evidence_move_sessions=None) == (None, "NO_EVIDENCE_HOLD")
 
 
 def test_theta_drag_is_charged_in_calendar_days():

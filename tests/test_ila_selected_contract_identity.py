@@ -58,6 +58,9 @@ from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as _TE
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD = LATER_ADDITIVE_FIELDS_TEV_AND_CARD | set(_AM) | set(_TE)
 # B7 (ACK 3 Oct 2026): the basis of the Wyckoff heuristic scores.
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"wyckoff_validation_probability_fields_basis", "wyckoff_validation_expected_bars_remaining_basis"}
+# Trade lane and intake labels (ACK 4 Oct 2026): additive book fields.
+from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS as _TL
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_TL)
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",

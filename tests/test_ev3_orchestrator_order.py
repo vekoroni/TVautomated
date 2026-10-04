@@ -42,7 +42,8 @@ def test_horizon_patch_rederives_ev3_planned_hold_atomically() -> None:
     assert '"11_20d": 20' in helper
     assert 'patched["planned_hold_sessions"]' in helper
     # ACK 18 Sep 2026: the hold is the governed thesis window; the anticipated move follows the thesis horizon.
-    assert "THESIS_WINDOW_D2" in helper
+    # Superseded 4 Oct 2026 (ACK step 3): EV3's hold is the grid point at or below the evidence hold.
+    assert "grid_hold_for" in helper and "NO_EVIDENCE_HOLD" in helper
     assert "FINAL_HORIZON_ROUTER_ENDPOINT_V1" not in helper
 
 
