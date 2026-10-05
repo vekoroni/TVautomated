@@ -98,10 +98,34 @@ def stored_sessions(registry: CanonicalRegistry, tickers: Iterable[str], start: 
     for r in registry.list_dataset_records(DatasetType.INTRADAY_BAR):
         extra = dict(r.scope.extra) if not isinstance(r.scope.extra, dict) else r.scope.extra
         if (r.instrument_id in wanted and extra.get("interval") == f"{INTERVAL_MINUTES}min"
-                and extra.get("session_segment") == "REGULAR" and start <= r.session_date <= end
-                and r.completeness_status.value == "COMPLETE"):
+                and extra.get("session_segment") == "REGULAR" and start <= r.session_date <= end):
+            # COMPLETE or PARTIAL: a thin name's partial session (bars with no trades) is stored, not missing.
             out.setdefault(r.instrument_id, set()).add(r.session_date)
     return out
+
+
+def fetched_tickers(run_id: str) -> set[str]:
+    """Tickers whose Polygon fetch this backfill run already finished (one ledger row per ticker fetch)."""
+    import sqlite3
+    if not Path(REGISTRY).exists():
+        return set()
+    with sqlite3.connect(f"file:{Path(REGISTRY).as_posix()}?mode=ro", uri=True, timeout=30) as connection:
+        try:
+            rows = connection.execute("SELECT DISTINCT ticker FROM api_request_ledger WHERE run_id = ? "
+                                      "AND resolution = 'PROVIDER_FETCH'", (run_id,)).fetchall()
+        except sqlite3.OperationalError:
+            return set()
+    return {str(r[0]).upper() for r in rows}
+
+
+def shard_tickers(tickers: list[str], spec: str | None) -> list[str]:
+    """--shard K/N: the K-th of N disjoint slices (by position), so N processes can split one backfill."""
+    if not spec:
+        return list(tickers)
+    k, n = (int(x) for x in str(spec).split("/"))
+    if not 1 <= k <= n:
+        raise ValueError("--shard must be K/N with 1 <= K <= N")
+    return [t for i, t in enumerate(tickers) if i % n == k - 1]
 
 
 def fetch_polygon(ticker: str, start: date, end: date, api_key: str) -> pd.DataFrame:
@@ -143,10 +167,14 @@ def _register(lifecycle, run_id: str, ticker: str) -> None:
 
 
 def run(args) -> dict:
-    tickers = _tickers(args)
+    tickers = shard_tickers(_tickers(args), getattr(args, "shard", None))
     sessions = xnys_sessions(args.start, args.end)
+    run_id = f"intraday_backfill_{args.start:%Y%m%d}_{args.end:%Y%m%d}"
     registry = CanonicalRegistry(REGISTRY); registry.initialise()
     stored = stored_sessions(registry, tickers, args.start, args.end)
+    # Resume (5 Oct 2026): a ticker this run already fetched is done - its unstored sessions had no bars.
+    for ticker in fetched_tickers(run_id) & set(tickers):
+        stored[ticker] = set(sessions)
     plan = estimate_plan(tickers=tickers, sessions=sessions, stored=stored)
     print(json.dumps({"mode": "PLAN_ONLY" if args.plan_only else "BACKFILL", "start": str(args.start),
                       "end": str(args.end), **plan}, indent=2))
@@ -161,7 +189,6 @@ def run(args) -> dict:
     if not api_key:
         raise RuntimeError("POLYGON_API_KEY is required (environment or .env); it is never printed")
     from canonical_data.intraday_bars import CanonicalMinuteBarResolver
-    run_id = f"intraday_backfill_{args.start:%Y%m%d}_{args.end:%Y%m%d}"
     flags = CanonicalFeatureFlags(enabled=True, write_through=True, stage_gating_enforced=False,
                                   offline_replay=False, ohlcv_mode="ACTIVE")
     # The lifecycle references run_registry (pilot 4 Oct 2026: FOREIGN KEY constraint failed) - register the run first.
@@ -196,7 +223,9 @@ def run(args) -> dict:
             if counts["tickers_done"] % 25 == 0:
                 print(f"{counts['tickers_done']}/{len(todo)} tickers | {counts['sessions_written']} sessions | "
                       f"{counts['ticker_errors']} errors | {(time.time() - started) / 60:.0f} min", flush=True)
-    receipt = ROOT / "Enhancements" / "outcomes" / "intraday_backfill" / f"{run_id}_receipt.json"
+    shard = str(getattr(args, "shard", None) or "").replace("/", "of")
+    receipt = ROOT / "Enhancements" / "outcomes" / "intraday_backfill" / (
+        f"{run_id}{'_shard' + shard if shard else ''}_receipt.json")
     receipt.parent.mkdir(parents=True, exist_ok=True)
     receipt.write_text(json.dumps({"run_id": run_id, "plan": plan, "counts": counts, "errors": errors,
                                    "finished_utc": datetime.now(timezone.utc).isoformat()}, indent=2), encoding="utf-8")
@@ -215,6 +244,7 @@ def main() -> int:
     parser.add_argument("--end", type=date.fromisoformat, default=DEFAULT_END)
     parser.add_argument("--workers", type=int, default=4, help="Parallel Polygon fetches (writes stay single-threaded)")
     parser.add_argument("--plan-only", action="store_true", help="No provider call, no writes: counts and estimates")
+    parser.add_argument("--shard", help="K/N: run the K-th of N disjoint ticker slices (run N processes to split work)")
     args = parser.parse_args()
     if args.start > args.end:
         parser.error("--start must be on or before --end")

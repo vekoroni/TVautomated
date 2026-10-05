@@ -74,3 +74,30 @@ def test_backfill_writes_canonical_sessions_end_to_end(tmp_path, monkeypatch):
     assert len(records) == 1 and records[0].provider == "POLYGON" and records[0].completeness_status.value == "COMPLETE"
     again = bf.run(args)                                   # resumable: nothing fetched or written twice
     assert again["sessions_written"] == 0 and again["tickers_done"] == 0
+
+
+def test_resume_counts_partial_sessions_and_fetched_tickers_as_done(tmp_path, monkeypatch):
+    # 5 Oct 2026: 1,785 of 2,242 fetched tickers had PARTIAL sessions (thin names: bars with no trades); the resume
+    # counted only COMPLETE sessions, so it re-fetched every one of them.
+    from argparse import Namespace
+    monkeypatch.setattr(bf, "REGISTRY", tmp_path / "control_plane.sqlite")
+    monkeypatch.setattr(bf, "PAYLOADS", tmp_path / "payloads")
+    monkeypatch.setattr(bf, "ROOT", tmp_path)
+    monkeypatch.setenv("POLYGON_API_KEY", "test-key")
+    times = pd.date_range("2026-09-01T13:30:00Z", "2026-09-01T19:55:00Z", freq="5min")[::2]   # half the bars: PARTIAL
+    raw = pd.DataFrame({"t": (times.astype("int64") // 10**6), "o": 10.0, "h": 10.5, "l": 9.5, "c": 10.2, "v": 1000})
+    calls = []
+    monkeypatch.setattr(bf, "fetch_polygon", lambda ticker, start, end, key: calls.append(ticker) or raw.copy())
+    args = Namespace(tickers="AAA", universe=None, include_scanner=False, start=date(2026, 9, 1),
+                     end=date(2026, 9, 2), workers=1, plan_only=False, shard=None)   # 2 Sep: no bars returned
+    first = bf.run(args)
+    assert first["sessions_written"] == 1 and first["sessions_no_bars"] == 1 and calls == ["AAA"]
+    again = bf.run(args)
+    assert again["tickers_done"] == 0 and calls == ["AAA"]          # nothing fetched twice
+
+
+def test_shards_split_tickers_without_overlap():
+    tickers = [f"T{i:03d}" for i in range(10)]
+    parts = [bf.shard_tickers(tickers, f"{k}/3") for k in (1, 2, 3)]
+    assert sorted(sum(parts, [])) == tickers and all(parts)
+    assert bf.shard_tickers(tickers, None) == tickers
