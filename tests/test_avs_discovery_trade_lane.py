@@ -41,3 +41,10 @@ def test_lane_c_continues_downstream(monkeypatch):
     monkeypatch.setattr(discovery, "scan_ticker_ultimate", _stub("C"))
     signal, outcome = discovery._scan_with_lifecycle("WATCH", pd.DataFrame(), None, None)
     assert outcome is None and signal["trade_lane"] == "C"
+
+
+def test_intraday_only_ticker_drops_with_its_candidates(monkeypatch):
+    monkeypatch.setattr(discovery, "scan_ticker_ultimate", _stub("INTRADAY_ONLY_UNTESTED"))
+    signal, outcome = discovery._scan_with_lifecycle("THIN", pd.DataFrame(), None, None)
+    assert signal is None and outcome["reason_code"] == "INTRADAY_ONLY_UNTESTED"
+    assert outcome["_beh001_candidates"] == [{"Candidate_ID": "X"}]

@@ -66,6 +66,7 @@ SCANNER_FIELD_NAMES = [
     "scanner_data_quality",
     "scanner_confidence",
     "scanner_age_hrs",
+    "scanner_stale",            # change 4 (ACK 5 Oct 2026): an old scan is used and shown
     "scanner_decision",
     # Existing production aliases from avshunter_universe_scanner.py / VMS.
     "vms_score",

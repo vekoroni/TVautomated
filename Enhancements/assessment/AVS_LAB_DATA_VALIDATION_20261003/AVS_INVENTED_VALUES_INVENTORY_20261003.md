@@ -523,3 +523,27 @@ Downstream: 1,884 tickers against 1,672 (+13%). Scanner tickers: A 49, B 1, C 14
 - Records are byte-identical to the per-session path (same dataset ids, content hashes, scopes, completeness).
 - Tests: `test_avs_intraday_bulk_persist` (6, including identity, VWAP reset, ledger granularity, idempotence, authorisation, under 80 ms per session); `test_avs_polygon_intraday_backfill` (6).
 - Canonical, intraday, market-profile and GEX tests pass; tests_rebuild 169 pass.
+
+## Runs 20261005_072245 (Evening and Morning) and changes 1–6 (ACK 5 Oct 2026, "approve 1-6")
+
+**Evening (about 6 h, completed).**
+- Fresh scan, 224 scanned tickers entered.
+- Discovery passed 2,613 (A 538, B 40, C 2,035; 803 C were intraday-only); dropped 568 with no live setup.
+- Volatility cap applied on 268 rows. Evidence hold on 956 rows; 1,390 `NO_EVIDENCE_HOLD`. EV3 grid basis labelled.
+- Profile stage failed `MIN_USABLE_RATIO`: 0.8785, 279 partial sessions, 0 provider failures. All 279 partials were intake-flagged thin names; 267 intraday-only. The thesis receipt was not written.
+
+**Morning (about 35 min).**
+- Gate: 82 GO / 595 FLAG / 1,669 BLOCK. Handoff failed: the Lab marked the run `RUN_FATAL:COMPLETED_MARKET_PROFILE_MISSING_OR_UNUSABLE` (188 rows BLOCKED, including all 82 GO); 12 MANUAL_REVIEW rows mismatched.
+- GO by lane: A 31, B 1, C 50.
+- Against the pipeline's own criteria (lane A or confirmed B, pays at anticipated time, spread at most 10% at a fresh quote): 11 qualify. They are SMH, DELL, FUN, MRVL, SMR, SAP, PL, TTWO, NVS, TWLO and GLD; earnings fall inside the hold for FUN, SAP, PL and TWLO.
+
+**Changes, all test-first.**
+
+| # | Change | Test | Effect on this run |
+|---|---|---|---|
+| 1 | Intraday-only tickers held out (`INTRADAY_ONLY_UNTESTED`); a tested-timeframe setup sets the lane among equals; untested list in `config/beh001_lanes_v1.json` | `test_avs_trade_lanes`, `test_avs_discovery_trade_lane` | 803 held out; downstream 2,613 to about 1,810; partials 279 to 12; usable ratio about 0.992 |
+| 2 | Profile guard: partials on thin-trading-flagged names are `PARTIAL_SESSION_THIN_TRADING`, outside the usable denominator; the 5 Sep shape still fails | `test_avs_profile_guard_thin_trading` (3); w14 guard tests unchanged (7) | Usable ratio 1.0, PASS |
+| 3 | Morning gate: lane C is FLAG `WATCH_ONLY` (`TRADE_LANE_C_WATCH_ONLY`), never GO; `morning_trade_lane_rule` recorded | `test_avs_morning_gate_lanes` (3) | 50 lane-C GO become FLAG |
+| 4 | `scanner_stale` added to `SCANNER_FIELD_NAMES` | scanner intake test | — |
+| 5 | Time value: valid hold over 20 is `PLANNED_HOLD_BEYOND_TESTED_RANGE_20` (O8) | `test_avs_timevalue_hold_range_label` | — |
+| 6 | EV3 move window valued at the nearest grid point at or below it (`ev3_move_window_grid_basis`); below grid `BELOW_EV3_GRID_n` | `test_avs_ev3_move_window_grid` | — |

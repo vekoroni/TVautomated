@@ -61,3 +61,9 @@ def test_every_scanned_ticker_enters_the_run(tmp_path, monkeypatch):
     path = orch.build_augmented_universe(scanner, "R1")
     tickers = pd.read_csv(path).iloc[:, 0].tolist()
     assert set(tickers) == {"GOOG", "TQQQ", "SQQQ", "AAPL", "MSFT"} and len(tickers) == 5
+
+
+def test_the_stale_flag_travels_with_the_scanner_fields_to_the_book():
+    # Change 4 (ACK 5 Oct 2026): run 20261005_072245 carried scanner_age_hrs but not scanner_stale into the book.
+    from contracts.handoff_contract import SCANNER_FIELD_NAMES
+    assert "scanner_stale" in SCANNER_FIELD_NAMES and "scanner_age_hrs" in SCANNER_FIELD_NAMES

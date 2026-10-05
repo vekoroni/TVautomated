@@ -48,8 +48,10 @@ def test_detected_setup_without_the_geometry_waits_in_lane_c():
 
 def test_other_live_setups_wait_for_human_judgement():
     assert ticker_lane([c("1d", "Upthrust Candidate", "ACTIVATED")])["trade_lane"] == "C"
+    # Superseded 5 Oct 2026 (ACK change 1): an intraday-only ticker is held out, not lane C. Beside a setup on a
+    # tested timeframe, the tested setup sets the lane (see the mixed case in the intraday-only test).
     intraday = ticker_lane([c("15m", "SOS -> LPS continuation", "ACTIVATED")])
-    assert intraday["trade_lane"] == "C" and intraday["trade_lane_basis"] == "NO_TESTED_EVIDENCE"
+    assert intraday["trade_lane"] == "INTRADAY_ONLY_UNTESTED"
 
 
 def test_best_lane_wins_and_no_live_setup_is_stated():
@@ -91,3 +93,18 @@ def test_the_book_carries_the_lane_and_confirms_early_entry():
     src = inspect.getsource(eod)
     assert "*TRADE_LANE_FIELDS" in src and "confirm_early_entry(" in src
     assert {"trade_lane", "trade_lane_basis", "trade_lane_setup", "intake_flags", "price_band"} <= set(TRADE_LANE_FIELDS)
+
+
+def test_intraday_only_tickers_are_held_out_until_their_evidence_is_tested():
+    # ACK 5 Oct 2026 (change 1): 803 tickers had only intraday setups (no tested evidence); they caused 267 of 279
+    # partial market profiles, 718 book rows and thousands of Morning quote requests.
+    only_intraday = ticker_lane([c("15m", "SOS -> LPS continuation", "ACTIVATED"), c("60m", "Spring Candidate", "DETECTED")])
+    assert only_intraday["trade_lane"] == "INTRADAY_ONLY_UNTESTED"
+    assert only_intraday["trade_lane_basis"] == "INTRADAY_ONLY_UNTESTED"
+    mixed = ticker_lane([c("15m", "SOS -> LPS continuation", "ACTIVATED"), c("1d", "Upthrust Candidate", "DETECTED")])
+    assert mixed["trade_lane"] == "C" and mixed["trade_lane_setup"].startswith("1d|")
+
+
+def test_a_tested_intraday_timeframe_rejoins_automatically():
+    table = dict(load_lanes()); table["untested_timeframes"] = ["5m", "15m"]          # 60m tested by step 4
+    assert ticker_lane([c("60m", "Spring Candidate", "DETECTED")], table)["trade_lane"] == "C"

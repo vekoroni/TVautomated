@@ -7,6 +7,7 @@ B: early entry - a detected Spring / SOS->LPS / Buyer Absorption whose level is 
    1 in 3"); confirmed downstream only when the option's value multiple covers the failures (>= 1 / hit rate).
 C: awaiting trigger / human judgement - any other live setup, including timeframes without tested evidence.
 NO_LIVE_SETUP: nothing to trade or watch; Discovery drops the ticker for this run (it re-enters next run).
+INTRADAY_ONLY_UNTESTED: live setups only on timeframes without tested evidence; dropped for the run (ACK 5 Oct 2026).
 The table lives in config/beh001_lanes_v1.json with its evidence.
 """
 from __future__ import annotations
@@ -81,13 +82,26 @@ def ticker_lane(candidates: Iterable[Mapping], table: Mapping | None = None, *, 
     price / atr_daily: the session close and 14-day daily ATR, used for the lane B geometry.
     """
     table = table or load_lanes()
+    untested = set(table["untested_timeframes"])
     best = None
     for c in candidates or []:
         lane = candidate_lane(c, table, price, atr_daily)
-        if lane and (best is None or _ORDER[lane["lane"]] < _ORDER[best["lane"]]):
-            best = {**lane, "candidate": c}
+        if not lane:
+            continue
+        tested = str(c.get("Timeframe") or "") not in untested
+        # A before B before C; among equals, a setup on a tested timeframe sets the lane.
+        key = (_ORDER[lane["lane"]], 0 if tested else 1)
+        if best is None or key < best["key"]:
+            best = {**lane, "candidate": c, "key": key}
     if best is None:
         return {"trade_lane": "NO_LIVE_SETUP", "trade_lane_basis": "NO_LIVE_SETUP", "trade_lane_setup": None,
+                "trade_lane_hit_original": None, "trade_lane_hit_holdout": None, "trade_lane_version": table["version"]}
+    if best["key"][1] == 1:
+        # ACK 5 Oct 2026 (change 1): only intraday setups, none tested yet - held out of the downstream line until
+        # step 4 tests the timeframe (removing it from untested_timeframes re-admits these tickers).
+        c = best["candidate"]
+        return {"trade_lane": "INTRADAY_ONLY_UNTESTED", "trade_lane_basis": "INTRADAY_ONLY_UNTESTED",
+                "trade_lane_setup": f'{c.get("Timeframe")}|{c.get("Signal_Type")}|{c.get("Signal_State")}',
                 "trade_lane_hit_original": None, "trade_lane_hit_holdout": None, "trade_lane_version": table["version"]}
     c, hit = best["candidate"], best["hit"] or [None, None]
     return {"trade_lane": best["lane"], "trade_lane_basis": best["basis"],

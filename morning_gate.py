@@ -2827,6 +2827,20 @@ def run_gate(
             f"EOD classified this candidate watch-only ({row.get('eod_candidate_reason') or 'reason not recorded'})"
         )
         flag_reasons.append("EOD_WATCH_ONLY")
+    elif _u(row.get("trade_lane")) == "C":
+        # Change 3 (ACK 5 Oct 2026): lanes are isolated - lane C (no tested evidence that the setup reaches its level
+        # more often than not) is watch-only, never GO. Existing WATCH_ONLY vocabulary keeps the Lab handoff aligned.
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "WATCH_ONLY"
+        route = "WATCH_ONLY"
+        lane = "TRADE_LANE_C_WATCH_ONLY"
+        entry_action = "NO_TRADE"
+        unlock_condition = (
+            f"Lane C watch: {row.get('trade_lane_setup') or 'setup not recorded'} "
+            f"({row.get('trade_lane_basis') or 'basis not recorded'}); promoted to lane A when its setup qualifies"
+        )
+        flag_reasons.append("TRADE_LANE_C_WATCH_ONLY")
     elif str(row.get("trigger_go_eligible", "")).strip().lower() not in {"true", "1", "1.0"}:
         # N1: GO needs a GO-eligible trigger (owned by the trigger layer). Missing eligibility is not
         # eligibility (R1); the row stays in the book with the trigger state stated.
@@ -2876,6 +2890,9 @@ def run_gate(
     out["morning_execution_lane"] = lane
     out["morning_entry_action"] = entry_action
     out["morning_unlock_condition"] = unlock_condition
+    _trade_lane = _u(row.get("trade_lane"))
+    out["morning_trade_lane_rule"] = (f"LANE_{_trade_lane}" if _trade_lane in {"A", "B", "C"}
+                                      else "LANE_NOT_ASSIGNED")
     out["live_validation_state"] = "CONFIRMED" if verdict == "GO" else morning_permission
     out["evening_capital_permission"] = _u(
         row.get("capital_permission") or row.get("live_capital_permission")

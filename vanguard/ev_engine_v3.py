@@ -916,11 +916,20 @@ def _move_window_fields(
     if window is None:
         fields["ev3_move_window_reason_code"] = "MOVE_WINDOW_UNAVAILABLE"
         return fields
-    if int(window) == hold:
+    # Change 6 (ACK 5 Oct 2026): the grid rule of decision 1a - value at the nearest grid point at or below the window,
+    # labelled; below the grid it is not evaluated, never borrowed from the hold value.
+    from vanguard.ev3_stage0 import grid_hold_for
+    grid_window, grid_basis = grid_hold_for(window)
+    fields["ev3_move_window_grid_sessions"] = grid_window
+    fields["ev3_move_window_grid_basis"] = grid_basis
+    if grid_window is None:
+        fields["ev3_move_window_reason_code"] = grid_basis
+        return fields
+    if int(grid_window) == hold:
         value = hold_value
     else:
         cell, reason, detail = barrier_cache.lookup(
-            c["state_key"], c["canonical_direction"], int(window),
+            c["state_key"], c["canonical_direction"], int(grid_window),
             c["target_distance_fraction"], c["stop_distance_fraction"],
         )
         if cell is None:

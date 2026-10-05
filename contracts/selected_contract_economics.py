@@ -692,8 +692,12 @@ def evaluate_timevalue_monetisability(
     )
     if hold_days is None or hold_days < 0:
         return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_UNAVAILABLE"}
-    if int(hold_days) != hold_days or hold_days > 20:
+    if int(hold_days) != hold_days:
         return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_SESSIONS_INVALID"}
+    if hold_days > 20:
+        # Change 5 (ACK 5 Oct 2026, O8): the evidence hold is valid; the volatility budget behind this check is tested
+        # only for 1-20 sessions, so the check is not evaluated and says why - never "invalid".
+        return {**base, "monetisability_timevalue_reason": "PLANNED_HOLD_BEYOND_TESTED_RANGE_20"}
 
     symbol = _text(
         intrinsic.get("monetisability_contract_symbol")

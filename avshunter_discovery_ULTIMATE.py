@@ -2720,9 +2720,10 @@ def _scan_with_lifecycle(ticker, df, cfg, wyckoff_engine):
     if signal is None:
         return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE",
                       "reason_code": diagnostic.get("reason_code", "NO_SIGNAL_AT_ANY_HORIZON")}
-    if signal.get("trade_lane") == "NO_LIVE_SETUP":
-        # Nothing to trade or watch this run (ACK, 4 Oct 2026); the reading already made travels with the drop.
-        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE", "reason_code": "NO_LIVE_SETUP",
+    if signal.get("trade_lane") in ("NO_LIVE_SETUP", "INTRADAY_ONLY_UNTESTED"):
+        # Nothing to trade or watch this run (ACK, 4 Oct 2026), or only untested intraday setups (ACK, 5 Oct 2026);
+        # the reading already made travels with the drop.
+        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE", "reason_code": signal["trade_lane"],
                       "tier": signal.get("tier", ""), "_beh001_candidates": signal.get("_beh001_candidates", [])}
     return signal, None
 

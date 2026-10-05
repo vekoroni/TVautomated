@@ -209,6 +209,22 @@ def _quality_diagnostics(
     return usable, diagnostics
 
 
+THIN_TRADING_FLAGS = ("AVG_VOLUME_BELOW_MIN", "ADV_DOLLARS_BELOW_MIN")
+
+
+def thin_trading_tickers(run_dir: Path) -> set[str]:
+    """Tickers Discovery flagged as thinly traded this run (intake labels, ACK 4 Oct 2026); empty if unknown."""
+    files = sorted(Path(run_dir).glob("discovery/discovery_candidates_ultimate_*.csv"))
+    if not files:
+        return set()
+    frame = pd.read_csv(files[-1], usecols=lambda c: c in ("ticker", "intake_flags"), low_memory=False)
+    if "intake_flags" not in frame:
+        return set()
+    flags = frame["intake_flags"].fillna("").astype(str)
+    thin = flags.apply(lambda text: any(flag in text.split("|") for flag in THIN_TRADING_FLAGS))
+    return set(frame.loc[thin, "ticker"].astype(str).str.strip().str.upper())
+
+
 def build_completed_profiles(
     *,
     run_id: str,
@@ -218,10 +234,14 @@ def build_completed_profiles(
     fetch_factory: Callable[[date, int], Callable[[str, datetime, datetime], pd.DataFrame]] | None = None,
     max_failure_ratio: float = 0.05,
     min_usable_ratio: float = 0.90,
+    thin_tickers: set[str] | None = None,
 ) -> dict[str, Any]:
     if not 0.0 <= float(max_failure_ratio) <= 1.0:
         raise ValueError("max_failure_ratio must be in [0,1]")
     run_dir = base_dir / "data" / "output" / "runs" / run_id
+    # ACK 5 Oct 2026 (change 2): a partial session on a thinly traded name is a ticker fact (no trades in some bars),
+    # not a provider failure; it is labelled and kept out of the usable-ratio denominator.
+    thin = {t.upper() for t in (thin_tickers if thin_tickers is not None else thin_trading_tickers(run_dir))}
     worklist = _worklist(run_dir, base_dir)
     tickers = tuple(ticker for ticker, _ in worklist)
     registry_path = base_dir / "data" / "canonical" / "control_plane.sqlite"
@@ -285,7 +305,7 @@ def build_completed_profiles(
     #   exceptions the provider or the calculation failed (transport, auth,
     #              rate limit, ATR/data defect)
     completed = 0; deferred = 0; excluded = 0; exceptions: list[dict[str, Any]] = []
-    partial_session_count = 0; no_data_count = 0; provider_failure_count = 0
+    partial_session_count = 0; no_data_count = 0; provider_failure_count = 0; thin_partial_count = 0
     deferred_reasons: dict[str, int] = {}
     exception_reasons: dict[str, int] = {}
 
@@ -346,6 +366,8 @@ def build_completed_profiles(
                 # zero published profiles.
                 partial_session_count += 1
                 excluded += 1
+                thin_name = ticker.upper() in thin
+                thin_partial_count += int(thin_name)
                 _stamp(run_dir, run_id, ticker, path, {
                     "market_profile_contract_required": True,
                     "market_profile_evidence": None,
@@ -355,7 +377,7 @@ def build_completed_profiles(
                 })
                 exceptions.append({
                     "ticker": ticker,
-                    "classification": "PARTIAL_SESSION",
+                    "classification": "PARTIAL_SESSION_THIN_TRADING" if thin_name else "PARTIAL_SESSION",
                     "reason": DataExceptionReason.INCOMPLETE_SESSION.value,
                     "diagnostics": diagnostics,
                 })
@@ -462,7 +484,7 @@ def build_completed_profiles(
     # tickers looked like a coverage failure even when every observable ticker
     # produced a profile. Deferrals are not this pipeline's failures and are
     # therefore out of the denominator; exclusions and exceptions stay in.
-    observable_count = input_count - deferred
+    observable_count = input_count - deferred - thin_partial_count
     usable_ratio = (completed / observable_count) if observable_count else 1.0
 
     provider_systemic_failure = bool(input_count) and failure_ratio > float(max_failure_ratio)
@@ -494,6 +516,7 @@ def build_completed_profiles(
         "exception_count": exception_count,
         "hard_exception_count": hard_exception_count,
         "partial_session_count": partial_session_count,
+        "thin_trading_partial_count": thin_partial_count,
         "provider_no_data_count": no_data_count,
         "provider_failure_count": provider_failure_count,
         "deferred_by_reason": dict(sorted(deferred_reasons.items())),
