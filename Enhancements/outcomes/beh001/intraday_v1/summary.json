@@ -1,0 +1,1055 @@
+{
+  "rows": 297151,
+  "groups": [
+    {
+      "timeframe": "15m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 2106,
+      "hit_original": 0.4929,
+      "n_holdout": 2045,
+      "hit_holdout": 0.487
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 3136,
+      "hit_original": 0.42,
+      "n_holdout": 3013,
+      "hit_holdout": 0.4285
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 265,
+      "hit_original": 0.6075,
+      "n_holdout": 265,
+      "hit_holdout": 0.5925
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 667,
+      "hit_original": 0.4618,
+      "n_holdout": 613,
+      "hit_holdout": 0.4274
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1842,
+      "hit_original": 0.4283,
+      "n_holdout": 1677,
+      "hit_holdout": 0.4401
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1592,
+      "hit_original": 0.3907,
+      "n_holdout": 1420,
+      "hit_holdout": 0.419
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 104,
+      "hit_original": 0.4327,
+      "n_holdout": 92,
+      "hit_holdout": 0.5435
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 13,
+      "hit_original": 0.4615,
+      "n_holdout": 25,
+      "hit_holdout": 0.48
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 38,
+      "hit_original": 0.3421,
+      "n_holdout": 41,
+      "hit_holdout": 0.5122
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 139,
+      "hit_original": 0.6115,
+      "n_holdout": 129,
+      "hit_holdout": 0.5504
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 12,
+      "hit_original": 0.3333,
+      "n_holdout": 11,
+      "hit_holdout": 0.5455
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 49,
+      "hit_original": 0.3878,
+      "n_holdout": 44,
+      "hit_holdout": 0.6136
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1448,
+      "hit_original": 0.4461,
+      "n_holdout": 1270,
+      "hit_holdout": 0.4071
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1413,
+      "hit_original": 0.3914,
+      "n_holdout": 1236,
+      "hit_holdout": 0.3827
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 721,
+      "hit_original": 0.6255,
+      "n_holdout": 583,
+      "hit_holdout": 0.6244
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4724,
+      "hit_original": 0.4509,
+      "n_holdout": 4540,
+      "hit_holdout": 0.4423
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5355,
+      "hit_original": 0.3249,
+      "n_holdout": 5103,
+      "hit_holdout": 0.3135
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 524,
+      "hit_original": 0.5802,
+      "n_holdout": 466,
+      "hit_holdout": 0.6245
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4453,
+      "hit_original": 0.3919,
+      "n_holdout": 4155,
+      "hit_holdout": 0.3798
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 4982,
+      "hit_original": 0.3051,
+      "n_holdout": 4647,
+      "hit_holdout": 0.2972
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1774,
+      "hit_original": 0.4639,
+      "n_holdout": 1630,
+      "hit_holdout": 0.4454
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2583,
+      "hit_original": 0.4127,
+      "n_holdout": 2385,
+      "hit_holdout": 0.4063
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Spring Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 478,
+      "hit_original": 0.4163,
+      "n_holdout": 476,
+      "hit_holdout": 0.416
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 950,
+      "hit_original": 0.4842,
+      "n_holdout": 865,
+      "hit_holdout": 0.4971
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1227,
+      "hit_original": 0.3121,
+      "n_holdout": 1096,
+      "hit_holdout": 0.3038
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 1015,
+      "hit_original": 0.3793,
+      "n_holdout": 946,
+      "hit_holdout": 0.4207
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4154,
+      "hit_original": 0.4316,
+      "n_holdout": 3837,
+      "hit_holdout": 0.441
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 4889,
+      "hit_original": 0.151,
+      "n_holdout": 4533,
+      "hit_holdout": 0.167
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "UTAD Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 1,
+      "hit_original": 0.0,
+      "n_holdout": 5,
+      "hit_holdout": 0.0
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 3,
+      "hit_original": 0.6667,
+      "n_holdout": 7,
+      "hit_holdout": 0.8571
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5,
+      "hit_original": 0.2,
+      "n_holdout": 7,
+      "hit_holdout": 0.7143
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Upthrust Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 503,
+      "hit_original": 0.4533,
+      "n_holdout": 504,
+      "hit_holdout": 0.4028
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1021,
+      "hit_original": 0.429,
+      "n_holdout": 947,
+      "hit_holdout": 0.4403
+    },
+    {
+      "timeframe": "15m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1319,
+      "hit_original": 0.2547,
+      "n_holdout": 1220,
+      "hit_holdout": 0.2607
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1166,
+      "hit_original": 0.4451,
+      "n_holdout": 1087,
+      "hit_holdout": 0.4269
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1863,
+      "hit_original": 0.4176,
+      "n_holdout": 1726,
+      "hit_holdout": 0.4073
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 206,
+      "hit_original": 0.5583,
+      "n_holdout": 190,
+      "hit_holdout": 0.5684
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 958,
+      "hit_original": 0.5198,
+      "n_holdout": 920,
+      "hit_holdout": 0.4902
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 391,
+      "hit_original": 0.3581,
+      "n_holdout": 371,
+      "hit_holdout": 0.407
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 331,
+      "hit_original": 0.3353,
+      "n_holdout": 316,
+      "hit_holdout": 0.3576
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 97,
+      "hit_original": 0.3608,
+      "n_holdout": 101,
+      "hit_holdout": 0.2673
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 11,
+      "hit_original": 0.4545,
+      "n_holdout": 10,
+      "hit_holdout": 0.2
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 46,
+      "hit_original": 0.4565,
+      "n_holdout": 53,
+      "hit_holdout": 0.3019
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 114,
+      "hit_original": 0.386,
+      "n_holdout": 108,
+      "hit_holdout": 0.5093
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 15,
+      "hit_original": 0.5333,
+      "n_holdout": 15,
+      "hit_holdout": 0.5333
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 53,
+      "hit_original": 0.2642,
+      "n_holdout": 45,
+      "hit_holdout": 0.4
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 519,
+      "hit_original": 0.3854,
+      "n_holdout": 443,
+      "hit_holdout": 0.4131
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 695,
+      "hit_original": 0.3942,
+      "n_holdout": 657,
+      "hit_holdout": 0.4292
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 632,
+      "hit_original": 0.5554,
+      "n_holdout": 544,
+      "hit_holdout": 0.5496
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4749,
+      "hit_original": 0.4228,
+      "n_holdout": 4621,
+      "hit_holdout": 0.4263
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5597,
+      "hit_original": 0.3547,
+      "n_holdout": 5383,
+      "hit_holdout": 0.3637
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 557,
+      "hit_original": 0.5655,
+      "n_holdout": 512,
+      "hit_holdout": 0.5781
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4689,
+      "hit_original": 0.3732,
+      "n_holdout": 4291,
+      "hit_holdout": 0.3691
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5569,
+      "hit_original": 0.3399,
+      "n_holdout": 5158,
+      "hit_holdout": 0.3424
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1237,
+      "hit_original": 0.4026,
+      "n_holdout": 1157,
+      "hit_holdout": 0.4235
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1932,
+      "hit_original": 0.3898,
+      "n_holdout": 1856,
+      "hit_holdout": 0.403
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Spring Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 400,
+      "hit_original": 0.45,
+      "n_holdout": 376,
+      "hit_holdout": 0.4149
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1588,
+      "hit_original": 0.4704,
+      "n_holdout": 1358,
+      "hit_holdout": 0.4772
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2005,
+      "hit_original": 0.397,
+      "n_holdout": 1763,
+      "hit_holdout": 0.4005
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 1137,
+      "hit_original": 0.3923,
+      "n_holdout": 1131,
+      "hit_holdout": 0.3634
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 2113,
+      "hit_original": 0.434,
+      "n_holdout": 1899,
+      "hit_holdout": 0.4576
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2746,
+      "hit_original": 0.2174,
+      "n_holdout": 2504,
+      "hit_holdout": 0.2336
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "UTAD Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 0,
+      "hit_original": null,
+      "n_holdout": 2,
+      "hit_holdout": 0.0
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 7,
+      "hit_original": 0.8571,
+      "n_holdout": 4,
+      "hit_holdout": 0.5
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 8,
+      "hit_original": 0.75,
+      "n_holdout": 8,
+      "hit_holdout": 0.625
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Upthrust Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 401,
+      "hit_original": 0.4165,
+      "n_holdout": 377,
+      "hit_holdout": 0.3767
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1647,
+      "hit_original": 0.4074,
+      "n_holdout": 1550,
+      "hit_holdout": 0.4187
+    },
+    {
+      "timeframe": "5m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2159,
+      "hit_original": 0.3488,
+      "n_holdout": 1998,
+      "hit_holdout": 0.3328
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1672,
+      "hit_original": 0.619,
+      "n_holdout": 1619,
+      "hit_holdout": 0.6028
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Buyer Absorption Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2320,
+      "hit_original": 0.3543,
+      "n_holdout": 2224,
+      "hit_holdout": 0.3543
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 253,
+      "hit_original": 0.7747,
+      "n_holdout": 253,
+      "hit_holdout": 0.7549
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 979,
+      "hit_original": 0.474,
+      "n_holdout": 927,
+      "hit_holdout": 0.48
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 5194,
+      "hit_original": 0.4432,
+      "n_holdout": 4795,
+      "hit_holdout": 0.4373
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Crabel Compression Breakout",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 3953,
+      "hit_original": 0.3483,
+      "n_holdout": 3642,
+      "hit_holdout": 0.3504
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 257,
+      "hit_original": 0.5331,
+      "n_holdout": 210,
+      "hit_holdout": 0.5619
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 10,
+      "hit_original": 0.2,
+      "n_holdout": 15,
+      "hit_holdout": 0.7333
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Spring Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 59,
+      "hit_original": 0.4746,
+      "n_holdout": 55,
+      "hit_holdout": 0.5091
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 279,
+      "hit_original": 0.5448,
+      "n_holdout": 256,
+      "hit_holdout": 0.6094
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 10,
+      "hit_original": 0.4,
+      "n_holdout": 13,
+      "hit_holdout": 0.3077
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Failed Upthrust Continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 76,
+      "hit_original": 0.6184,
+      "n_holdout": 77,
+      "hit_holdout": 0.5974
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 827,
+      "hit_original": 0.4365,
+      "n_holdout": 825,
+      "hit_holdout": 0.4206
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Hinge / Apex Expansion",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 496,
+      "hit_original": 0.4234,
+      "n_holdout": 465,
+      "hit_holdout": 0.4301
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 1085,
+      "hit_original": 0.6074,
+      "n_holdout": 1044,
+      "hit_holdout": 0.6102
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4569,
+      "hit_original": 0.4401,
+      "n_holdout": 4293,
+      "hit_holdout": 0.434
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOS -> LPS continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5010,
+      "hit_original": 0.2487,
+      "n_holdout": 4697,
+      "hit_holdout": 0.2365
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 709,
+      "hit_original": 0.6389,
+      "n_holdout": 679,
+      "hit_holdout": 0.648
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 4435,
+      "hit_original": 0.4147,
+      "n_holdout": 4240,
+      "hit_holdout": 0.4139
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "SOW -> LPSY continuation",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 4800,
+      "hit_original": 0.2427,
+      "n_holdout": 4585,
+      "hit_holdout": 0.2421
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1500,
+      "hit_original": 0.572,
+      "n_holdout": 1347,
+      "hit_holdout": 0.5835
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Seller Absorption Breakdown",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1970,
+      "hit_original": 0.3756,
+      "n_holdout": 1807,
+      "hit_holdout": 0.3913
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Spring Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 667,
+      "hit_original": 0.3403,
+      "n_holdout": 624,
+      "hit_holdout": 0.3237
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1318,
+      "hit_original": 0.5448,
+      "n_holdout": 1264,
+      "hit_holdout": 0.5063
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Spring Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1589,
+      "hit_original": 0.1963,
+      "n_holdout": 1520,
+      "hit_holdout": 0.2118
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 1045,
+      "hit_original": 0.2871,
+      "n_holdout": 940,
+      "hit_holdout": 0.3128
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 2703,
+      "hit_original": 0.4428,
+      "n_holdout": 2511,
+      "hit_holdout": 0.4297
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 2991,
+      "hit_original": 0.0939,
+      "n_holdout": 2797,
+      "hit_holdout": 0.0937
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "UTAD Test",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 0,
+      "hit_original": null,
+      "n_holdout": 1,
+      "hit_holdout": 1.0
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 5,
+      "hit_original": 0.6,
+      "n_holdout": 1,
+      "hit_holdout": 1.0
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "UTAD Test",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 5,
+      "hit_original": 0.6,
+      "n_holdout": 1,
+      "hit_holdout": 1.0
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Upthrust Candidate",
+      "state": "ACTIVATED",
+      "test": "OUTCOME",
+      "n_original": 623,
+      "hit_original": 0.3676,
+      "n_holdout": 573,
+      "hit_holdout": 0.356
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "ACTIVATION",
+      "n_original": 1368,
+      "hit_original": 0.5088,
+      "n_holdout": 1316,
+      "hit_holdout": 0.5008
+    },
+    {
+      "timeframe": "60m",
+      "signal_type": "Upthrust Candidate",
+      "state": "DETECTED",
+      "test": "OUTCOME_FROM_DETECTION",
+      "n_original": 1656,
+      "hit_original": 0.1914,
+      "n_holdout": 1592,
+      "hit_holdout": 0.2004
+    }
+  ],
+  "timing": {
+    "15m": {
+      "q50_bars": 1.0,
+      "q80_bars": 3.0,
+      "holdout_share_le_q50": 0.7478,
+      "holdout_share_le_q80": 0.8213,
+      "events_holdout": 18890
+    },
+    "5m": {
+      "q50_bars": 1.0,
+      "q80_bars": 1.0,
+      "holdout_share_le_q50": 0.8345,
+      "holdout_share_le_q80": 0.8345,
+      "events_holdout": 16530
+    },
+    "60m": {
+      "q50_bars": 1.0,
+      "q80_bars": 8.0,
+      "holdout_share_le_q50": 0.5977,
+      "holdout_share_le_q80": 0.8084,
+      "events_holdout": 19076
+    }
+  },
+  "status": "IN_SAMPLE_REPLAY_NOT_VALIDATED",
+  "window_bars": {
+    "60m": 33,
+    "15m": 52,
+    "5m": 78
+  },
+  "step_sessions": 10
+}

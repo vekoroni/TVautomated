@@ -50,7 +50,7 @@ LATER_ADDITIVE_FIELDS_TEV_AND_CARD = {
     # Earnings disclosure (ACK 3 Oct 2026): display only, never a gate.
     "earnings_state", "earnings_date", "earnings_report_time", "earnings_fiscal_quarter",
     "earnings_sessions_to_event", "earnings_inside_hold", "earnings_inside_expiry", "earnings_unknown_reason",
-    "earnings_source", "earnings_disclosure", "earnings_authority",
+    "earnings_source", "earnings_disclosure", "earnings_authority", "earnings_date_confirmation",   # fix C, 5 Oct
 }
 # Anticipated move and the trade-side event's evidence (ACK 3 Oct 2026): display only, additive.
 from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS as _AM

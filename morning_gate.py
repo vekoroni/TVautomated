@@ -1076,6 +1076,37 @@ def _capture_msi_market_observations(
         live["msi_underlying_quote_resolution"] = "PROVIDER_NBBO_NOT_AVAILABLE"
 
 
+_OCC = re.compile(r"^([A-Z.]{1,6})(\d{6})([CP])(\d{8})$")
+
+
+def _occ_expiry(symbol: Any) -> Optional[date]:
+    """Expiry encoded in an OCC option symbol (YYMMDD), or None."""
+    match = _OCC.match(_u(symbol))
+    if not match:
+        return None
+    try:
+        return datetime.strptime(match.group(2), "%y%m%d").date()
+    except ValueError:
+        return None
+
+
+def _occ_strike(symbol: Any) -> Optional[float]:
+    match = _OCC.match(_u(symbol))
+    return int(match.group(4)) / 1000.0 if match else None
+
+
+def _today_session() -> date:
+    from avshunter.shared.xnys_calendar import xnys_session_on_or_before
+    return xnys_session_on_or_before(datetime.now(timezone.utc).date())
+
+
+def _evidence_runway_sessions(row: Dict[str, Any]) -> Optional[float]:
+    """The evidence runway (q80 hold) a contract must outlast; None without evidence (no filter, stated upstream)."""
+    if not _s(row.get("planned_hold_source")).startswith("DURATION_EVIDENCE"):
+        return None
+    return _f(row.get("planned_hold_sessions"))
+
+
 def _iter_repair_alternatives(row: Dict[str, Any], primary_contract: str = "") -> List[str]:
     """Return ordered EOD repair alternatives, de-duped against the primary contract."""
     seen = {_u(primary_contract)}
@@ -1118,7 +1149,17 @@ def _try_live_repair_alternatives(
     """
     attempts: List[str] = []
     last_live: Dict[str, Any] = {}
+    # Fix F (ACK 5 Oct 2026): never repair into a contract that expires before the move is due - "buy more runway
+    # than the anticipated move" (run 20261005_072245: 34 of 141 lane A/B repairs expired before q80).
+    runway = _evidence_runway_sessions(row)
+    today = _today_session() if runway is not None else None
     for alt_symbol in _iter_repair_alternatives(row, primary_contract):
+        if runway is not None:
+            from avshunter.shared.xnys_calendar import xnys_sessions_between
+            expiry = _occ_expiry(alt_symbol)
+            if expiry is not None and xnys_sessions_between(today, expiry) < runway:
+                attempts.append(f"{alt_symbol}:SKIP:SHORT_RUNWAY")
+                continue
         alt_live = _hydrate_live_structure(row, alt_symbol)
         last_live = dict(alt_live)
         alt_pass, alt_reason = _check_contract(alt_live, spread_threshold, row)
@@ -1142,6 +1183,48 @@ def _try_live_repair_alternatives(
         })
         return last_live
     return {}
+
+
+def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Fix E (ACK 5 Oct 2026): the contract-dependent anticipated move and earnings timing for the Morning's contract.
+
+    Run 20261005_072245: 413 repaired rows showed the Evening contract's value, time fit and earnings-in-contract
+    beside the new contract. Returns nothing when the contract is unchanged (the Evening values stand).
+    """
+    symbol = _s(live_data.get("live_contract_symbol") or live_data.get("morning_repair_contract_symbol"))
+    evening = _s(row.get("contract_symbol"))
+    if not symbol or _u(symbol) == _u(evening):
+        return {}
+    from domain.anticipated_move import anticipated_move_fields
+    from earnings_calendar_enricher import earnings_disclosure
+    today = _today_session()
+    expiry = _occ_expiry(symbol)
+    contract = {"strike": _occ_strike(symbol), "ask": _f(live_data.get("live_contract_ask")),
+                "iv": _f(live_data.get("live_contract_iv")), "expiry": expiry.isoformat() if expiry else None,
+                "as_of": today.isoformat()}
+    out = anticipated_move_fields(
+        direction=_u(row.get("final_direction") or row.get("direction")),
+        spot=_f(live_data.get("live_price")) or _f(row.get("signal_price")),
+        outcome_level=row.get("thesis_outcome_level"), outcome_definition=row.get("thesis_outcome_definition"),
+        timeframe=row.get("thesis_event_timeframe"),
+        duration={"test": row.get("thesis_duration_test"), "status": row.get("thesis_duration_status"),
+                  "n": row.get("thesis_duration_n"), "q50_bars": row.get("thesis_duration_q50_bars"),
+                  "q80_bars": row.get("thesis_duration_q80_bars"), "p_event": row.get("thesis_p_outcome_by_limit"),
+                  "p_invalidation": row.get("thesis_p_invalidation_by_limit")},
+        vol_annual=row.get("target_reachable_vol_annual"), contract=contract,
+        governed_window_sessions=row.get("planned_hold_sessions"),
+        earnings={"earnings_state": row.get("earnings_state"),
+                  "earnings_sessions_to_event": row.get("earnings_sessions_to_event")},
+        trade_side_event=_u(row.get("thesis_structure_alignment")) == "ALIGNED")
+    out["anticipated_contract_basis"] = f"MORNING_CONTRACT_RECOMPUTED:{symbol}"
+    if _s(row.get("earnings_state")):
+        out.update(earnings_disclosure(
+            {"state": row.get("earnings_state"), "date": row.get("earnings_date"),
+             "report_time": row.get("earnings_report_time"), "fiscal_quarter": row.get("earnings_fiscal_quarter"),
+             "reason": row.get("earnings_unknown_reason"), "source": row.get("earnings_source"),
+             "date_confirmation": row.get("earnings_date_confirmation")},
+            as_of=today, hold_sessions=row.get("planned_hold_sessions"), expiry=contract["expiry"]))
+    return out
 
 
 def _stored_quote_is_fresh(observation: Any, freshness_seconds: float, now: datetime) -> bool:
@@ -2536,6 +2619,8 @@ def run_gate(
         if _s(row.get("earnings_state")):
             _earnings_fields.pop("earnings_date", None)       # the disclosure above owns the date
         out.update(_earnings_fields)
+        # Fix E (ACK 5 Oct 2026): a contract the Morning swapped in gets its own anticipated move and earnings timing.
+        out.update(_recompute_for_morning_contract(row, live_data))
         # AG-01 Step 3: pre-earnings IV note for Options Intelligence display
         if _earnings_fields.get("earnings_catalyst_flag") == "TRUE":
             _days = _earnings_fields.get("earnings_days_to_event", "?")
@@ -2801,7 +2886,7 @@ def run_gate(
         lane = "MODEL_RISK_REVIEW"
         entry_action = "MANUAL_REVIEW"
         unlock_condition = model_risk["reason"]
-    elif _u(row.get("anticipated_pays_state")) == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
+    elif _u(out.get("anticipated_pays_state") or row.get("anticipated_pays_state")) == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
         # D-B (ACK 3 Oct 2026, amended): the contract is worth less than its premium at the median anticipated
         # time - no GO; the row stays visible. NOT_COMPUTED does not block on its own.
         verdict = "FLAG"

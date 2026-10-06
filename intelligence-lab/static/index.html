@@ -307,6 +307,13 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <div class="pp-hdr">Priority Shortlist — Top Actionable Signals</div>
     <div class="pp-grid" id="priority-grid"></div>
   </div>
+  <!-- TRADE SUMMARY (ACK 5 Oct 2026): setup / option / value at median time / median time / DTE / spread / earnings -->
+  <div class="priority-panel" id="trade-summary-panel">
+    <div class="pp-hdr">Trade Summary — lanes A and B
+      <label style="float:right;font-size:10px;cursor:pointer"><input type="checkbox" id="trade-summary-lane-c"
+        onchange="renderTradeSummary()"> include lane C (watch)</label></div>
+    <div style="overflow:auto" id="trade-summary"></div>
+  </div>
   <div class="cards-zone" id="cards-zone"></div>
   <div id="card-panels"></div>
   <div class="filter-bar">
@@ -610,6 +617,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
 
 <script src="/static/interpreter-desk-controls.js"></script>
 <script src="/static/trade-card.js"></script>
+<script src="/static/trade-summary.js"></script>
 <script>
 // ═══ STATE ═══════════════════════════════════════════════════════════════
 const API = 'http://localhost:5002/api';
@@ -829,6 +837,13 @@ async function switchRun(runId) {
 }
 
 // ═══ RENDER ALL ══════════════════════════════════════════════════════════
+function renderTradeSummary() {
+  const el = document.getElementById('trade-summary');
+  if (!el || typeof renderTradeSummaryTable !== 'function') return;
+  const laneC = document.getElementById('trade-summary-lane-c');
+  el.innerHTML = renderTradeSummaryTable(ALL_SIGS || [], {includeLaneC: !!(laneC && laneC.checked)});
+}
+
 function renderAll() {
   if (!RUN_DATA) return;
   const stats = RUN_DATA.stats || {};
@@ -868,6 +883,7 @@ function renderAll() {
 
   renderMacroBanner(macro);
   renderPriorityPanel();
+  renderTradeSummary();
   renderCards(stats);
   renderForecastBook();
   renderCardPanels(stats, macro, summary);

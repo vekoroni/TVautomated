@@ -59,6 +59,9 @@ def parse_marketdata_earnings(payload: Mapping[str, Any], *, as_of: date) -> Dic
         "fiscal_quarter": f"{year}Q{quarter}" if year and quarter else "",
         "estimated_eps": _first(payload, "estimatedEPS", i),
         "source": EARNINGS_SOURCE,
+        # Fix C (ACK 5 Oct 2026): MarketData carries no confirmation field; its future dates can be projections
+        # (DELL 27 Nov vs a confirmed 24 Nov). The date is disclosed as the provider's, not confirmed.
+        "date_confirmation": "PROVIDER_DATE_UNCONFIRMED",
     }
 
 

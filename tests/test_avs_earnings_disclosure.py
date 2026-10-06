@@ -108,3 +108,26 @@ def test_morning_recomputes_sessions_from_the_stored_date():
     assert out["earnings_state"] == "SCHEDULED" and out["earnings_date"] == "2026-10-27"
     assert isinstance(out["earnings_sessions_to_event"], int)
     assert out["verdict"] == "GO"                       # disclosure only: it never changes the verdict
+
+
+# --- Fix C (ACK 5 Oct 2026): a provider's expected date is not a confirmed date. --------------------------------
+# External review: MarketData gave DELL 27 Nov (Tastytrade confirmed 24 Nov), MRVL 1 Dec and PL 9 Dec (no next
+# date published yet); the pipeline labelled all of them SCHEDULED. MarketData carries no confirmation field.
+
+def test_marketdata_dates_are_marked_unconfirmed():
+    from datetime import date as _d, datetime as _dt, timezone as _tz
+    from canonical_data.marketdata_earnings import parse_marketdata_earnings
+    stamp = _dt(2026, 11, 27, tzinfo=_tz.utc).timestamp()
+    out = parse_marketdata_earnings({"s": "ok", "reportDate": [stamp], "fiscalYear": [2027], "fiscalQuarter": [3]},
+                                    as_of=_d(2026, 10, 5))
+    assert out["state"] == "SCHEDULED" and out["date_confirmation"] == "PROVIDER_DATE_UNCONFIRMED"
+
+
+def test_disclosure_states_the_date_is_unconfirmed():
+    from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS, earnings_disclosure
+    out = earnings_disclosure({"state": "SCHEDULED", "date": "2026-11-27", "report_time": "UNKNOWN",
+                               "date_confirmation": "PROVIDER_DATE_UNCONFIRMED"},
+                              as_of="2026-10-05", hold_sessions=21, expiry="2026-12-18")
+    assert "earnings_date_confirmation" in EARNINGS_DISCLOSURE_FIELDS
+    assert out["earnings_date_confirmation"] == "PROVIDER_DATE_UNCONFIRMED"
+    assert "not confirmed" in out["earnings_disclosure"]

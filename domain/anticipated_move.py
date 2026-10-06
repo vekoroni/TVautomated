@@ -26,6 +26,7 @@ from contracts.selected_contract_economics import _black_scholes_value
 CONSTANTS_PATH = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
 ANTICIPATED_MOVE_FIELDS = (
     "anticipated_move_state", "anticipated_level", "anticipated_level_basis", "anticipated_move_pct",
+    "anticipated_level_q50",
     "anticipated_structural_level", "anticipated_structural_definition", "anticipated_reachable_level",
     "anticipated_sessions_q50", "anticipated_sessions_q80", "anticipated_hold_sessions", "anticipated_time_basis",
     "anticipated_p_outcome_by_limit", "anticipated_p_invalidation_by_limit", "anticipated_evidence_n",
@@ -118,9 +119,21 @@ def anticipated_move_fields(
     out.update(anticipated_structural_level=structural,
                anticipated_structural_definition=(outcome_definition or None) if structural is not None else None)
     vol = _num(vol_annual)
-    if vol is not None and vol > 0 and reach_sessions:
-        k = float(econ["sigma_multiple"])
-        out["anticipated_reachable_level"] = round(s0 * (1.0 + sign * k * vol * math.sqrt(reach_sessions / 252.0)), 4)
+    k = float(econ["sigma_multiple"])
+
+    def reach_by(sessions: Any) -> Optional[float]:
+        if vol is None or vol <= 0 or not sessions:
+            return None
+        return round(s0 * (1.0 + sign * k * vol * math.sqrt(float(sessions) / 252.0)), 4)
+
+    def level_by(sessions: Any) -> Optional[float]:
+        """Fix B (ACK 5 Oct 2026): the level reachable by that time - structural, capped at that time's reach."""
+        cap = reach_by(sessions)
+        if structural is not None and cap is not None:
+            return round(structural if abs(structural - s0) <= abs(cap - s0) else cap, 4)
+        return cap if cap is not None else (round(structural, 4) if structural is not None else None)
+
+    out["anticipated_reachable_level"] = reach_by(reach_sessions)
     reach = out["anticipated_reachable_level"]
     if structural is not None and reach is not None:
         nearer = structural if abs(structural - s0) <= abs(reach - s0) else reach
@@ -134,6 +147,7 @@ def anticipated_move_fields(
         out["anticipated_move_state"] = "UNESTIMATED_NO_LEVEL"
         return out
     level = out["anticipated_level"]
+    out["anticipated_level_q50"] = level_by(out["anticipated_sessions_q50"] or reach_sessions)
     out["anticipated_move_pct"] = round(sign * (level - s0) / s0 * 100.0, 4)
     out["anticipated_move_state"] = "ESTIMATED" if estimated else "ESTIMATED_TIME_UNESTIMATED"
 
@@ -159,8 +173,12 @@ def anticipated_move_fields(
         # Real-data finding (3 Oct 2026): never value the move at a time the contract does not live to.
         if not sessions or sessions > contract_sessions:
             return None
+        # Fix B (ACK 5 Oct 2026): value at the level reachable by that time, never a later horizon's reach.
+        at = level_by(sessions)
+        if at is None:
+            return None
         years = max(days_to_expiry - sessions * per_session, 0.0) / 365.0
-        value = _black_scholes_value(side, level, strike, years, vol_used)
+        value = _black_scholes_value(side, at, strike, years, vol_used)
         return None if value is None else round(value / ask, 4)
 
     t50 = out["anticipated_sessions_q50"] or reach_sessions
@@ -180,7 +198,10 @@ def anticipated_move_fields(
     out["anticipated_stress_basis"] = "; ".join(stress)
     # D-B (ACK 3 Oct 2026, amended): does the move pay = contract value at the median anticipated time vs premium.
     q50_multiple = out["anticipated_value_multiple_q50"]
-    if q50_multiple is not None:
+    if out["anticipated_level_basis"] == "VOLATILITY_ONLY":
+        # Fix B: with no structural target on the trade side the level is a volatility reach, not an expectation.
+        out["anticipated_pays_state"] = "NOT_ASSESSED_VOLATILITY_ONLY"
+    elif q50_multiple is not None:
         out["anticipated_pays_state"] = "PAYS" if q50_multiple >= 1.0 else "DOES_NOT_PAY_AT_ANTICIPATED_TIME"
     return out
 

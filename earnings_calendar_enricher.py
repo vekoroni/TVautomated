@@ -37,6 +37,7 @@ EARNINGS_DISCLOSURE_FIELDS = (
     "earnings_state", "earnings_date", "earnings_report_time", "earnings_fiscal_quarter",
     "earnings_sessions_to_event", "earnings_inside_hold", "earnings_inside_expiry",
     "earnings_unknown_reason", "earnings_source", "earnings_disclosure", "earnings_authority",
+    "earnings_date_confirmation",
 )
 
 
@@ -102,7 +103,9 @@ def earnings_disclosure(
     expiry_day = _as_date(expiry)
     inside_hold = None if hold is None else sessions <= hold
     inside_expiry = None if expiry_day is None else sessions <= _sessions_between(as_of_day, expiry_day)
+    confirmation = str((earnings or {}).get("date_confirmation") or "PROVIDER_DATE_UNCONFIRMED").upper()
     out.update(earnings_date=report.isoformat(), earnings_report_time=report_time,
+               earnings_date_confirmation=confirmation,
                earnings_fiscal_quarter=(earnings or {}).get("fiscal_quarter") or "",
                earnings_sessions_to_event=sessions, earnings_inside_hold=inside_hold,
                earnings_inside_expiry=inside_expiry)
@@ -112,7 +115,8 @@ def earnings_disclosure(
     expiry_text = ("expiry not known" if inside_expiry is None else
                    f"before the {expiry_day.isoformat()} expiry" if inside_expiry
                    else f"after the {expiry_day.isoformat()} expiry")
-    out["earnings_disclosure"] = (f"Earnings {report.isoformat()} ({when}): {sessions} sessions away, "
+    confirmed_text = "" if confirmation == "CONFIRMED" else ", provider date, not confirmed"
+    out["earnings_disclosure"] = (f"Earnings {report.isoformat()} ({when}{confirmed_text}): {sessions} sessions away, "
                                   f"{hold_text}, {expiry_text}. Gap and IV-crush risk; disclosure only.")
     return out
 

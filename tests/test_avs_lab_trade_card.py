@@ -230,11 +230,16 @@ const no = renderTradeCard({ticker:'X', direction:'PUT', anticipated_move_covera
   anticipated_value_multiple_q50:0.7, anticipated_pays_state:'DOES_NOT_PAY_AT_ANTICIPATED_TIME'});
 const yes = renderTradeCard({ticker:'Y', direction:'PUT', anticipated_move_coverage:0.5, anticipated_breakeven_move_pct:9,
   anticipated_value_multiple_q50:1.25, anticipated_pays_state:'PAYS'});
-console.log(JSON.stringify({no: no.includes('does not pay at the anticipated time'), yes: yes.includes('pays at the anticipated time')}));
+const vol = renderTradeCard({ticker:'Z', direction:'CALL', anticipated_move_coverage:1.2, anticipated_breakeven_move_pct:8,
+  anticipated_value_multiple_q50:1.6, anticipated_pays_state:'NOT_ASSESSED_VOLATILITY_ONLY'});
+// Fix B (ACK 5 Oct 2026): the payoff is conditional on the level being reached - the card says so.
+console.log(JSON.stringify({no: no.includes('does not pay even if the level is reached'),
+  yes: yes.includes('pays if the level is reached by the median time') && yes.includes('not an expected outcome'),
+  vol: vol.includes('no structural target')}));
 """
     out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr
-    assert json.loads(out.stdout.strip().splitlines()[-1]) == {"no": True, "yes": True}
+    assert json.loads(out.stdout.strip().splitlines()[-1]) == {"no": True, "yes": True, "vol": True}
 
 
 def test_book_carries_the_trade_lane():
@@ -262,3 +267,17 @@ console.log(JSON.stringify({a: a.includes('Lane A') && a.includes('trade now'),
     out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"a": True, "b": True, "c": True}
+
+
+def test_card_states_calendar_days_and_trading_sessions_to_expiry():
+    # Fix D (ACK 5 Oct 2026): contract_dte holds XNYS trading sessions (54 for 18 Dec from 2 Oct) while dte holds
+    # calendar days (74); the card said "54 DTE", which a trader reads as calendar days (external review).
+    script = (ROOT / "intelligence-lab" / "static" / "trade-card.js").read_text(encoding="utf-8")
+    probe = script + """
+const html = renderTradeCard({ticker:'D', direction:'CALL', expiry:'2026-12-18', dte:74, contract_dte:54});
+console.log(JSON.stringify({cal: html.includes('74 calendar days'), ses: html.includes('54 trading sessions'),
+  bare: html.includes('54 DTE')}));
+"""
+    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr
+    assert json.loads(out.stdout.strip().splitlines()[-1]) == {"cal": True, "ses": True, "bare": False}

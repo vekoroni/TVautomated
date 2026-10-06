@@ -2518,7 +2518,7 @@ def scan_ticker_ultimate(
     signal['price_band'] = price_band(px, cfg)
     # Trade lane (ACK, 4 Oct 2026): A trade now / B early entry / C awaiting trigger; NO_LIVE_SETUP drops.
     from domain.structure_behaviour.trade_lane import ticker_lane
-    signal.update(ticker_lane(_beh['candidates'], price=px, atr_daily=atr_14_val))
+    signal.update(ticker_lane(_beh['candidates'], price=px, atr_daily=atr_14_val, side=_thesis_side))
 
     # Add early position fields if applicable. DSC-13: under the corrected
     # policy the Tier-0 heuristic never overwrites the structural stop (a

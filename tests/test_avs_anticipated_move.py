@@ -140,3 +140,29 @@ def test_contract_expiring_before_the_anticipated_time_is_stated():
     assert mid["anticipated_time_fit"] == "CONTRACT_EXPIRES_BEFORE_Q80"
     assert mid["anticipated_value_multiple_q50"] is not None and mid["anticipated_value_multiple_q80"] is None
     assert _am()["anticipated_time_fit"] == "CONTRACT_OUTLASTS_Q80"
+
+
+# --- Fix B (ACK 5 Oct 2026): each valuation uses the level reachable by its own time. -----------------------------
+# Run 20261005_072245, SMH: a volatility-only level was the 1.5-sigma reach over q80 (42 sessions, +19.2%) but
+# valued as if reached at q50 (10 sessions): 3.04x, roughly a 2-sigma move in 10 sessions (external review).
+
+def test_q50_value_uses_the_reach_at_q50_not_q80():
+    from domain.anticipated_move import anticipated_move_fields as amf
+    out = _am(outcome_level=4.87)                        # far beyond reach: capped at every horizon
+    k, vol, s0 = 1.5, 0.53, 15.92
+    reach50 = s0 * (1 - k * vol * (6 / 252) ** 0.5)
+    assert out["anticipated_level_q50"] == pytest.approx(reach50, rel=1e-3)
+    assert out["anticipated_level"] == pytest.approx(out["anticipated_reachable_level"])     # q80 level, displayed
+    assert abs(out["anticipated_level_q50"] - s0) < abs(out["anticipated_level"] - s0)
+
+
+def test_structural_level_inside_the_q50_reach_is_used_at_both_times():
+    out = _am()
+    assert out["anticipated_level_q50"] == pytest.approx(14.20)
+
+
+def test_volatility_only_has_no_pays_verdict():
+    out = _am(outcome_level=None)
+    assert out["anticipated_level_basis"] == "VOLATILITY_ONLY"
+    assert out["anticipated_pays_state"] == "NOT_ASSESSED_VOLATILITY_ONLY"
+    assert out["anticipated_value_multiple_q50"] is not None          # still shown, labelled, never a verdict

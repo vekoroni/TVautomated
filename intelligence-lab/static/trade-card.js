@@ -128,7 +128,8 @@ function renderTradeCard(s, profile) {
             : `${tcEsc(s.anticipated_sessions_q50)} / ${tcEsc(s.anticipated_sessions_q80)} sessions`, 'median / 80% to the level · ' + tcEsc(s.anticipated_time_basis || 'not computed in this run')
               + (tcBlank(s.thesis_activation_q50_bars) ? '' : `<br>activation (trigger) typically within ${tcEsc(s.thesis_activation_q50_bars)} / ${tcEsc(s.thesis_activation_q80_bars)} bars (${tcEsc(s.thesis_event_timeframe || '')})`)),
       tcRow('Planned hold', `${tcShow(s.planned_hold_sessions)} sessions`, 'governed window (runway floor)'),
-      tcRow('Contract expiry', `${tcShow(s.expiry)} · ${tcShow(s.contract_dte)} DTE`),
+      // Fix D (ACK 5 Oct 2026): units stated - contract_dte counts XNYS trading sessions, dte calendar days.
+      tcRow('Contract expiry', `${tcShow(s.expiry)} · ${tcShow(s.dte)} calendar days · ${tcShow(s.contract_dte)} trading sessions`),
       tcRow('Catalyst', tcShow(s.catalyst_date, 'none recorded'), tcBlank(s.catalyst_inside_dte) ? '' : `inside DTE: ${tcEsc(s.catalyst_inside_dte)}`),
       // Earnings disclosure (ACK 3 Oct 2026): position risk against the hold and expiry; never a gate.
       tcRow('Earnings', tcBlank(s.earnings_state) ? '<span class="tc-missing">earnings not checked in this run</span>' : tcEsc(s.earnings_disclosure || s.earnings_state)),
@@ -138,7 +139,7 @@ function renderTradeCard(s, profile) {
       tcRow('Spread', tcSpread(s)),
       tcRow('Delta / IV / IV level', `${tcShow(tcNum(s.contract_delta, 3))} / ${tcShow(tcNum(s.contract_iv, 3))} / ${tcShow(s.ivp_label)}`),
       tcRow('OI / volume / breakeven', `${tcShow(s.contract_oi)} / ${tcShow(s.contract_volume)} / ${tcShow(tcNum(s.breakeven_price))}`),      tcRow('Does the move pay', tcBlank(s.anticipated_move_coverage) ? '<span class="tc-missing">not computed in this run</span>'
-            : ({PAYS: '<b>pays at the anticipated time</b> · ', DOES_NOT_PAY_AT_ANTICIPATED_TIME: '<span class="tc-missing">does not pay at the anticipated time (no GO)</span> · '}[s.anticipated_pays_state] || '') + `coverage ${tcEsc(tcNum(s.anticipated_move_coverage))}× breakeven move (${tcEsc(tcNum(s.anticipated_breakeven_move_pct))}%) · value ${tcShow(tcNum(s.anticipated_value_multiple_q50))}× premium at median time`,
+            : ({PAYS: '<b>pays if the level is reached by the median time</b> · ', DOES_NOT_PAY_AT_ANTICIPATED_TIME: '<span class="tc-missing">does not pay even if the level is reached by the median time (no GO)</span> · ', NOT_ASSESSED_VOLATILITY_ONLY: '<span class="tc-missing">not assessed: no structural target on the trade side (volatility reach only)</span> · '}[s.anticipated_pays_state] || '') + `coverage ${tcEsc(tcNum(s.anticipated_move_coverage))}× breakeven move (${tcEsc(tcNum(s.anticipated_breakeven_move_pct))}%) · value ${tcShow(tcNum(s.anticipated_value_multiple_q50))}× premium at median time, at the level reachable by then (${tcShow(tcNum(s.anticipated_level_q50))}) - conditional on the level being reached, not an expected outcome`,
             tcBlank(s.anticipated_stress_basis) ? '' : `stress: ${tcShow(tcNum(s.anticipated_value_multiple_q80))}× at ${tcEsc(s.anticipated_stress_basis)}${tcBlank(s.anticipated_value_multiple_earnings_stress) ? '' : ` · ${tcEsc(tcNum(s.anticipated_value_multiple_earnings_stress))}× with earnings IV stress`}`),
     ]),
     tcSection('6 · Context (advisory)', [
@@ -200,12 +201,12 @@ const TC_CARD_FIELDS = new Set([
   'trade_lane', 'trade_lane_basis', 'trade_lane_setup', 'trade_lane_hit_original', 'trade_lane_hit_holdout',
   'trade_lane_required_multiple', 'intake_flags', 'price_band',
   'trigger_go_eligible', 'validation_transition', 'remaining_runway_state', 'invalidation_price',
-  'anticipated_move_state', 'anticipated_level', 'anticipated_level_basis', 'anticipated_move_pct',
+  'anticipated_move_state', 'anticipated_level', 'anticipated_level_q50', 'anticipated_level_basis', 'anticipated_move_pct',
   'anticipated_structural_level', 'anticipated_structural_definition', 'anticipated_p_outcome_by_limit',
   'anticipated_evidence_n', 'anticipated_sessions_q50', 'anticipated_sessions_q80', 'anticipated_time_basis',
   'anticipated_move_coverage', 'anticipated_breakeven_move_pct', 'anticipated_value_multiple_q50',
   'anticipated_value_multiple_q80', 'anticipated_value_multiple_earnings_stress', 'anticipated_stress_basis', 'anticipated_time_fit', 'anticipated_pays_state', 'thesis_activation_q50_bars', 'thesis_activation_q80_bars',
-  'planned_hold_sessions', 'expiry', 'contract_dte', 'catalyst_date', 'catalyst_inside_dte', 'contract_symbol', 'strike',
+  'planned_hold_sessions', 'expiry', 'dte', 'contract_dte', 'catalyst_date', 'catalyst_inside_dte', 'contract_symbol', 'strike',
   'contract_bid', 'contract_ask', 'spread_pct', 'contract_delta', 'contract_iv', 'ivp_label', 'contract_oi',
   'contract_volume', 'breakeven_price', 'sector', 'sector_etf', 'usmi_sector_alignment', 'macro_sector_alignment',
   'gamma_flip', 'call_wall', 'put_wall', 'lab_verdict', 'final_action', 'conflict_state', 'evening_thesis_bucket',

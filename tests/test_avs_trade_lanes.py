@@ -108,3 +108,43 @@ def test_intraday_only_tickers_are_held_out_until_their_evidence_is_tested():
 def test_a_tested_intraday_timeframe_rejoins_automatically():
     table = dict(load_lanes()); table["untested_timeframes"] = ["5m", "15m"]          # 60m tested by step 4
     assert ticker_lane([c("60m", "Spring Candidate", "DETECTED")], table)["trade_lane"] == "C"
+
+
+# --- Fix A (ACK 5 Oct 2026): the lane comes only from setups on the trade's side. ---------------------------------
+# Run 20261005_072245: 174 of 506 lane A/B rows took their lane from an opposite-side setup (the NVS put was lane A
+# from a BULL monthly Failed Upthrust Continuation); on trade-side setups 134 had none, 36 were C and 4 A.
+
+def cs(tf, kind, state, direction, outcome=None, invalidation=None):
+    return {**c(tf, kind, state, outcome, invalidation), "Direction": direction}
+
+
+def test_lane_uses_only_setups_on_the_trade_side():
+    setups = [cs("1mo", "Failed Upthrust Continuation", "ACTIVATED", "BULL"),
+              cs("1d", "Upthrust Candidate", "DETECTED", "BEAR")]
+    put = ticker_lane(setups, side="BEAR")
+    assert put["trade_lane"] == "C" and put["trade_lane_setup"].startswith("1d|Upthrust")
+    assert ticker_lane(setups, side="BULL")["trade_lane"] == "A"
+
+
+def test_only_opposite_side_setups_leave_the_ticker_visible_in_lane_c():
+    out = ticker_lane([cs("1d", "SOS -> LPS continuation", "ACTIVATED", "BULL")], side="BEAR")
+    assert out["trade_lane"] == "C" and out["trade_lane_basis"] == "NO_LIVE_SETUP_ON_TRADE_SIDE"
+
+
+def test_no_trade_side_is_lane_c_and_stated():
+    out = ticker_lane([cs("1d", "SOS -> LPS continuation", "ACTIVATED", "BULL")], side="UNASSIGNED")
+    assert out["trade_lane"] == "C" and out["trade_lane_basis"] == "NO_TRADE_SIDE"
+
+
+def test_lane_records_its_side_and_is_demoted_if_the_side_changes():
+    a = ticker_lane([cs("1d", "SOS -> LPS continuation", "ACTIVATED", "BULL")], side="BULL")
+    assert a["trade_lane_side"] == "BULL"
+    flipped = confirm_early_entry(a, None, final_direction="PUT")
+    assert flipped["trade_lane"] == "C" and flipped["trade_lane_basis"] == "LANE_SIDE_CHANGED"
+    assert confirm_early_entry(a, None, final_direction="CALL")["trade_lane"] == "A"
+
+
+def test_discovery_passes_its_thesis_side_to_the_lane():
+    import inspect
+    import avshunter_discovery_ULTIMATE as d
+    assert "side=_thesis_side" in inspect.getsource(d.scan_ticker_ultimate)

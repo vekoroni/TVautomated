@@ -2855,6 +2855,9 @@ def build_candidate_manifest(
         # only - no score, gate or rank reads these fields until the replay validation and D-C switch.
         for evidence_col in THESIS_EVIDENCE_FIELDS:
             candidate[evidence_col] = row.get(evidence_col, "")
+        # Fix E (ACK 5 Oct 2026): the inputs the Morning needs to recompute the anticipated move for a swapped contract.
+        for recompute_col in ("thesis_event_timeframe", "thesis_structure_alignment", "target_reachable_vol_annual"):
+            candidate[recompute_col] = row.get(recompute_col, "")
         candidate.update(anticipated_move_fields(
             direction=direction,
             spot=candidate.get("signal_price"),
@@ -2886,7 +2889,8 @@ def build_candidate_manifest(
         candidate.update(eod_monetisability)
         # Trade lane (ACK 4 Oct 2026): lane B holds only when the option's value multiple covers the failures.
         candidate.update(confirm_early_entry({col: row.get(col, "") for col in TRADE_LANE_FIELDS},
-                                             candidate.get("anticipated_value_multiple_q50")))
+                                             candidate.get("anticipated_value_multiple_q50"),
+                                             final_direction=direction))
         candidates.append(candidate)
 
     out_df = pd.DataFrame(candidates)

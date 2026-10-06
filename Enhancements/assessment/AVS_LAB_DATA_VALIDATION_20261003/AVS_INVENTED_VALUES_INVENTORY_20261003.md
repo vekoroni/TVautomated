@@ -353,6 +353,7 @@ Deferred items are tracked here so they are not lost in design documents.
 | O4 | Volatility route: scanner cheap-vol to call plus put, with no Discovery direction | 4 Oct | Open, needs design |
 | O5 | Scanner age clock uses local time, not UTC | 4 Oct | In this round |
 | O11 | `avshunter/c0_run/thin_package.py` read the wall clock outside the clock adapter (package purity) | tests_rebuild, 4 Oct | FIXED 4 Oct: reads `adapters.clock.wall_clock_utc`; tests_rebuild 169 pass |
+| O12 | Intraday (60m/15m/5m) lane A setups hit 55–65% from the cut close, but most settle before the Morning entry (about 15 min after open); from entry only 60m SOW→LPSY stays above 50%, and intraday timing fails holdout calibration | Step 4, 6 Oct | OPEN: ACK chose option 1 (6 Oct). Intraday stays in `untested_timeframes`; intraday-only tickers drop as `INTRADAY_ONLY_UNTESTED`; intraday setups stay on the cards for the human eye. Revisit by measuring from the Morning entry price, or with a limit order placed the evening before |
 | O6 | Vanguard BULL_ONLY_LEGACY edge; G1 circular breakeven; desk phase_transition_probability; N5; N6; REJECT_STALE_QUOTE name; DCV clock | Earlier inventory | Open |
 | O7 | Duration-evidence probabilities fail holdout calibration in the upper bands (recalibrate) | Step 2, 3 Oct | Open |
 
@@ -547,3 +548,99 @@ Downstream: 1,884 tickers against 1,672 (+13%). Scanner tickers: A 49, B 1, C 14
 | 4 | `scanner_stale` added to `SCANNER_FIELD_NAMES` | scanner intake test | — |
 | 5 | Time value: valid hold over 20 is `PLANNED_HOLD_BEYOND_TESTED_RANGE_20` (O8) | `test_avs_timevalue_hold_range_label` | — |
 | 6 | EV3 move window valued at the nearest grid point at or below it (`ev3_move_window_grid_basis`); below grid `BELOW_EV3_GRID_n` | `test_avs_ev3_move_window_grid` | — |
+
+## External review of the 11 GOs, and fixes A–D (ACK 5 Oct 2026, "approve A-D")
+
+**Verification against run 20261005_072245, the code and Tastytrade (read-only).**
+
+| Review point | Finding | Cause |
+|---|---|---|
+| "DTE" is trading days | Correct: `contract_dte` = 54 XNYS sessions to 18 Dec; `dte` = 74 calendar days; the card and my table showed "54 DTE" | Unit not in the name |
+| Earnings missed (SMR, TTWO, NVS) | Not a pipeline error: dates matched Tastytrade and `earnings_inside_expiry` was True; my table showed `earnings_inside_hold` | Presentation (mine) |
+| DELL earnings | MarketData 27 Nov vs Tastytrade confirmed 24 Nov | Provider date |
+| MRVL, PL earnings | MarketData projections (1 Dec, 9 Dec) labelled SCHEDULED; none published at Tastytrade | Parser assumed confirmation |
+| SMH 3.04× overstated | Correct: volatility-only level = 1.5σ reach over q80 (42 sessions, +19.2%), valued at q50 (10 sessions). The structural level 626.82 was below spot on a call | Horizon mismatch in the 3 Oct cap design |
+| MRVL direction | Reviewer wrong: in BEH-001 "Failed Upthrust Continuation" is BULL (upthrust absorbed) | — |
+| NVS direction | Correct: the NVS put's lane A came from a BULL monthly setup. 174 of 506 lane A/B rows took their lane from opposite-side setups; on trade-side setups 134 had none, 36 C, 4 A. GO affected: NVS, SAP, SPG | Lane code ignored side (step 2) |
+
+**Fixes, all test-first.**
+- **A.** `ticker_lane(..., side=)` uses only trade-side setups. `NO_LIVE_SETUP_ON_TRADE_SIDE` and `NO_TRADE_SIDE` are lane C. `trade_lane_side` is recorded; the book demotes A/B to C on `LANE_SIDE_CHANGED`. Discovery passes `thesis__side`. Replay: A 538 to 356, B 40 to 25; Morning GO in A/B 30 (NVS, SAP, SPG out).
+- **B.** Each valuation uses the level reachable by its own time (`anticipated_level_q50`; q80 and stress at q80). Volatility-only gives `NOT_ASSESSED_VOLATILITY_ONLY`. The card says the payoff is conditional on the level being reached. Replay: SMH 3.04× to 1.72× (volatility-only); DELL 2.11× to 1.86×; FUN 2.10× to 1.64×; book PAYS 801 to 748, DOES_NOT_PAY 108 to 132, volatility-only 29.
+- **C.** MarketData dates carry `date_confirmation` = `PROVIDER_DATE_UNCONFIRMED`; new `earnings_date_confirmation` field; disclosure text says "provider date, not confirmed". The state keeps its six-consumer meaning.
+- **D.** Card: "expiry · N calendar days · M trading sessions"; the bare "DTE" is gone.
+
+## Lab trade summary, and fixes E–F (ACK 5 Oct 2026)
+
+**Trade summary table.** ACK: "include Setup / Option / value at median time / Median time / DTE / Spread / Earnings inside hold".
+- `intelligence-lab/static/trade-summary.js`, plus a panel on the Signals page (`renderTradeSummary`).
+- Lanes A/B by default, best value first; toggle for lane C.
+- DTE in calendar days and trading sessions; earnings as hold and contract life, with date and confirmation; value labelled when it is not a verdict; missing values read "not recorded".
+- Test: `test_avs_lab_trade_summary` (4). Rendered on the real book of run 20261005_072245: 506 lane A/B rows.
+
+**Defects found while rendering.**
+- **E.** The Morning repair swapped the contract on 413 rows (141 in lanes A/B), but the anticipated value, time fit, pays verdict and earnings-in-contract stayed the Evening contract's. Example: SYNA's 18 Dec 125C 13.8× shown beside a 16 Oct 110C. GOs affected: DG, NXT, FUN, DY.
+- **F.** The repair took the first alternative passing the quote check, with no runway check. 34 of 141 lane A/B repairs expire before q80; 7 before the median time.
+
+**Fixes, test-first.**
+- **F.** `_try_live_repair_alternatives` skips alternatives expiring before the evidence runway (`SKIP:SHORT_RUNWAY`); no filter without an evidence hold.
+- **E.** `_recompute_for_morning_contract` recomputes the anticipated move and the earnings timing for the Morning's contract (`anticipated_contract_basis = MORNING_CONTRACT_RECOMPUTED:<symbol>`). The GO check reads the recomputed pays verdict. The Evening carries `thesis_event_timeframe`, `thesis_structure_alignment` and `target_reachable_vol_annual` for this.
+- Test: `test_avs_morning_repair_runway_recompute` (6). Morning gate, repair, N1, lane, move-pays, runway and earnings tests pass.
+
+**Regression for fixes A–F and the Lab trade summary (6 Oct 2026, overnight).**
+- Run in three parts because of the 2-hour background limit while the backfill and the intraday build shared the machine. Files touched mid-run were re-run.
+- Failures:
+  - Parked DCV clock: `test_vanguard_reference_input_p2` ×3, `test_canonical_manifest_p1` ×1.
+  - `test_worker3_browser_launch`: "Batch did not finish" plus a Windows temp-file lock. It passed in today's three earlier suites, this round touches nothing in Worker3, and it ran under full CPU load from the 8-worker intraday build. To re-run on a quiet machine before commit.
+- tests_rebuild: 169 pass. Fixes A–F remain uncommitted, awaiting ACK.
+
+## Step 4 receipt: intraday BEH-001 evidence (built overnight 5–6 Oct 2026; nothing applied, awaiting ACK)
+
+Built by `Enhancements/direction_evidence/beh001_intraday_evidence.py` on the Polygon 5-minute store: 3,105 tickers, 297,151 scored tests, panels split by ticker hash. Outcomes use C12 `classify` and `evaluate_passage` (censoring is never success or failure). Output is in `Enhancements/outcomes/beh001/intraday_v1/`. Tests: `tests/test_avs_intraday_evidence_builder.py` (4).
+
+**Hit rate (ACTIVATED, level before invalidation), n ≥ 100 on each panel.** These nine pass lane A's 50% bar on both panels:
+
+| tf | setup | original | holdout |
+|---|---|---|---|
+| 60m | SOW→LPSY | .639 | .648 |
+| 60m | SOS→LPS | .607 | .610 |
+| 60m | Failed Upthrust | .545 | .609 |
+| 60m | Failed Spring | .533 | .562 |
+| 15m | SOS→LPS | .626 | .624 |
+| 15m | SOW→LPSY | .580 | .624 |
+| 15m | Failed Upthrust | .612 | .550 |
+| 5m | SOW→LPSY | .566 | .578 |
+| 5m | SOS→LPS | .555 | .550 |
+
+Detected Change-of-Behaviour setups intraday hit 42–52% and do not qualify.
+
+**Reality check: the entry time.** The outcomes are measured from the cut close. The human enters after the Morning run, about 15 minutes after the open (one 60m bar, one 15m bar or three 5m bars). Share settled before that entry, and hit rate on the rest (original / holdout):
+
+| tf | setup | settled before entry | hit from entry |
+|---|---|---|---|
+| 60m | SOW→LPSY | .32 / .35 | .530 / .527 |
+| 60m | SOS→LPS | .35 / .32 | .455 / .475 |
+| 60m | Failed Upthrust | .65 / .62 | .454 / .443 |
+| 60m | Failed Spring | .58 / .68 | .491 / .433 |
+| 15m | SOS→LPS | .52 / .54 | .456 / .465 |
+| 15m | SOW→LPSY | .55 / .53 | .420 / .484 |
+| 15m | Failed Upthrust | .86 / .85 | .650 / .368 (n 20 / 19) |
+| 5m | SOS→LPS | .82 / .82 | .496 / .433 |
+| 5m | SOW→LPSY | .85 / .84 | .345 / .538 |
+
+This is approximate: it keeps the original level and invalidation and does not re-price from the entry.
+
+Only 60m SOW→LPSY stays above 50% on both panels from a realistic entry. The others' edge is mostly spent in the first bar, before a human using the Morning run can act.
+
+**Timing (duration pack, `beh001_intraday_duration_pack.py`):** 366 of 526 groups were published, original panel only, pooled over scope. Holdout calibration **fails on every intraday timeframe**:
+
+| tf | share by q50 | share by q80 | band |
+|---|---|---|---|
+| 60m | 0.666 | 0.837 | q50 [0.40, 0.60], q80 [0.70, 0.90] |
+| 15m | 0.753 | 0.849 | same |
+| 5m | 0.834 | 0.867 | same |
+
+The cause is the same first-bar resolution: q50 is 1 bar in most groups, so the quantile is too coarse to calibrate. The intraday timing evidence is not validated. The file `duration_evidence_intraday_PROPOSAL.json` is a proposal only.
+
+Also re-run on a quiet machine: `tests/test_worker3_browser_launch.py` passes 11 of 11 (the earlier failure was load).
+
+**ACK decision, 6 Oct 2026: option 1.** No configuration change. 60m, 15m and 5m stay in `untested_timeframes`, and none of the nine intraday entries is added to lane A. Logged as O12.
