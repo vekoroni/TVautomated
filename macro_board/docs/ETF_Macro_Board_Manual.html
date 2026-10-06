@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ETF Macro Board Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a desk manual. Sticky contents rail on wide screens, one reading column, data in mono. */
+:root{
+  --bg:#f7f8fa; --paper:#ffffff; --ink:#14171c; --ink-2:#4a515c; --muted:#78808c; --rule:#dde1e7; --tint:#eef2f7;
+  --accent:#1f5fae; --up:#2a78d6; --down:#d23f3f; --warn:#b77700; --good:#0f7a2a;
+  --display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --body:"Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --paper:#171b21; --ink:#eef1f5; --ink-2:#b8c0cc; --muted:#8a93a0; --rule:#2a313b; --tint:#1d232c;
+    --accent:#7fb0f0; --up:#5b9ff0; --down:#f07a7a; --warn:#e2a93b; --good:#58c776; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --paper:#171b21; --ink:#eef1f5; --ink-2:#b8c0cc; --muted:#8a93a0; --rule:#2a313b; --tint:#1d232c;
+  --accent:#7fb0f0; --up:#5b9ff0; --down:#f07a7a; --warn:#e2a93b; --good:#58c776; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.62 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:16px}}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:14px}
+@media (max-width:900px){nav.toc{position:static;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;background:var(--paper)}}
+nav.toc p{font:600 12px/1.4 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+nav.toc ol{margin:0;padding-left:18px;display:grid;gap:4px}
+nav.toc a{color:var(--ink-2);text-decoration:none}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);text-decoration:underline}
+main{min-width:0}
+header.cover{border-bottom:1px solid var(--rule);padding-bottom:22px;margin-bottom:8px}
+.eyebrow{font:600 12px/1.4 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h1{font:700 clamp(30px,4.4vw,44px)/1.12 var(--display);margin:0 0 12px;text-wrap:balance}
+h2{font:700 27px/1.2 var(--display);margin:46px 0 12px;text-wrap:balance;scroll-margin-top:20px}
+h3{font:600 18px/1.35 var(--body);margin:26px 0 8px}
+p,li{max-width:70ch}
+p{margin:0 0 12px}
+.lede{font-size:18px;color:var(--ink-2)}
+.meta{font:13px/1.5 var(--mono);color:var(--muted)}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--tint);border:1px solid var(--rule);border-radius:5px;padding:1px 5px}
+pre{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;overflow-x:auto;font:14px/1.5 var(--mono)}
+.callout{border:1px solid var(--rule);border-left:4px solid var(--accent);background:var(--paper);border-radius:8px;padding:14px 16px;margin:14px 0}
+.callout.warn{border-left-color:var(--warn)}
+.callout.good{border-left-color:var(--good)}
+.callout strong:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:12px 0}
+.box{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;min-width:0}
+.box h4{margin:0 0 6px;font:600 13px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.box ul{margin:0;padding-left:18px}
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--paper);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+th{font-weight:600;color:var(--ink-2);background:var(--tint);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font:600 12px/1.6 var(--mono);border:1px solid var(--rule);border-radius:999px;padding:0 8px;white-space:nowrap}
+.tag.up{color:var(--up);border-color:currentColor}
+.tag.down{color:var(--down);border-color:currentColor}
+.tag.flat{color:var(--ink-2)}
+ol.steps{padding-left:22px;display:grid;gap:10px}
+ol.steps li::marker{font-weight:700;color:var(--accent)}
+.tab{border-top:1px solid var(--rule);padding-top:4px}
+.example{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;margin:16px 0}
+.example .head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
+.example .head b{font:700 20px/1.2 var(--display)}
+.verdict{border-top:1px dashed var(--rule);margin-top:10px;padding-top:10px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#what">What the board is</a></li>
+    <li><a href="#signals">Why there are no buy/sell signals</a></li>
+    <li><a href="#spy">Why everything relates to SPY</a></li>
+    <li><a href="#run">Running the board</a></li>
+    <li><a href="#routine">The morning routine</a></li>
+    <li><a href="#tabs">Tab by tab</a></li>
+    <li><a href="#decide">From board to decision</a></li>
+    <li><a href="#examples">Worked examples</a></li>
+    <li><a href="#rules">Rules and red flags</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="cover">
+  <p class="eyebrow">AVSHUNTER · desk manual</p>
+  <h1>ETF Macro Board: how to read it and use it</h1>
+  <p class="lede">A guide for a junior trader. It explains what each part of the board measures, how to turn it into a trading decision, and what the board will not do for you.</p>
+  <p class="meta">Board version macro-board-v1.0.0 · examples use the board as of the 5 Oct 2026 close · written 6 Oct 2026</p>
+</header>
+
+<h2 id="what">What the board is</h2>
+<p>The ETF Macro Board is one HTML page, rebuilt each day. It answers four questions about SPY, QQQ and 113 other ETFs:</p>
+<ol class="steps">
+  <li><b>What is the macro backdrop right now?</b> Ten measured conditions: trend, volatility, breadth, liquidity, the yield curve, yields, credit, the dollar and oil.</li>
+  <li><b>What did each ETF do after past days that looked like today?</b> That is the "measured lean", with an honest count of how much evidence sits behind it.</li>
+  <li><b>Is the trade still worth taking at today's price?</b> Distance left to the pipeline's target, how far the move has already run, and what the option market charges for the move.</li>
+  <li><b>Where is money rotating, and is the macro view right?</b> Sector rotation, holdings, and scorecards that grade every macro opinion against what actually happened.</li>
+</ol>
+<div class="callout">
+  <strong>The board is a reader, not a trader.</strong>
+  It reads AVSHUNTER's data and the outside macro reports. It never places orders and never changes the pipeline. The pipeline does not read anything the board produces.
+</div>
+
+<h2 id="signals">Why there are no buy/sell signals</h2>
+<p>This is the most common question, and it is deliberate. There are three reasons.</p>
+<h3>1. The trade signals come from the AVSHUNTER pipeline</h3>
+<p>The pipeline decides direction, setup, target, invalidation and contract. The board shows that proposal next to its own evidence: the <b>Pipeline</b> column in the ETF matrix, and the "What the pipeline proposes" section in each ETF's drawer. On 5 Oct the pipeline had SPY <span class="tag up">CALL · ARMED</span>, DIA <span class="tag down">PUT · ARMED</span>, XLK and SMH <span class="tag up">CALL · ARMED</span>, and QQQ and IWM unresolved and standing down. Those are your candidate trades. The board's job is to tell you whether the backdrop, the history and the price still support them.</p>
+<h3>2. The board only gives a direction when history clearly supports one</h3>
+<p>A measured lean shows <span class="tag up">▲ Up</span> or <span class="tag down">▼ Down</span> only when three tests pass:</p>
+<ul>
+  <li>there were enough independent past windows;</li>
+  <li>the average move was large enough and consistent enough;</li>
+  <li>the direction also held on recent history that was kept aside (the "holdout").</li>
+</ul>
+<p>On most days most ETFs show <span class="tag flat">– No clear lean</span>. That is a finding in its own right: today's macro mix gives no measurable edge on that ETF, so the trade has to stand on the pipeline's setup and the price. On 5 Oct the only leans that also passed the holdout were TLT down over 20 sessions, EWZ up and JETS up over 1 session. On the rotation tab, XLP, XLRE and XLB are down relative to SPY.</p>
+<h3>3. Macro informs, it does not trade</h3>
+<p>AVSHUNTER's rule is that macro opinion is shown and measured, never turned directly into a trade. A packet that says "risk-on" or a risk score of 75/100 is a story to check, not an order. The Scorecards tab shows how those stories have done. So far none has enough evidence to trust on its own.</p>
+<div class="callout warn">
+  <strong>"No clear lean" is not "no trade".</strong>
+  It means macro history adds nothing beyond the ETF's normal drift today. Take or skip the trade on the pipeline's setup, the entry price and the option price. Do not invent a direction from the macro story.
+</div>
+
+<h2 id="spy">Why everything relates to SPY</h2>
+<p>SPY (the S&amp;P 500 ETF) is the board's benchmark, and it appears in five places.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Where</th><th>What SPY is used for</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Macro conditions</td><td>"SPY trend" and "Realised volatility" are measured on SPY</td><td>The broad market is the backdrop every ETF trades against</td></tr>
+    <tr><td>Relative strength</td><td>"RS vs SPY 20d" and the whole Sector rotation tab are measured against SPY</td><td>A sector that rises less than SPY is losing money flow even while it goes up</td></tr>
+    <tr><td>Rotation and holdings</td><td>Sectors are pieces of SPY; holdings show which names move it</td><td>Explains <i>why</i> SPY moved: e.g. META, AMD, NVDA, MSFT and AAPL drove its last 20 sessions</td></tr>
+    <tr><td>Scorecards</td><td>Every macro call is graded on what SPY and QQQ did next</td><td>The cleanest test of whether a market-wide view was right</td></tr>
+    <tr><td>Options check</td><td>SPY has the deepest, tightest option market</td><td>Its straddle is the most reliable read of what the market charges for movement</td></tr>
+  </tbody>
+</table></div>
+<p>Practical meaning: if you trade a sector ETF, ask two questions. Is the sector going up? Is it going up <i>faster than SPY</i>? A long call on a sector that lags SPY often underperforms a plain SPY call.</p>
+
+<h2 id="run">Running the board</h2>
+<p>From PowerShell, in the repo folder:</p>
+<pre>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence
+.\Run-MacroBoard.ps1</pre>
+<p>This downloads the latest issuer holdings and tastytrade volatility metrics, rebuilds the page (about 1–2 minutes) and opens it in your browser. The page is saved at <code>macro_board\output\etf_macro_board.html</code>; you can reopen it at any time without rebuilding.</p>
+<p><b>When to run it:</b> before the US open, after the morning macro refresh has landed, and again after the close if you want the day's final picture. Running it every trading day matters: each run saves the day's leans, and the board grades them later. That record is the only real proof of whether the board helps.</p>
+
+<h3>The input strip</h3>
+<p>Below the banner is a row of input chips. Read it before anything else.</p>
+<div class="grid2">
+  <div class="box"><h4>✓ Fresh</h4><p>The source is current. Use the panels that depend on it.</p></div>
+  <div class="box"><h4>! Stale</h4><p>The source is older than its limit. Read those panels as background only. Hover to see its age.</p></div>
+  <div class="box"><h4>× Missing</h4><p>Not available. The board shows "missing" rather than a neutral value. Never fill the gap with a guess.</p></div>
+</div>
+
+<h2 id="routine">The morning routine (10 minutes)</h2>
+<ol class="steps">
+  <li><b>Inputs.</b> Check the input strip. Note anything stale, such as QQQ holdings when Invesco blocks the download.</li>
+  <li><b>Backdrop.</b> On the Overview, read the 10 condition tiles and "What changed (last 10 sessions)". A change is often more useful than a level.</li>
+  <li><b>Index cards.</b> Read the SPY, QQQ, IWM and DIA cards: the pipeline chip, how much of the target is used, the response label, the measured lean and what options charge.</li>
+  <li><b>Rotation.</b> On Sector rotation, see which sectors lead, which are turning up, and what sessions like today did to each sector against SPY.</li>
+  <li><b>Candidates.</b> In the ETF matrix, sort by Pipeline and open each armed name. Work through the desk card in <a href="#decide">From board to decision</a>.</li>
+  <li><b>Advisory.</b> On Macro intelligence, read the event risk and news overlay for anything scheduled today. Treat them as risk to manage, not direction.</li>
+  <li><b>Record.</b> Write your decision and the reason before the open. Once a week, check the Scorecards.</li>
+</ol>
+
+<h2 id="tabs">Tab by tab</h2>
+
+<section class="tab">
+<h3>Overview</h3>
+<div class="grid2">
+  <div class="box"><h4>Shows</h4><ul>
+    <li>The four index cards (SPY, QQQ, IWM, DIA)</li>
+    <li>The 10 macro condition tiles with history</li>
+    <li>What changed in the last 10 sessions</li>
+    <li>Analog depth and recent analog episodes</li>
+    <li>The LLM packet's headline view</li>
+  </ul></div>
+  <div class="box"><h4>How to read it</h4><ul>
+    <li>Each tile shows a <b>state</b> (e.g. <i>RISING</i>), the value, a history line and a coloured state strip. The date at top right is when the data was <b>observed</b>; "1 session old" is normal for FRED data.</li>
+    <li><b>Analog depth</b> says how many past sessions matched today and how closely (5 Oct: 61 sessions at a 70% match). Fewer matches means weaker evidence.</li>
+    <li><b>Recent analog episodes</b> list the last times the macro looked like today, and what SPY, QQQ, IWM and DIA did next. Use them as a sense check.</li>
+  </ul></div>
+</div>
+<p>On an index card, read the chips in this order:</p>
+<ul>
+  <li><b>Pipeline</b>: the proposal, and how much of its target is already used.</li>
+  <li><b>Response</b>: what the price is doing against the measured macro pressure.</li>
+  <li><b>Move made</b>: whether the ETF has already run.</li>
+  <li><b>The lean table</b>: history after sessions like today.</li>
+  <li><b>The option table</b>: what a move costs.</li>
+</ul>
+</section>
+
+<section class="tab">
+<h3>ETF matrix</h3>
+<p>Every ETF in one table, grouped by type. Use the 1d / 5d / 20d buttons to switch horizon, click a column header to sort, and click any row to open its <b>drawer</b>.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>1d / 5d / 20d / 60d</td><td>The ETF's own returns.</td></tr>
+    <tr><td>RS vs SPY 20d</td><td>20-day return minus SPY's. Positive = stronger than the market.</td></tr>
+    <tr><td>vs 200d, from 1y high, RV20</td><td>Trend position, drawdown from the 1-year high, and 20-day realised volatility.</td></tr>
+    <tr><td>Lean · Holdout · 80% interval</td><td>The measured lean for the chosen horizon, whether it survived on held-out history, and the likely range of the average.</td></tr>
+    <tr><td>Pipeline</td><td>The latest AVSHUNTER proposal (CALL/PUT and its verdict).</td></tr>
+    <tr><td>Response</td><td>Supporting / absorbing pressure / rejecting relief / mixed / insufficient (see the glossary).</td></tr>
+    <tr><td>Move made 20d</td><td>How far the ETF has run, in units of its own volatility (σ). Beyond ±1.5σ = extended.</td></tr>
+    <tr><td>IV rank</td><td>tastytrade's implied-volatility rank (0–100). High = options are expensive against their own past year.</td></tr>
+    <tr><td>Priced vs history</td><td>The option market's expected move ÷ what similar past sessions actually delivered. Above 1 = options price more movement than history.</td></tr>
+    <tr><td>Analog mean · Base mean · Excess</td><td>Average return after sessions like today, after all sessions, and the difference: what macro adds.</td></tr>
+    <tr><td>Packet</td><td>Lead or avoid tags from the LLM packet (advisory).</td></tr>
+  </tbody>
+</table></div>
+<p><b>The drawer</b> holds the full story for one ETF:</p>
+<ul>
+  <li>the pipeline proposal, with distance left to its target and to its invalidation measured from today's close;</li>
+  <li>the lean by horizon, next to a price-only lean;</li>
+  <li>stage of the move;</li>
+  <li>the option straddle table;</li>
+  <li>tastytrade volatility metrics;</li>
+  <li>the holdings contribution, for SPY, QQQ, DIA and the sector ETFs;</li>
+  <li>which macro conditions have moved this ETF.</li>
+</ul>
+<div class="callout warn"><strong>Leveraged, inverse and volatility products.</strong>
+TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi-day history does not carry over. Their 5d and 20d leans show "Path-dependent" on purpose. Use them only for short, deliberate trades.</div>
+</section>
+
+<section class="tab">
+<h3>Transmission map</h3>
+<p>A heatmap: ETFs down the side, the 10 macro conditions across the top. Each cell shows how much better (blue) or worse (red) the ETF did over the chosen horizon while that condition sat in today's state, compared with its other states. Faded cells are weak (|t| below 1) and should be ignored.</p>
+<p><b>Use it to</b> see which conditions actually move an ETF. For example: does XLF do worse when the curve is flat? It replaces textbook assumptions such as "rising yields always hurt tech" with what this market has done since 2021.</p>
+<p><b>Do not</b> add cells together. The conditions overlap (yields and the curve move together), so each cell is a separate comparison.</p>
+</section>
+
+<section class="tab">
+<h3>Sector rotation</h3>
+<div class="grid2">
+  <div class="box"><h4>Rotation map</h4><p>Each sector is placed by its relative strength trend against SPY (left–right) and that trend's momentum (down–up). The tail shows the last 8 weeks. Sectors usually travel clockwise: <b>improving → leading → weakening → lagging</b>.</p></div>
+  <div class="box"><h4>Macro-conditional ranking</h4><p>Which sectors beat or trailed SPY over the next 1/5/20 sessions after days like today, with an 80% interval whisker. This is the macro's measured impact on sectors.</p></div>
+  <div class="box"><h4>Rotation table</h4><p>Quadrant and days in it, returns against SPY, <b>participation</b> (share of the sector's weight above its 50-day average), leading holdings, the measured lean, and whether the LLM packet's sector view agrees.</p></div>
+  <div class="box"><h4>Evidence panels</h4><p>Does the quadrant predict anything (compare each row with "All sessions"), where quadrants go next, and how the packets' leading-vs-lagging sector calls have scored.</p></div>
+</div>
+<p><b>What history says (5 Oct):</b></p>
+<ul>
+  <li>Leading sectors stayed level with SPY over the next 20 sessions. The other quadrants trailed by about 0.3%. That is a small edge.</li>
+  <li>Leaders and laggards stay in their quadrant 59% of the time a week later.</li>
+  <li>"Improving" became "leading" only 20% of the time.</li>
+</ul>
+<p>So use rotation to <i>tilt</i> (which sector ETF to prefer for a view you already have), not as a stand-alone signal.</p>
+<p><b>Participation</b> matters most for sectors. A sector in the leading quadrant with low participation is being carried by a few names and is fragile. On 5 Oct XLK had 89% of its weight above trend; XLRE had 0%.</p>
+</section>
+
+<section class="tab">
+<h3>Macro intelligence</h3>
+<p>The outside reports, as published. They include:</p>
+<ul>
+  <li>the LLM macro packet;</li>
+  <li>the US Money Index risk-off score and its triggers;</li>
+  <li>the economic event report;</li>
+  <li>the news overlay;</li>
+  <li>the VIX complex, dealer gamma, rates and credit, and the liquidity monitor;</li>
+  <li>the Colab models, FRED prints and threshold flags.</li>
+</ul>
+<p>Every card shows its source file, its as-of time and its age.</p>
+<ul>
+  <li>Scores such as <b>75/100</b>, <b>confidence 90</b> or <b>fragility 4.7/5</b> carry an <span class="tag flat">uncalibrated</span> tag. Someone chose them; nobody has tested them as probabilities. 75/100 does not mean a 75% chance of anything.</li>
+  <li>The Money Index card lists the <b>date of each value inside it</b>. A packet written today can contain a HYG price from 10 Sep. Always check the date of the number you use.</li>
+  <li>Dealer gamma is a <b>model estimate with an assumed sign</b>. The Money Index itself reports that true dealer positioning is unavailable.</li>
+  <li>When an event shows <b>"no consensus · surprise not measurable"</b>, there was no forecast to compare with, so any "surprise" label is opinion.</li>
+</ul>
+</section>
+
+<section class="tab">
+<h3>Scorecards</h3>
+<p>The scorecards grade every source of macro opinion against what SPY and QQQ did next, starting from the next open:</p>
+<ul>
+  <li>the Colab regime model;</li>
+  <li>the archived LLM packets;</li>
+  <li>the Money Index, grouped by its own bands;</li>
+  <li>the board's own daily leans, against price-only leans.</li>
+</ul>
+<p>A <b>"?"</b> next to the window count means fewer than 8 independent windows: too little to trust either way.</p>
+<p>On 5 Oct the Colab regime model was right 57% of the time one day ahead, but wrong more often than right at 5 days. No source has earned trust yet. Check this tab weekly, and adjust how much weight you give each source as its record grows.</p>
+</section>
+
+<section class="tab">
+<h3>Method</h3>
+<p>Definitions, thresholds and limits. Read it once in full and come back when a number surprises you. Key limits:</p>
+<ul>
+  <li>the history covers about 5 years, since Aug 2021, which is a single rate cycle;</li>
+  <li>analog sets are small;</li>
+  <li>every threshold is provisional until the board's own scorecard has tested it.</li>
+</ul>
+</section>
+
+<h2 id="decide">From board to decision: the desk card</h2>
+<p>For each candidate, answer these six questions in writing before you trade. The right column tells you where the board answers each one.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Question</th><th>Where on the board</th></tr></thead>
+  <tbody>
+    <tr><td><b>1. What changed?</b><br>The genuinely new information since yesterday.</td><td>Overview → What changed; Macro intelligence → event risk and news overlay (check observation dates)</td></tr>
+    <tr><td><b>2. What should it affect?</b><br>Which ETF, through which holdings.</td><td>Transmission map; drawer → holdings; Sector rotation → heatmap</td></tr>
+    <tr><td><b>3. What is the market doing with it?</b></td><td>Response label; RS vs SPY; participation; Move made</td></tr>
+    <tr><td><b>4. What does the pipeline propose?</b></td><td>Pipeline column; drawer → What the pipeline proposes</td></tr>
+    <tr><td><b>5. Is the entry still worth taking?</b></td><td>Drawer → % left to target vs % to invalidation, share of the move already used; Priced vs history; IV rank</td></tr>
+    <tr><td><b>6. What would change my mind?</b></td><td>The pipeline's invalidation level; condition tiles that would flip; Money Index forward triggers</td></tr>
+  </tbody>
+</table></div>
+<p>Then write one sentence: <i>"Against [backdrop], [new information] affects [ETF] through [mechanism]. The market is [response]. The pipeline proposes [trade]. At [price] there is [room left] against [risk]. I will [act / wait / skip] because [reason]. I will change my mind if [condition]."</i></p>
+
+<h2 id="examples">Worked examples</h2>
+<p class="meta">Training examples using the board as of the 5 Oct 2026 close. They show how to reason; they are not recommendations.</p>
+
+<div class="example">
+  <div class="head"><b>SPY: the direction is supported, the entry is not</b><span class="tag up">Pipeline CALL · ARMED</span></div>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Pipeline</td><td class="num">entry 769.64 · target 779.37 · invalidation 749.60</td></tr>
+    <tr><td>From today's close 774.83</td><td class="num">+0.59% left to target · 3.26% to invalidation · 53% of the move used</td></tr>
+    <tr><td>Measured lean (1/5/20d)</td><td>No clear lean. 20d analog +0.80% vs base +0.92%: macro adds nothing</td></tr>
+    <tr><td>Response · Move made</td><td>Absorbing pressure · not extended (0.2σ)</td></tr>
+    <tr><td>Options (20d)</td><td class="num">priced move 2.95% vs analog 2.96% → 1.00× · IV rank 31 · IV − HV +5.0 pts</td></tr>
+    <tr><td>Holdings</td><td>META, AMD, NVDA, MSFT, AAPL led; 57% of weight above trend</td></tr>
+    <tr><td>Advisory</td><td>Packet "transitional bullish, selective risk-on"; Money Index 75 "risk-off transition". The two disagree, and neither is proven</td></tr>
+  </tbody></table></div>
+  <p class="verdict"><b>Reading:</b> the pipeline and the price agree on direction, and options are fairly priced. But only 0.59% is left to the target against 3.26% of risk to the invalidation. More than half the planned move has already happened (Scenario C in the thesis). The sound action is to <b>wait</b> for a fresh setup or a re-evaluated target, not to chase the old one. Skipping a late call does not make SPY a put.</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>XLRE: everything agrees, but the move is spent</b><span class="tag down">Pipeline PUT · STAND DOWN</span></div>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Rotation</td><td>Lagging for 26 sessions; −8.0% vs SPY over 20 days; participation 0%</td></tr>
+    <tr><td>Macro-conditional (20d vs SPY)</td><td class="num">−2.79% · Down · holdout agrees · packet "headwind" agrees</td></tr>
+    <tr><td>Move made 20d</td><td class="num">−2.9σ (extended down)</td></tr>
+    <tr><td>Pipeline put</td><td class="num">0.65% left to target vs 1.54% to invalidation</td></tr>
+  </tbody></table></div>
+  <p class="verdict"><b>Reading:</b> macro, rotation, breadth and the packet all point the same way. That makes this an <b>avoid-longs / underweight</b> conclusion. It is not a fresh put: the move is stretched almost 3σ and little room is left. The pipeline's own stand-down agrees.</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>TLT: a real lean, but expensive options</b><span class="tag down">Lean 20d ▼ Down · holdout ✓</span></div>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Measured lean</td><td class="num">20d analog −1.63%, held on recent history</td></tr>
+    <tr><td>Pipeline</td><td>PUT, STAND DOWN ("structural intent is WAIT")</td></tr>
+    <tr><td>Move made · IV rank</td><td class="num">−2.2σ (extended) · IV rank 89</td></tr>
+    <tr><td>Priced vs history (20d)</td><td class="num">1.35× (options price more movement than history delivered)</td></tr>
+  </tbody></table></div>
+  <p class="verdict"><b>Reading:</b> this is one of the few genuine macro leans. But the move has run, and puts are expensive (IV rank 89, priced at 1.35× history). The lean supports staying away from long-bond calls. It does not support buying expensive puts late. A correct direction can still be a losing option trade.</p>
+</div>
+
+<h2 id="rules">Rules and red flags</h2>
+<div class="grid2">
+  <div class="box"><h4>Do</h4><ul>
+    <li>Start from the pipeline's proposal; use the board to check it.</li>
+    <li>Measure room left from <i>today's</i> price, not the proposal price.</li>
+    <li>Compare the lean with the price-only lean. If they match, macro adds nothing.</li>
+    <li>Prefer options when "priced vs history" is near or below 1.</li>
+    <li>Check the observation date of any number you quote.</li>
+    <li>Write the decision and the reason before the open.</li>
+  </ul></div>
+  <div class="box"><h4>Don't</h4><ul>
+    <li>Treat 75/100, confidence 90 or fragility 4.7 as probabilities.</li>
+    <li>Buy because a lean says Up when its holdout says ✗.</li>
+    <li>Chase a move that is extended beyond ±1.5σ or has used most of its target.</li>
+    <li>Read a "?" (thin evidence) as confirmation.</li>
+    <li>Use multi-day leans on leveraged or volatility products.</li>
+    <li>Add up heatmap cells or count two reports of the same event as two signals.</li>
+  </ul></div>
+</div>
+<div class="callout warn"><strong>Red flags that mean "stop and ask"</strong>
+<ul>
+  <li>An input chip is red on a panel you are relying on.</li>
+  <li>The pipeline and the measured lean point in opposite directions.</li>
+  <li>The option spread is above about 5% of the straddle price.</li>
+  <li>Breadth or participation is collapsing under a rising index.</li>
+</ul></div>
+
+<h2 id="glossary">Glossary</h2>
+<div class="tablewrap"><table>
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Analog sessions</td><td>Past days whose macro conditions matched today's (at the stated match level).</td></tr>
+    <tr><td>Independent windows</td><td>The number of non-overlapping periods behind a statistic. Twenty days in a row count as one 20-day window. This is the real sample size.</td></tr>
+    <tr><td>Measured lean</td><td><span class="tag up">▲ Up</span> / <span class="tag down">▼ Down</span> when history clearly favours a direction; otherwise "No clear lean", "Insufficient sample" (too few windows), "Short history" (ETF too new in the database) or "Path-dependent" (leveraged or volatility product).</td></tr>
+    <tr><td>Holdout ✓ / ✗ / thin</td><td>Whether the lean held on the last quarter of history, which was kept aside when the lean was set.</td></tr>
+    <tr><td>Price-only lean</td><td>The same test on all history, ignoring macro. Shows the ETF's normal drift.</td></tr>
+    <tr><td>80% interval</td><td>The likely range of the true average. If it spans zero, the sign is uncertain.</td></tr>
+    <tr><td>Excess vs base</td><td>Analog average minus all-history average: what today's macro adds.</td></tr>
+    <tr><td>Response</td><td><b>Supporting</b>: price agrees with the measured pressure. <b>Absorbing pressure</b>: measured headwinds, but the ETF rose. <b>Rejecting relief</b>: measured tailwinds, but it fell. <b>Mixed</b>: pressures balance. <b>Insufficient</b>: nothing measured.</td></tr>
+    <tr><td>Move made (σ)</td><td>The recent return divided by the ETF's own normal move size. Beyond ±1.5σ the entry may be late.</td></tr>
+    <tr><td>Priced vs history</td><td>The at-the-money straddle's expected move (from real bid/ask quotes) divided by the average move after similar sessions.</td></tr>
+    <tr><td>IV rank · IV − HV</td><td>Where implied volatility sits in its 1-year range (0–100) · implied minus realised volatility (positive = options above recent movement).</td></tr>
+    <tr><td>Participation</td><td>Share of an ETF's weight in holdings trading above their 50-day average. Low participation under a rising price = narrow, fragile move.</td></tr>
+    <tr><td>Contribution (pp)</td><td>A holding's start-of-window weight × its return, in percentage points of the ETF's move.</td></tr>
+    <tr><td>Quadrants</td><td>Leading, weakening, lagging, improving: a sector's relative trend against SPY and its momentum.</td></tr>
+    <tr><td>Uncalibrated</td><td>A score chosen by its author and never tested as a probability.</td></tr>
+    <tr><td>Fresh / Stale / Missing</td><td>Data age against its limit. Missing is shown as missing, never as neutral.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="trouble">Troubleshooting</h2>
+<div class="tablewrap"><table>
+  <thead><tr><th>You see</th><th>What it means</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td><code>Run-MacroBoard.ps1 is not recognized</code></td><td>PowerShell is not in the repo folder</td><td><code>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence</code> first</td></tr>
+    <tr><td>QQQ holdings: <code>406 Not Acceptable</code></td><td>Invesco sometimes blocks automated downloads</td><td>Nothing to do: the board keeps the last good file and marks it stale after 3 sessions</td></tr>
+    <tr><td>tastytrade: <code>missing broker OAuth environment</code></td><td>The window cannot see the broker variables</td><td>Open a new PowerShell window after the variables are set, then run again</td></tr>
+    <tr><td>An ETF shows "Short history"</td><td>Fewer than 500 sessions in the price database</td><td>Use its price data only; no lean is possible yet</td></tr>
+    <tr><td>Almost every lean says "No clear lean"</td><td>Normal: today's macro gives no measurable edge</td><td>Decide on the pipeline setup, entry and option price</td></tr>
+    <tr><td>A chip is red or "stale"</td><td>That source did not update</td><td>Do not rely on panels that use it; tell the desk lead</td></tr>
+  </tbody>
+</table></div>
+<p class="meta">Source code and technical README: <code>macro_board/</code> in the AVSHUNTER repository. Thresholds live in <code>macro_board/config/macro_board_config_v1.json</code>.</p>
+</main>
+</div>
+
+</body>
+</html>

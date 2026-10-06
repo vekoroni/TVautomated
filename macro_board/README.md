@@ -12,6 +12,8 @@ AVSHUNTER's macro outputs and databases (ACK, 6 Oct 2026).
   Money Index, event and news overlays, the Colab models) are shown as published and scored
   against SPY/QQQ.
 
+**Desk manual for traders:** [docs/ETF_Macro_Board_Manual.html](docs/ETF_Macro_Board_Manual.html). It covers reading every tab, the morning routine, the desk card and worked examples. A published copy is at https://claude.ai/artifact/MwP2uQYJkKSrUE4fTniBSX (private; share it from the page).
+
 ## Run
 
 ```powershell
