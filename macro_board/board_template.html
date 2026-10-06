@@ -94,6 +94,10 @@ tr.sel td{background:color-mix(in oklab,var(--accent) 10%,var(--surface))!import
 .heat .lab{display:flex;align-items:center;padding-right:6px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .heat .colh{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;color:var(--text-2);height:96px;display:flex;align-items:center;justify-content:flex-start}
 .legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin:6px 0}
+.q-LEADING{--q:var(--up)} .q-LAGGING{--q:var(--down)} .q-WEAKENING{--q:#eb6834} .q-IMPROVING{--q:#1baf7a}
+:root[data-theme="dark"] .q-WEAKENING{--q:#d95926} :root[data-theme="dark"] .q-IMPROVING{--q:#199e70}
+.qchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
+.qchip::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--q)}
 .legend .ramp{width:180px;height:10px;border-radius:3px;background:linear-gradient(90deg,var(--down),var(--mid),var(--up))}
 #tip{position:fixed;pointer-events:none;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:340px;display:none}
 #tip b{color:var(--text)}
@@ -129,6 +133,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
   <section class="page" id="p-overview"></section>
   <section class="page" id="p-etfs"></section>
   <section class="page" id="p-map"></section>
+  <section class="page" id="p-rotation"></section>
   <section class="page" id="p-intel"></section>
   <section class="page" id="p-score"></section>
   <section class="page" id="p-method"></section>
@@ -265,7 +270,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
+const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -710,8 +715,118 @@ function renderMethod(){
   </div>`;
 }
 
+/* ---------- sector rotation ---------- */
+state.rotSet = state.rotSet || "sector";
+const Q_TXT = {LEADING:"Leading", WEAKENING:"Weakening", LAGGING:"Lagging", IMPROVING:"Improving", MISSING:"Missing"};
+const qChip = (q, extra) => `<span class="qchip q-${esc(q)}">${esc(Q_TXT[q] || q)}${extra ? ` <span class="muted">${extra}</span>` : ""}</span>`;
+function rrgSvg(rows){
+  const pts = rows.flatMap(r => r.tail.map(p => [p.trend, p.momentum]));
+  if (!pts.length) return `<div class="sub muted">No rotation history.</div>`;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const spanX = Math.max(2, ...xs.map(x => Math.abs(x - 100))) * 1.12, spanY = Math.max(1, ...ys.map(y => Math.abs(y - 100))) * 1.12;
+  const W = 640, H = 460, L = 44, R = 14, T = 14, Bm = 36;
+  const X = x => L + (W - L - R) * (x - (100 - spanX)) / (2 * spanX);
+  const Y = y => T + (H - T - Bm) * (1 - (y - (100 - spanY)) / (2 * spanY));
+  const quad = (x0, y0, x1, y1, q, lx, ly, anchor) => `<rect x="${Math.min(X(x0),X(x1))}" y="${Math.min(Y(y0),Y(y1))}" width="${Math.abs(X(x1)-X(x0))}" height="${Math.abs(Y(y1)-Y(y0))}" class="q-${q}" style="fill:color-mix(in oklab, var(--q) 7%, var(--surface))"/>
+    <text x="${lx}" y="${ly}" text-anchor="${anchor}" font-size="12" font-weight="600" class="q-${q}" style="fill:var(--q)">${Q_TXT[q]}</text>`;
+  let g = quad(100, 100, 100 + spanX, 100 + spanY, "LEADING", W - R - 6, T + 16, "end")
+        + quad(100, 100 - spanY, 100 + spanX, 100, "WEAKENING", W - R - 6, H - Bm - 8, "end")
+        + quad(100 - spanX, 100 - spanY, 100, 100, "LAGGING", L + 6, H - Bm - 8, "start")
+        + quad(100 - spanX, 100, 100, 100 + spanY, "IMPROVING", L + 6, T + 16, "start");
+  g += `<line x1="${X(100)}" x2="${X(100)}" y1="${T}" y2="${H-Bm}" stroke="var(--border)"/><line x1="${L}" x2="${W-R}" y1="${Y(100)}" y2="${Y(100)}" stroke="var(--border)"/>`;
+  g += `<text x="${(L+W-R)/2}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--text-2)">RS trend vs SPY (100 = at its ${B.rotation.settings.trend_sessions}-session average) →</text>`;
+  g += `<text x="12" y="${(T+H-Bm)/2}" text-anchor="middle" font-size="12" fill="var(--text-2)" transform="rotate(-90 12 ${(T+H-Bm)/2})">RS momentum (${B.rotation.settings.momentum_sessions}-session change) →</text>`;
+  rows.forEach(r => {
+    const t = r.tail; if (!t.length) return;
+    const d = t.map((p, i) => (i ? "L" : "M") + X(p.trend).toFixed(1) + " " + Y(p.momentum).toFixed(1)).join("");
+    const head = t[t.length - 1];
+    g += `<g class="q-${esc(r.quadrant)}"><path d="${d}" fill="none" stroke="var(--q)" stroke-width="1.6" stroke-opacity=".55"/>`
+      + t.slice(0, -1).map(p => `<circle cx="${X(p.trend)}" cy="${Y(p.momentum)}" r="2.2" fill="var(--q)" fill-opacity=".45"/>`).join("")
+      + `<circle cx="${X(head.trend)}" cy="${Y(head.momentum)}" r="5.5" fill="var(--q)" stroke="var(--surface)" stroke-width="2"/>`
+      + `<text x="${X(head.trend) + 8}" y="${Y(head.momentum) + 4}" font-size="11.5" font-weight="600" fill="var(--text)">${esc(r.ticker)}</text>`
+      + `<circle cx="${X(head.trend)}" cy="${Y(head.momentum)}" r="12" fill="transparent" data-tip="${esc(`<b>${esc(r.ticker)}</b> ${esc(r.sector_name||"")}<br>${esc(Q_TXT[r.quadrant])} for ${r.sessions_in_quadrant} sessions<br>RS trend ${fmt(r.trend,2)} · momentum ${fmt(r.momentum,2)}<br>vs SPY: 5d ${pct(r.rel_5d)} · 20d ${pct(r.rel_20d)} · 60d ${pct(r.rel_60d)}<br>Tail: weekly points ${esc(t[0].session)} → ${esc(head.session)}`)}"/></g>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:760px;height:auto;display:block" role="img" aria-label="Relative rotation map">${g}</svg>`;
+}
+function renderRotation(){
+  const R = B.rotation; if (!R) { $("#p-rotation").innerHTML = `<div class="sub muted">Rotation not built.</div>`; return; }
+  const h = state.horizon;
+  const rows = R.rows.filter(r => r.kind === state.rotSet);
+  const evOf = r => r.relative_evidence[h] || {};
+  const table = rows.map(r => { const e = evOf(r), a = e.analog || {};
+    const agree = r.packet_agreement?.[h];
+    return `<tr class="row" data-t="${esc(r.ticker)}"><td><b>${esc(r.ticker)}</b> <span class="muted">${esc((r.sector_name||"").toLowerCase())}</span></td>
+      <td class="l">${qChip(r.quadrant, r.sessions_in_quadrant + "d")}</td><td>${fmt(r.trend,1)}</td><td>${fmt(r.momentum,1)}</td>
+      <td class="${cls(r.rel_5d)}">${pct(r.rel_5d,1)}</td><td class="${cls(r.rel_20d)}">${pct(r.rel_20d,1)}</td><td class="${cls(r.rel_60d)}">${pct(r.rel_60d,1)}</td>
+      <td>${isNum(r.participation_pct) ? Math.round(r.participation_pct) + "%" : "—"}</td><td class="l muted">${esc((r.top_contributors_20d||[]).join(", "))}</td>
+      <td class="l">${leanChip(e)} ${holdChip(e.holdout)}</td><td class="${cls(a.mean_pct)}">${pct(a.mean_pct)}</td><td class="muted">${ci(a)}</td>
+      <td class="l">${r.packet_bias ? `<span class="chip ${r.packet_bias==="TAILWIND"?"up":r.packet_bias==="HEADWIND"?"down":"na"}">${words(r.packet_bias)}</span>` : "—"} ${agree ? `<span class="chip ${agree==="AGREES"?"":"na"}">${agree==="AGREES"?"✓ agrees":agree==="DISAGREES"?"✗ disagrees":"unmeasured"}</span>` : ""}</td></tr>`; }).join("");
+  // macro-conditional ranking
+  const ranked = rows.map(r => ({r, a: evOf(r).analog || {}, e: evOf(r)})).filter(x => isNum(x.a.mean_pct)).sort((x, y) => y.a.mean_pct - x.a.mean_pct);
+  const cap = Math.max(0.5, ...ranked.flatMap(x => [Math.abs(x.a.ci_low_pct ?? 0), Math.abs(x.a.ci_high_pct ?? 0), Math.abs(x.a.mean_pct)]));
+  const pos = v => 50 + 50 * Math.max(-1, Math.min(1, v / cap));
+  const rank = ranked.map(x => { const a = x.a; const v = a.mean_pct;
+    return `<div><b>${esc(x.r.ticker)}</b> <span class="muted" style="font-size:11px">${esc(LEAN_TXT[x.e.lean]||x.e.lean)}</span></div>
+      <div class="track" data-tip="${esc(`<b>${esc(x.r.ticker)} vs SPY · next ${h} session(s) after sessions like today</b><br>Mean ${pct(v)} · 80% interval ${ci(a)}<br>Beat SPY ${isNum(a.hit_rate)?Math.round(100*a.hit_rate)+"%":"—"} · ${a.n_eff} independent windows<br>All history: ${pct(x.e.base?.mean_pct)}`)}">
+        ${isNum(a.ci_low_pct) && isNum(a.ci_high_pct) ? `<span style="position:absolute;top:6px;height:2px;left:${pos(a.ci_low_pct)}%;width:${pos(a.ci_high_pct)-pos(a.ci_low_pct)}%;background:var(--text-2);opacity:.5"></span>` : ""}
+        <span class="bar" style="left:${Math.min(pos(0),pos(v))}%;width:${Math.max(0.8,Math.abs(pos(v)-pos(0)))}%;background:${v>=0?"var(--up)":"var(--down)"}"></span></div>
+      <div class="num ${cls(v)}" style="text-align:right">${pct(v)}</div>`; }).join("");
+  // sector x condition (relative)
+  const keys = B.conditions.meta.map(m => m.key);
+  const allV = rows.flatMap(r => keys.map(k => Math.abs(r.relative_sensitivity[h]?.[k]?.excess_pct || 0))).filter(isNum).sort((a,b)=>a-b);
+  const hcap = Math.max(0.2, allV[Math.floor(allV.length*0.95)] || 1);
+  let heat = `<div class="heat" style="grid-template-columns:minmax(64px,80px) repeat(${keys.length}, minmax(44px,1fr))"><div></div>` + keys.map(k => `<div class="colh">${esc(condMeta[k].label)}: ${words(B.conditions.current[k])}</div>`).join("");
+  rows.forEach(r => { heat += `<div class="lab"><b>${esc(r.ticker)}</b></div>` + keys.map(k => { const c = r.relative_sensitivity[h]?.[k] || {}; const v = c.excess_pct; const weak = !isNum(c.t) || Math.abs(c.t) < 1;
+    return `<div class="cell ${weak?"weak":""}" style="background:${divergingColor(v, hcap)}" data-tip="${esc(`<b>${esc(r.ticker)} vs SPY · ${esc(condMeta[k].label)} = ${words(c.state)}</b><br>Excess ${h}d relative return in this state: ${pct(v)}<br>t ${fmt(c.t)} · ${c.n_eff_in ?? 0} independent windows`)}">${isNum(v) ? (Math.abs(v) >= 10 ? v.toFixed(0) : v.toFixed(1)) : "×"}</div>`; }).join(""); });
+  heat += `</div>`;
+  // quadrant evidence + transitions
+  const QE = R.quadrant_evidence[h] || {};
+  const qe = ["LEADING","WEAKENING","LAGGING","IMPROVING","ALL"].map(q => { const x = QE[q] || {};
+    return `<tr><td class="l">${q==="ALL" ? "<b>All sessions</b>" : qChip(q)}</td><td class="${cls(x.mean_pct)}">${pct(x.mean_pct)}</td><td class="muted">${ci({ci_low_pct:x.ci_low_pct, ci_high_pct:x.ci_high_pct})}</td><td>${isNum(x.beat_rate)?Math.round(100*x.beat_rate)+"%":"—"}</td><td>${x.n_eff ?? 0}</td></tr>`; }).join("");
+  const T = R.transitions;
+  const trans = ["LEADING","WEAKENING","LAGGING","IMPROVING"].map(a => { const row = T[a] || {}; const tot = Object.values(row).reduce((s,v)=>s+v,0);
+    return `<tr><td class="l">${qChip(a)}</td>${["LEADING","WEAKENING","LAGGING","IMPROVING"].map(b => `<td style="${a===b?"font-weight:650":""}">${tot ? Math.round(100*row[b]/tot)+"%" : "—"}</td>`).join("")}<td class="muted">${tot}</td></tr>`; }).join("");
+  // packet scorecard
+  const P = R.packet || {}, LL = R.lead_lag_scorecard || {};
+  const llRows = B.horizons.map(hh => { const x = (LL.results||{})[String(hh)] || {}; const thin = (x.n_eff||0) < B.settings.evidence.min_effective_n;
+    return `<tr><td>${hh}d</td><td>${x.n ?? 0}</td><td class="${thin?"muted":""}">${x.n_eff ?? 0}${thin?" ?":""}</td><td>${isNum(x.hit_rate)?Math.round(100*x.hit_rate)+"%":"—"}</td><td class="${cls(x.mean_spread_pct)}">${pct(x.mean_spread_pct)}</td></tr>`; }).join("");
+  $("#p-rotation").innerHTML = `<h2>Sector rotation <span class="sub">relative strength vs SPY and the macro's measured impact on it</span></h2>
+    <div class="controls">${horizonSeg("hz-rot")} <span class="seg" id="rot-set"><button data-s="sector" aria-pressed="${state.rotSet==="sector"}">SPDR sectors</button><button data-s="industry" aria-pressed="${state.rotSet==="industry"}">Industries & themes</button></span></div>
+    <div class="grid g-2">
+      <div class="card"><h3>Rotation map <span class="sub">weekly tail, last ${B.rotation.settings.tail_points} points</span></h3>${rrgSvg(rows)}
+        <div class="legend">${["LEADING","WEAKENING","LAGGING","IMPROVING"].map(q => qChip(q)).join(" ")}</div>
+        <div class="note">Transparent approximation of a relative-rotation graph, not the proprietary JdK RS-Ratio. RS trend = 100 × (ETF/SPY) ÷ its ${B.rotation.settings.trend_sessions}-session mean. RS momentum = 100 × RS trend ÷ its value ${B.rotation.settings.momentum_sessions} sessions earlier. Sectors usually move clockwise: improving → leading → weakening → lagging.</div></div>
+      <div class="card"><h3>Macro-conditional ranking · next ${h} session(s) vs SPY</h3>
+        <div class="sub" style="margin-bottom:6px">Mean return relative to SPY after past sessions whose macro conditions matched today's (${Math.round(B.analogs.match_level*100)}% match, ${B.analogs.count} sessions). The whisker is the 80% interval.</div>
+        <div class="bars" style="grid-template-columns:minmax(90px,150px) 1fr 70px">${rank || `<div class="sub muted">No measurable sectors.</div>`}</div>
+        <div class="note">Each lean uses relative thresholds (|mean| ≥ ${esc(JSON.stringify(B.rotation.settings.relative_lean_min_abs_mean_pct))}%, |t| ≥ ${B.settings.evidence.lean_t_min}) and is checked on held-out history.</div></div>
+    </div>
+    <h2>Rotation table</h2>
+    <div class="table-wrap"><table><thead><tr><th>ETF</th><th class="l">Quadrant</th><th>RS trend</th><th>Momentum</th><th>vs SPY 5d</th><th>20d</th><th>60d</th><th>Participation</th><th class="l">Leading holdings 20d</th><th class="l">Macro lean ${h}d</th><th>Analog vs SPY</th><th>80% interval</th><th class="l">Packet bias</th></tr></thead><tbody>${table}</tbody></table></div>
+    <div class="note">Participation = share of the ETF's weight (issuer daily holdings) trading above its ${B.settings.holdings.participation_sessions}-session mean. "Packet bias" is the LLM packet's sector_bias_map, compared with the measured macro lean: ✓ agrees, ✗ disagrees, or unmeasured when the evidence shows no clear lean.</div>
+    <h2>Macro impact on sectors · ${h}-session relative returns</h2>
+    <div class="card" style="overflow:auto">${heat}</div>
+    <div class="note">Cell = mean ${h}-session return relative to SPY while the condition sat in today's state, minus the same in the condition's other states. Blue = the sector did better relative to SPY. Faded = |t| &lt; 1.</div>
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card"><h3>Does the quadrant predict the next ${h} session(s)?</h3>
+        <table class="mini" style="width:100%"><thead><tr><th class="l">Quadrant</th><th>Mean vs SPY</th><th>80% interval</th><th>Beat SPY</th><th>Windows</th></tr></thead><tbody>${qe}</tbody></table>
+        <div class="note">Pooled over the 11 SPDR sectors since 2021. Compare each quadrant with "All sessions": over this period sectors lagged SPY on average, because SPY is concentrated in mega-cap tech.</div></div>
+      <div class="card"><h3>Where quadrants go next (${B.rotation.settings.transition_step_sessions} sessions later)</h3>
+        <table class="mini" style="width:100%"><thead><tr><th class="l">From \ to</th><th>Leading</th><th>Weakening</th><th>Lagging</th><th>Improving</th><th>n</th></tr></thead><tbody>${trans}</tbody></table>
+        <div class="note">Measured transition rates for the 11 SPDR sectors. Bold = stayed in the same quadrant.</div></div>
+      <div class="card"><h3>LLM packet sector calls</h3>
+        <div class="sub">Rotation signal <b>${words(P.signal)}</b> · strongest ${esc((P.strongest||[]).join(", ")||"—")} · weakest ${esc((P.weakest||[]).join(", ")||"—")} ${uncal}</div>
+        <table class="mini" style="width:100%;margin-top:6px"><thead><tr><th class="l">H</th><th>Calls</th><th>Windows</th><th>Lead beat lag</th><th>Mean spread</th></tr></thead><tbody>${llRows}</tbody></table>
+        <details style="margin-top:6px"><summary>Latest archived calls</summary><ul class="list">${(LL.latest||[]).map(c => `<li>${esc(c.entry_session)}: lead ${esc(c.lead.join(", "))} · lag ${esc(c.lag.join(", "))}</li>`).join("")}</ul></details>
+        <div class="note">Scored from each archived generation's leading_sectors vs lagging_sectors (latest wins per session): equal-weight lead basket minus lag basket, next open → close.</div></div>
+    </div>`;
+  bindHorizon("hz-rot");
+  $("#rot-set").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.rotSet = b.dataset.s; renderRotation(); };
+  $("#p-rotation tbody").onclick = e => { const tr = e.target.closest("tr.row"); if (tr && B.etfs[tr.dataset.t]) openDrawer(tr.dataset.t); };
+}
+
 function renderAll(){
-  renderOverview(); renderEtfs(); renderMap(); renderIntel(); renderScore(); renderMethod();
+  renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderIntel(); renderScore(); renderMethod();
 }
 renderAll();
 let start = "overview"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}

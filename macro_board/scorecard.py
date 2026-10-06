@@ -98,7 +98,13 @@ def load_archive_packets(archive_dir: Path) -> list[dict]:
         when = when.tz_localize("UTC") if when.tzinfo is None else when.tz_convert("UTC")
         label = packet.get("macro_regime_sub_state") or packet.get("regime_label") or packet.get("macro_regime_label")
         entry = by_time.setdefault(when, {"when": when, "labels": [], "switches": [], "projections": 0,
-                                          "session_date": packet.get("macro_session_date") or packet.get("report_date")})
+                                          "session_date": packet.get("macro_session_date") or packet.get("report_date"),
+                                          "leading": [], "lagging": []})
+        # sector calls: first projection that carries them (projections of one generation share them)
+        if not entry["leading"] and isinstance(packet.get("leading_sectors"), list):
+            entry["leading"] = list(packet["leading_sectors"])
+        if not entry["lagging"] and isinstance(packet.get("lagging_sectors"), list):
+            entry["lagging"] = list(packet["lagging_sectors"])
         entry["projections"] += 1
         entry["labels"].append(label)
         entry["switches"].append(packet.get("risk_on_off_switch"))

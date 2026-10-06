@@ -27,6 +27,7 @@ from . import decision as dec
 from . import evidence as ev
 from . import holdings as hold
 from . import options as opt
+from . import rotation as rot
 from . import tastytrade_metrics as ttm
 from . import scorecard as sc
 from . import sources as src
@@ -193,6 +194,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                          if iv is not None else None)
     print(f"[board] holdings: {list(holdings_payload)} · tastytrade metrics: {tasty['status']} ({len(tasty['metrics'])})")
 
+
     pipe_cfg = config["pipeline"]
     proposals = src.load_pipeline_proposals(src.resolve(pipe_cfg["runs_dir"]), pipe_cfg["file"], pipe_cfg["columns"], universe)
     for ticker, row in proposals["rows"].items():
@@ -203,6 +205,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
 
     external = src.load_external(config, now)
     packet = external["macro_packet"].data if external["macro_packet"].status != "MISSING" else None
+    rotation_payload = build_rotation(opens=opens, closes=closes, states=states, current=current, mask=mask,
+                                      sessions=sessions, config=config, horizons=horizons, metrics=metrics,
+                                      holdings_payload=holdings_payload, packet=packet,
+                                      packets=sc.load_archive_packets(src.resolve(sources_cfg["macro_archive_dir"])))
+    print(f"[board] rotation: {len(rotation_payload['rows'])} ETFs")
 
     score_cfg = config["scorecard"]
     score_tickers = [t for t in score_cfg["score_tickers"] if t in closes.columns]
@@ -250,6 +257,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "path_dependent": t in path_dependent} for t in universe},
         "pipeline": {k: v for k, v in proposals.items() if k != "rows"},
         "tastytrade": {k: v for k, v in tasty.items() if k != "metrics"},
+        "rotation": rotation_payload,
         "holdings_status": {etf: {k: v for k, v in block.items() if k in ("status", "as_of", "sessions_old", "issuer", "count")}
                             for etf, block in holdings_payload.items()},
         "refresh_report": refresh_report,
@@ -298,6 +306,97 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     target.write_text(html, encoding="utf-8")
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
+
+
+def build_rotation(*, opens, closes, states, current, mask, sessions, config, horizons, metrics, holdings_payload,
+                   packet, packets) -> dict:
+    """Sector rotation and the macro's measured impact on it (relative to SPY)."""
+    cfg = config["rotation"]
+    bench = cfg["benchmark"]
+    sectors = [t for t in cfg["sectors"] if t in closes.columns]
+    industries = [t for t in cfg["industries"] if t in closes.columns]
+    names = sectors + industries
+    coords = rot.rotation_coordinates(closes, names, bench, trend_sessions=int(cfg["trend_sessions"]),
+                                      momentum_sessions=int(cfg["momentum_sessions"]))
+    step, points = int(cfg["tail_step_sessions"]), int(cfg["tail_points"])
+    sector_map_doc = json.loads(src.resolve(cfg["sector_map"]).read_text(encoding="utf-8"))
+    etf_to_sector = sector_map_doc.get("etf_to_sector", {})
+    name_to_etf = rot.sector_name_to_etf(etf_to_sector)
+
+    rel_settings = {**config["evidence"], "lean_min_abs_mean_pct": cfg["relative_lean_min_abs_mean_pct"]}
+    rel_fwd = {h: rot.relative_forward_returns(opens, closes, names, bench, h) for h in horizons}
+
+    bias_map = ((packet or {}).get("sector_rotation") or {}).get("sector_bias_map") or {}
+    packet_bias = {name_to_etf[k.strip().lower()]: v for k, v in bias_map.items() if k.strip().lower() in name_to_etf}
+
+    def rel_return(ticker, n):
+        c, b = closes[ticker].dropna(), closes[bench].dropna()
+        if len(c) <= n or len(b) <= n:
+            return None
+        return float((c.iloc[-1] / c.iloc[-1 - n] - 1.0) - (b.iloc[-1] / b.iloc[-1 - n] - 1.0)) * 100.0
+
+    rows = []
+    for ticker in names:
+        frame = coords.get(ticker)
+        if frame is None or frame.dropna().empty:
+            continue
+        q_now = frame["quadrant"].iloc[-1]
+        run = 0
+        for value in reversed(frame["quadrant"].tolist()):
+            if value != q_now:
+                break
+            run += 1
+        tail_idx = list(range(len(frame) - 1, max(-1, len(frame) - 1 - step * points), -step))[::-1]
+        tail = [{"session": str(frame.index[i].date()), "trend": frame["trend"].iloc[i], "momentum": frame["momentum"].iloc[i]}
+                for i in tail_idx if np.isfinite(frame["trend"].iloc[i]) and np.isfinite(frame["momentum"].iloc[i])]
+        evidence = {str(h): ev.ticker_evidence(rel_fwd[h][ticker], mask, h, rel_settings) for h in horizons}
+        sensitivity = {str(h): ev.condition_sensitivity(rel_fwd[h][ticker], states, current, h) for h in horizons}
+        bias = packet_bias.get(ticker)
+        agreement = {}
+        for h in horizons:
+            lean = evidence[str(h)].get("lean")
+            if bias in ("TAILWIND", "HEADWIND") and lean in ("UP", "DOWN"):
+                agreement[str(h)] = "AGREES" if (bias == "TAILWIND") == (lean == "UP") else "DISAGREES"
+            elif bias in ("TAILWIND", "HEADWIND"):
+                agreement[str(h)] = "UNMEASURED"
+            else:
+                agreement[str(h)] = None
+        hold_block = holdings_payload.get(ticker) or {}
+        rows.append({
+            "ticker": ticker, "kind": "sector" if ticker in sectors else "industry",
+            "sector_name": etf_to_sector.get(ticker), "quadrant": q_now, "sessions_in_quadrant": run,
+            "quadrant_5_ago": frame["quadrant"].iloc[-1 - step] if len(frame) > step else None,
+            "trend": frame["trend"].iloc[-1], "momentum": frame["momentum"].iloc[-1], "tail": tail,
+            "rel_5d": rel_return(ticker, 5), "rel_20d": rel_return(ticker, 20), "rel_60d": rel_return(ticker, 60),
+            "participation_pct": ((hold_block.get("windows") or {}).get("20") or {}).get("participation_weight_pct"),
+            "holdings_as_of": hold_block.get("as_of"),
+            "top_contributors_20d": [r["ticker"] for r in (((hold_block.get("windows") or {}).get("20") or {}).get("top_contributors") or [])[:3]],
+            "packet_bias": bias, "packet_agreement": agreement,
+            "relative_evidence": evidence, "relative_sensitivity": sensitivity,
+        })
+
+    quadrant_series = {t: coords[t]["quadrant"] for t in sectors if t in coords}
+    quadrant_evidence = {str(h): rot.quadrant_forward_evidence(quadrant_series, rel_fwd[h], h) for h in horizons}
+    transitions = rot.transition_counts(quadrant_series, int(cfg["transition_step_sessions"]))
+
+    score_cfg = config["scorecard"]
+    by_entry = {}
+    for item in packets:
+        entry = sc.packet_entry_index(item["when"].to_pydatetime(), closes.index, score_cfg["us_regular_open_utc"])
+        lead, lag = rot.etfs_for(item.get("leading"), name_to_etf), rot.etfs_for(item.get("lagging"), name_to_etf)
+        if entry is not None and lead and lag:
+            by_entry[entry] = (lead, lag, item["when"])
+    calls = [(e, lead, lag) for e, (lead, lag, _) in sorted(by_entry.items())]
+    lead_lag = {"calls": len(calls),
+                "results": {str(h): rot.score_lead_lag(calls, opens, closes, bench, h) for h in horizons},
+                "latest": [{"entry_session": str(closes.index[e].date()), "lead": lead, "lag": lag}
+                           for e, (lead, lag, _) in sorted(by_entry.items())][-6:][::-1]}
+    return {"settings": cfg, "rows": rows, "quadrant_evidence": quadrant_evidence, "transitions": transitions,
+            "packet": {"strongest": ((packet or {}).get("sector_rotation") or {}).get("strongest_sectors"),
+                       "weakest": ((packet or {}).get("sector_rotation") or {}).get("weakest_sectors"),
+                       "signal": ((packet or {}).get("sector_rotation") or {}).get("rotation_signal"),
+                       "bias": packet_bias},
+            "lead_lag_scorecard": lead_lag}
 
 
 def build_holdings(holdings_dir: Path, cfg: dict, price_db: Path, sessions: pd.DatetimeIndex, metrics: dict,

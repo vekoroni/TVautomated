@@ -365,3 +365,70 @@ def test_adjusted_option_chains_are_left_out_of_the_term_structure():
         {"expiration-date": "2026-11-20", "implied-volatility": "0.57"}]}
     term = ttm.normalise(raw)["term"]
     assert [t["iv_pct"] for t in term] == [pytest.approx(55.0), pytest.approx(57.0)]
+
+
+# === sector rotation ===================================================================
+
+from macro_board import rotation as rot
+
+
+def _prices(n=120):
+    index = pd.bdate_range("2026-01-01", periods=n)
+    spy = pd.Series(np.linspace(100, 110, n), index=index)
+    leader = spy * np.exp(2e-5 * np.arange(n) ** 2)             # outperforming at an accelerating rate
+    laggard = spy * np.linspace(1.0, 0.85, n)                  # steadily underperforming
+    return pd.DataFrame({"SPY": spy, "LEAD": leader, "LAG": laggard})
+
+
+def test_quadrants_follow_relative_trend_and_momentum_and_missing_stays_missing():
+    assert rot.quadrant(101.0, 100.5) == "LEADING"
+    assert rot.quadrant(101.0, 99.5) == "WEAKENING"
+    assert rot.quadrant(99.0, 99.5) == "LAGGING"
+    assert rot.quadrant(99.0, 100.5) == "IMPROVING"
+    assert rot.quadrant(float("nan"), 100.0) == "MISSING"
+
+
+def test_an_accelerating_outperformer_leads_and_a_steady_underperformer_lags():
+    closes = _prices()
+    coords = rot.rotation_coordinates(closes, ["LEAD", "LAG"], "SPY", trend_sessions=50, momentum_sessions=10)
+    last = {t: rot.quadrant(coords[t]["trend"].iloc[-1], coords[t]["momentum"].iloc[-1]) for t in ("LEAD", "LAG")}
+    assert last["LEAD"] == "LEADING"
+    assert coords["LAG"]["trend"].iloc[-1] < 100
+
+
+def test_relative_forward_return_is_the_sector_minus_spy_over_the_same_window():
+    index = pd.bdate_range("2026-01-05", periods=3)
+    opens = pd.DataFrame({"SPY": [100.0, 100.0, 100.0], "XLK": [50.0, 50.0, 50.0]}, index=index)
+    closes = pd.DataFrame({"SPY": [100.0, 102.0, 103.0], "XLK": [50.0, 52.0, 53.0]}, index=index)
+    rel = rot.relative_forward_returns(opens, closes, ["XLK"], "SPY", 1)
+    assert rel["XLK"].iloc[0] == pytest.approx(0.04 - 0.02)
+
+
+def test_quadrant_transitions_are_counted_over_the_step():
+    states = pd.Series(["LAGGING", "LAGGING", "IMPROVING", "IMPROVING", "LEADING", "LEADING"])
+    matrix = rot.transition_counts({"X": states}, step=2)
+    assert matrix["LAGGING"]["IMPROVING"] == 1 and matrix["IMPROVING"]["LEADING"] == 1
+
+
+def test_packet_sector_names_map_to_their_etfs_through_the_single_sector_owner():
+    mapping = rot.sector_name_to_etf({"XLK": "INFORMATION TECHNOLOGY", "XLE": "ENERGY"})
+    assert mapping["information technology"] == "XLK"
+    assert rot.etfs_for(["Information Technology", "Energy", "Unknown"], mapping) == ["XLK", "XLE"]
+
+
+def test_a_lead_lag_call_is_scored_on_the_spread_between_its_lead_and_lag_baskets():
+    index = pd.bdate_range("2026-01-05", periods=4)
+    opens = pd.DataFrame({"SPY": [100.0] * 4, "A": [10.0] * 4, "B": [10.0] * 4}, index=index)
+    closes = pd.DataFrame({"SPY": [100.0, 101.0, 101.0, 101.0], "A": [10.0, 10.3, 10.3, 10.3], "B": [10.0, 9.9, 9.9, 9.9]},
+                          index=index)
+    result = rot.score_lead_lag([(1, ["A"], ["B"])], opens, closes, "SPY", 1)
+    assert result["n"] == 1 and result["mean_spread_pct"] == pytest.approx(4.0) and result["hit_rate"] == 1.0
+
+
+def test_quadrant_evidence_carries_an_all_sessions_baseline_to_compare_against():
+    index = pd.bdate_range("2026-01-01", periods=40)
+    states = pd.Series(["LEADING"] * 20 + ["LAGGING"] * 20, index=index)
+    rel = pd.DataFrame({"X": [0.01] * 20 + [-0.01] * 20}, index=index)
+    out = rot.quadrant_forward_evidence({"X": states}, rel, 1)
+    assert out["ALL"]["n"] == 40 and out["ALL"]["mean_pct"] == pytest.approx(0.0, abs=1e-9)
+    assert out["LEADING"]["mean_pct"] == pytest.approx(1.0)

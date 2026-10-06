@@ -35,6 +35,7 @@ Build after the macro refresh, or before the open alongside the morning run.
 | Overview | SPY/QQQ/IWM/DIA cards: leans per horizon, dealer gamma and price state. The 10 macro conditions with their history. What changed. Analog depth and recent analog episodes. Packet headline. |
 | ETF matrix | All ETFs by group, with returns, relative strength, trend, realised vol, lean, analog vs base mean, independent windows and packet lead/avoid. Click a row for evidence by horizon and by condition. |
 | Transmission map | ETF × condition heatmap: how each ETF's forward return differed while each condition sat in today's state. |
+| Sector rotation | A relative rotation map (approximation, not JdK) for the 11 SPDR sectors or industries/themes, with weekly tails. Rotation table: quadrant and days in it, relative 5/20/60d, participation, leading holdings, macro-conditional relative lean, packet bias with agree/disagree. Macro-conditional ranking vs SPY with 80% intervals. Sector × condition heatmap on relative returns. Quadrant → forward relative return (with an all-sessions baseline). Measured quadrant transitions. Scorecard of the LLM packets' leading vs lagging sectors. |
 | Macro intelligence | LLM packet, US Money Index transmission score and triggers, event risk, news overlay, VIX complex, GEX, rates/credit, liquidity, Colab models, FRED prints, threshold flags. Each shows its source, as-of time and freshness. |
 | Scorecards | Colab regime model, archived LLM packets (latest wins per session) and the board's own leans, scored from the next open. |
 | Method | Definitions, thresholds, point-in-time rules and limits. |
@@ -84,6 +85,7 @@ These are labels and measurements for the human. None of them is a permission or
 | `evidence.py` | Forward returns, adaptive analog depth, independent windows, lean, holdout check, per-condition sensitivity. |
 | `scorecard.py` | Scores the regime model, the archived packets, the Money Index ladder and the board's own snapshots (against price-only leans). |
 | `decision.py` | Move already made, response label, remaining opportunity against the pipeline's target and invalidation. |
+| `rotation.py` | Rotation coordinates and quadrants, relative forward returns, quadrant evidence and transitions, mapping packet sector names to ETFs (via `config/sector_etf_map_v1.json`), lead/lag scoring. |
 | `options.py` | ATM straddle implied move from executable chain quotes (read-only phantom DB). |
 | `build_board.py` | Orchestration, payload, HTML render. |
 | `config/macro_board_config_v1.json` | Every threshold, band, lag and horizon, with its rationale. All are PROVISIONAL. |

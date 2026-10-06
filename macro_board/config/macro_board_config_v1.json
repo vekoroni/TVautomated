@@ -330,7 +330,7 @@
     "rationale": "Answers the desk card's 'What does the pipeline propose?' read-only; the board never changes or re-ranks it."
   },
   "archive_inputs": true,
-  "revision_note": "2026-10-06 rev c: issuer holdings (SSGA, Invesco) and tastytrade market metrics.",
+  "revision_note": "2026-10-06 rev d: sector rotation (relative rotation map, quadrant evidence, macro-conditional relative leans, packet lead/lag scorecard) and SPDR sector holdings.",
   "holdings": {
     "dir": "macro_board/output/holdings",
     "max_age_sessions": 3,
@@ -352,6 +352,61 @@
         "format": "invesco_json",
         "accept": "application/json",
         "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/QQQ/holdings/fund?idType=ticker&productType=ETF"
+      },
+      "XLK": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlk.xlsx"
+      },
+      "XLF": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlf.xlsx"
+      },
+      "XLE": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xle.xlsx"
+      },
+      "XLV": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlv.xlsx"
+      },
+      "XLY": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xly.xlsx"
+      },
+      "XLP": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlp.xlsx"
+      },
+      "XLI": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xli.xlsx"
+      },
+      "XLB": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlb.xlsx"
+      },
+      "XLU": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlu.xlsx"
+      },
+      "XLRE": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlre.xlsx"
+      },
+      "XLC": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xlc.xlsx"
       }
     },
     "rationale": "Issuer daily holdings (ACK 6 Oct 2026): weight x return contribution and weight-share participation answer 'are the holdings that matter supporting the move?' (thesis s.6). Unpriced weight is shown, never treated as zero return."
@@ -361,5 +416,50 @@
     "max_age_hours": 30,
     "mean_abs_factor": 0.7979,
     "rationale": "Read-only broker metrics via bridge.tastytrade_readonly_mcp (needs the broker OAuth environment). IV-based expected |move| = IV x sqrt(h/252) x sqrt(2/pi), shown beside the executable straddle move."
+  },
+  "rotation": {
+    "benchmark": "SPY",
+    "sectors": [
+      "XLK",
+      "XLF",
+      "XLE",
+      "XLV",
+      "XLY",
+      "XLP",
+      "XLI",
+      "XLB",
+      "XLU",
+      "XLRE",
+      "XLC"
+    ],
+    "industries": [
+      "SMH",
+      "SOXX",
+      "IGV",
+      "KRE",
+      "KBE",
+      "XBI",
+      "IBB",
+      "XOP",
+      "XHB",
+      "XRT",
+      "IYR",
+      "IYT",
+      "JETS",
+      "GDX",
+      "ARKK"
+    ],
+    "trend_sessions": 50,
+    "momentum_sessions": 10,
+    "tail_points": 8,
+    "tail_step_sessions": 5,
+    "transition_step_sessions": 5,
+    "relative_lean_min_abs_mean_pct": {
+      "1": 0.03,
+      "5": 0.15,
+      "20": 0.5
+    },
+    "sector_map": "config/sector_etf_map_v1.json",
+    "rationale": "Relative-rotation approximation (not JdK): 50-session RS trend and its 10-session momentum vs SPY; 8 weekly tail points. Relative leans use the board's analog sessions on sector-minus-SPY returns, with smaller minimum effects than absolute leans because relative moves are smaller. All PROVISIONAL."
   }
 }
