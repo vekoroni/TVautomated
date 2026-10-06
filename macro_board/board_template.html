@@ -799,7 +799,7 @@ function renderRotation(){
       <div class="card"><h3>Macro-conditional ranking · next ${h} session(s) vs SPY</h3>
         <div class="sub" style="margin-bottom:6px">Mean return relative to SPY after past sessions whose macro conditions matched today's (${Math.round(B.analogs.match_level*100)}% match, ${B.analogs.count} sessions). The whisker is the 80% interval.</div>
         <div class="bars" style="grid-template-columns:minmax(90px,150px) 1fr 70px">${rank || `<div class="sub muted">No measurable sectors.</div>`}</div>
-        <div class="note">Each lean uses relative thresholds (|mean| ≥ ${esc(JSON.stringify(B.rotation.settings.relative_lean_min_abs_mean_pct))}%, |t| ≥ ${B.settings.evidence.lean_t_min}) and is checked on held-out history.</div></div>
+        <div class="note">Each lean uses relative thresholds (|mean| ≥ ${Object.entries(B.rotation.settings.relative_lean_min_abs_mean_pct).map(([k,v]) => v + "% at " + k + "d").join(", ")}, |t| ≥ ${B.settings.evidence.lean_t_min}) and is checked on held-out history.</div></div>
     </div>
     <h2>Rotation table</h2>
     <div class="table-wrap"><table><thead><tr><th>ETF</th><th class="l">Quadrant</th><th>RS trend</th><th>Momentum</th><th>vs SPY 5d</th><th>20d</th><th>60d</th><th>Participation</th><th class="l">Leading holdings 20d</th><th class="l">Macro lean ${h}d</th><th>Analog vs SPY</th><th>80% interval</th><th class="l">Packet bias</th></tr></thead><tbody>${table}</tbody></table></div>
@@ -812,7 +812,7 @@ function renderRotation(){
         <table class="mini" style="width:100%"><thead><tr><th class="l">Quadrant</th><th>Mean vs SPY</th><th>80% interval</th><th>Beat SPY</th><th>Windows</th></tr></thead><tbody>${qe}</tbody></table>
         <div class="note">Pooled over the 11 SPDR sectors since 2021. Compare each quadrant with "All sessions": over this period sectors lagged SPY on average, because SPY is concentrated in mega-cap tech.</div></div>
       <div class="card"><h3>Where quadrants go next (${B.rotation.settings.transition_step_sessions} sessions later)</h3>
-        <table class="mini" style="width:100%"><thead><tr><th class="l">From \ to</th><th>Leading</th><th>Weakening</th><th>Lagging</th><th>Improving</th><th>n</th></tr></thead><tbody>${trans}</tbody></table>
+        <table class="mini" style="width:100%"><thead><tr><th class="l">From → to</th><th>Leading</th><th>Weakening</th><th>Lagging</th><th>Improving</th><th>n</th></tr></thead><tbody>${trans}</tbody></table>
         <div class="note">Measured transition rates for the 11 SPDR sectors. Bold = stayed in the same quadrant.</div></div>
       <div class="card"><h3>LLM packet sector calls</h3>
         <div class="sub">Rotation signal <b>${words(P.signal)}</b> · strongest ${esc((P.strongest||[]).join(", ")||"—")} · weakest ${esc((P.weakest||[]).join(", ")||"—")} ${uncal}</div>
