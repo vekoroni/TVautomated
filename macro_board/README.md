@@ -75,6 +75,15 @@ These are labels and measurements for the human. None of them is a permission or
   (post-split) option chains, which are left out of the IV term structure. The provenance
   notice appended by the tastytrade MCP server (21 Sep 2026 build) is accepted by the bridge
   and never parsed as data.
+- **Momentum history (rev e):** each ETF's own streak and 5d/20d extension, with what followed
+  similar runs (independent windows, intervals, holdout). Extended moves are measured, never
+  assumed late. On 6 Oct 2026, SPY/QQQ runs of 5+ up closes had continued (next 20d +2.19%/+2.86%
+  against +0.92%/+1.18% normal).
+- **Desk card (rev e):** the six desk questions filled for every pipeline candidate and index
+  ETF. Checks cover macro lean, momentum, room left, option price, data and event risk; they
+  describe evidence and never decide. The card adds a stale-target note when measured
+  continuation (interval clear of zero and beating normal drift) exceeds the room left. The
+  trader's decision is downloadable as a JSON record for `output/journal/`.
 - **Input archive:** each build stores a content-addressed copy of every file it read in
   `output/inputs/`; the manifest goes in that day's snapshot.
 
@@ -86,6 +95,8 @@ These are labels and measurements for the human. None of them is a permission or
 | `conditions.py` | Point-in-time condition states. Trend, vol and breadth reuse `avshunter.c12_outcome.conditions.market_condition` and the registry settings, so the board and the outcome scorer agree. |
 | `evidence.py` | Forward returns, adaptive analog depth, independent windows, lean, holdout check, per-condition sensitivity. |
 | `scorecard.py` | Scores the regime model, the archived packets, the Money Index ladder and the board's own snapshots (against price-only leans). |
+| `momentum.py` | Streaks, extension states and what followed similar runs per ETF. |
+| `desk_card.py` | Desk card checks (direction vs evidence, room left, option price, stale target) and card assembly. |
 | `decision.py` | Move already made, response label, remaining opportunity against the pipeline's target and invalidation. |
 | `rotation.py` | Rotation coordinates and quadrants, relative forward returns, quadrant evidence and transitions, mapping packet sector names to ETFs (via `config/sector_etf_map_v1.json`), lead/lag scoring. |
 | `options.py` | ATM straddle implied move from executable chain quotes (read-only phantom DB). |

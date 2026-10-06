@@ -92,6 +92,7 @@ html{scroll-behavior:smooth}
     <li><a href="#run">Running the board</a></li>
     <li><a href="#routine">The morning routine</a></li>
     <li><a href="#tabs">Tab by tab</a></li>
+    <li><a href="#runs">Runs and trends</a></li>
     <li><a href="#decide">From board to decision</a></li>
     <li><a href="#examples">Worked examples</a></li>
     <li><a href="#rules">Rules and red flags</a></li>
@@ -105,7 +106,7 @@ html{scroll-behavior:smooth}
   <p class="eyebrow">AVSHUNTER · desk manual</p>
   <h1>ETF Macro Board: how to read it and use it</h1>
   <p class="lede">A guide for a junior trader. It explains what each part of the board measures, how to turn it into a trading decision, and what the board will not do for you.</p>
-  <p class="meta">Board version macro-board-v1.0.0 · examples use the board as of the 5 Oct 2026 close · written 6 Oct 2026</p>
+  <p class="meta">Board version macro-board-v1.0.0 · examples use the board as of the 5 Oct 2026 close and the pipeline run of 6 Oct 06:04 · revised 6 Oct 2026 (runs are measured, desk card added)</p>
 </header>
 
 <h2 id="what">What the board is</h2>
@@ -124,7 +125,7 @@ html{scroll-behavior:smooth}
 <h2 id="signals">Why there are no buy/sell signals</h2>
 <p>This is the most common question, and it is deliberate. There are three reasons.</p>
 <h3>1. The trade signals come from the AVSHUNTER pipeline</h3>
-<p>The pipeline decides direction, setup, target, invalidation and contract. The board shows that proposal next to its own evidence: the <b>Pipeline</b> column in the ETF matrix, and the "What the pipeline proposes" section in each ETF's drawer. On 5 Oct the pipeline had SPY <span class="tag up">CALL · ARMED</span>, DIA <span class="tag down">PUT · ARMED</span>, XLK and SMH <span class="tag up">CALL · ARMED</span>, and QQQ and IWM unresolved and standing down. Those are your candidate trades. The board's job is to tell you whether the backdrop, the history and the price still support them.</p>
+<p>The pipeline decides direction, setup, target, invalidation and contract. The board shows that proposal next to its own evidence: the <b>Pipeline</b> column in the ETF matrix, and the "What the pipeline proposes" section in each ETF's drawer. In the run of 6 Oct 06:04 the pipeline had SPY and QQQ <span class="tag up">CALL · ARMED</span>, DIA <span class="tag down">PUT · ARMED</span>, XLK and SMH <span class="tag up">CALL · ARMED</span>, and IWM unresolved and standing down. Those are your candidate trades. The board's job is to tell you whether the backdrop, the history and the price still support them.</p>
 <h3>2. The board only gives a direction when history clearly supports one</h3>
 <p>A measured lean shows <span class="tag up">▲ Up</span> or <span class="tag down">▼ Down</span> only when three tests pass:</p>
 <ul>
@@ -175,7 +176,7 @@ html{scroll-behavior:smooth}
   <li><b>Backdrop.</b> On the Overview, read the 10 condition tiles and "What changed (last 10 sessions)". A change is often more useful than a level.</li>
   <li><b>Index cards.</b> Read the SPY, QQQ, IWM and DIA cards: the pipeline chip, how much of the target is used, the response label, the measured lean and what options charge.</li>
   <li><b>Rotation.</b> On Sector rotation, see which sectors lead, which are turning up, and what sessions like today did to each sector against SPY.</li>
-  <li><b>Candidates.</b> In the ETF matrix, sort by Pipeline and open each armed name. Work through the desk card in <a href="#decide">From board to decision</a>.</li>
+  <li><b>Candidates.</b> Open the <b>Desk card</b> tab. Every pipeline candidate and index ETF has a card with the six desk questions already filled from the board. Work through each card and record your decision.</li>
   <li><b>Advisory.</b> On Macro intelligence, read the event risk and news overlay for anything scheduled today. Treat them as risk to manage, not direction.</li>
   <li><b>Record.</b> Write your decision and the reason before the open. Once a week, check the Scorecards.</li>
 </ol>
@@ -267,6 +268,26 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
 </section>
 
 <section class="tab">
+<h3>Desk card</h3>
+<p>One card per pipeline candidate (▲ call · ▼ put) and per index ETF. The horizon defaults to the pipeline's own, and you can switch it.</p>
+<div class="grid2">
+  <div class="box"><h4>Checks strip</h4><ul>
+    <li><b>Macro lean</b> and <b>Momentum</b>: does history point the same way as the proposal? Supports / conflicts / no evidence. The numbers always show, even when they are too thin for a lean.</li>
+    <li><b>Room left</b>: reward left to the pipeline target against risk left to its invalidation, from today's close.</li>
+    <li><b>Option price</b>: what a move costs against history, IV rank and spread.</li>
+    <li><b>Data</b> and <b>Event risk</b>.</li>
+  </ul></div>
+  <div class="box"><h4>Six questions</h4><ul>
+    <li>What changed · what should it affect · what is the market doing · what the pipeline proposes · is the entry still worth taking · what would change my mind.</li>
+    <li>Below them: an evidence table (macro, price-only, momentum).</li>
+    <li>At the bottom: your decision (Act / Wait / Skip / Insufficient information), the reason and what would change your mind.</li>
+  </ul></div>
+</div>
+<p>Use <b>Download record</b> to save the decision as JSON in <code>macro_board/output/journal/</code>. Drafts stay in your browser until you clear them. The checks describe evidence; they never decide for you.</p>
+<p>When the card says <b>"the target may be stale"</b>, measured continuation after similar runs is larger than the room left to the pipeline's target. Ask for a re-evaluated target. Don't chase the old one, and don't dismiss the trend because the old target is close.</p>
+</section>
+
+<section class="tab">
 <h3>Macro intelligence</h3>
 <p>The outside reports, as published. They include:</p>
 <ul>
@@ -309,8 +330,26 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
 </ul>
 </section>
 
+<h2 id="runs">Runs and trends: measure, don't assume</h2>
+<p>A common textbook rule says an ETF that has risen several days in a row, or has moved far in a short time, is "extended" and the entry is late. This market's own history does not support that rule. From Aug 2021 to Oct 2026, over the next 20 sessions:</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>After…</th><th>SPY</th><th>QQQ</th></tr></thead>
+  <tbody>
+    <tr><td>All sessions (normal drift)</td><td class="num">+0.92% · up 63%</td><td class="num">+1.18% · up 62%</td></tr>
+    <tr><td>5+ up closes in a row</td><td class="num">+2.19% · up 84% · 16 windows</td><td class="num">+2.86% · up 73% · 22 windows</td></tr>
+    <tr><td>6+ of the last 7 days up</td><td class="num">+1.42% · up 74%</td><td class="num">+1.71% · up 65%</td></tr>
+  </tbody>
+</table></div>
+<p>Runs have more often continued than stalled. These figures come from mostly a bull market and rest on 16–22 independent windows, so treat them as evidence, not law.</p>
+<p>The board therefore measures runs per ETF. Every drawer and desk card has a <b>Momentum history</b> table: what this ETF did next after the same streak, the same 5-day move and the same 20-day move.</p>
+<ul>
+  <li><b>Continuation that beats normal drift</b>: e.g. QQQ after 5+ up closes, or TLT after 10 down closes. The run is a reason to stay with the trend, not to wait.</li>
+  <li><b>Ordinary drift</b>: e.g. SPY after 3 up closes did +0.66% against +0.92% normally. The run itself tells you nothing; decide on the setup and the room left.</li>
+  <li><b>No evidence either way</b>: the window count is small or the interval spans zero. Don't let the run push you in either direction.</li>
+</ul>
+
 <h2 id="decide">From board to decision: the desk card</h2>
-<p>For each candidate, answer these six questions in writing before you trade. The right column tells you where the board answers each one.</p>
+<p>For each candidate, answer these six questions in writing before you trade. The <b>Desk card</b> tab fills them in for you; the right column shows where each answer comes from.</p>
 <div class="tablewrap"><table>
   <thead><tr><th>Question</th><th>Where on the board</th></tr></thead>
   <tbody>
@@ -328,39 +367,52 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
 <p class="meta">Training examples using the board as of the 5 Oct 2026 close. They show how to reason; they are not recommendations.</p>
 
 <div class="example">
-  <div class="head"><b>SPY: the direction is supported, the entry is not</b><span class="tag up">Pipeline CALL · ARMED</span></div>
+  <div class="head"><b>QQQ: a run that history says continues</b><span class="tag up">Pipeline CALL · ARMED</span></div>
   <div class="tablewrap"><table><tbody>
-    <tr><td>Pipeline</td><td class="num">entry 769.64 · target 779.37 · invalidation 749.60</td></tr>
-    <tr><td>From today's close 774.83</td><td class="num">+0.59% left to target · 3.26% to invalidation · 53% of the move used</td></tr>
-    <tr><td>Measured lean (1/5/20d)</td><td>No clear lean. 20d analog +0.80% vs base +0.92%: macro adds nothing</td></tr>
-    <tr><td>Response · Move made</td><td>Absorbing pressure · not extended (0.2σ)</td></tr>
-    <tr><td>Options (20d)</td><td class="num">priced move 2.95% vs analog 2.96% → 1.00× · IV rank 31 · IV − HV +5.0 pts</td></tr>
-    <tr><td>Holdings</td><td>META, AMD, NVDA, MSFT, AAPL led; 57% of weight above trend</td></tr>
-    <tr><td>Advisory</td><td>Packet "transitional bullish, selective risk-on"; Money Index 75 "risk-off transition". The two disagree, and neither is proven</td></tr>
+    <tr><td>Run</td><td>5 up closes in a row; 5d move 1.25σ, 20d move 1.21σ (not extended)</td></tr>
+    <tr><td>Momentum history</td><td class="num">next 20d +2.86% vs +1.18% normal (80% interval +1.06% to +4.67%, 22 windows); next 5d +0.71% vs +0.28%</td></tr>
+    <tr><td>Macro lean (5d)</td><td class="num">No clear lean: +0.44% vs +0.28% normal</td></tr>
+    <tr><td>Pipeline</td><td class="num">entry 756.20 · no target · invalidation 731.63 (−3.25%)</td></tr>
+    <tr><td>Options</td><td class="num">5d straddle priced 0.88× history · 20d 1.26× · IV rank 44 · pipeline flags event-priced IV</td></tr>
+    <tr><td>Holdings · participation</td><td>NVDA, AMAT, MSFT, TSLA, LRCX led the last 5 days; 74% of weight above trend</td></tr>
   </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> the pipeline and the price agree on direction, and options are fairly priced. But only 0.59% is left to the target against 3.26% of risk to the invalidation. More than half the planned move has already happened (Scenario C in the thesis). The sound action is to <b>wait</b> for a fresh setup or a re-evaluated target, not to chase the old one. Skipping a late call does not make SPY a put.</p>
+  <p class="verdict"><b>Reading:</b> the old "extended, so wait" rule would have kept you out. History says QQQ's runs like this continued more often than not. That falls just short of a formal lean, but it supports the pipeline's call. The 5-day option is not expensive against history. Two things still need work: there is no target, so set your exit plan before entry, and the IV is priced for an event, so plan for a volatility drop after it passes. This is a case for <b>acting with a defined exit</b>, not for waiting on the trend to end.</p>
 </div>
 
 <div class="example">
-  <div class="head"><b>XLRE: everything agrees, but the move is spent</b><span class="tag down">Pipeline PUT · STAND DOWN</span></div>
+  <div class="head"><b>SPY: ordinary drift, little room to the target</b><span class="tag up">Pipeline CALL · ARMED</span></div>
   <div class="tablewrap"><table><tbody>
-    <tr><td>Rotation</td><td>Lagging for 26 sessions; −8.0% vs SPY over 20 days; participation 0%</td></tr>
-    <tr><td>Macro-conditional (20d vs SPY)</td><td class="num">−2.79% · Down · holdout agrees · packet "headwind" agrees</td></tr>
-    <tr><td>Move made 20d</td><td class="num">−2.9σ (extended down)</td></tr>
-    <tr><td>Pipeline put</td><td class="num">0.65% left to target vs 1.54% to invalidation</td></tr>
+    <tr><td>Pipeline</td><td class="num">entry 774.83 · target 779.37 (the 52-week high) · invalidation 749.60</td></tr>
+    <tr><td>Room left</td><td class="num">+0.59% to target vs 3.26% to invalidation (ratio 0.18) → Room left: against</td></tr>
+    <tr><td>Momentum history</td><td class="num">3 up closes: next 20d +0.66% vs +0.92% normal, so no momentum edge</td></tr>
+    <tr><td>Macro lean</td><td>No clear lean at any horizon</td></tr>
+    <tr><td>Options</td><td class="num">5d priced 0.83× history · 20d 1.01× · IV rank 31</td></tr>
+    <tr><td>Response</td><td>Absorbing pressure: measured headwinds (low realised vol, flat curve), yet SPY rose</td></tr>
   </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> macro, rotation, breadth and the packet all point the same way. That makes this an <b>avoid-longs / underweight</b> conclusion. It is not a fresh put: the move is stretched almost 3σ and little room is left. The pipeline's own stand-down agrees.</p>
+  <p class="verdict"><b>Reading:</b> SPY is drifting up normally. The run is not a burst that history rewards. The problem is the target: it sits at the prior high, only 0.59% away, against 3.26% of risk. That makes the pipeline's call a poor ticket <i>as written</i>, but it does not make SPY bearish. The right move is to <b>wait for the pipeline's morning re-quote and a re-evaluated target</b>. If the new target gives better room, the card turns. Options are cheap at 5 days, so the contract is not the obstacle.</p>
 </div>
 
 <div class="example">
-  <div class="head"><b>TLT: a real lean, but expensive options</b><span class="tag down">Lean 20d ▼ Down · holdout ✓</span></div>
+  <div class="head"><b>TLT: two measured sources agree, but the options are expensive</b><span class="tag down">Macro ▼ · Momentum ▼ · holdout ✓</span></div>
   <div class="tablewrap"><table><tbody>
-    <tr><td>Measured lean</td><td class="num">20d analog −1.63%, held on recent history</td></tr>
+    <tr><td>Macro lean (20d)</td><td class="num">Down: −1.63%, held on recent history</td></tr>
+    <tr><td>Momentum history</td><td class="num">10 down closes in a row: next 20d −1.93% vs −0.85% normal (interval −3.27% to −0.60%), held on recent history</td></tr>
     <tr><td>Pipeline</td><td>PUT, STAND DOWN ("structural intent is WAIT")</td></tr>
-    <tr><td>Move made · IV rank</td><td class="num">−2.2σ (extended) · IV rank 89</td></tr>
-    <tr><td>Priced vs history (20d)</td><td class="num">1.35× (options price more movement than history delivered)</td></tr>
+    <tr><td>Options</td><td class="num">IV rank 89 · 20d priced 1.37× history</td></tr>
+    <tr><td>Card note</td><td>Target may be stale: continuation is larger than the 0.45% left to the pipeline target</td></tr>
   </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> this is one of the few genuine macro leans. But the move has run, and puts are expensive (IV rank 89, priced at 1.35× history). The lean supports staying away from long-bond calls. It does not support buying expensive puts late. A correct direction can still be a losing option trade.</p>
+  <p class="verdict"><b>Reading:</b> two independent measures say the down-trend in long bonds has tended to continue, so <b>do not buy long-bond calls</b> on a "too far, too fast" story. The pipeline is standing down, and the put options are expensive (IV rank 89, priced 1.37× what history delivered). A correct direction can still lose money in options. If you want this view, it needs the pipeline's re-evaluated setup and a cheaper way to express it.</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>XLRE: a clear sector view you cannot trade with options</b><span class="tag down">Rotation · Lagging 26 sessions</span></div>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Macro-conditional vs SPY (20d)</td><td class="num">−2.79% · Down · holdout agrees · packet "headwind" agrees</td></tr>
+    <tr><td>Participation</td><td>0% of weight above trend</td></tr>
+    <tr><td>Momentum history</td><td>No evidence either way (small samples, wide intervals)</td></tr>
+    <tr><td>Pipeline</td><td>PUT, STAND DOWN: option spread 44% of price, beyond the 25% liquidity limit</td></tr>
+  </tbody></table></div>
+  <p class="verdict"><b>Reading:</b> macro, rotation, breadth and the packet all say real estate lags SPY. That is a strong <b>avoid-longs / underweight</b> view. But the options are too wide to trade, and the pipeline blocks it for that reason. Use the view to stay out of real estate longs. Do not force it into an illiquid put.</p>
 </div>
 
 <h2 id="rules">Rules and red flags</h2>
@@ -376,7 +428,8 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
   <div class="box"><h4>Don't</h4><ul>
     <li>Treat 75/100, confidence 90 or fragility 4.7 as probabilities.</li>
     <li>Buy because a lean says Up when its holdout says ✗.</li>
-    <li>Chase a move that is extended beyond ±1.5σ or has used most of its target.</li>
+    <li>Assume a run is late, or that it must continue. Check Momentum history.</li>
+    <li>Chase a pipeline target that is almost reached, unless the card says it may be stale and you have a re-evaluated target.</li>
     <li>Read a "?" (thin evidence) as confirmation.</li>
     <li>Use multi-day leans on leveraged or volatility products.</li>
     <li>Add up heatmap cells or count two reports of the same event as two signals.</li>
@@ -402,7 +455,9 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
     <tr><td>80% interval</td><td>The likely range of the true average. If it spans zero, the sign is uncertain.</td></tr>
     <tr><td>Excess vs base</td><td>Analog average minus all-history average: what today's macro adds.</td></tr>
     <tr><td>Response</td><td><b>Supporting</b>: price agrees with the measured pressure. <b>Absorbing pressure</b>: measured headwinds, but the ETF rose. <b>Rejecting relief</b>: measured tailwinds, but it fell. <b>Mixed</b>: pressures balance. <b>Insufficient</b>: nothing measured.</td></tr>
-    <tr><td>Move made (σ)</td><td>The recent return divided by the ETF's own normal move size. Beyond ±1.5σ the entry may be late.</td></tr>
+    <tr><td>Move made (σ)</td><td>The recent return divided by the ETF's own normal move size (beyond ±1.5σ = extended). Whether runs like this continued is <i>measured</i> under Momentum history, never assumed.</td></tr>
+    <tr><td>Momentum history</td><td>What the ETF did next after the same streak, 5-day move and 20-day move, against its normal drift, with intervals and the holdout check.</td></tr>
+    <tr><td>Stale target</td><td>The desk card's note when measured continuation after similar runs is larger than the room left to the pipeline's target, often a prior high.</td></tr>
     <tr><td>Priced vs history</td><td>The at-the-money straddle's expected move (from real bid/ask quotes) divided by the average move after similar sessions.</td></tr>
     <tr><td>IV rank · IV − HV</td><td>Where implied volatility sits in its 1-year range (0–100) · implied minus realised volatility (positive = options above recent movement).</td></tr>
     <tr><td>Participation</td><td>Share of an ETF's weight in holdings trading above their 50-day average. Low participation under a rising price = narrow, fragile move.</td></tr>

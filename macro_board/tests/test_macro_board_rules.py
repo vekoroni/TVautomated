@@ -432,3 +432,86 @@ def test_quadrant_evidence_carries_an_all_sessions_baseline_to_compare_against()
     out = rot.quadrant_forward_evidence({"X": states}, rel, 1)
     assert out["ALL"]["n"] == 40 and out["ALL"]["mean_pct"] == pytest.approx(0.0, abs=1e-9)
     assert out["LEADING"]["mean_pct"] == pytest.approx(1.0)
+
+
+# === momentum evidence and the desk decision card ======================================
+
+from macro_board import momentum as mom
+from macro_board import desk_card as desk
+
+STREAK_BUCKETS = [[5, 99, "UP_5_PLUS"], [3, 4, "UP_3_4"], [1, 2, "UP_1_2"],
+                  [-2, -1, "DOWN_1_2"], [-4, -3, "DOWN_3_4"], [-99, -5, "DOWN_5_PLUS"]]
+
+
+def test_streak_counts_consecutive_up_closes_and_down_closes_as_negative():
+    closes = pd.Series([100, 101, 102, 103, 102, 101, 101.5])
+    assert list(mom.streak(closes))[1:] == [1, 2, 3, -1, -2, 1]
+
+
+def test_streak_states_bucket_the_run_and_a_missing_day_is_missing():
+    s = pd.Series([6, 3, 1, -2, -4, -7, np.nan])
+    assert list(mom.streak_state(s, STREAK_BUCKETS)) == ["UP_5_PLUS", "UP_3_4", "UP_1_2", "DOWN_1_2", "DOWN_3_4",
+                                                          "DOWN_5_PLUS", "MISSING"]
+
+
+def test_a_run_is_judged_by_what_followed_similar_runs_not_by_a_rule_that_extended_means_late():
+    index = pd.bdate_range("2020-01-01", periods=700)
+    noise = np.random.default_rng(7).normal(0, 0.005, 700)
+    fwd = pd.Series(np.where(np.arange(700) % 10 < 5, 0.02, -0.002) + noise, index=index)   # after runs: ~+2%
+    state = pd.Series(np.where(np.arange(700) % 10 < 5, "UP_5_PLUS", "UP_1_2"), index=index)
+    settings = {**EVIDENCE_SETTINGS, "min_history_sessions": 500, "holdout_fraction": 0.25, "interval_level": 0.8}
+    out = mom.state_evidence(fwd, state, "UP_5_PLUS", 1, settings)
+    assert out["lean"] == "UP" and out["analog"]["mean_pct"] == pytest.approx(2.0, abs=0.1)
+
+
+CARD_CFG = {"room_ok_ratio": 1.0, "room_caution_ratio": 0.5, "priced_vs_history_ok": 1.1,
+            "priced_vs_history_expensive": 1.4, "iv_rank_high": 80, "spread_caution_pct": 5.0}
+
+
+def test_direction_check_compares_the_pipeline_with_each_evidence_source():
+    assert desk.direction_check("CALL", "UP")["status"] == "SUPPORTS"
+    assert desk.direction_check("CALL", "DOWN")["status"] == "CONFLICTS"
+    assert desk.direction_check("PUT", "DOWN")["status"] == "SUPPORTS"
+    assert desk.direction_check("CALL", "NO_CLEAR_LEAN")["status"] == "NO_EVIDENCE"
+    assert desk.direction_check("UNRESOLVED", "UP")["status"] == "NO_PROPOSAL"
+
+
+def test_entry_room_is_reward_left_against_risk_left_from_todays_price():
+    tight = desk.entry_room_check({"to_target_pct": 0.59, "to_invalidation_pct": 3.26}, CARD_CFG)
+    fine = desk.entry_room_check({"to_target_pct": 4.0, "to_invalidation_pct": 2.0}, CARD_CFG)
+    assert tight["status"] == "AGAINST" and fine["status"] == "OK"
+    assert desk.entry_room_check({"to_target_pct": None, "to_invalidation_pct": 2.0}, CARD_CFG)["status"] == "UNKNOWN"
+    assert desk.entry_room_check({"to_target_pct": -0.5, "to_invalidation_pct": 3.0}, CARD_CFG)["status"] == "AGAINST"
+
+
+def test_option_price_check_flags_rich_options_and_wide_spreads():
+    assert desk.option_price_check(1.0, 31, 1.4, CARD_CFG)["status"] == "OK"
+    assert desk.option_price_check(1.5, 31, 1.4, CARD_CFG)["status"] == "AGAINST"
+    assert desk.option_price_check(1.2, 31, 1.4, CARD_CFG)["status"] == "CAUTION"
+    assert desk.option_price_check(1.0, 89, 1.4, CARD_CFG)["status"] == "CAUTION"
+    assert desk.option_price_check(1.0, 31, 7.0, CARD_CFG)["status"] == "CAUTION"
+    assert desk.option_price_check(None, None, None, CARD_CFG)["status"] == "UNKNOWN"
+
+
+def test_a_thin_momentum_record_still_shows_its_numbers_instead_of_hiding_them():
+    evidence = {"lean": "NO_CLEAR_LEAN", "analog": {"mean_pct": 2.86, "ci_low_pct": 1.06, "ci_high_pct": 4.67, "n_eff": 22,
+                                                    "hit_rate": 0.73},
+                "base": {"mean_pct": 1.18}}
+    out = desk.direction_check("CALL", "NO_CLEAR_LEAN", evidence)
+    assert out["status"] == "NO_EVIDENCE" and "+2.86%" in out["text"] and "+1.18%" in out["text"]
+
+
+def test_measured_continuation_beyond_the_room_left_marks_the_target_as_possibly_stale():
+    room = desk.entry_room_check({"to_target_pct": 0.59, "to_invalidation_pct": 3.26}, CARD_CFG)
+    strong = {"analog": {"mean_pct": 2.86, "ci_low_pct": 1.06, "n_eff": 22}, "base": {"mean_pct": 1.18}}
+    note = desk.stale_target_note("CALL", room, strong, "20")
+    assert note and "stale" in note
+    assert desk.stale_target_note("PUT", room, strong, "20") is None
+
+
+def test_ordinary_drift_is_not_mistaken_for_continuation():
+    room = desk.entry_room_check({"to_target_pct": 0.59, "to_invalidation_pct": 3.26}, CARD_CFG)
+    below_normal = {"analog": {"mean_pct": 0.66, "ci_low_pct": 0.1, "n_eff": 43}, "base": {"mean_pct": 0.92}}
+    uncertain = {"analog": {"mean_pct": 2.0, "ci_low_pct": -0.4, "n_eff": 9}, "base": {"mean_pct": 0.9}}
+    assert desk.stale_target_note("CALL", room, below_normal, "20") is None      # runs did worse than usual
+    assert desk.stale_target_note("CALL", room, uncertain, "20") is None         # interval spans zero

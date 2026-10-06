@@ -330,7 +330,7 @@
     "rationale": "Answers the desk card's 'What does the pipeline propose?' read-only; the board never changes or re-ranks it."
   },
   "archive_inputs": true,
-  "revision_note": "2026-10-06 rev d: sector rotation (relative rotation map, quadrant evidence, macro-conditional relative leans, packet lead/lag scorecard) and SPDR sector holdings.",
+  "revision_note": "2026-10-06 rev e: momentum evidence (streak/extension measured, not assumed) and desk decision card.",
   "holdings": {
     "dir": "macro_board/output/holdings",
     "max_age_sessions": 3,
@@ -461,5 +461,61 @@
     },
     "sector_map": "config/sector_etf_map_v1.json",
     "rationale": "Relative-rotation approximation (not JdK): 50-session RS trend and its 10-session momentum vs SPY; 8 weekly tail points. Relative leans use the board's analog sessions on sector-minus-SPY returns, with smaller minimum effects than absolute leans because relative moves are smaller. All PROVISIONAL."
+  },
+  "momentum": {
+    "streak_buckets": [
+      [
+        5,
+        99,
+        "UP_5_PLUS"
+      ],
+      [
+        3,
+        4,
+        "UP_3_4"
+      ],
+      [
+        1,
+        2,
+        "UP_1_2"
+      ],
+      [
+        -2,
+        -1,
+        "DOWN_1_2"
+      ],
+      [
+        -4,
+        -3,
+        "DOWN_3_4"
+      ],
+      [
+        -99,
+        -5,
+        "DOWN_5_PLUS"
+      ]
+    ],
+    "extension_windows": [
+      5,
+      20
+    ],
+    "extension_band_sd": 1.5,
+    "rv_sessions": 20,
+    "rationale": "ACK 6 Oct 2026: 'SPY and QQQ rose constantly over 7 days'. History 2021-2026 showed continuation after 5+ up closes (SPY 20d +2.19% vs +0.92% base; QQQ +2.86% vs +1.18%), so an extended move is judged by what followed similar runs for that ETF, never assumed late."
+  },
+  "desk_card": {
+    "room_ok_ratio": 1.0,
+    "room_caution_ratio": 0.5,
+    "priced_vs_history_ok": 1.1,
+    "priced_vs_history_expensive": 1.4,
+    "iv_rank_high": 80,
+    "spread_caution_pct": 5.0,
+    "pipeline_horizon_map": {
+      "1_5d": "5",
+      "6_10d": "5",
+      "11_20d": "20"
+    },
+    "default_horizon": "20",
+    "rationale": "Checks describe evidence and never decide. Room = reward left to the pipeline target / risk left to its invalidation from today's close (>=1 ok, 0.5-1 caution, <0.5 against). Option price: priced-vs-history <=1.1 ok, >1.4 against; IV rank >=80 or straddle spread >5% of mid = caution. All PROVISIONAL."
   }
 }

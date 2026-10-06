@@ -24,6 +24,8 @@ import pandas as pd
 from . import BOARD_VERSION
 from . import conditions as cond
 from . import decision as dec
+from . import desk_card as desk
+from . import momentum as mom
 from . import evidence as ev
 from . import holdings as hold
 from . import options as opt
@@ -171,6 +173,12 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     metrics = {t: etf_metrics(t, closes, volumes, sessions, int(config["freshness"]["price_max_age_sessions"]), spark_n)
                for t in universe}
     decision_aids = build_decision_aids(metrics, evidence["per_ticker"], horizons, config)
+    fwd_by_h = {h: ev.forward_returns(opens, closes, h) for h in horizons}
+    momentum_payload = {}
+    for t in tickers:
+        momentum_payload[t] = mom.momentum_block(closes[t], {h: fwd_by_h[h][t] for h in horizons}, evidence_cfg,
+                                                 config["momentum"])
+    print(f"[board] momentum evidence: {sum(1 for v in momentum_payload.values() if v.get('status') == 'OK')} ETFs")
 
     options_cfg = config["options"]
     implied = opt.load_implied_moves(src.resolve(options_cfg["chain_db"]), tickers, str(sessions[-1].date()),
@@ -254,6 +262,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "etfs": {t: {"metrics": metrics[t], **evidence["per_ticker"].get(t, {}), "decision": decision_aids.get(t, {}),
                      "options": implied.get(t), "pipeline": proposals["rows"].get(t),
                      "tastytrade": tasty["metrics"].get(t), "holdings": holdings_payload.get(t),
+                     "momentum": momentum_payload.get(t),
                      "path_dependent": t in path_dependent} for t in universe},
         "pipeline": {k: v for k, v in proposals.items() if k != "rows"},
         "tastytrade": {k: v for k, v in tasty.items() if k != "metrics"},
@@ -267,12 +276,14 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "settings": {"evidence": evidence_cfg, "conditions": config["conditions"], "extension": config["extension"],
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,
                      "holdings": {k: v for k, v in holdings_cfg.items() if k != "sources"}, "tastytrade": tasty_cfg,
+                     "momentum": config["momentum"], "desk_card": config["desk_card"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
                              "vol_sessions": c12.vol_sessions, "vol_bands": list(c12.vol_state_bands),
                              "breadth_sessions": c12.breadth_sessions, "breadth_bands": list(c12.breadth_state_bands)}},
         "price_universe_in_breadth": int(panel.shape[1]),
     }
+    payload["desk_cards"] = build_desk_cards(payload, config)
     payload = _clean(payload)
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -306,6 +317,27 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     target.write_text(html, encoding="utf-8")
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
+
+
+def build_desk_cards(payload: dict, config: dict) -> dict:
+    """Desk cards for pipeline candidates (CALL/PUT) and the focus ETFs, for every horizon."""
+    cfg = config["desk_card"]
+    labels = {m["key"]: m["label"] for m in payload["conditions"]["meta"]}
+    candidates = [t for t, e in payload["etfs"].items()
+                  if (e.get("pipeline") or {}).get("canonical_direction") in ("CALL", "PUT")]
+    tickers = list(dict.fromkeys(list(config["focus_tickers"]) + candidates))
+    cards = {}
+    for t in tickers:
+        etf = payload["etfs"].get(t)
+        if not etf or (etf.get("metrics") or {}).get("status") == "MISSING":
+            continue
+        bucket = (etf.get("pipeline") or {}).get("horizon_bucket")
+        cards[t] = {"default_horizon": cfg["pipeline_horizon_map"].get(bucket, cfg["default_horizon"]),
+                    "by_horizon": {str(h): desk.build_card(t, etf, horizon=str(h), conditions=payload["conditions"],
+                                                           intel=payload["intel"], external=payload["external"],
+                                                           cfg=cfg, condition_labels=labels)
+                                   for h in payload["horizons"]}}
+    return cards
 
 
 def build_rotation(*, opens, closes, states, current, mask, sessions, config, horizons, metrics, holdings_payload,

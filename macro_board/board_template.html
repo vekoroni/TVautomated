@@ -96,6 +96,16 @@ tr.sel td{background:color-mix(in oklab,var(--accent) 10%,var(--surface))!import
 .legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin:6px 0}
 .q-LEADING{--q:var(--up)} .q-LAGGING{--q:var(--down)} .q-WEAKENING{--q:#eb6834} .q-IMPROVING{--q:#1baf7a}
 :root[data-theme="dark"] .q-WEAKENING{--q:#d95926} :root[data-theme="dark"] .q-IMPROVING{--q:#199e70}
+.ck{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--border);border-radius:8px;padding:4px 9px;background:var(--surface-2)}
+.ck i{font-style:normal;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font-size:10px;font-weight:700;color:#fff;background:var(--muted)}
+.ck.good i{background:var(--good)} .ck.warn i{background:var(--warn);color:#000} .ck.bad i{background:var(--critical)}
+.deskgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px}
+.deskq h3 small{font-weight:400;color:var(--text-2)}
+.cand{display:flex;flex-wrap:wrap;gap:6px}
+.cand button{font:inherit;font-size:12.5px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:4px 9px;border-radius:999px;cursor:pointer}
+.cand button[aria-pressed="true"]{background:var(--text);color:var(--surface)}
+textarea,.deskform input[type=text]{font:inherit;font-size:13.5px;width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface);color:var(--text)}
+.deskform label.opt{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:13.5px}
 .qchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
 .qchip::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--q)}
 .legend .ramp{width:180px;height:10px;border-radius:3px;background:linear-gradient(90deg,var(--down),var(--mid),var(--up))}
@@ -134,6 +144,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
   <section class="page" id="p-etfs"></section>
   <section class="page" id="p-map"></section>
   <section class="page" id="p-rotation"></section>
+  <section class="page" id="p-desk"></section>
   <section class="page" id="p-intel"></section>
   <section class="page" id="p-score"></section>
   <section class="page" id="p-method"></section>
@@ -210,7 +221,7 @@ const HOLD_TXT = {HOLDOUT_AGREES:"✓ holdout", HOLDOUT_DISAGREES:"✗ holdout",
 const holdChip = h => HOLD_TXT[h] ? `<span class="chip ${h==="HOLDOUT_AGREES"?"":"na"}" title="Held-out check from ${esc("last quarter of history")}">${HOLD_TXT[h]}</span>` : "";
 function leanTip(ev){
   if (!ev || !ev.analog) return `<b>${esc(LEAN_TXT[ev?.lean] || ev?.lean)}</b><br>${esc(ev?.history_sessions ?? 0)} sessions of history (need ${B.settings.evidence.min_history_sessions}).`;
-  const a = ev.analog, b = ev.base, t = ev.train, h = ev.holdout_stats;
+  const a = ev.analog || {}, b = ev.base || {}, t = ev.train || {}, h = ev.holdout_stats || {};
   return `<b>${esc(LEAN_TXT[ev.lean] || ev.lean)}</b> · ${esc((ev.holdout||"").replace(/_/g," ").toLowerCase())}<br>`+
     `Analog sessions: mean ${pct(a.mean_pct)}, median ${pct(a.median_pct)}, up ${fmt(100*(a.hit_rate??NaN),0)}% · n=${a.n}, independent windows ${a.n_eff}<br>`+
     `All history (base): mean ${pct(b.mean_pct)}, up ${fmt(100*(b.hit_rate??NaN),0)}%<br>`+
@@ -270,7 +281,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
+const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -514,7 +525,7 @@ function openDrawer(t){
         ${isNum(v) ? `<span class="bar" style="left:${left}%;width:${Math.max(1,w)}%;background:${v>=0?"var(--up)":"var(--down)"};opacity:${weak?.4:1}"></span>` : ""}</div>
       <div class="num ${cls(v)}" style="text-align:right">${isNum(v) ? pct(v) : "missing"}</div>`; }).join("");
   const d = $("#drawer");
-  d.innerHTML = `<button class="btn close" id="dclose">Close ✕</button>
+  d.innerHTML = `<button class="btn close" id="dclose">Close ✕</button>${(B.desk_cards||{})[t] ? `<button class="btn close" id="dcard" style="margin-right:6px">Desk card →</button>` : ""}
     <div class="state" style="font-size:20px">${t} <span class="sub">${esc(groupOf(t))}</span></div>
     <div class="sub num">${fmt(m.close)} · last bar ${esc(m.last_session)} ${m.status!=="FRESH"?statusChip(m.status):""} · ${m.history_sessions} sessions · avg $ volume 20d ${isNum(m.avg_dollar_volume_20d_m) ? (m.avg_dollar_volume_20d_m >= 1000 ? "$" + (m.avg_dollar_volume_20d_m/1000).toFixed(1) + "bn" : "$" + m.avg_dollar_volume_20d_m.toFixed(0) + "m") : "—"}</div>
     ${sparkSvg(m.spark, {label: t, color: "var(--text-2)", h: 70})}
@@ -524,6 +535,7 @@ function openDrawer(t){
     ${e.path_dependent ? `<div class="warnbox">Path-dependent product: 5d and 20d leans are withheld. Daily reset or futures roll means multi-session history does not transfer mechanically.</div>` : ""}
     <h3 style="margin-top:12px">Stage of the move</h3>
     <div class="pill-row">${extChip((D.extension||{})["5"])} <span class="sub">5 sessions</span> ${extChip((D.extension||{})["20"])} <span class="sub">20 sessions · in units of the ETF's own realised vol (band ±${B.settings.extension.band_sd}σ)</span></div>
+    ${momentumTable(t)}
     <h3 style="margin-top:12px">What the option market charges</h3>${optHtml}
     <h3 style="margin-top:12px">Volatility metrics (tastytrade)</h3>${ttBlock(t)}
     ${e.holdings ? `<h3 style="margin-top:12px">Holdings · ${h}-session window</h3>${holdBlock(t, false)}` : ""}
@@ -534,6 +546,7 @@ function openDrawer(t){
     <div class="note">Each condition is measured on its own. They overlap (for example yields and the curve), so the bars do not add up.</div>`;
   d.classList.add("open"); d.setAttribute("aria-hidden","false");
   $("#dclose").onclick = closeDrawer;
+  if ($("#dcard")) $("#dcard").onclick = () => { state.deskTicker = t; state.deskH = null; closeDrawer(); renderDesk(); show("desk"); window.scrollTo(0, 0); };
   $("#hz-dr").onclick = ev => { const b = ev.target.closest("button"); if (!b) return; state.horizon = b.dataset.h; savePrefs(); renderAll(); openDrawer(t); };
   document.querySelectorAll("tr.row").forEach(r => r.classList.toggle("sel", r.dataset.t === t));
 }
@@ -700,7 +713,8 @@ function renderMethod(){
       <li><b>80% interval</b>: Student-t interval for the analog mean on independent windows. The window minimum is a label, not a rule.</li>
       <li><b>Price-only lean</b>: the same rule applied to all history, with no macro. Compare it with the macro lean to see what macro adds.</li>
       <li><b>Path-dependent</b>: leveraged, inverse and volatility products show no 5d or 20d lean.</li>
-      <li><b>Move made</b>: return over 5 and 20 sessions in units of the ETF's own 20-session realised vol. Beyond ±${B.settings.extension.band_sd}σ counts as extended. It says the entry may have deteriorated, not that the direction is wrong.</li>
+      <li><b>Move made</b>: return over 5 and 20 sessions in units of the ETF's own 20-session realised vol (beyond ±${B.settings.extension.band_sd}σ = extended). It describes the run; whether runs like it continued or stalled is <i>measured</i> per ETF under Momentum history, never assumed. Since 2021, runs in SPY and QQQ have more often continued.</li>
+      <li><b>Desk card</b>: the six desk questions filled from the board for each pipeline candidate and index ETF, with checks (macro lean, momentum, room left, option price, data, event risk) that describe evidence. When measured continuation exceeds the room left, the card says the pipeline target may be stale. The trader records Act / Wait / Skip and the reason.</li>
       <li><b>Response</b>: conditions in today's state with a measured contrast of |t| ≥ ${B.settings.response.t_min} count as headwinds or tailwinds for that ETF. The label compares their balance with the ETF's own return over the window. It is descriptive only.</li>
       <li><b>Priced vs history</b>: executable ATM straddle mid on the first expiry covering the horizon, scaled by √time, divided by the analog mean absolute move.</li>
       <li><b>Pipeline</b>: rows from the newest run with <code>${esc(B.settings.options ? "options/options_candidates_ranked.csv" : "")}</code>, shown read-only.</li>
@@ -825,8 +839,130 @@ function renderRotation(){
   $("#p-rotation tbody").onclick = e => { const tr = e.target.closest("tr.row"); if (tr && B.etfs[tr.dataset.t]) openDrawer(tr.dataset.t); };
 }
 
+/* ---------- momentum + desk card ---------- */
+const MOM_TXT = {UP_5_PLUS:"5+ up closes in a row", UP_3_4:"3–4 up closes in a row", UP_1_2:"1–2 up closes", DOWN_1_2:"1–2 down closes", DOWN_3_4:"3–4 down closes in a row", DOWN_5_PLUS:"5+ down closes in a row", UNCHANGED:"unchanged close", EXTENDED_UP:"extended up (≥1.5σ)", EXTENDED_DOWN:"extended down (≤−1.5σ)", NOT_EXTENDED:"not extended", MISSING:"missing"};
+function evRow(label, x){
+  const a = x?.analog || {};
+  return `<tr><td class="l">${label}</td><td class="l">${leanChip(x)} ${holdChip(x?.holdout)}</td><td class="${cls(a.mean_pct)}">${pct(a.mean_pct)}</td><td class="muted">${ci(a)}</td><td>${isNum(a.hit_rate)?Math.round(100*a.hit_rate)+"%":"—"}</td><td>${a.n_eff ?? "—"}</td></tr>`;
+}
+function momentumTable(t, hz){
+  const m = (B.etfs[t] || {}).momentum; if (!m || m.status !== "OK") return "";
+  const h = hz || state.horizon; const E = m.evidence || {}; const base = ((B.etfs[t].evidence || {})[h] || {}).base || {};
+  return `<h3 style="margin-top:12px">Momentum history · next ${h} session(s)</h3>
+    <div class="sub">Now: ${esc(MOM_TXT[m.current.streak] || m.current.streak)} (streak ${m.streak > 0 ? "+" : ""}${m.streak}) · 5d ${fmt(m.z?.["5"],2)}σ · 20d ${fmt(m.z?.["20"],2)}σ. What ${t} did next after the same state, against ${pct(base.mean_pct)} for all sessions.</div>
+    <table class="mini" style="width:100%;margin-top:4px"><thead><tr><th class="l">After…</th><th class="l">Lean</th><th>Mean</th><th>80% interval</th><th>Up</th><th>Windows</th></tr></thead><tbody>
+      ${evRow(esc(MOM_TXT[m.current.streak] || m.current.streak), (E.streak||{})[h])}
+      ${evRow("5d move " + esc(MOM_TXT[m.current.ext5] || m.current.ext5), (E.ext5||{})[h])}
+      ${evRow("20d move " + esc(MOM_TXT[m.current.ext20] || m.current.ext20), (E.ext20||{})[h])}
+    </tbody></table>
+    <div class="note">An extended move is judged by what followed similar runs for this ETF, not assumed to be late. Since 2021, runs in SPY and QQQ have more often continued than stalled.</div>`;
+}
+const CK_CLASS = {SUPPORTS:"good", OK:"good", CAUTION:"warn", CONFLICTS:"bad", AGAINST:"bad", NO_EVIDENCE:"", NO_PROPOSAL:"", UNKNOWN:""};
+const CK_ICON = {good:"✓", warn:"!", bad:"×", "":"–"};
+const CK_LABEL = {macro_lean:"Macro lean", momentum:"Momentum (streak)", momentum_ext20:"Momentum (20d move)", entry_room:"Room left", option_price:"Option price", data:"Data", event_risk:"Event risk"};
+const ckChip = (key, c) => { const k = CK_CLASS[c?.status] ?? ""; return `<span class="ck ${k}" data-tip="${esc(`<b>${CK_LABEL[key]}: ${words(c?.status)}</b><br>${esc(c?.text || "")}${c?.note ? "<br><br>" + esc(c.note) : ""}`)}"><i aria-hidden="true">${CK_ICON[k]}</i>${CK_LABEL[key]} · ${words(c?.status)}</span>`; };
+state.deskTicker = state.deskTicker || null; state.deskH = null;
+function deskKey(t){ return `macroBoardDesk:${B.as_of_session}:${t}`; }
+function renderDesk(){
+  const cards = B.desk_cards || {}; const names = Object.keys(cards);
+  if (!names.length) { $("#p-desk").innerHTML = `<div class="sub muted">No desk cards built.</div>`; return; }
+  if (!state.deskTicker || !cards[state.deskTicker]) state.deskTicker = names[0];
+  const t = state.deskTicker, D = cards[t];
+  const h = state.deskH && D.by_horizon[state.deskH] ? state.deskH : D.default_horizon;
+  const C = D.by_horizon[h]; const e = B.etfs[t]; const m = e.metrics || {}; const P = C.q4_pipeline || {};
+  const candBtn = n => { const p = B.etfs[n]?.pipeline; const d = p?.canonical_direction;
+    return `<button data-t="${esc(n)}" aria-pressed="${n===t}">${esc(n)} ${d==="CALL"?"▲":d==="PUT"?"▼":"·"}</button>`; };
+  const focus = names.filter(n => B.focus.includes(n)), others = names.filter(n => !B.focus.includes(n));
+  const q1 = C.q1_changed || {}, q2 = C.q2_affects || {}, q3 = C.q3_market || {}, q5 = C.q5_entry || {}, q6 = C.q6_change_mind || {};
+  const ck = C.checks || {};
+  const close = m.close;
+  const distTo = lvl => isNum(lvl) && isNum(close) ? pct((lvl / close - 1) * 100, 2) : "—";
+  const trig = (B.intel.usmi || {}).forward_triggers || {};
+  const trigList = Object.entries(trig).slice(0, 2).map(([k, v]) => `<li><b>${words(k)}</b>: ${esc((Array.isArray(v) ? v : [v]).slice(0, 2).join(" · "))}</li>`).join("");
+  let draft = {}; try { draft = JSON.parse(localStorage.getItem(deskKey(t)) || "{}"); } catch(err) {}
+  const opt = (v, label) => `<label class="opt"><input type="radio" name="dk-decision" value="${v}" ${draft.decision===v?"checked":""}> ${label}</label>`;
+  const template = `Against [backdrop], [new information] affects ${t} through [mechanism]. The market is [response]. The pipeline proposes [trade]. At [price] there is [room left] against [risk]. I will [act / wait / skip] because [reason]. I will change my mind if [condition].`;
+  $("#p-desk").innerHTML = `<h2>Desk decision card <span class="sub">the six desk questions answered from the board · checks describe evidence, you decide</span></h2>
+    <div class="card soft"><div class="sub" style="margin-bottom:6px">Pipeline candidates (▲ call · ▼ put) and the index ETFs</div>
+      <div class="cand" id="dk-cand">${focus.map(candBtn).join("")} <span class="sub" style="align-self:center">·</span> ${others.map(candBtn).join("")}</div></div>
+    <div class="card" style="margin-top:10px">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline">
+        <div><span class="state" style="font-size:22px">${esc(t)}</span> <span class="sub">${esc(groupOf(t))} · close ${fmt(close)} (${esc(m.last_session)})</span> ${pipeChip(e.pipeline)}</div>
+        <div class="seg" id="dk-h">${B.horizons.map(x => `<button data-h="${x}" aria-pressed="${String(x)===h}">${x}d${String(x)===D.default_horizon?" ·pipeline":""}</button>`).join("")}</div>
+      </div>
+      <div class="pill-row" style="margin-top:10px;gap:6px">${Object.keys(CK_LABEL).map(k => ckChip(k, ck[k])).join("")}</div>
+      ${ck.entry_room?.note ? `<div class="warnbox" style="margin-top:8px">${esc(ck.entry_room.note)}</div>` : ""}
+    </div>
+    <div class="deskgrid" style="margin-top:10px">
+      <div class="card deskq"><h3>1 · What changed? <small>new information since the last sessions</small></h3>
+        <ul class="list">${(q1.conditions||[]).map(c => `<li>${esc(c.session)}: ${esc(condMeta[c.condition]?.label || c.condition)} ${words(c.from)} → <b>${words(c.to)}</b></li>`).join("") || "<li class='muted'>No condition changes.</li>"}
+        ${(q1.events||[]).map(x => `<li>Event: ${esc(x)}</li>`).join("")}<li>News alert: ${words(q1.news_alert)} ${uncal}</li></ul></div>
+      <div class="card deskq"><h3>2 · What should it affect? <small>measured for ${esc(t)}, ${h}d</small></h3>
+        <ul class="list">${(q2.measured||[]).map(x => `<li>${esc(x.condition)} = ${words(x.state)}: <span class="${cls(x.excess_pct)}">${pct(x.excess_pct)}</span> vs other states (t ${fmt(x.t)})</li>`).join("") || "<li class='muted'>No condition with |t| ≥ 1 for this ETF and horizon.</li>"}
+        ${(q2.holdings_leaders||[]).length ? `<li>Holdings leading ${h}d: ${esc(q2.holdings_leaders.join(", "))}</li>` : ""}</ul></div>
+      <div class="card deskq"><h3>3 · What is the market doing?</h3>
+        <dl class="kv"><dt>Response (${h}d)</dt><dd>${respChip((e.decision?.response||{})[h])}</dd>
+        <dt>vs SPY, 20d</dt><dd class="${cls(q3.rs_vs_spy_20d)}">${pct(q3.rs_vs_spy_20d)}</dd>
+        <dt>Streak</dt><dd>${isNum(q3.streak) ? (q3.streak > 0 ? "+" : "") + q3.streak + " closes" : "—"} · ${esc(MOM_TXT[q3.momentum_states?.streak] || "")}</dd>
+        <dt>Move vs own vol</dt><dd>5d ${fmt(q3.z?.["5"],2)}σ · 20d ${fmt(q3.z?.["20"],2)}σ</dd>
+        <dt>Participation</dt><dd>${isNum(q3.participation_pct) ? Math.round(q3.participation_pct) + "% of weight above trend" : "—"}</dd></dl></div>
+      <div class="card deskq"><h3>4 · What does the pipeline propose?</h3>
+        ${P.canonical_direction ? `<dl class="kv"><dt>Direction · verdict</dt><dd>${esc(P.canonical_direction)} · ${words(P.options_verdict)}</dd>
+        <dt>Entry · target · invalidation</dt><dd>${fmt(P.entry_spot)} · ${fmt(P.target_spot)} · ${fmt(P.invalidation_spot)}</dd>
+        <dt>Trigger · horizon</dt><dd>${words(P.trigger_state)} · ${words(P.horizon_bucket)}</dd>
+        <dt>Contract</dt><dd>${P.contract_strike ? `${fmt(P.contract_strike,1)} exp ${esc(P.contract_expiry)} (${esc(P.contract_dte)}d) · ${fmt(P.contract_premium)}` : "—"}</dd>
+        <dt>Stand-down reason</dt><dd style="text-align:left">${esc(P.stand_down_reason || "—")}</dd></dl>` : `<div class="sub muted">No row for ${esc(t)} in the latest full run (${esc(B.pipeline?.run_id||"none")}).</div>`}
+        <div class="note">Run ${esc(B.pipeline?.run_id || "—")}, read-only.</div></div>
+      <div class="card deskq"><h3>5 · Is the entry still worth taking? <small>from today's close</small></h3>
+        <ul class="list"><li>${ckChip("entry_room", ck.entry_room)} ${esc(ck.entry_room?.text || "")}</li>
+        <li>${ckChip("option_price", ck.option_price)} ${esc(ck.option_price?.text || "")}</li>
+        ${q5.options?.straddle_mid ? `<li>ATM straddle ${q5.options.dte}d @ ${fmt(q5.options.strike,1)}: ${fmt(q5.options.straddle_bid)} / ${fmt(q5.options.straddle_mid)} / ${fmt(q5.options.straddle_ask)} → priced move ${pct(q5.options.implied_move_horizon_pct,2,false)} over ${h}d</li>` : ""}
+        ${isNum(q5.iv_rank) ? `<li>IV rank ${fmt(q5.iv_rank,0)} · IV − HV ${pct(q5.iv_hv_diff,1)}</li>` : ""}</ul></div>
+      <div class="card deskq"><h3>6 · What would change my mind?</h3>
+        <ul class="list">${isNum(q6.invalidation) ? `<li>Pipeline invalidation ${fmt(q6.invalidation)} (${distTo(q6.invalidation)} from close)</li>` : ""}
+        ${isNum(q6.target) ? `<li>Pipeline target ${fmt(q6.target)} (${distTo(q6.target)} from close)</li>` : ""}
+        ${trigList ? trigList.replace(/<li>/g, "<li>Money Index ") : ""}<li>A condition tile flipping state (Overview)</li></ul></div>
+    </div>
+    <div class="card" style="margin-top:10px"><h3>Evidence · next ${h} session(s)</h3>
+      <table class="mini" style="width:100%"><thead><tr><th class="l">Evidence</th><th class="l">Lean</th><th>Mean</th><th>80% interval</th><th>Up</th><th>Windows</th></tr></thead><tbody>
+        ${evRow("Macro: sessions like today", C.evidence?.macro)}
+        ${evRow("Price only: all sessions", {lean: C.evidence?.macro?.baseline_lean, analog: C.evidence?.macro?.base, holdout: "NOT_APPLICABLE"})}
+        ${evRow("Momentum: " + esc(MOM_TXT[e.momentum?.current?.streak] || ""), C.evidence?.momentum?.streak)}
+        ${evRow("Momentum: 5d move " + esc(MOM_TXT[e.momentum?.current?.ext5] || ""), C.evidence?.momentum?.ext5)}
+        ${evRow("Momentum: 20d move " + esc(MOM_TXT[e.momentum?.current?.ext20] || ""), C.evidence?.momentum?.ext20)}
+      </tbody></table>
+      <div class="note">${ckChip("macro_lean", ck.macro_lean)} ${esc(ck.macro_lean?.text || "")}<br>${ckChip("momentum", ck.momentum)} ${esc(ck.momentum?.text || "")}</div></div>
+    <div class="card deskform" style="margin-top:10px"><h3>Your decision</h3>
+      <div style="margin:6px 0 10px">${opt("ACT","Act")}${opt("WAIT","Wait")}${opt("SKIP","Skip")}${opt("INSUFFICIENT","Insufficient information")}</div>
+      <label class="sub" for="dk-reason">Reason (one sentence; template below)</label>
+      <textarea id="dk-reason" rows="4" placeholder="${esc(template)}">${esc(draft.reason || "")}</textarea>
+      <label class="sub" for="dk-change">What would change my mind</label>
+      <textarea id="dk-change" rows="2">${esc(draft.change || "")}</textarea>
+      <label class="sub" for="dk-who">Trader</label><input type="text" id="dk-who" value="${esc(draft.who || "")}" placeholder="initials">
+      <div class="controls"><button class="btn" id="dk-copy">Copy record</button><button class="btn" id="dk-save">Download record</button><button class="btn" id="dk-clear">Clear</button><span class="sub" id="dk-status">Drafts are kept in this browser until you clear them.</span></div>
+      <div class="note">The record holds your decision with the facts the card showed (as of ${esc(B.as_of_session)}). Save it to <code>macro_board/output/journal/</code> so it can be scored later. The checks describe evidence; they never decide for you.</div></div>`;
+  $("#dk-cand").onclick = ev => { const b = ev.target.closest("button[data-t]"); if (b) { state.deskTicker = b.dataset.t; state.deskH = null; renderDesk(); } };
+  $("#dk-h").onclick = ev => { const b = ev.target.closest("button"); if (b) { state.deskH = b.dataset.h; renderDesk(); } };
+  const collect = () => ({ decision: (document.querySelector("input[name=dk-decision]:checked") || {}).value || null,
+    reason: $("#dk-reason").value, change: $("#dk-change").value, who: $("#dk-who").value });
+  const persist = () => { try { localStorage.setItem(deskKey(t), JSON.stringify(collect())); } catch(err) {} };
+  $("#p-desk .deskform").addEventListener("input", persist); $("#p-desk .deskform").addEventListener("change", persist);
+  const record = () => JSON.stringify({ schema: "macro-board-desk-record-v1", board_version: B.board_version, as_of_session: B.as_of_session,
+    recorded_at: new Date().toISOString(), ticker: t, horizon_sessions: Number(h), close: close, ...collect(),
+    checks: Object.fromEntries(Object.entries(ck).map(([k, v]) => [k, v.status])),
+    pipeline: { direction: P.canonical_direction, verdict: P.options_verdict, entry: P.entry_spot, target: P.target_spot, invalidation: P.invalidation_spot, run_id: B.pipeline?.run_id },
+    evidence: { macro_lean: C.evidence?.macro?.lean, macro_mean_pct: C.evidence?.macro?.analog?.mean_pct, momentum_state: e.momentum?.current?.streak,
+      momentum_mean_pct: C.evidence?.momentum?.streak?.analog?.mean_pct, priced_vs_history: q5.options?.priced_vs_history, iv_rank: q5.iv_rank } }, null, 2);
+  $("#dk-copy").onclick = async () => { const text = record(); try { await navigator.clipboard.writeText(text); $("#dk-status").textContent = "Record copied."; }
+    catch(err) { $("#dk-reason").select(); $("#dk-status").textContent = "Copy was blocked; use Download instead."; } };
+  $("#dk-save").onclick = () => { const blob = new Blob([record()], {type: "application/json"}); const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `desk_${t}_${B.as_of_session}.json`; document.body.appendChild(a); a.click(); a.remove();
+    $("#dk-status").textContent = `Downloaded desk_${t}_${B.as_of_session}.json`; };
+  $("#dk-clear").onclick = () => { try { localStorage.removeItem(deskKey(t)); } catch(err) {} renderDesk(); };
+}
+
 function renderAll(){
-  renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderIntel(); renderScore(); renderMethod();
+  renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod();
 }
 renderAll();
 let start = "overview"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
