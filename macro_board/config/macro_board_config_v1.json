@@ -1,0 +1,365 @@
+{
+  "config_version": "macro_board_config_v1",
+  "recorded_at": "2026-10-06",
+  "business_owner": "ACK",
+  "approval_note": "ACK 2026-10-06: standalone ETF macro decision board, outside the AVSHUNTER pipeline, reading its data read-only. All thresholds PROVISIONAL until measured on board snapshots.",
+  "authority": "STANDALONE_DECISION_SUPPORT_ONLY_NOT_A_PIPELINE_INPUT",
+  "horizons_sessions": [
+    1,
+    5,
+    20
+  ],
+  "history_start": "2020-06-01",
+  "board_history_display_sessions": 260,
+  "conditions": {
+    "change_sessions": 20,
+    "zscore_window_sessions": 252,
+    "zscore_min_sessions": 126,
+    "trend_band_z": 0.5,
+    "curve_level_bands_pct": [
+      0.0,
+      0.5
+    ],
+    "rationale": "20-session change matches the 1-20 session thesis window; z-score against the trailing year makes 'rising/falling' relative to each series' own recorded volatility rather than a textbook level. Band 0.5 sd keeps roughly the middle third as 'stable'."
+  },
+  "fred_publication_lag_days": {
+    "DGS10": 1,
+    "DGS2": 1,
+    "SPREAD_2Y10Y": 1,
+    "DEXUSEU": 1,
+    "WALCL": 1,
+    "WTREGEN": 1,
+    "RRPONTSYD": 1,
+    "rationale": "FRED dates a value by observation date; it is published the next business day (H.4.1 weekly: Wednesday observation, Thursday release). A one-calendar-day lag minimum stops a session from seeing its own same-day print."
+  },
+  "fred_max_age_days": {
+    "daily": 6,
+    "weekly": 12
+  },
+  "evidence": {
+    "analog_match_levels": [
+      1.0,
+      0.9,
+      0.8,
+      0.7,
+      0.6
+    ],
+    "analog_target_effective_n": 12,
+    "min_history_sessions": 500,
+    "min_effective_n": 8,
+    "min_effective_n_holdout": 3,
+    "holdout_fraction": 0.25,
+    "lean_t_min": 1.5,
+    "lean_min_abs_mean_pct": {
+      "1": 0.05,
+      "5": 0.25,
+      "20": 0.75
+    },
+    "entry_convention": "NEXT_SESSION_OPEN_TO_CLOSE_H",
+    "analog_rationale": "Analog depth is chosen per build: the closest match level (share of today's observed conditions that agree) whose analog set still holds at least analog_target_effective_n independent 20-session windows; never looser than 0.6. 12 windows over the full history leaves ~8 in the train period (min_effective_n).",
+    "rationale": "Forward returns start at the next session's open because the board is read after the close/pre-market; overlapping windows are thinned so n_eff counts independent windows; the last quarter of history is held out to check the lean was not fitted to the whole sample.",
+    "interval_level": 0.8,
+    "interval_rationale": "Student-t interval for the mean on independent windows (thesis review: report uncertainty, the window minimum is only a label)."
+  },
+  "freshness": {
+    "price_max_age_sessions": 2,
+    "macro_packet_max_age_hours": 30,
+    "external_file_max_age_hours": 30,
+    "us_money_index_max_age_hours": 48
+  },
+  "scorecard": {
+    "us_regular_open_utc": "13:30",
+    "packet_bullish_tokens": [
+      "BULL",
+      "RISK_ON"
+    ],
+    "packet_bearish_tokens": [
+      "BEAR",
+      "RISK_OFF"
+    ],
+    "score_tickers": [
+      "SPY",
+      "QQQ"
+    ]
+  },
+  "sources": {
+    "price_db": "data/canonical/historical_prices.sqlite",
+    "fred_master": "dropbox/market_data/avshunter_fred_master.csv",
+    "macro_packet": "dropbox/macro/macro_intelligence_latest.json",
+    "macro_archive_dir": "data/macro/archive",
+    "us_money_index": "dropbox/macro/avshunter_us_money_index.json",
+    "enrichment_delta": "dropbox/macro/avshunter_macro_enrichment_delta.json",
+    "event_payload_glob": "dropbox/macro/avshunter_us_economic_event_payload_*.json",
+    "bond_state": "dropbox/macro/bond_macro_state.json",
+    "vix_engine": "dropbox/market_data/avshunter_vix_engine_v3.csv",
+    "gex_proxy": "dropbox/market_data/avshunter_gex_proxy.csv",
+    "liquidity_monitor": "dropbox/market_data/avshunter_liquidity_monitor.csv",
+    "macro_filter_summary": "dropbox/market_data/avshunter_macro_filter_summary.csv",
+    "daily_regime_model": "dropbox/market_data/avshunter_daily_macro_regime.csv",
+    "breadth_rsp_spy": "dropbox/market_data/breadth_rsp_spy.csv",
+    "forward_bias_glob": "dropbox/market_data/forward_bias_*.csv",
+    "economic_prints_glob": "dropbox/market_data/macro_2*.csv",
+    "threshold_flags": "dropbox/market_data/macro_series_threshold_flags.csv",
+    "c12_registry_dir": "config/registry"
+  },
+  "focus_tickers": [
+    "SPY",
+    "QQQ",
+    "IWM",
+    "DIA"
+  ],
+  "universe": [
+    {
+      "group": "Broad indices",
+      "tickers": [
+        "SPY",
+        "QQQ",
+        "IWM",
+        "DIA",
+        "RSP",
+        "IJH",
+        "MDY",
+        "VTI",
+        "VOO",
+        "IVV",
+        "IJR",
+        "IWO",
+        "IWN"
+      ]
+    },
+    {
+      "group": "Factors",
+      "tickers": [
+        "MTUM",
+        "VLUE",
+        "QUAL",
+        "USMV",
+        "SCHD"
+      ]
+    },
+    {
+      "group": "SPDR sectors",
+      "tickers": [
+        "XLK",
+        "XLF",
+        "XLE",
+        "XLV",
+        "XLY",
+        "XLP",
+        "XLI",
+        "XLB",
+        "XLU",
+        "XLRE",
+        "XLC"
+      ]
+    },
+    {
+      "group": "Industries & themes",
+      "tickers": [
+        "SMH",
+        "SOXX",
+        "IGV",
+        "HACK",
+        "KRE",
+        "KBE",
+        "XBI",
+        "IBB",
+        "ARKK",
+        "ARKG",
+        "ARKW",
+        "XOP",
+        "OIH",
+        "XME",
+        "ITB",
+        "XHB",
+        "XRT",
+        "IYR",
+        "VNQ",
+        "IYT",
+        "JETS"
+      ]
+    },
+    {
+      "group": "Rates & credit",
+      "tickers": [
+        "TLT",
+        "IEF",
+        "SHY",
+        "TIP",
+        "AGG",
+        "BND",
+        "HYG",
+        "JNK",
+        "LQD",
+        "EMB"
+      ]
+    },
+    {
+      "group": "Commodities & dollar",
+      "tickers": [
+        "GLD",
+        "IAU",
+        "SLV",
+        "GDX",
+        "GDXJ",
+        "USO",
+        "UCO",
+        "UNG",
+        "UUP"
+      ]
+    },
+    {
+      "group": "International",
+      "tickers": [
+        "EEM",
+        "EFA",
+        "VEA",
+        "VWO",
+        "EWJ",
+        "EWZ",
+        "FXI",
+        "EWG",
+        "EWU",
+        "KWEB",
+        "MCHI",
+        "INDA",
+        "EWY",
+        "EWT",
+        "EWC",
+        "EWA"
+      ]
+    },
+    {
+      "group": "Crypto",
+      "tickers": [
+        "IBIT",
+        "BITO",
+        "GBTC"
+      ]
+    },
+    {
+      "group": "Volatility products",
+      "tickers": [
+        "VXX",
+        "VIXY",
+        "UVXY",
+        "SVXY"
+      ]
+    },
+    {
+      "group": "Leveraged & inverse",
+      "tickers": [
+        "TQQQ",
+        "SQQQ",
+        "SPXL",
+        "SPXS",
+        "SPXU",
+        "SOXL",
+        "SOXS",
+        "TNA",
+        "TZA",
+        "LABU",
+        "LABD",
+        "FAS",
+        "FAZ",
+        "TMF",
+        "NUGT",
+        "DUST",
+        "ERX",
+        "ERY",
+        "BOIL",
+        "KOLD",
+        "UDOW",
+        "SDOW",
+        "SDS"
+      ]
+    }
+  ],
+  "path_dependent": {
+    "groups": [
+      "Leveraged & inverse",
+      "Volatility products"
+    ],
+    "lean_horizons_allowed": [
+      1
+    ],
+    "rationale": "Daily-reset and futures-roll products compound along the path; multi-session analog returns do not transfer mechanically (thesis s.14)."
+  },
+  "extension": {
+    "band_sd": 1.5,
+    "windows_sessions": [
+      5,
+      20
+    ],
+    "rationale": "Move already made, in the ETF's own 20-session realised vol; 1.5 sd marks a run large relative to its recent noise (thesis s.7, Scenario C). Descriptive label only."
+  },
+  "response": {
+    "t_min": 1.0,
+    "rationale": "Only condition contrasts with |t| >= 1 count as measured pressure; signs come from the board's own transmission evidence (thesis s.4)."
+  },
+  "options": {
+    "chain_db": "data/phantom/phantom_history.db",
+    "target_dte_calendar": {
+      "1": 1,
+      "5": 7,
+      "20": 28
+    },
+    "max_quote_age_sessions": 2,
+    "rationale": "Executable ATM straddle on the first expiry covering the horizon (runway rule), scaled by sqrt(time) to the horizon; compared with the analog mean absolute move (thesis s.8)."
+  },
+  "pipeline": {
+    "runs_dir": "data/output/runs",
+    "file": "options/options_candidates_ranked.csv",
+    "columns": [
+      "canonical_direction",
+      "options_verdict",
+      "stand_down_reason",
+      "entry_spot",
+      "target_spot",
+      "invalidation_spot",
+      "trigger_state",
+      "horizon_bucket",
+      "contract_strike",
+      "contract_expiry",
+      "contract_dte",
+      "contract_premium",
+      "thesis_state",
+      "thesis_move_consumed_factor",
+      "direction_arbitration_reason"
+    ],
+    "rationale": "Answers the desk card's 'What does the pipeline propose?' read-only; the board never changes or re-ranks it."
+  },
+  "archive_inputs": true,
+  "revision_note": "2026-10-06 rev c: issuer holdings (SSGA, Invesco) and tastytrade market metrics.",
+  "holdings": {
+    "dir": "macro_board/output/holdings",
+    "max_age_sessions": 3,
+    "top_rows": 15,
+    "participation_sessions": 50,
+    "sources": {
+      "SPY": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx"
+      },
+      "DIA": {
+        "issuer": "State Street",
+        "format": "ssga_xlsx",
+        "url": "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-dia.xlsx"
+      },
+      "QQQ": {
+        "issuer": "Invesco",
+        "format": "invesco_json",
+        "accept": "application/json",
+        "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/QQQ/holdings/fund?idType=ticker&productType=ETF"
+      }
+    },
+    "rationale": "Issuer daily holdings (ACK 6 Oct 2026): weight x return contribution and weight-share participation answer 'are the holdings that matter supporting the move?' (thesis s.6). Unpriced weight is shown, never treated as zero return."
+  },
+  "tastytrade": {
+    "dir": "macro_board/output/external",
+    "max_age_hours": 30,
+    "mean_abs_factor": 0.7979,
+    "rationale": "Read-only broker metrics via bridge.tastytrade_readonly_mcp (needs the broker OAuth environment). IV-based expected |move| = IV x sqrt(h/252) x sqrt(2/pi), shown beside the executable straddle move."
+  }
+}

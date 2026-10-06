@@ -28,10 +28,15 @@ for line in sys.stdin:
         result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                   "serverInfo": {"name": "fake-tastytrade", "version": "1"}}
     elif method == "tools/list":
-        result = {"tools": [{"name": "tastytrade_get_quote"}]}
+        result = {"tools": [{"name": "tastytrade_get_market_metrics"}, {"name": "tastytrade_get_quote"}]}
     elif method == "tools/call":
         name = message["params"]["name"]
-        if name != "tastytrade_get_quote":
+        if name == "tastytrade_get_market_metrics":
+            args = message["params"]["arguments"]
+            result = {"content": [{"type": "text", "text": json.dumps({"items": [
+                {"symbol": s, "implied-volatility-index": "0.21", "test-read-only": os.environ.get("TASTYTRADE_READ_ONLY")}
+                for s in args["symbols"]]})}]}
+        elif name != "tastytrade_get_quote":
             result = {"isError": True, "content": [{"type": "text", "text": "forbidden"}]}
         else:
             args = message["params"]["arguments"]
@@ -100,3 +105,53 @@ def test_unavailable_tool_is_explicit(tmp_path):
     with pytest.raises(BrokerMcpError, match="not advertised"):
         with ReadOnlyTastytradeMcp(command=[sys.executable, str(server)], environment={}):
             pass
+
+
+def test_market_metrics_is_the_only_added_read_and_order_tools_stay_refused(tmp_path):
+    env = {"TASTYTRADE_CLIENT_ID": "dummy", "TASTYTRADE_CLIENT_SECRET": "dummy", "TASTYTRADE_REFRESH_TOKEN": "dummy"}
+    with ReadOnlyTastytradeMcp(command=fake_command(tmp_path), environment=env) as broker:
+        payload = broker.market_metrics(["QQQ", "SPY"])
+        assert [item["symbol"] for item in payload["items"]] == ["QQQ", "SPY"]
+        assert payload["items"][0]["test-read-only"] == "1"
+        for forbidden in ("tastytrade_place_order", "tastytrade_get_positions", "tastytrade_get_balances"):
+            with pytest.raises(ValueError, match="not allowed"):
+                broker.call_tool(forbidden, {})
+        with pytest.raises(ValueError):
+            broker.market_metrics([])
+
+
+def test_market_metrics_also_requires_the_broker_oauth_environment(tmp_path):
+    with ReadOnlyTastytradeMcp(command=fake_command(tmp_path), environment={}) as broker:
+        with pytest.raises(BrokerCredentialUnavailable):
+            broker.market_metrics(["QQQ"])
+
+
+_PROVENANCE_HOOK = """    if method == "tools/call" and not result.get("isError"):
+        if os.environ.get("FAKE_MODE") == "two_data_blocks":
+            result["content"].append({"type": "text", "text": "{}"})
+        else:
+            result["content"].append({"type": "text", "text": "PROVENANCE - written by the tastytrade MCP server, not by the broker."})
+            result["_meta"] = {"tastytrade/provenance": {"upstream_content": True, "authored_by": "tastytrade-api"}}
+"""
+PROVENANCE_SERVER = FAKE_SERVER.replace("    sys.stdout.write(", _PROVENANCE_HOOK + "    sys.stdout.write(", 1)
+assert PROVENANCE_SERVER != FAKE_SERVER
+
+
+def test_the_servers_provenance_notice_is_accepted_and_never_parsed_as_data(tmp_path):
+    """tastytrade-mcp (21 Sep 2026 build) appends a provenance block to every broker result."""
+    server = tmp_path / "provenance_server.py"
+    server.write_text(PROVENANCE_SERVER, encoding="utf-8")
+    env = {"TASTYTRADE_CLIENT_ID": "dummy", "TASTYTRADE_CLIENT_SECRET": "dummy", "TASTYTRADE_REFRESH_TOKEN": "dummy"}
+    with ReadOnlyTastytradeMcp(command=[sys.executable, str(server)], environment=env) as broker:
+        assert broker.market_metrics(["QQQ"])["items"][0]["symbol"] == "QQQ"
+        assert broker.quote(["SPY"], "Equity")["items"][0]["symbol"] == "SPY"
+
+
+def test_a_second_data_block_without_the_provenance_marker_is_still_rejected(tmp_path):
+    server = tmp_path / "two_blocks_server.py"
+    server.write_text(PROVENANCE_SERVER, encoding="utf-8")
+    env = {"TASTYTRADE_CLIENT_ID": "dummy", "TASTYTRADE_CLIENT_SECRET": "dummy", "TASTYTRADE_REFRESH_TOKEN": "dummy",
+           "FAKE_MODE": "two_data_blocks"}
+    with ReadOnlyTastytradeMcp(command=[sys.executable, str(server)], environment={**env}) as broker:
+        with pytest.raises(BrokerMcpError, match="unsupported payload"):
+            broker.market_metrics(["QQQ"])

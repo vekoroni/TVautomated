@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ETF Macro Board</title>
+<style>
+:root{
+  color-scheme:light;
+  --surface:#fcfcfb; --surface-2:#f4f3f0; --surface-3:#ebe9e4; --border:#dedcd6; --grid:#e8e6e1;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7873;
+  --up:#2a78d6; --down:#e34948; --mid:#f0efec; --accent:#2a78d6;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --critical:#d03b3b; --good-text:#006300;
+  --seq-1:#cde2fb; --seq-2:#86b6ef; --seq-3:#3987e5; --seq-4:#1c5cab;
+  --shadow:0 1px 2px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --surface:#1a1a19; --surface-2:#222220; --surface-3:#2b2b29; --border:#3a3a37; --grid:#30302d;
+    --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+    --up:#3987e5; --down:#e66767; --mid:#383835; --accent:#3987e5; --good-text:#4cc84c;
+    --seq-1:#184f95; --seq-2:#256abf; --seq-3:#5598e7; --seq-4:#9ec5f4;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --surface:#1a1a19; --surface-2:#222220; --surface-3:#2b2b29; --border:#3a3a37; --grid:#30302d;
+  --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+  --up:#3987e5; --down:#e66767; --mid:#383835; --accent:#3987e5; --good-text:#4cc84c;
+  --seq-1:#184f95; --seq-2:#256abf; --seq-3:#5598e7; --seq-4:#9ec5f4;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--surface);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{overflow-x:hidden}
+a{color:var(--accent)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 16px 48px}
+header.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1440px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:650;font-size:16px;letter-spacing:.2px}
+.brand small{font-weight:400;color:var(--text-2);margin-left:8px}
+nav.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+nav.tabs button,.seg button,.btn{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);padding:5px 10px;border-radius:6px;cursor:pointer}
+nav.tabs button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--text);color:var(--surface);border-color:var(--text)}
+.seg{display:inline-flex;gap:2px}
+.authority{font-size:12px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin:14px 0 10px}
+.authority b{color:var(--text)}
+h2{font-size:15px;margin:22px 0 10px;font-weight:650}
+h3{font-size:13px;margin:0 0 8px;font-weight:650;color:var(--text)}
+.sub{color:var(--text-2);font-size:12px}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:10px}
+.g-cond{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.g-focus{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.g-intel{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);min-width:0}
+.card.soft{background:var(--surface-2)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--text-2)} .kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.state{font-weight:650;font-size:15px;letter-spacing:.2px}
+.num{font-variant-numeric:tabular-nums}
+.big{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--border);border-radius:999px;padding:1px 8px;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+.chip.up{color:var(--up);border-color:color-mix(in oklab,var(--up) 45%,var(--border))}
+.chip.down{color:var(--down);border-color:color-mix(in oklab,var(--down) 45%,var(--border))}
+.chip.flat{color:var(--text-2)}
+.chip.na{color:var(--muted);border-style:dashed}
+.stat{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}
+.stat i{font-style:normal;display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;font-size:10px;font-weight:700;color:#fff}
+.stat.ok i{background:var(--good)} .stat.stale i{background:var(--warn);color:#000} .stat.miss i{background:var(--critical)}
+.fresh-strip{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin:6px 0 2px}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.spark{display:block;width:100%;height:42px;margin-top:6px}
+.strip{display:flex;height:8px;border-radius:3px;overflow:hidden;margin-top:4px;gap:0}
+.strip span{flex:1 1 0;min-width:0}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:72vh}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--surface-2);color:var(--text-2);font-weight:600;cursor:pointer;user-select:none;z-index:2}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1}
+th:first-child{z-index:3;background:var(--surface-2)}
+td.l,th.l{text-align:left}
+tr.grp td{background:var(--surface-3);color:var(--text-2);font-weight:650;text-align:left}
+tbody tr.row:hover td{background:var(--surface-2);cursor:pointer}
+tr.sel td{background:color-mix(in oklab,var(--accent) 10%,var(--surface))!important}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.controls input[type=search],.controls select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}
+.heat{display:grid;gap:2px;font-size:11.5px}
+.heat .cell{height:24px;border-radius:3px;display:grid;place-items:center;font-variant-numeric:tabular-nums;color:var(--text);position:relative}
+.heat .cell.weak{opacity:.38}
+.heat .lab{display:flex;align-items:center;padding-right:6px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.heat .colh{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;color:var(--text-2);height:96px;display:flex;align-items:center;justify-content:flex-start}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin:6px 0}
+.legend .ramp{width:180px;height:10px;border-radius:3px;background:linear-gradient(90deg,var(--down),var(--mid),var(--up))}
+#tip{position:fixed;pointer-events:none;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:340px;display:none}
+#tip b{color:var(--text)}
+.bars{display:grid;grid-template-columns:minmax(110px,150px) 1fr 70px;gap:4px 8px;align-items:center;font-size:12px}
+.bars .track{position:relative;height:14px;background:transparent}
+.bars .track::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--border)}
+.bars .bar{position:absolute;top:2px;height:10px;border-radius:2px}
+.list{margin:0;padding-left:18px;font-size:12.5px}
+.list li{margin:2px 0}
+details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--surface);border-left:1px solid var(--border);z-index:40;overflow:auto;padding:16px;transform:translateX(100%);transition:transform .18s ease;box-shadow:-8px 0 24px rgba(0,0,0,.12)}
+.drawer.open{transform:none}
+.drawer .close{position:sticky;top:0;float:right}
+.pill-row{display:flex;flex-wrap:wrap;gap:4px}
+.page{display:none}.page.active{display:block}
+.note{font-size:12px;color:var(--text-2);margin:6px 0 0}
+.mini th,.mini td{padding:4px 6px;font-size:12px}
+.mini th{position:static;cursor:default}
+.mini th:first-child,.mini td:first-child{position:static}
+.warnbox{border-left:3px solid var(--warn);padding:6px 10px;background:var(--surface-2);font-size:12.5px;margin:6px 0}
+@media (max-width:640px){ header.top{position:static} .brand small{display:none} nav.tabs{margin-left:0} .big{font-size:22px} }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <div class="brand">ETF Macro Board <small id="hdr-asof"></small></div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <button class="btn" id="theme" title="Toggle light/dark">◐</button>
+</div></header>
+<div class="wrap">
+  <div class="authority" id="authority"></div>
+  <div class="fresh-strip" id="fresh"></div>
+  <section class="page" id="p-overview"></section>
+  <section class="page" id="p-etfs"></section>
+  <section class="page" id="p-map"></section>
+  <section class="page" id="p-intel"></section>
+  <section class="page" id="p-score"></section>
+  <section class="page" id="p-method"></section>
+</div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div id="tip" role="tooltip"></div>
+<script>
+const BOARD=/*__BOARD_PAYLOAD__*/null;
+</script>
+<script>
+(function(){
+"use strict";
+const B = BOARD;
+const $ = (s, el=document) => el.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isNum = v => typeof v === "number" && isFinite(v);
+const fmt = (v, d=2) => isNum(v) ? v.toFixed(d) : "—";
+const pct = (v, d=2, sign=true) => isNum(v) ? (sign && v > 0 ? "+" : "") + v.toFixed(d) + "%" : "—";
+const cls = v => isNum(v) ? (v > 0 ? "pos" : v < 0 ? "neg" : "") : "muted";
+const words = s => esc(String(s ?? "—").replace(/_/g, " "));
+const state = { horizon: String(B.horizons[B.horizons.length-1]), group: "ALL", q: "", freshOnly: true, sort: null, sortDir: -1, selected: null };
+try { const s = JSON.parse(localStorage.getItem("macroBoardPrefs") || "{}"); Object.assign(state, s.horizon ? {horizon: s.horizon} : {}); } catch(e) {}
+const savePrefs = () => { try { localStorage.setItem("macroBoardPrefs", JSON.stringify({horizon: state.horizon})); } catch(e) {} };
+
+/* ---------- theme ---------- */
+$("#theme").onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+};
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest("[data-tip]");
+  if (!t) { tip.style.display = "none"; return; }
+  tip.innerHTML = t.dataset.tip;
+  tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+
+/* ---------- helpers ---------- */
+const statusChip = (status, label) => {
+  const s = String(status || "MISSING").toUpperCase();
+  const k = s === "FRESH" || s === "OK" ? "ok" : s === "STALE" ? "stale" : "miss";
+  const icon = k === "ok" ? "✓" : k === "stale" ? "!" : "×";
+  return `<span class="stat ${k}"><i aria-hidden="true">${icon}</i>${esc(label ?? s)}</span>`;
+};
+const LEAN_TXT = {UP:"▲ Up", DOWN:"▼ Down", NO_CLEAR_LEAN:"– No clear lean", INSUFFICIENT_SAMPLE:"Insufficient sample", INSUFFICIENT_HISTORY:"Short history", PATH_DEPENDENT:"Path-dependent"};
+const RESP_TXT = {SUPPORTING_RESPONSE:"Supporting", ABSORBING_PRESSURE:"Absorbing pressure", REJECTING_RELIEF:"Rejecting relief", MIXED:"Mixed", INSUFFICIENT:"Insufficient"};
+const EXT_TXT = {EXTENDED_UP:"Extended ↑", EXTENDED_DOWN:"Extended ↓", NOT_EXTENDED:"Not extended", UNKNOWN:"—"};
+const uncal = `<span class="chip na" title="A composite chosen by its author. It has not been calibrated against outcomes, so it is not a probability.">uncalibrated</span>`;
+const ci = (s) => (s && isNum(s.ci_low_pct) && isNum(s.ci_high_pct)) ? `${pct(s.ci_low_pct,1)} … ${pct(s.ci_high_pct,1)}` : "—";
+const respChip = (r) => { if (!r) return `<span class="chip na">—</span>`;
+  const k = r.label === "SUPPORTING_RESPONSE" ? "" : r.label === "INSUFFICIENT" ? "na" : "flat";
+  const tipTxt = `<b>${esc(RESP_TXT[r.label]||r.label)}</b><br>Measured headwinds active: ${esc((r.headwinds||[]).map(k=>condMeta[k]?.label||k).join(", ")||"none")}<br>Measured tailwinds active: ${esc((r.tailwinds||[]).map(k=>condMeta[k]?.label||k).join(", ")||"none")}<br>ETF's own return over the window: ${pct(r.own_return_pct)}<br><span class="muted">Describes behaviour only. It is not a permission or a probability.</span>`;
+  return `<span class="chip ${k}" data-tip="${esc(tipTxt)}">${esc(RESP_TXT[r.label]||r.label)}</span>`; };
+const extChip = (x) => { if (!x) return "—"; const k = x.state === "EXTENDED_UP" ? "up" : x.state === "EXTENDED_DOWN" ? "down" : "na";
+  return `<span class="chip ${k}" title="Move over the window in units of the ETF's own realised volatility (z ${fmt(x.z)})">${EXT_TXT[x.state]||x.state} ${isNum(x.z)?fmt(x.z,1)+"σ":""}</span>`; };
+const pipeChip = (p) => { if (!p) return `<span class="chip na">not in run</span>`;
+  const d = p.canonical_direction, v = p.options_verdict;
+  const k = d === "CALL" ? "up" : d === "PUT" ? "down" : "na";
+  return `<span class="chip ${k}" data-tip="${esc(`<b>Pipeline ${esc(B.pipeline?.run_id||"")}</b><br>${esc(d)} · ${esc(v)}<br>${esc(p.stand_down_reason||"")}`)}">${esc(d||"—")} · ${words(v)}</span>`; };
+const leanChip = (ev) => {
+  if (!ev) return `<span class="chip na">n/a</span>`;
+  const k = ev.lean === "UP" ? "up" : ev.lean === "DOWN" ? "down" : ev.lean === "NO_CLEAR_LEAN" ? "flat" : "na";
+  return `<span class="chip ${k}" data-tip="${esc(leanTip(ev))}">${LEAN_TXT[ev.lean] || esc(ev.lean)}</span>`;
+};
+const HOLD_TXT = {HOLDOUT_AGREES:"✓ holdout", HOLDOUT_DISAGREES:"✗ holdout", HOLDOUT_THIN:"? holdout thin", NOT_APPLICABLE:""};
+const holdChip = h => HOLD_TXT[h] ? `<span class="chip ${h==="HOLDOUT_AGREES"?"":"na"}" title="Held-out check from ${esc("last quarter of history")}">${HOLD_TXT[h]}</span>` : "";
+function leanTip(ev){
+  if (!ev || !ev.analog) return `<b>${esc(LEAN_TXT[ev?.lean] || ev?.lean)}</b><br>${esc(ev?.history_sessions ?? 0)} sessions of history (need ${B.settings.evidence.min_history_sessions}).`;
+  const a = ev.analog, b = ev.base, t = ev.train, h = ev.holdout_stats;
+  return `<b>${esc(LEAN_TXT[ev.lean] || ev.lean)}</b> · ${esc((ev.holdout||"").replace(/_/g," ").toLowerCase())}<br>`+
+    `Analog sessions: mean ${pct(a.mean_pct)}, median ${pct(a.median_pct)}, up ${fmt(100*(a.hit_rate??NaN),0)}% · n=${a.n}, independent windows ${a.n_eff}<br>`+
+    `All history (base): mean ${pct(b.mean_pct)}, up ${fmt(100*(b.hit_rate??NaN),0)}%<br>`+
+    `80% interval for the analog mean: ${ci(a)}<br>`+
+    `Price-only lean (no macro): ${esc(LEAN_TXT[ev.baseline_lean]||ev.baseline_lean||"—")}<br>`+
+    `Train (before ${esc(ev.holdout_from)}): mean ${pct(t.mean_pct)}, t ${fmt(t.t)} on ${t.n_eff} windows<br>`+
+    `Holdout: mean ${pct(h.mean_pct)} on ${h.n_eff} windows<br><span class="muted">Return = next open → close ${state.horizon} session(s) later.</span>`;
+}
+function sparkSvg(values, opts={}){
+  const v = (values || []).map(x => isNum(x) ? x : null);
+  const pts = v.map((y,i) => [i,y]).filter(p => p[1] !== null);
+  if (pts.length < 2) return `<div class="sub muted">no history</div>`;
+  const W = 300, H = opts.h || 42, pad = 3;
+  const ys = pts.map(p => p[1]); let lo = Math.min(...ys), hi = Math.max(...ys);
+  if (opts.zero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+  if (hi === lo) { hi += 1; lo -= 1; }
+  const X = i => pad + (W - 2*pad) * i / Math.max(1, v.length - 1);
+  const Y = y => H - pad - (H - 2*pad) * (y - lo) / (hi - lo);
+  const d = pts.map((p,i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("");
+  const last = pts[pts.length-1];
+  const zero = opts.zero ? `<line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--border)" stroke-width="1"/>` : "";
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(opts.label||"history")}">${zero}`+
+    `<path d="${d}" fill="none" stroke="${opts.color||"var(--seq-3)"}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`+
+    `<circle cx="${X(last[0])}" cy="${Y(last[1])}" r="3" fill="${opts.color||"var(--seq-3)"}" stroke="var(--surface)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function divergingColor(v, cap){
+  if (!isNum(v)) return "var(--surface-3)";
+  const share = Math.min(1, Math.abs(v) / cap);
+  const pole = v >= 0 ? "var(--up)" : "var(--down)";
+  return `color-mix(in oklab, ${pole} ${Math.round(share*85)}%, var(--mid))`;
+}
+const condMeta = Object.fromEntries(B.conditions.meta.map(m => [m.key, m]));
+const VALUE_FMT = {
+  market_trend: v => isNum(v) ? "SPY " + v.toFixed(2) : "—",
+  market_vol: v => isNum(v) ? (100*v).toFixed(0) + "th pct" : "—",
+  market_breadth: v => isNum(v) ? (100*v).toFixed(0) + "% above 50d" : "—",
+  liquidity: v => isNum(v) ? "$" + (v/1000).toFixed(2) + "tn" : "—",
+  curve_level: v => isNum(v) ? (v>0?"+":"") + (100*v).toFixed(0) + " bp" : "—",
+  curve_move: v => isNum(v) ? (v>0?"+":"") + (100*v).toFixed(0) + " bp / 20d" : "—",
+  yields: v => isNum(v) ? v.toFixed(2) + "%" : "—",
+  credit: v => isNum(v) ? pct(v) + " / 20d" : "—",
+  dollar: v => isNum(v) ? pct(v) + " / 20d" : "—",
+  oil: v => isNum(v) ? pct(v) + " / 20d" : "—",
+};
+
+/* ---------- header / authority / freshness ---------- */
+$("#hdr-asof").textContent = `as of ${B.as_of_session} close · built ${B.built_at_utc.replace("T"," ").replace("+00:00"," UTC")}`;
+$("#authority").innerHTML = `<b>Standalone decision board.</b> Reads AVSHUNTER data read-only and feeds nothing back into the pipeline. `+
+  `<b>Measured leans</b> are what each ETF did after past sessions whose macro conditions resembled today (next open → close, independent windows, last quarter held out). They describe recorded history, not a guarantee. `+
+  `<b>Advisory intelligence</b> (LLM packet, US Money Index, event and news overlays) is shown as published, with its source and age, and is scored against reality on the Scorecards tab.`+
+  ` <span class="muted">${esc(B.board_version)} · ${esc(B.config_version)}</span>`;
+$("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span> ` + Object.values(B.external).map(s =>
+  `<span data-tip="${esc(`<b>${esc(s.name)}</b><br>${esc(s.path)}<br>as of ${esc(s.as_of||"—")} · age ${s.age_hours ?? "—"} h${s.note ? "<br>"+esc(s.note) : ""}`)}">${statusChip(s.status, s.name.split(" (")[0])}</span>`).join("") +
+  `<span data-tip="Daily bars: historical_prices.sqlite (Polygon, split-adjusted)">${statusChip("FRESH", "Prices to " + B.as_of_session)}</span>` +
+  `<span data-tip="${esc(`tastytrade market metrics (read-only) · ${B.tastytrade?.file || "no snapshot"} · fetched ${B.tastytrade?.fetched_utc || "—"}${(B.tastytrade?.skipped||[]).length ? " · rejected by the MCP server's schema: " + B.tastytrade.skipped.join(", ") : ""}${(B.refresh_report?.tastytrade?.status === "FAILED") ? " · today's refresh failed: " + B.refresh_report.tastytrade.error : ""}`)}">${statusChip(B.tastytrade?.status || "MISSING", "tastytrade metrics")}</span>` +
+  Object.entries(B.holdings_status || {}).map(([etf, h]) => `<span data-tip="${esc(`${h.issuer} daily holdings · as of ${h.as_of} · ${h.count} positions`)}">${statusChip(h.status, etf + " holdings")}</span>`).join("") +
+  Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
+
+/* ---------- tabs ---------- */
+const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
+$("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
+function show(page){
+  PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
+  try { localStorage.setItem("macroBoardPage", page); } catch(e) {}
+}
+$("#tabs").onclick = e => { const b = e.target.closest("button"); if (b) { show(b.dataset.p); window.scrollTo(0, 0); } };
+
+const horizonSeg = (id) => `<span class="seg" id="${id}" role="group" aria-label="Horizon">${B.horizons.map(h => `<button data-h="${h}" aria-pressed="${String(h)===state.horizon}">${h}d</button>`).join("")}</span>`;
+function bindHorizon(id, rerender){
+  $("#"+id).onclick = e => { const b = e.target.closest("button"); if (!b) return; state.horizon = b.dataset.h; savePrefs(); renderAll(); };
+}
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  const C = B.conditions;
+  const tiles = C.meta.map(m => {
+    const st = C.current[m.key]; const v = C.current_values[m.key];
+    const hist = C.history_states[m.key] || [];
+    const idx = s => m.states.indexOf(s);
+    const steps = ["var(--seq-1)","var(--seq-2)","var(--seq-3)","var(--seq-4)"];
+    const strip = hist.map((s,i) => `<span style="background:${s==="MISSING" ? "var(--surface-3)" : steps[Math.min(3, Math.round(idx(s) * 3 / Math.max(1, m.states.length-1)))]}" data-tip="${esc(C.history_sessions[i])}: ${words(s)}"></span>`).join("");
+    const legend = m.states.map((s,i) => `<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:${steps[Math.min(3, Math.round(i*3/Math.max(1,m.states.length-1)))]}"></span>${words(s)}</span>`).join(" ");
+    const missing = st === "MISSING";
+    const ob = (C.observations || {})[m.key] || {};
+    const obTxt = ob.oldest ? `observed ${esc(ob.oldest)}${ob.sessions_old ? ` · ${ob.sessions_old} session${ob.sessions_old>1?"s":""} old` : ""}` : "no observation";
+    const obTip = (ob.inputs||[]).map(i => `${esc(i.input)}: ${esc(i.observed||"missing")}`).join("<br>");
+    return `<div class="card">
+      <div class="sub" style="display:flex;justify-content:space-between;gap:6px"><span>${esc(m.label)}</span><span class="${ob.sessions_old ? "" : "muted"}" data-tip="${esc("<b>Observation dates used</b><br>" + obTip)}" style="${ob.sessions_old>=2?"color:var(--serious)":""}">${obTxt}</span></div>
+      <div class="state" style="${missing?"color:var(--critical)":""}">${missing ? "× MISSING" : words(st)}</div>
+      <div class="num sub">${VALUE_FMT[m.key] ? VALUE_FMT[m.key](v) : fmt(v)}</div>
+      ${sparkSvg(C.history_values[m.key], {label: m.label, zero: ["curve_level","curve_move","credit","dollar","oil"].includes(m.key)})}
+      <div class="strip" aria-label="state history">${strip}</div>
+      <div class="note" style="font-size:11px;display:flex;flex-wrap:wrap;gap:4px 8px">${legend}</div>
+      <div class="note" style="font-size:11px">${esc(m.measured)} · <span class="muted">${esc(m.source)}</span></div>
+    </div>`;
+  }).join("");
+  const ch = C.changes.slice(0, 12).map(c => `<li><span class="num muted">${esc(c.session)}</span> · <b>${esc(condMeta[c.condition]?.label || c.condition)}</b>: ${words(c.from)} → <b>${words(c.to)}</b></li>`).join("") || `<li class="muted">No state changes in the last 10 sessions.</li>`;
+  const A = B.analogs;
+  const ladder = A.ladder.map(r => `<tr${r.level===A.match_level?' style="font-weight:650"':""}><td>${Math.round(r.level*100)}%</td><td>${r.sessions}</td><td>${r.n_eff}</td></tr>`).join("");
+  const eps = A.episodes.map(e => `<tr><td>${esc(e.session)}</td>${B.focus.map(t => `<td class="${cls(e.forward[t])}">${pct(e.forward[t],1)}</td>`).join("")}</tr>`).join("");
+  const focus = B.focus.map(t => focusCard(t)).join("");
+  const p = B.intel.packet || {};
+  $("#p-overview").innerHTML = `
+    <h2>Index focus <span class="sub">measured lean per horizon · hover a chip for the evidence</span></h2>
+    <div class="grid g-focus">${focus}</div>
+    <h2>Macro conditions now <span class="sub">point-in-time, ${B.settings.conditions.change_sessions}-session changes scored against each series' trailing year</span></h2>
+    <div class="grid g-cond">${tiles}</div>
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card"><h3>What changed (last 10 sessions)</h3><ul class="list">${ch}</ul></div>
+      <div class="card"><h3>Analog depth</h3>
+        <div class="sub">Today has ${A.dimensions} observed conditions. The board uses the closest match level that still holds ≥ ${B.settings.evidence.analog_target_effective_n} independent ${Math.max(...B.horizons)}-session windows.</div>
+        <div class="big" style="margin:6px 0">${Math.round(A.match_level*100)}% <span class="sub">match · ${A.count} sessions</span></div>
+        <table class="mini"><thead><tr><th class="l">Match level</th><th>Sessions</th><th>Independent windows</th></tr></thead><tbody>${ladder}</tbody></table>
+      </div>
+      <div class="card"><h3>Most recent analog episodes · next ${Math.max(...B.horizons)} sessions</h3>
+        <div class="table-wrap" style="max-height:none;border:none"><table class="mini"><thead><tr><th class="l">Episode</th>${B.focus.map(t=>`<th>${t}</th>`).join("")}</tr></thead><tbody>${eps}</tbody></table></div>
+        <div class="note">Open after the episode → close ${Math.max(...B.horizons)} sessions later. Blank = window not complete.</div>
+      </div>
+      <div class="card soft"><h3>Advisory packet headline <span class="sub">(LLM synthesis · ${esc(p.macro_authority || "advisory")})</span></h3>
+        <div class="state">${words(p.regime_label)}</div>
+        <div class="sub">${words(p.risk_on_off_switch)} · conviction ${fmt(p.macro_conviction)} · probability ${fmt(p.regime_probability)}</div>
+        <div class="pill-row" style="margin-top:6px">${(p.sector_lead||[]).map(s=>`<span class="chip up">▲ lead ${esc(s)}</span>`).join("")}${(p.sector_avoid||[]).map(s=>`<span class="chip down">▼ avoid ${esc(s)}</span>`).join("")}</div>
+        <div class="note">Shown as published. Its record against SPY/QQQ is on the Scorecards tab.</div>
+      </div>
+    </div>`;
+}
+function focusCard(t){
+  const e = B.etfs[t]; if (!e) return "";
+  const m = e.metrics || {};
+  const ev = e.evidence || {};
+  const rows = B.horizons.map(h => {
+    const x = ev[String(h)];
+    const a = x?.analog || {}, b = x?.base || {};
+    return `<tr><td>${h}d</td><td class="l">${leanChip(x)} ${holdChip(x?.holdout)}</td><td class="${cls(a.mean_pct)}">${pct(a.mean_pct)}</td><td class="muted">${ci(a)}</td><td class="${cls(b.mean_pct)}">${pct(b.mean_pct)}</td><td>${a.n_eff ?? "—"}</td></tr>`;
+  }).join("");
+  const o = e.options, dcs = e.decision || {};
+  const optRows = o ? B.horizons.map(h => { const mv = (o.moves||{})[String(h)];
+    return mv ? `<tr><td>${h}d</td><td>${mv.dte}d · ${fmt(mv.strike,1)}</td><td>${pct(mv.implied_move_horizon_pct,2,false)}</td><td>${pct(mv.analog_mean_abs_pct,2,false)}</td><td>${isNum(mv.priced_vs_history)?fmt(mv.priced_vs_history,2)+"×":"—"}</td><td>${fmt(mv.spread_pct_of_mid,1)}%</td></tr>` : `<tr><td>${h}d</td><td colspan="5" class="muted">no expiry covering the horizon</td></tr>`; }).join("") : "";
+  const optBlock = o ? `<table class="mini" style="margin-top:6px;width:100%"><thead><tr><th class="l">H</th><th>Expiry · ATM</th><th>Priced move</th><th>Analog |move|</th><th>Ratio</th><th>Spread</th></tr></thead><tbody>${optRows}</tbody></table>
+    <div class="note">ATM straddle from executable chain quotes ${esc(o.quote_date)} ${o.status!=="FRESH"?statusChip(o.status, o.sessions_old+" sessions old"):""}, scaled to the horizon. A ratio above 1 means options price more movement than similar past sessions delivered.</div>` : `<div class="note muted">No option chain in the store for ${t}.</div>`;
+  const resp = (dcs.response||{})[state.horizon];
+  const ext20 = (dcs.extension||{})["20"], ext5 = (dcs.extension||{})["5"];
+  const g = (B.intel.gex || []).find(r => r.Ticker === t);
+  const gex = g ? `<div class="sub" style="margin-top:6px" data-tip="${esc(`Model estimate (${esc(g.Greek_Model_Disclosure)}). Dealer short-call/long-put sign is assumed. The Money Index reports authoritative dealer inventory as unavailable.`)}">Dealer gamma <span class="chip na">model estimate · sign assumed</span> <b>${words(g.Regime)}</b> · net ${fmt(g.Net_GEX_Bn)}bn · flip ${fmt(g.Gamma_Flip,1)} · call wall ${fmt(g.Call_Wall,0)} · put wall ${fmt(g.Put_Wall,0)} <span class="muted">(${esc(g.Date)})</span></div>` : "";
+  const stale = m.status !== "FRESH" ? `<div class="warnbox">${statusChip(m.status)} last bar ${esc(m.last_session)}</div>` : "";
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <div><span class="state">${t}</span> <span class="sub">${esc(groupOf(t))}</span></div>
+      <div class="big">${fmt(m.close)}</div></div>
+    <div class="sub num">1d <span class="${cls(m.ret_1d)}">${pct(m.ret_1d)}</span> · 5d <span class="${cls(m.ret_5d)}">${pct(m.ret_5d)}</span> · 20d <span class="${cls(m.ret_20d)}">${pct(m.ret_20d)}</span> · vs 200d <span class="${cls(m.vs_sma200)}">${pct(m.vs_sma200,1)}</span> · RV20 ${fmt(m.rv20,1)}%</div>
+    ${stale}
+    ${sparkSvg(m.spark, {label: t + " closes", color: "var(--text-2)"})}
+    <div class="pill-row" style="margin-top:6px"><span class="sub">Pipeline</span> ${pipeChip(e.pipeline)}${e.pipeline?.remaining && isNum(e.pipeline.remaining.target_consumed) ? ` <span class="chip ${e.pipeline.remaining.target_consumed >= 0.5 ? "flat" : "na"}" title="Share of the pipeline's entry→target move already made at today's close">${Math.round(100*e.pipeline.remaining.target_consumed)}% of target used</span>` : ""} <span class="sub">· Response ${state.horizon}d</span> ${respChip(resp)} <span class="sub">· Move made 5d</span> ${extChip(ext5)} <span class="sub">20d</span> ${extChip(ext20)}</div>
+    <table class="mini" style="margin-top:6px;width:100%"><thead><tr><th class="l">H</th><th class="l">Measured lean</th><th>Analog</th><th>80% interval</th><th>Base</th><th>Win.</th></tr></thead><tbody>${rows}</tbody></table>
+    ${optBlock}
+    ${e.tastytrade ? `<div class="sub num" style="margin-top:6px" data-tip="${esc("IV-based expected |move| = IV × √(h/252) × √(2/π). Compare with the straddle-priced move above.")}">tastytrade IV ${fmt(e.tastytrade.iv_index_pct,1)}% · IV rank ${fmt(e.tastytrade.iv_rank_pct,0)} · HV30 ${fmt(e.tastytrade.hv30_pct,1)}% · IV−HV ${pct(e.tastytrade.iv_hv_diff_pct,1)} · IV-implied |move| ${state.horizon}d ${pct((e.tastytrade.iv_expected_abs_move_pct||{})[state.horizon],2,false)}</div>` : ""}
+    ${e.holdings ? `<div style="margin-top:6px">${holdBlock(t, true)}</div>` : ""}
+    ${gex}
+  </div>`;
+}
+function ttBlock(t){
+  const m = (B.etfs[t] || {}).tastytrade; const T = B.tastytrade || {};
+  if (!m) return `<div class="note muted">Tastytrade metrics ${T.status === "MISSING" ? "not fetched (broker session unavailable)" : "not returned for " + t}.</div>`;
+  const term = (m.term || []).slice(0, 14);
+  const W = 300, H = 46, ys = term.map(x => x.iv_pct), lo = Math.min(...ys), hi = Math.max(...ys);
+  const path = term.length > 1 ? term.map((x,i) => (i?"L":"M") + (4 + 292*i/(term.length-1)).toFixed(1) + " " + (H-4-(H-8)*(x.iv_pct-lo)/Math.max(0.01,hi-lo)).toFixed(1)).join("") : "";
+  const termSvg = path ? `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="IV term structure"><path d="${path}" fill="none" stroke="var(--seq-3)" stroke-width="2" vector-effect="non-scaling-stroke"/>${term.map((x,i)=>`<circle cx="${(4+292*i/Math.max(1,term.length-1)).toFixed(1)}" cy="${(H-4-(H-8)*(x.iv_pct-lo)/Math.max(0.01,hi-lo)).toFixed(1)}" r="5" fill="transparent" data-tip="${esc(`${x.expiry}: IV ${fmt(x.iv_pct,1)}%`)}"/>`).join("")}</svg>` : "";
+  return `<dl class="kv">
+    <dt>IV index (30d)</dt><dd>${fmt(m.iv_index_pct,1)}% <span class="muted">5d ${pct(m.iv_index_5d_change_pct,2)}</span></dd>
+    <dt>IV rank / percentile</dt><dd>${fmt(m.iv_rank_pct,0)} / ${fmt(m.iv_percentile_pct,0)}</dd>
+    <dt>HV 30 / 60 / 90</dt><dd>${fmt(m.hv30_pct,1)} / ${fmt(m.hv60_pct,1)} / ${fmt(m.hv90_pct,1)}%</dd>
+    <dt>IV − HV (30d)</dt><dd class="${cls(m.iv_hv_diff_pct)}">${pct(m.iv_hv_diff_pct,2)}</dd>
+    <dt>Beta · corr SPY 3m</dt><dd>${fmt(m.beta,2)} · ${fmt(m.corr_spy_3m,2)}</dd>
+    <dt>Liquidity rating</dt><dd>${esc(m.liquidity_rating ?? "—")} / 5</dd></dl>
+    ${termSvg ? `<div class="sub" style="margin-top:4px">IV term structure, next ${term.length} expiries (${esc(term[0]?.expiry)} → ${esc(term[term.length-1]?.expiry)})</div>${termSvg}` : ""}
+    <div class="note">tastytrade, read-only · ${esc(T.source || "")} · fetched ${esc(T.fetched_utc || "—")} ${T.status !== "FRESH" ? statusChip(T.status) : ""}</div>`;
+}
+function holdBlock(t, compact){
+  const Hd = (B.etfs[t] || {}).holdings; if (!Hd) return compact ? "" : `<div class="note muted">No issuer holdings file for ${t}.</div>`;
+  const hz = state.horizon, w = Hd.windows[hz] || {};
+  const head = `<div class="sub">${esc(Hd.issuer)} holdings as of ${esc(Hd.as_of)} (${Hd.count} positions) ${Hd.status !== "FRESH" ? statusChip(Hd.status, Hd.sessions_old + " sessions old") : ""}</div>`;
+  const summary = `<div class="sub num" style="margin-top:4px">${hz}d: priced holdings contributed <b class="${cls(w.sum_contribution_pp)}">${pct(w.sum_contribution_pp)}</b> vs ${t} ${pct(w.etf_return_pct)} · top 10 (${fmt(w.top10_weight_pct,1)}% weight) <b class="${cls(w.top10_contribution_pp)}">${pct(w.top10_contribution_pp)}</b> · participation ${fmt(w.participation_weight_pct,0)}% of weight above its ${B.settings.holdings.participation_sessions}-session mean${w.unpriced_weight_pct > 0.05 ? ` · <span style="color:var(--serious)">${fmt(w.unpriced_weight_pct,1)}% weight unpriced</span>` : ""}</div>`;
+  if (compact) return head + summary;
+  const rows = (Hd.top || []).map(r => `<tr><td class="l"><b>${esc(r.ticker)}</b> <span class="muted">${esc((r.name||"").slice(0,22))}</span></td><td>${fmt(r.weight_pct,2)}%</td>${B.horizons.map(h => `<td class="${cls(r["ret_"+h])}">${pct(r["ret_"+h],1)}</td><td class="${cls(r["contrib_"+h])}">${isNum(r["contrib_"+h]) ? (r["contrib_"+h]>0?"+":"") + r["contrib_"+h].toFixed(2) : "—"}</td>`).join("")}</tr>`).join("");
+  const lead = (w.top_contributors || []).map(r => `${esc(r.ticker)} ${pct(r.contribution_pp,2).replace("%"," pp")}`).join(" · ");
+  const lag = (w.top_detractors || []).map(r => `${esc(r.ticker)} ${pct(r.contribution_pp,2).replace("%"," pp")}`).join(" · ");
+  return head + summary + `<div class="sub" style="margin-top:4px">Leading ${hz}d: ${lead || "—"}<br>Dragging ${hz}d: ${lag || "—"}</div>
+    <div class="table-wrap" style="max-height:340px;margin-top:6px"><table class="mini"><thead><tr><th class="l">Holding</th><th>Weight</th>${B.horizons.map(h=>`<th>${h}d ret</th><th>${h}d pp</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="note">Contribution = start-of-window weight × return, in percentage points of the ETF. Issuer weights are as of the file date and are drifted back to the window start, so recent winners are not over-weighted. Fees and cash are ignored. Holdings without a price in the store count as unpriced weight, never as a zero return.</div>`;
+}
+const GROUP_OF = {}; B.groups.forEach(g => g.tickers.forEach(t => GROUP_OF[t] = g.group));
+const groupOf = t => GROUP_OF[t] || "";
+
+/* ---------- ETF matrix ---------- */
+function etfRows(){
+  const h = state.horizon, q = state.q.trim().toUpperCase();
+  const p = B.intel.packet || {};
+  const lead = new Set(p.sector_lead || []), avoid = new Set(p.sector_avoid || []);
+  const out = [];
+  B.groups.forEach(g => g.tickers.forEach(t => {
+    const e = B.etfs[t]; if (!e) return;
+    const m = e.metrics || {};
+    if (state.group !== "ALL" && g.group !== state.group) return;
+    if (q && !t.includes(q)) return;
+    if (state.freshOnly && m.status !== "FRESH") return;
+    const x = (e.evidence || {})[h] || null;
+    out.push({t, g: g.group, m, x, p: e.pipeline, d: e.decision, o: e.options, tt: e.tastytrade, tag: lead.has(t) ? "LEAD" : avoid.has(t) ? "AVOID" : ""});
+  }));
+  return out;
+}
+const COLS = [
+  ["t","Ticker", r => r.t, r => `<b>${r.t}</b>`],
+  ["close","Last", r => r.m.close, r => fmt(r.m.close)],
+  ["status","Data", r => r.m.status, r => r.m.status === "FRESH" ? `<span class="muted">${esc(r.m.last_session?.slice(5))}</span>` : statusChip(r.m.status, r.m.last_session || "missing")],
+  ["r1","1d", r => r.m.ret_1d, r => `<span class="${cls(r.m.ret_1d)}">${pct(r.m.ret_1d)}</span>`],
+  ["r5","5d", r => r.m.ret_5d, r => `<span class="${cls(r.m.ret_5d)}">${pct(r.m.ret_5d)}</span>`],
+  ["r20","20d", r => r.m.ret_20d, r => `<span class="${cls(r.m.ret_20d)}">${pct(r.m.ret_20d)}</span>`],
+  ["r60","60d", r => r.m.ret_60d, r => `<span class="${cls(r.m.ret_60d)}">${pct(r.m.ret_60d)}</span>`],
+  ["rs","RS vs SPY 20d", r => r.m.rs_vs_spy_20d, r => `<span class="${cls(r.m.rs_vs_spy_20d)}">${pct(r.m.rs_vs_spy_20d)}</span>`],
+  ["s200","vs 200d", r => r.m.vs_sma200, r => `<span class="${cls(r.m.vs_sma200)}">${pct(r.m.vs_sma200,1)}</span>`],
+  ["hi","from 1y high", r => r.m.from_252_high, r => pct(r.m.from_252_high,1)],
+  ["rv","RV20", r => r.m.rv20, r => fmt(r.m.rv20,1)],
+  ["lean","Lean", r => ({UP:3,DOWN:1,NO_CLEAR_LEAN:2}[r.x?.lean] ?? 0), r => leanChip(r.x)],
+  ["ci","80% interval", r => r.x?.analog?.ci_low_pct, r => `<span class="muted">${ci(r.x?.analog)}</span>`],
+  ["pipe","Pipeline", r => r.p?.canonical_direction || "", r => pipeChip(r.p)],
+  ["resp","Response", r => r.d?.response?.[state.horizon]?.label || "", r => respChip(r.d?.response?.[state.horizon])],
+  ["ext","Move made 20d", r => r.d?.extension?.["20"]?.z, r => extChip(r.d?.extension?.["20"])],
+  ["ivr","IV rank", r => r.tt?.iv_rank_pct, r => isNum(r.tt?.iv_rank_pct) ? `<span data-tip="${esc(`IV ${fmt(r.tt.iv_index_pct,1)}% · HV30 ${fmt(r.tt.hv30_pct,1)}% · IV percentile ${fmt(r.tt.iv_percentile_pct,0)}`)}">${fmt(r.tt.iv_rank_pct,0)}</span>` : "—"],
+  ["pvh","Priced vs history", r => r.o?.moves?.[state.horizon]?.priced_vs_history, r => { const mv = r.o?.moves?.[state.horizon]; return mv && isNum(mv.priced_vs_history) ? `<span data-tip="${esc(`Straddle ${mv.dte}d ATM ${fmt(mv.strike,1)} (${esc(r.o.quote_date)}): priced move ${pct(mv.implied_move_horizon_pct,2,false)} over ${state.horizon} sessions vs analog mean |move| ${pct(mv.analog_mean_abs_pct,2,false)} · spread ${fmt(mv.spread_pct_of_mid,1)}% of mid`)}">${fmt(mv.priced_vs_history,2)}×</span>` : "—"; }],
+  ["hold","Holdout", r => r.x?.holdout, r => holdChip(r.x?.holdout)],
+  ["am","Analog mean", r => r.x?.analog?.mean_pct, r => `<span class="${cls(r.x?.analog?.mean_pct)}">${pct(r.x?.analog?.mean_pct)}</span>`],
+  ["bm","Base mean", r => r.x?.base?.mean_pct, r => `<span class="${cls(r.x?.base?.mean_pct)}">${pct(r.x?.base?.mean_pct)}</span>`],
+  ["ex","Excess", r => r.x?.excess_vs_base_pct, r => `<span class="${cls(r.x?.excess_vs_base_pct)}">${pct(r.x?.excess_vs_base_pct)}</span>`],
+  ["hit","Up %", r => r.x?.analog?.hit_rate, r => isNum(r.x?.analog?.hit_rate) ? Math.round(100*r.x.analog.hit_rate)+"%" : "—"],
+  ["ne","Windows", r => r.x?.analog?.n_eff, r => r.x?.analog?.n_eff ?? "—"],
+  ["tag","Packet", r => r.tag, r => r.tag === "LEAD" ? `<span class="chip up">lead</span>` : r.tag === "AVOID" ? `<span class="chip down">avoid</span>` : ""],
+];
+function renderEtfs(){
+  const rows = etfRows();
+  const groups = ["ALL", ...B.groups.map(g => g.group)];
+  let body = "";
+  if (state.sort){
+    const col = COLS.find(c => c[0] === state.sort);
+    rows.sort((a,b) => { const va = col[2](a), vb = col[2](b);
+      if (va == null && vb == null) return 0; if (va == null) return 1; if (vb == null) return -1;
+      return (va > vb ? 1 : va < vb ? -1 : 0) * state.sortDir; });
+    body = rows.map(r => rowHtml(r)).join("");
+  } else {
+    let last = null;
+    rows.forEach(r => { if (r.g !== last){ body += `<tr class="grp"><td colspan="${COLS.length}">${esc(r.g)}</td></tr>`; last = r.g; } body += rowHtml(r); });
+  }
+  $("#p-etfs").innerHTML = `
+    <h2>ETF matrix <span class="sub">${rows.length} shown · lean and evidence columns for the selected horizon</span></h2>
+    <div class="controls">
+      ${horizonSeg("hz-etf")}
+      <select id="grp" aria-label="Group">${groups.map(g => `<option ${g===state.group?"selected":""}>${esc(g)}</option>`).join("")}</select>
+      <input type="search" id="q" placeholder="Filter ticker" value="${esc(state.q)}">
+      <label class="sub"><input type="checkbox" id="fo" ${state.freshOnly?"checked":""}> current data only</label>
+      ${state.sort ? `<button class="btn" id="unsort">Group view</button>` : ""}
+    </div>
+    <div class="table-wrap"><table><thead><tr>${COLS.map(c => `<th class="${["t","lean","hold","pipe","resp","ext"].includes(c[0])?"l":""}" data-k="${c[0]}">${c[1]}${state.sort===c[0]?(state.sortDir>0?" ↑":" ↓"):""}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="note">Click a row for the condition-by-condition evidence. "Short history" ETFs have fewer than ${B.settings.evidence.min_history_sessions} sessions in the price store, so they show price data only. Leveraged, inverse and volatility products decay along their path, so their 5d and 20d leans are withheld ("Path-dependent"); the evidence is still shown. "Pipeline" is the latest full AVSHUNTER run (${esc(B.pipeline?.run_id||"none")}), shown read-only.</div>`;
+  bindHorizon("hz-etf");
+  $("#grp").onchange = e => { state.group = e.target.value; renderEtfs(); };
+  $("#q").oninput = e => { state.q = e.target.value; const pos = e.target.selectionStart; renderEtfs(); const q = $("#q"); q.focus(); q.setSelectionRange(pos,pos); };
+  $("#fo").onchange = e => { state.freshOnly = e.target.checked; renderEtfs(); };
+  if ($("#unsort")) $("#unsort").onclick = () => { state.sort = null; renderEtfs(); };
+  $("#p-etfs thead").onclick = e => { const th = e.target.closest("th"); if (!th) return; const k = th.dataset.k;
+    state.sortDir = state.sort === k ? -state.sortDir : -1; state.sort = k; renderEtfs(); };
+  $("#p-etfs tbody").onclick = e => { const tr = e.target.closest("tr.row"); if (tr) openDrawer(tr.dataset.t); };
+}
+const rowHtml = r => `<tr class="row ${state.selected===r.t?"sel":""}" data-t="${r.t}">${COLS.map(c => `<td class="${["t","lean","hold","pipe","resp","ext"].includes(c[0])?"l":""}">${c[3](r)}</td>`).join("")}</tr>`;
+
+/* ---------- drawer ---------- */
+function openDrawer(t){
+  state.selected = t;
+  const e = B.etfs[t]; const m = e.metrics || {};
+  const h = state.horizon;
+  const evRows = B.horizons.map(hh => { const x = (e.evidence||{})[String(hh)]; const a = x?.analog||{}, b = x?.base||{}, tr = x?.train||{}, ho = x?.holdout_stats||{};
+    return `<tr><td>${hh}d</td><td class="l">${leanChip(x)}</td><td class="${cls(a.mean_pct)}">${pct(a.mean_pct)}</td><td>${ci(a)}</td><td>${pct(a.p10_pct,1)} … ${pct(a.p90_pct,1)}</td><td class="${cls(b.mean_pct)}">${pct(b.mean_pct)}</td><td class="l">${esc(LEAN_TXT[x?.baseline_lean]||x?.baseline_lean||"—")}</td><td>${fmt(tr.t)}</td><td class="${cls(ho.mean_pct)}">${pct(ho.mean_pct)} <span class="muted">(${ho.n_eff ?? 0})</span></td></tr>`; }).join("");
+  const P = e.pipeline;
+  const RM = P?.remaining;
+  const remHtml = RM ? `<div class="warnbox" style="border-left-color:var(--accent)">From today's close ${fmt(m.close)}: <b>${pct(RM.to_target_pct)}</b> left to the pipeline target, <b>${pct(RM.to_invalidation_pct)}</b> to its invalidation${isNum(RM.target_consumed) ? ` · <b>${Math.round(100*RM.target_consumed)}%</b> of the entry→target move already used` : ""}. These are distances, not probabilities. Re-evaluate the entry if the move is largely consumed.</div>` : "";
+  const pipeHtml = P ? `${remHtml}<dl class="kv">${Object.entries(P).filter(([k]) => k !== "remaining").map(([k,v]) => `<dt>${words(k)}</dt><dd style="text-align:left">${esc(v ?? "—")}</dd>`).join("")}</dl><div class="note">Run ${esc(B.pipeline?.run_id)} · written ${esc(B.pipeline?.written_utc)} · ${esc(B.pipeline?.file)}. Read-only: the board does not change or re-rank it.</div>` : `<div class="sub muted">${t} has no row in the latest full run (${esc(B.pipeline?.run_id||"none")}).</div>`;
+  const O = e.options;
+  const optHtml = O ? `<table class="mini" style="width:100%"><thead><tr><th class="l">H</th><th>Expiry</th><th>ATM</th><th>Straddle bid / mid / ask</th><th>Priced move (expiry)</th><th>Scaled to H</th><th>Analog |move|</th><th>Ratio</th><th>Spread</th></tr></thead><tbody>${B.horizons.map(hh => { const mv = (O.moves||{})[String(hh)];
+      return mv ? `<tr><td>${hh}d</td><td>${mv.dte}d</td><td>${fmt(mv.strike,1)}</td><td>${fmt(mv.straddle_bid)} / ${fmt(mv.straddle_mid)} / ${fmt(mv.straddle_ask)}</td><td>${pct(mv.implied_move_pct,2,false)}</td><td>${pct(mv.implied_move_horizon_pct,2,false)}</td><td>${pct(mv.analog_mean_abs_pct,2,false)}</td><td>${isNum(mv.priced_vs_history)?fmt(mv.priced_vs_history,2)+"×":"—"}</td><td>${fmt(mv.spread_pct_of_mid,1)}%</td></tr>` : `<tr><td>${hh}d</td><td colspan="8" class="muted">no expiry covering the horizon</td></tr>`; }).join("")}</tbody></table>
+      <div class="note">Quotes ${esc(O.quote_date)} (${O.sessions_old} session(s) before ${esc(B.as_of_session)}) ${O.status!=="FRESH"?statusChip(O.status):""}. Buying the straddle at the ask costs more than the mid shown. Contract choice stays with the pipeline's options stage.</div>` : `<div class="sub muted">No option chain stored for ${t}.</div>`;
+  const D = e.decision || {};
+  const R = (D.response||{})[h];
+  const respHtml = R ? `${respChip(R)} <span class="sub">headwinds: ${esc((R.headwinds||[]).map(k=>condMeta[k]?.label||k).join(", ")||"none")} · tailwinds: ${esc((R.tailwinds||[]).map(k=>condMeta[k]?.label||k).join(", ")||"none")} · own ${h}d return ${pct(R.own_return_pct)}</span>` : "";
+  const sens = (e.sensitivity || {})[h] || {};
+  const vals = Object.values(sens).map(s => Math.abs(s.excess_pct || 0));
+  const cap = Math.max(0.5, ...vals);
+  const bars = B.conditions.meta.map(mm => { const s = sens[mm.key]; if (!s) return "";
+    const v = s.excess_pct; const w = isNum(v) ? Math.abs(v) / cap * 50 : 0;
+    const left = isNum(v) && v < 0 ? 50 - w : 50;
+    const weak = !isNum(s.t) || Math.abs(s.t) < 1;
+    return `<div>${esc(mm.label)}<div class="muted" style="font-size:11px">${words(s.state)}</div></div>
+      <div class="track" data-tip="${esc(`<b>${esc(mm.label)}: ${words(s.state)}</b><br>Mean ${h}d return while in this state ${pct(s.mean_in_pct)} vs other observed states: excess ${pct(v)}<br>t ${fmt(s.t)} · ${s.n_eff_in} independent windows in state`)}">
+        ${isNum(v) ? `<span class="bar" style="left:${left}%;width:${Math.max(1,w)}%;background:${v>=0?"var(--up)":"var(--down)"};opacity:${weak?.4:1}"></span>` : ""}</div>
+      <div class="num ${cls(v)}" style="text-align:right">${isNum(v) ? pct(v) : "missing"}</div>`; }).join("");
+  const d = $("#drawer");
+  d.innerHTML = `<button class="btn close" id="dclose">Close ✕</button>
+    <div class="state" style="font-size:20px">${t} <span class="sub">${esc(groupOf(t))}</span></div>
+    <div class="sub num">${fmt(m.close)} · last bar ${esc(m.last_session)} ${m.status!=="FRESH"?statusChip(m.status):""} · ${m.history_sessions} sessions · avg $ volume 20d ${isNum(m.avg_dollar_volume_20d_m) ? (m.avg_dollar_volume_20d_m >= 1000 ? "$" + (m.avg_dollar_volume_20d_m/1000).toFixed(1) + "bn" : "$" + m.avg_dollar_volume_20d_m.toFixed(0) + "m") : "—"}</div>
+    ${sparkSvg(m.spark, {label: t, color: "var(--text-2)", h: 70})}
+    <h3 style="margin-top:12px">What the pipeline proposes</h3>${pipeHtml}
+    <h3 style="margin-top:12px">Measured lean by horizon</h3>
+    <div class="table-wrap" style="max-height:none"><table class="mini"><thead><tr><th class="l">H</th><th class="l">Lean</th><th>Analog mean</th><th>80% interval</th><th>10th…90th pct</th><th>Base mean</th><th class="l">Price-only lean</th><th>Train t</th><th>Holdout (win.)</th></tr></thead><tbody>${evRows}</tbody></table></div>
+    ${e.path_dependent ? `<div class="warnbox">Path-dependent product: 5d and 20d leans are withheld. Daily reset or futures roll means multi-session history does not transfer mechanically.</div>` : ""}
+    <h3 style="margin-top:12px">Stage of the move</h3>
+    <div class="pill-row">${extChip((D.extension||{})["5"])} <span class="sub">5 sessions</span> ${extChip((D.extension||{})["20"])} <span class="sub">20 sessions · in units of the ETF's own realised vol (band ±${B.settings.extension.band_sd}σ)</span></div>
+    <h3 style="margin-top:12px">What the option market charges</h3>${optHtml}
+    <h3 style="margin-top:12px">Volatility metrics (tastytrade)</h3>${ttBlock(t)}
+    ${e.holdings ? `<h3 style="margin-top:12px">Holdings · ${h}-session window</h3>${holdBlock(t, false)}` : ""}
+    <h3 style="margin-top:12px">Response · ${h}-session window</h3><div class="pill-row">${respHtml}</div>
+    <h3 style="margin-top:14px">Which conditions moved ${t} · ${h}-session horizon ${horizonSeg("hz-dr")}</h3>
+    <div class="sub" style="margin-bottom:6px">Bar = mean forward return while each condition sat in today's state, minus its mean in the condition's other observed states. Faded bars have |t| below 1.</div>
+    <div class="bars">${bars}</div>
+    <div class="note">Each condition is measured on its own. They overlap (for example yields and the curve), so the bars do not add up.</div>`;
+  d.classList.add("open"); d.setAttribute("aria-hidden","false");
+  $("#dclose").onclick = closeDrawer;
+  $("#hz-dr").onclick = ev => { const b = ev.target.closest("button"); if (!b) return; state.horizon = b.dataset.h; savePrefs(); renderAll(); openDrawer(t); };
+  document.querySelectorAll("tr.row").forEach(r => r.classList.toggle("sel", r.dataset.t === t));
+}
+function closeDrawer(){ const d = $("#drawer"); d.classList.remove("open"); d.setAttribute("aria-hidden","true"); state.selected = null; document.querySelectorAll("tr.row.sel").forEach(r => r.classList.remove("sel")); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+/* ---------- transmission map ---------- */
+function renderMap(){
+  const h = state.horizon;
+  const keys = B.conditions.meta.map(m => m.key);
+  const tickers = [];
+  B.groups.forEach(g => g.tickers.forEach(t => { const e = B.etfs[t]; if (e && e.metrics?.status === "FRESH" && e.evidence?.[h]?.lean !== "INSUFFICIENT_HISTORY" && e.sensitivity?.[h]) tickers.push(t); }));
+  const all = tickers.flatMap(t => keys.map(k => Math.abs(B.etfs[t].sensitivity[h][k]?.excess_pct || 0)));
+  const sorted = all.filter(isNum).sort((a,b)=>a-b);
+  const cap = Math.max(0.2, sorted[Math.floor(sorted.length*0.95)] || 1);
+  const cols = `minmax(64px,90px) repeat(${keys.length}, minmax(44px,1fr))`;
+  let html = `<div class="heat" style="grid-template-columns:${cols}"><div></div>` + keys.map(k => `<div class="colh" title="${esc(condMeta[k].measured)}">${esc(condMeta[k].label)}: ${words(B.conditions.current[k])}</div>`).join("");
+  let lastG = null;
+  tickers.forEach(t => {
+    if (groupOf(t) !== lastG){ lastG = groupOf(t); html += `<div class="lab" style="grid-column:1/-1;color:var(--text);font-weight:650;margin-top:6px">${esc(lastG)}</div>`; }
+    html += `<div class="lab"><b>${t}</b></div>` + keys.map(k => { const s = B.etfs[t].sensitivity[h][k] || {}; const v = s.excess_pct;
+      const weak = !isNum(s.t) || Math.abs(s.t) < 1;
+      return `<div class="cell ${weak?"weak":""}" style="background:${divergingColor(v, cap)}" data-tip="${esc(`<b>${t} · ${esc(condMeta[k].label)} = ${words(s.state)}</b><br>Excess ${h}d return in this state: ${pct(v)}<br>t ${fmt(s.t)} · ${s.n_eff_in ?? 0} independent windows in state<br>Mean while in state ${pct(s.mean_in_pct)}`)}">${isNum(v) ? (Math.abs(v) >= 10 ? v.toFixed(0) : v.toFixed(1)) : "×"}</div>`; }).join("");
+  });
+  html += `</div>`;
+  $("#p-map").innerHTML = `<h2>Transmission map <span class="sub">how each ETF's forward return differed while each condition sat in today's state</span></h2>
+    <div class="controls">${horizonSeg("hz-map")}
+    <div class="legend"><span>${pct(-cap,1)}</span><span class="ramp"></span><span>${pct(cap,1)}</span><span>· faded = |t| &lt; 1 (weak) · × = condition missing</span></div></div>
+    <div class="card" style="overflow:auto">${html}</div>
+    <div class="note">Cell = mean ${h}-session return (next open → close) while the condition was in today's state, minus its mean in the condition's other observed states. Blue means the ETF did better, red worse. These are single-condition contrasts on overlapping windows, so use them to see where macro has been transmitting, not as stand-alone signals. Colour scale capped at the 95th percentile.</div>`;
+  bindHorizon("hz-map");
+}
+
+/* ---------- intelligence ---------- */
+function kv(obj, keys){ return `<dl class="kv">${keys.map(([k,l,f]) => `<dt>${esc(l)}</dt><dd>${f ? f(obj?.[k]) : words(obj?.[k])}</dd>`).join("")}</dl>`; }
+function srcLine(name){ const s = B.external[name]; return s ? `<div class="note">${statusChip(s.status)} <span class="muted">${esc(s.path)} · as of ${esc(s.as_of || "—")} · ${s.age_hours ?? "—"} h old</span></div>` : ""; }
+function renderIntel(){
+  const I = B.intel; const p = I.packet || {};
+  const routing = p.horizon_routing ? Object.entries(p.horizon_routing).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="l">${words(v.bias)}</td><td>${fmt(v.bullish_prob_pct,1)}%</td><td class="l">${words(v.engine_mode)}</td></tr>`).join("") : "";
+  const u = I.usmi || {};
+  const comps = (u.components || []).map(c => { const w = isNum(c.weight) && c.weight ? (c.score||0)/c.weight : 0;
+    return `<div class="l" style="font-size:12px">${words(c.name)}</div><div class="track" data-tip="${esc(words(c.status))}"><span class="bar" style="left:0;width:${Math.max(1,100*w)}%;background:var(--seq-3)"></span></div><div class="num" style="text-align:right;font-size:12px">${fmt(c.score,0)}/${fmt(c.weight,0)}</div>`; }).join("");
+  const trig = u.forward_triggers ? Object.entries(u.forward_triggers).map(([k,v]) => `<details><summary>${words(k)} (${Array.isArray(v)?v.length:1})</summary><ul class="list">${(Array.isArray(v)?v:[v]).map(x=>`<li>${esc(typeof x==="string"?x:JSON.stringify(x))}</li>`).join("")}</ul></details>`).join("") : "";
+  const ev = I.events || {}; const verdict = ev.verdict || {};
+  const short = v => v == null ? "—" : typeof v === "object" ? Object.entries(v).slice(0,4).map(([k,x]) => `${k.replace(/_/g," ")}: ${typeof x==="object"?JSON.stringify(x):x}`).join("; ") : String(v);
+  const evs = (ev.events || []).map(x => { const noConsensus = x.forecast == null;
+    return `<li><b>${esc(x.event_name)}</b> <span class="muted">${esc(x.country_or_institution||"")} · ${esc(x.release_time_utc||"")} · ${words(x.status)}</span>
+      <div class="sub">Actual: ${esc(short(x.actual))} · Forecast: ${noConsensus ? "<b>none</b>" : esc(short(x.forecast))} · Previous: ${esc(short(x.previous))}</div>
+      <div class="sub">${noConsensus ? `<span class="chip na">no consensus · surprise not measurable</span> <span class="muted">engine label: ${words(x.surprise_direction)} ${esc(x.surprise_score ?? "")}</span>` : `Surprise ${words(x.surprise_direction)} ${esc(x.surprise_score ?? "")} ${uncal}`}${x.expected_magnitude?` · ${words(x.expected_magnitude)}`:""}</div></li>`; }).join("");
+  const en = I.enrichment || {};
+  const vix = (I.vix_engine || [])[0] || {};
+  const bond = I.bond || {};
+  const liq = (I.liquidity_monitor || [])[0] || {};
+  const fh = (I.macro_filter || [])[0] || {};
+  const fb = (I.forward_bias || []).map(r => `<tr><td class="l">${words(r.horizon)}</td><td class="l">${words(r.direction)}</td><td>${fmt(r.bullish_prob_pct,1)}%</td><td>${fmt(r.score,3)}</td></tr>`).join("");
+  const rm = (I.regime_model_latest || []).slice(-5).reverse().map(r => `<tr><td class="l">${esc(r.Date)}</td><td class="l">${esc(r.Regime)}</td><td>${fmt(r.Regime_Probability,3)}</td><td class="l">${esc(r.Confidence_Level)}</td></tr>`).join("");
+  const prints = (I.economic_prints || []).map(r => `<tr><td class="l">${esc(r.name)}</td><td>${fmt(r.value, Math.abs(r.value) > 1000 ? 0 : 2)}</td><td>${pct(r.change_pct,2)}</td><td>${isNum(r.yoy_pct)?pct(r.yoy_pct,2):"—"}</td><td>${esc(r.date)}</td><td>${esc(r.age_days)}d</td></tr>`).join("");
+  const flags = (I.threshold_flags || []).map(r => `<tr><td class="l">${esc(r.series)}</td><td class="l">${words(r.flag)}</td><td class="l">${words(r.direction)}</td><td class="l">${words(r.regime)}</td><td>${pct(r.chg_5d_pct,1)}</td><td>${pct(r.chg_30d_pct,1)}</td><td>${r.counts_as_risk ? "yes" : ""}</td></tr>`).join("");
+  const gex = (I.gex || []).map(g => `<tr><td class="l"><b>${esc(g.Ticker)}</b></td><td class="l">${words(g.Regime)}</td><td>${fmt(g.Spot,2)}</td><td>${fmt(g.Gamma_Flip,1)}</td><td>${fmt(g.Call_Wall,0)}</td><td>${fmt(g.Put_Wall,0)}</td><td>${fmt(g.Net_GEX_Bn,2)}</td><td class="l">${esc(g.Date)}</td></tr>`).join("");
+  $("#p-intel").innerHTML = `<h2>Macro intelligence <span class="sub">advisory sources as published · not measured by this board unless scored on the Scorecards tab</span></h2>
+  <div class="grid g-intel">
+    <div class="card"><h3>LLM macro packet</h3>${kv(p, [["regime_label","Regime"],["regime_probability","Probability",v=>fmt(v,3)+" "+uncal],["macro_conviction","Conviction",v=>fmt(v,2)+" "+uncal],["risk_on_off_switch","Risk switch"],["dir_bias","Direction bias"],["trend_energy","Trend energy"],["vol_mode","Vol mode"],["liquidity_pulse","Liquidity"],["rates_impulse","Rates"],["usd_state","USD"],["credit_state","Credit"],["macro_filter","Macro filter"],["regime_drift_status","Drift"]])}
+      ${routing ? `<table class="mini" style="margin-top:8px;width:100%"><thead><tr><th class="l">Horizon</th><th class="l">Bias</th><th>Bull prob</th><th class="l">Mode</th></tr></thead><tbody>${routing}</tbody></table>` : ""}
+      ${p.notes ? `<details style="margin-top:6px"><summary>Packet notes</summary><p class="note">${esc(p.notes)}</p></details>` : ""}
+      ${(p.conflict_flags||[]).length ? `<details><summary>Conflict flags (${p.conflict_flags.length})</summary><ul class="list">${p.conflict_flags.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
+      ${srcLine("macro_packet")}</div>
+    <div class="card"><h3>US Money Index · risk-off transmission</h3>
+      <div class="big">${fmt(u.score,0)}<span class="sub"> / 100 · previous ${fmt(u.previous_score,0)}</span> ${uncal}</div>
+      <div class="note">${esc(u.method||"")} Ladder: ${esc(Object.entries(u.ladder||{}).map(([k,v])=>k+" "+v.replace(/_/g," ").toLowerCase()).join(" · "))}. Its record is on the Scorecards tab.</div>
+      <div class="sub" style="margin:4px 0 8px;overflow-wrap:anywhere">${words(u.transmission_state || u.state)}</div>
+      <div class="bars" style="grid-template-columns:minmax(120px,170px) 1fr 50px">${comps}</div>
+      <details style="margin-top:6px" open><summary>Dated observations inside the packet</summary><table class="mini" style="width:100%"><tbody>${(u.dated||[]).map(r => `<tr><td class="l">${esc(r.metric)}</td><td>${esc(r.value)}</td><td class="l ${r.observed==="not dated in packet"?"muted":""}">${esc(r.observed)}</td></tr>`).join("")}</tbody></table><div class="note">The packet's time (${esc(B.external.us_money_index?.as_of||"")}) is not the date of every value it carries.</div></details>
+      ${u.dealer_gamma ? `<div class="note">Authoritative dealer inventory: <b>${u.dealer_gamma.authoritative_inventory_available ? "available" : "unavailable"}</b> · ${words(u.dealer_gamma.status)}</div>` : ""}
+      ${u.summary ? `<details style="margin-top:6px"><summary>Summary</summary><p class="note">${esc(u.summary)}</p></details>` : ""}
+      ${trig}
+      ${srcLine("us_money_index")}</div>
+    <div class="card"><h3>Event risk</h3>
+      <div class="state">${words(verdict.verdict)}</div>
+      <div class="sub">${esc(ev.classification || "")} · confidence ${esc(verdict.confidence ?? "—")} ${uncal} · ${words(verdict.expected_magnitude)}</div>
+      <ul class="list" style="margin-top:6px">${evs}</ul>
+      ${ev.counter_case ? `<details><summary>Counter-case</summary><p class="note">${esc(ev.counter_case)}</p></details>` : ""}
+      ${srcLine("event_payload")}</div>
+    <div class="card"><h3>News overlay</h3>
+      <div class="state">${words(en.alert_level)} <span class="sub">fragility ${fmt(en.fragility_score,1)} / 5</span> ${uncal}</div>
+      <p class="note">${esc(en.summary || "")}</p>${srcLine("enrichment")}</div>
+    <div class="card"><h3>Volatility complex</h3>${kv(vix, [["VIX_Direct","VIX",v=>fmt(v)],["VIX9D_Proxy","VIX9D",v=>fmt(v)],["VIX3M_Proxy","VIX3M",v=>fmt(v)],["VVIX_Proxy","VVIX",v=>fmt(v)],["VIX_Structure","Term structure"],["VIX_Term_Slope","Term slope",v=>fmt(v)],["IV_Pct_Rank","IV rank",v=>fmt(v,0)],["RealisedVol_20d","SPY RV20",v=>fmt(v)],["IV_vs_RealisedVol_Pct","IV vs RV %",v=>fmt(v,1)],["Fear_Phase","Fear phase"],["USD_Trend","USD trend"],["VIX_Obs_Date","Observed",v=>esc(v)]])}${srcLine("vix_engine")}</div>
+    <div class="card"><h3>Dealer gamma <span class="chip na">model estimate · dealer sign assumed</span></h3><div class="table-wrap" style="max-height:none;border:none"><table class="mini"><thead><tr><th class="l">ETF</th><th class="l">Regime</th><th>Spot</th><th>Flip</th><th>Call wall</th><th>Put wall</th><th>Net bn</th><th class="l">Data</th></tr></thead><tbody>${gex}</tbody></table></div>
+      <div class="note">Local Black-Scholes approximation from MarketData.app chains, not provider Greeks. The regime assumes dealers are short calls and long puts. The Money Index reports authoritative dealer inventory as ${B.intel.usmi?.dealer_gamma?.authoritative_inventory_available ? "available" : "<b>unavailable</b>"}, so treat the sign as unknown unless confirmed.</div>${srcLine("gex")}</div>
+    <div class="card"><h3>Rates & credit</h3>${kv(bond.yield_curve, [["yield_2y","2Y",v=>fmt(v)+"%"],["yield_10y","10Y",v=>fmt(v)+"%"],["yield_30y","30Y",v=>fmt(v)+"%"],["spread_bps","10s-2s",v=>fmt(v,0)+" bp"],["curve_move_1d","1d curve move"]])}
+      ${kv(bond.credit_stress, [["hyg_lqd_ratio","HYG/LQD",v=>fmt(v,4)],["ratio_zscore_20d","Ratio z (20d)",v=>fmt(v)],["stress_level","Stress"]])}
+      ${kv(bond.composite, [["macro_bond_score","Bond score",v=>fmt(v,0)],["primary_warning","Warning",v=>esc(v||"—")]])}${srcLine("bond_state")}</div>
+    <div class="card"><h3>Liquidity monitor</h3>${kv(liq, [["Liquidity_Regime","Regime"],["Repo_Stress_Score","Repo stress",v=>fmt(v,0)],["Credit_Stress","Credit stress"],["HY_OAS","HY OAS",v=>fmt(v)],["IG_BBB_OAS","BBB OAS",v=>fmt(v)],["Spread_10y2y","10y-2y",v=>fmt(v)],["WALCL_Change_Pct","Fed BS change",v=>esc(v)],["Latest_RRP_Trillions","RRP",v=>esc(v)],["Corr_WALCL_QQQ","Corr WALCL-QQQ",v=>fmt(v,3)]])}${srcLine("liquidity_monitor")}</div>
+    <div class="card"><h3>Colab models</h3>
+      <table class="mini" style="width:100%"><thead><tr><th class="l">Forward bias</th><th class="l">Direction</th><th>Bull prob</th><th>Score</th></tr></thead><tbody>${fb}</tbody></table>${srcLine("forward_bias")}
+      <table class="mini" style="width:100%;margin-top:8px"><thead><tr><th class="l">Regime model</th><th class="l">Regime</th><th>Prob</th><th class="l">Confidence</th></tr></thead><tbody>${rm}</tbody></table>${srcLine("regime_model")}
+      <div class="sub" style="margin-top:8px">Fung-Hsieh filter (week ${esc(fh.Week)}): <b>${words(fh.GO_NO_GO)}</b> · self-reported accuracy ${fmt(fh.Accuracy,2)} · ${esc(fh.Bias||"")}</div>${srcLine("macro_filter")}</div>
+  </div>
+  <div class="grid g-2" style="margin-top:10px">
+    <div class="card"><h3>Economic prints (FRED)</h3><div class="table-wrap" style="max-height:420px"><table class="mini"><thead><tr><th class="l">Series</th><th>Value</th><th>Change</th><th>YoY</th><th>Period</th><th>Age</th></tr></thead><tbody>${prints}</tbody></table></div>${srcLine("economic_prints")}</div>
+    <div class="card"><h3>Series threshold flags</h3><div class="table-wrap" style="max-height:420px"><table class="mini"><thead><tr><th class="l">Series</th><th class="l">Flag</th><th class="l">Dir</th><th class="l">Regime</th><th>5d</th><th>30d</th><th>Risk</th></tr></thead><tbody>${flags}</tbody></table></div>${srcLine("threshold_flags")}</div>
+  </div>`;
+}
+
+/* ---------- scorecards ---------- */
+function scoreTable(results){
+  const tick = Object.keys(results || {});
+  if (!tick.length) return `<div class="sub muted">No scorable calls.</div>`;
+  return `<table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th>${B.horizons.map(h=>`<th>${h}d hit</th><th>${h}d signed</th><th>${h}d win.</th>`).join("")}</tr></thead><tbody>${tick.map(t => `<tr><td class="l"><b>${t}</b></td>${B.horizons.map(h => { const r = results[t][String(h)] || {};
+    const thin = (r.n_eff||0) < B.settings.evidence.min_effective_n;
+    return `<td class="${thin?"muted":""}">${isNum(r.hit_rate)?Math.round(100*r.hit_rate)+"%":"—"}</td><td class="${cls(r.mean_signed_pct)}">${pct(r.mean_signed_pct)}</td><td class="${thin?"muted":""}">${r.n_eff ?? 0}${thin?" ?":""}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function renderScore(){
+  const S = B.scorecards;
+  const rm = S.regime_model || {}, pk = S.packets || {}, bd = S.board || {};
+  const plist = (pk.listing || []).map(r => `<tr class="${r.used?"":"muted"}"><td class="l">${esc(r.generated_utc.replace("T"," ").slice(0,16))}</td><td class="l">${esc(r.labels.join(" / "))}</td><td>${r.projections}</td><td class="l">${r.direction>0?'<span class="chip up">▲ bull</span>':r.direction<0?'<span class="chip down">▼ bear</span>':'<span class="chip flat">– none</span>'}</td><td class="l">${words(r.agreement)}</td><td class="l">${esc(r.entry_session||"pending")}${r.used?"":" · superseded"}</td></tr>`).join("");
+  const brows = Object.entries(bd.results || {}).map(([h,r]) => { const b0 = (bd.baseline||{})[h] || {};
+    return `<tr><td>${h}d</td><td>${r.scored}</td><td>${r.pending}</td><td>${isNum(r.hit_rate)?Math.round(100*r.hit_rate)+"%":"—"}</td><td class="${cls(r.mean_signed_pct)}">${pct(r.mean_signed_pct)}</td><td>${b0.scored ?? 0}</td><td>${isNum(b0.hit_rate)?Math.round(100*b0.hit_rate)+"%":"—"}</td><td class="${cls(b0.mean_signed_pct)}">${pct(b0.mean_signed_pct)}</td></tr>`; }).join("");
+  const mi = S.money_index || {};
+  const miRows = Object.entries(mi.results || {}).flatMap(([t, perH]) => { const bands = [...new Set(Object.values(perH).flatMap(x => Object.keys(x)))];
+    return bands.map(b => `<tr><td class="l"><b>${t}</b></td><td class="l">${words(b)}</td>${B.horizons.map(h => { const r = (perH[String(h)]||{})[b];
+      return r ? `<td class="${cls(r.mean_pct)}">${pct(r.mean_pct)}</td><td>${Math.round(100*r.up_rate)}%</td><td class="${r.n_eff < B.settings.evidence.min_effective_n ? "muted" : ""}">${r.n_eff}${r.n_eff < B.settings.evidence.min_effective_n ? " ?" : ""}</td>` : `<td>—</td><td>—</td><td>0</td>`; }).join("")}</tr>`); }).join("");
+  $("#p-score").innerHTML = `<h2>Scorecards <span class="sub">every macro call scored from the next tradable open · hit = direction matched the sign of the move · signed = return in the called direction · “?” = fewer than ${B.settings.evidence.min_effective_n} independent windows</span></h2>
+  <div class="grid g-2">
+    <div class="card"><h3>Colab daily regime model (Risk-On / Risk-Off)</h3>
+      <div class="sub">${rm.calls ?? 0} daily calls ${esc(rm.first||"")} → ${esc(rm.last||"")} · self-reported accuracy ${fmt(rm.self_reported_accuracy,3)}</div>
+      ${scoreTable(rm.results)}</div>
+    <div class="card"><h3>LLM macro packets (archived, latest wins per session)</h3>
+      <div class="sub">${pk.generations ?? 0} generations → ${pk.entry_sessions ?? 0} entry sessions, ${pk.directional ?? 0} directional · ${pk.conflicting ?? 0} with projections pointing opposite ways · ${pk.partial ?? 0} where some projections dropped the BULLISH/BEARISH qualifier</div>
+      ${scoreTable(pk.results)}
+      <details style="margin-top:6px"><summary>Packet history</summary><div class="table-wrap" style="max-height:340px"><table class="mini"><thead><tr><th class="l">Generated (UTC)</th><th class="l">Labels in archive</th><th>Copies</th><th class="l">Call</th><th class="l">Projections</th><th class="l">Entry</th></tr></thead><tbody>${plist}</tbody></table></div></details></div>
+    <div class="card"><h3>This board's own leans</h3>
+      <div class="sub">${bd.snapshots ?? 0} daily snapshot(s) saved. Each UP/DOWN lean on current-data ETFs is scored once its horizon completes.</div>
+      <table class="mini" style="width:100%"><thead><tr><th class="l">Horizon</th><th>Scored</th><th>Pending</th><th>Hit</th><th>Signed</th><th>Price-only scored</th><th>Price-only hit</th><th>Price-only signed</th></tr></thead><tbody>${brows}</tbody></table>
+      <div class="note">This record grows with every daily build and is the board's only forward-tested evidence. The price-only columns score the leans the board would give from each ETF's own drift, without macro. The gap between the two is what macro adds.</div></div>
+    <div class="card"><h3>US Money Index · by its own ladder band</h3>
+      <div class="sub">${mi.revisions ?? 0} revisions → ${mi.entry_sessions ?? 0} entry sessions (latest revision before each open wins). No direction is assigned. The table shows what SPY and QQQ did next while the index sat in each band.</div>
+      <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th class="l">Band</th>${B.horizons.map(h=>`<th>${h}d mean</th><th>${h}d up</th><th>${h}d win.</th>`).join("")}</tr></thead><tbody>${miRows || `<tr><td colspan="11" class="muted">No completed windows yet.</td></tr>`}</tbody></table></div>
+      <details style="margin-top:6px"><summary>Revision history</summary><ul class="list">${(mi.calls||[]).map(c => `<li>${esc(c.entry_session)}: ${fmt(c.score,0)} · ${words(c.band)}</li>`).join("")}</ul></details></div>
+  </div>`;
+}
+
+/* ---------- method ---------- */
+function renderMethod(){
+  const E = B.settings.evidence, C = B.settings.conditions, c12 = B.settings.c12;
+  const conds = B.conditions.meta.map(m => `<tr><td class="l"><b>${esc(m.label)}</b></td><td class="l" style="white-space:normal">${esc(m.measured)}</td><td class="l">${esc(m.states.map(s=>s.replace(/_/g," ")).join(" · "))}</td><td class="l">${esc(m.source)}</td></tr>`).join("");
+  const lastObs = Object.entries(B.conditions.fred_last_observation).map(([k,v]) => `${esc(k)} ${esc(v||"—")}`).join(" · ");
+  $("#p-method").innerHTML = `<h2>Method</h2>
+  <div class="grid g-2">
+    <div class="card" style="grid-column:1/-1"><h3>Conditions</h3><div class="table-wrap" style="max-height:none"><table class="mini"><thead><tr><th class="l">Condition</th><th class="l">What is measured</th><th class="l">States</th><th class="l">Source</th></tr></thead><tbody>${conds}</tbody></table></div>
+      <p class="note">Trend, realised vol and breadth reuse the outcome scorer's definitions (${c12.trend.join("/")}-session means; ${c12.vol_sessions}-session vol percentile, bands ${c12.vol_bands.join("/")}; breadth over ${c12.breadth_sessions} sessions across ${B.price_universe_in_breadth} stored tickers, bands ${c12.breadth_bands.join("/")}). Moving conditions compare the ${C.change_sessions}-session change with its trailing ${C.zscore_window_sessions}-session standard deviation; beyond ±${C.trend_band_z} sd counts as moving. Curve level bands: ${C.curve_level_bands_pct.join(" / ")} pct points.</p>
+      <p class="note">Latest FRED observations: ${lastObs}.</p></div>
+    <div class="card"><h3>Point in time</h3><ul class="list">
+      <li>FRED values become visible ${esc(JSON.stringify(Object.fromEntries(Object.entries(B.settings.fred_publication_lag_days).filter(([k])=>k!=="rationale"))))} calendar day(s) after their observation date.</li>
+      <li>A series older than its freshness limit becomes MISSING. It is never carried forward or treated as neutral.</li>
+      <li>Today's MISSING conditions are left out of the analog match. A past session's MISSING never counts as a match.</li>
+      <li>Forward returns run from the next session's open to the close ${B.horizons.join("/")} sessions later.</li></ul></div>
+    <div class="card"><h3>From evidence to lean</h3><ul class="list">
+      <li>Analog sessions: past sessions agreeing with today on at least the chosen match level of observed conditions (${E.analog_match_levels.map(x=>Math.round(x*100)+"%").join(" → ")}, loosened until ≥ ${E.analog_target_effective_n} independent windows).</li>
+      <li>Overlapping windows are thinned, so “windows” counts independent observations.</li>
+      <li>The lean is fitted on history before the last ${Math.round(E.holdout_fraction*100)}%: it needs ≥ ${E.min_effective_n} windows, |t| ≥ ${E.lean_t_min} and |mean| ≥ ${esc(JSON.stringify(E.lean_min_abs_mean_pct))}%. Otherwise it shows “No clear lean”.</li>
+      <li>The held-out quarter then shows whether the direction survived on data it never saw.</li>
+      <li>ETFs need ≥ ${E.min_history_sessions} sessions of history for evidence.</li></ul></div>
+    <div class="card"><h3>Decision aids (thesis review, 6 Oct)</h3><ul class="list">
+      <li><b>80% interval</b>: Student-t interval for the analog mean on independent windows. The window minimum is a label, not a rule.</li>
+      <li><b>Price-only lean</b>: the same rule applied to all history, with no macro. Compare it with the macro lean to see what macro adds.</li>
+      <li><b>Path-dependent</b>: leveraged, inverse and volatility products show no 5d or 20d lean.</li>
+      <li><b>Move made</b>: return over 5 and 20 sessions in units of the ETF's own 20-session realised vol. Beyond ±${B.settings.extension.band_sd}σ counts as extended. It says the entry may have deteriorated, not that the direction is wrong.</li>
+      <li><b>Response</b>: conditions in today's state with a measured contrast of |t| ≥ ${B.settings.response.t_min} count as headwinds or tailwinds for that ETF. The label compares their balance with the ETF's own return over the window. It is descriptive only.</li>
+      <li><b>Priced vs history</b>: executable ATM straddle mid on the first expiry covering the horizon, scaled by √time, divided by the analog mean absolute move.</li>
+      <li><b>Pipeline</b>: rows from the newest run with <code>${esc(B.settings.options ? "options/options_candidates_ranked.csv" : "")}</code>, shown read-only.</li>
+      <li><b>Holdings</b>: issuer daily files (State Street for SPY/DIA, Invesco for QQQ), downloaded on <code>--refresh</code> and archived raw. Contribution = weight × return; participation = share of priced weight above its ${B.settings.holdings.participation_sessions}-session mean.</li>
+      <li><b>tastytrade</b>: IV index/rank/percentile, HV, beta and the IV term structure, read-only through <code>bridge.tastytrade_readonly_mcp</code>. IV-implied |move| = IV × √(h/252) × √(2/π).</li>
+      <li><b>Inputs</b>: each build archives a content-addressed copy of every file it read (${B.inputs_archived ?? 0} this build) in <code>output/inputs</code>, with the manifest in the day's snapshot.</li></ul></div>
+    <div class="card"><h3>Limits</h3><ul class="list">
+      <li>About five years of daily history (from 2021-08), so one rate cycle. Analog sets are small and the evidence is thin by construction.</li>
+      <li>FRED history is the latest vintage. Market series (yields, FX, H.4.1) are not revised; monthly prints are shown only, never used as conditions.</li>
+      <li>Breadth uses the price store's own ticker universe, which grows over time.</li>
+      <li>All thresholds are provisional. The board's own scorecard is how they get validated.</li></ul></div>
+  </div>`;
+}
+
+function renderAll(){
+  renderOverview(); renderEtfs(); renderMap(); renderIntel(); renderScore(); renderMethod();
+}
+renderAll();
+let start = "overview"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
+show(PAGES.some(p => p[0]===start) ? start : "overview");
+})();
+</script>
+</body>
+</html>

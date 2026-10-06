@@ -28,6 +28,10 @@ class BrokerCredentialUnavailable(BrokerMcpError):
 
 
 _QUOTE_TOOL = "tastytrade_get_quote"
+# Read-only volatility/liquidity metrics for the standalone ETF macro board (ACK, 6 Oct 2026).
+_METRICS_TOOL = "tastytrade_get_market_metrics"
+_ALLOWED_TOOLS = frozenset({_QUOTE_TOOL, _METRICS_TOOL})
+_PROVENANCE_META_FIELD = "tastytrade/provenance"
 _CREDENTIAL_NAMES = (
     "TASTYTRADE_CLIENT_ID",
     "TASTYTRADE_CLIENT_SECRET",
@@ -59,7 +63,7 @@ def _default_command(environment: Mapping[str, str]) -> list[str]:
 
 
 class ReadOnlyTastytradeMcp:
-    """One-shot read session; the only callable remote tool is get_quote."""
+    """One-shot read session; the only callable remote tools are get_quote and get_market_metrics."""
 
     def __init__(
         self, *, command: Sequence[str] | None = None,
@@ -193,14 +197,22 @@ class ReadOnlyTastytradeMcp:
         return result["result"]
 
     def call_tool(self, name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any] | list[Any]:
-        if name != _QUOTE_TOOL:
+        if name not in _ALLOWED_TOOLS:
             raise ValueError(f"MCP tool {name!r} is not allowed")
         if name not in self._advertised_tools:
-            raise BrokerMcpError("quote tool is not advertised")
+            raise BrokerMcpError(f"{name} is not advertised")
         result = self._request("tools/call", {"name": name, "arguments": dict(arguments)})
         if not isinstance(result, Mapping) or result.get("isError"):
             raise BrokerMcpError("broker read tool returned an error")
         content = result.get("content")
+        # tastytrade-mcp (21 Sep 2026 build) appends its own provenance notice as a final text
+        # block and marks it in _meta; that block is server-authored metadata, never data.
+        meta = result.get("_meta")
+        if (isinstance(content, list) and len(content) == 2 and isinstance(meta, Mapping)
+                and isinstance(meta.get(_PROVENANCE_META_FIELD), Mapping)
+                and isinstance(content[1], Mapping) and content[1].get("type") == "text"
+                and str(content[1].get("text", "")).startswith("PROVENANCE")):
+            content = content[:1]
         if (not isinstance(content, list) or len(content) != 1
                 or not isinstance(content[0], Mapping) or content[0].get("type") != "text"):
             raise BrokerMcpError("broker read tool returned an unsupported payload")
@@ -232,3 +244,16 @@ class ReadOnlyTastytradeMcp:
             "symbols": broker_symbols, "instrument_type": instrument_type,
             "include_instrument": True,
         })
+
+    def market_metrics(self, symbols: Sequence[str]) -> Mapping[str, Any] | list[Any]:
+        """IV index/rank/percentile, HV, beta and per-expiry IV for underlying symbols (read-only)."""
+        if not 1 <= len(symbols) <= 100:
+            raise ValueError("market metrics request needs 1–100 symbols")
+        if any(not isinstance(s, str) or not s or s.strip() != s for s in symbols):
+            raise ValueError("metric symbols must be exact nonblank strings")
+        if len(set(symbols)) != len(symbols):
+            raise ValueError("duplicate metric symbols")
+        missing = [name for name in _CREDENTIAL_NAMES if not self._environment.get(name)]
+        if missing:
+            raise BrokerCredentialUnavailable("missing broker OAuth environment: " + ", ".join(missing))
+        return self.call_tool(_METRICS_TOOL, {"symbols": list(symbols)})
