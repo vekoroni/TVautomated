@@ -96,7 +96,15 @@
 #         Key values are redacted at the source and again at write time.
 #   L-05  Charts only when matplotlib is installed (not in the venv; no code
 #         reads the PNGs). JSON / errors written as UTF-8; UTF-8 console.
-#   Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_macro_module_v2_7.py
+#   v2.8 (7 Oct 2026, ACK approved)
+#   F-01  GEX age: As_Of is an ISO UTC timestamp; v2.7 subtracted it from a naive date,
+#         raised, and _days_between returned 999, so GEX was STALE on every run. Both
+#         sides are now compared as UTC calendar dates.
+#   F-02  Event calendar: bond_macro_intelligence writes auction_calendar.csv to
+#         dropbox\macro; v2.7 looked only in market_data, so the event window was never
+#         active. dropbox\macro\auction_calendar.csv is now read after the market_data
+#         candidates (first existing file wins, as before).
+#   Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_macro_module_v2_8.py
 
 # ════════════════════════════════════════════════════════════
 # ── CONFIG ──────────────────────────────────────────────────
@@ -147,10 +155,17 @@ GEX_NEGATIVE_HAIRCUT = 0.85        # [STUB]
 GEX_AFFECTS_SIZING = False         # keep False until backtested
 
 # ── v2.6: event calendar (shared with bond_macro_intelligence B-01) ─────────
-EVENT_CALENDAR_FILES = [
-    INPUT_DIR / "macro_event_calendar.csv",      # columns: date,event,importance
-    INPUT_DIR / "auction_calendar.csv",          # from bond module B-01
-]
+def event_calendar_files(input_dir):
+    """Calendars in priority order. v2.8: bond_macro_intelligence (B-01) writes
+    auction_calendar.csv to dropbox\\macro, the sibling of market_data, so v2.7 never found it."""
+    return [
+        input_dir / "macro_event_calendar.csv",            # columns: date,event,importance
+        input_dir / "auction_calendar.csv",
+        input_dir.parent / "macro" / "auction_calendar.csv",   # where the bond module writes it
+    ]
+
+
+EVENT_CALENDAR_FILES = event_calendar_files(INPUT_DIR)
 EVENT_WINDOW_DAYS   = 3            # look-ahead for a scheduled binary
 EVENT_HAIRCUT       = 0.85         # [STUB]
 EVENT_HAIRCUT_ACTIVE = False       # keep False until backtested
@@ -294,8 +309,16 @@ def _normalise(series):
 
 
 def _days_between(a, b):
+    """Calendar days between two dates or timestamps. v2.8: a tz-aware ISO timestamp (the GEX
+    proxy's As_Of, e.g. 2026-10-05T20:00:00Z) is converted to its UTC date first — v2.7
+    subtracted it from a naive date, raised, and returned 999, so GEX was always STALE."""
     try:
-        return abs((pd.Timestamp(a) - pd.Timestamp(b)).days)
+        def day(x):
+            ts = pd.Timestamp(x)
+            if ts.tzinfo is not None:
+                ts = ts.tz_convert("UTC").tz_localize(None)
+            return ts.normalize()
+        return abs((day(a) - day(b)).days)
     except Exception:
         return 999
 
@@ -519,7 +542,7 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
 
 # ── EVENT CALENDAR (shared with bond_macro_intelligence B-01) ───────────────
 
-def load_event_window(days=EVENT_WINDOW_DAYS):
+def load_event_window(days=EVENT_WINDOW_DAYS, files=None):
     """
     Scheduled binaries inside the look-ahead window.
 
@@ -530,7 +553,7 @@ def load_event_window(days=EVENT_WINDOW_DAYS):
     """
     out = {"active": False, "events": [], "source": None,
            "note": "no calendar file found — event awareness INACTIVE"}
-    for path in EVENT_CALENDAR_FILES:
+    for path in (EVENT_CALENDAR_FILES if files is None else files):
         try:
             if not path.exists():
                 continue
@@ -538,9 +561,13 @@ def load_event_window(days=EVENT_WINDOW_DAYS):
             dcol = next((c for c in df.columns if "date" in c.lower()), None)
             if dcol is None:
                 continue
-            df[dcol] = pd.to_datetime(df[dcol], errors="coerce").dt.date
-            lo, hi = TODAY, TODAY + datetime.timedelta(days=days)
-            hit = df[(df[dcol] >= lo) & (df[dcol] <= hi)]
+            # v2.8: drop undated rows first — an all-blank column (the bond module's "no auctions"
+            # file) stays datetime64 after .dt.date and cannot be compared with a date.
+            df[dcol] = pd.to_datetime(df[dcol], errors="coerce")
+            df = df.dropna(subset=[dcol])
+            lo, hi = pd.Timestamp(TODAY), pd.Timestamp(TODAY + datetime.timedelta(days=days))
+            hit = df[(df[dcol] >= lo) & (df[dcol] <= hi)].copy()
+            hit[dcol] = hit[dcol].dt.date
             ecol = next((c for c in df.columns if "event" in c.lower()
                          or "tenor" in c.lower()), None)
             out.update({
@@ -1277,7 +1304,7 @@ if __name__ == "__main__":
     print(f"Saved: {OUTPUT_DIR / 'breadth_rsp_spy.csv'}")
 
     contract = {
-        "module": "macro_module", "version": "2.6", "run_id": RUN_ID, "as_of": END_DATE,
+        "module": "macro_module", "version": "2.8", "run_id": RUN_ID, "as_of": END_DATE,
         "breadth_eod": breadth,
         "breadth_intraday": breadth_intraday,
         "vix": {"snapshot": vix_snap, "shape": vix_shape, "slope_pct_vs_spot": vix_slope,
