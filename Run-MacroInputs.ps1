@@ -80,6 +80,11 @@ Start-Transcript -Path $logFile -Append | Out-Null
 
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = "1"
+# The scripts print UTF-8. Windows PowerShell 5.1 decodes native output with the console code
+# page (e.g. 850), which turned every check mark and box line into accented garbage; decode as UTF-8 for this run and
+# restore the caller's setting afterwards. (Display and log only; the data files are UTF-8.)
+$previousOutputEncoding = [Console]::OutputEncoding
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 $results = @()
 try {
     if (-not (Test-Path $venvPython)) {
@@ -140,4 +145,5 @@ try {
     exit 0
 } finally {
     Stop-Transcript | Out-Null
+    try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
 }
