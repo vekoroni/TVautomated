@@ -700,6 +700,7 @@ function renderMethod(){
       <p class="note">Latest FRED observations: ${lastObs}.</p></div>
     <div class="card"><h3>Point in time</h3><ul class="list">
       <li>FRED values become visible ${esc(JSON.stringify(Object.fromEntries(Object.entries(B.settings.fred_publication_lag_days).filter(([k])=>k!=="rationale"))))} calendar day(s) after their observation date.</li>
+      <li>Weekly-released series become visible only on their release day: ${esc(Object.keys(B.settings.fred_release_calendar||{}).filter(k=>k!=="rationale").join(", ")||"none")} (Fed H.10, the Monday after the observation week; Tuesday after a federal holiday).</li>
       <li>A series older than its freshness limit becomes MISSING. It is never carried forward or treated as neutral.</li>
       <li>Today's MISSING conditions are left out of the analog match. A past session's MISSING never counts as a match.</li>
       <li>Forward returns run from the next session's open to the close ${B.horizons.join("/")} sessions later.</li></ul></div>

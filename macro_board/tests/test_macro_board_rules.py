@@ -42,6 +42,57 @@ def test_a_stale_series_becomes_missing_not_its_last_value():
     assert np.isnan(aligned.loc["2026-01-12"])           # 7 days old > 6 -> missing, never carried forward
 
 
+# A condition only uses a value once it was public at the board's session. The Fed H.10 release
+# publishes the daily USD/EUR rates (FRED DEXUSEU) once a week, on the Monday after the observation
+# week (Tuesday when that Monday is a federal holiday); other FRED series keep their next-day lag.
+
+def _board_config() -> dict:
+    import json
+    from macro_board.build_board import DEFAULT_CONFIG
+    return json.loads(DEFAULT_CONFIG.read_text(encoding="utf-8"))
+
+
+def _daily_fred(start: str, end: str) -> pd.DataFrame:
+    days = pd.bdate_range(start, end)
+    values = np.linspace(1.10, 1.20, len(days))
+    return pd.DataFrame({"DEXUSEU": values, "DGS10": values + 3.0}, index=days)
+
+
+def _used(fred: pd.DataFrame, session: str, condition: str, config: dict) -> str | None:
+    session_ts = pd.Timestamp(session)
+    sessions = pd.bdate_range("2026-09-01", session_ts)
+    closes = pd.DataFrame(1.0, index=sessions, columns=["SPY", "HYG", "LQD", "USO"])
+    observed = cond.current_observations(session=session_ts, sessions=sessions, closes=closes,
+                                         fred=fred, config=config)
+    return observed[condition]["inputs"][0]["observed"]
+
+
+def test_the_dollar_only_uses_a_euro_rate_after_its_weekly_monday_release():
+    config, fred = _board_config(), _daily_fred("2026-09-14", "2026-10-09")
+    # Wednesday 30 Sep: the week of 28 Sep is not published until Monday 5 Oct.
+    assert _used(fred, "2026-09-30", "dollar", config) == "2026-09-25"
+    assert _used(fred, "2026-10-05", "dollar", config) == "2026-10-02"     # released that Monday
+    sessions = pd.bdate_range("2026-09-21", "2026-10-09")
+    aligned = cond.fred_point_in_time(fred, "DEXUSEU", "daily", sessions, config)
+    assert aligned.loc["2026-09-30"] == fred.loc["2026-09-25", "DEXUSEU"]
+    # A daily-published series keeps its next-day lag.
+    assert _used(fred, "2026-09-30", "yields", config) == "2026-09-29"
+
+
+def test_a_monday_holiday_moves_the_euro_rate_release_to_tuesday():
+    config, fred = _board_config(), _daily_fred("2026-09-21", "2026-10-16")
+    # Columbus Day, Monday 12 Oct 2026: markets open, the Fed closed.
+    assert _used(fred, "2026-10-12", "dollar", config) == "2026-10-02"
+    assert _used(fred, "2026-10-13", "dollar", config) == "2026-10-09"
+
+
+def test_a_weekly_released_euro_rate_is_never_left_permanently_missing():
+    config, fred = _board_config(), _daily_fred("2026-08-31", "2026-10-16")
+    sessions = pd.bdate_range("2026-09-14", "2026-10-16")
+    aligned = cond.fred_point_in_time(fred, "DEXUSEU", "daily", sessions, config)
+    assert aligned.notna().all()
+
+
 # --- missing is never neutral -------------------------------------------------------
 
 def test_a_missing_input_gives_a_missing_state_not_a_flat_one():

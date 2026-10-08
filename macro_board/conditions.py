@@ -13,6 +13,7 @@ from typing import Mapping, Sequence
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.holiday import USFederalHolidayCalendar
 
 from avshunter.c12_outcome.conditions import ConditionSettings, market_condition
 
@@ -69,16 +70,34 @@ CONDITION_INPUTS: dict[str, tuple[tuple[str, ...], ...]] = {
 
 # --- primitives ------------------------------------------------------------------------
 
-def align_point_in_time(series: pd.Series, sessions: pd.DatetimeIndex, lag_days: int,
-                        max_age_days: int) -> pd.Series:
+def release_dates(observed: pd.DatetimeIndex, rule: Mapping) -> pd.DatetimeIndex:
+    """Day each observation became public under a weekly release calendar (e.g. Fed H.10:
+    the Monday after the observation week, the next day when that Monday is a federal holiday)."""
+    if rule["release"] != "WEEKLY_AFTER_OBSERVATION_WEEK":
+        raise ValueError(f"unknown FRED release rule {rule['release']!r}")
+    release = observed + pd.to_timedelta(7 - observed.weekday + int(rule["release_weekday"]), unit="D")
+    if rule["holiday_shift"] != "NEXT_DAY_IF_US_FEDERAL_HOLIDAY":
+        raise ValueError(f"unknown FRED holiday shift {rule['holiday_shift']!r}")
+    if len(release):
+        holidays = USFederalHolidayCalendar().holidays(start=release.min(), end=release.max())
+        release = release.where(~release.isin(holidays), release + pd.Timedelta(days=1))
+    return release
+
+
+def _available(observed: pd.DatetimeIndex, lag_days: int | None, release_rule: Mapping | None) -> pd.DatetimeIndex:
+    return observed + pd.Timedelta(days=lag_days) if release_rule is None else release_dates(observed, release_rule)
+
+
+def align_point_in_time(series: pd.Series, sessions: pd.DatetimeIndex, lag_days: int | None,
+                        max_age_days: int, release_rule: Mapping | None = None) -> pd.Series:
     """Value known at each session: the latest observation published by then (observation
-    date + ``lag_days``), or NaN when none exists or the observation is older than
-    ``max_age_days`` (stale is missing, never carried forward)."""
+    date + ``lag_days``, or its ``release_rule`` release day), or NaN when none exists or the
+    observation is older than ``max_age_days`` (stale is missing, never carried forward)."""
     observed = series.dropna().sort_index()
     out = np.full(len(sessions), np.nan)
     if observed.empty:
         return pd.Series(out, index=sessions)
-    available = observed.index + pd.Timedelta(days=lag_days)
+    available = _available(observed.index, lag_days, release_rule)
     position = available.searchsorted(sessions, side="right") - 1
     has = position >= 0
     picked = np.clip(position, 0, None)
@@ -88,32 +107,53 @@ def align_point_in_time(series: pd.Series, sessions: pd.DatetimeIndex, lag_days:
     return pd.Series(out, index=sessions)
 
 
-def observation_date_at(series: pd.Series, session: pd.Timestamp, lag_days: int,
-                        max_age_days: int) -> pd.Timestamp | None:
+def observation_date_at(series: pd.Series, session: pd.Timestamp, lag_days: int | None,
+                        max_age_days: int, release_rule: Mapping | None = None) -> pd.Timestamp | None:
     """Observation date of the value visible at ``session`` (None when nothing usable)."""
     observed = series.dropna().sort_index()
     if observed.empty:
         return None
-    position = (observed.index + pd.Timedelta(days=lag_days)).searchsorted(session, side="right") - 1
+    position = _available(observed.index, lag_days, release_rule).searchsorted(session, side="right") - 1
     if position < 0:
         return None
     used = observed.index[position]
     return used if (session - used).days <= max_age_days else None
 
 
+def fred_publication(name: str, frequency: str, config: Mapping) -> tuple[int | None, Mapping | None, int]:
+    """(lag_days, release_rule, max_age_days) for one FRED series: its weekly release calendar
+    when configured, otherwise its next-day publication lag and its frequency's max age."""
+    calendar = config["fred_release_calendar"]
+    if name in calendar:
+        rule = calendar[name]
+        return None, rule, int(config["fred_max_age_days"][rule["max_age"]])
+    return int(config["fred_publication_lag_days"][name]), None, int(config["fred_max_age_days"][frequency])
+
+
+def fred_point_in_time(fred: pd.DataFrame, name: str, frequency: str, sessions: pd.DatetimeIndex,
+                       config: Mapping) -> pd.Series:
+    """One FRED series as known at each session (all NaN when the series is absent)."""
+    if name not in fred.columns:
+        return pd.Series(np.nan, index=sessions)
+    lag_days, rule, max_age = fred_publication(name, frequency, config)
+    return align_point_in_time(fred[name], sessions, lag_days, max_age, release_rule=rule)
+
+
 def current_observations(*, session: pd.Timestamp, sessions: pd.DatetimeIndex, closes: pd.DataFrame,
                          fred: pd.DataFrame, config: Mapping) -> dict:
     """Per condition: the observation dates actually used today and how many sessions old the
     oldest one is (information clock: observation date, not build date)."""
-    lags, ages = config["fred_publication_lag_days"], config["fred_max_age_days"]
     out = {}
     for key, inputs in CONDITION_INPUTS.items():
         parts = []
         for spec in inputs:
             if spec[0] == "fred":
                 _, name, frequency = spec
-                used = None if name not in fred.columns else observation_date_at(
-                    fred[name], session, int(lags[name]), int(ages[frequency]))
+                if name in fred.columns:
+                    lag_days, rule, max_age = fred_publication(name, frequency, config)
+                    used = observation_date_at(fred[name], session, lag_days, max_age, release_rule=rule)
+                else:
+                    used = None
             else:
                 name = spec[1]
                 column = closes[name].dropna() if name in closes.columns else pd.Series(dtype=float)
@@ -183,16 +223,12 @@ def build_condition_frame(*, sessions: pd.DatetimeIndex, closes: pd.DataFrame, b
                           fred: pd.DataFrame, c12: ConditionSettings, config: Mapping) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (states, values): one row per session, one column per condition key."""
     cc = config["conditions"]
-    lags = config["fred_publication_lag_days"]
-    ages = config["fred_max_age_days"]
     n = int(cc["change_sessions"])
     trend_kw = dict(window=int(cc["zscore_window_sessions"]), min_periods=int(cc["zscore_min_sessions"]),
                     band_z=float(cc["trend_band_z"]))
 
     def fred_series(name: str, frequency: str) -> pd.Series:
-        if name not in fred.columns:
-            return pd.Series(np.nan, index=sessions)
-        return align_point_in_time(fred[name], sessions, int(lags[name]), int(ages[frequency]))
+        return fred_point_in_time(fred, name, frequency, sessions, config)
 
     def price(ticker: str) -> pd.Series:
         return closes[ticker] if ticker in closes.columns else pd.Series(np.nan, index=sessions)

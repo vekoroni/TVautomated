@@ -278,6 +278,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "holdings": {k: v for k, v in holdings_cfg.items() if k != "sources"}, "tastytrade": tasty_cfg,
                      "momentum": config["momentum"], "desk_card": config["desk_card"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
+                     "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
                              "vol_sessions": c12.vol_sessions, "vol_bands": list(c12.vol_state_bands),
                              "breadth_sessions": c12.breadth_sessions, "breadth_bands": list(c12.breadth_state_bands)}},

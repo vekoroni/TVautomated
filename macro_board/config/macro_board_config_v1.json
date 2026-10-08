@@ -26,11 +26,19 @@
     "DGS10": 1,
     "DGS2": 1,
     "SPREAD_2Y10Y": 1,
-    "DEXUSEU": 1,
     "WALCL": 1,
     "WTREGEN": 1,
     "RRPONTSYD": 1,
-    "rationale": "FRED dates a value by observation date; it is published the next business day (H.4.1 weekly: Wednesday observation, Thursday release). A one-calendar-day lag minimum stops a session from seeing its own same-day print."
+    "rationale": "FRED dates a value by observation date; it is published the next business day (H.4.1 weekly: Wednesday observation, Thursday release). A one-calendar-day lag minimum stops a session from seeing its own same-day print. Series released on a weekly calendar are in fred_release_calendar instead (one owner per series)."
+  },
+  "fred_release_calendar": {
+    "DEXUSEU": {
+      "release": "WEEKLY_AFTER_OBSERVATION_WEEK",
+      "release_weekday": 0,
+      "holiday_shift": "NEXT_DAY_IF_US_FEDERAL_HOLIDAY",
+      "max_age": "weekly"
+    },
+    "rationale": "Amended 2026-10-07 (point-in-time defect). Fed H.10 publishes the week's daily noon rates once, on the Monday after the observation week (Tuesday after a federal holiday such as Columbus Day, when markets are open). A 1-day lag let a mid-week session use rates published up to 5 sessions later. Local evidence: FRED manifest fetched 2026-10-06 shows DEXUSEU and the other H.10 series (DEXJPUS, DEXCHUS, DEXUSAL) last updated Monday 2026-10-05 15:16 CT with observations to Friday 2026-10-02. The Monday rule itself is Fed practice, not checked against a release calendar offline; ACK to confirm. Same-day convention as H.4.1: a value released on day R is used from session R (the board is read after the close; entries start next open). Max age is the weekly limit because the newest public value is up to 10 days old (Columbus Day Monday)."
   },
   "fred_max_age_days": {
     "daily": 6,
