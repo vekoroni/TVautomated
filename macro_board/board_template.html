@@ -56,6 +56,7 @@ h3{font-size:13px;margin:0 0 8px;font-weight:650;color:var(--text)}
 .g-focus{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
 .g-intel{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 .g-2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.g-night{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);min-width:0}
 .card.soft{background:var(--surface-2)}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
@@ -268,7 +269,9 @@ const VALUE_FMT = {
 };
 
 /* ---------- header / authority / freshness ---------- */
-$("#hdr-asof").textContent = `as of ${B.as_of_session} close · built ${B.built_at_utc.replace("T"," ").replace("+00:00"," UTC")}`;
+const KIND_TXT = {MORNING:"Morning build (pre-open)", EVENING:"Evening build (post-close)", INTRADAY:"Intraday build", OFF_SESSION:"Off-session build"};
+const BK = B.build || {};
+$("#hdr-asof").textContent = `as of ${B.as_of_session} close · ${KIND_TXT[BK.kind] || "build"}${BK.source === "clock" ? " (by clock)" : ""}${BK.scored_record ? " · scored record" : ""} · built ${B.built_at_utc.replace("T"," ").replace("+00:00"," UTC")}`;
 $("#authority").innerHTML = `<b>Standalone decision board.</b> Reads AVSHUNTER data read-only and feeds nothing back into the pipeline. `+
   `<b>Measured leans</b> are what each ETF did after past sessions whose macro conditions resembled today (next open → close, independent windows, last quarter held out). They describe recorded history, not a guarantee. `+
   `<b>Advisory intelligence</b> (LLM packet, US Money Index, event and news overlays) is shown as published, with its source and age, and is scored against reality on the Scorecards tab.`+
@@ -292,6 +295,50 @@ $("#tabs").onclick = e => { const b = e.target.closest("button"); if (b) { show(
 const horizonSeg = (id) => `<span class="seg" id="${id}" role="group" aria-label="Horizon">${B.horizons.map(h => `<button data-h="${h}" aria-pressed="${String(h)===state.horizon}">${h}d</button>`).join("")}</span>`;
 function bindHorizon(id, rerender){
   $("#"+id).onclick = e => { const b = e.target.closest("button"); if (!b) return; state.horizon = b.dataset.h; savePrefs(); renderAll(); };
+}
+
+/* ---------- overnight (since the last US close) ---------- */
+const NIGHT_GROUPS = [["us_futures","US index futures"],["us_premarket","US pre-market (ETFs)"],["volatility","VIX overnight"],
+  ["fx","FX & dollar"],["rates_commodities","Rates & commodity futures"],["asia","Asia"],["europe","Europe"]];
+const NIGHT_STATE = {OK:"", NO_TRADE_SINCE_CLOSE:"no trade since close", MISSING:"missing", MISSING_REFERENCE:"no close reference",
+  CLOSED:"closed", INTRADAY:"in session", NOT_YET_OPEN:"not yet open", NO_SESSION_TODAY:"no session today"};
+function renderOvernight(){
+  const N = B.overnight || {status:"MISSING"};
+  if (N.status === "MISSING" || N.status === "UNREADABLE")
+    return `<h2>Overnight <span class="sub">since the last US close</span></h2>
+      <div class="card"><div class="state" style="color:var(--critical)">× ${esc(N.status)}</div><div class="note">No overnight capture (dropbox/market_data/overnight_*.json). The market intelligence step of Run-MacroInputs writes it on every run; the pre-open run is the one that matters.</div></div>`;
+  const night = (BK.kind === "MORNING" ? "" : ` <span class="chip na" title="Captured by a ${esc(N.run_session)} run: futures and FX have had little time to move since the close.">captured ${esc(N.run_session)}</span>`) +
+    (N.us_reference_session && N.us_reference_session !== B.as_of_session ? ` <span class="chip" style="color:var(--serious)" title="The board's measured layers use daily bars to ${esc(B.as_of_session)}; the overnight capture measures from the ${esc(N.us_reference_session)} close.">! board prices end ${esc(B.as_of_session)}</span>` : "");
+  const cards = NIGHT_GROUPS.filter(([k]) => (N.groups||{})[k]).map(([k, label]) => {
+    const rows = N.groups[k], sm = (N.summary||{})[k] || {};
+    const session = k === "asia" || k === "europe";
+    const body = rows.map(r => {
+      const st = NIGHT_STATE[r.state] ?? words(r.state);
+      const age = isNum(r.age_minutes) ? (r.age_minutes >= 120 ? Math.round(r.age_minutes/60) + "h" : r.age_minutes + "m") : "—";
+      const tipTxt = `<b>${esc(r.name)}</b> (${esc(r.symbol)}) · ${esc(r.source||"")}<br>`+
+        (session ? `Session ${esc(r.session_date||"—")} vs ${esc(r.prev_session_date||"—")}: ${fmt(r.last)} vs ${fmt(r.prev_close)}` :
+                   `Last ${fmt(r.last,4)} vs ${esc(r.reference_label||"reference")} ${fmt(r.reference,4)}`)+
+        `<br>Last bar ${esc(r.last_bar_utc||"—")}${r.note ? "<br>" + esc(r.note) : ""}`;
+      return `<tr data-tip="${esc(tipTxt)}"><td class="l">${esc(r.name)}</td><td class="${cls(r.change_pct)}">${pct(r.change_pct)}</td>`+
+        `<td class="l ${r.state==="OK"||r.state==="CLOSED"?"muted":""}" style="${r.state&&r.state.startsWith("MISSING")?"color:var(--critical)":""}">${esc(st)}${r.after_break?' <span class="chip na">after break</span>':""}</td>`+
+        `<td style="${r.stale?"color:var(--serious)":""}" class="${r.stale?"":"muted"}">${age}${r.stale?" !":""}</td></tr>`;
+    }).join("");
+    return `<div class="card"><h3>${esc(label)} <span class="sub">${sm.up ?? 0} up · ${sm.down ?? 0} down · median ${pct(sm.median_change_pct)}</span></h3>
+      <table class="mini" style="width:100%"><tbody>${body}</tbody></table>
+      <div class="note" style="font-size:11px">${session ? "move from its own previous close, in its own session" : "move since the US close"}</div></div>`;
+  }).join("");
+  const big = v => isNum(v) ? v.toLocaleString("en-US", {maximumFractionDigits: Math.abs(v) >= 1000 ? 0 : 2}) : "—";
+  const rel = (N.releases_today||[]).map(r => `<tr><td class="l">${esc(r.time_et)} ET</td><td class="l">${esc(r.name)}</td><td class="l ${r.state==="RELEASED"?"":"muted"}">${words(r.state)}</td>`+
+    `<td>${big(r.value)}</td><td class="muted">${isNum(r.prior) ? "prior " + big(r.prior) : ""}</td></tr>`).join("")
+    || `<tr><td class="l muted" colspan="5">No tracked 08:30 ET release scheduled today.</td></tr>`;
+  const ahead = (N.releases_ahead||[]).map(r => `<span class="chip">${esc(r.date.slice(5))} ${esc(r.name)}</span>`).join(" ");
+  return `<h2>Overnight <span class="sub">since the US close ${esc(N.us_reference_session)} (${esc((N.us_reference_close_utc||"").replace("T"," ").replace("Z"," UTC"))}) · captured ${esc((N.as_of||"").replace("T"," ").replace("+00:00"," UTC"))}</span>
+      <span data-tip="${esc(`Overnight capture · run ${esc(N.run_session)} · age ${N.age_hours ?? "—"} h<br>Reference: ${esc(N.us_reference_source)}<br>${(N.notes||[]).map(esc).join("<br>")}`)}">${statusChip(N.status, N.status === "FRESH" ? "fresh" : "stale capture")}</span>${night}</h2>
+    <div class="grid g-night">${cards}
+      <div class="card"><h3>US prints today <span class="sub">FRED</span></h3><table class="mini" style="width:100%"><tbody>${rel}</tbody></table>
+        <div class="pill-row" style="margin-top:6px">${ahead ? '<span class="sub">Next 7 days:</span> ' + ahead : ""}</div>
+        <div class="note" style="font-size:11px">Display only. Quotes are delayed (≈10–15 min); age shown, ! = older than ${esc(N.stale_after_minutes)} min.${(N.errors||[]).length ? " " + N.errors.length + " source error(s) in the capture." : ""}</div></div>
+    </div>`;
 }
 
 /* ---------- overview ---------- */
@@ -324,7 +371,7 @@ function renderOverview(){
   const eps = A.episodes.map(e => `<tr><td>${esc(e.session)}</td>${B.focus.map(t => `<td class="${cls(e.forward[t])}">${pct(e.forward[t],1)}</td>`).join("")}</tr>`).join("");
   const focus = B.focus.map(t => focusCard(t)).join("");
   const p = B.intel.packet || {};
-  $("#p-overview").innerHTML = `
+  $("#p-overview").innerHTML = renderOvernight() + `
     <h2>Index focus <span class="sub">measured lean per horizon · hover a chip for the evidence</span></h2>
     <div class="grid g-focus">${focus}</div>
     <h2>Macro conditions now <span class="sub">point-in-time, ${B.settings.conditions.change_sessions}-session changes scored against each series' trailing year</span></h2>
@@ -678,7 +725,7 @@ function renderScore(){
       ${scoreTable(pk.results)}
       <details style="margin-top:6px"><summary>Packet history</summary><div class="table-wrap" style="max-height:340px"><table class="mini"><thead><tr><th class="l">Generated (UTC)</th><th class="l">Labels in archive</th><th>Copies</th><th class="l">Call</th><th class="l">Projections</th><th class="l">Entry</th></tr></thead><tbody>${plist}</tbody></table></div></details></div>
     <div class="card"><h3>This board's own leans</h3>
-      <div class="sub">${bd.snapshots ?? 0} daily snapshot(s) saved. Each UP/DOWN lean on current-data ETFs is scored once its horizon completes.</div>
+      <div class="sub">${bd.snapshots ?? 0} evening snapshot(s) saved. Each UP/DOWN lean on current-data ETFs is scored once its horizon completes. Only the evening (post-close) build is the scored record; morning builds show the same close and are kept beside it, unscored.</div>
       <table class="mini" style="width:100%"><thead><tr><th class="l">Horizon</th><th>Scored</th><th>Pending</th><th>Hit</th><th>Signed</th><th>Price-only scored</th><th>Price-only hit</th><th>Price-only signed</th></tr></thead><tbody>${brows}</tbody></table>
       <div class="note">This record grows with every daily build and is the board's only forward-tested evidence. The price-only columns score the leans the board would give from each ETF's own drift, without macro. The gap between the two is what macro adds.</div></div>
     <div class="card"><h3>US Money Index · by its own ladder band</h3>

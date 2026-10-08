@@ -25,10 +25,17 @@ A build takes about 40–90 seconds. The first run also caches the breadth panel
 price store's size and modification time. Output:
 
 - `output/etf_macro_board.html`: a self-contained page; open it in any browser.
-- `output/snapshots/board_<session>.json`: the leans shown that day. Later builds score them on
-  the Scorecards tab.
+- `output/snapshots/board_<session>.json`: the leans shown by the evening build. This is the
+  scored record; later builds score it on the Scorecards tab.
+- `output/snapshots/board_<session>_<kind>.json`: morning, intraday and off-session builds. They
+  are kept but never scored, because a pre-open build shows the same closing session as the
+  evening before.
 
-Build after the macro refresh, or before the open alongside the morning run.
+Run-MacroInputs.ps1 builds the board twice per session. PostClose gives the evening build
+(the scored record). PreOpen gives the morning build: it adds the overnight capture
+(`dropbox/market_data/overnight_*.json`) at the top of the Overview, showing futures,
+pre-market, VIX, FX, Asia, Europe and the 08:30 ET prints since the US close. The header
+names the build. A manual build is labelled from the XNYS calendar and the clock ("by clock").
 
 ## Pages
 

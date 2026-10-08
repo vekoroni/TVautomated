@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime, time, timezone
 import json
 from pathlib import Path
+import re
 from typing import Iterable, Mapping, Sequence
 
 import numpy as np
@@ -151,12 +152,18 @@ def score_packets(packets: Sequence[dict], opens: pd.DataFrame, closes: pd.DataF
                         for t in tickers if t in closes.columns}}
 
 
+SCORED_SNAPSHOT = re.compile(r"^board_\d{4}-\d{2}-\d{2}\.json$")
+
+
 def score_board_snapshots(snapshot_dir: Path, opens: pd.DataFrame, closes: pd.DataFrame,
                           horizons: Sequence[int]) -> dict:
     """The board's own UP/DOWN leans, scored once their horizon has completed, beside the
     price-only baseline leans recorded on the same day (what macro adds beyond drift)."""
     sessions = closes.index
-    snapshots = sorted(snapshot_dir.glob("board_*.json")) if snapshot_dir.exists() else []
+    # Only the evening build's record (board_<session>.json) is scored; morning, intraday and
+    # off-session builds are kept beside it (board_<session>_<kind>.json) but never counted.
+    snapshots = (sorted(p for p in snapshot_dir.glob("board_*.json") if SCORED_SNAPSHOT.match(p.name))
+                 if snapshot_dir.exists() else [])
     calls = {kind: {str(h): [] for h in horizons} for kind in ("leans", "baseline_leans")}
     for path in snapshots:
         try:

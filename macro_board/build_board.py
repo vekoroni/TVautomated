@@ -4,7 +4,13 @@
 
 Reads AVSHUNTER stores read-only and writes only under macro_board/output:
   etf_macro_board.html          latest board (self-contained, open in any browser)
-  snapshots/board_<session>.json  the leans shown, so later builds can score them
+  snapshots/board_<session>.json  the evening build's leans: the scored record
+  snapshots/board_<session>_<kind>.json  morning / intraday / off-session builds, kept, never scored
+
+Build kind (ACK 8 Oct 2026): Run-MacroInputs.ps1 sets AVSH_RUN_SESSION (PreOpen -> MORNING,
+PostClose -> EVENING); a manual build is labelled from the XNYS calendar and the clock. A
+pre-open build shows the same closing session as the evening before, so it must never
+overwrite the evening record.
 """
 
 from __future__ import annotations
@@ -13,6 +19,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import math
+import os
 from pathlib import Path
 import sys
 import time
@@ -54,6 +61,44 @@ def _clean(value):
     if isinstance(value, (pd.Timestamp, datetime)):
         return value.isoformat()
     return value
+
+
+def build_kind(now: datetime, run_session: str | None) -> tuple[str, str]:
+    """(MORNING | INTRADAY | EVENING | OFF_SESSION, runner | clock). The runner's session wins;
+    otherwise the XNYS calendar decides (before the open, during regular hours, after the close,
+    half days included)."""
+    session = (run_session or "").strip().lower()
+    if session == "preopen":
+        return "MORNING", "runner"
+    if session == "postclose":
+        return "EVENING", "runner"
+    from zoneinfo import ZoneInfo
+    from avshunter.shared.xnys_calendar import is_xnys_session, session_bounds
+    day = now.astimezone(ZoneInfo("America/New_York")).date()
+    if not is_xnys_session(day):
+        return "OFF_SESSION", "clock"
+    open_utc, close_utc = session_bounds(day)
+    if now < open_utc:
+        return "MORNING", "clock"
+    return ("INTRADAY", "clock") if now < close_utc else ("EVENING", "clock")
+
+
+def snapshot_name(session: str, kind: str) -> str:
+    """Only the evening build writes the scored record; other builds are kept beside it."""
+    return f"board_{session}.json" if kind == "EVENING" else f"board_{session}_{kind.lower()}.json"
+
+
+def build_overnight(external: dict) -> dict:
+    """The overnight capture (market intelligence L-06) as measured; display only."""
+    read = external.get("overnight")
+    if read is None or read.status in ("MISSING", "UNREADABLE") or not isinstance(read.data, dict):
+        return {"status": "UNREADABLE" if read is not None and read.status == "UNREADABLE" else "MISSING"}
+    doc = read.data
+    keys = ("run_session", "us_reference_session", "us_reference_close_utc", "us_reference_source",
+            "stale_after_minutes", "groups", "summary", "releases_today", "releases_ahead", "notes", "errors")
+    return {"status": read.status, "as_of": read.as_of,
+            "age_hours": None if read.age_hours is None else round(read.age_hours, 1),
+            **{k: doc.get(k) for k in keys}}
 
 
 def etf_metrics(ticker: str, closes: pd.DataFrame, volumes: pd.DataFrame, sessions: pd.DatetimeIndex,
@@ -128,6 +173,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     started = time.time()
     config = json.loads(config_path.read_text(encoding="utf-8"))
     now = datetime.now(timezone.utc)
+    run_session = os.environ.get("AVSH_RUN_SESSION", "")
+    kind, kind_source = build_kind(now, run_session)
+    print(f"[board] build kind: {kind} ({kind_source}{', ' + run_session if run_session else ''})")
     holdings_cfg, tasty_cfg = config["holdings"], config["tastytrade"]
     holdings_dir, tasty_dir = src.resolve(holdings_cfg["dir"]), src.resolve(tasty_cfg["dir"])
     refresh_report = {}
@@ -246,6 +294,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "authority": config["authority"],
         "built_at_utc": now.isoformat(timespec="seconds"),
         "as_of_session": str(sessions[-1].date()),
+        "build": {"kind": kind, "source": kind_source, "run_session": run_session or None,
+                  "snapshot": None if as_of else snapshot_name(str(sessions[-1].date()), kind),
+                  "scored_record": kind == "EVENING" and not as_of},
         "horizons": horizons,
         "focus": config["focus_tickers"],
         "groups": groups,
@@ -272,6 +323,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "refresh_report": refresh_report,
         "external": {name: read.public() for name, read in external.items()},
         "intel": build_intel(external, packet),
+        "overnight": build_overnight(external),
         "scorecards": scorecards,
         "settings": {"evidence": evidence_cfg, "conditions": config["conditions"], "extension": config["extension"],
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,
@@ -294,7 +346,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     baseline = {t: {h: e.get("baseline_lean") for h, e in payload["etfs"][t].get("evidence", {}).items()} for t in fresh}
     snapshot = {"board_version": BOARD_VERSION, "config_version": config["config_version"],
                 "as_of_session": payload["as_of_session"], "built_at_utc": payload["built_at_utc"],
-                "conditions": current, "leans": leans, "baseline_leans": baseline}
+                "build_kind": kind, "build_kind_source": kind_source,
+                "conditions": current, "leans": leans, "baseline_leans": baseline,
+                "overnight": {k: payload["overnight"].get(k) for k in ("status", "as_of", "run_session", "summary")}}
     if not as_of and config.get("archive_inputs"):
         files = {name: read.file for name, read in external.items()}
         files.update({f"holdings_{etf}": holdings_dir / f"{etf}_latest.json" for etf in holdings_cfg["sources"]})
@@ -308,7 +362,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         payload["inputs_archived"] = archived
         print(f"[board] archived {archived} input files")
     if not as_of:
-        (snapshot_dir / f"board_{payload['as_of_session']}.json").write_text(json.dumps(snapshot, indent=1), encoding="utf-8")
+        (snapshot_dir / snapshot_name(payload["as_of_session"], kind)).write_text(json.dumps(snapshot, indent=1), encoding="utf-8")
 
     html = TEMPLATE.read_text(encoding="utf-8")
     blob = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")

@@ -209,6 +209,8 @@ def load_external(config: Mapping, now: datetime) -> dict[str, SourceRead]:
         "forward_bias": read_csv("Colab forward bias", latest_glob(src["forward_bias_glob"]), None, file_age, now),
         "economic_prints": read_csv("FRED economic prints", latest_glob(src["economic_prints_glob"]), "date", file_age, now),
         "threshold_flags": read_csv("Series threshold flags", resolve(src["threshold_flags"]), "as_of", file_age, now),
+        "overnight": read_json("Overnight capture (since the US close)", latest_glob(src["overnight_glob"]),
+                               ["as_of_utc"], float(fresh["overnight_max_age_hours"]), now),
     }
     return reads
 

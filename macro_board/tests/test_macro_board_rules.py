@@ -566,3 +566,80 @@ def test_ordinary_drift_is_not_mistaken_for_continuation():
     uncertain = {"analog": {"mean_pct": 2.0, "ci_low_pct": -0.4, "n_eff": 9}, "base": {"mean_pct": 0.9}}
     assert desk.stale_target_note("CALL", room, below_normal, "20") is None      # runs did worse than usual
     assert desk.stale_target_note("CALL", room, uncertain, "20") is None         # interval spans zero
+
+
+# --- morning and evening builds (step 5, ACK 8 Oct 2026) ------------------------------------
+
+from macro_board import build_board as bb  # noqa: E402
+
+
+def test_a_runner_pre_open_build_is_morning_and_a_post_close_build_is_evening():
+    now = datetime(2026, 10, 8, 12, 41, tzinfo=timezone.utc)
+    assert bb.build_kind(now, "PreOpen") == ("MORNING", "runner")
+    assert bb.build_kind(now, "PostClose") == ("EVENING", "runner")
+
+
+@pytest.mark.parametrize("instant, expected", [
+    (datetime(2026, 10, 8, 12, 41, tzinfo=timezone.utc), "MORNING"),     # 08:41 ET, session day
+    (datetime(2026, 10, 8, 15, 0, tzinfo=timezone.utc), "INTRADAY"),     # 11:00 ET
+    (datetime(2026, 10, 8, 21, 0, tzinfo=timezone.utc), "EVENING"),      # 17:00 ET
+    (datetime(2026, 11, 27, 18, 30, tzinfo=timezone.utc), "EVENING"),    # 13:30 ET after a half-day close
+    (datetime(2026, 10, 10, 15, 0, tzinfo=timezone.utc), "OFF_SESSION"), # Saturday
+])
+def test_a_manual_build_is_labelled_by_the_trading_clock_and_says_so(instant, expected):
+    kind, source = bb.build_kind(instant, "")
+    assert kind == expected and source == "clock"
+
+
+def test_only_the_evening_build_writes_the_scored_record():
+    assert bb.snapshot_name("2026-10-07", "EVENING") == "board_2026-10-07.json"
+    assert bb.snapshot_name("2026-10-07", "MORNING") == "board_2026-10-07_morning.json"
+    assert bb.snapshot_name("2026-10-07", "OFF_SESSION") == "board_2026-10-07_off_session.json"
+
+
+def test_a_morning_snapshot_is_kept_but_never_scored(tmp_path):
+    import json as _json
+    sessions = pd.bdate_range("2026-10-01", periods=6)
+    opens = pd.DataFrame({"SPY": [100.0] * 6}, index=sessions)
+    closes = pd.DataFrame({"SPY": [101.0] * 6}, index=sessions)
+    evening = {"as_of_session": "2026-10-01", "build_kind": "EVENING", "leans": {"SPY": {"1": "UP"}}, "baseline_leans": {}}
+    morning = {"as_of_session": "2026-10-01", "build_kind": "MORNING", "leans": {"SPY": {"1": "DOWN"}}, "baseline_leans": {}}
+    (tmp_path / "board_2026-10-01.json").write_text(_json.dumps(evening), encoding="utf-8")
+    (tmp_path / "board_2026-10-01_morning.json").write_text(_json.dumps(morning), encoding="utf-8")
+    result = sc.score_board_snapshots(tmp_path, opens, closes, [1])
+    assert result["snapshots"] == 1
+    assert result["results"]["1"]["scored"] == 1 and result["results"]["1"]["hit_rate"] == 1.0
+
+
+def test_the_overnight_capture_is_a_board_input_with_its_age(tmp_path, monkeypatch):
+    import json as _json
+    from macro_board import sources as src
+    doc = {"contract": "avshunter_overnight_v1", "as_of_utc": "2026-10-08T12:41:00Z", "run_session": "PreOpen",
+           "groups": {}, "summary": {}, "releases_today": []}
+    (tmp_path / "overnight_20261008_124100.json").write_text(_json.dumps(doc), encoding="utf-8")
+    config = {"sources": {k: str(tmp_path / "absent") for k in (
+                  "macro_packet", "us_money_index", "enrichment_delta", "bond_state", "vix_engine", "gex_proxy",
+                  "liquidity_monitor", "macro_filter_summary", "daily_regime_model", "breadth_rsp_spy",
+                  "threshold_flags")},
+              "freshness": {"external_file_max_age_hours": 30, "macro_packet_max_age_hours": 30,
+                            "us_money_index_max_age_hours": 48, "overnight_max_age_hours": 12}}
+    config["sources"].update({"event_payload_glob": str(tmp_path / "none_*.json"),
+                              "forward_bias_glob": str(tmp_path / "none_*.csv"),
+                              "economic_prints_glob": str(tmp_path / "none_*.csv"),
+                              "overnight_glob": str(tmp_path / "overnight_*.json")})
+    reads = src.load_external(config, datetime(2026, 10, 8, 13, 41, tzinfo=timezone.utc))
+    assert reads["overnight"].status == "FRESH" and round(reads["overnight"].age_hours, 2) == 1.0
+    stale = src.load_external(config, datetime(2026, 10, 9, 13, 41, tzinfo=timezone.utc))
+    assert stale["overnight"].status == "STALE"
+
+
+def test_the_overnight_block_carries_the_capture_as_measured_and_a_missing_one_says_so():
+    doc = {"as_of_utc": "2026-10-08T12:41:00Z", "run_session": "PreOpen", "us_reference_session": "2026-10-07",
+           "us_reference_close_utc": "2026-10-07T20:00:00Z", "us_reference_source": "runner",
+           "groups": {"us_futures": [{"symbol": "ES=F", "change_pct": -0.41}]},
+           "summary": {"us_futures": {"measured": 1}}, "releases_today": [], "releases_ahead": [], "notes": [], "errors": []}
+    read = type("R", (), {"status": "FRESH", "data": doc, "as_of": "2026-10-08T12:41:00+00:00", "age_hours": 1.0})()
+    block = bb.build_overnight({"overnight": read})
+    assert block["status"] == "FRESH" and block["groups"] == doc["groups"] and block["us_reference_session"] == "2026-10-07"
+    missing = bb.build_overnight({"overnight": type("R", (), {"status": "MISSING", "data": None, "as_of": None, "age_hours": None})()})
+    assert missing == {"status": "MISSING"}
