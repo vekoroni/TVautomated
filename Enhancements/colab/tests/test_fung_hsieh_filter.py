@@ -59,3 +59,12 @@ def test_the_model_is_tested_on_weeks_after_the_ones_it_learned_from():
     X_train, X_test, y_train, y_test = m.chronological_split(X.values, y)
     assert y_train.index.max() < y_test.index.min()
     assert len(y_test) == int(np.ceil(0.2 * len(y)))
+
+
+def test_a_friday_pre_open_run_does_not_count_the_current_week_as_finished():
+    # Friday 9 Oct 2026, 08:40 ET: last completed session Thursday 8 Oct, so the week ending
+    # Friday 9 Oct has not finished even though its Friday label equals the run date.
+    m = _module()
+    data = _polygon_weekly(40, last_week_start="2026-10-04")
+    returns = m.complete_weekly_returns(data, today=dt.date(2026, 10, 8))
+    assert returns.index.max() == pd.Timestamp("2026-10-02")

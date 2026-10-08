@@ -124,3 +124,13 @@ def test_a_rejected_fred_request_is_not_retried(monkeypatch):
     with pytest.raises(requests.exceptions.HTTPError):
         m._fred_series("NOT_A_SERIES", "2026-10-01")
     assert len(calls) == 1
+
+
+def test_a_bar_dated_after_the_last_completed_us_session_is_not_used(monkeypatch):
+    # Polygon daily aggregates arrive tz-aware (UTC); the cut is by session date.
+    m = _module()
+    idx = pd.DatetimeIndex(pd.to_datetime(["2026-10-06 04:00", "2026-10-07 04:00", "2026-10-08 04:00"]), tz="UTC")
+    frame = pd.DataFrame({"close": [1.0, 2.0, 3.0]}, index=idx)
+    monkeypatch.setenv("AVSH_SESSION_CUTOFF", "2026-10-07")
+    cut = m.cut_to_session(frame, m.session_cutoff())
+    assert list(cut["close"]) == [1.0, 2.0]

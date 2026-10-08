@@ -24,6 +24,10 @@ L-03  P0  A requests error message carries the full URL, and Polygon (apiKey=)
 L-04  report_*.json and collection_errors_*.txt written as UTF-8 (Windows
       default cp1252 is not what the UTF-8 readers expect). UTF-8 console.
       Local run:  venv\\Scripts\\python.exe Enhancements\\colab\\avshunter_market_intelligence_v5_4_3.py
+L-05  Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1),
+      Polygon bars and the Cboe / yfinance vol complex stop at the last completed US
+      session. Global (non-US) indices are not cut: their overnight session is what a
+      pre-open run is for.
 
 ===============================================================================
 CHANGES FROM v5.4.1
@@ -237,6 +241,26 @@ def setup(argv=None):
 COLLECTION_ERRORS = []
 TODAY_ISO = date.today().isoformat()
 
+
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def within_session(dates):
+    """Mask of dates on or before the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market trades, overnight VIX) as a finished session. Non-US indices
+    are not cut: their overnight session is the point of a pre-open run."""
+    cutoff = session_cutoff()
+    idx = pd.DatetimeIndex(dates)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    if cutoff is None:
+        return np.ones(len(idx), dtype=bool)
+    return np.asarray(idx.normalize() <= cutoff)
+
 _KEY_IN_TEXT = re.compile(r"((?:apiKey|api_key|apikey|token)=)[^&\s'\"]+", re.IGNORECASE)
 
 
@@ -433,6 +457,12 @@ class PolygonExtractor:
             COLLECTION_ERRORS.append(f"Polygon {ticker}: empty results")
             return build_metrics(ticker, name, [], source="POLYGON",
                                  status="NO_DATA", note="empty results")
+        keep = within_session([pd.to_datetime(r['t'], unit='ms') for r in res])
+        res = [r for r, k in zip(res, keep) if k]
+        if not res:
+            COLLECTION_ERRORS.append(f"Polygon {ticker}: no bar on or before the session cut-off")
+            return build_metrics(ticker, name, [], source="POLYGON",
+                                 status="NO_DATA", note="no bar on or before the session cut-off")
         return build_metrics(ticker, name,
                              closes=[r['c'] for r in res], highs=[r['h'] for r in res],
                              lows=[r['l'] for r in res], volumes=[r.get('v', 0) for r in res],
@@ -548,6 +578,7 @@ class VolComplexExtractor:
         out['close'] = pd.to_numeric(out['close'], errors='coerce')
         out = out.dropna().sort_values('date')
         out = out[out['date'] <= pd.Timestamp(TODAY_ISO)]      # V-03 pattern
+        out = out[within_session(out['date'])]
         return out.tail(600) if not out.empty else None
 
     def fetch_cboe(self, key):
@@ -586,6 +617,7 @@ class VolComplexExtractor:
         if hist is None or hist.empty or 'Close' not in hist.columns:
             return None
         df = hist[['Close', 'High', 'Low', 'Volume']].dropna(subset=['Close'])
+        df = df[within_session(df.index)]
         if df.empty:
             return None
         idx = pd.to_datetime(df.index)

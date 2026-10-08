@@ -105,6 +105,9 @@
 #         active. dropbox\macro\auction_calendar.csv is now read after the market_data
 #         candidates (first existing file wins, as before).
 #   Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_macro_module_v2_8.py
+#   Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), Polygon,
+#         vol-complex and DXY series stop at the last completed US session; a PreOpen run
+#         (AVSH_RUN_SESSION) skips the same-day RSP vs SPY breadth (state SKIPPED).
 
 # ════════════════════════════════════════════════════════════
 # ── CONFIG ──────────────────────────────────────────────────
@@ -293,6 +296,24 @@ RISK_NEUTRAL = {"GLD"}   # safe haven, ambiguous in both directions
 errors = []
 
 
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def cut_to_session(data, cutoff):
+    """Drop rows dated after the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market trades, overnight VIX / dollar) as a finished session."""
+    if cutoff is None or data is None or len(data) == 0:
+        return data
+    idx = pd.DatetimeIndex(data.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return data[idx.normalize() <= cutoff]
+
+
 # ══════════════════════════════════════════════════════════════
 # SECTION 1 — FETCH HELPERS
 # ══════════════════════════════════════════════════════════════
@@ -349,7 +370,7 @@ def fetch_polygon(ticker, start, end, api_key):
         errors.append(f"Polygon {ticker}: unexpected schema {list(df.columns)}")
         return pd.Series(dtype="float64")
     df["t"] = pd.to_datetime(df["t"], unit="ms")
-    return _normalise(df.set_index("t")["c"].astype("float64"))
+    return cut_to_session(_normalise(df.set_index("t")["c"].astype("float64")), session_cutoff())
 
 
 def fetch_polygon_snapshot(ticker, api_key):
@@ -497,6 +518,7 @@ def fetch_vol_complex():
                     errors.append(f"Cboe {key} unavailable — yfinance fallback")
             except Exception as e:
                 errors.append(f"yfinance {key}: {type(e).__name__} — {e}")
+        got = cut_to_session(got, session_cutoff())
         if got is None or got.empty:
             errors.append(f"{key}: no source available")
             print(f"  FAIL {key:6s} no source")
@@ -720,6 +742,10 @@ def compute_intraday_breadth(api_key):
     this answers 'is today's gap broad?'."""
     out = {"spread_pct": None, "rsp_pct": None, "spy_pct": None,
            "state": "MISSING", "note": ""}
+    if os.environ.get("AVSH_RUN_SESSION", "").strip().lower() == "preopen":
+        # Before the open there is no US session yet; a snapshot would only reflect pre-market prints.
+        out.update({"state": "SKIPPED", "note": "pre-open run: no US session yet"})
+        return out
     rsp = fetch_polygon_snapshot("RSP", api_key)
     spy = fetch_polygon_snapshot("SPY", api_key)
     if not rsp or not spy:
@@ -943,7 +969,7 @@ if __name__ == "__main__":
         import yfinance as yf
         h = yf.Ticker("DX=F").history(period="2y", auto_adjust=False)
         if h is not None and not h.empty and "Close" in h.columns:
-            vix_data["DXY"] = _normalise(h["Close"].astype("float64").dropna())
+            vix_data["DXY"] = cut_to_session(_normalise(h["Close"].astype("float64").dropna()), session_cutoff())
     except Exception as e:
         errors.append(f"yfinance DX=F: {type(e).__name__} — {e}")
     if "DXY" not in vix_data or vix_data["DXY"].empty:
@@ -1045,8 +1071,8 @@ if __name__ == "__main__":
     if INTRADAY_BREADTH:
         print("\nBREADTH — same-day snapshot (is TODAY's gap broad?)")
         breadth_intraday = compute_intraday_breadth(POLYGON_API_KEY)
-        if breadth_intraday["state"] == "MISSING":
-            print(f"  MISSING — {breadth_intraday['note']}")
+        if breadth_intraday["state"] in ("MISSING", "SKIPPED"):
+            print(f"  {breadth_intraday['state']} — {breadth_intraday['note']}")
         else:
             print(f"  RSP {breadth_intraday['rsp_pct']:+.2f}%   "
                   f"SPY {breadth_intraday['spy_pct']:+.2f}%   "

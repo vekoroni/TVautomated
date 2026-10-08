@@ -35,6 +35,9 @@
 # ✅ FRED VIXCLS through the FRED REST API when fredapi is not installed (same series).
 # ✅ Chart is optional: no matplotlib → no PNG, the CSV is unaffected.
 # ✅ UTF-8 console so a scheduled run cannot die printing an emoji.
+# ✅ Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), the VIX
+#    suite, FRED VIXCLS and MarketData daily closes stop at the last completed US session, so a
+#    pre-open run never reads an overnight VIX print as a close. The live SPY chain is not cut.
 # ✅ --output-dir (or AVSH_VIX_OUTPUT_DIR) to test without touching dropbox\market_data.
 # ✅ Exit code 1 when the CSV was not written, so a scheduler sees the failure.
 #    Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_vix_engine_v4_1.py
@@ -241,6 +244,24 @@ def _normalise_index(series):
     return series[~series.index.duplicated(keep="last")].sort_index()
 
 
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def cut_to_session(data, cutoff):
+    """Drop rows dated after the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market trades, overnight VIX) as a finished session."""
+    if cutoff is None or data is None or len(data) == 0:
+        return data
+    idx = pd.DatetimeIndex(data.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return data[idx.normalize() <= cutoff]
+
+
 # ══════════════════════════════════════════════════════════════
 # SECTION 1 — REAL VIX  (yfinance primary)
 # ══════════════════════════════════════════════════════════════
@@ -280,7 +301,7 @@ def fetch_real_vix_suite():
             print(f"  ⚠  {sym}: empty response")
             continue
 
-        s = _normalise_index(hist["Close"].astype("float64"))
+        s = cut_to_session(_normalise_index(hist["Close"].astype("float64")), session_cutoff())
         val, obs = _clean_last(s)
         if val is None:
             print(f"  ⚠  {sym}: all values NaN")
@@ -336,6 +357,7 @@ def fetch_fred_vix():
             s = pd.Series(pd.to_numeric([o["value"] for o in obs], errors="coerce"),
                           index=pd.to_datetime([o["date"] for o in obs])).dropna()
         s = _normalise_index(pd.Series(s.values, index=pd.to_datetime(s.index), dtype="float64"))
+        s = cut_to_session(s, session_cutoff())
         val, obs = _clean_last(s)
         print(f"\n✅ FRED VIXCLS: {len(s)} obs, latest {val:.2f} on {obs}")
         return s
@@ -416,6 +438,10 @@ def fetch_daily_close(ticker, start, end):
         unit = "ms" if (raw_t and raw_t[0] > 1e10) else "s"
         dates = pd.to_datetime(raw_t, unit=unit).tz_localize(None).normalize()
         s = pd.Series(data["c"], index=dates, name=ticker, dtype="float64").sort_index()
+        s = cut_to_session(s, session_cutoff())
+        if s.empty:
+            print(f"  ⚠  {ticker}: no close on or before the session cut-off")
+            return s
         print(f"  ✅ {ticker}: {len(s)} closes ({s.index[0].date()} → {s.index[-1].date()})")
         return s
     if r.status_code == 429:

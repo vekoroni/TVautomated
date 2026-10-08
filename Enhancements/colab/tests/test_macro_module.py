@@ -144,3 +144,22 @@ def test_a_slow_fred_answer_is_retried_not_turned_into_a_missing_series(monkeypa
     assert "DGS10" in out and out["DGS10"].iloc[-1] == 4.13
     assert len(calls) == 3 and all(t >= 60 for t in calls)
     assert not m.errors
+
+
+def test_a_bar_dated_after_the_last_completed_us_session_is_not_used(monkeypatch):
+    import pandas as pd
+    m = _module()
+    bars = pd.Series([1.0, 2.0, 3.0], index=pd.to_datetime(["2026-10-06", "2026-10-07", "2026-10-08"]))
+    monkeypatch.setenv("AVSH_SESSION_CUTOFF", "2026-10-07")
+    assert list(m.cut_to_session(bars, m.session_cutoff())) == [1.0, 2.0]
+
+
+def test_pre_open_intraday_breadth_is_skipped_without_a_snapshot_call(monkeypatch):
+    # Before the open there is no US session yet: the snapshot would only reflect pre-market prints.
+    m = _module()
+    monkeypatch.setenv("AVSH_RUN_SESSION", "PreOpen")
+    def no_call(*a, **k):
+        raise AssertionError("snapshot requested in a pre-open run")
+    monkeypatch.setattr(m.requests, "get", no_call)
+    out = m.compute_intraday_breadth("k")
+    assert out["state"] == "SKIPPED"

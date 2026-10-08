@@ -18,6 +18,9 @@
 # only in Colab, keys from the repo .env, error messages never echo a request URL (Polygon
 # apiKey / MarketData token ride in it), charts only in Colab, UTF-8 console, --output-dir
 # (or AVSH_REGIME_OUTPUT_DIR) for testing, exit code 1 when the CSV was not written.
+# Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), ETF and VIX
+# series stop at the last completed US session, so a pre-open run predicts from the previous
+# close and never from a partial pre-market bar. Unset (Colab / manual): unchanged.
 #
 # v1.8 (7 Oct 2026, ACK approved both fixes) — model, features and thresholds unchanged:
 # ✅ FIX: a prediction is dated by the session whose close it was computed from. v1.7 dated
@@ -94,6 +97,24 @@ def _normalise_index(series):
         pass
     series.index = idx.normalize()
     return series[~series.index.duplicated(keep="last")].sort_index()
+
+
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def cut_to_session(data, cutoff):
+    """Drop rows dated after the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market trades, overnight VIX) as a finished session."""
+    if cutoff is None or data is None or len(data) == 0:
+        return data
+    idx = pd.DatetimeIndex(data.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return data[idx.normalize() <= cutoff]
 
 
 def fetch_polygon_daily(ticker, start, end):
@@ -468,11 +489,14 @@ def main(argv=None):
     end_date = datetime.today().strftime("%Y-%m-%d")
     start_date = (datetime.today() - timedelta(days=730)).strftime("%Y-%m-%d")
 
-    # ── data acquisition (unchanged from v1.6) ──
-    print(f"\nFetching {start_date} to {end_date} (730 days)...\n")
+    # ── data acquisition (unchanged from v1.6; v1.8 cuts at the last completed session) ──
+    cutoff = session_cutoff()
+    print(f"\nFetching {start_date} to {end_date} (730 days)..."
+          + (f"  session cut-off {cutoff.date()} ({os.environ.get('AVSH_RUN_SESSION', 'manual')})" if cutoff is not None else "")
+          + "\n")
     etf_data = {}
     for name, ticker in ETF_TICKERS.items():
-        s = fetch_polygon_daily(ticker, start_date, end_date)
+        s = cut_to_session(fetch_polygon_daily(ticker, start_date, end_date), cutoff)
         if s is not None and not s.empty:
             etf_data[name] = s
             print(f"  ✅ {name} ({ticker})  — {len(s)} bars")
@@ -487,6 +511,7 @@ def main(argv=None):
         raise SystemExit("❌ ETF frame is empty after alignment — check fetch logs above")
 
     vix_series, vix_source, vix_flag = fetch_vix_with_fallback(start_date, end_date)
+    vix_series = cut_to_session(vix_series, cutoff)
     vix_aligned = None
     if vix_series is not None:
         aligned = vix_series.reindex(daily_data.index).ffill()

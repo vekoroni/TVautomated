@@ -23,6 +23,8 @@
 #    is left out of training and testing.
 # ✅ Importing this file does nothing; work happens in main() (tests import the functions).
 #    Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_fung_hsieh_filter_v1_4.py
+# ✅ Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), "today" is
+#    the last completed US session, so a Friday pre-open run does not count the week as finished.
 
 import argparse
 import datetime as dt
@@ -175,7 +177,13 @@ def main(argv=None):
         if not POLYGON_API_KEY:
             raise SystemExit("❌ POLYGON_API_KEY is required — cannot proceed")
 
-    today = dt.date.today()
+    # A week counts as finished only when its Friday is on or before the last completed US session
+    # (AVSH_SESSION_CUTOFF from Run-MacroInputs.ps1): a Friday pre-open run must not treat the
+    # current week as finished. Unset (Colab / manual): today, as before.
+    cutoff = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    today = dt.date.fromisoformat(cutoff) if cutoff else dt.date.today()
+    if cutoff:
+        print(f"ℹ️  Session cut-off {today} ({os.environ.get('AVSH_RUN_SESSION', 'manual')})")
     end_date   = datetime.today().strftime('%Y-%m-%d')
     start_date = (datetime.today() - timedelta(days=730)).strftime('%Y-%m-%d')
 

@@ -14,7 +14,11 @@
 #
 # Every producer writes straight into dropbox\market_data and reads keys from the user
 # environment or the repo .env (FRED_API_KEY, POLYGON_API_KEY, MARKETDATA_API_KEY;
-# ANTHROPIC_API_KEY for build_macro_json.py). Each step receives AVSH_RUN_SESSION.
+# ANTHROPIC_API_KEY for build_macro_json.py). Each step receives AVSH_RUN_SESSION and
+# AVSH_SESSION_CUTOFF: the last COMPLETED US session at the start time (repo xnys_calendar), so a
+# pre-open run measures from the previous close and never treats a partial "today" bar (pre-market
+# trades, overnight VIX) as a finished session. A PreOpen run stops (exit 6) when the cut-off
+# cannot be computed; a PostClose run warns and runs uncut.
 #
 # Usage:
 #   .\Run-MacroInputs.ps1 -Session PostClose        # evening run (waits until 16:30 ET)
@@ -44,7 +48,8 @@
 #   3. merge and publish (in order): FRED monitor (merges the producers into
 #      avsh_macro_master.csv), build_macro_json.py, the board.
 # Exit codes: 0 done or skipped (not a session day), 1 a step failed, 2 venv missing,
-# 3 refused during regular hours, 4 past the latest start, 5 pipeline still running.
+# 3 refused during regular hours, 4 past the latest start, 5 pipeline still running,
+# 6 PreOpen without a session cut-off (calendar check unavailable).
 
 param(
     [ValidateSet("Auto", "PostClose", "PreOpen")]
@@ -104,6 +109,22 @@ function Test-XnysSession([DateTime]$Day) {
     } finally { Pop-Location }
 }
 
+function Get-SessionCutoff([DateTime]$AtET) {
+    # Last completed XNYS session at $AtET (US Eastern), "yyyy-MM-dd"; $null when unavailable.
+    if (-not (Test-Path $venvPython)) { return $null }
+    $code = "import sys; from datetime import datetime; from zoneinfo import ZoneInfo; from avshunter.shared.xnys_calendar import session_state as s; print(s(datetime.fromisoformat(sys.argv[1]).replace(tzinfo=ZoneInfo(sys.argv[2])))[2].isoformat())"
+    Push-Location $repoRoot
+    try {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+        $out = & $venvPython -c $code ($AtET.ToString("yyyy-MM-ddTHH:mm:ss")) "America/New_York" 2>$null
+        $ErrorActionPreference = $prev
+        if ($LASTEXITCODE -ne 0) { return $null }
+        $value = ("$out").Trim()
+        if ($value -match '^\d{4}-\d{2}-\d{2}$') { return $value }
+        return $null
+    } finally { Pop-Location }
+}
+
 function Get-PipelineProcesses {
     $found = @()
     try {
@@ -158,6 +179,9 @@ if ($PlanOnly) {
     Write-Host ("  now            : {0:yyyy-MM-dd HH:mm} ET{1}" -f $etNow, $(if ($NowET) { "  (simulated by -NowET)" } else { "" }))
     Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
     Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal)
+    $planAt = if ($etNow -gt $startAt) { $etNow } else { $startAt }
+    $planCutoff = Get-SessionCutoff $planAt
+    Write-Host ("  session cut-off: {0}" -f $(if ($planCutoff) { "$planCutoff (last completed US session at {0:HH:mm} ET; later bars are not used)" -f $planAt } elseif ($Session -eq "PreOpen") { "UNAVAILABLE - a PreOpen run would stop (exit 6)" } else { "UNAVAILABLE - the run would continue uncut" }))
     $running = @(Get-PipelineProcesses)
     Write-Host ("  pipeline now   : {0}" -f $(if ($running.Count) { "RUNNING (pid " + (($running | ForEach-Object { $_.ProcessId }) -join ", ") + ") - would wait up to $PipelineWaitMinutes min" } else { "not running" }))
     $i = 0
@@ -363,6 +387,20 @@ try {
         Write-Host ("[SKIPPED] it is {0:HH:mm} ET, after the latest start {1:HH:mm} ET." -f (Get-NowET), $latestAt)
         $exitCode = 4
         break run
+    }
+
+    # 3. session cut-off at the actual start time (not when the task woke up)
+    $cutoff = Get-SessionCutoff (Get-NowET)
+    if ($cutoff) {
+        $env:AVSH_SESSION_CUTOFF = $cutoff
+        Write-Host ("[CUTOFF] last completed US session {0}; bars dated after it are not used" -f $cutoff)
+    } elseif ($Session -eq "PreOpen") {
+        Write-Host "[STOPPED] session cut-off unavailable (trading-calendar check failed); a PreOpen run without it would treat partial pre-market bars as a finished session."
+        $exitCode = 6
+        break run
+    } else {
+        Remove-Item Env:AVSH_SESSION_CUTOFF -ErrorAction SilentlyContinue
+        Write-Host "[WARN] session cut-off unavailable; PostClose run continues uncut"
     }
 
     $runStarted = Get-Date

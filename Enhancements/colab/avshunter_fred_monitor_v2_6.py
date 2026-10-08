@@ -58,6 +58,8 @@
 #    runs only inside Colab.
 # ✅ Keys: Colab Secrets in Colab; locally the environment, else the repo .env (override=False).
 #    v2.5 read the environment only, so a key kept in .env was never found.
+# ✅ Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), the Polygon
+#    sector series stop at the last completed US session. FRED series are not cut.
 # ✅ FRED via its REST endpoints (series/observations, series) — the calls fredapi wraps;
 #    fredapi is not in the venv. Error text is redacted before it is printed or written.
 # ✅ Merges for avsh_macro_master.csv read the other producers' files from
@@ -229,6 +231,24 @@ def safe_fred_info(series_id):
         return {"units": None, "frequency": None, "last_updated": None}
 
 
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def cut_to_session(data, cutoff):
+    """Drop rows dated after the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market trades, overnight VIX) as a finished session."""
+    if cutoff is None or data is None or len(data) == 0:
+        return data
+    idx = pd.DatetimeIndex(data.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return data[idx.normalize() <= cutoff]
+
+
 def fetch_polygon_daily(ticker, start, end, api_key):
     if not api_key:
         errors.append(f"Polygon {ticker}: no key"); return pd.Series(dtype="float64")
@@ -238,7 +258,7 @@ def fetch_polygon_daily(ticker, start, end, api_key):
     res = r.json().get("results",[])
     if not res: errors.append(f"Polygon {ticker} empty"); return pd.Series(dtype="float64")
     df = pd.DataFrame(res); df["t"] = pd.to_datetime(df["t"],unit="ms")
-    return df.set_index("t")["c"].sort_index()
+    return cut_to_session(df.set_index("t")["c"].sort_index(), session_cutoff())
 
 
 print(f"Fetching {len(FRED_SERIES)} FRED series...")

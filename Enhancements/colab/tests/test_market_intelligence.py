@@ -70,3 +70,25 @@ def test_an_api_key_never_reaches_the_console_or_the_error_record(source, monkey
     assert m.COLLECTION_ERRORS, "the failure itself must still be recorded"
     assert secret not in printed
     assert all(secret not in entry for entry in m.COLLECTION_ERRORS)
+
+
+def test_a_bar_dated_after_the_last_completed_us_session_is_not_used(monkeypatch):
+    # Polygon returns ms timestamps; a pre-open run on 8 Oct must report the 7 Oct close.
+    import pandas as pd
+    m = _module()
+    monkeypatch.setenv("AVSH_SESSION_CUTOFF", "2026-10-07")
+    ms = lambda d: int(pd.Timestamp(d).value // 10**6)
+    results = [{"t": ms(d), "c": c, "h": c, "l": c, "v": 100}
+               for d, c in [("2026-10-06", 10.0), ("2026-10-07", 11.0), ("2026-10-08", 12.0)]]
+    ext = m.PolygonExtractor("k")
+    monkeypatch.setattr(ext, "get_data", lambda ticker: {"results": results})
+    row = ext.fetch("SPY", "S&P")
+    assert row["current_price"] == 11.0 and row["obs_date"] == "2026-10-07"
+
+
+def test_cboe_history_after_the_cut_off_is_dropped(monkeypatch):
+    m = _module()
+    monkeypatch.setenv("AVSH_SESSION_CUTOFF", "2026-10-07")
+    text = "DATE,OPEN,HIGH,LOW,CLOSE\n10/06/2026,15,16,14,15.1\n10/07/2026,15,16,14,15.2\n10/08/2026,15,16,14,15.3\n"
+    out = m.VolComplexExtractor._parse_cboe(text, "VIX")
+    assert str(out["date"].max().date()) == "2026-10-07"

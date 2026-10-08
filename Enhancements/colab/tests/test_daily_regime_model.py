@@ -98,3 +98,22 @@ def test_the_old_re_predicted_history_is_archived_not_kept_in_the_scored_file(tm
     assert len(kept) == 1 and pd.read_csv(kept[0]).equals(old)            # archived, not deleted
     assert list(pd.read_csv(log)["Date"]) == ["2026-10-07"]
     assert set(pd.read_csv(log)["Prediction_Kind"]) == {"LIVE"}
+
+
+# --- Session cut-off (ACK 8 Oct 2026: a pre-open run must not treat partial "today" data as a
+# finished session). Run-MacroInputs.ps1 sets AVSH_SESSION_CUTOFF to the last completed US session.
+
+def test_a_bar_dated_after_the_last_completed_us_session_is_not_used(monkeypatch):
+    m = _module()
+    bars = pd.Series([1.0, 2.0, 3.0], index=pd.to_datetime(["2026-10-06", "2026-10-07", "2026-10-08"]))
+    monkeypatch.setenv("AVSH_SESSION_CUTOFF", "2026-10-07")
+    cut = m.cut_to_session(bars, m.session_cutoff())
+    assert list(cut.index.strftime("%Y-%m-%d")) == ["2026-10-06", "2026-10-07"]
+
+
+def test_without_a_cut_off_the_series_is_unchanged(monkeypatch):
+    m = _module()
+    bars = pd.Series([1.0, 2.0], index=pd.to_datetime(["2026-10-07", "2026-10-08"]))
+    monkeypatch.delenv("AVSH_SESSION_CUTOFF", raising=False)
+    assert m.session_cutoff() is None
+    assert m.cut_to_session(bars, None).equals(bars)

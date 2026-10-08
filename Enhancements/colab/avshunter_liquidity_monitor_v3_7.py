@@ -26,6 +26,8 @@
 #    Same source the market intelligence extractor uses.
 # ✅ Importing this file does nothing; work happens in main() (tests import the functions).
 #    Local run:  venv\Scripts\python.exe Enhancements\colab\avshunter_liquidity_monitor_v3_7.py
+# ✅ Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), ETF, BTC and
+#    Cboe vol series stop at the last completed US session. FRED series are not cut.
 
 import argparse
 import io
@@ -94,6 +96,25 @@ def _safe(e):
 # ══════════════════════════════════════════════════════════════
 # Classification (pure; unit-tested)
 # ══════════════════════════════════════════════════════════════
+
+def session_cutoff():
+    """Last completed US session from AVSH_SESSION_CUTOFF (set by Run-MacroInputs.ps1), or None
+    when unset (Colab / manual runs keep the previous behaviour)."""
+    value = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    return pd.Timestamp(value).normalize() if value else None
+
+
+def cut_to_session(data, cutoff):
+    """Drop rows dated after the last completed US session, so a pre-open run never treats a
+    partial "today" bar (pre-market, 24h crypto) as a finished session. Polygon day bars and the
+    Cboe series here carry tz-aware UTC timestamps; the cut is by date."""
+    if cutoff is None or data is None or len(data) == 0:
+        return data
+    idx = pd.DatetimeIndex(data.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    return data[idx.normalize() <= cutoff]
+
 
 def _present(x):
     return x is not None and not (isinstance(x, float) and np.isnan(x))
@@ -361,18 +382,22 @@ def main(argv=None):
     for k, s in {"walcl":walcl,"rrp":rrp,"sofr":sofr,"y10":y10,"y2":y2,"hy_oas":hy_oas,"ig_oas":ig_oas}.items():
         print(f"  {'✅' if not s.empty else '⚠ '} {k}")
 
+    # Market series stop at the last completed US session (FRED observations are dated already).
+    cutoff = session_cutoff()
+    if cutoff is not None:
+        print(f"\nSession cut-off {cutoff.date()} ({os.environ.get('AVSH_RUN_SESSION', 'manual')})")
     print("\nFetching Polygon ETFs...")
     etfs = {}
     for symbol in ETF_TICKERS:
-        etfs[symbol] = get_polygon_aggs(symbol, START_DATE, end_date)
+        etfs[symbol] = cut_to_session(get_polygon_aggs(symbol, START_DATE, end_date), cutoff)
         print(f"  {'✅' if not etfs[symbol].empty else '⚠ '} {symbol}")
-    btc = get_polygon_aggs(CRYPTO_TICKER, START_DATE, end_date)
+    btc = cut_to_session(get_polygon_aggs(CRYPTO_TICKER, START_DATE, end_date), cutoff)
 
     # FIX v3.7: Cboe daily history (Polygon index aggregates are 403 on this plan)
     vix_liq = {}
     print("\nFetching Cboe indices (VIX/VIX9D/VIX3M/VVIX)...")
     for name in CBOE_FILES:
-        s = fetch_cboe_index(name)
+        s = cut_to_session(fetch_cboe_index(name), cutoff)
         if s is not None and not s.empty:
             s = s[s.index >= pd.Timestamp(START_DATE)]
             s.index = s.index.tz_localize("UTC")      # consistent with the FRED series
