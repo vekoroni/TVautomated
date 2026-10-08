@@ -267,3 +267,44 @@ def test_usd_jpy_rejects_explicitly_invalid_capture_row() -> None:
     assert overrides["usd_jpy"] == 154.50
     assert overrides["usd_jpy_source_field"] == "DEXJPUS"
     assert overrides["usd_jpy_evidence_status"] == "SOURCE_RELEASED"
+
+
+def _overnight_doc() -> dict:
+    return {
+        "contract": "avshunter_overnight_v1", "authority": "DISPLAY_ONLY", "run_session": "PreOpen",
+        "as_of_utc": "2026-10-08T12:41:00Z", "us_reference_session": "2026-10-07",
+        "us_reference_close_utc": "2026-10-07T20:00:00Z",
+        "groups": {"us_futures": [{"symbol": "ES=F", "state": "OK", "change_pct": -0.41, "age_minutes": 11}]},
+        "summary": {"us_futures": {"measured": 1, "of": 1, "up": 0, "down": 1, "median_change_pct": -0.41}},
+        "releases_today": [{"release_id": 180, "name": "Jobless claims", "state": "RELEASED", "value": 197000.0}],
+        "errors": [],
+    }
+
+
+def test_the_overnight_capture_reaches_the_packet_unchanged_and_display_only() -> None:
+    # The pre-open run prepares the morning run: what happened since the US close is carried as
+    # measured, never re-synthesised or scored.
+    payload = _payload()
+    payload["data"]["overnight_json"] = _overnight_doc()
+    payload["files_found_by_key"]["overnight_json"] = "C:/capture/overnight_20261008_124100.json"
+    macro = apply_market_data_overrides(_macro(), payload)
+    overnight = macro["extras"]["overnight"]
+    assert overnight["state"] == "OBSERVED"
+    assert overnight["source"] == "overnight_20261008_124100.json"
+    assert overnight["authority"] == "DISPLAY_ONLY"
+    assert overnight["document"] == _overnight_doc()
+
+
+def test_a_missing_overnight_capture_is_reported_missing_not_neutral() -> None:
+    macro = apply_market_data_overrides(_macro(), _payload())
+    assert macro["extras"]["overnight"] == {"state": "MISSING", "source": None, "authority": "DISPLAY_ONLY",
+                                            "document": None}
+
+
+def test_the_loader_finds_only_the_overnight_capture_files(tmp_path: Path) -> None:
+    from build_macro_json import FILE_SPECS, find_latest_file
+    pattern = dict((key, pat) for key, pat, _ in FILE_SPECS)["overnight_json"]
+    (tmp_path / "overnight_20261008_124100.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "overnight_notes.json").write_text("{}", encoding="utf-8")
+    assert find_latest_file(tmp_path, pattern).name == "overnight_20261008_124100.json"
+    assert all(required is False for key, _, required in FILE_SPECS if key == "overnight_json")

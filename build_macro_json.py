@@ -193,6 +193,9 @@ FILE_SPECS = [
     ("collection_validation_csv", "collection_validation_*.csv", False),
     ("vix_term_dxy_csv",   "vix_term_dxy_snapshot.csv",          False),
     ("vol_complex_csv",    "vol_complex_*.csv",                  False),
+    # Market intelligence L-06: what happened since the last US close (futures, pre-market,
+    # overnight VIX, FX, Asia, Europe, 08:30 prints). Display only; copied into extras.overnight.
+    ("overnight_json",     "overnight_????????_??????.json",     False),
 ]
 
 FILE_SPEC_KEYS = [key for key, _, _ in FILE_SPECS]
@@ -1463,6 +1466,17 @@ def apply_market_data_overrides(macro_json: dict, payload: dict) -> dict:
         "xlc_sector": "CONFIRMED" if overrides["xlc_present"] else "MISSING",
         "yield_curve": "CONFIRMED" if overrides["curve_2y10y"] is not None else "MISSING",
         "usd_jpy": overrides["usd_jpy_evidence_status"],
+    }
+
+    # The overnight capture is carried as measured (never re-synthesised or scored); a missing
+    # capture is stated, not left out.
+    overnight = (payload.get("data") or {}).get("overnight_json")
+    overnight_path = (payload.get("files_found_by_key") or {}).get("overnight_json")
+    extras["overnight"] = {
+        "state": "OBSERVED" if isinstance(overnight, dict) else "MISSING",
+        "source": Path(overnight_path).name if overnight_path and isinstance(overnight, dict) else None,
+        "authority": "DISPLAY_ONLY",
+        "document": overnight if isinstance(overnight, dict) else None,
     }
     return macro_json
 

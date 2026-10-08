@@ -488,6 +488,7 @@ def _domain_coverage(data: Mapping[str, Any], gex: Mapping[str, Any]) -> dict[st
         "commodities": ("metals_csv", "energy_csv", "agriculture_csv"),
         "sectors": ("sectors_csv",),
         "global_risk": ("global_indices_csv",),
+        "overnight": ("overnight_json",),
     }
     coverage = {
         domain: "OBSERVED" if any(_present(data.get(key)) for key in keys) else "NOT_CONFIGURED"

@@ -297,3 +297,11 @@ def test_manifest_repository_is_idempotent_and_atomic(tmp_path: Path) -> None:
     assert latest["manifest_sha256"] == manifest["manifest_sha256"]
     assert first["evidence_file_count"] == "1"
     assert len(list((tmp_path / "evidence").rglob("*.csv"))) == 1
+
+
+def test_overnight_capture_is_a_named_coverage_domain() -> None:
+    present = build_macro_prompt_context({"data": {"overnight_json": {"authority": "DISPLAY_ONLY"}}, "input_manifest": {}})
+    absent = build_macro_prompt_context({"data": {}, "input_manifest": {}})
+    assert present["domain_coverage"]["overnight"] == "OBSERVED"
+    assert present["sources"]["overnight_json"] == {"authority": "DISPLAY_ONLY"}
+    assert absent["domain_coverage"]["overnight"] == "NOT_CONFIGURED"

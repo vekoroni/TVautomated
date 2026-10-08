@@ -18,7 +18,8 @@
 # AVSH_SESSION_CUTOFF: the last COMPLETED US session at the start time (repo xnys_calendar), so a
 # pre-open run measures from the previous close and never treats a partial "today" bar (pre-market
 # trades, overnight VIX) as a finished session. A PreOpen run stops (exit 6) when the cut-off
-# cannot be computed; a PostClose run warns and runs uncut.
+# cannot be computed; a PostClose run warns and runs uncut. AVSH_US_CLOSE_UTC is that session's
+# close instant (13:00 ET on half days): the overnight capture measures from it.
 #
 # Usage:
 #   .\Run-MacroInputs.ps1 -Session PostClose        # evening run (waits until 16:30 ET)
@@ -111,8 +112,10 @@ function Test-XnysSession([DateTime]$Day) {
 
 function Get-SessionCutoff([DateTime]$AtET) {
     # Last completed XNYS session at $AtET (US Eastern), "yyyy-MM-dd"; $null when unavailable.
+    # Also sets $script:CutoffCloseUtc to that session's close instant ("yyyy-MM-ddTHH:mm:ssZ").
+    $script:CutoffCloseUtc = $null
     if (-not (Test-Path $venvPython)) { return $null }
-    $code = "import sys; from datetime import datetime; from zoneinfo import ZoneInfo; from avshunter.shared.xnys_calendar import session_state as s; print(s(datetime.fromisoformat(sys.argv[1]).replace(tzinfo=ZoneInfo(sys.argv[2])))[2].isoformat())"
+    $code = "import sys; from datetime import datetime; from zoneinfo import ZoneInfo; from avshunter.shared.xnys_calendar import session_state as s, session_bounds as b; d = s(datetime.fromisoformat(sys.argv[1]).replace(tzinfo=ZoneInfo(sys.argv[2])))[2]; print(d.isoformat(), b(d)[1].strftime('%Y-%m-%dT%H:%M:%SZ'))"
     Push-Location $repoRoot
     try {
         $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
@@ -120,7 +123,10 @@ function Get-SessionCutoff([DateTime]$AtET) {
         $ErrorActionPreference = $prev
         if ($LASTEXITCODE -ne 0) { return $null }
         $value = ("$out").Trim()
-        if ($value -match '^\d{4}-\d{2}-\d{2}$') { return $value }
+        if ($value -match '^(\d{4}-\d{2}-\d{2}) (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$') {
+            $script:CutoffCloseUtc = $Matches[2]
+            return $Matches[1]
+        }
         return $null
     } finally { Pop-Location }
 }
@@ -181,7 +187,7 @@ if ($PlanOnly) {
     Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal)
     $planAt = if ($etNow -gt $startAt) { $etNow } else { $startAt }
     $planCutoff = Get-SessionCutoff $planAt
-    Write-Host ("  session cut-off: {0}" -f $(if ($planCutoff) { "$planCutoff (last completed US session at {0:HH:mm} ET; later bars are not used)" -f $planAt } elseif ($Session -eq "PreOpen") { "UNAVAILABLE - a PreOpen run would stop (exit 6)" } else { "UNAVAILABLE - the run would continue uncut" }))
+    Write-Host ("  session cut-off: {0}" -f $(if ($planCutoff) { "$planCutoff (last completed US session at {0:HH:mm} ET; later bars are not used; close $script:CutoffCloseUtc)" -f $planAt } elseif ($Session -eq "PreOpen") { "UNAVAILABLE - a PreOpen run would stop (exit 6)" } else { "UNAVAILABLE - the run would continue uncut" }))
     $running = @(Get-PipelineProcesses)
     Write-Host ("  pipeline now   : {0}" -f $(if ($running.Count) { "RUNNING (pid " + (($running | ForEach-Object { $_.ProcessId }) -join ", ") + ") - would wait up to $PipelineWaitMinutes min" } else { "not running" }))
     $i = 0
@@ -393,13 +399,15 @@ try {
     $cutoff = Get-SessionCutoff (Get-NowET)
     if ($cutoff) {
         $env:AVSH_SESSION_CUTOFF = $cutoff
-        Write-Host ("[CUTOFF] last completed US session {0}; bars dated after it are not used" -f $cutoff)
+        $env:AVSH_US_CLOSE_UTC = $script:CutoffCloseUtc
+        Write-Host ("[CUTOFF] last completed US session {0} (close {1}); bars dated after it are not used" -f $cutoff, $script:CutoffCloseUtc)
     } elseif ($Session -eq "PreOpen") {
         Write-Host "[STOPPED] session cut-off unavailable (trading-calendar check failed); a PreOpen run without it would treat partial pre-market bars as a finished session."
         $exitCode = 6
         break run
     } else {
         Remove-Item Env:AVSH_SESSION_CUTOFF -ErrorAction SilentlyContinue
+        Remove-Item Env:AVSH_US_CLOSE_UTC -ErrorAction SilentlyContinue
         Write-Host "[WARN] session cut-off unavailable; PostClose run continues uncut"
     }
 

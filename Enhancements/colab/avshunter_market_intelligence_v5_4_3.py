@@ -28,6 +28,15 @@ L-05  Session cut-off (8 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInput
       Polygon bars and the Cboe / yfinance vol complex stop at the last completed US
       session. Global (non-US) indices are not cut: their overnight session is what a
       pre-open run is for.
+L-06  Overnight capture (8 Oct 2026): overnight_<run>.json, display only, every run.
+      Measured from the last US close (AVSH_US_CLOSE_UTC from the runner): US index
+      futures, ZN/CL/GC, FX and the dollar index (yfinance 5-minute bars), overnight
+      VIX (Cboe delayed quote vs its previous close), US pre-market SPY/QQQ/IWM/DIA
+      (MarketData extended candles vs the official close). Asia and Europe in their
+      own session (CLOSED / INTRADAY / NO_SESSION_TODAY, move from their own previous
+      close, reopening after a holiday flagged). Today's 08:30 ET prints from FRED
+      (RELEASED with value and prior / PENDING / NOT_YET_ON_FRED) and the next 7 days.
+      Quote age is shown and flagged above OVERNIGHT_STALE_AFTER_MINUTES, never gated.
 
 ===============================================================================
 CHANGES FROM v5.4.1
@@ -129,7 +138,7 @@ import json
 import time
 import glob
 import warnings
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 
 import numpy as np
 import pandas as pd
@@ -153,7 +162,53 @@ USSLIND_MAX_AGE_DAYS = 120
 OUTPUT_PREFIXES = ('report_', 'macro_', 'forward_bias_', 'collection_validation_',
                    'collection_errors_', 'equity_etf_', 'sectors_', 'metals_etf_',
                    'energy_etf_', 'bonds_etf_', 'agriculture_etf_', 'vol_dollar_',
-                   'fx_spot_', 'vol_complex_', 'global_indices_', 'us_indices_cash_')
+                   'fx_spot_', 'vol_complex_', 'global_indices_', 'us_indices_cash_',
+                   'overnight_')
+
+# -- Overnight capture (L-06) -------------------------------------------------
+# What happened since the last US close, for the pre-open run (08:35-09:00 ET). Display only.
+# Sources tested 8 Oct 2026 08:41 ET: yfinance 5-minute bars carry US index futures, ZN/CL/GC,
+# FX and overnight ^VIX ~10 min behind; Asia and Europe daily + 5-minute bars; Cboe delayed
+# quotes carry overnight VIX (VIX9D / VIX3M / VVIX are not quoted overnight); MarketData
+# extended candles carry the US pre-market (15 min delayed); FRED posted the 08:30 claims
+# print at 08:33 ET. Not usable: Polygon FX minute aggregates (last bar 23:55Z the day before),
+# Polygon indices (403), yfinance DX=F (404; DX-Y.NYB works).
+OVERNIGHT_STALE_AFTER_MINUTES = 60       # quote age above this is flagged, never dropped
+OVERNIGHT_BREAK_DAYS = 4                 # a gap longer than this between two sessions is flagged
+OVERNIGHT_RELEASE_LOOKAHEAD_DAYS = 7
+OVERNIGHT_SINCE_US_CLOSE = {             # measured from the price at the last US close
+    'us_futures': [('ES=F', 'S&P 500 e-mini'), ('NQ=F', 'Nasdaq 100 e-mini'),
+                   ('YM=F', 'Dow e-mini'), ('RTY=F', 'Russell 2000 e-mini')],
+    'rates_commodities': [('ZN=F', '10Y T-note future'), ('CL=F', 'WTI crude future'),
+                          ('GC=F', 'Gold future')],
+    'fx': [('EURUSD=X', 'EUR/USD'), ('USDJPY=X', 'USD/JPY'), ('GBPUSD=X', 'GBP/USD'),
+           ('AUDUSD=X', 'AUD/USD'), ('CNH=X', 'USD/CNH'), ('DX-Y.NYB', 'US Dollar Index (ICE)')],
+}
+OVERNIGHT_SESSIONS = {                   # (symbol, name, exchange time zone, open, close) local time
+    'asia': [('^N225', 'Nikkei 225', 'Asia/Tokyo', '09:00', '15:30'),
+             ('^HSI', 'Hang Seng', 'Asia/Hong_Kong', '09:30', '16:10'),
+             ('000001.SS', 'Shanghai Composite', 'Asia/Shanghai', '09:30', '15:00'),
+             ('^AXJO', 'ASX 200', 'Australia/Sydney', '10:00', '16:10'),
+             ('^KS11', 'KOSPI', 'Asia/Seoul', '09:00', '15:30')],
+    'europe': [('^STOXX50E', 'Euro Stoxx 50', 'Europe/Berlin', '09:00', '17:30'),
+               ('^GDAXI', 'DAX', 'Europe/Berlin', '09:00', '17:30'),
+               ('^FTSE', 'FTSE 100', 'Europe/London', '08:00', '16:30'),
+               ('^FCHI', 'CAC 40', 'Europe/Paris', '09:00', '17:30')],
+}
+OVERNIGHT_PREMARKET = [('SPY', 'S&P 500 ETF'), ('QQQ', 'Nasdaq 100 ETF'),
+                       ('IWM', 'Russell 2000 ETF'), ('DIA', 'Dow ETF')]
+OVERNIGHT_RELEASES = [                   # (FRED release id, name, headline series, ET release time)
+    (180, 'Jobless claims', 'ICSA', '08:30'),
+    (10, 'CPI', 'CPIAUCSL', '08:30'),
+    (46, 'PPI', 'PPIFIS', '08:30'),
+    (50, 'Employment Situation (payrolls)', 'PAYEMS', '08:30'),
+    (9, 'Retail sales', 'RSAFS', '08:30'),
+    (53, 'GDP', 'A191RL1Q225SBEA', '08:30'),
+    (54, 'Personal income and outlays (PCE prices)', 'PCEPI', '08:30'),
+    (95, 'Durable goods (M3)', 'DGORDER', '08:30'),
+    (27, 'Housing starts', 'HOUST', '08:30'),
+    (51, 'Trade balance', 'BOPGSTB', '08:30'),
+]
 
 
 def _load_key(names, label):
@@ -181,13 +236,14 @@ def _load_key(names, label):
 
 POLYGON_API_KEY = None      # set by setup()
 FRED_API_KEY = None         # set by setup()
+MARKETDATA_API_KEY = None   # set by setup(); optional (US pre-market in the overnight capture)
 REPO_ROOT = r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence"
 
 
 def setup(argv=None):
     """Everything v5.4.2 did at import time: resolve the output folder, load keys, print the
     banner. Called only when the file is run, so importing it (tests) has no side effects."""
-    global OUTPUT_DIR, POLYGON_API_KEY, FRED_API_KEY
+    global OUTPUT_DIR, POLYGON_API_KEY, FRED_API_KEY, MARKETDATA_API_KEY
     import argparse
     import sys
     for stream in (sys.stdout, sys.stderr):
@@ -226,6 +282,7 @@ def setup(argv=None):
 
     POLYGON_API_KEY = _load_key(["POLYGON_API_KEY", "POLYGON"], "Polygon")
     FRED_API_KEY = _load_key(["FRED_API_KEY", "FRED"], "FRED")
+    MARKETDATA_API_KEY = _load_key(["MARKETDATA_API_KEY", "MARKETDATA_KEY"], "MarketData")
 
     if not POLYGON_API_KEY:
         raise SystemExit("POLYGON_API_KEY is required — cannot proceed")
@@ -706,6 +763,340 @@ class GlobalIndicesExtractor:
         ok = sum(1 for r in rows if r['data_status'] == 'OK')
         print(f"  [Global_Indices  ] {ok}/{len(rows)} populated")
         return {'Global_Indices': pd.DataFrame(rows)}
+
+
+# ============================================================================
+# SOURCE 2c — OVERNIGHT SESSION  (L-06; display only)
+# ============================================================================
+
+def _iso_z(ts):
+    return pd.Timestamp(ts).tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _utc_index(series):
+    idx = pd.DatetimeIndex(series.index)
+    return idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+
+
+def _hhmm(text):
+    return datetime.strptime(text, "%H:%M").time()
+
+
+def us_reference_close(now_utc):
+    """(session date, close instant UTC, source) of the US close the overnight move is measured
+    from. Run-MacroInputs.ps1 passes both from the repo trading calendar (half days included);
+    without it (Colab / manual) 16:00 ET on the last weekday is assumed, and the source says so."""
+    from zoneinfo import ZoneInfo
+    ny = ZoneInfo("America/New_York")
+    cutoff = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+    close = os.environ.get("AVSH_US_CLOSE_UTC", "").strip()
+    if cutoff and close:
+        return cutoff, pd.Timestamp(close).tz_convert("UTC").to_pydatetime(), "runner"
+    if cutoff:
+        day = date.fromisoformat(cutoff)
+        at = datetime.combine(day, _hhmm("16:00"), ny)
+        return cutoff, at.astimezone(timezone.utc), "runner cut-off; close assumed 16:00 ET"
+    now_et = now_utc.astimezone(ny)
+    day = now_et.date()
+    if day.weekday() >= 5 or now_et.time() < _hhmm("16:00"):
+        day -= timedelta(days=1)
+    while day.weekday() >= 5:
+        day -= timedelta(days=1)
+    at = datetime.combine(day, _hhmm("16:00"), ny)
+    return (day.isoformat(), at.astimezone(timezone.utc),
+            "derived: 16:00 ET on the last weekday (no trading calendar)")
+
+
+def measure_since_us_close(symbol, name, bars, us_close_utc, now_utc, reference=None,
+                           reference_label=None, stale_after_minutes=OVERNIGHT_STALE_AFTER_MINUTES,
+                           source="YFINANCE"):
+    """Move from the price at the last US close to the latest bar. Bars are labelled by their start
+    (yfinance, MarketData), so the reference is the last bar that starts before the close. An old
+    quote is kept and flagged; a missing reading is MISSING, never a zero move."""
+    row = {'symbol': symbol, 'name': name, 'source': source, 'state': 'MISSING', 'last': None,
+           'last_bar_utc': None, 'age_minutes': None, 'stale': None, 'reference': None,
+           'reference_label': reference_label, 'reference_bar_utc': None, 'change_pct': None}
+    s = bars.dropna() if bars is not None else pd.Series(dtype="float64")
+    if s.empty:
+        return row
+    s = pd.Series(s.values.astype(float), index=_utc_index(s)).sort_index()
+    close_ts = pd.Timestamp(us_close_utc)
+    last_ts = s.index[-1]
+    age = int((pd.Timestamp(now_utc) - last_ts).total_seconds() // 60)
+    row.update({'last': float(s.iloc[-1]), 'last_bar_utc': _iso_z(last_ts), 'age_minutes': age,
+                'stale': age > stale_after_minutes})
+    if reference is None:
+        before = s[s.index < close_ts]
+        if before.empty:
+            row['state'] = 'MISSING_REFERENCE'
+            return row
+        reference = float(before.iloc[-1])
+        row['reference_bar_utc'] = _iso_z(before.index[-1])
+        row['reference_label'] = reference_label or "last 5-minute bar before the US close"
+    row['reference'] = float(reference)
+    row['change_pct'] = round((row['last'] / row['reference'] - 1) * 100, 6) if row['reference'] else None
+    row['state'] = 'OK' if last_ts >= close_ts else 'NO_TRADE_SINCE_CLOSE'
+    return row
+
+
+def local_session_reading(symbol, name, daily, now_utc, tz, open_hhmm, close_hhmm, intraday=None,
+                          stale_after_minutes=OVERNIGHT_STALE_AFTER_MINUTES):
+    """A non-US index in its own session: CLOSED (finished today, local time), INTRADAY, NOT_YET_OPEN
+    or NO_SESSION_TODAY (holiday / weekend; the last session is reported), with its move from its own
+    previous close. A reopening after a break longer than OVERNIGHT_BREAK_DAYS is flagged."""
+    from zoneinfo import ZoneInfo
+    zone = ZoneInfo(tz)
+    row = {'symbol': symbol, 'name': name, 'source': 'YFINANCE', 'exchange_tz': tz, 'state': 'MISSING',
+           'session_date': None, 'last': None, 'prev_session_date': None, 'prev_close': None,
+           'change_pct': None, 'break_days': None, 'after_break': None, 'note': '',
+           'last_bar_utc': None, 'age_minutes': None, 'stale': None}
+    s = daily.dropna() if daily is not None else pd.Series(dtype="float64")
+    if s.empty:
+        return row
+    idx = pd.DatetimeIndex(s.index)
+    days = [d.date() for d in (idx.tz_convert(zone) if idx.tz is not None else idx)]
+    local_now = now_utc.astimezone(zone)
+    last_day, last = days[-1], float(s.iloc[-1])
+    if last_day == local_now.date():
+        state = 'CLOSED' if local_now.time() >= _hhmm(close_hhmm) else 'INTRADAY'
+    elif local_now.weekday() < 5 and local_now.time() < _hhmm(open_hhmm):
+        state = 'NOT_YET_OPEN'
+    else:
+        state = 'NO_SESSION_TODAY'
+    row.update({'state': state, 'session_date': last_day.isoformat(), 'last': last})
+    if len(s) >= 2:
+        prev_day, prev = days[-2], float(s.iloc[-2])
+        gap = (last_day - prev_day).days
+        row.update({'prev_session_date': prev_day.isoformat(), 'prev_close': prev,
+                    'change_pct': round((last / prev - 1) * 100, 6) if prev else None,
+                    'break_days': gap, 'after_break': gap > OVERNIGHT_BREAK_DAYS})
+        if gap > OVERNIGHT_BREAK_DAYS:
+            row['note'] = f"first session after a {gap}-day break (previous session {prev_day})"
+    if intraday is not None and not intraday.dropna().empty:
+        bars = intraday.dropna()
+        last_ts = _utc_index(bars)[-1]
+        age = int((pd.Timestamp(now_utc) - last_ts).total_seconds() // 60)
+        row.update({'last_bar_utc': _iso_z(last_ts), 'age_minutes': age,
+                    'stale': state == 'INTRADAY' and age > stale_after_minutes})
+    return row
+
+
+def release_reading(release_id, name, series_id, time_et, observations, last_updated, now_utc):
+    """An ET-morning print scheduled today: RELEASED (FRED updated the series today) with value,
+    prior and change; PENDING before its time; NOT_YET_ON_FRED after its time."""
+    from zoneinfo import ZoneInfo
+    ny = ZoneInfo("America/New_York")
+    now_et = now_utc.astimezone(ny)
+    row = {'release_id': release_id, 'name': name, 'series_id': series_id, 'time_et': time_et,
+           'state': None, 'value': None, 'prior': None, 'change': None, 'observation_date': None,
+           'fred_updated_et': None}
+
+    def num(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    obs = [o for o in (observations or []) if num(o.get('value')) is not None]
+    updated = None
+    if last_updated:
+        try:
+            updated = pd.Timestamp(last_updated).tz_convert(ny)
+            row['fred_updated_et'] = updated.strftime("%Y-%m-%d %H:%M")
+        except (ValueError, TypeError):
+            updated = None
+    if updated is not None and updated.date() == now_et.date() and obs:
+        row.update({'state': 'RELEASED', 'value': num(obs[0]['value']), 'observation_date': obs[0]['date']})
+        if len(obs) > 1:
+            row['prior'] = num(obs[1]['value'])
+            row['change'] = row['value'] - row['prior']
+    else:
+        row['state'] = 'PENDING' if now_et.time() < _hhmm(time_et) else 'NOT_YET_ON_FRED'
+    return row
+
+
+def summarise_group(rows):
+    """Count of measured readings and how many moved up / down; the median move. A label of what
+    was measured, not a score."""
+    moves = [r['change_pct'] for r in rows if r.get('change_pct') is not None]
+    return {'measured': len(moves), 'of': len(rows), 'up': sum(1 for x in moves if x > 0),
+            'down': sum(1 for x in moves if x < 0),
+            'median_change_pct': round(float(np.median(moves)), 4) if moves else None}
+
+
+def _yf_history(symbol, period, interval):
+    import yfinance as yf
+    return yf.Ticker(symbol).history(period=period, interval=interval, prepost=True, auto_adjust=False)
+
+
+class OvernightExtractor:
+    """What happened since the last US close, measured and labelled for the morning run.
+    history and http_get are injectable so tests run without the network."""
+    FRED = "https://api.stlouisfed.org/fred"
+    CBOE_VIX = "https://cdn.cboe.com/api/global/delayed_quotes/quotes/_VIX.json"
+    MD = "https://api.marketdata.app/v1"
+
+    def __init__(self, marketdata_key=None, fred_key=None, now_utc=None, history=None, http_get=None,
+                 official_closes=None):
+        self.md_key, self.fred_key = marketdata_key, fred_key
+        self.now = now_utc or datetime.now(timezone.utc)
+        self.history = history or _yf_history
+        self.get = http_get or requests.get
+        self.official = official_closes or {}
+        self.errors = []
+
+    def _err(self, text):
+        self.errors.append(redact(text))
+
+    def _closes(self, symbol, period, interval):
+        try:
+            df = self.history(symbol, period, interval)
+        except Exception as e:
+            self._err(f"{symbol} {interval}: {safe_error(e)}")
+            return pd.Series(dtype="float64")
+        if df is None or len(df) == 0 or 'Close' not in df:
+            return pd.Series(dtype="float64")
+        return df['Close'].astype(float).dropna()
+
+    def _json(self, url, params=None, headers=None, ok=(200,)):
+        try:
+            r = self.get(url, params=params, headers=headers, timeout=30)
+        except Exception as e:
+            self._err(f"{url.split('?')[0]}: {safe_error(e)}")
+            return None
+        if r.status_code not in ok:
+            self._err(f"{url.split('?')[0]}: HTTP {r.status_code}")
+            return None
+        try:
+            return r.json()
+        except ValueError:
+            self._err(f"{url.split('?')[0]}: non-JSON response")
+            return None
+
+    def _volatility(self, session, close_utc):
+        bars = self._closes('^VIX', '5d', '5m')
+        q = (self._json(self.CBOE_VIX, headers={'User-Agent': 'AVSHUNTER/5.4.3'}) or {}).get('data') or {}
+        last, prev = q.get('current_price'), q.get('prev_day_close')
+        if last is not None and prev:
+            row = measure_since_us_close('VIX', 'VIX (overnight, Cboe delayed)', bars, close_utc, self.now,
+                                         reference=float(prev), reference_label="Cboe previous close")
+            row.update({'source': 'CBOE_DELAYED', 'last': float(last), 'reference': float(prev),
+                        'change_pct': round((float(last) / float(prev) - 1) * 100, 6), 'state': 'OK'})
+            row['note'] = "timing from the yfinance ^VIX 5-minute bars" if row['last_bar_utc'] else "no bar timing"
+        else:
+            daily = self._closes('^VIX', '10d', '1d')
+            ref = None
+            if not daily.empty:
+                days = [d.date().isoformat() for d in pd.DatetimeIndex(daily.index)]
+                ref = float(daily.iloc[days.index(session)]) if session in days else None
+            row = measure_since_us_close('VIX', 'VIX (overnight, yfinance)', bars, close_utc, self.now,
+                                         reference=ref, reference_label=f"VIX close {session}" if ref else None)
+        return [row]
+
+    def _premarket(self, session, close_utc):
+        rows = []
+        for sym, name in OVERNIGHT_PREMARKET:
+            if not self.md_key:
+                rows.append(measure_since_us_close(sym, name, None, close_utc, self.now, source='MARKETDATA'))
+                rows[-1]['note'] = "no MarketData key"
+                continue
+            j = self._json(f"{self.MD}/stocks/candles/5/{sym}/",
+                           params={'from': session, 'to': self.now.date().isoformat(), 'extended': 'true'},
+                           headers={'Authorization': f"Token {self.md_key}", 'Accept': 'application/json'},
+                           ok=(200, 203)) or {}
+            bars, vols = pd.Series(dtype="float64"), pd.Series(dtype="float64")
+            if j.get('s') == 'ok' and j.get('t'):
+                idx = pd.to_datetime(j['t'], unit='s', utc=True)
+                bars = pd.Series(j['c'], index=idx, dtype="float64")
+                vols = pd.Series(j.get('v') or [0] * len(idx), index=idx, dtype="float64")
+            ref, label = None, None
+            official = self.official.get(sym)
+            if official and official[1] == session and official[0] is not None:
+                ref, label = float(official[0]), f"official close {session} (Polygon)"
+            row = measure_since_us_close(sym, name, bars, close_utc, self.now, reference=ref,
+                                         reference_label=label, source='MARKETDATA')
+            row['volume_since_close'] = float(vols[vols.index >= pd.Timestamp(close_utc)].sum()) if len(vols) else None
+            rows.append(row)
+        return rows
+
+    def _releases(self):
+        from zoneinfo import ZoneInfo
+        if not self.fred_key:
+            self._err("FRED: no key - releases not read")
+            return [], []
+        today = self.now.astimezone(ZoneInfo("America/New_York")).date()
+        wanted = {rid: (name, sid, t) for rid, name, sid, t in OVERNIGHT_RELEASES}
+        base = {'api_key': self.fred_key, 'file_type': 'json', 'include_release_dates_with_no_data': 'true',
+                'limit': 1000}
+
+        def scheduled(end):
+            j = self._json(f"{self.FRED}/releases/dates",
+                           params={**base, 'realtime_start': today.isoformat(), 'realtime_end': end.isoformat()}) or {}
+            return [x for x in j.get('release_dates', []) if x.get('release_id') in wanted]
+
+        today_rows = []
+        for x in scheduled(today):
+            if x.get('date') != today.isoformat():
+                continue
+            name, sid, t = wanted[x['release_id']]
+            obs = (self._json(f"{self.FRED}/series/observations",
+                              params={'series_id': sid, 'api_key': self.fred_key, 'file_type': 'json',
+                                      'sort_order': 'desc', 'limit': 2}) or {}).get('observations', [])
+            info = (self._json(f"{self.FRED}/series",
+                               params={'series_id': sid, 'api_key': self.fred_key, 'file_type': 'json'}) or {})
+            updated = ((info.get('seriess') or [{}])[0]).get('last_updated')
+            today_rows.append(release_reading(x['release_id'], name, sid, t, obs, updated, self.now))
+        ahead = [{'date': x['date'], 'release_id': x['release_id'], 'name': wanted[x['release_id']][0],
+                  'time_et': wanted[x['release_id']][2]}
+                 for x in scheduled(today + timedelta(days=OVERNIGHT_RELEASE_LOOKAHEAD_DAYS))
+                 if x.get('date', '') > today.isoformat()]
+        return today_rows, sorted(ahead, key=lambda r: (r['date'], r['release_id']))
+
+    def extract(self):
+        session, close_utc, ref_source = us_reference_close(self.now)
+        groups = {}
+        for group, items in OVERNIGHT_SINCE_US_CLOSE.items():
+            groups[group] = [measure_since_us_close(sym, name, self._closes(sym, '5d', '5m'), close_utc, self.now)
+                             for sym, name in items]
+        groups['volatility'] = self._volatility(session, close_utc)
+        groups['us_premarket'] = self._premarket(session, close_utc)
+        for region, items in OVERNIGHT_SESSIONS.items():
+            groups[region] = [local_session_reading(sym, name, self._closes(sym, '10d', '1d'), self.now, tz, o, c,
+                                                    intraday=self._closes(sym, '1d', '5m'))
+                              for sym, name, tz, o, c in items]
+        releases_today, releases_ahead = self._releases()
+        return {
+            'contract': 'avshunter_overnight_v1', 'version': '5.4.3', 'authority': 'DISPLAY_ONLY',
+            'as_of_utc': _iso_z(self.now), 'run_session': os.environ.get('AVSH_RUN_SESSION', 'manual'),
+            'us_reference_session': session, 'us_reference_close_utc': _iso_z(close_utc),
+            'us_reference_source': ref_source, 'stale_after_minutes': OVERNIGHT_STALE_AFTER_MINUTES,
+            'groups': groups, 'summary': {g: summarise_group(rows) for g, rows in groups.items()},
+            'releases_today': releases_today, 'releases_ahead': releases_ahead,
+            'notes': ["VIX9D, VIX3M and VVIX are not quoted overnight; see vol_complex for their closes.",
+                      "Quotes are delayed (yfinance ~10 min, MarketData 15 min); age is shown, never gated."],
+            'errors': list(self.errors),
+        }
+
+
+def print_overnight(doc):
+    print("\n" + "-" * 70)
+    print(f"SOURCE 2c — OVERNIGHT since the US close {doc['us_reference_session']} "
+          f"({doc['us_reference_close_utc']}, {doc['us_reference_source']})")
+    print("-" * 70)
+    for group, rows in doc['groups'].items():
+        sm = doc['summary'][group]
+        print(f"  [{group:17s}] {sm['measured']}/{sm['of']} measured, up {sm['up']} down {sm['down']}, "
+              f"median {sm['median_change_pct'] if sm['median_change_pct'] is not None else 'n/a'}%")
+        for r in rows:
+            chg = f"{r['change_pct']:+.2f}%" if r.get('change_pct') is not None else "  n/a"
+            age = f"{r['age_minutes']}m" if r.get('age_minutes') is not None else "?"
+            flag = " STALE" if r.get('stale') else ""
+            print(f"      {r['symbol']:10s} {r['state']:17s} {chg:>8s}  age {age:>5s}{flag}  {r.get('note') or ''}")
+    for r in doc['releases_today']:
+        val = f"{r['value']:,.0f} (prior {r['prior']:,.0f})" if r['value'] is not None and r['prior'] is not None else ""
+        print(f"  release {r['time_et']} {r['name']:30s} {r['state']:15s} {val}")
+    if doc['errors']:
+        print(f"  errors: {len(doc['errors'])}")
 
 
 # ============================================================================
@@ -1661,6 +2052,28 @@ def colab_auto_download(output_dir, ts):
             print(f"  FAILED {fn}: {e}")
 
 
+def write_overnight(market_data, ts):
+    """L-06: overnight capture -> overnight_<ts>.json, written every run (a PostClose run labels
+    itself, so the evening packet never carries the morning's file). Written before the collection
+    check so a Polygon failure does not lose it; its own failure never stops the main report."""
+    try:
+        official = {}
+        eq = market_data.get('Equity_ETF')
+        if isinstance(eq, pd.DataFrame) and not eq.empty:
+            official = {r['ticker']: (r.get('current_price'), r.get('obs_date')) for r in eq.to_dict('records')}
+        doc = OvernightExtractor(MARKETDATA_API_KEY, FRED_API_KEY, official_closes=official).extract()
+        print_overnight(doc)
+        path = os.path.join(OUTPUT_DIR, f"overnight_{ts}.json")
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(doc, f, indent=2, ensure_ascii=False, default=str)
+        print(f"  overnight_{ts}.json")
+        return doc
+    except Exception as e:
+        COLLECTION_ERRORS.append(f"Overnight capture: {safe_error(e)}")
+        print(f"  FAIL overnight capture: {safe_error(e)}")
+        return None
+
+
 # ============================================================================
 # MAIN
 # ============================================================================
@@ -1674,6 +2087,7 @@ def main():
     market_data.update(PolygonExtractor(POLYGON_API_KEY).extract())
     market_data.update(VolComplexExtractor().extract())
     market_data.update(GlobalIndicesExtractor().extract())
+    write_overnight(market_data, ts)
     fred_data = FREDExtractor(FRED_API_KEY).extract()
 
     val_rows, failed_cats = validate_collection(market_data)
