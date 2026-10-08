@@ -2,36 +2,56 @@
 # rebuild the macro packet and the ETF macro board. Replaces: open Colab, run each notebook,
 # download the files, copy them into dropbox\market_data.
 #
-# Run after the US close (16:15 ET); before it, Polygon daily/weekly bars are still forming.
+# Runs twice per US session:
+#   PostClose  after the close (default start 16:30 ET, latest start 23:30 ET) - the evening
+#              record, built after the evening pipeline has written the day's prices.
+#   PreOpen    before the open (default start 08:35 ET, latest start 09:00 ET) - picks up the
+#              overnight session (Asia, London/Europe, FX) and the 08:30 ET releases, and must
+#              finish before the open and the morning pipeline.
+# Task Scheduler runs in UK time while the targets are US times; the two clocks shift on
+# different dates. Start the task early and let the runner wait: it converts -StartAtET to
+# local time every run, so the clock-change weeks need no schedule edits.
+#
 # Every producer writes straight into dropbox\market_data and reads keys from the user
 # environment or the repo .env (FRED_API_KEY, POLYGON_API_KEY, MARKETDATA_API_KEY;
-# ANTHROPIC_API_KEY for build_macro_json.py).
+# ANTHROPIC_API_KEY for build_macro_json.py). Each step receives AVSH_RUN_SESSION.
 #
 # Usage:
-#   .\Run-MacroInputs.ps1                  # producers (in parallel) -> FRED merge -> macro packet -> board
-#   .\Run-MacroInputs.ps1 -PlanOnly        # list the steps and check the scripts exist; runs nothing
-#   .\Run-MacroInputs.ps1 -Sequential      # run the producers one after another (the v1 behaviour)
-#   .\Run-MacroInputs.ps1 -WithGex         # also rebuild GEX from the stored chains first
-#   .\Run-MacroInputs.ps1 -WithBonds       # also refresh bond_macro_state.json + auction calendar first
-#   .\Run-MacroInputs.ps1 -SkipMacroJson   # skip build_macro_json.py (it calls the Anthropic API)
-#   .\Run-MacroInputs.ps1 -SkipBoard       # skip the board rebuild
-#   .\Run-MacroInputs.ps1 -AllowIntraday   # run before the close anyway (bars will be partial)
-#   .\Run-MacroInputs.ps1 -ProducerTimeoutMinutes 45   # stop a producer that runs longer (default 60)
+#   .\Run-MacroInputs.ps1 -Session PostClose        # evening run (waits until 16:30 ET)
+#   .\Run-MacroInputs.ps1 -Session PreOpen          # morning run (waits until 08:35 ET)
+#   .\Run-MacroInputs.ps1                           # -Session Auto: PreOpen before 09:30 ET, else PostClose
+#   .\Run-MacroInputs.ps1 -PlanOnly                 # show the session decision and steps; runs nothing
+#   .\Run-MacroInputs.ps1 -StartAtET 08:45 -LatestStartET 09:05   # move the window
+#   .\Run-MacroInputs.ps1 -PipelineWaitMinutes 45   # how long to wait for a running pipeline (default 30)
+#   .\Run-MacroInputs.ps1 -Sequential               # producers one after another (v1 behaviour)
+#   .\Run-MacroInputs.ps1 -WithGex / -WithBonds     # rebuild GEX / bond state first
+#   .\Run-MacroInputs.ps1 -SkipMacroJson / -SkipBoard
+#   .\Run-MacroInputs.ps1 -AllowIntraday            # allow a run during US regular hours (bars partial)
+#   .\Run-MacroInputs.ps1 -ProducerTimeoutMinutes 45
+#
+# Before anything runs: (1) today must be an XNYS session (repo xnys_calendar; weekends and US
+# holidays exit 0 as SKIPPED); (2) not during US regular hours 09:30-16:15 ET unless
+# -AllowIntraday; (3) not after -LatestStartET (exit 4); wait until -StartAtET; (4) if
+# intelligent_orchestrator.py or a backfill is running, wait up to -PipelineWaitMinutes
+# (never past -LatestStartET) and stop with exit 5 if it is still running.
 #
 # Three phases:
-#   1. setup (optional, in order): GEX from stored chains, bond state + auction calendar - the
-#      macro module reads both, so they finish before the producers start.
+#   1. setup (optional, in order): GEX from stored chains, bond state + auction calendar.
 #   2. producers, IN PARALLEL: VIX engine, regime model, market intelligence, liquidity monitor,
-#      macro module, Fung-Hsieh filter. They write different files and do not read each other's
-#      outputs. Each writes its own log under logs\scheduled\macro_inputs_<time>\; the logs are
-#      copied into the main transcript one step at a time once all have finished, so output
-#      never interleaves. A producer still running after -ProducerTimeoutMinutes is stopped.
-#   3. merge and publish (in order): FRED monitor (merges the producers' outputs into
-#      avsh_macro_master.csv, so it must run after them), build_macro_json.py, the board.
-# One failing step does not stop the rest. Exit code 1 if any step failed; the summary lists
-# each step, its exit code and duration.
+#      macro module, Fung-Hsieh filter; each logs to logs\scheduled\macro_inputs_<time>\,
+#      copied into the transcript one step at a time afterwards. -ProducerTimeoutMinutes
+#      stops a producer that hangs.
+#   3. merge and publish (in order): FRED monitor (merges the producers into
+#      avsh_macro_master.csv), build_macro_json.py, the board.
+# Exit codes: 0 done or skipped (not a session day), 1 a step failed, 2 venv missing,
+# 3 refused during regular hours, 4 past the latest start, 5 pipeline still running.
 
 param(
+    [ValidateSet("Auto", "PostClose", "PreOpen")]
+    [string]$Session = "Auto",
+    [string]$StartAtET = "",
+    [string]$LatestStartET = "",
+    [int]$PipelineWaitMinutes = 30,
     [switch]$PlanOnly,
     [switch]$Sequential,
     [switch]$WithGex,
@@ -39,7 +59,8 @@ param(
     [switch]$SkipMacroJson,
     [switch]$SkipBoard,
     [switch]$AllowIntraday,
-    [int]$ProducerTimeoutMinutes = 60
+    [int]$ProducerTimeoutMinutes = 60,
+    [string]$NowET = ""          # testing only: pretend it is this US Eastern time, "yyyy-MM-dd HH:mm"
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,11 +69,71 @@ $venvPython = Join-Path $repoRoot "venv\Scripts\python.exe"
 $colab      = Join-Path $repoRoot "Enhancements\colab"
 $logDir     = Join-Path $repoRoot "logs\scheduled"
 
+$etZone = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
+$SessionDefaults = @{
+    PostClose = @{ Start = "16:30"; Latest = "23:30" }
+    PreOpen   = @{ Start = "08:35"; Latest = "09:00" }
+}
+$RegularOpen  = [TimeSpan]::new(9, 30, 0)
+$RegularGuard = [TimeSpan]::new(16, 15, 0)     # after the close plus settlement of closing prints
+$PreOpenWarn  = [TimeSpan]::new(9, 25, 0)
+$PipelinePatterns = @("*intelligent_orchestrator.py*", "*backfill*")
+
+function Get-NowET {
+    if ($NowET) { return [DateTime]::ParseExact($NowET, "yyyy-MM-dd HH:mm", [Globalization.CultureInfo]::InvariantCulture) }
+    return [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $etZone)
+}
+
+function Get-ETOnDate([DateTime]$EtNow, [string]$HHmm) {
+    $t = [TimeSpan]::ParseExact($HHmm, "hh\:mm", [Globalization.CultureInfo]::InvariantCulture)
+    return $EtNow.Date + $t
+}
+
+function Test-XnysSession([DateTime]$Day) {
+    # One owner of the US trading calendar: avshunter.shared.xnys_calendar.
+    if (-not (Test-Path $venvPython)) { return $null }
+    $code = "import sys; from datetime import date; from avshunter.shared.xnys_calendar import is_xnys_session as f; sys.exit(0 if f(date.fromisoformat(sys.argv[1])) else 3)"
+    Push-Location $repoRoot
+    try {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+        & $venvPython -c $code ($Day.ToString("yyyy-MM-dd")) 2>&1 | Out-Null
+        $ErrorActionPreference = $prev
+        if ($LASTEXITCODE -eq 0) { return $true }
+        if ($LASTEXITCODE -eq 3) { return $false }
+        return $null
+    } finally { Pop-Location }
+}
+
+function Get-PipelineProcesses {
+    $found = @()
+    try {
+        $procs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction Stop
+        foreach ($p in $procs) {
+            foreach ($pat in $PipelinePatterns) {
+                if ($p.CommandLine -and $p.CommandLine -like $pat) { $found += $p; break }
+            }
+        }
+    } catch { }
+    return $found
+}
+
 function New-Step([string]$Key, [string]$Name, [string]$Script, [string[]]$Arguments = @()) {
     return @{ Key = $Key; Name = $Name; Script = $Script; Args = $Arguments }
 }
 
-# -- Steps -------------------------------------------------------------------------------------
+# -- Session decision ---------------------------------------------------------------------------
+$etNow = Get-NowET
+if ($Session -eq "Auto") {
+    $Session = if ($etNow.TimeOfDay -lt $RegularOpen) { "PreOpen" } else { "PostClose" }
+}
+if (-not $StartAtET)     { $StartAtET = $SessionDefaults[$Session].Start }
+if (-not $LatestStartET) { $LatestStartET = $SessionDefaults[$Session].Latest }
+$startAt  = Get-ETOnDate $etNow $StartAtET
+$latestAt = Get-ETOnDate $etNow $LatestStartET
+$startAtLocal = [TimeZoneInfo]::ConvertTime($startAt, $etZone, [TimeZoneInfo]::Local)
+$isSessionDay = Test-XnysSession $etNow
+
+# -- Steps --------------------------------------------------------------------------------------
 $setup = @()
 if ($WithGex)   { $setup += New-Step "gex"   "GEX (stored chains)"   (Join-Path $repoRoot "scripts\build_local_gex.py") }
 if ($WithBonds) { $setup += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") }
@@ -70,9 +151,15 @@ $publish = @( (New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "
 if (-not $SkipMacroJson) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force") }
 if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"                  (Join-Path $repoRoot "Run-MacroBoard.ps1")  @("-NoOpen") }
 
-# -- Plan --------------------------------------------------------------------------------------
+# -- Plan ---------------------------------------------------------------------------------------
 if ($PlanOnly) {
     Write-Host "Run-MacroInputs plan (nothing is run):"
+    Write-Host ("  session        : {0}" -f $Session)
+    Write-Host ("  now            : {0:yyyy-MM-dd HH:mm} ET{1}" -f $etNow, $(if ($NowET) { "  (simulated by -NowET)" } else { "" }))
+    Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
+    Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal)
+    $running = @(Get-PipelineProcesses)
+    Write-Host ("  pipeline now   : {0}" -f $(if ($running.Count) { "RUNNING (pid " + (($running | ForEach-Object { $_.ProcessId }) -join ", ") + ") - would wait up to $PipelineWaitMinutes min" } else { "not running" }))
     $i = 0
     $phases = @(
         @{ Label = "setup, in order"; Steps = $setup },
@@ -92,25 +179,32 @@ if ($PlanOnly) {
     exit 0
 }
 
-# -- Run-time guard: US session must be closed -------------------------------------------------
-$eastern = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), "Eastern Standard Time")
-$isWeekday = $eastern.DayOfWeek -notin @([DayOfWeek]::Saturday, [DayOfWeek]::Sunday)
-$beforeClose = $isWeekday -and ($eastern.TimeOfDay -lt [TimeSpan]::new(16, 15, 0)) -and ($eastern.TimeOfDay -gt [TimeSpan]::new(4, 0, 0))
-if ($beforeClose -and -not $AllowIntraday) {
-    Write-Host (("[STOPPED] It is {0:HH:mm} ET on a weekday: today's bars are still forming. " -f $eastern) +
-                "Run after 16:15 ET, or pass -AllowIntraday to run anyway.")
+# -- Guards before anything is written -----------------------------------------------------------
+if ($isSessionDay -eq $false) {
+    Write-Host ("[SKIPPED] {0:yyyy-MM-dd} is not a US trading session (weekend or XNYS holiday)." -f $etNow)
+    exit 0
+}
+$inRegularHours = ($etNow.TimeOfDay -ge $RegularOpen) -and ($etNow.TimeOfDay -lt $RegularGuard)
+if ($inRegularHours -and -not $AllowIntraday) {
+    Write-Host (("[STOPPED] It is {0:HH:mm} ET, inside US regular hours (09:30-16:15): today's bars are still forming. " -f $etNow) +
+                "Run PreOpen before 09:30 or PostClose after 16:15, or pass -AllowIntraday.")
     exit 3
+}
+if ($etNow -gt $latestAt) {
+    Write-Host ("[SKIPPED] {0} run: it is {1:HH:mm} ET, after the latest start {2:HH:mm} ET (-LatestStartET)." -f $Session, $etNow, $latestAt)
+    exit 4
 }
 
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $stamp = "{0:yyyyMMdd_HHmmss}" -f (Get-Date)
-$logFile = Join-Path $logDir ("macro_inputs_{0}.log" -f $stamp)
-$stepLogDir = Join-Path $logDir ("macro_inputs_{0}" -f $stamp)
+$logFile = Join-Path $logDir ("macro_inputs_{0}_{1}.log" -f $Session.ToLower(), $stamp)
+$stepLogDir = Join-Path $logDir ("macro_inputs_{0}_{1}" -f $Session.ToLower(), $stamp)
 New-Item -ItemType Directory -Path $stepLogDir -Force | Out-Null
 Start-Transcript -Path $logFile -Append | Out-Null
 
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = "1"
+$env:AVSH_RUN_SESSION = $Session
 # The scripts print UTF-8. Windows PowerShell 5.1 decodes native output with the console code
 # page (e.g. 850), which turned every check mark and box line into accented garbage; decode as
 # UTF-8 for this run and restore the caller's setting afterwards. (Display and log only.)
@@ -219,16 +313,60 @@ function Invoke-StepsParallel($Steps, [int]$TimeoutMinutes) {
     }
 }
 
+function Wait-UntilET([DateTime]$TargetET, [string]$Why) {
+    # Sleep in one-minute steps until $TargetET (US Eastern), logging every 15 minutes.
+    $lastLog = [DateTime]::MinValue
+    while ((Get-NowET) -lt $TargetET) {
+        if ($NowET) { break }                                  # simulated time: never sleep
+        if (((Get-Date) - $lastLog).TotalMinutes -ge 15) {
+            Write-Host ("[WAIT] {0}: now {1:HH:mm} ET, waiting until {2:HH:mm} ET" -f $Why, (Get-NowET), $TargetET)
+            $lastLog = Get-Date
+        }
+        Start-Sleep -Seconds 60
+    }
+}
+
+$exitCode = 0
 try {
+  :run do {
     if (-not (Test-Path $venvPython)) {
         Write-Host "[ERROR] venv Python not found at $venvPython"
-        exit 2
+        $exitCode = 2
+        break run
     }
     Set-Location $repoRoot
+    Write-Host ("Run-MacroInputs {0}: start window {1:HH:mm}-{2:HH:mm} ET ({3:HH:mm} local), producers {4}" -f `
+                $Session, $startAt, $latestAt, $startAtLocal, $(if ($Sequential) { "in order" } else { "in parallel" }))
+    if ($isSessionDay -eq $null) { Write-Host "[WARN] trading-calendar check unavailable; continuing" }
+
+    # 1. wait for the start time
+    Wait-UntilET $startAt "start time"
+
+    # 2. wait for a running pipeline / backfill, never past the latest start
+    $pipeDeadline = (Get-NowET).AddMinutes($PipelineWaitMinutes)
+    if ($pipeDeadline -gt $latestAt) { $pipeDeadline = $latestAt }
+    $running = @(Get-PipelineProcesses)
+    while ($running.Count -gt 0) {
+        $now = Get-NowET
+        if ($now -ge $pipeDeadline -or $NowET) {
+            Write-Host ("[STOPPED] pipeline / backfill still running (pid {0}) at {1:HH:mm} ET; not starting, so the two runs do not compete for the network, the price store and the API keys." -f `
+                        (($running | ForEach-Object { $_.ProcessId }) -join ", "), $now)
+            $exitCode = 5
+            break run
+        }
+        Write-Host ("[WAIT] pipeline / backfill running (pid {0}); waiting, at most until {1:HH:mm} ET" -f `
+                    (($running | ForEach-Object { $_.ProcessId }) -join ", "), $pipeDeadline)
+        Start-Sleep -Seconds 60
+        $running = @(Get-PipelineProcesses)
+    }
+    if ((Get-NowET) -gt $latestAt) {
+        Write-Host ("[SKIPPED] it is {0:HH:mm} ET, after the latest start {1:HH:mm} ET." -f (Get-NowET), $latestAt)
+        $exitCode = 4
+        break run
+    }
+
     $runStarted = Get-Date
-    Write-Host ("Run-MacroInputs started {0:yyyy-MM-dd HH:mm} local / {1:HH:mm} ET  (producers: {2})" -f `
-                (Get-Date), $eastern, $(if ($Sequential) { "in order" } else { "in parallel" }))
-    Write-Host ("Per-step logs: {0}" -f $stepLogDir)
+    Write-Host ("[START] {0} run at {1:yyyy-MM-dd HH:mm} ET  (per-step logs: {2})" -f $Session, (Get-NowET), $stepLogDir)
 
     foreach ($s in $setup) { Invoke-StepInline $s }
     if ($Sequential) {
@@ -238,19 +376,25 @@ try {
     }
     foreach ($s in $publish) { Invoke-StepInline $s }
 
+    $finishedET = Get-NowET
     Write-Host ""
     Write-Host ("=" * 78)
-    Write-Host ("SUMMARY  (total {0:hh\:mm\:ss})" -f ((Get-Date) - $runStarted))
+    Write-Host ("SUMMARY  {0} run  (total {1:hh\:mm\:ss}, finished {2:HH:mm} ET)" -f $Session, ((Get-Date) - $runStarted), $finishedET)
     Write-Host ("=" * 78)
     $script:results | Format-Table -AutoSize | Out-String -Width 120 | Write-Host
+    if ($Session -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
+        Write-Host ("[WARN] PreOpen run finished at {0:HH:mm} ET - after 09:25, close to the open and the morning pipeline." -f $finishedET)
+    }
     $failed = @($script:results | Where-Object { $_.Exit -ne 0 })
     if ($failed.Count -gt 0) {
         Write-Host ("[FAILED] {0} of {1} steps failed: {2}" -f $failed.Count, $script:results.Count, (($failed | ForEach-Object { $_.Step }) -join "; "))
-        exit 1
+        $exitCode = 1
+        break run
     }
-    Write-Host ("[COMPLETE] all {0} steps succeeded - log: {1}" -f $script:results.Count, $logFile)
-    exit 0
+    Write-Host ("[COMPLETE] {0} run: all {1} steps succeeded - log: {2}" -f $Session, $script:results.Count, $logFile)
+  } while ($false)
 } finally {
     Stop-Transcript | Out-Null
     try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
 }
+exit $exitCode
