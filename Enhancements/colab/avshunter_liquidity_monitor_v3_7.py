@@ -191,13 +191,34 @@ def fetch_cboe_index(key):
     return None
 
 
+FRED_TIMEOUT_S, FRED_ATTEMPTS = 60, 3
+
+
+def _get_retried(url, params):
+    """GET retried on timeout / connection error / 429 / 5xx; a 4xx is returned at once.
+    fredapi waited without a time limit; on 8 Oct 2026 FRED answered in 8-11 s per request and
+    a single 30 s attempt lost series, so slowness is retried, not turned into MISSING."""
+    last = None
+    for attempt in range(1, FRED_ATTEMPTS + 1):
+        try:
+            r = requests.get(url, params=params, timeout=FRED_TIMEOUT_S)
+            if r.status_code != 429 and r.status_code < 500:
+                return r
+            last = requests.exceptions.HTTPError(f"HTTP {r.status_code}", response=r)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            last = e
+        if attempt < FRED_ATTEMPTS:
+            time.sleep(2 * attempt)
+    raise last
+
+
 def _fred_series(series: str, start: str) -> pd.Series:
     """FRED series/observations (the endpoint fredapi.get_series calls); '.' = missing."""
     if not FRED_API_KEY:
         raise RuntimeError("no FRED_API_KEY")
-    r = requests.get("https://api.stlouisfed.org/fred/series/observations",
-                     params={"series_id": series, "api_key": FRED_API_KEY, "file_type": "json",
-                             "observation_start": start}, timeout=30)
+    r = _get_retried("https://api.stlouisfed.org/fred/series/observations",
+                     {"series_id": series, "api_key": FRED_API_KEY, "file_type": "json",
+                      "observation_start": start})
     r.raise_for_status()
     obs = r.json().get("observations", [])
     return pd.Series(pd.to_numeric([o["value"] for o in obs], errors="coerce"),

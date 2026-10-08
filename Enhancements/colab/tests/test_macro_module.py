@@ -115,3 +115,32 @@ def test_redaction_covers_every_key_parameter_name():
     m = _module()
     text = f"u?apiKey={SECRET}&x=1 api_key={SECRET} token={SECRET}"
     assert SECRET not in m.redact(text)
+
+
+class _Resp:
+    def __init__(self, status, payload):
+        self.status_code, self._payload = status, payload
+
+    def json(self):
+        return self._payload
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.exceptions.HTTPError(f"HTTP {self.status_code}", response=self)
+
+
+def test_a_slow_fred_answer_is_retried_not_turned_into_a_missing_series(monkeypatch):
+    m = _module()
+    calls = []
+    def get(url, params=None, timeout=None, **kw):
+        calls.append(timeout)
+        if len(calls) < 3:
+            raise requests.exceptions.ReadTimeout("read timed out")
+        return _Resp(200, {"observations": [{"date": "2026-10-06", "value": "4.13"}]})
+    monkeypatch.setattr(m.requests, "get", get)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    m.errors.clear()
+    out = m.fetch_fred_all({"DGS10": "10Y"}, "2026-10-01", "k")
+    assert "DGS10" in out and out["DGS10"].iloc[-1] == 4.13
+    assert len(calls) == 3 and all(t >= 60 for t in calls)
+    assert not m.errors

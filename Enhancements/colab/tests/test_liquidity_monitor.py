@@ -74,3 +74,53 @@ def test_cboe_history_parses_both_published_file_shapes():
     vvix = m.parse_cboe_history(single, "VVIX")
     assert vix.index[-1] == pd.Timestamp("2026-10-05") and vix.iloc[-1] == 15.52
     assert vvix.index[-1] == pd.Timestamp("2026-10-05") and vvix.iloc[-1] == 85.46
+
+
+class _Resp:
+    def __init__(self, status, payload):
+        self.status_code, self._payload = status, payload
+        self.ok = status < 400
+
+    def json(self):
+        return self._payload
+
+    def raise_for_status(self):
+        import requests
+        if self.status_code >= 400:
+            raise requests.exceptions.HTTPError(f"HTTP {self.status_code}", response=self)
+
+
+OBS = {"observations": [{"date": "2026-10-05", "value": "3.10"}, {"date": "2026-10-06", "value": "3.12"}]}
+
+
+def test_a_slow_fred_answer_is_retried_not_turned_into_a_missing_series(monkeypatch):
+    # 8 Oct 2026: FRED answered in 8-11 s per request; a single 30 s attempt lost series.
+    import requests
+    m = _module()
+    calls = []
+    def get(url, params=None, timeout=None, **kw):
+        calls.append(timeout)
+        if len(calls) < 3:
+            raise requests.exceptions.Timeout("read timed out")
+        return _Resp(200, OBS)
+    monkeypatch.setattr(m.requests, "get", get)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    monkeypatch.setattr(m, "FRED_API_KEY", "k")
+    s = m._fred_series("BAMLH0A0HYM2", "2026-10-01")
+    assert len(calls) == 3 and s.iloc[-1] == 3.12
+    assert all(t >= 60 for t in calls)
+
+
+def test_a_rejected_fred_request_is_not_retried(monkeypatch):
+    import requests
+    m = _module()
+    calls = []
+    def get(url, params=None, timeout=None, **kw):
+        calls.append(1)
+        return _Resp(400, {"error_message": "Bad Request"})
+    monkeypatch.setattr(m.requests, "get", get)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    monkeypatch.setattr(m, "FRED_API_KEY", "k")
+    with pytest.raises(requests.exceptions.HTTPError):
+        m._fred_series("NOT_A_SERIES", "2026-10-01")
+    assert len(calls) == 1
