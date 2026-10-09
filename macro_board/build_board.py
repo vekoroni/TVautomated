@@ -36,6 +36,7 @@ from . import desk_card as desk
 from . import momentum as mom
 from . import evidence as ev
 from . import holdings as hold
+from . import market_prices as mkt
 from . import opportunity as opty
 from . import options as opt
 from . import review as rvw
@@ -195,14 +196,37 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
 
     price_db = src.resolve(sources_cfg["price_db"])
     opens, closes, volumes = src.load_prices(price_db, load, config["history_start"])
+    highs, lows = src.load_ranges(price_db, load, config["history_start"])
+    store_last = closes["SPY"].dropna().index[-1]
+    prices_info, grouped = {"store_last_session": str(store_last.date()), "fill": None}, {}
+    if not as_of:
+        prices_cfg = config["prices"]
+        last_completed = mkt.last_eligible_session(now, settle_minutes=float(prices_cfg["settle_minutes"]))
+        plan, too_long = mkt.plan_fill(closes, load, last_completed=last_completed,
+                                       max_gap_sessions=int(prices_cfg["max_gap_sessions"]))
+        offline = lambda url, params: (599, {})
+        for day in plan:
+            grouped[day] = mkt.fetch_grouped_daily(day, cache_dir=output_dir / "cache" / "grouped",
+                                                   transport=None if refresh else offline)
+        filled, report = mkt.apply_fill({"open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes},
+                                        grouped, plan)
+        opens, highs, lows, closes, volumes = (filled[k] for k in ("open", "high", "low", "close", "volume"))
+        report["gap_too_long"] = too_long
+        prices_info.update({"last_completed_session": str(last_completed), "fill": report,
+                            "settle_minutes": prices_cfg["settle_minutes"],
+                            "grouped_sessions": [str(d) for d, bars in grouped.items() if bars]})
+        if plan:
+            print(f"[board] price fill: {len(plan)} session(s) planned, filled {len(report['filled'])} tickers, "
+                  f"unavailable {len(report['unavailable'])}")
     sessions = closes["SPY"].dropna().index
     if as_of:
         sessions = sessions[sessions <= pd.Timestamp(as_of)]
-    opens, closes, volumes = (frame.reindex(sessions) for frame in (opens, closes, volumes))
-    highs, lows = (frame.reindex(sessions) for frame in src.load_ranges(price_db, load, config["history_start"]))
-    print(f"[board] prices: {len(load)} tickers, {len(sessions)} sessions to {sessions[-1].date()}")
+    opens, closes, volumes, highs, lows = (frame.reindex(sessions) for frame in (opens, closes, volumes, highs, lows))
+    print(f"[board] prices: {len(load)} tickers, {len(sessions)} sessions to {sessions[-1].date()} "
+          f"(store to {store_last.date()})")
 
-    panel = src.load_breadth_panel(price_db, config["history_start"], sessions, output_dir / "cache")
+    panel = src.load_breadth_panel(price_db, config["history_start"], sessions, output_dir / "cache",
+                                   grouped={d: b for d, b in grouped.items() if b})
     fred = src.load_fred(src.resolve(sources_cfg["fred_master"]))
     c12 = src.load_c12_settings(src.resolve(sources_cfg["c12_registry_dir"]), sessions[-1])
     states, values = cond.build_condition_frame(sessions=sessions, closes=closes, breadth_panel=panel,
@@ -298,6 +322,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "authority": config["authority"],
         "built_at_utc": now.isoformat(timespec="seconds"),
         "as_of_session": str(sessions[-1].date()),
+        "prices": prices_info,
         "build": {"kind": kind, "source": kind_source, "run_session": run_session or None,
                   "snapshot": None if as_of else snapshot_name(str(sessions[-1].date()), kind),
                   "scored_record": kind == "EVENING" and not as_of},

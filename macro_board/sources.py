@@ -63,11 +63,14 @@ def _store_fingerprint(db: Path) -> str:
     return "|".join(parts)
 
 
-def load_breadth_panel(db: Path, start: str, sessions: pd.DatetimeIndex, cache_dir: Path | None = None) -> np.ndarray:
+def load_breadth_panel(db: Path, start: str, sessions: pd.DatetimeIndex, cache_dir: Path | None = None,
+                       grouped: Mapping | None = None) -> np.ndarray:
     """Session x ticker closes for every ticker in the store (outcome-scorer breadth universe).
 
     Cached under ``cache_dir`` keyed on the store's row count and latest fetch, so any ingest
-    or revision invalidates it."""
+    or revision invalidates it. ``grouped`` (board-filled completed sessions, market_prices) adds
+    closes the store lacks for the panel's own tickers; the store's values are kept."""
+    from .market_prices import merge_breadth
     key = f"{_store_fingerprint(db)}|{start}"
     with _connect_read_only(db) as connection:
         if cache_dir is not None:
@@ -76,7 +79,9 @@ def load_breadth_panel(db: Path, start: str, sessions: pd.DatetimeIndex, cache_d
                 stored = json.loads(meta.read_text(encoding="utf-8"))
                 if stored.get("key") == key:
                     index = pd.DatetimeIndex(pd.to_datetime(stored["sessions"]))
-                    frame = pd.DataFrame(np.load(data), index=index)
+                    frame = pd.DataFrame(np.load(data), index=index, columns=stored.get("tickers"))
+                    if grouped:
+                        frame = merge_breadth(frame, grouped)
                     return frame.reindex(sessions).to_numpy(dtype=float)
         frame = pd.read_sql_query(
             "SELECT ticker, trading_date, close FROM ohlcv_daily WHERE bar_status='COMPLETE' AND trading_date >= ?",
@@ -87,6 +92,8 @@ def load_breadth_panel(db: Path, start: str, sessions: pd.DatetimeIndex, cache_d
         np.save(cache_dir / "breadth_panel.npy", wide.to_numpy(dtype=float))
         (cache_dir / "breadth_panel.json").write_text(json.dumps(
             {"key": key, "sessions": [str(d.date()) for d in wide.index], "tickers": list(wide.columns)}), encoding="utf-8")
+    if grouped:
+        wide = merge_breadth(wide, grouped)
     return wide.reindex(sessions).to_numpy(dtype=float)
 
 
