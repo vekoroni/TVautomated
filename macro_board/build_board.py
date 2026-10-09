@@ -16,7 +16,7 @@ overwrite the evening record.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
@@ -30,6 +30,7 @@ import pandas as pd
 
 from . import BOARD_VERSION
 from . import conditions as cond
+from . import decision_points as dpts
 from . import decision as dec
 from . import desk_card as desk
 from . import momentum as mom
@@ -325,6 +326,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "external": {name: read.public() for name, read in external.items()},
         "intel": build_intel(external, packet),
         "overnight": build_overnight(external),
+        "decision_points": None,
         "opportunity": opty.build(metrics=metrics, closes=closes, holdings=holdings_payload, horizons=horizons,
                                   sectors=[t for t in config["rotation"]["sectors"] if t in metrics],
                                   gex_records=src.records(external["gex"].data) if external["gex"].status
@@ -337,6 +339,8 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,
                      "holdings": {k: v for k, v in holdings_cfg.items() if k != "sources"}, "tastytrade": tasty_cfg,
                      "momentum": config["momentum"], "desk_card": config["desk_card"],
+                     "decision_points": {k: v for k, v in config["decision_points"].items() if k != "fomc"},
+                     "opportunity": config["opportunity"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -344,6 +348,8 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                              "breadth_sessions": c12.breadth_sessions, "breadth_bands": list(c12.breadth_state_bands)}},
         "price_universe_in_breadth": int(panel.shape[1]),
     }
+    payload["decision_points"] = build_decision_points(payload, config, holdings_payload, external, sessions,
+                                                       output_dir, refresh=refresh, as_of=as_of)
     payload["desk_cards"] = build_desk_cards(payload, config)
     payload = _clean(payload)
 
@@ -362,6 +368,8 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         files.update({f"holdings_{etf}": holdings_dir / f"{etf}_latest.json" for etf in holdings_cfg["sources"]})
         if tasty.get("file"):
             files["tastytrade_metrics"] = tasty_dir / tasty["file"]
+        earnings_file = (payload.get("decision_points") or {}).get("earnings_file")
+        files["constituent_earnings"] = Path(earnings_file) if earnings_file else None
         files.update({"fred_master": src.resolve(sources_cfg["fred_master"]),
                       "pipeline_proposals": src.resolve(proposals["file"]) if proposals.get("file") else None})
         snapshot["inputs"] = src.archive_inputs(files, output_dir / "inputs")
@@ -380,6 +388,40 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     target.write_text(html, encoding="utf-8")
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
+
+
+def build_decision_points(payload: dict, config: dict, holdings_payload: dict, external: dict, sessions,
+                          output_dir: Path, *, refresh: bool, as_of: str | None) -> dict:
+    """Daily review section 2. Constituent earnings come from MarketData through the existing owner
+    (canonical_data.marketdata_earnings, cached per session); only a refresh build calls the API,
+    other builds use the cache and state the rest UNKNOWN. A back-dated build has no earnings."""
+    cfg = config["decision_points"]
+    sectors = [t for t in config["rotation"]["sectors"]]
+    owners = dpts.constituent_tickers(holdings_payload, cfg, sectors)
+    earnings, earnings_file = None, None
+    if not as_of and owners:
+        from canonical_data.marketdata_earnings import fetch_marketdata_earnings
+        start = (sessions[-1] + timedelta(days=1)).date()
+        cache = output_dir / "external" / "earnings"
+        offline = lambda symbol, a, b: (599, {"s": "error", "errmsg": "NOT_REFRESHED"})
+        earnings = fetch_marketdata_earnings(list(owners), as_of=start, cache_dir=cache,
+                                             transport=None if refresh else offline)
+        candidate = cache / f"{start.isoformat()}.json"
+        earnings_file = str(candidate) if candidate.exists() else None
+    usable = lambda name: (external[name].data if name in external and external[name].status
+                           not in ("MISSING", "UNREADABLE") else None)
+    overnight = payload.get("overnight") or {}
+    block = dpts.build(as_of_session=payload["as_of_session"],
+                       overnight=overnight if overnight.get("status") not in (None, "MISSING", "UNREADABLE") else None,
+                       holdings=holdings_payload, earnings=earnings, enrichment=usable("enrichment"),
+                       event_payload=usable("event_payload"), room=(payload.get("opportunity") or {}).get("room") or {},
+                       focus=config["focus_tickers"], sectors=sectors, cfg=cfg, horizons=payload["horizons"])
+    block["earnings_file"] = earnings_file
+    block["sources"] = {"enrichment": external["enrichment"].public() if "enrichment" in external else None,
+                        "event_payload": external["event_payload"].public() if "event_payload" in external else None}
+    print(f"[board] decision points: {len(block['calendar'])} scheduled, "
+          f"{len(block['unscheduled']['items'])} unscheduled, earnings unknown {len(block['coverage']['earnings_unknown'])}")
+    return block
 
 
 def build_desk_cards(payload: dict, config: dict) -> dict:

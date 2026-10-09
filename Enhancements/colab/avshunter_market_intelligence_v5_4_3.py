@@ -35,7 +35,8 @@ L-06  Overnight capture (8 Oct 2026): overnight_<run>.json, display only, every 
       (MarketData extended candles vs the official close). Asia and Europe in their
       own session (CLOSED / INTRADAY / NO_SESSION_TODAY, move from their own previous
       close, reopening after a holiday flagged). Today's 08:30 ET prints from FRED
-      (RELEASED with value and prior / PENDING / NOT_YET_ON_FRED) and the next 7 days.
+      (RELEASED with value and prior / PENDING / NOT_YET_ON_FRED) and the next 31 days
+      (the board's decision points place them up to 20 sessions ahead).
       Quote age is shown and flagged above OVERNIGHT_STALE_AFTER_MINUTES, never gated.
 
 ===============================================================================
@@ -175,7 +176,7 @@ OUTPUT_PREFIXES = ('report_', 'macro_', 'forward_bias_', 'collection_validation_
 # Polygon indices (403), yfinance DX=F (404; DX-Y.NYB works).
 OVERNIGHT_STALE_AFTER_MINUTES = 60       # quote age above this is flagged, never dropped
 OVERNIGHT_BREAK_DAYS = 4                 # a gap longer than this between two sessions is flagged
-OVERNIGHT_RELEASE_LOOKAHEAD_DAYS = 7
+OVERNIGHT_RELEASE_LOOKAHEAD_DAYS = 31     # the board places releases up to 20 sessions ahead
 OVERNIGHT_SINCE_US_CLOSE = {             # measured from the price at the last US close
     'us_futures': [('ES=F', 'S&P 500 e-mini'), ('NQ=F', 'Nasdaq 100 e-mini'),
                    ('YM=F', 'Dow e-mini'), ('RTY=F', 'Russell 2000 e-mini')],

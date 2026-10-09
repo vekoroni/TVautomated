@@ -514,6 +514,27 @@
     "rv_sessions": 20,
     "rationale": "ACK 6 Oct 2026: 'SPY and QQQ rose constantly over 7 days'. History 2021-2026 showed continuation after 5+ up closes (SPY 20d +2.19% vs +0.92% base; QQQ +2.86% vs +1.18%), so an extended move is judged by what followed similar runs for that ETF, never assumed late."
   },
+  "decision_points": {
+    "constituent_etfs": ["SPY", "QQQ", "DIA"],
+    "constituent_top_n": 15,
+    "sector_top_n": 3,
+    "near_level_daily_moves": 1.0,
+    "max_sessions": 20,
+    "fomc": {
+      "time_et": "14:00",
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm (read 2026-10-09). Dates are tentative until confirmed at the preceding meeting; sep = Summary of Economic Projections. Decision day = second meeting day.",
+      "decisions": [
+        {"date": "2026-01-28", "sep": false}, {"date": "2026-03-18", "sep": true}, {"date": "2026-04-29", "sep": false},
+        {"date": "2026-06-17", "sep": true}, {"date": "2026-07-29", "sep": false}, {"date": "2026-09-16", "sep": true},
+        {"date": "2026-10-28", "sep": false}, {"date": "2026-12-09", "sep": true},
+        {"date": "2027-01-27", "sep": false}, {"date": "2027-03-17", "sep": true}, {"date": "2027-04-28", "sep": false},
+        {"date": "2027-06-09", "sep": true}, {"date": "2027-07-28", "sep": false}, {"date": "2027-09-15", "sep": true},
+        {"date": "2027-10-27", "sep": false}, {"date": "2027-12-08", "sep": true}
+      ],
+      "minutes": []
+    },
+    "rationale": "Added 2026-10-09 (Daily review, section 2, ACK). Earnings looked up for the top 15 issuer holdings of SPY/QQQ/DIA and the top 3 of each SPDR sector (MarketData, cached per session). A level within 1 daily move counts as a next-session decision point. Releases come from the overnight capture (FRED, 31-day lookahead); central-bank speakers from the event payload only. FRED release 101 is published daily, so FOMC decision days are kept here from the Fed calendar; update the list each year. PROVISIONAL."
+  },
   "opportunity": {
     "leader_band_pp": {"1": 0.1, "5": 0.3, "20": 0.75},
     "relative_band_pp": {"1": 0.1, "5": 0.25, "20": 0.5},

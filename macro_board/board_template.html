@@ -332,7 +332,8 @@ function renderOvernight(){
   const rel = (N.releases_today||[]).map(r => `<tr><td class="l">${esc(r.time_et)} ET</td><td class="l">${esc(r.name)}</td><td class="l ${r.state==="RELEASED"?"":"muted"}">${words(r.state)}</td>`+
     `<td>${big(r.value)}</td><td class="muted">${isNum(r.prior) ? "prior " + big(r.prior) : ""}</td></tr>`).join("")
     || `<tr><td class="l muted" colspan="5">No tracked 08:30 ET release scheduled today.</td></tr>`;
-  const ahead = (N.releases_ahead||[]).map(r => `<span class="chip">${esc(r.date.slice(5))} ${esc(r.name)}</span>`).join(" ");
+  const in7 = r => { const d = new Date(r.date + "T00:00:00Z"), a = new Date(String(N.as_of||"").slice(0,10) + "T00:00:00Z"); return isFinite(d) && isFinite(a) && (d - a) <= 7 * 864e5; };
+  const ahead = (N.releases_ahead||[]).filter(in7).map(r => `<span class="chip">${esc(r.date.slice(5))} ${esc(r.name)}</span>`).join(" ");
   return `<h2>Overnight <span class="sub">since the US close ${esc(N.us_reference_session)} (${esc((N.us_reference_close_utc||"").replace("T"," ").replace("Z"," UTC"))}) · captured ${esc((N.as_of||"").replace("T"," ").replace("+00:00"," UTC"))}</span>
       <span data-tip="${esc(`Overnight capture · run ${esc(N.run_session)} · age ${N.age_hours ?? "—"} h<br>Reference: ${esc(N.us_reference_source)}<br>${(N.notes||[]).map(esc).join("<br>")}`)}">${statusChip(N.status, N.status === "FRESH" ? "fresh" : "stale capture")}</span>${night}</h2>
     <div class="grid g-night">${cards}
@@ -340,6 +341,62 @@ function renderOvernight(){
         <div class="pill-row" style="margin-top:6px">${ahead ? '<span class="sub">Next 7 days:</span> ' + ahead : ""}</div>
         <div class="note" style="font-size:11px">Display only. Quotes are delayed (≈10–15 min); age shown, ! = older than ${esc(N.stale_after_minutes)} min.${(N.errors||[]).length ? " " + N.errors.length + " source error(s) in the capture." : ""}</div></div>
     </div>`;
+}
+
+/* ---------- CSV export (built in the browser from the board's own data) ---------- */
+const csvCell = v => { const s = v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+function downloadCsv(name, cols, rows){
+  const text = [cols.map(c => c[0]).join(",")].concat(rows.map(r => cols.map(c => csvCell(typeof c[1] === "function" ? c[1](r) : r[c[1]])).join(","))).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + text], {type: "text/csv;charset=utf-8"}));
+  a.download = `${name}_${B.as_of_session}_${(B.build?.kind || "build").toLowerCase()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+const csvBtn = (key, label) => `<button class="btn" data-csv="${key}" title="Download this table as CSV" style="float:right;padding:2px 8px;font-size:12px">${label || "CSV"}</button>`;
+const CSV_EXPORTS = {
+  decision_calendar: () => downloadCsv("decision_calendar", [["date","date"],["sessions_ahead","sessions_ahead"],["windows",r=>(r.windows||[]).join("/")],["kind","kind"],["event","name"],["time_et","time_et"],["detail","detail"],["weights",r=>r.weights?Object.entries(r.weights).map(([k,v])=>k+" "+v+"%").join("; "):""],["source","source"]], (B.decision_points?.calendar)||[]),
+  reassess: () => downloadCsv("reassess_next_session", [["etf","etf"],["kind","kind"],["time_et","time_et"],["item","text"]],
+    Object.entries(B.decision_points?.reassess||{}).flatMap(([etf, items]) => items.map(i => ({etf, ...i})))),
+  unscheduled: () => downloadCsv("unscheduled_developments", [["development","name"],["importance","importance"],["confirms","confirms"],["fails","fails"],["source","source"],["as_of","as_of"]], (B.decision_points?.unscheduled?.items)||[]),
+  leadership: () => { const L = B.opportunity?.leadership || {windows:{}}, br = L.breadth || {};
+    downloadCsv("leadership_qqq_spy", [["window_sessions","h"],["qqq_pct","qqq_pct"],["spy_pct","spy_pct"],["qqq_minus_spy_pp","qqq_minus_spy_pp"],["leader","leader"],["breadth_state",()=>br.state],["rsp_minus_spy_20d_pp",()=>br.rsp_minus_spy_20d_pp],["spy_weight_above_50d_pct",()=>(br.participation_50d_pct||{}).SPY],["qqq_weight_above_50d_pct",()=>(br.participation_50d_pct||{}).QQQ]],
+      Object.entries(L.windows).map(([h, w]) => ({h, ...w}))); },
+  sectors: () => downloadCsv("sectors_vs_spy", [["etf","ticker"]].concat(B.horizons.flatMap(h => [[`ret_${h}d_pct`, r=>r.windows[h]?.absolute_pct],[`vs_spy_${h}d_pp`, r=>r.windows[h]?.relative_pp],[`reading_${h}d`, r=>r.windows[h]?.label],[`constituents_${h}d`, r=>r.windows[h]?.constituents],[`confirming_weight_${h}d_pct`, r=>r.windows[h]?.confirming_weight_pct],[`top_contributors_${h}d`, r=>(r.windows[h]?.top_contributors||[]).join(" ")]])), (B.opportunity?.sectors)||[]),
+  room: () => downloadCsv("price_room", [["etf","t"],["close","close"],["daily_move_pct","daily_move_pct"],["above_level_name",r=>r.above?.name],["above_level",r=>r.above?.level],["above_distance_pct",r=>r.above?.distance_pct],["above_daily_moves",r=>r.above?.distance_daily_moves],["below_level_name",r=>r.below?.name],["below_level",r=>r.below?.level],["below_distance_pct",r=>r.below?.distance_pct],["below_daily_moves",r=>r.below?.distance_daily_moves],["gex_as_of","gex_as_of"]],
+    Object.entries(B.opportunity?.room||{}).map(([t, r]) => ({t, ...r}))),
+};
+document.addEventListener("click", e => { const b = e.target.closest("[data-csv]"); if (b && CSV_EXPORTS[b.dataset.csv]) CSV_EXPORTS[b.dataset.csv](); });
+
+/* ---------- daily review (section 2: tomorrow's decision points) ---------- */
+const KIND_LABEL = {RELEASE:"release", FOMC:"FOMC", EARNINGS:"earnings", HOLIDAY:"holiday", SHORTENED_SESSION:"short session", LEVEL:"level", UNSCHEDULED:"unscheduled"};
+function renderDecisionPoints(){
+  const D = B.decision_points;
+  if (!D) return `<h2>Tomorrow's decision points</h2><div class="card muted">Not in this build.</div>`;
+  const h = Number(state.horizon), cov = D.coverage || {};
+  const kchip = k => `<span class="chip ${k==="FOMC"||k==="RELEASE"?"":k==="LEVEL"?"flat":k==="UNSCHEDULED"?"na":"up"}">${esc(KIND_LABEL[k]||k)}</span>`;
+  const reassess = B.focus.map(t => { const items = (D.reassess||{})[t] || [];
+    return `<div class="card soft"><h3>${esc(t)}</h3>${items.length ? `<ul class="list">${items.map(i => `<li>${kchip(i.kind)} ${esc(i.text)}</li>`).join("")}</ul>` : `<div class="sub muted">Nothing scheduled or nearby for the next session.</div>`}</div>`; }).join("");
+  const cal = (D.calendar||[]).filter(e => e.sessions_ahead <= h);
+  const crow = e => `<tr><td class="l num">${esc(e.date)}</td><td>${e.sessions_ahead}</td><td class="l">${kchip(e.kind)}</td><td class="l">${esc(e.name)}</td><td class="l">${esc(e.time_et||"")}</td>`+
+    `<td class="l muted">${esc(e.detail||"")}${e.weights ? " · " + esc(Object.entries(e.weights).map(([k,v]) => k + " " + (isNum(v)?v.toFixed(1):v) + "%").join(", ")) : ""}</td><td class="l muted">${esc(e.source||"")}</td></tr>`;
+  const U = D.unscheduled || {}, src = D.sources || {};
+  const srcChip = x => x ? statusChip(x.status, (x.name||"").split(" (")[0] + (x.as_of ? " · " + String(x.as_of).slice(0,16).replace("T"," ") : "")) : "";
+  const urows = (U.items||[]).map(g => `<tr><td class="l"><b>${esc(g.name)}</b></td><td class="l">${esc(g.importance||"")}</td><td class="l">${esc(g.confirms||"")}</td><td class="l">${esc(g.fails||"")}</td></tr>`).join("")
+    || `<tr><td class="l muted" colspan="4">No unscheduled developments in the inputs.</td></tr>`;
+  return `<h2>Tomorrow's decision points <span class="sub">next session ${esc(D.next_session)}${D.next_session_close_et && D.next_session_close_et !== "16:00" ? " · <b>closes " + esc(D.next_session_close_et) + " ET</b>" : ""} · scheduled events kept apart from unscheduled developments</span></h2>
+    <div class="card"><h3>What could force participants to reassess these assets in the next session? ${csvBtn("reassess")}</h3>
+      <div class="grid g-night">${reassess}</div>
+      <div class="note">Next-session releases (ET), FOMC, holidays and shortened sessions, earnings of each ETF's own top holdings, price within ${esc(B.settings?.decision_points?.near_level_daily_moves ?? 1)} daily move of a level (section below), and high-importance unresolved developments.</div></div>
+    <div class="card" style="margin-top:10px"><h3>Scheduled, known in advance <span class="sub">next ${h} session${h>1?"s":""} (horizon selector below)</span> ${csvBtn("decision_calendar")}</h3>
+      <div class="table-wrap" style="max-height:420px"><table class="mini" style="width:100%"><thead><tr><th class="l">Date</th><th>Sessions ahead</th><th class="l">Kind</th><th class="l">Event</th><th class="l">Time ET</th><th class="l">Detail</th><th class="l">Source</th></tr></thead><tbody>${cal.map(crow).join("") || `<tr><td class="l muted" colspan="7">Nothing scheduled in this window.</td></tr>`}</tbody></table></div>
+      <div class="note">Coverage: releases ${esc(cov.releases)} (FRED, overnight capture) · central-bank speakers from the event payload only · consensus: no free source · earnings ${esc(cov.earnings)}${(cov.earnings_unknown||[]).length ? ", date unknown for " + esc(cov.earnings_unknown.join(", ")) : ""}. FOMC dates from the Federal Reserve calendar (tentative until confirmed).</div></div>
+    <div class="card" style="margin-top:10px"><h3>Unscheduled, unresolved developments <span class="sub">as published · LLM-made, not measured</span> ${csvBtn("unscheduled")}</h3>
+      <div class="pill-row" style="margin-bottom:6px">${srcChip(src.enrichment)} ${srcChip(src.event_payload)}</div>
+      <div class="table-wrap" style="max-height:320px"><table class="mini" style="width:100%"><thead><tr><th class="l">Development</th><th class="l">Importance</th><th class="l">Confirms if</th><th class="l">Fails if</th></tr></thead><tbody>${urows}</tbody></table></div>
+      ${U.red_team ? `<div class="note"><b>Red-team question:</b> ${esc(U.red_team)}</div>` : ""}
+      ${(U.counter_conditions||[]).length ? `<div class="note"><b>Would reverse or neutralise the case:</b> ${esc(U.counter_conditions.join(" · "))}</div>` : ""}
+      ${U.verdict ? `<div class="note"><b>Event payload verdict:</b> ${words(U.verdict)}${U.verdict_scope ? " · " + esc(U.verdict_scope) : ""}</div>` : ""}</div>`;
 }
 
 /* ---------- daily review (section 3: where the opportunity is strongest) ---------- */
@@ -370,19 +427,19 @@ function renderReview(){
   const lvl = x => x ? `${esc(LEVEL_TXT[x.name]||x.name)} ${fmt(x.level)} <span class="${cls(x.distance_pct)}">${pct(x.distance_pct,1)}</span>${isNum(x.distance_daily_moves)?` <span class="muted">· ${x.distance_daily_moves.toFixed(1)} daily moves</span>`:""}` : `<span class="muted">none in range</span>`;
   const gexDate = r => r.gex_as_of && r.gex_as_of !== B.as_of_session ? ` <span class="chip na" title="GEX walls/flip are from the ${esc(r.gex_as_of)} session">GEX ${esc(r.gex_as_of)}</span>` : "";
   const rrows = Object.entries(O.room || {}).map(([t, r]) => `<tr><td class="l"><b>${esc(t)}</b>${gexDate(r)}</td><td>${fmt(r.close)}</td><td class="l">${lvl(r.above)}</td><td class="l">${lvl(r.below)}</td></tr>`).join("");
-  $("#p-review").innerHTML = `<h2>Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
+  $("#p-review").innerHTML = renderDecisionPoints() + `<h2 style="margin-top:22px">Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
     <div class="controls">${horizonSeg("hz-rev")}</div>
     <div class="grid g-2">
-      <div class="card"><h3>Market: QQQ vs SPY</h3>
+      <div class="card"><h3>Market: QQQ vs SPY ${csvBtn("leadership")}</h3>
         <table class="mini" style="width:100%"><thead><tr><th class="l">Window</th><th>QQQ</th><th>SPY</th><th>QQQ − SPY</th><th class="l">Leadership</th></tr></thead><tbody>${lrows}</tbody></table>
         <div style="margin-top:8px"><span class="chip ${bk}">${esc(br.state === "BROAD" ? "broad" : br.state === "CONCENTRATED" ? "concentrated" : "breadth unknown")}</span>
           <span class="sub">RSP − SPY (20d) ${isNum(br.rsp_minus_spy_20d_pp)?(br.rsp_minus_spy_20d_pp>0?"+":"")+br.rsp_minus_spy_20d_pp.toFixed(2)+" pp":"—"} · above 50d avg: SPY ${isNum(part.SPY)?Math.round(part.SPY)+"%":"—"}, QQQ ${isNum(part.QQQ)?Math.round(part.QQQ)+"%":"—"} of issuer weight</span></div>
         <div class="note">Broad needs equal-weight keeping pace and most index weight above its own 50-day average; either failing marks the move concentrated.</div></div>
-      <div class="card"><h3>Price location <span class="sub">room to the nearest obstacle</span></h3>
+      <div class="card"><h3>Price location <span class="sub">room to the nearest obstacle</span> ${csvBtn("room")}</h3>
         <div class="table-wrap" style="max-height:360px"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Close</th><th class="l">Nearest above</th><th class="l">Nearest below</th></tr></thead><tbody>${rrows}</tbody></table></div>
         <div class="note">Levels: 252-session high/low, 50/200-session averages, GEX walls and flip (SPY/QQQ, model estimate), pipeline target/invalidation. Daily move = 20-session realised volatility ÷ √252.</div></div>
     </div>
-    <div class="card" style="margin-top:10px"><h3>Sectors vs SPY <span class="sub">${esc(h)}-session window · relative strength kept apart from direction</span></h3>
+    <div class="card" style="margin-top:10px"><h3>Sectors vs SPY <span class="sub">${esc(h)}-session window · relative strength kept apart from direction</span> ${csvBtn("sectors")}</h3>
       <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Return</th><th>vs SPY</th><th class="l">Reading</th><th class="l">Constituents</th><th class="l">Top contributors</th></tr></thead><tbody>${srows}</tbody></table></div>
       <div class="note">"Outperforming while falling" (e.g. XLU down less than SPY) is defensive preference, not an attractive call. Constituents: confirmed when at least ${esc(O.settings?.confirmation_min_pct)}% of the ETF's priced issuer weight moved the same way over the window.</div></div>`;
   bindHorizon("hz-rev");

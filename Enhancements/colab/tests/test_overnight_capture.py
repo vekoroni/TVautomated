@@ -158,6 +158,13 @@ def test_without_the_runner_the_reference_close_is_derived_and_says_so(monkeypat
     assert "no trading calendar" in source
 
 
+def test_the_release_calendar_covers_the_longest_holding_window():
+    # The board's decision points place releases up to 20 sessions ahead (~28 calendar days,
+    # more around holidays), so the capture must look at least that far.
+    m = _module()
+    assert m.OVERNIGHT_RELEASE_LOOKAHEAD_DAYS >= 31
+
+
 def test_overnight_outputs_are_archived_like_the_other_outputs(tmp_path):
     m = _module()
     (tmp_path / "overnight_20261007_211500.json").write_text("{}", encoding="utf-8")
