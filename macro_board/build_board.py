@@ -38,6 +38,7 @@ from . import evidence as ev
 from . import holdings as hold
 from . import opportunity as opty
 from . import options as opt
+from . import review as rvw
 from . import rotation as rot
 from . import tastytrade_metrics as ttm
 from . import scorecard as sc
@@ -326,6 +327,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "external": {name: read.public() for name, read in external.items()},
         "intel": build_intel(external, packet),
         "overnight": build_overnight(external),
+        "review": None,
         "decision_points": None,
         "opportunity": opty.build(metrics=metrics, closes=closes, holdings=holdings_payload, horizons=horizons,
                                   sectors=[t for t in config["rotation"]["sectors"] if t in metrics],
@@ -340,7 +342,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "holdings": {k: v for k, v in holdings_cfg.items() if k != "sources"}, "tastytrade": tasty_cfg,
                      "momentum": config["momentum"], "desk_card": config["desk_card"],
                      "decision_points": {k: v for k, v in config["decision_points"].items() if k != "fomc"},
-                     "opportunity": config["opportunity"],
+                     "opportunity": config["opportunity"], "review": config["review"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -348,6 +350,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                              "breadth_sessions": c12.breadth_sessions, "breadth_bands": list(c12.breadth_state_bands)}},
         "price_universe_in_breadth": int(panel.shape[1]),
     }
+    payload["review"] = build_review(payload, config, opens, closes, holdings_payload, external)
     payload["decision_points"] = build_decision_points(payload, config, holdings_payload, external, sessions,
                                                        output_dir, refresh=refresh, as_of=as_of)
     payload["desk_cards"] = build_desk_cards(payload, config)
@@ -388,6 +391,23 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     target.write_text(html, encoding="utf-8")
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
+
+
+def build_review(payload: dict, config: dict, opens, closes, holdings_payload: dict, external: dict) -> dict:
+    """Daily review section 1: what changed, what was expected, how markets reacted (accepted /
+    rejected / absorbed, scored on what followed), what disagreed, what remains unresolved."""
+    usable = lambda name: (external[name].data if name in external and external[name].status
+                           not in ("MISSING", "UNREADABLE") else None)
+    overnight = payload.get("overnight") or {}
+    block = rvw.build(opens=opens, closes=closes, instruments=config["review"]["instruments"],
+                      sectors=config["rotation"]["sectors"], focus=config["focus_tickers"], horizons=payload["horizons"],
+                      evidence_settings=config["evidence"], holdings=holdings_payload,
+                      event_payload=usable("event_payload"),
+                      overnight=overnight if overnight.get("status") not in (None, "MISSING", "UNREADABLE") else None,
+                      cfg=config["review"])
+    block["sources"] = {"event_payload": external["event_payload"].public() if "event_payload" in external else None}
+    print(f"[board] review: {block['headline']}")
+    return block
 
 
 def build_decision_points(payload: dict, config: dict, holdings_payload: dict, external: dict, sessions,

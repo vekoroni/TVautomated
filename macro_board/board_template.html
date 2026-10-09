@@ -365,8 +365,56 @@ const CSV_EXPORTS = {
   sectors: () => downloadCsv("sectors_vs_spy", [["etf","ticker"]].concat(B.horizons.flatMap(h => [[`ret_${h}d_pct`, r=>r.windows[h]?.absolute_pct],[`vs_spy_${h}d_pp`, r=>r.windows[h]?.relative_pp],[`reading_${h}d`, r=>r.windows[h]?.label],[`constituents_${h}d`, r=>r.windows[h]?.constituents],[`confirming_weight_${h}d_pct`, r=>r.windows[h]?.confirming_weight_pct],[`top_contributors_${h}d`, r=>(r.windows[h]?.top_contributors||[]).join(" ")]])), (B.opportunity?.sectors)||[]),
   room: () => downloadCsv("price_room", [["etf","t"],["close","close"],["daily_move_pct","daily_move_pct"],["above_level_name",r=>r.above?.name],["above_level",r=>r.above?.level],["above_distance_pct",r=>r.above?.distance_pct],["above_daily_moves",r=>r.above?.distance_daily_moves],["below_level_name",r=>r.below?.name],["below_level",r=>r.below?.level],["below_distance_pct",r=>r.below?.distance_pct],["below_daily_moves",r=>r.below?.distance_daily_moves],["gex_as_of","gex_as_of"]],
     Object.entries(B.opportunity?.room||{}).map(([t, r]) => ({t, ...r}))),
+  reaction: () => downloadCsv("market_reaction", [["instrument","t"],["group","g"],["reading","label"],["direction","direction"],["path","path"],["gap_pct","gap_pct"],["open_to_close_pct","open_to_close_pct"],["close_pct","close_pct"],["daily_move_pct","daily_move_pct"],["threshold_pct","threshold_pct"]],
+    Object.entries(B.review?.instruments||{}).map(([t, r]) => ({t, g: "cross-asset", ...r})).concat(Object.entries(B.review?.sectors||{}).map(([t, r]) => ({t, g: "sector", ...r})))),
+  reaction_record: () => downloadCsv("reaction_record", [["etf","t"],["today","key"],["horizon_sessions","h"],["n_days","n"],["independent_windows","n_eff"],["mean_after_pct","mean"],["up_share","hit"],["ci_low_pct","lo"],["ci_high_pct","hi"],["all_days_mean_pct","base"],["lean","lean"],["holdout","holdout"]],
+    Object.entries(B.review?.scored||{}).flatMap(([t, s]) => Object.entries(s.evidence||{}).map(([h, e]) => ({t, key: s.today?.key, h, n: e.analog?.n, n_eff: e.analog?.n_eff, mean: e.analog?.mean_pct, hit: e.analog?.hit_rate, lo: e.analog?.ci_low_pct, hi: e.analog?.ci_high_pct, base: e.base?.mean_pct, lean: e.lean, holdout: e.holdout})))),
+  information: () => downloadCsv("information_review", [["event","name"],["institution","institution"],["status","status"],["what_changed","what_changed"],["expected","expected"],["previous","previous"],["revised_previous","revised_previous"],["surprise","surprise"],["source","source"],["source_url","source_url"]], (B.review?.information?.items)||[]),
+  disagreements: () => downloadCsv("disagreements", [["instrument","ticker"],["close_pct","close_pct"],["reading","label"],["versus","versus"]], (B.review?.disagreements?.measured)||[]),
 };
 document.addEventListener("click", e => { const b = e.target.closest("[data-csv]"); if (b && CSV_EXPORTS[b.dataset.csv]) CSV_EXPORTS[b.dataset.csv](); });
+
+/* ---------- daily review (section 1: the day's information and the market's reaction) ---------- */
+const READ_TXT = {ACCEPTED:"accepted", REJECTED:"rejected", ABSORBED:"absorbed", UNKNOWN:"unknown"};
+const PATH_TXT = {EXTENDED:"gap extended", FADED:"gap faded", NO_OPENING_REACTION:"no opening reaction"};
+const KEY_TXT = {ACCEPTED_UP:"accepted up", ACCEPTED_DOWN:"accepted down", REJECTED_GAP_UP:"rejected a gap up", REJECTED_GAP_DOWN:"rejected a gap down", ABSORBED:"absorbed", UNKNOWN:"unknown"};
+function readChip(r){ const l = r?.label || "UNKNOWN";
+  const k = l === "ACCEPTED" ? (r.direction === "UP" ? "up" : "down") : l === "REJECTED" ? "flat" : "na";
+  return `<span class="chip ${k}">${esc(READ_TXT[l]||l)}${l === "ACCEPTED" ? " " + (r.direction === "UP" ? "▲" : "▼") : l === "REJECTED" ? " gap " + (r.direction === "UP" ? "▲" : "▼") : ""}</span>`; }
+function renderInformationReview(){
+  const R = B.review;
+  if (!R) return `<h2>The day's information and the market's reaction</h2><div class="card muted">Not in this build.</div>`;
+  const row = (t, r) => `<tr><td class="l"><b>${esc(t)}</b></td><td class="l">${readChip(r)}</td><td class="${cls(r.gap_pct)}">${pct(r.gap_pct)}</td><td class="l muted">${esc(PATH_TXT[r.path]||"")}</td><td class="${cls(r.open_to_close_pct)}">${pct(r.open_to_close_pct)}</td><td class="${cls(r.close_pct)}"><b>${pct(r.close_pct)}</b></td><td class="muted">${isNum(r.daily_move_pct)?r.daily_move_pct.toFixed(2)+"%":"—"}</td></tr>`;
+  const inst = Object.entries(R.instruments||{}).map(([t, r]) => row(t, r)).join("");
+  const sect = Object.entries(R.sectors||{}).map(([t, r]) => row(t, r)).join("");
+  const scored = Object.entries(R.scored||{}).map(([t, s]) => { const td = s.today || {};
+    const cells = B.horizons.map(h => { const e = (s.evidence||{})[String(h)] || {}, a = e.analog || {}, b = e.base || {};
+      return `<td class="${cls(a.mean_pct)}" data-tip="${esc(`After past ${KEY_TXT[td.key]||td.key} days: n=${a.n}, independent windows ${a.n_eff}, up ${isNum(a.hit_rate)?Math.round(a.hit_rate*100)+"%":"—"}, 80% interval ${ci(a)}<br>All days: ${pct(b.mean_pct)}<br>Lean ${e.lean||"—"} · ${e.holdout||""}`)}">${pct(a.mean_pct)} <span class="muted">vs ${pct(b.mean_pct)} · ${a.n_eff ?? 0} win.</span></td>`; }).join("");
+    return `<tr><td class="l"><b>${esc(t)}</b></td><td class="l">${esc(KEY_TXT[td.key]||td.key||"")}</td>${cells}</tr>`; }).join("");
+  const I = R.information || {}, D = R.disagreements || {}, U = R.unresolved || {};
+  const payloadNote = I.payload_session ? (I.payload_matches_session ? `event payload for ${esc(I.payload_session)}` : `<span style="color:var(--serious)">event payload is for ${esc(I.payload_session)}, not ${esc(R.session)}</span>`) : `<span class="muted">no event payload</span>`;
+  const irows = (I.items||[]).map(e => `<tr><td class="l"><b>${esc(e.name)}</b><div class="sub">${esc(e.institution||"")}</div></td><td class="l">${esc(e.what_changed||"")}</td><td class="l ${String(e.expected).startsWith("MISSING")?"muted":""}">${esc(e.expected||"")}</td><td class="l muted">${esc(e.previous||"")}${e.revised_previous ? "<br>revised: " + esc(e.revised_previous) : ""}</td><td class="l">${words(e.surprise||"")}</td><td class="l muted">${esc(e.source||"")}</td></tr>`).join("")
+    || `<tr><td class="l muted" colspan="6">No new information in the inputs for this session.</td></tr>`;
+  const drows = (D.measured||[]).map(d => `<li><b>${esc(d.ticker)}</b> <span class="${cls(d.close_pct)}">${pct(d.close_pct)}</span> ${esc(READ_TXT[d.label]||d.label)} · against ${esc(d.versus)}</li>`).join("") || `<li class="muted">No instrument moved beyond its threshold against SPY.</li>`;
+  return `<h2>The day's information and the market's reaction <span class="sub">session ${esc(R.session)} · did the market accept the new information, reject it, or absorb it?</span></h2>
+    <div class="card"><div class="state">${esc(R.headline || "")}</div>
+      <div class="note">Measured on daily bars: the opening gap is the immediate response, the close against the previous close is the closing position, both in the instrument's own daily move (20 sessions before the day). Absorbed = the close moved less than ${esc(R.settings?.threshold_daily_moves)} of a daily move; rejected = a gap reversed through the previous close; accepted = otherwise. Provisional.</div></div>
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card"><h3>How did markets react? ${csvBtn("reaction")}</h3>
+        <div class="table-wrap" style="max-height:440px"><table class="mini" style="width:100%"><thead><tr><th class="l">Instrument</th><th class="l">Reading</th><th>Gap</th><th class="l">Path</th><th>Open→close</th><th>Close</th><th>Daily move</th></tr></thead>
+        <tbody>${inst}<tr><td class="l sub" colspan="7">Sectors</td></tr>${sect}</tbody></table></div></div>
+      <div class="card"><h3>Has this reading meant anything before? ${csvBtn("reaction_record")}</h3>
+        <table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th class="l">Today</th>${B.horizons.map(h => `<th>Next ${h}d after similar days</th>`).join("")}</tr></thead><tbody>${scored}</tbody></table>
+        <div class="note">Mean return from the next open to the close h sessions later after past sessions with the same reading, against all sessions; independent windows only. Hover for the interval and the held-out check.</div>
+        <h3 style="margin-top:12px">What disagreed? ${csvBtn("disagreements")}</h3>
+        <ul class="list">${drows}</ul>
+        <div class="sub">SPY constituents: ${esc(D.constituents === "CONFIRMED" ? "moved with SPY" : D.constituents === "NOT_CONFIRMED" ? "did not confirm SPY's move" : "unknown")}${isNum(D.confirming_weight_1d_pct) ? " (" + Math.round(D.confirming_weight_1d_pct) + "% of weight moved the same way)" : ""}</div>
+        ${(D.published||[]).length ? `<details style="margin-top:6px"><summary>Contradictions as published (event payload, ${(D.published||[]).length})</summary><ul class="list">${D.published.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}</div>
+    </div>
+    <div class="card" style="margin-top:10px"><h3>What changed, and what was expected? <span class="sub">${payloadNote} · consensus shown only where the source carries it</span> ${csvBtn("information")}</h3>
+      <div class="table-wrap" style="max-height:420px"><table class="mini" style="width:100%"><thead><tr><th class="l">Development</th><th class="l">What changed</th><th class="l">Expected</th><th class="l">Previous</th><th class="l">Surprise</th><th class="l">Source</th></tr></thead><tbody>${irows}</tbody></table></div>
+      <div class="note"><b>What remains unresolved:</b> ${esc(U.counter_case || "see the unscheduled developments under tomorrow's decision points")}${U.verdict ? " · verdict " + words(U.verdict) : ""}</div></div>`;
+}
 
 /* ---------- daily review (section 2: tomorrow's decision points) ---------- */
 const KIND_LABEL = {RELEASE:"release", FOMC:"FOMC", EARNINGS:"earnings", HOLIDAY:"holiday", SHORTENED_SESSION:"short session", LEVEL:"level", UNSCHEDULED:"unscheduled"};
@@ -427,7 +475,7 @@ function renderReview(){
   const lvl = x => x ? `${esc(LEVEL_TXT[x.name]||x.name)} ${fmt(x.level)} <span class="${cls(x.distance_pct)}">${pct(x.distance_pct,1)}</span>${isNum(x.distance_daily_moves)?` <span class="muted">· ${x.distance_daily_moves.toFixed(1)} daily moves</span>`:""}` : `<span class="muted">none in range</span>`;
   const gexDate = r => r.gex_as_of && r.gex_as_of !== B.as_of_session ? ` <span class="chip na" title="GEX walls/flip are from the ${esc(r.gex_as_of)} session">GEX ${esc(r.gex_as_of)}</span>` : "";
   const rrows = Object.entries(O.room || {}).map(([t, r]) => `<tr><td class="l"><b>${esc(t)}</b>${gexDate(r)}</td><td>${fmt(r.close)}</td><td class="l">${lvl(r.above)}</td><td class="l">${lvl(r.below)}</td></tr>`).join("");
-  $("#p-review").innerHTML = renderDecisionPoints() + `<h2 style="margin-top:22px">Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
+  $("#p-review").innerHTML = renderInformationReview() + `<div style="margin-top:22px"></div>` + renderDecisionPoints() + `<h2 style="margin-top:22px">Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
     <div class="controls">${horizonSeg("hz-rev")}</div>
     <div class="grid g-2">
       <div class="card"><h3>Market: QQQ vs SPY ${csvBtn("leadership")}</h3>

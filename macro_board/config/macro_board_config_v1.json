@@ -514,6 +514,13 @@
     "rv_sessions": 20,
     "rationale": "ACK 6 Oct 2026: 'SPY and QQQ rose constantly over 7 days'. History 2021-2026 showed continuation after 5+ up closes (SPY 20d +2.19% vs +0.92% base; QQQ +2.86% vs +1.18%), so an extended move is judged by what followed similar runs for that ETF, never assumed late."
   },
+  "review": {
+    "threshold_daily_moves": 0.5,
+    "vol_sessions": 20,
+    "confirmation_min_pct": 60.0,
+    "instruments": ["SPY", "QQQ", "IWM", "DIA", "RSP", "TLT", "HYG", "LQD", "UUP", "USO", "GLD"],
+    "rationale": "Added 2026-10-09 (Daily review, section 1, ACK: daily bars v1). Threshold = 0.5 x the instrument's daily move (20-session realised vol of the sessions before the day). ABSORBED: close moved less than the threshold. REJECTED: gap beyond the threshold, close beyond it on the other side. ACCEPTED: otherwise. Each label is scored on what followed past days with the same label (next open to close 1/5/20 sessions, independent windows, held-out quarter). Constituent agreement: at least 60% of SPY's priced issuer weight moved with SPY on the day. PROVISIONAL until the label's own record is reviewed."
+  },
   "decision_points": {
     "constituent_etfs": ["SPY", "QQQ", "DIA"],
     "constituent_top_n": 15,
