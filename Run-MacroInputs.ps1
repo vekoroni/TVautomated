@@ -232,6 +232,13 @@ $stepLogDir = Join-Path $logDir ("macro_inputs_{0}_{1}" -f $Session.ToLower(), $
 New-Item -ItemType Directory -Path $stepLogDir -Force | Out-Null
 Start-Transcript -Path $logFile -Append | Out-Null
 
+# The variables below are set for the producers only. A manual run happens in the user's own
+# PowerShell process, so they are saved here and restored on exit (9 Oct 2026: a PostClose run left
+# AVSH_RUN_SESSION=PostClose behind and labelled the next morning's board build as the evening one).
+$script:CallerEnv = @{}
+foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "AVSH_SESSION_CUTOFF", "AVSH_US_CLOSE_UTC") {
+    $script:CallerEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+}
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = "1"
 $env:AVSH_RUN_SESSION = $Session
@@ -442,5 +449,8 @@ try {
 } finally {
     Stop-Transcript | Out-Null
     try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
+    foreach ($name in $script:CallerEnv.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $script:CallerEnv[$name], "Process")   # $null removes it
+    }
 }
 exit $exitCode
