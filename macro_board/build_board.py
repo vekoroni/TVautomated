@@ -35,6 +35,7 @@ from . import desk_card as desk
 from . import momentum as mom
 from . import evidence as ev
 from . import holdings as hold
+from . import opportunity as opty
 from . import options as opt
 from . import rotation as rot
 from . import tastytrade_metrics as ttm
@@ -324,6 +325,13 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "external": {name: read.public() for name, read in external.items()},
         "intel": build_intel(external, packet),
         "overnight": build_overnight(external),
+        "opportunity": opty.build(metrics=metrics, closes=closes, holdings=holdings_payload, horizons=horizons,
+                                  sectors=[t for t in config["rotation"]["sectors"] if t in metrics],
+                                  gex_records=src.records(external["gex"].data) if external["gex"].status
+                                  not in ("MISSING", "UNREADABLE") else [],
+                                  proposals=proposals["rows"],
+                                  room_tickers=list(dict.fromkeys(list(config["focus_tickers"]) + list(config["rotation"]["sectors"]))),
+                                  cfg=config["opportunity"]),
         "scorecards": scorecards,
         "settings": {"evidence": evidence_cfg, "conditions": config["conditions"], "extension": config["extension"],
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,

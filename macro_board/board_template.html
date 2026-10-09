@@ -141,6 +141,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
 <div class="wrap">
   <div class="authority" id="authority"></div>
   <div class="fresh-strip" id="fresh"></div>
+  <section class="page" id="p-review"></section>
   <section class="page" id="p-overview"></section>
   <section class="page" id="p-etfs"></section>
   <section class="page" id="p-map"></section>
@@ -284,7 +285,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
+const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -339,6 +340,52 @@ function renderOvernight(){
         <div class="pill-row" style="margin-top:6px">${ahead ? '<span class="sub">Next 7 days:</span> ' + ahead : ""}</div>
         <div class="note" style="font-size:11px">Display only. Quotes are delayed (≈10–15 min); age shown, ! = older than ${esc(N.stale_after_minutes)} min.${(N.errors||[]).length ? " " + N.errors.length + " source error(s) in the capture." : ""}</div></div>
     </div>`;
+}
+
+/* ---------- daily review (section 3: where the opportunity is strongest) ---------- */
+const REL_TXT = {OUTPERFORMING_AND_RISING:"Outperforming, rising", OUTPERFORMING_WHILE_FALLING:"Outperforming while falling",
+  OUTPERFORMING_FLAT:"Outperforming, flat", UNDERPERFORMING_WHILE_RISING:"Lagging while rising", UNDERPERFORMING_AND_FALLING:"Lagging, falling",
+  UNDERPERFORMING_FLAT:"Lagging, flat", IN_LINE:"In line with SPY", MISSING:"missing"};
+const CONST_TXT = {CONFIRMED:"confirmed", NOT_CONFIRMED:"not confirmed", NO_HOLDINGS:"no holdings file", UNKNOWN:"—"};
+const LEVEL_TXT = {high_252:"252d high", low_252:"252d low", sma50:"50d avg", sma200:"200d avg", call_wall:"GEX call wall",
+  put_wall:"GEX put wall", gamma_flip:"GEX flip", pipeline_target:"pipeline target", pipeline_invalidation:"pipeline invalidation"};
+function renderReview(){
+  const O = B.opportunity;
+  if (!O) { $("#p-review").innerHTML = `<h2>Daily review</h2><div class="card muted">Not in this build.</div>`; return; }
+  const h = state.horizon, L = O.leadership, br = L.breadth || {};
+  const lrows = B.horizons.map(hh => { const w = L.windows[String(hh)] || {};
+    const k = w.leader === "QQQ" ? "up" : w.leader === "SPY" ? "flat" : "na";
+    return `<tr><td class="l">${hh}d</td><td class="${cls(w.qqq_pct)}">${pct(w.qqq_pct)}</td><td class="${cls(w.spy_pct)}">${pct(w.spy_pct)}</td><td class="${cls(w.qqq_minus_spy_pp)}">${isNum(w.qqq_minus_spy_pp)?(w.qqq_minus_spy_pp>0?"+":"")+w.qqq_minus_spy_pp.toFixed(2)+" pp":"—"}</td><td class="l"><span class="chip ${k}">${esc(w.leader === "NEITHER" ? "neither" : w.leader === "MISSING" ? "missing" : w.leader + " leads")}</span></td></tr>`; }).join("");
+  const bk = br.state === "BROAD" ? "" : br.state === "CONCENTRATED" ? "down" : "na";
+  const part = br.participation_50d_pct || {};
+  const sectors = (O.sectors || []).map(r => ({...r, w: (r.windows||{})[h] || {}}))
+    .sort((a, b) => (isNum(b.w.relative_pp) ? b.w.relative_pp : -1e9) - (isNum(a.w.relative_pp) ? a.w.relative_pp : -1e9));
+  const srows = sectors.map(r => { const w = r.w;
+    const lk = (w.label||"").startsWith("OUTPERFORMING") ? (w.label === "OUTPERFORMING_WHILE_FALLING" ? "flat" : "up") : (w.label||"").startsWith("UNDERPERFORMING") ? "down" : "na";
+    const note = w.label === "OUTPERFORMING_WHILE_FALLING" ? ` <span class="sub" title="Relative strength in a falling market: defensive preference, not a call setup">defensive</span>` : "";
+    return `<tr><td class="l"><b>${esc(r.ticker)}</b></td><td class="${cls(w.absolute_pct)}">${pct(w.absolute_pct)}</td><td class="${cls(w.relative_pp)}">${isNum(w.relative_pp)?(w.relative_pp>0?"+":"")+w.relative_pp.toFixed(2)+" pp":"—"}</td>`+
+      `<td class="l"><span class="chip ${lk}">${esc(REL_TXT[w.label]||w.label)}</span>${note}</td>`+
+      `<td class="l ${w.constituents==="CONFIRMED"?"":"muted"}">${esc(CONST_TXT[w.constituents]||w.constituents)}${isNum(w.confirming_weight_pct)?" · "+Math.round(w.confirming_weight_pct)+"% of weight":""}</td>`+
+      `<td class="l muted">${esc((w.top_contributors||[]).join(", "))}</td></tr>`; }).join("");
+  const lvl = x => x ? `${esc(LEVEL_TXT[x.name]||x.name)} ${fmt(x.level)} <span class="${cls(x.distance_pct)}">${pct(x.distance_pct,1)}</span>${isNum(x.distance_daily_moves)?` <span class="muted">· ${x.distance_daily_moves.toFixed(1)} daily moves</span>`:""}` : `<span class="muted">none in range</span>`;
+  const gexDate = r => r.gex_as_of && r.gex_as_of !== B.as_of_session ? ` <span class="chip na" title="GEX walls/flip are from the ${esc(r.gex_as_of)} session">GEX ${esc(r.gex_as_of)}</span>` : "";
+  const rrows = Object.entries(O.room || {}).map(([t, r]) => `<tr><td class="l"><b>${esc(t)}</b>${gexDate(r)}</td><td>${fmt(r.close)}</td><td class="l">${lvl(r.above)}</td><td class="l">${lvl(r.below)}</td></tr>`).join("");
+  $("#p-review").innerHTML = `<h2>Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
+    <div class="controls">${horizonSeg("hz-rev")}</div>
+    <div class="grid g-2">
+      <div class="card"><h3>Market: QQQ vs SPY</h3>
+        <table class="mini" style="width:100%"><thead><tr><th class="l">Window</th><th>QQQ</th><th>SPY</th><th>QQQ − SPY</th><th class="l">Leadership</th></tr></thead><tbody>${lrows}</tbody></table>
+        <div style="margin-top:8px"><span class="chip ${bk}">${esc(br.state === "BROAD" ? "broad" : br.state === "CONCENTRATED" ? "concentrated" : "breadth unknown")}</span>
+          <span class="sub">RSP − SPY (20d) ${isNum(br.rsp_minus_spy_20d_pp)?(br.rsp_minus_spy_20d_pp>0?"+":"")+br.rsp_minus_spy_20d_pp.toFixed(2)+" pp":"—"} · above 50d avg: SPY ${isNum(part.SPY)?Math.round(part.SPY)+"%":"—"}, QQQ ${isNum(part.QQQ)?Math.round(part.QQQ)+"%":"—"} of issuer weight</span></div>
+        <div class="note">Broad needs equal-weight keeping pace and most index weight above its own 50-day average; either failing marks the move concentrated.</div></div>
+      <div class="card"><h3>Price location <span class="sub">room to the nearest obstacle</span></h3>
+        <div class="table-wrap" style="max-height:360px"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Close</th><th class="l">Nearest above</th><th class="l">Nearest below</th></tr></thead><tbody>${rrows}</tbody></table></div>
+        <div class="note">Levels: 252-session high/low, 50/200-session averages, GEX walls and flip (SPY/QQQ, model estimate), pipeline target/invalidation. Daily move = 20-session realised volatility ÷ √252.</div></div>
+    </div>
+    <div class="card" style="margin-top:10px"><h3>Sectors vs SPY <span class="sub">${esc(h)}-session window · relative strength kept apart from direction</span></h3>
+      <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Return</th><th>vs SPY</th><th class="l">Reading</th><th class="l">Constituents</th><th class="l">Top contributors</th></tr></thead><tbody>${srows}</tbody></table></div>
+      <div class="note">"Outperforming while falling" (e.g. XLU down less than SPY) is defensive preference, not an attractive call. Constituents: confirmed when at least ${esc(O.settings?.confirmation_min_pct)}% of the ETF's priced issuer weight moved the same way over the window.</div></div>`;
+  bindHorizon("hz-rev");
 }
 
 /* ---------- overview ---------- */
@@ -1010,11 +1057,11 @@ function renderDesk(){
 }
 
 function renderAll(){
-  renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod();
+  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod();
 }
 renderAll();
-let start = "overview"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
-show(PAGES.some(p => p[0]===start) ? start : "overview");
+let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
+show(PAGES.some(p => p[0]===start) ? start : "review");
 })();
 </script>
 </body>

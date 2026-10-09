@@ -514,6 +514,14 @@
     "rv_sessions": 20,
     "rationale": "ACK 6 Oct 2026: 'SPY and QQQ rose constantly over 7 days'. History 2021-2026 showed continuation after 5+ up closes (SPY 20d +2.19% vs +0.92% base; QQQ +2.86% vs +1.18%), so an extended move is judged by what followed similar runs for that ETF, never assumed late."
   },
+  "opportunity": {
+    "leader_band_pp": {"1": 0.1, "5": 0.3, "20": 0.75},
+    "relative_band_pp": {"1": 0.1, "5": 0.25, "20": 0.5},
+    "rsp_concentration_band_pp": 1.0,
+    "participation_broad_min_pct": 50.0,
+    "confirmation_min_pct": 60.0,
+    "rationale": "Added 2026-10-09 (Daily review, section 3, ACK). Leadership: QQQ minus SPY beyond the band per horizon, else NEITHER. Concentrated when equal-weight RSP lags SPY by 1 pp or more over 20 sessions, or under half of SPY's issuer weight trades above its 50-session average; BROAD needs both measures. Sector labels keep relative strength (vs SPY, beyond the band) apart from absolute direction. A sector move is CONFIRMED when at least 60% of its priced holdings weight moved the same way over the window. Room: nearest level above/below (252-session high/low, 50/200 averages, GEX walls/flip, pipeline target/invalidation) in % and in daily moves (20-session realised vol / sqrt(252)). All PROVISIONAL until scored."
+  },
   "desk_card": {
     "room_ok_ratio": 1.0,
     "room_caution_ratio": 0.5,

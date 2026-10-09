@@ -199,7 +199,13 @@ def contribution(holdings: Sequence[Mapping], closes: pd.DataFrame, *, window: i
                      "start_weight_pct": round(start_weight, 4), "return_pct": round(ret * 100.0, 4),
                      "contribution_pp": round(start_weight * ret, 4)})
     rows.sort(key=lambda r: r["weight_pct"], reverse=True)
+    # Constituent confirmation: share of priced (start) weight whose return moved the same way as
+    # the fund over the window. Participation above is a trend measure, not this window's move.
+    fund_sign = np.sign(sum(r["contribution_pp"] for r in rows))
+    confirming = (round(sum(r["start_weight_pct"] for r in rows if np.sign(r["return_pct"]) == fund_sign)
+                        / priced * 100.0, 4) if priced and fund_sign != 0 else None)
     return {
+        "confirming_weight_pct": confirming,
         "rows": rows,
         "priced_weight_pct": round(priced, 4), "unpriced_weight_pct": round(unpriced, 4),
         "sum_contribution_pp": round(sum(r["contribution_pp"] for r in rows), 4),
