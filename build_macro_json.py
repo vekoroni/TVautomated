@@ -88,8 +88,11 @@ MODEL           = "claude-sonnet-4-6"
 
 MSG1_TOKENS = 2000
 MSG2_TOKENS = 4000
-MSG3_TOKENS = 8000
-MSG3_REPAIR_TOKENS = 10000
+# The complete packet is ~20.6k chars (~8k tokens). At 8,000 every run on 8 Oct 2026 stopped at
+# max_tokens mid-object and depended on the syntax repair regenerating it; 16,000 keeps 2x room.
+# A syntax repair rewrites the whole packet, so it needs the same room.
+MSG3_TOKENS = 16000
+MSG3_REPAIR_TOKENS = 16000
 
 FRESH_HOURS = 6  # skip rebuild if JSON is less than N hours old
 USSLIND_MAX_AGE_DAYS = 180  # monthly leading index; older observations are unusable
@@ -739,6 +742,13 @@ def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
     raw_json = _response_text(r3)
     stop_reason = str(getattr(r3, "stop_reason", "") or "UNKNOWN")
     log.info("  Response: %d chars | stop_reason=%s", len(raw_json), stop_reason)
+    if stop_reason == "max_tokens":
+        # A cut-off object is not a syntax error; a "syntax only" repair would have to
+        # regenerate the packet from memory, so it is never attempted.
+        raise RuntimeError(
+            f"macro packet truncated at the output limit ({MSG3_TOKENS} tokens, "
+            f"{len(raw_json)} chars received); raise MSG3_TOKENS"
+        )
 
     try:
         return _parse_macro_response(raw_json)

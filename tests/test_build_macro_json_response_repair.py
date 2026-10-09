@@ -69,6 +69,40 @@ class MacroResponseRepairTests(unittest.TestCase):
         finally:
             build_macro_json._anthropic_client = original
 
+    def test_a_packet_cut_off_at_the_output_limit_fails_without_a_repair(self):
+        # A truncated object is not a syntax error: a "syntax only" repair would have to
+        # regenerate the packet from memory. 8 Oct 2026: both runs hit max_tokens at ~20.5k chars.
+        client = _Client([
+            _Response("identity"), _Response("analysis"),
+            _Response('{"regime_state":"TRANSITIONAL","notes":"cut off mid', "max_tokens"),
+        ])
+        original = build_macro_json._anthropic_client
+        build_macro_json._anthropic_client = lambda: client
+        try:
+            with self.assertRaisesRegex(RuntimeError, "truncated at the output limit"):
+                build_macro_json.call_macro_api("fixture")
+        finally:
+            build_macro_json._anthropic_client = original
+        self.assertEqual(len(client.messages.calls), 3)          # no repair request
+
+    def test_the_packet_reply_has_room_for_the_full_object_with_headroom(self):
+        # The complete packet is ~20.6k chars (~8k tokens); the finalisation budget keeps 2x room,
+        # and a syntax repair of a complete packet needs the same room as the packet itself.
+        self.assertGreaterEqual(build_macro_json.MSG3_TOKENS, 16000)
+        self.assertGreaterEqual(build_macro_json.MSG3_REPAIR_TOKENS, build_macro_json.MSG3_TOKENS)
+        client = _Client([
+            _Response("identity"), _Response("analysis"),
+            _Response('{"regime_state":"TRANSITIONAL"}', "end_turn"),
+        ])
+        original = build_macro_json._anthropic_client
+        build_macro_json._anthropic_client = lambda: client
+        try:
+            value = build_macro_json.call_macro_api("fixture")
+        finally:
+            build_macro_json._anthropic_client = original
+        self.assertEqual(value["regime_state"], "TRANSITIONAL")
+        self.assertEqual(client.messages.calls[2]["max_tokens"], build_macro_json.MSG3_TOKENS)
+
 
 if __name__ == "__main__":
     unittest.main()
