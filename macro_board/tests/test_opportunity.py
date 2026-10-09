@@ -141,3 +141,13 @@ def test_room_without_volatility_still_gives_percent_but_no_daily_move_count():
     idx = pd.bdate_range("2026-01-01", periods=60)
     room = opp.price_room(pd.Series(np.linspace(50, 60, 60), index=idx), rv20_pct=None, extra_levels={})
     assert room["below"]["distance_pct"] is not None and room["below"]["distance_daily_moves"] is None
+
+
+def test_room_is_measured_from_the_current_price_when_a_later_quote_supersedes_the_close():
+    idx = pd.bdate_range("2025-09-01", periods=260)
+    closes = pd.Series(np.r_[np.linspace(90, 120, 200), np.linspace(120, 100, 60)], index=idx)
+    room = opp.price_room(closes, rv20_pct=15.874, extra_levels={"call_wall": 104.0, "put_wall": 96.0},
+                          current=102.0, current_basis="PREMARKET 08:40 ET")
+    assert room["close"] == 100.0 and room["current"] == 102.0 and room["current_basis"] == "PREMARKET 08:40 ET"
+    assert room["above"]["name"] == "call_wall" and room["above"]["distance_pct"] == round((104 / 102 - 1) * 100, 4)
+    assert room["below"]["name"] == "put_wall"

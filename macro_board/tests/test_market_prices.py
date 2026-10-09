@@ -94,3 +94,44 @@ def test_extra_breadth_closes_are_added_without_replacing_the_store():
     merged = mp.merge_breadth(panel, grouped)
     assert merged.loc["2026-10-08", "AAA"] == 2.0 and merged.loc["2026-10-08", "BBB"] == 4.0
     assert merged.loc["2026-10-09", "AAA"] == 2.5 and "CCC" not in merged.columns    # only the panel's own tickers
+
+
+# -- latest price: pre-market / intraday / after-hours supersedes the close (ACK 9 Oct 2026) ------------
+
+def test_the_trading_segment_of_a_quote_comes_from_the_exchange_calendar():
+    assert mp.segment_of(datetime(2026, 10, 9, 12, 41, tzinfo=timezone.utc)) == "PREMARKET"     # 08:41 ET
+    assert mp.segment_of(datetime(2026, 10, 9, 15, 0, tzinfo=timezone.utc)) == "REGULAR"
+    assert mp.segment_of(datetime(2026, 10, 9, 21, 55, tzinfo=timezone.utc)) == "AFTER_HOURS"
+    assert mp.segment_of(datetime(2026, 11, 27, 18, 30, tzinfo=timezone.utc)) == "AFTER_HOURS"  # after a 13:00 close
+    assert mp.segment_of(datetime(2026, 10, 10, 15, 0, tzinfo=timezone.utc)) == "CLOSED"        # Saturday
+
+
+def test_a_latest_price_after_the_boards_close_supersedes_it_and_an_older_one_does_not():
+    snap = {"QQQ": {"price": 753.10, "time_utc": "2026-10-10T12:40:00Z"},     # pre-market, next session
+            "SPY": {"price": 778.38, "time_utc": "2026-10-09T19:59:00Z"}}     # before the 9 Oct close
+    closes = {"QQQ": (751.27, "2026-10-09"), "SPY": (778.57, "2026-10-09"), "IWM": (277.0, "2026-10-09")}
+    rows = mp.latest_layer(snap, closes, now=datetime(2026, 10, 12, 12, 45, tzinfo=timezone.utc), stale_after_minutes=30)
+    q = rows["QQQ"]
+    assert q["supersedes_close"] is True and q["current"] == 753.10 and q["segment"] == "CLOSED"   # 10 Oct is Saturday
+    assert round(q["change_vs_close_pct"], 4) == round((753.10 / 751.27 - 1) * 100, 4)
+    assert q["stale"] is True and q["age_minutes"] == 2 * 24 * 60 + 5            # shown and flagged, still used
+    s = rows["SPY"]
+    assert s["supersedes_close"] is False and s["current"] == 778.57              # the close stands
+    assert rows["IWM"]["supersedes_close"] is False and rows["IWM"]["current"] == 277.0 and rows["IWM"]["price"] is None
+
+
+def test_the_snapshot_is_one_call_parsed_to_the_latest_minute_and_a_failure_is_stated(tmp_path):
+    seen = []
+
+    def ok(url, params):
+        seen.append(params["tickers"])
+        return 200, {"tickers": [{"ticker": "QQQ", "min": {"c": 751.31, "t": 1791581100000}, "day": {"c": 751.27},
+                                  "prevDay": {"c": 747.58}},
+                                 {"ticker": "UUP", "min": {}, "day": {"c": 29.02}, "updated": 1791576600000000000}]}
+    out = mp.fetch_snapshot(["QQQ", "UUP"], transport=ok)
+    assert seen == ["QQQ,UUP"]
+    assert out["status"] == "OK" and out["rows"]["QQQ"]["price"] == 751.31
+    assert out["rows"]["QQQ"]["time_utc"] == "2026-10-09T21:25:00Z"
+    assert out["rows"]["UUP"]["price"] == 29.02                                   # no minute bar: day close, its update time
+    failed = mp.fetch_snapshot(["QQQ"], transport=lambda u, p: (403, {"status": "NOT_AUTHORIZED"}))
+    assert failed["status"] == "UNAVAILABLE" and failed["rows"] == {}

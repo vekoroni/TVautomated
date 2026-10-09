@@ -249,6 +249,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     metrics = {t: etf_metrics(t, closes, volumes, sessions, int(config["freshness"]["price_max_age_sessions"]), spark_n)
                for t in universe}
     decision_aids = build_decision_aids(metrics, evidence["per_ticker"], horizons, config)
+    latest = build_latest(metrics, universe, config, now, refresh=refresh, as_of=as_of)
     fwd_by_h = {h: ev.forward_returns(opens, closes, h) for h in horizons}
     momentum_payload = {}
     for t in tickers:
@@ -353,6 +354,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         "external": {name: read.public() for name, read in external.items()},
         "intel": build_intel(external, packet),
         "overnight": build_overnight(external),
+        "latest": latest,
         "review": None,
         "decision_points": None,
         "opportunity": opty.build(metrics=metrics, closes=closes, holdings=holdings_payload, horizons=horizons,
@@ -361,7 +363,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                   not in ("MISSING", "UNREADABLE") else [],
                                   proposals=proposals["rows"],
                                   room_tickers=list(dict.fromkeys(list(config["focus_tickers"]) + list(config["rotation"]["sectors"]))),
-                                  cfg=config["opportunity"], highs=highs, lows=lows),
+                                  cfg=config["opportunity"], highs=highs, lows=lows, latest=latest["rows"]),
         "scorecards": scorecards,
         "settings": {"evidence": evidence_cfg, "conditions": config["conditions"], "extension": config["extension"],
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,
@@ -417,6 +419,25 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     target.write_text(html, encoding="utf-8")
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
+
+
+def build_latest(metrics: dict, universe, config: dict, now: datetime, *, refresh: bool, as_of: str | None) -> dict:
+    """Latest price per ETF (ACK 9 Oct 2026: pre-market data supersedes the end of day). One Polygon
+    snapshot on refresh builds; a quote after the board's close becomes the current price for room,
+    levels and focus cards. The reaction review and the leans stay on completed sessions."""
+    if as_of:
+        return {"status": "NOT_APPLICABLE_AS_OF_BUILD", "fetched_utc": None, "rows": {}}
+    if not refresh:
+        return {"status": "NOT_REFRESHED", "fetched_utc": None, "rows": {}}
+    closes = {t: (m["close"], m["last_session"]) for t, m in metrics.items()
+              if m.get("status") != "MISSING" and m.get("close") is not None}
+    snap = mkt.fetch_snapshot(list(closes))
+    rows = mkt.latest_layer(snap["rows"], closes, now=now,
+                            stale_after_minutes=float(config["prices"]["latest_stale_after_minutes"]))
+    superseded = sum(1 for r in rows.values() if r["supersedes_close"])
+    print(f"[board] latest prices: {snap['status']}, {len(snap['rows'])} quotes, {superseded} supersede the close")
+    return {"status": snap["status"], "fetched_utc": now.isoformat(timespec="seconds"), "rows": rows,
+            "superseding": superseded}
 
 
 def build_review(payload: dict, config: dict, opens, closes, holdings_payload: dict, external: dict) -> dict:

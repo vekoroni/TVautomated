@@ -155,3 +155,74 @@ def merge_breadth(panel: pd.DataFrame, grouped: Mapping[date, Mapping | None]) -
 
 def redact(text: str) -> str:
     return _KEY.sub(r"\1REDACTED", str(text))
+
+
+# --- latest price: pre-market / intraday / after-hours supersedes the close ----------------------------
+
+SNAPSHOT_URL = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers"
+
+
+def segment_of(instant: datetime) -> str:
+    """PREMARKET (04:00 ET to the open), REGULAR, AFTER_HOURS (close to 20:00 ET) or CLOSED."""
+    from avshunter.shared.xnys_calendar import session_state
+    return str(getattr(session_state(instant)[0], "name", session_state(instant)[0])).upper()
+
+
+def _iso(ts: pd.Timestamp) -> str:
+    return ts.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def fetch_snapshot(tickers: Sequence[str], *, transport: Transport | None = None, api_key: str | None = None) -> dict:
+    """One Polygon snapshot call: {ticker: {price, time_utc}} from the latest minute bar (extended
+    hours included; the day's close with its update time when there is no minute bar)."""
+    symbols = ",".join(dict.fromkeys(t for t in tickers if t))
+    if transport is None:
+        key = (api_key or os.environ.get("POLYGON_API_KEY", "")).strip()
+        if not key:
+            return {"status": "NO_KEY", "rows": {}}
+        import requests
+
+        def transport(url, params):
+            r = requests.get(url, params={**params, "apiKey": key}, timeout=30)
+            return r.status_code, (r.json() if r.headers.get("content-type", "").startswith("application/json") else {})
+    try:
+        status, payload = transport(SNAPSHOT_URL, {"tickers": symbols})
+    except Exception:  # noqa: BLE001 - stated, never guessed
+        return {"status": "UNAVAILABLE", "rows": {}}
+    if status != 200:
+        return {"status": "UNAVAILABLE", "rows": {}}
+    rows = {}
+    for x in (payload or {}).get("tickers") or []:
+        minute, day = x.get("min") or {}, x.get("day") or {}
+        if minute.get("c") and minute.get("t"):
+            price, when = float(minute["c"]), pd.Timestamp(int(minute["t"]), unit="ms", tz="UTC")
+        elif day.get("c") and x.get("updated"):
+            price, when = float(day["c"]), pd.Timestamp(int(x["updated"]), unit="ns", tz="UTC")
+        else:
+            continue
+        rows[x.get("ticker")] = {"price": price, "time_utc": _iso(when)}
+    return {"status": "OK" if rows else "EMPTY", "rows": rows}
+
+
+def latest_layer(snapshot_rows: Mapping[str, Mapping], closes: Mapping[str, tuple], *, now: datetime,
+                 stale_after_minutes: float) -> dict:
+    """Per ticker: the current price - the latest quote when it is after the board's close
+    (pre-market / intraday / after-hours), else the close. Age shown and flagged, never gated."""
+    from avshunter.shared.xnys_calendar import session_bounds
+    out = {}
+    for t, (close, session) in closes.items():
+        close_at = session_bounds(date.fromisoformat(session))[1]
+        row = {"close": close, "close_session": session, "price": None, "time_utc": None, "segment": None,
+               "age_minutes": None, "stale": None, "supersedes_close": False, "current": close,
+               "change_vs_close_pct": None}
+        quote = snapshot_rows.get(t)
+        if quote and quote.get("price") is not None and quote.get("time_utc"):
+            when = pd.Timestamp(quote["time_utc"]).to_pydatetime()
+            age = int((now - when).total_seconds() // 60)
+            row.update({"price": quote["price"], "time_utc": quote["time_utc"], "segment": segment_of(when),
+                        "age_minutes": age, "stale": age > float(stale_after_minutes)})
+            if when > close_at and close:
+                row.update({"supersedes_close": True, "current": quote["price"],
+                            "change_vs_close_pct": round((quote["price"] / close - 1.0) * 100.0, 6)})
+        out[t] = row
+    return out

@@ -280,6 +280,7 @@ $("#authority").innerHTML = `<b>Standalone decision board.</b> Reads AVSHUNTER d
 $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span> ` + Object.values(B.external).map(s =>
   `<span data-tip="${esc(`<b>${esc(s.name)}</b><br>${esc(s.path)}<br>as of ${esc(s.as_of||"—")} · age ${s.age_hours ?? "—"} h${s.note ? "<br>"+esc(s.note) : ""}`)}">${statusChip(s.status, s.name.split(" (")[0])}</span>`).join("") +
   `<span data-tip="${esc(`Daily bars: pipeline store historical_prices.sqlite to ${B.prices?.store_last_session || "?"} (Polygon, split-adjusted)` + (Object.keys(B.prices?.fill?.filled || {}).length ? `<br>Filled by the board from Polygon grouped daily (completed sessions only): ${Object.entries(B.prices.fill.filled).map(([t, d]) => t + " " + d.length + " session" + (d.length > 1 ? "s" : "")).join(", ")}` : "") + (Object.keys(B.prices?.fill?.unavailable || {}).length ? `<br>Unavailable: ${Object.keys(B.prices.fill.unavailable).join(", ")}` : "") + (Object.keys(B.prices?.fill?.gap_too_long || {}).length ? `<br>Gap too long to fill (left stale): ${Object.entries(B.prices.fill.gap_too_long).map(([t, g]) => t + " since " + g.last_stored).join(", ")}` : ""))}">${statusChip("FRESH", "Prices to " + B.as_of_session + (B.prices?.store_last_session && B.prices.store_last_session !== B.as_of_session ? " (store to " + B.prices.store_last_session + ")" : ""))}</span>` +
+  (B.latest && B.latest.status !== "NOT_APPLICABLE_AS_OF_BUILD" ? `<span data-tip="${esc(`Latest prices: Polygon snapshot (about 15 min delayed) · ${B.latest.status} · fetched ${B.latest.fetched_utc || "—"}<br>${B.latest.superseding || 0} ETFs have a quote after the ${esc(B.as_of_session)} close, used as the current price for room and levels. Leans and the reaction review stay on completed sessions.`)}">${statusChip(B.latest.status === "OK" ? "FRESH" : "MISSING", "Latest prices" + (B.latest.superseding ? " · " + B.latest.superseding + " after the close" : ""))}</span>` : "") +
   `<span data-tip="${esc(`tastytrade market metrics (read-only) · ${B.tastytrade?.file || "no snapshot"} · fetched ${B.tastytrade?.fetched_utc || "—"}${(B.tastytrade?.skipped||[]).length ? " · rejected by the MCP server's schema: " + B.tastytrade.skipped.join(", ") : ""}${(B.refresh_report?.tastytrade?.status === "FAILED") ? " · today's refresh failed: " + B.refresh_report.tastytrade.error : ""}`)}">${statusChip(B.tastytrade?.status || "MISSING", "tastytrade metrics")}</span>` +
   Object.entries(B.holdings_status || {}).map(([etf, h]) => `<span data-tip="${esc(`${h.issuer} daily holdings · as of ${h.as_of} · ${h.count} positions`)}">${statusChip(h.status, etf + " holdings")}</span>`).join("") +
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
@@ -363,7 +364,7 @@ const CSV_EXPORTS = {
     downloadCsv("leadership_qqq_spy", [["window_sessions","h"],["qqq_pct","qqq_pct"],["spy_pct","spy_pct"],["qqq_minus_spy_pp","qqq_minus_spy_pp"],["leader","leader"],["breadth_state",()=>br.state],["rsp_minus_spy_20d_pp",()=>br.rsp_minus_spy_20d_pp],["spy_weight_above_50d_pct",()=>(br.participation_50d_pct||{}).SPY],["qqq_weight_above_50d_pct",()=>(br.participation_50d_pct||{}).QQQ]],
       Object.entries(L.windows).map(([h, w]) => ({h, ...w}))); },
   sectors: () => downloadCsv("sectors_vs_spy", [["etf","ticker"]].concat(B.horizons.flatMap(h => [[`ret_${h}d_pct`, r=>r.windows[h]?.absolute_pct],[`vs_spy_${h}d_pp`, r=>r.windows[h]?.relative_pp],[`reading_${h}d`, r=>r.windows[h]?.label],[`constituents_${h}d`, r=>r.windows[h]?.constituents],[`confirming_weight_${h}d_pct`, r=>r.windows[h]?.confirming_weight_pct],[`top_contributors_${h}d`, r=>(r.windows[h]?.top_contributors||[]).join(" ")]])), (B.opportunity?.sectors)||[]),
-  room: () => downloadCsv("price_room", [["etf","t"],["close","close"],["daily_move_pct","daily_move_pct"],["above_level_name",r=>r.above?.name],["above_level",r=>r.above?.level],["above_distance_pct",r=>r.above?.distance_pct],["above_daily_moves",r=>r.above?.distance_daily_moves],["below_level_name",r=>r.below?.name],["below_level",r=>r.below?.level],["below_distance_pct",r=>r.below?.distance_pct],["below_daily_moves",r=>r.below?.distance_daily_moves],["gex_as_of","gex_as_of"]],
+  room: () => downloadCsv("price_room", [["etf","t"],["close","close"],["current","current"],["current_basis","current_basis"],["daily_move_pct","daily_move_pct"],["above_level_name",r=>r.above?.name],["above_level",r=>r.above?.level],["above_distance_pct",r=>r.above?.distance_pct],["above_daily_moves",r=>r.above?.distance_daily_moves],["below_level_name",r=>r.below?.name],["below_level",r=>r.below?.level],["below_distance_pct",r=>r.below?.distance_pct],["below_daily_moves",r=>r.below?.distance_daily_moves],["gex_as_of","gex_as_of"]],
     Object.entries(B.opportunity?.room||{}).map(([t, r]) => ({t, ...r}))),
   reaction: () => downloadCsv("market_reaction", [["instrument","t"],["group","g"],["reading","label"],["direction","direction"],["path","path"],["gap_pct","gap_pct"],["open_to_close_pct","open_to_close_pct"],["close_pct","close_pct"],["daily_move_pct","daily_move_pct"],["threshold_pct","threshold_pct"]],
     Object.entries(B.review?.instruments||{}).map(([t, r]) => ({t, g: "cross-asset", ...r})).concat(Object.entries(B.review?.sectors||{}).map(([t, r]) => ({t, g: "sector", ...r})))),
@@ -474,7 +475,8 @@ function renderReview(){
       `<td class="l muted">${esc((w.top_contributors||[]).join(", "))}</td></tr>`; }).join("");
   const lvl = x => x ? `${esc(LEVEL_TXT[x.name]||x.name)} ${fmt(x.level)} <span class="${cls(x.distance_pct)}">${pct(x.distance_pct,1)}</span>${isNum(x.distance_daily_moves)?` <span class="muted">· ${x.distance_daily_moves.toFixed(1)} daily moves</span>`:""}` : `<span class="muted">none in range</span>`;
   const gexDate = r => r.gex_as_of && r.gex_as_of !== B.as_of_session ? ` <span class="chip na" title="GEX walls/flip are from the ${esc(r.gex_as_of)} session">GEX ${esc(r.gex_as_of)}</span>` : "";
-  const rrows = Object.entries(O.room || {}).map(([t, r]) => `<tr><td class="l"><b>${esc(t)}</b>${gexDate(r)}</td><td>${fmt(r.close)}</td><td class="l">${lvl(r.above)}</td><td class="l">${lvl(r.below)}</td></tr>`).join("");
+  const priceCell = r => r.current_basis && r.current_basis !== "CLOSE" ? `${fmt(r.current)}<div class="sub">${esc(String(r.current_basis).replace(/^[A-Z_]+/, m => SEG_TXT[m] || m))} · close ${fmt(r.close)}</div>` : fmt(r.close);
+  const rrows = Object.entries(O.room || {}).map(([t, r]) => `<tr><td class="l"><b>${esc(t)}</b>${gexDate(r)}</td><td>${priceCell(r)}</td><td class="l">${lvl(r.above)}</td><td class="l">${lvl(r.below)}</td></tr>`).join("");
   $("#p-review").innerHTML = renderInformationReview() + `<div style="margin-top:22px"></div>` + renderDecisionPoints() + `<h2 style="margin-top:22px">Where the opportunity is strongest <span class="sub">market → sectors → constituents → price location · display only · thresholds provisional</span></h2>
     <div class="controls">${horizonSeg("hz-rev")}</div>
     <div class="grid g-2">
@@ -484,7 +486,7 @@ function renderReview(){
           <span class="sub">RSP − SPY (20d) ${isNum(br.rsp_minus_spy_20d_pp)?(br.rsp_minus_spy_20d_pp>0?"+":"")+br.rsp_minus_spy_20d_pp.toFixed(2)+" pp":"—"} · above 50d avg: SPY ${isNum(part.SPY)?Math.round(part.SPY)+"%":"—"}, QQQ ${isNum(part.QQQ)?Math.round(part.QQQ)+"%":"—"} of issuer weight</span></div>
         <div class="note">Broad needs equal-weight keeping pace and most index weight above its own 50-day average; either failing marks the move concentrated.</div></div>
       <div class="card"><h3>Price location <span class="sub">room to the nearest obstacle</span> ${csvBtn("room")}</h3>
-        <div class="table-wrap" style="max-height:360px"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Close</th><th class="l">Nearest above</th><th class="l">Nearest below</th></tr></thead><tbody>${rrows}</tbody></table></div>
+        <div class="table-wrap" style="max-height:360px"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Price</th><th class="l">Nearest above</th><th class="l">Nearest below</th></tr></thead><tbody>${rrows}</tbody></table></div>
         <div class="note">Levels: 252-session high/low where price traded (intraday), 50/200-session averages on closes, GEX walls and flip (SPY/QQQ, model estimate), pipeline target/invalidation. Daily move = 20-session realised volatility ÷ √252.</div></div>
     </div>
     <div class="card" style="margin-top:10px"><h3>Sectors vs SPY <span class="sub">${esc(h)}-session window · relative strength kept apart from direction</span> ${csvBtn("sectors")}</h3>
@@ -547,6 +549,13 @@ function renderOverview(){
       </div>
     </div>`;
 }
+const SEG_TXT = {PREMARKET:"pre-market", REGULAR:"intraday", AFTER_HOURS:"after-hours", CLOSED:"closed market"};
+function latestLine(t){
+  const L = (B.latest?.rows || {})[t];
+  if (!L || !L.supersedes_close) return "";
+  const when = L.time_utc ? new Date(L.time_utc).toLocaleTimeString("en-US", {timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false}) : "";
+  return `<div class="sub" style="text-align:right" title="Latest quote after the ${esc(L.close_session)} close (Polygon snapshot); used as the current price for room and levels">${SEG_TXT[L.segment]||L.segment} <b>${fmt(L.current)}</b> <span class="${cls(L.change_vs_close_pct)}">${pct(L.change_vs_close_pct)}</span> · ${esc(when)} ET${L.stale ? ` <span style="color:var(--serious)">· ${L.age_minutes} min old</span>` : ""}</div>`;
+}
 function focusCard(t){
   const e = B.etfs[t]; if (!e) return "";
   const m = e.metrics || {};
@@ -569,7 +578,7 @@ function focusCard(t){
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
       <div><span class="state">${t}</span> <span class="sub">${esc(groupOf(t))}</span></div>
-      <div class="big">${fmt(m.close)}</div></div>
+      <div class="big">${fmt(m.close)}</div>${latestLine(t)}</div>
     <div class="sub num">1d <span class="${cls(m.ret_1d)}">${pct(m.ret_1d)}</span> · 5d <span class="${cls(m.ret_5d)}">${pct(m.ret_5d)}</span> · 20d <span class="${cls(m.ret_20d)}">${pct(m.ret_20d)}</span> · vs 200d <span class="${cls(m.vs_sma200)}">${pct(m.vs_sma200,1)}</span> · RV20 ${fmt(m.rv20,1)}%</div>
     ${stale}
     ${sparkSvg(m.spark, {label: t + " closes", color: "var(--text-2)"})}

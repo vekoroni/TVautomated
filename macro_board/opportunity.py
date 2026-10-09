@@ -89,7 +89,7 @@ def sector_rows(metrics: Mapping, tickers: Sequence[str], holdings: Mapping, hor
 
 
 def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float], highs: pd.Series | None = None,
-               lows: pd.Series | None = None) -> dict:
+               lows: pd.Series | None = None, current: float | None = None, current_basis: str | None = None) -> dict:
     """Nearest obstacle above and below today's close among the 252-session high/low, the 50/200
     session averages and any supplied levels (GEX walls/flip, pipeline target/invalidation).
     The 252-session high/low are where price actually traded (intraday high/low) when bars carry
@@ -99,6 +99,7 @@ def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float]
     if c.empty:
         return {"close": None, "levels": {}, "above": None, "below": None, "range_basis": None}
     close = float(c.iloc[-1])
+    anchor = float(current) if isinstance(current, (int, float)) and math.isfinite(current) and current > 0 else close
     h = highs.reindex(c.index).dropna() if highs is not None else pd.Series(dtype=float)
     l = lows.reindex(c.index).dropna() if lows is not None else pd.Series(dtype=float)
     intraday = not h.empty and not l.empty
@@ -114,17 +115,27 @@ def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float]
     daily = (float(rv20_pct) / math.sqrt(252.0)) if isinstance(rv20_pct, (int, float)) and rv20_pct > 0 else None
 
     def describe(name):
-        pct = round((levels[name] / close - 1.0) * 100.0, 4)
+        pct = round((levels[name] / anchor - 1.0) * 100.0, 4)
         return {"name": name, "level": round(levels[name], 4), "distance_pct": pct,
                 "distance_daily_moves": round(abs(pct) / daily, 2) if daily else None}
 
-    above = [n for n, v in levels.items() if v > close]
-    below = [n for n, v in levels.items() if v < close]
-    return {"close": close, "daily_move_pct": None if daily is None else round(daily, 4),
+    above = [n for n, v in levels.items() if v > anchor]
+    below = [n for n, v in levels.items() if v < anchor]
+    return {"close": close, "current": anchor, "current_basis": current_basis if anchor != close else "CLOSE",
+            "daily_move_pct": None if daily is None else round(daily, 4),
             "range_basis": "INTRADAY_HIGH_LOW" if intraday else "CLOSES",
             "levels": {k: round(v, 4) for k, v in levels.items()},
             "above": describe(min(above, key=lambda n: levels[n])) if above else None,
             "below": describe(max(below, key=lambda n: levels[n])) if below else None}
+
+
+def _basis(row) -> str | None:
+    """"PREMARKET 08:40 ET" for a quote that supersedes the close, else None."""
+    if not row or not row.get("supersedes_close"):
+        return None
+    from zoneinfo import ZoneInfo
+    when = pd.Timestamp(row["time_utc"]).tz_convert(ZoneInfo("America/New_York"))
+    return f"{row.get('segment')} {when.strftime('%H:%M')} ET"
 
 
 def gex_levels(gex_records: Sequence[Mapping]) -> dict:
@@ -140,7 +151,7 @@ def gex_levels(gex_records: Sequence[Mapping]) -> dict:
 
 def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons: Sequence[int], sectors: Sequence[str],
           gex_records: Sequence[Mapping], proposals: Mapping, room_tickers: Sequence[str], cfg: Mapping,
-          highs: pd.DataFrame | None = None, lows: pd.DataFrame | None = None) -> dict:
+          highs: pd.DataFrame | None = None, lows: pd.DataFrame | None = None, latest: Mapping | None = None) -> dict:
     """The section 3 payload: market, sectors, constituents and price location."""
     gex = gex_levels(gex_records)
     room = {}
@@ -154,7 +165,9 @@ def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons
         levels["pipeline_invalidation"] = prop.get("invalidation_spot")
         room[t] = {**price_room(closes[t], rv20_pct=(metrics.get(t) or {}).get("rv20"), extra_levels=levels,
                                 highs=highs[t] if highs is not None and t in highs.columns else None,
-                                lows=lows[t] if lows is not None and t in lows.columns else None),
+                                lows=lows[t] if lows is not None and t in lows.columns else None,
+                                current=((latest or {}).get(t) or {}).get("current"),
+                                current_basis=_basis((latest or {}).get(t))),
                    "gex_as_of": None if gex_as_of is None else str(gex_as_of)}
     return {"leadership": leadership(metrics, holdings, horizons, cfg),
             "sectors": sector_rows(metrics, sectors, holdings, horizons, cfg),

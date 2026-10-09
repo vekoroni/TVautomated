@@ -517,7 +517,8 @@
   "prices": {
     "settle_minutes": 30,
     "max_gap_sessions": 120,
-    "rationale": "Added 2026-10-09 (ACK: pre-market / latest data must supersede the pipeline's end of day). The pipeline's price store stays primary and is never written; the board fills completed sessions it lacks (behind the last completed session, or a ticker gap such as RSP/UUP since 20 Aug) from Polygon grouped daily bars, cached per session. A session counts 30 minutes after its close (late prints); a ticker's gap is filled whole or not at all: gaps longer than 120 sessions are left as they are and reported (9 Oct 2026: 37 universe ETFs last stored 15 May, about 100 sessions; RSP/UUP since 20 Aug). PROVISIONAL."
+    "latest_stale_after_minutes": 30,
+    "rationale": "Added 2026-10-09 (ACK: pre-market / latest data must supersede the pipeline's end of day). The pipeline's price store stays primary and is never written; the board fills completed sessions it lacks (behind the last completed session, or a ticker gap such as RSP/UUP since 20 Aug) from Polygon grouped daily bars, cached per session. A session counts 30 minutes after its close (late prints); a ticker's gap is filled whole or not at all: gaps longer than 120 sessions are left as they are and reported (9 Oct 2026: 37 universe ETFs last stored 15 May, about 100 sessions; RSP/UUP since 20 Aug). Latest price: one Polygon snapshot per refresh build; a quote later than the board's close supersedes it as the current price (room, levels, focus cards); older than 30 minutes is flagged, never gated. PROVISIONAL."
   },
   "review": {
     "threshold_daily_moves": 0.5,
