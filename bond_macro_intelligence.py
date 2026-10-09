@@ -100,6 +100,10 @@ Dependencies:
 
 FRED API:   Free. No key required for CSV endpoint used here.
 Polygon:    Uses POLYGON_API_KEY env var (already configured in AVSHUNTER).
+
+Session cut-off (9 Oct 2026): with AVSH_SESSION_CUTOFF set (Run-MacroInputs.ps1), the Polygon
+closes (ZN / IEF, HYG, LQD) stop at the last completed US session, so a pre-open run never reads
+a partial pre-market bar as a close. FRED yields and the auction calendar are not cut.
 """
 
 import os
@@ -692,6 +696,14 @@ def fetch_polygon_ohlcv(ticker: str, lookback_days: int = 35) -> Optional[pd.Dat
         df = df.set_index("date").rename(columns={
             "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"
         })[["open", "high", "low", "close", "volume"]]
+        # Session cut-off (Run-MacroInputs.ps1 sets AVSH_SESSION_CUTOFF): a pre-open run must not
+        # treat a partial "today" bar (pre-market trades) as a finished session.
+        cutoff = os.environ.get("AVSH_SESSION_CUTOFF", "").strip()
+        if cutoff:
+            df = df[df.index <= date.fromisoformat(cutoff)]
+            if df.empty:
+                log.warning(f"No Polygon bar for {ticker} on or before the session cut-off {cutoff}")
+                return None
         return df
 
     except Exception as exc:
