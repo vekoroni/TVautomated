@@ -122,6 +122,21 @@ def test_gex_levels_carry_their_own_session_date_into_the_room_table():
     assert out["room"]["SPY"]["above"]["name"] == "gamma_flip"
 
 
+def test_the_252_session_high_and_low_are_where_price_actually_traded_not_the_best_close():
+    # 9 Oct 2026: QQQ's highest close was 759.66 but it traded to 762.86 the same day; the obstacle
+    # is the traded high. Averages stay on closes.
+    idx = pd.bdate_range("2025-09-01", periods=260)
+    closes = pd.Series(np.r_[np.linspace(90, 120, 200), np.linspace(120, 100, 60)], index=idx)
+    highs, lows = closes + 2.0, closes - 3.0
+    room = opp.price_room(closes, rv20_pct=15.874, extra_levels={}, highs=highs, lows=lows)
+    assert room["levels"]["high_252"] == round(float(highs.iloc[-252:].max()), 4)
+    assert room["levels"]["low_252"] == round(float(lows.iloc[-252:].min()), 4)
+    assert room["levels"]["sma50"] == round(float(closes.iloc[-50:].mean()), 4)
+    assert room["range_basis"] == "INTRADAY_HIGH_LOW"
+    without = opp.price_room(closes, rv20_pct=15.874, extra_levels={})
+    assert without["range_basis"] == "CLOSES" and without["levels"]["high_252"] == 120.0
+
+
 def test_room_without_volatility_still_gives_percent_but_no_daily_move_count():
     idx = pd.bdate_range("2026-01-01", periods=60)
     room = opp.price_room(pd.Series(np.linspace(50, 60, 60), index=idx), rv20_pct=None, extra_levels={})

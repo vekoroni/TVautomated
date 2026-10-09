@@ -199,6 +199,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     if as_of:
         sessions = sessions[sessions <= pd.Timestamp(as_of)]
     opens, closes, volumes = (frame.reindex(sessions) for frame in (opens, closes, volumes))
+    highs, lows = (frame.reindex(sessions) for frame in src.load_ranges(price_db, load, config["history_start"]))
     print(f"[board] prices: {len(load)} tickers, {len(sessions)} sessions to {sessions[-1].date()}")
 
     panel = src.load_breadth_panel(price_db, config["history_start"], sessions, output_dir / "cache")
@@ -335,7 +336,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                   not in ("MISSING", "UNREADABLE") else [],
                                   proposals=proposals["rows"],
                                   room_tickers=list(dict.fromkeys(list(config["focus_tickers"]) + list(config["rotation"]["sectors"]))),
-                                  cfg=config["opportunity"]),
+                                  cfg=config["opportunity"], highs=highs, lows=lows),
         "scorecards": scorecards,
         "settings": {"evidence": evidence_cfg, "conditions": config["conditions"], "extension": config["extension"],
                      "response": config["response"], "options": options_cfg, "path_dependent": path_cfg,

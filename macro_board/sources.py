@@ -41,6 +41,18 @@ def load_prices(db: Path, tickers: Sequence[str], start: str) -> tuple[pd.DataFr
     return wide["open"], wide["close"], wide["volume"]
 
 
+def load_ranges(db: Path, tickers: Sequence[str], start: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(highs, lows) wide frames for ``tickers``, complete bars only: where price actually traded."""
+    placeholders = ",".join("?" for _ in tickers)
+    with _connect_read_only(db) as connection:
+        frame = pd.read_sql_query(
+            f"SELECT ticker, trading_date, high, low FROM ohlcv_daily "
+            f"WHERE bar_status='COMPLETE' AND trading_date >= ? AND ticker IN ({placeholders})",
+            connection, params=[start, *tickers], parse_dates=["trading_date"])
+    wide = frame.pivot_table(index="trading_date", columns="ticker", values=["high", "low"])
+    return wide["high"], wide["low"]
+
+
 def _store_fingerprint(db: Path) -> str:
     """Cheap change detector: any write to the store (or its WAL) changes size or mtime."""
     parts = []

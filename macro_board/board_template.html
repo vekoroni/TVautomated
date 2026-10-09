@@ -485,7 +485,7 @@ function renderReview(){
         <div class="note">Broad needs equal-weight keeping pace and most index weight above its own 50-day average; either failing marks the move concentrated.</div></div>
       <div class="card"><h3>Price location <span class="sub">room to the nearest obstacle</span> ${csvBtn("room")}</h3>
         <div class="table-wrap" style="max-height:360px"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Close</th><th class="l">Nearest above</th><th class="l">Nearest below</th></tr></thead><tbody>${rrows}</tbody></table></div>
-        <div class="note">Levels: 252-session high/low, 50/200-session averages, GEX walls and flip (SPY/QQQ, model estimate), pipeline target/invalidation. Daily move = 20-session realised volatility ÷ √252.</div></div>
+        <div class="note">Levels: 252-session high/low where price traded (intraday), 50/200-session averages on closes, GEX walls and flip (SPY/QQQ, model estimate), pipeline target/invalidation. Daily move = 20-session realised volatility ÷ √252.</div></div>
     </div>
     <div class="card" style="margin-top:10px"><h3>Sectors vs SPY <span class="sub">${esc(h)}-session window · relative strength kept apart from direction</span> ${csvBtn("sectors")}</h3>
       <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th>Return</th><th>vs SPY</th><th class="l">Reading</th><th class="l">Constituents</th><th class="l">Top contributors</th></tr></thead><tbody>${srows}</tbody></table></div>

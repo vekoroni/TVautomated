@@ -88,15 +88,22 @@ def sector_rows(metrics: Mapping, tickers: Sequence[str], holdings: Mapping, hor
     return rows
 
 
-def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float]) -> dict:
+def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float], highs: pd.Series | None = None,
+               lows: pd.Series | None = None) -> dict:
     """Nearest obstacle above and below today's close among the 252-session high/low, the 50/200
     session averages and any supplied levels (GEX walls/flip, pipeline target/invalidation).
-    Distance in % and in daily moves (20-session realised volatility / sqrt(252))."""
+    The 252-session high/low are where price actually traded (intraday high/low) when bars carry
+    them; the averages stay on closes. Distance in % and in daily moves (20-session realised
+    volatility / sqrt(252))."""
     c = closes.dropna()
     if c.empty:
-        return {"close": None, "levels": {}, "above": None, "below": None}
+        return {"close": None, "levels": {}, "above": None, "below": None, "range_basis": None}
     close = float(c.iloc[-1])
-    levels = {"high_252": float(c.iloc[-252:].max()), "low_252": float(c.iloc[-252:].min())}
+    h = highs.reindex(c.index).dropna() if highs is not None else pd.Series(dtype=float)
+    l = lows.reindex(c.index).dropna() if lows is not None else pd.Series(dtype=float)
+    intraday = not h.empty and not l.empty
+    levels = ({"high_252": float(h.iloc[-252:].max()), "low_252": float(l.iloc[-252:].min())} if intraday
+              else {"high_252": float(c.iloc[-252:].max()), "low_252": float(c.iloc[-252:].min())})
     if len(c) >= 50:
         levels["sma50"] = float(c.iloc[-50:].mean())
     if len(c) >= 200:
@@ -114,6 +121,7 @@ def price_room(closes: pd.Series, *, rv20_pct, extra_levels: Mapping[str, float]
     above = [n for n, v in levels.items() if v > close]
     below = [n for n, v in levels.items() if v < close]
     return {"close": close, "daily_move_pct": None if daily is None else round(daily, 4),
+            "range_basis": "INTRADAY_HIGH_LOW" if intraday else "CLOSES",
             "levels": {k: round(v, 4) for k, v in levels.items()},
             "above": describe(min(above, key=lambda n: levels[n])) if above else None,
             "below": describe(max(below, key=lambda n: levels[n])) if below else None}
@@ -131,7 +139,8 @@ def gex_levels(gex_records: Sequence[Mapping]) -> dict:
 
 
 def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons: Sequence[int], sectors: Sequence[str],
-          gex_records: Sequence[Mapping], proposals: Mapping, room_tickers: Sequence[str], cfg: Mapping) -> dict:
+          gex_records: Sequence[Mapping], proposals: Mapping, room_tickers: Sequence[str], cfg: Mapping,
+          highs: pd.DataFrame | None = None, lows: pd.DataFrame | None = None) -> dict:
     """The section 3 payload: market, sectors, constituents and price location."""
     gex = gex_levels(gex_records)
     room = {}
@@ -143,7 +152,9 @@ def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons
         prop = proposals.get(t) or {}
         levels["pipeline_target"] = prop.get("target_spot")
         levels["pipeline_invalidation"] = prop.get("invalidation_spot")
-        room[t] = {**price_room(closes[t], rv20_pct=(metrics.get(t) or {}).get("rv20"), extra_levels=levels),
+        room[t] = {**price_room(closes[t], rv20_pct=(metrics.get(t) or {}).get("rv20"), extra_levels=levels,
+                                highs=highs[t] if highs is not None and t in highs.columns else None,
+                                lows=lows[t] if lows is not None and t in lows.columns else None),
                    "gex_as_of": None if gex_as_of is None else str(gex_as_of)}
     return {"leadership": leadership(metrics, holdings, horizons, cfg),
             "sectors": sector_rows(metrics, sectors, holdings, horizons, cfg),
