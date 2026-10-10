@@ -58,7 +58,8 @@ def _windows(ahead: int, horizons: Sequence[int]) -> list[int]:
 
 def build(*, as_of_session: str, overnight: Mapping | None, holdings: Mapping, earnings: Mapping | None,
           enrichment: Mapping | None, event_payload: Mapping | None, room: Mapping, focus: Sequence[str],
-          sectors: Sequence[str], cfg: Mapping, horizons: Sequence[int] = (1, 5, 20)) -> dict:
+          sectors: Sequence[str], cfg: Mapping, horizons: Sequence[int] = (1, 5, 20),
+          scheduled: Mapping | None = None) -> dict:
     max_s = int(cfg["max_sessions"])
     sessions, holidays, shortened = upcoming_sessions(as_of_session, max_s)
     position = {d: i + 1 for i, d in enumerate(sessions)}
@@ -91,7 +92,14 @@ def build(*, as_of_session: str, overnight: Mapping | None, holdings: Mapping, e
         add("SHORTENED_SESSION", d, f"Shortened session, closes {close} ET", close, source="XNYS calendar")
 
     coverage = {"speakers": "EVENT_PAYLOAD_ONLY", "consensus": "NOT_AVAILABLE_FREE_SOURCE"}
-    if not overnight:
+    if scheduled and scheduled.get("upcoming") is not None and scheduled.get("status") not in ("UNAVAILABLE", "NO_KEY", "NOT_APPLICABLE_AS_OF_BUILD"):
+        coverage["releases"] = "MEASURED"
+        for r in scheduled.get("upcoming") or []:
+            spy = ((r.get("event_day") or {}).get("SPY") or {})
+            detail = (f"SPY {round(spy['ratio'], 2):g}x a normal day on past release days ({spy.get('n')})"
+                      if spy.get("ratio") is not None else "")
+            add("RELEASE", date.fromisoformat(r["date"]), r.get("name"), r.get("time_et"), detail, "FRED release calendar (board)")
+    elif not overnight:
         coverage["releases"] = "MISSING"
     else:
         coverage["releases"] = "OBSERVED"

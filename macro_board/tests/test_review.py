@@ -111,3 +111,22 @@ def test_moves_against_spy_beyond_their_own_threshold_are_disagreements():
 def test_the_headline_answers_accept_reject_or_absorb_for_the_index_etfs():
     rows = {"SPY": {"label": "ABSORBED", "direction": "NONE"}, "QQQ": {"label": "ACCEPTED", "direction": "DOWN"}}
     assert rv.headline(rows, ["SPY", "QQQ"]) == "SPY absorbed · QQQ accepted (down)"
+
+
+
+def test_scheduled_releases_measured_from_fred_replace_the_captures_copy_and_state_no_consensus():
+    scheduled = {"released": [{"name": "Jobless claims", "series_id": "ICSA", "release_id": 180, "time_et": "08:30", "actual": 197000.0,
+                  "previous": 199000.0, "observation_date": "2026-10-03", "revision_of_previous": 1000.0,
+                  "previous_as_first_known": 198000.0, "unit": "claims", "change": -2000.0, "status": "RELEASED",
+                  "surprise": {"label": "IN_LINE_WITH_OWN_TREND", "z": -0.3,
+                               "basis": "change vs its own past 36 changes; not a consensus surprise"},
+                  "event_day": {"SPY": {"ratio": 1.1, "n": 200}, "TLT": {"ratio": 1.3, "n": 200}}}]}
+    overnight = {"releases_today": [{"name": "Jobless claims", "series_id": "ICSA", "state": "RELEASED", "value": 197000.0,
+                                     "prior": 199000.0, "change": -2000.0, "observation_date": "2026-10-03", "time_et": "08:30"}]}
+    events = rv.information(None, overnight, session="2026-10-08", scheduled=scheduled)
+    claims = [e for e in events["items"] if e["name"] == "Jobless claims"]
+    assert len(claims) == 1 and claims[0]["source"] == "FRED (measured)"
+    assert claims[0]["what_changed"] == "197,000 (observation 2026-10-03; change -2,000)"
+    assert claims[0]["revised_previous"] == "first published 198,000 (revised +1,000)"
+    assert claims[0]["surprise"] == "in line with own trend (z -0.3; not a consensus surprise)"
+    assert claims[0]["expected"] == "MISSING (no free consensus source)"

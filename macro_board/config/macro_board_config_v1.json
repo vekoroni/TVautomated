@@ -742,5 +742,116 @@
       "DIA"
     ],
     "rationale": "Added 2026-10-10 (ACK: build the measured sheet with the instructions included). Every board build writes macro_board/output/measured_sheet_latest.md (and sheets/measured_sheet_<session>_<kind>.md): facts AVSHUNTER measured itself, assembled from the board payload without an LLM, for ACK to paste into ChatGPT so the LLM adds only the news layer and cannot contradict local numbers (one owner per fact). The sheet never carries an LLM's published numbers and writes MISSING where a fact is missing. Instruction wording is editable here."
+  },
+  "scheduled_events": {
+    "releases": [
+      {
+        "release_id": 180,
+        "name": "Jobless claims",
+        "series_id": "ICSA",
+        "time_et": "08:30",
+        "transform": "diff",
+        "unit": "claims",
+        "why_it_matters": "Labour-market slack week to week; a rise feeds rate-cut expectations."
+      },
+      {
+        "release_id": 10,
+        "name": "CPI",
+        "series_id": "CPIAUCSL",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "Consumer inflation: the Fed path and Treasury yields."
+      },
+      {
+        "release_id": 46,
+        "name": "PPI",
+        "series_id": "PPIFIS",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "Producer (pipeline) inflation; feeds CPI and PCE estimates."
+      },
+      {
+        "release_id": 50,
+        "name": "Employment Situation (payrolls)",
+        "series_id": "PAYEMS",
+        "time_et": "08:30",
+        "transform": "diff",
+        "unit": "thousand jobs",
+        "why_it_matters": "Jobs and wages: the labour leg of the Fed's mandate."
+      },
+      {
+        "release_id": 9,
+        "name": "Retail sales",
+        "series_id": "RSAFS",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "Consumer demand and growth."
+      },
+      {
+        "release_id": 53,
+        "name": "GDP",
+        "series_id": "A191RL1Q225SBEA",
+        "time_et": "08:30",
+        "transform": "level",
+        "unit": "% q/q annualised",
+        "why_it_matters": "Economic growth."
+      },
+      {
+        "release_id": 54,
+        "name": "Personal income and outlays (PCE prices)",
+        "series_id": "PCEPI",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "The Fed's preferred inflation gauge."
+      },
+      {
+        "release_id": 95,
+        "name": "Durable goods (M3)",
+        "series_id": "DGORDER",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "Business investment demand."
+      },
+      {
+        "release_id": 27,
+        "name": "Housing starts",
+        "series_id": "HOUST",
+        "time_et": "08:30",
+        "transform": "pct_change",
+        "unit": "% m/m",
+        "why_it_matters": "Rate-sensitive housing activity."
+      },
+      {
+        "release_id": 51,
+        "name": "Trade balance",
+        "series_id": "BOPGSTB",
+        "time_et": "08:30",
+        "transform": "diff",
+        "unit": "$m",
+        "why_it_matters": "Net exports and GDP."
+      }
+    ],
+    "lookback_changes": 36,
+    "surprise_band_z": 1.0,
+    "reaction_tickers": [
+      "SPY",
+      "QQQ",
+      "TLT",
+      "UUP"
+    ],
+    "event_day_tickers": [
+      "SPY",
+      "QQQ",
+      "TLT"
+    ],
+    "sessions_ahead": 20,
+    "min_event_days": 12,
+    "history_start": "2015-01-01",
+    "rationale": "Added 2026-10-10 (ACK: build the scheduled part of the event payload locally; ChatGPT keeps the unscheduled news). The release list mirrors the overnight capture's OVERNIGHT_RELEASES (Enhancements/colab/avshunter_market_intelligence_v5_4_3.py) - update both together. FRED release dates give the calendar; the print is read as known on the release day (vintage) with the previous value's revision since first published. Surprise = the latest change against the series' own past 36 changes, |z| >= 1 above/below trend - there is no free consensus source, so it is never called a consensus surprise. Event-day history = mean |close-to-close move| on the release's past sessions vs other sessions (shown from 12 release days). Refresh builds read FRED (cached per session under output/external/fred_events); a failed or keyless read falls back to the overnight capture. Written as output/events/us_scheduled_events_<session>.json in the event payload schema (route SCHEDULED_RELEASES_MEASURED). Display only. PROVISIONAL."
   }
 }

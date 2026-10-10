@@ -137,3 +137,23 @@ def test_percentiles_read_as_ordinals_and_conditions_carry_states_with_explicit_
     assert "Conditions (20-session readings): 10Y yield RISING; Curve level STEEP." in text
     assert "Rates: 10Y 5.28%; 2s10s +0.51 pts (FRED, publication-lagged)." in text
     assert "lean no clear lean" not in text and "no clear lean" in text
+
+
+
+def test_scheduled_releases_measured_locally_carry_their_surprise_basis_and_event_day_history():
+    p = _payload()
+    p["scheduled_events"] = {"released": [{"name": "Jobless claims", "series_id": "ICSA", "release_id": 180, "time_et": "08:30", "actual": 197000.0,
+                  "previous": 199000.0, "observation_date": "2026-10-03", "revision_of_previous": 1000.0,
+                  "previous_as_first_known": 198000.0, "unit": "claims", "change": -2000.0, "status": "RELEASED",
+                  "surprise": {"label": "IN_LINE_WITH_OWN_TREND", "z": -0.3,
+                               "basis": "change vs its own past 36 changes; not a consensus surprise"},
+                  "event_day": {"SPY": {"ratio": 1.1, "n": 200}, "TLT": {"ratio": 1.3, "n": 200}}}],
+                             "upcoming": [{"name": "PPI", "date": "2026-10-15", "time_et": "08:30", "sessions_ahead": 4,
+                                           "event_day": {"SPY": {"ratio": 1.2, "n": 58}}}]}
+    text = ms.render(p, CFG)
+    assert "Released 08:30 ET: Jobless claims 197000 (observation 2026-10-03; change -2000 claims; previous 199000" in text
+    assert "revised +1000 since first published" in text
+    assert "in line with own trend (z -0.3), not a consensus surprise" in text
+    assert "SPY moves 1.1x a normal day on its release days (200 days)" in text
+    assert "2026-10-15 08:30 PPI (SPY 1.2x a normal day)" in text
+    assert "CPI" not in text                                                     # the board calendar is replaced, not merged

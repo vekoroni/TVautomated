@@ -135,6 +135,24 @@ def _calendar(payload: Mapping, cfg: Mapping, lines: list) -> None:
     session = payload.get("as_of_session")
     ov = payload.get("overnight") or {}
     lines += ["## 4. Overnight and scheduled releases", ""]
+    sched = payload.get("scheduled_events") or {}
+    local_released = sched.get("released") or []
+    for e in local_released:
+        if e.get("actual") is None:
+            lines.append(f"- Released {e.get('time_et')} ET: {e.get('name')} - not read from FRED.")
+            continue
+        s = e.get("surprise") or {}
+        rev = _num(e.get("revision_of_previous"))
+        spy = ((e.get("event_day") or {}).get("SPY") or {})
+        z = _num(s.get("z"))
+        lines.append(f"- Released {e.get('time_et')} ET: {e.get('name')} {_num(e.get('actual')):g} (observation {e.get('observation_date')}; "
+                     f"change {(_num(e.get('change')) or 0):+g} {e.get('unit') or ''}".rstrip()
+                     + (f"; previous {_num(e.get('previous')):g}" if _num(e.get("previous")) is not None else "")
+                     + (f", revised {rev:+g} since first published" if rev else "") + "); "
+                     + f"{str(s.get('label') or 'MISSING').replace('_', ' ').lower()}"
+                     + (f" (z {z:+.1f})" if z is not None else "") + ", not a consensus surprise"
+                     + (f"; SPY moves {round(spy['ratio'], 2):g}x a normal day on its release days ({spy.get('n')} days)" if spy.get("ratio") is not None else "")
+                     + ".")
     if ov.get("status") in (None, "MISSING", "UNREADABLE") or ov.get("us_reference_session") != session:
         lines.append(f"Overnight: not captured after the {session} close (run the PreOpen inputs for futures, VIX, FX, Asia/Europe).")
     else:
@@ -144,13 +162,21 @@ def _calendar(payload: Mapping, cfg: Mapping, lines: list) -> None:
             if items:
                 lines.append(f"- {group.replace('_', ' ')}: " + ", ".join(items))
         for r in ov.get("releases_today") or []:
-            if r.get("state") == "RELEASED":
+            if r.get("state") == "RELEASED" and r.get("name") not in {e.get("name") for e in local_released}:
                 lines.append(f"- Released {r.get('time_et')} ET: {r.get('name')} {(_num(r.get('value')) or 0):.6g} "
                              f"(prior {(_num(r.get('prior')) or 0):.6g}).")
-    ahead = [c for c in (payload.get("decision_points") or {}).get("calendar") or []
-             if (c.get("sessions_ahead") or 99) <= int(cfg["release_sessions_ahead"])]
-    lines.append("Scheduled (next {} sessions): ".format(cfg["release_sessions_ahead"]) + (
-        "; ".join(f"{c.get('date')} {c.get('time_et') or ''} {c.get('name')}".replace("  ", " ") for c in ahead) or "none") + ".")
+    limit = int(cfg["release_sessions_ahead"])
+    if sched.get("upcoming") is not None and sched.get("status") not in ("UNAVAILABLE", "NO_KEY", "NOT_APPLICABLE_AS_OF_BUILD"):
+        def tag(c):
+            spy = ((c.get("event_day") or {}).get("SPY") or {})
+            return f" (SPY {round(spy['ratio'], 2):g}x a normal day)" if spy.get("ratio") is not None else ""
+        ahead = [f"{c.get('date')} {c.get('time_et') or ''} {c.get('name')}{tag(c)}".replace("  ", " ")
+                 for c in sched.get("upcoming") or [] if (c.get("sessions_ahead") or 99) <= limit]
+    else:
+        ahead = [f"{c.get('date')} {c.get('time_et') or ''} {c.get('name')}".replace("  ", " ")
+                 for c in (payload.get("decision_points") or {}).get("calendar") or []
+                 if (c.get("sessions_ahead") or 99) <= limit]
+    lines.append(f"Scheduled (next {limit} sessions): " + ("; ".join(ahead) or "none") + ".")
     lines.append("")
 
 

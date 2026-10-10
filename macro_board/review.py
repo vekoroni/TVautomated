@@ -118,9 +118,30 @@ def _number(value) -> str:
     return f"{value:,.0f}" if abs(value) >= 1000 else f"{value:,.2f}"
 
 
-def information(event_payload: Mapping | None, overnight: Mapping | None, *, session: str) -> dict:
-    """What changed and what was expected: event payload records (as published) and FRED prints."""
+def _signed(value) -> str:
+    return ("+" if _finite(value) and value > 0 else "") + _number(value)
+
+
+def information(event_payload: Mapping | None, overnight: Mapping | None, *, session: str,
+                scheduled: Mapping | None = None) -> dict:
+    """What changed and what was expected: event payload records (as published) and FRED prints. Scheduled
+    releases measured by the board (scheduled_events.py, FRED vintages) replace the overnight capture's copy."""
     items = []
+    local = {e.get("name") for e in (scheduled or {}).get("released") or []}
+    for e in (scheduled or {}).get("released") or []:
+        s = e.get("surprise") or {}
+        rev, first = e.get("revision_of_previous"), e.get("previous_as_first_known")
+        items.append({"name": e.get("name"), "institution": f"FRED release {e.get('release_id')}", "status": e.get("status"),
+                      "what_changed": (f"{_number(e.get('actual'))} (observation {e.get('observation_date')}; "
+                                       f"change {_signed(e.get('change'))})") if e.get("actual") is not None else "MISSING",
+                      "expected": "MISSING (no free consensus source)",
+                      "previous": _number(e.get("previous")) if e.get("previous") is not None else None,
+                      "revised_previous": (None if first is None else
+                                           f"first published {_number(first)} (" + (f"revised {_signed(rev)}" if rev else "unrevised") + ")"),
+                      "surprise": (f"{str(s.get('label') or 'MISSING').replace('_', ' ').lower()} "
+                                   f"(z {s.get('z'):+.1f}; not a consensus surprise)" if _finite(s.get("z")) else
+                                   f"{str(s.get('label') or 'MISSING').replace('_', ' ').lower()} (not a consensus surprise)"),
+                      "time_utc": None, "time_et": e.get("time_et"), "source": "FRED (measured)", "source_url": None})
     for e in (event_payload or {}).get("events") or []:
         forecast = e.get("forecast")
         items.append({"name": e.get("event_name"), "institution": e.get("country_or_institution"),
@@ -130,7 +151,7 @@ def information(event_payload: Mapping | None, overnight: Mapping | None, *, ses
                       "surprise": e.get("surprise_direction"), "time_utc": e.get("release_time_utc"),
                       "source": "event payload (LLM)", "source_url": e.get("source_url")})
     for r in (overnight or {}).get("releases_today") or []:
-        if r.get("state") != "RELEASED":
+        if r.get("state") != "RELEASED" or r.get("name") in local:
             continue
         items.append({"name": r.get("name"), "institution": "FRED", "status": "RELEASED",
                       "what_changed": f"{_number(r.get('value'))} (observation {r.get('observation_date')})",
@@ -183,7 +204,7 @@ def headline(rows: Mapping[str, Mapping], tickers: Sequence[str]) -> str:
 
 def build(*, opens: pd.DataFrame, closes: pd.DataFrame, instruments: Sequence[str], sectors: Sequence[str],
           focus: Sequence[str], horizons: Sequence[int], evidence_settings: Mapping, holdings: Mapping,
-          event_payload: Mapping | None, overnight: Mapping | None, cfg: Mapping) -> dict:
+          event_payload: Mapping | None, overnight: Mapping | None, cfg: Mapping, scheduled: Mapping | None = None) -> dict:
     k, vol = float(cfg["threshold_daily_moves"]), int(cfg["vol_sessions"])
     session = str(closes.index[-1].date())
     rows = {}
@@ -204,7 +225,7 @@ def build(*, opens: pd.DataFrame, closes: pd.DataFrame, instruments: Sequence[st
             "instruments": {t: rows[t] for t in instruments if t in rows},
             "sectors": {t: rows[t] for t in sectors if t in rows},
             "scored": scored,
-            "information": information(event_payload, overnight, session=session),
+            "information": information(event_payload, overnight, session=session, scheduled=scheduled),
             "disagreements": disagreements(rows, confirming_weight_1d=spy_window.get("confirming_weight_pct"),
                                            contradictions=(event_payload or {}).get("cross_asset_contradictions") or [],
                                            cfg=cfg),

@@ -42,6 +42,7 @@ from . import options as opt
 from . import measured_sheet as msheet
 from . import money_index as mindex
 from . import review as rvw
+from . import scheduled_events as sev
 from . import session_plan as splan
 from . import rotation as rot
 from . import tastytrade_metrics as ttm
@@ -378,6 +379,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "opportunity": config["opportunity"], "review": config["review"],
                      "session_plan": config["session_plan"], "money_index": config["money_index"],
                      "measured_sheet": {k: v for k, v in config["measured_sheet"].items() if k != "rationale"},
+                     "scheduled_events": {k: v for k, v in config["scheduled_events"].items() if k != "rationale"},
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -385,6 +387,8 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                              "breadth_sessions": c12.breadth_sessions, "breadth_bands": list(c12.breadth_state_bands)}},
         "price_universe_in_breadth": int(panel.shape[1]),
     }
+    payload["scheduled_events"] = build_scheduled_events(config, sessions=sessions, opens=opens, closes=closes,
+                                                         output_dir=output_dir, refresh=refresh, as_of=as_of)
     payload["review"] = build_review(payload, config, opens, closes, holdings_payload, external)
     payload["decision_points"] = build_decision_points(payload, config, holdings_payload, external, sessions,
                                                        output_dir, refresh=refresh, as_of=as_of)
@@ -467,9 +471,41 @@ def build_review(payload: dict, config: dict, opens, closes, holdings_payload: d
                       evidence_settings=config["evidence"], holdings=holdings_payload,
                       event_payload=usable("event_payload"),
                       overnight=overnight if overnight.get("status") not in (None, "MISSING", "UNREADABLE") else None,
-                      cfg=config["review"])
+                      cfg=config["review"], scheduled=payload.get("scheduled_events"))
     block["sources"] = {"event_payload": external["event_payload"].public() if "event_payload" in external else None}
     print(f"[board] review: {block['headline']}")
+    return block
+
+
+def build_scheduled_events(config: dict, *, sessions, opens, closes, output_dir: Path, refresh: bool, as_of: str | None) -> dict:
+    """The scheduled part of the event payload measured from FRED (ACK 10 Oct 2026). Refresh builds read FRED
+    (cached per session); other builds use the cache. A failed or keyless read is stated, and the review and
+    decision points fall back to the overnight capture."""
+    cfg = config["scheduled_events"]
+    if as_of:
+        return {"status": "NOT_APPLICABLE_AS_OF_BUILD", "released": [], "upcoming": None}
+    session = str(sessions[-1].date())
+    offline = lambda url, params: (599, {})
+    data = sev.fetch(cfg["releases"], as_of=session, cache_dir=output_dir / "external" / "fred_events",
+                     transport=None if refresh else offline, history_start=cfg["history_start"])
+    reactions = {}
+    for t in cfg["reaction_tickers"]:
+        if t in closes.columns and not closes[t].dropna().empty:
+            c = closes[t].dropna()
+            last = rvw.label_history(opens[t].reindex(c.index), c, k=float(config["review"]["threshold_daily_moves"]),
+                                     vol_sessions=int(config["review"]["vol_sessions"])).iloc[-1]
+            if c.index[-1] == sessions[-1]:
+                reactions[t] = {"key": last["key"], "close_pct": None if pd.isna(last["close_pct"]) else float(last["close_pct"])}
+    upcoming = dpts.upcoming_sessions(session, int(config["decision_points"]["max_sessions"]))[0]
+    block = sev.build(data, as_of_session=session, upcoming_sessions=upcoming, closes=closes, reactions=reactions, cfg=cfg)
+    if block["status"] == "OK":
+        events_dir = output_dir / "events"
+        events_dir.mkdir(parents=True, exist_ok=True)
+        target = events_dir / f"us_scheduled_events_{session}.json"
+        target.write_text(json.dumps(_clean(sev.as_event_payload(block)), indent=1), encoding="utf-8")
+        block["file"] = str(target)
+    print(f"[board] scheduled releases (FRED): {block['status']} · released {len(block['released'])} · "
+          f"upcoming {len(block['upcoming'] or [])}" + (f" · {len(block['errors'])} read errors" if block.get("errors") else ""))
     return block
 
 
@@ -498,7 +534,8 @@ def build_decision_points(payload: dict, config: dict, holdings_payload: dict, e
                        overnight=overnight if overnight.get("status") not in (None, "MISSING", "UNREADABLE") else None,
                        holdings=holdings_payload, earnings=earnings, enrichment=usable("enrichment"),
                        event_payload=usable("event_payload"), room=(payload.get("opportunity") or {}).get("room") or {},
-                       focus=config["focus_tickers"], sectors=sectors, cfg=cfg, horizons=payload["horizons"])
+                       focus=config["focus_tickers"], sectors=sectors, cfg=cfg, horizons=payload["horizons"],
+                       scheduled=payload.get("scheduled_events"))
     block["earnings_file"] = earnings_file
     block["sources"] = {"enrichment": external["enrichment"].public() if "enrichment" in external else None,
                         "event_payload": external["event_payload"].public() if "event_payload" in external else None}

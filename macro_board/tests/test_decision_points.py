@@ -122,3 +122,16 @@ def test_missing_inputs_are_reported_missing():
     out = _build(overnight=None, earnings=None)
     assert out["coverage"]["releases"] == "MISSING" and out["coverage"]["earnings"] == "MISSING"
     assert out["coverage"]["speakers"] == "EVENT_PAYLOAD_ONLY"
+
+
+
+def test_the_boards_own_fred_calendar_places_releases_when_given_and_nothing_is_duplicated():
+    scheduled = {"upcoming": [{"name": "CPI", "date": "2026-10-14", "time_et": "08:30", "release_id": 10,
+                               "event_day": {"SPY": {"ratio": 1.4, "n": 60}}}]}
+    out = _build(scheduled=scheduled)
+    rel = [c for c in out["calendar"] if c["kind"] == "RELEASE"]
+    assert [(c["name"], c["date"]) for c in rel] == [("CPI", "2026-10-14")]
+    assert rel[0]["source"] == "FRED release calendar (board)" and "SPY 1.4x a normal day" in rel[0]["detail"]
+    assert out["coverage"]["releases"] == "MEASURED"
+    without = _build(overnight=None)
+    assert without["coverage"]["releases"] == "MISSING"
