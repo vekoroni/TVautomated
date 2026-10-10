@@ -310,8 +310,10 @@ OPTIONS_BLOCKED_ROUTE = "OPTIONS_BLOCKED"
 # Research scoring bands.  These classify contract quality but never grant
 # capital.  The final executable/reviewable limits live in
 # ``contracts.long_option_policy`` and are evaluated again on the exact quote.
-OPTIONS_SPREAD_PASS_PCT = 0.15
-OPTIONS_SPREAD_HARD_PCT = LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT / 100.0
+# E15 (ACK 6 Oct 2026): fractions of mid, named as such, from config spread_policy (values unchanged).
+from domain.long_option_execution import SPREAD_POLICY as _SPREAD_POLICY
+OPTIONS_SPREAD_PASS_FRACTION = _SPREAD_POLICY["research_pass_max"]
+OPTIONS_SPREAD_HARD_FRACTION = _SPREAD_POLICY["reviewable_max"]
 OPTIONS_MIN_BREAKEVEN_FEASIBILITY = 1.0
 OPTIONS_MIN_R_MULTIPLE = 1.0
 OPTIONS_THETA_DECAY_LIMIT_PCT = 35.0
@@ -1358,29 +1360,26 @@ def theta_drag_pct(*, theta_per_calendar_day: Any, hold_sessions: Any, mark: Any
 
 
 def contract_runway_policy(horizon: object, *, evidence_hold: Optional[int] = None,
-                           evidence_basis: Optional[str] = None) -> Dict[str, Any]:
-    """Runway floor for the contract: the planned hold, in calendar days - a floor, never a ceiling.
+                           evidence_basis: Optional[str] = None, hold_is_evidence: bool = True) -> Dict[str, Any]:
+    """Runway floor for the contract, in calendar days - a floor, never a ceiling (ACK 18 Sep 2026).
 
-    ACK 18 Sep 2026 decision (a): the contract must outlast the planned hold (the thesis window), not only
-    the anticipated move; the move is expected inside the window.  The anticipated-move horizon is kept in
-    the basis for display and measurement and never shortens the runway.
+    The hold that sizes it is the setup's own q80 time to its level, else its pooled evidence, else the volatility
+    time to its level (ACK 7 Oct 2026). ``horizon`` is accepted for compatibility and no longer used.
     """
-    text = str(horizon or "").lower().replace("-", "_").replace(" ", "")
-    key = ("1_5d" if "1_5" in text else "6_10d" if "6_10" in text else "11_20d" if "11_20" in text
-           else text if text in DTE_CONFIG else None)
+    # Runway hold (ACK 7 Oct 2026, "build C with B fallback"): the setup's own q80 evidence, else its pooled
+    # evidence, else the volatility time to its level (domain.anticipated_move.runway_fallback) - never the fixed
+    # 20-session window. With no estimate only the holdable-past-issue floor applies, stated NO_RUNWAY_ESTIMATE.
     if evidence_hold:
-        # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level sizes the runway.
         hold = int(evidence_hold)
         basis = str(evidence_basis or "DURATION_EVIDENCE_Q80")
-        requirement = calculate_dte_requirement(hold, evidence_hold=True)
+        requirement = calculate_dte_requirement(hold, evidence_hold=bool(hold_is_evidence))
     else:
-        hold = governed_thesis_window_sessions()
-        basis = f"THESIS_WINDOW_D2|HORIZON:{key}" if key is not None else "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
-        if evidence_basis:
-            basis = f"{basis}|{evidence_basis}"
-        requirement = calculate_dte_requirement(hold)
+        hold = None
+        basis = str(evidence_basis or "NO_RUNWAY_ESTIMATE")
+        requirement = calculate_dte_requirement(None)
+    floor = requirement["minimum_required_dte"]
     return {
-        "contract_runway_floor_days": int(requirement["minimum_required_dte"]),
+        "contract_runway_floor_days": int(floor if floor is not None else requirement["minimum_holdable_dte"]),
         "contract_min_holdable_dte": int(requirement["minimum_holdable_dte"]),
         "contract_runway_basis": basis,
         "contract_runway_hold_sessions": hold,
@@ -3405,6 +3404,35 @@ def _oi_wall_on_side(by_strike: "pd.Series", *, above: bool, spot: float) -> Tup
     return float(side.idxmax()), (WALL_STATE_CALL if above else WALL_STATE_PUT)
 
 
+from domain.option_walls import GOVERNED_WALL_FIELDS as _GOVERNED_WALL_FIELDS, WALL_FIELDS as _WALL_FIELDS  # noqa: E402
+
+
+def _wall_assessment(ticker: str, chain: pd.DataFrame, spot: Any, ctx: Dict, gamma_flip: Any,
+                     flip_conf: Any) -> Dict[str, Any]:
+    """Item 7: the governed wall assessment for one ticker; never takes a ticker down (a failure is a stated state)."""
+    from canonical_data.session_clock import advance_xnys_sessions, is_xnys_session
+    from domain.option_walls import assess_option_walls, gamma_flip_confidence_state
+    try:
+        evidence = _iv_evidence_session()
+        session = evidence if is_xnys_session(evidence) else None
+        trade_session = advance_xnys_sessions(session, 1) if session else evidence
+        bars = None
+        try:
+            from canonical_data.historical_prices import HistoricalPriceDatabase
+            bars = HistoricalPriceDatabase(Path(__file__).resolve().parents[1] / "data" / "canonical"
+                                           / "historical_prices.sqlite").read(ticker, end_date=evidence, bars=80)
+        except Exception:                                     # noqa: BLE001 - price response says NO_PRICE_HISTORY
+            bars = None
+        out = assess_option_walls(chain, ticker=ticker, spot=spot, trade_session=trade_session,
+                                  hold_sessions=planned_hold_from_evidence(ctx), bars=bars,
+                                  chain_asof_utc=f"{evidence.isoformat()}T20:00:00Z")
+        out["gamma_flip_confidence_state"] = gamma_flip_confidence_state(gamma_flip, flip_conf)
+        return out
+    except Exception as exc:                                  # noqa: BLE001
+        return {"wall_method": "GAMMA_OI_CONCENTRATION_V1", "wall_hold_call_state": f"ERROR:{type(exc).__name__}",
+                "wall_hold_put_state": f"ERROR:{type(exc).__name__}"}
+
+
 def compute_oi_walls(df: pd.DataFrame, spot: Optional[float] = None) -> Dict:
     """Call wall above spot, put wall below spot, max pain; raw per-side maxima kept by name.
 
@@ -4131,7 +4159,7 @@ def resolve_iv_ownership(iv_ctx: Dict, contract: Optional[Dict] = None) -> Dict:
     proxy_pct = iv_ctx.get('iv_vs_rv_range_primary')
     md_pct = contract.get('iv_percentile_marketdata')
     if history_pct is not None:
-        candidates.append('IV_HISTORY_252D')
+        candidates.append('IV_HISTORY')
     if proxy_pct is not None:
         candidates.append('RV_RANGE_PROXY')
     if md_pct is not None:
@@ -4142,7 +4170,8 @@ def resolve_iv_ownership(iv_ctx: Dict, contract: Optional[Dict] = None) -> Dict:
         candidates.append('ABSOLUTE_IV_LEVEL_BUCKET')
 
     if history_pct is not None:
-        source = 'IV_HISTORY_252D'
+        # Output-trust item 6 (9 Oct 2026): the method, not a window it may not have; the samples are disclosed below.
+        source = 'IV_HISTORY'
         percentile = round(float(history_pct), 3)
         rank_unit = iv_ctx.get('iv_rank_history')
         rank = round(float(rank_unit) * 100.0, 1) if rank_unit is not None else None
@@ -4169,6 +4198,14 @@ def resolve_iv_ownership(iv_ctx: Dict, contract: Optional[Dict] = None) -> Dict:
     iv_ctx['iv_percentile_source'] = source
     iv_ctx['iv_rank_definition'] = rank_definition
     iv_ctx['iv_rank_window_sessions'] = window
+    # Output-trust item 6: SHORT_HISTORY below the governed full window (samples, not a fixed "252D" label).
+    if source == 'IV_HISTORY':
+        full = int(json.loads((Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json")
+                              .read_text(encoding="utf-8-sig"))["iv_history"]["full_window_samples"])
+        iv_ctx['iv_history_state'] = 'FULL_WINDOW' if (window or 0) >= full else 'SHORT_HISTORY'
+    else:
+        iv_ctx['iv_history_state'] = 'NOT_IV_HISTORY'
+        iv_ctx['iv_history_first_date'] = None
     iv_ctx['ivp_suppressed_sources'] = [c for c in candidates if c != source]
     return iv_ctx
 
@@ -4184,8 +4221,10 @@ def _apply_true_iv_percentile(result: Dict, ticker: str, atm_iv: float, as_of: d
     if result.get('iv_vs_rv_range_primary') is None and result.get('iv_percentile') is not None:
         # Legacy callers may hand in the proxy under the governed name; treat it as the proxy candidate.
         result['iv_vs_rv_range_primary'] = result.get('iv_percentile')
-    history = [v for _, v in _iv_history_samples(ticker, as_of.isoformat())]
+    samples = _iv_history_samples(ticker, as_of.isoformat())
+    history = [v for _, v in samples]
     result['iv_history_samples'] = len(history)
+    result['iv_history_first_date'] = samples[0][0] if samples else None
     true_ivp = iv_percentile_from_history(atm_iv, history)
     result['iv_percentile_history'] = round(true_ivp, 3) if true_ivp is not None else None
     result['iv_rank_history'] = iv_rank_from_history(atm_iv, history)
@@ -4753,6 +4792,52 @@ def reachable_target_fields(direction: str, spot: Optional[float], structural_ta
     return out
 
 
+def strike_selection_level(get, direction: str, spot: Optional[float], vol_annual: Any,
+                           window_sessions: Any) -> Tuple[Optional[float], str]:
+    """S2-3 (ACK 6 Oct 2026): the strike filter level is the anticipated level at the median time - the level the
+    EOD valuation (domain.anticipated_move) values the contract at - from the governing setup's thesis fields.
+    Returns (level, basis); no level -> (None, NO_ANTICIPATED_LEVEL), never a fallback to the range extreme."""
+    from domain.anticipated_move import anticipated_move_fields
+    try:
+        fields = anticipated_move_fields(
+            direction=direction, spot=spot, outcome_level=get('thesis_outcome_level'),
+            outcome_definition=get('thesis_outcome_definition'), timeframe=get('thesis_event_timeframe'),
+            duration={"test": get('thesis_duration_test'), "status": get('thesis_duration_status'),
+                      "n": get('thesis_duration_n'), "q50_bars": get('thesis_duration_q50_bars'),
+                      "q80_bars": get('thesis_duration_q80_bars'), "p_event": get('thesis_p_outcome_by_limit'),
+                      "p_invalidation": get('thesis_p_invalidation_by_limit')},
+            vol_annual=vol_annual, contract=None, governed_window_sessions=window_sessions,
+            trade_side_event=str(get('thesis_structure_alignment') or '').upper() == 'ALIGNED')
+    except Exception:   # never takes a ticker down; the absence is stated
+        return None, "NO_ANTICIPATED_LEVEL"
+    level = fields.get("anticipated_level_q50")
+    try:
+        level = float(level)
+    except (TypeError, ValueError):
+        return None, "NO_ANTICIPATED_LEVEL"
+    return (level, "ANTICIPATED_LEVEL_Q50") if math.isfinite(level) and level > 0 else (None, "NO_ANTICIPATED_LEVEL")
+
+
+def filter_strikes_to_level(leg_df: pd.DataFrame, level: Optional[float], right: str, spot: float) -> pd.DataFrame:
+    """Keep strikes with intrinsic value at the level (CALL: strike <= level; PUT: strike >= level). If none
+    qualifies, keep the strike closest to the level on the near side of spot (as before). No level: unchanged."""
+    if level is None or leg_df.empty:
+        return leg_df
+    if right == 'C':
+        reachable = leg_df[leg_df['strike'] <= level].copy()
+        if not reachable.empty:
+            return reachable
+        near = leg_df[leg_df['strike'] <= spot * 1.05].copy()
+    else:
+        reachable = leg_df[leg_df['strike'] >= level].copy()
+        if not reachable.empty:
+            return reachable
+        near = leg_df[leg_df['strike'] >= spot * 0.95].copy()
+    if near.empty:
+        return leg_df          # nothing near: the original set (scoring flags a wrong strike as last resort)
+    return near.loc[[(near['strike'] - level).abs().idxmin()]]
+
+
 def parse_structural_context(signal_row: pd.Series) -> Dict:
     """
     Extract all structural intelligence from the merged Vanguard + Discovery row.
@@ -4981,12 +5066,29 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         q50_bars=_f('thesis_duration_q50_bars'), q80_bars=_f('thesis_duration_q80_bars'),
         n=signal_row.get('thesis_duration_n'),
     )
+    _runway_hold, _runway_basis, _runway_is_evidence = (_ev_runway['evidence_runway_sessions'],
+                                                        _ev_runway['evidence_runway_basis'], True)
+    if _runway_hold is None:
+        # C then B (ACK 7 Oct 2026): pooled evidence of the setup's broader group, else volatility time to level.
+        from domain.anticipated_move import runway_fallback
+        from domain.structure_behaviour.engine import _duration_evidence
+        from domain.structure_behaviour.policy import load_policy
+        _sigma = _repair_alt_float(_f('sigma_daily_log_20'))
+        _fallback = runway_fallback(
+            evidence=_duration_evidence(load_policy()), timeframe=signal_row.get('thesis_event_timeframe'),
+            signal_type=signal_row.get('thesis_event'), direction=direction,
+            state=signal_row.get('thesis_event_state'), test=signal_row.get('thesis_duration_test') or None,
+            outcome_level=_f('thesis_outcome_level'), spot=spot,
+            vol_annual=(_sigma * math.sqrt(252.0)) if _sigma else None)
+        _runway_hold, _runway_is_evidence = _fallback['runway_sessions'], _fallback['runway_is_evidence']
+        _runway_basis = _fallback['runway_basis']
     _contract_runway = contract_runway_policy(
         signal_row.get('horizon_bucket')
         or signal_row.get('expected_move_window')
         or signal_row.get('macro_preferred_horizon'),
-        evidence_hold=_ev_runway['evidence_runway_sessions'],
-        evidence_basis=_ev_runway['evidence_runway_basis'],
+        evidence_hold=_runway_hold,
+        evidence_basis=_runway_basis,
+        hold_is_evidence=_runway_is_evidence,
     )
 
     # Expected hold days — use L2 if available, else DTE target
@@ -5066,6 +5168,8 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
     except Exception as _reach_error:   # never takes a ticker down; the absence is stated
         _reach_fields = {'target_reachable': None,
                          'target_reachable_state': f'NOT_EVALUATED_ERROR:{type(_reach_error).__name__}'}
+    _strike_level, _strike_basis = strike_selection_level(
+        _f, direction, spot, _reach_fields.get('target_reachable_vol_annual'), hold_days)
 
     return {
         '_signal_row'        : signal_row,   # FIX (2026-03-07): raw row stash for asof_date in _stand_down
@@ -5095,6 +5199,10 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         'target_3r'          : target_3r,
         'structural_target'  : structural_target,
         'structural_target_state': structural_target_state,
+        # S2-3: the range extreme is supporting only; strikes are filtered at the valued level.
+        'prior_range_extreme': structural_target,
+        'strike_filter_level': _strike_level,
+        'strike_filter_basis': _strike_basis,
         'target_3r_scenario'     : target_3r_scenario,
         'target_3r_scenario_state': target_3r_scenario_state,
         **_reach_fields,
@@ -5582,39 +5690,11 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             leg_df = core_df
             leg_df["best_available_suboptimal"] = False
 
-        # ── TARGET-REACHABILITY FILTER ─────────────────────────────────────────
-        # Root cause of BLOCK_WRONG_STRIKE: delta-zone selection picks a strike
-        # that is beyond the structural target, so option_value_at_target = 0 even
-        # when the trade thesis is fully correct.
-        #
-        # Rule: For CALLs, only keep strikes BELOW structural_target (option has
-        # intrinsic value at target). For PUTs, only keep strikes ABOVE
-        # structural_target. If no contracts pass this filter, fall back to the
-        # best available strike closest to the structural target on the correct side.
-        structural_target = ctx.get('structural_target') or ctx.get('target_reachable')
-        if structural_target and right == 'C' and not leg_df.empty:
-            reachable = leg_df[leg_df['strike'] <= structural_target].copy()
-            if not reachable.empty:
-                leg_df = reachable
-            else:
-                # Fallback: use strike closest to target from below (ATM-ish for CALL)
-                below = leg_df[leg_df['strike'] <= spot * 1.05].copy()
-                if not below.empty:
-                    closest_idx = (below['strike'] - structural_target).abs().idxmin()
-                    leg_df = below.loc[[closest_idx]]
-                # If truly nothing below target, proceed with original set (BLOCK_WRONG_STRIKE
-                # will fire at scoring time as last resort — better than no contract)
-
-        if structural_target and right == 'P' and not leg_df.empty:
-            reachable = leg_df[leg_df['strike'] >= structural_target].copy()
-            if not reachable.empty:
-                leg_df = reachable
-            else:
-                # Fallback: use strike closest to target from above
-                above = leg_df[leg_df['strike'] >= spot * 0.95].copy()
-                if not above.empty:
-                    closest_idx = (above['strike'] - structural_target).abs().idxmin()
-                    leg_df = above.loc[[closest_idx]]
+        # ── TARGET-REACHABILITY FILTER (S2-3, ACK 6 Oct 2026) ─────────────────
+        # Strikes are filtered against the level the contract is VALUED at (the governing setup's anticipated
+        # level at the median time), never the prior 40-bar range extreme; with no anticipated level no filter
+        # applies and the basis says so.
+        leg_df = filter_strikes_to_level(leg_df, ctx.get('strike_filter_level'), right, spot)
 
         if leg_df.empty: return None
 
@@ -5642,10 +5722,13 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             delta_score = max(0, 100 - abs(delta_abs - target_delta)*300)
 
             # 2. Runway fit (20%): short of the floor costs the most; extra runway costs a little so the
-            #    nearest covering expiry wins ties, but a longer contract is never excluded.
+            #    nearest covering expiry wins ties, but a longer contract is never excluded. With no runway
+            #    estimate the floor is only the holdable one, so extra runway costs nothing (ACK 7 Oct 2026).
+            _excess_per_day = (0.0 if runway['contract_runway_basis'] == 'NO_RUNWAY_ESTIMATE'
+                               else float(CONTRACT_SELECTION['runway_excess_score_per_day']))
             dte_score = max(0, 100
                             - max(0.0, floor_days - dte_val) * float(CONTRACT_SELECTION['runway_shortfall_score_per_day'])
-                            - max(0.0, dte_val - floor_days) * float(CONTRACT_SELECTION['runway_excess_score_per_day']))
+                            - max(0.0, dte_val - floor_days) * _excess_per_day)
 
             # 3. Theta efficiency: theta/mark ratio — lower is better (20%)
             _drag = theta_drag_pct(theta_per_calendar_day=theta, hold_sessions=ctx['hold_days'], mark=mark)
@@ -5707,7 +5790,10 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
                 'evidence_runway_sessions': ctx.get('evidence_runway_sessions'),
                 'evidence_move_sessions': ctx.get('evidence_move_sessions'),
                 'evidence_runway_basis': ctx.get('evidence_runway_basis'),
-                'contract_runway_state': 'RUNWAY_COVERED' if dte_val >= floor_days else 'RUNWAY_SHORT',
+                'contract_runway_state': ('RUNWAY_SHORT' if dte_val < floor_days
+                                          else 'NO_RUNWAY_ESTIMATE'
+                                          if runway['contract_runway_basis'] == 'NO_RUNWAY_ESTIMATE'
+                                          else 'RUNWAY_COVERED'),
                 'spread_above_limit': spread_above_limit,
                 'selection_reason': (
                     'BEST_AVAILABLE_SPREAD_ABOVE_LIMIT_MANUAL_REVIEW'
@@ -5734,7 +5820,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         if spread_above_limit:
             chosen = min(scores, key=lambda x: (x['spread_pct'], -x['contract_score']))
         else:
-            chosen = max(scores, key=lambda x: x['contract_score'])
+            # A score tie goes to the longer expiry: buy more runway than the anticipated move (ACK 18 Sep 2026).
+            chosen = max(scores, key=lambda x: (x['contract_score'], x['dte']))
         # ACK 18 Sep 2026: value the shortlist. Above the spread limit the row is manual review and the
         # tightest contract stays selected, with its value recorded.
         return apply_contract_value_selection(scores, chosen, ctx, allow_switch=not spread_above_limit)
@@ -5918,8 +6005,10 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
     # ACK 19 Sep 2026: only a contract that outlasts the planned hold (the runway floor) may be the value
     # choice; on central value alone the 18 Sep replay moved 244 contracts shorter for a worse downside.
     floor_days = float(_runway_from_ctx(ctx)['contract_runway_floor_days'])
+    # With no runway estimate there is no hold to value against or to cover (ACK 7 Oct 2026).
+    no_estimate = _runway_from_ctx(ctx)['contract_runway_basis'] == 'NO_RUNWAY_ESTIMATE'
     ok = [(c, v) for c, v in valued if _value_ok(v)]
-    covering = [(c, v) for c, v in ok if float(c['dte']) >= floor_days]
+    covering = [] if no_estimate else [(c, v) for c, v in ok if float(c['dte']) >= floor_days]
     best = max(covering, key=lambda cv: (cv[1]["emp_path_r_central"], cv[0]['contract_score'])) if covering else None
     mode = CONTRACT_SELECTION["value_selection_mode"]
     selected = best[0] if (best is not None and allow_switch and mode == "ACTIVE") else chosen
@@ -5927,6 +6016,8 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
         basis = "SCORE_FALLBACK_VALUE_UNAVAILABLE"
     elif not allow_switch:
         basis = "SCORE_SPREAD_ABOVE_LIMIT_REVIEW"
+    elif no_estimate:
+        basis = "SCORE_NO_RUNWAY_ESTIMATE"
     elif best is None:
         basis = "SCORE_NO_VALUED_CONTRACT_COVERS_HOLD"
     elif mode == "ACTIVE":
@@ -5939,7 +6030,7 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
         "delta": c.get('delta'), "ask": c.get('ask'), "spread_pct": c.get('spread_pct'),
         "contract_score": c.get('contract_score'), "r_central": v.get("emp_path_r_central"),
         "r_cautious": v.get("emp_path_r_cautious"), "quality_flag": v.get("emp_path_quality_flag"),
-        "covers_planned_hold": float(c['dte']) >= floor_days,
+        "covers_planned_hold": None if no_estimate else float(c['dte']) >= floor_days,
     } for c, v in valued]
     return {
         **selected,
@@ -6181,9 +6272,10 @@ def _options_liquidity_lifecycle_fields(
         "contract_runway_floor_days": contract.get("contract_runway_floor_days"),
         "contract_runway_basis": contract.get("contract_runway_basis"),
         "contract_runway_hold_sessions": contract.get("contract_runway_hold_sessions"),
-        "evidence_runway_sessions": contract.get("evidence_runway_sessions"),
-        "evidence_move_sessions": contract.get("evidence_move_sessions"),
-        "evidence_runway_basis": contract.get("evidence_runway_basis"),
+        # G3-01 (verification 20261008_220129): with no selected contract the ticker keeps its own duration
+        # evidence (never the empty contract's None); nothing is invented when the ticker has none.
+        **{field: (contract.get(field) if contract.get(field) is not None else ctx.get(field))
+           for field in ("evidence_runway_sessions", "evidence_move_sessions", "evidence_runway_basis")},
         "contract_runway_state": contract.get("contract_runway_state"),
         "spread_above_limit": contract.get("spread_above_limit"),
         **{field: contract.get(field) for field in CONTRACT_VALUE_FIELDS},
@@ -6222,8 +6314,8 @@ def _options_liquidity_lifecycle_fields(
         # window, not the governed planned holding period for this trade.
         # Step 4b (ACK 3 Oct 2026): a daily event's evidence runway is the hold selection used; the lifecycle
         # must consume the same one (hold_is_evidence below).
-        "remaining_hold_sessions": (_repair_alt_float(ctx.get("evidence_runway_sessions"))
-                                    or _repair_alt_float(governed_handoff.get("planned_hold_sessions"))),
+        # The lifecycle uses the hold contract selection used (ACK 7 Oct 2026); None = no runway estimate.
+        "remaining_hold_sessions": _repair_alt_float(ctx.get("contract_runway_hold_sessions")),
         "forecast_vol_annual": forecast_vol,
         # XLU-D01: no invented target; the runway uses the reachable target when there is no structural one.
         "structural_target": (_repair_alt_float(ctx.get("structural_target"))
@@ -6235,6 +6327,7 @@ def _options_liquidity_lifecycle_fields(
             governed_handoff.get("invalidation_spot")
         ),
     }
+    required.pop("remaining_hold_sessions", None)          # optional: no estimate -> no hold-based floor
     missing = [key for key, value in required.items() if value is None]
     if missing:
         return {
@@ -6262,8 +6355,9 @@ def _options_liquidity_lifecycle_fields(
                 bid=_repair_alt_float(contract.get("bid")),
                 ask=_repair_alt_float(contract.get("ask")),
                 dte=float(required["dte"]),
-                remaining_hold_sessions=float(required["remaining_hold_sessions"]),
-                hold_is_evidence=_repair_alt_float(ctx.get("evidence_runway_sessions")) is not None,
+                remaining_hold_sessions=_repair_alt_float(ctx.get("contract_runway_hold_sessions")),
+                hold_is_evidence=str(ctx.get("contract_runway_basis") or "").startswith(
+                    ("DURATION_EVIDENCE", "POOLED_EVIDENCE")),
                 forecast_vol_annual=float(required["forecast_vol_annual"]),
                 thesis_spot=float(required["spot"]),
                 current_spot=float(required["spot"]),
@@ -6296,8 +6390,8 @@ def _options_liquidity_lifecycle_fields(
         )
     lifecycle.update({
         **base,
-        "planned_hold_sessions": required["remaining_hold_sessions"],
-        "planned_hold_source": governed_handoff.get("planned_hold_source"),
+        "planned_hold_sessions": _repair_alt_float(ctx.get("contract_runway_hold_sessions")),
+        "planned_hold_source": ctx.get("contract_runway_basis"),
         "invalidation_spot": required["invalidation_spot"],
         "invalidation_source": governed_handoff.get("invalidation_source"),
         "thesis_state": (
@@ -6523,7 +6617,10 @@ def select_repair_alternative_contracts(
             continue
 
         delta_score = max(0.0, 100.0 - abs(delta_abs - target_delta) * 300.0)
-        dte_score = max(0.0, 100.0 - abs(float(dte_val) - float(dte_target)) * 3.0)
+        dte_gap = float(dte_val) - float(dte_target)
+        if runway["contract_runway_basis"] == "NO_RUNWAY_ESTIMATE":
+            dte_gap = min(0.0, dte_gap)        # no estimate: only a shortfall costs (ACK 7 Oct 2026)
+        dte_score = max(0.0, 100.0 - abs(dte_gap) * 3.0)
         liq_score = min(100.0, volume * 2.0 + oi / 20.0)
         spread_score = max(0.0, 100.0 - max(0.0, spread - spread_limit) * 400.0)
         reach_score = 60.0
@@ -7506,9 +7603,8 @@ def derive_verdict(ois_score: float, ctx: Dict, iv_ctx: Dict,
     # Rule: STAND_DOWN only when risk cannot be defined or execution is impossible.
     # Everything else is a WARNING on the output, not a gate.
 
-    # Gate 1: No directional conviction — nothing to trade
-    if intent == 'WAIT' and not ctx.get('vanguard_support_direction_repair'):
-        return 'STAND_DOWN', 'BLOCK_WAIT_INTENT: Structural intent is WAIT — no directional conviction'
+    # Phase 5.4 (ACK 8 Oct 2026): the legacy precor WAIT intent no longer stands down a governed thesis side; the
+    # intent stays visible in the `intent` column.
 
     # Gate 2: No direction determined — cannot select contract type
     if direction == 'NONE':
@@ -8012,7 +8108,7 @@ def build_options_research_contract(
     if not invalid_quote and bid is not None and ask is not None and mid is not None and mid > 0:
         spread_fraction = quote_spread_fraction(bid, ask)
         spread_pct = round(spread_fraction, 6) if spread_fraction is not None else None
-        if spread_pct is not None and spread_pct > OPTIONS_SPREAD_HARD_PCT:
+        if spread_pct is not None and spread_pct > OPTIONS_SPREAD_HARD_FRACTION:
             soft_review_flags.append("SPREAD_GT_25PCT")
 
     if dte is not None and dte <= 0:
@@ -8057,7 +8153,7 @@ def build_options_research_contract(
     trigger_info_flag = trigger_state if trigger_state in {"TRIGGER_STALE", "NO_TRIGGER"} else ""
 
     direction_fit_score = 100.0 if ctx.get("direction") in {"CALL", "PUT"} and str(ctx.get("preferred_strategy", "")).endswith(str(ctx.get("direction"))) else 70.0
-    liquidity_score = 0.0 if spread_pct is None else (100.0 if spread_pct <= OPTIONS_SPREAD_PASS_PCT else _score_linear(spread_pct, OPTIONS_SPREAD_HARD_PCT, OPTIONS_SPREAD_PASS_PCT))
+    liquidity_score = 0.0 if spread_pct is None else (100.0 if spread_pct <= OPTIONS_SPREAD_PASS_FRACTION else _score_linear(spread_pct, OPTIONS_SPREAD_HARD_FRACTION, OPTIONS_SPREAD_PASS_FRACTION))
     breakeven_score = _score_linear(breakeven_feasibility, 0.75, 1.5)
     ivp = _oi_float(iv_ctx.get("iv_percentile"))
     if ivp is None:
@@ -8222,6 +8318,31 @@ def _resolve_asof_date(signal_row) -> str:
     return ''
 
 
+def _thesis_alternatives_priceable(signal_row: Any) -> bool:
+    """Phase 5.4 (ACK 8 Oct 2026): a ticker with any adopted or conditional thesis has its chain acquired, so the
+    candidate lane can price every live thesis. Missing counts are not theses (never assumed)."""
+    get = signal_row.get if hasattr(signal_row, "get") else (lambda k, d=None: d)
+    for key in ("thesis__adopted_count", "thesis__conditional_count"):
+        try:
+            if float(get(key, 0) or 0) > 0:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
+
+
+def _chain_lineage_fields(chain: pd.DataFrame) -> Dict[str, Any]:
+    finality = chain.attrs.get('provider_finality')
+    return {
+        'option_chain_dataset_id': chain.attrs.get('canonical_dataset_id', ''),
+        'option_chain_provider': chain.attrs.get('canonical_provider', 'MARKETDATA'),
+        'option_chain_resolution': chain.attrs.get('canonical_resolution', ''),
+        'option_chain_provider_finality': finality.get('finality_state', '') if isinstance(finality, dict) else '',
+        'option_chain_provider_finality_reasons_json': json.dumps(
+            finality.get('reasons', []) if isinstance(finality, dict) else []),
+    }
+
+
 def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]] = None, tle_context: Optional[Dict[str, Any]] = None) -> Dict:
     """
     Full options intelligence pipeline for a single signal.
@@ -8245,10 +8366,21 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     # audit, but this production pipeline does not trade non-directional or
     # exotic structures.
     if ctx['direction'] not in GOVERNED_DIRECTED_SIDES:
-        return _stand_down(
-            ctx,
-            'No governed long CALL/PUT direction; chain request suppressed',
-        )
+        if not _thesis_alternatives_priceable(signal_row):
+            return _stand_down(
+                ctx,
+                'No governed long CALL/PUT direction; chain request suppressed',
+            )
+        # Phase 5.4 (ACK 8 Oct 2026): no ticker contract without a governed side, but the ticker's one chain is
+        # acquired and recorded here so the candidate lane prices its adopted and conditional theses.
+        try:
+            _thesis_chain = fetch_chain(ticker)
+        except Exception as e:
+            return _stand_down(ctx, f'No governed long CALL/PUT direction; thesis chain fetch failed: {e}')
+        return {
+            **_stand_down(ctx, 'No governed long CALL/PUT direction; thesis alternatives priced in the candidate lane'),
+            **_chain_lineage_fields(_thesis_chain),
+        }
 
     print(f"  [{ticker}] T{ctx['tier']} Ph{ctx['phase']} "
           f"{ctx['intent']} → {ctx['direction']} | "
@@ -8307,19 +8439,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             **_contract_rejection_fields('CHAIN_FETCH_FAILED', 'CHAIN_FETCH'),
         }
 
-    _chain_lineage = {
-        'option_chain_dataset_id': chain.attrs.get('canonical_dataset_id', ''),
-        'option_chain_provider': chain.attrs.get('canonical_provider', 'MARKETDATA'),
-        'option_chain_resolution': chain.attrs.get('canonical_resolution', ''),
-        'option_chain_provider_finality': (
-            chain.attrs.get('provider_finality', {}).get('finality_state', '')
-            if isinstance(chain.attrs.get('provider_finality'), dict) else ''
-        ),
-        'option_chain_provider_finality_reasons_json': json.dumps(
-            chain.attrs.get('provider_finality', {}).get('reasons', [])
-            if isinstance(chain.attrs.get('provider_finality'), dict) else []
-        ),
-    }
+    _chain_lineage = _chain_lineage_fields(chain)
 
     if chain.empty:
         return {
@@ -8332,6 +8452,13 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     gex_df, gamma_flip, flip_conf = compute_gex(chain, spot)
     gamma_flip_meta = compute_gamma_flip(chain, spot)   # Fix 4: state, method, legacy comparison value
     walls = compute_oi_walls(chain, spot)
+    # Output-trust item 7 (ACK 10 Oct 2026): gamma-weighted concentration by expiry basket, separated from dealer
+    # influence and observed price response. The legacy raw-OI walls above stay for their readers until ACK decides.
+    wall_assessment = _wall_assessment(ticker, chain, spot, ctx, gamma_flip, flip_conf)
+    # Readers (ACK 10 Oct 2026, design section 8): every reader below reads the governed hold-basket wall; the raw-OI
+    # walls stay by name (legacy_oi_*) for audit.
+    from domain.option_walls import governed_walls
+    walls = governed_walls(wall_assessment, walls)
     pcr_val, pcr_signal = compute_pcr(chain)
     gamma_surface_source = "MARKETDATA_CHAIN_GEX_BY_STRIKE"
     try:
@@ -8467,6 +8594,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'ivp_source'     : iv_ctx.get('ivp_source'),
                 'iv_rank_definition': iv_ctx.get('iv_rank_definition'),
                 'iv_rank_window_sessions': iv_ctx.get('iv_rank_window_sessions'),
+                'iv_history_state': iv_ctx.get('iv_history_state'),
+                'iv_history_first_date': iv_ctx.get('iv_history_first_date'),
                 'ivp_suppressed_sources': iv_ctx.get('ivp_suppressed_sources'),
                 'gamma_flip'     : gamma_flip,
                 'gamma_flip_state': gamma_flip_meta.get('gamma_flip_state'),
@@ -8474,10 +8603,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
                 'gamma_flip_legacy_first_sign_change': gamma_flip_meta.get('gamma_flip_legacy_first_sign_change'),
                 'gamma_flip_gap_pct': flip_gap_pct,
                 **gamma_island,
-                'call_wall'      : walls.get('call_wall'),
-                'put_wall'       : walls.get('put_wall'),
-                'call_wall_state': walls.get('call_wall_state'),
-                'put_wall_state' : walls.get('put_wall_state'),
+                **wall_assessment,
+                **{k: walls.get(k) for k in _GOVERNED_WALL_FIELDS},
                 'oi_max_call_strike': walls.get('oi_max_call_strike'),
                 'oi_max_put_strike': walls.get('oi_max_put_strike'),
                 'max_pain'       : walls.get('max_pain'),
@@ -8963,6 +9090,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'ivp_source'              : iv_ctx.get('ivp_source'),
         'iv_rank_definition'      : iv_ctx.get('iv_rank_definition'),
         'iv_rank_window_sessions' : iv_ctx.get('iv_rank_window_sessions'),
+        'iv_history_state'        : iv_ctx.get('iv_history_state'),
+        'iv_history_first_date'   : iv_ctx.get('iv_history_first_date'),
         'ivp_suppressed_sources'  : iv_ctx.get('ivp_suppressed_sources'),
         'iv_history_samples'      : iv_ctx.get('iv_history_samples'),
         'iv_vs_rv_range_252d'     : iv_ctx.get('iv_vs_rv_range_252d'),
@@ -8996,10 +9125,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'gamma_island_gex_sign'   : gamma_island.get('gamma_island_gex_sign'),
         'gamma_island_source'     : gamma_island.get('gamma_island_source'),
         'gamma_island_note'       : gamma_island.get('gamma_island_note'),
-        'call_wall'               : walls.get('call_wall'),
-        'put_wall'                : walls.get('put_wall'),
-        'call_wall_state'         : walls.get('call_wall_state'),
-        'put_wall_state'          : walls.get('put_wall_state'),
+        **wall_assessment,
+        **{k: walls.get(k) for k in _GOVERNED_WALL_FIELDS},
         'oi_max_call_strike'      : walls.get('oi_max_call_strike'),
         'oi_max_put_strike'       : walls.get('oi_max_put_strike'),
         'max_pain'                : walls.get('max_pain'),
@@ -9324,11 +9451,12 @@ def build_convexity_strike_map(
         if direction == "CALL":
             _stop = _oi_float(
                 _sr.get("stop_loss") or _sr.get("structural_support") or _sr.get("invalidation_price")
-                or walls.get("put_wall")
+                or (walls.get("put_wall") if walls.get("put_wall_level_confirmed") else None)
             )
         else:
             _stop = _oi_float(
-                _sr.get("stop_loss") or _sr.get("invalidation_price") or walls.get("call_wall")
+                _sr.get("stop_loss") or _sr.get("invalidation_price")
+                or (walls.get("call_wall") if walls.get("call_wall_level_confirmed") else None)
             )
         if _stop and structural_target != _stop:
             if direction == "CALL" and structural_target > _stop:
@@ -10116,12 +10244,13 @@ def _run_candidate_expression_lane(vanguard_csv: str, eligible: pd.DataFrame, re
     lane = evaluate_candidate_expressions(
         packet.get("records", []), rows_by_ticker, results_by_ticker,
         fetch_chain=fetch_chain, parse_context=parse_structural_context, select_contract=select_best_contract,
-        max_candidates=int(policy["expression"]["max_candidates_per_run"]))
+        max_candidates=(None if policy["expression"].get("max_candidates_per_run") is None
+                        else int(policy["expression"]["max_candidates_per_run"])))
     path = os.path.join(output_dir, f"options_candidate_expressions_{run_id}.csv")
     pd.DataFrame(lane).to_csv(path, index=False)
     found = sum(1 for r in lane if r.get("Expression_Status") == "CONTRACT_FOUND")
     print(f"[SAVE] {path} (candidates={len(lane)}, contract_found={found})")
-    return path
+    return lane
 
 
 def run_options_layer(
@@ -10205,20 +10334,12 @@ def run_options_layer(
             support_mask = support_mask | merged['final_recommendation'].fillna('').astype(str).str.upper().str.contains('EDGE_STRONG', regex=False)
         vanguard_trade = set(merged.loc[support_mask, 'ticker'])
 
-    # Now apply tier filter — but include Vanguard-supported tickers regardless of tier
-    eligible = merged[
-        merged['tier'].isin(ELIGIBLE_TIERS) | merged['ticker'].isin(vanguard_trade)
-    ].copy()
+    # Phase 5.4 (ACK 8 Oct 2026): no tier or legacy precor-WAIT exclusion. Direction is the thesis's; every
+    # Discovery+Vanguard row reaches Options and is either priced or stood down with its stated reason.
+    eligible = merged.copy()
     eligible = eligible.sort_values('composite_score', ascending=False)
-    print(f"[SCOPE] Tier 0/1/2 eligible + {len(vanguard_trade)} Vanguard support overrides: {len(eligible)} signals")
-
-    # Exclude WAIT intent — no options analysis needed
-    # Exception: tickers with Vanguard statistical support pass regardless of intent
-    eligible = eligible[
-        (eligible['precor_intent'] != 'WAIT') |
-        (eligible['ticker'].isin(vanguard_trade))
-    ]
-    print(f"[SCOPE] After excluding WAIT (preserving {len(vanguard_trade)} Vanguard-supported tickers): {len(eligible)} signals")
+    print(f"[SCOPE] All {len(eligible)} signals in scope (no tier/WAIT exclusion; "
+          f"{len(vanguard_trade)} carry Vanguard support labels)")
 
     if max_signals:
         eligible = eligible.head(max_signals)
@@ -10281,7 +10402,8 @@ def run_options_layer(
                     _candidate_ticker = str(_candidate.get("ticker", ""))
                     if _candidate_ticker in _exception_tickers:
                         continue
-                    if parse_structural_context(_candidate).get("direction") in GOVERNED_DIRECTED_SIDES:
+                    if (parse_structural_context(_candidate).get("direction") in GOVERNED_DIRECTED_SIDES
+                            or _thesis_alternatives_priceable(_candidate)):
                         _chain_authorised_tickers.append(_candidate_ticker)
                 except Exception:
                     # The row remains in Options output as a fail-closed data
@@ -10488,6 +10610,17 @@ def run_options_layer(
 
     # ── Build output DataFrame ─────────────────────────────────────────────
     out_df = _annotate_ev3_handoff_frame(pd.DataFrame(results))
+    # Phase 5.4 (ACK 8 Oct 2026): every live thesis is priced in the candidate lane before the Options rows are
+    # saved; each row carries the per-ticker summary so the Lab card can show the other theses priced.
+    try:
+        from scripts.options_candidate_lane import summarise_by_ticker
+        _lane_rows = _run_candidate_expression_lane(vanguard_csv, eligible, results, run_id, output_dir) or []
+        _lane_summary = summarise_by_ticker(_lane_rows)
+        _tickers_upper = out_df['ticker'].astype(str).str.upper()
+        for _field in ("thesis_alternatives_count", "thesis_alternatives_tested", "thesis_alternatives_json"):
+            out_df[_field] = _tickers_upper.map(lambda t, f=_field: (_lane_summary.get(t) or {}).get(f))
+    except Exception as _lane_error:
+        print(f"[CANDIDATE LANE] not produced: {type(_lane_error).__name__}: {_lane_error}")
 
     # Summary stats
     verdicts = out_df['options_verdict'].value_counts().to_dict()
@@ -10551,12 +10684,6 @@ def run_options_layer(
     out_df.to_csv(latest_path, index=False)
     print(f"[SAVE] {latest_path}")
 
-    # BEH-001 phase 2B: expression search per behavioural candidate. A separate pass
-    # after the per-ticker outputs; measurement only and never fails the Options run.
-    try:
-        _run_candidate_expression_lane(vanguard_csv, eligible, results, run_id, output_dir)
-    except Exception as _lane_error:
-        print(f"[CANDIDATE LANE] not produced: {type(_lane_error).__name__}: {_lane_error}")
     direction_record_columns = [
         column for column in (
             'ticker', 'run_id', 'dir_calc_version', 'direction_policy_version',
@@ -10631,7 +10758,8 @@ def run_options_layer(
         'gamma_island_level','gamma_island_distance_pct',
         'gamma_island_strength_share','gamma_island_isolation_ratio',
         'gamma_island_gex_sign','gamma_island_source','gamma_island_note',
-        'call_wall','put_wall','call_wall_state','put_wall_state',
+        *_GOVERNED_WALL_FIELDS,
+        *_WALL_FIELDS,
         'oi_max_call_strike','oi_max_put_strike','pcr_signal',
         'target_in_play','breakeven_pct','rr_options','rr_options_state',
         'rr_options_tradeability','rr_options_spread_fraction','ev_adjusted',
@@ -10730,6 +10858,7 @@ def run_options_layer(
         'hv_30d','atm_iv','iv_vs_hv','iv_direction','iv_regime',
         'iv_percentile_source','iv_history_samples','iv_vs_rv_range_252d','iv_vs_rv_range_30d',
         'ivp_source','iv_rank_definition','iv_rank_window_sessions','ivp_suppressed_sources',
+        'iv_history_state','iv_history_first_date',
         # PIPELINE-01 (2026-05-03): Single source of truth — discovery structural fields
         # must survive the full pipeline to EOD/morning validation. These were written
         # by discovery but dropped here, causing rr_underlying=0.00 in morning manifest

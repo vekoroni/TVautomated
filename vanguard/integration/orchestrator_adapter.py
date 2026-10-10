@@ -249,7 +249,7 @@ class OrchestratorAdapter:
         df = _to_ohlcv_df(raw, ticker)
 
         if df.empty:
-            raise _Reject(["NO_OHLCV_DATA"],
+            raise _Reject([_bar_rejection_code(payload)],
                           f"No valid OHLCV for {ticker} in any source field",
                           diag={"tried": ["technical_data.ohlcv",
                                           "ohlcv_daily", "timeseries.ohlcv_daily", "ohlcv"]})
@@ -421,3 +421,10 @@ def _to_ohlcv_df(raw: Any, ticker: str = "?") -> pd.DataFrame:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=["close", "volume"]).reset_index(drop=True)
     return df
+
+
+def _bar_rejection_code(payload: dict) -> str:
+    """RC04 (Phase 4): the package factory's precise history reason (e.g. HISTORY_BEHIND_EVIDENCE_SESSION), not a
+    generic NO_OHLCV_DATA when bars exist but did not reach the evidence session."""
+    reason = str((payload or {}).get("data_failure_reason") or "").strip()
+    return reason.split(" ")[0] if reason else "NO_OHLCV_DATA"

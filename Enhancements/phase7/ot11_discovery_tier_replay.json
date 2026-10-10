@@ -1,0 +1,144 @@
+{
+  "run": "20261008_220129",
+  "survivors": 2933,
+  "tier4_drops_last_8_runs": {
+    "20260926_173730": 0,
+    "20260927_205123": 0,
+    "20260930_083504": 0,
+    "20261001_211641": 0,
+    "20261003_213716": 0,
+    "20261005_072245": 0,
+    "20261006_060401": 0,
+    "20261008_220129": 0
+  },
+  "tier_old": {
+    "0": 1249,
+    "1": 1631,
+    "2": 52,
+    "3": 1
+  },
+  "tier_new": {
+    "0": 528,
+    "1": 266,
+    "2": 1644,
+    "3": 495
+  },
+  "tier_old_x_new": {
+    "0->0": 236,
+    "0->2": 691,
+    "0->3": 203,
+    "0->1": 119,
+    "1->2": 922,
+    "1->1": 146,
+    "1->0": 284,
+    "1->3": 279,
+    "2->2": 31,
+    "2->0": 7,
+    "2->3": 13,
+    "2->1": 1,
+    "3->0": 1
+  },
+  "readiness_by_new_tier": {
+    "0": {
+      "READY_FOR_HUMAN_REVIEW": 528
+    },
+    "1": {
+      "READY_FOR_HUMAN_REVIEW": 266
+    },
+    "2": {
+      "WAIT_TRIGGER": 1644
+    },
+    "3": {
+      "NOT_ADOPTED": 443,
+      "CLOSED_RETEST_FAILED": 24,
+      "CLOSED_OUTCOME_REACHED": 21,
+      "CLOSED_INVALIDATED": 7
+    }
+  },
+  "geometry_new_tier_0_1": {
+    "NOT_MEASURED": 324,
+    "GEOMETRY_NOT_JUSTIFIED": 266,
+    "JUSTIFIED": 155,
+    "NaN": 49
+  },
+  "order_overlap_top_k": {
+    "50": 3,
+    "100": 6,
+    "200": 20
+  },
+  "top10_old": [
+    "WBD",
+    "TMHC",
+    "GPAT",
+    "HAYN",
+    "PKE",
+    "GTLS",
+    "APGE",
+    "ESPR",
+    "CRNX",
+    "MBAV"
+  ],
+  "top10_new": [
+    "BFST",
+    "CMT",
+    "CPRX",
+    "DAVE",
+    "DJCO",
+    "DXPE",
+    "ERJ",
+    "EXEL",
+    "FARO",
+    "FBNC"
+  ],
+  "win_probability_old": {
+    "min": 50.1,
+    "median": 57.3,
+    "max": 62.1,
+    "basis": "COMPOSITE_RESCALED_NOT_A_PROBABILITY"
+  },
+  "win_probability_new": {
+    "covered": 2496,
+    "null_no_setup_rate": 437,
+    "median": 0.3039,
+    "q10": 0.1931,
+    "q90": 0.5458
+  },
+  "horizon_old": {
+    "1_5d": 2880,
+    "6_10d": 52,
+    "11_20d": 1
+  },
+  "horizon_new": {
+    "OVER_20d": 1784,
+    "NO_EVIDENCE_HOLD": 795,
+    "11_20d": 285,
+    "6_10d": 69
+  },
+  "quality_gate_old": {
+    "candidate_ratio": 0.882,
+    "early_ratio": 0.376,
+    "tier1_plus_2": 1683
+  },
+  "quality_gate_new": {
+    "candidate_ratio": 0.882,
+    "thesis_go": 528,
+    "passes": true
+  },
+  "acceptance_built": {
+    "tier_built_equals_replay": false,
+    "tier_built": {
+      "0": 479,
+      "1": 315,
+      "2": 1644,
+      "3": 495
+    },
+    "order_built_equals_replay": false,
+    "horizon_built_from_discovery_evidence": {
+      "OVER_20d": 1952,
+      "NO_EVIDENCE_HOLD": 595,
+      "11_20d": 306,
+      "6_10d": 80
+    },
+    "win_probability_built_covered": 2496
+  }
+}

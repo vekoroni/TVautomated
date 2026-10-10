@@ -1,0 +1,9 @@
+{
+  "version": "discovery_thesis_tier_v1",
+  "tier_source": "thesis_v1",
+  "rollback_value": "legacy_composite",
+  "min_candidate_ratio": 0.15,
+  "min_thesis_go": 1,
+  "basis": "ACK 10 Oct 2026 (item 11, D2-1 Step B, decisions D11-1..4): Discovery tier = thesis disposition (0 GO by the trigger layer's GO rule, 1 READY_NOT_GO, 2 WAITING, 3 NO_ACTIVE_THESIS); no legacy composite drop; order by the setup's held-out within-hold rate, lane hit rate, ticker; win_probability = the setup's held-out within-hold rate or null; horizon label from the setup's evidence hold; quality gate >= 15% survivors and >= 1 thesis GO. legacy_composite restores the Wyckoff/Crabel composite tier, tier-4 drop, lift-proxy order, rescaled win probability and tier horizon (code kept). Replay: Enhancements/phase7/ot11_discovery_tier_replay.json.",
+  "authority": "DISCOVERY_TIER_ORDER_LABELS"
+}

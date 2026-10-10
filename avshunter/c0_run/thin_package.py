@@ -192,12 +192,12 @@ class ThinPackageFactory:
         # The backfill attaches canonical bars only when they are fresh at the evidence session and
         # long enough; otherwise the package stays bar-less (the manifest already records why).
         # Same rule here, so Vanguard's data-contract gate behaves identically in both modes.
-        fresh = (
-            not frame.empty
-            and len(frame) >= DataContractValidator.MIN_BARS
-            and canonical_history_is_fresh(frame, reference_date=ref.evidence_session)
-            and pd.to_datetime(frame["date"]).max().date() == ref.evidence_session
-        )
+        # RC04 (Phase 4): the one history policy shared with the manifest; a rejection carries its precise reason.
+        from avshunter.c0_run.canonical_manifest import evidence_history_policy
+        policy = evidence_history_policy(frame, evidence_session=ref.evidence_session,
+                                         min_bars=DataContractValidator.MIN_BARS)
+        fresh = policy["ok"]
+        pkg["data_failure_reason"] = None if fresh else policy["reason"]
         if fresh:
             actuarial = pkg.get("actuarial") if isinstance(pkg.get("actuarial"), dict) else None
             pkg = attach_canonical_bars(pkg, frame, actuarial_snapshot=actuarial, today=self.today)

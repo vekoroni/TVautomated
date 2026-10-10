@@ -48,6 +48,7 @@ def test_run_condition_vocabulary_is_central_and_complete() -> None:
         "POSTOPEN_CONTRACT_REFRESH",
         "REPLAY",
         "TEST",
+        "LIVE_PROVING",   # ACK 8 Oct 2026: operator-started run, used and measured, kept out of model fitting
     }
 
 

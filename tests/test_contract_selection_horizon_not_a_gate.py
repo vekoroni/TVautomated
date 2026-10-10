@@ -53,12 +53,19 @@ def _structural_context(horizon: str | None) -> dict:
     return oi.parse_structural_context(row)
 
 
-def _ctx(horizon: str | None = "1_5d", direction: str = "CALL") -> dict:
+# A 20-session evidence runway (the setup's own q80 time to its level): +3 monitor, +5 exit buffer = 28 sessions
+# = 40 calendar days. ACK 7 Oct 2026 (L3 / runway C-then-B): the horizon bucket no longer supplies a hold, so the
+# coverage rules below are exercised with an explicit evidence runway.
+EVIDENCE_RUNWAY = oi.contract_runway_policy(None, evidence_hold=20, evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50")
+EVIDENCE_FLOOR_DAYS = math.ceil((20 + 3 + 5) * 7 / 5)
+
+
+def _ctx(horizon: str | None = "1_5d", direction: str = "CALL", runway: dict | None = None) -> dict:
     """Selection context as the existing selector tests build it, with the runway the run attaches."""
     return {"ticker": "TEST", "direction": direction, "spot": 100.0, "horizon_bucket": horizon,
             "structural_target": 110.0 if direction == "CALL" else 90.0, "hold_days": 5,
             "dte_window": oi.governed_dte_window(horizon), "dte_config": oi.governed_dte_config(horizon),
-            **_runway(horizon)}
+            **(runway if runway is not None else _runway(horizon))}
 
 
 def _runway(horizon):
@@ -85,29 +92,41 @@ def test_a_longer_dated_contract_is_never_dropped_for_being_longer():
     assert selected is not None and selected["dte"] == 64.0
 
 
-# ACK 18 Sep 2026 decision (a): the runway floor is the planned hold - the governed 20-session thesis window
-# (+3 monitor, +5 exit buffer = 28 sessions = 40 calendar days) - whatever the anticipated move. The move is
-# expected within the window; the contract must outlast the hold.
+# ACK 18 Sep 2026 decision (a): the runway floor is the planned hold (+3 monitor, +5 exit buffer), whatever the
+# anticipated move. The move is expected within the hold; the contract must outlast it. ACK 7 Oct 2026 (L3 / runway
+# C-then-B): that hold is the setup's evidence runway (own q80, else pooled, else calibrated volatility time), no
+# longer the fixed 20-session thesis window.
 
 @pytest.mark.parametrize("horizon", ["1_5d", "6_10d", "11_20d"])
 def test_monthly_chain_gets_the_nearest_expiry_covering_the_planned_hold(horizon):
     rows = [_contract("TEST260918C00100000", 1.0), _contract("TEST261016C00100000", 29.0),
             _contract("TEST261120C00100000", 64.0), _contract("TEST261218C00100000", 92.0)]
-    selected = _select(rows, _ctx(horizon))
+    selected = _select(rows, _ctx(horizon, runway=EVIDENCE_RUNWAY))
     assert selected["dte"] == 64.0          # 29 days cannot outlast a 20-session hold; 92 is more than needed
 
 
 def test_the_runway_floor_is_the_planned_hold_not_the_anticipated_move():
-    floors = {h: _structural_context(h)["contract_runway_floor_days"] for h in ("1_5d", "6_10d", "11_20d", None)}
-    assert set(floors.values()) == {math.ceil((20 + 3 + 5) * 7 / 5)}
-    assert _structural_context("1_5d")["contract_runway_hold_sessions"] == 20
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the horizon bucket sets neither the floor nor the hold. With an
+    # evidence hold the floor is that hold for every horizon; with none it is only the holdable-past-issue floor.
+    evidence = {h: oi.contract_runway_policy(h, evidence_hold=20, evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50")
+                for h in ("1_5d", "6_10d", "11_20d", None)}
+    assert {r["contract_runway_floor_days"] for r in evidence.values()} == {EVIDENCE_FLOOR_DAYS}
+    assert {r["contract_runway_hold_sessions"] for r in evidence.values()} == {20}
+    no_estimate = {h: _structural_context(h) for h in ("1_5d", "6_10d", "11_20d", None)}
+    assert {c["contract_runway_floor_days"] for c in no_estimate.values()} == {
+        calculate_dte_requirement(None)["minimum_holdable_dte"]}
+    assert {c["contract_runway_hold_sessions"] for c in no_estimate.values()} == {None}
 
 
 def test_short_runway_is_selected_and_flagged_for_manual_review():
-    selected = _select([_contract("TEST261002C00100000", 15.0)], _ctx("6_10d"))
+    selected = _select([_contract("TEST261002C00100000", 15.0)], _ctx("6_10d", runway=EVIDENCE_RUNWAY))
     assert selected is not None
     assert selected["contract_runway_state"] == "RUNWAY_SHORT"
-    assert selected["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
+    assert selected["contract_runway_floor_days"] == EVIDENCE_FLOOR_DAYS
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): with no runway estimate the same holdable contract is still selected,
+    # labelled NO_RUNWAY_ESTIMATE - never reported as covering a hold nobody estimated.
+    unestimated = _select([_contract("TEST261002C00100000", 15.0)], _ctx("6_10d"))
+    assert unestimated is not None and unestimated["contract_runway_state"] == "NO_RUNWAY_ESTIMATE"
 
 
 def test_a_contract_that_cannot_be_held_past_issue_is_never_chosen():
@@ -146,17 +165,26 @@ def test_delta_preference_is_the_same_for_every_horizon():
 # --- missing horizon: reported, not defaulted ----------------------------------------------------------------------
 
 @pytest.mark.parametrize("horizon", [None, "", "UNKNOWN"])
-def test_missing_horizon_is_reported_and_uses_the_full_thesis_window_not_the_shortest(horizon):
+def test_missing_horizon_is_reported_and_never_defaulted_to_the_shortest_window(horizon):
     ctx = _structural_context(horizon)
-    # Step 4b (ACK 3 Oct 2026): the governed basis now also states why no evidence runway applied.
-    assert ctx["contract_runway_basis"].startswith("THESIS_WINDOW_D2|HORIZON_UNAVAILABLE")
-    assert ctx["contract_runway_floor_days"] == math.ceil((20 + 3 + 5) * 7 / 5)
+    assert ctx["horizon_bucket"] == horizon                          # reported as received, never substituted
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the runway no longer comes from the horizon or the fixed thesis window.
+    # Without evidence the absence is labelled and the floor is only the holdable one - the same as for a known
+    # horizon, never the shortest window's runway.
+    assert ctx["contract_runway_basis"] == "NO_RUNWAY_ESTIMATE"
+    assert ctx["contract_runway_floor_days"] == _structural_context("11_20d")["contract_runway_floor_days"]
+    assert ctx["contract_runway_floor_days"] != oi.governed_dte_config("1_5d")["lifecycle_minimum_dte"]
+    # With evidence, a missing horizon gets the evidence runway, exactly as a known one does.
+    assert (oi.contract_runway_policy(horizon, evidence_hold=20, evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50")
+            == EVIDENCE_RUNWAY)
 
 
-def test_known_horizon_is_the_runway_basis_and_stays_descriptive():
+def test_known_horizon_stays_descriptive_and_no_longer_sets_the_runway_basis():
     ctx = _structural_context("6_10d")
-    assert ctx["contract_runway_basis"].startswith("THESIS_WINDOW_D2|HORIZON:6_10d")
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the horizon bucket is no longer the runway basis (was HORIZON:6_10d).
+    assert ctx["contract_runway_basis"] == "NO_RUNWAY_ESTIMATE"
     assert ctx["dte_config"]["planned_hold_sessions"] == 10          # the horizon is still carried
+    assert ctx["dte_window"] == oi.governed_dte_window("6_10d")
 
 
 # --- lifecycle: short runway is a manual-review flag, not a repair ------------------------------------------------

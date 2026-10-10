@@ -1,0 +1,11 @@
+{
+  "run": "20261008_220129",
+  "contracts": 2173,
+  "model_inside_bid_ask": 2023,
+  "share_inside": 0.931,
+  "abs_error_vs_mid": {
+    "median": 0.0099,
+    "p90": 0.0793
+  },
+  "note": "contract IV is the provider's quote-implied IV; agreement tests the engine and its inputs (rate, days, dividend basis), not a forecast"
+}

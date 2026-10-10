@@ -61,6 +61,27 @@ LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"wyckoff_validation_probability_fields_ba
 # Trade lane and intake labels (ACK 4 Oct 2026): additive book fields.
 from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS as _TL
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_TL)
+# Phase 5 (ACK 8 Oct 2026): the thesis's own story, Vanguard context and the Morning build-up, carried as recorded.
+from contracts.thesis_record import THESIS_SPINE_FIELDS as _TS, VANGUARD_CONTEXT_FIELDS as _VC, INTRADAY_BUILDUP_FIELDS as _IB
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_TS) | set(_VC) | set(_IB)
+# Direction validation label (ACK 7 Oct 2026, lab_control._direction_validation): display only, from config.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"direction_validation_state", "direction_validation_basis"}
+# RC10 (ACK E11b 8 Oct 2026): the one ranking owner's published basis.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"rank_expected_multiple", "rank_group", "rank_basis"}
+# Phase 5.4 (ACK 8 Oct 2026): the other theses priced by the Options candidate lane.
+from contracts.thesis_record import OPTIONS_ALTERNATIVE_FIELDS as _ALT
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_ALT)
+# Output-trust item 1 (ACK 9 Oct 2026): the governance path published as the direction record status.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"direction_record_status"}
+# Output-trust item 6 (ACK 9 Oct 2026): the IV history samples' state and first date (no fixed "252D" label).
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"iv_history_state", "iv_history_first_date"}
+# Output-trust item 7 (ACK 10 Oct 2026): gamma-weighted wall concentrations by expiry basket and the flip confidence.
+from domain.option_walls import WALL_FIELDS as _WALLS
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {*_WALLS, "gamma_flip_conf"}
+from domain.option_walls import GOVERNED_WALL_FIELDS as _GOV_WALLS
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_GOV_WALLS) - {"call_wall", "put_wall", "call_wall_state", "put_wall_state"}
+# Output-trust item 9 (ACK 9-10 Oct 2026): earnings confirmation tiers - the conflict, each source, the note.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"earnings_disagreement", "earnings_sources_json", "earnings_confirmation_note"}
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",
@@ -101,6 +122,12 @@ LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "i
                          # analytics block (display only).
                          "contract_greeks_source",
                          *CONTRACT_ANALYTICS_FIELDS}
+# Superseded by the rename (approved; L5 context, ACK 7 Oct 2026): monetisability_structural_target_spot is
+# published as monetisability_target_spot, with its basis in monetisability_target_basis.
+RENAMED_FIELDS = {"monetisability_structural_target_spot": "monetisability_target_spot"}
+LATER_ADDITIVE_FIELDS |= {"monetisability_target_spot", "monetisability_target_basis"}
+# A1 (ACK 6 Oct 2026): the live price's age and state are disclosed beside it, never a gate; additive.
+LATER_ADDITIVE_FIELDS |= {"live_price_age_seconds", "live_price_state"}
 
 
 def _publish(tmp_path, *signals):
@@ -267,6 +294,16 @@ def test_fix_adds_only_the_two_identity_fields(tmp_path):
         for key in ("convexity_score", "convexity_score_max"):
             if actual.get(key) is None and expected.get(key) == "":
                 actual[key] = ""
+        # Rename: the old field's golden value must reappear unchanged under its new name.
+        for old_name, new_name in RENAMED_FIELDS.items():
+            assert old_name not in published
+            if old_name in expected:
+                assert published.get(new_name) == expected.pop(old_name)
+        # Superseded by L5 (ACK 7 Oct 2026): the economics lock is owned by the anticipated move's value, so the
+        # golden's "monetisability not evaluated" reason is now "anticipated value not computed" (same row state).
+        for key in ("economics_mismatch_reason", "execution_lock_reason"):
+            if expected.get(key) == "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT":
+                expected[key] = "ANTICIPATED_VALUE_NOT_COMPUTED_FOR_SELECTED_CONTRACT"
         # B2 (ACK 3 Oct 2026): an unmeasured win rate is labelled NOT_ESTIMABLE (formerly UNAVAILABLE).
         if expected.get("win_rate_source") == "UNAVAILABLE" and actual.get("win_rate_source") == "NOT_ESTIMABLE":
             actual["win_rate_source"] = "UNAVAILABLE"

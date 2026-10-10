@@ -94,5 +94,10 @@ def test_engine_passes_spot_and_publishes_states_and_raw_maxima():
     source = SCRIPT.read_text(encoding="utf-8")
     assert "walls = compute_oi_walls(chain, spot)" in source
     assert "walls = compute_oi_walls(chain)" not in source
-    for key in ("call_wall_state", "put_wall_state", "oi_max_call_strike", "oi_max_put_strike"):
+    for key in ("oi_max_call_strike", "oi_max_put_strike"):
         assert source.count(f"'{key}'") >= 3, key          # two row projections + CSV export
+    # Item 7 readers (ACK 10 Oct 2026): the wall states are published through the governed field list (the hold-basket
+    # wall; raw OI as legacy_oi_*) in both row projections and the CSV export.
+    from domain.option_walls import GOVERNED_WALL_FIELDS
+    assert {"call_wall_state", "put_wall_state", "legacy_oi_call_wall_state"} <= set(GOVERNED_WALL_FIELDS)
+    assert source.count("for k in _GOVERNED_WALL_FIELDS}") == 2 and "*_GOVERNED_WALL_FIELDS," in source

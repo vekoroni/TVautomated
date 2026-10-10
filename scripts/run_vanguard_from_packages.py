@@ -1213,6 +1213,12 @@ def signal_to_row(
             _disc_win = coerce_float(disc.get("win_probability", 0))
         else:
             _disc_win = 0.0
+        # Output-trust item 11 (ACK D11-2, 10 Oct 2026): a measured setup rate within its own hold is never clamped
+        # or relabelled as a 5/10/20-day win rate - it travels as itself and the horizon rates stay missing.
+        if str(disc.get("win_probability_basis") or "") == "SETUP_RATE_WITHIN_HOLD_HELDOUT":
+            row["win_probability"] = coerce_float(disc.get("win_probability"), None)
+            row["win_probability_basis"] = "SETUP_RATE_WITHIN_HOLD_HELDOUT"
+            _disc_win = 0.0
 
         if _disc_win > 0.0:
             # Normalise: Discovery writes as percentage (57.8) or fraction (0.578)

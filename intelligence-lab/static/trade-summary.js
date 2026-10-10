@@ -65,11 +65,21 @@ function tsEarnings(s) {
     + `${tsEsc(s.earnings_date)}${unconfirmed}`;
 }
 
+// ACK 7 Oct 2026: the side carries its validation state (display only); a missing state is stated.
+function tsSide(s) {
+  const labels = {TESTED_NO_EDGE: 'tested: no edge found', NOT_TESTED: 'not tested',
+    INSUFFICIENT_EVIDENCE: 'insufficient evidence', UNVALIDATED: 'unvalidated', VALIDATED: 'validated'};
+  const state = tsBlank(s.direction_validation_state) ? 'validation not recorded'
+    : (labels[String(s.direction_validation_state).toUpperCase()] || String(s.direction_validation_state).toLowerCase());
+  return `${tsEsc(s.direction || '')} · ${tsEsc(state)}`;
+}
+
 function renderTradeSummaryTable(rows, options = {}) {
   const lanes = options.includeLaneC ? ['A', 'B', 'C'] : ['A', 'B'];
   const picked = (rows || [])
     .filter(s => lanes.includes(String(s.trade_lane || '').toUpperCase()))
-    .sort((a, b) => (tsNum(b.anticipated_value_multiple_q50) ?? -1) - (tsNum(a.anticipated_value_multiple_q50) ?? -1));
+    // RC10 (ACK 8 Oct 2026): the book's rank (domain/opportunity_rank.py) is the one order; no re-sort here.
+    .sort((a, b) => (tsNum(a.lab_rank) ?? Infinity) - (tsNum(b.lab_rank) ?? Infinity));
   if (!picked.length) return '<div class="meta-note">No rows in the selected lanes.</div>';
   const head = ['Ticker', 'Side', 'Lane', 'Setup', 'Option', 'Value at median time', 'Median time', 'DTE', 'Spread',
                 'Earnings'];
@@ -77,7 +87,7 @@ function renderTradeSummaryTable(rows, options = {}) {
     const setup = tsBlank(s.trade_lane_setup) ? tsMissing() : tsEsc(String(s.trade_lane_setup).replaceAll('|', ' · '));
     const median = tsNum(s.anticipated_sessions_q50);
     return `<tr onclick="typeof openModal === 'function' && openModal('${tsEsc(s.ticker)}')">`
-      + `<td>${tsEsc(s.ticker)}</td><td>${tsEsc(s.direction || '')}</td><td>${tsEsc(s.trade_lane || '')}</td>`
+      + `<td>${tsEsc(s.ticker)}</td><td>${tsSide(s)}</td><td>${tsEsc(s.trade_lane || '')}</td>`
       + `<td>${setup}</td><td>${tsOption(s)}</td><td>${tsValue(s)}</td>`
       + `<td>${median === null ? tsMissing() : `${Math.round(median)} sessions`}</td><td>${tsDte(s)}</td>`
       + `<td>${tsSpread(s)}</td><td>${tsEarnings(s)}</td></tr>`;

@@ -346,6 +346,7 @@ def _conviction_label(score: float, conf: float, eil_reason: str) -> str:
 # SOVEREIGN EVENT GATE (v4.1 — FINAL)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# LEGACY (Phase 5.3): no longer decides GO; kept for audit parity with trigger_layer.GO_ELIGIBLE_PRIMARIES.
 GO_ELIGIBLE_PRIMARIES = {"VOL_COMPRESSION", "VOL_COMPRESSION_IV_RICH", "VOL_COMPRESSION_IV_UNVERIFIED",
                          "RANGE_BREAK_EARLY", "RANGE_BREAK", "TRAP"}   # XLU-D04: IV variants are flags only
 
@@ -367,8 +368,10 @@ def sovereign_event_gate(result):
     if result.trigger_quality not in ("STRONG", "SINGLE"):
         return False, "WEAK_TRIGGER"
 
-    if result.trigger_primary not in GO_ELIGIBLE_PRIMARIES:
-        return False, "NON_PRIMARY_TRIGGER"
+    # Phase 5.3 (ACK 8 Oct 2026): GO eligibility is the trigger layer's flag, which mirrors the thesis's own event
+    # readiness. The state category (trigger_primary / GO_ELIGIBLE_PRIMARIES) no longer decides it.
+    if not result.trigger_go_eligible:
+        return False, "THESIS_NOT_ACTIVATED"
 
     return True, "PASS"
 
@@ -493,9 +496,9 @@ def decision_engine(
                 result.final_score     = 0.0
                 result.composite_score = 0.0
                 return result
-            elif gate_reason == "NON_PRIMARY_TRIGGER":
+            elif gate_reason == "THESIS_NOT_ACTIVATED":
                 result.verdict = Verdict.ARMED
-                result.reason  = f"NON_PRIMARY_TRIGGER (primary={result.trigger_primary})"
+                result.reason  = f"THESIS_NOT_ACTIVATED (state primary={result.trigger_primary})"
                 result.final_score     = 0.0
                 result.composite_score = 0.0
                 result.size_fraction   = cfg_ede.ARMED_SIZE_FRACTION
@@ -607,8 +610,8 @@ def decision_engine(
     result.composite_score = round(final_score, 4)   # alias for downstream compat
 
     # ── STEP 5: Verdict ───────────────────────────────────────────────────────
-    # GO is only valid for primary triggers in GO_ELIGIBLE_PRIMARIES (sovereign gate)
-    if result.trigger_primary in GO_ELIGIBLE_PRIMARIES and final_score >= cfg_ede.SCORE_GO_MIN:
+    # GO is only valid when the thesis's own trigger has been accepted (Phase 5.3: trigger layer GO flag)
+    if result.trigger_go_eligible and final_score >= cfg_ede.SCORE_GO_MIN:
         verdict      = Verdict.GO
         size         = 1.0
         conviction   = "HIGH" if final_score >= 0.80 else "MODERATE"
@@ -806,7 +809,8 @@ def _build_signal_pkg(row: Dict[str, Any]) -> Dict[str, Any]:
         "primary":      trigger_primary,
         "quality":      trigger_quality,
         "score":        trigger_score_v or 0.0,
-        "go_eligible":  bool(trigger_go_elig) if trigger_go_elig is not None else (trigger_count > 0),
+        # Phase 5.3: missing eligibility is not eligibility (R1); a trigger count never stands in for it.
+        "go_eligible":  bool(trigger_go_elig),
     }
 
     return {

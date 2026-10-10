@@ -1,0 +1,19 @@
+{
+  "run": "20261008_220129",
+  "book_rows": 2788,
+  "dispositions": 2788,
+  "appended": 2788,
+  "re_append": 0,
+  "with_thesis_id": 2370,
+  "thesis_states": {
+    "PRESENT": 2370,
+    "NO_THESIS:UNRESOLVED_DIRECTION": 418
+  },
+  "contract_states": {
+    "PRESENT": 2182,
+    "NO_CONTRACT:NO_TRADE_SIDE": 418,
+    "NO_CONTRACT:CANDIDATES_UNVALUED": 96,
+    "NO_CONTRACT:NO_VERIFIED_CHAIN": 90,
+    "NO_CONTRACT:NO_SUITABLE_OPTION": 2
+  }
+}

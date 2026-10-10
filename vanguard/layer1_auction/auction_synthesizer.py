@@ -174,16 +174,19 @@ class AuctionStateSynthesizer:
             position = "ABOVE_VALUE"
         else:
             position = "INSIDE_VALUE"
+        # RC02 (Phase 4, 8 Oct 2026): a completed profile measures POC / value area / position only. Acceptance,
+        # control and migration are NOT_MEASURED (NaN scores), never a zero or NEUTRAL reading (R1).
+        _nan = float("nan")
         acceptance = AcceptanceState(
-            level=current_price, score=0.0, classification="PROFILE_CONTEXT_ONLY",
+            level=current_price, score=_nan, classification="PROFILE_CONTEXT_ONLY",
             position_in_profile=position,
         )
         control = ControlState(
-            controller="NEUTRAL", confidence=0.0,
+            controller="NOT_MEASURED", confidence=_nan,
             interpretation="No governed intraday order-flow/control evidence in completed profile",
         )
         migration = MigrationState(
-            direction="UNKNOWN", speed="UNKNOWN", consistency="UNKNOWN", magnitude=0.0,
+            direction="NOT_MEASURED", speed="NOT_MEASURED", consistency="NOT_MEASURED", magnitude=_nan,
             interpretation="Single completed profile cannot establish value migration",
         )
         return AuctionVerdict(
@@ -214,15 +217,15 @@ class AuctionStateSynthesizer:
                 timeframe="GOVERNED",
             ),
             acceptance=AcceptanceState(
-                level=current_price, score=0.0, classification="NOT_EVALUATED",
+                level=current_price, score=float("nan"), classification="NOT_EVALUATED",
                 position_in_profile="UNKNOWN",
             ),
             control=ControlState(
-                controller="NEUTRAL", confidence=0.0,
+                controller="NOT_MEASURED", confidence=float("nan"),
                 interpretation="Market Profile unavailable",
             ),
             migration=MigrationState(
-                direction="UNKNOWN", speed="UNKNOWN", consistency="UNKNOWN", magnitude=0.0,
+                direction="NOT_MEASURED", speed="NOT_MEASURED", consistency="NOT_MEASURED", magnitude=float("nan"),
                 interpretation="Market Profile unavailable",
             ),
             scenarios={},

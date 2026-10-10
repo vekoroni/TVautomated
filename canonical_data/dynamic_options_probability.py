@@ -71,8 +71,9 @@ def _spread_fraction(bid: float | None, ask: float | None, supplied: float | Non
             return (float(ask) - float(bid)) / mid
     if supplied is None or not math.isfinite(float(supplied)) or float(supplied) < 0:
         return None
-    value = float(supplied)
-    return value / 100.0 if value > 1.0 else value
+    # E15 (ACK 6 Oct 2026): the observation's spread_pct is the quote owner's fraction of mid
+    # (marketdata_response.quote_spread_fraction); never re-guessed from its size (a 140% spread is 1.4).
+    return float(supplied)
 
 
 def build_probability_feature_vector(

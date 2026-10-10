@@ -1,6 +1,6 @@
 """AVSHUNTER UAT drop-off audit.
 
-Tracks each ticker from package/Vanguard through Options Intelligence, EIL,
+Tracks each ticker from the canonical manifest (or package index) / Vanguard through Options Intelligence, EIL,
 execution, EOD slate, and morning validation. The output is intentionally
 diagnostic: it tells us where a ticker last survived, why it fell off, and what
 to inspect next.
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,7 @@ STAGE_ORDER = {
     "UNIVERSE": 1,
     "SCANNER": 2,
     "DISCOVERY": 3,
+    "CANONICAL_MANIFEST": 4,
     "PACKAGE": 4,
     "VANGUARD_REJECT": 5,
     "VANGUARD": 6,
@@ -111,6 +113,24 @@ def _read_package_index(path: Optional[Path]) -> pd.DataFrame:
     return pd.DataFrame(rows).drop_duplicates("ticker", keep="first")
 
 
+def _read_manifest(path: Optional[Path]) -> pd.DataFrame:
+    """RC12: the canonical manifest is the package-free intake stage (AVS-PKG-002)."""
+    if not path or not path.exists():
+        return pd.DataFrame(columns=["ticker"])
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return pd.DataFrame(columns=["ticker"])
+    rows = [{"ticker": _s(item.get("ticker")).upper(),
+             "man__dcv_verdict": "TRUE" if item.get("dcv_verdict") is True else "FALSE",
+             "man__dcv_reason": _s(item.get("dcv_reason")),
+             "man__bar_count": item.get("bar_count", "")}
+            for item in data.get("tickers", []) or [] if _s(item.get("ticker"))]
+    if not rows:
+        return pd.DataFrame(columns=["ticker"])
+    return pd.DataFrame(rows).drop_duplicates("ticker", keep="first")
+
+
 def _read_universe(path: Optional[Path]) -> pd.DataFrame:
     if not path or not path.exists():
         return pd.DataFrame(columns=["ticker"])
@@ -185,6 +205,7 @@ def _stage_presence(row: dict) -> tuple[str, str]:
         ("VANGUARD", "vg__verdict"),
         ("VANGUARD_REJECT", "vgr__reason_code"),
         ("PACKAGE", "pkg__status"),
+        ("CANONICAL_MANIFEST", "man__dcv_verdict"),
         ("DISCOVERY", "disc__tier"),
         ("SCANNER", "scan__scanner_decision"),
         ("UNIVERSE", "uni__in_universe"),
@@ -238,21 +259,11 @@ def _vanguard_support_override(row: dict) -> bool:
 
 
 def _expected_options_scope(row: dict) -> str:
-    """Mirror Options Intelligence scope so the audit can catch handoff drift."""
-    try:
-        tier = int(float(_s(row.get("disc__tier"))))
-    except Exception:
-        tier = 999
-    intent = _u(row.get("disc__precor_intent") or row.get("disc__intent"))
-    if _vanguard_support_override(row):
-        return "EXPECTED_BY_VANGUARD_SUPPORT"
-    if tier in {0, 1, 2} and intent != "WAIT":
-        return "EXPECTED_BY_TIER_AND_INTENT"
-    if tier in {0, 1, 2} and intent == "WAIT":
-        return "EXCLUDED_WAIT_NO_SUPPORT"
-    if tier == 3:
-        return "EXCLUDED_TIER3_NO_SUPPORT"
-    return "EXCLUDED_BY_SCOPE_RULES"
+    """Mirror Options Intelligence scope so the audit can catch handoff drift.
+
+    Phase 5.4 (ACK 8 Oct 2026): Options has no tier or legacy WAIT exclusion; every Vanguard row is in scope.
+    """
+    return "EXPECTED_ALL_IN_SCOPE"
 
 
 def _vanguard_contract_contradiction(row: dict) -> str:
@@ -279,13 +290,24 @@ def _reason(row: dict, available: Optional[dict[str, bool]] = None) -> tuple[str
         return "BETWEEN_SCANNER_AND_DISCOVERY", f"SCANNER_TICKER_NOT_SELECTED_BY_DISCOVERY;decision={scan_decision}", "Review discovery selection threshold for scanner-fed tickers"
     if not disc_tier and _s(row.get("uni__in_universe")):
         return "BETWEEN_UNIVERSE_AND_DISCOVERY", "UNIVERSE_TICKER_NOT_SELECTED_BY_DISCOVERY", "Normal funnel drop-off unless ticker should have been catalyst/scanner boosted"
+    # RC12 (Codex 7 Oct 2026): the evening is package-free (AVS-PKG-002); the canonical manifest is the intake stage.
+    # The package index is read only when it exists (the packages-mode rollback).
+    manifest_verdict = _u(row.get("man__dcv_verdict"))
     if disc_tier and not _s(row.get("pkg__status")):
-        if not available.get("pkg", False):
-            return "PENDING_PACKAGE_BUILD", "PACKAGE_INDEX_NOT_YET_AVAILABLE", "Await package build checkpoint"
-        return "BETWEEN_DISCOVERY_AND_PACKAGE", "DISCOVERY_CANDIDATE_NOT_PACKAGED", "Check package builder input and ticker normalization"
+        if available.get("pkg", False):
+            return "BETWEEN_DISCOVERY_AND_PACKAGE", "DISCOVERY_CANDIDATE_NOT_PACKAGED", "Check package builder input and ticker normalization"
+        if not available.get("man", False):
+            return "PENDING_INTAKE", "MANIFEST_OR_PACKAGE_INDEX_NOT_YET_AVAILABLE", "Await the canonical manifest checkpoint"
+        if not manifest_verdict:
+            return "BETWEEN_DISCOVERY_AND_MANIFEST", "DISCOVERY_ROW_NOT_IN_CANONICAL_MANIFEST", "Check the manifest ticker set against Discovery"
+        if manifest_verdict != "TRUE":
+            return ("CANONICAL_MANIFEST", _s(row.get("man__dcv_reason")) or "MANIFEST_REFUSED_WITHOUT_REASON",
+                    "Repair the ticker's price history for the evidence session")
 
     if not vg_verdict and not vgr_reason and _s(row.get("pkg__status")):
         return "BETWEEN_PACKAGE_AND_VANGUARD", "PACKAGE_BUILT_BUT_NO_VANGUARD_PASS_OR_REJECT", "Check Vanguard runner accounting"
+    if not vg_verdict and not vgr_reason and manifest_verdict == "TRUE":
+        return "BETWEEN_MANIFEST_AND_VANGUARD", "MANIFEST_VALID_BUT_NO_VANGUARD_PASS_OR_REJECT", "Check Vanguard runner accounting"
     if vgr_reason:
         return "VANGUARD", vgr_reason, "Fix package data contract / OHLCV before options layer"
 
@@ -359,6 +381,11 @@ def _reason(row: dict, available: Optional[dict[str, bool]] = None) -> tuple[str
         return "AFTER_EOD_BEFORE_MORNING", eod_status, "Await morning validation or run morning_thesis_validator"
     if mv_perm == "GO":
         return "SURVIVED", "GO", "Ready subject to operator controls"
+    # Phase 5.5: current Morning permissions (the pipeline is a signal engine; the human executes).
+    if mv_perm == "HUMAN_APPROVAL_REQUIRED":
+        return "SURVIVED", "HUMAN_APPROVAL_REQUIRED", "Ready for human review"
+    if mv_perm == "CONTRACT_REPAIR":
+        return "MORNING_VALIDATION", mv_reason or "CONTRACT_REPAIR", "Repair the contract inside the thesis"
     if mv_perm == "ARMED":
         return "MORNING_VALIDATION", mv_reason or "ARMED_WAITING_FOR_RETEST", "Wait for live confirmation/retest"
     if mv_perm == "WAIT":
@@ -366,6 +393,43 @@ def _reason(row: dict, available: Optional[dict[str, bool]] = None) -> tuple[str
     if mv_perm == "BLOCKED":
         return "MORNING_VALIDATION", mv_reason or mv_state or "BLOCKED", "Review live veto"
     return "UNKNOWN", "UNCLASSIFIED", "Inspect row manually"
+
+
+_RESOURCE = re.compile(r"\b(CAP|CAPPED|BUDGET|RATE_LIMIT|QUOTA|MAX_SIGNALS|CREDITS?)\b")
+_ECONOMIC = ("SPREAD", "WIDE", "LIQUID", "LOW OI", "LOW_OI", "LOW OIS", "VOLUME", "DOES_NOT_PAY", "NOT_MONETISABLE",
+             "PREMIUM", "BREAKEVEN")
+_MISSING_EVIDENCE = ("CHAIN", "NO CONTRACT", "NO_RECOMMENDED_CONTRACT", "NO_USABLE", "QUOTE", "MISSING", "NO_OHLCV",
+                     "HISTORY")
+
+
+def _reason_class(row: dict, dropoff_stage: str, dropoff_reason: str) -> str:
+    """RC12: scope, resource, evidence and economic reasons are recorded separately."""
+    stage, reason = _u(dropoff_stage), _u(dropoff_reason)
+    if stage == "SURVIVED":
+        return "SURVIVED"
+    if stage.startswith("PENDING") or stage == "AFTER_EOD_BEFORE_MORNING":
+        return "PROGRESS"
+    if stage in {"BETWEEN_UNIVERSE_AND_DISCOVERY", "BETWEEN_SCANNER_AND_DISCOVERY"}:
+        return "SELECTION"
+    if _RESOURCE.search(reason):
+        return "RESOURCE"
+    if stage in {"CANONICAL_MANIFEST", "VANGUARD"}:
+        return "EVIDENCE"
+    if stage == "BETWEEN_VANGUARD_AND_OPTIONS":
+        return "SCOPE" if _expected_options_scope(row).startswith("EXCLUDED") else "HANDOFF"
+    if stage == "OPTIONS_INTELLIGENCE":
+        if any(k in reason for k in _ECONOMIC):
+            return "ECONOMIC"
+        if any(k in reason for k in _MISSING_EVIDENCE):
+            return "EVIDENCE"
+        return "GATE"
+    if stage.startswith("BETWEEN") or stage == "BEFORE_OPTIONS_INTELLIGENCE":
+        return "HANDOFF"
+    if "CONTRACT_REPAIR" in reason:
+        return "ECONOMIC"
+    if stage in {"EIL", "EXECUTION", "EOD_CANDIDATE", "MORNING_VALIDATION", "SHADOW_BOOK"}:
+        return "GATE"
+    return "UNCLASSIFIED"
 
 
 def _audit_classification(row: dict, dropoff_stage: str, dropoff_reason: str) -> dict[str, str]:
@@ -453,7 +517,11 @@ def _audit_classification(row: dict, dropoff_stage: str, dropoff_reason: str) ->
         impact = "MAY_HIDE_SCANNER_CONFIRMED_TRADE"
     elif stage == "BETWEEN_DISCOVERY_AND_PACKAGE":
         layer, root, severity, behavior, impact = "HANDOFF", "DISCOVERY_PACKAGE_HANDOFF_GAP", "P1", "POTENTIAL_DEFECT", "CANDIDATE_DROPPED_BEFORE_MODEL"
-    elif stage == "BETWEEN_PACKAGE_AND_VANGUARD":
+    elif stage == "CANONICAL_MANIFEST":
+        layer, root, severity, behavior, impact = "DATA_INPUT", "MANIFEST_HISTORY_REFUSAL", "P2", "DATA_DEFECT", "TICKER_CANNOT_REACH_VANGUARD"
+    elif stage == "BETWEEN_DISCOVERY_AND_MANIFEST":
+        layer, root, severity, behavior, impact = "HANDOFF", "DISCOVERY_MANIFEST_HANDOFF_GAP", "P1", "POTENTIAL_DEFECT", "CANDIDATE_DROPPED_BEFORE_MODEL"
+    elif stage in {"BETWEEN_PACKAGE_AND_VANGUARD", "BETWEEN_MANIFEST_AND_VANGUARD"}:
         layer, root, severity, behavior, impact = "HANDOFF", "PACKAGE_VANGUARD_ACCOUNTING_GAP", "P1", "POTENTIAL_DEFECT", "MODEL_OUTPUT_MISSING"
     elif stage == "VANGUARD":
         layer, root, severity, behavior, impact = "DATA_INPUT", "VANGUARD_INPUT_DATA_REJECT", "P2", "DATA_DEFECT", "TICKER_CANNOT_REACH_OPTIONS"
@@ -520,6 +588,7 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         "disc": _find_one(run_dir, [f"discovery/discovery_candidates_ultimate_{run_id}.csv", "discovery/discovery_candidates_*.csv"])
         or _find_one(ROOT / "data" / "output", [f"discovery_candidates_ultimate_{run_id}.csv"]),
         "pkg": _find_one(run_dir, ["packages/index.json"]),
+        "man": _find_one(run_dir, ["canonical_manifest.json", "canonical/canonical_manifest.json"]),
         "vg": _find_one(run_dir, [f"vanguard/vanguard_signals_{run_id}.csv", "vanguard/vanguard_signals.csv", "vanguard/vanguard_signals_*.csv"]),
         "vgr": _find_one(run_dir, [f"vanguard/vanguard_rejects_{run_id}.csv", "vanguard/vanguard_rejects.csv", "vanguard/vanguard_rejects_*.csv"]),
         "oi": _find_one(run_dir, [f"options/options_intelligence_{run_id}.csv", "options/options_intelligence_*.csv"]),
@@ -540,6 +609,8 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         "scanner_data_quality", "asymmetry_pass", "asymmetry_R", "catalyst_detected",
         "catalyst_type", "catalyst_date", "catalyst_truth_score", "catalyst_data_quality",
         "catalyst_trade_class", "catalyst_reason_codes",
+        # Phase 5.5: the thesis each row belongs to.
+        "thesis__side", "thesis__readiness", "thesis__readiness_reason", "thesis_trigger_candidate_id",
     ]
 
     vanguard_cols = [
@@ -624,6 +695,7 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         _read_scanner_context(paths["scan"]),
         _read(paths["disc"], "disc", discovery_cols),
         _read_package_index(paths["pkg"]),
+        _read_manifest(paths["man"]),
         _read(paths["vg"], "vg", vanguard_cols),
         _read(paths["vgr"], "vgr", vanguard_reject_cols),
         _read(paths["oi"], "oi", oi_cols),
@@ -642,6 +714,7 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         last_stage, _ = _stage_presence(row)
         dropoff_stage, dropoff_reason, next_step = _reason(row, available)
         classification = _audit_classification(row, dropoff_stage, dropoff_reason)
+        classification["dropoff_reason_class"] = _reason_class(row, dropoff_stage, dropoff_reason)
         records.append(
             {
                 "run_id": run_id,
@@ -681,6 +754,12 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
                 "discovery_catalyst_data_quality": row.get("disc__catalyst_data_quality", ""),
                 "discovery_catalyst_trade_class": row.get("disc__catalyst_trade_class", ""),
                 "discovery_catalyst_reason_codes": row.get("disc__catalyst_reason_codes", ""),
+                "thesis_side": row.get("disc__thesis__side", ""),
+                "thesis_readiness": row.get("disc__thesis__readiness", ""),
+                "thesis_readiness_reason": row.get("disc__thesis__readiness_reason", ""),
+                "thesis_candidate_id": row.get("disc__thesis_trigger_candidate_id", ""),
+                "manifest_verdict": row.get("man__dcv_verdict", ""),
+                "manifest_reason": row.get("man__dcv_reason", ""),
                 "package_status": row.get("pkg__status", ""),
                 "package_reason": row.get("pkg__reason", ""),
                 "vanguard_verdict": row.get("vg__verdict", ""),
@@ -788,6 +867,7 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         "rows": int(len(out)),
         "last_stage_counts": dict(Counter(out["last_stage_reached"])) if not out.empty else {},
         "dropoff_stage_counts": dict(Counter(out["dropoff_stage"])) if not out.empty else {},
+        "dropoff_reason_class_counts": dict(Counter(out["dropoff_reason_class"])) if not out.empty else {},
         "audit_layer_counts": dict(Counter(out["audit_layer"])) if not out.empty and "audit_layer" in out.columns else {},
         "root_cause_family_counts": dict(Counter(out["root_cause_family"])) if not out.empty and "root_cause_family" in out.columns else {},
         "audit_severity_counts": dict(Counter(out["audit_severity"])) if not out.empty and "audit_severity" in out.columns else {},

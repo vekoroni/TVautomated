@@ -21,6 +21,7 @@ def _tier_row() -> dict:
         "invalidation_price": 95.0,
         "structural_target": 115.0,
         "rr_underlying": 3.0,
+        "anticipated_pays_state": "PAYS",  # L5 (ACK 7 Oct 2026): decision input; monetisability is audit
         "monetisability_state": "MONETISABLE",
         "monetisability_state_timevalue": "MONETISABLE",
         "spread_pct_of_mid": 20.0,

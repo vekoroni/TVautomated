@@ -242,27 +242,9 @@ class RegimeConsensus:
             # Will be overridden when GEX pipeline is live
             macro["gex_regime_score"] = 0.50
 
-        # FIX-07: Macro freshness check — haircut conviction when stale
-        try:
-            from datetime import datetime, timezone, timedelta
-            _norm_at = (macro.get("normalised_at_utc") or
-                        macro.get("as_of_utc") or
-                        macro.get("generated_at_utc") or "")
-            if _norm_at:
-                _norm_dt = datetime.fromisoformat(
-                    str(_norm_at).replace("Z", "+00:00"))
-                _age_h = (datetime.now(timezone.utc) - _norm_dt).total_seconds() / 3600
-                if _age_h > 20:
-                    log.warning(
-                        f"[RCS] Macro is {_age_h:.1f}h old (> 20h threshold). "
-                        f"Applying 0.85× conviction haircut."
-                    )
-                    for _sk in ["net_liquidity_score", "vix_regime_score",
-                                "gex_regime_score", "macro_momentum_score"]:
-                        if macro.get(_sk) is not None:
-                            macro[_sk] = float(macro[_sk]) * 0.85
-        except Exception as _age_err:
-            log.debug(f"[RCS] Freshness check skipped: {_age_err}")
+        # FIX-07 macro-age haircut REMOVED (ACK 6 Oct 2026, quarantine on the retire list): it scaled four macro
+        # scores by 0.85 when the packet was > 20 h old, letting macro age change a score and a size against
+        # CLAUDE.md rule 6 (macro is display only). The layer that runs this module (Phase 9B) is disabled.
 
         raw_inputs = {k: macro.get(k) for k in STRUCTURED_MACRO_KEYS}
 

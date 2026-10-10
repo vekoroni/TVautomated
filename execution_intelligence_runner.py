@@ -2006,7 +2006,6 @@ def _eod_candidate_profile(row: dict, signal: str, tier: str) -> dict:
 
     options_score = float(options_contract.get("score", 0.0) or 0.0)
     rr = _authority_float(row, "rr_underlying", "rr", "rr_options")
-    spread = _authority_float(row, "contract_spread_pct", "contract_spread_pct_eod", "eil_spread_pct_live")
     premium = _authority_float(row, "contract_premium", "premium", "premium_eod")
     oi = _authority_float(row, "contract_oi")
     volume = _authority_float(row, "contract_volume")
@@ -2023,7 +2022,6 @@ def _eod_candidate_profile(row: dict, signal: str, tier: str) -> dict:
     )
     catalyst_ok = catalyst_class == "DATED_CATALYST_CONFIRMED" or catalyst_quality in {"CONFIRMED", "DATED_REVIEW", "INFERRED_GOOD"}
     contract_seen = options_ok or premium > 0.0 or oi > 0.0 or volume > 0.0
-    liquidity_ok = options_ok or spread <= 30.0 or spread <= 0.0
     options_research_blocked = bool(options_contract.get("present") and options_contract.get("blocked"))
 
     support_ok = options_ok or trigger_ok or catalyst_ok
@@ -2040,7 +2038,8 @@ def _eod_candidate_profile(row: dict, signal: str, tier: str) -> dict:
     if trigger_ok: reasons.append("TRIGGER_SUPPORT")
     if catalyst_ok: reasons.append("CATALYST_SUPPORT")
     if direction_conflict_unresolved: reasons.append("DIRECTION_CONFLICT_UNRESOLVED")
-    if not liquidity_ok: reasons.append("SPREAD_REVIEW")
+    # E15 (ACK 6 Oct 2026): the 30-percent spread reason label is removed - it compared a fraction with a percent
+    # (true on every fraction) and decided nothing; the governed 25% reviewable limit is the spread policy.
     if not contract_seen: reasons.append("NO_CONTRACT_MARKET")
     if not allowed and not reasons:
         reasons.append("QUALITY_FLOOR_NOT_MET")

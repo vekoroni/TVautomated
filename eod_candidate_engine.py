@@ -92,8 +92,15 @@ from datetime import date, datetime, timezone
 from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
 from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields
+from canonical_data.dividend_history import dividend_inputs
+from domain.option_walls import level_wall
 from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
+from contracts.thesis_record import THESIS_SPINE_FIELDS, VANGUARD_CONTEXT_FIELDS
 from domain.structure_behaviour.trade_lane import TRADE_LANE_FIELDS, confirm_early_entry
+from domain.long_option_execution import SPREAD_POLICY as _SPREAD_POLICY
+
+# L5: anticipated-move states that carry a computed option value for the contract.
+_VALUED_PAYS_STATES = {"PAYS", "DOES_NOT_PAY_AT_ANTICIPATED_TIME"}
 from contracts.selected_contract_economics import (
     CONTRACT_ANALYTICS_FIELDS,
     MONETISABILITY_AUTHORITY,
@@ -454,6 +461,24 @@ def _first_flt(row: dict, *keys: str, default: float = 0.0) -> float:
         if value != 0.0:
             return value
     return default
+
+
+def _governed_trigger_fields(row: dict) -> dict:
+    """Phase 5.2 (8 Oct 2026): trigger_price is the thesis's own trigger (Discovery thesis_trigger_level).
+
+    Wall-Break levels are kept as legacy_wbs_* and never become the trigger (Phase 0: 1,038 of 1,039 differed from
+    the thesis candidate's trigger). No thesis trigger -> trigger_price stays missing, never borrowed (R1).
+    """
+    level = _first_optional_flt(row, "thesis_trigger_level")
+    wbs_c = _first_optional_flt(row, "wbs_phase_c_trigger")
+    wbs_b = _first_optional_flt(row, "wbs_phase_b_trigger")
+    return {
+        "trigger_price": level,
+        "trigger_price_source": "THESIS_TRIGGER_LEVEL" if level is not None else "NOT_AVAILABLE_NO_THESIS_TRIGGER",
+        "legacy_wbs_trigger_price": wbs_c if wbs_c is not None else wbs_b,
+        "legacy_wbs_trigger_source": ("WBS_PHASE_C_CONFIRMED_BREAK" if wbs_c is not None
+                                      else "WBS_PHASE_B_WATCH_ZONE" if wbs_b is not None else ""),
+    }
 
 
 def _first_optional_flt(row: dict, *keys: str) -> Optional[float]:
@@ -925,17 +950,16 @@ def _governed_contract_dte(row: dict) -> tuple[float | None, str]:
     return float(xnys_sessions_between(session, expiry)), "AVAILABLE"
 
 
-def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
-    """Evaluate one completed-session long option without an API call."""
+def _eod_selected_contract_monetisability(row: dict, direction: str, anticipated_level: Optional[float] = None) -> dict:
+    """Evaluate one completed-session long option without an API call, at the anticipated level (the level the
+    decision values the contract at; never the legacy range-extreme target)."""
     symbol = _first_str(
         row, "recommended_contract", "contract_occ_symbol", "contract_symbol"
     ).replace("O:", "")
     bid = _first_flt(row, "contract_bid", default=0.0)
     ask = _first_flt(row, "contract_ask", default=0.0)
     strike = _first_flt(row, "contract_strike", "strike", default=0.0)
-    target = _first_flt(
-        row, "target_spot", "structural_target", "target_price", default=0.0
-    )
+    target = _flt({"level": anticipated_level}, "level")
     quote_timestamp = _first_str(
         row, "contract_quote_timestamp_utc", "quote_as_of", "quote_timestamp_utc"
     )
@@ -1004,7 +1028,7 @@ def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
             **base,
             "monetisability_status": "FAILED",
             "monetisability_state": "DATA_MISSING",
-            "monetisability_reason": "EOD_ASK_STRIKE_OR_TARGET_MISSING",
+            "monetisability_reason": "EOD_ASK_STRIKE_OR_ANTICIPATED_LEVEL_MISSING",
             "monetisability_eligible": False,
             "monetisability_contract_symbol": symbol,
         }
@@ -1027,7 +1051,7 @@ def _eod_selected_contract_monetisability(row: dict, direction: str) -> dict:
     }
     economics_row = {
         "canonical_direction": direction,
-        "target_spot": target,
+        "anticipated_level_q50": target,
     }
     result = evaluate_long_option_monetisability(economics_row, hydrated)
     # AVS-FIX-001 W3.4: the advisory time-value companion. It reads the
@@ -1528,10 +1552,14 @@ def _invalidate_direction_dependent_contract(row: dict, direction_info: dict) ->
 
 
 def _spread_pct_from_row(row: dict) -> float:
-    spread = _first_flt(row, "contract_spread_pct", "eil_spread_pct_live", default=0.0)
-    if spread <= 0:
-        return 0.0
-    return spread * 100.0 if spread <= 1.0 else spread
+    """Spread in PERCENT of mid. E15 (ACK 6 Oct 2026): each field is read in its own unit - contract_spread_pct is a
+    fraction (the quote owner's), eil_spread_pct_live a percent. The old guess (<= 1 means fraction) read a 140%
+    spread (fraction 1.4) as 1.4%."""
+    fraction = _first_flt(row, "contract_spread_pct", default=0.0)
+    if fraction > 0:
+        return fraction * 100.0
+    percent = _first_flt(row, "eil_spread_pct_live", default=0.0)
+    return percent if percent > 0 else 0.0
 
 def _contract_repair_profile(row: dict, direction_info: dict) -> dict:
     spread = _spread_pct_from_row(row)
@@ -1550,9 +1578,9 @@ def _contract_repair_profile(row: dict, direction_info: dict) -> dict:
         score += 5
     else:
         reasons.append("NO_CONTRACT_SELECTED")
-    if spread and spread <= 15:
+    if spread and spread <= _SPREAD_POLICY["eod_repair_tight_max"] * 100:
         score += 10
-    elif spread and spread <= 25:
+    elif spread and spread <= _SPREAD_POLICY["eod_repair_caution_max"] * 100:
         score += 6
         reasons.append("SPREAD_CAUTION")
     elif spread:
@@ -2229,6 +2257,7 @@ def build_candidate_manifest(
         "wyckoff_execution_bias", "wyckoff_entry_trigger",
         "thesis_phase", "thesis_event", "thesis_event_state", "thesis_event_timeframe", "thesis_event_scope", "thesis_event_candidate_id", "thesis_structure_alignment", "thesis_category",
         *THESIS_EVIDENCE_FIELDS,   # the trade-side event's level and duration evidence (anticipated move)
+        *THESIS_SPINE_FIELDS,      # Phase 5.1: the thesis's own trigger, spine and last event (one story)
         *TRADE_LANE_FIELDS,        # trade lane A / B / C and the intake labels (ACK 4 Oct 2026)
         "adx_14", "atr_percentile_rank",
         "bar_data_source", "bar_data_asof", "bar_data_days_old",
@@ -2249,6 +2278,7 @@ def build_candidate_manifest(
         "atr_pct", "vol_regime", "structure_quality",
         "macro_regime", "layer2__vol_regime", "layer2__structure_quality",
         "layer2__trend_maturity",
+        *VANGUARD_CONTEXT_FIELDS,  # Phase 5.1: Vanguard context flags (display only)
         *MACRO_QUANT_CSV_FIELDS,
         # V2 Signal Intelligence (Sprint 3) — fallback source if eil_enriched
         # inject_actuarial did not populate these. Primary source is eil_enriched.
@@ -2380,7 +2410,6 @@ def build_candidate_manifest(
         eod_failure_class = _eod_failure_class(row, eod_reason)
         thesis_state = _thesis_state_from_eod_status(eod_status)
         morning_tasks = _morning_tasks_for_status(row, eod_status, eod_reason)
-        eod_monetisability = _eod_selected_contract_monetisability(row, direction)
 
         candidate = {
             # ── Identity ──────────────────────────────────────────────────────
@@ -2489,10 +2518,9 @@ def build_candidate_manifest(
             ),
             "invalidation_spot": _first_optional_flt(row, "invalidation_spot"),
             "invalidation_source": _str(row, "invalidation_source"),
-            "quote_as_of": _first_str(
-                row, "contract_quote_timestamp_utc", "quote_as_of", "quote_timestamp_utc"
-            ),
-            "option_chain_dataset_id": _str(row, "option_chain_dataset_id"),
+            # P0-06 (7 Oct 2026): quote_as_of and option_chain_dataset_id are written once, further down. The
+            # contract-first quote_as_of that stood here was always overwritten by the later plain value; the
+            # contract's own quote time is published as selected_quote_timestamp_utc.
             "selected_quote_dataset_id": _str(row, "selected_quote_dataset_id"),
             "selected_quote_timestamp_utc": _first_str(
                 row, "selected_quote_timestamp_utc", "contract_quote_timestamp_utc",
@@ -2513,7 +2541,6 @@ def build_candidate_manifest(
             "bar_evidence_state": _str(row, "bar_evidence_state"),
             "bar_evidence_reason": _str(row, "bar_evidence_reason"),
             "is_stale": _str(row, "is_stale").lower() in {"1", "true", "yes", "y"},
-            "remaining_runway_state": _str(row, "remaining_runway_state"),
             "maturation_state_1d":  _str(row, "maturation_state_1d"),
             "maturation_state_2d":  _str(row, "maturation_state_2d"),
             "maturation_state_3d":  _str(row, "maturation_state_3d"),
@@ -2769,12 +2796,7 @@ def build_candidate_manifest(
             "pse_score":            _flt(row, "pse_score"),
             "pse_edge_score":       _flt(row, "pse_edge_score"),
             "trigger_primary":      _trigger_text(row, "trigger_primary"),
-            "trigger_price": _first_optional_flt(row, "trigger_price", "wbs_phase_c_trigger"),
-            "trigger_price_source": (
-                "SUPPLIED_TRIGGER_PRICE" if _first_optional_flt(row, "trigger_price") is not None
-                else "WBS_PHASE_C_CONFIRMED_BREAK" if _first_optional_flt(row, "wbs_phase_c_trigger") is not None
-                else ""
-            ),
+            **_governed_trigger_fields(row),
             "trigger_quality":      _trigger_text(row, "trigger_quality"),
             "trigger_count":        _flt(row, "trigger_count"),
             "trigger_score":        _flt(row, "trigger_score"),
@@ -2826,8 +2848,7 @@ def build_candidate_manifest(
             #   - CONTINUATION → wider entry window / full PSE size
             #   - TRANSITION   → probe-only flag / reduced live size
             #   - pse_ev_mult  → shows how strongly the edge scored
-            "signal_type":          _resolved_signal_type(row),
-            "momentum_tier":        _resolved_momentum_tier(row),
+            # signal_type / momentum_tier are written once, in the Sprint 3 block above (P0-06).
             "pse_ev_mult":          _flt(row, "pse_ev_mult"),
             "pse_final_size":       _flt(row, "pse_final_size"),
             "forward_momentum_conf":_flt(row, "actuarial_forward_momentum_conf"),
@@ -2855,6 +2876,9 @@ def build_candidate_manifest(
         # only - no score, gate or rank reads these fields until the replay validation and D-C switch.
         for evidence_col in THESIS_EVIDENCE_FIELDS:
             candidate[evidence_col] = row.get(evidence_col, "")
+        # Phase 5.1 (8 Oct 2026): the thesis's own story fields and Vanguard's context travel unchanged.
+        for spine_col in (*THESIS_SPINE_FIELDS, *VANGUARD_CONTEXT_FIELDS):
+            candidate[spine_col] = row.get(spine_col, "")
         # Fix E (ACK 5 Oct 2026): the inputs the Morning needs to recompute the anticipated move for a swapped contract.
         for recompute_col in ("thesis_event_timeframe", "thesis_structure_alignment", "target_reachable_vol_annual"):
             candidate[recompute_col] = row.get(recompute_col, "")
@@ -2871,21 +2895,38 @@ def build_candidate_manifest(
                       "p_invalidation": row.get("thesis_p_invalidation_by_limit")},
             vol_annual=row.get("target_reachable_vol_annual"),
             contract={"strike": candidate.get("strike"), "ask": candidate.get("contract_ask"),
+                      "bid": candidate.get("contract_bid"), "underlying": candidate.get("ticker"),
                       "iv": candidate.get("contract_iv"), "expiry": candidate.get("expiry"),
                       "as_of": row.get("bar_data_asof")},
             governed_window_sessions=candidate.get("planned_hold_sessions"),
             earnings={"earnings_state": row.get("earnings_state"),
                       "earnings_sessions_to_event": row.get("earnings_sessions_to_event")},
             trade_side_event=str(row.get("thesis_structure_alignment") or "").upper() == "ALIGNED",
+            # Output-trust item 4: the invalidation scenario and the dividend yield from history (basis stated).
+            invalidation_level=invalidation,
+            **dividend_inputs(candidate.get("ticker"), as_of=row.get("bar_data_asof"),
+                              spot=candidate.get("signal_price")),
         ))
         # Step 4d: the exit plan follows the anticipated move (replaces the earlier plan's invented targets).
         candidate.update(anticipated_exit_plan(
             direction=direction, entry=candidate.get("signal_price"),
             anticipated_level=candidate.get("anticipated_level"),
             structural_level=candidate.get("anticipated_structural_level"),
-            invalidation=invalidation, call_wall=_flt(row, "call_wall") or None, put_wall=_flt(row, "put_wall") or None,
+            # Item 7 readers (ACK 10 Oct 2026): a wall is a T1 price level only when price confirmed its role.
+            invalidation=invalidation, call_wall=level_wall(row, "call"), put_wall=level_wall(row, "put"),
             wbs_grade=_str(row, "wbs_grade"),
         ))
+        # L5 (ACK 7 Oct 2026): the contract the anticipated value was computed for - the Lab's economics identity.
+        candidate["anticipated_contract_symbol"] = (
+            candidate.get("contract_symbol") or candidate.get("recommended_contract") or ""
+        ) if str(candidate.get("anticipated_pays_state") or "").upper() in _VALUED_PAYS_STATES else ""
+        # M-G2-01 (ACK 10 Oct 2026): the Evening value states its basis and quote time; the Morning keeps it as eod_*.
+        if candidate["anticipated_contract_symbol"]:
+            candidate["anticipated_contract_basis"] = "EVENING_COMPLETED_SESSION_QUOTE"
+            candidate["anticipated_valued_at_utc"] = candidate.get("selected_quote_timestamp_utc") or None
+        # Monetisability at the valued level (ACK 6-7 Oct 2026): computed after the anticipated move, at its level.
+        eod_monetisability = _eod_selected_contract_monetisability(row, direction,
+                                                                   candidate.get("anticipated_level_q50"))
         candidate.update(eod_monetisability)
         # Trade lane (ACK 4 Oct 2026): lane B holds only when the option's value multiple covers the failures.
         candidate.update(confirm_early_entry({col: row.get(col, "") for col in TRADE_LANE_FIELDS},

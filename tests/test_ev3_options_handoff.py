@@ -205,8 +205,11 @@ def test_lifecycle_adapter_accepts_production_shaped_series_context() -> None:
     assert lifecycle["maturation_execution_authority"] is False
 
 
-def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
+def test_lifecycle_uses_governed_put_invalidation_and_the_contract_runway_hold() -> None:
     ctx = _context(direction="PUT", stop=103.0, horizon="1_5d")
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the lifecycle hold is the contract runway hold selection used (here a
+    # 5-session evidence runway), no longer the horizon bucket's routed 5/10/20 hold.
+    ctx.update(oi.contract_runway_policy(None, evidence_hold=5, evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50"))
     ctx.update({
         "ticker": "PUTFIX",
         # PUT invalidation must already be above the thesis entry; the
@@ -227,7 +230,7 @@ def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
         "ask": 2.00,
         "quote_timestamp_utc": "2026-08-28T20:00:00Z",
         "mark_synthetic": False,
-        "contract_runway_floor_days": 19, "contract_runway_basis": "HORIZON:1_5d",
+        "contract_runway_floor_days": 19, "contract_runway_basis": "DURATION_EVIDENCE_Q80:1d:n=50",
         "contract_runway_state": "RUNWAY_COVERED", "spread_above_limit": False,
     }
 
@@ -238,10 +241,11 @@ def test_lifecycle_uses_governed_put_invalidation_and_routed_hold() -> None:
     # The selector's runway and spread facts reach the output row (Lab display, 18 Sep 2026).
     assert (lifecycle["contract_runway_floor_days"], lifecycle["contract_runway_basis"],
             lifecycle["contract_runway_state"], lifecycle["spread_above_limit"]) == (
-        19, "HORIZON:1_5d", "RUNWAY_COVERED", False)
+        19, "DURATION_EVIDENCE_Q80:1d:n=50", "RUNWAY_COVERED", False)
     assert lifecycle["invalidation_spot"] == 103.0
     assert lifecycle["invalidation_source"] == "stop_loss"
     assert lifecycle["planned_hold_sessions"] == 5.0
+    assert lifecycle["planned_hold_source"] == "DURATION_EVIDENCE_Q80:1d:n=50"
     assert lifecycle["minimum_required_dte"] == 19          # 13 sessions in calendar days (R3)
     # Completed-session evidence can prepare and rank the thesis, but cannot
     # claim current executability.  That state is minted only by the governed
@@ -575,7 +579,10 @@ def test_ev3_candidate_set_is_two_expiries_by_three_delta_nearest_strikes() -> N
                 "volume": 100,
                 "quote_timestamp_utc": "2026-08-14T10:30:00Z",
             })
-    candidates = select_repair_alternative_contracts(pd.DataFrame(rows), _context(), limit=6)
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the planned hold is the evidence runway, stated explicitly here.
+    ctx = {**_context(), **oi.contract_runway_policy(None, evidence_hold=20,
+                                                     evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50")}
+    candidates = select_repair_alternative_contracts(pd.DataFrame(rows), ctx, limit=6)
     assert len(candidates) == 6
     # ACK 18 Sep 2026 (a): the runway floor is the 20-session planned hold (40 calendar days), so the two
     # expiries nearest to covering it are 30 and 40 days (was 25 and 30 under the anticipated-move floor).

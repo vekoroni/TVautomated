@@ -102,7 +102,9 @@ def _enhanced_html(result: TickerRunResult, row: dict[str, Any]) -> str:
         "<div class='grid'><section class='panel'><h3>GEX &amp; WALLS</h3><div class='kv'>"
         + pairs((("Call wall", "call_wall"), ("Put wall", "put_wall"),
                  ("Gamma flip", "gamma_flip"), ("Max pain", "max_pain"),
-                 ("Regime", "gex_regime"), ("GEX score", "gex_score")))
+                 ("Ticker regime", "gex_regime"), ("Ticker GEX score", "gex_score"),
+                 ("Market (SPY) gamma", "market_dealer_gamma_state"),
+                 ("Market (SPY) GEX score", "market_gex_regime_score")))
         + "</div></section><section class='panel'><h3>WALL BREAK SCORE</h3><div class='kv'>"
         + pairs((("Grade", "wbs_grade"), ("Score", "wbs_score"),
                  ("Nearest wall", "wbs_wall_price"), ("Distance", "wbs_wall_distance_pct"),

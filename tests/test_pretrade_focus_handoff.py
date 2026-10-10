@@ -35,6 +35,9 @@ def _row(**updates):
         "contract_oi": 0,
         "contract_delta": 0.8,
         "monetisability_state": "MONETISABLE",
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state decides the lane; monetisability is audit.
+        "anticipated_pays_state": "PAYS",
+        "anticipated_contract_symbol": "TEST261120C00100000",
         "contract_repair_required": "FALSE",
         "contract_repair_status": "CONTRACT_OK",
         "trigger_go_eligible": "TRUE",
@@ -89,11 +92,14 @@ def test_cross_contract_or_session_mismatch_is_review_only():
     for changes in (
         {"monetisability_contract_symbol": "OTHER261120C00100000"},
         {"monetisability_quote_snapshot_id": "different-dataset"},
-        {"selected_quote_timestamp_utc": "2026-09-17T20:00:00Z"},
     ):
         result = project_pretrade_focus(_row(**changes))
         assert result["pretrade_contract_evidence_state"] == "CONTRACT_EVIDENCE_CONFLICT_REVIEW"
         assert result["pretrade_focus_candidate"] is False
+    # Superseded by A7 (ACK 7 Oct 2026): a quote from a prior session is an aged quote, not a contract
+    # evidence conflict; only symbol and quote-dataset identity mismatches are conflicts.
+    aged = project_pretrade_focus(_row(selected_quote_timestamp_utc="2026-09-17T20:00:00Z"))
+    assert aged["pretrade_contract_evidence_state"] == "COMPLETED_SESSION_QUOTE_OBSERVED"
 
 
 def test_eod_quote_pending_does_not_fabricate_contract_repair_or_entry_authority():
@@ -121,12 +127,22 @@ def test_developing_and_conflicted_opportunities_remain_visible():
     assert project_pretrade_focus(_row(trigger_go_eligible="FALSE"))[
         "pretrade_focus_lane"
     ] == "FOCUS_TRIGGER_DEVELOPING"
-    assert project_pretrade_focus(_row(monetisability_state="LIMITED"))[
+    # Superseded by L5 (ACK 7 Oct 2026): monetisability no longer decides the lane (FOCUS_LIMITED_MONETISATION
+    # is retired); the pays state does - DOES_NOT_PAY -> WATCH_MOVE_DOES_NOT_PAY (was WATCH_CONTRACT_MONETISATION),
+    # not computed -> OPTION_VALUE_REVIEW (was MONETISATION_EVIDENCE_REVIEW).
+    for audit_only in ("LIMITED", "NOT_MONETISABLE"):
+        assert project_pretrade_focus(_row(monetisability_state=audit_only))[
+            "pretrade_focus_lane"
+        ] == FOCUS_PRIMARY
+    assert project_pretrade_focus(_row(anticipated_pays_state="DOES_NOT_PAY_AT_ANTICIPATED_TIME"))[
         "pretrade_focus_lane"
-    ] == "FOCUS_LIMITED_MONETISATION"
-    assert project_pretrade_focus(_row(monetisability_state="NOT_MONETISABLE"))[
+    ] == "WATCH_MOVE_DOES_NOT_PAY"
+    assert project_pretrade_focus(_row(anticipated_pays_state="NOT_COMPUTED"))[
         "pretrade_focus_lane"
-    ] == "WATCH_CONTRACT_MONETISATION"
+    ] == "OPTION_VALUE_REVIEW"
+    assert project_pretrade_focus(_row(anticipated_pays_state=""))[
+        "pretrade_focus_lane"
+    ] == "OPTION_VALUE_REVIEW"
 
 
 def test_lab_projection_carries_focus_evidence_without_changing_authority():

@@ -433,7 +433,13 @@ def _record_decision_outcome_ledger(
         validation_events_by_ticker=validation_by_ticker,
     )
     execution_appended = ledger.append_many(execution_events)
+    # Output-trust item 8 (ACK 9-10 Oct 2026): a Morning disposition for every row, with or without identity.
+    from domain.ticker_disposition import disposition_records
+    dispositions = disposition_records(source_rows, run_id=run_id, stage="MORNING", recorded_at_utc=occurred_at_utc)
+    dispositions_appended = ledger.append_dispositions(dispositions)
     return {
+        "dispositions": len(dispositions),
+        "dispositions_appended": dispositions_appended,
         "path": str(ledger_path),
         "authority": "OBSERVATION_ONLY",
         "can_grant_capital": False,
@@ -906,6 +912,7 @@ def finalize_morning_handoff(
         manifest,
         Path(runs_dir),
         sync_interpreter=False,
+        publish_review=False,
     )
     lab_rows = list(lab_book.get("rows") or [])
     if len(lab_rows) != len(source_rows):
@@ -1024,6 +1031,24 @@ def finalize_morning_handoff(
     summary_path = morning_dir / f"morning_handoff_summary_{run_id}.json"
     summary["summary_path"] = str(summary_path)
     _atomic_json(summary_path, summary)
+    # LAB-004: the compact view is the final read-only projection. Publish only
+    # after validation events, accepted MSI evidence and summary exist, avoiding
+    # a costly early materialisation and a stale watch receipt immediately after.
+    try:
+        from contracts.lab_review_sources import prepare_review_publication
+        from contracts.lab_review_projection import publish_review_projection, source_file_receipt
+        prepared, review_context, review_receipt = prepare_review_publication(
+            lab_book, run_dir,
+            validation_receipt=validation_event_summary if validation_event_summary.get("status") == "PASS" else None,
+        )
+        summary["review_projection"] = publish_review_projection(
+            prepared, runs_dir, context=review_context,
+            source_receipt={**source_file_receipt(Path(lab_book["json_path"])), **review_receipt},
+        )
+    except Exception as error:
+        summary["review_projection"] = {"publication_state": "FAILED", "error_type": type(error).__name__,
+                                        "reason": str(error), "authority": "DISPLAY_ONLY"}
+        log.warning("Compact Lab review publication failed for %s: %s", run_id, error)
     log.info(
         "Morning handoff PASS: run=%s rows=%d source_actionable=%d lab_actionable=%d",
         run_id,

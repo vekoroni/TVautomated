@@ -1,0 +1,96 @@
+{
+  "run": "20261008_220129",
+  "chains": 2677,
+  "stats": {
+    "assessed": 2677,
+    "hold_call:QUALIFIED": 2010,
+    "hold_put:QUALIFIED": 1814,
+    "hold_call:NO_PLANNED_EXIT": 539,
+    "hold_put:NO_PLANNED_EXIT": 539,
+    "hold_put:NO_QUALIFIED_WALL": 261,
+    "hold_call:NO_STRIKES_IN_RELEVANT_RANGE": 10,
+    "hold_call:NO_GAMMA_OI": 6,
+    "hold_call:NO_QUALIFIED_WALL": 112,
+    "hold_put:NO_STRIKES_IN_RELEVANT_RANGE": 42,
+    "hold_put:NO_GAMMA_OI": 21
+  },
+  "hold_wall_price_status": {
+    "OBSERVED_RESISTANCE": 268,
+    "BREACHED_ACCEPTANCE_ASSESSING": 187,
+    "CONTESTED_LEVEL": 790,
+    "UNTESTED_CONCENTRATION": 829,
+    "CONTINUATION_SUPPORTED": 437,
+    "AT_LEVEL": 268,
+    "OBSERVED_SUPPORT": 352,
+    "FAILED_BREAK_ASSESSING": 483,
+    "SINGLE_REJECTION": 210
+  },
+  "old_walls_more_than_30pct_from_spot": 1053,
+  "examples": [
+    {
+      "ticker": "JBLU",
+      "spot": 3.92,
+      "old_call": 7.0,
+      "old_put": 3.0,
+      "wall_hold_call_peak": 4.5,
+      "wall_hold_call_share": 0.524,
+      "wall_hold_call_price_status": "CONTESTED_LEVEL",
+      "wall_hold_put_peak": null,
+      "wall_hold_put_share": null,
+      "wall_hold_put_price_status": null,
+      "wall_exit_date": "2026-10-22"
+    },
+    {
+      "ticker": "MSFT",
+      "spot": 522.61,
+      "old_call": 575.0,
+      "old_put": 350.0,
+      "wall_hold_call_peak": 550.0,
+      "wall_hold_call_share": 0.1734,
+      "wall_hold_call_price_status": "UNTESTED_CONCENTRATION",
+      "wall_hold_put_peak": 510.0,
+      "wall_hold_put_share": 0.151,
+      "wall_hold_put_price_status": "CONTESTED_LEVEL",
+      "wall_exit_date": "2026-10-29"
+    },
+    {
+      "ticker": "NVDA",
+      "spot": 230.48,
+      "old_call": 240.0,
+      "old_put": 200.0,
+      "wall_hold_call_peak": 240.0,
+      "wall_hold_call_share": 0.1746,
+      "wall_hold_call_price_status": "SINGLE_REJECTION",
+      "wall_hold_put_peak": 220.0,
+      "wall_hold_put_share": 0.1589,
+      "wall_hold_put_price_status": "CONTESTED_LEVEL",
+      "wall_exit_date": "2026-11-20"
+    },
+    {
+      "ticker": "SMCI",
+      "spot": 42.77,
+      "old_call": 50.0,
+      "old_put": 3.0,
+      "wall_hold_call_peak": 45.0,
+      "wall_hold_call_share": 0.1458,
+      "wall_hold_call_price_status": "OBSERVED_RESISTANCE",
+      "wall_hold_put_peak": 40.0,
+      "wall_hold_put_share": 0.1241,
+      "wall_hold_put_price_status": "CONTINUATION_SUPPORTED",
+      "wall_exit_date": "2026-12-28"
+    },
+    {
+      "ticker": "WYNN",
+      "spot": 75.29,
+      "old_call": 120.0,
+      "old_put": 62.5,
+      "wall_hold_call_peak": 79.0,
+      "wall_hold_call_share": 0.2128,
+      "wall_hold_call_price_status": "CONTINUATION_SUPPORTED",
+      "wall_hold_put_peak": 75.0,
+      "wall_hold_put_share": 0.2826,
+      "wall_hold_put_price_status": "AT_LEVEL",
+      "wall_exit_date": "2026-10-21"
+    }
+  ]
+}

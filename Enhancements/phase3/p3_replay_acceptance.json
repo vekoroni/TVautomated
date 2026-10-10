@@ -1,0 +1,48 @@
+{
+  "candidates": 728,
+  "tested_tf": 728,
+  "events_status": {
+    "MEASURED": 728
+  },
+  "last_event_mix_tested": {
+    "<none>": 346,
+    "VWAP_LOSS": 101,
+    "VWAP_RECLAIM": 82,
+    "OUTCOME_REACHED": 37,
+    "BREAK_ACCEPTED_UP": 35,
+    "BREAK_ATTEMPT_UP": 29,
+    "BREAK_ACCEPTED_DOWN": 27,
+    "BREAK_ATTEMPT_DOWN": 21,
+    "RETEST_HELD_UP": 17,
+    "RETEST_HELD_DOWN": 13,
+    "FAILED_BREAK_DOWN": 11,
+    "FAILED_BREAK_UP": 6,
+    "INVALIDATED": 2,
+    "RETEST_FAILED_UP": 1
+  },
+  "engine_state_vs_detector_acceptance": {
+    "ACTIVATED": {
+      "False": 0,
+      "True": 75
+    },
+    "DETECTED": {
+      "False": 384,
+      "True": 0
+    }
+  },
+  "ticker_last_event": {
+    "<none>": 46,
+    "BREAK_ACCEPTED_UP": 16,
+    "BREAK_ACCEPTED_DOWN": 9,
+    "RETEST_HELD_DOWN": 7,
+    "RETEST_HELD_UP": 7,
+    "BREAK_ATTEMPT_UP": 6,
+    "VWAP_RECLAIM": 6,
+    "VWAP_LOSS": 4,
+    "BREAK_ATTEMPT_DOWN": 3,
+    "FAILED_BREAK_DOWN": 1,
+    "RETEST_FAILED_UP": 1
+  },
+  "directed_tickers_with_event_status": 91,
+  "directed_tickers": 91
+}

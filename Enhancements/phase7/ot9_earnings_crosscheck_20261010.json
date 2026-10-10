@@ -1,0 +1,13 @@
+{
+  "purpose": "Item 9 acceptance: MarketData earnings dates (cache 2026-10-08) against tastytrade market metrics (read-only MCP, 10 Oct 2026) on a random sample of 40 SCHEDULED tickers plus MSFT.",
+  "compared": 30,
+  "not_compared": {"batch_rejected_by_connector_schema": ["BWFG", "C", "CLS", "CNO", "CR", "CVCO", "FRT", "GAP", "GDOT", "GSAT"], "removed_from_retry": ["DAC"]},
+  "agree": 26,
+  "disagree": {
+    "MSFT": {"marketdata": "2026-11-04 AFTER_CLOSE", "tastytrade": "2026-10-28 AMC, estimated=false"},
+    "OI": {"marketdata": "2026-11-03 UNKNOWN", "tastytrade": "2026-10-27 AMC, estimated=false"},
+    "TRS": {"marketdata": "2026-10-27 BEFORE_OPEN", "tastytrade": "2026-10-29 BTO, estimated=false"},
+    "VFC": {"marketdata": "2026-10-27 UNKNOWN", "tastytrade": "2026-10-28 BTO, estimated=false"}
+  },
+  "note": "PEP reported 2026-10-08 in both (a past date by 10 Oct). tastytrade omits time-of-day on many names; MarketData supplies it. The same response carries dividend-yield and dividend-ex-date (a dividend source for item 4)."
+}

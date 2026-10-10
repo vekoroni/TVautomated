@@ -184,6 +184,9 @@ def test_governed_book_preserves_owned_ev3_trigger_spread_and_garch_fields(tmp_p
             monetisability_status="COMPLETE",
             monetisability_state="MONETISABLE",
             monetisability_contract_symbol=OCC,
+            # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value for the contract.
+            anticipated_pays_state="PAYS",
+            anticipated_contract_symbol=OCC,
         )],
         {"pipeline_mode": "EOD", "fatal_flags": [], "stale_flags": []},
         tmp_path,
@@ -241,6 +244,9 @@ def test_morning_live_and_msi_fields_survive_into_the_final_book(tmp_path):
             monetisability_status="COMPLETE",
             monetisability_state="MONETISABLE",
             monetisability_contract_symbol=OCC,
+            # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value for the contract.
+            anticipated_pays_state="PAYS",
+            anticipated_contract_symbol=OCC,
             live_price=30.68,
             live_vwap=30.6867,
             quote_timestamp_utc="2026-09-18T15:41:30Z",
@@ -356,6 +362,9 @@ def test_cross_contract_ev_is_fail_closed_and_never_populates_selected_contract_
             monetisability_status="COMPLETE",
             monetisability_state="MONETISABLE",
             monetisability_contract_symbol="O:AAA990119C00100000",
+            # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value for the contract.
+            anticipated_pays_state="PAYS",
+            anticipated_contract_symbol="O:AAA990119C00100000",
             ev3_status="EVALUATED_SHADOW",
             ev3_structure="BULL_CALL_DEBIT",
             ev3_contract_symbol=(
@@ -395,6 +404,9 @@ def test_exact_contract_ev_and_monetisability_share_one_governed_evaluation_iden
             monetisability_status="COMPLETE",
             monetisability_state="MONETISABLE",
             monetisability_contract_symbol=OCC,
+            # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value for the contract.
+            anticipated_pays_state="PAYS",
+            anticipated_contract_symbol=OCC,
             ev3_status="EVALUATED_SHADOW",
             ev3_structure="LONG_SINGLE",
             ev3_contract_symbol=OCC,
@@ -448,7 +460,8 @@ def test_post_merge_rejects_rr_and_quote_fields_from_a_different_contract(tmp_pa
     assert "rr_premium_expected" not in row
     assert "rr_contract_symbol" not in row
     assert row["economics_comparable"] is False
-    assert row["economics_mismatch_reason"] == "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT"
+    # Superseded by L5 (ACK 7 Oct 2026): the lock reason names the uncomputed anticipated value, not monetisability.
+    assert row["economics_mismatch_reason"] == "ANTICIPATED_VALUE_NOT_COMPUTED_FOR_SELECTED_CONTRACT"
     assert row["lab_tradeable"] is False
     assert row["lab_verdict"] == "CONTRACT_REPAIR"
     assert "CONTRACT_JOIN_REJECTED:options_intelligence:rr_premium_expected" in row["data_quality_flags"]
@@ -474,7 +487,8 @@ def test_legacy_repaired_contract_cannot_inherit_unidentified_rr():
 
     assert row["rr_contract_symbol"] == ""
     assert row["economics_comparable"] is False
-    assert row["economics_mismatch_reason"] == "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT"
+    # Superseded by L5 (ACK 7 Oct 2026): the lock reason names the uncomputed anticipated value, not monetisability.
+    assert row["economics_mismatch_reason"] == "ANTICIPATED_VALUE_NOT_COMPUTED_FOR_SELECTED_CONTRACT"
     assert row["lab_tradeable"] is False
 
 
@@ -635,15 +649,18 @@ def test_post_merge_materialization_recovers_owned_lab_fields(tmp_path):
     assert row["sector_etf"] == "XLK"
     assert row["positive_factors"] == "CHEAP_VOL"
     assert row["entry_plan"] == "Wait for confirmed break"
-    assert row["trigger_price"] == "69.65"
-    assert row["trigger_price_source"] == "WBS_PHASE_C_CONFIRMED_BREAK"
+    # Phase 5.2 (ACK 8 Oct 2026): the trigger is the thesis's own trigger. Without one it stays missing; the
+    # Wall-Break level is kept as legacy_wbs_* and never becomes the trigger.
+    assert row["trigger_price"] in ("", None)
+    assert row["legacy_wbs_trigger_price"] == "69.65"
+    assert row["legacy_wbs_trigger_source"] == "WBS_PHASE_C_CONFIRMED_BREAK"
     assert row["wbs_momentum_alignment_state"] == "UNAVAILABLE_NO_INTRADAY_PCR"
     assert row["readiness_stage"] == 3
     assert row["readiness_enter_now"] is False
     provenance = json.loads(row["field_provenance_json"])
     assert provenance["contract_mid"] == "options_intelligence"
     assert provenance["sector"] == "vanguard_signals_enriched"
-    assert provenance["trigger_price"] == "wall_break_scores"
+    assert provenance.get("trigger_price") != "wall_break_scores"
 
 
 def test_governed_materializer_corrects_legacy_put_wbs_missing_pcr_bonus(tmp_path):

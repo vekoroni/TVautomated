@@ -1,0 +1,75 @@
+{
+  "sample": {
+    "INTRADAY_ONLY_UNTESTED": 40,
+    "NO_LIVE_SETUP": 40,
+    "DISCOVERY_SURVIVOR": 40
+  },
+  "now": {
+    "SURVIVE": 106,
+    "NO_LIVE_SETUP": 10,
+    "INSUFFICIENT_DAILY_HISTORY": 4
+  },
+  "candidates": 728,
+  "candidates_with_decision": 728,
+  "adoption": {
+    "ADOPTED": 403,
+    "UNRESOLVED": 221,
+    "CLOSED": 80,
+    "REFUSED": 24
+  },
+  "deciding_reason": {
+    "SETUP_SIDE_WITH_COMPLETE_GEOMETRY": 403,
+    "NO_SIDE": 189,
+    "LIFECYCLE_OUTCOME_REACHED": 73,
+    "LEVELS_INCOMPLETE": 32,
+    "LEVELS_WRONG_SIDE": 24,
+    "LIFECYCLE_FAILED": 7
+  },
+  "spine_roles": {
+    "OTHER": 348,
+    "SUPPORTING": 160,
+    "CONFLICTING": 97,
+    "GOVERNING": 91,
+    "SIDE_SETTER": 32
+  },
+  "ticker_side_new": {
+    "BULL": 52,
+    "BEAR": 39,
+    "UNASSIGNED": 15
+  },
+  "ticker_side_legacy": {
+    "UNASSIGNED": 46,
+    "BEAR": 31,
+    "BULL": 29
+  },
+  "side_vs_legacy": {
+    "BEAR": {
+      "BEAR": 21,
+      "BULL": 3,
+      "UNASSIGNED": 15
+    },
+    "BULL": {
+      "BEAR": 9,
+      "BULL": 22,
+      "UNASSIGNED": 21
+    },
+    "UNASSIGNED": {
+      "BEAR": 1,
+      "BULL": 4,
+      "UNASSIGNED": 10
+    }
+  },
+  "top_timeframe": {
+    "1mo": 57,
+    "1w": 32,
+    "1d": 17
+  },
+  "unresolved_reason": {
+    "SAME_TIMEFRAME_CONFLICT": 15
+  },
+  "intraday_alignment": {
+    "NOT_MEASURED": 106
+  },
+  "directed": 91,
+  "one_story_directed": "91/91"
+}

@@ -83,7 +83,31 @@ def _side_block_fields(outcomes, vanguard_input) -> dict:
     else:
         blocks["side_assigned__status"] = "NOT_APPLICABLE_UNASSIGNED"
     blocks["side_assigned__authority"] = "SHADOW_DESCRIPTIVE_ONLY"
+    blocks.update(_context_flags(blocks, side))
     return blocks
+
+
+def _context_flags(blocks: dict, side: str) -> dict:
+    """Phase 4 (8 Oct 2026): Vanguard adds context to the thesis, never authority. Flags compare the THESIS side's
+    own evidence; with no thesis side there is no side flag (Vanguard never picks a side)."""
+    try:
+        from vanguard.layer2_statistical.actuarial_query import load_side_block_policy
+        horizon = int(load_side_block_policy().get("context_flag_horizon_sessions", 20))
+    except Exception:
+        horizon = 20
+    flags = []
+    status, reason = str(blocks.get("side_block_status") or ""), str(blocks.get("side_block_reason") or "")
+    if reason == "THIN_SAMPLE":
+        flags.append("THIN_HISTORY")
+    elif status != "EVALUATED" and reason:
+        flags.append("SIDE_EVIDENCE_NOT_EVALUATED")
+    if side in {"BULL", "BEAR"}:
+        p = blocks.get(f"side_{side.lower()}__p_close_favourable_{horizon}d")
+        m = blocks.get(f"side_{side.lower()}__signed_mean_return_close_{horizon}d")
+        if p is not None and m is not None and p == p and m == m and p < 0.5 and m < 0:
+            flags.append("HISTORY_AGAINST_THESIS_SIDE")
+    return {"vanguard_context_flags": ";".join(flags), "vanguard_context_flag_horizon": horizon,
+            "vanguard_context_authority": "CONTEXT_ONLY"}
 
 
 def analyze_ticker(vanguard_input: VanguardInput, actuarial_db_path: Optional[str] = None) -> VanguardSignal:

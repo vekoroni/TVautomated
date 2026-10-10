@@ -116,7 +116,8 @@ MARKETDATA_API_KEY = os.getenv("MARKETDATA_API_KEY", "").strip()
 DEFAULT_SPREAD_THRESHOLD = LONG_OPTION_EXECUTION_POLICY["reviewable_spread_max_pct"]
 LIVE_FETCH_WORKERS       = 8     # increased for AG-03 skew fetch (2 extra calls per ticker)
 LIVE_FETCH_TIMEOUT       = 10.0  # seconds per ticker
-LIVE_STOCK_PRICE_MAX_AGE_SECONDS = 300  # source observation, not HTTP fetch time
+# A1 (ACK 6 Oct 2026): no share-price age threshold. A valid provider price is used and its age disclosed;
+# config share_price_label only labels it CURRENT / AGED_REFERENCE for display.
 LIVE_STOCK_PRICE_FUTURE_TOLERANCE_SECONDS = 30
 EV3_BARRIER_CACHE_PATH   = Path(os.getenv(
     "EV3_BARRIER_CACHE_PATH",
@@ -124,6 +125,20 @@ EV3_BARRIER_CACHE_PATH   = Path(os.getenv(
 ))
 _EV3_BARRIER_CACHE: Any = None
 _EV3_BARRIER_CACHE_ERROR = ""
+
+def _share_price_aged_after_seconds() -> float:
+    cfg = json.loads((Path(__file__).resolve().parent / "config" / "governed_constants_v1.json")
+                     .read_text(encoding="utf-8-sig"))["share_price_label"]
+    if cfg.get("authority") != "DISPLAY_ONLY":
+        raise ValueError("share_price_label must be display only")
+    return float(cfg["aged_after_seconds"])
+
+
+_SHARE_PRICE_AGED_AFTER_SECONDS = _share_price_aged_after_seconds()
+
+# E12 (ACK 6 Oct 2026): anticipated-move states that carry no option value verdict -> option review, never GO.
+_OPTION_VALUE_NOT_ASSESSED = {"NOT_COMPUTED": "OPTION_VALUE_NOT_COMPUTED",
+                              "NOT_ASSESSED_VOLATILITY_ONLY": "OPTION_VALUE_VOLATILITY_ONLY"}
 
 # Layer 3 model-risk capital guardrails. These never break the thesis; they
 # convert otherwise-valid trades into FLAG / MODEL_RISK_REVIEW.
@@ -255,26 +270,26 @@ def _check_direction_integrity(row: Dict[str, Any]) -> tuple[bool, str]:
 
 
 def _check_upstream_authority(row: Dict[str, Any]) -> tuple[bool, str]:
-    """Only a governed EOD candidate may be unlocked by morning validation."""
+    """Which rows the Morning may validate: governed provenance, a usable options route, a governed invalidation and an
+    adopted thesis.
+
+    M-REVIEW-01 (ACK 10 Oct 2026): the legacy execution-layer permission (Vanguard's actuarial signal_type turned into
+    WATCH_ONLY / NOT_AUTHORIZED) no longer decides; run_gate publishes it as legacy_execution_permission_context. Run
+    20261008_220129 replay: 862 rows were blocked by it before review, 282 of them activated theses
+    (Enhancements/phase7/M_REVIEW_01_THESIS_AUTHORITY_DESIGN_20261010.md).
+    """
     source_stage = _u(row.get("authority_source_stage"))
     if source_stage != "FINAL_EXECUTION":
         return False, f"UNSAFE_AUTHORITY_SOURCE:{source_stage or 'MISSING'}"
     route = _u(row.get("final_route"))
     if route in {"OPTIONS_BLOCKED", "OPTIONS_EQUITY_ONLY_BETTER"}:
         return False, f"UPSTREAM_OPTIONS_ROUTE_BLOCKED:{route}"
-
-    authority_state = _u(row.get("capital_authorization_state"))
-    capital_permission = _u(
-        row.get("capital_permission") or row.get("live_capital_permission")
-    )
-    eod_authorized = _truthy(row.get("eod_candidate_authorized"))
-    if authority_state != "EOD_CANDIDATE_ONLY":
-        return False, f"UPSTREAM_NOT_AUTHORIZED:{authority_state or 'MISSING'}"
-    if capital_permission != "EOD_CANDIDATE_ONLY":
-        return False, f"UPSTREAM_CAPITAL_PERMISSION:{capital_permission or 'MISSING'}"
-    if not eod_authorized:
-        return False, "UPSTREAM_EOD_CANDIDATE_AUTHORIZATION_FALSE"
-    return True, "Governed EOD candidate awaiting live validation"
+    if _u(row.get("capital_authorization_state")) == "NOT_AUTHORIZED_INVALIDATION_MISSING":
+        return False, "UPSTREAM_INVALIDATION_MISSING"
+    readiness = _u(row.get("thesis__readiness"))
+    if readiness in {"", "NAN", "NONE", "NOT_ADOPTED", "NOT_MEASURED"}:
+        return False, f"NO_ADOPTED_THESIS:{readiness or 'MISSING'}"
+    return True, f"THESIS_AUTHORITY:{readiness}"
 
 
 def _check_monetisability(row: Dict[str, Any]) -> tuple[bool, str]:
@@ -828,13 +843,13 @@ def _parse_marketdata_stock_price(
     age_seconds = (now - observed).total_seconds()
     if age_seconds < -LIVE_STOCK_PRICE_FUTURE_TOLERANCE_SECONDS:
         return rejected("FUTURE_PROVIDER_TIMESTAMP")
-    if age_seconds > LIVE_STOCK_PRICE_MAX_AGE_SECONDS:
-        return rejected("STALE_PROVIDER_PRICE")
+    age_seconds = max(age_seconds, 0.0)
     return {
         "live_price": midpoint,
+        "live_price_state": "AGED_REFERENCE" if age_seconds > _SHARE_PRICE_AGED_AFTER_SECONDS else "CURRENT",
         "live_price_kind": "SMARTMID_MIDPOINT",
         "live_price_updated_utc": observed_at,
-        "live_price_age_seconds": round(max(age_seconds, 0.0), 1),
+        "live_price_age_seconds": round(age_seconds, 1),
         "live_data_source": source,
         "live_fetched_at": now.isoformat().replace("+00:00", "Z"),
     }
@@ -1107,6 +1122,13 @@ def _evidence_runway_sessions(row: Dict[str, Any]) -> Optional[float]:
     return _f(row.get("planned_hold_sessions"))
 
 
+def _occ_right(symbol: Any) -> str:
+    """The call/put right of an OCC option symbol ("C" / "P"), or "" when the symbol cannot be read."""
+    import re
+    match = re.search(r"[A-Z.]+\d{6}([CP])\d{8}", _u(symbol).replace("O:", ""))
+    return match.group(1) if match else ""
+
+
 def _iter_repair_alternatives(row: Dict[str, Any], primary_contract: str = "") -> List[str]:
     """Return ordered EOD repair alternatives, de-duped against the primary contract."""
     seen = {_u(primary_contract)}
@@ -1153,7 +1175,16 @@ def _try_live_repair_alternatives(
     # than the anticipated move" (run 20261005_072245: 34 of 141 lane A/B repairs expired before q80).
     runway = _evidence_runway_sessions(row)
     today = _today_session() if runway is not None else None
+    # Phase 5.5 (ACK E02 6 Oct 2026): the repair changes the contract inside the thesis, never the thesis. An
+    # alternative whose right does not express the thesis side is skipped, whatever its quote.
+    thesis_right = {"CALL": "C", "PUT": "P"}.get(
+        _side(row.get("governed_direction") or row.get("final_direction") or row.get("canonical_direction"))
+        or {"BULL": "CALL", "BEAR": "PUT"}.get(_u(row.get("thesis__side")), ""))
     for alt_symbol in _iter_repair_alternatives(row, primary_contract):
+        alt_right = _occ_right(alt_symbol)
+        if thesis_right and alt_right and alt_right != thesis_right:
+            attempts.append(f"{alt_symbol}:SKIP:OFF_THESIS_SIDE")
+            continue
         if runway is not None:
             from avshunter.shared.xnys_calendar import xnys_sessions_between
             expiry = _occ_expiry(alt_symbol)
@@ -1186,22 +1217,34 @@ def _try_live_repair_alternatives(
 
 
 def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Fix E (ACK 5 Oct 2026): the contract-dependent anticipated move and earnings timing for the Morning's contract.
+    """Fix E (ACK 5 Oct 2026) + M-G2-01 (ACK 10 Oct 2026): the Morning values the contract it shows, on its quote.
 
-    Run 20261005_072245: 413 repaired rows showed the Evening contract's value, time fit and earnings-in-contract
-    beside the new contract. Returns nothing when the contract is unchanged (the Evening values stand).
+    Run 20261005_072245: 413 repaired rows showed the Evening contract's value beside the new contract (Fix E).
+    Run 20261008_220129: 25 of 35 GO rows kept the Evening value beside Morning quotes because an unchanged contract
+    was not repriced (M-G2-01). Now every contract with a usable Morning quote is valued by the one engine; the frozen
+    Evening value is kept under eod_* names with its time; without a Morning quote the Evening value stands, labelled.
     """
     symbol = _s(live_data.get("live_contract_symbol") or live_data.get("morning_repair_contract_symbol"))
     evening = _s(row.get("contract_symbol"))
-    if not symbol or _u(symbol) == _u(evening):
+    reference = {"eod_anticipated_value_multiple_q50": row.get("anticipated_value_multiple_q50"),
+                 "eod_anticipated_pays_state": row.get("anticipated_pays_state"),
+                 "eod_scenario_target_return_on_premium": row.get("scenario_target_return_on_premium"),
+                 "eod_anticipated_valued_at_utc": row.get("anticipated_valued_at_utc")}
+    if not symbol:
         return {}
+    unchanged = _u(symbol) == _u(evening)
+    if unchanged and (_f(live_data.get("live_contract_ask")) is None or _f(live_data.get("live_contract_iv")) is None):
+        return {"anticipated_contract_basis": "EVENING_REFERENCE:NO_MORNING_QUOTE", **reference}
     from domain.anticipated_move import anticipated_move_fields
     from earnings_calendar_enricher import earnings_disclosure
     today = _today_session()
     expiry = _occ_expiry(symbol)
     contract = {"strike": _occ_strike(symbol), "ask": _f(live_data.get("live_contract_ask")),
+                "bid": _f(live_data.get("live_contract_bid")), "underlying": row.get("ticker"),
                 "iv": _f(live_data.get("live_contract_iv")), "expiry": expiry.isoformat() if expiry else None,
                 "as_of": today.isoformat()}
+    from canonical_data.dividend_history import dividend_inputs
+    _spot = _f(live_data.get("live_price")) or _f(row.get("signal_price"))
     out = anticipated_move_fields(
         direction=_u(row.get("final_direction") or row.get("direction")),
         spot=_f(live_data.get("live_price")) or _f(row.get("signal_price")),
@@ -1215,14 +1258,27 @@ def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, An
         governed_window_sessions=row.get("planned_hold_sessions"),
         earnings={"earnings_state": row.get("earnings_state"),
                   "earnings_sessions_to_event": row.get("earnings_sessions_to_event")},
-        trade_side_event=_u(row.get("thesis_structure_alignment")) == "ALIGNED")
-    out["anticipated_contract_basis"] = f"MORNING_CONTRACT_RECOMPUTED:{symbol}"
+        trade_side_event=_u(row.get("thesis_structure_alignment")) == "ALIGNED",
+        # Output-trust item 4: the invalidation scenario and the dividend yield from history (basis stated).
+        invalidation_level=row.get("invalidation_price") or row.get("invalidation_eod") or row.get("invalidation_level"),
+        **dividend_inputs(row.get("ticker"), as_of=today, spot=_spot))
+    out["anticipated_contract_basis"] = (f"MORNING_REPRICED:{symbol}" if unchanged
+                                         else f"MORNING_CONTRACT_RECOMPUTED:{symbol}")
+    out["anticipated_contract_symbol"] = symbol          # L5: the contract the decision's value belongs to
+    out["anticipated_valued_at_utc"] = _s(live_data.get("quote_provider_timestamp_utc")
+                                          or live_data.get("live_contract_provider_updated")
+                                          or live_data.get("selected_quote_timestamp_utc")
+                                          or live_data.get("live_contract_quote_timestamp")) or None
+    out.update(reference)
     if _s(row.get("earnings_state")):
         out.update(earnings_disclosure(
             {"state": row.get("earnings_state"), "date": row.get("earnings_date"),
              "report_time": row.get("earnings_report_time"), "fiscal_quarter": row.get("earnings_fiscal_quarter"),
              "reason": row.get("earnings_unknown_reason"), "source": row.get("earnings_source"),
-             "date_confirmation": row.get("earnings_date_confirmation")},
+             "date_confirmation": row.get("earnings_date_confirmation"),
+             # item 9: the Evening reconciliation travels unchanged (the Morning recomputes timing only)
+             "disagreement": row.get("earnings_disagreement"), "sources_json": row.get("earnings_sources_json"),
+             "confirmation_note": row.get("earnings_confirmation_note")},
             as_of=today, hold_sessions=row.get("planned_hold_sessions"), expiry=contract["expiry"]))
     return out
 
@@ -1993,23 +2049,18 @@ def _check_contract(
     return True, f"Contract liquid â€” bid={bid:.2f} ask={ask:.2f} spread={spread_text}"
 
 
+_MEASURED_HOLD_BASES = ("DURATION_EVIDENCE", "POOLED_EVIDENCE", "VOLATILITY_TIME_TO_LEVEL")
+
+
 def _morning_hold_sessions(row: Dict[str, Any]) -> Optional[float]:
-    # The Horizon Router owns the planned trade hold.  Actuarial L2 hold days
-    # describe an outcome window and must not expand the DTE requirement for a
-    # shorter governed trade horizon.
-    for key in (
-        "planned_hold_sessions",
-        "remaining_hold_sessions",
-        "ev3_horizon_sessions",
-        "hold_days",
-        "l2_hold_days",
-    ):
-        value = _f(row.get(key))
-        if value is not None and value >= 0:
-            return value
-    text = _s(row.get("hold_label") or row.get("hold_period") or row.get("time_horizon"))
-    values = [float(token) for token in re.findall(r"\d+(?:\.\d+)?", text)]
-    return max(values) if values else None
+    # L3 (ACK 7 Oct 2026): the hold is the one the evening sized the contract with - its own duration evidence,
+    # pooled evidence or calibrated volatility time to level - or none. The fallbacks to remaining/EV3/L2 hold
+    # fields and to numbers parsed from hold labels are removed; no hold means no hold-based minimum DTE
+    # (NO_EVIDENCE_HOLD), never a borrowed or retired 5/10/20 hold.
+    if not _s(row.get("planned_hold_source")).startswith(_MEASURED_HOLD_BASES):
+        return None
+    value = _f(row.get("planned_hold_sessions"))
+    return value if value is not None and value >= 0 else None
 
 
 def _morning_forecast_vol(row: Dict[str, Any], live_data: Dict[str, Any]) -> Optional[float]:
@@ -2114,7 +2165,6 @@ def _morning_liquidity_lifecycle(
         "target": target,
         "invalidation": invalidation,
         "dte": dte,
-        "hold": hold,
         "forecast_vol": forecast_vol,
         "selected_symbol": selected_symbol or None,
     }
@@ -2168,7 +2218,7 @@ def _morning_liquidity_lifecycle(
             bid=bid,
             ask=ask,
             dte=float(required["dte"]),
-            remaining_hold_sessions=float(required["hold"]),
+            remaining_hold_sessions=hold,          # L3: None = no evidence hold (no hold-based minimum)
             # Step 4b: a hold sourced from a daily event's duration evidence (planned_hold_source) is accepted.
             hold_is_evidence=str(row.get("planned_hold_source") or "").startswith("DURATION_EVIDENCE"),
             forecast_vol_annual=float(required["forecast_vol"]),
@@ -2432,6 +2482,10 @@ def run_gate(
     # Run checks
     direction_pass, direction_reason = _check_direction_integrity(out)
     authority_pass, authority_reason = _check_upstream_authority(out)
+    # M-REVIEW-01: the legacy execution-layer permission is context only (shown beside Vanguard history).
+    out["legacy_execution_permission_context"] = ":".join(
+        part for part in (_u(out.get("capital_permission") or out.get("live_capital_permission")),
+                          _s(out.get("signal_authority_reason"))) if part) or "NOT_RECORDED"
     economics_pass, economics_reason = _check_premium_economics(out)
     ev3_pass, ev3_reason = _check_ev3_authority(out)
     out["ev3_authority_requested"] = _truthy(out.get("ev3_authority_active"))
@@ -2608,7 +2662,11 @@ def run_gate(
                 {"state": row.get("earnings_state"), "date": row.get("earnings_date"),
                  "report_time": row.get("earnings_report_time"),
                  "fiscal_quarter": row.get("earnings_fiscal_quarter"),
-                 "reason": row.get("earnings_unknown_reason"), "source": row.get("earnings_source")},
+                 "reason": row.get("earnings_unknown_reason"), "source": row.get("earnings_source"),
+                 # item 9: the confirmation tier was dropped here (every Morning date read "not confirmed")
+                 "date_confirmation": row.get("earnings_date_confirmation"),
+                 "disagreement": row.get("earnings_disagreement"), "sources_json": row.get("earnings_sources_json"),
+                 "confirmation_note": row.get("earnings_confirmation_note")},
                 as_of=datetime.now(timezone.utc).date(),
                 hold_sessions=row.get("planned_hold_sessions"),
                 expiry=row.get("contract_expiry") or row.get("selected_contract_expiry") or row.get("expiry"),
@@ -2619,7 +2677,8 @@ def run_gate(
         if _s(row.get("earnings_state")):
             _earnings_fields.pop("earnings_date", None)       # the disclosure above owns the date
         out.update(_earnings_fields)
-        # Fix E (ACK 5 Oct 2026): a contract the Morning swapped in gets its own anticipated move and earnings timing.
+        # Fix E (ACK 5 Oct 2026) + M-G2-01 (10 Oct 2026): every contract is valued on its Morning quote; a swapped
+        # contract also gets its own earnings timing. The Evening value is kept as eod_* reference.
         out.update(_recompute_for_morning_contract(row, live_data))
         # AG-01 Step 3: pre-earnings IV note for Options Intelligence display
         if _earnings_fields.get("earnings_catalyst_flag") == "TRUE":
@@ -2896,10 +2955,26 @@ def run_gate(
         lane = "MOVE_DOES_NOT_PAY_AT_ANTICIPATED_TIME"
         entry_action = "NO_TRADE"
         unlock_condition = (
-            f"The anticipated move values this contract at {row.get('anticipated_value_multiple_q50')}x its premium at "
+            # M-G2-01: quote the value the decision used (the Morning repricing when there is one), not the Evening's.
+            f"The anticipated move values this contract at {out.get('anticipated_value_multiple_q50') or row.get('anticipated_value_multiple_q50')}x its premium at "
             "the median anticipated time; choose a contract the move pays, or skip"
         )
         flag_reasons.append("MOVE_DOES_NOT_PAY_AT_ANTICIPATED_TIME")
+    elif _u(out.get("anticipated_pays_state") or row.get("anticipated_pays_state")) in _OPTION_VALUE_NOT_ASSESSED:
+        # E12 (ACK 6 Oct 2026): an option with no computed value is an option review, never a plain GO (R1). The
+        # ticker assessment - lane, direction, setup - is unchanged and the row stays visible (E02).
+        _reason = _OPTION_VALUE_NOT_ASSESSED[_u(out.get("anticipated_pays_state") or row.get("anticipated_pays_state"))]
+        verdict = "FLAG"
+        permission = "WAIT"
+        morning_permission = "OPTION_REVIEW"
+        route = "REVIEW_OPTION_VALUE"
+        lane = _reason
+        entry_action = "MANUAL_REVIEW"
+        unlock_condition = (
+            "The ticker assessment is unchanged; the option's value at the anticipated move could not be computed "
+            f"({_reason}). Review the contract against the move, or wait for a computed value"
+        )
+        flag_reasons.append(_reason)
     elif _u(row.get("candidate_status")) == "WATCH_ONLY":
         # N1 (3 Oct 2026): GO was a fall-through. An EOD watch-only candidate stays visible, never GO.
         verdict = "FLAG"
@@ -2929,19 +3004,42 @@ def run_gate(
     elif str(row.get("trigger_go_eligible", "")).strip().lower() not in {"true", "1", "1.0"}:
         # N1: GO needs a GO-eligible trigger (owned by the trigger layer). Missing eligibility is not
         # eligibility (R1); the row stays in the book with the trigger state stated.
+        # Phase 5.3 (ACK 8 Oct 2026): eligibility = the thesis's own trigger accepted (thesis__readiness).
         _eligibility = str(row.get("trigger_go_eligible", "")).strip()
-        _trigger = str(row.get("trigger_primary") or "").strip() or "NOT_RECORDED"
+        _readiness = str(row.get("thesis__readiness") or row.get("trigger_thesis_readiness") or "").strip() or "NOT_RECORDED"
+        _level = str(row.get("thesis_trigger_level") or "").strip() or "NOT_RECORDED"
+        _go_reason = str(row.get("trigger_go_reason") or "").strip().upper()
+        _geometry = str(row.get("geometry_justification") or "").strip().upper()
+        if _go_reason in {"", "NAN", "NONE"} and _readiness.upper() == "READY_FOR_HUMAN_REVIEW"                 and _geometry in {"GEOMETRY_NOT_JUSTIFIED", "INVALID_GEOMETRY"}:
+            _go_reason = _geometry      # the geometry travels with the thesis spine even if the reason did not
         verdict = "FLAG"
         permission = "WAIT"
-        morning_permission = "AWAITING_TRIGGER"
-        route = "AWAIT_TRIGGER"
-        lane = "TRIGGER_NOT_GO_ELIGIBLE"
         entry_action = "NO_TRADE"
-        unlock_condition = f"Wait for a GO-eligible trigger (trigger_primary={_trigger})"
-        flag_reasons.append(
-            "TRIGGER_NOT_GO_ELIGIBLE" if _eligibility and _eligibility.lower() not in {"nan", "none"}
-            else "TRIGGER_ELIGIBILITY_NOT_RECORDED"
-        )
+        if _go_reason in {"GEOMETRY_NOT_JUSTIFIED", "INVALID_GEOMETRY", "GEOMETRY_NOT_RECORDED"}:
+            # Output-trust item 3 (ACK decision 1, 9 Oct 2026): the trigger WAS accepted; the geometry from the planned
+            # entry is not justified by the setup's measured hit rate. Say that, not "wait for the trigger".
+            def _pct(value):
+                try:
+                    return f"{float(value):.0%}"
+                except (TypeError, ValueError):
+                    return "not recorded"
+            morning_permission = "GEOMETRY_NOT_JUSTIFIED"
+            route = "GEOMETRY_REVIEW"
+            lane = "GEOMETRY_NOT_GO_ELIGIBLE"
+            unlock_condition = (f"Thesis activated (thesis_readiness={_readiness}) but {_go_reason}: break-even "
+                                f"{_pct(row.get('geometry_breakeven_hit_rate'))} vs measured "
+                                f"{_pct(row.get('geometry_measured_hit_rate'))}; not GO - target and invalidation are "
+                                "never moved")
+            flag_reasons.append(_go_reason)
+        else:
+            morning_permission = "AWAITING_TRIGGER"
+            route = "AWAIT_TRIGGER"
+            lane = "TRIGGER_NOT_GO_ELIGIBLE"
+            unlock_condition = f"Wait for the thesis trigger to be accepted at {_level} (thesis_readiness={_readiness})"
+            flag_reasons.append(
+                "TRIGGER_NOT_GO_ELIGIBLE" if _eligibility and _eligibility.lower() not in {"nan", "none"}
+                else "TRIGGER_ELIGIBILITY_NOT_RECORDED"
+            )
     elif flag_reasons:
         verdict = "FLAG"
         permission = "ARMED"
@@ -3601,6 +3699,14 @@ def run_morning_gate(
     # Write output
     _write_csv(output_path, results)
     log.info("Output written: %s", output_path)
+    # Output-trust item 10.3 (ACK 9-10 Oct 2026): inspect the Morning's part - every candidate kept, sound values.
+    import pandas as _pd_station
+    from domain.station_inspection import enforce, inspect_station, write_station_report
+    _station = inspect_station("morning", _pd_station.DataFrame(results), run_id=run_id,
+                               previous_tickers={_u(r.get("ticker")) for r in candidates}, accounted_tickers=set())
+    log.info("Station morning inspected: rows=%d stop_defects=%d | %s", _station["rows"],
+             len(_station["stop_defects"]), write_station_report(_station, ROOT / "data" / "output" / "runs" / run_id).name)
+    enforce(_station)
 
     # Summary
     go_list    = [r for r in results if r["verdict"] == "GO"]
@@ -3819,10 +3925,13 @@ def _market_structure_populations(
             }
         )
     )
+    # Phase 5.4 (ACK 8 Oct 2026, spend approved): the advisory build-up also covers every adopted thesis, accepted or
+    # waiting for its trigger - where the build-up toward the trigger is most informative. It never decides.
     calculation_candidates = [
         row
         for row in results
-        if _u(row.get("verdict")) == "GO"
+        if (_u(row.get("verdict")) == "GO"
+            or _u(row.get("thesis__readiness")) in {"READY_FOR_HUMAN_REVIEW", "WAIT_TRIGGER"})
         and _u(row.get("ticker")) in live_map
     ]
     calculation_live_map = {
@@ -3830,6 +3939,36 @@ def _market_structure_populations(
         for row in calculation_candidates
     }
     return worklist_tickers, calculation_candidates, calculation_live_map
+
+
+def _prefetch_minute_bars(tickers, start_utc: datetime, end_utc: datetime, fetch, *, workers: int) -> Dict[str, Any]:
+    """M-G3-01 (ACK 10 Oct 2026): fetch each ticker's session bars in parallel (network only, bounded workers).
+
+    Returns ticker -> the provider response, or the exception it raised (the sequential stage then re-fetches live).
+    Nothing is written here: registry writes and calculations stay sequential in the caller.
+    """
+    cache: Dict[str, Any] = {}
+
+    def one(ticker):
+        try:
+            return ticker, fetch(ticker, start_utc, end_utc)
+        except Exception as error:                     # noqa: BLE001 - recorded; the caller fetches live instead
+            return ticker, error
+
+    with ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
+        for ticker, result in pool.map(one, list(tickers)):
+            cache[ticker] = result
+    return cache
+
+
+def _prefetched_fetcher(cache: Dict[str, Any], live_fetch, start_utc: datetime, end_utc: datetime):
+    """The resolver's fetch_missing: the prefetched provider response when it covers the gap, else a live fetch."""
+    def fetch(ticker, gap_start, gap_end):
+        hit = cache.get(ticker)
+        if hit is not None and not isinstance(hit, Exception) and gap_start >= start_utc and gap_end <= end_utc:
+            return hit
+        return live_fetch(ticker, gap_start, gap_end)
+    return fetch
 
 
 def _enrich_msi_market_structure(
@@ -3915,7 +4054,23 @@ def _enrich_msi_market_structure(
     )
     calculated = 0
     unavailable = 0
-    for ticker in tickers:
+    # M-G3-01 (ACK 10 Oct 2026): provider fetches in parallel first; the loop below stays sequential (registry writes,
+    # calculations, order) and receives exactly the response a direct fetch would return.
+    stage_start = time.monotonic()
+    fetchable = [t for t in tickers if (_f(rows_by_ticker[t].get("atr14") or rows_by_ticker[t].get("atr")
+                                           or rows_by_ticker[t].get("atr_14")) or 0) > 0]
+    prefetched = _prefetch_minute_bars(fetchable, regular_open, end_utc, _fetch_marketdata_five_minute_bars,
+                                       workers=LIVE_FETCH_WORKERS)
+    log.info("MSI market structure prefetch: %d tickers in %.0fs (%d workers, %d failed -> live retry)",
+             len(prefetched), time.monotonic() - stage_start, LIVE_FETCH_WORKERS,
+             sum(1 for v in prefetched.values() if isinstance(v, Exception)))
+    fetch_bars = _prefetched_fetcher(prefetched, _fetch_marketdata_five_minute_bars, regular_open, end_utc)
+    for position, ticker in enumerate(tickers, start=1):
+        if position % 100 == 0 or position == len(tickers):
+            elapsed = time.monotonic() - stage_start
+            log.info("MSI market structure progress: %d/%d (calculated %d, unavailable %d), %.0fs elapsed, "
+                     "about %.0fs left", position, len(tickers), calculated, unavailable, elapsed,
+                     elapsed / position * (len(tickers) - position))
         row = rows_by_ticker[ticker]
         live = live_map[ticker]
         atr14 = _f(row.get("atr14") or row.get("atr") or row.get("atr_14"))
@@ -3936,7 +4091,7 @@ def _enrich_msi_market_structure(
                 session_date=session_date,
                 start_utc=regular_open,
                 end_utc=end_utc,
-                fetch_missing=_fetch_marketdata_five_minute_bars,
+                fetch_missing=fetch_bars,
                 provider="MARKETDATA",
                 interval_minutes=5,
                 session_segment="REGULAR",
@@ -3967,6 +4122,8 @@ def _enrich_msi_market_structure(
             record = structure_store.persist(evidence)
             evidence["ms_profile_evidence_state"] = profile_evidence_state
             evidence["ms_profile_authority"] = "ADVISORY_ONLY"
+            # Phase 3b (ACK 8 Oct 2026): intraday build-up on the thesis's own levels, from the same bars. Advisory.
+            evidence.update(_intraday_buildup_fields(row, minute_result.frame))
             live.update(evidence)
             live["ms_dataset_id"] = record.dataset_id
             live["ms_minute_resolution"] = minute_result.resolution
@@ -3989,6 +4146,33 @@ def _enrich_msi_market_structure(
         "calculated": calculated,
         "unavailable": unavailable,
     }
+
+
+def _intraday_buildup_fields(row: Dict[str, Any], bars: Any) -> Dict[str, Any]:
+    """Phase 3b: today's intraday build-up against the thesis's own levels (advisory display only).
+
+    Reads the thesis trigger (thesis_trigger_level from Discovery) when it has been carried; never the legacy
+    Wall-Break trigger_price. Never changes the Morning verdict, direction or contract; never raises.
+    """
+    try:
+        from domain.structure_behaviour.policy import load_policy
+        from domain.structure_behaviour.trigger_events import intraday_buildup
+        direction = _u(row.get("governed_direction") or row.get("canonical_direction") or row.get("direction"))
+        side = {"CALL": "BULL", "PUT": "BEAR", "BULL": "BULL", "BEAR": "BEAR"}.get(direction)
+        trigger = _f(row.get("thesis_trigger_level"))
+        out = intraday_buildup(
+            bars, side=side, trigger=trigger,
+            invalidation=_f(row.get("invalidation_level") or row.get("governed_invalidation_spot")
+                            or row.get("invalidation_spot")),
+            target=_f(row.get("structural_target")),
+            atr_daily=_f(row.get("atr14") or row.get("atr") or row.get("atr_14")),
+            policy=load_policy(),
+        )
+        out["ib_trigger_source"] = "THESIS_TRIGGER_LEVEL" if trigger is not None else "NOT_CARRIED_YET_PHASE5"
+        return out
+    except Exception as error:
+        return {"ib_state": "NOT_MEASURED", "ib_reason": f"ERROR:{type(error).__name__}",
+                "ib_authority": "ADVISORY_ONLY"}
 
 
 def _get_ev3_barrier_cache() -> tuple[Any, str]:
@@ -4199,7 +4383,7 @@ def _recompute_selected_contract_economics(
         "monetisability_status", "monetisability_state", "monetisability_reason",
         "monetisability_eligible", "monetisability_contract_symbol",
         "monetisability_evaluation_id", "monetisability_entry_ask",
-        "monetisability_breakeven_spot", "monetisability_structural_target_spot",
+        "monetisability_breakeven_spot", "monetisability_target_spot", "monetisability_target_basis",
         "monetisability_target_intrinsic_per_share",
         "monetisability_target_profit_per_share", "monetisability_target_profit_pct",
         "execution_viability_policy_version", "execution_viability_state",

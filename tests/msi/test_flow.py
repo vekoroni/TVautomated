@@ -465,14 +465,12 @@ def test_w05_stale_interpreter_request_fails_closed_no_refresh_executed(tmp_path
     manifest, bundle = _handoff_fixture(tmp_path, ticker="MSIE", freshness="STALE")
     book_hash_before = _sha(tmp_path / RUN_ID_HANDOFF / "intelligence_lab" / "lab_signal_book_v3.csv")
 
-    with pytest.raises(EvidenceResolutionError) as excinfo:
-        resolve_interpreter_evidence("MSIE", manifest_path=manifest)
-    assert excinfo.value.code == "EVIDENCE_REFRESH_REQUIRED"
-
-    evidence = resolve_interpreter_evidence("MSIE", manifest_path=manifest, require_current=False)
+    # Superseded by A2/A3 (ACK 7 Oct 2026): aged evidence no longer fails closed - its age is disclosed
+    # (AGE_DISCLOSED, no provider call); only missing or invalid evidence raises EVIDENCE_REFRESH_REQUIRED.
+    evidence = resolve_interpreter_evidence("MSIE", manifest_path=manifest)
     assert evidence.refresh_required is not None
     assert evidence.refresh_required["provider_calls_made"] == 0
-    assert evidence.refresh_required["request_type"] == "CDS_NARROW_REFRESH_REQUIRED"
+    assert evidence.refresh_required["request_type"] == "AGE_DISCLOSURE"
 
     overlay_path = tmp_path / RUN_ID_HANDOFF / "intelligence_lab" / "lab_evidence_overlay_v1.jsonl"
     assert not overlay_path.exists()  # nothing produced a refreshed overlay

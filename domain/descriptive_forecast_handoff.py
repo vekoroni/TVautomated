@@ -20,7 +20,7 @@ PACKET_VERSION = "ticker_forecast_descriptive_v1"
 
 # Structural target sources C5 accepts, by name (audit finding 5, 1 Oct 2026): a prior-range
 # extreme is a structural level and is no longer relabelled as WYCKOFF upstream.
-STRUCTURAL_TARGET_SOURCES = frozenset({"WYCKOFF", "PRIOR_RANGE_EXTREME"})
+from contracts.direction_governance import STRUCTURAL_TARGET_SOURCES  # noqa: E402  one owner (P0-04)
 
 
 def _positive(value: object) -> float | None:

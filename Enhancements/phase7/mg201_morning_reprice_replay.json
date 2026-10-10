@@ -1,0 +1,297 @@
+{
+  "run": "20261008_220129",
+  "go_rows": 35,
+  "unchanged": 25,
+  "replacement": 10,
+  "no_quote": 0,
+  "pays_flips": [
+    "VLO: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+    "JBLU: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+    "RIVN: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+    "UUUU: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+    "ARDX: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+    "PLUG: PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME"
+  ],
+  "rows": [
+    {
+      "ticker": "AZO",
+      "basis": "MORNING_REPRICED:AZO261218P02900000",
+      "eod_multiple": "1.7833",
+      "morning_multiple": 1.7075,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:41:01Z"
+    },
+    {
+      "ticker": "WIX",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:WIX270115C00070000",
+      "eod_multiple": "1.7467",
+      "morning_multiple": 1.6585,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:41:25Z"
+    },
+    {
+      "ticker": "WTS",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:WTS261218C00330000",
+      "eod_multiple": "1.5798",
+      "morning_multiple": 1.5003,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:41:39Z"
+    },
+    {
+      "ticker": "TPL",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:TPL270115C00360000",
+      "eod_multiple": "2.2635",
+      "morning_multiple": 2.1252,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:42:25Z"
+    },
+    {
+      "ticker": "DQ",
+      "basis": "MORNING_REPRICED:DQ270115P00013000",
+      "eod_multiple": "1.3543",
+      "morning_multiple": 1.226,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:42:48Z"
+    },
+    {
+      "ticker": "CAH",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:CAH270115C00230000",
+      "eod_multiple": "1.4696",
+      "morning_multiple": 1.4467,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:44:31Z"
+    },
+    {
+      "ticker": "VOOG",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:VOOG261218C00083330",
+      "eod_multiple": "1.347",
+      "morning_multiple": 1.2861,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:47:04Z"
+    },
+    {
+      "ticker": "VLO",
+      "basis": "MORNING_REPRICED:VLO261127C00455000",
+      "eod_multiple": "1.0134",
+      "morning_multiple": 0.9973,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:48:58Z"
+    },
+    {
+      "ticker": "JBLU",
+      "basis": "MORNING_REPRICED:JBLU270115P00004000",
+      "eod_multiple": "1.0543",
+      "morning_multiple": 0.8862,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:52:20Z"
+    },
+    {
+      "ticker": "CSIQ",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:CSIQ270115P00012000",
+      "eod_multiple": "1.2415",
+      "morning_multiple": 1.0508,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:33Z"
+    },
+    {
+      "ticker": "SHOP",
+      "basis": "MORNING_REPRICED:SHOP261218C00175000",
+      "eod_multiple": "1.2675",
+      "morning_multiple": 1.0568,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:30Z"
+    },
+    {
+      "ticker": "QBTS",
+      "basis": "MORNING_REPRICED:QBTS270115P00015000",
+      "eod_multiple": "1.1228",
+      "morning_multiple": 1.0386,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:31Z"
+    },
+    {
+      "ticker": "RIVN",
+      "basis": "MORNING_REPRICED:RIVN261218P00015000",
+      "eod_multiple": "1.025",
+      "morning_multiple": 0.9356,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:52:32Z"
+    },
+    {
+      "ticker": "AXON",
+      "basis": "MORNING_REPRICED:AXON261120P00420000",
+      "eod_multiple": "1.3156",
+      "morning_multiple": 1.2936,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:36Z"
+    },
+    {
+      "ticker": "ALB",
+      "basis": "MORNING_REPRICED:ALB261218P00100000",
+      "eod_multiple": "1.2745",
+      "morning_multiple": 1.1415,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:36Z"
+    },
+    {
+      "ticker": "CAVA",
+      "basis": "MORNING_REPRICED:CAVA270115P00055000",
+      "eod_multiple": "1.3272",
+      "morning_multiple": 1.1752,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:42Z"
+    },
+    {
+      "ticker": "FISV",
+      "basis": "MORNING_REPRICED:FISV270115P00045000",
+      "eod_multiple": "1.5612",
+      "morning_multiple": 1.4708,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:45Z"
+    },
+    {
+      "ticker": "MSTR",
+      "basis": "MORNING_REPRICED:MSTR270115C00170000",
+      "eod_multiple": "2.0211",
+      "morning_multiple": 2.0119,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:50Z"
+    },
+    {
+      "ticker": "HPE",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:HPE270115C00075000",
+      "eod_multiple": "2.456",
+      "morning_multiple": 2.2089,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:55Z"
+    },
+    {
+      "ticker": "MRVL",
+      "basis": "MORNING_REPRICED:MRVL261120C00290000",
+      "eod_multiple": "1.5898",
+      "morning_multiple": 1.701,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:56Z"
+    },
+    {
+      "ticker": "MSFT",
+      "basis": "MORNING_REPRICED:MSFT261120C00535000",
+      "eod_multiple": "1.1975",
+      "morning_multiple": 1.0364,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:52:56Z"
+    },
+    {
+      "ticker": "CLS",
+      "basis": "MORNING_REPRICED:CLS270115C00390000",
+      "eod_multiple": "2.2666",
+      "morning_multiple": 2.2786,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:02Z"
+    },
+    {
+      "ticker": "WRB",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:WRB270115C00069500",
+      "eod_multiple": "1.6479",
+      "morning_multiple": 1.5554,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:05Z"
+    },
+    {
+      "ticker": "A",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:A261218C00170000",
+      "eod_multiple": "1.6975",
+      "morning_multiple": 1.5151,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:09Z"
+    },
+    {
+      "ticker": "QS",
+      "basis": "MORNING_REPRICED:QS270115P00005000",
+      "eod_multiple": "1.1584",
+      "morning_multiple": 1.0525,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:11Z"
+    },
+    {
+      "ticker": "CNXN",
+      "basis": "MORNING_CONTRACT_RECOMPUTED:CNXN270115C00090000",
+      "eod_multiple": "1.4718",
+      "morning_multiple": 1.4525,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:20Z"
+    },
+    {
+      "ticker": "SNY",
+      "basis": "MORNING_REPRICED:SNY261120P00040000",
+      "eod_multiple": "1.3159",
+      "morning_multiple": 1.2239,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:19Z"
+    },
+    {
+      "ticker": "UUUU",
+      "basis": "MORNING_REPRICED:UUUU261120P00010000",
+      "eod_multiple": "1.0021",
+      "morning_multiple": 0.902,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:53:19Z"
+    },
+    {
+      "ticker": "CDNS",
+      "basis": "MORNING_REPRICED:CDNS270115C00370000",
+      "eod_multiple": "1.9027",
+      "morning_multiple": 1.8932,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:28Z"
+    },
+    {
+      "ticker": "LIN",
+      "basis": "MORNING_REPRICED:LIN270115C00495000",
+      "eod_multiple": "1.442",
+      "morning_multiple": 1.575,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:30Z"
+    },
+    {
+      "ticker": "TTD",
+      "basis": "MORNING_REPRICED:TTD261218P00012500",
+      "eod_multiple": "1.3826",
+      "morning_multiple": 1.2877,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:40Z"
+    },
+    {
+      "ticker": "ARDX",
+      "basis": "MORNING_REPRICED:ARDX270115P00004000",
+      "eod_multiple": "1.1188",
+      "morning_multiple": 0.9445,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:53:43Z"
+    },
+    {
+      "ticker": "GS",
+      "basis": "MORNING_REPRICED:GS261218P00870000",
+      "eod_multiple": "1.2986",
+      "morning_multiple": 1.2089,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:43Z"
+    },
+    {
+      "ticker": "PLUG",
+      "basis": "MORNING_REPRICED:PLUG261218P00002000",
+      "eod_multiple": "1.0105",
+      "morning_multiple": 0.9276,
+      "morning_pays": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+      "valued_at": "2026-10-09T13:53:53Z"
+    },
+    {
+      "ticker": "TWLO",
+      "basis": "MORNING_REPRICED:TWLO270115C00310000",
+      "eod_multiple": "1.5594",
+      "morning_multiple": 1.4266,
+      "morning_pays": "PAYS",
+      "valued_at": "2026-10-09T13:53:55Z"
+    }
+  ]
+}

@@ -68,7 +68,9 @@ def _row(ticker: str, *, route: str, vetoes: str = "") -> dict:
         "macro_session_date": "2026-09-04",
         "macro_plain_language_advisory": "Rotation context only.",
         "macro_authority": "ADVISORY_ONLY",
-        "contract_spread_pct": 5.0 if not vetoes else 30.0,
+        # E15 (6 Oct 2026): contract_spread_pct is the quote owner's FRACTION of mid (verified on run 20261006: 1,041
+        # of 1,041 rows). This fixture wrote 5.0 / 30.0 for 5% / 30%, which only worked through the removed unit guess.
+        "contract_spread_pct": 0.05 if not vetoes else 0.30,
         "execution_permission": "NONE_OPTIONS_RESEARCH_ONLY",
         "final_route": route,
         "options_research_score": 84.0,
@@ -251,6 +253,13 @@ def test_eod_monetisability_uses_completed_session_exact_contract() -> None:
             "final_direction": "CALL",
             "target_spot": 115.0,
             "structural_target": 115.0,
+            # Monetisability values at the anticipated level (ACK 6-7 Oct 2026): the governing setup's evidence below
+            # gives an anticipated level of 115 (structural, inside the volatility reach).
+            "thesis_outcome_level": 115.0, "thesis_outcome_definition": "measured move",
+            "thesis_event_timeframe": "1d", "thesis_structure_alignment": "ALIGNED",
+            "thesis_duration_test": "OUTCOME", "thesis_duration_status": "IN_SAMPLE_REPLAY_NOT_VALIDATED",
+            "thesis_duration_n": 200, "thesis_duration_q50_bars": 5, "thesis_duration_q80_bars": 10,
+            "target_reachable_vol_annual": 3.0,
             "contract_ask": 5.0,
             "contract_strike": 100.0,
             "strike": 100.0,

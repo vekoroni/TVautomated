@@ -57,10 +57,29 @@ def test_dte_requirement_includes_hold_monitor_and_exit_buffer() -> None:
     assert result["minimum_required_dte"] == 24          # 17 sessions in calendar days (R3, 18 Sep 2026)
 
 
-@pytest.mark.parametrize("invalid_hold", [0, 7, 8, 15, 100])
-def test_dte_requirement_rejects_non_routed_hold_values(invalid_hold: int) -> None:
-    with pytest.raises(ValueError, match="governed routed hold"):
-        calculate_dte_requirement(invalid_hold)
+# ACK 7 Oct 2026 (L3 / runway C-then-B): the {5, 10, 20} routed set is retired; any stated non-negative hold is
+# honoured as stated (STATED_HOLD) instead of being refused.
+@pytest.mark.parametrize("stated_hold", [0, 7, 8, 15, 100])
+def test_dte_requirement_honours_any_stated_non_negative_hold(stated_hold: int) -> None:
+    result = calculate_dte_requirement(stated_hold, monitor_sessions=2, exit_buffer_sessions=5)
+    assert result["dte_requirement_basis"] == "STATED_HOLD"
+    assert result["minimum_required_sessions"] == stated_hold + 7
+    assert result["minimum_required_dte"] >= result["minimum_holdable_dte"]
+
+
+def test_dte_requirement_rejects_a_negative_hold() -> None:
+    with pytest.raises(ValueError, match="cannot be negative"):
+        calculate_dte_requirement(-1)
+
+
+def test_no_evidence_hold_sets_no_hold_minimum_but_keeps_the_holdable_floor() -> None:
+    # L3: no hold is stated as NO_EVIDENCE_HOLD - never defaulted to a fixed window; the contract must still be
+    # holdable past issue (one session before the 5-session exit buffer, in calendar days).
+    result = calculate_dte_requirement(None)
+    assert result["dte_requirement_basis"] == "NO_EVIDENCE_HOLD"
+    assert result["remaining_hold_sessions"] is None
+    assert result["minimum_required_dte"] is None
+    assert result["minimum_holdable_dte"] == 9
 
 
 @pytest.mark.parametrize(

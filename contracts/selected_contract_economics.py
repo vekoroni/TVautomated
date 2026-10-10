@@ -657,7 +657,7 @@ def evaluate_timevalue_monetisability(
 
     entry_ask = _number(intrinsic.get("monetisability_entry_ask"))
     strike = _number(intrinsic.get("monetisability_strike"))
-    target_spot = _number(intrinsic.get("monetisability_structural_target_spot"))
+    target_spot = _number(intrinsic.get("monetisability_target_spot"))
     if not entry_ask or entry_ask <= 0 or not strike or not target_spot:
         return {**base, "monetisability_timevalue_reason": "ENTRY_STRIKE_OR_TARGET_MISSING"}
 
@@ -889,10 +889,17 @@ def evaluate_long_option_monetisability(
         row.get("canonical_direction") or row.get("resolved_direction") or row.get("direction")
     ).upper()
     direction = "CALL" if "CALL" in direction_text else "PUT" if "PUT" in direction_text else ""
-    target_spot = _number(
-        row.get("target_spot") or row.get("target_price") or row.get("structural_target")
-    )
+    # Monetisability at the valued level (ACK 6-7 Oct 2026): the contract is valued at the anticipated level the
+    # decision uses (anticipated_level_q50), never the legacy target chain (the prior 40-bar range extreme).
+    target_spot = _number(row.get("anticipated_level_q50"))
     long_leg = hydrated.get("selected_long_leg")
+    if direction in {"CALL", "PUT"} and isinstance(long_leg, Mapping) and target_spot is None:
+        return {
+            **base,
+            "monetisability_status": "FAILED",
+            "monetisability_state": "DATA_MISSING",
+            "monetisability_reason": "ANTICIPATED_LEVEL_MISSING",
+        }
     if direction not in {"CALL", "PUT"} or target_spot is None or not isinstance(long_leg, Mapping):
         return {
             **base,
@@ -924,7 +931,7 @@ def evaluate_long_option_monetisability(
     target_profit_pct = (target_profit / entry_ask) * 100.0
     if not target_clears_breakeven or target_profit <= 0:
         state = "NOT_MONETISABLE"
-        reason = "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN"
+        reason = "ANTICIPATED_LEVEL_DOES_NOT_CLEAR_BREAKEVEN"
         eligible = False
     elif target_profit_pct < float(minimum_profit_pct):
         state = "LIMITED"
@@ -945,7 +952,8 @@ def evaluate_long_option_monetisability(
         "monetisability_entry_ask": round(entry_ask, 6),
         "monetisability_strike": round(strike, 6),
         "monetisability_breakeven_spot": round(breakeven, 6),
-        "monetisability_structural_target_spot": round(target_spot, 6),
+        "monetisability_target_spot": round(target_spot, 6),
+        "monetisability_target_basis": "ANTICIPATED_LEVEL_Q50",
         "monetisability_target_intrinsic_per_share": round(target_intrinsic, 6),
         "monetisability_target_profit_per_share": round(target_profit, 6),
         "monetisability_target_profit_pct": round(target_profit_pct, 4),

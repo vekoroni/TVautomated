@@ -61,9 +61,9 @@ const questions = ['What and which side','Why now','Where wrong','How long','Whi
 const missing = questions.filter(q => !html.includes(q));
 console.log(JSON.stringify({missing, interp: html.includes('tradeCardRunInterpreter(') && html.includes('tradeCardSavedReports('),
   rich: html.includes('IV rich'), reach: html.includes('37.2'), opposing: html.includes('OPPOSING_ONLY'),
-  callWall: html.includes('overhead resistance')}));
+  callWall: html.includes('Call concentration') && !html.includes('overhead resistance')}));   // item 7: a concentration is never called resistance
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     result = json.loads(out.stdout.strip().splitlines()[-1])
     assert result == {"missing": [], "interp": True, "rich": True, "reach": True, "opposing": True, "callWall": True}
@@ -96,10 +96,10 @@ console.log(JSON.stringify({
   details: (html.match(/<details/g) || []).length >= 2, auditClosed: html.includes('<details class="tc-audit">'),
   groups: html.includes('Wyckoff') && html.includes('Vanguard') && html.includes('DOI')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     r = json.loads(out.stdout.strip().splitlines()[-1])
-    assert r["ev"] == ["doi_rank", "layer2__edge_quality", "wyckoff_score"]          # card fields (ticker, direction) excluded
+    assert r["ev"] == ["doi_rank", "layer2__edge_quality"]   # card fields excluded; legacy wyckoff_score is inactive (ACK 9 Oct)
     assert r["dup"] == {"final_direction": "direction"}
     assert r["constant"] == ["dummy_const"]
     assert r["lineage"] == ["calc_version", "forecast_authority", "payload_sha256"]
@@ -124,7 +124,7 @@ const html = renderTradeCard(s);
 console.log(JSON.stringify({mins: html.includes('22 min old'), feed: html.includes('delayed feed'),
   requote: html.includes('re-quote at broker'), bare: />STALE ·/.test(html)}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"mins": True, "feed": True, "requote": True, "bare": False}
 
@@ -146,7 +146,7 @@ const legacy = renderTradeCard({ticker:'AAA', direction:'CALL'});
 console.log(JSON.stringify({known: known.includes('17 sessions away') && known.includes('Earnings'),
   unknown: unknown.includes('Earnings date unknown'), legacy: legacy.includes('earnings not checked in this run')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"known": True, "unknown": True, "legacy": True}
 
@@ -171,7 +171,7 @@ console.log(JSON.stringify({exit: html.includes('Thesis exit'), level: html.incl
   noRR: !html.includes('R:R option'), no3R: !html.includes('TARGET_3R'),
   old: old.includes('anticipated move not computed in this run') && old.includes('37.20')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"exit": True, "level": True, "time": True, "pays": True,
                                                               "noRR": True, "no3R": True, "old": True}
@@ -185,13 +185,14 @@ const rows = [{ticker:'A', rr_options:'3.1', rr_underlying:'0.4', target_3r_scen
               {ticker:'B', rr_options:'0.9', rr_underlying:'1.2', target_3r_scenario:'60', structural_target:'60', wyckoff_score:'48'}];
 const p = tcProfile(rows);
 const html = renderEvidenceTiers(rows[0], p);
-console.log(JSON.stringify({legacy: p.legacy.sort(), evidence: p.evidence, label: html.includes('Legacy stop-based R:R')}));
+console.log(JSON.stringify({legacy: p.legacy.sort(), evidence: p.evidence, label: html.includes('Legacy (inactive): stop-based R:R')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     r = json.loads(out.stdout.strip().splitlines()[-1])
-    assert r["legacy"] == ["rr_options", "rr_underlying", "structural_target", "target_3r_scenario"]
-    assert r["evidence"] == ["wyckoff_score"] and r["label"]
+    # ACK 9 Oct 2026 (output-trust item 2): the legacy Wyckoff score is inactive, not evidence.
+    assert r["legacy"] == ["rr_options", "rr_underlying", "structural_target", "target_3r_scenario", "wyckoff_score"]
+    assert r["evidence"] == [] and r["label"]
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
@@ -203,7 +204,7 @@ const html = renderTradeCard({ticker:'TW', direction:'CALL', anticipated_move_st
   anticipated_time_fit:'CONTRACT_EXPIRES_BEFORE_MEDIAN_TIME'});
 console.log(JSON.stringify({warn: html.includes('contract expires before the median anticipated time')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"warn": True}
 
@@ -217,7 +218,7 @@ const html = renderTradeCard({ticker:'SOFI', direction:'PUT', anticipated_move_s
   thesis_activation_q50_bars:2, thesis_activation_q80_bars:5, thesis_p_activation_by_limit:0.61});
 console.log(JSON.stringify({act: html.includes('activation (trigger) typically within 2 / 5 bars (1d)')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"act": True}
 
@@ -237,7 +238,7 @@ console.log(JSON.stringify({no: no.includes('does not pay even if the level is r
   yes: yes.includes('pays if the level is reached by the median time') && yes.includes('not an expected outcome'),
   vol: vol.includes('no structural target')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"no": True, "yes": True, "vol": True}
 
@@ -264,7 +265,7 @@ console.log(JSON.stringify({a: a.includes('Lane A') && a.includes('trade now'),
   b: b.includes('Lane B') && b.includes('about 1 in 4 fail') && b.includes('1.35'),
   c: c.includes('Lane C') && c.includes('watch') && c.includes('NO_TESTED_EVIDENCE')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"a": True, "b": True, "c": True}
 
@@ -278,6 +279,6 @@ const html = renderTradeCard({ticker:'D', direction:'CALL', expiry:'2026-12-18',
 console.log(JSON.stringify({cal: html.includes('74 calendar days'), ses: html.includes('54 trading sessions'),
   bare: html.includes('54 DTE')}));
 """
-    out = subprocess.run(["node", "-e", probe], capture_output=True, text=True, timeout=60)
+    out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout.strip().splitlines()[-1]) == {"cal": True, "ses": True, "bare": False}

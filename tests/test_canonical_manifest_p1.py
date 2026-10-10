@@ -146,7 +146,9 @@ def test_every_discovery_ticker_is_listed_with_a_typed_history_verdict(fixture_r
     assert by["SHORT"]["bar_count"] == 30
     assert by["ABSENT"]["dcv_verdict"] is False and by["ABSENT"]["dcv_reason"] == "NO_OHLCV"
     assert by["ABSENT"]["bar_count"] == 0 and by["ABSENT"]["last_session"] is None
-    assert by["STALE"]["dcv_verdict"] is False and by["STALE"]["dcv_reason"].startswith("STALE_DATA")
+    # RC04 (Phase 4, 8 Oct 2026): one history policy with the runtime factory - history must reach the evidence
+    # session; the reason says how far behind it is (was STALE_DATA under the separate 5-day manifest rule).
+    assert by["STALE"]["dcv_verdict"] is False and by["STALE"]["dcv_reason"].startswith("HISTORY_BEHIND_EVIDENCE_SESSION")
     stale_last = date.fromisoformat(by["STALE"]["last_session"])
     assert by["STALE"]["staleness_days"] == (SESSION - stale_last).days > 5
     for row in manifest["tickers"]:
@@ -168,7 +170,7 @@ def test_staleness_is_judged_against_the_evidence_session_not_the_wall_clock(fix
     (fixture_run["run_dir"] / "run_meta.json").write_text(json.dumps(later), encoding="utf-8")
     manifest2 = _build(fixture_run)
     fresh = {r["ticker"]: r for r in manifest2["tickers"]}["FRESH"]
-    assert fresh["dcv_verdict"] is False and fresh["dcv_reason"].startswith("STALE_DATA")
+    assert fresh["dcv_verdict"] is False and fresh["dcv_reason"].startswith("HISTORY_BEHIND_EVIDENCE_SESSION")  # RC04
     assert manifest2["history_policy"]["reference_session"] == (SESSION + timedelta(days=10)).isoformat()
     assert manifest2["history_policy"]["max_staleness_days"] == 5 and manifest2["history_policy"]["min_bars"] == 50
 
@@ -222,11 +224,24 @@ REAL_DIR = ROOT / "data" / "output" / "runs" / REAL_RUN
 
 
 @pytest.mark.skipif(not (REAL_DIR / "packages").is_dir(), reason="retained package run not present")
-def test_p1_gate_manifest_verdicts_equal_dcv_over_the_packages_actual_bars(tmp_path):
+def test_p1_gate_manifest_verdicts_equal_dcv_over_the_packages_actual_bars(tmp_path, monkeypatch):
     """Parity: for every retained package, the manifest's verdict from canonical history equals the
     data-contract validator applied to the bars the package actually carries. The package's own
     stored dcv_* annotation is NOT the reference: it was stamped before backfill (finding PKG-F1)."""
+    import scripts.data_contract_validator as dcv_module
     from scripts.data_contract_validator import DataContractValidator as DCV
+
+    # The manifest judges staleness against the run's evidence session; the validator judges it against the
+    # wall clock. Freeze the validator's clock at the retained run's evidence session so the parity compares like
+    # with like and does not decay once today is more than MAX_STALENESS_DAYS past the retained run.
+    evidence_close = datetime(2026, 9, 25, 23, 0, tzinfo=timezone.utc)
+
+    class _EvidenceSessionClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return evidence_close.astimezone(tz) if tz else evidence_close.replace(tzinfo=None)
+
+    monkeypatch.setattr(dcv_module, "datetime", _EvidenceSessionClock)
 
     before = hashlib.sha256((REAL_DIR / "run_meta.json").read_bytes()).hexdigest()
     inputs = collect_canonical_inputs(run_dir=REAL_DIR, repo_root=ROOT)
@@ -239,6 +254,7 @@ def test_p1_gate_manifest_verdicts_equal_dcv_over_the_packages_actual_bars(tmp_p
     packages = sorted((REAL_DIR / "packages").glob("*.package.json"))
     assert set(by) == {p.name[:-13].upper() for p in packages}
     disagreements, stale_annotations, withheld_as_stale, barless, checked = [], 0, 0, 0, 0
+    behind_session_legacy = 0  # RC04: legacy packages carrying bars that end before the session (5-day rule)
     for path in packages:
         pkg = json.loads(path.read_text(encoding="utf-8-sig"))
         ticker = path.name[:-13].upper()
@@ -248,14 +264,19 @@ def test_p1_gate_manifest_verdicts_equal_dcv_over_the_packages_actual_bars(tmp_p
         manifest_reason = row["dcv_reason"].split(" ")[0]
         package_reason = reason.split(" ")[0]
         if bool(row["dcv_verdict"]) != ok:
-            disagreements.append((ticker, "verdict", row["dcv_reason"], reason))
+            if ok and manifest_reason == "HISTORY_BEHIND_EVIDENCE_SESSION" and bars and                     str(bars[-1].get("date", ""))[:10] < manifest["evidence_session"]:
+                # RC04 (Phase 4): the one policy (history must reach the evidence session) rejects bars the legacy
+                # 5-day backfill attached; that is the intended difference, counted and named, not hidden.
+                behind_session_legacy += 1
+            else:
+                disagreements.append((ticker, "verdict", row["dcv_reason"], reason))
         elif ok and row["bar_count"] != len(bars):
             disagreements.append((ticker, "bar_count", row["bar_count"], len(bars)))
         elif manifest_reason != package_reason:
             # The backfill withholds stale canonical bars, so the package cannot tell "no history"
             # from "history too old"; the manifest can and must say so (R1). Any other difference
             # is a real disagreement.
-            if package_reason == "NO_OHLCV" and manifest_reason == "STALE_DATA":
+            if package_reason == "NO_OHLCV" and manifest_reason in ("STALE_DATA", "HISTORY_BEHIND_EVIDENCE_SESSION"):
                 withheld_as_stale += 1
             else:
                 disagreements.append((ticker, row["dcv_reason"], reason))
@@ -268,7 +289,8 @@ def test_p1_gate_manifest_verdicts_equal_dcv_over_the_packages_actual_bars(tmp_p
     assert disagreements == [], disagreements[:10]
     assert withheld_as_stale <= barless
     assert manifest["coverage"]["valid"] >= int(0.95 * checked)
-    assert manifest["coverage"]["valid"] == checked - barless  # every bar-carrying package is VALID
+    # RC04: every bar-carrying package is VALID except those whose bars end before the evidence session
+    assert manifest["coverage"]["valid"] == checked - barless - behind_session_legacy
     # Finding PKG-F1 is recorded, not hidden: the packages' own annotation disagrees with their bars.
     assert stale_annotations > 0
 

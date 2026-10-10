@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import closing
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -91,8 +92,70 @@ class DecisionOutcomeLedger:
                 CREATE TRIGGER IF NOT EXISTS ledger_events_no_delete
                     BEFORE DELETE ON ledger_events
                     BEGIN SELECT RAISE(ABORT, 'ledger is append-only'); END;
+                -- Output-trust item 8 (ACK 9-10 Oct 2026): one disposition per run, ticker and stage for every
+                -- surfaced idea, with or without a thesis or contract identity (never invented).
+                CREATE TABLE IF NOT EXISTS ticker_dispositions(
+                    disposition_id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    stage TEXT NOT NULL,
+                    recorded_at_utc TEXT NOT NULL,
+                    thesis_id TEXT,
+                    thesis_identity_state TEXT NOT NULL,
+                    contract_symbol TEXT,
+                    contract_identity_state TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS ix_dispositions_run ON ticker_dispositions(run_id, stage, ticker);
+                CREATE TRIGGER IF NOT EXISTS ticker_dispositions_no_update
+                    BEFORE UPDATE ON ticker_dispositions
+                    BEGIN SELECT RAISE(ABORT, 'dispositions are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS ticker_dispositions_no_delete
+                    BEFORE DELETE ON ticker_dispositions
+                    BEGIN SELECT RAISE(ABORT, 'dispositions are append-only'); END;
                 """
             )
+
+    def append_dispositions(self, records: Iterable[Mapping[str, Any]]) -> int:
+        """Item 8: idempotent append; the same identity with different content is refused (never rewritten)."""
+        if self.read_only:
+            raise RuntimeError("decision outcome ledger is open read-only")
+        self.initialise()
+        written = 0
+        # closing(): the sqlite3 context manager commits but does not close; an open handle locks the file on Windows
+        with closing(self._connect()) as connection, connection:
+            for record in records:
+                existing = connection.execute(
+                    "SELECT payload_hash FROM ticker_dispositions WHERE disposition_id=?",
+                    (record["disposition_id"],),
+                ).fetchone()
+                if existing:
+                    if existing[0] != record["payload_hash"]:
+                        raise RuntimeError(
+                            f"disposition {record['run_id']}|{record['ticker']}|{record['stage']} already recorded "
+                            "with different content"
+                        )
+                    continue
+                connection.execute(
+                    "INSERT INTO ticker_dispositions VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    (record["disposition_id"], record["run_id"], record["ticker"], record["stage"],
+                     record["recorded_at_utc"], record.get("thesis_id"), record["thesis_identity_state"],
+                     record.get("contract_symbol"), record["contract_identity_state"], record["payload_hash"],
+                     _canonical(dict(record))),
+                )
+                written += 1
+        return written
+
+    def dispositions_for_run(self, run_id: str, stage: str | None = None) -> list[dict[str, Any]]:
+        self.initialise()
+        sql = "SELECT payload_json FROM ticker_dispositions WHERE run_id=?"
+        params: list[str] = [str(run_id)]
+        if stage:
+            sql += " AND stage=?"
+            params.append(str(stage).upper())
+        with closing(self._connect()) as connection:
+            return [json.loads(r[0]) for r in connection.execute(sql + " ORDER BY ticker", params).fetchall()]
 
     @staticmethod
     def _select_fields() -> str:

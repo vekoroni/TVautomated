@@ -32,6 +32,9 @@ def _row(**overrides):
         "evidence_session_date": "2026-09-18",
         "monetisability_contract_symbol": "TEST261120C00100000",
         "monetisability_state": "MONETISABLE",
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state decides; monetisability is audit.
+        "anticipated_pays_state": "PAYS",
+        "anticipated_contract_symbol": "TEST261120C00100000",
         "contract_repair_required": False,
         "direction_conflict_status": "NO_CONFLICT",
         "direction_resolution_call_score": 1.0,
@@ -39,7 +42,11 @@ def _row(**overrides):
         "direction_resolution_evidence_json": '[{"family":"PRICE_FLOW","side":"CALL","direction_independent":true}]',
         "trigger_primary": "RANGE_BREAK",
         "trigger_price": 99.0,
-        "trigger_price_source": "WBS_PHASE_C_CONFIRMED_BREAK",
+        "trigger_price_source": "THESIS_TRIGGER_LEVEL",
+        # Phase 5.3 (ACK 8 Oct 2026): price confirmation = the thesis's own accepted break / held retest.
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
+        # Output-trust item 3 (ACK decision 1, 9 Oct 2026): a ready setup also needs justified geometry.
+        "geometry_justification": "JUSTIFIED",
         "wyckoff_execution_bias": "BULLISH",
         # XLU-D10 (ACK 2 Oct 2026): readiness needs a behavioural event on the trade side.
         "thesis_structure_alignment": "ALIGNED",
@@ -90,7 +97,7 @@ def test_neutral_price_flow_is_missing_alignment_not_opposition():
 
 def test_early_trigger_and_observe_only_preserve_thesis_as_watch():
     result = project_evening_thesis(
-        _row(trigger_primary="VOL_COMPRESSION", wyckoff_execution_bias="OBSERVE_ONLY")
+        _row(thesis__readiness="WAIT_TRIGGER", wyckoff_execution_bias="OBSERVE_ONLY")
     )
     assert result["evening_thesis_bucket"] == "EOD_TRIGGER_WATCH"
     assert result["evening_thesis_candidate"] is False
@@ -126,7 +133,7 @@ def test_options_handoff_preserves_generated_target_origin_on_nonselection():
 def test_primary_reason_does_not_hide_secondary_evidence():
     result = project_evening_thesis(_row(
         target_price=180.0,
-        trigger_primary="VOL_COMPRESSION",
+        thesis__readiness="WAIT_TRIGGER",
         wyckoff_execution_bias="OBSERVE_ONLY",
         thesis_structure_alignment="OPPOSING_ONLY",
         direction_resolution_call_score=0.0,

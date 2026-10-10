@@ -169,5 +169,185 @@
       "1mo"
     ],
     "runway_tested_timeframes_basis": "ACK 4 Oct 2026: weekly/monthly are core. Held-out timing (eval_v5_holdout duration_calibration by_timeframe): 1d 55.5%/81.7%, 1w 58.7%/83.3%, 1mo 64.9%/87.5% by q50/q80. Intraday untested."
+  },
+  "spread_policy": {
+    "version": "spread_policy_v1",
+    "unit": "FRACTION_OF_MID",
+    "formula": "(ask - bid) / ((ask + bid) / 2)",
+    "executable_max": 0.18,
+    "reviewable_max": 0.25,
+    "execution_gate_full_size_max": 0.08,
+    "research_pass_max": 0.15,
+    "tier_band_short_horizon": 0.15,
+    "tier_band_other": 0.25,
+    "eod_repair_tight_max": 0.15,
+    "eod_repair_caution_max": 0.25,
+    "note": "E15 (ACK 6 Oct 2026, option a): every spread threshold in one place at the values in force on 6 Oct 2026, unit stated; no value changed. A single threshold policy (option b) is a later decision backed by fill data."
+  },
+  "trigger_freshness": {
+    "version": "trigger_freshness_v1",
+    "max_source_age_sessions": 2,
+    "note": "ACK 6 Oct 2026: the trigger-age data-integrity rule is kept; its threshold moves from trigger_layer.py to config (value unchanged). Source age is read only from explicit freshness fields."
+  },
+  "direction_validation": {
+    "version": "direction_validation_v1",
+    "authority": "DISPLAY_ONLY",
+    "state": "TESTED_NO_EDGE",
+    "basis": "no measured direction edge: pipeline setups, side rules, a top-down trend read, momentum and compression all failed to beat market drift on a survivorship-free universe (7 Oct 2026 studies)",
+    "evidence": [
+      "Enhancements/direction_evidence/WP1_DIRECTION_AUDIT_RESULTS_20261007.md",
+      "Enhancements/direction_evidence/TOP_DOWN_BIAS_STUDY_RESULTS_20261007.md",
+      "Enhancements/direction_evidence/MAGNITUDE_AND_STRENGTH_STUDY_RESULTS_20261007.md",
+      "Enhancements/direction_evidence/survivorship/SURVIVORSHIP_RESULTS_20261007.md"
+    ],
+    "note": "ACK 7 Oct 2026: label direction unvalidated. Shown next to every side in the Lab; never changes a side, gate, score or rank. Becomes VALIDATED only on pre-registered evidence passing gates G1-G4."
+  },
+  "share_price_label": {
+    "version": "share_price_label_v1",
+    "authority": "DISPLAY_ONLY",
+    "aged_after_seconds": 300,
+    "note": "A1 (ACK 6 Oct 2026): a valid provider share price is always used; this boundary only labels it CURRENT or AGED_REFERENCE on screen. It never rejects, gates, ranks or hides."
+  },
+  "execution_gate": {
+    "version": "execution_gate_v1",
+    "authority_of_gex_warnings": "DISPLAY_ONLY",
+    "min_runway_fraction": 0.015,
+    "target_gain_multiple": 2.0,
+    "delta_hard_min": 0.2,
+    "delta_soft_min": 0.3,
+    "delta_soft_max": 0.6,
+    "delta_hard_max": 0.85,
+    "iv_elevated": 0.6,
+    "iv_extreme": 1.0,
+    "note": "L4 (ACK 7 Oct 2026): the execution gate's thresholds at their values in force on 7 Oct 2026, unchanged. GEX/wall warnings (low runway, above gamma flip, target beyond runway) are disclosed and never change final_action (CLAUDE.md rule 6)."
+  },
+  "runway_volatility_calibration": {
+    "version": "runway_volatility_calibration_v1",
+    "applies_to": "contract runway fallback B (domain.anticipated_move.runway_fallback): volatility time to level x multiplier",
+    "q80_multiplier": {
+      "1d": 6.22,
+      "1w": 6.0,
+      "1mo": 3.0
+    },
+    "evidence": {
+      "script": "Enhancements/assessment/AVS_LAB_SOURCE_OF_TRUTH_20261006/s2_batch1/calibrate_runway_volatility.py",
+      "fit_panel": "Enhancements/outcomes/beh001/eval_v4 (original)",
+      "test_panel": "Enhancements/outcomes/beh001/eval_v4_holdout",
+      "holdout_coverage": {
+        "1d": 0.83,
+        "1w": 0.861,
+        "1mo": 0.848
+      },
+      "events": {
+        "1d": [
+          2623,
+          2692
+        ],
+        "1w": [
+          2404,
+          2641
+        ],
+        "1mo": [
+          781,
+          565
+        ]
+      },
+      "uncalibrated_b_holdout_coverage_1d": 0.296,
+      "sigma_proxy": "ATR(timeframe)/close/1.25 per own-timeframe bar"
+    },
+    "note": "ACK 7 Oct 2026 ('build the calibrated B'): uncalibrated B covered 30% of real level hits; B x the q80 multiplier covers 83-86% on the held-out panel. Timeframes without a multiplier get no B estimate."
+  },
+  "option_valuation": {
+    "version": "option_valuation_v1",
+    "approved": "ACK 9 Oct 2026, output-trust decision 2: reuse EV3's American CRR as the single engine; continuous dividend yield from history first, discrete ex-dividend dates second",
+    "crr_steps": 300,
+    "crr_steps_basis": "tree within 0.2% of a 4,000-step tree and 1% of an independent finite-difference model (tests/test_ot4_one_valuation_engine.py)",
+    "european_style_roots": [
+      "SPX",
+      "SPXW",
+      "XSP",
+      "NDX",
+      "NDXP",
+      "RUT",
+      "RUTW",
+      "VIX",
+      "VIXW",
+      "DJX",
+      "OEX",
+      "XEO",
+      "MXEA",
+      "MXEF"
+    ],
+    "rate_annual_fallback": 0.0422,
+    "rate_fallback_basis": "MACRO:T3M 4.22% from run 20261008_220129 macro_snapshot (load_market_rate); used when the caller passes no observed rate; refresh with the macro packet",
+    "fee_usd_per_contract_open": 1.1,
+    "fee_usd_per_contract_close": 0.1,
+    "fee_basis": "approximate tastytrade equity-option schedule: $1.00 commission to open, $0 to close, about $0.10 clearing per contract each side; regulatory fees not modelled; ACK to confirm",
+    "exit_spread_rule": "EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD",
+    "entry_price_rule": "ENTRY_AT_ASK_PLUS_FEE"
+  },
+  "iv_history": {
+    "full_window_samples": 252,
+    "basis": "ACK 9 Oct 2026 (output-trust item 6): a full year of daily ATM IV samples (XNYS sessions in 365 calendar days); fewer is labelled SHORT_HISTORY. The cache was restored on 8 Sep 2026, so most tickers are short until mid-2027.",
+    "authority": "DISPLAY_ONLY"
+  },
+  "option_walls": {
+    "version": "option_walls_v1",
+    "approved": "ACK 10 Oct 2026: item 7 with ACK's call-wall review (Enhancements/phase7/ITEM7_WALLS_DESIGN_20261010.md)",
+    "method": "GAMMA_OI_CONCENTRATION_V1",
+    "longer_cutoff_calendar_days": 110,
+    "relevance_k": 2.0,
+    "materiality_share_min": 0.1,
+    "zone_neighbour_fraction": 0.5,
+    "zones_per_side": 3,
+    "price_lookback_sessions": 60,
+    "touch_tolerance_atr": 0.25,
+    "gamma_flip_min_confidence": 0.3,
+    "basis": "INITIAL VALUES, to calibrate in item 10 (C-1) on recorded chains and price outcomes. longer cutoff = the 110-day chain the Options stage fetches; relevance = 2 x ATM IV x sqrt(sessions to the basket's last expiry / 252) around spot (replaces +/-30%); a zone qualifies at >= 10% of its side's basket dollar-gamma (SMCI 8 Oct: hold-basket zones 8-18%); neighbours join a zone at >= 50% of the peak; price response over 60 completed sessions with a 0.25 x ATR(14) touch tolerance; gamma flip below 0.3 confidence is LOW_CONFIDENCE (SMCI 8 Oct: 0.067).",
+    "authority": "DISPLAY_AND_CONTEXT_ONLY until ACK decides which readers may use a wall as a price level (design section 8)"
+  },
+  "station_inspection": {
+    "version": "station_inspection_v1",
+    "approved": "ACK 9-10 Oct 2026: output-trust item 10 (C-2) - integrity defects stop the line with the reason",
+    "enforce": true,
+    "stop_checks": [
+      "unique_tickers",
+      "nonblank_tickers",
+      "no_invented_tickers",
+      "losses_accounted",
+      "positive_prices",
+      "sane_quotes",
+      "side_matches_governed_direction",
+      "levels_on_correct_sides",
+      "no_future_timestamps"
+    ],
+    "future_tolerance_minutes": 15,
+    "accounted_drop_stages": {
+      "options": [
+        "PENDING_INTAKE",
+        "BETWEEN_SCANNER_AND_DISCOVERY",
+        "BETWEEN_UNIVERSE_AND_DISCOVERY",
+        "BETWEEN_DISCOVERY_AND_MANIFEST",
+        "CANONICAL_MANIFEST",
+        "BETWEEN_MANIFEST_AND_VANGUARD"
+      ],
+      "eod": [],
+      "book": [],
+      "morning": []
+    },
+    "basis": "Each STOP check was zero on the healthy run 20261008_220129 (Discovery 2,933 -> Options 2,788 with all 145 losses recorded at CANONICAL_MANIFEST; EOD, book and Morning keep all 2,788; no duplicate, blank or invented tickers, side mismatches, crossed or negative quotes, non-positive prices, wrong-side levels or future timestamps). enforce=false makes every station report-only (a stated switch, for ACK)."
+  },
+  "forward_calibration": {
+    "min_resolved": 100,
+    "min_sessions": 20,
+    "basis": "ACK 9-10 Oct 2026 (item 10.2): a setup's stated rate is forward-calibrated only after 100 resolved outcomes over 20 distinct evidence sessions (20 = the C12 scorer's min_sessions_for_verdict; 100 gives a Wilson half-width of about +/-10 points near 50%). Until then UNCALIBRATED_FORWARD.",
+    "authority": "DISPLAY_AND_REPORT_ONLY",
+    "scorer_window_sessions": 20,
+    "sessions_per_bar": {
+      "1d": 1,
+      "1w": 5,
+      "1mo": 21
+    },
+    "window_basis": "C12 scores a 20-session window (outcome.window_sessions; max sessions_observed in the store = 20). A setup hold longer than the window is BEYOND_SCORER_WINDOW on a window TIMEOUT, never a miss. Bars convert to sessions at 1 / 5 / 21 per 1d / 1w / 1mo bar (setup_rates_v1.json timeframes)."
   }
 }

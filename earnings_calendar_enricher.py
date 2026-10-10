@@ -38,7 +38,13 @@ EARNINGS_DISCLOSURE_FIELDS = (
     "earnings_sessions_to_event", "earnings_inside_hold", "earnings_inside_expiry",
     "earnings_unknown_reason", "earnings_source", "earnings_disclosure", "earnings_authority",
     "earnings_date_confirmation",
+    # Output-trust item 9 (ACK 9 Oct 2026): the conflict between sources, each source as checked, and the note.
+    "earnings_disagreement", "earnings_sources_json", "earnings_confirmation_note",
 )
+# Disclosure wording per confirmation tier (item 9); PROVIDER_DATE_UNCONFIRMED is the pre-item-9 MarketData-only state.
+_TIER_TEXT = {"ISSUER_CONFIRMED": ", issuer confirmed", "CONFIRMED": ", issuer confirmed",
+              "CORROBORATED": ", MarketData and tastytrade agree", "VENDOR_ESTIMATE": ", one vendor, not confirmed",
+              "PROVIDER_DATE_UNCONFIRMED": ", provider date, not confirmed"}
 
 
 def _as_date(value: Any) -> Optional[date]:
@@ -79,7 +85,10 @@ def earnings_disclosure(
     state = str((earnings or {}).get("state") or "UNKNOWN").upper()
     out: Dict[str, Any] = {field: None for field in EARNINGS_DISCLOSURE_FIELDS}
     out.update(earnings_state=state, earnings_source=(earnings or {}).get("source") or "MARKETDATA_EARNINGS",
-               earnings_authority="DISCLOSURE_ONLY")
+               earnings_authority="DISCLOSURE_ONLY",
+               earnings_disagreement=(earnings or {}).get("disagreement") or None,
+               earnings_sources_json=(earnings or {}).get("sources_json") or None,
+               earnings_confirmation_note=(earnings or {}).get("confirmation_note") or None)
     if state == "NONE_IN_LOOKAHEAD":
         days = (earnings or {}).get("lookahead_days") or 120
         out["earnings_disclosure"] = f"No earnings report scheduled in the next {days} days."
@@ -115,7 +124,10 @@ def earnings_disclosure(
     expiry_text = ("expiry not known" if inside_expiry is None else
                    f"before the {expiry_day.isoformat()} expiry" if inside_expiry
                    else f"after the {expiry_day.isoformat()} expiry")
-    confirmed_text = "" if confirmation == "CONFIRMED" else ", provider date, not confirmed"
+    disagreement = out.get("earnings_disagreement")
+    confirmed_text = (f", sources disagree: {disagreement}" if confirmation == "SOURCES_DISAGREE"
+                      else _TIER_TEXT.get(confirmation, ", provider date, not confirmed")
+                      + (f" ({disagreement})" if disagreement else ""))
     out["earnings_disclosure"] = (f"Earnings {report.isoformat()} ({when}{confirmed_text}): {sessions} sessions away, "
                                   f"{hold_text}, {expiry_text}. Gap and IV-crush risk; disclosure only.")
     return out

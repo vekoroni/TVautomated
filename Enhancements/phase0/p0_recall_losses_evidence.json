@@ -1,0 +1,5379 @@
+{
+ "run": "20261006_060401",
+ "cutoff": "2026-10-05",
+ "lifecycle_rows": 3325,
+ "lifecycle_unique": 3325,
+ "counts": {
+  "outcome": {
+   "SURVIVE": 1814,
+   "DROP": 1504,
+   "ERROR": 7
+  },
+  "lifecycle_state": {
+   "ACTIVE_CORE": 1814,
+   "DROPPED_STAGE": 1476,
+   "DROPPED_TERMINAL_DATA": 28,
+   "ERROR_STAGE": 7
+  },
+  "reason_code": {
+   "DISCOVERY_SURVIVOR": 1814,
+   "INTRADAY_ONLY_UNTESTED": 1036,
+   "NO_LIVE_SETUP": 331,
+   "ELIG_INSUFFICIENT_BARS": 109,
+   "NO_PRICE_DATA": 28,
+   "SCAN_EXCEPTION_ValueError": 7
+  }
+ },
+ "universe": {
+  "base_file": "data\\universe\\polygon_liquid_universe.csv",
+  "base_n": 3320,
+  "augmented_n": 3325,
+  "scanner_injected": [
+   "ARKF",
+   "GOOG",
+   "SQQQ",
+   "TQQQ",
+   "ARKG"
+  ],
+  "universe_not_in_lifecycle": [],
+  "lifecycle_not_in_universe": []
+ },
+ "bars_by_reason": {
+  "DISCOVERY_SURVIVOR": {
+   "0": 0,
+   "1-29": 0,
+   "120-259": 24,
+   "30-119": 2,
+   ">=260": 1788
+  },
+  "ELIG_INSUFFICIENT_BARS": {
+   "0": 0,
+   "1-29": 109,
+   "120-259": 0,
+   "30-119": 0,
+   ">=260": 0
+  },
+  "INTRADAY_ONLY_UNTESTED": {
+   "0": 0,
+   "1-29": 0,
+   "120-259": 1,
+   "30-119": 952,
+   ">=260": 83
+  },
+  "NO_LIVE_SETUP": {
+   "0": 0,
+   "1-29": 1,
+   "120-259": 5,
+   "30-119": 312,
+   ">=260": 13
+  },
+  "NO_PRICE_DATA": {
+   "0": 28,
+   "1-29": 0,
+   "120-259": 0,
+   "30-119": 0,
+   ">=260": 0
+  },
+  "SCAN_EXCEPTION_ValueError": {
+   "0": 0,
+   "1-29": 0,
+   "120-259": 0,
+   "30-119": 0,
+   ">=260": 7
+  }
+ },
+ "survival_rate_by_bars": {
+  "0": {
+   "sum": 0,
+   "count": 28
+  },
+  "1-29": {
+   "sum": 0,
+   "count": 110
+  },
+  "120-259": {
+   "sum": 24,
+   "count": 30
+  },
+  "30-119": {
+   "sum": 2,
+   "count": 1266
+  },
+  ">=260": {
+   "sum": 1788,
+   "count": 1891
+  }
+ },
+ "first_date_by_reason": {
+  "DISCOVERY_SURVIVOR": {
+   "2021-08-23": 1338,
+   "2023-08-28": 65,
+   "2021-09-07": 40
+  },
+  "ELIG_INSUFFICIENT_BARS": {
+   "2026-05-26": 26,
+   "2025-12-01": 22,
+   "2026-03-26": 10
+  },
+  "INTRADAY_ONLY_UNTESTED": {
+   "2026-05-26": 939,
+   "2021-08-23": 45,
+   "2025-12-01": 11
+  },
+  "NO_LIVE_SETUP": {
+   "2026-05-26": 303,
+   "2023-08-28": 5,
+   "2023-08-29": 4
+  },
+  "NO_PRICE_DATA": {},
+  "SCAN_EXCEPTION_ValueError": {
+   "2022-01-03": 7
+  }
+ },
+ "last_date_by_reason": {
+  "DISCOVERY_SURVIVOR": {
+   "2026-10-05": 1702,
+   "older": 112,
+   "none": 0
+  },
+  "ELIG_INSUFFICIENT_BARS": {
+   "2026-10-05": 1,
+   "older": 108,
+   "none": 0
+  },
+  "INTRADAY_ONLY_UNTESTED": {
+   "2026-10-05": 986,
+   "older": 50,
+   "none": 0
+  },
+  "NO_LIVE_SETUP": {
+   "2026-10-05": 304,
+   "older": 27,
+   "none": 0
+  },
+  "NO_PRICE_DATA": {
+   "2026-10-05": 0,
+   "older": 0,
+   "none": 28
+  },
+  "SCAN_EXCEPTION_ValueError": {
+   "2026-10-05": 0,
+   "older": 7,
+   "none": 0
+  }
+ },
+ "short_history_ingest": {
+  "n": 1265,
+  "first_fetch_day": {
+   "2026-08-22": 1265
+  },
+  "kinds": {
+   "MIGRATION_DAILY_CACHE,POLYGON_DATA_FETCHER,DISCOVERY_INCREMENTAL_REFRESH": 1250,
+   "MIGRATION_DAILY_CACHE": 15
+  }
+ },
+ "run_candidates": {
+  "DISCOVERY_SURVIVOR": {
+   "tickers_with_any_candidate": 1814,
+   "tickers_with_any_daily_family_candidate": 1814,
+   "tickers_with_directed_live_daily_family": 1814,
+   "tickers_with_directed_live_intraday": 1682,
+   "state_by_timeframe": {
+    "15m": {
+     "ACTIVATED": 189,
+     "DETECTED": 2309,
+     "FAILED": 88,
+     "MONITOR": 804,
+     "OUTCOME_REACHED": 224
+    },
+    "1d": {
+     "ACTIVATED": 367,
+     "DETECTED": 2201,
+     "FAILED": 72,
+     "MONITOR": 499,
+     "OUTCOME_REACHED": 615
+    },
+    "1mo": {
+     "ACTIVATED": 240,
+     "DETECTED": 1963,
+     "FAILED": 15,
+     "MONITOR": 1155,
+     "OUTCOME_REACHED": 259
+    },
+    "1w": {
+     "ACTIVATED": 369,
+     "DETECTED": 2021,
+     "FAILED": 46,
+     "MONITOR": 1448,
+     "OUTCOME_REACHED": 459
+    },
+    "5m": {
+     "ACTIVATED": 209,
+     "DETECTED": 1917,
+     "FAILED": 98,
+     "MONITOR": 321,
+     "OUTCOME_REACHED": 315
+    },
+    "60m": {
+     "ACTIVATED": 331,
+     "DETECTED": 2134,
+     "FAILED": 37,
+     "MONITOR": 1144,
+     "OUTCOME_REACHED": 455
+    }
+   }
+  },
+  "ELIG_INSUFFICIENT_BARS": {
+   "tickers_with_any_candidate": 90,
+   "tickers_with_any_daily_family_candidate": 0,
+   "tickers_with_directed_live_daily_family": 0,
+   "tickers_with_directed_live_intraday": 84,
+   "state_by_timeframe": {
+    "15m": {
+     "ACTIVATED": 16,
+     "DETECTED": 123,
+     "FAILED": 5,
+     "MONITOR": 13,
+     "OUTCOME_REACHED": 14
+    },
+    "5m": {
+     "ACTIVATED": 10,
+     "DETECTED": 75,
+     "FAILED": 7,
+     "MONITOR": 14,
+     "OUTCOME_REACHED": 8
+    },
+    "60m": {
+     "ACTIVATED": 18,
+     "DETECTED": 103,
+     "FAILED": 1,
+     "MONITOR": 40,
+     "OUTCOME_REACHED": 33
+    }
+   }
+  },
+  "INTRADAY_ONLY_UNTESTED": {
+   "tickers_with_any_candidate": 1036,
+   "tickers_with_any_daily_family_candidate": 70,
+   "tickers_with_directed_live_daily_family": 0,
+   "tickers_with_directed_live_intraday": 1036,
+   "state_by_timeframe": {
+    "15m": {
+     "ACTIVATED": 85,
+     "DETECTED": 1445,
+     "FAILED": 43,
+     "MONITOR": 349,
+     "OUTCOME_REACHED": 149
+    },
+    "1d": {
+     "ACTIVATED": 0,
+     "DETECTED": 0,
+     "FAILED": 1,
+     "MONITOR": 26,
+     "OUTCOME_REACHED": 18
+    },
+    "1mo": {
+     "ACTIVATED": 0,
+     "DETECTED": 0,
+     "FAILED": 0,
+     "MONITOR": 74,
+     "OUTCOME_REACHED": 3
+    },
+    "1w": {
+     "ACTIVATED": 0,
+     "DETECTED": 0,
+     "FAILED": 3,
+     "MONITOR": 77,
+     "OUTCOME_REACHED": 9
+    },
+    "5m": {
+     "ACTIVATED": 126,
+     "DETECTED": 1148,
+     "FAILED": 56,
+     "MONITOR": 225,
+     "OUTCOME_REACHED": 208
+    },
+    "60m": {
+     "ACTIVATED": 139,
+     "DETECTED": 962,
+     "FAILED": 29,
+     "MONITOR": 606,
+     "OUTCOME_REACHED": 289
+    }
+   }
+  },
+  "NO_LIVE_SETUP": {
+   "tickers_with_any_candidate": 67,
+   "tickers_with_any_daily_family_candidate": 16,
+   "tickers_with_directed_live_daily_family": 0,
+   "tickers_with_directed_live_intraday": 0,
+   "state_by_timeframe": {
+    "15m": {
+     "FAILED": 0,
+     "MONITOR": 27,
+     "OUTCOME_REACHED": 10
+    },
+    "1d": {
+     "FAILED": 0,
+     "MONITOR": 14,
+     "OUTCOME_REACHED": 5
+    },
+    "1mo": {
+     "FAILED": 0,
+     "MONITOR": 5,
+     "OUTCOME_REACHED": 0
+    },
+    "1w": {
+     "FAILED": 0,
+     "MONITOR": 12,
+     "OUTCOME_REACHED": 2
+    },
+    "5m": {
+     "FAILED": 4,
+     "MONITOR": 17,
+     "OUTCOME_REACHED": 14
+    },
+    "60m": {
+     "FAILED": 0,
+     "MONITOR": 34,
+     "OUTCOME_REACHED": 11
+    }
+   }
+  }
+ },
+ "replay": {
+  "IOU_short_history_sample": {
+   "summary": {
+    "n": 20,
+    "daily_1d_evaluated": 0,
+    "with_directed_live_daily_family": 0,
+    "lanes": {
+     "NO_LIVE_SETUP": 20
+    },
+    "lane_basis": {
+     "NO_LIVE_SETUP": 20
+    },
+    "status_1d": {
+     "NOT_EVALUATED_INSUFFICIENT_BARS": 20
+    }
+   },
+   "rows": [
+    {
+     "ticker": "UIS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GNL",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "WALD",
+     "bars": 91,
+     "last": "2026-10-02",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VYGR",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MCK",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "UVV",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MSEX",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ENSG",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SNAP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KRYS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HSTM",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MLGO",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VFF",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ACRE",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TMQ",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ANIP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "COFS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "UHAL",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "INTR",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VFS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    }
+   ]
+  },
+  "IOU_full_history_all": {
+   "summary": {
+    "n": 84,
+    "daily_1d_evaluated": 84,
+    "with_directed_live_daily_family": 13,
+    "lanes": {
+     "NO_LIVE_SETUP": 71,
+     "C": 6,
+     "A": 5,
+     "B": 2
+    },
+    "lane_basis": {
+     "NO_LIVE_SETUP": 71,
+     "TRADE_NOW_MEASURED": 5,
+     "BELOW_LINE_OR_UNMEASURED": 3,
+     "NO_TRADE_SIDE": 3,
+     "EARLY_ENTRY_MEASURED": 2
+    },
+    "status_1d": {
+     "EVALUATED": 84
+    }
+   },
+   "rows": [
+    {
+     "ticker": "AAL",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ACVA",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ADSK",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AKR",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AMSC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AOSL",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "APLD",
+     "bars": 1194,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ASX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ATEC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AXL",
+     "bars": 1116,
+     "last": "2026-02-04",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "B",
+     "lane_basis": "EARLY_ENTRY_MEASURED",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "BBT",
+     "bars": 275,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BJ",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BKE",
+     "bars": 1266,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BKKT",
+     "bars": 1246,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BKSY",
+     "bars": 1272,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BLZE",
+     "bars": 1228,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BMRN",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BTDR",
+     "bars": 872,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BURL",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BZ",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CADE",
+     "bars": 1113,
+     "last": "2026-01-30",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 1,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CALX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CDE",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CIVI",
+     "bars": 1064,
+     "last": "2026-01-29",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 1,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CMA",
+     "bars": 1113,
+     "last": "2026-01-30",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 1,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CMPO",
+     "bars": 1021,
+     "last": "2026-01-22",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 3,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "B",
+     "lane_basis": "EARLY_ENTRY_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "COKE",
+     "bars": 1266,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "COMM",
+     "bars": 1101,
+     "last": "2026-01-13",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 1,
+      "1d": 3
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CRCL",
+     "bars": 335,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CRH",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CTVA",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CYBR",
+     "bars": 1120,
+     "last": "2026-02-10",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "DPRO",
+     "bars": 1272,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "EMBJ",
+     "bars": 231,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ESAB",
+     "bars": 1129,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "FLEX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "FN",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "FRPT",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GAP",
+     "bars": 531,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HIW",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HST",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "IART",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KGC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KN",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KTOS",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LASR",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LUNR",
+     "bars": 913,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MATV",
+     "bars": 1067,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MKSI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MLI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MMC",
+     "bars": 1101,
+     "last": "2026-01-13",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 3,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "MMSI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MNMD",
+     "bars": 1102,
+     "last": "2026-01-14",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 2,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MODG",
+     "bars": 843,
+     "last": "2026-01-15",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MZTI",
+     "bars": 318,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NFG",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NU",
+     "bars": 1209,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "O",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PAY",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PCH",
+     "bars": 1113,
+     "last": "2026-01-30",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PX",
+     "bars": 1080,
+     "last": "2026-02-10",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RBLX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RDW",
+     "bars": 1276,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RELY",
+     "bars": 1263,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "REVG",
+     "bars": 1105,
+     "last": "2026-01-30",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 3,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RKLB",
+     "bars": 1283,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ROST",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RSG",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RUM",
+     "bars": 1015,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SBRA",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SEZL",
+     "bars": 768,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SHW",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SIBN",
+     "bars": 1275,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SIG",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SKY",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SMA",
+     "bars": 379,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SNDX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "STAA",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "STUB",
+     "bars": 264,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TTEK",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "UBER",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ULCC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VICI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ZWS",
+     "bars": 1255,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    }
+   ]
+  },
+  "NLS_short_history_sample": {
+   "summary": {
+    "n": 20,
+    "daily_1d_evaluated": 0,
+    "with_directed_live_daily_family": 0,
+    "lanes": {
+     "NO_LIVE_SETUP": 20
+    },
+    "lane_basis": {
+     "NO_LIVE_SETUP": 20
+    },
+    "status_1d": {
+     "NOT_EVALUATED_INSUFFICIENT_BARS": 20
+    }
+   },
+   "rows": [
+    {
+     "ticker": "SUNS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MGRC",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ENO",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "WDFC",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "FPH",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BFS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MBWM",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SRTA",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PCB",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "EACO",
+     "bars": 19,
+     "last": "2026-09-24",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SRCE",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "FNLC",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CUB",
+     "bars": 89,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TRNS",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CRAI",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "WTM",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GLRE",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "DGICA",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "IDT",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "WMK",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    }
+   ]
+  },
+  "NLS_full_history_all": {
+   "summary": {
+    "n": 18,
+    "daily_1d_evaluated": 18,
+    "with_directed_live_daily_family": 0,
+    "lanes": {
+     "NO_LIVE_SETUP": 18
+    },
+    "lane_basis": {
+     "NO_LIVE_SETUP": 18
+    },
+    "status_1d": {
+     "EVALUATED": 18
+    }
+   },
+   "rows": [
+    {
+     "ticker": "ALLE",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AMSWA",
+     "bars": 276,
+     "last": "2024-10-01",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "DSP",
+     "bars": 1261,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GLXY",
+     "bars": 348,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HIMS",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MEKA",
+     "bars": 358,
+     "last": "2023-06-15",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "MRDB",
+     "bars": 249,
+     "last": "2024-08-23",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NKLA",
+     "bars": 375,
+     "last": "2025-02-25",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NSC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PNM",
+     "bars": 234,
+     "last": "2024-08-02",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PSPC",
+     "bars": 339,
+     "last": "2023-05-26",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RE",
+     "bars": 379,
+     "last": "2023-07-07",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SCUA",
+     "bars": 235,
+     "last": "2023-06-08",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SGH",
+     "bars": 285,
+     "last": "2024-10-14",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SMMF",
+     "bars": 171,
+     "last": "2024-05-02",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SOI",
+     "bars": 262,
+     "last": "2024-09-11",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "STR",
+     "bars": 495,
+     "last": "2025-08-18",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "SVNA",
+     "bars": 205,
+     "last": "2023-05-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    }
+   ]
+  },
+  "SURVIVOR_full_history_sample": {
+   "summary": {
+    "n": 30,
+    "daily_1d_evaluated": 30,
+    "with_directed_live_daily_family": 30,
+    "lanes": {
+     "C": 22,
+     "A": 6,
+     "B": 1,
+     "NO_LIVE_SETUP": 1
+    },
+    "lane_basis": {
+     "NO_TRADE_SIDE": 14,
+     "TRADE_NOW_MEASURED": 6,
+     "BELOW_LINE_OR_UNMEASURED": 5,
+     "EARLY_ENTRY_GEOMETRY_NOT_MET": 3,
+     "EARLY_ENTRY_MEASURED": 1,
+     "ALL_LEVELS_PASSED": 1
+    },
+    "status_1d": {
+     "EVALUATED": 30
+    }
+   },
+   "rows": [
+    {
+     "ticker": "AIG",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 1,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VNOM",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "C",
+     "lane_basis": "EARLY_ENTRY_GEOMETRY_NOT_MET",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TRIP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 2,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "TAP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 1,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "COP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 2,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KMI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 2,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PWP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 2,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CTRI",
+     "bars": 618,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 1,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HLI",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 2,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "C",
+     "lane_basis": "EARLY_ENTRY_GEOMETRY_NOT_MET",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RAL",
+     "bars": 319,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "XLP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 1,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LNC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 4,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VYX",
+     "bars": 744,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 1,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NOK",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 3,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "EFX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 3,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LTBR",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 2,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NEO",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 3,
+      "1d": 3
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "CBOE",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 1,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "B",
+     "lane_basis": "EARLY_ENTRY_MEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AEHL",
+     "bars": 1276,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 1,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TEX",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 1,
+      "1d": 3
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ZG",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "ALL_LEVELS_PASSED",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "ARCT",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GLUE",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TFC",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 1,
+      "1w": 0,
+      "1d": 5
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TWLO",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 2,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "A",
+     "lane_basis": "TRADE_NOW_MEASURED",
+     "levels_passed": 1
+    },
+    {
+     "ticker": "HPP",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 0,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NEM",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 3,
+      "1w": 0,
+      "1d": 1
+     },
+     "any_directed_live": true,
+     "side": "BEAR",
+     "lane": "C",
+     "lane_basis": "BELOW_LINE_OR_UNMEASURED",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BBNX",
+     "bars": 422,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 3,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CRK",
+     "bars": 1285,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "EVALUATED",
+      "1w": "EVALUATED",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 2,
+      "1w": 2,
+      "1d": 0
+     },
+     "any_directed_live": true,
+     "side": "UNASSIGNED",
+     "lane": "C",
+     "lane_basis": "NO_TRADE_SIDE",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PFHD",
+     "bars": 271,
+     "last": "2023-01-31",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "EVALUATED"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 2
+     },
+     "any_directed_live": true,
+     "side": "BULL",
+     "lane": "C",
+     "lane_basis": "EARLY_ENTRY_GEOMETRY_NOT_MET",
+     "levels_passed": 0
+    }
+   ]
+  },
+  "SURVIVOR_cut_to_92_bars": {
+   "summary": {
+    "n": 30,
+    "daily_1d_evaluated": 0,
+    "with_directed_live_daily_family": 0,
+    "lanes": {
+     "NO_LIVE_SETUP": 30
+    },
+    "lane_basis": {
+     "NO_LIVE_SETUP": 30
+    },
+    "status_1d": {
+     "NOT_EVALUATED_INSUFFICIENT_BARS": 30
+    }
+   },
+   "rows": [
+    {
+     "ticker": "AIG",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VNOM",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TRIP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TAP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "COP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "KMI",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PWP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CTRI",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HLI",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "RAL",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "XLP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LNC",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "VYX",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NOK",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "EFX",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "LTBR",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NEO",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CBOE",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "AEHL",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TEX",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ZG",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "ARCT",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "GLUE",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TFC",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "TWLO",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "HPP",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "NEM",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "BBNX",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "CRK",
+     "bars": 92,
+     "last": "2026-10-05",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    },
+    {
+     "ticker": "PFHD",
+     "bars": 92,
+     "last": "2023-01-31",
+     "status": {
+      "1mo": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1w": "NOT_EVALUATED_INSUFFICIENT_BARS",
+      "1d": "NOT_EVALUATED_INSUFFICIENT_BARS"
+     },
+     "directed_live": {
+      "1mo": 0,
+      "1w": 0,
+      "1d": 0
+     },
+     "any_directed_live": false,
+     "side": "UNASSIGNED",
+     "lane": "NO_LIVE_SETUP",
+     "lane_basis": "NO_LIVE_SETUP",
+     "levels_passed": 0
+    }
+   ]
+  }
+ },
+ "insufficient_bars": {
+  "threshold": "UltimateConfig.min_bars = 30",
+  "n": 109,
+  "bars_describe": {
+   "count": 109.0,
+   "mean": 8.0,
+   "std": 8.2,
+   "min": 1.0,
+   "25%": 2.0,
+   "50%": 4.0,
+   "75%": 13.0,
+   "max": 29.0
+  },
+  "with_ge_260_bars_in_store": 0,
+  "last_is_cutoff": 1,
+  "first_on_or_after_2026_08_01": 0,
+  "last_before_2026_09_01": 101,
+  "tickers": [
+   [
+    "AHH",
+    1,
+    "2026-02-27",
+    "2026-02-27"
+   ],
+   [
+    "AMRK",
+    1,
+    "2025-12-01",
+    "2025-12-01"
+   ],
+   [
+    "ATGE",
+    1,
+    "2026-02-23",
+    "2026-02-23"
+   ],
+   [
+    "ARMN",
+    1,
+    "2026-02-18",
+    "2026-02-18"
+   ],
+   [
+    "BK",
+    1,
+    "2026-05-20",
+    "2026-05-20"
+   ],
+   [
+    "EB",
+    1,
+    "2026-03-09",
+    "2026-03-09"
+   ],
+   [
+    "CTRA",
+    1,
+    "2026-05-06",
+    "2026-05-06"
+   ],
+   [
+    "CMBM",
+    1,
+    "2026-03-26",
+    "2026-03-26"
+   ],
+   [
+    "HTBK",
+    1,
+    "2026-04-17",
+    "2026-04-17"
+   ],
+   [
+    "IPG",
+    1,
+    "2025-11-26",
+    "2025-11-26"
+   ],
+   [
+    "INFA",
+    1,
+    "2025-11-17",
+    "2025-11-17"
+   ],
+   [
+    "HBI",
+    1,
+    "2025-11-28",
+    "2025-11-28"
+   ],
+   [
+    "GMRE",
+    1,
+    "2026-02-20",
+    "2026-02-20"
+   ],
+   [
+    "FRGE",
+    1,
+    "2026-02-27",
+    "2026-02-27"
+   ],
+   [
+    "FOLD",
+    1,
+    "2026-04-24",
+    "2026-04-24"
+   ],
+   [
+    "FIHL",
+    1,
+    "2026-05-11",
+    "2026-05-11"
+   ],
+   [
+    "MGIC",
+    1,
+    "2026-02-23",
+    "2026-02-23"
+   ],
+   [
+    "NGD",
+    1,
+    "2026-03-19",
+    "2026-03-19"
+   ],
+   [
+    "MCW",
+    1,
+    "2026-05-18",
+    "2026-05-18"
+   ],
+   [
+    "MBCN",
+    1,
+    "2026-02-27",
+    "2026-02-27"
+   ],
+   [
+    "VVPR",
+    1,
+    "2026-03-13",
+    "2026-03-13"
+   ],
+   [
+    "VRNT",
+    1,
+    "2025-11-25",
+    "2025-11-25"
+   ],
+   [
+    "TERN",
+    1,
+    "2026-05-04",
+    "2026-05-04"
+   ],
+   [
+    "SAVA",
+    1,
+    "2026-03-10",
+    "2026-03-10"
+   ],
+   [
+    "VRE",
+    1,
+    "2026-05-26",
+    "2026-05-26"
+   ],
+   [
+    "TGNA",
+    1,
+    "2026-03-19",
+    "2026-03-19"
+   ],
+   [
+    "VMEO",
+    1,
+    "2025-11-21",
+    "2025-11-21"
+   ],
+   [
+    "CFLT",
+    2,
+    "2026-03-13",
+    "2026-03-16"
+   ],
+   [
+    "EWCZ",
+    2,
+    "2026-05-06",
+    "2026-05-07"
+   ],
+   [
+    "DHIL",
+    2,
+    "2026-04-20",
+    "2026-04-21"
+   ],
+   [
+    "EXAS",
+    2,
+    "2026-03-19",
+    "2026-03-20"
+   ],
+   [
+    "CVGW",
+    2,
+    "2026-05-26",
+    "2026-05-27"
+   ],
+   [
+    "PSPW",
+    2,
+    "2026-05-26",
+    "2026-09-29"
+   ],
+   [
+    "AMWD",
+    2,
+    "2026-05-26",
+    "2026-05-27"
+   ],
+   [
+    "ACLX",
+    2,
+    "2026-04-24",
+    "2026-04-27"
+   ],
+   [
+    "EXPI",
+    2,
+    "2026-05-06",
+    "2026-05-07"
+   ],
+   [
+    "PKST",
+    2,
+    "2026-05-04",
+    "2026-05-05"
+   ],
+   [
+    "SEMR",
+    2,
+    "2026-04-24",
+    "2026-04-27"
+   ],
+   [
+    "SONN",
+    2,
+    "2025-12-01",
+    "2025-12-02"
+   ],
+   [
+    "SNCY",
+    2,
+    "2026-05-11",
+    "2026-05-12"
+   ],
+   [
+    "CTLP",
+    2,
+    "2026-05-06",
+    "2026-05-07"
+   ],
+   [
+    "PWCO",
+    3,
+    "2026-07-28",
+    "2026-09-29"
+   ],
+   [
+    "UDMY",
+    3,
+    "2026-05-06",
+    "2026-05-08"
+   ],
+   [
+    "TPH",
+    3,
+    "2026-05-11",
+    "2026-05-13"
+   ],
+   [
+    "CSGS",
+    3,
+    "2026-05-11",
+    "2026-05-13"
+   ],
+   [
+    "ALEX",
+    3,
+    "2026-03-10",
+    "2026-03-12"
+   ],
+   [
+    "ALCE",
+    3,
+    "2026-07-21",
+    "2026-08-19"
+   ],
+   [
+    "GDEN",
+    4,
+    "2026-04-24",
+    "2026-04-29"
+   ],
+   [
+    "OS",
+    4,
+    "2026-03-26",
+    "2026-03-31"
+   ],
+   [
+    "GLDD",
+    4,
+    "2026-03-26",
+    "2026-03-31"
+   ],
+   [
+    "BLFY",
+    4,
+    "2026-03-26",
+    "2026-03-31"
+   ],
+   [
+    "ASGN",
+    4,
+    "2026-04-20",
+    "2026-04-23"
+   ],
+   [
+    "MPX",
+    4,
+    "2026-05-11",
+    "2026-05-14"
+   ],
+   [
+    "WWPW",
+    4,
+    "2026-07-06",
+    "2026-09-03"
+   ],
+   [
+    "ONTF",
+    4,
+    "2026-03-26",
+    "2026-03-31"
+   ],
+   [
+    "THR",
+    4,
+    "2026-05-26",
+    "2026-05-29"
+   ],
+   [
+    "SPR",
+    5,
+    "2025-12-01",
+    "2025-12-05"
+   ],
+   [
+    "ASRE",
+    5,
+    "2026-05-26",
+    "2026-10-05"
+   ],
+   [
+    "SLNO",
+    5,
+    "2026-05-11",
+    "2026-05-15"
+   ],
+   [
+    "VSCO",
+    5,
+    "2026-05-26",
+    "2026-06-01"
+   ],
+   [
+    "FFIC",
+    5,
+    "2026-05-26",
+    "2026-06-01"
+   ],
+   [
+    "MEG",
+    6,
+    "2026-04-24",
+    "2026-05-01"
+   ],
+   [
+    "BITF",
+    6,
+    "2026-03-26",
+    "2026-04-02"
+   ],
+   [
+    "AKRO",
+    6,
+    "2025-12-01",
+    "2025-12-08"
+   ],
+   [
+    "STKL",
+    6,
+    "2026-04-24",
+    "2026-05-01"
+   ],
+   [
+    "HSII",
+    7,
+    "2025-12-01",
+    "2025-12-09"
+   ],
+   [
+    "ODP",
+    7,
+    "2025-12-01",
+    "2025-12-09"
+   ],
+   [
+    "IAC",
+    7,
+    "2026-05-26",
+    "2026-06-03"
+   ],
+   [
+    "HOLX",
+    7,
+    "2026-03-26",
+    "2026-04-06"
+   ],
+   [
+    "SCS",
+    7,
+    "2025-12-01",
+    "2025-12-09"
+   ],
+   [
+    "K",
+    8,
+    "2025-12-01",
+    "2025-12-10"
+   ],
+   [
+    "HYAC",
+    9,
+    "2026-03-26",
+    "2026-04-08"
+   ],
+   [
+    "SINX",
+    9,
+    "2026-05-26",
+    "2026-09-02"
+   ],
+   [
+    "SEE",
+    9,
+    "2026-03-26",
+    "2026-04-08"
+   ],
+   [
+    "ALE",
+    10,
+    "2025-12-01",
+    "2025-12-12"
+   ],
+   [
+    "VTLE",
+    10,
+    "2025-12-01",
+    "2025-12-12"
+   ],
+   [
+    "MCAP",
+    10,
+    "2026-06-01",
+    "2026-09-25"
+   ],
+   [
+    "VACH",
+    11,
+    "2026-05-26",
+    "2026-06-10"
+   ],
+   [
+    "MASI",
+    11,
+    "2026-05-26",
+    "2026-06-09"
+   ],
+   [
+    "KALV",
+    12,
+    "2026-05-26",
+    "2026-06-10"
+   ],
+   [
+    "SPNS",
+    12,
+    "2025-12-01",
+    "2025-12-16"
+   ],
+   [
+    "KNWN",
+    13,
+    "2025-01-30",
+    "2025-02-18"
+   ],
+   [
+    "SCVL",
+    13,
+    "2026-05-26",
+    "2026-06-11"
+   ],
+   [
+    "BRY",
+    13,
+    "2025-12-01",
+    "2025-12-17"
+   ],
+   [
+    "PGRE",
+    14,
+    "2025-12-01",
+    "2025-12-18"
+   ],
+   [
+    "SUME",
+    14,
+    "2026-06-09",
+    "2026-10-01"
+   ],
+   [
+    "KW",
+    15,
+    "2026-05-26",
+    "2026-06-15"
+   ],
+   [
+    "PSTG",
+    15,
+    "2026-03-26",
+    "2026-04-16"
+   ],
+   [
+    "SKBL",
+    16,
+    "2026-05-26",
+    "2026-06-16"
+   ],
+   [
+    "IAS",
+    16,
+    "2025-12-01",
+    "2025-12-22"
+   ],
+   [
+    "KAR",
+    18,
+    "2025-12-01",
+    "2025-12-24"
+   ],
+   [
+    "SNBR",
+    19,
+    "2026-05-26",
+    "2026-06-22"
+   ],
+   [
+    "SGMO",
+    20,
+    "2026-05-26",
+    "2026-06-23"
+   ],
+   [
+    "MRUS",
+    20,
+    "2025-12-01",
+    "2025-12-29"
+   ],
+   [
+    "CNTA",
+    20,
+    "2026-05-26",
+    "2026-06-23"
+   ],
+   [
+    "CWAN",
+    21,
+    "2026-05-26",
+    "2026-06-24"
+   ],
+   [
+    "WOW",
+    21,
+    "2025-12-01",
+    "2025-12-30"
+   ],
+   [
+    "OMI",
+    22,
+    "2025-12-01",
+    "2025-12-31"
+   ],
+   [
+    "SNV",
+    22,
+    "2025-12-01",
+    "2025-12-31"
+   ],
+   [
+    "PRA",
+    22,
+    "2026-05-26",
+    "2026-06-25"
+   ],
+   [
+    "CDTX",
+    25,
+    "2025-12-01",
+    "2026-01-06"
+   ],
+   [
+    "SILA",
+    25,
+    "2026-05-26",
+    "2026-06-30"
+   ],
+   [
+    "JMTM",
+    25,
+    "2024-02-16",
+    "2025-02-28"
+   ],
+   [
+    "JHG",
+    25,
+    "2026-05-26",
+    "2026-06-30"
+   ],
+   [
+    "SEM",
+    25,
+    "2026-05-26",
+    "2026-06-30"
+   ],
+   [
+    "HOUS",
+    27,
+    "2025-12-01",
+    "2026-01-08"
+   ],
+   [
+    "OLPX",
+    28,
+    "2026-05-26",
+    "2026-07-06"
+   ],
+   [
+    "DYNA",
+    29,
+    "2026-05-26",
+    "2026-10-02"
+   ],
+   [
+    "SPLP",
+    29,
+    "2025-12-01",
+    "2026-01-16"
+   ]
+  ]
+ },
+ "no_price_data": {
+  "n": 28,
+  "in_store": 0,
+  "legacy_csv_exists": [],
+  "tickers": [
+   "ALAN",
+   "CNBKA",
+   "CQXL",
+   "CWE.A",
+   "FQFC",
+   "HBMD",
+   "KRA",
+   "LEVL",
+   "LSYN",
+   "MFL",
+   "MKTY",
+   "NEVE",
+   "OAK",
+   "OGNG",
+   "PGLO",
+   "PGLOD",
+   "PKO",
+   "RBNC",
+   "SGOC",
+   "SMTX",
+   "SPX",
+   "SPXW",
+   "STXB",
+   "TCP",
+   "VRTU",
+   "VVIT",
+   "VWTR",
+   "WTNW"
+  ]
+ },
+ "scan_errors": {
+  "n": 7,
+  "store": [
+   [
+    "ESTE",
+    460,
+    "2022-01-03",
+    "2023-10-31"
+   ],
+   [
+    "LTHM",
+    503,
+    "2022-01-03",
+    "2024-01-03"
+   ],
+   [
+    "LVOX",
+    497,
+    "2022-01-03",
+    "2023-12-22"
+   ],
+   [
+    "OFC",
+    427,
+    "2022-01-03",
+    "2023-09-14"
+   ],
+   [
+    "PCYG",
+    461,
+    "2022-01-03",
+    "2023-11-01"
+   ],
+   [
+    "PNT",
+    498,
+    "2022-01-03",
+    "2023-12-26"
+   ],
+   [
+    "THRN",
+    448,
+    "2022-01-03",
+    "2023-10-13"
+   ]
+  ],
+  "replay": {
+   "ESTE": {
+    "source": "STALE_CSV",
+    "bars": 505,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-10-31",
+    "date_formats": {
+     "19": 460,
+     "10": 45
+    }
+   },
+   "LTHM": {
+    "source": "STALE_CSV",
+    "bars": 591,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2024-01-03",
+    "date_formats": {
+     "19": 503,
+     "10": 88
+    }
+   },
+   "LVOX": {
+    "source": "STALE_CSV",
+    "bars": 579,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-12-22",
+    "date_formats": {
+     "19": 497,
+     "10": 82
+    }
+   },
+   "OFC": {
+    "source": "STALE_CSV",
+    "bars": 439,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-09-14",
+    "date_formats": {
+     "19": 427,
+     "10": 12
+    }
+   },
+   "PCYG": {
+    "source": "STALE_CSV",
+    "bars": 507,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-11-01",
+    "date_formats": {
+     "19": 461,
+     "10": 46
+    }
+   },
+   "PNT": {
+    "source": "STALE_CSV",
+    "bars": 581,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-12-26",
+    "date_formats": {
+     "19": 498,
+     "10": 83
+    }
+   },
+   "THRN": {
+    "source": "STALE_CSV",
+    "bars": 481,
+    "error": "ValueError: time data \"2023-08-29\" doesn't match format \"%Y-%m-%d %H:%M:%S\", at position 415. You might want to try:\n    - passing `format` if your strings have a consistent format;\n    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;\n    -",
+    "frames": [
+     "datetimes.py:469 _array_strptime_with_fallback",
+     "strptime.pyx:501 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:451 pandas._libs.tslibs.strptime.array_strptime",
+     "strptime.pyx:583 pandas._libs.tslibs.strptime._parse_with_format"
+    ],
+    "last_date": "2023-10-13",
+    "date_formats": {
+     "19": 448,
+     "10": 33
+    }
+   }
+  }
+ }
+}

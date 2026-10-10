@@ -64,7 +64,7 @@ def test_ev3_authority_switch_is_retired_and_overlay_is_advisory() -> None:
         encoding="utf-8",
     )
     config = source[source.index("EV3_AUTHORITY_REQUESTED") : source.index("EV3_FUNCTIONAL_TEST_NOW_UTC")]
-    overlay = source[source.index("def run_ev3_authority_overlay") : source.index("def run_phantom_layer")]
+    overlay = source[source.index("def run_ev3_authority_overlay") : source.index("def run_core_intel_exporter")]   # run_phantom_layer removed as dead code (7 Oct 2026)
 
     assert "EV3_AUTHORITY_ENABLED = False" in config
     assert 'command.append("--enable-authority")' not in overlay

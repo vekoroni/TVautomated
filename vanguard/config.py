@@ -208,7 +208,7 @@ REPORT_CONFIG = {
 
 # === UNIVERSE & FILTERING ===
 
-# Ticker Universe
+# Ticker Universe -- RETIRED (Phase 4, 8 Oct 2026): no code reads UNIVERSE_CONFIG; ACK 4 Oct: no price gate. Kept until ACK approves deletion (guard: tests/test_p4_no_hidden_price_gate.py).
 UNIVERSE_CONFIG = {
     'min_price': 10.0,                         # Minimum $10 stock price
     'max_price': 500.0,                        # Maximum $500 stock price

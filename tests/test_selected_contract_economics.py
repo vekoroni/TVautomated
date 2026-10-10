@@ -234,7 +234,7 @@ def test_single_call_monetisability_uses_ask_breakeven_and_target_intrinsic() ->
         fetched_at_utc=FETCHED_AT,
     )
     result = evaluate_long_option_monetisability(
-        {"canonical_direction": "CALL", "structural_target": 115}, hydrated
+        {"canonical_direction": "CALL", "anticipated_level_q50": 115}, hydrated  # Monetisability values at the anticipated level (ACK 6-7 Oct 2026); the legacy target is no longer read.
     )
     assert result["monetisability_state"] == "MONETISABLE"
     assert result["monetisability_contract_symbol"] == symbol
@@ -255,7 +255,7 @@ def test_single_put_monetisability_uses_put_breakeven() -> None:
         fetched_at_utc=FETCHED_AT,
     )
     result = evaluate_long_option_monetisability(
-        {"canonical_direction": "PUT", "structural_target": 85}, hydrated
+        {"canonical_direction": "PUT", "anticipated_level_q50": 85}, hydrated
     )
     assert result["monetisability_state"] == "MONETISABLE"
     assert result["monetisability_breakeven_spot"] == 95.0
@@ -273,7 +273,7 @@ def test_target_that_does_not_clear_breakeven_is_not_monetisable() -> None:
         fetched_at_utc=FETCHED_AT,
     )
     result = evaluate_long_option_monetisability(
-        {"canonical_direction": "CALL", "structural_target": 104}, hydrated
+        {"canonical_direction": "CALL", "anticipated_level_q50": 104}, hydrated
     )
     assert result["monetisability_state"] == "NOT_MONETISABLE"
     assert result["monetisability_eligible"] is False
@@ -290,7 +290,7 @@ def test_contract_change_recomputes_monetisability_for_the_new_symbol() -> None:
         lambda requested: _quote(requested, bid=1.8, ask=2.0, delta=0.35),
         ticker="AAA", direction="CALL", instrument="LONG_CALL", fetched_at_utc=FETCHED_AT,
     )
-    thesis = {"canonical_direction": "CALL", "structural_target": 115}
+    thesis = {"canonical_direction": "CALL", "anticipated_level_q50": 115}
     old_result = evaluate_long_option_monetisability(thesis, old)
     new_result = evaluate_long_option_monetisability(thesis, replacement)
     assert old_result["monetisability_contract_symbol"] != new_result["monetisability_contract_symbol"]

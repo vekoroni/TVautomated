@@ -60,12 +60,18 @@ def _ticker_row(direction: str = "CALL", horizon: str = "6_10d", *, canonical: b
         "monetisability_quote_snapshot_id": "q-1",
         "selected_quote_timestamp_utc": "2026-09-25T20:00:00Z", "evidence_session_date": "2026-09-25",
         "monetisability_state": "MONETISABLE", "direction_conflict_status": "NO_CONFLICT",
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state decides; monetisability is audit.
+        "anticipated_pays_state": "PAYS",
+        "anticipated_contract_symbol": "ACME261120C00048000" if direction == "CALL" else "ACME261120P00048000",
         "direction_resolution_call_score": 1.0 if direction == "CALL" else 0.0,
         "direction_resolution_put_score": 0.0 if direction == "CALL" else 1.0,
         "direction_resolution_evidence_json":
             f'[{{"family":"PRICE_FLOW","side":"{direction}","direction_independent":true}}]',
         "trigger_primary": "RANGE_BREAK",
         "trigger_price": SPOT * (0.99 if direction == "CALL" else 1.01),
+        # Phase 5.3 (ACK 8 Oct 2026): price confirmation = the thesis's own accepted break.
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
+        "geometry_justification": "JUSTIFIED",   # output-trust item 3: a ready setup needs justified geometry
         "wyckoff_execution_bias": "BULLISH" if direction == "CALL" else "BEARISH",
         "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
     }

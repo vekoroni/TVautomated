@@ -332,6 +332,10 @@ def side_evidence_vectors(
 # Structural invalidation owners accepted by the handoff: the Wyckoff validator
 # (DIR-002) and the BEH-001 behavioural engine. Never a convention (ATR, %).
 STRUCTURAL_INVALIDATION_SOURCES = frozenset({"WYCKOFF_VALIDATION", "BEHAVIOURAL_STRUCTURE"})
+# The one list of structural target sources (P0-04, Phase 1, 7 Oct 2026). BEH001_OUTCOME_LEVEL is the governing
+# behavioural candidate's own Outcome_Level - the thesis target. WYCKOFF / PRIOR_RANGE_EXTREME remain readable for
+# legacy rows; consumers import this set instead of repeating it.
+STRUCTURAL_TARGET_SOURCES = frozenset({"WYCKOFF", "PRIOR_RANGE_EXTREME", "BEH001_OUTCOME_LEVEL"})
 
 
 def assess_thesis_geometry(
@@ -378,7 +382,7 @@ def assess_thesis_geometry(
     if reference is None or side == "UNASSIGNED":
         return result
 
-    if target is not None and target_basis in {"WYCKOFF", "PRIOR_RANGE_EXTREME"}:
+    if target is not None and target_basis in STRUCTURAL_TARGET_SOURCES:
         if (side == "BULL" and target > reference) or (side == "BEAR" and target < reference):
             result["target_state"] = "LEVEL"
             result["target_price"] = target
@@ -484,7 +488,7 @@ def legacy_direction_adapter_v1(
     valid_target = (
         side != "UNASSIGNED"
         and _upper(geometry.get("target_state")) == "LEVEL"
-        and target_basis in {"WYCKOFF", "PRIOR_RANGE_EXTREME"}
+        and target_basis in STRUCTURAL_TARGET_SOURCES
         and target_value is not None and math.isfinite(target_value) and target_value > 0
     )
     target = float(geometry["target_price"]) if valid_target else None
@@ -970,7 +974,7 @@ def validate_direction_record(row: Mapping[str, Any]) -> Tuple[bool, str]:
         or row.get("scanner_price")
     )
     target = _number(
-        row.get("monetisability_structural_target_spot")
+        row.get("monetisability_target_spot")
         or row.get("structural_target")
         or row.get("target_price")
         or row.get("exit_target_price")

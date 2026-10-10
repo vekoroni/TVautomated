@@ -196,6 +196,8 @@ FINAL_BOOK_FIELDS = [
     "execution_lock_reason",
     "requires_live_validation",
     "direction",
+    "direction_validation_state",       # ACK 7 Oct 2026: display only, from config direction_validation
+    "direction_validation_basis",
     "phase",
     "intent",
     "tier",
@@ -505,7 +507,8 @@ FINAL_BOOK_FIELDS = [
     "monetisability_entry_ask",
     "monetisability_strike",
     "monetisability_breakeven_spot",
-    "monetisability_structural_target_spot",
+    "monetisability_target_spot",
+    "monetisability_target_basis",
     "monetisability_target_intrinsic_per_share",
     "monetisability_target_profit_per_share",
     "monetisability_target_profit_pct",
@@ -683,6 +686,8 @@ FINAL_BOOK_FIELDS = [
     "ivp_source",
     "iv_rank_definition",
     "iv_rank_window_sessions",
+    "iv_history_state",
+    "iv_history_first_date",
     "atm_iv",
     "hv_30d",
     "iv_vs_hv",
@@ -806,6 +811,8 @@ FINAL_BOOK_FIELDS = [
     # comment - Morning live-price/VWAP and market-structure evidence, genuinely computed
     # but previously dropped before the published book.
     "live_price",
+    "live_price_age_seconds",          # A1 (ACK 6 Oct 2026): age disclosed, never a gate
+    "live_price_state",
     "live_vwap",
     "quote_timestamp_utc",
     "ms_profile_type",
@@ -818,6 +825,18 @@ FINAL_BOOK_FIELDS = [
     "ms_value_area_high",
     "source_payload_json",
 ]
+# Phase 5.1 (8 Oct 2026): the thesis's own story fields and Vanguard's context (one definition).
+from contracts.thesis_record import THESIS_SPINE_FIELDS as _THESIS_SPINE_FIELDS, VANGUARD_CONTEXT_FIELDS as _VG_CTX
+from contracts.thesis_record import INTRADAY_BUILDUP_FIELDS as _IB_FIELDS, OPTIONS_ALTERNATIVE_FIELDS as _ALT
+_THESIS_CARRIED_FIELDS = (*_THESIS_SPINE_FIELDS, *_VG_CTX, *_IB_FIELDS, *_ALT)
+FINAL_BOOK_FIELDS += [f for f in _THESIS_CARRIED_FIELDS if f not in FINAL_BOOK_FIELDS]
+FINAL_BOOK_FIELDS += [f for f in ("rank_expected_multiple", "rank_group", "rank_basis") if f not in FINAL_BOOK_FIELDS]
+FINAL_BOOK_FIELDS += [f for f in ("direction_record_status",) if f not in FINAL_BOOK_FIELDS]
+# Output-trust item 7 (ACK 10 Oct 2026): gamma-weighted wall concentrations by expiry basket, their observed price
+# response and the gamma-flip confidence state (display and context; readers decision pending).
+from domain.option_walls import WALL_FIELDS as _WALL_FIELDS
+from domain.option_walls import GOVERNED_WALL_FIELDS as _GOVERNED_WALL_FIELDS
+FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_flip_conf") if f not in FINAL_BOOK_FIELDS]
 
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 # It intentionally excludes source_payload_json, which makes final_opportunity_book
@@ -1060,21 +1079,9 @@ def first_trigger_category(
 
 
 def _trigger_price(sig: Dict[str, Any]) -> Any:
-    return first(
-        sig,
-        "trigger_price",
-        "entry_trigger_price",
-        "trade_trigger_price",
-        "scenario_entry_trigger",
-        "eod__scenario_entry_trigger",
-        "vg__scenario_entry_trigger",
-        "wbs_phase_b_trigger",
-        "eod__wbs_phase_b_trigger",
-        "vg__wbs_phase_b_trigger",
-        "wbs_phase_c_trigger",
-        "eod__wbs_phase_c_trigger",
-        "vg__wbs_phase_c_trigger",
-    )
+    """Phase 5.2 (8 Oct 2026): the card trigger is the thesis's own trigger only. The scenario-builder and Wall-Break
+    levels that used to back-fill it are kept as legacy_* fields and never become the trigger (one story)."""
+    return first(sig, "trigger_price", "thesis_trigger_level")
 
 
 def _trigger_evidence(sig: Dict[str, Any]) -> Any:
@@ -1579,6 +1586,10 @@ def _economics_identity(
     )
     monetisability_status = _u(sig.get("monetisability_status"))
     monetisability_contract = first(sig, "monetisability_contract_symbol")
+    # L5 (ACK 7 Oct 2026): the economics that decide are the anticipated move's, computed for the contract;
+    # monetisability (intrinsic at expiry) is AUDIT and no longer drives this lock.
+    anticipated_state = _u(sig.get("anticipated_pays_state"))
+    anticipated_symbols = _contract_symbols(first(sig, "anticipated_contract_symbol"))
     monetisability_symbols = _contract_symbols(monetisability_contract)
     monetisability_id = _s(sig.get("monetisability_evaluation_id")) or _economics_evaluation_id(
         sig.get("ticker"), first(sig, "canonical_direction", "direction"),
@@ -1602,14 +1613,12 @@ def _economics_identity(
     reason = ""
     if not selected_symbols:
         reason = "NO_SELECTED_CONTRACT"
-    elif monetisability_status != "COMPLETE":
-        reason = "MONETISABILITY_NOT_EVALUATED_FOR_SELECTED_CONTRACT"
-    elif not monetisability_symbols:
-        reason = "MONETISABILITY_CONTRACT_IDENTITY_MISSING"
-    elif selected_symbols != monetisability_symbols:
-        reason = "MONETISABILITY_SELECTED_CONTRACT_MISMATCH"
-    elif selected_id != monetisability_id:
-        reason = "MONETISABILITY_EVALUATION_ID_MISMATCH"
+    elif anticipated_state not in {"PAYS", "DOES_NOT_PAY_AT_ANTICIPATED_TIME"}:
+        reason = "ANTICIPATED_VALUE_NOT_COMPUTED_FOR_SELECTED_CONTRACT"
+    elif not anticipated_symbols:
+        reason = "ANTICIPATED_VALUE_CONTRACT_IDENTITY_MISSING"
+    elif selected_symbols != anticipated_symbols:
+        reason = "ANTICIPATED_VALUE_CONTRACT_MISMATCH"
     else:
         comparable = True
     ev_aligned = bool(
@@ -2666,9 +2675,11 @@ def _resolve_execution_gate_authority(
     ]
     if source.get("eil_v3_verdict"):
         warnings.extend(eil_advisory_flags(source.get("eil_v3_verdict")))
-    monetisability_state = _u(sig.get("monetisability_state"))
-    if monetisability_state and monetisability_state != "MONETISABLE":
-        warnings.append(f"MONETISABILITY:{monetisability_state}")
+    # Output-trust item 4 (ACK decision 2, 9 Oct 2026): the soft valuation warning comes from the one engine's pays
+    # state; monetisability (expiry intrinsic vs ask) is a legacy payoff kept for audit only.
+    pays_state = _u(sig.get("anticipated_pays_state"))
+    if pays_state == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
+        warnings.append(f"VALUATION:{pays_state}")
     structure_state, route, structure_reason = _lab_structure_policy(
         sig,
         first(
@@ -3263,6 +3274,27 @@ _SCENARIO_PATH_TO_FIELD = {
 
 
 @functools.lru_cache(maxsize=1)
+def _direction_record_status(path: Any) -> str:
+    text = _u(path)
+    if not text or text in {"NAN", "NONE"}:
+        return "NOT_RECORDED"
+    return {"DIRECTION_CONFIRMED": "RECORD_CONSISTENT",
+            "DIRECTION_RESOLVED_PRECONTRACT": "RECORD_RESOLVED_PRECONTRACT"}.get(text, text)
+
+
+def _direction_validation() -> Dict[str, Any]:
+    """ACK 7 Oct 2026 ("label direction unvalidated"): the side's validation state and basis, one owner (config
+    direction_validation), display only - never a gate, score or rank. Unreadable config is stated, not assumed."""
+    path = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+    try:
+        block = dict(json.loads(path.read_text(encoding="utf-8-sig")).get("direction_validation") or {})
+    except (OSError, ValueError):
+        block = {}
+    return {"direction_validation_state": block.get("state") or "NOT_RECORDED",
+            "direction_validation_basis": block.get("basis") or "direction validation config not readable"}
+
+
+@functools.lru_cache(maxsize=1)
 def _governed_scenario_constants() -> Dict[str, Any]:
     """The friction and vol-budget assumptions the scenario values were produced under (fail-soft to UNKNOWN)."""
     path = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
@@ -3419,6 +3451,7 @@ def opportunity_book_row(
         "trade_idea_id": sig.get("trade_idea_id") or _trade_idea_id(sig, run_id),
         "lab_rank": rank,
         "priority_rank": rank,
+        **_rank_fields(sig),
         "lab_verdict": sig.get("lab_verdict", "WAIT"),
         "lab_tradeable": bool(sig.get("lab_tradeable")),
         "prep_permission": first(sig, "prep_permission", "run_prep_permission", "eod_prep_permission"),
@@ -3471,6 +3504,9 @@ def opportunity_book_row(
         "final_direction": first(sig, "final_direction", "canonical_direction"),
         "direction_resolution_path": first(sig, "direction_resolution_path"),
         "direction_governance_status": first(sig, "direction_governance_status"),
+        # Output-trust item 1 (ACK 9 Oct 2026): the governance path means "the direction record is consistent", never
+        # a confirmed direction.
+        "direction_record_status": _direction_record_status(first(sig, "direction_resolution_path")),
         "direction_resolution_confidence": first(sig, "direction_resolution_confidence"),
         "direction_resolution_call_score": first(sig, "direction_resolution_call_score"),
         "direction_resolution_put_score": first(sig, "direction_resolution_put_score"),
@@ -3512,6 +3548,7 @@ def opportunity_book_row(
         "execution_lock_reason": sig.get("execution_lock_reason", ""),
         "requires_live_validation": bool(sig.get("requires_live_validation")),
         "direction": canonical_direction,
+        **_direction_validation(),
         "phase": first(sig, "phase", "phase_best", "wyckoff_phase"),
         "intent": first(sig, "intent", "precor_intent", "setup_intent"),
         "tier": first(sig, "tier", "tier_label", "structural_tier"),
@@ -3618,6 +3655,8 @@ def opportunity_book_row(
         # Display only (18 Sep 2026): the selector's runway and spread facts and the 20-session valuation,
         # passed through exactly as recorded upstream.
         # Lab trade card (ACK 2 Oct 2026): pass the 2 Oct decision fields through as recorded upstream.
+        # Phase 5.3: the thesis's own story, Vanguard's context and the Morning build-up, exactly as recorded.
+        **{field: sig.get(field) for field in _THESIS_CARRIED_FIELDS},
         **{field: sig.get(field) for field in ("target_reachable", "target_reachable_state", "target_reach_ratio", "rr_options_reachable", "rr_underlying_reachable", "rr_basis", "target_3r_scenario", "governance__open_contract", "governance__verdict", "governance__reason", "trigger_go_eligible")},
         **{field: sig.get(field) for field in (
             "anticipated_move_sessions", "anticipated_move_source", "planned_hold_sessions", "planned_hold_source",
@@ -3761,7 +3800,8 @@ def opportunity_book_row(
         "monetisability_entry_ask": first(sig, "monetisability_entry_ask"),
         "monetisability_strike": first(sig, "monetisability_strike"),
         "monetisability_breakeven_spot": first(sig, "monetisability_breakeven_spot"),
-        "monetisability_structural_target_spot": first(sig, "monetisability_structural_target_spot"),
+        "monetisability_target_spot": first(sig, "monetisability_target_spot"),
+        "monetisability_target_basis": first(sig, "monetisability_target_basis"),
         "monetisability_target_intrinsic_per_share": first(sig, "monetisability_target_intrinsic_per_share"),
         "monetisability_target_profit_per_share": first(sig, "monetisability_target_profit_per_share"),
         "monetisability_target_profit_pct": first(sig, "monetisability_target_profit_pct"),
@@ -3925,6 +3965,8 @@ def opportunity_book_row(
         "ivp_source": first(sig, "ivp_source", "opt__ivp_source"),
         "iv_rank_definition": first(sig, "iv_rank_definition", "opt__iv_rank_definition"),
         "iv_rank_window_sessions": first(sig, "iv_rank_window_sessions", "opt__iv_rank_window_sessions"),
+        "iv_history_state": first(sig, "iv_history_state", "opt__iv_history_state"),
+        "iv_history_first_date": first(sig, "iv_history_first_date", "opt__iv_history_first_date"),
         "atm_iv": first(sig, "atm_iv", "opt__atm_iv"),
         "hv_30d": first(sig, "hv_30d", "opt__hv_30d"),
         "iv_vs_hv": first(sig, "iv_vs_hv", "opt__iv_vs_hv"),
@@ -3939,6 +3981,10 @@ def opportunity_book_row(
         "put_wall_state": first(sig, "put_wall_state", "opt__put_wall_state"),
         "gamma_flip": first(sig, "gamma_flip", "opt__gamma_flip"),
         "gamma_flip_state": first(sig, "gamma_flip_state", "opt__gamma_flip_state"),
+        "gamma_flip_conf": first(sig, "gamma_flip_conf", "opt__gamma_flip_conf"),
+        **{field: first(sig, field, f"opt__{field}") for field in _WALL_FIELDS},
+        **{field: first(sig, field, f"opt__{field}") for field in _GOVERNED_WALL_FIELDS
+           if field not in ("call_wall", "put_wall", "call_wall_state", "put_wall_state")},
         "max_pain": first(sig, "max_pain", "opt__max_pain"),
         "pcr_signal": first(sig, "pcr_signal", "opt__pcr_signal"),
         "pcr_direction_conflict_status": first(sig, "pcr_direction_conflict_status"),
@@ -4061,6 +4107,8 @@ def opportunity_book_row(
         # from the frozen/signal price fallback chain the price display already uses; it is
         # published here so it is available to show separately, not to silently replace it.
         "live_price": first(sig, "live_price"),
+        "live_price_age_seconds": first(sig, "live_price_age_seconds"),
+        "live_price_state": first(sig, "live_price_state"),
         "live_vwap": first(sig, "live_vwap", "mv__live_vwap"),
         "quote_timestamp_utc": first(sig, "quote_timestamp_utc"),
         "ms_profile_type": first(sig, "ms_profile_type"),
@@ -4184,7 +4232,16 @@ def opportunity_book_row(
     for field in evening_projection:
         provenance[field] = "governed_materializer:evening_thesis_decision"
     row["field_provenance_json"] = _json_safe(provenance)
-    return {key: csv_safe_row(row).get(key, "") for key in FINAL_BOOK_FIELDS}
+    # Normalization is pure: doing the complete row once per output field caused
+    # quadratic work (982 complete passes for one captured Morning row).
+    normalized = csv_safe_row(row)
+    return {key: normalized.get(key, "") for key in FINAL_BOOK_FIELDS}
+
+
+def _rank_fields(sig: Dict[str, Any]) -> Dict[str, Any]:
+    from domain.opportunity_rank import RANK_BASIS, expected_option_multiple, rank_group
+    return {"rank_expected_multiple": expected_option_multiple(sig), "rank_group": rank_group(sig),
+            "rank_basis": RANK_BASIS}
 
 
 def build_final_opportunity_book(
@@ -4201,20 +4258,21 @@ def build_final_opportunity_book(
         sig.setdefault("pipeline_mode", pipeline_mode)
         if "lab_verdict" not in sig or "morning_lab_alignment_status" not in sig:
             apply_lab_resolution(sig, manifest)
-    # MANUAL_REVIEW (the Execution Gate's review action) ranks with the other review states, above
-    # repair and BLOCKED (18 Sep 2026: 554 review rows had fallen below 381 blocked rows).
-    order = {"GO": 0, "GO_LIMIT": 1, "PROBE": 2, "MANUAL_REVIEW": 3, "MANUAL_LIQUIDITY_REVIEW": 3, "CONTRACT_REPAIR": 4, "MORNING_VALIDATION_REQUIRED": 5, "ARMED": 6, "WAIT": 7, "BLOCKED": 8}
-    enriched.sort(
-        key=lambda row: (
-            order.get(_u(row.get("lab_verdict")), 9),
-            -_f(first(row, "priority_score", "research_priority_score", "options_research_score", "options_research_confidence"), 0.0),
-            _s(row.get("ticker")),
-        )
-    )
-    return [
+    # RC10 (ACK 8 Oct 2026, "Expectancy"): one ranking owner, domain.opportunity_rank. It replaces the verdict +
+    # retired priority-score order (ACK E11: replace the priority score); the verdict stays visible on each row.
+    from domain.opportunity_rank import rank_key
+    enriched.sort(key=rank_key)
+    rows = [
         opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup)
         for rank, sig in enumerate(enriched, 1)
     ]
+    # Live run 20261008_220129: the materializer can block a row after the sort (e.g. INVALIDATION_MISSING), so the
+    # published rank is taken from the final rows - a late block still sinks and no other rank shifts.
+    rows.sort(key=rank_key)
+    for rank, row in enumerate(rows, 1):
+        row["lab_rank"] = rank
+        row["priority_rank"] = rank
+    return rows
 
 
 
@@ -4264,6 +4322,10 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "entry_reason": ["entry_reason", "eod_candidate_reason", "execution_authority_reason", "signal_authority_reason", "sb_verdict_reason"],
         "positive_factors": ["positive_factors", "opt__positive_factors"],
         "negative_factors": ["negative_factors", "opt__negative_factors"],
+        # Phase 5.4: the other theses priced (Options row summary).
+        "thesis_alternatives_count": ["thesis_alternatives_count"],
+        "thesis_alternatives_tested": ["thesis_alternatives_tested"],
+        "thesis_alternatives_json": ["thesis_alternatives_json"],
         "sector": ["sector", "gics_sector", "gics_sector_norm", "sector_name"],
         "gics_sector": ["gics_sector", "gics_sector_norm", "sector"],
         "gics_sector_norm": ["gics_sector_norm", "gics_sector", "sector"],
@@ -4377,6 +4439,8 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "ivp_source": ["ivp_source", "opt__ivp_source"],
         "iv_rank_definition": ["iv_rank_definition", "opt__iv_rank_definition"],
         "iv_rank_window_sessions": ["iv_rank_window_sessions", "opt__iv_rank_window_sessions"],
+        "iv_history_state": ["iv_history_state", "opt__iv_history_state"],
+        "iv_history_first_date": ["iv_history_first_date", "opt__iv_history_first_date"],
         "atm_iv": ["atm_iv", "opt__atm_iv"],
         "hv_30d": ["hv_30d", "opt__hv_30d"],
         "iv_vs_hv": ["iv_vs_hv", "opt__iv_vs_hv"],
@@ -4462,7 +4526,7 @@ def _lab_field_source_priority(field: str) -> List[str]:
         return ["vanguard_signals_enriched", "options_intelligence", "execution_v3_5", "eil_enriched", "morning_candidates"]
     if field in {
         "options_score", "iv_rank", "ivp_label", "iv_percentile", "ivp_source",
-        "iv_rank_definition", "iv_rank_window_sessions", "atm_iv", "hv_30d",
+        "iv_rank_definition", "iv_rank_window_sessions", "iv_history_state", "iv_history_first_date", "atm_iv", "hv_30d",
         "iv_vs_hv", "term_structure", "theta_drag_pct", "vega_risk_pct",
         "theta_constrained", "contract_mark_synthetic", "positive_factors",
         "negative_factors", "pcr_vol", "pcr_vol_status", "pcr_vol_missing_reason",
@@ -4522,17 +4586,20 @@ def _recompute_governed_lab_fields(row: Dict[str, Any], provenance: Dict[str, st
         row["entry_plan"] = row.get("wbs_entry_guidance")
         provenance["entry_plan"] = provenance.get("wbs_entry_guidance", "wall_break_scores")
 
-    if _is_missing(row.get("trigger_price")):
+    # Phase 5.2 (8 Oct 2026): the trigger is the thesis's own (thesis_trigger_level); Wall-Break levels are kept as
+    # legacy_wbs_* and never fill trigger_price. No thesis trigger -> it stays missing (R1).
+    if _is_missing(row.get("legacy_wbs_trigger_price")):
         if not _is_missing(row.get("wbs_phase_c_trigger")):
-            row["trigger_price"] = row.get("wbs_phase_c_trigger")
-            row["trigger_price_source"] = "WBS_PHASE_C_CONFIRMED_BREAK"
-            provenance["trigger_price"] = provenance.get("wbs_phase_c_trigger", "wall_break_scores")
-            provenance["trigger_price_source"] = "governed_materializer"
+            row["legacy_wbs_trigger_price"] = row.get("wbs_phase_c_trigger")
+            row["legacy_wbs_trigger_source"] = "WBS_PHASE_C_CONFIRMED_BREAK"
         elif not _is_missing(row.get("wbs_phase_b_trigger")):
-            row["trigger_price"] = row.get("wbs_phase_b_trigger")
-            row["trigger_price_source"] = "WBS_PHASE_B_WATCH_ZONE"
-            provenance["trigger_price"] = provenance.get("wbs_phase_b_trigger", "wall_break_scores")
-            provenance["trigger_price_source"] = "governed_materializer"
+            row["legacy_wbs_trigger_price"] = row.get("wbs_phase_b_trigger")
+            row["legacy_wbs_trigger_source"] = "WBS_PHASE_B_WATCH_ZONE"
+    if _is_missing(row.get("trigger_price")) and not _is_missing(row.get("thesis_trigger_level")):
+        row["trigger_price"] = row.get("thesis_trigger_level")
+        row["trigger_price_source"] = "THESIS_TRIGGER_LEVEL"
+        provenance["trigger_price"] = provenance.get("thesis_trigger_level", "discovery_thesis_step")
+        provenance["trigger_price_source"] = "governed_materializer"
 
     direction = _side_from_value(first(row, "canonical_direction", "direction"))
     pcr_status = _u(row.get("pcr_vol_status"))
@@ -4864,6 +4931,7 @@ def write_final_opportunity_book(
     *,
     sync_interpreter: bool = True,
     contract_quote_lookup: Any = None,
+    publish_review: bool = True,
 ) -> Dict[str, Any]:
     if contract_quote_lookup is None:
         # Reuse-only lookup of a reselected contract in the run's stored
@@ -5128,7 +5196,27 @@ def write_final_opportunity_book(
         },
     }
     json_path.write_text(_json_safe(payload), encoding="utf-8")
-    return {"csv_path": str(csv_path), "triage_csv_path": str(triage_csv_path), "json_path": str(json_path), **payload}
+    # AVS-SD-LAB-004: materialise compact indexed review from the already
+    # governed in-memory population, not from a second pass through stage CSVs.
+    # Additive display-only publication; it never changes these rows or grants
+    # an accepted Interpreter overlay. The old complete book remains available
+    # if this presentation publication fails.
+    try:
+        if not publish_review:
+            review_projection = {"publication_state": "DEFERRED_TO_HANDOFF", "authority": "DISPLAY_ONLY"}
+        else:
+            from contracts.lab_review_sources import prepare_review_publication
+            prepared, review_context, receipt = prepare_review_publication(payload, Path(runs_dir) / run_id)
+            from contracts.lab_review_projection import publish_review_projection, source_file_receipt
+            review_projection = publish_review_projection(
+                prepared, runs_dir, context=review_context,
+                source_receipt={**source_file_receipt(json_path), **receipt},
+            )
+    except Exception as error:
+        review_projection = {"publication_state": "FAILED", "authority": "DISPLAY_ONLY",
+                             "error_type": type(error).__name__, "reason": str(error)}
+    return {"csv_path": str(csv_path), "triage_csv_path": str(triage_csv_path), "json_path": str(json_path),
+            "review_projection": review_projection, **payload}
 
 
 def read_final_opportunity_book(run_id: str, runs_dir: Path | str) -> Dict[str, Any]:

@@ -184,7 +184,9 @@ def _refresh_requirement(
 ) -> dict[str, Any] | None:
     if intended_use is IntendedUse.TRAJECTORY:
         return None
-    allowed = {"FRESH", "EOD_CURRENT"} if intended_use is IntendedUse.EOD_REVIEW else {"FRESH"}
+    # A2/A3 (ACK 7 Oct 2026): age is disclosed, never a block. Only MISSING or INVALID evidence blocks; an aged
+    # (STALE) domain is listed in aged_domains for the human to see.
+    blocking_states = {"MISSING", "INVALID"}
     evidence_record = dict(bundle.get("governed_record") or {})
     quote_change = bundle.get("quote_change_evidence")
     if isinstance(quote_change, Mapping):
@@ -198,25 +200,40 @@ def _refresh_requirement(
         legacy = _text(legacy_map.get(domain)).upper()
         if freshness_map.get(domain) in {"MISSING", "INVALID"} and legacy:
             freshness_map[domain] = legacy
-    stale_domains = [
-        str(domain)
-        for domain, state in freshness_map.items()
-        if str(domain).lower() not in ADVISORY_FRESHNESS_DOMAINS
-        and str(state).upper() not in allowed
-    ]
-    if not stale_domains:
+    governed = {str(domain): str(state).upper() for domain, state in freshness_map.items()
+                if str(domain).lower() not in ADVISORY_FRESHNESS_DOMAINS}
+    blocking = sorted(d for d, state in governed.items() if state in blocking_states)
+    aged = sorted(d for d, state in governed.items() if state == "STALE")
+    if not blocking and not aged:
         return None
+    if not blocking:
+        return {
+            "request_type": "AGE_DISCLOSURE",
+            "run_id": bundle["run_id"],
+            "ticker": bundle["ticker"],
+            "selected_contract_symbol": bundle["selected_contract_symbol"],
+            "domains": aged,
+            "aged_domains": aged,
+            "advisory_domains": [],
+            "blocking_domains": [],
+            "disposition": "AGE_DISCLOSED",
+            "trade_thesis_affected": False,
+            "intended_use": intended_use.value,
+            "provider_calls_made": 0,
+        }
+    stale_domains = blocking
     # A successfully validated Morning thesis remains valid for its governed
     # 1-20 session holding horizon, but execution evidence has a much shorter
     # lifetime.  Stale/missing quotes therefore request a narrow refresh while
     # trade_thesis_affected remains false.
-    blocking_domains = sorted(stale_domains)
+    blocking_domains = sorted(stale_domains)          # missing or invalid evidence only (A2/A3)
     return {
         "request_type": "CDS_NARROW_REFRESH_REQUIRED",
         "run_id": bundle["run_id"],
         "ticker": bundle["ticker"],
         "selected_contract_symbol": bundle["selected_contract_symbol"],
         "domains": sorted(stale_domains),
+        "aged_domains": aged,
         "advisory_domains": [],
         "blocking_domains": blocking_domains,
         "disposition": "BLOCKING_EVIDENCE_REFRESH",

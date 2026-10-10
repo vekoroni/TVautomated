@@ -45,9 +45,23 @@ def build_candidate_packet(run_id: str, candidates: Iterable[Mapping], vanguard_
         if state == "FAILED":
             failed.append(c)
             continue
-        if state in monitoring or c.get("Direction") not in {"BULL", "BEAR"} or state not in live:
+        # Phase 5.4 (ACK 8 Oct 2026): a candidate with a thesis decision is routed by it - an adopted thesis is
+        # priced on its own side; an unresolved thesis with both conditional boundaries is priced on both sides.
+        adoption = c.get("Adoption_State")
+        if adoption is not None:
+            if adoption == "ADOPTED" and c.get("Thesis_Side") in {"BULL", "BEAR"}:
+                c["Direction"], handoff = c["Thesis_Side"], "DIRECTED_LIVE"
+            elif (adoption == "UNRESOLVED" and c.get("Conditional_Bull_Trigger") is not None
+                  and c.get("Conditional_Bear_Trigger") is not None):
+                handoff = "CONDITIONAL_BOTH_SIDES"
+            else:
+                watch.append({**c, "Handoff_Status": "MONITOR_ONLY"})
+                continue
+        elif state in monitoring or c.get("Direction") not in {"BULL", "BEAR"} or state not in live:
             watch.append({**c, "Handoff_Status": "MONITOR_ONLY"})
             continue
+        else:
+            handoff = "DIRECTED_LIVE"
         ticker = str(c["Ticker"]).upper()
         if ticker in passed:
             row = passed[ticker]
@@ -61,7 +75,7 @@ def build_candidate_packet(run_id: str, candidates: Iterable[Mapping], vanguard_
         else:
             c["vanguard__status"] = "VANGUARD_NOT_RUN"
             c["vanguard__fields_missing"] = list(fields)
-        c["Handoff_Status"] = "DIRECTED_LIVE"
+        c["Handoff_Status"] = handoff
         records.append(c)
     records.sort(key=_rank_key)
     for rank, c in enumerate(records, start=1):

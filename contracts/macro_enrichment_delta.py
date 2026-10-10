@@ -11,8 +11,12 @@ macro exposure index stored under extras.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
+import os
 import re
+import uuid
+from datetime import datetime, timezone
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional
@@ -97,6 +101,85 @@ DELTA_PATTERNS = (
     "avshunter_macro_enrichment_delta*.json",
 )
 
+SNAPSHOT_NAME = "macro_enrichment_delta_snapshot.json"
+SNAPSHOT_RECEIPT_NAME = "macro_enrichment_snapshot_receipt.json"
+
+
+def _read_pinned_delta(macro_dir: Path) -> Optional[Path]:
+    receipt = json.loads((macro_dir / SNAPSHOT_RECEIPT_NAME).read_text(encoding="utf-8"))
+    if receipt.get("schema_version") != "macro_enrichment_snapshot_v1":
+        raise ValueError("Invalid macro enrichment snapshot receipt version")
+    if receipt.get("run_macro_directory") != str(macro_dir.resolve()):
+        raise ValueError("Macro enrichment receipt directory mismatch")
+    snapshot = macro_dir / SNAPSHOT_NAME
+    if receipt.get("state") == "ABSENT":
+        if snapshot.exists():
+            raise ValueError("Snapshot exists despite frozen ABSENT enrichment")
+        return None
+    if receipt.get("state") != "CAPTURED" or receipt.get("snapshot_name") != SNAPSHOT_NAME:
+        raise ValueError("Invalid macro enrichment snapshot receipt state")
+    if not snapshot.is_file() or hashlib.sha256(snapshot.read_bytes()).hexdigest() != receipt.get("sha256"):
+        raise ValueError("Macro enrichment snapshot hash mismatch or file missing")
+    return snapshot
+
+
+def _publish_once(path: Path, raw: bytes) -> None:
+    """Atomic publication without overwriting an existing run artefact."""
+    temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Windows rename refuses an existing destination. Hard-link publication
+        # also has no-overwrite semantics on other platforms.
+        os.link(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def pin_macro_enrichment_delta(run_macro_path: Path | str, source_macro_path: Path | str) -> Optional[Path]:
+    """Freeze uploaded advisory enrichment (including absence) before Discovery.
+
+    Resuming a run reuses its hash-checked copy, never a later upload. Invalid
+    packets are not published; callers retain their existing degraded policy.
+    """
+    run_macro = Path(run_macro_path).resolve()
+    macro_dir = run_macro.parent
+    source_macro = Path(source_macro_path).resolve()
+    if macro_dir == source_macro.parent:
+        raise ValueError("Run and source macro directories must be different")
+    if (macro_dir / SNAPSHOT_RECEIPT_NAME).exists():
+        return _read_pinned_delta(macro_dir)
+    snapshot = macro_dir / SNAPSHOT_NAME
+    if snapshot.exists():
+        raise ValueError("Unreceipted macro enrichment snapshot; manual review required")
+    selected = find_macro_enrichment_delta(source_macro)
+    receipt = {
+        "schema_version": "macro_enrichment_snapshot_v1",
+        "run_macro_directory": str(macro_dir),
+        "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_directory": str(source_macro.parent),
+        "state": "ABSENT",
+    }
+    if selected is not None:
+        raw = selected.read_bytes()
+        enrichment = json.loads(raw.decode("utf-8-sig"))
+        base = json.loads(run_macro.read_text(encoding="utf-8-sig"))
+        if not isinstance(enrichment, dict):
+            raise ValueError("Invalid macro enrichment: expected JSON object")
+        validation = validate_macro_enrichment_delta(enrichment, base)
+        if not validation.valid:
+            raise ValueError("Invalid macro enrichment: " + "; ".join(validation.errors))
+        receipt.update(state="CAPTURED", source_path=str(selected.resolve()),
+                       source_modified_at_utc=datetime.fromtimestamp(selected.stat().st_mtime, timezone.utc).isoformat(),
+                       snapshot_name=SNAPSHOT_NAME, sha256=hashlib.sha256(raw).hexdigest(),
+                       size_bytes=len(raw))
+        _publish_once(snapshot, raw)
+    _publish_once(macro_dir / SNAPSHOT_RECEIPT_NAME,
+                  json.dumps(receipt, indent=2).encode("utf-8"))
+    return _read_pinned_delta(macro_dir)
+
 
 @dataclass
 class ValidationResult:
@@ -113,7 +196,7 @@ class ValidationResult:
 
 def load_macro_enrichment_delta(path: Path | str) -> Dict[str, Any]:
     delta_path = Path(path)
-    with delta_path.open("r", encoding="utf-8") as fh:
+    with delta_path.open("r", encoding="utf-8-sig") as fh:
         data = json.load(fh)
     if not isinstance(data, dict):
         raise ValueError(f"Macro enrichment delta must be a JSON object: {delta_path}")
@@ -124,11 +207,16 @@ def find_macro_enrichment_delta(
     macro_path: Path | str,
     explicit_path: Optional[Path | str] = None,
 ) -> Optional[Path]:
+    macro_dir = Path(macro_path).resolve().parent
+    if (macro_dir / SNAPSHOT_RECEIPT_NAME).exists():
+        pinned = _read_pinned_delta(macro_dir)
+        if explicit_path and (pinned is None or Path(explicit_path).resolve() != pinned.resolve()):
+            raise ValueError("Explicit enrichment conflicts with frozen run snapshot")
+        return pinned
     if explicit_path:
         candidate = Path(explicit_path)
         return candidate if candidate.is_absolute() else (Path.cwd() / candidate).resolve()
 
-    macro_dir = Path(macro_path).resolve().parent
     candidates: List[Path] = []
     for pattern in DELTA_PATTERNS:
         candidates.extend([p for p in macro_dir.glob(pattern) if p.is_file()])

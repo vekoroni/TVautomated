@@ -372,7 +372,7 @@ def materialize_interpreter_macro_context(
     conflicts = conflicts if isinstance(conflicts, list) else []
     context_state = (
         "STALE_CONTEXT"
-        if freshness in {"STALE", "MISSING", "INVALID"}
+        if freshness in {"STALE", "MISSING", "INVALID", "FUTURE_TIMESTAMP"}
         else "CONFLICTING_SOURCES"
         if conflicts
         else "NEUTRAL"

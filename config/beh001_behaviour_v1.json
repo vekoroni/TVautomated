@@ -41,7 +41,9 @@
       3,
       4,
       7
-    ]
+    ],
+    "episode_max_gap_bars": 1,
+    "episode_note": "P0-02 (Phase 1, 8 Oct 2026): a compression episode starts at its first contracting bar; at most episode_max_gap_bars non-contracting bars may sit inside it. Additive key; existing compression rules unchanged."
   },
   "maturity": {
     "early": 1,
@@ -114,5 +116,9 @@
     ],
     "evidence": "Enhancements/outcomes/beh001/eval_v4_holdout/two_sided_resolution.json",
     "note": "ACK 3 Oct 2026: switched off. HIGHER_TIMEFRAME_ONE_SIDED (ACK 1 Oct, +2.1 pt in-sample, best of four rules) did not replicate on a 500-ticker holdout with refreshed bars: +0.5 pt vs same-day drift, 95% [-1.0, +2.0]; pooled +1.2 [+0.0, +2.5] (eval_v4*). A two-sided daily reading stays UNASSIGNED with CONFLICTING_DAILY_CANDIDATES or RANGE_EDGES_TWO_SIDED. Setting HIGHER_TIMEFRAME_ONE_SIDED re-enables the mechanism. The empty-daily extension also failed its holdout (+0.0 pt) and is not built."
+  },
+  "trigger_events": {
+    "lookback_bars": 20,
+    "note": "Phase 3 (8 Oct 2026): events are read from the thesis origin bar; when the origin is not on the bar index, the last lookback_bars bars. Acceptance uses the acceptance block above (single owner)."
   }
 }

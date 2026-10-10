@@ -1,0 +1,296 @@
+{
+  "run_id": "20261006_060401",
+  "funnel": {
+    "discovery_tickers": 1814,
+    "vanguard_pass": 1702,
+    "vanguard_reject": 112,
+    "vanguard_reject_reasons": {
+      "DATA_FAILURE_NO_OHLCV": 112
+    },
+    "options_tickers": 1636,
+    "lab_tickers": 1636,
+    "lab_verdicts": {
+      "BLOCKED": 834,
+      "MANUAL_REVIEW": 732,
+      "GO_LIMIT": 27,
+      "GO": 24,
+      "CONTRACT_REPAIR": 19
+    },
+    "lab_go_or_go_limit": 51,
+    "lab_gate_reasons_not_go_top": {
+      "DIRECTION_INTEGRITY_FAILED:DIRECTION_NOT_EXECUTABLE:UNRESOLVED": 584,
+      "OLM_LIQUIDITY_STILL_PENDING": 440,
+      "CAMPAIGN_VERDICT_MISSING": 243,
+      "OLM_TRANSITION_UNRECOGNISED:THESIS_UNDER_PRESSURE": 127,
+      "DIRECTION_INTEGRITY_FAILED:PUT_INVALIDATION_NOT_ABOVE_SIGNAL": 53,
+      "OLM_WAIT_FOR_PULLBACK": 42,
+      "DIRECTION_INTEGRITY_FAILED:PUT_TARGET_NOT_BELOW_SIGNAL": 29,
+      "DIRECTION_INTEGRITY_FAILED:CALL_TARGET_NOT_ABOVE_SIGNAL": 25,
+      "OLM_CONTRACT_REPRICE_REQUIRED": 19,
+      "OLM_MOVE_ALREADY_REALIZED": 11,
+      "DIRECTION_INTEGRITY_FAILED:CALL_INVALIDATION_NOT_BELOW_SIGNAL": 4,
+      "OLM_GAP_CONFIRMATION_EXTENDED": 4
+    },
+    "discovery_side": {
+      "BEAR": 743,
+      "UNASSIGNED": 645,
+      "BULL": 426
+    },
+    "side_block_reason": {
+      "SIDE_BLOCK_ERROR:TypeError": 1702
+    }
+  },
+  "candidate_funnel": {
+    "engine_candidate_records": 29009,
+    "engine_tickers": 3007,
+    "engine_states": {
+      "DETECTED": 16401,
+      "MONITOR": 6904,
+      "OUTCOME_REACHED": 3100,
+      "ACTIVATED": 2099,
+      "FAILED": 505
+    },
+    "engine_undirected": 6904,
+    "expression_lane_records": 18500,
+    "expression_status_family": {
+      "DEFERRED_RESOURCE": 16500,
+      "CONTRACT_FOUND": 1048,
+      "NOT_ROUTED": 949,
+      "NO_CONTRACT_FIT": 3
+    },
+    "not_routed_detail": {
+      "NOT_ROUTED:TICKER_OUTSIDE_OPTIONS_SCOPE": 479,
+      "NOT_ROUTED:CHAIN_NOT_AUTHORISED_BY_GDR": 470
+    },
+    "contract_found_tickers": 613
+  },
+  "story_mismatch": {
+    "directed_thesis_candidates_in_lab": 1052,
+    "setup_shown_differs_from_thesis": 646,
+    "setup_differs_on_go": 32,
+    "target_discovery_vs_outcome_level_differs": 907,
+    "target_discovery_vs_outcome_level_comparable": 951,
+    "target_source": {
+      "PRIOR_RANGE_EXTREME": 964
+    },
+    "trigger_lab_vs_candidate_differs": 1038,
+    "trigger_lab_vs_candidate_comparable": 1039,
+    "trigger_price_source": {
+      "WBS_PHASE_C_CONFIRMED_BREAK": 1039
+    },
+    "invalidation_lab_vs_candidate_differs": 8,
+    "thesis_candidate_expression_status": {
+      "DEFERRED_RESOURCE": 808,
+      "CONTRACT_FOUND": 244
+    },
+    "thesis_candidate_rank_median": 4194.0,
+    "contract_options_vs_morning_differs": 144,
+    "contract_repaired_in_morning": 60,
+    "contract_expression_vs_lab_differs": 55
+  },
+  "compression_agreement": {
+    "producers": {
+      "discovery_crabel": {
+        "compressed": 339,
+        "not": 1475,
+        "not_measured": 0
+      },
+      "precor_state": {
+        "compressed": 727,
+        "not": 141,
+        "not_measured": 946
+      },
+      "engine_1d": {
+        "compressed": 439,
+        "not": 1219,
+        "not_measured": 156
+      },
+      "trigger_layer_T1": {
+        "compressed": 626,
+        "not": 1010,
+        "not_measured": 178
+      }
+    },
+    "pairwise": {
+      "discovery_crabel__vs__precor_state": {
+        "n": 868,
+        "agree": 325,
+        "a_only": 32,
+        "b_only": 511
+      },
+      "discovery_crabel__vs__engine_1d": {
+        "n": 1658,
+        "agree": 1251,
+        "a_only": 143,
+        "b_only": 264
+      },
+      "discovery_crabel__vs__trigger_layer_T1": {
+        "n": 1636,
+        "agree": 1067,
+        "a_only": 122,
+        "b_only": 447
+      },
+      "precor_state__vs__engine_1d": {
+        "n": 819,
+        "agree": 361,
+        "a_only": 433,
+        "b_only": 25
+      },
+      "precor_state__vs__trigger_layer_T1": {
+        "n": 816,
+        "agree": 753,
+        "a_only": 62,
+        "b_only": 1
+      },
+      "engine_1d__vs__trigger_layer_T1": {
+        "n": 1497,
+        "agree": 896,
+        "a_only": 194,
+        "b_only": 407
+      }
+    },
+    "all_measured_and_all_agree": 172,
+    "all_measured": 768,
+    "crabel_bucket": {
+      "NONE": 796,
+      "COILING": 728,
+      "ULTRA_RARE_COMPRESSION": 213,
+      "RARE_COMPRESSION": 76,
+      "READY": 1
+    }
+  },
+  "direction_agreement": {
+    "by_producer": {
+      "thesis__side": {
+        "BEAR": 743,
+        "NONE": 645,
+        "BULL": 426
+      },
+      "legacy_direction": {
+        "BULL": 1223,
+        "BEAR": 322,
+        "NONE": 269
+      },
+      "fusion_direction": {
+        "NONE": 1752,
+        "BULL": 53,
+        "BEAR": 9
+      },
+      "precor_intent": {
+        "BULL": 1106,
+        "NONE": 418,
+        "BEAR": 290
+      },
+      "precor_intent_raw": {
+        "BULL": 1145,
+        "BEAR": 412,
+        "NONE": 257
+      },
+      "dominant_trend": {
+        "NONE": 806,
+        "BEAR": 643,
+        "BULL": 365
+      },
+      "discovery_direction_preliminary": {
+        "BEAR": 743,
+        "NONE": 645,
+        "BULL": 426
+      }
+    },
+    "thesis_vs_legacy_direction": {
+      "both_directed": 1006,
+      "same": 398,
+      "opposite": 608
+    },
+    "thesis_vs_fusion_direction": {
+      "both_directed": 36,
+      "same": 13,
+      "opposite": 23
+    },
+    "thesis_vs_precor_intent": {
+      "both_directed": 903,
+      "same": 277,
+      "opposite": 626
+    },
+    "thesis_vs_precor_intent_raw": {
+      "both_directed": 1017,
+      "same": 253,
+      "opposite": 764
+    },
+    "thesis_vs_dominant_trend": {
+      "both_directed": 713,
+      "same": 669,
+      "opposite": 44
+    },
+    "thesis_vs_discovery_direction_preliminary": {
+      "both_directed": 1169,
+      "same": 1169,
+      "opposite": 0
+    }
+  },
+  "target_agreement": {
+    "thesis_outcome_level_vs_structural_target": {
+      "comparable": 1041,
+      "differs": 990,
+      "median_abs_pct_gap": 6.354093173412016
+    },
+    "thesis_outcome_level_vs_legacy_structural_target": {
+      "comparable": 303,
+      "differs": 303,
+      "median_abs_pct_gap": 20.78059048054083
+    },
+    "thesis_outcome_level_vs_asymmetry_target1": {
+      "comparable": 36,
+      "differs": 36,
+      "median_abs_pct_gap": 45.67325173074006
+    },
+    "thesis_outcome_level_vs_anticipated_level": {
+      "comparable": 998,
+      "differs": 291,
+      "median_abs_pct_gap": 5.331689582105262e-05
+    },
+    "thesis_outcome_level_vs_target_price": {
+      "comparable": 942,
+      "differs": 899,
+      "median_abs_pct_gap": 6.220367730882829
+    }
+  },
+  "trigger_layer": {
+    "rows": 1636,
+    "trigger_primary": {
+      "NONE": 814,
+      "VOL_COMPRESSION": 271,
+      "VOL_COMPRESSION_IV_UNVERIFIED": 189,
+      "VOL_COMPRESSION_IV_RICH": 166,
+      "RANGE_BREAK_EARLY": 161,
+      "RANGE_BREAK": 35
+    },
+    "codes_containing": {
+      "VOL_COMPRESSION": 626,
+      "RANGE_BREAK_EARLY": 247,
+      "RANGE_BREAK": 289,
+      "VWAP_RECLAIM": 0,
+      "VWAP_LOSS": 0,
+      "TRAP": 0
+    },
+    "go_eligible": {
+      "True": 822,
+      "False": 814
+    }
+  },
+  "discovery_lifecycle": {
+    "outcome": {
+      "SURVIVE": 1814,
+      "DROP": 1504,
+      "ERROR": 7
+    },
+    "reason_code": {
+      "DISCOVERY_SURVIVOR": 1814,
+      "INTRADAY_ONLY_UNTESTED": 1036,
+      "NO_LIVE_SETUP": 331,
+      "ELIG_INSUFFICIENT_BARS": 109,
+      "NO_PRICE_DATA": 28,
+      "SCAN_EXCEPTION_ValueError": 7
+    }
+  }
+}

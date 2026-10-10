@@ -581,6 +581,19 @@ def _downgrade(current: str, target: str) -> str:
 # SECTION 3 - BEHAVIOURAL VETO ENGINE (6 vetoes - V1-V6)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _runway_walls(signal: Dict, dashboard: Dict) -> Tuple[float, float]:
+    """Walls used as runway price levels. Item 7 readers (ACK 10 Oct 2026): with the governed assessment present, only
+    a wall whose role price has confirmed is a level (0 = none); the raw-OI dashboard walls are not consulted. Rows
+    from before item 7 keep the legacy dashboard -> signal reading."""
+    if signal.get('wall_method'):
+        from domain.option_walls import level_wall
+        return level_wall(signal, 'call') or 0.0, level_wall(signal, 'put') or 0.0
+    return ((_f(dashboard, 'top_call_wall') or _f(dashboard, 'gex_wall_call') or
+             _f(signal, 'call_wall') or _f(signal, 'gex_wall_call')),
+            (_f(dashboard, 'top_put_wall') or _f(dashboard, 'gex_wall_put') or
+             _f(signal, 'put_wall') or _f(signal, 'gex_wall_put')))
+
+
 def apply_behavioural_vetoes(
     signal: Dict,
     dashboard: Dict,
@@ -613,10 +626,7 @@ def apply_behavioural_vetoes(
     phase_low  = _f(signal, 'phase_a_low')
     hold_label = _s(signal, 'hold_label') or _s(signal, 'hold')
 
-    call_wall  = (_f(dashboard, 'top_call_wall') or _f(dashboard, 'gex_wall_call') or
-                  _f(signal, 'call_wall')       or _f(signal, 'gex_wall_call'))
-    put_wall   = (_f(dashboard, 'top_put_wall')  or _f(dashboard, 'gex_wall_put') or
-                  _f(signal, 'put_wall')         or _f(signal, 'gex_wall_put'))
+    call_wall, put_wall = _runway_walls(signal, dashboard)
 
     # ── V1: Late Entry - big move already happened ────────────────────────────
     if phase_low > 0 and spot > 0:
@@ -676,7 +686,12 @@ def apply_behavioural_vetoes(
     # ── V3: High IV without sufficient runway edge ────────────────────────────
     if ivp > VETO_HIGH_IV_THRESHOLD:
         runway_ok = False
-        if direction == 'CALL' and spot > 0 and call_wall > spot:
+        trade_wall = call_wall if direction == 'CALL' else put_wall if direction == 'PUT' else 0.0
+        if signal.get('wall_method') and not trade_wall:
+            # Item 7 readers (ACK 10 Oct 2026): no price-confirmed wall on the trade side means nothing limits the
+            # runway - not that there is none (replay 8 Oct: 712 false V3 vetoes otherwise).
+            runway_ok = True
+        elif direction == 'CALL' and spot > 0 and call_wall > spot:
             runway_ok = (call_wall - spot) / spot * 100 > VETO_HIGH_IV_RUNWAY_MIN_PCT
         elif direction == 'PUT' and spot > 0 and 0 < put_wall < spot:
             runway_ok = (spot - put_wall) / spot * 100 > VETO_HIGH_IV_RUNWAY_MIN_PCT
@@ -786,10 +801,7 @@ def compute_convexity_score(
     atr_pct   = _f(signal, 'atr_percentile', -1.0)
 
     # call_wall / put_wall - try dashboard first, fall back to options CSV columns
-    call_wall     = (_f(dashboard, 'top_call_wall') or _f(dashboard, 'gex_wall_call') or
-                     _f(signal,    'call_wall')      or _f(signal,    'gex_wall_call'))
-    put_wall      = (_f(dashboard, 'top_put_wall')  or _f(dashboard, 'gex_wall_put') or
-                     _f(signal,    'put_wall')       or _f(signal,    'gex_wall_put'))
+    call_wall, put_wall = _runway_walls(signal, dashboard)
     notional_buy  = _f(signal, 'notional_buy')
     notional_sell = _f(signal, 'notional_sell')
 

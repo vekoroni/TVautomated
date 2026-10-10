@@ -20,12 +20,12 @@ SCRIPT = ROOT / "intelligence-lab" / "static" / "trade-summary.js"
 ROWS = """[
  {ticker:'SMR', direction:'PUT', trade_lane:'A', trade_lane_setup:'1d|SOW -> LPSY continuation|ACTIVATED',
   contract_symbol:'SMR261120P00008000', strike:8, expiry:'2026-11-20', dte:46, contract_dte:35,
-  contract_bid:0.99, contract_ask:1.07, anticipated_value_multiple_q50:1.59, anticipated_sessions_q50:3,
+  contract_bid:0.99, contract_ask:1.07, anticipated_value_multiple_q50:1.59, anticipated_sessions_q50:3, lab_rank:7,
   anticipated_pays_state:'PAYS', earnings_inside_hold:false, earnings_inside_expiry:true, earnings_date:'2026-11-05',
   earnings_date_confirmation:'PROVIDER_DATE_UNCONFIRMED'},
  {ticker:'SMH', direction:'CALL', trade_lane:'A', trade_lane_setup:'1d|Change-of-Behaviour Reversal|DETECTED',
   contract_symbol:'SMH261218C00650000', strike:650, expiry:'2026-12-18', dte:74, contract_dte:54,
-  contract_bid:32.4, contract_ask:33.65, anticipated_value_multiple_q50:1.72, anticipated_sessions_q50:10,
+  contract_bid:32.4, contract_ask:33.65, anticipated_value_multiple_q50:1.72, anticipated_sessions_q50:10, lab_rank:2,
   anticipated_pays_state:'NOT_ASSESSED_VOLATILITY_ONLY', earnings_state:'NONE_IN_LOOKAHEAD'},
  {ticker:'XYZ', direction:'CALL', trade_lane:'C', trade_lane_setup:'1d|Upthrust Candidate|DETECTED'}
 ]"""
@@ -44,6 +44,7 @@ const rows = {ROWS};
 const html = renderTradeSummaryTable(rows);
 const heads = ['Ticker','Side','Lane','Setup','Option','Value at median time','Median time','DTE','Spread','Earnings'];
 console.log(JSON.stringify({{heads: heads.every(h => html.includes('<th>' + h + '</th>')),
+  // RC10 (ACK E11b 8 Oct 2026): rows follow the book's rank (SMH rank 2 before SMR rank 7), no re-sort.
   smhFirst: html.indexOf('SMH') < html.indexOf('SMR'), noC: !html.includes('XYZ'),
   withC: renderTradeSummaryTable(rows, {{includeLaneC: true}}).includes('XYZ')}}));""")
     assert r == {"heads": True, "smhFirst": True, "noC": True, "withC": True}

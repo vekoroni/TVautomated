@@ -71,9 +71,12 @@ def test_repaired_contract_gets_its_own_anticipated_move_and_earnings_timing():
     assert out["earnings_inside_expiry"] is False                          # 5 Nov is after the 16 Oct expiry
 
 
-def test_unchanged_contract_is_not_recomputed():
+def test_unchanged_contract_is_repriced_on_the_morning_quote():
+    # M-G2-01 (ACK 10 Oct 2026) supersedes "the Evening values stand": the Morning values the contract it shows.
     live = {"live_contract_symbol": "SYNA261218C00125000", "live_contract_ask": 4.0, "live_contract_iv": 0.6}
-    assert morning_gate._recompute_for_morning_contract(ROW, live) == {}
+    out = morning_gate._recompute_for_morning_contract(ROW, live)
+    assert out["anticipated_contract_basis"] == "MORNING_REPRICED:SYNA261218C00125000"
+    assert out["eod_anticipated_value_multiple_q50"] == 13.8
 
 
 def test_the_go_check_reads_the_recomputed_pays_verdict_and_evening_carries_the_inputs():

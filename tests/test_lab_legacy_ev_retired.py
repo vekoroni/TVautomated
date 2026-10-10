@@ -24,7 +24,9 @@ LEGACY = {"ev2_ev_conf_adj": 0.31, "eil_ev_net": 0.2, "ev": 0.31, "ev_final": 0.
 ALIGNED_CONTRACT = dict(lab_verdict="GO_LIMIT", lab_tradeable=True, contract_symbol=OCC, instrument="LONG_CALL",
                         strike=100, expiry="2099-01-19", dte=30, premium_mid=1.05, contract_bid=1.0, contract_ask=1.1,
                         rr_premium_expected=1.8, monetisability_status="COMPLETE",
-                        monetisability_state="MONETISABLE", monetisability_contract_symbol=OCC)
+                        monetisability_state="MONETISABLE", monetisability_contract_symbol=OCC,
+                        # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value.
+                        anticipated_pays_state="PAYS", anticipated_contract_symbol=OCC)
 
 
 def test_a_row_with_only_legacy_ev_publishes_no_ev():

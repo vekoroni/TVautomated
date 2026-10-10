@@ -11,6 +11,7 @@ from contracts.direction_governance import validate_direction_record
 from contracts.options_liquidity_execution_guard import evaluate_olm_execution_guard
 from contracts.selected_contract_economics import contract_symbols
 from contracts.dynamic_session_contract import DataExceptionReason
+from domain.long_option_execution import SPREAD_POLICY
 from contracts.long_option_policy import (
     LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT,
     quote_spread_fraction,
@@ -20,17 +21,29 @@ from domain.execution_authority import govern_execution_result
 log = logging.getLogger("avshunter.execution_gate")
 GATE_VERSION = "1.5.0"
 
+def _gate_constants() -> dict:
+    """L4 (ACK 7 Oct 2026): the gate thresholds from config "execution_gate" (values unchanged)."""
+    path = Path(__file__).resolve().parent / "config" / "governed_constants_v1.json"
+    cfg = json.loads(path.read_text(encoding="utf-8-sig"))["execution_gate"]
+    if cfg.get("version") != "execution_gate_v1" or cfg.get("authority_of_gex_warnings") != "DISPLAY_ONLY":
+        raise ValueError("unsupported execution_gate config")
+    return cfg
+
+
+_GATE = _gate_constants()
+
+
 class ExecutionGateConfig:
-    SPREAD_FULL: float = 0.08
+    SPREAD_FULL: float = SPREAD_POLICY["execution_gate_full_size_max"]      # E15: config, fraction of mid
     SPREAD_MAX:  float = LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT / 100.0
-    DELTA_HARD_MIN: float = 0.20
-    DELTA_SOFT_MIN: float = 0.30
-    DELTA_SOFT_MAX: float = 0.60
-    DELTA_HARD_MAX: float = 0.85
-    IV_ELEVATED: float = 0.60
-    IV_EXTREME:  float = 1.00
-    MIN_RUNWAY_PCT: float = 0.015
-    TARGET_GAIN_MULTIPLE: float = 2.0
+    DELTA_HARD_MIN: float = _GATE["delta_hard_min"]
+    DELTA_SOFT_MIN: float = _GATE["delta_soft_min"]
+    DELTA_SOFT_MAX: float = _GATE["delta_soft_max"]
+    DELTA_HARD_MAX: float = _GATE["delta_hard_max"]
+    IV_ELEVATED: float = _GATE["iv_elevated"]
+    IV_EXTREME:  float = _GATE["iv_extreme"]
+    MIN_RUNWAY_PCT: float = _GATE["min_runway_fraction"]      # a fraction of spot, despite the legacy name
+    TARGET_GAIN_MULTIPLE: float = _GATE["target_gain_multiple"]
     TRENDING_REGIMES: frozenset = frozenset({"TRENDING_BULL","RISK_ON","RECOVERY","STRONG_BULL"})
     PSE_CONVICTION_MIN: float = 0.01
     PROBE_SIZE_LABEL: str = "BUY_SMALL"
@@ -369,20 +382,29 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
         if spot <= 0:
             return _preserve(row, "MANUAL_REVIEW", "UNDERLYING_PRICE_MISSING", warnings=warnings)
         put_wall = _f(row, "put_wall")
+        call_wall = _f(row, "call_wall")
         gamma_flip = _f(row, "gamma_flip")
         rcs_label = _s(row, "rcs_label")
+        side = _s(row, "canonical_direction") or _s(row, "final_direction") or _s(row, "direction") \
+            or _s(row, "selected_contract_side")
+        # L4 (ACK 7 Oct 2026): GEX/wall checks are DISPLAY ONLY (rule 6). They are disclosed in
+        # gate_display_warnings and never change final_action; only decision warnings do.
+        display_warnings = []
 
-        # GATE-04: Runway, soft penalty.
+        # GATE-04: Runway (display only). A call runs into the call wall above; a put into the put wall below.
         runway_pct = 0.0
         runway_source = "NONE"
-        if put_wall > 0:
+        if side.upper() == "CALL" and call_wall > spot > 0:
+            runway_pct = abs((call_wall - spot) / spot)
+            runway_source = "CALL_WALL"
+        elif side.upper() == "PUT" and 0 < put_wall < spot:
             runway_pct = abs((spot - put_wall) / spot)
             runway_source = "PUT_WALL"
-        elif gamma_flip > 0 and spot > gamma_flip:
+        elif side.upper() == "PUT" and gamma_flip > 0 and spot > gamma_flip:
             runway_pct = abs((spot - gamma_flip) / spot)
             runway_source = "GAMMA_FLIP_PROXY"
         if runway_source != "NONE" and runway_pct < cfg_gate.MIN_RUNWAY_PCT:
-            warnings.append("WARN_LOW_RUNWAY")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
+            display_warnings.append("WARN_LOW_RUNWAY")  # D6/L4: GEX/wall display-only (rule 6) - disclosed, never decides
             log.info("[%s] WARN_LOW_RUNWAY runway=%.2f%% (display only, GEX/wall)", ticker, runway_pct * 100)
 
         # GATE-05: Gamma flip, trending-day bypass.
@@ -391,7 +413,7 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
             gamma_state = "ABOVE_FLIP" if spot > gamma_flip else "BELOW_FLIP"
         if gamma_state == "ABOVE_FLIP":
             if rcs_label not in cfg_gate.TRENDING_REGIMES:
-                warnings.append("WARN_ABOVE_GAMMA")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
+                display_warnings.append("WARN_ABOVE_GAMMA")  # D6/L4: GEX display-only (rule 6); rcs_label is unset since Phase 9B is off
                 log.info("[%s] WARN_ABOVE_GAMMA rcs=%s (display only, GEX)", ticker, rcs_label)
             else:
                 log.info("[%s] Above gamma flip, trending regime %s - bypass", ticker, rcs_label)
@@ -400,7 +422,7 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
         target_move_pct = (mid * cfg_gate.TARGET_GAIN_MULTIPLE) / max(spot, 0.001)
         if runway_source != "NONE" and runway_pct > 0 and target_move_pct > runway_pct:
             if conviction_override:
-                warnings.append("WARN_TARGET_EXCEEDS_RUNWAY_OVERRIDE")
+                display_warnings.append("WARN_TARGET_EXCEEDS_RUNWAY_OVERRIDE")
                 log.info(
                     "[%s] target_move=%.2f%% > runway=%.2f%% - conviction override",
                     ticker,
@@ -408,7 +430,7 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
                     runway_pct * 100,
                 )
             else:
-                warnings.append("WARN_TARGET_EXCEEDS_RUNWAY")  # D6 19 Sep 2026: GEX/wall display-only (rule 6) - warning kept, size no longer scaled
+                display_warnings.append("WARN_TARGET_EXCEEDS_RUNWAY")  # D6/L4: GEX/wall display-only (rule 6) - disclosed, never decides
                 log.info(
                     "[%s] WARN_TARGET_EXCEEDS_RUNWAY need=%.2f%% runway=%.2f%% (display only, GEX/wall runway)",
                     ticker,
@@ -455,6 +477,7 @@ def execution_gate(row: dict, *, require_olm: bool = False) -> dict:
         return govern_execution_result({
             **row,
             "gate_warnings": ",".join(warnings) if warnings else "",
+            "gate_display_warnings": ",".join(display_warnings) if display_warnings else "",
             "gate_size_penalty": penalty,
             "gate_conviction_override": conviction_override,
             "live_bid": round(bid, 4),
@@ -534,7 +557,9 @@ def run_execution_gate(signals, run_id, output_dir):
 def _write_csv(path, rows):
     if not rows: return
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    fields = list(rows[0].keys())
+    # H1 (source-of-truth S2, 6 Oct 2026): the header is the union of every row's columns in first-seen order. It
+    # was rows[0] only with extrasaction="ignore", which silently dropped 71 columns on run 20261006_060401.
+    fields = list(dict.fromkeys(k for r in rows for k in r))
     try:
         with open(path,"w",newline="",encoding="utf-8") as f:
             w = csv.DictWriter(f,fieldnames=fields,extrasaction="ignore")

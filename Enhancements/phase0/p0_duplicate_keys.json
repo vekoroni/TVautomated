@@ -1,0 +1,33 @@
+[
+ {
+  "file": "avshunter_discovery_ULTIMATE.py",
+  "line": 2231,
+  "keys": [
+   "bar_data_asof",
+   "bar_data_days_old",
+   "crabel_score",
+   "data_source",
+   "is_stale"
+  ]
+ },
+ {
+  "file": "eod_candidate_engine.py",
+  "line": 2391,
+  "keys": [
+   "momentum_tier",
+   "option_chain_dataset_id",
+   "quote_as_of",
+   "remaining_runway_state",
+   "signal_type"
+  ]
+ },
+ {
+  "file": "scripts\\core_intel_exporter.py",
+  "line": 114,
+  "keys": [
+   "l1__confidence",
+   "l2__edge_status",
+   "pm_action"
+  ]
+ }
+]

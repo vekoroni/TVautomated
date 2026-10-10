@@ -1,0 +1,84 @@
+{
+  "q1_go_set_change_run_20261006_060401": {
+    "tickers": 300,
+    "old_go_true": 146,
+    "new_ready": 87,
+    "readiness_mix": {
+      "WAIT_TRIGGER": 154,
+      "READY_FOR_HUMAN_REVIEW": 87,
+      "NOT_ADOPTED": 50,
+      "CLOSED_RETEST_FAILED": 3,
+      "CLOSED_OUTCOME_REACHED": 3,
+      "CLOSED_INVALIDATED": 2,
+      "NO_SIGNAL_ROW": 1
+    },
+    "old_vs_new": {
+      "False": {
+        "False": 114,
+        "True": 40
+      },
+      "True": {
+        "False": 99,
+        "True": 47
+      }
+    },
+    "old_go_primary_mix": {
+      "VOL_COMPRESSION": 57,
+      "VOL_COMPRESSION_IV_UNVERIFIED": 34,
+      "VOL_COMPRESSION_IV_RICH": 27,
+      "RANGE_BREAK_EARLY": 23,
+      "RANGE_BREAK": 5
+    }
+  },
+  "q2_forward_by_readiness_past_fridays": {
+    "CLOSED_INVALIDATED": {
+      "n": 2,
+      "ret5_side_pct_mean": -5.87,
+      "ret5_side_pct_median": -5.87,
+      "ret10_side_pct_mean": -5.29,
+      "ret10_side_pct_median": -5.29,
+      "hit10_pct": 0.0
+    },
+    "CLOSED_OUTCOME_REACHED": {
+      "n": 9,
+      "ret5_side_pct_mean": 0.14,
+      "ret5_side_pct_median": 0.95,
+      "ret10_side_pct_mean": 0.38,
+      "ret10_side_pct_median": -1.1,
+      "hit10_pct": 44.4
+    },
+    "CLOSED_RETEST_FAILED": {
+      "n": 6,
+      "ret5_side_pct_mean": 1.16,
+      "ret5_side_pct_median": 2.1,
+      "ret10_side_pct_mean": 6.31,
+      "ret10_side_pct_median": 6.21,
+      "hit10_pct": 83.3
+    },
+    "NOT_ADOPTED": {
+      "n": 6,
+      "ret5_side_pct_mean": -3.49,
+      "ret5_side_pct_median": -2.4,
+      "ret10_side_pct_mean": -3.19,
+      "ret10_side_pct_median": -1.57,
+      "hit10_pct": 33.3
+    },
+    "READY_FOR_HUMAN_REVIEW": {
+      "n": 148,
+      "ret5_side_pct_mean": -0.7,
+      "ret5_side_pct_median": 0.16,
+      "ret10_side_pct_mean": -1.17,
+      "ret10_side_pct_median": -0.06,
+      "hit10_pct": 50.0
+    },
+    "WAIT_TRIGGER": {
+      "n": 284,
+      "ret5_side_pct_mean": 0.32,
+      "ret5_side_pct_median": -0.03,
+      "ret10_side_pct_mean": -0.32,
+      "ret10_side_pct_median": -0.24,
+      "hit10_pct": 48.2
+    }
+  },
+  "note": "Descriptive replay; survivorship as per read_bars source; not a significance test."
+}

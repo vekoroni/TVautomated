@@ -44,12 +44,17 @@ def test_without_daily_level_evidence_the_window_is_used_and_labelled(change, ba
     assert r["evidence_runway_sessions"] is None and r["evidence_runway_basis"] == basis
 
 
-def test_dte_requirement_accepts_an_evidence_hold_but_still_guards_routed_holds():
+def test_dte_requirement_accepts_an_evidence_hold_and_labels_the_hold_basis():
     assert calculate_dte_requirement(27, evidence_hold=True)["minimum_required_dte"] > calculate_dte_requirement(20)["minimum_required_dte"]
+    assert calculate_dte_requirement(27, evidence_hold=True)["dte_requirement_basis"] == "EVIDENCE_HOLD"
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): the {5, 10, 20} routed set is retired; a stated hold is honoured as stated.
+    stated = calculate_dte_requirement(27)
+    assert stated["dte_requirement_basis"] == "STATED_HOLD"
+    assert stated["minimum_required_dte"] == calculate_dte_requirement(27, evidence_hold=True)["minimum_required_dte"]
     with pytest.raises(ValueError):
-        calculate_dte_requirement(27)                       # an unrouted, unevidenced hold is still refused
+        calculate_dte_requirement(0, evidence_hold=True)    # an evidence hold is a positive whole number of sessions
     with pytest.raises(ValueError):
-        calculate_dte_requirement(0, evidence_hold=True)
+        calculate_dte_requirement(-1)                       # a negative hold is still refused
 
 
 def test_runway_policy_uses_the_evidence_hold_and_labels_it():
@@ -58,7 +63,10 @@ def test_runway_policy_uses_the_evidence_hold_and_labels_it():
     gov = oi.contract_runway_policy("1_5d")
     assert ev["contract_runway_hold_sessions"] == 27 and ev["contract_runway_basis"].startswith("DURATION_EVIDENCE_Q80")
     assert ev["contract_runway_floor_days"] > gov["contract_runway_floor_days"]
-    assert gov["contract_runway_basis"].startswith("THESIS_WINDOW_D2")
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): no evidence -> no thesis-window hold; the absence is labelled and only
+    # the holdable-past-issue floor applies.
+    assert gov["contract_runway_basis"] == "NO_RUNWAY_ESTIMATE" and gov["contract_runway_hold_sessions"] is None
+    assert gov["contract_runway_floor_days"] == gov["contract_min_holdable_dte"]
 
 
 def test_hold_patch_keeps_the_evidence_runway_and_labels_the_window(tmp_path, monkeypatch):
@@ -92,9 +100,12 @@ def test_lifecycle_accepts_an_evidence_hold_when_flagged():
                 bid_size=10, ask_size=10, delta=-0.45, structural_target=15.21, invalidation_spot=19.5,
                 forecast_vol_annual=0.5, thesis_spot=15.84, current_spot=15.92)
     out = evaluate_options_liquidity_lifecycle(LifecycleInputs(**base, hold_is_evidence=True))
-    assert out["minimum_required_dte"] > 0
+    assert out["minimum_required_dte"] > 0 and out["dte_requirement_basis"] == "EVIDENCE_HOLD"
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): an unflagged hold is no longer refused; it is honoured and labelled stated.
+    assert evaluate_options_liquidity_lifecycle(LifecycleInputs(**base))["dte_requirement_basis"] == "STATED_HOLD"
     with pytest.raises(ValueError):
-        evaluate_options_liquidity_lifecycle(LifecycleInputs(**base))
+        evaluate_options_liquidity_lifecycle(LifecycleInputs(**{**base, "remaining_hold_sessions": 27.5},
+                                                             hold_is_evidence=True))
 
 
 def test_callers_flag_evidence_holds_from_the_hold_source():

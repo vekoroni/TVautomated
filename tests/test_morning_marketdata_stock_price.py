@@ -40,11 +40,12 @@ def test_marketdata_price_requires_exact_symbol_and_provider_timestamp():
 
 
 def test_marketdata_price_rejects_stale_future_and_invalid_midpoint():
-    stale = morning_gate._parse_marketdata_stock_price(
+    # Superseded by A1 (ACK 6 Oct 2026): a 16-minute-old valid price used to be rejected (STALE_PROVIDER_PRICE); it is
+    # now kept and labelled AGED_REFERENCE with its age disclosed (tests/test_avs_a1_aged_share_price.py).
+    aged = morning_gate._parse_marketdata_stock_price(
         _payload(updated=int((NOW - timedelta(minutes=16)).timestamp())), "AAPL", now_utc=NOW
     )
-    assert "live_price" not in stale
-    assert stale["live_fetch_error"] == "STALE_PROVIDER_PRICE"
+    assert aged["live_price"] == 150.25 and aged["live_price_state"] == "AGED_REFERENCE"
 
     future = morning_gate._parse_marketdata_stock_price(
         _payload(updated=int((NOW + timedelta(minutes=2)).timestamp())), "AAPL", now_utc=NOW

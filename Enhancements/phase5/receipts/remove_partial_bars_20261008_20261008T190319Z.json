@@ -1,0 +1,9 @@
+{
+  "action": "remove partial in-session bars written by failed run 20261008_141534 (ACK 8 Oct 2026: delete the run)",
+  "reason": "bars fetched 10:46-11:29 ET on 8 Oct 2026 were stored as COMPLETE during the session",
+  "rows_removed": 2969,
+  "rows_left_on_or_after_2026_10_08": 0,
+  "oct7_rows_untouched": 2987,
+  "backup": "data\\canonical\\backups\\historical_prices.pre_remove_partial_20261008_20261008T190319Z.sqlite",
+  "executed_utc": "20261008T190319Z"
+}

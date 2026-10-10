@@ -1348,14 +1348,10 @@ def _finalise_lab_priority_ranking(signals):
                 "negative_factors",
             ) or "Blocked by morning validation."
 
-    ranked = sorted(
-        signals,
-        key=lambda row: (
-            int(row.get("lab_action_bucket", 99)),
-            -float(row.get("research_priority_score", 0) or 0),
-            str(row.get("ticker", "")),
-        ),
-    )
+    # RC10 (ACK 8 Oct 2026, "Expectancy"): the Lab table follows the one ranking owner (domain.opportunity_rank),
+    # the same order as the book's lab_rank. The action bucket and research score stay as displayed labels.
+    from domain.opportunity_rank import rank_key
+    ranked = sorted(signals, key=rank_key)
     for rank, sig in enumerate(ranked, 1):
         sig["priority_rank"] = rank
 
@@ -2466,7 +2462,8 @@ _LAB_COMPACT_BASE_FIELDS = {
     "win_rate_source", "composite", "current_price", "signal_price", "spot_price",
     "underlying_price", "live_vwap", "strike", "premium", "premium_mid", "premium_label",
     "premium_is_synthetic", "ivp", "ivp_label", "iv_rank", "iv_percentile", "ivp_source",
-    "iv_rank_definition", "iv_rank_window_sessions", "qomega_gate", "qomega_gate_reason",
+    "iv_rank_definition", "iv_rank_window_sessions", "iv_history_state", "iv_history_first_date",
+    "qomega_gate", "qomega_gate_reason",
     "tce_entry_type", "tce_trigger_reason", "tce_trigger_score", "tce_trigger_state",
     "physics_state_id", "hidden_state_label", "state_transition_label", "phase_transition_probability",
     "precor_intent", "sector", "sector_short", "gics_sector", "sector_name", "sector_etf", "sector_proxy", "industry", "macro_regime", "macro_regime_label",
@@ -2477,6 +2474,8 @@ _LAB_COMPACT_PREFIXES = (
     "opt__", "wbs__", "garch__", "mv__", "doss__", "display_", "lab_", "sb_",
     "ev2_", "ev3_", "mv_", "tce_", "qomega_", "eil_", "eod__", "exe__",
     "trigger_", "catalyst_", "actuarial_", "contract_", "doi_",
+    # Phase 5.1 (8 Oct 2026): the thesis story, intraday build-up and Vanguard context
+    "thesis_", "ib_", "vanguard_context_", "legacy_beh_",
 )
 _LAB_COMPACT_VG_FIELDS = {
     "vg__physics_state_id", "vg__hidden_state_label", "vg__state_transition_label",
@@ -2549,6 +2548,8 @@ def _governed_ui_projection(sig):
         "opt__ivp_source": ("ivp_source",),
         "opt__iv_rank_definition": ("iv_rank_definition",),
         "opt__iv_rank_window_sessions": ("iv_rank_window_sessions",),
+        "opt__iv_history_state": ("iv_history_state",),
+        "opt__iv_history_first_date": ("iv_history_first_date",),
         "opt__atm_iv": ("atm_iv",),
         "opt__hv_30d": ("hv_30d",),
         "opt__iv_vs_hv": ("iv_vs_hv",),
@@ -2741,9 +2742,24 @@ def _regime_alerts_from_cached_run(run_id=None):
 
 @app.route("/")
 def index():
-    response = send_from_directory(Path(__file__).resolve().parent / "static", "index.html")
+    response = send_from_directory(Path(__file__).resolve().parent / "static", "review.html")
     # The Lab is a live read model. Serving an older page against a newer
     # governed book can display contradictory Morning and quote states.
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
+@app.route("/legacy")
+def legacy_lab():
+    response = send_from_directory(Path(__file__).resolve().parent / "static", "index.html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
+@app.route("/review")
+def review_first_lab():
+    """Compatibility URL for the approved review-first homepage."""
+    response = send_from_directory(Path(__file__).resolve().parent / "static", "review.html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
 
@@ -2763,7 +2779,23 @@ def api_health():
 @app.route("/api/runs")
 def api_runs():
     runs = _list_runs()
-    return jsonify({"runs": runs, "latest": runs[0] if runs else None, "count": len(runs)})
+    published_review_runs = []
+    validated = []
+    for run_id in runs:
+        path = RUNS_DIR / run_id / "intelligence_lab" / "review_projection" / "manifest.json"
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            if manifest.get("run_id") != run_id or manifest.get("publication_state") != "COMPLETE":
+                continue
+            published_review_runs.append(run_id)
+            if (manifest.get("source_receipt") or {}).get("validation_events_applied", 0) > 0:
+                validated.append(run_id)
+        except (OSError, ValueError, TypeError):
+            continue
+    preferred = validated or published_review_runs
+    return jsonify({"runs": runs, "latest": runs[0] if runs else None, "count": len(runs),
+                    "published_review_runs": published_review_runs,
+                    "latest_review_run": preferred[0] if preferred else None})
 
 @app.route("/api/run/<run_id>")
 def api_run(run_id):
@@ -3779,6 +3811,12 @@ def api_learning_feedback():
     except Exception as e:
         import traceback
         return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()}), 500
+
+
+# AVS-SD-LAB-004 additive fast path. No server start or artifact publication
+# occurs here; legacy APIs remain unchanged until the UI cutover is accepted.
+from contracts.lab_review_projection import register_review_routes
+register_review_routes(app, lambda: RUNS_DIR)
 
 
 if __name__ == "__main__":

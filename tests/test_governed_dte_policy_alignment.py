@@ -55,6 +55,12 @@ def test_structural_context_uses_governed_dte_window() -> None:
     assert context["dte_config"]["dte_policy_version"] == options.DTE_SELECTION_POLICY_VERSION
 
 
+# ACK 7 Oct 2026 (L3 / runway C-then-B): the horizon bucket no longer supplies the hold, so the runway-preference
+# tests state a 5-session evidence runway explicitly (5 + 3 monitor + 5 exit buffer = 13 sessions = 19 days).
+EVIDENCE_RUNWAY_5 = options.contract_runway_policy(
+    None, evidence_hold=5, evidence_basis="DURATION_EVIDENCE_Q80:1d:n=50")
+
+
 def _chain(right: str) -> pd.DataFrame:
     signed_delta = 0.50 if right == "C" else -0.50
     strike = 100.0
@@ -129,13 +135,14 @@ def test_call_and_put_selector_prefers_the_longer_runway_and_flags_the_shortfall
         "hold_days": 5,
         "dte_window": options.governed_dte_window("1_5d"),
         "dte_config": policy,
+        **EVIDENCE_RUNWAY_5,
     }
 
     selected = options.select_best_contract(_chain(right), context)
 
     assert selected is not None
     assert selected["symbol"] == f"TEST_ALIGNED_{right}"
-    assert selected["dte"] < policy["lifecycle_minimum_dte"]
+    assert selected["dte"] < policy["lifecycle_minimum_dte"] == EVIDENCE_RUNWAY_5["contract_runway_floor_days"]
     assert selected["contract_runway_state"] == "RUNWAY_SHORT"
 
 
@@ -155,6 +162,7 @@ def test_repair_selector_keeps_holdable_contracts_and_prefers_the_runway(
         "structural_target": 110.0 if direction == "CALL" else 90.0,
         "dte_window": (7, 14, 21),
         "dte_config": options.DTE_CONFIG["1_5d"],
+        **EVIDENCE_RUNWAY_5,
     }
 
     alternatives = options.select_repair_alternative_contracts(chain, context)
@@ -163,8 +171,14 @@ def test_repair_selector_keeps_holdable_contracts_and_prefers_the_runway(
     assert alternatives[-1]["dte"] >= calculate_dte_requirement(5)["minimum_holdable_dte"]
 
 
-def test_unknown_horizon_descriptive_window_and_full_window_runway() -> None:
-    """The descriptive window still normalises to 1_5d, but the runway that drives selection uses the full
-    thesis window and says so (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
+def test_unknown_horizon_descriptive_window_and_no_estimate_runway() -> None:
+    """The descriptive window still normalises to 1_5d, but the runway that drives selection never borrows that
+    window (ACK 18 Sep 2026: the horizon informs contract choice, never gates it)."""
     assert options.governed_dte_window("UNKNOWN") == (19, 20, 21)
-    assert options.contract_runway_policy("UNKNOWN")["contract_runway_basis"] == "THESIS_WINDOW_D2|HORIZON_UNAVAILABLE"
+    # ACK 7 Oct 2026 (L3 / runway C-then-B): without evidence the runway is NO_RUNWAY_ESTIMATE (was the full thesis
+    # window, THESIS_WINDOW_D2|HORIZON_UNAVAILABLE); only the holdable-past-issue floor applies, never 1_5d's 19 days.
+    runway = options.contract_runway_policy("UNKNOWN")
+    assert runway["contract_runway_basis"] == "NO_RUNWAY_ESTIMATE"
+    assert runway["contract_runway_hold_sessions"] is None
+    assert runway["contract_runway_floor_days"] == calculate_dte_requirement(None)["minimum_holdable_dte"]
+    assert runway == options.contract_runway_policy("1_5d") == options.contract_runway_policy("11_20d")

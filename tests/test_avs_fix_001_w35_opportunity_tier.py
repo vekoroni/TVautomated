@@ -38,6 +38,9 @@ def row(direction="CALL", **overrides):
         "invalidation_price": invalidation,
         "structural_target": target,
         "rr_underlying": 3.0,
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state is the decision input; the
+        # monetisability fields stay as audit data.
+        "anticipated_pays_state": "PAYS",
         "monetisability_state": "MONETISABLE",
         "monetisability_state_timevalue": "MONETISABLE",
         "spread_pct": 0.10,
@@ -73,15 +76,8 @@ class Tier1(unittest.TestCase):
 class Tier2SingleNamedWeakness(unittest.TestCase):
     CASES = {
         "R:R between 1.5 and 2.0": ({"rr_underlying": 1.7}, "RR_1.70_BELOW_2.0"),
-        "LIMITED not MONETISABLE": (
-            {"monetisability_state": "LIMITED"},
-            "MONETISABILITY_LIMITED_NOT_MONETISABLE",
-        ),
-        "monetisable on time value only": (
-            {"monetisability_state": "NOT_MONETISABLE",
-             "monetisability_state_timevalue": "MONETISABLE"},
-            "MONETISABLE_ON_TIMEVALUE_ONLY",
-        ),
+        # Superseded by L5 (ACK 7 Oct 2026): MONETISABILITY_LIMITED_NOT_MONETISABLE and
+        # MONETISABLE_ON_TIMEVALUE_ONLY are retired weaknesses; see test_monetisability_no_longer_grades_the_tier.
         "spread above the horizon band": (
             {"spread_pct": 0.20}, "SPREAD_20.00%_ABOVE_HORIZON_BAND",
         ),
@@ -100,6 +96,20 @@ class Tier2SingleNamedWeakness(unittest.TestCase):
                     tier, reason = derive_tier(row(direction, **overrides))
                     self.assertEqual(tier, TIER_2, label)
                     self.assertEqual(reason, expected_reason)
+
+    def test_monetisability_no_longer_grades_the_tier(self) -> None:
+        # Superseded by L5 (ACK 7 Oct 2026): monetisability is audit data; a row the anticipated
+        # move PAYS stays TIER_1 whatever its intrinsic/time-value monetisability says.
+        for overrides in (
+            {"monetisability_state": "LIMITED"},
+            {"monetisability_state": "NOT_MONETISABLE",
+             "monetisability_state_timevalue": "MONETISABLE"},
+        ):
+            for direction in ("CALL", "PUT"):
+                with self.subTest(overrides=overrides, direction=direction):
+                    tier, reason = derive_tier(row(direction, **overrides))
+                    self.assertEqual(tier, TIER_1)
+                    self.assertEqual(reason, "ALL_GOVERNED_EVIDENCE_PRESENT_AND_STRONG")
 
     def test_the_reason_names_the_single_weakness_not_a_score(self) -> None:
         _, reason = derive_tier(row(rr_underlying=1.7))
@@ -126,6 +136,7 @@ class Tier3TwoOrMoreWeaknesses(unittest.TestCase):
 
 class ArmedNeedsANamedPromoter(unittest.TestCase):
     NOT_MONETISABLE = {
+        "anticipated_pays_state": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
         "monetisability_state": "NOT_MONETISABLE",
         "monetisability_state_timevalue": "NOT_MONETISABLE",
     }
@@ -158,15 +169,19 @@ class ArmedNeedsANamedPromoter(unittest.TestCase):
         """THS-001 §4: ARMED without a named promoter is a bin, not a state."""
         tier, reason = derive_tier(row(**self.NOT_MONETISABLE))
         self.assertEqual(tier, WATCH)
-        self.assertEqual(reason, "EQUITY_VALID_OPTIONS_NOT_MONETISABLE_NO_PROMOTER")
+        # Superseded by L5 (ACK 7 Oct 2026): the reason names the pays state, not monetisability.
+        self.assertEqual(reason, "EQUITY_VALID_OPTION_DOES_NOT_PAY_NO_PROMOTER")
 
     def test_data_missing_without_a_promoter_is_watch(self) -> None:
         tier, reason = derive_tier(row(
+            anticipated_pays_state="NOT_COMPUTED",
             monetisability_state="DATA_MISSING",
             monetisability_state_timevalue="NOT_EVALUATED",
         ))
         self.assertEqual(tier, WATCH)
-        self.assertEqual(reason, "DATA_MISSING_AWAITING_RE_RESOLUTION")
+        # Superseded by L5 (ACK 7 Oct 2026): DATA_MISSING_AWAITING_RE_RESOLUTION is now
+        # OPTION_VALUE_NOT_COMPUTED_AWAITING_RE_RESOLUTION (the option value is not computed).
+        self.assertEqual(reason, "OPTION_VALUE_NOT_COMPUTED_AWAITING_RE_RESOLUTION")
 
 
 class BlockIsTheHardVetoListUnchanged(unittest.TestCase):
@@ -250,10 +265,12 @@ class AuthorityIsUnchanged(unittest.TestCase):
         ("tier 1", {}),
         ("tier 2", {"rr_underlying": 1.7}),
         ("tier 3", {"rr_underlying": 1.7, "spread_pct": 0.20}),
-        ("armed", {"monetisability_state": "NOT_MONETISABLE",
+        ("armed", {"anticipated_pays_state": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+                   "monetisability_state": "NOT_MONETISABLE",
                    "monetisability_state_timevalue": "NOT_MONETISABLE",
                    "best_alternative_symbol": "AAA"}),
-        ("watch", {"monetisability_state": "NOT_MONETISABLE",
+        ("watch", {"anticipated_pays_state": "DOES_NOT_PAY_AT_ANTICIPATED_TIME",
+                   "monetisability_state": "NOT_MONETISABLE",
                    "monetisability_state_timevalue": "NOT_MONETISABLE"}),
         ("block", {"invalidation_state": "MISSING"}),
     ]
@@ -329,8 +346,8 @@ class UnevaluableCriteriaAreWeaknessesNotSilence(unittest.TestCase):
 
     CASES = {
         "risk reward": ("rr_underlying", "UNEVALUABLE_RISK_REWARD"),
-        "time value": ("monetisability_state_timevalue",
-                       "UNEVALUABLE_TIMEVALUE_MONETISABILITY"),
+        # Superseded by L5 (ACK 7 Oct 2026): UNEVALUABLE_TIMEVALUE_MONETISABILITY is retired; an
+        # absent pays state is WATCH, see test_an_absent_pays_state_is_watch_not_a_tier.
         "spread": ("spread_pct", "UNEVALUABLE_SPREAD"),
         "trigger": ("trigger_state", "UNEVALUABLE_TRIGGER_STATE"),
         "dte vs hold": ("contract_dte", "UNEVALUABLE_DTE_VS_HOLD"),
@@ -348,13 +365,25 @@ class UnevaluableCriteriaAreWeaknessesNotSilence(unittest.TestCase):
 
     def test_a_row_missing_several_criteria_is_tier_3_not_tier_1(self) -> None:
         fixture = row()
-        for column in ("trigger_state", "contract_dte", "monetisability_state_timevalue"):
+        # Superseded by L5 (ACK 7 Oct 2026): the absent time-value monetisability is no longer a
+        # weakness; an absent R:R stands in as the third unevaluable criterion.
+        for column in ("trigger_state", "contract_dte", "rr_underlying",
+                       "monetisability_state_timevalue"):
             fixture.pop(column, None)
         tier, reason = derive_tier(fixture)
         self.assertEqual(tier, TIER_3)
         self.assertIn("UNEVALUABLE_TRIGGER_STATE", reason)
         self.assertIn("UNEVALUABLE_DTE_VS_HOLD", reason)
-        self.assertIn("UNEVALUABLE_TIMEVALUE_MONETISABILITY", reason)
+        self.assertIn("UNEVALUABLE_RISK_REWARD", reason)
+        self.assertNotIn("UNEVALUABLE_TIMEVALUE_MONETISABILITY", reason)
+
+    def test_an_absent_pays_state_is_watch_not_a_tier(self) -> None:
+        # L5 (ACK 7 Oct 2026): an absent pays state cannot promote a row to a tier by silence.
+        fixture = row()
+        fixture.pop("anticipated_pays_state")
+        tier, reason = derive_tier(fixture)
+        self.assertEqual(tier, WATCH)
+        self.assertEqual(reason, "OPTION_VALUE_NOT_COMPUTED_AWAITING_RE_RESOLUTION")
 
     def test_tier_1_still_requires_every_criterion_to_be_present(self) -> None:
         tier, _ = derive_tier(row())

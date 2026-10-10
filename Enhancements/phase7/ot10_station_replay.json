@@ -1,0 +1,27 @@
+{
+  "discovery": {
+    "rows": 2933,
+    "stop_defects": [],
+    "other_defects": []
+  },
+  "options": {
+    "rows": 2788,
+    "stop_defects": [],
+    "other_defects": []
+  },
+  "eod": {
+    "rows": 2788,
+    "stop_defects": [],
+    "other_defects": []
+  },
+  "book": {
+    "rows": 2788,
+    "stop_defects": [],
+    "other_defects": []
+  },
+  "morning": {
+    "rows": 2788,
+    "stop_defects": [],
+    "other_defects": []
+  }
+}

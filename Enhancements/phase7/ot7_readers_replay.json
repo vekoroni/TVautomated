@@ -1,0 +1,18 @@
+{
+  "run": "20261008_220129",
+  "directed_rows": 2280,
+  "veto_changes": {
+    "V2_NO_RUNWAY: removed": 1070,
+    "V2_NO_RUNWAY: kept": 300,
+    "V3_HIGH_IV_NO_EDGE: removed": 114,
+    "V2_NO_RUNWAY: added": 114,
+    "V3_HIGH_IV_NO_EDGE: added": 37,
+    "V3_HIGH_IV_NO_EDGE: kept": 26
+  },
+  "trade_side_wall": {
+    "call_wall_level_confirmed=True": 261,
+    "put_wall_level_confirmed=False": 930,
+    "call_wall_level_confirmed=False": 870,
+    "put_wall_level_confirmed=True": 219
+  }
+}

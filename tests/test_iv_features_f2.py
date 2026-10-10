@@ -55,7 +55,7 @@ def test_the_percentile_uses_iv_history_and_keeps_the_realised_range_measure(cac
     result = {"iv_percentile": 0.90, "ivp_252d": 0.90, "ivp_30d": 0.70, "iv_rank": 90.0, "ivp_label": "EXPENSIVE"}
     oi._apply_true_iv_percentile(result, "AAA", 0.255, AS_OF)
     assert result["iv_percentile"] == pytest.approx(6 / 40, abs=1e-3) and result["ivp_252d"] == pytest.approx(6 / 40, abs=1e-3)
-    assert result["iv_percentile_source"] == "IV_HISTORY_252D" and result["iv_history_samples"] == 40
+    assert result["iv_percentile_source"] == "IV_HISTORY" and result["iv_history_samples"] == 40
     assert result["ivp_label"] == "CHEAP"
     assert result["iv_vs_rv_range_252d"] == 0.90 and result["iv_vs_rv_range_30d"] == 0.70   # kept, renamed
 

@@ -23,6 +23,7 @@ import math
 from typing import Any, Mapping
 
 from domain.quote_units import resolve_spread
+from domain.long_option_execution import SPREAD_POLICY as _SPREAD_POLICY
 
 TIER_POLICY_VERSION = "opportunity-tier-v1-ths001-s4"
 
@@ -40,11 +41,10 @@ TIER_SORT_ORDER = (TIER_1, TIER_2, TIER_3, ARMED, WATCH, BLOCK)
 #: reviewable edit to one place, and so the Lab can print the policy it used.
 RR_TIER_1_MIN = 2.0
 RR_TIER_2_MIN = 1.5
-SPREAD_TIER_2_MAX = 0.25
+SPREAD_TIER_2_MAX = _SPREAD_POLICY["reviewable_max"]          # E15: config, fraction of mid
 DTE_HOLD_MULTIPLE = 2.0
 
 _DIRECTED = {"CALL", "PUT"}
-_MONETISABLE_STATES = {"MONETISABLE", "LIMITED"}
 
 
 def _text(value: Any) -> str:
@@ -159,23 +159,16 @@ def _tier_2_weaknesses(row: Mapping[str, Any]) -> list[str]:
     elif RR_TIER_2_MIN <= rr < RR_TIER_1_MIN:
         weaknesses.append(f"RR_{rr:.2f}_BELOW_2.0")
 
-    intrinsic = _upper(row.get("monetisability_state"))
-    timevalue = _upper(row.get("monetisability_state_timevalue"))
-    if intrinsic == "LIMITED":
-        weaknesses.append("MONETISABILITY_LIMITED_NOT_MONETISABLE")
-    elif intrinsic != "MONETISABLE" and timevalue == "MONETISABLE":
-        # W3.4's whole purpose: monetisable on time value alone is a named
-        # weakness, not an exclusion.
-        weaknesses.append("MONETISABLE_ON_TIMEVALUE_ONLY")
-    elif not timevalue or timevalue == "NOT_EVALUATED":
-        # THS-001 Tier 1 requires MONETISABLE under BOTH valuations.
-        weaknesses.append("UNEVALUABLE_TIMEVALUE_MONETISABILITY")
+    # L5 (ACK 7 Oct 2026): monetisability (intrinsic and time value) no longer grades the tier - the pays
+    # state decides it in derive_tier. Retired weaknesses: MONETISABILITY_LIMITED_NOT_MONETISABLE,
+    # MONETISABLE_ON_TIMEVALUE_ONLY, UNEVALUABLE_TIMEVALUE_MONETISABILITY.
 
     spread = _tier_spread_fraction(row)
     horizon_band = _number(row.get("horizon_spread_limit"))
     if horizon_band is None:
         horizon = _upper(_first(row, "time_horizon", "horizon_bucket"))
-        horizon_band = 0.15 if horizon.startswith("1_5") else 0.25
+        horizon_band = (_SPREAD_POLICY["tier_band_short_horizon"] if horizon.startswith("1_5")
+                        else _SPREAD_POLICY["tier_band_other"])
     if spread is None:
         weaknesses.append("UNEVALUABLE_SPREAD")
     elif horizon_band < spread <= SPREAD_TIER_2_MAX:
@@ -239,23 +232,19 @@ def derive_tier(row: Mapping[str, Any]) -> tuple[str, str]:
     if veto:
         return BLOCK, veto
 
-    intrinsic = _upper(row.get("monetisability_state"))
-    timevalue = _upper(row.get("monetisability_state_timevalue"))
+    # L5 (ACK 7 Oct 2026): the tier follows the decision owner - the anticipated move's pays state - not
+    # monetisability (intrinsic at expiry, AUDIT).
+    pays = _upper(row.get("anticipated_pays_state"))
     viability = _upper(row.get("execution_viability_state"))
-    monetisable = intrinsic in _MONETISABLE_STATES or timevalue in _MONETISABLE_STATES
 
-    if not monetisable:
-        # Not monetisable today. ARMED only with a named promoting condition;
-        # otherwise WATCH.
-        if intrinsic == "DATA_MISSING" or viability == "DATA_MISSING":
-            promoter = _armed_promoter(row)
-            if promoter:
-                return ARMED, promoter
-            return WATCH, "DATA_MISSING_AWAITING_RE_RESOLUTION"
+    if pays != "PAYS":
+        # Not paying, or no computed option value. ARMED only with a named promoting condition; else WATCH.
         promoter = _armed_promoter(row)
         if promoter:
             return ARMED, promoter
-        return WATCH, "EQUITY_VALID_OPTIONS_NOT_MONETISABLE_NO_PROMOTER"
+        if pays != "DOES_NOT_PAY_AT_ANTICIPATED_TIME" or viability == "DATA_MISSING":
+            return WATCH, "OPTION_VALUE_NOT_COMPUTED_AWAITING_RE_RESOLUTION"
+        return WATCH, "EQUITY_VALID_OPTION_DOES_NOT_PAY_NO_PROMOTER"
 
     weaknesses = _tier_2_weaknesses(row)
     if not weaknesses:

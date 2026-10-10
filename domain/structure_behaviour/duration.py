@@ -129,3 +129,26 @@ def attach_duration(candidates: Iterable[MutableMapping], evidence: Optional[Map
             f"ESTIMATED ({chosen['status']}): remaining time to {event} about {q50} bars (median) and "
             f"{q80} bars (80%) on {c.get('Timeframe')}, of the cases that reach it; "
             f"P({event} first)={chosen.get('p_event_at_limit')}, n={chosen.get('n')}, basis {basis}")
+
+
+def pooled_level_q80(evidence: Optional[Mapping], *, timeframe: object, signal_type: object, direction: object,
+                     test: object) -> tuple:
+    """C (ACK 7 Oct 2026, "build C with B fallback"): the setup's broader evidence group when its own is missing -
+    same timeframe, setup type, direction and test, across every scope and age bucket. Groups hold quantiles, not
+    samples, so they cannot be merged; the longest sufficient q80 is taken (conservative: a runway is a floor).
+    Returns (q80_bars, basis, n) or (None, "NO_POOLED_EVIDENCE", None)."""
+    best = None
+    for g in (evidence or {}).get("groups") or []:
+        if (g.get("timeframe") != timeframe or g.get("signal_type") != signal_type or g.get("direction") != direction
+                or g.get("test") != test or g.get("status") == "INSUFFICIENT_SAMPLE"):
+            continue
+        q80 = g.get("remaining_bars_q80")
+        if q80 is None:
+            continue
+        if best is None or q80 > best["remaining_bars_q80"]:
+            best = g
+    if best is None:
+        return None, "NO_POOLED_EVIDENCE", None
+    basis = (f"POOLED_EVIDENCE_MAX_Q80:{timeframe}|{signal_type}|{direction}|{test}"
+             f"|scope={best.get('scope')}|age={best.get('age_bucket')}|n={best.get('n')}")
+    return best["remaining_bars_q80"], basis, best.get("n")

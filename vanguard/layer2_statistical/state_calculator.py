@@ -108,6 +108,8 @@ class StateVectorCalculator:
         ticker = vanguard_input.ticker
         current_price = vanguard_input.current_price
         tech = vanguard_input.technical
+        # RC18 (Phase 4, 8 Oct 2026): every "days since" is measured from the evidence session, never the run clock.
+        self._asof = _evidence_session(vanguard_input)
         options = vanguard_input.options
         macro = vanguard_input.macro
         calendar = vanguard_input.calendar
@@ -119,6 +121,8 @@ class StateVectorCalculator:
         raw_wyckoff_for_trend = getattr(tech, 'wyckoff_phase_bucket', None) or getattr(tech, 'wyckoff_phase', None) or ''
         trend_state = self._calculate_trend_maturity(tech, vol_regime=vol_state['regime'], wyckoff_phase=raw_wyckoff_for_trend)
         structure_state = self._calculate_structure_quality(tech, auction_verdict)
+        # RC03/RC19 (Phase 4, 8 Oct 2026): matching dimensions mean what the v7 database meant (one owner).
+        self._apply_matching_parity(tech, trend_state, structure_state)
         positioning_state = self._calculate_positioning_bias(options)
         catalyst_state = self._calculate_catalyst_proximity(calendar)
         macro_state = self._calculate_macro_regime(macro)
@@ -396,6 +400,23 @@ class StateVectorCalculator:
             return float(tech.iv_rank)
         return 50.0
 
+    @staticmethod
+    def _apply_matching_parity(tech: 'TechnicalData', trend_state: Dict, structure_state: Dict) -> None:
+        """Phase 4 (8 Oct 2026): trend_direction, trend_maturity and structure_quality - dimensions Vanguard matches
+        history on - are taken from actuarial_core_v7.calculate_core_state (the function that labelled the v7
+        database). Live vs v7 agreement on run 20261006_060401 was 131/200, 104/200 and 75/200 (live structure WEAK
+        on every row, from unmeasured auction fields). The auction-based score is kept as a legacy display field.
+        Without enough bars the legacy runtime values stay and the basis says so."""
+        structure_state['legacy_auction_structure_quality'] = structure_state.get('quality')
+        v7 = db_consistent_core_dims(getattr(tech, 'ohlcv', None))
+        if v7 is None:
+            structure_state['matching_state_basis'] = 'LEGACY_RUNTIME_RULE_BARS_INSUFFICIENT'
+            return
+        trend_state['direction'] = v7['trend_direction']
+        trend_state['maturity'] = v7['trend_maturity']
+        structure_state['quality'] = v7['structure_quality']
+        structure_state['matching_state_basis'] = 'V7_CORE_STATE'
+
     def _calculate_volatility_regime(self, tech: 'TechnicalData') -> Dict:
         """
         Determine volatility regime (COMPRESSION, NORMAL, EXPANSION)
@@ -496,8 +517,9 @@ class StateVectorCalculator:
         pct_from_low = (current_price - tech.low_52w) / tech.low_52w if tech.low_52w > 0 else 0
         
         # Days since extremes
-        days_since_high = (pd.Timestamp.now() - tech.date_52w_high).days if tech.date_52w_high else 365
-        days_since_low = (pd.Timestamp.now() - tech.date_52w_low).days if tech.date_52w_low else 365
+        _asof = getattr(self, '_asof', None) or _last_bar_date(tech.ohlcv)
+        days_since_high = (_asof - pd.Timestamp(tech.date_52w_high)).days if tech.date_52w_high and _asof is not None else 365
+        days_since_low = (_asof - pd.Timestamp(tech.date_52w_low)).days if tech.date_52w_low and _asof is not None else 365
         
         # === SAFE THRESHOLD RESOLUTION ===
         # Explicit fallback prevents config.py omission from silently breaking gate logic.
@@ -623,6 +645,16 @@ class StateVectorCalculator:
         else:
             quality_score += 15  # Mixed
             
+        # RC02 (Phase 4): without measured acceptance this auction-based score is NOT_MEASURED (it read WEAK on
+        # every row by construction). It is a legacy display field; matching uses the v7 state (RC03/RC19).
+        _acc = auction.acceptance.score
+        if _acc is None or _acc != _acc:
+            return {
+                'pct_from_vwap_1h': pct_from_vwap_1h, 'pct_from_vwap_daily': pct_from_vwap_daily,
+                'pct_from_poc': pct_from_poc, 'position_in_value': position, 'quality': 'NOT_MEASURED',
+                'quality_score': float('nan'), 'relative_volume': relative_volume_from_bars(tech.ohlcv),
+                'liquidity': _liquidity_label(relative_volume_from_bars(tech.ohlcv)),
+            }
         # Value acceptance (40 points)
         quality_score += (auction.acceptance.score / 100) * 40
         
@@ -661,40 +693,12 @@ class StateVectorCalculator:
         # half-days), the scaling will overshoot slightly — acceptable because the
         # alternative is wrongly classifying every name as LOW liquidity.
 
-        from datetime import datetime as _dt, timezone as _tz
+        # RC18 (Phase 4, 8 Oct 2026): completeness comes from the BAR, not the run clock. A completed bar is never
+        # scaled; only a bar explicitly marked partial is scaled, by its own observation time. Codex B18: the same
+        # completed bars read LOW at 12:00 UTC and HIGH at 14:00 UTC under the old clock rule.
+        relative_volume = relative_volume_from_bars(tech.ohlcv)
 
-        avg_volume = tech.ohlcv['volume'].mean() if len(tech.ohlcv) > 0 else 1
-        current_volume = tech.ohlcv['volume'].iloc[-1] if len(tech.ohlcv) > 0 else 0
-
-        _now_utc      = _dt.now(_tz.utc)
-        _utc_hour     = _now_utc.hour
-        _utc_minute   = _now_utc.minute
-        _utc_minutes  = _utc_hour * 60 + _utc_minute
-
-        # US market: 13:30–20:00 UTC (accounts for both EST and EDT)
-        _MARKET_OPEN_UTC  = 13 * 60 + 30   # 13:30 UTC
-        _MARKET_CLOSE_UTC = 20 * 60          # 20:00 UTC
-        _MARKET_TOTAL_MIN = 390              # 6.5 hours = 390 minutes
-
-        _in_session = _MARKET_OPEN_UTC <= _utc_minutes < _MARKET_CLOSE_UTC
-
-        if _in_session and avg_volume > 0 and current_volume < avg_volume * 0.50:
-            # Partial day detected — scale to projected full-day volume
-            _elapsed_min = max(1, _utc_minutes - _MARKET_OPEN_UTC)
-            _scale       = _MARKET_TOTAL_MIN / _elapsed_min
-            _adjusted_volume = current_volume * _scale
-        else:
-            # Market closed or already a full-day bar — use as-is
-            _adjusted_volume = current_volume
-
-        relative_volume = _adjusted_volume / avg_volume if avg_volume > 0 else 1.0
-
-        if relative_volume > 1.5:
-            liquidity = "HIGH"
-        elif relative_volume > 0.7:
-            liquidity = "NORMAL"
-        else:
-            liquidity = "LOW"
+        liquidity = _liquidity_label(relative_volume)
             
         return {
             'pct_from_vwap_1h': pct_from_vwap_1h,
@@ -767,7 +771,10 @@ class StateVectorCalculator:
         # blackout (0 < days_since <= 3). Three resolution strategies in priority order:
         if hasattr(calendar, 'last_earnings_date') and calendar.last_earnings_date is not None:
             # Best: actual last earnings date available
-            days_since = max(0, (pd.Timestamp.now() - pd.Timestamp(calendar.last_earnings_date)).days)
+            _asof = getattr(self, '_asof', None)
+            days_since = (max(0, (_asof - pd.Timestamp(calendar.last_earnings_date)).days) if _asof is not None
+                          else int(calendar.days_since_earnings or 0) if getattr(calendar, 'days_since_earnings', None) is not None
+                          else 90)
         elif hasattr(calendar, 'days_since_earnings') and calendar.days_since_earnings is not None:
             # Good: field already computed upstream
             days_since = max(0, int(calendar.days_since_earnings))
@@ -956,3 +963,79 @@ class StateVectorCalculator:
         confidence *= (0.7 + 0.3 * auction.confidence)
         
         return float(min(confidence, 1.0))
+
+
+_SESSION_OPEN_UTC_MIN = 13 * 60 + 30   # 09:30 ET in UTC (EDT); the session-minute count only scales partial bars
+_SESSION_MINUTES = 390
+
+
+def _last_bar_date(ohlcv):
+    """Session date of the last bar (a 'date' column or a DatetimeIndex), or None."""
+    try:
+        if ohlcv is None or len(ohlcv) == 0:
+            return None
+        if "date" in ohlcv.columns:
+            return pd.Timestamp(pd.Timestamp(ohlcv["date"].iloc[-1]).date())
+        if isinstance(ohlcv.index, pd.DatetimeIndex):
+            return pd.Timestamp(ohlcv.index[-1].date())
+    except Exception:
+        return None
+    return None
+
+
+def _evidence_session(vanguard_input):
+    """The evidence session date: the input's analysis timestamp (a session anchor) or the last bar's date."""
+    ts = getattr(vanguard_input, "analysis_timestamp", None)
+    if ts is not None:
+        return pd.Timestamp(pd.Timestamp(ts).date())
+    tech = getattr(vanguard_input, "technical", None)
+    return _last_bar_date(getattr(tech, "ohlcv", None))
+
+
+def relative_volume_from_bars(ohlcv) -> float:
+    """Last bar volume / mean volume. Scales only a bar the data marks as partial (attrs last_bar_partial with
+    last_bar_observed_utc, or a bar_status column == PARTIAL with observed_at), by its own observation time."""
+    if ohlcv is None or len(ohlcv) == 0:
+        return 1.0
+    current = float(ohlcv["volume"].iloc[-1])
+    observed = None
+    if ohlcv.attrs.get("last_bar_partial"):
+        observed = ohlcv.attrs.get("last_bar_observed_utc")
+    elif "bar_status" in ohlcv.columns and str(ohlcv["bar_status"].iloc[-1]).upper() == "PARTIAL":
+        observed = ohlcv["observed_at"].iloc[-1] if "observed_at" in ohlcv.columns else None
+    adjusted = current
+    if observed is not None:
+        t = pd.Timestamp(observed)
+        t = t.tz_convert("UTC") if t.tzinfo else t
+        elapsed = max(1, t.hour * 60 + t.minute - _SESSION_OPEN_UTC_MIN)
+        adjusted = current * _SESSION_MINUTES / min(elapsed, _SESSION_MINUTES)
+    volumes = ohlcv["volume"].astype(float).copy()
+    volumes.iloc[-1] = adjusted
+    average = float(volumes.mean())
+    return adjusted / average if average > 0 else 1.0
+
+
+def db_consistent_core_dims(ohlcv):
+    """The v7 database's core state of the LAST bar (actuarial_core_v7 - the function that labelled v7), or None
+    when the bars cannot support it. Fast last-bar mode; identical values (Phase 4 parity test)."""
+    try:
+        from vanguard.core.actuarial_core_v7 import MIN_BARS_REQUIRED, calculate_core_state, compute_technicals
+        if ohlcv is None or not hasattr(ohlcv, "columns") or len(ohlcv) <= MIN_BARS_REQUIRED:
+            return None
+        df = ohlcv.copy()
+        df.columns = [str(c).lower() for c in df.columns]
+        if "date" not in df.columns and isinstance(df.index, pd.DatetimeIndex):
+            df = df.reset_index().rename(columns={df.index.name or "index": "date"})
+        tech = compute_technicals(df, last_rank_only=True)
+        return calculate_core_state(tech, len(tech) - 1)
+    except Exception:
+        return None
+
+
+def _liquidity_label(relative_volume: float) -> str:
+    """HIGH > 1.5, NORMAL > 0.7, else LOW (unchanged thresholds, one place)."""
+    if relative_volume > 1.5:
+        return "HIGH"
+    if relative_volume > 0.7:
+        return "NORMAL"
+    return "LOW"

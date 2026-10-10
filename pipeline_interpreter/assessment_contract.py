@@ -121,12 +121,17 @@ def build_assessment(
         for domain, value in freshness.items()
         if str(domain).lower() in ASSESSMENT_CRITICAL_FRESHNESS_DOMAINS
     }
+    # A2/A3 (ACK 7 Oct 2026): aged evidence is disclosed, never a rejection; only missing or invalid evidence
+    # rejects (the status name is kept for compatibility; the finding says what was measured).
+    for domain, value in sorted(critical_freshness.items()):
+        if str(value).upper() == "STALE":
+            findings.append(f"EVIDENCE_AGE_DISCLOSED:{domain}")
     if any(
-        str(value).upper() in {"STALE", "MISSING", "INVALID"}
+        str(value).upper() in {"MISSING", "INVALID"}
         for value in critical_freshness.values()
     ):
         status = AssessmentStatus.REJECTED_STALE_BUNDLE
-        findings.append("BUNDLE_NOT_CURRENT_FOR_ASSESSMENT")
+        findings.append("BUNDLE_EVIDENCE_MISSING_OR_INVALID")
     authority = _bundle_authority(bundle)
     conflicts = _narrative_conflicts(
         _text(model_output.get("plain_language_reason")), authority

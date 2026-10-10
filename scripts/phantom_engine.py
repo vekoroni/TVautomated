@@ -198,37 +198,14 @@ def score_row(row: Dict[str, Any], db: PhantomDatabase, run_id: str) -> Dict[str
 
 
 def apply_payload(row: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Add Phantom's evidence to the row (ACK 7 Oct 2026): its own fields only. It never rewrites options_score,
+    options_route_verdict or positive_factors - authority without G1-G4 (CLAUDE.md rule 5). Its adjusted score and
+    promotion stay visible as phantom evidence (options_score_phantom_adjusted, phantom_promoted_verdict)."""
     out = dict(row)
     for k, v in payload.items():
         out[k] = v
-
-    promotion = payload.get("phantom_promoted_verdict")
     hard_veto = bool(payload.get("phantom_hard_veto_respected"))
-    if payload.get("phantom_ois_adjustment", 0) > 0:
-        out["options_score_original"] = row.get("options_score")
-        out["options_score"] = payload.get("options_score_phantom_adjusted")
-    if not hard_veto and promotion in {"EXECUTE", "ARMED"}:
-        # ADVISORY_PROMOTION mode:
-        # Phantom signals its verdict but does NOT overwrite
-        # execution_permission. Morning validator retains
-        # full authority. Promote to FULL_PROMOTION after
-        # phantom_history.db is validated (post-Monday).
-        out["options_verdict_original"] = row.get("options_verdict")
-        out["options_route_verdict"] = f"PHANTOM_{promotion}"
-        # execution_permission intentionally NOT overwritten
-        out["phantom_execution_authority"] = "ADVISORY_PROMOTION"
-        out["phantom_advisory_note"] = (
-            f"Phantom {promotion}: {payload.get('phantom_promotion_reason','')}. "
-            "Advisory only — DB_SURFACE validation pending. "
-            "Morning validator retains execution authority."
-        )
-        factors = str(row.get("positive_factors") or "")
-        note = payload.get("phantom_promotion_reason", "")
-        out["positive_factors"] = (factors + " | PHANTOM_ADVISORY: " + note).strip(" |")
-    else:
-        out["phantom_execution_authority"] = (
-            "NO_OVERRIDE_HARD_VETO" if hard_veto else "NO_PROMOTION"
-        )
+    out["phantom_execution_authority"] = "NO_OVERRIDE_HARD_VETO" if hard_veto else "EVIDENCE_ONLY"
     return out
 
 

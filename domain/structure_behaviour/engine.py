@@ -70,6 +70,11 @@ def analyse_timeframe(ticker: str, bars: Optional[pd.DataFrame], timeframe: str,
         "Control_Transfer_Condition": control.transfer_condition, "Transfer_Level": control.transfer_level,
         "Movement_Maturity": maturity, "Thrusts": control.thrust_count,
         "Crabel_Compression": describe(compression), "events": events, "candidates": candidates,
+        # P0-02 (Phase 1): the canonical compression facts, flat, from the single owner (compression.py).
+        "Compression_State": compression["state"], "Compression_Box_High": compression["box_high"],
+        "Compression_Box_Low": compression["box_low"], "Compression_Episode_Start": compression["episode_start"],
+        "Compression_Location": compression["location"],
+        "Compression_Contracting_Side": compression["contracting_side"],
     }
 
 

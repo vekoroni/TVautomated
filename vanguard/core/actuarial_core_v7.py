@@ -62,7 +62,10 @@ def normalise_daily_ohlcv(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def compute_technicals(frame: pd.DataFrame) -> pd.DataFrame:
+def compute_technicals(frame: pd.DataFrame, *, last_rank_only: bool = False) -> pd.DataFrame:
+    """Technicals used to label the v7 database. last_rank_only (Phase 4, 8 Oct 2026; default OFF so the database
+    builders are unchanged): compute the 252-bar percentile ranks for the LAST row only, with the same formula, for
+    live matching-state parity at a fraction of the cost. Earlier rows of the two rank columns are NaN."""
     df = normalise_daily_ohlcv(frame)
     close, high, low = df["close"], df["high"], df["low"]
     df["ema21"] = close.ewm(span=21, adjust=False).mean()
@@ -99,8 +102,22 @@ def compute_technicals(frame: pd.DataFrame) -> pd.DataFrame:
             valid = sample[~np.isnan(sample)]
             result[idx] = float(np.sum(valid < value) / len(valid) * 100) if len(valid) and not np.isnan(value) else 50.0
         return result
-    df["atr_percentile_252"] = rolling_ranks(df["atr_pct"])
-    df["bb_percentile_252"] = rolling_ranks(df["bb_width"])
+    if last_rank_only:
+        def last_rank(series: pd.Series) -> np.ndarray:
+            values = series.to_numpy(dtype=float)
+            out = np.full(len(values), np.nan)
+            if len(values):
+                idx = len(values) - 1
+                sample = values[max(0, idx - 252) : idx + 1]
+                valid = sample[~np.isnan(sample)]
+                value = values[idx]
+                out[idx] = float(np.sum(valid < value) / len(valid) * 100) if len(valid) and not np.isnan(value) else 50.0
+            return out
+        df["atr_percentile_252"] = last_rank(df["atr_pct"])
+        df["bb_percentile_252"] = last_rank(df["bb_width"])
+    else:
+        df["atr_percentile_252"] = rolling_ranks(df["atr_pct"])
+        df["bb_percentile_252"] = rolling_ranks(df["bb_width"])
     df["volume_mean_6"] = df["volume"].rolling(6, min_periods=1).mean()
     df["volume_mean_21"] = df["volume"].rolling(21, min_periods=1).mean()
     return df

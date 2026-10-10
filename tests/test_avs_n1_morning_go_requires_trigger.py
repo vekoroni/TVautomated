@@ -33,7 +33,8 @@ def test_no_eligible_trigger_is_flagged_awaiting_trigger():
     assert out["verdict"] == "FLAG"
     assert out["morning_execution_permission"] == "AWAITING_TRIGGER"
     assert out["morning_entry_action"] == "NO_TRADE"
-    assert "NONE" in out["morning_unlock_condition"]
+    # Phase 5.3 (ACK 8 Oct 2026): the unlock condition names the thesis trigger and its readiness.
+    assert "thesis_readiness=" in out["morning_unlock_condition"]
 
 
 def test_missing_trigger_eligibility_is_not_eligibility():

@@ -291,7 +291,9 @@ def _build_candidates(*, ticker: str, timeframe: str, role: str, seq: SequenceRe
             f"rapid return into the box, or acceptance {'below' if up else 'above'} {inv:.4g}" if direction else "n/a",
             "Expansion produces retained directional movement" if direction else "Wait for a side to retain an expansion",
             "Monitoring observation" if direction else "Monitoring observation",
-            end, [{"status": "OBSERVED", "what": describe(compression)}], [],
+            # P0-02: the candidate is dated by its episode start, so one coil keeps one Candidate_ID across runs.
+            compression["episode_start_index"] if compression.get("episode_start_index") is not None else end,
+            [{"status": "OBSERVED", "what": describe(compression)}], [],
             outcome=_pivot_outcome(seq, trig, up) if direction else None)
     highs = [p for p in seq.minor_pivots if p.kind == "H"][-2:]
     lows = [p for p in seq.minor_pivots if p.kind == "L"][-2:]

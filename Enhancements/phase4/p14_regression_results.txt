@@ -1,0 +1,175 @@
+tests/test_a1_geometry_labels.py | 7 passed in 12.33s
+tests/test_actuarial_cache_v7_contract.py | 7 passed in 5.06s
+tests/test_actuarial_v7_cutover_paths.py | 4 passed in 6.34s
+tests/test_actuarial_v7_database_contract.py | 9 passed in 8.55s
+tests/test_audit_remediation_guards.py | 8 passed in 1.81s
+tests/test_avs_4b_evidence_runway.py | 14 passed in 17.85s
+tests/test_avs_4d_time_stop_and_exits.py | 7 passed in 14.49s
+tests/test_avs_anticipated_move.py | 16 passed in 7.83s
+tests/test_avs_b1_win_probability.py | 4 passed in 14.12s
+tests/test_avs_b3_b5_vanguard_statistics.py | 3 passed in 4.68s
+tests/test_avs_d01_d13_target_reachability.py | 9 passed in 18.70s
+tests/test_avs_d04_compression_iv.py | 5 passed in 2.28s
+tests/test_avs_d10_phase_event_thesis.py | 9 passed in 12.00s
+tests/test_avs_d11_morning_confirmation.py | 9 passed in 14.20s
+tests/test_avs_d13_rr_underlying_reachable.py | 5 passed in 45.18s
+tests/test_avs_dir002_c5_thesis_handoff.py | 8 passed in 6.46s
+tests/test_avs_dir002_direction_policy_crossover.py | 7 passed in 4.57s
+tests/test_avs_dir002_discovery_ticker_error.py | 2 passed in 37.85s
+tests/test_avs_dir002_eligibility_reasons.py | 1 passed in 40.71s
+tests/test_avs_dir002_geometry_boundary.py | 12 passed in 38.15s
+tests/test_avs_dir002_interpreter_no_direction_vote.py | 3 passed in 2.69s
+tests/test_avs_dir002_lab_direction_authority.py | 4 passed in 51.20s
+tests/test_avs_dir002_legacy_adapter.py | 9 passed in 4.42s
+tests/test_avs_dir002_open_contract_reconciliation.py | 3 passed in 22.68s
+tests/test_avs_dir002_options_thesis_side.py | 6 passed in 69.39s (0:01:09)
+tests/test_avs_dir002_side_assignment.py | 15 passed in 4.62s
+tests/test_avs_dir002_side_evidence_wiring.py | 12 passed in 23.00s
+tests/test_avs_dir002_vanguard_direction_retired.py | 5 passed in 65.63s (0:01:05)
+tests/test_avs_dir002_vanguard_no_direction_vote.py | 3 passed in 89.10s (0:01:29)
+tests/test_avs_dir002_vanguard_side_blocks.py | 7 passed in 28.89s
+tests/test_avs_dir002_vanguard_thesis_handoff.py | 8 passed in 46.11s
+tests/test_avs_direction_source_beh001.py | 1 passed in 5.78s
+tests/test_avs_discovery_trade_lane.py | 4 passed in 47.98s
+tests/test_avs_duration_evidence_v2.py | 2 passed in 7.86s
+tests/test_avs_duration_level_timing.py | 4 passed in 46.08s
+tests/test_avs_e15_spread_units.py | 10 passed in 70.85s (0:01:10)
+tests/test_avs_e5_eil_no_quote.py | 3 passed in 33.31s
+tests/test_avs_earnings_disclosure.py | 11 passed in 41.23s
+tests/test_avs_ev2_retired.py | 4 passed in 36.98s
+tests/test_avs_ev3_move_window_grid.py | 2 passed in 33.25s
+tests/test_avs_fix_001_w11_price_null_never_zero.py | 14 passed, 17 subtests passed in 42.10s
+tests/test_avs_fix_001_w13_monetisability_authority.py | 7 passed, 11 subtests passed in 35.10s
+tests/test_avs_fix_001_w15_contract_dte.py | 14 passed, 5 subtests passed in 25.25s
+tests/test_avs_fix_002_runtime_adapters.py | 4 passed in 23.67s
+tests/test_avs_governing_setup.py | 17 passed in 37.06s
+tests/test_avs_int001_horizon_consumers.py | 9 passed in 30.58s
+tests/test_avs_int001_scenario_evening_to_lab.py | 9 passed in 95.58s (0:01:35)
+tests/test_avs_int001_scenario_horizon_parity.py | 20 passed in 43.60s
+tests/test_avs_int001_scenario_policy_dcv_outcomes.py | 23 passed in 22.51s
+tests/test_avs_intake_labels_not_gates.py | 9 passed in 8.07s
+tests/test_avs_interpreter_governed_facts.py | 9 passed in 3.59s
+tests/test_avs_intraday_evidence_builder.py | 4 passed in 55.16s
+tests/test_avs_l5_monetisability_out_of_decisions.py | 7 passed in 43.55s
+tests/test_avs_lab_trade_card.py | 18 passed in 71.42s (0:01:11)
+tests/test_avs_mon004_canary.py | 2 passed in 49.67s
+tests/test_avs_monetisability_anticipated_level.py | 4 passed in 68.07s (0:01:08)
+tests/test_avs_morning_repair_runway_recompute.py | 6 passed in 58.19s
+tests/test_avs_quote_age_disclosed_not_gated.py | 6 passed in 50.93s
+tests/test_avs_rr_removed_from_scoring.py | 6 passed in 121.97s (0:02:01)
+tests/test_avs_runway_pooled_and_vol_fallback.py | 8 passed in 117.27s (0:01:57)
+tests/test_avs_sd003_authority_boundaries.py | 6 passed in 116.72s (0:01:56)
+tests/test_avs_sd003_blocker_closure.py | 7 passed in 79.03s (0:01:19)
+tests/test_avs_sor001_crabel_fusion_contract.py | 3 passed in 57.76s
+tests/test_avs_sot_s0_characterisation.py | 9 passed in 129.58s (0:02:09)
+tests/test_avs_step3_no_fixed_hold.py | 9 passed in 117.87s (0:01:57)
+tests/test_avs_target_source_label.py | 4 passed in 5.88s
+tests/test_avs_tev001_candidate_expression.py | 8 passed in 45.93s
+tests/test_avs_tev001_offline_vertical_slice.py | 1 passed in 38.27s
+tests/test_avs_trade_lanes.py | 17 passed in 52.13s
+tests/test_beh001_behaviour_control.py | 8 passed in 36.27s
+tests/test_beh001_candidate_ledger.py | 12 passed in 54.20s
+tests/test_beh001_candidate_packet.py | 7 passed in 38.34s
+tests/test_beh001_conflict_resolution.py | 7 passed in 36.78s
+tests/test_beh001_duration.py | 7 passed in 37.99s
+tests/test_beh001_handoff_sources.py | 2 passed in 6.17s
+tests/test_beh001_intraday_degradation.py | 8 passed in 44.38s
+tests/test_beh001_no_upstream_constraints.py | 4 passed in 47.05s
+tests/test_beh001_options_candidate_lane.py | 7 passed in 105.42s (0:01:45)
+tests/test_beh001_outcome_and_lineage.py | 10 passed in 39.42s
+tests/test_beh001_phase_events_signals.py | 11 passed in 36.97s
+tests/test_beh001_sequences.py | 7 passed in 42.29s
+tests/test_big_bang_phase_6_7.py | 3 passed in 51.12s
+tests/test_book_integrity_e3_e4_e5_e7.py | 31 passed in 86.07s (0:01:26)
+tests/test_book_integrity_leftovers_l1_l2_l3.py | 24 passed in 56.99s
+tests/test_book_integrity_reselected_liquidity.py | 17 passed in 61.90s (0:01:01)
+tests/test_canonical_manifest_p1.py | 8 passed in 1387.19s (0:23:07)
+tests/test_contract_analytics_slice2.py | 13 passed in 46.65s
+tests/test_contract_selection_horizon_not_a_gate.py | 28 passed in 43.12s
+tests/test_cycle2_governance.py | 4 passed in 23.54s
+tests/test_d2_manifest_geometry_grain.py | 6 passed in 20.86s
+tests/test_d3_book_stability_diagnostic.py | 6 passed in 19.90s
+tests/test_d6_d7_gex_macro_display_only.py | 3 passed in 26.00s
+tests/test_dcv_required_imports.py | 2 passed in 23.63s
+tests/test_ddd_execution_authority.py | 16 passed in 18.85s
+tests/test_ddd_production_integration.py | 8 passed in 12.62s
+tests/test_ddd_thesis_direction.py | 11 passed in 10.85s
+tests/test_descriptive_forecast_handoff.py | 7 passed in 27.28s
+tests/test_direction_geometry_semantic_repairs.py | 9 passed in 36.39s
+tests/test_direction_governance_contract.py | 17 passed in 56.71s
+tests/test_directional_bias_fixes.py | 19 passed in 17.33s
+tests/test_discovery_scope_and_macro_timestamp.py | 3 passed in 11.16s
+tests/test_dynamic_options_domain_persistence.py | 11 passed in 17.63s
+tests/test_dynamic_options_non_discard_policy.py | 4 passed in 11.04s
+tests/test_dynamic_options_outcomes.py | 32 passed in 82.31s (0:01:22)
+tests/test_dynamic_options_probability.py | 13 passed in 29.26s
+tests/test_dynamic_options_ranking.py | 14 passed in 40.85s
+tests/test_dynamic_session_phase0.py | 16 passed in 14.23s
+tests/test_dynamic_session_phase2.py | 15 passed in 37.54s
+tests/test_dynamic_session_phase4.py | 14 passed in 17.04s
+tests/test_dynamic_session_phase6.py | 13 passed in 15.26s
+tests/test_enrichment_ledger_p3.py | 5 passed in 22.95s
+tests/test_eod_options_research_handoff.py | 5 passed in 16.06s
+tests/test_eod_probe_uniform_window.py | 6 passed in 13.24s
+tests/test_ev3_cache_promotion.py | 2 passed in 7.02s
+tests/test_ev3_hold_and_move_window.py | 14 passed in 11.87s
+tests/test_ev3_options_handoff.py | 38 passed in 27.60s
+tests/test_ev3_stage0.py | 13 passed in 9.87s
+tests/test_ev_engine_v3.py | 20 passed in 8.44s
+tests/test_execution_monetisability_gate.py | 9 passed in 8.45s
+tests/test_f4_distance_to_trigger.py | 2 passed in 6.44s
+tests/test_f7_delta_weighted_pcr.py | 13 passed in 17.03s
+tests/test_fixspec_rr_options_state.py | 25 passed in 18.68s
+tests/test_handoff_contract_audit.py | 3 passed in 8.68s
+tests/test_ila_release_coverage_gate.py | 3 passed in 11.69s
+tests/test_ila_selected_contract_identity.py | 1 failed, 6 passed in 31.97s
+tests/test_lab_governed_handoff.py | 19 passed in 34.30s
+tests/test_lab_journal_handoff.py | 3 passed in 20.60s
+tests/test_lab_monetisation_gate.py | 6 passed in 10.56s
+tests/test_lab_priority_and_journal_ev_no_legacy.py | 8 passed in 14.48s
+tests/test_lab_strangle_direction.py | 9 passed in 53.08s
+tests/test_layer3_price_history_integrity.py | 7 passed, 14 warnings in 5.11s
+tests/test_layer3_volatility_leftovers.py | 27 passed, 20 warnings in 14.95s
+tests/test_level1_20260512_regressions.py | 2 passed in 15.85s
+tests/test_low_risk_pipeline_repairs.py | 5 passed in 4.45s
+tests/test_macro_enrichment_delta.py | 15 passed in 6.63s
+tests/test_market_physics.py | 10 passed in 6.34s
+tests/test_market_profile_manifest_p4c.py | 6 passed in 16.67s
+tests/test_missing_invalidation_authority_withheld.py | 4 passed in 7.92s
+tests/test_morning_gate_quote_reuse.py | 3 passed in 5.65s
+tests/test_morning_handoff_finalizer.py | 11 passed, 3 subtests passed in 10.24s
+tests/test_morning_selected_contract_identity.py | 3 passed in 8.78s
+tests/test_olm_execution_authority.py | 27 passed in 10.03s
+tests/test_option_liquidity_lifecycle.py | 18 passed in 36.01s
+tests/test_options_crossed_quote_integration.py | 8 passed in 13.84s
+tests/test_options_liquidity_morning_lab.py | 7 passed in 18.59s
+tests/test_p1_candidate_record.py | 7 passed in 6.65s
+tests/test_p1_compression_episode.py | 5 passed in 6.43s
+tests/test_p1_compression_single_owner.py | 3 passed in 10.13s
+tests/test_p1_insufficient_daily_history_label.py | 3 passed in 6.38s
+tests/test_p1_thesis_target_from_governing_candidate.py | 4 passed in 6.13s
+tests/test_p2_thesis_step.py | 12 passed in 2.05s
+tests/test_p3_trigger_events.py | 8 passed in 6.73s
+tests/test_p3_trigger_layer_no_direction.py | 2 passed in 1.58s
+tests/test_p4_actuarial_no_invented_values.py | 5 passed, 1 warning in 5.55s
+tests/test_p4_matching_state_parity.py | 4 passed in 15.12s
+tests/test_p4_no_run_clock_in_state.py | 3 passed in 5.58s
+tests/test_p4_one_history_policy.py | 5 passed in 5.71s
+tests/test_p4_side_block_timezone_seam.py | 2 passed in 4.93s
+tests/test_p4_vanguard_context_only.py | 5 passed in 5.64s
+tests/test_package_free_evening_p4.py | 9 passed in 39.59s
+tests/test_phase0_characterisation.py | 9 passed in 12.77s
+tests/test_phase0_duplicate_output_keys.py | 2 passed in 7.53s
+tests/test_physics_forward_verdict.py | 14 passed in 14.72s
+tests/test_physics_inputs_f8.py | 4 passed in 8.55s
+tests/test_pre_evening_production_repairs.py | 10 passed, 13 subtests passed in 12.47s
+tests/test_pretrade_focus_handoff.py | 9 passed in 12.30s
+tests/test_production_readiness_guardrails.py | 4 passed in 8.56s
+tests/test_trigger_layer_governance.py | 8 passed in 8.85s
+tests/test_vanguard_production_fixes.py | 6 passed in 6.37s
+tests/test_vanguard_reference_input_p2.py | 6 passed in 1069.08s (0:17:49)
+tests/test_vol_regime_db_consistent_f3.py | 8 passed in 5.29s
+tests/test_wbs_eod_advisory_contract.py | 3 passed in 6.44s
+tests/test_ws2_trigger_spine.py | 6 passed in 6.24s
+tests/ws2_trigger_spine_runtime_probe.py | no tests ran in 5.32s
+tests_rebuild | 169 passed in 30.60s

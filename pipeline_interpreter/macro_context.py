@@ -134,7 +134,7 @@ def load_macro_packet(
     if payload_id and payload_id != _text(reference["packet_id"]):
         raise MacroPacketError("MACRO_PACKET_ID_MISMATCH")
     freshness = _text(reference["freshness"]).upper()
-    if freshness in {"STALE", "MISSING", "INVALID"}:
+    if freshness in {"STALE", "MISSING", "INVALID", "FUTURE_TIMESTAMP"}:
         state = MacroContextState.STALE_CONTEXT
     else:
         raw_state = _text(

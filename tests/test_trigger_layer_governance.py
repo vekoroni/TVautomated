@@ -12,6 +12,9 @@ def _range_break_row(**overrides):
         "catalyst_proximity": "WITHIN_3D",
         "days_in_range": 4,
         "asof_date": "2026-08-28",
+        # Phase 5.3 (ACK 8 Oct 2026): GO eligibility mirrors the thesis's own event readiness.
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
+        "geometry_justification": "JUSTIFIED",   # output-trust item 3 (ACK decision 1): GO also needs justified geometry
     }
     row.update(overrides)
     return row

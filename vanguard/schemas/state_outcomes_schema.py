@@ -368,6 +368,16 @@ class ActuarialOutcomes:
     ret_pctl_20d_p95: Optional[float] = None
     ret_pctl_20d_p99: Optional[float] = None
 
+    # === RC05 (Phase 4, 8 Oct 2026): honest statistics ===
+    # The expected_value_* fields are win-rate-weighted CONDITIONAL MEDIANS - a heuristic, not the arithmetic mean
+    # (Codex B17: 1% vs 25.25% on the same cohort). The arithmetic means are published beside them. Undefined
+    # statistics (no winners / no losers / no labels) are NaN with a status, never an invented +5% / -3% / 0.1 / 0.0.
+    mean_return_5d: Optional[float] = None
+    mean_return_10d: Optional[float] = None
+    mean_return_20d: Optional[float] = None
+    expected_value_basis: str = "MEDIAN_WEIGHTED_HEURISTIC_NOT_ARITHMETIC_MEAN"
+    outcome_value_status: str = "MEASURED"
+
     # Non-null observation count backing the percentiles above, per horizon.
     # Can differ across horizons and from n_observations/sample_size (which
     # count the matched sample before any per-horizon dropna).

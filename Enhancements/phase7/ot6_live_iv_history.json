@@ -1,0 +1,25 @@
+{
+  "run": "20261008_220129",
+  "rows": 2788,
+  "labelled_IV_HISTORY_252D": 2139,
+  "samples": {
+    "min": 20,
+    "median": 57.0,
+    "max": 107
+  },
+  "short_history_rows": 2139,
+  "full_window_rows": 0,
+  "other_sources": {
+    "MISSING": 508,
+    "RV_RANGE_PROXY": 140,
+    "UNAVAILABLE": 1
+  },
+  "smci": [
+    {
+      "iv_percentile": 0.5,
+      "iv_rank": 30.5,
+      "ivp_label": "FAIR",
+      "iv_rank_window_sessions": 66.0
+    }
+  ]
+}

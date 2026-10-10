@@ -15,8 +15,20 @@ from typing import Any, Mapping
 
 
 LONG_OPTION_POLICY_VERSION = "long-options-production-v1"
-LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT = 18.0
-LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT = 25.0
+
+
+def load_spread_policy(path: Path | str | None = None) -> Mapping[str, Any]:
+    """E15 (ACK 6 Oct 2026): every spread threshold, as a fraction of mid, from config "spread_policy"."""
+    path = path or Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+    policy = json.loads(Path(path).read_text(encoding="utf-8-sig"))["spread_policy"]
+    if policy.get("version") != "spread_policy_v1" or policy.get("unit") != "FRACTION_OF_MID":
+        raise ValueError("unsupported spread_policy version or unit")
+    return MappingProxyType(dict(policy))
+
+
+SPREAD_POLICY = load_spread_policy()
+LONG_OPTION_EXECUTABLE_SPREAD_MAX_PCT = round(SPREAD_POLICY["executable_max"] * 100.0, 6)
+LONG_OPTION_REVIEWABLE_SPREAD_MAX_PCT = round(SPREAD_POLICY["reviewable_max"] * 100.0, 6)
 LONG_OPTION_ALLOWED_STRUCTURES = frozenset({"LONG_SINGLE"})
 LONG_OPTION_ALLOWED_SIDES = frozenset({"CALL", "PUT"})
 LONG_OPTION_ALLOWED_INSTRUMENTS = frozenset({"LONG_CALL", "LONG_PUT"})

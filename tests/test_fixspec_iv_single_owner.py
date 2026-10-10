@@ -74,7 +74,7 @@ def test_history_percentile_and_range_rank_are_published_as_different_disclosed_
     assert result["iv_rank"] == pytest.approx(51.3, abs=0.05)      # (0.40 − 0.20) / (0.59 − 0.20) × 100
     assert result["iv_rank_definition"] == oi.IV_RANK_DEFINITION == "RANGE_IV_HISTORY"
     assert result["iv_rank_window_sessions"] == 40
-    assert result["ivp_source"] == "IV_HISTORY_252D"
+    assert result["ivp_source"] == "IV_HISTORY"   # output-trust item 6: the method; samples disclosed separately
     assert result["ivp_label"] == "FAIR"
     assert result["iv_vs_rv_range_252d"] == 0.90                    # the proxy is kept under its own name
 
@@ -94,7 +94,7 @@ def test_resolver_prefers_history_then_proxy_then_marketdata_and_names_what_it_s
     contract = {"iv_percentile_marketdata": 0.80, "iv_rank_marketdata": 80.0, "iv_engine_vrp_signal": "SELL_EDGE"}
     out = oi.resolve_iv_ownership(ctx, contract)
     assert out["iv_percentile"] == 0.30 and out["iv_rank"] == 42.0 and out["ivp_label"] == "CHEAP"
-    assert out["ivp_source"] == "IV_HISTORY_252D"
+    assert out["ivp_source"] == "IV_HISTORY"
     assert set(out["ivp_suppressed_sources"]) == {"RV_RANGE_PROXY", "MARKETDATA_CONTRACT_IVRANK", "IV_ENGINE_PROXY"}
 
     proxy_only = oi.resolve_iv_ownership({"iv_vs_rv_range_primary": 0.90}, {"iv_percentile_marketdata": 0.10})

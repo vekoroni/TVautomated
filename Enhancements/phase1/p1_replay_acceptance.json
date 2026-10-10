@@ -1,0 +1,36 @@
+{
+  "cut": "2026-10-05",
+  "sample": {
+    "INTRADAY_ONLY_UNTESTED": 40,
+    "NO_LIVE_SETUP": 40,
+    "DISCOVERY_SURVIVOR": 40
+  },
+  "outcome_by_previous_reason": {
+    "DROP": {
+      "DISCOVERY_SURVIVOR": 0,
+      "INTRADAY_ONLY_UNTESTED": 7,
+      "NO_LIVE_SETUP": 7
+    },
+    "SURVIVE": {
+      "DISCOVERY_SURVIVOR": 40,
+      "INTRADAY_ONLY_UNTESTED": 33,
+      "NO_LIVE_SETUP": 33
+    }
+  },
+  "drop_reasons_now": {
+    "NO_LIVE_SETUP": 10,
+    "INSUFFICIENT_DAILY_HISTORY": 4
+  },
+  "survivors": 106,
+  "directed": 60,
+  "directed_with_governing_setup": 60,
+  "R_a_target_is_governing_outcome": "60/60",
+  "R_a_trigger_is_governing": "60/60",
+  "R_a_one_candidate": "60/60",
+  "R_a_legacy_target_published": 0,
+  "target_source_counts": {
+    "BEH001_OUTCOME_LEVEL": 60,
+    "<none>": 46
+  },
+  "R_b_compression_columns_present": "106/106"
+}

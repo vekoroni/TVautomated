@@ -123,7 +123,19 @@ def test_manifest_cites_the_governed_discovery_input_and_the_runtime_macro(tmp_p
 # ------------------------------------------------------------------ thin package == stored package (minus declared stamps)
 @needs_real_run
 @pytest.mark.parametrize("ticker", ["AAPL", "VST", "XLF"])
-def test_thin_package_reproduces_the_stored_package_except_declared_stamps(ticker):
+def test_thin_package_reproduces_the_stored_package_except_declared_stamps(ticker, monkeypatch):
+    import scripts.data_contract_validator as dcv_module
+
+    # The data-contract validator judges staleness against the wall clock; the retained run is judged at its own
+    # evidence session, so freeze the validator's clock there (same fix as test_canonical_manifest_p1, 7 Oct 2026).
+    evidence_close = datetime(2026, 9, 25, 23, 0, tzinfo=timezone.utc)
+
+    class _EvidenceSessionClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return evidence_close.astimezone(tz) if tz else evidence_close.replace(tzinfo=None)
+
+    monkeypatch.setattr(dcv_module, "datetime", _EvidenceSessionClock)
     stored_path = REAL_DIR / "packages" / f"{ticker}.package.json"
     if not stored_path.is_file():
         pytest.skip(f"{ticker} not in the retained run")

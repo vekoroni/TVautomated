@@ -16,12 +16,18 @@ def _ready_row(**overrides):
         "selected_quote_timestamp_utc": "2026-09-18T20:00:00Z",
         "evidence_session_date": "2026-09-18",
         "monetisability_state": "MONETISABLE",
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state decides; monetisability is audit.
+        "anticipated_pays_state": "PAYS",
+        "anticipated_contract_symbol": "TEST261120C00100000",
         "direction_conflict_status": "NO_CONFLICT",
         "direction_resolution_call_score": 1.0,
         "direction_resolution_put_score": 0.0,
         "direction_resolution_evidence_json":
             '[{"family":"PRICE_FLOW","side":"CALL","direction_independent":true}]',
         "trigger_primary": "RANGE_BREAK", "trigger_price": 99.0,
+        # Phase 5.3 (ACK 8 Oct 2026): price confirmation = the thesis's own accepted break.
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
+        "geometry_justification": "JUSTIFIED",   # output-trust item 3: a ready setup needs justified geometry
         "wyckoff_execution_bias": "BULLISH",
         "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
         "garch_expected_move_1_5d": 5.0,

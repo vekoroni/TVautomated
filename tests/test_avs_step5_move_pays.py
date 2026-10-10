@@ -70,7 +70,10 @@ def test_morning_flags_a_move_that_does_not_pay_and_never_on_not_computed():
     out = _gate(_row(anticipated_pays_state="DOES_NOT_PAY_AT_ANTICIPATED_TIME", anticipated_value_multiple_q50=0.7))
     assert out["verdict"] == "FLAG" and out["morning_execution_permission"] == "MOVE_DOES_NOT_PAY"
     assert "0.7" in out["morning_unlock_condition"]
-    assert _gate(_row(anticipated_pays_state="NOT_COMPUTED"))["verdict"] == "GO"
+    # Superseded by E12 (ACK 6 Oct 2026): NOT_COMPUTED used to pass as GO ("does not block on its own"); it is now
+    # an option-review FLAG with its own reason (tests/test_avs_e12_option_review.py), never MOVE_DOES_NOT_PAY.
+    nc = _gate(_row(anticipated_pays_state="NOT_COMPUTED"))
+    assert nc["verdict"] == "FLAG" and nc["morning_execution_permission"] == "OPTION_REVIEW"
     assert _gate(_row(anticipated_pays_state="PAYS"))["verdict"] == "GO"
 
 

@@ -39,6 +39,8 @@ class RunCondition(str, Enum):
     POSTOPEN_CONTRACT_REFRESH = "POSTOPEN_CONTRACT_REFRESH"
     REPLAY = "REPLAY"
     TEST = "TEST"
+    # ACK 8 Oct 2026: an operator-started run whose data is used and measured, kept out of model fitting.
+    LIVE_PROVING = "LIVE_PROVING"
 
 
 class OperatorMode(str, Enum):
@@ -46,6 +48,7 @@ class OperatorMode(str, Enum):
     FORCE = "FORCE"
     REPLAY = "REPLAY"
     TEST = "TEST"
+    LIVE_PROVING = "LIVE_PROVING"
 
 
 class AuthorityCeiling(str, Enum):
@@ -198,6 +201,13 @@ def resolve_run_condition(
     action = RequestedAction(str(getattr(requested_action, "value", requested_action)).upper())
     phase = SessionPhase(str(getattr(session_phase, "value", session_phase)).upper())
     mode = OperatorMode(str(getattr(operator_mode, "value", operator_mode)).upper())
+    if mode is OperatorMode.LIVE_PROVING:
+        # Deviations are recorded on the run, never relabelled TEST. A Morning keeps its session-phase condition:
+        # it is the Morning's execution mode (pre-open thesis check vs post-open contract refresh).
+        if action is RequestedAction.VALIDATE:
+            return (RunCondition.PREOPEN_THESIS_CHECK if phase is SessionPhase.PREMARKET
+                    else RunCondition.POSTOPEN_CONTRACT_REFRESH)
+        return RunCondition.LIVE_PROVING
     if code_dirty or mode is OperatorMode.TEST:
         return RunCondition.TEST
     if action is RequestedAction.REPLAY or mode is OperatorMode.REPLAY:

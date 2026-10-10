@@ -292,6 +292,7 @@ def test_morning_gate_routes_unresolved_direction_to_stand_down() -> None:
         "ticker": "WAIT",
         "run_id": "20990101_010101",
         "authority_source_stage": "FINAL_EXECUTION",
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",  # M-REVIEW-01: Morning authority = an adopted thesis
         "final_route": "OPTIONS_GO_REVIEW",
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "capital_permission": "EOD_CANDIDATE_ONLY",

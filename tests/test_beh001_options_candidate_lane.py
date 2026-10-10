@@ -98,14 +98,16 @@ def test_one_failure_never_affects_others():
     assert out["AAA|1d|CAMPAIGN|Spring Candidate|1"]["Expression_Status"] == "CONTRACT_FOUND"
 
 
-def test_options_run_writes_the_lane_after_its_own_outputs_and_never_fails():
+def test_options_run_writes_the_lane_before_its_own_outputs_and_never_fails():
+    # Phase 5.4 (ACK 8 Oct 2026): the lane runs before the Options rows are saved so each row carries the per-ticker
+    # summary of the other theses priced; it still never fails the Options run.
     from pathlib import Path
     source = Path("scripts/avshunter_options_intelligence.py").read_text(encoding="utf-8")
     body = source[source.index("def run_options_layer("):]
     hook = body.index("_run_candidate_expression_lane(vanguard_csv")
-    assert body.index("out_df.to_csv(out_path") < hook
-    assert body.index("out_df.to_csv(latest_path") < hook
-    block = body[hook - 300:hook + 300]
+    assert hook < body.index("out_df.to_csv(out_path")
+    assert hook < body.index("out_df.to_csv(latest_path")
+    block = body[hook - 400:hook + 700]
     assert "try:" in block and "except Exception" in block
 
 
@@ -123,9 +125,10 @@ def test_lane_helper_reads_the_packet_and_writes_one_row_per_candidate(tmp_path,
     monkeypatch.setattr(oi, "select_best_contract", calls.select)
     eligible = pd.DataFrame([{"ticker": "AAA"}, {"ticker": "BBB"}])
     results = [{"ticker": "AAA", "option_chain_dataset_id": "ds1"}, {"ticker": "BBB"}]
-    path = oi._run_candidate_expression_lane(str(run / "vanguard" / "vanguard_signals.csv"), eligible, results,
+    rows = oi._run_candidate_expression_lane(str(run / "vanguard" / "vanguard_signals.csv"), eligible, results,
                                              "R1", str(tmp_path))
-    lane = pd.read_csv(path)
+    lane = pd.read_csv(tmp_path / "options_candidate_expressions_R1.csv")   # Phase 5.4: the rows are returned too
+    assert len(rows) == len(lane)
     assert len(lane) == len(RECORDS)
     assert (lane["Expression_Status"] == "CONTRACT_FOUND").sum() == 2
     assert oi._run_candidate_expression_lane(str(tmp_path / "X" / "vanguard" / "v.csv"), eligible, results,

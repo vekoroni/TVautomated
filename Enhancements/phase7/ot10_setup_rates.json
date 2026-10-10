@@ -1,0 +1,175 @@
+{
+  "calibration": {
+    "slope": 0.9619,
+    "intercept": -0.0322,
+    "ece": 0.0207,
+    "brier": 0.1902,
+    "n": 73961,
+    "groups": 74
+  },
+  "setups": 78,
+  "lane_setups_compared": 16,
+  "lane_setups_below_50pct_within_hold": 9,
+  "compare": [
+    {
+      "lane": "A",
+      "setup": "1d|SOS -> LPS continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.678,
+      "within_hold_holdout": 0.5796,
+      "shrunk_original": 0.5777,
+      "n_holdout": 1099,
+      "hold_bars": 30.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1d|SOW -> LPSY continuation|ACTIVATED|BEAR",
+      "lane_hit_holdout": 0.686,
+      "within_hold_holdout": 0.5424,
+      "shrunk_original": 0.5255,
+      "n_holdout": 872,
+      "hold_bars": 20.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1d|Spring Candidate|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.522,
+      "within_hold_holdout": 0.4214,
+      "shrunk_original": 0.4226,
+      "n_holdout": 757,
+      "hold_bars": 53.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "A",
+      "setup": "1d|Failed Upthrust Continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.623,
+      "within_hold_holdout": 0.5,
+      "shrunk_original": 0.4621,
+      "n_holdout": 130,
+      "hold_bars": 7.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1d|Failed Spring Continuation|ACTIVATED|BEAR",
+      "lane_hit_holdout": 0.523,
+      "within_hold_holdout": 0.3721,
+      "shrunk_original": 0.4062,
+      "n_holdout": 86,
+      "hold_bars": 4.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "A",
+      "setup": "1d|Change-of-Behaviour Reversal|DETECTED|BULL",
+      "lane_hit_holdout": 0.615,
+      "within_hold_holdout": 0.5458,
+      "shrunk_original": 0.5118,
+      "n_holdout": 568,
+      "hold_bars": 40.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1w|SOS -> LPS continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.66,
+      "within_hold_holdout": 0.597,
+      "shrunk_original": 0.5401,
+      "n_holdout": 1320,
+      "hold_bars": 26.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1w|SOW -> LPSY continuation|ACTIVATED|BEAR",
+      "lane_hit_holdout": 0.68,
+      "within_hold_holdout": 0.5526,
+      "shrunk_original": 0.5388,
+      "n_holdout": 704,
+      "hold_bars": 16.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1w|Failed Upthrust Continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.612,
+      "within_hold_holdout": 0.4592,
+      "shrunk_original": 0.4278,
+      "n_holdout": 294,
+      "hold_bars": 6.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "A",
+      "setup": "1w|Change-of-Behaviour Reversal|DETECTED|BULL",
+      "lane_hit_holdout": 0.551,
+      "within_hold_holdout": 0.471,
+      "shrunk_original": 0.5024,
+      "n_holdout": 724,
+      "hold_bars": 36.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "A",
+      "setup": "1mo|SOS -> LPS continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.667,
+      "within_hold_holdout": 0.5648,
+      "shrunk_original": 0.5149,
+      "n_holdout": 409,
+      "hold_bars": 6.0,
+      "below_50pct_line": false
+    },
+    {
+      "lane": "A",
+      "setup": "1mo|SOW -> LPSY continuation|ACTIVATED|BEAR",
+      "lane_hit_holdout": 0.547,
+      "within_hold_holdout": 0.4672,
+      "shrunk_original": 0.5452,
+      "n_holdout": 137,
+      "hold_bars": 5.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "A",
+      "setup": "1mo|Failed Upthrust Continuation|ACTIVATED|BULL",
+      "lane_hit_holdout": 0.507,
+      "within_hold_holdout": 0.4267,
+      "shrunk_original": 0.4718,
+      "n_holdout": 150,
+      "hold_bars": 4.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "B",
+      "setup": "1d|Spring Candidate|DETECTED|BULL",
+      "lane_hit_holdout": 0.76,
+      "within_hold_holdout": 0.2481,
+      "shrunk_original": 0.241,
+      "n_holdout": 1693,
+      "hold_bars": 53.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "B",
+      "setup": "1d|SOS -> LPS continuation|DETECTED|BULL",
+      "lane_hit_holdout": 0.76,
+      "within_hold_holdout": 0.2701,
+      "shrunk_original": 0.2595,
+      "n_holdout": 5749,
+      "hold_bars": 37.0,
+      "below_50pct_line": true
+    },
+    {
+      "lane": "B",
+      "setup": "1d|Buyer Absorption Breakout|DETECTED|BULL",
+      "lane_hit_holdout": 0.76,
+      "within_hold_holdout": 0.3406,
+      "shrunk_original": 0.3521,
+      "n_holdout": 2601,
+      "hold_bars": 20.0,
+      "below_50pct_line": true
+    }
+  ]
+}

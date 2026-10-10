@@ -55,6 +55,8 @@ from contracts.direction_governance import (
 from domain.structure_behaviour.engine import analyse_ticker as analyse_behaviour
 from domain.structure_behaviour.policy import load_policy as load_behaviour_policy
 from domain.structure_mode_phase import resolve_mode_phase_identity
+from domain.thesis_tier import (discovery_horizon, discovery_order, discovery_win_probability, thesis_tier,
+                                tier_policy)
 try:
     from scripts.macro_quant_packet import (
         build_macro_quant_packet,
@@ -1343,6 +1345,14 @@ def _beh001_summary_fields(beh: dict) -> dict:
             f'beh__{tf}_local_phase': reading.get('Local_Phase'),
             f'beh__{tf}_local_controller': reading.get('Local_Controller'),
             f'beh__{tf}_maturity': reading.get('Movement_Maturity'),
+            # P0-02 (Phase 1): canonical compression columns from the engine (single owner). The legacy
+            # crabel_* columns stay until the tier that consumes them retires (Phase 2).
+            f'beh__{tf}_compression_state': reading.get('Compression_State'),
+            f'beh__{tf}_compression_box_high': reading.get('Compression_Box_High'),
+            f'beh__{tf}_compression_box_low': reading.get('Compression_Box_Low'),
+            f'beh__{tf}_compression_episode_start': reading.get('Compression_Episode_Start'),
+            f'beh__{tf}_compression_location': reading.get('Compression_Location'),
+            f'beh__{tf}_compression_contracting_side': reading.get('Compression_Contracting_Side'),
         })
     primary = beh['handoff'].get('primary') or {}
     for key in ('Signal_Type', 'Signal_State', 'Structure_Scope', 'Trigger', 'Invalidation',
@@ -1716,10 +1726,31 @@ def scan_ticker_ultimate(
     _legacy_direction_basis = _discovery_direction_basis
     _beh_policy, _assign_runtime = _beh001_runtime()
     _beh = _beh001_reading(ticker, df, cfg, _beh_policy)
+    _enrich_candidate_records(_beh, close=px, atr_daily=atr_14_val)
+    # Phase 2 (ACK 8 Oct 2026): Discovery's thesis step is the ONE owner of direction. Every candidate gets a
+    # thesis decision; the ticker's side (the spine, until Phase 5) is set top-down by the highest tested timeframe
+    # with an adopted thesis. The engine's daily-primary handoff is kept as a legacy reading only.
     _handoff = _beh['handoff']
-    _primary = _handoff.get('primary')
-    _thesis_side = _handoff['thesis__side']
+    _theses, _spine = _thesis_step(_beh)
+    _thesis_side = _spine['side']
+    _primary = _handoff.get('primary') if (_handoff.get('primary') or {}).get('Direction') == _thesis_side else None
     _sigma_d = _daily_log_sigma(df)
+    # S2-1 (ACK 6 Oct 2026): ONE governing setup sets the lane and supplies the move, time and invalidation (it used
+    # to be picked four times with four rules). I-c: its own invalidation decides "thesis wrong"; the daily primary's
+    # level, when it is another setup, is published as an early warning only.
+    from domain.structure_behaviour.trade_lane import governed_invalidation, select_governing
+    from domain.trade_geometry import assess_trade_geometry
+    # G2-06 (verification 20261008_220129): only an adopted thesis governs; a refused candidate never supplies the
+    # trigger, target or invalidation (BRO, FA, ISRG reached the handoff without a governed invalidation).
+    _lane_fields, _governing = select_governing(_beh['candidates'], price=px, atr_daily=atr_14_val,
+                                                side=_thesis_side,
+                                                adopted_ids={_t['Candidate_ID'] for _t in _theses
+                                                             if _t['Adoption_State'] == 'ADOPTED'})
+    _governed_inval = governed_invalidation(_governing, _primary)
+    _attach_theses(_beh, _theses, _spine, _governing)
+    _attach_trigger_events(_beh, df, _beh_policy)
+    _gov_rec = next((c for c in _beh['candidates']
+                     if _governing and c.get('Candidate_ID') == _governing.get('Candidate_ID')), {})
     _side_geometry = {
         _side: assess_thesis_geometry(
             thesis_side=_side,
@@ -1731,22 +1762,27 @@ def scan_ticker_ultimate(
         )
         for _side in ('BULL', 'BEAR')
     }
-    if _thesis_side in {'BULL', 'BEAR'} and _primary is not None:
-        _assigned_geometry = assess_thesis_geometry(
-            thesis_side=_thesis_side, reference_price=px,
-            invalidation_price=_primary.get('Invalidation_Level'),
-            invalidation_source='BEHAVIOURAL_STRUCTURE',
-            target_price=_side_geometry[_thesis_side]['target_price'],
-            target_source=_side_geometry[_thesis_side]['target_source'],
-        )
+    if _thesis_side in {'BULL', 'BEAR'}:
+        # P0-04 (Phase 1, 7 Oct 2026): the target is the governing candidate's own Outcome_Level. The legacy
+        # validator geometry (_side_geometry, PRIOR_RANGE_EXTREME) stays visible in wyckoff_validation_* only.
+        _assigned_geometry = _governed_thesis_geometry(
+            _thesis_side, px, _governed_inval['governed_invalidation_level'], _governing)
     else:
         _assigned_geometry = assess_thesis_geometry(
             thesis_side='UNASSIGNED', reference_price=px, invalidation_price=None,
             invalidation_source=None, target_price=None, target_source=None,
         )
+    _spine_status, _spine_unassigned = _spine_direction_status(_thesis_side, _spine['info'], _governing)
     _thesis_basis = json.dumps({
         'policy_version': _beh_policy['version'],
+        'spine_rule': _spine['info']['rule'],
+        'top_timeframe': _spine['info']['top_timeframe'],
+        'side_setter_id': _spine['info']['side_setter_id'],
+        'conflicting_ids': _spine['info']['conflicting_ids'],
+        'intraday_alignment': _spine['info']['intraday_alignment'],
+        'legacy_daily_primary_side': _handoff.get('thesis__side'),
         'primary_candidate_id': _primary.get('Candidate_ID') if _primary else None,
+        'governing_candidate_id': _governing.get('Candidate_ID') if _governing else None,
         'signal_type': _primary.get('Signal_Type') if _primary else None,
         'signal_state': _primary.get('Signal_State') if _primary else None,
         'scope': _primary.get('Structure_Scope') if _primary else None,
@@ -1755,9 +1791,9 @@ def scan_ticker_ultimate(
     }, sort_keys=True, separators=(',', ':'))
     _adapter = legacy_direction_adapter_v1(
         thesis_side=_thesis_side,
-        direction_status=_handoff['thesis__direction_status'],
+        direction_status=_spine_status,
         direction_basis=_thesis_basis,
-        unassigned_reason=_handoff['thesis__unassigned_reason'],
+        unassigned_reason=_spine_unassigned,
         geometry=_assigned_geometry,
     )
     _thesis_governs = _assign_runtime['production_direction_source'] == 'beh001_v1'
@@ -1767,14 +1803,45 @@ def scan_ticker_ultimate(
         _discovery_direction_basis = _adapter['discovery_direction_basis']
     _thesis_fields = {
         'thesis__side': _thesis_side,
-        'thesis__direction_status': _handoff['thesis__direction_status'],
+        'thesis__direction_status': _spine_status,
         'thesis__direction_basis': _thesis_basis,
-        'thesis__unassigned_reason': _handoff['thesis__unassigned_reason'],
+        'thesis__unassigned_reason': _spine_unassigned,
+        'thesis__spine_rule': _spine['info']['rule'],
+        'thesis__top_timeframe': _spine['info']['top_timeframe'],
+        'thesis__side_setter_id': _spine['info']['side_setter_id'],
+        'thesis__conflicting_count': len(_spine['info']['conflicting_ids']),
+        'thesis__intraday_alignment': _spine['info']['intraday_alignment'],
+        'thesis__adopted_count': sum(1 for _t in _theses if _t['Adoption_State'] == 'ADOPTED'),
+        # Phase 5.4: unresolved theses Options prices on both conditional sides.
+        'thesis__conditional_count': sum(1 for _t in _theses if _t['Adoption_State'] == 'UNRESOLVED'
+                                         and _t.get('Conditional_Bull_Trigger') is not None
+                                         and _t.get('Conditional_Bear_Trigger') is not None),
+        'thesis__events_status': _gov_rec.get('Events_Status'),
+        'thesis__last_event': _gov_rec.get('Last_Event'),
+        'thesis__last_event_date': _gov_rec.get('Last_Event_Date'),
+        'thesis__last_event_level': _gov_rec.get('Last_Event_Level'),
+        'thesis__last_event_interval': _gov_rec.get('Last_Event_Interval'),
+        # Phase 5.3: the governing thesis's event readiness; no governing thesis -> not adopted (never neutral).
+        'thesis__readiness': _gov_rec.get('Readiness') or 'NOT_ADOPTED',
+        'thesis__readiness_reason': _gov_rec.get('Readiness_Reason') or 'NO_GOVERNING_THESIS',
+        'thesis__readiness_event_date': _gov_rec.get('Readiness_Event_Date'),
+        'legacy_beh_daily_primary_side': _handoff.get('thesis__side'),
         'thesis__side_assignment_policy_version': _beh_policy['version'],
         'thesis__evidence_independence': 'SINGLE_FAMILY_OHLCV',
         'thesis__production_direction_source': _assign_runtime['production_direction_source'],
         'geometry_status': _adapter['geometry_status'],
         'target_state': _adapter['target_state'],
+        **_governed_trigger_fields(_governing if _thesis_side in {'BULL', 'BEAR'} else None),
+        # Output-trust item 3 (ACK decision 1, 9 Oct 2026): geometry from the planned entry against the setup's
+        # measured hit rate; the governing setup's own levels, never moved.
+        **assess_trade_geometry(
+            side=_thesis_side if _thesis_side in {'BULL', 'BEAR'} else None,
+            readiness=_gov_rec.get('Readiness'), session_price=px,
+            trigger_level=_governed_trigger_fields(_governing)['thesis_trigger_level'] if _governing else None,
+            target=_governing.get('Outcome_Level') if _governing else None,
+            invalidation=_governed_inval['governed_invalidation_level'],
+            early_warning=_governed_inval['early_warning_invalidation_level'],
+            atr_daily=atr_14_val, lane=_lane_fields),
         **_beh001_summary_fields(_beh),
         'legacy_direction': _legacy_direction,
         'legacy_discovery_direction_status': _legacy_direction_status,
@@ -1800,7 +1867,7 @@ def scan_ticker_ultimate(
         # still published, under shadow names, so no consumer reads it as the
         # governed side (Options rejects a thesis/legacy mismatch).
         _thesis_fields = {
-            (f'shadow_{key}' if key.startswith('thesis__') or key in {'geometry_status', 'target_state'}
+            (f'shadow_{key}' if key.startswith(('thesis__', 'geometry_')) or key in {'target_state'}
              else key): value
             for key, value in _thesis_fields.items()
         }
@@ -1845,15 +1912,27 @@ def scan_ticker_ultimate(
     composite_for_tier = composite_adjusted
     
     # === TIER ASSIGNMENT ===
-    if early_signal:
-        tier = 0  # EARLY
-        tier_label = "TIER_0_EARLY"
+    # Output-trust item 11 (ACK D11-1, 10 Oct 2026): the tier is the thesis disposition (domain/thesis_tier.py) and
+    # no ticker is dropped on the legacy composite. tier_source legacy_composite (config) restores the Wyckoff/Crabel
+    # composite tier and its tier-4 drop (rollback; code kept).
+    _legacy_tier = tier_policy()["tier_source"] == "legacy_composite"
+    if _legacy_tier:
+        if early_signal:
+            tier = 0  # EARLY
+            tier_label = "TIER_0_EARLY"
+        else:
+            tier = assign_tier(wyckoff_score, crabel_score, composite_for_tier, cfg)
+            tier_label = f"TIER_{tier}"
+        _tier_fields = {"tier_basis": "LEGACY_WYCKOFF_CRABEL_COMPOSITE", "tier_reason": tier_label}
     else:
-        tier = assign_tier(wyckoff_score, crabel_score, composite_for_tier, cfg)
-        tier_label = f"TIER_{tier}"
+        def _tf(key):
+            return _thesis_fields.get(key, _thesis_fields.get(f"shadow_{key}"))
+        _tier_fields = thesis_tier({"thesis__readiness": _tf("thesis__readiness"),
+                                    "geometry_justification": _tf("geometry_justification")})
+        tier, tier_label = _tier_fields.pop("tier"), _tier_fields.pop("tier_label")
     
-    # Skip rejected tickers (tier 4)
-    if tier == 4 and not early_signal:
+    # Skip rejected tickers (tier 4) - legacy rollback only
+    if _legacy_tier and tier == 4 and not early_signal:
         return _reject("ELIG_TIER4_LOW_COMPOSITE")
     
     # === CALCULATE INDICATORS ===
@@ -2224,6 +2303,7 @@ def scan_ticker_ultimate(
         'ticker': ticker,
         'tier': tier,
         'tier_label': tier_label,
+        **_tier_fields,
         'stock_price': current_price,
         'entry_price': current_price,
         # DISC-01 / FIX-01: structural stop — from asymmetry gate, Wyckoff, or ATR fallback
@@ -2238,7 +2318,9 @@ def scan_ticker_ultimate(
         
         # Scores
         'wyckoff_score': round(wyckoff_score, 1),
-        'crabel_score': round(crabel_score, 1),
+        # P0-06 (7 Oct 2026): the score that sets tier/composite is published under its own name. It used to be
+        # written as 'crabel_score' and then silently overwritten by the precor score below (the published value).
+        'discovery_crabel_score': round(crabel_score, 1),
         'composite_score': round(composite_score, 1),          # raw (pre-prior)
         'composite_adjusted': round(composite_for_tier, 1),    # Enhancement 1: post-prior
         'prior_adjustment': prior_adj,                         # Enhancement 1: delta applied
@@ -2272,14 +2354,14 @@ def scan_ticker_ultimate(
         'move_age_bucket':          _move_age_bkt,
         'crabel_bucket':            _crabel_bkt,
 
-        # Canonical stale / data-quality fields for Vanguard, EIL, MVE and Intelligence Lab.
-        'bar_data_days_old':        _bar_days_old_val,
-        'bar_data_asof':            _data_asof_attr,
-        'data_source':              _data_source_attr,
-        'is_stale':                 bool(_is_stale),
-        'win_probability': round(win_probability, 1),
-        # B1 (ACK 3 Oct 2026): 40 + 0.25 x composite, clamped 35-75 - a rescaled score, not a probability.
-        'win_probability_basis': 'COMPOSITE_RESCALED_NOT_A_PROBABILITY',
+        # Canonical stale / data-quality fields: written once, in the data-provenance block below
+        # (P0-06, 7 Oct 2026: this block repeated the same keys with the same values).
+        # Output-trust item 11 (ACK D11-2): the governing setup's held-out within-hold rate, else null (NO_SETUP_RATE).
+        # Rollback: B1 (ACK 3 Oct 2026) 40 + 0.25 x composite, clamped 35-75 - a rescaled score, not a probability.
+        **(discovery_win_probability(_lane_fields) if not _legacy_tier else
+           {'win_probability': round(win_probability, 1),
+            'win_probability_basis': 'COMPOSITE_RESCALED_NOT_A_PROBABILITY', 'win_probability_n': None}),
+        'composite_basis': 'LEGACY_WYCKOFF_CRABEL',
         'wyckoff_phase_bucket':   phase_bucket,           # broad bucket — actuarial DB state hash
         'wyckoff_phase_granular': phase_bucket_granular,  # sub-phase — setup quality scoring
         'wyckoff_mode_phase_key': _mode_phase_key,  # v2 structural identity; not legacy actuarial bucket
@@ -2323,7 +2405,7 @@ def scan_ticker_ultimate(
             'MEDIUM'  if _dom_event_norm in _MED_QUALITY_EVENTS  else
             'OBSERVE'
         ),
-        # Crabel data — full numeric score forwarded
+        # Crabel data — full numeric score forwarded (precor's score; unchanged published value of crabel_score)
         'crabel_score':           round(_crabel_score_raw, 1),
         'crabel_compression':     round(crabel_result.get('compression', float('nan')), 3),
         'crabel_pattern':         crabel_result.get('pattern', ''),
@@ -2344,7 +2426,7 @@ def scan_ticker_ultimate(
         'discovery_direction_basis': _discovery_direction_basis,
         'direction':             _candidate_direction,
         # XLU-D10 (ACK 2 Oct 2026): Phase and Event categorise the trade on its own side.
-        **_thesis_category_fields(_beh, _candidate_direction),
+        **_thesis_category_fields(_beh, _candidate_direction, _governing),
         'direction_authority':   'DISCOVERY_GOVERNED',
         'governed_invalidation_spot': _governed_invalidation_spot,
         'governed_invalidation_source': _governed_invalidation_source,
@@ -2517,8 +2599,9 @@ def scan_ticker_ultimate(
     signal['intake_flags'] = "|".join(_intake_flags) if _intake_flags else "NONE"
     signal['price_band'] = price_band(px, cfg)
     # Trade lane (ACK, 4 Oct 2026): A trade now / B early entry / C awaiting trigger; NO_LIVE_SETUP drops.
-    from domain.structure_behaviour.trade_lane import ticker_lane
-    signal.update(ticker_lane(_beh['candidates'], price=px, atr_daily=atr_14_val, side=_thesis_side))
+    # S2-1: the lane is the governing setup's (selected once, above).
+    signal.update(_lane_fields)
+    signal.update({k: v for k, v in _governed_inval.items() if k != 'governed_invalidation_level'})
 
     # Add early position fields if applicable. DSC-13: under the corrected
     # policy the Tier-0 heuristic never overwrites the structural stop (a
@@ -2667,11 +2750,11 @@ def _beh001_candidates_for_drop(ticker, df, cfg, outcome: dict, read: Optional[s
     return beh["candidates"]
 
 
-def _thesis_category_fields(beh, direction) -> dict:
-    """Phase/Event categorisation from the BEH-001 readings; never raises (XLU-D10)."""
-    from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS, FIELDS, thesis_category
+def _thesis_category_fields(beh, direction, governing=None) -> dict:
+    """Phase/Event categorisation from the governing setup (S2-1); never raises (XLU-D10)."""
+    from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS, FIELDS, governed_thesis
     try:
-        return thesis_category((beh or {}).get('readings') or {}, direction)
+        return governed_thesis((beh or {}).get('readings') or {}, direction, governing)
     except Exception as exc:
         out = {field: None for field in (*FIELDS, *EVIDENCE_FIELDS)}
         out['thesis_structure_alignment'] = f'NOT_EVALUATED_ERROR:{type(exc).__name__}'
@@ -2720,12 +2803,158 @@ def _scan_with_lifecycle(ticker, df, cfg, wyckoff_engine):
     if signal is None:
         return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE",
                       "reason_code": diagnostic.get("reason_code", "NO_SIGNAL_AT_ANY_HORIZON")}
-    if signal.get("trade_lane") in ("NO_LIVE_SETUP", "INTRADAY_ONLY_UNTESTED"):
+    reason = _lane_drop_reason(signal)
+    if reason is not None:
         # Nothing to trade or watch this run (ACK, 4 Oct 2026), or only untested intraday setups (ACK, 5 Oct 2026);
         # the reading already made travels with the drop.
-        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE", "reason_code": signal["trade_lane"],
+        return None, {**row, "outcome": "DROP", "lifecycle_state": "DROPPED_STAGE", "reason_code": reason,
                       "tier": signal.get("tier", ""), "_beh001_candidates": signal.get("_beh001_candidates", [])}
     return signal, None
+
+
+def _enrich_candidate_records(beh: dict, *, close, atr_daily) -> None:
+    """Phase 1: publish every engine candidate as a CandidateRecord (contracts/candidate_record.py), in place.
+
+    The candidate's own levels, side and state are never changed; the contract fields are added once here, so the
+    behavioural_candidates file, the lifecycle ledger and the forecast packet all carry the same record.
+    """
+    from contracts.candidate_record import enrich_candidate
+    for candidate in beh.get('candidates') or []:
+        enrich_candidate(candidate, close=close, atr_daily=atr_daily, readings=beh.get('readings') or {})
+
+
+def _thesis_step(beh: dict):
+    """Phase 2: thesis decision per candidate + the ticker spine (ACK 8 Oct 2026 top-down rule).
+
+    Returns (theses, {'side': BULL|BEAR|UNASSIGNED, 'info': spine details}). Intraday counts as measured when any
+    intraday timeframe was evaluated; it only labels the spine (intraday_alignment), never sets the side.
+    """
+    from contracts.thesis_record import INTRADAY_TIMEFRAMES, build_thesis, ticker_spine
+    readings = beh.get('readings') or {}
+    theses = [build_thesis(c, readings=readings) for c in beh.get('candidates') or []]
+    intraday_measured = any((readings.get(tf) or {}).get('Status') == 'EVALUATED' for tf in INTRADAY_TIMEFRAMES)
+    side, info = ticker_spine(theses, intraday_measured=intraday_measured)
+    return theses, {'side': side, 'info': info}
+
+
+def _attach_theses(beh: dict, theses: list, spine: dict, governing) -> None:
+    """Carry each thesis decision and its spine role on its own candidate record (one row per candidate)."""
+    from contracts.thesis_record import spine_roles
+    roles = spine_roles(theses, spine['side'], spine['info'], (governing or {}).get('Candidate_ID'))
+    by_id = {t['Candidate_ID']: t for t in theses}
+    for candidate in beh.get('candidates') or []:
+        t = by_id.get(candidate.get('Candidate_ID')) or {}
+        candidate.update({k: v for k, v in t.items() if k.startswith('Thesis_') or k in (
+            'Adoption_State', 'Deciding_Reason', 'Unresolved_Condition', 'Lifecycle_State', 'Readiness',
+            'Conditional_Bull_Trigger', 'Conditional_Bear_Trigger')})
+        candidate['Spine_Role'] = roles.get(candidate.get('Candidate_ID'), 'OTHER')
+
+
+def _attach_trigger_events(beh: dict, df: pd.DataFrame, policy) -> None:
+    """Phase 3: timestamped events for each thesis on ITS OWN timeframe, from ITS OWN origin, against ITS OWN levels.
+
+    Directed thesis: break level = its trigger on its side, plus its invalidation and target. Undirected compression:
+    both box edges. Weekly / monthly bars are built from the completed daily bars (the engine's resampling).
+    The detector (domain/structure_behaviour/trigger_events.py) chooses no side and gates nothing.
+    """
+    from domain.structure_behaviour.engine import resample_daily
+    from domain.structure_behaviour.sequences import build_sequences
+    from domain.structure_behaviour.trigger_events import detect_events
+    from contracts.thesis_record import event_readiness
+    rules = {'1d': None, '1w': 'W-FRI', '1mo': 'ME'}
+    lookback = int((policy.get('trigger_events') or {}).get('lookback_bars', 20))
+    cols = [c for c in ('date', 'open', 'high', 'low', 'close', 'volume') if c in df.columns]
+    seqs = {}
+    for candidate in beh.get('candidates') or []:
+        tf = str(candidate.get('Timeframe') or '')
+        if tf not in rules:
+            candidate.update({'Events_Status': 'NOT_MEASURED:INTRADAY_EVENTS_IN_MORNING', 'Events_JSON': '[]',
+                              'Readiness': 'NOT_MEASURED', 'Readiness_Reason': 'EVENTS_INTRADAY_IN_MORNING',
+                              'Readiness_Event_Date': None})
+            continue
+        if tf not in seqs:
+            bars = df[cols].reset_index(drop=True)
+            seqs[tf] = build_sequences(bars if rules[tf] is None else resample_daily(bars, rules[tf]), tf, policy)
+        seq = seqs[tf]
+        side = candidate.get('Proposed_Side')
+        levels = {}
+        if side in {'BULL', 'BEAR'}:
+            up = side == 'BULL'
+            levels = {'up' if up else 'down': candidate.get('Trigger_Level'),
+                      'invalidation': (candidate.get('Invalidation_Level'), 'BELOW' if up else 'ABOVE')
+                      if candidate.get('Invalidation_Level') is not None else None,
+                      'target': (candidate.get('Outcome_Level'), 'ABOVE' if up else 'BELOW')
+                      if candidate.get('Outcome_Level') is not None else None}
+        elif candidate.get('Conditional_Bull_Trigger') is not None:
+            levels = {'up': candidate.get('Conditional_Bull_Trigger'), 'down': candidate.get('Conditional_Bear_Trigger')}
+        origin = str(candidate.get('Candidate_ID') or '').rsplit('|', 1)[-1][:10]
+        start = None
+        if getattr(seq, 'frame', None) is not None and seq.status == 'EVALUATED':
+            labels = [seq.label(i)[:10] for i in range(len(seq.frame))]
+            start = next((i for i, d in enumerate(labels) if d >= origin), None) if origin else None
+            if start is None:
+                start = max(1, len(seq.frame) - lookback)
+        res = detect_events(seq, levels=levels, from_index=start or 1, policy=policy)
+        last = res['last_event'] or {}
+        # Phase 5.3: readiness is decided here, from this thesis's own events (the single readiness owner).
+        ready = event_readiness(res['events'], side=candidate.get('Thesis_Side'),
+                                adoption_state=candidate.get('Adoption_State'), events_status=res['status'])
+        candidate.update({'Readiness': ready['Readiness'], 'Readiness_Reason': ready['Readiness_Reason'],
+                          'Readiness_Event_Date': ready['Readiness_Event_Date']})
+        candidate.update({'Events_Status': res['status'], 'Event_Count': len(res['events']),
+                          'Last_Event': last.get('event'), 'Last_Event_Date': last.get('date'),
+                          'Last_Event_Level': last.get('level'), 'Last_Event_Interval': last.get('interval'),
+                          'Events_JSON': json.dumps([{k: e[k] for k in ('event', 'date', 'level', 'interval')}
+                                                     for e in res['events']], separators=(',', ':'))})
+
+
+def _spine_direction_status(side: str, info: dict, governing):
+    """Direction status and unassigned reason for the ticker row, from the thesis step (not the daily primary)."""
+    if side not in {'BULL', 'BEAR'}:
+        return f"UNRESOLVED:{info.get('reason') or 'NO_ADOPTED_THESIS'}", info.get('reason') or 'NO_ADOPTED_THESIS'
+    if governing:
+        return f"{governing.get('Signal_State')}:{governing.get('Signal_Type')}", ''
+    return f"ADOPTED_NO_GOVERNING_SETUP:{info.get('top_timeframe')}", ''
+
+
+def _governed_thesis_geometry(thesis_side: str, reference_price, invalidation_level, governing) -> dict:
+    """Thesis geometry from ONE candidate (P0-04): its invalidation and its own Outcome_Level as the target.
+
+    With no governing setup the target stays missing (target_state NONE) - never a legacy fallback.
+    """
+    target = governing.get('Outcome_Level') if governing else None
+    return assess_thesis_geometry(
+        thesis_side=thesis_side, reference_price=reference_price,
+        invalidation_price=invalidation_level, invalidation_source='BEHAVIOURAL_STRUCTURE',
+        target_price=target, target_source='BEH001_OUTCOME_LEVEL' if target is not None else None,
+    )
+
+
+def _governed_trigger_fields(governing) -> dict:
+    """The thesis trigger level is the governing candidate's own Trigger_Level (P0-04)."""
+    level = governing.get('Trigger_Level') if governing else None
+    try:
+        level = float(level) if level is not None else None
+    except (TypeError, ValueError):
+        level = None
+    return {'thesis_trigger_level': level,
+            'thesis_trigger_source': 'BEH001_TRIGGER_LEVEL' if level is not None else None,
+            'thesis_trigger_candidate_id': governing.get('Candidate_ID') if governing else None}
+
+
+def _lane_drop_reason(signal: dict):
+    """The lifecycle reason for a lane drop, or None when the ticker continues.
+
+    P0-07 (Phase 1, 7 Oct 2026): when the daily chart was never read because the stored history is shorter than
+    the engine's minimum, the reason says so (INSUFFICIENT_DAILY_HISTORY). NO_LIVE_SETUP / INTRADAY_ONLY_UNTESTED
+    describe a chart that was read; Phase 0 found 1,221 tickers mislabelled on run 20261006_060401.
+    """
+    lane = signal.get("trade_lane")
+    if lane not in ("NO_LIVE_SETUP", "INTRADAY_ONLY_UNTESTED"):
+        return None
+    if str(signal.get("beh__1d_status") or "").startswith("NOT_EVALUATED_INSUFFICIENT"):
+        return "INSUFFICIENT_DAILY_HISTORY"
+    return lane
 
 
 def _macro_source_path(explicit: str = "") -> Path:
@@ -2952,7 +3181,15 @@ def main() -> None:
 
         if signal:
             # FIX 3: Stamp horizon_bucket and discovery_basis using three-horizon router
-            _horizon = assign_discovery_horizon(signal)
+            # Output-trust item 11 (ACK D11-3): the label is the setup's evidence hold (never a drop); the legacy tier
+            # router runs only on the rollback path.
+            if tier_policy()["tier_source"] == "legacy_composite":
+                _horizon = assign_discovery_horizon(signal)
+            else:
+                _hz = discovery_horizon(signal)
+                _horizon = _hz["horizon_bucket"]
+                signal["horizon_hold_sessions"] = _hz["horizon_hold_sessions"]
+                signal["horizon_basis"] = _hz["horizon_basis"]
             if _horizon is None:
                 # Genuine no-signal at any horizon — only legitimate discard
                 logger.debug("NO_SIGNAL_AT_ANY_HORIZON: %s", t)
@@ -2970,13 +3207,16 @@ def main() -> None:
                 })
             else:
                 signal["horizon_bucket"] = _horizon
-                signal["discovery_basis"] = (
-                    "CURRENT_PHASE_ALIGNMENT" if _horizon == "1_5d"
-                    else "STRUCTURAL_SETUP_BUILDING" if _horizon == "6_10d"
-                    else "REGIME_TRANSITION_SIGNAL"
-                )
-                if _horizon in ("6_10d", "11_20d"):
-                    signal.setdefault("opportunity_label", "WATCH_FOR_REGIME_FLIP")
+                if tier_policy()["tier_source"] == "legacy_composite":
+                    signal["discovery_basis"] = (
+                        "CURRENT_PHASE_ALIGNMENT" if _horizon == "1_5d"
+                        else "STRUCTURAL_SETUP_BUILDING" if _horizon == "6_10d"
+                        else "REGIME_TRANSITION_SIGNAL"
+                    )
+                    if _horizon in ("6_10d", "11_20d"):
+                        signal.setdefault("opportunity_label", "WATCH_FOR_REGIME_FLIP")
+                else:
+                    signal["discovery_basis"] = f"THESIS_{signal.get('tier_label')}"
                 all_signals.append(signal)
                 for _c in _ticker_candidates:
                     _c["Discovery_Outcome"], _c["Discovery_Reason"] = "SURVIVE", "DISCOVERY_SURVIVOR"
@@ -3044,8 +3284,12 @@ def main() -> None:
         df_all = _enrich_with_activist_signals(df_all, activist_signals, logger)
         # Enhancement 3: Sort by tier then lift_proxy_score (not raw composite)
         # This ensures within each tier, the highest-lift setups surface first.
-        sort_col = 'lift_proxy_score' if 'lift_proxy_score' in df_all.columns else 'composite_score'
-        df_all = df_all.sort_values(['tier', sort_col], ascending=[True, False])
+        # Output-trust item 11 (ACK D11-1): thesis tier, then the setup's within-hold rate, lane hit rate, ticker.
+        if tier_policy()["tier_source"] == "legacy_composite":
+            sort_col = 'lift_proxy_score' if 'lift_proxy_score' in df_all.columns else 'composite_score'
+            df_all = df_all.sort_values(['tier', sort_col], ascending=[True, False])
+        else:
+            df_all = discovery_order(df_all)
         df_all.to_csv(out_candidates, index=False)
         
         # Early positions only
@@ -3073,6 +3317,9 @@ def main() -> None:
             "tier_1_confirmed": tier_counts[1],
             "tier_2_observe": tier_counts[2],
             "tier_3_watch": tier_counts[3],  # RISK_OFF: boosted-sub-T2 accumulation setups
+            # Output-trust item 11: under thesis_v1 tier 0 = thesis GO (the quality gate reads thesis_go).
+            "tier_source": tier_policy()["tier_source"],
+            "thesis_go": tier_counts[0] if tier_policy()["tier_source"] != "legacy_composite" else None,
             "candidate_ratio": round(len(all_signals) / len(tickers) * 100, 1) if tickers else 0,
             "early_ratio": round(tier_counts[0] / len(tickers) * 100, 1) if tickers else 0,
             "stale_ticker_count": stale_ticker_count,  # tickers that used STALE_CACHE fallback

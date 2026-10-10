@@ -1,0 +1,62 @@
+{
+  "run": "20261008_220129",
+  "book_rows": 2788,
+  "one_story": {
+    "rows_with_thesis_trigger": 2370,
+    "trigger_price_equals_thesis_trigger": 2370,
+    "trigger_price_source": {
+      "THESIS_TRIGGER_LEVEL": 2370,
+      "NOT_AVAILABLE_NO_THESIS_TRIGGER": 418
+    },
+    "thesis_rows_with_candidate_id": 2370,
+    "thesis_rows_with_events_status": 2370,
+    "rows_without_thesis_trigger_but_trigger_price": 0
+  },
+  "go_is_readiness": {
+    "readiness_mix": {
+      "WAIT_TRIGGER": 1568,
+      "READY_FOR_HUMAN_REVIEW": 745,
+      "NOT_ADOPTED": 423,
+      "CLOSED_RETEST_FAILED": 24,
+      "CLOSED_OUTCOME_REACHED": 21,
+      "CLOSED_INVALIDATED": 7
+    },
+    "go_true": 745,
+    "go_true_and_ready": 745,
+    "ready_but_not_go": 0,
+    "go_but_not_ready": 0
+  },
+  "one_rank_owner": {
+    "lab_rank_equals_rank_key_order": 2347,
+    "rank_basis_present": 2788,
+    "blocked_rows": 4,
+    "worst_non_blocked_rank": 2787,
+    "best_blocked_rank": 2348
+  },
+  "alternatives": {
+    "rows_with_alternatives_tested": 2787,
+    "rows_with_alternative_contract": 2614
+  },
+  "dropoff_audit": {
+    "stages": {
+      "AFTER_EOD_BEFORE_MORNING": 2168,
+      "OPTIONS_INTELLIGENCE": 620,
+      "CANONICAL_MANIFEST": 145,
+      "BETWEEN_SCANNER_AND_DISCOVERY": 5,
+      "BETWEEN_UNIVERSE_AND_DISCOVERY": 387
+    },
+    "classes": {
+      "PROGRESS": 2168,
+      "GATE": 397,
+      "EVIDENCE": 363,
+      "ECONOMIC": 5,
+      "SELECTION": 392
+    }
+  },
+  "run_label": {
+    "run_condition": "TEST",
+    "operator_mode": "STANDARD",
+    "baseline_eligible": false,
+    "run_status": "COMPLETED"
+  }
+}

@@ -492,9 +492,12 @@ def persist_morning_validation_events(
 
     written = reused = skipped = 0
     event_ids: list[str] = []
+    skipped_tickers: list[str] = []
     for row in rows:
         if not _row_text(row, "ticker") or not _row_text(row, "thesis_id"):
             skipped += 1
+            # M-G3-03 / item 8: name what was skipped (a blank ticker is reported as such, never invented)
+            skipped_tickers.append(_row_text(row, "ticker") or "TICKER_MISSING")
             continue
         event = validation_event_from_morning_row(
             row,
@@ -518,6 +521,7 @@ def persist_morning_validation_events(
         "written": written,
         "reused": reused,
         "skipped_missing_governed_identity": skipped,
+        "skipped_missing_governed_identity_tickers": skipped_tickers,
         "event_ids": event_ids,
         "destination": str(destination),
     }

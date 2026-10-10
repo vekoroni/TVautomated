@@ -56,10 +56,15 @@ def _base(ticker: str, side: str, spot: float, *, target: float, stop: float, **
         "selected_quote_dataset_id": f"quote-{ticker}", "monetisability_quote_snapshot_id": f"quote-{ticker}",
         "selected_quote_timestamp_utc": f"{SESSION}T19:59:30Z", "evidence_session_date": SESSION,
         "monetisability_state": "MONETISABLE", "direction_conflict_status": "NO_CONFLICT",
+        # L5 (ACK 7 Oct 2026): the anticipated move's pays state decides; monetisability is audit.
+        "anticipated_pays_state": "PAYS", "anticipated_contract_symbol": occ,
         "direction_resolution_call_score": 1.0 if side == "CALL" else 0.0,
         "direction_resolution_put_score": 0.0 if side == "CALL" else 1.0,
         "direction_resolution_evidence_json": _evidence(side),
         "trigger_primary": "RANGE_BREAK",
+        # Phase 5.3 (ACK 8 Oct 2026): price confirmation = the thesis's own accepted break.
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
+        "geometry_justification": "JUSTIFIED",   # output-trust item 3: a ready setup needs justified geometry
         "trigger_price": spot * (0.995 if side == "CALL" else 1.005),
         "wyckoff_execution_bias": "BULLISH" if side == "CALL" else "BEARISH",
         "thesis_structure_alignment": "ALIGNED",   # XLU-D10: readiness needs an event on the trade side
@@ -94,7 +99,8 @@ def _population() -> list[dict]:
               direction_resolution_put_score=0.7, direction_resolution_call_score=0.6),
         # 4. no two-sided quote on the selected contract (temporary market condition)
         _base("NOQT", "CALL", 15.75, target=17.20, stop=14.90, contract_bid="", contract_ask="",
-              bid="", ask="", monetisability_state="NOT_EVALUATED", monetisability_quote_snapshot_id=""),
+              bid="", ask="", monetisability_state="NOT_EVALUATED", monetisability_quote_snapshot_id="",
+              anticipated_pays_state="NOT_COMPUTED"),
         # 5. generated 3R target (not independently supported)
         _base("GEN3", "PUT", 64.00, target=55.00, stop=67.00, target_price_source="TARGET_3R"),
         # 6. explicitly invalidated by the governed lifecycle
@@ -135,7 +141,8 @@ def test_sector_headwind_is_advisory_and_a_new_quote_restores_expression_not_dir
     before = project_evening_thesis(noqt)
     assert before["evening_thesis_bucket"] == "EOD_EVIDENCE_REVIEW"
     recovered = dict(noqt, contract_bid=0.95, contract_ask=1.05, bid=0.95, ask=1.05,
-                     monetisability_state="MONETISABLE", monetisability_quote_snapshot_id="quote-NOQT")
+                     monetisability_state="MONETISABLE", monetisability_quote_snapshot_id="quote-NOQT",
+                     anticipated_pays_state="PAYS")
     after = project_evening_thesis(recovered)
     assert after["evening_thesis_bucket"] == "EOD_ACTION_SETUP_READY"
     assert recovered["canonical_direction"] == noqt["canonical_direction"] == "CALL"

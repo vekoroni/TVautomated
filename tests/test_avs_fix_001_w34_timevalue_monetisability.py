@@ -50,7 +50,7 @@ def evaluate(*, direction, target, ask, strike, iv, dte, hold, bid=0.0):
     hyd = hydrated(symbol=symbol, bid=bid, ask=ask, strike=strike)
     row = {
         "canonical_direction": direction,
-        "target_spot": target,
+        "anticipated_level_q50": target,   # Monetisability values at the anticipated level (ACK 6-7 Oct 2026); the legacy target is no longer read.
         "selected_quote_timestamp_utc": "2026-09-01T20:00:00Z",
     }
     intrinsic = evaluate_long_option_monetisability(row, hyd)
@@ -77,7 +77,7 @@ class NamedFixtures(unittest.TestCase):
         self.assertEqual(intrinsic["monetisability_state"], "NOT_MONETISABLE")
         self.assertEqual(
             intrinsic["monetisability_reason"],
-            "STRUCTURAL_TARGET_DOES_NOT_CLEAR_BREAKEVEN",
+            "ANTICIPATED_LEVEL_DOES_NOT_CLEAR_BREAKEVEN",   # renamed 7 Oct 2026: it values the anticipated level
         )
         self.assertEqual(timevalue["monetisability_state_timevalue"], "MONETISABLE")
         self.assertGreater(timevalue["monetisability_timevalue_profit_pct"], 20.0)
@@ -175,7 +175,7 @@ class NamedAbsences(unittest.TestCase):
     def _reason(self, **overrides):
         hyd = hydrated()
         row = {
-            "canonical_direction": "CALL", "target_spot": 100.82,
+            "canonical_direction": "CALL", "anticipated_level_q50": 100.82,
             "selected_quote_timestamp_utc": "2026-09-01T20:00:00Z",
         }
         intrinsic = evaluate_long_option_monetisability(row, hyd)

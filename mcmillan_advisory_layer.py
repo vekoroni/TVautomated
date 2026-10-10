@@ -127,10 +127,11 @@ def _iv_bucket(ivp: float | None) -> str:
 
 
 def _gex_bucket(row: Mapping[str, Any]) -> str:
+    # Output-trust item 5 (D5-4, 9 Oct 2026): the ticker's own GEX only. dealer_gamma_state / gex_regime_score are the
+    # macro packet's SPY values (identical on every row); they never stand in for the ticker's.
     label = _text(
         row,
         "eil_gex_regime",
-        "dealer_gamma_state",
         "gex_regime",
         "gamma_regime",
         "gamma_velocity_label",
@@ -140,7 +141,7 @@ def _gex_bucket(row: Mapping[str, Any]) -> str:
     if any(token in label for token in ("POSITIVE", "PIN", "DAMPEN", "LONG_GAMMA")):
         return "PINNING_GEX"
 
-    score = _number(row, "gex_regime_score", "eil_gex_score")
+    score = _number(row, "eil_gex_score")
     if score is not None:
         scaled = score / 100.0 if score > 1 else score
         if scaled <= 0.40:

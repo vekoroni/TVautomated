@@ -16,6 +16,9 @@ LABEL_COLUMNS = (
     "lab_rank", "priority_rank", "tier", "lab_verdict", "final_action", "thesis_state",
     "ev3_absolute_state", "ev_status", "ev2_ev_status", "ev_source", "dte", "direction_confidence",
     "trigger_go_eligible", "monetisability_state", "lab_execution_status",
+    # Output-trust item 10.2 (ACK 9-10 Oct 2026): the setup, its stated rate and the planned hold, for forward calibration.
+    "trade_lane_setup", "trade_lane", "trade_lane_side", "planned_hold_sessions", "setup_rate_within_hold",
+    "setup_hold_bars", "geometry_measured_hit_rate", "anticipated_p_outcome_by_limit",
 )
 
 

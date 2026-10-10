@@ -1,0 +1,98 @@
+{
+  "compared": 200,
+  "vol_regime": {
+    "agree": "200/200",
+    "live_values": {
+      "NORMAL": 76,
+      "EXPANSION": 75,
+      "COMPRESSION": 49
+    },
+    "v7_values": {
+      "NORMAL": 76,
+      "EXPANSION": 75,
+      "COMPRESSION": 49
+    }
+  },
+  "trend_direction": {
+    "agree": "131/200",
+    "live_values": {
+      "DOWN": 88,
+      "SIDEWAYS": 75,
+      "UP": 37
+    },
+    "v7_values": {
+      "SIDEWAYS": 86,
+      "DOWN": 65,
+      "UP": 49
+    }
+  },
+  "structure_quality": {
+    "agree": "75/200",
+    "live_values": {
+      "WEAK": 200
+    },
+    "v7_values": {
+      "WEAK": 75,
+      "NEUTRAL": 66,
+      "STRONG": 59
+    }
+  },
+  "phase_v2": {
+    "agree": "200/200",
+    "live_values": {
+      "EXHAUSTION": 123,
+      "CONTINUATION": 52,
+      "EARLY_TRANSITION": 25
+    },
+    "v7_values": {
+      "EXHAUSTION": 123,
+      "CONTINUATION": 52,
+      "EARLY_TRANSITION": 25
+    }
+  },
+  "momentum_bucket": {
+    "agree": "200/200",
+    "live_values": {
+      "LOW": 137,
+      "MID": 48,
+      "HIGH": 8,
+      "EXTREME": 7
+    },
+    "v7_values": {
+      "LOW": 137,
+      "MID": 48,
+      "HIGH": 8,
+      "EXTREME": 7
+    }
+  },
+  "location_bucket": {
+    "agree": "200/200",
+    "live_values": {
+      "TRANSITION_ZONE": 85,
+      "NEAR_HIGH": 46,
+      "NEAR_LOW": 44,
+      "MID_RANGE": 25
+    },
+    "v7_values": {
+      "TRANSITION_ZONE": 85,
+      "NEAR_HIGH": 46,
+      "NEAR_LOW": 44,
+      "MID_RANGE": 25
+    }
+  },
+  "trend_maturity": {
+    "agree": "104/200",
+    "live_values": {
+      "MIDDLE": 89,
+      "SIDEWAYS_BUILDING": 69,
+      "LATE": 36,
+      "SIDEWAYS_RANGING": 6
+    },
+    "v7_values": {
+      "SIDEWAYS_BUILDING": 86,
+      "MIDDLE": 44,
+      "LATE": 41,
+      "EARLY": 29
+    }
+  }
+}

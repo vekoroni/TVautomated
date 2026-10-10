@@ -1,0 +1,116 @@
+{
+  "run": "20261008_220129",
+  "rows": 2788,
+  "valued_rows": 1222,
+  "models": {
+    "AMERICAN_CRR": 1222
+  },
+  "dividend_basis": {
+    "ASSUMED_ZERO": 1222
+  },
+  "pays_transitions": {
+    "NOT_COMPUTED -> NOT_COMPUTED": 1566,
+    "PAYS -> PAYS": 754,
+    "DOES_NOT_PAY_AT_ANTICIPATED_TIME -> DOES_NOT_PAY_AT_ANTICIPATED_TIME": 307,
+    "PAYS -> DOES_NOT_PAY_AT_ANTICIPATED_TIME": 159,
+    "DOES_NOT_PAY_AT_ANTICIPATED_TIME -> PAYS": 2
+  },
+  "new_over_old_multiple": {
+    "n": 1222,
+    "q25": 0.8135,
+    "median": 0.9084,
+    "q75": 0.9514
+  },
+  "scenarios": {
+    "scenario_target_return_on_premium": {
+      "n": 1222,
+      "q25": -0.1684,
+      "median": 0.1299,
+      "q75": 0.487
+    },
+    "scenario_invalidation_return_on_premium": {
+      "n": 1219,
+      "q25": -1.0,
+      "median": -0.8762,
+      "q75": -0.5755
+    },
+    "scenario_stall_return_on_premium": {
+      "n": 1222,
+      "q25": -0.6824,
+      "median": -0.4111,
+      "q75": -0.2494
+    }
+  },
+  "examples": [
+    {
+      "ticker": "NEO",
+      "old_multiple_gross_european": 3.1553,
+      "old_pays": "PAYS",
+      "anticipated_value_multiple_q50": 3.0456,
+      "anticipated_pays_state": "PAYS",
+      "valuation_model": "AMERICAN_CRR",
+      "scenario_exit_sessions": 20,
+      "scenario_target_exit_spot": 20.5663,
+      "scenario_target_return_on_premium": 2.0456,
+      "scenario_invalidation_return_on_premium": -1.0,
+      "scenario_stall_return_on_premium": -0.5983,
+      "valuation_cost_basis": "ENTRY_AT_ASK_PLUS_FEE|EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD|fees $1.10 open $0.10 close per contract"
+    },
+    {
+      "ticker": "COHR",
+      "old_multiple_gross_european": 3.7197,
+      "old_pays": "PAYS",
+      "anticipated_value_multiple_q50": 3.684,
+      "anticipated_pays_state": "PAYS",
+      "valuation_model": "AMERICAN_CRR",
+      "scenario_exit_sessions": 42,
+      "scenario_target_exit_spot": 440.0,
+      "scenario_target_return_on_premium": 2.684,
+      "scenario_invalidation_return_on_premium": -1.0,
+      "scenario_stall_return_on_premium": -0.8788,
+      "valuation_cost_basis": "ENTRY_AT_ASK_PLUS_FEE|EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD|fees $1.10 open $0.10 close per contract"
+    },
+    {
+      "ticker": "SMCI",
+      "old_multiple_gross_european": 2.1562,
+      "old_pays": "PAYS",
+      "anticipated_value_multiple_q50": 2.1805,
+      "anticipated_pays_state": "PAYS",
+      "valuation_model": "AMERICAN_CRR",
+      "scenario_exit_sessions": 17,
+      "scenario_target_exit_spot": 54.1117,
+      "scenario_target_return_on_premium": 1.1805,
+      "scenario_invalidation_return_on_premium": -0.8215,
+      "scenario_stall_return_on_premium": -0.2581,
+      "valuation_cost_basis": "ENTRY_AT_ASK_PLUS_FEE|EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD|fees $1.10 open $0.10 close per contract"
+    },
+    {
+      "ticker": "HPE",
+      "old_multiple_gross_european": 2.456,
+      "old_pays": "PAYS",
+      "anticipated_value_multiple_q50": 2.4856,
+      "anticipated_pays_state": "PAYS",
+      "valuation_model": "AMERICAN_CRR",
+      "scenario_exit_sessions": 17,
+      "scenario_target_exit_spot": 91.0142,
+      "scenario_target_return_on_premium": 1.4856,
+      "scenario_invalidation_return_on_premium": -1.0,
+      "scenario_stall_return_on_premium": -0.2464,
+      "valuation_cost_basis": "ENTRY_AT_ASK_PLUS_FEE|EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD|fees $1.10 open $0.10 close per contract"
+    },
+    {
+      "ticker": "HAFN",
+      "old_multiple_gross_european": 3.01,
+      "old_pays": "PAYS",
+      "anticipated_value_multiple_q50": 2.9937,
+      "anticipated_pays_state": "PAYS",
+      "valuation_model": "AMERICAN_CRR",
+      "scenario_exit_sessions": 14,
+      "scenario_target_exit_spot": 12.5255,
+      "scenario_target_return_on_premium": 1.9937,
+      "scenario_invalidation_return_on_premium": -1.0,
+      "scenario_stall_return_on_premium": -0.2006,
+      "valuation_cost_basis": "ENTRY_AT_ASK_PLUS_FEE|EXIT_AT_MODEL_LESS_HALF_QUOTED_SPREAD|fees $1.10 open $0.10 close per contract"
+    }
+  ]
+}

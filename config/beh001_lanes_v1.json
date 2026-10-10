@@ -16,6 +16,10 @@
         "hit": [
           0.726,
           0.678
+        ],
+        "n": [
+          1071,
+          1099
         ]
       },
       {
@@ -24,6 +28,10 @@
         "hit": [
           0.657,
           0.686
+        ],
+        "n": [
+          679,
+          872
         ]
       },
       {
@@ -32,6 +40,10 @@
         "hit": [
           0.517,
           0.522
+        ],
+        "n": [
+          704,
+          757
         ]
       },
       {
@@ -40,6 +52,10 @@
         "hit": [
           0.551,
           0.623
+        ],
+        "n": [
+          118,
+          130
         ]
       },
       {
@@ -48,6 +64,10 @@
         "hit": [
           0.506,
           0.523
+        ],
+        "n": [
+          89,
+          86
         ]
       },
       {
@@ -56,6 +76,10 @@
         "hit": [
           0.612,
           0.615
+        ],
+        "n": [
+          935,
+          1036
         ]
       }
     ],
@@ -66,6 +90,10 @@
         "hit": [
           0.668,
           0.66
+        ],
+        "n": [
+          1291,
+          1320
         ]
       },
       {
@@ -74,6 +102,10 @@
         "hit": [
           0.667,
           0.68
+        ],
+        "n": [
+          622,
+          704
         ]
       },
       {
@@ -82,6 +114,10 @@
         "hit": [
           0.52,
           0.612
+        ],
+        "n": [
+          304,
+          294
         ]
       },
       {
@@ -90,6 +126,10 @@
         "hit": [
           0.587,
           0.551
+        ],
+        "n": [
+          1154,
+          1216
         ]
       }
     ],
@@ -100,6 +140,10 @@
         "hit": [
           0.612,
           0.667
+        ],
+        "n": [
+          502,
+          409
         ]
       },
       {
@@ -108,6 +152,10 @@
         "hit": [
           0.669,
           0.547
+        ],
+        "n": [
+          175,
+          137
         ]
       },
       {
@@ -116,6 +164,10 @@
         "hit": [
           0.584,
           0.507
+        ],
+        "n": [
+          178,
+          150
         ]
       }
     ]
@@ -138,6 +190,10 @@
         "mean_result_pct": [
           0.18,
           0.71
+        ],
+        "n": [
+          1068,
+          1157
         ]
       },
       {
@@ -150,6 +206,10 @@
         "mean_result_pct": [
           0.18,
           0.71
+        ],
+        "n": [
+          1068,
+          1157
         ]
       },
       {
@@ -162,6 +222,10 @@
         "mean_result_pct": [
           0.18,
           0.71
+        ],
+        "n": [
+          1068,
+          1157
         ]
       }
     ]
@@ -170,5 +234,12 @@
     "60m",
     "15m",
     "5m"
-  ]
+  ],
+  "n_basis": "n = records behind each hit (original, held out). Lane A: eval_v5 duration records, reproduced exactly (Enhancements/phase7/lane_hit_n.py). Lane B: the R2 rule's pooled panel rows (one hit for the three types).",
+  "geometry_justification": {
+    "approved": "ACK 9 Oct 2026 (output-trust decision 1): GEOMETRY_NOT_JUSTIFIED stays visible and ranked but cannot be GO",
+    "measured_hit": "LOWER_OF_PANELS",
+    "interval_confidence": 0.95,
+    "interval_method": "WILSON"
+  }
 }

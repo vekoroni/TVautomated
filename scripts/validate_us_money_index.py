@@ -1,55 +1,38 @@
-#!/usr/bin/env python3
-"""Validate and normalise an advisory US Money Index sidecar."""
+"""Check a US Money Index packet against the pipeline's own contract before the Evening (ACK 8 Oct 2026).
 
+Usage:  venv\\Scripts\\python.exe scripts\\validate_us_money_index.py [path]
+Default path: dropbox\\macro\\avshunter_us_money_index.json. Read-only. Exit 0 = accepted, 1 = refused (reason printed).
+"""
 from __future__ import annotations
 
-import argparse
-import json
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
 
-from contracts.us_money_index_contract import load_us_money_index_sidecar  # noqa: E402
+from contracts.us_money_index_contract import (  # noqa: E402
+    USMoneyIndexValidationError, load_us_money_index_sidecar,
+)
+
+FLAGS = ("regime_change_since_monday", "monetisation_change_since_monday", "risk_off_transition")
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--input",
-        default=str(ROOT / "dropbox" / "macro" / "avshunter_us_money_index.json"),
-    )
-    parser.add_argument("--output", default="")
-    args = parser.parse_args()
+def main(argv: list[str]) -> int:
+    path = Path(argv[1]) if len(argv) > 1 else ROOT / "dropbox" / "macro" / "avshunter_us_money_index.json"
     try:
-        packet = load_us_money_index_sidecar(args.input)
-    except Exception as error:
-        print(f"US MONEY INDEX INVALID: {error}", file=sys.stderr)
-        return 2
-    if args.output:
-        Path(args.output).write_text(json.dumps(packet, indent=2, default=str), encoding="utf-8")
-    print(json.dumps({
-        "status": "VALID_ADVISORY",
-        "packet_id": packet["packet_id"],
-        "source_contract_version": packet["source_contract_version"],
-        "normalised_contract_version": packet["contract_version"],
-        "market_as_of_session": packet["market_as_of_session"],
-        "quality_status": packet["quality_status"],
-        "quality_issues": packet.get("quality_issues", []),
-        "authority": packet["authority"],
-        "execution_permission": packet["execution_permission"],
-        "advisory_blocks": sorted(packet.get("advisory_context", {})),
-        "sector_routes": {
-            direction: len(routes)
-            for direction, routes in packet.get("sector_routing", {}).items()
-        },
-        "unverified_metrics": packet["unverified_metrics"],
-    }, indent=2))
+        packet = load_us_money_index_sidecar(path)
+    except (USMoneyIndexValidationError, ValueError, OSError) as error:
+        print(f"REFUSED {path.name}: {error}")
+        return 1
+    state = packet.get("state") or {}
+    print(f"ACCEPTED {path.name}: packet {packet.get('packet_id')} quality {packet.get('quality_status')}")
+    for flag in FLAGS:
+        print(f"  {flag}={state.get(flag)} ({state.get(flag + '_basis', 'BOOLEAN')})")
+    for issue in packet.get("quality_issues") or []:
+        print(f"  note: {issue}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main(sys.argv))

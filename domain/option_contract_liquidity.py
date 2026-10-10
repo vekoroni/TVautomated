@@ -146,7 +146,6 @@ DEFAULT_QUOTE_FRESHNESS_MAX_SECONDS = 15 * 60
 DEFAULT_MONITOR_SESSIONS = 3
 DEFAULT_EXIT_BUFFER_SESSIONS = 5
 DEFAULT_MIN_REMAINING_RUNWAY_FACTOR = 0.20
-GOVERNED_HOLD_SESSIONS = frozenset({5.0, 10.0, 20.0})
 CALENDAR_DAYS_PER_SESSION = 7.0 / 5.0   # unit conversion: trading sessions -> calendar days (R3)
 
 EXECUTABLE_STATES = frozenset({"EXECUTABLE_NOW"})
@@ -212,6 +211,23 @@ def calculate_dte_requirement(
     DTE that leaves one session before the exit buffer - below it the contract cannot be held at all.
     """
     hold = _finite_number(remaining_hold_sessions)
+    # L3 (ACK 7 Oct 2026): no evidence hold -> no hold-based minimum DTE, stated (NO_EVIDENCE_HOLD). The contract
+    # must still be holdable past issue (minimum_holdable_dte). The retired {5, 10, 20} restriction is gone: a
+    # caller-stated hold (e.g. contract selection's governed window) is used as stated.
+    if remaining_hold_sessions is None or (hold is None and str(remaining_hold_sessions).strip() == ""):
+        exit_buffer = _finite_number(exit_buffer_sessions)
+        if exit_buffer is None or exit_buffer < 0:
+            raise ValueError("DTE requirement inputs must be finite numbers")
+        return {
+            "remaining_hold_sessions": None,
+            "monitor_sessions": _finite_number(monitor_sessions),
+            "exit_buffer_sessions": exit_buffer,
+            "minimum_required_sessions": None,
+            "minimum_required_dte": None,
+            "minimum_holdable_dte": math.ceil((exit_buffer + 1) * CALENDAR_DAYS_PER_SESSION),
+            "dte_requirement_basis": "NO_EVIDENCE_HOLD",
+            "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+        }
     monitor = _finite_number(monitor_sessions)
     exit_buffer = _finite_number(exit_buffer_sessions)
     if hold is None or monitor is None or exit_buffer is None:
@@ -222,10 +238,6 @@ def calculate_dte_requirement(
         # Step 4b (ACK 3 Oct 2026): a daily event's q80 time to its level (duration evidence) may size the runway.
         if hold < 1 or hold != int(hold):
             raise ValueError("an evidence hold must be a positive whole number of sessions")
-    elif hold not in GOVERNED_HOLD_SESSIONS:
-        raise ValueError(
-            "remaining_hold_sessions must be a governed routed hold in {5, 10, 20}"
-        )
     sessions = math.ceil(hold + monitor + exit_buffer)
     return {
         "remaining_hold_sessions": hold,
@@ -234,6 +246,7 @@ def calculate_dte_requirement(
         "minimum_required_sessions": sessions,
         "minimum_required_dte": math.ceil(sessions * CALENDAR_DAYS_PER_SESSION),
         "minimum_holdable_dte": math.ceil((exit_buffer + 1) * CALENDAR_DAYS_PER_SESSION),
+        "dte_requirement_basis": "EVIDENCE_HOLD" if evidence_hold else "STATED_HOLD",
         "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
     }
 
@@ -405,6 +418,17 @@ def classify_current_executability(
     """
     dte_value, minimum = _finite_number(dte), _finite_number(minimum_required_dte)
     holdable = _finite_number(minimum_holdable_dte)
+    if minimum is None and holdable is not None:
+        # L3 (ACK 7 Oct 2026): no evidence hold - only the holdable-past-issue floor applies, and it is stated.
+        result = _classify_current_executability(
+            bid=bid, ask=ask, bid_size=bid_size, ask_size=ask_size, quote_age_seconds=quote_age_seconds, dte=dte,
+            minimum_required_dte=holdable, moneyness_treatment=moneyness_treatment, listed_market=listed_market,
+            executable_spread_max_pct=executable_spread_max_pct, reviewable_spread_max_pct=reviewable_spread_max_pct,
+            quote_freshness_max_seconds=quote_freshness_max_seconds, require_displayed_size=require_displayed_size)
+        if "minimum_required_dte" in result:
+            result["minimum_required_dte"] = None
+        result["liquidity_reasons"] = list(result.get("liquidity_reasons", [])) + ["NO_EVIDENCE_HOLD"]
+        return result
     runway_short = (dte_value is not None and minimum is not None and holdable is not None
                     and holdable <= dte_value < minimum)
     result = _classify_current_executability(
@@ -761,7 +785,7 @@ class LifecycleInputs:
     bid: float | None
     ask: float | None
     dte: float
-    remaining_hold_sessions: float
+    remaining_hold_sessions: float | None      # L3: None = no evidence hold (no hold-based minimum DTE)
     forecast_vol_annual: float
     thesis_spot: float
     current_spot: float

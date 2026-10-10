@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +25,7 @@ def test_blank_primary_contract_promotes_live_repair_alternative(monkeypatch) ->
         "eod_candidate_authorized": True,
         "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",  # M-REVIEW-01: Morning authority = an adopted thesis
         "contract_repair_action": "ALTERNATIVES_AVAILABLE",
         "alternative_contract_1": "AAA260116C00100000",
         "alternative_contract_2": "AAA260116C00105000",
@@ -131,6 +132,7 @@ def test_missing_live_price_can_never_produce_go() -> None:
         "eod_candidate_authorized": True,
         "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",  # M-REVIEW-01: Morning authority = an adopted thesis
     }
     live = {
         "live_price": None,
@@ -177,6 +179,12 @@ def _go_row(**overrides) -> dict:
         "eod_candidate_authorized": True,
         "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
         "authority_source_stage": "FINAL_EXECUTION",
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",  # M-REVIEW-01: Morning authority = an adopted thesis
+        # M-G2-01 (ACK 10 Oct 2026): the Morning reprices every contract, so a GO row carries the thesis inputs the
+        # valuation needs (a blank pays state used to slip through; E12 makes an unvalued option a review).
+        "thesis_outcome_level": 115.0, "thesis_event_timeframe": "1d", "thesis_structure_alignment": "ALIGNED",
+        "thesis_duration_status": "IN_SAMPLE_REPLAY_NOT_VALIDATED", "thesis_duration_q50_bars": 10,
+        "thesis_duration_q80_bars": 21, "target_reachable_vol_annual": 0.40,
     }
     row.update(overrides)
     return row
@@ -201,6 +209,17 @@ def _quote(*, bid: float, ask: float, delta: float) -> dict:
     }
 
 
+def _live_expiry_code(min_days: int = 60) -> str:
+    """OCC expiry (YYMMDD) of the first Friday at least ``min_days`` after today, so the fixture contract is
+    never expired by the wall clock (the former fixed 260918 expiry lapsed on 18 Sep 2026)."""
+    expiry = date.today() + timedelta(days=min_days)
+    expiry += timedelta(days=(4 - expiry.weekday()) % 7)
+    return expiry.strftime("%y%m%d")
+
+
+LIVE_EXPIRY = _live_expiry_code()
+
+
 def _evaluated_ev3(row: dict, hydrated: dict) -> dict:
     return {
         "ev3_status": "EVALUATED_SHADOW",
@@ -214,7 +233,7 @@ def _evaluated_ev3(row: dict, hydrated: dict) -> dict:
 
 
 def test_primary_contract_recomputes_rr_and_ev3_with_one_identity(monkeypatch) -> None:
-    symbol = "AAA260918C00100000"
+    symbol = f"AAA{LIVE_EXPIRY}C00100000"
     row = _go_row(contract_symbol=symbol, recommended_contract=symbol)
     monkeypatch.setattr(morning_gate, "_evaluate_hydrated_ev3", _evaluated_ev3)
     monkeypatch.setattr(morning_gate, "_fetch_live_contract", lambda _symbol: _quote(bid=4.8, ask=5.0, delta=0.45))
@@ -236,7 +255,7 @@ def test_primary_contract_recomputes_rr_and_ev3_with_one_identity(monkeypatch) -
 
 
 def test_ev3_unavailable_remains_advisory_when_exact_rr_is_complete(monkeypatch) -> None:
-    symbol = "AAA260918C00100000"
+    symbol = f"AAA{LIVE_EXPIRY}C00100000"
     row = _go_row(contract_symbol=symbol, recommended_contract=symbol)
     monkeypatch.setattr(morning_gate, "_fetch_live_contract", lambda _symbol: _quote(bid=4.8, ask=5.0, delta=0.45))
     monkeypatch.setattr(
@@ -263,7 +282,7 @@ def test_ev3_unavailable_remains_advisory_when_exact_rr_is_complete(monkeypatch)
 
 
 def test_morning_ev3_adapter_normalises_expected_move_percent_points() -> None:
-    symbol = "AAA260918C00100000"
+    symbol = f"AAA{LIVE_EXPIRY}C00100000"
     row = _go_row(
         contract_symbol=symbol,
         expected_move_5d=3.78,
@@ -293,8 +312,8 @@ def test_morning_ev3_adapter_normalises_expected_move_percent_points() -> None:
 
 
 def test_composite_repair_is_hydrated_but_not_promoted_to_production(monkeypatch) -> None:
-    long_symbol = "AAA260918C00100000"
-    short_symbol = "AAA260918C00110000"
+    long_symbol = f"AAA{LIVE_EXPIRY}C00100000"
+    short_symbol = f"AAA{LIVE_EXPIRY}C00110000"
     composite = f"BULL_CALL_DEBIT:{long_symbol}/{short_symbol}"
     row = _go_row(
         contract_symbol="",

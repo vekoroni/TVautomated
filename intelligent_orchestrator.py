@@ -212,12 +212,16 @@ except Exception:  # MSI flags are rollout controls and must fail safely off.
 
 try:
     from contracts.macro_enrichment_delta import (
+        SNAPSHOT_NAME,
+        pin_macro_enrichment_delta,
         find_macro_enrichment_delta,
         load_macro_enrichment_delta,
         merge_macro_enrichment_delta,
     )
 except Exception:
     from macro_enrichment_delta import (  # type: ignore
+        SNAPSHOT_NAME,
+        pin_macro_enrichment_delta,
         find_macro_enrichment_delta,
         load_macro_enrichment_delta,
         merge_macro_enrichment_delta,
@@ -483,7 +487,6 @@ class OrchestratorConfig:
     RUN_VANGUARD        = SCRIPTS_DIR / "run_vanguard_from_packages.py"
     # scripts\ subfolder — Options Intelligence Layer (Phase 8b)
     OPTIONS_INTEL       = SCRIPTS_DIR / "avshunter_options_intelligence.py"
-    PHANTOM_RUNNER      = SCRIPTS_DIR / "run_phantom.py"
     PHANTOM_DB_PATH     = BASE_DIR / "data" / "phantom" / "phantom_history.db"
 
     # EV-1.5 — governed advisory computation lane. EV is retained for ranking
@@ -2053,15 +2056,17 @@ def apply_macro_enrichment_to_discovery(run_id: str, macro_path: Path) -> bool:
     return ok
 
 
-def merge_macro_enrichment_into_macro_latest(macro_path: Path) -> bool:
+def merge_macro_enrichment_into_macro_latest(macro_path: Path, source_macro_path: Optional[Path] = None) -> bool:
     """
     Attach the GPT macro enrichment delta to macro_intelligence_latest.json before
     discovery. The merge is augment-only and cannot replace protected macro gates.
     """
     try:
-        selected = find_macro_enrichment_delta(macro_path)
+        selected = (pin_macro_enrichment_delta(macro_path, source_macro_path)
+                    if source_macro_path is not None else find_macro_enrichment_delta(macro_path))
         if selected is None:
-            logger.info("Macro enrichment pre-discovery merge skipped: no enrichment delta found")
+            logger.info("Macro enrichment ABSENT at capture: searched %s; no enrichment applied",
+                        source_macro_path.parent if source_macro_path is not None else macro_path.parent)
             return True
         with open(macro_path, "r", encoding="utf-8") as fh:
             macro = json.load(fh)
@@ -2076,7 +2081,7 @@ def merge_macro_enrichment_into_macro_latest(macro_path: Path) -> bool:
         )
         logger.info(
             "✅ Macro enrichment merged before discovery: %s | exposure_tickers=%d",
-            selected.name,
+            selected,
             exposure_count,
         )
         return True
@@ -2152,40 +2157,50 @@ def validate_quality(summary: dict) -> Tuple[bool, List[str]]:
         issues.append("Universe size is 0 — summary file may be corrupt")
         return False, issues
 
-    candidate_ratio = total_candidates / universe_size
-    early_ratio = tier_0_early / universe_size
+    # Output-trust item 11 (ACK D11-4, 10 Oct 2026): under the thesis tier the gate is survivors >= the governed
+    # share of the universe and at least one thesis GO (domain/thesis_tier.quality_issues); the legacy tier-ratio
+    # rules run only when Discovery reports tier_source legacy_composite (rollback).
+    if summary.get("tier_source") == "thesis_v1":
+        from domain.thesis_tier import quality_issues
+        issues.extend(quality_issues(summary))
+        logger.info(f"   Universe        : {universe_size} tickers")
+        logger.info(f"   Total Candidates: {total_candidates}")
+        logger.info(f"   Thesis GO       : {summary.get('thesis_go')}")
+    else:
+        candidate_ratio = total_candidates / universe_size
+        early_ratio = tier_0_early / universe_size
 
-    logger.info(f"   Universe        : {universe_size} tickers")
-    logger.info(f"   Total Candidates: {total_candidates} ({candidate_ratio*100:.1f}%)")
-    logger.info(f"   Early Positions : {tier_0_early} ({early_ratio*100:.1f}%)")
+        logger.info(f"   Universe        : {universe_size} tickers")
+        logger.info(f"   Total Candidates: {total_candidates} ({candidate_ratio*100:.1f}%)")
+        logger.info(f"   Early Positions : {tier_0_early} ({early_ratio*100:.1f}%)")
 
-    if candidate_ratio < cfg.EXPECTED_CANDIDATE_RATIO_MIN:
-        issues.append(
-            f"Too few candidates: {total_candidates} ({candidate_ratio*100:.1f}%) "
-            f"— expected {cfg.EXPECTED_CANDIDATE_RATIO_MIN*100:.0f}–"
-            f"{cfg.EXPECTED_CANDIDATE_RATIO_MAX*100:.0f}%. "
-            f"Loosen compression threshold or lower tier minimums."
-        )
-    elif candidate_ratio > cfg.EXPECTED_CANDIDATE_RATIO_MAX:
-        warnings.append(
-            f"High candidate count: {total_candidates} ({candidate_ratio*100:.1f}%) "
-            f"— consider tightening filters."
-        )
+        if candidate_ratio < cfg.EXPECTED_CANDIDATE_RATIO_MIN:
+            issues.append(
+                f"Too few candidates: {total_candidates} ({candidate_ratio*100:.1f}%) "
+                f"— expected {cfg.EXPECTED_CANDIDATE_RATIO_MIN*100:.0f}–"
+                f"{cfg.EXPECTED_CANDIDATE_RATIO_MAX*100:.0f}%. "
+                f"Loosen compression threshold or lower tier minimums."
+            )
+        elif candidate_ratio > cfg.EXPECTED_CANDIDATE_RATIO_MAX:
+            warnings.append(
+                f"High candidate count: {total_candidates} ({candidate_ratio*100:.1f}%) "
+                f"— consider tightening filters."
+            )
 
-    if early_ratio < cfg.EXPECTED_EARLY_RATIO_MIN:
-        issues.append(
-            f"Too few early positions: {tier_0_early} ({early_ratio*100:.1f}%) "
-            f"— expected {cfg.EXPECTED_EARLY_RATIO_MIN*100:.1f}–"
-            f"{cfg.EXPECTED_EARLY_RATIO_MAX*100:.1f}%. "
-            f"Review early position thresholds in ULTIMATE script."
-        )
-    elif early_ratio > cfg.EXPECTED_EARLY_RATIO_MAX:
-        warnings.append(f"High early position count: {tier_0_early} ({early_ratio*100:.1f}%)")
+        if early_ratio < cfg.EXPECTED_EARLY_RATIO_MIN:
+            issues.append(
+                f"Too few early positions: {tier_0_early} ({early_ratio*100:.1f}%) "
+                f"— expected {cfg.EXPECTED_EARLY_RATIO_MIN*100:.1f}–"
+                f"{cfg.EXPECTED_EARLY_RATIO_MAX*100:.1f}%. "
+                f"Review early position thresholds in ULTIMATE script."
+            )
+        elif early_ratio > cfg.EXPECTED_EARLY_RATIO_MAX:
+            warnings.append(f"High early position count: {tier_0_early} ({early_ratio*100:.1f}%)")
 
-    tier_1 = summary.get("tier_1_confirmed", 0)
-    tier_2 = summary.get("tier_2_observe", 0)
-    if tier_1 == 0 and tier_2 == 0:
-        issues.append("No Tier 1 or Tier 2 signals — logic may be broken")
+        tier_1 = summary.get("tier_1_confirmed", 0)
+        tier_2 = summary.get("tier_2_observe", 0)
+        if tier_1 == 0 and tier_2 == 0:
+            issues.append("No Tier 1 or Tier 2 signals — logic may be broken")
 
     # Data freshness check — confirm discovery ran today, not on stale outputs.
     # summary["timestamp"] is the run execution time (format: YYYYMMDD_HHMMSS).
@@ -2354,7 +2369,7 @@ def _integrate_provider_completeness_into_run_meta(
         run_condition = resolve_run_condition(
             requested_action=(payload.get("dynamic_plan") or {}).get("resolved_action") or "BUILD_THESIS",
             session_phase=(payload.get("dynamic_plan") or {}).get("session_state") or SessionPhase.AFTER_HOURS.value,
-            operator_mode="TEST" if dirty else mode,
+            operator_mode="TEST" if dirty and mode != "LIVE_PROVING" else mode,
             code_dirty=dirty,
         ).value
     except (TypeError, ValueError):
@@ -2368,6 +2383,12 @@ def _integrate_provider_completeness_into_run_meta(
         {
             "run_condition": run_condition,
             "baseline_eligible": run_condition == "NORMAL_COMPLETED_SESSION",
+            # ACK 8 Oct 2026: a live-proving run states how it differs from a clean completed-session baseline.
+            **({"baseline_ineligibility_reason": "LIVE_PROVING",
+                "live_proving_deviations": [d for d, present in (("CODE_UNCOMMITTED", dirty),
+                                                                 ("PROVIDER_NOT_COMPLETED_SESSION", not provider_eligible))
+                                            if present]}
+               if run_condition == "LIVE_PROVING" else {}),
             "code_identity": {
                 "commit_hash": baseline_commit,
                 "dirty": dirty,
@@ -3414,6 +3435,78 @@ def prepare_cds3_governed_package_input(run_id: str) -> Optional[Path]:
     )
     return target
 
+def _read_stage_frame(path: Path):
+    """A station's output read as text, keeping "NAN" (a real ticker) and other NA-like strings as values."""
+    import pandas as _pd_st
+    if str(path).endswith(".json"):
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        return _pd_st.DataFrame(payload if isinstance(payload, list) else (payload.get("rows") or []))
+    return _pd_st.read_csv(path, low_memory=False, dtype=str, keep_default_na=False, na_values=[""])
+
+
+def _run_station_inspection(run_id: str, station: str, output_path: Path, previous_path: Optional[Path] = None) -> bool:
+    """Output-trust item 10.3 (ACK 9-10 Oct 2026): inspect a station's part right after it; an integrity defect
+    stops the line with the station, check and rows (domain.station_inspection). Returns False to stop."""
+    from domain.station_inspection import StationDefect, enforce, inspect_station, station_policy, write_station_report
+    try:
+        policy = station_policy()
+        frame = _read_stage_frame(output_path)
+        previous = accounted = None
+        if previous_path is not None and Path(previous_path).exists():
+            previous = set(_read_stage_frame(previous_path)["ticker"].astype(str).str.strip().str.upper())
+            stages = set((policy.get("accounted_drop_stages") or {}).get(station) or [])
+            audit_path = cfg.RUNS_DIR / run_id / "diagnostics" / f"dropoff_audit_{run_id}.csv"
+            accounted = set()
+            if stages and audit_path.exists():
+                audit = _read_stage_frame(audit_path)
+                accounted = set(audit.loc[audit["dropoff_stage"].isin(stages), "ticker"].astype(str).str.upper())
+        report = inspect_station(station, frame, run_id=run_id, previous_tickers=previous,
+                                 accounted_tickers=accounted, policy=policy)
+        path = write_station_report(report, cfg.RUNS_DIR / run_id)
+    except Exception as err:                                      # noqa: BLE001 - an inspection that cannot run is stated
+        logger.critical("STATION INSPECTION %s could not run (%s: %s) - stopping the line", station,
+                        type(err).__name__, err)
+        return False
+    try:
+        enforce(report, policy)
+    except StationDefect as defect:
+        logger.critical("%s | report %s", defect, path)
+        return False
+    logger.info("Station %s inspected: rows=%d stop_defects=%d other=%d | %s", station, report["rows"],
+                len(report["stop_defects"]), len(report["other_defects"]), path.name)
+    return True
+
+
+def _run_end_of_line_scorecard(run_id: str, phase: str) -> None:
+    """Output-trust item 10.4 (ACK 9-10 Oct 2026): run the end-of-line verifier (tools/avs_verify, read-only) and write
+    the five-section scorecard. Report only - it never stops the run (the station inspections do)."""
+    try:
+        verify = subprocess.run(
+            [sys.executable, str(cfg.BASE_DIR / "tools" / "avs_verify" / "avs_verify.py"), "--run-id", run_id,
+             "--phase", phase, "--runs-root", str(cfg.RUNS_DIR), "--out-root", str(cfg.BASE_DIR / "audit" / "verify")],
+            cwd=str(cfg.BASE_DIR), capture_output=True, text=True, timeout=600)
+        logger.info("End-of-line verifier (%s): exit %s | %s", phase, verify.returncode,
+                    (verify.stdout or "").strip().splitlines()[0] if (verify.stdout or "").strip() else "no output")
+    except Exception as err:                                      # noqa: BLE001 - the scorecard states the gap
+        logger.warning("End-of-line verifier (%s) did not run: %s", phase, err)
+    try:
+        from avshunter.c12_outcome.adapters.storage import DEFAULT_STORE
+        from domain.run_scorecard import build_scorecard, write_scorecard
+        card = build_scorecard(cfg.RUNS_DIR / run_id, run_id=run_id, phase=phase,
+                               verify_root=cfg.BASE_DIR / "audit" / "verify", outcome_store=DEFAULT_STORE)
+        path = write_scorecard(card, cfg.RUNS_DIR / run_id)
+        # Item 10.2: the latest forward report, read by the trade lane for the card's per-setup forward state.
+        if card.get("forward_calibration") is not None:
+            from domain.structure_behaviour.trade_lane import FORWARD_REPORT_PATH
+            FORWARD_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            FORWARD_REPORT_PATH.write_text(json.dumps({**card["forward_calibration"], "run_id": run_id,
+                                                       "phase": phase}, indent=2, default=str), encoding="utf-8")
+        logger.info("Scorecard (%s): overall %s | %s | %s", phase, card["overall"],
+                    ", ".join(f"{k} {v['status']}" for k, v in card["sections"].items()), path.name)
+    except Exception as err:                                      # noqa: BLE001 - report only
+        logger.warning("Scorecard (%s) failed: %s", phase, err)
+
+
 def run_dropoff_audit_checkpoint(run_id: str, label: str) -> None:
     """Write the drop-off audit at intermediate checkpoints without stopping the run."""
     try:
@@ -3917,42 +4010,6 @@ def run_ev3_authority_overlay(run_id: str) -> bool:
 # ============================================================ PHASE 8c: CORE INTEL EXPORTER
 
 
-# ============================================================ PHASE 8c-P: PHANTOM EDGE MODEL
-
-def run_phantom_layer(run_id: str) -> bool:
-    """PHANTOM production edge model (non-critical fail-open)."""
-    logger.info("=" * 80)
-    logger.info("PHASE 8c-P: PHANTOM EDGE MODEL")
-    logger.info("=" * 80)
-
-    if not cfg.PHANTOM_RUNNER.exists():
-        logger.warning("PHANTOM skipped - script not deployed: %s", cfg.PHANTOM_RUNNER)
-        return True
-
-    input_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
-    output_csv = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_phantom_{run_id}.csv"
-    if not input_csv.exists():
-        logger.warning("PHANTOM skipped - options CSV not found: %s", input_csv)
-        return True
-
-    cmd = [
-        sys.executable,
-        str(cfg.PHANTOM_RUNNER),
-        "--run-id", run_id,
-        "--repo-root", str(cfg.BASE_DIR),
-        "--input-csv", str(input_csv),
-        "--output-csv", str(output_csv),
-        "--db-path", str(cfg.PHANTOM_DB_PATH),
-    ]
-    ok = _run("PHANTOM Edge Model", cmd, critical=False)
-    if not ok:
-        logger.warning("PHANTOM failed open - downstream will use original Options Intelligence output.")
-        return True
-    if output_csv.exists():
-        logger.info("PHANTOM output ready for downstream handoff: %s", output_csv.name)
-    return True
-
-
 def run_core_intel_exporter(run_id: str, strict: bool = False) -> bool:
     """CORE INTEL Exporter (non-critical)."""
     logger.info("=" * 80)
@@ -4206,6 +4263,13 @@ def patch_earnings_fields_into_csv(run_id: str, target_csv: Path, label: str, *,
         if fetcher is None:
             cache_dir = Path(cfg.RUNS_DIR).parents[1] / "cache" / "marketdata_earnings"
             calendar = fetch_marketdata_earnings(tickers.unique(), as_of=as_of, cache_dir=cache_dir)
+            # Output-trust item 9 (ACK 9 Oct 2026): tastytrade is the second source; each date carries its tier.
+            from canonical_data.tastytrade_earnings import fetch_tastytrade_earnings
+            from domain.earnings_confirmation import reconcile_earnings
+            # one cached tastytrade market-metrics call serves the earnings tiers and the dividend yield (ACK 10 Oct)
+            tasty = fetch_tastytrade_earnings(tickers.unique(), as_of=as_of,
+                                              cache_dir=Path(cfg.RUNS_DIR).parents[1] / "cache" / "tastytrade_metrics")
+            calendar = {t: reconcile_earnings(calendar.get(t), tasty.get(t)) for t in tickers.unique()}
         else:
             calendar = fetcher(list(tickers.unique()), as_of)
 
@@ -4225,7 +4289,8 @@ def patch_earnings_fields_into_csv(run_id: str, target_csv: Path, label: str, *,
         frame = frame.drop(columns=[c for c in EARNINGS_DISCLOSURE_FIELDS if c in frame.columns])
         _pd_ed.concat([frame, disclosed], axis=1).to_csv(target_csv, index=False)
         counts = disclosed["earnings_state"].value_counts().to_dict()
-        logger.info("Earnings disclosure -> %s | %s | file=%s", label, counts, target_csv.name)
+        tiers = disclosed["earnings_date_confirmation"].value_counts().to_dict()
+        logger.info("Earnings disclosure -> %s | %s | tiers %s | file=%s", label, counts, tiers, target_csv.name)
         return True
     except Exception as _ed_err:  # noqa: BLE001 - disclosure never stops the pipeline
         logger.warning("Earnings patch failed for %s - %s: %s", label, type(_ed_err).__name__, _ed_err)
@@ -4437,6 +4502,10 @@ _WS2_TRIGGER_INPUT_COLS = (
     "layer2__state_match_method", "layer2__state_match_stage",
     "layer2__state_match_dimensions", "layer2__state_match_quality",
     "layer2__state_match_is_exact",
+    # Phase 5.3: GO eligibility mirrors the thesis's own event readiness, owned by Discovery.
+    "thesis__readiness", "thesis__readiness_reason", "thesis__readiness_event_date",
+    # Output-trust item 3: an unjustified or invalid geometry cannot be GO.
+    "geometry_justification",
 )
 
 
@@ -5586,6 +5655,7 @@ def evening_workflow(
     as_of_utc: datetime | None = None,
     evidence_session_date: str | None = None,
     run_plan: Optional["RunPlan"] = None,
+    live_proving: bool = False,
 ) -> bool:
     """
     Evening workflow: preflight → discovery → validate → vanguard → post-process → archive.
@@ -5907,7 +5977,7 @@ def evening_workflow(
     # Its failure must never abort the pipeline — degrade gracefully with base macro.
     _enrichment_merge_degraded = False
     try:
-        _enrichment_ok = merge_macro_enrichment_into_macro_latest(macro_path)
+        _enrichment_ok = merge_macro_enrichment_into_macro_latest(macro_path, cfg.MACRO_FILE)
         if not _enrichment_ok:
             logger.warning(
                 "[MACRO] Enrichment merge returned False. "
@@ -6084,6 +6154,11 @@ def evening_workflow(
     if not valid:
         logger.error("❌ EVENING WORKFLOW ABORTED — fix quality issues above\n")
         return False
+    # Output-trust item 10.3: inspect Discovery's part before Vanguard uses it.
+    if not _run_station_inspection(canonical_run_id, "discovery",
+                                   cfg.RUNS_DIR / canonical_run_id / "discovery"
+                                   / f"discovery_candidates_ultimate_{canonical_run_id}.csv"):
+        return False
 
     detect_regression(summary)     # non-blocking
     run_position_tracking()        # non-blocking
@@ -6188,11 +6263,18 @@ def evening_workflow(
     run_position_lock_check(canonical_run_id)
     if not run_options_intelligence(
         canonical_run_id,
-        operator_mode="FORCE" if force else "STANDARD",
+        operator_mode="LIVE_PROVING" if live_proving else ("FORCE" if force else "STANDARD"),
     ):     # MUST precede Phase 8.5
         logger.error(
             "Evening workflow aborted: governed Options acquisition did not complete"
         )
+        return False
+    # Output-trust item 10.3: every Discovery ticker reaches Options or has a recorded pre-Options drop-off.
+    if not _run_station_inspection(canonical_run_id, "options",
+                                   cfg.RUNS_DIR / canonical_run_id / "options"
+                                   / ("options_intelligence_" + canonical_run_id + ".csv"),
+                                   cfg.RUNS_DIR / canonical_run_id / "discovery"
+                                   / f"discovery_candidates_ultimate_{canonical_run_id}.csv"):
         return False
 
     try:
@@ -7115,7 +7197,8 @@ def evening_workflow(
                     _exp_df = _exp_mod.enrich_dataframe(
                         _exp_df,
                         macro_path=macro_path,
-                        enrichment_path=cfg.MACRO_DIR / "avshunter_macro_enrichment_delta.json",
+                        enrichment_path=(find_macro_enrichment_delta(macro_path)
+                                         or macro_path.parent / SNAPSHOT_NAME),
                     )
                     _exp_df.to_csv(_morning_csv_path, index=False)
                     _ben = (_exp_df.get("macro_exposure_role") == "BENEFICIARY").sum() if "macro_exposure_role" in _exp_df.columns else 0
@@ -7539,6 +7622,22 @@ def evening_workflow(
                         _decision_appended = _decision_ledger.append_many(
                             _decision_events
                         )
+                        # Output-trust item 8 (ACK 9-10 Oct 2026): a disposition for EVERY surfaced row, with or
+                        # without a thesis or contract identity (G2-05: 508 rows were never journalled).
+                        from domain.ticker_disposition import disposition_record
+                        _recorded_at = datetime.now(timezone.utc).isoformat()
+                        _dispositions = [
+                            disposition_record(_row, run_id=canonical_run_id, stage="EOD", recorded_at_utc=_recorded_at)
+                            for _row in (_lab_book.get("rows") or [])
+                            if str(_row.get("ticker") if _row.get("ticker") is not None else "").strip()
+                        ]
+                        _dispositions_appended = _decision_ledger.append_dispositions(_dispositions)
+                        logger.info(
+                            "Ticker disposition journal: EOD rows=%d appended=%d (no thesis=%d, no contract=%d)",
+                            len(_dispositions), _dispositions_appended,
+                            sum(1 for _d in _dispositions if _d["thesis_identity_state"] != "PRESENT"),
+                            sum(1 for _d in _dispositions if _d["contract_identity_state"] != "PRESENT"),
+                        )
                         logger.info(
                             "DDD Phase 8 decision ledger: EOD=%d appended=%d missing_identity=%d authority=OBSERVATION_ONLY",
                             len(_decision_events),
@@ -7558,6 +7657,15 @@ def evening_workflow(
             logger.warning("Lab/Interpreter shared triage view failed (non-critical): %s", _lab_sync_err)
     except Exception as _manifest_err:
         logger.warning("Final run manifest failed (non-critical): %s", _manifest_err)
+
+    # Output-trust item 10.3: the EOD candidates and the Lab book keep every Options row with sound values.
+    _options_out = cfg.RUNS_DIR / canonical_run_id / "options" / f"options_intelligence_{canonical_run_id}.csv"
+    _eod_out = cfg.RUNS_DIR / canonical_run_id / "morning_validation" / f"morning_candidates_{canonical_run_id}.csv"
+    _book_out = cfg.RUNS_DIR / canonical_run_id / "intelligence_lab" / f"final_opportunity_book_{canonical_run_id}.json"
+    if not _run_station_inspection(canonical_run_id, "eod", _eod_out, _options_out):
+        return False
+    if not _run_station_inspection(canonical_run_id, "book", _book_out, _eod_out):
+        return False
 
     # W3-ME2: freeze the advisory macro packet after the Lab book exists and
     # before the authoritative manifest is refreshed. Worker 3 reads only this
@@ -7701,6 +7809,8 @@ def evening_workflow(
     # Item 1 (ACK 17 Sep 2026): measure recorded predictions against reality after every
     # completed evening run. Non-critical, observation only.
     run_c12_outcome_scoring_stage(canonical_run_id)
+    # Output-trust item 10.4: end-of-line verifier and the five-section scorecard (report only).
+    _run_end_of_line_scorecard(canonical_run_id, "evening")
 
     # Freeze the Interpreter's completed-session parent only after all Evening
     # stages above have returned, immediately before the terminal success
@@ -7844,6 +7954,8 @@ def premarket_workflow(
             )
             return False
 
+        # Output-trust item 10.4: end-of-line verifier and the five-section scorecard (report only).
+        _run_end_of_line_scorecard(_run_id, "morning")
         return True
 
     except Exception as _mv_err:
@@ -8152,6 +8264,9 @@ def main() -> None:
     parser.add_argument("--premarket", action="store_true", help="[DEPRECATED] Use --morning instead")
     parser.add_argument("--auto", action="store_true", help="Resolve and execute the governed run-anytime action (feature-flagged)")
     parser.add_argument("--finalise", action="store_true", help="Explicitly finalise provider-confirmed completed-session data (feature-flagged)")
+    parser.add_argument("--live-proving", action="store_true",
+                        help="ACK 8 Oct 2026: label the run LIVE_PROVING - used and measured, kept out of model fitting; "
+                             "deviations (uncommitted code, non-completed-session quotes) are recorded")
     parser.add_argument("--replay", action="store_true", help="Resolve an offline research replay plan; live execution is not permitted")
     parser.add_argument("--plan-only", action="store_true", help="Print the dynamic RunPlan without provider calls or filesystem changes")
     parser.add_argument("--as-of-utc", default=None, help="Timezone-aware ISO-8601 dispatcher clock; intended for deterministic replay/testing")
@@ -8308,7 +8423,9 @@ def main() -> None:
                 as_of_utc=as_of_utc,
                 run_id=args.run_id,
                 provider_session_finalised=args.provider_session_finalised,
-                operator_mode="FORCE" if args.force else ("REPLAY" if args.replay else "STANDARD"),
+                # G2-01 (verification 20261008_220129): the dispatcher carries ACK's --live-proving to the plan.
+                operator_mode=("LIVE_PROVING" if args.live_proving else
+                               "FORCE" if args.force else ("REPLAY" if args.replay else "STANDARD")),
             )
             logger.info(operator_summary(plan, selected_thesis))
             if args.plan_only:
@@ -8356,6 +8473,7 @@ def main() -> None:
                         ),
                         evidence_session_date=planned.last_completed_session,
                         run_plan=planned,
+                        live_proving=args.live_proving,
                     )
                     if not built:
                         return False
@@ -8397,6 +8515,7 @@ def main() -> None:
             force=args.force,
             universe_override=Path(args.universe).resolve() if args.universe else None,
             data_mode=args.data_mode,
+            live_proving=args.live_proving,
         )
     elif args.morning or args.premarket:
         if args.premarket:

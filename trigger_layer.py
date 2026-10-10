@@ -107,7 +107,15 @@ T3_CONF_PHASES        = {"MARKUP", "DISTRIBUTION"}
 # Trigger context is not data freshness.  FAR means that Discovery did not find
 # an early catalyst/compression formation; it does not mean the underlying bars
 # are old.  Likewise, days_in_range is setup age, not source-data age.
-TRIGGER_MAX_AGE_SESSIONS = 2
+def _trigger_max_age_sessions() -> int:
+    """ACK 6 Oct 2026: the trigger-age data-integrity rule is kept; its threshold lives in config (value 2)."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parent / "config" / "governed_constants_v1.json"
+    return int(json.loads(path.read_text(encoding="utf-8-sig"))["trigger_freshness"]["max_source_age_sessions"])
+
+
+TRIGGER_MAX_AGE_SESSIONS = _trigger_max_age_sessions()
 _EXPLICIT_STALE_STATES = {"STALE", "STALE_DATA", "EXPIRED", "INVALID_STALE"}
 _EXPLICIT_FRESH_STATES = {"FRESH", "CURRENT", "VALID", "OK"}
 _FRESHNESS_STATE_FIELDS = (
@@ -176,33 +184,15 @@ def _direction(row: Dict) -> str:
     TRANSITION precor_intent was also returning NONE — now falls through to dominant_trend.
     Added MIXED dominant_trend fallback via vwap_bias to recover direction for ~11% of universe.
     """
+    # Phase 3 (8 Oct 2026, design P3): read the governed direction only. The precor-intent / dominant-trend /
+    # VWAP-bias fallbacks derived a side of their own (precor intent was opposite to the thesis on 626 of 903 rows,
+    # Phase 0); they are removed. No governed direction -> NONE.
     for field in ("options_direction", "direction"):
         d = _str(row, field)
         if d in ("CALL", "PUT"):
             return d
         if d == "STRANGLE":
             return "NONE"   # bidirectional — intentionally non-directional
-
-    intent = _str(row, "precor_intent")
-    if "BUY" in intent:
-        return "CALL"
-    if "SELL" in intent:
-        return "PUT"
-    # TRANSITION intent — fall through to structural signals
-
-    trend = _str(row, "dominant_trend")
-    if trend == "BULLISH":
-        return "CALL"
-    if trend == "BEARISH":
-        return "PUT"
-
-    # MIXED trend — use VWAP bias as tiebreaker
-    vwap = _str(row, "vwap_bias")
-    if vwap == "ABOVE":
-        return "CALL"
-    if vwap == "BELOW":
-        return "PUT"
-
     return "NONE"
 
 
@@ -547,8 +537,36 @@ def trigger_primary(triggers: List[str]) -> str:
     return max(triggers, key=lambda t: TRIGGER_WEIGHTS.get(t, 1.0))
 
 
+THESIS_GO_BASIS = "THESIS_READINESS_V1"
+
+
+def thesis_go_eligibility(row: Dict) -> Dict[str, Any]:
+    """Phase 5.3 (ACK 8 Oct 2026, "Thesis activated"): GO = the thesis's own trigger accepted.
+
+    Mirrors Discovery's thesis__readiness (the single readiness owner, from the thesis's own events). The state
+    categories evaluated here stay as observations and as legacy_state_go_eligible (audit); they never decide GO.
+    Missing readiness is not readiness (R1).
+    Output-trust item 3 (ACK decision 1, 9 Oct 2026): an activated thesis whose geometry from the planned entry is
+    GEOMETRY_NOT_JUSTIFIED or INVALID_GEOMETRY cannot be GO (it stays visible and ranked); unrecorded geometry is not
+    justified geometry (R1). NOT_MEASURED (lane C, no hit rate) is labelled, not blocked.
+    """
+    from domain.trade_geometry import NOT_GO_STATES
+    readiness = str(row.get("thesis__readiness") or "").strip().upper()
+    if readiness in ("", "NAN", "NONE"):
+        return {"go_eligible": False, "go_reason": "THESIS_READINESS_NOT_RECORDED", "thesis_readiness": "NOT_RECORDED"}
+    if readiness == "READY_FOR_HUMAN_REVIEW":
+        geometry = str(row.get("geometry_justification") or "").strip().upper()
+        if geometry in ("", "NAN", "NONE"):
+            return {"go_eligible": False, "go_reason": "GEOMETRY_NOT_RECORDED", "thesis_readiness": readiness}
+        if geometry in NOT_GO_STATES:
+            return {"go_eligible": False, "go_reason": geometry, "thesis_readiness": readiness}
+        return {"go_eligible": True, "go_reason": "THESIS_ACTIVATED", "thesis_readiness": readiness}
+    return {"go_eligible": False, "go_reason": f"THESIS_{readiness}", "thesis_readiness": readiness}
+
+
 def is_go_eligible(triggers: List[str]) -> bool:
     """
+    LEGACY (Phase 5.3): the state-category rule, kept as legacy_state_go_eligible for audit only.
     Fix 6: GO requires a primary trigger from the high-conviction set.
     VWAP_RECLAIM or VWAP_LOSS alone is not sufficient for GO — each is supportive.
     Primary must be VOL_COMPRESSION, RANGE_BREAK_EARLY, RANGE_BREAK, or TRAP.
@@ -606,7 +624,8 @@ def build_trigger_block(row: Dict) -> Dict[str, Any]:
     primary     = trigger_primary(triggers)
     freshness   = _trigger_data_freshness(row)
     context     = _trigger_context(row)
-    go_eligible = is_go_eligible(triggers) and not freshness["stale"]
+    go          = thesis_go_eligibility(row)
+    go_eligible = go["go_eligible"] and not freshness["stale"]
 
     return {
         "codes":        "|".join(triggers) if triggers else "NONE",
@@ -615,6 +634,10 @@ def build_trigger_block(row: Dict) -> Dict[str, Any]:
         "primary":      primary,
         "score":        round(score, 2),
         "go_eligible":  go_eligible,
+        "go_basis":     THESIS_GO_BASIS,
+        "go_reason":    "TRIGGER_SOURCE_STALE" if go["go_eligible"] and freshness["stale"] else go["go_reason"],
+        "thesis_readiness": go["thesis_readiness"],
+        "legacy_state_go_eligible": is_go_eligible(triggers) and not freshness["stale"],
         "stale":        freshness["stale"],
         "freshness_state": freshness["state"],
         "data_asof":    freshness["asof"],
@@ -646,6 +669,10 @@ TRIGGER_CSV_COLUMNS = [
     "trigger_quality",
     "trigger_score",
     "trigger_go_eligible",
+    "trigger_go_basis",
+    "trigger_go_reason",
+    "trigger_thesis_readiness",
+    "trigger_legacy_state_go_eligible",
     "trigger_stale",
     "trigger_freshness_state",
     "trigger_data_asof",
@@ -690,6 +717,10 @@ def _load_package_trigger_map(input_path: pathlib.Path) -> Dict[str, Dict[str, A
                     "primary": row.get("trigger_primary", "NONE"),
                     "score": row.get("trigger_score", 0),
                     "go_eligible": row.get("trigger_go_eligible", False),
+                    "go_basis": row.get("trigger_go_basis", ""),
+                    "go_reason": row.get("trigger_go_reason", ""),
+                    "thesis_readiness": row.get("trigger_thesis_readiness", ""),
+                    "legacy_state_go_eligible": row.get("trigger_legacy_state_go_eligible", ""),
                     "stale": row.get("trigger_stale", False),
                     "freshness_state": row.get("trigger_freshness_state", "UNKNOWN"),
                     "data_asof": row.get("trigger_data_asof", ""),
@@ -733,6 +764,11 @@ def _trigger_block_from_package(row: Dict[str, Any], pkg_trigger: Dict[str, Any]
         "primary": primary or "NONE",
         "score": round(_flt(pkg_trigger, "score", _trigger_score(trigger_list)), 2),
         "go_eligible": bool(go_eligible) and not bool(stale),
+        # Phase 5.3: a block without the thesis basis predates the readiness rule; it is labelled, never upgraded.
+        "go_basis": str(pkg_trigger.get("go_basis") or "LEGACY_STATE_CATEGORY"),
+        "go_reason": str(pkg_trigger.get("go_reason") or "NOT_RECORDED"),
+        "thesis_readiness": str(pkg_trigger.get("thesis_readiness") or "NOT_RECORDED"),
+        "legacy_state_go_eligible": pkg_trigger.get("legacy_state_go_eligible", ""),
         "stale": bool(stale),
         "freshness_state": freshness_state,
         "data_asof": pkg_trigger.get("data_asof", ""),
@@ -822,6 +858,10 @@ def enrich_csv(
         row["trigger_quality"]    = tb["quality"]
         row["trigger_score"]      = round(tb["score"], 2)
         row["trigger_go_eligible"]= tb["go_eligible"]
+        row["trigger_go_basis"]   = tb["go_basis"]
+        row["trigger_go_reason"]  = tb["go_reason"]
+        row["trigger_thesis_readiness"] = tb["thesis_readiness"]
+        row["trigger_legacy_state_go_eligible"] = tb["legacy_state_go_eligible"]
         row["trigger_stale"]      = tb["stale"]
         row["trigger_freshness_state"] = tb["freshness_state"]
         row["trigger_data_asof"] = tb["data_asof"]
@@ -989,6 +1029,10 @@ def patch_run_packages(
                 "trigger_quality": trig.get("quality", "NONE"),
                 "trigger_score": trig.get("score", 0),
                 "trigger_go_eligible": trig.get("go_eligible", False),
+                "trigger_go_basis": trig.get("go_basis", ""),
+                "trigger_go_reason": trig.get("go_reason", ""),
+                "trigger_thesis_readiness": trig.get("thesis_readiness", ""),
+                "trigger_legacy_state_go_eligible": trig.get("legacy_state_go_eligible", ""),
                 "trigger_stale": trig.get("stale", False),
                 "trigger_freshness_state": trig.get("freshness_state", "UNKNOWN"),
                 "trigger_data_asof": trig.get("data_asof", ""),
@@ -1030,6 +1074,8 @@ def patch_run_packages(
                 fieldnames = [
                     "ticker", "trigger_codes", "trigger_count", "trigger_primary",
                     "trigger_quality", "trigger_score", "trigger_go_eligible",
+                    "trigger_go_basis", "trigger_go_reason", "trigger_thesis_readiness",
+                    "trigger_legacy_state_go_eligible",
                     "trigger_stale",
                     "trigger_freshness_state", "trigger_data_asof",
                     "trigger_age_sessions", "trigger_freshness_reason",

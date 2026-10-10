@@ -1,0 +1,15 @@
+{
+  "run": "20261008_220129",
+  "rows": 2788,
+  "spy_dealer_gamma_state": [
+    "NEGATIVE_GAMMA"
+  ],
+  "spy_gex_regime_score": [
+    "0.3"
+  ],
+  "bucket_transitions": {
+    "PINNING_GEX -> PINNING_GEX": 1331,
+    "AMPLIFYING_GEX -> AMPLIFYING_GEX": 792,
+    "AMPLIFYING_GEX -> PINNING_GEX": 665
+  }
+}

@@ -125,6 +125,26 @@ def _frame_rows(frame: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
+def evidence_history_policy(frame: pd.DataFrame | None, *, evidence_session: date, min_bars: int) -> dict[str, Any]:
+    """RC04 (Phase 4, 8 Oct 2026): the ONE history policy, used by this manifest AND the runtime package factory.
+
+    Point-in-time: Vanguard analyses AS OF the completed evidence session, so history must reach that session.
+    Reasons are precise (never NO_OHLCV when bars exist): NO_BARS / INSUFFICIENT_HISTORY (n<min) /
+    HISTORY_BEHIND_EVIDENCE_SESSION (last <date>, session <date>) / VALID.
+    """
+    if frame is None or frame.empty or "date" not in frame.columns:
+        return {"ok": False, "reason": "NO_BARS", "bar_count": 0, "last_session": None}
+    dates = pd.to_datetime(frame["date"]).dt.date
+    last, n = dates.max(), len(frame)
+    out = {"ok": False, "bar_count": int(n), "last_session": last.isoformat()}
+    if n < min_bars:
+        return {**out, "reason": f"INSUFFICIENT_HISTORY ({n}<{min_bars})"}
+    if last != evidence_session:
+        return {**out, "reason": f"HISTORY_BEHIND_EVIDENCE_SESSION (last {last.isoformat()}, "
+                                 f"session {evidence_session.isoformat()})"}
+    return {**out, "ok": True, "reason": "VALID"}
+
+
 def _history_verdict(
     frame: pd.DataFrame | None, *, reference_session: date, min_bars: int, max_staleness_days: int
 ) -> dict[str, Any]:
@@ -149,9 +169,11 @@ def _history_verdict(
         if any(row.get(column) is None for row in tail):
             out["dcv_reason"] = f"NULLS_IN_CRITICAL_COLS ({column})"
             return out
-    age = out["staleness_days"]
-    if age is None or age < 0 or age > max_staleness_days:
-        out["dcv_reason"] = f"STALE_DATA ({rows[-1]['date']}, {age}d old)"
+    # RC04: one policy with the runtime factory - history must reach the evidence session (max_staleness_days is
+    # kept in the signature for callers; the session rule is stricter and is the one the runtime always applied).
+    policy = evidence_history_policy(frame, evidence_session=reference_session, min_bars=min_bars)
+    if not policy["ok"]:
+        out["dcv_reason"] = policy["reason"]
         return out
     out["dcv_verdict"] = True
     out["dcv_reason"] = "VALID"

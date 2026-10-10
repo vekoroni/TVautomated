@@ -135,7 +135,6 @@ def project_pretrade_focus(row: Mapping[str, Any]) -> dict[str, Any]:
     quote_dataset_id = _token(row.get("selected_quote_dataset_id"))
     monetisation_symbol = _token(row.get("monetisability_contract_symbol"))
     monetisation_dataset_id = _token(row.get("monetisability_quote_snapshot_id"))
-    evidence_session = _token(row.get("evidence_session_date"))
     if not symbol:
         contract_state = "CONTRACT_SELECTION_REVIEW"
     elif (
@@ -146,7 +145,6 @@ def project_pretrade_focus(row: Mapping[str, Any]) -> dict[str, Any]:
     elif (
         symbol != monetisation_symbol
         or quote_dataset_id != monetisation_dataset_id
-        or (evidence_session and quote_timestamp[:10] != evidence_session)
     ):
         contract_state = "CONTRACT_EVIDENCE_CONFLICT_REVIEW"
     elif bid <= 0 or ask < bid or dte is None or dte <= 0:
@@ -154,7 +152,10 @@ def project_pretrade_focus(row: Mapping[str, Any]) -> dict[str, Any]:
     else:
         contract_state = "COMPLETED_SESSION_QUOTE_OBSERVED"
 
-    monetisation = _token(row.get("monetisability_state")).upper()
+    # L5 (ACK 7 Oct 2026): the focus lane follows the decision owner - the anticipated move's pays state - not
+    # monetisability (intrinsic at expiry, AUDIT). A7: a prior-session quote is an aged quote, not a conflict;
+    # only the exact-contract identity (symbol + quote dataset) is checked above.
+    pays = _token(row.get("anticipated_pays_state")).upper()
     conflict = _token(row.get("direction_conflict_status")).upper()
     trigger = _true(row.get("trigger_go_eligible"))
     repair_required = _token(row.get("contract_repair_required")).upper()
@@ -165,24 +166,22 @@ def project_pretrade_focus(row: Mapping[str, Any]) -> dict[str, Any]:
         lane, priority = "THESIS_EVIDENCE_REVIEW", 8
     elif not quote_observed:
         lane, priority = "CONTRACT_EVIDENCE_REVIEW", 7
-    elif monetisation == "MONETISABLE" and trigger and conflict == "MITIGATED_REQUIRES_CONFIRMATION":
+    elif pays == "PAYS" and trigger and conflict == "MITIGATED_REQUIRES_CONFIRMATION":
         lane, priority = "FOCUS_DIRECTION_CONFIRMATION", 2
-    elif monetisation == "MONETISABLE" and trigger and conflict != "NO_CONFLICT":
+    elif pays == "PAYS" and trigger and conflict != "NO_CONFLICT":
         lane, priority = "FOCUS_DIRECTION_EVIDENCE_REVIEW", 3
-    elif monetisation == "MONETISABLE" and trigger and repair_required == "TRUE":
+    elif pays == "PAYS" and trigger and repair_required == "TRUE":
         lane, priority = "FOCUS_CONTRACT_REPAIR", 5
-    elif monetisation == "MONETISABLE" and trigger and repair_required != "FALSE":
+    elif pays == "PAYS" and trigger and repair_required != "FALSE":
         lane, priority = "CONTRACT_REPAIR_EVIDENCE_REVIEW", 7
-    elif monetisation == "MONETISABLE" and trigger:
+    elif pays == "PAYS" and trigger:
         lane, priority = FOCUS_PRIMARY, 1
-    elif monetisation == "MONETISABLE":
+    elif pays == "PAYS":
         lane, priority = "FOCUS_TRIGGER_DEVELOPING", 4
-    elif monetisation == "LIMITED":
-        lane, priority = "FOCUS_LIMITED_MONETISATION", 5
-    elif monetisation == "NOT_MONETISABLE":
-        lane, priority = "WATCH_CONTRACT_MONETISATION", 6
+    elif pays == "DOES_NOT_PAY_AT_ANTICIPATED_TIME":
+        lane, priority = "WATCH_MOVE_DOES_NOT_PAY", 6
     else:
-        lane, priority = "MONETISATION_EVIDENCE_REVIEW", 7
+        lane, priority = "OPTION_VALUE_REVIEW", 7
 
     return {
         "pretrade_thesis_state": thesis_state,
@@ -193,7 +192,7 @@ def project_pretrade_focus(row: Mapping[str, Any]) -> dict[str, Any]:
         "pretrade_focus_candidate": lane == FOCUS_PRIMARY,
         "pretrade_focus_reason": (
             f"thesis={thesis_state}; contract={contract_state}; "
-            f"monetisability={monetisation or 'MISSING'}; "
+            f"pays={pays or 'MISSING'}; "
             f"contract_repair={repair_required or 'MISSING'}"
             f"/{repair_status or 'MISSING'}; "
             f"trigger={'GO' if trigger else 'PENDING'}; "
@@ -247,9 +246,10 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
         flags.append("TARGET_GENERATED_3R_SCENARIO")
     if _true(row.get("contract_repair_required")):
         flags.append("CONTRACT_REPAIR_REQUIRED")
-    monetisation = _token(row.get("monetisability_state")).upper()
-    if monetisation not in {"MONETISABLE", ""}:
-        flags.append(f"CONTRACT_{monetisation}")
+    # L5 (ACK 7 Oct 2026): the evening thesis reads the pays state, not monetisability (AUDIT).
+    pays = _token(row.get("anticipated_pays_state")).upper()
+    if pays and pays != "PAYS":
+        flags.append(f"OPTION_{pays}")
     if quote_id and economics_quote_id and quote_id != economics_quote_id:
         flags.append("QUOTE_ID_MISMATCH")
     horizon = _token(row.get("time_horizon")).upper()
@@ -257,10 +257,12 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
     target_move = abs(target / spot - 1.0) * 100.0 if target and spot else None
     if target_move is not None and expected_move and target_move > TARGET_EXPECTED_MOVE_REVIEW_MULTIPLE * expected_move:
         flags.append("TARGET_BEYOND_EXPECTED_MOVE_REVIEW_BAND")
-    trigger = _token(row.get("trigger_primary")).upper()
+    # Phase 5.3 (ACK 8 Oct 2026): price confirmation is the thesis's own accepted break / held retest on its own
+    # trigger level (thesis__readiness, owned by Discovery's event step) - not a state category plus a spot cross.
+    readiness = _token(row.get("thesis__readiness")).upper() or "NOT_RECORDED"
     trigger_price = _number(row.get("trigger_price"))
-    trigger_crossed = trigger_price is not None and ((side == "CALL" and spot is not None and spot >= trigger_price) or (side == "PUT" and spot is not None and spot <= trigger_price))
-    if trigger != "RANGE_BREAK" or not trigger_crossed:
+    trigger_confirmed = readiness == "READY_FOR_HUMAN_REVIEW"
+    if not trigger_confirmed:
         flags.append("TRIGGER_NOT_PRICE_CONFIRMED")
     # XLU-D10 (ACK 2 Oct 2026): the trade is categorised by Phase and Event; the legacy
     # Wyckoff OBSERVE_ONLY bias is not a decision. Missing alignment is never neutral.
@@ -318,12 +320,12 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
     if side not in price_flow_sides:
         return result("EOD_DIRECTION_EVIDENCE_REVIEW", "Aligned Vanguard price/trend proxy evidence is missing", "Confirm the ticker direction with additional independently sourced evidence")
 
-    if monetisation not in {"MONETISABLE", "LIMITED", "NOT_MONETISABLE"}:
-        return result("EOD_EVIDENCE_REVIEW", "Exact-contract monetisability is not evaluated", "Complete the contract economics assessment")
+    if pays not in {"PAYS", "DOES_NOT_PAY_AT_ANTICIPATED_TIME"}:
+        return result("EOD_EVIDENCE_REVIEW", "The option value at the anticipated move is not computed", "Complete the anticipated-move valuation for the contract")
     if _true(row.get("contract_repair_required")):
         return result("EOD_CONTRACT_WATCH", "Selected contract needs repair but ticker thesis remains", "Review the same-direction contract family")
-    if monetisation != "MONETISABLE":
-        return result("EOD_CONTRACT_WATCH", f"Current contract is {monetisation}; ticker thesis retained", "Monitor the contract family for improved economics or liquidity")
+    if pays != "PAYS":
+        return result("EOD_CONTRACT_WATCH", "The anticipated move does not pay this contract; ticker thesis retained", "Choose a contract the move pays, or monitor the contract family")
 
     if target_source == "TARGET_3R":
         return result("EOD_TARGET_FEASIBILITY_REVIEW", "The target is a generated 3R scenario, not an independently supported price level", "Find a supported target before using target-based option profit as monetisability evidence")
@@ -335,8 +337,16 @@ def project_evening_thesis(row: Mapping[str, Any]) -> dict[str, Any]:
         return result("EOD_TARGET_FEASIBILITY_REVIEW", f"Target move {target_move:.1f}% exceeds the supported {horizon} scenario", "Review target plausibility before using target-based option profit")
 
     structure_aligned = structure == "ALIGNED"
-    if trigger != "RANGE_BREAK" or not trigger_crossed or not structure_aligned or aligned_score <= 0:
-        next_level = f"{side} price confirmation at {trigger_price:g}" if trigger_price is not None else "an observed directional price trigger"
-        return result("EOD_TRIGGER_WATCH", f"Thesis retained; trigger={trigger or 'MISSING'}, price_crossed={trigger_crossed}, structure={category}", f"Watch for {next_level} and aligned independent evidence")
+    if not trigger_confirmed or not structure_aligned or aligned_score <= 0:
+        next_level = f"{side} acceptance beyond the thesis trigger {trigger_price:g}" if trigger_price is not None else "the thesis trigger level"
+        return result("EOD_TRIGGER_WATCH", f"Thesis retained; thesis_readiness={readiness}, structure={category}", f"Watch for {next_level} and aligned independent evidence")
 
+    # Output-trust item 3 (ACK decision 1, 9 Oct 2026): an activated thesis is ready only when its geometry from the
+    # planned entry is justified by the setup's measured hit rate (or unmeasured, labelled). Unrecorded is not justified.
+    geometry = _token(row.get("geometry_justification")).upper() or "NOT_RECORDED"
+    if geometry in {"GEOMETRY_NOT_JUSTIFIED", "INVALID_GEOMETRY", "NOT_RECORDED"}:
+        flags.append(f"GEOMETRY_{geometry}" if geometry == "NOT_RECORDED" else geometry)
+        return result("EOD_GEOMETRY_REVIEW", f"Thesis activated; geometry {geometry} from the planned entry: "
+                      f"{_token(row.get('geometry_reason')) or 'reason not recorded'}",
+                      "Not GO: needs the setup's measured hit rate at or above break-even; target and invalidation are never moved")
     return result("EOD_ACTION_SETUP_READY", "Target, exact contract, direction evidence and observed trigger reconcile", "Morning checks thesis change and current entry conditions; human decides execution")

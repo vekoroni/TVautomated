@@ -61,6 +61,42 @@ def _describe(candidate: Mapping) -> str:
     return f"{candidate['Signal_Type']} ({str(candidate['Signal_State']).lower()}, {candidate['Timeframe']})"
 
 
+def _from_event(out: Dict[str, Optional[str]], own: Mapping, readings: Mapping[str, Mapping]) -> None:
+    phase = _phase(own, readings)
+    out.update({
+        "thesis_phase": phase, "thesis_event": own["Signal_Type"],
+        "thesis_event_state": own["Signal_State"], "thesis_event_timeframe": own["Timeframe"],
+        "thesis_event_scope": own.get("Structure_Scope"), "thesis_event_candidate_id": own["Candidate_ID"],
+        "thesis_structure_alignment": "ALIGNED",
+        "thesis_category": f"Phase {phase} · {_describe(own)}",
+    })
+    out.update({field: own.get(source) for field, source in _EVIDENCE_SOURCE.items()})
+    if own.get("Signal_State") == "DETECTED" and own.get("Duration_Test") == "ACTIVATION":
+        out.update({field: own.get(source) for field, source in _ACTIVATION_SOURCE.items()})
+
+
+def governed_thesis(readings: Mapping[str, Mapping], trade_direction: str,
+                    governing: Optional[Mapping]) -> Dict[str, Optional[str]]:
+    """S2-1 (ACK 6 Oct 2026): the thesis event and its move/time evidence are the governing setup's (the setup that
+    set the lane - trade_lane.select_governing). The legacy 1d-first pick is kept as supporting daily_event_* fields
+    (displayed as the daily refinement, never valued). No governing setup leaves the thesis missing, stated."""
+    legacy = thesis_category(readings, trade_direction)
+    out: Dict[str, Optional[str]] = {field: None for field in (*FIELDS, *EVIDENCE_FIELDS)}
+    out.update({"daily_event": legacy["thesis_event"], "daily_event_state": legacy["thesis_event_state"],
+                "daily_event_candidate_id": legacy["thesis_event_candidate_id"],
+                "daily_event_outcome_level": legacy["thesis_outcome_level"]})
+    if SIDES.get(str(trade_direction or "").upper()) is None:
+        out.update(thesis_structure_alignment=legacy["thesis_structure_alignment"],
+                   thesis_category=legacy["thesis_category"])
+        return out
+    if governing is None:
+        out.update(thesis_phase=legacy["thesis_phase"], thesis_structure_alignment="NO_GOVERNING_SETUP",
+                   thesis_category="No governing setup on the trade side (none live, or every level already passed)")
+        return out
+    _from_event(out, governing, readings)
+    return out
+
+
 def thesis_category(readings: Mapping[str, Mapping], trade_direction: str) -> Dict[str, Optional[str]]:
     out: Dict[str, Optional[str]] = {field: None for field in (*FIELDS, *EVIDENCE_FIELDS)}
     side = SIDES.get(str(trade_direction or "").upper())
@@ -70,17 +106,7 @@ def thesis_category(readings: Mapping[str, Mapping], trade_direction: str) -> Di
         return out
     own = _pick(readings, side)
     if own is not None:
-        phase = _phase(own, readings)
-        out.update({
-            "thesis_phase": phase, "thesis_event": own["Signal_Type"],
-            "thesis_event_state": own["Signal_State"], "thesis_event_timeframe": own["Timeframe"],
-            "thesis_event_scope": own.get("Structure_Scope"), "thesis_event_candidate_id": own["Candidate_ID"],
-            "thesis_structure_alignment": "ALIGNED",
-            "thesis_category": f"Phase {phase} · {_describe(own)}",
-        })
-        out.update({field: own.get(source) for field, source in _EVIDENCE_SOURCE.items()})
-        if own.get("Signal_State") == "DETECTED" and own.get("Duration_Test") == "ACTIVATION":
-            out.update({field: own.get(source) for field, source in _ACTIVATION_SOURCE.items()})
+        _from_event(out, own, readings)
         return out
     other = _pick(readings, "BEAR" if side == "BULL" else "BULL")
     phase = _phase(other, readings)

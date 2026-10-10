@@ -1,0 +1,1951 @@
+{
+  "event": "outcome level before invalidation within the planned hold (the setup's q80 time on the original panel); censored, invalidated or later = not reached",
+  "setups": [
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 4.0,
+      "n_original": 89,
+      "hits_original": 36,
+      "rate_original": 0.4045,
+      "ci_original": [
+        0.3085,
+        0.5084
+      ],
+      "tickers_original": 71,
+      "n_holdout": 86,
+      "hits_holdout": 32,
+      "rate_holdout": 0.3721,
+      "ci_holdout": [
+        0.2775,
+        0.4777
+      ],
+      "tickers_holdout": 61,
+      "rate_shrunk": 0.4062
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 7.0,
+      "n_original": 118,
+      "hits_original": 53,
+      "rate_original": 0.4492,
+      "ci_original": [
+        0.3624,
+        0.5391
+      ],
+      "tickers_original": 85,
+      "n_holdout": 130,
+      "hits_holdout": 65,
+      "rate_holdout": 0.5,
+      "ci_holdout": [
+        0.4153,
+        0.5847
+      ],
+      "tickers_holdout": 88,
+      "rate_shrunk": 0.4621
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 30.0,
+      "n_original": 1071,
+      "hits_original": 623,
+      "rate_original": 0.5817,
+      "ci_original": [
+        0.5519,
+        0.6109
+      ],
+      "tickers_original": 247,
+      "n_holdout": 1099,
+      "hits_holdout": 637,
+      "rate_holdout": 0.5796,
+      "ci_holdout": [
+        0.5502,
+        0.6085
+      ],
+      "tickers_holdout": 271,
+      "rate_shrunk": 0.5777
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 20.0,
+      "n_original": 679,
+      "hits_original": 360,
+      "rate_original": 0.5302,
+      "ci_original": [
+        0.4926,
+        0.5675
+      ],
+      "tickers_original": 211,
+      "n_holdout": 872,
+      "hits_holdout": 473,
+      "rate_holdout": 0.5424,
+      "ci_holdout": [
+        0.5093,
+        0.5752
+      ],
+      "tickers_holdout": 248,
+      "rate_shrunk": 0.5255
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 53.0,
+      "n_original": 704,
+      "hits_original": 294,
+      "rate_original": 0.4176,
+      "ci_original": [
+        0.3817,
+        0.4544
+      ],
+      "tickers_original": 211,
+      "n_holdout": 757,
+      "hits_holdout": 319,
+      "rate_holdout": 0.4214,
+      "ci_holdout": [
+        0.3867,
+        0.4569
+      ],
+      "tickers_holdout": 236,
+      "rate_shrunk": 0.4226
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 33.0,
+      "n_original": 371,
+      "hits_original": 136,
+      "rate_original": 0.3666,
+      "ci_original": [
+        0.3191,
+        0.4167
+      ],
+      "tickers_original": 163,
+      "n_holdout": 391,
+      "hits_holdout": 103,
+      "rate_holdout": 0.2634,
+      "ci_holdout": [
+        0.2222,
+        0.3092
+      ],
+      "tickers_holdout": 160,
+      "rate_shrunk": 0.3697
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 96.0,
+      "n_original": 878,
+      "hits_original": 394,
+      "rate_original": 0.4487,
+      "ci_original": [
+        0.4161,
+        0.4818
+      ],
+      "tickers_original": 222,
+      "n_holdout": 860,
+      "hits_holdout": 336,
+      "rate_holdout": 0.3907,
+      "ci_holdout": [
+        0.3586,
+        0.4237
+      ],
+      "tickers_holdout": 224,
+      "rate_shrunk": 0.4511
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 0.0,
+      "n_original": 1,
+      "hits_original": 0,
+      "rate_original": 0.0,
+      "ci_original": [
+        0.0,
+        0.7935
+      ],
+      "tickers_original": 1,
+      "n_holdout": 3,
+      "hits_holdout": 0,
+      "rate_holdout": 0.0,
+      "ci_holdout": [
+        0.0,
+        0.5615
+      ],
+      "tickers_holdout": 3,
+      "rate_shrunk": 0.3973
+    },
+    {
+      "timeframe": "1d",
+      "state": "ACTIVATED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 44.0,
+      "n_original": 678,
+      "hits_original": 216,
+      "rate_original": 0.3186,
+      "ci_original": [
+        0.2846,
+        0.3546
+      ],
+      "tickers_original": 212,
+      "n_holdout": 773,
+      "hits_holdout": 226,
+      "rate_holdout": 0.2924,
+      "ci_holdout": [
+        0.2614,
+        0.3254
+      ],
+      "tickers_holdout": 236,
+      "rate_shrunk": 0.3223
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Buyer Absorption Breakout",
+      "direction": "BULL",
+      "hold_bars": 20.0,
+      "n_original": 2415,
+      "hits_original": 852,
+      "rate_original": 0.3528,
+      "ci_original": [
+        0.334,
+        0.3721
+      ],
+      "tickers_original": 266,
+      "n_holdout": 2601,
+      "hits_holdout": 886,
+      "rate_holdout": 0.3406,
+      "ci_holdout": [
+        0.3227,
+        0.3591
+      ],
+      "tickers_holdout": 290,
+      "rate_shrunk": 0.3521
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BEAR",
+      "hold_bars": 26.0,
+      "n_original": 448,
+      "hits_original": 205,
+      "rate_original": 0.4576,
+      "ci_original": [
+        0.412,
+        0.5039
+      ],
+      "tickers_original": 213,
+      "n_holdout": 468,
+      "hits_holdout": 217,
+      "rate_holdout": 0.4637,
+      "ci_holdout": [
+        0.419,
+        0.509
+      ],
+      "tickers_holdout": 232,
+      "rate_shrunk": 0.4427
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BULL",
+      "hold_bars": 40.0,
+      "n_original": 487,
+      "hits_original": 255,
+      "rate_original": 0.5236,
+      "ci_original": [
+        0.4792,
+        0.5676
+      ],
+      "tickers_original": 207,
+      "n_holdout": 568,
+      "hits_holdout": 310,
+      "rate_holdout": 0.5458,
+      "ci_holdout": [
+        0.5047,
+        0.5863
+      ],
+      "tickers_holdout": 240,
+      "rate_shrunk": 0.5118
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BEAR",
+      "hold_bars": 6.0,
+      "n_original": 889,
+      "hits_original": 275,
+      "rate_original": 0.3093,
+      "ci_original": [
+        0.2798,
+        0.3405
+      ],
+      "tickers_original": 244,
+      "n_holdout": 1025,
+      "hits_holdout": 312,
+      "rate_holdout": 0.3044,
+      "ci_holdout": [
+        0.277,
+        0.3332
+      ],
+      "tickers_holdout": 267,
+      "rate_shrunk": 0.3068
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BULL",
+      "hold_bars": 6.0,
+      "n_original": 1142,
+      "hits_original": 467,
+      "rate_original": 0.4089,
+      "ci_original": [
+        0.3808,
+        0.4377
+      ],
+      "tickers_original": 251,
+      "n_holdout": 1224,
+      "hits_holdout": 472,
+      "rate_holdout": 0.3856,
+      "ci_holdout": [
+        0.3588,
+        0.4132
+      ],
+      "tickers_holdout": 278,
+      "rate_shrunk": 0.4062
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 2.0,
+      "n_original": 48,
+      "hits_original": 20,
+      "rate_original": 0.4167,
+      "ci_original": [
+        0.2885,
+        0.5572
+      ],
+      "tickers_original": 38,
+      "n_holdout": 45,
+      "hits_holdout": 19,
+      "rate_holdout": 0.4222,
+      "ci_holdout": [
+        0.2897,
+        0.567
+      ],
+      "tickers_holdout": 38,
+      "rate_shrunk": 0.3444
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 3.0,
+      "n_original": 53,
+      "hits_original": 20,
+      "rate_original": 0.3774,
+      "ci_original": [
+        0.2594,
+        0.5119
+      ],
+      "tickers_original": 39,
+      "n_holdout": 51,
+      "hits_holdout": 24,
+      "rate_holdout": 0.4706,
+      "ci_holdout": [
+        0.3405,
+        0.6048
+      ],
+      "tickers_holdout": 37,
+      "rate_shrunk": 0.347
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BEAR",
+      "hold_bars": 13.0,
+      "n_original": 390,
+      "hits_original": 128,
+      "rate_original": 0.3282,
+      "ci_original": [
+        0.2835,
+        0.3763
+      ],
+      "tickers_original": 195,
+      "n_holdout": 404,
+      "hits_holdout": 150,
+      "rate_holdout": 0.3713,
+      "ci_holdout": [
+        0.3256,
+        0.4194
+      ],
+      "tickers_holdout": 210,
+      "rate_shrunk": 0.3212
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BULL",
+      "hold_bars": 12.0,
+      "n_original": 456,
+      "hits_original": 160,
+      "rate_original": 0.3509,
+      "ci_original": [
+        0.3085,
+        0.3958
+      ],
+      "tickers_original": 215,
+      "n_holdout": 482,
+      "hits_holdout": 184,
+      "rate_holdout": 0.3817,
+      "ci_holdout": [
+        0.3395,
+        0.4259
+      ],
+      "tickers_holdout": 219,
+      "rate_shrunk": 0.3473
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 37.0,
+      "n_original": 5328,
+      "hits_original": 1382,
+      "rate_original": 0.2594,
+      "ci_original": [
+        0.2478,
+        0.2713
+      ],
+      "tickers_original": 269,
+      "n_holdout": 5749,
+      "hits_holdout": 1553,
+      "rate_holdout": 0.2701,
+      "ci_holdout": [
+        0.2588,
+        0.2818
+      ],
+      "tickers_holdout": 293,
+      "rate_shrunk": 0.2595
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 26.0,
+      "n_original": 4749,
+      "hits_original": 1033,
+      "rate_original": 0.2175,
+      "ci_original": [
+        0.206,
+        0.2295
+      ],
+      "tickers_original": 271,
+      "n_holdout": 5354,
+      "hits_holdout": 1211,
+      "rate_holdout": 0.2262,
+      "ci_holdout": [
+        0.2152,
+        0.2376
+      ],
+      "tickers_holdout": 291,
+      "rate_shrunk": 0.2177
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Seller Absorption Breakdown",
+      "direction": "BEAR",
+      "hold_bars": 19.0,
+      "n_original": 2067,
+      "hits_original": 609,
+      "rate_original": 0.2946,
+      "ci_original": [
+        0.2754,
+        0.3146
+      ],
+      "tickers_original": 266,
+      "n_holdout": 2297,
+      "hits_holdout": 698,
+      "rate_holdout": 0.3039,
+      "ci_holdout": [
+        0.2854,
+        0.323
+      ],
+      "tickers_holdout": 285,
+      "rate_shrunk": 0.2937
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 53.0,
+      "n_original": 1519,
+      "hits_original": 365,
+      "rate_original": 0.2403,
+      "ci_original": [
+        0.2195,
+        0.2624
+      ],
+      "tickers_original": 261,
+      "n_holdout": 1693,
+      "hits_holdout": 420,
+      "rate_holdout": 0.2481,
+      "ci_holdout": [
+        0.2281,
+        0.2692
+      ],
+      "tickers_holdout": 284,
+      "rate_shrunk": 0.241
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 44.0,
+      "n_original": 1042,
+      "hits_original": 114,
+      "rate_original": 0.1094,
+      "ci_original": [
+        0.0919,
+        0.1298
+      ],
+      "tickers_original": 233,
+      "n_holdout": 1076,
+      "hits_holdout": 113,
+      "rate_holdout": 0.105,
+      "ci_holdout": [
+        0.0881,
+        0.1248
+      ],
+      "tickers_holdout": 267,
+      "rate_shrunk": 0.1132
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 107.0,
+      "n_original": 1930,
+      "hits_original": 274,
+      "rate_original": 0.142,
+      "ci_original": [
+        0.1271,
+        0.1583
+      ],
+      "tickers_original": 262,
+      "n_holdout": 1925,
+      "hits_holdout": 270,
+      "rate_holdout": 0.1403,
+      "ci_holdout": [
+        0.1255,
+        0.1565
+      ],
+      "tickers_holdout": 285,
+      "rate_shrunk": 0.1438
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 0.0,
+      "n_original": 1,
+      "hits_original": 0,
+      "rate_original": 0.0,
+      "ci_original": [
+        0.0,
+        0.7935
+      ],
+      "tickers_original": 1,
+      "n_holdout": 0,
+      "hits_holdout": 0,
+      "rate_holdout": null,
+      "ci_holdout": null,
+      "tickers_holdout": 0,
+      "rate_shrunk": 0.23
+    },
+    {
+      "timeframe": "1d",
+      "state": "DETECTED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 40.0,
+      "n_original": 1666,
+      "hits_original": 295,
+      "rate_original": 0.1771,
+      "ci_original": [
+        0.1595,
+        0.1961
+      ],
+      "tickers_original": 261,
+      "n_holdout": 1750,
+      "hits_holdout": 340,
+      "rate_holdout": 0.1943,
+      "ci_holdout": [
+        0.1764,
+        0.2135
+      ],
+      "tickers_holdout": 285,
+      "rate_shrunk": 0.1782
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 3.0,
+      "n_original": 105,
+      "hits_original": 47,
+      "rate_original": 0.4476,
+      "ci_original": [
+        0.356,
+        0.5429
+      ],
+      "tickers_original": 16,
+      "n_holdout": 125,
+      "hits_holdout": 33,
+      "rate_holdout": 0.264,
+      "ci_holdout": [
+        0.1946,
+        0.3475
+      ],
+      "tickers_holdout": 26,
+      "rate_shrunk": 0.4421
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 4.0,
+      "n_original": 178,
+      "hits_original": 85,
+      "rate_original": 0.4775,
+      "ci_original": [
+        0.4054,
+        0.5506
+      ],
+      "tickers_original": 35,
+      "n_holdout": 150,
+      "hits_holdout": 64,
+      "rate_holdout": 0.4267,
+      "ci_holdout": [
+        0.3503,
+        0.5067
+      ],
+      "tickers_holdout": 37,
+      "rate_shrunk": 0.4718
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 6.0,
+      "n_original": 502,
+      "hits_original": 260,
+      "rate_original": 0.5179,
+      "ci_original": [
+        0.4742,
+        0.5613
+      ],
+      "tickers_original": 74,
+      "n_holdout": 409,
+      "hits_holdout": 231,
+      "rate_holdout": 0.5648,
+      "ci_holdout": [
+        0.5164,
+        0.612
+      ],
+      "tickers_holdout": 74,
+      "rate_shrunk": 0.5149
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 5.0,
+      "n_original": 175,
+      "hits_original": 97,
+      "rate_original": 0.5543,
+      "ci_original": [
+        0.4803,
+        0.626
+      ],
+      "tickers_original": 36,
+      "n_holdout": 137,
+      "hits_holdout": 64,
+      "rate_holdout": 0.4672,
+      "ci_holdout": [
+        0.3856,
+        0.5505
+      ],
+      "tickers_holdout": 34,
+      "rate_shrunk": 0.5452
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 9.0,
+      "n_original": 218,
+      "hits_original": 62,
+      "rate_original": 0.2844,
+      "ci_original": [
+        0.2287,
+        0.3476
+      ],
+      "tickers_original": 30,
+      "n_holdout": 105,
+      "hits_holdout": 29,
+      "rate_holdout": 0.2762,
+      "ci_holdout": [
+        0.1997,
+        0.3685
+      ],
+      "tickers_holdout": 27,
+      "rate_shrunk": 0.2898
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 7.0,
+      "n_original": 33,
+      "hits_original": 6,
+      "rate_original": 0.1818,
+      "ci_original": [
+        0.0861,
+        0.3439
+      ],
+      "tickers_original": 9,
+      "n_holdout": 22,
+      "hits_holdout": 0,
+      "rate_holdout": 0.0,
+      "ci_holdout": [
+        -0.0,
+        0.1487
+      ],
+      "tickers_holdout": 5,
+      "rate_shrunk": 0.2286
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 15.0,
+      "n_original": 319,
+      "hits_original": 65,
+      "rate_original": 0.2038,
+      "ci_original": [
+        0.1632,
+        0.2514
+      ],
+      "tickers_original": 40,
+      "n_holdout": 256,
+      "hits_holdout": 29,
+      "rate_holdout": 0.1133,
+      "ci_holdout": [
+        0.08,
+        0.158
+      ],
+      "tickers_holdout": 30,
+      "rate_shrunk": 0.2105
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 0.0,
+      "n_original": 1,
+      "hits_original": 0,
+      "rate_original": 0.0,
+      "ci_original": [
+        0.0,
+        0.7935
+      ],
+      "tickers_original": 1,
+      "n_holdout": 0,
+      "hits_holdout": 0,
+      "rate_holdout": null,
+      "ci_holdout": null,
+      "tickers_holdout": 0,
+      "rate_shrunk": 0.349
+    },
+    {
+      "timeframe": "1mo",
+      "state": "ACTIVATED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 10.0,
+      "n_original": 178,
+      "hits_original": 39,
+      "rate_original": 0.2191,
+      "ci_original": [
+        0.1646,
+        0.2854
+      ],
+      "tickers_original": 34,
+      "n_holdout": 105,
+      "hits_holdout": 28,
+      "rate_holdout": 0.2667,
+      "ci_holdout": [
+        0.1914,
+        0.3584
+      ],
+      "tickers_holdout": 30,
+      "rate_shrunk": 0.2278
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Buyer Absorption Breakout",
+      "direction": "BULL",
+      "hold_bars": 13.0,
+      "n_original": 2479,
+      "hits_original": 554,
+      "rate_original": 0.2235,
+      "ci_original": [
+        0.2075,
+        0.2403
+      ],
+      "tickers_original": 151,
+      "n_holdout": 2218,
+      "hits_holdout": 484,
+      "rate_holdout": 0.2182,
+      "ci_holdout": [
+        0.2015,
+        0.2359
+      ],
+      "tickers_holdout": 153,
+      "rate_shrunk": 0.2234
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BEAR",
+      "hold_bars": 3.0,
+      "n_original": 87,
+      "hits_original": 32,
+      "rate_original": 0.3678,
+      "ci_original": [
+        0.2741,
+        0.4727
+      ],
+      "tickers_original": 18,
+      "n_holdout": 189,
+      "hits_holdout": 25,
+      "rate_holdout": 0.1323,
+      "ci_holdout": [
+        0.0912,
+        0.188
+      ],
+      "tickers_holdout": 34,
+      "rate_shrunk": 0.3406
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BULL",
+      "hold_bars": 11.0,
+      "n_original": 220,
+      "hits_original": 69,
+      "rate_original": 0.3136,
+      "ci_original": [
+        0.256,
+        0.3777
+      ],
+      "tickers_original": 25,
+      "n_holdout": 208,
+      "hits_holdout": 67,
+      "rate_holdout": 0.3221,
+      "ci_holdout": [
+        0.2623,
+        0.3883
+      ],
+      "tickers_holdout": 29,
+      "rate_shrunk": 0.3067
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BEAR",
+      "hold_bars": 6.0,
+      "n_original": 366,
+      "hits_original": 96,
+      "rate_original": 0.2623,
+      "ci_original": [
+        0.2199,
+        0.3097
+      ],
+      "tickers_original": 81,
+      "n_holdout": 505,
+      "hits_holdout": 169,
+      "rate_holdout": 0.3347,
+      "ci_holdout": [
+        0.2949,
+        0.3769
+      ],
+      "tickers_holdout": 102,
+      "rate_shrunk": 0.2599
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BULL",
+      "hold_bars": 5.0,
+      "n_original": 636,
+      "hits_original": 287,
+      "rate_original": 0.4513,
+      "ci_original": [
+        0.413,
+        0.4901
+      ],
+      "tickers_original": 125,
+      "n_holdout": 675,
+      "hits_holdout": 223,
+      "rate_holdout": 0.3304,
+      "ci_holdout": [
+        0.2959,
+        0.3667
+      ],
+      "tickers_holdout": 135,
+      "rate_shrunk": 0.4452
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 1.0,
+      "n_original": 8,
+      "hits_original": 1,
+      "rate_original": 0.125,
+      "ci_original": [
+        0.0224,
+        0.4709
+      ],
+      "tickers_original": 2,
+      "n_holdout": 30,
+      "hits_holdout": 4,
+      "rate_holdout": 0.1333,
+      "ci_holdout": [
+        0.0531,
+        0.2968
+      ],
+      "tickers_holdout": 6,
+      "rate_shrunk": 0.1864
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 3.0,
+      "n_original": 13,
+      "hits_original": 12,
+      "rate_original": 0.9231,
+      "ci_original": [
+        0.6669,
+        0.9863
+      ],
+      "tickers_original": 4,
+      "n_holdout": 21,
+      "hits_holdout": 6,
+      "rate_holdout": 0.2857,
+      "ci_holdout": [
+        0.1381,
+        0.4996
+      ],
+      "tickers_holdout": 4,
+      "rate_shrunk": 0.5254
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BEAR",
+      "hold_bars": 12.0,
+      "n_original": 121,
+      "hits_original": 17,
+      "rate_original": 0.1405,
+      "ci_original": [
+        0.0896,
+        0.2135
+      ],
+      "tickers_original": 21,
+      "n_holdout": 178,
+      "hits_holdout": 97,
+      "rate_holdout": 0.5449,
+      "ci_holdout": [
+        0.4716,
+        0.6164
+      ],
+      "tickers_holdout": 29,
+      "rate_shrunk": 0.1501
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BULL",
+      "hold_bars": 4.0,
+      "n_original": 63,
+      "hits_original": 19,
+      "rate_original": 0.3016,
+      "ci_original": [
+        0.2024,
+        0.4236
+      ],
+      "tickers_original": 12,
+      "n_holdout": 118,
+      "hits_holdout": 27,
+      "rate_holdout": 0.2288,
+      "ci_holdout": [
+        0.1623,
+        0.3124
+      ],
+      "tickers_holdout": 17,
+      "rate_shrunk": 0.2834
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 10.0,
+      "n_original": 2036,
+      "hits_original": 366,
+      "rate_original": 0.1798,
+      "ci_original": [
+        0.1637,
+        0.197
+      ],
+      "tickers_original": 163,
+      "n_holdout": 2237,
+      "hits_holdout": 432,
+      "rate_holdout": 0.1931,
+      "ci_holdout": [
+        0.1773,
+        0.21
+      ],
+      "tickers_holdout": 182,
+      "rate_shrunk": 0.18
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 7.0,
+      "n_original": 1034,
+      "hits_original": 254,
+      "rate_original": 0.2456,
+      "ci_original": [
+        0.2204,
+        0.2728
+      ],
+      "tickers_original": 105,
+      "n_holdout": 1337,
+      "hits_holdout": 289,
+      "rate_holdout": 0.2162,
+      "ci_holdout": [
+        0.1949,
+        0.239
+      ],
+      "tickers_holdout": 120,
+      "rate_shrunk": 0.2451
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Seller Absorption Breakdown",
+      "direction": "BEAR",
+      "hold_bars": 11.0,
+      "n_original": 844,
+      "hits_original": 268,
+      "rate_original": 0.3175,
+      "ci_original": [
+        0.287,
+        0.3497
+      ],
+      "tickers_original": 72,
+      "n_holdout": 1111,
+      "hits_holdout": 277,
+      "rate_holdout": 0.2493,
+      "ci_holdout": [
+        0.2248,
+        0.2756
+      ],
+      "tickers_holdout": 93,
+      "rate_shrunk": 0.3153
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 11.0,
+      "n_original": 694,
+      "hits_original": 106,
+      "rate_original": 0.1527,
+      "ci_original": [
+        0.1279,
+        0.1814
+      ],
+      "tickers_original": 92,
+      "n_holdout": 924,
+      "hits_holdout": 140,
+      "rate_holdout": 0.1515,
+      "ci_holdout": [
+        0.1298,
+        0.1761
+      ],
+      "tickers_holdout": 111,
+      "rate_shrunk": 0.1542
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 20.0,
+      "n_original": 115,
+      "hits_original": 11,
+      "rate_original": 0.0957,
+      "ci_original": [
+        0.0543,
+        0.1632
+      ],
+      "tickers_original": 24,
+      "n_holdout": 163,
+      "hits_holdout": 8,
+      "rate_holdout": 0.0491,
+      "ci_holdout": [
+        0.0251,
+        0.0938
+      ],
+      "tickers_holdout": 35,
+      "rate_shrunk": 0.1119
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 21.0,
+      "n_original": 592,
+      "hits_original": 31,
+      "rate_original": 0.0524,
+      "ci_original": [
+        0.0371,
+        0.0734
+      ],
+      "tickers_original": 85,
+      "n_holdout": 383,
+      "hits_holdout": 38,
+      "rate_holdout": 0.0992,
+      "ci_holdout": [
+        0.0731,
+        0.1333
+      ],
+      "tickers_holdout": 74,
+      "rate_shrunk": 0.0568
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 0.0,
+      "n_original": 18,
+      "hits_original": 0,
+      "rate_original": 0.0,
+      "ci_original": [
+        0.0,
+        0.1759
+      ],
+      "tickers_original": 2,
+      "n_holdout": 12,
+      "hits_holdout": 0,
+      "rate_holdout": 0.0,
+      "ci_holdout": [
+        0.0,
+        0.2425
+      ],
+      "tickers_holdout": 2,
+      "rate_shrunk": 0.108
+    },
+    {
+      "timeframe": "1mo",
+      "state": "DETECTED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 10.0,
+      "n_original": 1004,
+      "hits_original": 87,
+      "rate_original": 0.0867,
+      "ci_original": [
+        0.0708,
+        0.1057
+      ],
+      "tickers_original": 116,
+      "n_holdout": 1146,
+      "hits_holdout": 100,
+      "rate_holdout": 0.0873,
+      "ci_holdout": [
+        0.0723,
+        0.105
+      ],
+      "tickers_holdout": 134,
+      "rate_shrunk": 0.0889
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 13.0,
+      "n_original": 159,
+      "hits_original": 68,
+      "rate_original": 0.4277,
+      "ci_original": [
+        0.3534,
+        0.5054
+      ],
+      "tickers_original": 61,
+      "n_holdout": 213,
+      "hits_holdout": 104,
+      "rate_holdout": 0.4883,
+      "ci_holdout": [
+        0.4219,
+        0.555
+      ],
+      "tickers_holdout": 77,
+      "rate_shrunk": 0.4257
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 6.0,
+      "n_original": 304,
+      "hits_original": 130,
+      "rate_original": 0.4276,
+      "ci_original": [
+        0.3733,
+        0.4838
+      ],
+      "tickers_original": 99,
+      "n_holdout": 294,
+      "hits_holdout": 135,
+      "rate_holdout": 0.4592,
+      "ci_holdout": [
+        0.4031,
+        0.5163
+      ],
+      "tickers_holdout": 91,
+      "rate_shrunk": 0.4278
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 26.0,
+      "n_original": 1291,
+      "hits_original": 700,
+      "rate_original": 0.5422,
+      "ci_original": [
+        0.515,
+        0.5692
+      ],
+      "tickers_original": 183,
+      "n_holdout": 1320,
+      "hits_holdout": 788,
+      "rate_holdout": 0.597,
+      "ci_holdout": [
+        0.5703,
+        0.6231
+      ],
+      "tickers_holdout": 211,
+      "rate_shrunk": 0.5401
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 16.0,
+      "n_original": 622,
+      "hits_original": 337,
+      "rate_original": 0.5418,
+      "ci_original": [
+        0.5025,
+        0.5806
+      ],
+      "tickers_original": 150,
+      "n_holdout": 704,
+      "hits_holdout": 389,
+      "rate_holdout": 0.5526,
+      "ci_holdout": [
+        0.5156,
+        0.5889
+      ],
+      "tickers_holdout": 182,
+      "rate_shrunk": 0.5388
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 32.0,
+      "n_original": 620,
+      "hits_original": 215,
+      "rate_original": 0.3468,
+      "ci_original": [
+        0.3104,
+        0.3851
+      ],
+      "tickers_original": 118,
+      "n_holdout": 692,
+      "hits_holdout": 247,
+      "rate_holdout": 0.3569,
+      "ci_holdout": [
+        0.3221,
+        0.3933
+      ],
+      "tickers_holdout": 139,
+      "rate_shrunk": 0.3499
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 22.0,
+      "n_original": 189,
+      "hits_original": 69,
+      "rate_original": 0.3651,
+      "ci_original": [
+        0.2998,
+        0.4358
+      ],
+      "tickers_original": 59,
+      "n_holdout": 224,
+      "hits_holdout": 80,
+      "rate_holdout": 0.3571,
+      "ci_holdout": [
+        0.2973,
+        0.4218
+      ],
+      "tickers_holdout": 65,
+      "rate_shrunk": 0.3677
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 38.0,
+      "n_original": 870,
+      "hits_original": 281,
+      "rate_original": 0.323,
+      "ci_original": [
+        0.2928,
+        0.3548
+      ],
+      "tickers_original": 132,
+      "n_holdout": 755,
+      "hits_holdout": 251,
+      "rate_holdout": 0.3325,
+      "ci_holdout": [
+        0.2998,
+        0.3668
+      ],
+      "tickers_holdout": 123,
+      "rate_shrunk": 0.3259
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 11.0,
+      "n_original": 3,
+      "hits_original": 3,
+      "rate_original": 1.0,
+      "ci_original": [
+        0.4385,
+        1.0
+      ],
+      "tickers_original": 2,
+      "n_holdout": 0,
+      "hits_holdout": 0,
+      "rate_holdout": null,
+      "ci_holdout": null,
+      "tickers_holdout": 0,
+      "rate_shrunk": 0.5088
+    },
+    {
+      "timeframe": "1w",
+      "state": "ACTIVATED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 33.0,
+      "n_original": 566,
+      "hits_original": 144,
+      "rate_original": 0.2544,
+      "ci_original": [
+        0.2203,
+        0.2919
+      ],
+      "tickers_original": 127,
+      "n_holdout": 718,
+      "hits_holdout": 146,
+      "rate_holdout": 0.2033,
+      "ci_holdout": [
+        0.1755,
+        0.2343
+      ],
+      "tickers_holdout": 150,
+      "rate_shrunk": 0.258
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Buyer Absorption Breakout",
+      "direction": "BULL",
+      "hold_bars": 21.0,
+      "n_original": 2234,
+      "hits_original": 795,
+      "rate_original": 0.3559,
+      "ci_original": [
+        0.3363,
+        0.3759
+      ],
+      "tickers_original": 245,
+      "n_holdout": 2536,
+      "hits_holdout": 869,
+      "rate_holdout": 0.3427,
+      "ci_holdout": [
+        0.3244,
+        0.3614
+      ],
+      "tickers_holdout": 268,
+      "rate_shrunk": 0.3553
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BEAR",
+      "hold_bars": 19.0,
+      "n_original": 406,
+      "hits_original": 164,
+      "rate_original": 0.4039,
+      "ci_original": [
+        0.3573,
+        0.4524
+      ],
+      "tickers_original": 144,
+      "n_holdout": 492,
+      "hits_holdout": 198,
+      "rate_holdout": 0.4024,
+      "ci_holdout": [
+        0.36,
+        0.4464
+      ],
+      "tickers_holdout": 154,
+      "rate_shrunk": 0.3894
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Change-of-Behaviour Reversal",
+      "direction": "BULL",
+      "hold_bars": 36.0,
+      "n_original": 748,
+      "hits_original": 380,
+      "rate_original": 0.508,
+      "ci_original": [
+        0.4722,
+        0.5437
+      ],
+      "tickers_original": 173,
+      "n_holdout": 724,
+      "hits_holdout": 341,
+      "rate_holdout": 0.471,
+      "ci_holdout": [
+        0.4349,
+        0.5074
+      ],
+      "tickers_holdout": 186,
+      "rate_shrunk": 0.5024
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BEAR",
+      "hold_bars": 6.0,
+      "n_original": 1049,
+      "hits_original": 298,
+      "rate_original": 0.2841,
+      "ci_original": [
+        0.2576,
+        0.3121
+      ],
+      "tickers_original": 190,
+      "n_holdout": 1322,
+      "hits_holdout": 385,
+      "rate_holdout": 0.2912,
+      "ci_holdout": [
+        0.2674,
+        0.3163
+      ],
+      "tickers_holdout": 205,
+      "rate_shrunk": 0.282
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Crabel Compression Breakout",
+      "direction": "BULL",
+      "hold_bars": 8.0,
+      "n_original": 1676,
+      "hits_original": 635,
+      "rate_original": 0.3789,
+      "ci_original": [
+        0.356,
+        0.4024
+      ],
+      "tickers_original": 230,
+      "n_holdout": 1681,
+      "hits_holdout": 627,
+      "rate_holdout": 0.373,
+      "ci_holdout": [
+        0.3502,
+        0.3964
+      ],
+      "tickers_holdout": 246,
+      "rate_shrunk": 0.3778
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Failed Spring Continuation",
+      "direction": "BEAR",
+      "hold_bars": 14.0,
+      "n_original": 37,
+      "hits_original": 18,
+      "rate_original": 0.4865,
+      "ci_original": [
+        0.3345,
+        0.6411
+      ],
+      "tickers_original": 18,
+      "n_holdout": 110,
+      "hits_holdout": 59,
+      "rate_holdout": 0.5364,
+      "ci_holdout": [
+        0.4435,
+        0.6267
+      ],
+      "tickers_holdout": 22,
+      "rate_shrunk": 0.357
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Failed Upthrust Continuation",
+      "direction": "BULL",
+      "hold_bars": 3.0,
+      "n_original": 100,
+      "hits_original": 38,
+      "rate_original": 0.38,
+      "ci_original": [
+        0.291,
+        0.4779
+      ],
+      "tickers_original": 27,
+      "n_holdout": 110,
+      "hits_holdout": 54,
+      "rate_holdout": 0.4909,
+      "ci_holdout": [
+        0.3994,
+        0.583
+      ],
+      "tickers_holdout": 31,
+      "rate_shrunk": 0.3647
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BEAR",
+      "hold_bars": 13.0,
+      "n_original": 187,
+      "hits_original": 56,
+      "rate_original": 0.2995,
+      "ci_original": [
+        0.2384,
+        0.3686
+      ],
+      "tickers_original": 79,
+      "n_holdout": 260,
+      "hits_holdout": 97,
+      "rate_holdout": 0.3731,
+      "ci_holdout": [
+        0.3165,
+        0.4333
+      ],
+      "tickers_holdout": 95,
+      "rate_shrunk": 0.2869
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Hinge / Apex Expansion",
+      "direction": "BULL",
+      "hold_bars": 13.0,
+      "n_original": 360,
+      "hits_original": 158,
+      "rate_original": 0.4389,
+      "ci_original": [
+        0.3885,
+        0.4905
+      ],
+      "tickers_original": 102,
+      "n_holdout": 335,
+      "hits_holdout": 115,
+      "rate_holdout": 0.3433,
+      "ci_holdout": [
+        0.2945,
+        0.3956
+      ],
+      "tickers_holdout": 116,
+      "rate_shrunk": 0.431
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "SOS -> LPS continuation",
+      "direction": "BULL",
+      "hold_bars": 28.0,
+      "n_original": 4892,
+      "hits_original": 1229,
+      "rate_original": 0.2512,
+      "ci_original": [
+        0.2393,
+        0.2636
+      ],
+      "tickers_original": 260,
+      "n_holdout": 5346,
+      "hits_holdout": 1285,
+      "rate_holdout": 0.2404,
+      "ci_holdout": [
+        0.2291,
+        0.252
+      ],
+      "tickers_holdout": 282,
+      "rate_shrunk": 0.2514
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "SOW -> LPSY continuation",
+      "direction": "BEAR",
+      "hold_bars": 25.0,
+      "n_original": 3656,
+      "hits_original": 769,
+      "rate_original": 0.2103,
+      "ci_original": [
+        0.1974,
+        0.2239
+      ],
+      "tickers_original": 257,
+      "n_holdout": 4427,
+      "hits_holdout": 976,
+      "rate_holdout": 0.2205,
+      "ci_holdout": [
+        0.2085,
+        0.2329
+      ],
+      "tickers_holdout": 282,
+      "rate_shrunk": 0.2104
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Seller Absorption Breakdown",
+      "direction": "BEAR",
+      "hold_bars": 16.0,
+      "n_original": 1466,
+      "hits_original": 398,
+      "rate_original": 0.2715,
+      "ci_original": [
+        0.2493,
+        0.2948
+      ],
+      "tickers_original": 218,
+      "n_holdout": 1665,
+      "hits_holdout": 517,
+      "rate_holdout": 0.3105,
+      "ci_holdout": [
+        0.2887,
+        0.3332
+      ],
+      "tickers_holdout": 247,
+      "rate_shrunk": 0.2703
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Spring Candidate",
+      "direction": "BULL",
+      "hold_bars": 36.0,
+      "n_original": 1357,
+      "hits_original": 314,
+      "rate_original": 0.2314,
+      "ci_original": [
+        0.2097,
+        0.2546
+      ],
+      "tickers_original": 212,
+      "n_holdout": 1689,
+      "hits_holdout": 377,
+      "rate_holdout": 0.2232,
+      "ci_holdout": [
+        0.204,
+        0.2437
+      ],
+      "tickers_holdout": 259,
+      "rate_shrunk": 0.2322
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BEAR",
+      "hold_bars": 54.0,
+      "n_original": 596,
+      "hits_original": 75,
+      "rate_original": 0.1258,
+      "ci_original": [
+        0.1016,
+        0.1549
+      ],
+      "tickers_original": 148,
+      "n_holdout": 593,
+      "hits_holdout": 67,
+      "rate_holdout": 0.113,
+      "ci_holdout": [
+        0.09,
+        0.141
+      ],
+      "tickers_holdout": 159,
+      "rate_shrunk": 0.131
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Trend Continuation after Shallow Test",
+      "direction": "BULL",
+      "hold_bars": 48.0,
+      "n_original": 1630,
+      "hits_original": 184,
+      "rate_original": 0.1129,
+      "ci_original": [
+        0.0984,
+        0.1292
+      ],
+      "tickers_original": 218,
+      "n_holdout": 1486,
+      "hits_holdout": 175,
+      "rate_holdout": 0.1178,
+      "ci_holdout": [
+        0.1024,
+        0.1351
+      ],
+      "tickers_holdout": 222,
+      "rate_shrunk": 0.115
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "UTAD Test",
+      "direction": "BEAR",
+      "hold_bars": 5.0,
+      "n_original": 1,
+      "hits_original": 1,
+      "rate_original": 1.0,
+      "ci_original": [
+        0.2065,
+        1.0
+      ],
+      "tickers_original": 1,
+      "n_holdout": 0,
+      "hits_holdout": 0,
+      "rate_holdout": null,
+      "ci_holdout": null,
+      "tickers_holdout": 0,
+      "rate_shrunk": 0.2414
+    },
+    {
+      "timeframe": "1w",
+      "state": "DETECTED",
+      "signal_type": "Upthrust Candidate",
+      "direction": "BEAR",
+      "hold_bars": 30.0,
+      "n_original": 1785,
+      "hits_original": 238,
+      "rate_original": 0.1333,
+      "ci_original": [
+        0.1183,
+        0.1499
+      ],
+      "tickers_original": 244,
+      "n_holdout": 1818,
+      "hits_holdout": 263,
+      "rate_holdout": 0.1447,
+      "ci_holdout": [
+        0.1292,
+        0.1616
+      ],
+      "tickers_holdout": 267,
+      "rate_shrunk": 0.135
+    }
+  ],
+  "parents": {
+    "1d|ACTIVATED|BEAR": {
+      "rate": 0.4114,
+      "n": 1818,
+      "prior_strength": 28.1,
+      "setups": 5
+    },
+    "1d|DETECTED|BEAR": {
+      "rate": 0.2371,
+      "n": 11300,
+      "prior_strength": 32.35,
+      "setups": 9
+    },
+    "1d|DETECTED|BULL": {
+      "rate": 0.2832,
+      "n": 13330,
+      "prior_strength": 25.24,
+      "setups": 8
+    },
+    "1d|ACTIVATED|BULL": {
+      "rate": 0.4922,
+      "n": 2771,
+      "prior_strength": 50.78,
+      "setups": 4
+    },
+    "1w|ACTIVATED|BEAR": {
+      "rate": 0.4035,
+      "n": 1539,
+      "prior_strength": 13.99,
+      "setups": 5
+    },
+    "1w|DETECTED|BEAR": {
+      "rate": 0.2196,
+      "n": 9183,
+      "prior_strength": 34.89,
+      "setups": 9
+    },
+    "1w|ACTIVATED|BULL": {
+      "rate": 0.4298,
+      "n": 3085,
+      "prior_strength": 24.61,
+      "setups": 4
+    },
+    "1w|DETECTED|BULL": {
+      "rate": 0.2872,
+      "n": 12997,
+      "prior_strength": 19.67,
+      "setups": 8
+    },
+    "1mo|DETECTED|BULL": {
+      "rate": 0.2145,
+      "n": 6733,
+      "prior_strength": 16.63,
+      "setups": 8
+    },
+    "1mo|DETECTED|BEAR": {
+      "rate": 0.213,
+      "n": 3597,
+      "prior_strength": 18.51,
+      "setups": 9
+    },
+    "1mo|ACTIVATED|BULL": {
+      "rate": 0.3878,
+      "n": 1217,
+      "prior_strength": 12.07,
+      "setups": 4
+    },
+    "1mo|ACTIVATED|BEAR": {
+      "rate": 0.3841,
+      "n": 492,
+      "prior_strength": 9.93,
+      "setups": 5
+    }
+  },
+  "calibration": {
+    "slope": 0.9619,
+    "intercept": -0.0322,
+    "ece": 0.0207,
+    "brier": 0.1902,
+    "n": 73961,
+    "groups": 74
+  },
+  "version": "setup_rates_v1",
+  "authority": "DISPLAY_AND_REPORT_ONLY until ACK switches lane / geometry rates",
+  "evidence": "Enhancements/outcomes/beh001/eval_v5 (original) and eval_v5_holdout (held out) duration records",
+  "builder": "Enhancements/phase7/ot10_setup_rates.py (domain/setup_calibration.py)"
+}

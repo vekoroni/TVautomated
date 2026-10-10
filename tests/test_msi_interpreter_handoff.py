@@ -188,14 +188,13 @@ def test_handoff_rejects_same_ticker_with_different_contract_identity(
         validate_handoff_manifest(manifest)
 
 
-def test_aged_validation_quote_requires_refresh_without_invalidating_swing_thesis(tmp_path: Path) -> None:
+def test_aged_validation_quote_is_disclosed_without_invalidating_swing_thesis(tmp_path: Path) -> None:
+    # Superseded by A2/A3 (ACK 7 Oct 2026): an aged quote used to raise EVIDENCE_REFRESH_REQUIRED; its age is now
+    # disclosed and never blocks (missing/invalid evidence still does - tests/test_avs_a2_a3_interpreter_age_disclosed.py).
     manifest, _, _ = _fixture(tmp_path, freshness="STALE")
-    with pytest.raises(EvidenceResolutionError, match="EVIDENCE_REFRESH_REQUIRED"):
-        resolve_interpreter_evidence(TICKER, manifest_path=manifest)
-    evidence = resolve_interpreter_evidence(
-        TICKER, manifest_path=manifest, require_current=False
-    )
+    evidence = resolve_interpreter_evidence(TICKER, manifest_path=manifest)
     assert evidence.refresh_required is not None
+    assert evidence.refresh_required["disposition"] == "AGE_DISCLOSED"
     assert evidence.refresh_required["trade_thesis_affected"] is False
 
 

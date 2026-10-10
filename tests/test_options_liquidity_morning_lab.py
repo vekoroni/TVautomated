@@ -158,6 +158,9 @@ def test_replacement_contract_identity_and_recomputed_economics_reach_lab() -> N
             monetisability_status="COMPLETE",
             monetisability_state="MONETISABLE",
             monetisability_contract_symbol=REPLACEMENT,
+            # L5 (ACK 7 Oct 2026): comparability is owned by the anticipated move's value for the contract.
+            anticipated_pays_state="PAYS",
+            anticipated_contract_symbol=REPLACEMENT,
             morning_transition_state="EXECUTABLE_NOW",
             liquidity_state="EXECUTABLE_NOW",
             executable_now=True,

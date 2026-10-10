@@ -1,0 +1,93 @@
+{
+  "run": "20261008_220129",
+  "rows": 2788,
+  "baseline_matches_recorded_verdict": 2781,
+  "baseline_vs_recorded_differences": {
+    "GO -> FLAG": 6,
+    "FLAG -> GO": 1
+  },
+  "baseline_vs_recorded_tickers": {
+    "VLO": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.9973x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    },
+    "JBLU": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.8862x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    },
+    "NVDA": {
+      "recorded": "FLAG",
+      "baseline": "GO",
+      "why": "Live validation passed; human approval and size are still required"
+    },
+    "RIVN": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.9356x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    },
+    "UUUU": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.902x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    },
+    "ARDX": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.9445x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    },
+    "PLUG": {
+      "recorded": "GO",
+      "baseline": "FLAG",
+      "why": "The anticipated move values this contract at 0.9276x its premium at the median anticipated time; choose a contract the move pays, or skip"
+    }
+  },
+  "baseline_counts": {
+    "FLAG": 1338,
+    "BLOCK": 1420,
+    "GO": 30
+  },
+  "candidate_counts": {
+    "FLAG": 2177,
+    "BLOCK": 580,
+    "GO": 31
+  },
+  "transitions": {
+    "FLAG -> FLAG": 1338,
+    "BLOCK -> FLAG": 839,
+    "BLOCK -> BLOCK": 580,
+    "GO -> GO": 30,
+    "BLOCK -> GO": 1
+  },
+  "upstream_blocked_rows": 862,
+  "upstream_blocked_after_candidate": {
+    "FLAG": 839,
+    "BLOCK": 22,
+    "GO": 1
+  },
+  "why_still_not_go": {
+    "EXECUTION_NOT_VIABLE": 704,
+    "MISSING": 80,
+    "Wait for a fresh executable two-sided quote on the exact con": 40,
+    "Do not chase the overnight extension": 11,
+    "PUT_INVALIDATION_NOT_ABOVE_SIGNAL": 9,
+    "PUT_TARGET_NOT_BELOW_SIGNAL": 5,
+    "The planned underlying move is already substantially realise": 3,
+    "NO_ADOPTED_THESIS": 2,
+    "Lane C watch": 2,
+    "CALL_INVALIDATION_NOT_BELOW_SIGNAL": 2,
+    "CALL_TARGET_NOT_ABOVE_SIGNAL": 1,
+    "The anticipated move values this contract at 0.8641x its pre": 1
+  },
+  "new_go": [
+    {
+      "ticker": "WYNN",
+      "lane": "A",
+      "readiness": "READY_FOR_HUMAN_REVIEW",
+      "legacy_reason": "CURRENT_EDGE_EOD_BLOCK:LIVE_CLEARANCE_REQUIRED",
+      "pays": "PAYS"
+    }
+  ],
+  "lost_go": []
+}

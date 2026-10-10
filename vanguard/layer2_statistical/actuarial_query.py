@@ -166,8 +166,11 @@ def side_evidence_blocks(sample: pd.DataFrame, *, as_of, match_attrs: dict, poli
     if "label_asof_date" not in sample.columns:
         out["side_block_reason"] = "LABEL_DATE_MISSING"
         return out
-    cut = pd.Timestamp(as_of).normalize() - pd.offsets.BDay(int(policy["label_embargo_sessions"]))
-    observed = pd.to_datetime(sample["label_asof_date"], errors="coerce")
+    # RC01 (Phase 4, 8 Oct 2026): compare SESSION DATES, not timestamps. The adapter sends the evidence session as
+    # UTC-aware midnight while labels are dates; comparing an aware cut with naive labels raised TypeError on every
+    # row (run 20261006_060401: 1,702 of 1,702). The session date is the date as given, in its own clock.
+    cut = pd.Timestamp(pd.Timestamp(as_of).date()) - pd.offsets.BDay(int(policy["label_embargo_sessions"]))
+    observed = pd.to_datetime(sample["label_asof_date"].astype(str).str[:10], errors="coerce")
     usable = sample.loc[observed.notna() & (observed <= cut)]
     out["side_block_excluded_not_observable"] = int(len(sample) - len(usable))
     out["side_block_sample_size"] = int(len(usable))
@@ -1243,8 +1246,16 @@ class ActuarialQueryEngine:
         wins_20d = sample_20d[sample_20d['outcome_20d_return'] > 0]
         loss_20d = sample_20d[sample_20d['outcome_20d_return'] <= 0]
 
-        median_gain_20d     = wins_20d['outcome_20d_return'].median() if len(wins_20d) > 0 else 0.05
-        median_loss_20d     = loss_20d['outcome_20d_return'].median() if len(loss_20d) > 0 else -0.03
+        # RC05 (Phase 4, 8 Oct 2026): undefined statistics are NaN with a status, never invented
+        # (was +5% / -3% / 5% / 3% / Kelly 0.1 / ratio 1.0 / 0.0 for unlabelled horizons).
+        _nan = float('nan')
+        _value_status = []
+        if len(wins_20d) == 0:
+            _value_status.append('NO_WINNERS_20D')
+        if len(loss_20d) == 0:
+            _value_status.append('NO_LOSERS_20D')
+        median_gain_20d     = wins_20d['outcome_20d_return'].median() if len(wins_20d) > 0 else _nan
+        median_loss_20d     = loss_20d['outcome_20d_return'].median() if len(loss_20d) > 0 else _nan
         median_drawdown_20d = sample_20d['outcome_max_drawdown_20d'].median()
         median_days         = sample_20d['outcome_days_to_10pct'].median()
 
@@ -1257,20 +1268,21 @@ class ActuarialQueryEngine:
         # NOT prob_up_10pct (target hit rate) --- that would understate EV for small winners
         ev_20d = (win_rate_20d * median_gain_20d) + ((1 - win_rate_20d) * median_loss_20d)
 
-        avg_win_20d  = wins_20d['outcome_20d_return'].mean() if len(wins_20d) > 0 else 0.05
-        avg_loss_20d = abs(loss_20d['outcome_20d_return'].mean()) if len(loss_20d) > 0 else 0.03
-        win_loss_ratio = avg_win_20d / avg_loss_20d if avg_loss_20d > 0 else 1.0
+        avg_win_20d  = wins_20d['outcome_20d_return'].mean() if len(wins_20d) > 0 else _nan
+        avg_loss_20d = abs(loss_20d['outcome_20d_return'].mean()) if len(loss_20d) > 0 else _nan
+        win_loss_ratio = avg_win_20d / avg_loss_20d if avg_loss_20d > 0 else _nan
 
-        kelly = (prob_up_10pct * avg_win_20d - (1 - prob_up_10pct) * avg_loss_20d) / avg_win_20d if avg_win_20d > 0 else 0.1
-        kelly = max(0.0, min(kelly, 0.25))
+        kelly = (prob_up_10pct * avg_win_20d - (1 - prob_up_10pct) * avg_loss_20d) / avg_win_20d if avg_win_20d > 0 else _nan
+        kelly = max(0.0, min(kelly, 0.25)) if kelly == kelly else _nan
+        mean_ret_20d = float(rets_20d.mean()) if len(rets_20d) else _nan
 
-        recommended_hold = int(median_days) if prob_up_10pct > 0.5 else 20
+        recommended_hold = int(median_days) if (prob_up_10pct > 0.5 and median_days == median_days) else 20
         outcome_dist     = sample_20d['outcome_category'].value_counts(normalize=True).to_dict()
         confidence       = min(1.0, n_obs / 50)
 
         # ------ 5-DAY OUTCOMES (available after database upgrade) ---------------------------------------------------
-        wr_5d = ev_5d = prob_5pct_5d = 0.0
-        med_gain_5d = med_loss_5d = med_dd_5d = sharpe_5d = 0.0
+        wr_5d = ev_5d = prob_5pct_5d = _nan
+        med_gain_5d = med_loss_5d = med_dd_5d = sharpe_5d = mean_ret_5d = _nan
         pctl_5d = self._return_percentiles(None, "5d")
 
         if self._has_5d_cols and 'outcome_5d_return' in similar_states.columns:
@@ -1280,8 +1292,9 @@ class ActuarialQueryEngine:
             losses_5d = rets_5d[rets_5d <= 0]
 
             wr_5d        = (rets_5d > 0).mean()
-            med_gain_5d  = wins_5d.median()   if len(wins_5d)   > 0 else 0.0
-            med_loss_5d  = losses_5d.median() if len(losses_5d) > 0 else 0.0
+            med_gain_5d  = wins_5d.median()   if len(wins_5d)   > 0 else _nan
+            med_loss_5d  = losses_5d.median() if len(losses_5d) > 0 else _nan
+            mean_ret_5d  = float(rets_5d.mean()) if len(rets_5d) else _nan
             ev_5d        = (wr_5d * med_gain_5d) + ((1 - wr_5d) * med_loss_5d)
             sharpe_5d    = (rets_5d.mean() / rets_5d.std()) if rets_5d.std() > 0 else 0.0
             pctl_5d      = self._return_percentiles(rets_5d, "5d")
@@ -1293,8 +1306,8 @@ class ActuarialQueryEngine:
                 med_dd_5d = sample_5d['outcome_max_drawdown_5d'].median()
 
         # ------ 10-DAY OUTCOMES (available after database upgrade) ------------------------------------------------
-        wr_10d = ev_10d = prob_7pct_10d = 0.0
-        med_gain_10d = med_loss_10d = med_dd_10d = sharpe_10d = 0.0
+        wr_10d = ev_10d = prob_7pct_10d = _nan
+        med_gain_10d = med_loss_10d = med_dd_10d = sharpe_10d = mean_ret_10d = _nan
         pctl_10d = self._return_percentiles(None, "10d")
 
         if self._has_10d_cols and 'outcome_10d_return' in similar_states.columns:
@@ -1304,8 +1317,9 @@ class ActuarialQueryEngine:
             losses_10d = rets_10d[rets_10d <= 0]
 
             wr_10d        = (rets_10d > 0).mean()
-            med_gain_10d  = wins_10d.median()   if len(wins_10d)   > 0 else 0.0
-            med_loss_10d  = losses_10d.median() if len(losses_10d) > 0 else 0.0
+            med_gain_10d  = wins_10d.median()   if len(wins_10d)   > 0 else _nan
+            med_loss_10d  = losses_10d.median() if len(losses_10d) > 0 else _nan
+            mean_ret_10d  = float(rets_10d.mean()) if len(rets_10d) else _nan
             ev_10d        = (wr_10d * med_gain_10d) + ((1 - wr_10d) * med_loss_10d)
             sharpe_10d    = (rets_10d.mean() / rets_10d.std()) if rets_10d.std() > 0 else 0.0
             pctl_10d      = self._return_percentiles(rets_10d, "10d")
@@ -1355,6 +1369,11 @@ class ActuarialQueryEngine:
             median_loss_if_down_10d=med_loss_10d,
             median_max_drawdown_10d=med_dd_10d,
             sharpe_ratio_10d=sharpe_10d,
+            # RC05: arithmetic means beside the median heuristic; undefined values are NaN with a status
+            mean_return_5d=mean_ret_5d,
+            mean_return_10d=mean_ret_10d,
+            mean_return_20d=mean_ret_20d,
+            outcome_value_status=";".join(_value_status) or "MEASURED",
             # -- v6 future bucket fields (Fix 4+5) -----------------------------
             future_momentum_bucket=_fbs['future_momentum_bucket'],
             future_momentum_bucket_distribution=_fbs['future_momentum_bucket_distribution'],

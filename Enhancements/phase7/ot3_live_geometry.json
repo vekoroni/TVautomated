@@ -1,0 +1,126 @@
+{
+  "run": "20261008_220129",
+  "rows": 2788,
+  "all_rows": {
+    "GEOMETRY_NOT_JUSTIFIED": 370,
+    "JUSTIFIED": 277,
+    "NOT_MEASURED": 1720,
+    "NOT_ASSESSABLE": 421
+  },
+  "ready_rows": {
+    "GEOMETRY_NOT_JUSTIFIED": 266,
+    "JUSTIFIED": 155,
+    "NOT_MEASURED": 324
+  },
+  "ready_by_lane": {
+    "A": {
+      "GEOMETRY_NOT_JUSTIFIED": 266,
+      "JUSTIFIED": 155
+    },
+    "C": {
+      "NOT_MEASURED": 324
+    }
+  },
+  "ready_not_assessable_reasons": {},
+  "examples": [
+    {
+      "ticker": "NEO",
+      "trade_lane": "A",
+      "trade_lane_setup": "1w|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "GEOMETRY_NOT_JUSTIFIED",
+      "geometry_reward_atr": 4.25,
+      "geometry_risk_atr": 8.37,
+      "geometry_breakeven_hit_rate": 0.6633,
+      "geometry_measured_hit_rate": 0.66,
+      "geometry_hit_n": 1320
+    },
+    {
+      "ticker": "HAFN",
+      "trade_lane": "A",
+      "trade_lane_setup": "1d|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 5.34,
+      "geometry_risk_atr": 5.81,
+      "geometry_breakeven_hit_rate": 0.521,
+      "geometry_measured_hit_rate": 0.678,
+      "geometry_hit_n": 1099
+    },
+    {
+      "ticker": "COHR",
+      "trade_lane": "A",
+      "trade_lane_setup": "1mo|Failed Upthrust Continuation|ACTIVATED",
+      "geometry_justification": "GEOMETRY_NOT_JUSTIFIED",
+      "geometry_reward_atr": 7.04,
+      "geometry_risk_atr": 11.15,
+      "geometry_breakeven_hit_rate": 0.613,
+      "geometry_measured_hit_rate": 0.507,
+      "geometry_hit_n": 150
+    },
+    {
+      "ticker": "JBHT",
+      "trade_lane": "A",
+      "trade_lane_setup": "1mo|Failed Upthrust Continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 11.64,
+      "geometry_risk_atr": 5.62,
+      "geometry_breakeven_hit_rate": 0.3258,
+      "geometry_measured_hit_rate": 0.507,
+      "geometry_hit_n": 150
+    },
+    {
+      "ticker": "OMER",
+      "trade_lane": "A",
+      "trade_lane_setup": "1mo|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 29.15,
+      "geometry_risk_atr": 19.25,
+      "geometry_breakeven_hit_rate": 0.3977,
+      "geometry_measured_hit_rate": 0.612,
+      "geometry_hit_n": 502
+    },
+    {
+      "ticker": "AG",
+      "trade_lane": "A",
+      "trade_lane_setup": "1mo|Failed Upthrust Continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 18.36,
+      "geometry_risk_atr": 3.5,
+      "geometry_breakeven_hit_rate": 0.1601,
+      "geometry_measured_hit_rate": 0.507,
+      "geometry_hit_n": 150
+    },
+    {
+      "ticker": "FITB",
+      "trade_lane": "A",
+      "trade_lane_setup": "1mo|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 21.09,
+      "geometry_risk_atr": 18.64,
+      "geometry_breakeven_hit_rate": 0.4692,
+      "geometry_measured_hit_rate": 0.612,
+      "geometry_hit_n": 502
+    },
+    {
+      "ticker": "HPE",
+      "trade_lane": "A",
+      "trade_lane_setup": "1d|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 13.35,
+      "geometry_risk_atr": 8.73,
+      "geometry_breakeven_hit_rate": 0.3953,
+      "geometry_measured_hit_rate": 0.678,
+      "geometry_hit_n": 1099
+    },
+    {
+      "ticker": "SMCI",
+      "trade_lane": "A",
+      "trade_lane_setup": "1d|SOS -> LPS continuation|ACTIVATED",
+      "geometry_justification": "JUSTIFIED",
+      "geometry_reward_atr": 6.09,
+      "geometry_risk_atr": 3.95,
+      "geometry_breakeven_hit_rate": 0.3932,
+      "geometry_measured_hit_rate": 0.678,
+      "geometry_hit_n": 1099
+    }
+  ]
+}

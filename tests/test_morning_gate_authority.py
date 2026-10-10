@@ -24,6 +24,8 @@ def _row(**overrides):
         "capital_authorization_state": "EOD_CANDIDATE_ONLY",
         "eod_candidate_authorized": True,
         "trigger_go_eligible": True,  # N1 (3 Oct 2026): GO now requires a GO-eligible trigger
+        # M-REVIEW-01 (ACK 10 Oct 2026): Morning authority = an adopted thesis (a real GO row always carries it).
+        "thesis__readiness": "READY_FOR_HUMAN_REVIEW",
         "authority_source_stage": "FINAL_EXECUTION",
         "execution_authorized": False,
         "final_route": "OPTIONS_GO_REVIEW",
@@ -93,27 +95,19 @@ def test_legacy_nonfinal_source_cannot_reach_morning_go() -> None:
     assert gated["execution_authorized"] is False
 
 
-def test_not_authorized_or_watch_only_can_never_upgrade() -> None:
-    denied = _gate(
-        _row(
-            capital_permission="NO",
-            capital_authorization_state="NOT_AUTHORIZED",
-            eod_candidate_authorized=False,
-        )
-    )
-    watch = _gate(
-        _row(
-            capital_permission="WATCH_ONLY",
-            capital_authorization_state="NOT_AUTHORIZED",
-            eod_candidate_authorized=False,
-        )
-    )
-
-    for gated in (denied, watch):
-        assert gated["verdict"] == "BLOCK"
-        assert gated["execution_permission"] == "BLOCKED"
-        assert gated["morning_execution_permission"] == "NOT_ELIGIBLE"
-        assert gated["execution_authorized"] is False
+def test_legacy_permission_is_context_and_never_live_authority() -> None:
+    # M-REVIEW-01 (ACK 10 Oct 2026) supersedes "not authorized or watch-only can never upgrade": the legacy execution
+    # permission no longer decides; an adopted thesis does. Nothing ever becomes live execution authority.
+    for legacy in ({"capital_permission": "NO"}, {"capital_permission": "WATCH_ONLY"}):
+        base = {**legacy, "capital_authorization_state": "NOT_AUTHORIZED", "eod_candidate_authorized": False}
+        validated = _gate(_row(**base))
+        assert validated["verdict"] == "GO" and validated["execution_authorized"] is False
+        assert validated["execution_permission"] == "HUMAN_APPROVAL_REQUIRED"
+        no_thesis = _gate(_row(**base, thesis__readiness="NOT_ADOPTED"))
+        assert no_thesis["verdict"] == "BLOCK"
+        assert no_thesis["execution_permission"] == "BLOCKED"
+        assert no_thesis["morning_execution_permission"] == "NOT_ELIGIBLE"
+        assert no_thesis["execution_authorized"] is False
 
 
 def test_macro_no_go_is_advisory_and_cannot_deny_trade_authority() -> None:

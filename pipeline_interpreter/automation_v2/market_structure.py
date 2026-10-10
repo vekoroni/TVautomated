@@ -17,6 +17,8 @@ MARKET_STRUCTURE_FIELDS = (
     "wbs_entry_guidance", "wbs_stop_guidance", "trigger_primary",
     "trigger_quality", "trigger_score", "trigger_codes", "trigger_go_eligible",
     "trigger_confirmation_state",
+    # Output-trust item 5 (D5-4, 9 Oct 2026): the market-wide SPY dealer gamma, labelled as the market's.
+    "market_dealer_gamma_state", "market_gex_regime_score",
 )
 
 ALIASES: dict[str, tuple[str, ...]] = {
@@ -24,8 +26,10 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "put_wall": ("put_wall", "gex_put_wall"),
     "gamma_flip": ("gamma_flip", "gex_gamma_flip"),
     "max_pain": ("max_pain", "max_pain_level"),
-    "gex_regime": ("gex_regime", "dealer_gamma_state", "gamma_regime"),
-    "gex_score": ("gex_score", "eil_gex_score", "gex_regime_score"),
+    # Output-trust item 5: the ticker's own chain only - never the macro packet's SPY dealer_gamma_state /
+    # gex_regime_score (live 8 Oct: every ticker read NEGATIVE_GAMMA from SPY).
+    "gex_regime": ("gex_regime", "eil_gex_regime", "gamma_regime"),
+    "gex_score": ("gex_score", "eil_gex_score"),
     "gamma_island_on_path": ("gamma_island_on_path", "gamma_island"),
     "gamma_island_level": ("gamma_island_level", "gamma_island_target"),
     "wbs_score": ("wbs_score", "wall_break_score"),
@@ -47,7 +51,10 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "trigger_confirmation_state": (
         "trigger_confirmation_state", "trigger_status", "trigger_state",
     ),
+    "market_dealer_gamma_state": ("dealer_gamma_state",),
+    "market_gex_regime_score": ("gex_regime_score",),
 }
+_MARKET_FIELDS = frozenset({"market_dealer_gamma_state", "market_gex_regime_score"})
 
 
 def _present(value: Any) -> bool:
@@ -73,7 +80,8 @@ def project_market_structure(request: TickerRunRequest) -> dict[str, Any]:
     projected: dict[str, Any] = {}
     for target, aliases in ALIASES.items():
         projected[target] = ""
-        for source in sources:
+        # Market-wide fields read the run's macro context first; ticker fields never read it.
+        for source in ((request.macro_context, *sources) if target in _MARKET_FIELDS else sources):
             for alias in aliases:
                 value = source.get(alias)
                 if _present(value):

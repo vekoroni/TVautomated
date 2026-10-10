@@ -359,7 +359,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
     <button class="fb" id="btn-pretrade-focus" onclick="toggleQuick('pretradeFocus',this)" title="Show EOD primary pre-open review names. Advisory only: Morning thesis and entry quote are not yet validated.">Pre-open Focus</button>
     <button class="fb" id="btn-pretrade-repair" onclick="toggleQuick('pretradeRepair',this)" title="Show monetisable EOD names whose selected contract still requires repair; the ticker thesis remains available.">Contract Repair Watch</button>
     <button class="fb" id="btn-monetisable" onclick="toggleQuick('monetisable',this)" title="Show only contracts classified as monetisable">Monetisable</button>
-    <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only signals with a positive EV3 advisory value — not a validated expected value">EV* &gt; 0</button>
+    <button class="fb" id="btn-pos-ev" onclick="toggleQuick('ev',this)" title="Show only signals whose target scenario pays after spread and fees (one engine) — conditional, not an expected value">Target &gt; 0</button>
     <button class="fb active" id="btn-show-audit" onclick="toggleAuditRows(this)" title="Toggle between the complete governed opportunity population and the actionable subset">All Opportunities</button>
     <button class="fb" onclick="sortBy(13);highlightSort(13)" title="Sort by conservative target profit descending">⬇ Target Profit</button>
     <button class="fb" onclick="sortBy(14);highlightSort(14)" title="Sort by EV descending. Legacy v2 EV / EV3 advisory — not a validated expected value">⬇ EV*</button>
@@ -464,7 +464,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;d
         <div class="slh">Tier</div>
         <div class="slh">Phase</div>
         <div class="slh">Composite</div>
-        <div class="slh">Wyckoff</div>
+        <div class="slh">Legacy Wyckoff</div>
         <div class="slh">Win Prob</div>
         <div class="slh">Entry</div>
         <div class="slh">Stop</div>
@@ -929,9 +929,9 @@ function renderForecastBook() {
   const cell = value => htmlSafe(value === null || value === undefined || value === '' ? '—' : value);
   target.innerHTML = `<div class="meta-note">${rows.length} frozen underlying forecasts · C5 is independent of option availability. This is advisory evidence, not trade permission. No calibrated C4 probability or C8 monetary EV is available on the descriptive lane.</div>
     <div class="meta-note">C6 ${cell(FORECAST_BOOK.c6_state)} · C8 ${cell(FORECAST_BOOK.c8_state)} · ${cell(FORECAST_BOOK.research_ev_count)} uncalibrated research contract estimates · rows without a suitable option remain visible.</div>
-    <div style="overflow:auto"><table class="dtbl"><thead><tr><th>Ticker</th><th>Underlying state</th><th>Direction</th><th>Structure</th><th>Compression</th><th>Target</th><th>Invalidation</th><th>Evidence / reason</th><th>Option expression</th><th>Candidates</th><th>Research EV</th><th>Governed C8</th></tr></thead><tbody>${rows.map(s => `<tr>
+    <div style="overflow:auto"><table class="dtbl"><thead><tr><th>Ticker</th><th>Underlying state</th><th>Direction</th><th>Structure (thesis engine)</th><th>Compression</th><th>Target</th><th>Invalidation</th><th>Evidence / reason</th><th>Option expression</th><th>Candidates</th><th>Research EV</th><th>Governed C8</th></tr></thead><tbody>${rows.map(s => `<tr>
       <td>${cell(s.ticker)}</td><td>${cell(s.forecast_state)}</td><td>${cell(s.forecast_direction)}</td>
-      <td>${cell(s.forecast_structure_stage)}</td><td>${cell(s.forecast_compression_state)}</td>
+      <td>${cell(thesisStructureText(s))}</td><td>${cell(s.forecast_compression_state)}</td>
       <td>${cell(s.forecast_target_spot)}</td><td>${cell(s.forecast_invalidation_spot)}</td>
       <td>${cell(s.forecast_reason)}</td><td>${cell(s.option_expression_state)}</td>
       <td>${cell(s.option_expression_candidate_count)}</td><td>${cell(s.research_ev_candidate_count)}</td><td>${cell(s.c8_valuation_state)}</td>
@@ -956,7 +956,7 @@ function renderPriorityPanel() {
     const fv   = finalLabVerdict(s);
     const camp = displayCampaign(s).replace('_CAMPAIGN','');
     const dir  = (s.direction||'').toUpperCase();
-    const ev   = getEv(s); const monProfit = getMonetisabilityProfitPct(s);
+    const ev   = getHeadline(s); const monProfit = getMonetisabilityProfitPct(s);
     const em   = displayExecutionMode(s).replace('_EXECUTE','').replace('FULL','FULL').replace('REDUCED','RED');
     const vC   = ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(fv)?'p-exec':fv==='ARMED'?'p-armed':'p-risk';
     const emC  = em==='FULL'?'var(--green)':em==='RED'?'var(--cyan)':em==='PROBE'?'var(--amber)':'var(--text3)';
@@ -977,7 +977,7 @@ function renderPriorityPanel() {
       <div class="pp-badges">
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2)">Conv ${htmlSafe(getConvexitySummary(s))}</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:9px" class="${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}" title="${LEGACY_EV_TITLE}">${formatEv(ev)} ${evLabel(s)}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${evDisplayColor(ev)}" title="${HEADLINE_TITLE}">${formatHeadline(ev)} ${headlineLabel(s)}</span>
       </div>
     </div>`;
   }).join('');
@@ -1091,7 +1091,7 @@ function renderCardPanels(stats, macro, summary) {
           <div class="mrow"><span class="mr-k">CORE_CAMPAIGN</span><span class="mr-v g">${stats.core_armed_count||0}</span></div>
           <div class="mrow"><span class="mr-k">STAGED</span><span class="mr-v a">${stats.staged_armed_count||0}</span></div>
           <div class="mrow"><span class="mr-k">Monetisable (Armed)</span><span class="mr-v g">${monetisableArmed.length} signals</span></div>
-          <div class="mrow"><span class="mr-k" title="${LEGACY_EV_TITLE}">Positive EV* (EV3 advisory)</span><span class="mr-v g">${armed.filter(s=>getEv(s)>0).length} signals</span></div>
+          <div class="mrow"><span class="mr-k" title="${HEADLINE_TITLE}">Pays if target (one engine)</span><span class="mr-v g">${armed.filter(s=>getHeadline(s)>0).length} signals</span></div>
           <div class="mrow"><span class="mr-k">PCR Vetoes</span><span class="mr-v a">${armed.filter(s=>s.sb_vetoes&&s.sb_vetoes.includes('V6')).length} signals</span></div>
           <div class="mrow"><span class="mr-k">Zero-entry (size=0)</span><span class="mr-v r">${armed.filter(s=>s.sb_position_size_pct==='0'||s.sb_position_size_pct===0).length} signals</span></div>
           <div class="mrow"><span class="mr-k">CALL direction</span><span class="mr-v c">${armed.filter(s=>s.direction==='CALL').length}</span></div>
@@ -1223,7 +1223,7 @@ function execCardHTML(s) {
     <div class="mrow" title="${attrSafe(getIvSourceTitle(s))}"><span class="mr-k">IV Rank · IV Percentile</span><span class="mr-v g">${htmlSafe(getIvRankDisplay(s))} · ${htmlSafe(getIvPercentileDisplay(s))} · ${htmlSafe(getIvpLabelDisplay(s))}</span></div>
     <div class="mrow"><span class="mr-k">Monetisability</span><span class="mr-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
     <div class="mrow"><span class="mr-k">Conservative Target Profit</span><span class="mr-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}</span></div>
-    <div class="mrow"><span class="mr-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="mr-v ${evDisplayClass(getEv(s))}">${formatEv(getEv(s))}</span></div>
+    <div class="mrow"><span class="mr-k" title="${HEADLINE_TITLE}">${headlineLabel(s)}</span><span class="mr-v ${evDisplayClass(getHeadline(s))}">${formatHeadline(getHeadline(s))}</span></div>
     <div class="mrow"><span class="mr-k">Theta Drag</span><span class="mr-v g">${opt('theta_drag_pct')}%</span></div>
     <div class="mrow"><span class="mr-k">Size</span><span class="mr-v a">${displaySize(s)}</span></div>
     <div class="mrow"><span class="mr-k">Vetoes</span><span class="mr-v g">${s.sb_vetoes_count||0} · ${s.sb_vetoes||'NONE'}</span></div>
@@ -1236,7 +1236,7 @@ function execCardHTML(s) {
     <div class="mrow"><span class="mr-k">Win Rate Source</span><span class="mr-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</span></div>
     <div class="mrow"><span class="mr-k">Exec Mode</span><span class="mr-v ${canOpenEntry(s)?'g':'a'}">${execMode}</span></div>
     <div class="mrow"><span class="mr-k">EV Role</span><span class="mr-v a">ADVISORY ONLY</span></div>
-    <div class="mrow"><span class="mr-k">EV Source</span><span class="mr-v a" title="${LEGACY_EV_TITLE}">${getEvSource(s)==='EV3'?'EV3 ADVISORY (UNVALIDATED)':'NONE'}</span></div>
+    <div class="mrow"><span class="mr-k">EV Source</span><span class="mr-v a" title="${HEADLINE_TITLE}">${getTargetScenarioInfo(s).source==='TARGET_SCENARIO'?'ONE ENGINE: TARGET SCENARIO':'NOT VALUED'}</span></div>
   </div>
   <div class="meta-note"><strong>Entry Reason:</strong> ${s.sb_verdict_reason||'—'}</div>`;
 }
@@ -1282,7 +1282,10 @@ function getGammaFlipDisplay(s) {
 function getIvSourceTitle(s) {
   const src = getOpt(s, 'ivp_source') || 'SOURCE NOT PUBLISHED';
   const win = getOpt(s, 'iv_rank_window_sessions');
-  return `IV source: ${src}${win ? ` · window ${win} sessions` : ''} · rank = (IV − low) / (high − low); percentile = share of history below today`;
+  const since = getOpt(s, 'iv_history_first_date');
+  const state = getOpt(s, 'iv_history_state');
+  // Output-trust item 6: the samples actually used and SHORT_HISTORY, never a fixed "252D" window.
+  return `IV source: ${src}${win ? ` · ${win} samples${since ? ` since ${since}` : ''}` : ''}${state ? ` · ${state}` : ''} · rank = (IV − low) / (high − low); percentile = share of history below today`;
 }
 
 function getMonetisabilityState(s) {
@@ -1318,9 +1321,26 @@ function directionResolutionPath(s) {
   return cleanCategory(firstSignalValue(s, ['direction_resolution_path'])) || 'UNRESOLVED';
 }
 
+// Output-trust item 1 (ACK 9 Oct 2026): what the predictive-edge test found, in words (display only).
+const DIRECTION_EDGE_LABELS = {TESTED_NO_EDGE: 'tested: no edge found', NOT_TESTED: 'not tested',
+  INSUFFICIENT_EVIDENCE: 'insufficient evidence', UNVALIDATED: 'unvalidated', VALIDATED: 'validated'};
+
+function directionRecordStatus(s) {
+  const path = String(s.direction_record_status || s.direction_resolution_path || '').toUpperCase();
+  return ({DIRECTION_CONFIRMED: 'RECORD_CONSISTENT', DIRECTION_RESOLVED_PRECONTRACT: 'RECORD_RESOLVED_PRECONTRACT'})[path] || path;
+}
+
 function directionResolutionBadge(s) {
   const path = directionResolutionPath(s);
-  if (path === 'DIRECTION_CONFIRMED') return {label:'✓', title:'Direction confirmed by governed structural authority', cls:'g'};
+  // ACK 7 Oct / 9 Oct 2026: the governance path only means the direction record is consistent; the badge states what
+  // the predictive-edge test found (display only).
+  const state = String(s.direction_validation_state || '').toUpperCase();
+  const record = path === 'DIRECTION_CONFIRMED' ? 'record consistent' : path.toLowerCase();
+  if (state !== 'VALIDATED') {
+    const label = state ? (DIRECTION_EDGE_LABELS[state] || state.toLowerCase()) : 'validation not recorded';
+    return {label, title:`${record} · direction ${label}: ${s.direction_validation_basis || 'no validation state in this row'}`, cls:'a'};
+  }
+  if (path === 'DIRECTION_CONFIRMED') return {label:'✓', title:'record consistent; direction edge validated', cls:'g'};
   if (path.includes('RESOLVED')) return {label:'⚑', title:`${path} · confidence ${s.direction_resolution_confidence||'—'}`, cls:'a'};
   return {label:'!', title:`${path} · not executable`, cls:'r'};
 }
@@ -1435,6 +1455,30 @@ function cleanUiHtml(value) {
 // so a legacy figure is never read as real EV (forensic report §8).
 const EV3_SOURCE_KEYS = ['ev3_ev_conservative_return', 'ev3_ev_lower_bound_return'];
 
+// Output-trust item 4 (ACK decision 2, 9 Oct 2026): the Lab's headline value is the ONE valuation engine's target
+// scenario - return on premium after spread and fees if the target is reached by the median time (conditional, not an
+// expected value). EV3 stays only in the audit export columns until its E09 rewiring.
+const HEADLINE_TITLE = 'One valuation engine (American CRR / BSM for index options): return on premium after spread and fees if the target is reached by the median time. Conditional on that path - not an expected value. EV3 is legacy (audit export only).';
+
+function getTargetScenarioInfo(s) {
+  const n = parseFloat(s.scenario_target_return_on_premium);
+  return Number.isFinite(n) ? { value: n, source: 'TARGET_SCENARIO' } : { value: Number.NaN, source: '' };
+}
+
+function getHeadline(s) {
+  return getTargetScenarioInfo(s).value;
+}
+
+function headlineLabel(s) {
+  return 'If target (net)';
+}
+
+function formatHeadline(v) {
+  const n = parseFloat(v);
+  if (Number.isNaN(n)) return 'NOT VALUED';
+  return `${n >= 0 ? '+' : '-'}${Math.abs(Math.round(n * 100))}%`;
+}
+
 function getEvInfo(s) {
   if (!hasComparableEconomics(s)) return { value: Number.NaN, source: '' };
   // ACK 30 Sep 2026 (options analytics slice 1d): legacy EV v2 retired from the Lab. Only EV3 (advisory) is shown;
@@ -1445,7 +1489,7 @@ function getEvInfo(s) {
   // sentinel and present it as a genuine value - a row with no validated EV at all
   // (SA: "EV3 values are blank and EV3 is rejected") rendered as "+0.000", indistinguishable
   // from a real, computed zero-EV row. `first` now starts null and is only ever set from a
-  // real, non-NaN key; formatEv() already renders NaN as 'NOT COMPARABLE' (line ~1312) - the
+  // real, non-NaN key; formatHeadline() already renders NaN as 'NOT COMPARABLE' (line ~1312) - the
   // display side was already correct, only this function was fabricating the zero.
   let first = null;
   for (const k of keys) {
@@ -2272,7 +2316,7 @@ function getMoveWindowEvInfo(s) {
 function moveWindowEvLabel(s) {
   const info = getMoveWindowEvInfo(s);
   const windowLabel = info.sessions ? `${Math.round(info.sessions)}-session move window` : 'move window';
-  return Number.isFinite(info.value) ? `${formatEv(info.value)} at ${windowLabel}` : `NOT COMPARABLE at ${windowLabel}`;
+  return Number.isFinite(info.value) ? `${formatHeadline(info.value)} at ${windowLabel}` : `NOT COMPARABLE at ${windowLabel}`;
 }
 
 function maxDaysFromLabel(label) {
@@ -2378,7 +2422,7 @@ function filteredData() {
     if (quickFilters.pretradeFocus && String(s.pretrade_focus_lane||'').toUpperCase() !== 'FOCUS_PRIMARY') return false;
     if (quickFilters.pretradeRepair && String(s.pretrade_focus_lane||'').toUpperCase() !== 'FOCUS_CONTRACT_REPAIR') return false;
     if (quickFilters.monetisable && !['MONETISABLE','LIMITED'].includes(getMonetisabilityState(s))) return false;
-    if (quickFilters.ev && (!Number.isFinite(getEv(s)) || getEv(s) <= 0)) return false;
+    if (quickFilters.ev && (!Number.isFinite(getHeadline(s)) || getHeadline(s) <= 0)) return false;
     return true;
   });
 }
@@ -2398,7 +2442,7 @@ const sortKeys = [
   s => triggerSortValue(s),                         // 11 Trigger
   s => triggerEvidenceSortValue(s),                 // 12 Trigger Evidence
   s => getMonetisabilityProfitPct(s),               // 13 conservative target profit
-  s => getEv(s),                                    // 14 EV
+  s => getHeadline(s),                                    // 14 EV
   s => parseFloat(getOpt(s,'iv_rank')||0),          // 15 IV Rank (range)
   s => parseFloat(s['garch__l3_iv_tailwind_score']||s.garch_iv_tailwind_score||0), // 16 Vol State
   s => maxDaysFromLabel(getHoldPeriod(s)) ?? -1,     // 17 Hold (planned hold, sessions)
@@ -2454,7 +2498,7 @@ function buildTable() {
 
   const tableHtml = data.map(s => {
     const monProfit = getMonetisabilityProfitPct(s);
-    const ev = getEv(s);
+    const ev = getHeadline(s);
     const ivr = parseFloat(getOpt(s,'iv_rank')||0);
     const evC = !Number.isFinite(ev)?'':ev>=0?'ev-p':'ev-n';
     const dir = (s.final_direction||s.direction||s.canonical_direction||'—').toUpperCase();
@@ -2535,7 +2579,7 @@ function buildTable() {
       <div class="sc" title="${attrSafe(getTriggerPriceRaw(s) !== '' ? [getTriggerPriceRaw(s), s.trigger_price_source || 'Supplied trigger price'].join(' · ') : 'No numeric trigger price supplied; trigger evidence or strength does not establish a price level.')}" style="color:var(--cyan);font-size:10px">${trgDisplay}</div>
       <div class="sc" title="${attrSafe([trgEvidence, firstSignalValue(s, ['trigger_codes', 'eod__trigger_codes', 'vg__trigger_codes', 'opt__trigger_codes'])].filter(Boolean).join(' · '))}" style="color:var(--text2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${trgEvidence || '-'}</div>
       <div class="sc ${monetisabilityClass(s)}" title="${attrSafe(s.evening_thesis_reason||s.monetisability_reason||'')}">${monetisabilityLabel(s)}${!targetScenarioNeedsReview(s)&&Number.isFinite(monProfit)?` ${monProfit.toFixed(0)}%`:''}</div>
-      <div class="sc ${evC}" title="${attrSafe('Planned hold: ' + formatEv(ev) + ' · ' + moveWindowEvLabel(s))}">${formatEv(ev)}</div>
+      <div class="sc ${evC}" title="${attrSafe('Planned hold: ' + formatHeadline(ev) + ' · ' + moveWindowEvLabel(s))}">${formatHeadline(ev)}</div>
       <div class="sc" ${ivpC} title="${attrSafe(getIvSourceTitle(s))}">${ivpLbl}<br><span style="font-size:8px;color:var(--text3)">R ${htmlSafe(getIvRankDisplay(s))} · P ${htmlSafe(getIvPercentileDisplay(s))}</span></div>
       <div class="sc" style="font-family:'Share Tech Mono',monospace;font-size:10px">${gVolState ? `<span ${gVolC}>${gVolState}</span>${gJump?'<span style="color:var(--red);margin-left:3px">⚡</span>':''}` : '<span style="color:var(--text3)">—</span>'}</div>
       <div class="sc" style="font-size:10px;color:var(--cyan)">${hold}</div>
@@ -2644,7 +2688,7 @@ function buildExportColumns() {
     ['Direction',       s => s.final_direction || s.direction],
     ['Options_Direction', s => s.options_direction || s.opt__options_direction || ''],
     ['Lab_Coherence_Status', s => (s.lab_coherence_status === 'CLEAN' ? 'OK' : s.lab_coherence_status) || 'OK'],
-    ['Direction_Path',  s => s.direction_resolution_path || ''],
+    ['Direction_Record', s => directionRecordStatus(s)],
     ['Direction_Confidence', s => s.direction_resolution_confidence || ''],
     ['Governed_Direction', s => s.governed_direction || ''],
     ['Discovery_Preliminary_Direction', s => s.discovery_direction_preliminary || ''],
@@ -2672,6 +2716,11 @@ function buildExportColumns() {
     ['Target_Profit_Pct', s => Number.isFinite(getMonetisabilityProfitPct(s)) ? getMonetisabilityProfitPct(s).toFixed(2) : ''],
     ['Monetisability_Reason', s => s.monetisability_reason || ''],
     ['EV',              s => Number.isFinite(getEv(s)) ? getEv(s).toFixed(8) : ''],
+    ['Target_Scenario_Return_On_Premium', s => s.scenario_target_return_on_premium ?? ''],
+    ['Invalidation_Scenario_Return_On_Premium', s => s.scenario_invalidation_return_on_premium ?? ''],
+    ['Stall_Scenario_Return_On_Premium', s => s.scenario_stall_return_on_premium ?? ''],
+    ['Valuation_Model', s => s.valuation_model || ''],
+    ['Valuation_Dividend_Basis', s => s.valuation_dividend_basis || ''],
     ['EV3_Move_Window', s => Number.isFinite(getMoveWindowEvInfo(s).value) ? getMoveWindowEvInfo(s).value.toFixed(8) : ''],
     ['EV3_Move_Window_Sessions', s => getMoveWindowEvInfo(s).sessions ? String(Math.round(getMoveWindowEvInfo(s).sessions)) : ''],
     ['EV_Source',       s => getEvSource(s) === 'LEGACY' ? 'LEGACY_V2_NOT_REAL_EV' : getEvSource(s) === 'EV3' ? 'EV3_ADVISORY' : ''],
@@ -2794,7 +2843,7 @@ function openModal(ticker) {
   const vClass = ['GO','GO_LIMIT','PROBE','EOD_EXEC'].includes(finalV)?'p-exec':finalV==='BLOCKED'?'p-sd':finalV==='CONTRACT_REPAIR'?'p-armed':'p-armed';
   const campClass = campaign==='CORE_CAMPAIGN'||campaign==='READY_EXECUTE'?'p-core':'p-staged';
   const dirPillClass = dir==='CALL'?'p-call':dir.includes('PUT')?'p-put':'p-strangle';
-  const ev = getEv(s);
+  const ev = getHeadline(s);
 
   document.getElementById('m-ticker').className = 'm-ticker ' + dirClass;
   document.getElementById('m-ticker').textContent = s.ticker;
@@ -2840,7 +2889,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Historical Reliability</div><div class="mf-v a">${htmlSafe(s.c4_reliability_state||'NOT_ESTIMABLE')}</div></div>
       <div class="m-field"><div class="mf-k">Vanguard Evidence</div><div class="mf-v a">${htmlSafe(s.forecast_vanguard_state||'UNAVAILABLE')}</div></div>
       <div class="m-field"><div class="mf-k">Auction Control</div><div class="mf-v a">${htmlSafe(s.forecast_auction_control||'NOT MEASURED')}</div></div>
-      <div class="m-field"><div class="mf-k">Structure Stage</div><div class="mf-v a">${htmlSafe(s.forecast_structure_stage||'UNRESOLVED')}</div></div>
+      <div class="m-field"><div class="mf-k">Structure (thesis engine)</div><div class="mf-v a">${htmlSafe(thesisStructureText(s))}</div></div>
       <div class="m-field"><div class="mf-k">Compression</div><div class="mf-v a">${htmlSafe(s.forecast_compression_state||'UNAVAILABLE')}</div></div>
     </div>
     <div class="m-reason"><strong>Reason:</strong> ${htmlSafe(s.forecast_reason||'NO GOVERNED FORECAST')} · ${htmlSafe(s.forecast_source||'UNAVAILABLE')} · ${htmlSafe(s.forecast_authority||'ADVISORY_ONLY')}</div>
@@ -2898,7 +2947,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Convexity Score</div><div class="mf-v a">${htmlSafe(getConvexitySummary(s))}</div></div>
       <div class="m-field"><div class="mf-k">Sector</div><div class="mf-v c">${s.gics_sector||s.sector_name||s.sector||s.sector_short||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Sector ETF</div><div class="mf-v" style="color:var(--text2)">${s.sector_etf||s.sector_proxy||'—'}</div></div>
-      <div class="m-field"><div class="mf-k">Wyckoff Phase</div><div class="mf-v p">${s.phase||'—'}</div></div>
+      <div class="m-field"><div class="mf-k">Legacy Wyckoff Phase (inactive)</div><div class="mf-v sm">${htmlSafe(s.phase||'—')}</div></div>
       <div class="m-field"><div class="mf-k">Direction</div><div class="mf-v ${dirClass}">${dir} ${directionResolutionBadge(s).label}</div></div>
       <div class="m-field"><div class="mf-k">Direction Path</div><div class="mf-v ${directionResolutionPath(s)==='DIRECTION_CONFIRMED'?'g':directionResolutionPath(s).includes('RESOLVED')?'a':'r'}">${displayCategory(directionResolutionPath(s))}</div></div>
       <div class="m-field"><div class="mf-k">Direction Confidence</div><div class="mf-v a">${s.direction_resolution_confidence||'—'}</div></div>
@@ -2916,7 +2965,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Regime</div><div class="mf-v a">${s.regime||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Priority Rank</div><div class="mf-v ${parseFloat(s.priority_rank||9999)<=5?'g':parseFloat(s.priority_rank||9999)<=15?'c':'a'}">#${s.priority_rank||'—'} · Score ${parseFloat(s.priority_score||0).toFixed(1)}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Advisory State</div><div class="mf-v a">${s.ev3_absolute_state||s.ev3_status||s.ev3_data_state||'NOT EVALUATED'}</div></div>
-      <div class="m-field"><div class="mf-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</div><div class="mf-v a">${formatEv(getEv(s))}</div></div>
+      <div class="m-field"><div class="mf-k" title="${HEADLINE_TITLE}">${headlineLabel(s)}</div><div class="mf-v a">${formatHeadline(getHeadline(s))}</div></div>
       <div class="m-field"><div class="mf-k">Execution Mode</div><div class="mf-v ${canOpenEntry(s)?'g':'a'}">${execMode||'—'}</div></div>
       <div class="m-field"><div class="mf-k">Win Rate Source</div><div class="mf-v ${s.win_rate_source==='ACTUARIAL'?'g':'a'}">${s.win_rate_source||'UNAVAILABLE'}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Data State</div><div class="mf-v ${s.ev3_data_state==='AVAILABLE'?'g':'a'}">${s.ev3_data_state||'NOT EVALUATED'}</div></div>
@@ -2967,7 +3016,7 @@ function openModal(ticker) {
       <div class="m-field"><div class="mf-k">Selected-quote expiry breakeven</div><div class="mf-v a">${getSelectedQuoteAskBreakeven(s) === null ? 'UNAVAILABLE' : '$'+getSelectedQuoteAskBreakeven(s).toFixed(2)}<br><span class="dim">Illustrative strike ± displayed ask as of ${htmlSafe(getQuoteFreshnessContext(s).timestamp)}, before fees, only if held to expiry; not an early-exit target.</span></div></div>
       <div class="m-field"><div class="mf-k">Monetisability</div><div class="mf-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</div></div>
       <div class="m-field"><div class="mf-k">Conservative Target Profit</div><div class="mf-v ${monetisabilityClass(s)}">${Number.isFinite(getMonetisabilityProfitPct(s))?getMonetisabilityProfitPct(s).toFixed(1)+'%':'—'}<br><span class="dim">scenario payoff if target is reached — not a probability and cannot authorize entry</span></div></div>
-      <div class="m-field"><div class="mf-k">EV3 Advisory · planned hold</div><div class="mf-v ${evDisplayClass(ev)}">${formatEv(ev)}</div></div>
+      <div class="m-field"><div class="mf-k">EV3 Advisory · planned hold</div><div class="mf-v ${evDisplayClass(ev)}">${formatHeadline(ev)}</div></div>
       <div class="m-field"><div class="mf-k">EV3 Advisory · move window</div><div class="mf-v ${evDisplayClass(getMoveWindowEvInfo(s).value)}">${htmlSafe(moveWindowEvLabel(s))}<br><span class="dim">Same contract valued as if exited at the end of the thesis move window. Advisory only.</span></div></div>
       <div class="m-field"><div class="mf-k">Quote Hydration</div><div class="mf-v ${cleanCategory(s.selected_structure_hydration_status)==='COMPLETE'?'g':'a'}">${s.selected_structure_hydration_status||'LEGACY / NOT RUN'}</div></div>
       <div class="m-field"><div class="mf-k">Monetisability Check</div><div class="mf-v ${cleanCategory(s.monetisability_status)==='COMPLETE'?'g':'a'}">${s.monetisability_status||'NOT RUN'}</div></div>
@@ -3532,7 +3581,7 @@ function buildArmedList() {
   const opt = optField;
 
   document.getElementById('armed-list-items').innerHTML = armed.map(s => {
-    const ev = getEv(s);
+    const ev = getHeadline(s);
     const camp = displayCampaign(s);
     const isCamp = camp === 'CORE_CAMPAIGN' || camp === 'READY_EXECUTE';
     const dir = (s.direction||'').toUpperCase();
@@ -3560,7 +3609,7 @@ function buildArmedList() {
       <div class="ai-stats">
         <div class="aistat"><span class="ais-k">Rank</span><span class="ais-v ${parseInt(s.priority_rank||9999)<=10?'g':'a'}">#${s.priority_rank||'—'} · ${parseFloat(s.priority_score||0).toFixed(0)}</span></div>
         <div class="aistat"><span class="ais-k">Monetisable</span><span class="ais-v ${monetisabilityClass(s)}">${monetisabilityLabel(s)}</span></div>
-        <div class="aistat"><span class="ais-k" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><span class="ais-v" style="color:${evC}">${formatEv(ev)}</span></div>
+        <div class="aistat"><span class="ais-k" title="${HEADLINE_TITLE}">${headlineLabel(s)}</span><span class="ais-v" style="color:${evC}">${formatHeadline(ev)}</span></div>
         <div class="aistat" title="${attrSafe(getIvSourceTitle(s))}"><span class="ais-k">IV</span><span class="ais-v g">${htmlSafe(ivpLbl)} · rank ${htmlSafe(ivr)} · pct ${htmlSafe(getIvPercentileDisplay(s))}</span></div>
         <div class="aistat"><span class="ais-k">Strike</span><span class="ais-v c">$${opt(s,'contract_strike')}</span></div>
         <div class="aistat"><span class="ais-k">Target</span><span class="ais-v g">$${parseFloat(opt(s,'structural_target')||0).toFixed(2)}</span></div>
@@ -3623,6 +3672,16 @@ function buildConvEngine() {
   }).join('') || '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px">No signals loaded.</div>';
 }
 
+// Output-trust item 2 (D2-1 Step A, ACK 9 Oct 2026): structure is read from the thesis engine, never from the legacy
+// forecast_structure_stage (a Wyckoff engine key). Rows without thesis fields borrow the book row for the same ticker.
+function thesisStructureText(s) {
+  const book = (typeof ALL_SIGS !== 'undefined' && Array.isArray(ALL_SIGS) && !s.thesis_category && !s.thesis_phase)
+    ? (ALL_SIGS.find(r => r.ticker === s.ticker) || {}) : s;
+  if (book.thesis_phase || book.thesis_event)
+    return `Phase ${book.thesis_phase || '?'} · ${book.thesis_event || '?'}${book.thesis_event_timeframe ? ' · ' + book.thesis_event_timeframe : ''}`;
+  return book.thesis_category || 'no thesis structure';
+}
+
 // ═══ DISCOVERY ═══════════════════════════════════════════════════════════
 function renderDiscovery() { discPage_ = 0; buildDiscTable(); }
 
@@ -3646,11 +3705,14 @@ function buildDiscTable() {
   document.getElementById('disc-prev').disabled = discPage_===0;
   document.getElementById('disc-next').disabled = (discPage_+1)*DISC_PAGE_SIZE>=total;
   document.getElementById('disc-body').innerHTML = page.map(r => {
-    const tier = r.tier||r.tier_label||'—';
+    // Output-trust item 11: the thesis tier label (GO / READY_NOT_GO / WAITING / NO_ACTIVE_THESIS).
+    const tier = r.tier_label||r.tier||'—';
     const ph = (r.phase||r.wyckoff_phase||'—').toUpperCase();
     const comp = parseFloat(r.composite_score||r.composite||0).toFixed(1);
     const wy = parseFloat(r.wyckoff_score||0).toFixed(1);
-    const wp = r.win_prob||r.win_probability||'—';
+    // Output-trust item 11: a measured setup rate (0-1) shows as a percentage; none shows as none, never a default.
+    const wpn = parseFloat(r.win_prob ?? r.win_probability);
+    const wp = isNaN(wpn) ? '—' : (wpn <= 1 ? `${Math.round(wpn * 100)}%` : wpn.toFixed(1));
     const ent = r.entry_price||r.support||'—';
     const stop = r.stop_loss||r.stop||'—';
     const ctrl = r.control||r.trend||'—';
@@ -3959,13 +4021,13 @@ function openETModal(ticker) {
     `${displayCampaign(s)||'—'} · Phase ${s.phase||'—'} · ${s.sb_instrument_now||'—'} · Conv ${getConvexitySummary(s)}`;
 
   // Summary strip
-  const ev = getEv(s);
+  const ev = getHeadline(s);
   const mvState = s.mv_live_validation_state || s.mv__live_validation_state || 'PENDING';
   const mvPerm = s.mv_execution_permission || s.mv__execution_permission || (s.requires_live_validation ? 'ARMED' : '—');
   document.getElementById('et-summary').innerHTML = `
     <div><span style="color:#555">Direction</span><br><span style="color:#ff4466;font-size:12px">${(s.direction||'').toUpperCase()}</span></div>
     <div><span style="color:#555">Monetisability</span><br><span class="${monetisabilityClass(s)}" style="font-size:12px">${monetisabilityLabel(s)}</span></div>
-    <div><span style="color:#555" title="${LEGACY_EV_TITLE}">${evLabel(s)}</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatEv(ev)}</span></div>
+    <div><span style="color:#555" title="${HEADLINE_TITLE}">${headlineLabel(s)}</span><br><span style="color:${evDisplayColor(ev)};font-size:12px">${formatHeadline(ev)}</span></div>
     <div><span style="color:#555">Position Size</span><br><span style="color:#f5a623;font-size:12px">${displaySize(s)}</span></div>
     <div><span style="color:#555">Convexity</span><br><span style="color:#fff;font-size:12px">${htmlSafe(getConvexitySummary(s))}</span></div>
     <div><span style="color:#555">Vetoes</span><br><span style="color:${parseInt(s.sb_vetoes_count||0)===0?'#00ff88':'#ff4466'};font-size:12px">${parseInt(s.sb_vetoes_count||0)===0?'✓ CLEAN':'⚠ '+s.sb_vetoes_count}</span></div>

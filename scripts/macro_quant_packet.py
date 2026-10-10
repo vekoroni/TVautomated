@@ -19,6 +19,9 @@ MACRO_QUANT_CONTRACT_VERSION = "macro_quant_contract_v1"
 
 FRESH_HOURS = 20.0
 EXPIRED_HOURS = 72.0
+# G2-04 (verification 20261008_220129): a timestamp further in the future than this clock-skew allowance is a
+# timestamp-meaning defect (e.g. local time stated as UTC), labelled FUTURE_TIMESTAMP - never FRESH, never a gate.
+FUTURE_TOLERANCE_HOURS = 0.25
 
 MISSING_TOKENS = {"", "NONE", "NULL", "NAN", "N/A", "UNKNOWN", "MISSING"}
 
@@ -233,6 +236,8 @@ def _freshness_status(age_hours: Optional[float], missing: bool = False) -> str:
         return "MISSING"
     if age_hours is None:
         return "MISSING"
+    if age_hours < -FUTURE_TOLERANCE_HOURS:
+        return "FUTURE_TIMESTAMP"
     if age_hours <= FRESH_HOURS:
         return "FRESH"
     if age_hours <= EXPIRED_HOURS:

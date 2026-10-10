@@ -34,4 +34,8 @@ def test_unsourced_target_is_not_passed_on():
 
 def test_c5_accepts_structural_sources_by_name():
     from domain import descriptive_forecast_handoff as c5
-    assert c5.STRUCTURAL_TARGET_SOURCES == frozenset({"WYCKOFF", "PRIOR_RANGE_EXTREME"})
+    # P0-04 (Phase 1, 7 Oct 2026): the governing behavioural candidate's own level is the thesis target source;
+    # C5 reads the single list owned by contracts.direction_governance.
+    from contracts.direction_governance import STRUCTURAL_TARGET_SOURCES
+    assert c5.STRUCTURAL_TARGET_SOURCES is STRUCTURAL_TARGET_SOURCES
+    assert c5.STRUCTURAL_TARGET_SOURCES == frozenset({"WYCKOFF", "PRIOR_RANGE_EXTREME", "BEH001_OUTCOME_LEVEL"})
