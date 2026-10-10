@@ -3444,6 +3444,13 @@ def _read_stage_frame(path: Path):
     return _pd_st.read_csv(path, low_memory=False, dtype=str, keep_default_na=False, na_values=[""])
 
 
+def _discovery_output_csv(run_id: str) -> Path:
+    """Discovery's candidates file: the run copy once pin_run_directory has staged it, else Discovery's own output
+    (live 10 Oct 2026: the Discovery station ran before the copy existed and stopped the line)."""
+    pinned = cfg.RUNS_DIR / run_id / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
+    return pinned if pinned.exists() else cfg.OUTPUT_DIR / f"discovery_candidates_ultimate_{run_id}.csv"
+
+
 def _run_station_inspection(run_id: str, station: str, output_path: Path, previous_path: Optional[Path] = None) -> bool:
     """Output-trust item 10.3 (ACK 9-10 Oct 2026): inspect a station's part right after it; an integrity defect
     stops the line with the station, check and rows (domain.station_inspection). Returns False to stop."""
@@ -6155,9 +6162,7 @@ def evening_workflow(
         logger.error("❌ EVENING WORKFLOW ABORTED — fix quality issues above\n")
         return False
     # Output-trust item 10.3: inspect Discovery's part before Vanguard uses it.
-    if not _run_station_inspection(canonical_run_id, "discovery",
-                                   cfg.RUNS_DIR / canonical_run_id / "discovery"
-                                   / f"discovery_candidates_ultimate_{canonical_run_id}.csv"):
+    if not _run_station_inspection(canonical_run_id, "discovery", _discovery_output_csv(canonical_run_id)):
         return False
 
     detect_regression(summary)     # non-blocking
@@ -6273,8 +6278,7 @@ def evening_workflow(
     if not _run_station_inspection(canonical_run_id, "options",
                                    cfg.RUNS_DIR / canonical_run_id / "options"
                                    / ("options_intelligence_" + canonical_run_id + ".csv"),
-                                   cfg.RUNS_DIR / canonical_run_id / "discovery"
-                                   / f"discovery_candidates_ultimate_{canonical_run_id}.csv"):
+                                   _discovery_output_csv(canonical_run_id)):
         return False
 
     try:

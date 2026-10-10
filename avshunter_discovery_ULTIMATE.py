@@ -2608,15 +2608,26 @@ def scan_ticker_ultimate(
     # long-only price x 0.97), Wyckoff control or phase; it keeps its own
     # early_* fields.
     if early_signal:
-        if _thesis_governs:
-            _early = dict(early_signal)
-            for _key in ('stop_loss', 'stop_pct', 'phase', 'phase_strength', 'control_state'):
-                if _key in _early:
-                    _early[f'early_{_key}'] = _early.pop(_key)
-            signal.update(_early)
-        else:
-            signal.update(early_signal)
+        signal = _merge_early_fields(signal, early_signal, thesis_governs=_thesis_governs, legacy_tier=_legacy_tier)
 
+    return signal
+
+
+def _merge_early_fields(signal: dict, early_signal: dict, *, thesis_governs: bool, legacy_tier: bool) -> dict:
+    """Merge the Tier-0 early-position heuristic's fields into the signal.
+
+    DSC-13: under the thesis the heuristic never overwrites the structural stop, control or phase (early_* fields).
+    Output-trust item 11 (live 10 Oct 2026 run): under the thesis tier it never overwrites tier / tier_label either -
+    its tier 0 / TIER_0_EARLY had relabelled 1,488 rows as tier 0. Kept as early_tier / early_tier_label.
+    """
+    early = dict(early_signal)
+    renamed = ('stop_loss', 'stop_pct', 'phase', 'phase_strength', 'control_state') if thesis_governs else ()
+    if not legacy_tier:
+        renamed += ('tier', 'tier_label')
+    for key in renamed:
+        if key in early:
+            early[f'early_{key}'] = early.pop(key)
+    signal.update(early)
     return signal
 
 

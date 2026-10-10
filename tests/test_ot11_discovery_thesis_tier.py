@@ -97,3 +97,35 @@ def test_the_orchestrator_gate_reads_the_thesis_summary():
 def test_the_vanguard_bridge_never_clamps_a_measured_setup_rate():
     src = open("scripts/run_vanguard_from_packages.py", encoding="utf-8").read()
     assert "SETUP_RATE_WITHIN_HOLD_HELDOUT" in src
+
+
+def test_an_early_position_never_overwrites_the_thesis_tier():
+    """Live 10 Oct run: the legacy early-position dict carries tier 0 / TIER_0_EARLY and was merged after the thesis
+    tier, relabelling 1,488 rows (810 of them still waiting for their trigger) as tier 0 and inflating thesis GO to
+    1,718. Under thesis_v1 the early heuristic keeps its own early_* fields only."""
+    from avshunter_discovery_ULTIMATE import _merge_early_fields
+    early = {"tier": 0, "tier_label": "TIER_0_EARLY", "stop_loss": 9.7, "phase": "C", "early_score": 62}
+    signal = {"tier": 2, "tier_label": "WAITING", "stop_loss": 9.0, "phase": "B"}
+    out = _merge_early_fields(dict(signal), early, thesis_governs=True, legacy_tier=False)
+    assert (out["tier"], out["tier_label"], out["early_tier_label"]) == (2, "WAITING", "TIER_0_EARLY")
+    assert (out["stop_loss"], out["early_stop_loss"], out["early_score"]) == (9.0, 9.7, 62)
+    legacy = _merge_early_fields(dict(signal), early, thesis_governs=False, legacy_tier=True)
+    assert (legacy["tier"], legacy["tier_label"], legacy["stop_loss"]) == (0, "TIER_0_EARLY", 9.7)   # rollback as today
+
+
+def test_the_discovery_station_reads_discovery_output_before_the_run_folder_is_pinned(tmp_path, monkeypatch):
+    """Live 10 Oct run: the Discovery station read runs/<id>/discovery/... before pin_run_directory copied the file
+    there, so it could not run and stopped the line. It reads the run copy when present, else Discovery's output."""
+    import intelligent_orchestrator as orch
+    monkeypatch.setattr(orch.cfg, "RUNS_DIR", tmp_path / "runs")
+    monkeypatch.setattr(orch.cfg, "OUTPUT_DIR", tmp_path / "output")
+    (tmp_path / "output").mkdir()
+    flat = tmp_path / "output" / "discovery_candidates_ultimate_R1.csv"
+    flat.write_text("ticker\nAAA\n", encoding="utf-8")
+    assert orch._discovery_output_csv("R1") == flat
+    pinned = tmp_path / "runs" / "R1" / "discovery" / "discovery_candidates_ultimate_R1.csv"
+    pinned.parent.mkdir(parents=True)
+    pinned.write_text("ticker\nAAA\n", encoding="utf-8")
+    assert orch._discovery_output_csv("R1") == pinned
+    src = inspect.getsource(orch.evening_workflow)
+    assert src.count("_discovery_output_csv(canonical_run_id)") >= 2

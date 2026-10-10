@@ -106,3 +106,17 @@ Config `config/discovery_thesis_tier_v1.json`: `tier_source` = `thesis_v1` (prod
 - Contract selection is unchanged by the new horizon values: one spread limit and one delta preference for every
   horizon (ACK 18 Sep), the DTE band is descriptive, unknown keys normalise to 1_5d as today.
 - Tests `tests/test_ot11_discovery_thesis_tier.py` (8).
+
+## Live run 10 Oct 2026 (20261010_180048): two defects found and fixed
+
+1. **Early-position heuristic overwrote the thesis tier.** `detect_early_position` returns `tier` 0 /
+   `TIER_0_EARLY`, merged into the signal after the thesis tier: 1,488 rows relabelled tier 0 (810 still waiting,
+   241 no active thesis), thesis GO reported 1,718. Fix `_merge_early_fields`: under thesis_v1 the heuristic keeps
+   `early_tier` / `early_tier_label` only (rollback unchanged). Corrected counts on that run's Discovery output:
+   522 GO / 276 READY_NOT_GO / 1,647 WAITING / 491 NO_ACTIVE_THESIS. The replay and tests computed the tier directly
+   and never ran the merge - the new test exercises the merge.
+2. **Discovery station read the run folder before it was pinned.** It read `runs/<id>/discovery/...`, which
+   `pin_run_directory` copies later, so it could not run and stopped the line. Fix `_discovery_output_csv`: the run
+   copy when present, else Discovery's own output. On that run's output: 2,936 rows, zero STOP defects. The other
+   stations read files already written at their point (checked).
+Regression: 37 Discovery / orchestrator files, 0 failures.
