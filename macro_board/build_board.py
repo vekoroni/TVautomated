@@ -39,6 +39,7 @@ from . import holdings as hold
 from . import market_prices as mkt
 from . import opportunity as opty
 from . import options as opt
+from . import measured_sheet as msheet
 from . import money_index as mindex
 from . import review as rvw
 from . import session_plan as splan
@@ -376,6 +377,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "decision_points": {k: v for k, v in config["decision_points"].items() if k != "fomc"},
                      "opportunity": config["opportunity"], "review": config["review"],
                      "session_plan": config["session_plan"], "money_index": config["money_index"],
+                     "measured_sheet": {k: v for k, v in config["measured_sheet"].items() if k != "rationale"},
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -393,6 +395,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                      proposals=proposals["rows"], external=external, latest=latest, sessions=sessions,
                                      price_db=price_db, universe=universe))
     payload["session_plan"] = splan.build(payload, config["session_plan"])
+    payload["measured_sheet"] = write_measured_sheet(payload, config, output_dir, kind=kind, as_of=as_of)
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
           f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
     payload = _clean(payload)
@@ -502,6 +505,22 @@ def build_decision_points(payload: dict, config: dict, holdings_payload: dict, e
     print(f"[board] decision points: {len(block['calendar'])} scheduled, "
           f"{len(block['unscheduled']['items'])} unscheduled, earnings unknown {len(block['coverage']['earnings_unknown'])}")
     return block
+
+
+def write_measured_sheet(payload: dict, config: dict, output_dir: Path, *, kind: str, as_of: str | None) -> dict:
+    """The measured sheet ACK pastes into ChatGPT (ACK 10 Oct 2026): measured facts + instructions, no LLM."""
+    text = msheet.render(payload, config["measured_sheet"])
+    files = []
+    if not as_of:
+        sheets = output_dir / "sheets"
+        sheets.mkdir(parents=True, exist_ok=True)
+        dated = sheets / f"measured_sheet_{payload['as_of_session']}_{kind.lower()}.md"
+        latest = output_dir / "measured_sheet_latest.md"
+        for target in (dated, latest):
+            target.write_text(text, encoding="utf-8")
+        files = [str(latest), str(dated)]
+        print(f"[board] measured sheet for ChatGPT: {latest}")
+    return {"text": text, "files": files}
 
 
 def build_plan_inputs(payload: dict, config: dict, *, opens, closes, highs, lows, metrics, proposals, external, latest,

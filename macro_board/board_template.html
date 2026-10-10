@@ -384,6 +384,18 @@ const CSV_EXPORTS = {
   plan_scenarios: () => downloadCsv("next_session_scenarios", [["etf","t"],["reference","reference"],["basis","basis"],["daily_move_pct","daily_move_pct"],["implied_move_pct","implied_move_pct"],["implied_source","implied_source"],["up_trigger",r=>r.up?.trigger?.label],["up_trigger_level",r=>r.up?.trigger?.level],["up_target",r=>r.up?.target?.label],["up_target_level",r=>r.up?.target?.level],["down_trigger",r=>r.down?.trigger?.label],["down_trigger_level",r=>r.down?.trigger?.level],["down_target",r=>r.down?.target?.label],["down_target_level",r=>r.down?.target?.level],["history_leans","history_leans"],["option_pricing",r=>r.expression?.pricing],["priced_vs_history",r=>r.expression?.priced_vs_history],["runway_sessions",r=>r.expression?.runway_sessions]],
     Object.entries(B.session_plan?.instruments||{}).map(([t, r]) => ({t, ...r}))),
 };
+document.addEventListener("click", e => { const b = e.target.closest("[data-sheet]"); if (!b) return;
+  const text = B.measured_sheet?.text || "";
+  if (!text) { b.textContent = "no sheet in this build"; return; }
+  if (b.dataset.sheet === "download") {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], {type: "text/markdown;charset=utf-8"}));
+    a.download = `measured_sheet_${B.as_of_session}_${(B.build?.kind || "build").toLowerCase()}.md`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); return; }
+  const done = () => { const old = b.textContent; b.textContent = "copied ✓"; setTimeout(() => b.textContent = old, 1800); };
+  const fallback = () => { const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch(err) { b.textContent = "copy failed"; } ta.remove(); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+});
 document.addEventListener("click", e => { const b = e.target.closest("[data-csv]"); if (b && CSV_EXPORTS[b.dataset.csv]) CSV_EXPORTS[b.dataset.csv](); });
 
 /* ---------- daily review (section 1: the day's information and the market's reaction) ---------- */
@@ -819,7 +831,7 @@ function renderMoneyIndex(){
     return `<tr><td class="l"><b>${t}</b></td>` + B.horizons.map(h => { const x = (e.band_evidence||{})[String(h)] || {}, a = x.analog || {}, b = x.base || {};
       return `<td class="${cls(a.mean_pct)}" data-tip="${esc(`After past ${R.band} sessions: n=${a.n}, independent windows ${a.n_eff}, up ${isNum(a.hit_rate)?Math.round(a.hit_rate*100)+"%":"—"}<br>All days ${pct(b.mean_pct)} · lean ${x.lean||"—"} · ${x.holdout||""}`)}">${pct(a.mean_pct)} <span class="muted">vs ${pct(b.mean_pct)}</span></td>`; }).join("") +
       `<td>${isNum(e.ic?.ic) ? e.ic.ic.toFixed(2) : "—"}</td></tr>`; }).join("");
-  return `<div id="mi"><h2>US Money Index, measured here <span class="sub">7 of the published ladder's 9 components from data AVSHUNTER holds · each scored against its own past year · shown beside the published (LLM) packet</span> ${csvBtn("money_index")}</h2>
+  return `<div id="mi"><h2>US Money Index, measured here <span class="sub">7 of the published ladder's 9 components from data AVSHUNTER holds · each scored against its own past year · shown beside the published (LLM) packet</span> ${csvBtn("money_index")}<button class="btn" data-sheet="copy" title="Copy the measured sheet (facts + instructions) to paste into ChatGPT" style="float:right;padding:2px 8px;font-size:12px;margin-left:6px">Copy sheet for ChatGPT</button><button class="btn" data-sheet="download" title="Download the measured sheet as Markdown" style="float:right;padding:2px 8px;font-size:12px">sheet .md</button></h2>
   <div class="grid g-2">
     <div class="card"><h3>Risk-off transmission <span class="chip ${bc[0]}">${bc[1]}</span></h3>
       <div class="big">${isNum(R.score) ? R.score.toFixed(0) : "—"}<span class="sub">/100 measured (${esc(R.measured_weight)} of 100 weight)</span></div>
@@ -1274,7 +1286,7 @@ function renderPlan(){
   const jrow = (J.pieces||[]).map(x => { const sc = STANCE_CHIP[x.stance] || STANCE_CHIP.MISSING;
     return `<tr><td class="l"><b>${esc(x.piece)}</b></td><td class="l muted">${esc({MEASURED:"measured", MODEL:"model", LLM:"LLM"}[x.group]||x.group)}</td><td class="l">${words(x.says)}</td><td class="l">${esc(String(x.points||"").toLowerCase())}</td><td class="l"><span class="chip ${sc[0]}">${sc[1]}</span></td><td class="l ${x.freshness==="FRESH"?"muted":""}">${esc(x.freshness)}${x.as_of?" · "+esc(x.as_of):""}</td><td class="l muted">${esc(x.tab||"")}</td></tr>`; }).join("");
   const U = P.unresolved || {};
-  $("#p-plan").innerHTML = `<h2>Next session plan <span class="sub">${esc(P.as_of_session)} close → ${esc(P.next_session||"next session")} · research for the human, never a score or a gate</span></h2>
+  $("#p-plan").innerHTML = `<h2>Next session plan <button class="btn" data-sheet="copy" title="Copy the measured sheet (facts + instructions) to paste into ChatGPT" style="float:right;padding:2px 8px;font-size:12px;margin-left:6px">Copy sheet for ChatGPT</button><button class="btn" data-sheet="download" title="Download the measured sheet as Markdown" style="float:right;padding:2px 8px;font-size:12px">sheet .md</button> <span class="sub">${esc(P.as_of_session)} close → ${esc(P.next_session||"next session")} · research for the human, never a score or a gate</span></h2>
     <div class="card"><h3>The call <span class="chip ${kk}">${esc(keyTxt[C.key]||C.key)}</span></h3>
       <ul style="padding-left:16px;margin:6px 0">${(C.sentences||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
       <div style="margin-top:6px"><b>Approach.</b> ${esc(C.approach||"")}</div>

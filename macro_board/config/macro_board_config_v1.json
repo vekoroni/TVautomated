@@ -715,5 +715,32 @@
     "ic_horizon": 5,
     "corr_window_sessions": 60,
     "rationale": "Added 2026-10-10 (ACK: build the measured parts of the ChatGPT Money Index locally, shown beside it; the plan works per ETF with its correlation). Seven of the published ladder's nine components are measured from data held, with the published weights (76 of 100) so the two compare component by component; geopolitics and Hormuz stay LLM-only. Each component is scored against its own trailing 252 sessions (percentile, oriented to risk-off): 0 points at or below the median, full weight at the 95th percentile, linear between - calibrated on recorded data instead of fixed levels that go stale (the published file carried 10Y thresholds of 4.80/4.85% while the 10Y was 5.23%). A session with any component missing has no score. Bands: below 35 calm, 60+ risk-off. What followed each band is measured per ETF with the board's evidence rules; beta/correlation to SPY and QQQ on 60 sessions of daily returns; information coefficient = rank correlation of the score with the next 5-session return on non-overlapping windows. Display only. All PROVISIONAL."
+  },
+  "measured_sheet": {
+    "title": "AVSHUNTER measured sheet - paste this before your ChatGPT macro request",
+    "instructions": [
+      "This sheet describes the US close of {session}. Use every number in it exactly as given: do not restate, round, re-source or replace it, and do not look up your own value for anything listed here.",
+      "US Money Index (avshunter_us_money_index.json, contract unchanged): in risk_off_transmission_score.components set the seven measured components from section 1 - score = our points, weight = our weight, status = MEASURED_BY_AVSHUNTER, evidence = the row from the table. Score only {llm_components} yourself, each with evidence, source and time.",
+      "Set risk_off_transmission_score.current_score to the sum of all nine component scores (the measured points in section 1 + your {llm_weight} news points; weights total 100, no score above its weight), set current_state.risk_off_transmission_score to the same number so the pipeline contract reconciles, and say in current_interpretation that {measured_weight} of the 100 points were measured by AVSHUNTER.",
+      "Event payload (avshunter_us_economic_event_payload_<date>.json): for scheduled US releases use the actual and prior values in section 4; add a consensus forecast only with its source; add unscheduled developments (geopolitics, policy, corporate) with source and time.",
+      "News enrichment (avshunter_macro_enrichment_delta.json): use section 2 for how markets reacted and section 4 for overnight moves; add the narrative, event guards and candidate tickers from the news.",
+      "Where the news disagrees with a measured fact here, keep the measured fact and record the disagreement explicitly (cross_asset_contradictions, data_quality.discrepancy_register).",
+      "Keep every file's schema, keys and contract version unchanged and return valid JSON only."
+    ],
+    "needed_from_you": [
+      "Geopolitical escalation and Hormuz: state, evidence, source and time for each.",
+      "Weekly fund flows (equity, bond, money-market): source and week ending.",
+      "Consensus forecasts for the scheduled releases in section 4, with their source.",
+      "Unscheduled developments since the last close that could move US markets, with source and time.",
+      "Candidate tickers from the news, with the catalyst and its date."
+    ],
+    "release_sessions_ahead": 5,
+    "focus": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA"
+    ],
+    "rationale": "Added 2026-10-10 (ACK: build the measured sheet with the instructions included). Every board build writes macro_board/output/measured_sheet_latest.md (and sheets/measured_sheet_<session>_<kind>.md): facts AVSHUNTER measured itself, assembled from the board payload without an LLM, for ACK to paste into ChatGPT so the LLM adds only the news layer and cannot contradict local numbers (one owner per fact). The sheet never carries an LLM's published numbers and writes MISSING where a fact is missing. Instruction wording is editable here."
   }
 }
