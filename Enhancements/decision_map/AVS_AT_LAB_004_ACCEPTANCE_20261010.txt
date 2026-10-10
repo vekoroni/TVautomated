@@ -1,0 +1,69 @@
+AVS-AT-LAB-004 | BUSINESS-RULE TEST AND RELEASE ACCEPTANCE PLAN
+Version 1.0 | 10 October 2026
+Status: test specification ready; tests below have NOT yet been implemented or executed for the production build.
+
+TEST DISCIPLINE
+Pin old behaviour with characterisation tests; introduce each changed contract as a failing test; make the minimal production change; then run adjacent regressions and whole-run reconciliation. One test file per process, repo venv, short isolated temp directory, no cacheprovider/live data/network/provider calls. Store red/green evidence and exact code/config/source hashes. No assertion deletion to make a new policy pass.
+
+S0 CHARACTERISATION
+C01 Existing reference run population: pin 20261008_220129 full book count/identities and independently enumerate actionable overlay; accepted subset cannot replace full population. Prior observed 2,788 is a reference to verify, not a hard-coded future expected count.
+C02 Pin existing loader call graph/read counts and first-page dependencies; capture late slimming, forecast gate and macro placeholder behaviour with isolated spies/fixtures.
+C03 Pin same-contract Morning repricing as it exists on 10 Oct; compare to prior run defect, not assume it still recurs. Pin different-contract and no-quote paths.
+C04 Pin governing setup, lane/event/invalidation candidate IDs, timing source, model/cost basis and published rank/verdict. Include multiple same-ticker setups, unresolved direction and no-contract rows.
+C05 Pin every current visible geometry/scenario/earnings/evidence field introduced on 9-10 Oct; new layout cannot remove information essential to review.
+
+S1 PROJECTION / PUBLISHING
+P01 "The review projection preserves every governed row and its identity." Input base N, valid overlay M<=N; output N, exact row identity multiset equal; accepted/not accepted states and reasons preserved.
+P02 "Two theses for the same ticker never borrow each other's trigger, time, invalidation or contract." Adversarial multi-thesis/contract fixtures; exact join keys, no ticker-only collapse.
+P03 "Missing facts remain missing." Delete each owner field while populating every legacy alias; output null plus precise reason, not neutral/zero/GO/default CALL.
+P04 "The Lab never changes a thesis, valuation, rank or verdict." Freeze input records; output owner fields semantically identical; no rank/scenario pricing service invoked by projection or GET.
+P05 "Only a complete generation becomes current." Fail each write/check before manifest publication; previous manifest remains valid. Concurrent reader sees old or new, never mixed generations.
+P06 "Rejected overlays remain diagnostics, not execution authority." Wrong run, thesis, contract, digest or accepted state -> record rejection; safe base rows remain review-only, no hidden accepted fallback.
+P07 "A missing thesis ID is not invented." Diagnostic source-row key provided; missing identity and ledger coverage disclosed. No candidate is silently omitted.
+P08 No source_payload_json/full row copies in home/card records. Indexed per-family audit references preserve access without embedding duplicate histories.
+
+S2 FAST API / SECURITY / CACHE
+A01 Cold default home reads only summary and compact indexed rows. Spies make any stage CSV/full-book/C5/C6/C8 reads raise; request still works on valid prebuilt projection.
+A02 Macro or forecast-family unavailable -> rows usable, affected component states explicit. API health does not falsely certify publication completeness.
+A03 Ten concurrent requests for one cold revision build/cache once; responses agree; no publication modifications or paid calls. Cache memory bounded across run changes.
+A04 Paging/filtering counts conserve population. UNKNOWN sector and UNRESOLVED side included. All pages have no duplicate/omitted keys; filters disclose denominator.
+A05 Revision mismatch -> coherent conflict/reload response; no card from revision B next to grid A. In-flight old-run requests cannot overwrite newly selected run.
+A06 Invalid run IDs, traversal, arbitrary artifact paths and unsupported evidence families rejected. Untrusted text/HTML escaped. Drawer lookup only accesses exact run/indexed row.
+A07 One drawer reads only its indexed family; never parses full 470 MB book on demand. Saved reports loads do not generate new reports.
+A08 Older run without projection -> clear unavailable/compatibility state; no hidden raw rebuild, fabricated currentness or infinite spinner.
+
+S3 UI / ECONOMICS
+U01 Default card has one governed direction/setup and distinct thesis, trigger, contract and Morning states; unresolved remains unresolved. EOD accepted trigger never displayed as Morning confirmed.
+U02 Structural level, median-time scenario spot and volatility reach have distinct labels. Valuation spot/time equals the source scenario input, not legacy target.
+U03 Unchanged contract with new Morning ask/IV produces recomputed economics using existing owner; replaced contract does likewise. No usable quote -> labelled EOD_REFERENCE with its timestamp. Exact anticipated_contract_symbol == displayed expression identity when claimed current.
+U04 Independent arithmetic on captured inputs checks spread, fee-adjusted premium/scenarios, expiry breakeven, dollar risks and Greek-unit conversion. Example bid4/ask4.2 -> midpoint spread 4.87804878%, not ask spread 4.7619%; frozen4.1 and selected4.2 breakevens remain separate.
+U05 Quote age alone changes disclosure only: compare identical tuple at ages 0/15/120 minutes; no side/verdict/rank/visibility change. Missing/crossed/negative/nonfinite quotes generate distinct factual reasons.
+U06 q50/q80 bars -> sessions uses source timeframe/config; hold/runway not relabelled median time. 17/54 timing and 54-session hold not clamped to 20 by UI.
+U07 Earnings inside hold/expiry, confirmation, report time and IV-stress assumption visible. Earnings or sector-context edits alone do not alter published rank/verdict.
+U08 Original/holdout hit rates include n, sample/test/horizon and status; no in-sample value displayed as calibrated predictive confidence. Implied move not labelled directional forecast.
+U09 GEX/wall positional wording derived only from same-as-of spot; unknown spot suppresses relational assertion. PCR is positioning/activity, not buy/sell flow.
+U10 Stage ladder/evidence drawer interaction retains open card; loading/error/retry local to drawer. No backdrop click propagation closes view. Native keyboard interactions; 360px/1024px no clipping outside the table's allowed horizontal scroll.
+U11 Home sector counts classify BULL/BEAR and legacy CALL/PUT via explicit normalisation, not substring guesses. No-contract bullish thesis contributes bull thesis count, not selected-expression count. Missing sector -> UNKNOWN.
+U12 Sector rotation and candidate concentration separate. Changing candidate composition cannot change externally published sector trend/flow. Macro UNAVAILABLE never shown NEUTRAL.
+U13 Published business rank retained; sorting is labelled display order. No retired R:R/EV3/DOI fallback populates anticipated scenario value or rank.
+U14 Interpreter drawer only reads saved reports. Explicit generation retains preview/cost confirmation; no orders, journal mutation or paid calls on page load/expansion.
+
+S4 WHOLE-RUN / PERFORMANCE ACCEPTANCE
+R01 For every reference row trace raw identified producer inputs -> owning calculation -> publication -> compact record -> rendered labels. Classify: method suitability, raw-data identification, arithmetic, handoff, display, predictive validation. Consumer equality alone satisfies only handoff/display, never producer correctness.
+R02 Enumerate universe/discovery/Vanguard/Options/Lab counts and excluded identities/reasons in existing verification artifacts. New home projection uses complete governed population; missing earlier-stage names remain accessible through disposition view without pretending all are trade candidates.
+R03 Explain every target/timeframe/contract/value/decision mismatch. No unexplained mismatch can be hidden by choosing a convenient populated alias.
+R04 Manifest/file/hash/revision reconciliation and frozen EOD before/after hashes agree. New Morning events are appended, not rewrites.
+R05 Reference budgets on ACK's machine: first usable grid <5s; combined default home uncompressed <5MB; complete compact projection <10MB for 2,788 rows; zero initial wide-stage reads. Record at least three independent cold trials, warm trials and concurrent trials, median and worst, bytes/RSS/read count. No claim from an HTML mockup timing.
+R06 Macro/forecast failure, publication drift, missing audit family and delayed report routes do not prevent review of valid compact rows. Named error/retry; no permanent Loading Macro or unbounded refresh.
+R07 Default ticker-card open and source-indexed evidence-family load target <2s locally; record measurements and any accepted exception. These are engineering budgets, not trading gates.
+
+S5 MANUAL PROVING / RELEASE
+L01 User-started Evening and Morning only. Verify exact-run completion, no later abort, final publication counts/manifest, source dates/hashes and card/evidence identity. No launch in automated tests.
+L02 Report preserved functionality and independently checked calculations as well as defects; list Python owners/import paths used. Unseen file is not proved redundant; cleanup remains a later separately authorized task.
+L03 Open grade 0/1/2 defects must be reported before shipping; grade3 workarounds explicitly accepted. UI release and model/trading validation separate. ACK makes go-live decision; neither PASS technical integrity nor conditional value >1 grants capital authority.
+
+ARTIFACTS REQUIRED FOR ACCEPTANCE
+Baseline source/config hashes; red/green test receipts; row reconciliation by identity; field ownership exceptions; cold-load/bytes/RSS receipts; screenshots at desktop/mobile; exact-run manual proving report; defect register; manual ACK release decision.
+
+READY-TO-BUILD VS ACCEPTED
+This plan and the visual approval permit the described build sequence. They do not certify those tests passed. Production changes begin only after the baseline and failed tests for the next slice are recorded, and repository write permission is scoped appropriately.

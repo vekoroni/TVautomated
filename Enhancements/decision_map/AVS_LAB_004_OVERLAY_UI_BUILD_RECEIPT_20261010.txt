@@ -1,0 +1,79 @@
+AVS-LAB-004: VERIFIED OVERLAYS AND REVIEW SCREEN BUILD RECEIPT
+Date: 10 October 2026
+Status: implemented and locally tested; not activated or production accepted.
+
+SCOPE
+This slice extends the compact read-only presentation projection. It does not
+change trading direction, rank, verdict, valuation, execution authority or sizing.
+The existing root screen remains unchanged; the new screen is opt-in at /review.
+No Lab restart, pipeline run, paid provider call, order, live database update or
+frozen run artifact modification was performed.
+
+IMPLEMENTED
+1. contracts/lab_review_sources.py prepares exact-run source data for publication.
+   Accepted interpreter handoffs must pass the existing production acceptance and
+   artifact-integrity validator. Overlays match run/ticker/thesis/trade idea and
+   selected contract, not ticker alone. Protected decision fields are retained.
+2. Morning validation can reuse the finalizer's successful identity reconciliation
+   receipt instead of reopening thousands of event files. Missing events remain
+   explicit. The fallback independently reads exact matching validation events.
+3. Canonical BEH001 compression readings are carried from Discovery for the exact
+   governing lane candidate and thesis timeframe. This repairs a presentation
+   handoff gap: canonical compression existed in Discovery but not the final book.
+   No daily-for-weekly substitution or legacy Crabel fallback is introduced.
+4. Macro and sector rotation context come from pinned run artifacts. Bias and
+   breadth timestamps are separate. Only published P10 sector returns are shown;
+   missing returns and unpublished money flow are not inferred as neutral.
+5. The Morning compact publication occurs after handoff acceptance and summary
+   publication, avoiding an early duplicate projection build.
+6. review.html, review-app.css and review-app.js provide sector overview/filtering,
+   paginated rows, concise trade cards, lazy evidence families and saved reports.
+   Rows load independently of Macro. Drawer failures are local and retryable.
+   Source text is escaped and requests are revision-pinned. Loading this screen
+   neither calls the wide legacy book endpoint nor generates paid reports.
+   Paid report generation remains an explicit link to the existing desk workflow.
+
+SOURCE RECONCILIATION: RUN 20261008_220129
+Read-only preparation of the real final opportunity book:
+  Population: 2,788 rows, preserved.
+  Checked protected-fact mismatches: 0.
+  Accepted actionable overlays: 35 applied, 0 rejected.
+  Morning validation events: 2,787 applied, 1 unmatched.
+  Existing issue retained: NAN:EVENT_MISSING_FROM_PROJECTION.
+  Exact-setup canonical compression readings: 2,370 applied.
+  Remaining compression readings are explicit missing/identity states, not filled.
+  Source preparation with upstream receipt and Discovery handoff: 8.115 seconds.
+  Book SHA256 before and after:
+  43720de08900f1ca8c1d10b945d6f92579fd3e950e2e6662064acb2e7165e63c
+  Discovery context SHA256:
+  294dc3876915d66dcaf1006132c55885de9fec3b279be970b81a4a85ace7f977
+  Macro preserves CONFLICTING_SOURCES and PARTIAL quality as published.
+  Eleven sector biases/proxies; returns exist for five unique sectors only.
+  Money flow remains NOT_PUBLISHED.
+Evidence: LAB004_UPSTREAM_RECEIPT_RECONCILIATION_20261010.json in the Codex
+verification workspace. Source agreement demonstrates transmission/identity,
+not correct producer arithmetic, calibrated probabilities or profitable prediction.
+
+TEST EVIDENCE
+Focused Python suites: 59 tests and 3 subtests passed across source preparation
+(13), compact projection (21), Morning finalizer (11 plus 3 subtests), and DOI
+projection integration (14). The source suite was run test-first for each addition.
+Browser fixture checks: 10 passed with no page errors, including Macro failure
+while rows remain usable, lazy drawer failure isolation, HTML escaping, saved
+reports without paid calls, card persistence and 360px outer-layout containment.
+Fixture browser checks are not a real-run production first-paint measurement.
+JavaScript syntax and git diff whitespace checks passed (ordinary CRLF warnings).
+
+LIMITATIONS AND NEXT ACCEPTANCE STEP
+No new compact generation has been written into the live historical run. Existing
+scratch generations from the prior slice predate three added card schema fields.
+Controlled materialisation and an authorised Lab restart are still required to
+view /review against real artifacts. Root-route replacement is not authorised.
+The prior full projection publication measured approximately 94 seconds; the
+8.115-second preparation result is not an overall handoff timing improvement claim.
+Real-run HTTP/browser first paint, full publication timing and manual card review
+remain acceptance work. Indexed exclusion/forecast views are not part of this slice.
+Source-change checks watch publication markers, file metadata and the validation
+event directory; they do not rehash every immutable event on each browser request.
+Existing NAN event absence and partial context are visible, not silently repaired.
+Go-live remains a manual user decision after acceptance, not a result of these tests.

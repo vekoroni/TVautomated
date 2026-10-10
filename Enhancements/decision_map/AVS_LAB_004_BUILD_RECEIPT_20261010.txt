@@ -1,0 +1,77 @@
+AVS-SD-LAB-004 BUILD RECEIPT | 10 October 2026
+Scope: compact publication and additive read API slice. NOT full UI cutover or go-live acceptance.
+
+IMPLEMENTED
+contracts/lab_review_projection.py: pure display-only materializer receiving already governed rows; indexed immutable SQLite generation files; atomic manifest-last publication; complete row conservation; exact per-row facts; diagnostic keys distinct from thesis IDs; no owner fallbacks; one midpoint spread formula; explicit UNKNOWN sector/unresolved direction; lazy evidence-family queries; bounded digest verification cache with concurrent single-flight; readonly indexed reads; revision mismatch and integrity errors; parameter/path containment checks.
+
+contract fields are stored as a typed value vector with one shared versioned field schema, not repeated field names in every card. A single-card response expands names and missing-field states. Evidence-family JSON is losslessly zlib-compressed inside the presentation artifact. Nothing is removed from its evidence values except redundant source_payload_json; the full source remains referenced and preserved.
+
+contracts/lab_control.py: additive publication after existing full-book write, from existing in-memory governed rows. Original rows/full book and decision policy unchanged. Presentation failure is returned as FAILED with reason; previous generations are retained. Source receipt records full-book streaming hash, size and timestamp. A changed source book requires a new projection, not hidden reloading.
+
+intelligence-lab/intelligence_lab.py: registered four additive /api/lab/<run>/... summary/rows/card/evidence routes, independently of _load_run. Legacy APIs and UI unchanged. No server was started or restarted.
+
+NOT YET IMPLEMENTED / ACCEPTED
+- New Sector overview production UI and its timeout/error/retry behaviour.
+- Source-specific Macro/sector rotation publication and exact compression/evidence owner wiring. Missing context currently says NOT_PUBLISHED, never neutral or invented from counts.
+- Additional accepted-handoff/event overlay materialisation and its stale-publication signatures. Current manifest explicitly says SOURCE_BOOK_ONLY_NO_ADDITIONAL_OVERLAY. Do not use it as a substitute for a verified accepted baton.
+- Saved-report API and explicit paid-report action in new interface.
+- Forecast/exclusion indexed view, final frontend paging/sorting behaviour and whole-run raw-producer calculation review.
+- Browser cold-load acceptance, manual Evening/Morning/Lab proving and manual release decision.
+
+TEST-FIRST RECEIPTS (isolated scratch; no live data writes/network/providers)
+tests/test_lab_review_projection_v1.py:
+  Initial red: 14 failed / 1 passed, missing compact contract.
+  Contract green: 15 passed.
+  Integration red: 2 failed / 15 passed (writer did not publish; Flask had no fast routes).
+  Integration green: 17 passed.
+  Integrity red: manifest population tampering was not rejected; targeted 1 failed / 2 passed.
+  Integrity/shared-schema green: 20 passed.
+  Evidence size red: round-trip worked, but wide repeated text remained large on disk.
+  Final green: 21 passed (including lossless storage, source drift, concurrent verification, paths, lazy queries,
+    writer/API integration and original late-slim/forecast dependency characterisation).
+Adjacent tests, one file per process:
+  tests/test_lab_governed_handoff.py: 7 passed
+  tests/test_p5_one_ranking_owner.py: 7 passed
+  tests/test_m_g2_01_morning_reprice.py: 19 passed
+Total final focused/adjacent tests: 54 passed. NOT a full-suite or production-run acceptance claim.
+
+OFFLINE REFERENCE-RUN RECONCILIATION
+Source: data/output/runs/20261008_220129/intelligence_lab/final_opportunity_book_20261008_220129.json
+Original source size: 470,396,651 bytes.
+SHA256 before and after: 43720de08900f1ca8c1d10b945d6f92579fd3e950e2e6662064acb2e7165e63c
+Rows: 2,788; all retained, all diagnostic row keys unique; no checked card/home owner-field mismatch.
+This proves transmission of the selected published facts, NOT correct upstream identification, model method or predictive profitability.
+Live run artifacts were read only. Materialisation destination was Documents/Codex/2026-07-24/a/lab004_offline/runs.
+
+Offline read metrics (three independent cold digest-cache trials, direct functions, not browser/HTTP):
+  Summary + first 50-row page: 0.7336s / 0.7470s / 0.5549s
+  Combined first home response: 71,678 bytes
+  Complete compact home/card records + shared schema manifest: 9,627,252 bytes
+  All independently expanded card API responses would total 21,210,643 bytes; these are NEVER a default all-card payload.
+  Indexed artifact INCLUDING losslessly compressed per-row audit evidence: 110,624,768 bytes
+  Single structure-evidence query: 0.0115s / 0.0099s / 0.0083s
+  Publication/materialisation: 94.43 seconds; this remains an open performance item. Do not claim overall handoff improvement.
+The first uncompressed-index trial produced a 311,447,552-byte artifact and missed the compact-card budget;
+the shared schema and lossless evidence encoding were implemented and the full source reconciliation repeated.
+
+REPORT
+C:/Users/ACKVerissimo/Documents/Codex/2026-07-24/a/LAB004_OFFLINE_RECONCILIATION_20261010.json
+Offline verifier: C:/Users/ACKVerissimo/Documents/Codex/2026-07-24/a/verify_lab004_projection.py
+Scratch artifacts remain retained; no user evidence, database or redundant Python files were deleted.
+
+FINAL CODE HASHES
+contracts/lab_review_projection.py 4CB37A23EB26A53681662A539157BD53C4BB4DF152139D1D8E280812784E4871
+contracts/lab_control.py FC9827A2FF8449F5CB0EF0B2D468074F225263254ACC6E04457997661D154DD4
+intelligence-lab/intelligence_lab.py 85ED112F6CD5494CBAA2ECB0FBB8AF13D5BC5A19429ED9D3F26FBDD899C0633E
+tests/test_lab_review_projection_v1.py 1185EDAC3B24F1B8FA150D59A335CE67419EE5D68AD5450A19B7BA31CDF138DA
+
+EXISTING DIRTY TREE
+The repository already contained extensive user/developer modifications. Those were preserved. This build
+adds one contract module, one test file, an additive writer hook and additive Flask route registration.
+No trading-model changes, pricing recalculations, live database updates, pipeline launches, Lab restarts,
+commits or pushes were performed. A presentation SQLite artifact is not the Phantom or actuarial database.
+
+NEXT SAFE BUILD SLICE
+Verified overlay/event receipts and independent source-specific context, then approved UI against these
+fast routes. Do not cut over the default home page until all the above pending dependencies and UI tests
+are complete. Manual proving and ACK release decision remain separate required steps.

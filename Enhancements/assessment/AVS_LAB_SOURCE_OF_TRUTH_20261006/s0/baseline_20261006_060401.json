@@ -1,0 +1,322 @@
+{
+ "run_id": "20261006_060401",
+ "measured_at": "2026-10-06T20:28:47",
+ "command": "measure_baseline.py --run-id 20261006_060401",
+ "stages": {
+  "discovery": {
+   "present": true,
+   "bytes": 28254744,
+   "columns": 514,
+   "data_rows": 1814
+  },
+  "options_intelligence": {
+   "present": true,
+   "bytes": 41720653,
+   "columns": 1075,
+   "data_rows": 1636
+  },
+  "vanguard_enriched": {
+   "present": true,
+   "bytes": 52888096,
+   "columns": 1207,
+   "data_rows": 1702
+  },
+  "eil_enriched": {
+   "present": true,
+   "bytes": 46572526,
+   "columns": 1296,
+   "data_rows": 1636
+  },
+  "execution_v3_5": {
+   "present": true,
+   "bytes": 47720128,
+   "columns": 1359,
+   "data_rows": 1636
+  },
+  "morning_candidates": {
+   "present": true,
+   "bytes": 33337542,
+   "columns": 845,
+   "data_rows": 1636
+  },
+  "morning_validated": {
+   "present": true,
+   "bytes": 40184022,
+   "columns": 1186,
+   "data_rows": 1636
+  },
+  "execution_gated": {
+   "present": true,
+   "bytes": 40270146,
+   "columns": 1133,
+   "data_rows": 1636
+  },
+  "lab_book_csv": {
+   "present": true,
+   "bytes": 212846457,
+   "columns": 814,
+   "data_rows": 1636
+  },
+  "lab_book_json": {
+   "present": true,
+   "bytes": 252423365
+  }
+ },
+ "go_economics": {
+  "morning_verdicts": {
+   "BLOCK": 943,
+   "FLAG": 642,
+   "GO": 51
+  },
+  "pays_state_by_morning_verdict": {
+   "BLOCK": {
+    "DOES_NOT_PAY_AT_ANTICIPATED_TIME": 75,
+    "NOT_ASSESSED_VOLATILITY_ONLY": 14,
+    "NOT_COMPUTED": 650,
+    "PAYS": 204
+   },
+   "FLAG": {
+    "DOES_NOT_PAY_AT_ANTICIPATED_TIME": 50,
+    "NOT_ASSESSED_VOLATILITY_ONLY": 14,
+    "NOT_COMPUTED": 73,
+    "PAYS": 505
+   },
+   "GO": {
+    "DOES_NOT_PAY_AT_ANTICIPATED_TIME": 0,
+    "NOT_ASSESSED_VOLATILITY_ONLY": 1,
+    "NOT_COMPUTED": 6,
+    "PAYS": 44
+   }
+  },
+  "lab_verdicts": {
+   "BLOCKED": 834,
+   "MANUAL_REVIEW": 732,
+   "GO_LIMIT": 27,
+   "GO": 24,
+   "CONTRACT_REPAIR": 19
+  },
+  "lab_go_rows": 51,
+  "go_without_computed_value": [
+   "NET",
+   "CYTK",
+   "UNP",
+   "BLDR",
+   "BIRK",
+   "ENOV",
+   "CENX"
+  ],
+  "go_value_models": {
+   "anticipated_pays_and_monetisability_not": 33,
+   "monetisability_states": {
+    "NOT_MONETISABLE": 38,
+    "MONETISABLE": 6,
+    "DATA_MISSING": 5,
+    "LIMITED": 2
+   },
+   "ev3_status": {
+    "REJECTED": 36,
+    "EVALUATED_PRODUCTION_EVIDENCE": 15
+   },
+   "ev3_negative": 26,
+   "ev3_positive": 0,
+   "note": "disagreement between different measures is not by itself a defect (review register s7)"
+  },
+  "rank_vs_anticipated_value_spearman": -0.018,
+  "go_target_field_pairs": {
+   "target_price~structural_target": {
+    "both_present": 46,
+    "differ_gt_1pct": 0
+   },
+   "target_price~anticipated_level": {
+    "both_present": 43,
+    "differ_gt_1pct": 35
+   },
+   "target_price~anticipated_level_q50": {
+    "both_present": 43,
+    "differ_gt_1pct": 33
+   },
+   "target_price~anticipated_structural_level": {
+    "both_present": 42,
+    "differ_gt_1pct": 33
+   },
+   "target_price~monetisability_structural_target_spot": {
+    "both_present": 46,
+    "differ_gt_1pct": 0
+   },
+   "target_price~thesis_outcome_level": {
+    "both_present": 45,
+    "differ_gt_1pct": 36
+   },
+   "structural_target~anticipated_level": {
+    "both_present": 43,
+    "differ_gt_1pct": 35
+   },
+   "structural_target~anticipated_level_q50": {
+    "both_present": 43,
+    "differ_gt_1pct": 33
+   },
+   "structural_target~anticipated_structural_level": {
+    "both_present": 42,
+    "differ_gt_1pct": 33
+   },
+   "structural_target~monetisability_structural_target_spot": {
+    "both_present": 46,
+    "differ_gt_1pct": 0
+   },
+   "structural_target~thesis_outcome_level": {
+    "both_present": 45,
+    "differ_gt_1pct": 36
+   },
+   "anticipated_level~anticipated_level_q50": {
+    "both_present": 47,
+    "differ_gt_1pct": 23
+   },
+   "anticipated_level~anticipated_structural_level": {
+    "both_present": 46,
+    "differ_gt_1pct": 9
+   },
+   "anticipated_level~monetisability_structural_target_spot": {
+    "both_present": 43,
+    "differ_gt_1pct": 35
+   },
+   "anticipated_level~thesis_outcome_level": {
+    "both_present": 47,
+    "differ_gt_1pct": 10
+   },
+   "anticipated_level_q50~anticipated_structural_level": {
+    "both_present": 46,
+    "differ_gt_1pct": 22
+   },
+   "anticipated_level_q50~monetisability_structural_target_spot": {
+    "both_present": 43,
+    "differ_gt_1pct": 33
+   },
+   "anticipated_level_q50~thesis_outcome_level": {
+    "both_present": 47,
+    "differ_gt_1pct": 23
+   },
+   "anticipated_structural_level~monetisability_structural_target_spot": {
+    "both_present": 42,
+    "differ_gt_1pct": 33
+   },
+   "anticipated_structural_level~thesis_outcome_level": {
+    "both_present": 46,
+    "differ_gt_1pct": 0
+   },
+   "monetisability_structural_target_spot~thesis_outcome_level": {
+    "both_present": 45,
+    "differ_gt_1pct": 36
+   }
+  }
+ },
+ "h1_execution_gated": {
+  "morning_columns": 1186,
+  "execution_gated_columns": 1133,
+  "lost": 71,
+  "lost_names": [
+   "anticipated_contract_basis",
+   "breakeven_pct",
+   "breakeven_price",
+   "contract_data_state",
+   "contract_mark_synthetic",
+   "contract_premium",
+   "contract_quote_timestamp_utc",
+   "contract_symbol_original",
+   "entry_premium",
+   "execution_viability_domain_reason",
+   "execution_viability_recheck",
+   "execution_viability_reversible",
+   "liquidity_lifecycle_reason",
+   "liquidity_score",
+   "live_contract_dte",
+   "live_contract_expiry",
+   "live_contract_strike",
+   "live_fetch_error",
+   "live_options_error",
+   "morning_contract_repair_used",
+   "morning_repair_attempts",
+   "morning_repair_contract_symbol",
+   "morning_repair_reason",
+   "morning_repaired_from_contract",
+   "ms_acceptance_closes",
+   "ms_acceptance_minutes",
+   "ms_acceptance_volume_share",
+   "ms_adjustment_convention",
+   "ms_algorithm_version",
+   "ms_authority",
+   "ms_bin_width",
+   "ms_calculated_utc",
+   "ms_can_grant_capital",
+   "ms_can_reverse_direction",
+   "ms_dataset_id",
+   "ms_developing_poc",
+   "ms_direction_relationship",
+   "ms_evidence_id",
+   "ms_final_poc",
+   "ms_first_distribution_high",
+   "ms_first_distribution_low",
+   "ms_input_dataset_ids",
+   "ms_input_hashes",
+   "ms_lifecycle",
+   "ms_minute_resolution",
+   "ms_parameter_calibration_status",
+   "ms_parameter_set_version",
+   "ms_physical_fetches",
+   "ms_profile_authority",
+   "ms_profile_evidence_state",
+   "ms_profile_type",
+   "ms_quality_class",
+   "ms_reason_code",
+   "ms_repair_pct",
+   "ms_retest_count",
+   "ms_retest_result",
+   "ms_second_distribution_high",
+   "ms_second_distribution_low",
+   "ms_separation_high",
+   "ms_separation_low",
+   "ms_value_area_high",
+   "ms_value_area_low",
+   "ms_vwap_hold_minutes",
+   "premium",
+   "runway_state",
+   "selected_long_leg",
+   "selected_short_leg",
+   "session_date",
+   "theta_drag_pct",
+   "trade_idea_id",
+   "vega_risk_pct"
+  ]
+ },
+ "spread_units": {
+  "options_intelligence": {
+   "contract_spread_pct": {
+    "median": 0.1905,
+    "p90": 0.6316
+   }
+  },
+  "morning_validated": {
+   "contract_spread_pct": {
+    "median": 0.1596,
+    "p90": 0.8132
+   },
+   "spread_pct": {
+    "median": 0.1589,
+    "p90": 0.8
+   }
+  }
+ },
+ "morning_timings": {
+  "marks": {
+   "morning_start": "2026-10-06 15:45:33",
+   "catalyst_done": "2026-10-06 15:47:12",
+   "gate_done": "2026-10-06 16:10:16",
+   "handoff_done": "2026-10-06 16:39:56"
+  },
+  "minutes": {
+   "catalyst": 1.6,
+   "gate": 23.1,
+   "gate_to_lab_handoff": 29.7,
+   "total": 54.4
+  }
+ }
+}

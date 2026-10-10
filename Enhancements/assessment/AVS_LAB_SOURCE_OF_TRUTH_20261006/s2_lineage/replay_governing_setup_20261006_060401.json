@@ -1,0 +1,46 @@
+{
+ "rows_with_side": 1052,
+ "lane_now": {
+  "C": 693,
+  "A": 357,
+  "B": 2
+ },
+ "lane_governed": {
+  "C": 690,
+  "A": 331,
+  "B": 23,
+  "INTRADAY_ONLY_UNTESTED": 8
+ },
+ "rows_with_a_passed_level_excluded": 384,
+ "GO_rows": 51,
+ "GO_governed_lane": {
+  "A": 48,
+  "C": 3
+ },
+ "GO_governed_timeframe": {
+  "1d": 25,
+  "1w": 20,
+  "1mo": 6
+ },
+ "GO_valued_setup_changes": 26,
+ "GO_governed_level_present": 51,
+ "GO_unvalued_today_that_gain_a_level": [
+  "NET",
+  "BIRK",
+  "CYTK",
+  "BLDR",
+  "UNP",
+  "ENOV",
+  "CENX"
+ ],
+ "GO_duration_evidence_status": {
+  "IN_SAMPLE_REPLAY_NOT_VALIDATED": 50,
+  "NO_COMPARABLE_EVIDENCE": 1
+ },
+ "GO_q50_sessions_now_median": 9.0,
+ "GO_q50_sessions_governed_median": 11.0,
+ "GO_invalidation_distance_pct_now_median": 13.4,
+ "GO_invalidation_distance_pct_governed_median": 27.9,
+ "GO_move_to_level_pct_now_median": 9.78,
+ "GO_move_to_level_pct_governed_median": 13.13
+}

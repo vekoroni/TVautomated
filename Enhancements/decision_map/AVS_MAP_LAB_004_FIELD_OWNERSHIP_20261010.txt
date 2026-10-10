@@ -1,0 +1,74 @@
+AVS-MAP-LAB-004 | FIELD OWNERSHIP AND PRESENTATION CONTRACT
+Version 1.0 | 10 October 2026 | Companion to AVS-SD-LAB-004
+
+Mapping notation: owner -> observed current field(s) -> display/validation.
+Observed field names are not proof of producer correctness or end-to-end wiring. The release tests must trace raw inputs -> owning calculation -> published row -> displayed record, using the exact candidate/contract and source revision. Where an owner/path is not established here, it is explicitly unresolved; no Lab fallback is authorized.
+
+A. IDENTITY / PUBLICATION
+Run Context -> run_id, evidence_session, market_session, release_id/configuration_version where available -> header and audit; never wall-clock inference.
+Governed publication -> final_opportunity_book, validation events and accepted handoff overlay -> population and current review state. Current consumers: contracts/lab_control.py read_final_opportunity_book; Lab _governed_lab_book and _overlay_governed_validation_view. Writer/call sites must be pinned in S0 before modifying publication.
+Thesis/structure -> thesis_id, trade_lane_candidate_id, thesis_event_candidate_id, thesis_invalidation_setup_id -> exact row identity. A missing ID stays missing with source-row diagnostic reference.
+Expression -> expression_id and contract_symbol -> contract identity; OCC strike/expiry/side agrees with fields. Alternative expression is not a mutation of the governing thesis.
+Publication -> new projection schema, revision, hashes, generated_at, state -> one coherent generation. All card/evidence requests pin it.
+
+B. SIDE / STRUCTURE / READINESS (default)
+Discovery/adopted thesis -> direction, governed direction record and thesis__side -> directional story. Normalisation owned by domain/thesis_direction.py; explicit BULL/CALL and BEAR/PUT vocabulary mapping only. UNRESOLVED never defaults CALL. Contract side remains a separate field.
+Governing lane -> trade_lane, trade_lane_setup, trade_lane_basis, trade_lane_candidate_id -> lane/setup. Current owner domain/structure_behaviour/trade_lane.py select_governing; verify exact producer call site and selected Candidate_ID in S0.
+Governing structure -> thesis_phase, thesis_event, thesis_event_state, thesis_event_timeframe, thesis_event_scope, thesis_event_candidate_id -> Wyckoff/event/scope. domain/structure_behaviour/thesis_category.py governed_thesis/_from_event; avoid older phase/wyckoff fallbacks.
+Structure source -> compression evidence -> compression where available. Current canonical compression owner NOT YET pinned here. Preserve producer/version/timeframe and show "not identified / not assessed" as appropriate; do not infer from IV or trigger labels.
+Thesis event lifecycle -> thesis_trigger_level, thesis_trigger_candidate_id, thesis__readiness, thesis__readiness_reason, thesis__last_event, thesis__last_event_date/level -> why now. Candidate equality required. Lifecycle producer/call site must be traced in S0; existing card is only a consumer.
+Trigger-layer context -> trigger_primary, trigger_quality, ib_state/ib_last_event -> evidence drawer. State reading is not thesis activation; unmeasured intraday state never becomes NONE/neutral.
+Morning -> validation_transition, validation_event_id, remaining_runway_state, morning_execution_mode -> Morning state, exact event and reason. NOT_RUN differs from DATA_DEFERRED and THESIS_CONFIRMED.
+Predictive validation -> recorded direction/edge test state and report reference -> unvalidated/tested-no-edge/validated with specific test meaning. No proof inferred from matching CALL/PUT consumers.
+
+C. LEVELS / TIME (default)
+Qualifying thesis geometry -> invalidation_price plus thesis_invalidation_setup_id -> governing exit. Legacy aliases cannot substitute merely because populated; migration requires an explicit schema adapter/receipt.
+Supporting daily setup -> early_warning_invalidation_level, early_warning_setup_id -> early warning, not thesis exit.
+Governing event -> thesis_outcome_level/definition -> structural source for valuation. Must match trade_lane_candidate_id and own timeframe/scope.
+Anticipated owner -> anticipated_structural_level/definition -> structural reference.
+Anticipated owner -> anticipated_level_q50, scenario_target_exit_spot -> level actually used for median-time scenario. Compare the two; mismatch is a defect, not arbitrary priority selection.
+Anticipated owner -> anticipated_level, anticipated_level_basis, anticipated_reachable_level, anticipated_move_pct -> q80/reach-related reference with basis; do not label a volatility envelope as directional prediction.
+Evidence -> thesis_duration_status/test/n/q50_bars/q80_bars, thesis_p_outcome_by_limit, thesis_p_invalidation_by_limit -> raw timing/probability evidence drawer. Candidate group, estimator, censoring and horizon documented.
+domain/anticipated_move.py anticipated_move_fields -> anticipated_sessions_q50/q80, anticipated_time_basis, anticipated_evidence_status/n -> arrival. Bars -> sessions conversion is governed; q80 arrival is not 80% unconditional success.
+Runway publisher -> planned_hold_sessions/planned_hold_source, evidence_runway_sessions/basis -> hold/runway distinct from median move time. Current chain includes evidence_runway and intelligent_orchestrator.py hold patch. Missing hold not filled from DTE/horizon_bucket.
+Selected expression/calendar -> expiry, dte, contract_dte -> calendar days and exchange trading sessions. Display as-of; do not substitute a 365/252 approximation for an exchange-calendar count without a label.
+Expression exit policy -> last_exit_session/time-stop fields and basis -> detail. Never restart inherited clocks or move frozen last exit.
+
+D. QUOTE / ECONOMICS (default + risk drawer)
+Market-data quote tuple -> contract_symbol, contract_bid/ask/iv, provider timestamp, quote source, observed_at/as_of -> single selected observation. EOD and Morning namespaces must be resolved by publication schema, not six UI fallbacks.
+Market-data stock observation -> live_price, live_price_state/age, source/as-of; bar_data_asof -> stock/bar references. If absent, not recorded. Age disclosure has no veto.
+Presentation-only arithmetic -> spread_pct_mid = (ask-bid)/mid*100 -> new default spread with unit and quote identity. Null for invalid tuple. Not a change to upstream execution limits.
+Anticipated owner -> anticipated_contract_symbol, anticipated_contract_basis, anticipated_valued_at_utc -> valuation tuple identity. Inspect current morning_gate.py _recompute_for_morning_contract; unchanged and replaced contracts must both reprice on usable quotes.
+Anticipated owner -> anticipated_value_multiple_q50/q80, anticipated_pays_state, anticipated_time_fit -> conditional scenario, never EV. domain/anticipated_move.py delegates pricing/costs to domain/option_valuation.py.
+Scenario pricer -> valuation_model/version, valuation_rate_annual/basis, valuation_dividend_yield_annual/basis, valuation_cost_basis, valuation_entry_cost_usd_per_share -> basis drawer; displayed assumptions cannot imply observed data.
+Scenario pricer -> scenario_exit_sessions, scenario_iv_basis, scenario_target/invalidation_exit_spot, scenario_target/invalidation/stall_return_on_premium -> outcomes conditional on each path, not probability-weighted forecast.
+Scenario pricer -> anticipated_value_multiple_earnings_stress, anticipated_stress_basis, scenario_target_earnings_iv_return_on_premium -> earnings stress by time and model assumption.
+Frozen EOD -> eod_anticipated_value_multiple_q50, eod_anticipated_pays_state, eod_scenario_target_return_on_premium, eod_anticipated_valued_at_utc -> clearly separate reference. No currentness claim from retained value.
+Contract/quote -> strike + selected ask (CALL) or strike - ask (PUT) -> expiry breakeven BEFORE fees, if rendered. Frozen premium produces a separately labelled frozen breakeven. Not early-exit breakeven.
+Contract/quote -> premium risk = ask * contract_multiplier plus opening costs -> dollars per contract; multiplier must be explicit, especially adjusted contracts. Do not silently assume all live contracts are 100-share standard options.
+Greek source -> contract_delta/gamma/theta/vega and model/source timestamp -> risks with units. Producer and IV-point convention require exact mapping in S0; screenshot values are not fixtures of truth.
+Greek source -> daily decay / IV-point sensitivity -> labelled first-order sensitivities; disclose linear estimate, same quote tuple, multiplier, day-count convention.
+Option observation -> contract_oi/volume, own as-of -> liquidity observations. Missing differs from zero; not a probability or recent money flow by itself.
+
+E. CONTEXT / HISTORY (selected essentials default, rest drawer)
+earnings_calendar_enricher.py earnings_disclosure -> earnings_state/date/report_time/date_confirmation/source, sessions_to_event, inside_hold/expiry, disclosure -> risk information; recomputed timing by Morning, no new fetch on Lab read.
+Market classification -> sector, sector_etf/proxy, industry and source -> ticker/home sector. Taxonomy aliases require one versioned mapping; UNKNOWN bucket stays visible. Do not join two sectors by fuzzy name without a receipt.
+Published macro/sector producer -> macro source/as-of, daily/weekly state, money flow, usmi_sector_alignment/macro_sector_alignment -> context. _macro_from_run normalization and current artifact schema must be pinned before new rotation fields are shown.
+Published sector rotation -> sector trend/flow/categorical bias -> home. UNRESOLVED OWNER for daily/weekly money-flow authority pending S0 artifact trace; candidate counts cannot supply it.
+Full governed population -> bull/bear/unresolved, lane/readiness and selected-expression counts by sector -> distribution only, exact denominators. Do not count side by string contains CALL only.
+Structure/positioning -> gamma_flip/call_wall/put_wall/PCR/max_pain -> advisory drawer. Same-as-of spot required for above/below wording; wall label never proves directional flow.
+Volatility context -> IV rank/percentile, IV-history state/source/window/frequency/sample dates, ATM IV/HV/term structure -> risk drawer. IV rank not IV percentile; weekly history not daily 252-session series.
+Historical evidence -> trade_lane_hit_original/holdout, n_original/n_holdout, duration/calibration statuses -> sample-qualified evidence. In-sample is not validated live predictive probability.
+Vanguard -> vanguard_context_flags -> counterevidence/context with own basis. "No flags recorded" not "risk absent".
+Alternate thesis/expression publisher -> thesis_alternatives_count/tested and per-candidate records -> indexed drawer. Distinct side, levels, timing, contract and condition per alternative; never replace governing thesis silently.
+
+F. DECISION / RANK / AUDIT
+Published Morning decision -> producer verdict, action/reason and timestamp -> one review decision, with source. Lab compatibility labels/DOI presentation are separately labelled if they differ; do not resolve by whichever says GO.
+Published ranking -> rank, ranking_book_id, rank_basis/authority/model version -> default order. Ranking producer/call site must be established in S0; no _compute_priority_score recreation or q50-value authority promotion in new endpoints.
+Journal -> open position and journal health -> successful read required. Failure=POSITION_STATE_UNAVAILABLE, not "none".
+Ledger/outcome -> immutable published decisions, expression outcomes and future maturation -> audit, no fabricated IDs or loss of non-actioned alternatives.
+Retired models -> rr_*, target_3r/legacy targets, ev3_*, monetisability_* -> audit with formula, horizon, identity, retirement reason. No default grid labels implying these answer the same question as early-exit scenario value.
+Interpreter -> saved report based on exact source revision/identities -> on-demand explanation. Generation requires separate explicit paid-call confirmation; never grants capital authority.
+
+DELIVERY RULE
+Every compact field carries value, state/reason and source-reference ID at an appropriate shared-record granularity. Shared provenance is deduplicated; full source rows are referenced, not copied into source_payload_json. Explicit schema adapters are allowed for old runs, tested and labelled; opportunistic fallback chains are not.

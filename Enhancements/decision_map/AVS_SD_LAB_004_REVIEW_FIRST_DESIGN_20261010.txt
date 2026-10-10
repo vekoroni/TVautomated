@@ -1,0 +1,143 @@
+AVS-SD-LAB-004: REVIEW-FIRST INTELLIGENCE LAB
+Version 1.0 | 10 October 2026 | Owner: ACK
+Status: approved visual direction; implementation design and acceptance contract recorded for build.
+This document does not claim implementation, release acceptance or profitable predictive accuracy.
+
+1. OBJECTIVE AND SCOPE
+
+Provide enough relevant, correctly attributed information for a human to review a ticker thesis and its option expression without loading the whole pipeline into the browser. Preserve auditability, alternative theses and exclusions. The approved reference is the enhanced "Sector overview" mockup; "Focused desk" is a layout alternative, not a separate product to build.
+
+Build the existing Intelligence Lab read path and interface. Do not rebuild Discovery, Vanguard, pricing, databases, ranking or execution policy under the guise of a UI change. No automated orders, sizing, capital permission, provider calls on page load, report generation on expansion, database maintenance or Python-file deletion.
+
+Mockup reference:
+C:/Users/ACKVerissimo/.codex/visualizations/2026/07/24/019f958f-8313-7193-9fab-3c17c8b47842/avshunter-lab-redesign.html
+SMCI figures in the preview are supplied screenshot references, not new calculations. Sector states and other rows are illustrative. They must never enter production fixtures as validated market evidence.
+
+2. GOVERNANCE AND EXPLICIT SUPERSESSION
+
+Read CLAUDE.md; Enhancements/knowledge/README.md; the governing end-to-end specification, especially sections 3, 4, 14, 15, 18, 24 and 25; method notes 03, 05 and 07; and AVS_ANTICIPATED_MOVE_DESIGN_20261003.md, including its later receipts.
+
+ACK business decisions take precedence. For this build:
+- Discovery/adopted thesis determines direction; Vanguard enhances and challenges, never silently flips it.
+- Quote age alone is disclosure, never a rejection, hiding, ranking penalty or automatic thesis veto. Missing, crossed or mismatched quotes remain separate factual integrity states.
+- Human execution remains human. Conditional payoff is a computation, not a trading promise.
+- Macro and earnings are review context, not gates, scores or rank inputs.
+- Retired R:R, EV3 and legacy expiry-intrinsic payoff are audit models, not competing execution answers.
+- Preserve governing setup, Wyckoff phase/event, compression where actually identified, timing, invalidation, historical evidence and counterevidence.
+
+The September specification contains older stale-quote exclusion and 1-20-session language; October decisions and evidence-runway implementations differ. Record the policy/version effective for each run. Do not reintroduce the old quote-age gate, clamp a 54-session source hold to 20, restart clocks, or silently approve a new horizon in this read-model build. Likewise, do not introduce D4's earlier proposed missing-value GO downgrade or a new value ranking without its own approved behavioural change. Show missing value and current producer verdict accurately.
+
+The previous design's proposal to rank in the Lab by anticipated-value multiple is NOT implemented by this design. Presentation consumes published ranking. A user-selected sort is a labelled display order, never a new business rank. Conditional target payoff does not establish expected return or calibrated ranking power.
+
+3. CONFIRMED ROOT CAUSES AND EVIDENCE LIMITS
+
+RC-A: late slimming does not remove backend work. intelligence-lab/intelligence_lab.py:1422 _load_run reads and assembles wide stage data; at 2215 _governed_lab_book replaces signals. _slim_lab_payload at 2654 runs afterwards. The default route at 2769 uses this expensive path.
+
+RC-B: unnecessary dependencies delay first render. static/index.html:750 loadRun requires before/after version checks and the forecast_book response before publishing RUN_DATA. renderMacroBanner is reached through renderAll; the "Loading macro data..." placeholder at line 304 is therefore not proof that the Macro engine is broken.
+
+RC-C: duplicate wide payloads. Prior independent read-only profiling of run 20261008_220129: full book JSON 470,396,651 bytes; sequential parsing of ten stage CSVs about 45.99 seconds, plus book JSON 9.29 seconds before merge/serialization. source_payload_json and field_provenance_json repeat substantial data. These are a recorded baseline, not a new latency measurement today.
+
+RC-D: sector helper is not a rotation contract. _sector_summary_from_cached_run at 2676 requires the run already loaded, derives execution labels with fallback chains, counts direction only when its string contains CALL/PUT, and averages legacy EV with zero defaults. BULL/BEAR can be missed; missing EV can become zero. No new rotation state may be inferred from these candidate counts.
+
+RC-E: competing ownership remains possible. domain/lab_signal_book_v4.py describes DOI v2 as monetisability authority; the current trade card uses anticipated-time scenarios and labels legacy fields as retired. Do not choose either by arbitrary fallback. Keep separate field domains and published source/authority receipts, and reconcile their consumers before claiming a single economic truth.
+
+Existing assets to retain:
+- _governed_lab_book preserves the complete population and overlays accepted evidence on exact identities; the accepted v3 handoff alone is not the population.
+- domain/structure_behaviour/thesis_category.py governed_thesis uses the governing lane candidate and keeps daily refinements separately.
+- domain/anticipated_move.py owns magnitude, timing and conditional scenarios.
+- domain/option_valuation.py is the shared scenario pricer/cost convention (American CRR / European BSM by configured root), with explicit rate/dividend assumptions.
+- morning_gate.py _recompute_for_morning_contract now reprices unchanged usable Morning contracts as well as replacements and preserves eod_* reference values. Present in inspected code; not independently accepted on a new live run in this design exercise.
+- trade-card.js already exposes earnings, scope, geometry, scenarios, evidence labels and quote basis. Reuse the domain meanings, not its full-width browser profiling requirement.
+
+4. DISPLAY CONTRACT
+
+Home:
+- Run/session and publication revision, Evening/Morning state, source times, integrity/missing-data notices.
+- Sector name/proxy on every ticker row; sector overview and local filtering.
+- Sector daily/weekly state and money flow only from an identified published sector producer, with availability/as-of/method. Candidate distribution is labelled distribution, not rotation or money flow.
+- Grid: published rank with basis/status, ticker/sector, side/setup, readiness, move/time, contract/scenario value, review reason. Expiry, hold, spread and earnings are available in row detail; do not make a 25-column home table.
+- Counts distinguish underlying theses, selected expressions, ready-for-review states and missing-data states; denominators and filter scope visible. No "executable now" count from quote age or multiple verdict synonyms.
+
+Default ticker card:
+1) Thesis/structure/trigger: direction and evidence status; lane and candidate identity; own timeframe/scope; Wyckoff phase/event/status; compression; trigger and latest deciding event; Morning state.
+2) Levels/time: qualifying invalidation; separately labelled daily early warning; q50 time-specific level; structural reference; q50/q80 arrival; planned hold/basis; real expiry/calendar days/trading sessions; earnings inside hold/expiry and confirmation.
+3) Expression/economics: exact contract, bid/ask/as-of, midpoint spread, delta/IV/OI/volume, premium-at-risk, daily decay and IV sensitivity with units; conditional q50/q80 and earnings stress; target/invalidation/stall returns and pricing/cost basis.
+4) Decision/counterevidence/trust: published review verdict and reason, not an additional Lab verdict; thesis state distinct from contract state; conflicts and actionable missing information; quote/bar/stock-price times; EOD reference versus Morning recomputation; journal position state only from actual journal evidence.
+
+Expandable per-ticker drawers:
+- Structure, historical evidence, alternative theses (sample size, horizon, original/holdout, estimator, evidence/calibration status).
+- Greeks, volatility and cost sensitivities (point-in-time IV-history definition, daily/weekly frequency and sample count).
+- Sector, macro and positioning (GEX/walls/PCR are observations, not directions).
+- Morning validation, liquidity and chronological stage ladder (events and exclusions; no implied stage pass for missing artifacts).
+- Calculation/model conflicts and source audit (purpose, horizon, contract, cost basis, authority and retirement reason).
+- Saved Interpreter reports; explicit separately confirmed paid-generation action retained, never triggered by opening the drawer.
+
+No 375-field enumeration, all-row browser duplicate profiling or embedded raw JSON in the default payload. Preserve full evidence artifacts; do not delete history to speed the UI.
+
+5. PUBLICATION AND FAST READ ARCHITECTURE
+
+Produce a versioned lab_review_projection_v1 at the existing governed handoff/publication boundary, using the already available in-memory governed rows. Reuse existing publication machinery rather than introducing a parallel decision engine. This is a presentation record, NOT a replacement decision ledger or thesis.
+
+Projection consists of:
+- compact home rows and server-side paging/filter/sort index;
+- compact per-row trade-card records;
+- per-row references to stage artifacts/evidence indexes;
+- independent compact macro/sector context;
+- publication manifest: run_id, schema/model/config versions, session, revision, source hashes, population counts, overlay receipt, file hashes, generated_at, publication_state.
+
+Identity is run + candidate/thesis version + expression/contract where present. Never collapse multiple setups/contracts by ticker-only merge. An unresolved row stays visible with its source-row identity and reason; a display diagnostic key is not a fabricated thesis ID. Preserve the complete governed population, not only accepted/actionable rows. Forecast-only and excluded rows use separate indexed views with dispositions, without loading all C5/C6/C8 packets on home.
+
+Apply the same verified overlay/identity semantics as _governed_lab_book. If a manifest or overlay is rejected, expose the diagnostic and the safely available base population as review-only, without granting new action. Do not silently describe fallback as accepted.
+
+Publish generation files first, verify them, atomically replace one manifest pointer last. A client pins the revision and never mixes cards/audit from another revision. A publication failure leaves the previous valid generation available and identifies its date/revision; it must not masquerade as current. Cache by run+revision, with single-flight per generation and bounded memory. No wide-data/hash rebuild per HTTP request.
+
+Proposed endpoints (names are new, not claims of existing routes):
+GET /api/lab/<run>/summary -> compact state, counts, sector/macro, publication revision
+GET /api/lab/<run>/rows?revision=...&sector=...&page=... -> bounded home rows
+GET /api/lab/<run>/rows/<row_key>?revision=... -> compact card
+GET /api/lab/<run>/rows/<row_key>/evidence/<family>?revision=... -> that family only
+GET /api/lab/<run>/rows/<row_key>/reports?revision=... -> saved reports only
+
+Validate run/row/family parameters; allowlist artifact paths under the exact run; escape all source strings; no browser-provided filesystem path. Lazy audit must have per-row indexes/shards; parsing 470 MB to serve one drawer would move, not solve, the problem.
+
+Compatibility: keep existing full APIs for their known consumers during cutover. They are not default home dependencies. Older runs without a projection show "projection unavailable" and offer an explicit compatibility/audit path. Offline materialisation, if needed, is an explicit release/replay operation, never a paid provider call or hidden cold-request rebuild.
+
+6. ECONOMIC AND SOURCE ALIGNMENT
+
+One quote tuple and one contract identity per valuation. Display ask, IV, spot, as-of, pricing timestamp, rate/dividend basis, model, fee/spread convention and target/time used. No current quote displayed beside a frozen value without an EOD_REFERENCE label. If no Morning quote exists, preserve the EOD value as reference, not current. Repricing unchanged contracts must be tested using today's existing fix.
+
+Spread = (ask-bid)/((ask+bid)/2) * 100, for valid finite non-negative bid, positive ask and bid<=ask; otherwise null with reason. It is a presentation metric, not a change to production spread gates. One formula in the new view; old ask-based figures remain labelled audit.
+
+Keep structural target, volatility reach and the q50 scenario exit spot distinct. q50/q80 refer to the published distribution/test/conditioning, not 50%/80% unconditional success. Value multiple is conditional net proceeds divided by entry cost according to the pricer's cost basis, not EV. Return% = (multiple-1)*100 only when the exact basis agrees. Do not compute expected value by multiplying an in-sample hit rate by one target payoff.
+
+Daily theta and vega sensitivities need explicit premium/contract units, multiplier and IV-point convention. At expiry breakeven is not an early-exit target. Market-implied move is not directional probability. Missing OI/volume is not zero; "no position" requires a successful journal read, not a swallowed exception.
+
+7. BUILD SEQUENCE AND STOP CONDITIONS
+
+S0: Pin inspected code hashes, input revision, current row counts, source mappings and legacy behaviour. Characterise without running providers or mutating live data. Field map and acceptance plan accompany this document.
+S1: Projection writer and publication tests. Full row conservation and source ownership; no verdict/rank or model mutation. Begin with failed tests before production edits.
+S2: Fast routes, lazy indexed evidence, revision cache and independent macro/sector reads. Test malformed IDs, partial artifacts and concurrent cold requests.
+S3: Approved Sector overview UI. Implement exact source mappings; card/evidence uses pinned revision. Forecast and Macro outages cannot block available rows. Detail failure cannot close the ticker view.
+S4: Whole-run reconciliation and cold-load measurement on user machine. Reuse existing repricing/scenario fixes, compare against independent raw-input arithmetic, and verify all differences have reasons.
+S5: Manual Evening -> Morning -> Lab -> saved Interpreter/journal proving; record model authority and open defects. ACK manually chooses release. No pipeline run or Lab restart without explicit authorization at that stage. No commit/push unless asked.
+
+Stop on a newly required domain-policy change, ambiguous source owner, rejected publication identity, or unexplained row/value mutation. Continue unaffected presentation work and report the precise dependency. A Lab usability release is not certification of predictive profitability.
+
+8. ACCEPTANCE AND PERFORMANCE
+
+See AVS_AT_LAB_004_ACCEPTANCE_20261010.txt. Proposed engineering budgets: default first page <5 seconds on ACK's machine; home combined uncompressed response <5 MB; full compact projection <10 MB for the reference 2,788-row population; initial view zero wide CSV/C5/C6/C8/full-book reads. These are release tests, not trading thresholds.
+
+Measure cold/warm/concurrent cases, first usable grid, payload bytes, RSS, errors and audit latency. No claim of achieved performance until measured. A timeout produces a named failed component and retry, not a permanent Macro-loading placeholder. No infinite refresh loop; previous complete revision stays explicitly labelled.
+
+9. BASELINE CODE RECEIPT (inspected 10 October; hashes are not test results)
+
+intelligence-lab/intelligence_lab.py E5A7A810A6DFEBE520AF5328738EF03BB1BFD46EEDF6DE2D9237C5A8AB50A7E3
+intelligence-lab/static/index.html DA300CB2EDE340F248CD96721586789D0231BCF2B85B34884D3297EA5DC23226
+intelligence-lab/static/trade-card.js 86F7362611C4E511D33DD9C33C269A5F8BC2B5DD6D7B2B1C0050FB5B7DD15721
+domain/anticipated_move.py 4ABDBE485B1630DC2E07814D190A3DDF0752EC1624B5ABAC7741F4CB73407536
+domain/option_valuation.py AF1A1D4C55AC724FDD62493F0C440611C03894C31E6676BB6A007FA44A8F1B66
+morning_gate.py 280FCAEE334105478A600D6767D79DE6ACCE7BFD94F6EB096FBE0A4A6A3EB918
+
+Companion: AVS_MAP_LAB_004_FIELD_OWNERSHIP_20261010.txt
+Companion: AVS_AT_LAB_004_ACCEPTANCE_20261010.txt
+Production code and databases were not changed to create this review pack.

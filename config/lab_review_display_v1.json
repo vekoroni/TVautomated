@@ -1,0 +1,24 @@
+{
+  "version": "lab_review_display_v1",
+  "authority": "DISPLAY_ONLY",
+  "sector_aliases": {
+    "TECHNOLOGY": "Information Technology",
+    "INFORMATION TECHNOLOGY": "Information Technology",
+    "HEALTHCARE": "Health Care",
+    "HEALTH CARE": "Health Care",
+    "FINANCIAL SERVICES": "Financials",
+    "FINANCIALS": "Financials",
+    "CONSUMER CYCLICAL": "Consumer Discretionary",
+    "CONSUMER DISCRETIONARY": "Consumer Discretionary",
+    "CONSUMER DISCRETIONARY (ETF)": "Consumer Discretionary",
+    "CONSUMER DEFENSIVE": "Consumer Staples",
+    "CONSUMER STAPLES": "Consumer Staples",
+    "BASIC MATERIALS": "Materials",
+    "MATERIALS": "Materials",
+    "COMMUNICATION SERVICES": "Communication Services",
+    "REAL ESTATE": "Real Estate",
+    "INDUSTRIALS": "Industrials",
+    "ENERGY": "Energy",
+    "UTILITIES": "Utilities"
+  }
+}
