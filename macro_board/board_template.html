@@ -128,6 +128,9 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
 .mini th,.mini td{padding:4px 6px;font-size:12px}
 .mini th{position:static;cursor:default}
 .mini th:first-child,.mini td:first-child{position:static}
+#p-plan td,#p-plan th{white-space:normal;vertical-align:top}
+#p-plan .card{overflow-wrap:break-word;overflow-x:auto}
+#p-plan td.t{white-space:nowrap}
 .warnbox{border-left:3px solid var(--warn);padding:6px 10px;background:var(--surface-2);font-size:12.5px;margin:6px 0}
 @media (max-width:640px){ header.top{position:static} .brand small{display:none} nav.tabs{margin-left:0} .big{font-size:22px} }
 </style>
@@ -150,6 +153,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
   <section class="page" id="p-intel"></section>
   <section class="page" id="p-score"></section>
   <section class="page" id="p-method"></section>
+  <section class="page" id="p-plan"></section>
 </div>
 <aside class="drawer" id="drawer" aria-hidden="true"></aside>
 <div id="tip" role="tooltip"></div>
@@ -286,7 +290,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"]];
+const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"],["plan","Next session plan"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -372,6 +376,10 @@ const CSV_EXPORTS = {
     Object.entries(B.review?.scored||{}).flatMap(([t, s]) => Object.entries(s.evidence||{}).map(([h, e]) => ({t, key: s.today?.key, h, n: e.analog?.n, n_eff: e.analog?.n_eff, mean: e.analog?.mean_pct, hit: e.analog?.hit_rate, lo: e.analog?.ci_low_pct, hi: e.analog?.ci_high_pct, base: e.base?.mean_pct, lean: e.lean, holdout: e.holdout})))),
   information: () => downloadCsv("information_review", [["event","name"],["institution","institution"],["status","status"],["what_changed","what_changed"],["expected","expected"],["previous","previous"],["revised_previous","revised_previous"],["surprise","surprise"],["source","source"],["source_url","source_url"]], (B.review?.information?.items)||[]),
   disagreements: () => downloadCsv("disagreements", [["instrument","ticker"],["close_pct","close_pct"],["reading","label"],["versus","versus"]], (B.review?.disagreements?.measured)||[]),
+  plan_checklist: () => downloadCsv("next_session_checklist", [["phase","phase"],["time_et","time_et"],["item","item"],["source","source"]], (B.session_plan?.checklist)||[]),
+  plan_jigsaw: () => downloadCsv("next_session_jigsaw", [["piece","piece"],["kind","group"],["says","says"],["points","points"],["vs_tape","stance"],["freshness","freshness"],["as_of","as_of"],["tab","tab"]], (B.session_plan?.jigsaw?.pieces)||[]),
+  plan_scenarios: () => downloadCsv("next_session_scenarios", [["etf","t"],["reference","reference"],["basis","basis"],["daily_move_pct","daily_move_pct"],["implied_move_pct","implied_move_pct"],["implied_source","implied_source"],["up_trigger",r=>r.up?.trigger?.label],["up_trigger_level",r=>r.up?.trigger?.level],["up_target",r=>r.up?.target?.label],["up_target_level",r=>r.up?.target?.level],["down_trigger",r=>r.down?.trigger?.label],["down_trigger_level",r=>r.down?.trigger?.level],["down_target",r=>r.down?.target?.label],["down_target_level",r=>r.down?.target?.level],["history_leans","history_leans"],["option_pricing",r=>r.expression?.pricing],["priced_vs_history",r=>r.expression?.priced_vs_history],["runway_sessions",r=>r.expression?.runway_sessions]],
+    Object.entries(B.session_plan?.instruments||{}).map(([t, r]) => ({t, ...r}))),
 };
 document.addEventListener("click", e => { const b = e.target.closest("[data-csv]"); if (b && CSV_EXPORTS[b.dataset.csv]) CSV_EXPORTS[b.dataset.csv](); });
 
@@ -1170,8 +1178,73 @@ function renderDesk(){
   $("#dk-clear").onclick = () => { try { localStorage.removeItem(deskKey(t)); } catch(err) {} renderDesk(); };
 }
 
+/* ---------- next session plan (ACK 10 Oct 2026: the pieces in a veteran's order) ---------- */
+const PHASE_TXT = {PRE_OPEN:"Before the open", OPEN:"At the open", INTRADAY:"During the session", CLOSE:"After the close", WATCH:"Watch (unscheduled)"};
+const STANCE_CHIP = {SUPPORTS:["up","supports"], OPPOSES:["down","opposes"], NEUTRAL:["flat","neutral"], MISSING:["na","missing"]};
+const PRICING_CHIP = {CHEAP:["up","cheap vs history"], FAIR:["flat","fair"], RICH:["down","rich vs history"], UNKNOWN:["na","no pricing"]};
+function planLevel(x){ return x ? `${esc(x.label)} <b>${fmt(x.level)}</b> <span class="${cls(x.distance_pct)}">${pct(x.distance_pct,2)}</span>${isNum(x.distance_daily_moves)?` <span class="muted">· ${x.distance_daily_moves.toFixed(1)} daily moves</span>`:""}` : `<span class="muted">none mapped</span>`; }
+function planScenario(t, s){
+  const leans = x => x.history_leans_here ? ` <span class="chip up" title="The reaction history measured a lean this way">history leans here</span>` : "";
+  const ex = s.expression || {}, pc = PRICING_CHIP[ex.pricing] || PRICING_CHIP.UNKNOWN;
+  const hist = (s.history||[]).map(h => `<li><span class="muted">${esc(h.source)} · ${esc(h.horizon)}d:</span> ${esc(h.text)}</li>`).join("");
+  const basis = s.basis && s.basis !== "CLOSE" ? esc(String(s.basis).replace(/^[A-Z_]+/, m => SEG_TXT[m] || m)) : "close";
+  return `<div class="card"><h3>${esc(t)} <span class="sub">${fmt(s.reference)} · ${basis}</span></h3>
+    <div class="sub">Normal day ±${fmt(s.daily_move_pct)}%${isNum(s.implied_move_pct) ? ` · options price ±${fmt(s.implied_move_pct)}% next session (${esc(s.implied_source)})` : " · no option pricing"}</div>
+    <table class="mini" style="width:100%;margin-top:6px"><tbody>
+      <tr><td class="l"><span class="chip up">Up</span>${leans(s.up)}</td><td class="l">Trigger ${planLevel(s.up.trigger)}<br>Target ${planLevel(s.up.target)}${s.up.next_mapped ? `<div class="sub">next mapped level ${planLevel(s.up.next_mapped)}</div>` : ""}<div class="sub">${esc(s.up.expression)} · the idea is wrong below ${s.up.invalidation ? esc(s.up.invalidation.label) + " " + fmt(s.up.invalidation.level) : "—"}</div></td></tr>
+      <tr><td class="l"><span class="chip flat">Base</span>${leans(s.base)}</td><td class="l">${esc(s.base.text)}</td></tr>
+      <tr><td class="l"><span class="chip down">Down</span>${leans(s.down)}</td><td class="l">Trigger ${planLevel(s.down.trigger)}<br>Target ${planLevel(s.down.target)}${s.down.next_mapped ? `<div class="sub">next mapped level ${planLevel(s.down.next_mapped)}</div>` : ""}<div class="sub">${esc(s.down.expression)} · the idea is wrong above ${s.down.invalidation ? esc(s.down.invalidation.label) + " " + fmt(s.down.invalidation.level) : "—"}</div></td></tr>
+    </tbody></table>
+    <div style="margin-top:6px"><b>Expression</b> <span class="chip ${pc[0]}">${esc(pc[1])}</span>
+      <span class="sub">implied ${pct(ex.implied_move_pct)} vs history ${pct(ex.analog_mean_abs_pct)} over ${esc(ex.horizon)}d${isNum(ex.priced_vs_history)?" ("+ex.priced_vs_history.toFixed(2)+"×)":""}${ex.quote_date?" · quoted "+esc(ex.quote_date):""} · IV rank ${fmt(ex.iv_rank_pct,0)} · IV−HV ${fmt(ex.iv_minus_hv_pp,1)} pts · runway ≥ ${esc(ex.runway_sessions)} sessions</span>
+      <div class="note">${esc(ex.text||"")}</div></div>
+    <ul class="note" style="padding-left:16px;margin-top:6px">${hist || "<li class='muted'>No history.</li>"}</ul></div>`;
+}
+function renderPlan(){
+  const P = B.session_plan;
+  if (!P) { $("#p-plan").innerHTML = `<h2>Next session plan</h2><div class="card muted">Not in this build.</div>`; return; }
+  const C = P.call || {}, J = P.jigsaw || {pieces:[], agreement:{}}, O = P.opportunity || {};
+  const keyTxt = {UP_BROAD:"Up, broad", UP_NARROW:"Up, narrow", UP_UNKNOWN:"Up", DOWN_BROAD:"Down, broad", DOWN_NARROW:"Down, narrow", DOWN_UNKNOWN:"Down", MIXED:"Mixed", UNKNOWN:"Unknown"};
+  const kk = String(C.key||"").startsWith("UP") ? "up" : String(C.key||"").startsWith("DOWN") ? "down" : "flat";
+  const agg = g => { const a = (J.agreement||{})[g] || {}; return `<span class="chip up">${a.SUPPORTS||0} support</span> <span class="chip down">${a.OPPOSES||0} oppose</span> <span class="chip flat">${a.NEUTRAL||0} neutral</span> <span class="chip na">${a.MISSING||0} missing</span>`; };
+  const scen = Object.entries(P.instruments||{}).map(([t, s]) => planScenario(t, s)).join("");
+  const crow = (P.checklist||[]).map(i => `<tr><td class="l">${esc(PHASE_TXT[i.phase]||i.phase)}</td><td class="l t">${esc(i.time_et||"")}</td><td class="l">${esc(i.item)}</td><td class="l muted">${esc(i.source||"")}</td></tr>`).join("");
+  const lead = Object.entries(O.leadership||{}).map(([h, w]) => `<span class="chip ${w.leader==="QQQ"?"up":w.leader==="SPY"?"flat":"na"}">${esc(h)}d: ${esc(w.leader||"—")}${isNum(w.qqq_minus_spy_pp)?" ("+(w.qqq_minus_spy_pp>0?"+":"")+w.qqq_minus_spy_pp.toFixed(1)+" pp)":""}</span>`).join(" ");
+  const secList = (rows, k) => (rows||[]).map(r => `<span class="chip ${k}" title="${esc(Object.entries(r.labels||{}).map(([h,l])=>h+"d "+(l||"").replace(/_/g," ")).join(" · "))}">${esc(r.ticker)}${isNum(r.relative_pp)?" "+(r.relative_pp>0?"+":"")+r.relative_pp.toFixed(1)+" pp":""}</span>`).join(" ") || `<span class="muted">none</span>`;
+  const prow = (O.pipeline||[]).map(c => `<tr><td class="l"><b>${esc(c.ticker)}</b></td><td class="l">${esc(c.direction)}</td><td class="l">${esc(c.verdict||"")}</td><td class="l">${c.agrees_with_tape===true?'<span class="chip up">with the tape</span>':c.agrees_with_tape===false?'<span class="chip down">against the tape</span>':'<span class="chip na">tape mixed</span>'}</td></tr>`).join("") || `<tr><td class="l muted" colspan="4">No pipeline proposals on board ETFs.</td></tr>`;
+  const vrow = (P.change_view||[]).map(v => `<li>${esc(v.text)} <span class="muted">· ${esc(v.source)}</span></li>`).join("") || `<li class="muted">Nothing listed.</li>`;
+  const jrow = (J.pieces||[]).map(x => { const sc = STANCE_CHIP[x.stance] || STANCE_CHIP.MISSING;
+    return `<tr><td class="l"><b>${esc(x.piece)}</b></td><td class="l muted">${esc({MEASURED:"measured", MODEL:"model", LLM:"LLM"}[x.group]||x.group)}</td><td class="l">${words(x.says)}</td><td class="l">${esc(String(x.points||"").toLowerCase())}</td><td class="l"><span class="chip ${sc[0]}">${sc[1]}</span></td><td class="l ${x.freshness==="FRESH"?"muted":""}">${esc(x.freshness)}${x.as_of?" · "+esc(x.as_of):""}</td><td class="l muted">${esc(x.tab||"")}</td></tr>`; }).join("");
+  const U = P.unresolved || {};
+  $("#p-plan").innerHTML = `<h2>Next session plan <span class="sub">${esc(P.as_of_session)} close → ${esc(P.next_session||"next session")} · research for the human, never a score or a gate</span></h2>
+    <div class="card"><h3>The call <span class="chip ${kk}">${esc(keyTxt[C.key]||C.key)}</span></h3>
+      <ul style="padding-left:16px;margin:6px 0">${(C.sentences||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <div style="margin-top:6px"><b>Approach.</b> ${esc(C.approach||"")}</div>
+      ${C.conflict ? `<div class="note" style="color:var(--serious);margin-top:6px">${esc(C.conflict)}</div>` : ""}
+      ${U.verdict || U.counter_case ? `<div class="note">Unresolved (published): ${words(U.verdict||"")}${U.counter_case?" · "+esc(U.counter_case):""}</div>` : ""}</div>
+    <h2 style="margin-top:22px">Scenarios <span class="sub">triggers are the board's own levels around the current price · a scenario is marked only where history measured a lean</span> ${csvBtn("plan_scenarios")}</h2>
+    <div class="grid g-focus">${scen || `<div class="card muted">No scenarios (no levels or prices).</div>`}</div>
+    <h2 style="margin-top:22px">Checklist for ${esc(P.next_session||"the next session")} <span class="sub">in time order</span> ${csvBtn("plan_checklist")}</h2>
+    <div class="card"><table class="mini" style="width:100%"><thead><tr><th class="l">When</th><th class="l">ET</th><th class="l">What to check</th><th class="l">Source</th></tr></thead><tbody>${crow}</tbody></table></div>
+    <div class="grid g-2" style="margin-top:22px">
+      <div class="card"><h3>Where the opportunity is</h3>
+        <div class="pill-row"><span class="sub">QQQ vs SPY:</span> ${lead || '<span class="muted">—</span>'}</div>
+        <div class="pill-row" style="margin-top:6px"><span class="sub">Strength on every window:</span> ${secList(O.strength, "up")}</div>
+        <div class="pill-row" style="margin-top:6px"><span class="sub">Weakness on every window:</span> ${secList(O.weakness, "down")}</div>
+        <div class="pill-row" style="margin-top:6px"><span class="sub">Defensive (outperforming while falling):</span> ${secList(O.defensive, "flat")}</div>
+        <table class="mini" style="width:100%;margin-top:8px"><thead><tr><th class="l">Pipeline ETF</th><th class="l">Side</th><th class="l">Verdict</th><th class="l">vs tape</th></tr></thead><tbody>${prow}</tbody></table></div>
+      <div class="card"><h3>What would change the view</h3><ul style="padding-left:16px;margin:6px 0">${vrow}</ul></div>
+    </div>
+    <h2 style="margin-top:22px">The jigsaw <span class="sub">every input, what it points to, and whether it agrees with the tape (${esc(String(J.tape||"").toLowerCase())})</span> ${csvBtn("plan_jigsaw")}</h2>
+    <div class="card">
+      <div class="pill-row"><span class="sub" style="min-width:90px">Measured:</span> ${agg("MEASURED")}</div>
+      <div class="pill-row" style="margin-top:4px"><span class="sub" style="min-width:90px">Models:</span> ${agg("MODEL")}</div>
+      <div class="pill-row" style="margin-top:4px"><span class="sub" style="min-width:90px">LLM narratives:</span> ${agg("LLM")}</div>
+      <table class="mini" style="width:100%;margin-top:8px"><thead><tr><th class="l">Piece</th><th class="l">Kind</th><th class="l">Says</th><th class="l">Points to</th><th class="l">vs tape</th><th class="l">Fresh</th><th class="l">Tab</th></tr></thead><tbody>${jrow}</tbody></table>
+      <div class="note">${esc(J.note||"")} Missing is shown as missing, never as neutral.</div></div>`;
+}
 function renderAll(){
-  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod();
+  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod(); renderPlan();
 }
 renderAll();
 let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}

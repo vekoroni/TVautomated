@@ -570,5 +570,52 @@
     },
     "default_horizon": "20",
     "rationale": "Checks describe evidence and never decide. Room = reward left to the pipeline target / risk left to its invalidation from today's close (>=1 ok, 0.5-1 caution, <0.5 against). Option price: priced-vs-history <=1.1 ok, >1.4 against; IV rank >=80 or straddle spread >5% of mid = caution. All PROVISIONAL."
+  },
+  "session_plan": {
+    "focus": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA"
+    ],
+    "tape_majority": 3,
+    "gap_daily_moves": 0.5,
+    "history_horizons": [
+      "1",
+      "5"
+    ],
+    "expression_horizon": "5",
+    "options_cheap_below": 0.9,
+    "options_rich_above": 1.1,
+    "runway_multiple": 2.0,
+    "usmi_risk_off_min": 60,
+    "usmi_risk_on_max": 40,
+    "strength_windows": [
+      "5",
+      "20"
+    ],
+    "max_sectors": 4,
+    "max_pipeline": 8,
+    "max_unscheduled": 3,
+    "max_counter_conditions": 4,
+    "max_target_daily_moves": 5.0,
+    "approach": {
+      "UP_BROAD": "Buyers accepted the news and participation is broad. Work with the move: add on pullbacks that hold the first level below, not on gaps into resistance. The first level below is the line for the idea.",
+      "UP_NARROW": "Buyers accepted the news, but a few large names carried it. Let the open confirm before adding; favour the leaders over the laggards and keep size smaller until equal weight joins in. A close back below the first level below is the warning.",
+      "UP_UNKNOWN": "Buyers accepted the news; breadth is not measured. Let the first hour confirm before adding; the first level below is the line.",
+      "DOWN_BROAD": "Sellers were accepted across the board. Respect the selling: do not buy the first bounce until it reclaims the first level above; long puts or standing aside fit better than catching the low.",
+      "DOWN_NARROW": "Selling was accepted but concentrated in a few large names. Avoid or hedge the weak groups; treat it as a market-wide turn only if equal weight follows.",
+      "DOWN_UNKNOWN": "Sellers were accepted; breadth is not measured. Wait for the first hour; the first level above is the line.",
+      "MIXED": "The index ETFs disagreed: no clean acceptance either way. Treat it as a two-way market: trade the edges of the range with smaller size and wait for a level to break with breadth before committing.",
+      "UNKNOWN": "Not enough reaction data to read the tape; rely on the levels and the checklist."
+    },
+    "expression_text": {
+      "CHEAP": "Options price less movement than history delivered after similar days: long calls/puts are reasonably priced for the move; pick an expiry beyond the runway.",
+      "FAIR": "Options price about what history delivered: long premium needs the move inside the runway; shares carry no time decay.",
+      "RICH": "Options price more movement than history delivered: premium is expensive; shares or a smaller premium position fit better.",
+      "UNKNOWN": "No current option pricing on the board: check the chain before choosing an expression."
+    },
+    "conflict_note": "Published narratives disagree with what the market measured ({pieces}). The tape is the measured fact; treat the narratives as the risk to watch, not the call.",
+    "rationale": "Added 2026-10-10 (ACK: the board is confusing; a veteran-trader synthesis for the next session, all pieces fitting together; sentences from measured fields, not an LLM). Tape = which way the index ETFs closed (a rejected down gap counts as buyers); 3 of 4 = a direction, else MIXED. Scenario triggers are the nearest board levels around the current price, targets the next level (else one implied move; a next level more than 5 daily moves away is shown as the next mapped level, not the target). A scenario is marked only where the reaction history measured a lean. Options CHEAP below 0.9x / RICH above 1.1x the move history delivered (straddle vs analog mean |move|, 5-session horizon); runway = 2x the horizon (ACK: buy more time than the move). US Money Index score >=60 reads risk-off, <=40 risk-on. Agreement is a count, not a probability. Wording is editable here. Display only; all PROVISIONAL."
   }
 }

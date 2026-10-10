@@ -40,6 +40,7 @@ from . import market_prices as mkt
 from . import opportunity as opty
 from . import options as opt
 from . import review as rvw
+from . import session_plan as splan
 from . import rotation as rot
 from . import tastytrade_metrics as ttm
 from . import scorecard as sc
@@ -373,6 +374,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "momentum": config["momentum"], "desk_card": config["desk_card"],
                      "decision_points": {k: v for k, v in config["decision_points"].items() if k != "fomc"},
                      "opportunity": config["opportunity"], "review": config["review"],
+                     "session_plan": config["session_plan"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -384,6 +386,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     payload["decision_points"] = build_decision_points(payload, config, holdings_payload, external, sessions,
                                                        output_dir, refresh=refresh, as_of=as_of)
     payload["desk_cards"] = build_desk_cards(payload, config)
+    payload["session_plan"] = splan.build(payload, config["session_plan"])
+    print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
+          f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
     payload = _clean(payload)
 
     output_dir.mkdir(parents=True, exist_ok=True)
