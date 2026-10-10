@@ -257,6 +257,25 @@ def load_pipeline_proposals(runs_dir: Path, relative_file: str, columns: Sequenc
             "written_utc": modified.isoformat(timespec="seconds"), "rows": rows}
 
 
+def load_pipeline_candidates(runs_dir: Path, relative_file: str, columns: Sequence[str], *, sides: Sequence[str],
+                             limit: int) -> dict:
+    """The newest run's candidates in the pipeline's own ranked order (read-only), CALL/PUT only."""
+    if not runs_dir.exists():
+        return {"status": "MISSING", "rows": []}
+    runs = sorted((p for p in runs_dir.iterdir() if p.is_dir() and (p / relative_file).exists()), key=lambda p: p.name, reverse=True)
+    if not runs:
+        return {"status": "MISSING", "rows": []}
+    path = runs[0] / relative_file
+    head = pd.read_csv(path, nrows=0)
+    keep = [c for c in ["ticker", *columns] if c in head.columns]
+    frame = pd.read_csv(path, usecols=keep, low_memory=False)
+    frame["rank"] = range(1, len(frame) + 1)
+    frame = frame[frame["canonical_direction"].isin(list(sides))].drop_duplicates(subset=["ticker"], keep="first").head(int(limit))
+    modified = pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC")
+    return {"status": "OK", "run_id": runs[0].name, "file": str(path),
+            "written_utc": modified.isoformat(timespec="seconds"), "rows": records(frame[["rank", *keep]])}
+
+
 # --- input archive (reproducible board decisions, R7) -------------------------------------
 
 def archive_inputs(paths: Mapping[str, Path | None], target_dir: Path) -> dict:

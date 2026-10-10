@@ -438,6 +438,22 @@ def jigsaw(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mapping) ->
     add("options", "Option pricing (SPY)", "MEASURED", "NEUTRAL" if ex["pricing"] != "UNKNOWN" else "MISSING",
         f"{ex['pricing']}: implied vs history {ex['priced_vs_history']}; shapes the expression, not the direction.", tab="ETF matrix")
 
+    mi_block = payload.get("money_index") or {}
+    mi_read = mi_block.get("reading") or {}
+    h_mi = str(cfg.get("check_horizon", "5"))
+    spy_band = ((((mi_block.get("per_etf") or {}).get("SPY") or {}).get("band_evidence") or {}).get(h_mi) or {})
+    if mi_read.get("score") is None:
+        add("money_index_local", "Money Index (measured here)", "MEASURED", "MISSING",
+            f"No measured score (missing: {', '.join(mi_read.get('missing') or []) or 'all'}).", tab="Macro intelligence")
+    else:
+        lean = spy_band.get("lean")
+        a_, b_ = spy_band.get("analog") or {}, spy_band.get("base") or {}
+        add("money_index_local", "Money Index (measured here)", "MEASURED",
+            {"UP": "UP", "DOWN": "DOWN"}.get(lean, "NEUTRAL" if lean else "MISSING"),
+            f"Risk-off {mi_read.get('score')}/100 ({mi_read.get('band')}); after past {mi_read.get('band')} sessions SPY next "
+            f"{h_mi}d averaged {_pct(_num(a_.get('mean_pct')))} vs {_pct(_num(b_.get('mean_pct')))} on all days.",
+            tab="Macro intelligence")
+
     p = (payload.get("overnight") or {})
     if p.get("status") in (None, "MISSING", "UNREADABLE") or p.get("us_reference_session") != payload.get("as_of_session"):
         add("overnight", "Overnight capture", "MEASURED", "MISSING",
@@ -525,6 +541,185 @@ def _conflict(jig: Mapping, cfg: Mapping) -> str | None:
     return str(cfg["conflict_note"]).format(pieces=", ".join(names))
 
 
+# -- 7. per ETF, with correlation, and the pipeline's candidates (ACK 10 Oct 2026) ------------------------------
+
+SIDE = {"CALL": "UP", "PUT": "DOWN"}
+
+
+def _check(name: str, state: str, text: str) -> dict:
+    return {"check": name, "state": state, "text": text}
+
+
+def _versus(direction: str | None, side: str) -> str:
+    if direction in (None, "UNKNOWN", "MISSING"):
+        return "MISSING"
+    if direction in ("NONE", "NEUTRAL", "MIXED", "NO_CLEAR_LEAN"):
+        return "NEUTRAL"
+    return "WITH" if direction == side else "AGAINST"
+
+
+def _alignment(checks: list) -> str:
+    w = sum(1 for c in checks if c["state"] == "WITH")
+    a = sum(1 for c in checks if c["state"] == "AGAINST")
+    if a > w:
+        return "AGAINST"
+    return "ALIGNED" if a == 0 and w >= 2 else "MIXED"
+
+
+PIPELINE_LEVELS = ("pipeline_target", "pipeline_invalidation")
+
+
+def _market_room(room: Mapping) -> dict:
+    """The room with the nearest market levels only: a pipeline's own target or invalidation is not a level the
+    market has to confirm (10 Oct 2026 real build: 'XBI to clear pipeline target')."""
+    if not room:
+        return {}
+    ref, daily = _num(room.get("current")) or _num(room.get("close")), _num(room.get("daily_move_pct"))
+    levels = {n: _num(v) for n, v in (room.get("levels") or {}).items() if n not in PIPELINE_LEVELS and _num(v)}
+    if ref is None or not levels:
+        keep = lambda x: x if x and x.get("name") not in PIPELINE_LEVELS else None
+        return {**room, "above": keep(room.get("above")), "below": keep(room.get("below"))}
+    above = min(((n, v) for n, v in levels.items() if v > ref), key=lambda x: x[1], default=None)
+    below = max(((n, v) for n, v in levels.items() if v < ref), key=lambda x: x[1], default=None)
+    return {**room, "above": _level(*above, ref, daily) if above else None, "below": _level(*below, ref, daily) if below else None}
+
+
+def _etf_read(t: str, payload: Mapping, cfg: Mapping) -> dict:
+    """What the board knows about one ETF, independent of any proposal."""
+    etf = (payload.get("etfs") or {}).get(t) or {}
+    reaction = ((payload.get("etf_reactions") or {}).get(t) or {})
+    per = (((payload.get("money_index") or {}).get("per_etf") or {}).get(t) or {})
+    h = str(cfg["check_horizon"])
+    be = ((per.get("band_evidence") or {}).get(h) or {})
+    rel = None
+    for row in ((payload.get("opportunity") or {}).get("sectors") or []):
+        if row.get("ticker") == t:
+            rel = ((row.get("windows") or {}).get(h) or {}).get("label")
+    return {"ticker": t, "etf": etf, "metrics": etf.get("metrics") or {}, "reaction": reaction.get("key") or "UNKNOWN",
+            "closed": CLOSED.get(reaction.get("key"), "UNKNOWN"), "close_pct": reaction.get("close_pct"),
+            "room": _market_room((payload.get("etf_levels") or {}).get(t) or {}), "per": per,
+            "band_lean": be.get("lean") if be else None, "band_evidence": be or None,
+            "macro_lean": (((etf.get("evidence") or {}).get(h) or {}).get("lean")), "relative": rel}
+
+
+def _checks(read: Mapping, side: str, tp: Mapping, cfg: Mapping, *, own: str) -> list:
+    """Evidence for or against a proposal's side; each check says what was measured."""
+    h = str(cfg["check_horizon"])
+    t = read["ticker"]
+    out = [_check(f"{own}_tape", _versus(read["closed"], side) if read["reaction"] != "UNKNOWN" else "MISSING",
+                  f"{t} {read['reaction'].replace('_', ' ').lower()} ({_pct(_num(read['close_pct']))})."),
+           _check("market_tape", _versus(tp["direction"], side), f"Index ETFs closed {tp['direction'].lower()}.")]
+    lean = read["band_lean"]
+    be = read["band_evidence"] or {}
+    a, b = be.get("analog") or {}, be.get("base") or {}
+    out.append(_check("money_index_band", "MISSING" if not lean else _versus(lean, side),
+                      (f"After past sessions in today's Money Index band, {t} next {h}d averaged {_pct(_num(a.get('mean_pct')))} "
+                       f"vs {_pct(_num(b.get('mean_pct')))} on all days ({lean.replace('_', ' ').lower()}).") if lean else
+                      f"No measured Money Index history for {t}."))
+    ml = read["macro_lean"]
+    out.append(_check("macro_analogs", "MISSING" if not ml else _versus(ml, side) if ml in ("UP", "DOWN") else "NEUTRAL",
+                      f"Macro-analog lean {h}d: {(ml or 'MISSING').replace('_', ' ').lower()}."))
+    if read["relative"]:
+        rel_dir = {"OUTPERFORMING_AND_RISING": "UP", "UNDERPERFORMING_AND_FALLING": "DOWN"}.get(read["relative"], "NEUTRAL")
+        out.append(_check("relative_strength", _versus(rel_dir, side),
+                          f"{t} vs SPY {h}d: {read['relative'].replace('_', ' ').lower()}."))
+    room = read["room"]
+    obstacle = (room.get("above") if side == "UP" else room.get("below")) if room else None
+    if obstacle and obstacle.get("distance_daily_moves") is not None:
+        near = obstacle["distance_daily_moves"] < float(cfg["room_min_daily_moves"])
+        out.append(_check("room", "AGAINST" if near else "WITH",
+                          f"{LABELS.get(obstacle.get('name'), obstacle.get('name'))} {obstacle['level']:.2f} is "
+                          f"{obstacle['distance_daily_moves']} daily moves {'above' if side == 'UP' else 'below'}."))
+    else:
+        out.append(_check("room", "MISSING", "No mapped level in the trade's direction."))
+    return out
+
+
+def _action(alignment: str, side: str | None, read: Mapping, cfg: Mapping, etf_name: str) -> str:
+    texts = cfg.get("action_text") or {}
+    room = read.get("room") or {}
+    if alignment == "ALIGNED":
+        lvl = room.get("below") if side == "UP" else room.get("above")
+    else:
+        lvl = room.get("above") if side == "UP" else room.get("below")
+    level = f"{LABELS.get(lvl.get('name'), lvl.get('name'))} {lvl['level']:.2f}" if lvl else "its nearest level"
+    confirm, fail = ("clear", "loses") if side == "UP" else ("break below", "climbs back above")
+    return str(texts.get(alignment, "")).format(etf=etf_name, level=level, confirm=confirm, fail=fail)
+
+
+def etf_rows(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mapping) -> list:
+    spy = instruments.get("SPY") or {}
+    down_t = ((spy.get("down") or {}).get("target") or {}).get("distance_pct")
+    up_t = ((spy.get("up") or {}).get("target") or {}).get("distance_pct")
+    names = list(dict.fromkeys(list((payload.get("etfs") or {}).keys()) + list((payload.get("etf_levels") or {}).keys())))
+    rows = []
+    for t in names:
+        read = _etf_read(t, payload, cfg)
+        if read["metrics"].get("status") == "MISSING":
+            continue
+        per = read["per"]
+        beta = _num(((per.get("spy") or {}).get("beta")))
+        prop = (read["etf"].get("pipeline") or {})
+        side = SIDE.get(prop.get("canonical_direction"))
+        checks = _checks(read, side, tp, cfg, own="own") if side else []
+        alignment = _alignment(checks) if side else "NO_PROPOSAL"
+        room = read["room"]
+        rows.append({"ticker": t, "reaction": read["reaction"], "close_pct": read["close_pct"],
+                     "ret_5d": read["metrics"].get("ret_5d"), "ret_20d": read["metrics"].get("ret_20d"),
+                     "current": room.get("current"), "basis": room.get("current_basis"), "daily_move_pct": room.get("daily_move_pct"),
+                     "above": room.get("above"), "below": room.get("below"),
+                     "beta_spy": beta, "corr_spy": _num((per.get("spy") or {}).get("corr")),
+                     "beta_qqq": _num((per.get("qqq") or {}).get("beta")), "corr_qqq": _num((per.get("qqq") or {}).get("corr")),
+                     "ic": _num((per.get("ic") or {}).get("ic")),
+                     "if_spy_down_target_pct": round(beta * down_t, 2) if beta is not None and down_t is not None else None,
+                     "if_spy_up_target_pct": round(beta * up_t, 2) if beta is not None and up_t is not None else None,
+                     "implied_note": "beta estimate from 60 sessions of daily returns, not a forecast",
+                     "band_lean": read["band_lean"], "macro_lean": read["macro_lean"], "relative": read["relative"],
+                     "pipeline": {"direction": prop.get("canonical_direction"), "verdict": prop.get("options_verdict")} if prop else None,
+                     "checks": checks, "alignment": alignment,
+                     "action": _action(alignment, side, read, cfg, t) if side else (cfg.get("action_text") or {}).get("NO_PROPOSAL")})
+    return rows
+
+
+def candidate_rows(payload: Mapping, tp: Mapping, cfg: Mapping) -> list:
+    """The pipeline's candidates (mostly stocks) read through their sector ETF and their measured link to it."""
+    cands = ((payload.get("pipeline_candidates") or {}).get("rows") or [])[: int(cfg["max_candidates"])]
+    board = set((payload.get("etfs") or {}).keys()) | set((payload.get("etf_levels") or {}).keys())
+    texts = cfg.get("action_text") or {}
+    out = []
+    for c in cands:
+        side = SIDE.get(c.get("canonical_direction"))
+        etf = c.get("sector_etf")
+        link = c.get("link") or {}
+        corr = _num(link.get("corr"))
+        row = {"rank": c.get("rank"), "ticker": c.get("ticker"), "direction": c.get("canonical_direction"),
+               "verdict": c.get("options_verdict"), "horizon_bucket": c.get("horizon_bucket"), "sector_etf": etf,
+               "entry_spot": c.get("entry_spot"), "target_spot": c.get("target_spot"), "invalidation_spot": c.get("invalidation_spot"),
+               "link_corr": corr, "link_beta": _num(link.get("beta")),
+               "weak_link": corr is None or corr < float(cfg["min_link_corr"])}
+        if not side:
+            row.update({"checks": [], "alignment": "NO_PROPOSAL", "action": texts.get("NO_PROPOSAL")})
+        elif not etf or etf not in board:
+            row.update({"checks": [], "alignment": "NO_SECTOR_READ", "action": texts.get("NO_SECTOR_READ")})
+        else:
+            read = _etf_read(etf, payload, cfg)
+            checks = _checks(read, side, tp, cfg, own="sector")
+            checks.append(_check("link", "NEUTRAL",
+                                 f"{c.get('ticker')} vs {etf}: correlation {corr if corr is not None else 'n/a'} over "
+                                 f"{link.get('n') or 0} sessions" + (" - weak link, the sector read carries little." if row["weak_link"] else ".")))
+            if row["weak_link"]:
+                market = next(c["state"] for c in checks if c["check"] == "market_tape")
+                alignment = "STOCK_SPECIFIC"
+                action = str(texts.get("STOCK_SPECIFIC", "")).format(
+                    etf=etf, market={"WITH": "with it", "AGAINST": "against", "NEUTRAL": "mixed"}.get(market, "unknown"))
+            else:
+                alignment = _alignment(checks)
+                action = _action(alignment, side, read, cfg, etf)
+            row.update({"checks": checks, "alignment": alignment, "action": action})
+        out.append(row)
+    return out
+
+
 # -- the plan ---------------------------------------------------------------------------------------------------
 
 def build(payload: Mapping, cfg: Mapping) -> dict:
@@ -549,5 +744,8 @@ def build(payload: Mapping, cfg: Mapping) -> dict:
             "opportunity": opportunity(payload, tp, cfg),
             "change_view": change_view(payload, instruments, tp, cfg),
             "jigsaw": jig,
+            "etfs": etf_rows(payload, tp, instruments, cfg),
+            "candidates": candidate_rows(payload, tp, cfg),
+            "candidates_source": {k: (payload.get("pipeline_candidates") or {}).get(k) for k in ("status", "run_id", "file", "written_utc")},
             "unresolved": (review.get("unresolved") or {}),
             "authority": "RESEARCH_ONLY: display for the human; never a score, rank or gate."}

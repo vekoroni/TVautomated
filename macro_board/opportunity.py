@@ -153,9 +153,20 @@ def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons
           gex_records: Sequence[Mapping], proposals: Mapping, room_tickers: Sequence[str], cfg: Mapping,
           highs: pd.DataFrame | None = None, lows: pd.DataFrame | None = None, latest: Mapping | None = None) -> dict:
     """The section 3 payload: market, sectors, constituents and price location."""
+    room = rooms(metrics=metrics, closes=closes, gex_records=gex_records, proposals=proposals, tickers=room_tickers,
+                 highs=highs, lows=lows, latest=latest)
+    return {"leadership": leadership(metrics, holdings, horizons, cfg),
+            "sectors": sector_rows(metrics, sectors, holdings, horizons, cfg),
+            "room": room, "settings": dict(cfg)}
+
+
+def rooms(*, metrics: Mapping, closes: pd.DataFrame, gex_records: Sequence[Mapping], proposals: Mapping,
+          tickers: Sequence[str], highs: pd.DataFrame | None = None, lows: pd.DataFrame | None = None,
+          latest: Mapping | None = None) -> dict:
+    """Price room for each ticker (also used per ETF by the Next session plan)."""
     gex = gex_levels(gex_records)
     room = {}
-    for t in room_tickers:
+    for t in tickers:
         if t not in closes.columns:
             continue
         levels = dict(gex.get(t) or {})
@@ -169,6 +180,4 @@ def build(*, metrics: Mapping, closes: pd.DataFrame, holdings: Mapping, horizons
                                 current=((latest or {}).get(t) or {}).get("current"),
                                 current_basis=_basis((latest or {}).get(t))),
                    "gex_as_of": None if gex_as_of is None else str(gex_as_of)}
-    return {"leadership": leadership(metrics, holdings, horizons, cfg),
-            "sectors": sector_rows(metrics, sectors, holdings, horizons, cfg),
-            "room": room, "settings": dict(cfg)}
+    return room

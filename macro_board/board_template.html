@@ -128,8 +128,8 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
 .mini th,.mini td{padding:4px 6px;font-size:12px}
 .mini th{position:static;cursor:default}
 .mini th:first-child,.mini td:first-child{position:static}
-#p-plan td,#p-plan th{white-space:normal;vertical-align:top}
-#p-plan .card{overflow-wrap:break-word;overflow-x:auto}
+#p-plan td,#p-plan th,#mi td,#mi th{white-space:normal;vertical-align:top}
+#p-plan .card,#mi .card{overflow-wrap:break-word;overflow-x:auto}
 #p-plan td.t{white-space:nowrap}
 .warnbox{border-left:3px solid var(--warn);padding:6px 10px;background:var(--surface-2);font-size:12.5px;margin:6px 0}
 @media (max-width:640px){ header.top{position:static} .brand small{display:none} nav.tabs{margin-left:0} .big{font-size:22px} }
@@ -376,6 +376,9 @@ const CSV_EXPORTS = {
     Object.entries(B.review?.scored||{}).flatMap(([t, s]) => Object.entries(s.evidence||{}).map(([h, e]) => ({t, key: s.today?.key, h, n: e.analog?.n, n_eff: e.analog?.n_eff, mean: e.analog?.mean_pct, hit: e.analog?.hit_rate, lo: e.analog?.ci_low_pct, hi: e.analog?.ci_high_pct, base: e.base?.mean_pct, lean: e.lean, holdout: e.holdout})))),
   information: () => downloadCsv("information_review", [["event","name"],["institution","institution"],["status","status"],["what_changed","what_changed"],["expected","expected"],["previous","previous"],["revised_previous","revised_previous"],["surprise","surprise"],["source","source"],["source_url","source_url"]], (B.review?.information?.items)||[]),
   disagreements: () => downloadCsv("disagreements", [["instrument","ticker"],["close_pct","close_pct"],["reading","label"],["versus","versus"]], (B.review?.disagreements?.measured)||[]),
+  plan_etfs: () => downloadCsv("next_session_etf_by_etf", [["etf","ticker"],["reaction","reaction"],["close_pct","close_pct"],["current","current"],["above",r=>r.above?.name],["above_level",r=>r.above?.level],["above_daily_moves",r=>r.above?.distance_daily_moves],["below",r=>r.below?.name],["below_level",r=>r.below?.level],["below_daily_moves",r=>r.below?.distance_daily_moves],["beta_spy","beta_spy"],["corr_spy","corr_spy"],["beta_qqq","beta_qqq"],["corr_qqq","corr_qqq"],["if_spy_down_target_pct","if_spy_down_target_pct"],["if_spy_up_target_pct","if_spy_up_target_pct"],["money_index_band_lean","band_lean"],["macro_lean","macro_lean"],["relative","relative"],["pipeline_side",r=>r.pipeline?.direction],["pipeline_verdict",r=>r.pipeline?.verdict],["reading","alignment"],["checks",r=>(r.checks||[]).map(c=>c.check+":"+c.state).join("; ")],["action","action"]], (B.session_plan?.etfs)||[]),
+  plan_candidates: () => downloadCsv("next_session_pipeline_candidates", [["rank","rank"],["ticker","ticker"],["side","direction"],["verdict","verdict"],["horizon","horizon_bucket"],["sector_etf","sector_etf"],["link_corr","link_corr"],["link_beta","link_beta"],["weak_link","weak_link"],["entry_spot","entry_spot"],["target_spot","target_spot"],["invalidation_spot","invalidation_spot"],["reading","alignment"],["checks",r=>(r.checks||[]).map(c=>c.check+":"+c.state).join("; ")],["action","action"]], (B.session_plan?.candidates)||[]),
+  money_index: () => downloadCsv("money_index_measured", [["component","label"],["basis","basis"],["value",r=>((B.money_index?.reading?.components||[]).find(x=>x.key===r.key)||{}).value],["percentile",r=>((B.money_index?.reading?.components||[]).find(x=>x.key===r.key)||{}).percentile],["local_points","local_points"],["weight","weight"],["published_points","published_points"],["published_status","published_status"]], (B.money_index?.comparison?.rows)||[]),
   plan_checklist: () => downloadCsv("next_session_checklist", [["phase","phase"],["time_et","time_et"],["item","item"],["source","source"]], (B.session_plan?.checklist)||[]),
   plan_jigsaw: () => downloadCsv("next_session_jigsaw", [["piece","piece"],["kind","group"],["says","says"],["points","points"],["vs_tape","stance"],["freshness","freshness"],["as_of","as_of"],["tab","tab"]], (B.session_plan?.jigsaw?.pieces)||[]),
   plan_scenarios: () => downloadCsv("next_session_scenarios", [["etf","t"],["reference","reference"],["basis","basis"],["daily_move_pct","daily_move_pct"],["implied_move_pct","implied_move_pct"],["implied_source","implied_source"],["up_trigger",r=>r.up?.trigger?.label],["up_trigger_level",r=>r.up?.trigger?.level],["up_target",r=>r.up?.target?.label],["up_target_level",r=>r.up?.target?.level],["down_trigger",r=>r.down?.trigger?.label],["down_trigger_level",r=>r.down?.trigger?.level],["down_target",r=>r.down?.target?.label],["down_target_level",r=>r.down?.target?.level],["history_leans","history_leans"],["option_pricing",r=>r.expression?.pricing],["priced_vs_history",r=>r.expression?.priced_vs_history],["runway_sessions",r=>r.expression?.runway_sessions]],
@@ -799,6 +802,37 @@ function renderMap(){
 /* ---------- intelligence ---------- */
 function kv(obj, keys){ return `<dl class="kv">${keys.map(([k,l,f]) => `<dt>${esc(l)}</dt><dd>${f ? f(obj?.[k]) : words(obj?.[k])}</dd>`).join("")}</dl>`; }
 function srcLine(name){ const s = B.external[name]; return s ? `<div class="note">${statusChip(s.status)} <span class="muted">${esc(s.path)} · as of ${esc(s.as_of || "—")} · ${s.age_hours ?? "—"} h old</span></div>` : ""; }
+/* ---------- US Money Index measured here (ACK 10 Oct 2026) ---------- */
+const BAND_CHIP = {CALM:["up","calm"], TRANSITION:["flat","transition"], RISK_OFF:["down","risk-off"], MISSING:["na","missing"]};
+function renderMoneyIndex(){
+  const M = B.money_index;
+  if (!M) return "";
+  const R = M.reading || {}, C = M.comparison || {}, bc = BAND_CHIP[R.band] || BAND_CHIP.MISSING;
+  const unit = (v, u) => !isNum(v) ? "—" : u === "share" ? (v*100).toFixed(1) + "%" : u === "bp" ? (v>0?"+":"") + v.toFixed(0) + " bp" : u === "%" ? pct(v) : fmt(v);
+  const crow = (C.rows||[]).map(r => { const c = (R.components||[]).find(x => x.key === r.key) || {};
+    const w = isNum(r.local_points) && r.weight ? r.local_points / r.weight : 0;
+    return `<tr><td class="l"><b>${esc(r.label)}</b><div class="sub">${r.basis === "LLM_ONLY" ? "news only (not measurable here)" : "risk-off when " + (c.risk_off === "LOW" ? "low" : "high")}</div></td>`+
+      `<td>${r.basis === "LLM_ONLY" ? "—" : unit(c.value, c.unit)}</td><td>${isNum(c.percentile) ? Math.round(c.percentile*100) + "th" : "—"}</td>`+
+      `<td class="l"><span style="display:inline-block;width:90px;height:8px;border-radius:2px;background:var(--border);vertical-align:middle;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;border-radius:2px;width:${Math.max(1,100*w)}%;background:var(--seq-3)"></span></span> ${isNum(r.local_points) ? r.local_points.toFixed(1) : "—"}/${fmt(r.weight,0)}</td>`+
+      `<td>${isNum(r.published_points) ? r.published_points.toFixed(0) : "—"}/${fmt(r.published_weight ?? r.weight,0)}</td><td class="l muted">${words(r.published_status||"")}</td></tr>`; }).join("");
+  const focus = ["SPY","QQQ","IWM","DIA"].map(t => { const e = (M.per_etf||{})[t] || {};
+    return `<tr><td class="l"><b>${t}</b></td>` + B.horizons.map(h => { const x = (e.band_evidence||{})[String(h)] || {}, a = x.analog || {}, b = x.base || {};
+      return `<td class="${cls(a.mean_pct)}" data-tip="${esc(`After past ${R.band} sessions: n=${a.n}, independent windows ${a.n_eff}, up ${isNum(a.hit_rate)?Math.round(a.hit_rate*100)+"%":"—"}<br>All days ${pct(b.mean_pct)} · lean ${x.lean||"—"} · ${x.holdout||""}`)}">${pct(a.mean_pct)} <span class="muted">vs ${pct(b.mean_pct)}</span></td>`; }).join("") +
+      `<td>${isNum(e.ic?.ic) ? e.ic.ic.toFixed(2) : "—"}</td></tr>`; }).join("");
+  return `<div id="mi"><h2>US Money Index, measured here <span class="sub">7 of the published ladder's 9 components from data AVSHUNTER holds · each scored against its own past year · shown beside the published (LLM) packet</span> ${csvBtn("money_index")}</h2>
+  <div class="grid g-2">
+    <div class="card"><h3>Risk-off transmission <span class="chip ${bc[0]}">${bc[1]}</span></h3>
+      <div class="big">${isNum(R.score) ? R.score.toFixed(0) : "—"}<span class="sub">/100 measured (${esc(R.measured_weight)} of 100 weight)</span></div>
+      <div class="sub">Published (ChatGPT) ${isNum(C.published_score) ? C.published_score.toFixed(0) : "—"}/100 · comparable total ${isNum(C.comparable_total) ? C.comparable_total.toFixed(0) : "—"}/100 (measured + published geopolitics/Hormuz)${(R.missing||[]).length ? ` · <span style="color:var(--serious)">missing: ${esc(R.missing.join(", "))}</span>` : ""}</div>
+      <div style="margin-top:6px">${sparkSvg((M.history||{}).score, {h: 46})}</div>
+      <div class="note">${esc(M.history_sessions)} scored sessions · bands ${Object.entries(M.band_counts||{}).map(([k,v]) => k.toLowerCase().replace("_","-") + " " + v).join(", ")} · 0 points at or below the median of the past year, full weight at the 95th percentile. ${esc(C.note||"")}</div></div>
+    <div class="card"><h3>What followed today's band <span class="sub">next open → close · vs all days · hover for n</span></h3>
+      <table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th>${B.horizons.map(h => `<th>${h}d</th>`).join("")}<th data-tip="Rank correlation of the score with the next 5-session return, non-overlapping windows">IC 5d</th></tr></thead><tbody>${focus}</tbody></table>
+      <div class="note">Every ETF's own band history, beta and correlation are in the Next session plan (ETF by ETF).</div></div>
+  </div>
+  <div class="card" style="margin-top:10px"><table class="mini" style="width:100%"><thead><tr><th class="l">Component</th><th>Today</th><th>Percentile</th><th class="l">Measured points</th><th>Published</th><th class="l">Published status</th></tr></thead><tbody>${crow}</tbody></table></div>
+  <div style="margin-top:22px"></div></div>`;
+}
 function renderIntel(){
   const I = B.intel; const p = I.packet || {};
   const routing = p.horizon_routing ? Object.entries(p.horizon_routing).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="l">${words(v.bias)}</td><td>${fmt(v.bullish_prob_pct,1)}%</td><td class="l">${words(v.engine_mode)}</td></tr>`).join("") : "";
@@ -822,7 +856,7 @@ function renderIntel(){
   const prints = (I.economic_prints || []).map(r => `<tr><td class="l">${esc(r.name)}</td><td>${fmt(r.value, Math.abs(r.value) > 1000 ? 0 : 2)}</td><td>${pct(r.change_pct,2)}</td><td>${isNum(r.yoy_pct)?pct(r.yoy_pct,2):"—"}</td><td>${esc(r.date)}</td><td>${esc(r.age_days)}d</td></tr>`).join("");
   const flags = (I.threshold_flags || []).map(r => `<tr><td class="l">${esc(r.series)}</td><td class="l">${words(r.flag)}</td><td class="l">${words(r.direction)}</td><td class="l">${words(r.regime)}</td><td>${pct(r.chg_5d_pct,1)}</td><td>${pct(r.chg_30d_pct,1)}</td><td>${r.counts_as_risk ? "yes" : ""}</td></tr>`).join("");
   const gex = (I.gex || []).map(g => `<tr><td class="l"><b>${esc(g.Ticker)}</b></td><td class="l">${words(g.Regime)}</td><td>${fmt(g.Spot,2)}</td><td>${fmt(g.Gamma_Flip,1)}</td><td>${fmt(g.Call_Wall,0)}</td><td>${fmt(g.Put_Wall,0)}</td><td>${fmt(g.Net_GEX_Bn,2)}</td><td class="l">${esc(g.Date)}</td></tr>`).join("");
-  $("#p-intel").innerHTML = `<h2>Macro intelligence <span class="sub">advisory sources as published · not measured by this board unless scored on the Scorecards tab</span></h2>
+  $("#p-intel").innerHTML = renderMoneyIndex() + `<h2>Macro intelligence <span class="sub">advisory sources as published · not measured by this board unless scored on the Scorecards tab</span></h2>
   <div class="grid g-intel">
     <div class="card"><h3>LLM macro packet</h3>${kv(p, [["regime_label","Regime"],["regime_probability","Probability",v=>fmt(v,3)+" "+uncal],["macro_conviction","Conviction",v=>fmt(v,2)+" "+uncal],["risk_on_off_switch","Risk switch"],["dir_bias","Direction bias"],["trend_energy","Trend energy"],["vol_mode","Vol mode"],["liquidity_pulse","Liquidity"],["rates_impulse","Rates"],["usd_state","USD"],["credit_state","Credit"],["macro_filter","Macro filter"],["regime_drift_status","Drift"]])}
       ${routing ? `<table class="mini" style="margin-top:8px;width:100%"><thead><tr><th class="l">Horizon</th><th class="l">Bias</th><th>Bull prob</th><th class="l">Mode</th></tr></thead><tbody>${routing}</tbody></table>` : ""}
@@ -1200,6 +1234,30 @@ function planScenario(t, s){
       <div class="note">${esc(ex.text||"")}</div></div>
     <ul class="note" style="padding-left:16px;margin-top:6px">${hist || "<li class='muted'>No history.</li>"}</ul></div>`;
 }
+const ALIGN_CHIP = {ALIGNED:["up","aligned"], MIXED:["flat","mixed"], AGAINST:["down","against"], NO_PROPOSAL:["na","no proposal"], NO_SECTOR_READ:["na","no sector read"], STOCK_SPECIFIC:["flat","stock-specific"]};
+const CHECK_TXT = {WITH:"✔", AGAINST:"✘", NEUTRAL:"·", MISSING:"?"};
+function checkTip(checks){ return (checks||[]).map(c => `${CHECK_TXT[c.state]||"?"} <b>${esc(c.check.replace(/_/g," "))}</b>: ${esc(c.text)}`).join("<br>") || "No proposal to check."; }
+function alignChip(r){ const k = ALIGN_CHIP[r.alignment] || ALIGN_CHIP.NO_PROPOSAL; return `<span class="chip ${k[0]}" data-tip="${esc(checkTip(r.checks))}">${k[1]}</span>`; }
+function planLvlShort(x){ return x ? `${esc(LEVEL_TXT[x.name]||x.name)} ${fmt(x.level)} <span class="muted">${isNum(x.distance_daily_moves)?x.distance_daily_moves.toFixed(1)+" dm":""}</span>` : `<span class="muted">—</span>`; }
+function planEtfTable(rows){
+  const order = {AGAINST:0, MIXED:1, ALIGNED:2, NO_PROPOSAL:3};
+  const sorted = [...rows].sort((a, b) => (order[a.alignment] ?? 4) - (order[b.alignment] ?? 4) || String(a.ticker).localeCompare(b.ticker));
+  const body = sorted.map(r => `<tr><td class="l"><b>${esc(r.ticker)}</b></td><td class="l">${esc(KEY_TXT[r.reaction]||r.reaction)} <span class="${cls(r.close_pct)}">${pct(r.close_pct)}</span></td>`+
+    `<td class="l">${planLvlShort(r.above)}</td><td class="l">${planLvlShort(r.below)}</td>`+
+    `<td>${fmt(r.beta_spy)} <span class="muted">(${fmt(r.corr_spy)})</span></td>`+
+    `<td data-tip="${esc(r.implied_note||"")}"><span class="${cls(r.if_spy_down_target_pct)}">${pct(r.if_spy_down_target_pct)}</span> / <span class="${cls(r.if_spy_up_target_pct)}">${pct(r.if_spy_up_target_pct)}</span></td>`+
+    `<td class="l">${esc(String(r.band_lean||"—").replace(/_/g," ").toLowerCase())}</td>`+
+    `<td class="l">${r.pipeline ? esc(r.pipeline.direction||"") + " · " + words(r.pipeline.verdict||"") : '<span class="muted">—</span>'}</td>`+
+    `<td class="l">${alignChip(r)}</td><td class="l">${esc(r.action||"")}</td></tr>`).join("");
+  return `<table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th class="l">Reaction</th><th class="l">Nearest above</th><th class="l">Nearest below</th><th data-tip="Beta and (correlation) to SPY, 60 sessions of daily returns">β SPY</th><th data-tip="If SPY reaches its down / up scenario target, the move implied by this ETF's beta (estimate, not a forecast)">If SPY down / up</th><th class="l" data-tip="What followed past sessions in today's Money Index band (5 sessions)">Money Index band</th><th class="l">Pipeline</th><th class="l">Reading</th><th class="l" style="min-width:260px">Action (you decide)</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+function planCandidateTable(rows){
+  if (!rows.length) return `<div class="sub muted">No pipeline candidates found.</div>`;
+  const body = rows.map(r => `<tr><td>${esc(r.rank)}</td><td class="l"><b>${esc(r.ticker)}</b></td><td class="l">${esc(r.direction)} · ${words(r.verdict||"")}</td><td class="l">${esc(r.horizon_bucket||"")}</td>`+
+    `<td class="l">${esc(r.sector_etf||"—")}</td><td class="${r.weak_link?"muted":""}">${isNum(r.link_corr)?r.link_corr.toFixed(2):"—"}${r.weak_link?" weak":""}</td>`+
+    `<td class="l">${alignChip(r)}</td><td class="l">${esc(r.action||"")}</td></tr>`).join("");
+  return `<table class="mini" style="width:100%"><thead><tr><th>#</th><th class="l">Ticker</th><th class="l">Side</th><th class="l">Horizon</th><th class="l">Sector ETF</th><th data-tip="Correlation of the stock's daily returns with its sector ETF, 60 sessions">Link</th><th class="l">Reading</th><th class="l" style="min-width:260px">Action (you decide)</th></tr></thead><tbody>${body}</tbody></table>`;
+}
 function renderPlan(){
   const P = B.session_plan;
   if (!P) { $("#p-plan").innerHTML = `<h2>Next session plan</h2><div class="card muted">Not in this build.</div>`; return; }
@@ -1235,6 +1293,10 @@ function renderPlan(){
         <table class="mini" style="width:100%;margin-top:8px"><thead><tr><th class="l">Pipeline ETF</th><th class="l">Side</th><th class="l">Verdict</th><th class="l">vs tape</th></tr></thead><tbody>${prow}</tbody></table></div>
       <div class="card"><h3>What would change the view</h3><ul style="padding-left:16px;margin:6px 0">${vrow}</ul></div>
     </div>
+    <h2 style="margin-top:22px">ETF by ETF <span class="sub">each ETF's own reaction, levels and measured link to the market · a pipeline proposal is checked against them · hover a reading for its checks</span> ${csvBtn("plan_etfs")}</h2>
+    <div class="card">${planEtfTable(P.etfs||[])}</div>
+    <h2 style="margin-top:22px">Pipeline candidates through their sector ETF <span class="sub">run ${esc(P.candidates_source?.run_id||"—")} · ranked order · the stock's correlation to its sector ETF says how much the sector read carries</span> ${csvBtn("plan_candidates")}</h2>
+    <div class="card">${planCandidateTable(P.candidates||[])}</div>
     <h2 style="margin-top:22px">The jigsaw <span class="sub">every input, what it points to, and whether it agrees with the tape (${esc(String(J.tape||"").toLowerCase())})</span> ${csvBtn("plan_jigsaw")}</h2>
     <div class="card">
       <div class="pill-row"><span class="sub" style="min-width:90px">Measured:</span> ${agg("MEASURED")}</div>

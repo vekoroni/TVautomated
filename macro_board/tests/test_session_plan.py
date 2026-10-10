@@ -37,6 +37,14 @@ CFG = {
     "expression_text": {"CHEAP": "Options priced below history.", "FAIR": "Options priced in line.",
                         "RICH": "Options priced above history.", "UNKNOWN": "No option pricing."},
     "conflict_note": "Published narratives disagree with the measured tape: {pieces}.",
+    "check_horizon": "5",
+    "room_min_daily_moves": 0.5,
+    "min_link_corr": 0.4,
+    "max_candidates": 50,
+    "action_text": {"ALIGNED": "Aligned: weakens if {etf} {fail} {level}.", "MIXED": "Mixed: let {etf} {confirm} {level}.",
+                    "AGAINST": "Against: wait for {etf} to {confirm} {level} or stand aside.", "NO_PROPOSAL": "No pipeline proposal.",
+                    "NO_SECTOR_READ": "No board read for this stock's sector ETF.",
+                    "STOCK_SPECIFIC": "Stock-specific: judge on its own chart; market tape {market}."},
 }
 
 
@@ -115,6 +123,31 @@ def _payload():
             "room": {t: _room() for t in ("SPY", "QQQ", "IWM", "DIA")},
         },
         "overnight": {"status": "STALE", "us_reference_session": "2026-10-08", "as_of": "2026-10-08T21:37:21+00:00"},
+        "etf_reactions": {"SPY": {"key": "ACCEPTED_UP", "close_pct": 0.6}, "XLK": {"key": "ACCEPTED_DOWN", "close_pct": -1.2},
+                          "XBI": {"key": "ACCEPTED_DOWN", "close_pct": -0.9}, "XLU": {"key": "ABSORBED", "close_pct": 0.1}},
+        "etf_levels": {"XLK": {"close": 200.0, "current": 200.0, "current_basis": "CLOSE", "daily_move_pct": 1.5,
+                               "above": {"name": "sma50", "level": 201.0, "distance_pct": 0.5, "distance_daily_moves": 0.33},
+                               "below": {"name": "sma200", "level": 190.0, "distance_pct": -5.0, "distance_daily_moves": 3.33}},
+                       "XBI": {"close": 90.0, "current": 90.0, "current_basis": "CLOSE", "daily_move_pct": 2.0,
+                               "above": {"name": "sma50", "level": 95.0, "distance_pct": 5.6, "distance_daily_moves": 2.8},
+                               "below": {"name": "low_252", "level": 85.0, "distance_pct": -5.6, "distance_daily_moves": 2.8}},
+                       "XLU": {"close": 80.0, "current": 80.0, "current_basis": "CLOSE", "daily_move_pct": 0.8,
+                               "above": {"name": "high_252", "level": 82.0, "distance_pct": 2.5, "distance_daily_moves": 3.1},
+                               "below": {"name": "sma50", "level": 78.0, "distance_pct": -2.5, "distance_daily_moves": 3.1}}},
+        "money_index": {"reading": {"score": 55.0, "band": "TRANSITION"},
+                        "per_etf": {"XLK": {"spy": {"beta": 1.3, "corr": 0.9}, "qqq": {"beta": 1.1, "corr": 0.95}, "ic": {"ic": -0.2, "n": 200},
+                                            "band_evidence": {"5": {"lean": "DOWN", "analog": _stats(80, -0.4, 0.4), "base": _stats(1000, 0.2, 0.56)}}},
+                                    "XBI": {"spy": {"beta": 1.2, "corr": 0.6}, "qqq": {"beta": 1.0, "corr": 0.6}, "ic": {"ic": None, "n": 5},
+                                            "band_evidence": {}},
+                                    "XLU": {"spy": {"beta": 0.4, "corr": 0.3}, "qqq": {"beta": 0.2, "corr": 0.2}, "ic": {"ic": 0.1, "n": 200},
+                                            "band_evidence": {"5": {"lean": "NO_CLEAR_LEAN", "analog": _stats(), "base": _stats()}}}}},
+        "pipeline_candidates": {"status": "OK", "run_id": "20261008_220129", "rows": [
+            {"rank": 1, "ticker": "NVDA", "canonical_direction": "CALL", "options_verdict": "ARMED", "horizon_bucket": "1_5d",
+             "sector_etf": "XLK", "link": {"beta": 1.6, "corr": 0.8, "n": 60}},
+            {"rank": 2, "ticker": "NEE", "canonical_direction": "PUT", "options_verdict": "ARMED", "horizon_bucket": "6_10d",
+             "sector_etf": "XLU", "link": {"beta": 0.5, "corr": 0.2, "n": 60}},
+            {"rank": 3, "ticker": "ZZZ", "canonical_direction": "CALL", "options_verdict": "STAND_DOWN", "horizon_bucket": "1_5d",
+             "sector_etf": "XYZ", "link": {"beta": None, "corr": None, "n": 0}}]},
         "intel": {
             "packet": {"dir_bias": "MILDLY_BULLISH", "risk_on_off_switch": "SELECTIVE_RISK_ON_REDUCED_SIZE"},
             "usmi": {"score": 83, "transmission_state": "RISK_OFF_TRANSITION_CONFIRMED"},
@@ -302,3 +335,80 @@ def test_the_plan_does_not_change_the_payload_it_reads():
     before = copy.deepcopy(p)
     sp.build(p, CFG)
     assert p == before
+
+
+# -- per ETF, with correlation, and the pipeline's candidates (ACK 10 Oct 2026) ---------------------------------
+
+def test_every_etf_gets_its_own_reading_with_beta_and_what_spys_scenarios_imply_for_it():
+    rows = {r["ticker"]: r for r in sp.build(_payload(), CFG)["etfs"]}
+    xlk = rows["XLK"]
+    assert xlk["reaction"] == "ACCEPTED_DOWN" and xlk["beta_spy"] == 1.3 and xlk["corr_spy"] == 0.9
+    assert xlk["if_spy_down_target_pct"] == round(1.3 * -3.0, 2) and xlk["if_spy_up_target_pct"] == round(1.3 * 4.0, 2)
+    assert xlk["above"]["level"] == 201.0 and xlk["band_lean"] == "DOWN"
+    assert "beta estimate" in xlk["implied_note"]
+
+
+def test_a_call_against_the_etfs_own_tape_and_measured_history_reads_against_with_the_level_to_watch():
+    p = _payload()
+    p["etfs"]["XLK"]["pipeline"] = {"canonical_direction": "CALL", "options_verdict": "ARMED"}
+    xlk = {r["ticker"]: r for r in sp.build(p, CFG)["etfs"]}["XLK"]
+    checks = {c["check"]: c["state"] for c in xlk["checks"]}
+    assert checks["own_tape"] == "AGAINST" and checks["money_index_band"] == "AGAINST" and checks["market_tape"] == "WITH"
+    assert checks["room"] == "AGAINST"                                            # 50d avg 0.33 daily moves above
+    assert xlk["alignment"] == "AGAINST" and "XLK" in xlk["action"] and "201.00" in xlk["action"]
+
+
+def test_an_etf_without_a_proposal_is_described_not_judged():
+    xlu = {r["ticker"]: r for r in sp.build(_payload(), CFG)["etfs"]}["XLU"]
+    assert xlu["alignment"] == "NO_PROPOSAL" and xlu["checks"] == []
+
+
+def test_a_pipeline_stock_is_read_through_its_sector_etf_and_a_weak_link_is_labelled():
+    cands = {c["ticker"]: c for c in sp.build(_payload(), CFG)["candidates"]}
+    nvda = cands["NVDA"]
+    assert nvda["sector_etf"] == "XLK" and nvda["link_corr"] == 0.8 and nvda["weak_link"] is False
+    states = {c["check"]: c["state"] for c in nvda["checks"]}
+    assert states["sector_tape"] == "AGAINST" and states["money_index_band"] == "AGAINST" and states["market_tape"] == "WITH"
+    assert nvda["alignment"] == "AGAINST"
+    nee = cands["NEE"]
+    assert nee["weak_link"] is True and any(c["check"] == "link" and c["state"] == "NEUTRAL" for c in nee["checks"])
+    assert nee["alignment"] == "STOCK_SPECIFIC" and nee["action"] == "Stock-specific: judge on its own chart; market tape against."
+    zzz = cands["ZZZ"]
+    assert zzz["alignment"] == "NO_SECTOR_READ" and zzz["action"] == "No board read for this stock's sector ETF."
+    assert [c["ticker"] for c in sp.build(_payload(), CFG)["candidates"]] == ["NVDA", "NEE", "ZZZ"]   # pipeline order kept
+
+
+def test_missing_measured_history_is_a_missing_check_not_a_neutral_one():
+    p = _payload()
+    p["etfs"]["XBI"]["pipeline"] = {"canonical_direction": "PUT", "options_verdict": "ARMED"}
+    xbi = {r["ticker"]: r for r in sp.build(p, CFG)["etfs"]}["XBI"]
+    checks = {c["check"]: c["state"] for c in xbi["checks"]}
+    assert checks["money_index_band"] == "MISSING" and checks["own_tape"] == "WITH"
+
+
+def test_the_pipeline_candidates_come_from_the_newest_run_in_ranked_order_calls_and_puts_only(tmp_path):
+    import pandas as pd
+    from macro_board import sources as src
+    for run, rows in (("20261006_060401", [("OLD", "CALL")]), ("20261008_220129", [("AAA", "PUT"), ("BBB", "UNRESOLVED"), ("CCC", "CALL"), ("AAA", "CALL")])):
+        d = tmp_path / run / "options"
+        d.mkdir(parents=True)
+        pd.DataFrame({"ticker": [r[0] for r in rows], "canonical_direction": [r[1] for r in rows],
+                      "sector_etf": ["XLK"] * len(rows), "unused": [1] * len(rows)}).to_csv(d / "options_candidates_ranked.csv", index=False)
+    out = src.load_pipeline_candidates(tmp_path, "options/options_candidates_ranked.csv", ["canonical_direction", "sector_etf"],
+                                       sides=["CALL", "PUT"], limit=10)
+    assert out["run_id"] == "20261008_220129"
+    assert [(r["ticker"], r["rank"]) for r in out["rows"]] == [("AAA", 1), ("CCC", 3)]
+    assert "unused" not in out["rows"][0]
+
+
+def test_the_action_names_a_market_level_never_the_pipelines_own_target_and_a_put_is_confirmed_below():
+    p = _payload()
+    p["etfs"]["XBI"]["pipeline"] = {"canonical_direction": "PUT", "options_verdict": "ARMED"}
+    p["etf_reactions"]["XBI"] = {"key": "ACCEPTED_UP", "close_pct": 0.9}
+    p["etf_levels"]["XBI"] = {"close": 90.0, "current": 90.0, "current_basis": "CLOSE", "daily_move_pct": 2.0,
+                              "levels": {"pipeline_target": 89.0, "sma50": 86.0, "sma200": 95.0},
+                              "above": {"name": "sma200", "level": 95.0, "distance_pct": 5.6, "distance_daily_moves": 2.8},
+                              "below": {"name": "pipeline_target", "level": 89.0, "distance_pct": -1.1, "distance_daily_moves": 0.56}}
+    xbi = {r["ticker"]: r for r in sp.build(p, CFG)["etfs"]}["XBI"]
+    assert xbi["below"]["name"] == "sma50" and xbi["alignment"] == "AGAINST"
+    assert xbi["action"] == "Against: wait for XBI to break below 50d avg 86.00 or stand aside."

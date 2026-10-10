@@ -39,6 +39,7 @@ from . import holdings as hold
 from . import market_prices as mkt
 from . import opportunity as opty
 from . import options as opt
+from . import money_index as mindex
 from . import review as rvw
 from . import session_plan as splan
 from . import rotation as rot
@@ -374,7 +375,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                      "momentum": config["momentum"], "desk_card": config["desk_card"],
                      "decision_points": {k: v for k, v in config["decision_points"].items() if k != "fomc"},
                      "opportunity": config["opportunity"], "review": config["review"],
-                     "session_plan": config["session_plan"],
+                     "session_plan": config["session_plan"], "money_index": config["money_index"],
                      "fred_publication_lag_days": config["fred_publication_lag_days"],
                      "fred_release_calendar": config["fred_release_calendar"],
                      "c12": {"trend": [c12.trend_short_sessions, c12.trend_long_sessions],
@@ -386,6 +387,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     payload["decision_points"] = build_decision_points(payload, config, holdings_payload, external, sessions,
                                                        output_dir, refresh=refresh, as_of=as_of)
     payload["desk_cards"] = build_desk_cards(payload, config)
+    payload["money_index"] = build_money_index(payload, config, values=values, fred=fred, sessions=sessions,
+                                               opens=opens, closes=closes, tickers=tickers)
+    payload.update(build_plan_inputs(payload, config, opens=opens, closes=closes, highs=highs, lows=lows, metrics=metrics,
+                                     proposals=proposals["rows"], external=external, latest=latest, sessions=sessions,
+                                     price_db=price_db, universe=universe))
     payload["session_plan"] = splan.build(payload, config["session_plan"])
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
           f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
@@ -495,6 +501,72 @@ def build_decision_points(payload: dict, config: dict, holdings_payload: dict, e
                         "event_payload": external["event_payload"].public() if "event_payload" in external else None}
     print(f"[board] decision points: {len(block['calendar'])} scheduled, "
           f"{len(block['unscheduled']['items'])} unscheduled, earnings unknown {len(block['coverage']['earnings_unknown'])}")
+    return block
+
+
+def build_plan_inputs(payload: dict, config: dict, *, opens, closes, highs, lows, metrics, proposals, external, latest,
+                      sessions, price_db, universe) -> dict:
+    """Per-ETF inputs for the Next session plan (ACK 10 Oct 2026: the plan works per ETF with its correlation and
+    reads the pipeline's candidates): each ETF's reaction and levels, and the pipeline's top candidates (read-only,
+    ranked order) with their measured link to their sector ETF."""
+    rcfg, pcfg = config["review"], config["session_plan"]
+    reactions = {}
+    for t in universe:
+        if t not in closes.columns or closes[t].dropna().empty:
+            continue
+        c = closes[t].dropna()
+        last = rvw.label_history(opens[t].reindex(c.index), c, k=float(rcfg["threshold_daily_moves"]),
+                                 vol_sessions=int(rcfg["vol_sessions"])).iloc[-1]
+        reactions[t] = {"key": last["key"], "close_pct": None if pd.isna(last["close_pct"]) else float(last["close_pct"]),
+                        "session": str(c.index[-1].date())}
+    gex = src.records(external["gex"].data) if external["gex"].status not in ("MISSING", "UNREADABLE") else []
+    levels = opty.rooms(metrics=metrics, closes=closes, gex_records=gex, proposals=proposals, tickers=universe,
+                        highs=highs, lows=lows, latest=latest["rows"])
+    pipe = config["pipeline"]
+    cands = src.load_pipeline_candidates(src.resolve(pipe["runs_dir"]), pipe["file"], pcfg["candidate_columns"],
+                                         sides=pcfg["candidate_sides"], limit=int(pcfg["max_candidates"]))
+    window = int(config["money_index"]["corr_window_sessions"])
+    stocks = [r["ticker"] for r in cands["rows"] if r.get("ticker") and r["ticker"] not in closes.columns]
+    stock_closes = pd.DataFrame()
+    if stocks:
+        start = str(sessions[max(0, len(sessions) - window - 30)].date())
+        _, stock_closes, _ = src.load_prices(price_db, stocks, start)
+    for r in cands["rows"]:
+        t, etf = r.get("ticker"), r.get("sector_etf")
+        series = closes[t] if t in closes.columns else (stock_closes[t] if t in stock_closes.columns else None)
+        r["link"] = (mindex.beta_corr(series, closes[etf], window=window)
+                     if series is not None and etf in closes.columns else {"beta": None, "corr": None, "n": 0})
+    print(f"[board] plan inputs: {len(reactions)} ETF reactions, {len(levels)} ETF level maps, "
+          f"{len(cands['rows'])} pipeline candidates ({cands.get('run_id')})")
+    return {"etf_reactions": reactions, "etf_levels": levels, "pipeline_candidates": cands}
+
+
+def build_money_index(payload: dict, config: dict, *, values, fred, sessions, opens, closes, tickers) -> dict:
+    """The US Money Index risk-off score measured locally (ACK 10 Oct 2026), beside the published one."""
+    cfg = config["money_index"]
+    n = int(config["conditions"]["change_sessions"])
+
+    def rel(a: str, b: str, sessions_back: int) -> pd.Series:
+        if a not in closes.columns or b not in closes.columns:
+            return pd.Series(np.nan, index=sessions)
+        return np.log(closes[a] / closes[b]).diff(sessions_back) * 100.0
+
+    raw = pd.DataFrame(index=sessions)
+    raw["oil"] = values["oil"]
+    raw["rates"] = values["yields"].diff(n) * 100.0
+    raw["credit"] = values["credit"]
+    raw["volatility"] = cond.fred_point_in_time(fred, "VIXCLS", "daily", sessions, config)
+    raw["breadth"] = values["market_breadth"]
+    raw["small_caps"] = rel("IWM", "SPY", n)
+    raw["ai_semis"] = rel(cfg["ai_semis_ticker"], "SPY", int(cfg["ai_semis_sessions"]))
+    u = (payload.get("intel") or {}).get("usmi") or {}
+    published = {"score": u.get("score"),
+                 "components": {c["name"]: c for c in u.get("components") or [] if isinstance(c, dict)}} if u else None
+    block = mindex.build(raw=raw, opens=opens, closes=closes, tickers=tickers, published=published, cfg=cfg,
+                         evidence_settings=config["evidence"], spark_sessions=int(config["board_history_display_sessions"]))
+    r = block["reading"]
+    print(f"[board] money index (measured): {r['score']} {r['band']} · published {block['comparison']['published_score']}"
+          + (f" · missing {r['missing']}" if r["missing"] else ""))
     return block
 
 
