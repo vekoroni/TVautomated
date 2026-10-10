@@ -108,7 +108,7 @@ These are labels and measurements for the human. None of them is a permission or
 | `decision.py` | Move already made, response label, remaining opportunity against the pipeline's target and invalidation. |
 | `review.py` | Daily review section 1: reading per instrument (gap, path, close vs threshold), label history and its record via `evidence.ticker_evidence`, information items, disagreements, headline. Config `config["review"]`. |
 | `decision_points.py` | Daily review section 2: sessions ahead, holidays/short sessions, releases, FOMC, constituent earnings (`canonical_data.marketdata_earnings`, cached in `output/external/earnings/`), unscheduled developments, next-session reassessment list. Config `config["decision_points"]`. |
-| `market_prices.py` | The board's own prices (ACK 9 Oct 2026): fills completed sessions the pipeline store lacks from Polygon grouped daily (cached, whole gaps only, never overwrites the store) and takes one Polygon snapshot per refresh build so pre-market / intraday / after-hours quotes supersede the close for room, levels and focus cards. Config `config["prices"]`. |
+| `market_prices.py` | The board's own prices (ACK 9 Oct 2026): fills completed sessions the pipeline store lacks from Polygon grouped daily (cached, whole gaps only, never overwrites the store; the gap limit counts only sessions not yet cached, so the 37 ETFs and RSP/UUP the pipeline never fetches stay current) and takes one Polygon snapshot per refresh build so pre-market / intraday / after-hours quotes supersede the close for room, levels and focus cards. Config `config["prices"]`. |
 | `opportunity.py` | Daily review section 3: leadership and breadth, sector relative-vs-absolute labels, constituent confirmation, price room. Thresholds in `config["opportunity"]` (provisional). |
 | `rotation.py` | Rotation coordinates and quadrants, relative forward returns, quadrant evidence and transitions, mapping packet sector names to ETFs (via `config/sector_etf_map_v1.json`), lead/lag scoring. |
 | `options.py` | ATM straddle implied move from executable chain quotes (read-only phantom DB). |
@@ -123,7 +123,8 @@ venv\Scripts\python.exe -m pytest macro_board/tests/test_macro_board_rules.py -q
 
 ## Known data gaps (6 Oct 2026)
 
-- UUP and RSP stop at 2026-08-20 in the price store. They show as STALE on the board.
+- The pipeline's fetcher never writes UUP and RSP (last stored 2026-08-20) or 37 ETFs dropped from its universe on 16 May 2026
+  (last stored 2026-05-15). The board fills them from its grouped-daily cache; see `market_prices.py`.
 - IEF, SHY, TIP, MDY, VTI, VOO, IVV and others have only 63–92 sessions. They show price data
   only ("Short history").
 - The VIX index has no history in the store, so the vol condition uses SPY realised vol. VIX

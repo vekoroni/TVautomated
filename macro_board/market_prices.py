@@ -15,7 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Callable, Mapping, Sequence
+from typing import AbstractSet as Set, Callable, Mapping, Sequence
 
 import pandas as pd
 
@@ -47,15 +47,29 @@ def _sessions_between(after: date, through: date) -> list[date]:
     return out
 
 
+def cached_sessions(cache_dir: Path) -> set[date]:
+    """Sessions whose grouped daily bars the board already holds (only successful fetches are cached)."""
+    out = set()
+    for path in Path(cache_dir).glob("grouped_*.json") if Path(cache_dir).is_dir() else ():
+        try:
+            out.add(date.fromisoformat(path.stem[len("grouped_"):]))
+        except ValueError:
+            continue
+    return out
+
+
 def plan_fill(closes: pd.DataFrame, tickers: Sequence[str], *, last_completed: date,
-              max_gap_sessions: int) -> tuple[dict[date, list[str]], dict[str, dict]]:
+              max_gap_sessions: int, cached_sessions: Set[date] = frozenset()) -> tuple[dict[date, list[str]], dict[str, dict]]:
     """({session: [tickers]}, {ticker: gap}) - completed sessions the store lacks, filled whole or
-    not at all: a ticker whose trailing gap (last stored bar -> last completed session) is longer
-    than ``max_gap_sessions`` is left as it is and reported, never part-filled (a hole would run
-    through averages, the 252-session range and the evidence). Missing sessions inside the stored
-    history are filled within the same window. A ticker never held in the store is not filled."""
+    not at all: a ticker whose trailing gap (last stored bar -> last completed session) needs more
+    than ``max_gap_sessions`` sessions still to fetch is left as it is and reported, never
+    part-filled (a hole would run through averages, the 252-session range and the evidence).
+    Sessions already in the board's cache cost no call and do not count against the limit, so a
+    gap the pipeline never closes (10 Oct 2026: 37 ETFs outside its universe since 16 May) stays
+    filled as it grows. Missing sessions inside the stored history are filled within the same
+    window or from the cache. A ticker never held in the store is not filled."""
     first = closes.index.min().date() if len(closes.index) else last_completed
-    window = _sessions_between(first - timedelta(days=1), last_completed)[-int(max_gap_sessions):]
+    window = set(_sessions_between(first - timedelta(days=1), last_completed)[-int(max_gap_sessions):])
     plan: dict[date, list[str]] = {}
     too_long: dict[str, dict] = {}
     for t in tickers:
@@ -66,14 +80,16 @@ def plan_fill(closes: pd.DataFrame, tickers: Sequence[str], *, last_completed: d
             continue
         last = held.index.max().date()
         trailing = _sessions_between(last, last_completed)
-        if len(trailing) > int(max_gap_sessions):
-            too_long[t] = {"last_stored": last.isoformat(), "missing_sessions": len(trailing)}
+        to_fetch = [d for d in trailing if d not in cached_sessions]
+        if len(to_fetch) > int(max_gap_sessions):
+            too_long[t] = {"last_stored": last.isoformat(), "missing_sessions": len(trailing),
+                           "sessions_to_fetch": len(to_fetch)}
             continue
         have = {d.date() for d in held.index}
         start = held.index.min().date()
-        for d in window:
-            if d > start and d not in have:
-                plan.setdefault(d, []).append(t)
+        inside = [d for d in window | set(cached_sessions) if start < d < last and d not in have]
+        for d in trailing + inside:
+            plan.setdefault(d, []).append(t)
     return {d: sorted(v) for d, v in sorted(plan.items())}, too_long
 
 

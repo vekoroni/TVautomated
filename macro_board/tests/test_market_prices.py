@@ -48,7 +48,33 @@ def test_a_gap_longer_than_the_limit_is_left_whole_and_reported_never_part_fille
     frames = _frames({"UUP": {"2026-01-02": 1.0}, "SPY": {"2026-10-08": 1.0}})
     plan, too_long = mp.plan_fill(frames["close"], ["UUP", "SPY"], last_completed=date(2026, 10, 9), max_gap_sessions=5)
     assert plan == {date(2026, 10, 9): ["SPY"]}
-    assert too_long == {"UUP": {"last_stored": "2026-01-02", "missing_sessions": 193}}   # XNYS sessions 3 Jan - 9 Oct
+    assert too_long == {"UUP": {"last_stored": "2026-01-02", "missing_sessions": 193,     # XNYS sessions 3 Jan - 9 Oct
+                                "sessions_to_fetch": 193}}
+
+
+def test_the_limit_counts_only_sessions_still_to_fetch_so_a_cached_gap_stays_filled():
+    # 10 Oct 2026: the pipeline never fetches the 37 ETFs (dropped from its universe on 16 May), so
+    # their gap grows one session a day. Sessions already in the board's cache cost no call; only
+    # the sessions still to fetch count against the limit, or the 37 would go stale on 6 Nov.
+    frames = _frames({"UUP": {"2026-01-02": 1.0}, "SPY": {"2026-10-08": 1.0}})
+    held = set(mp._sessions_between(date(2026, 1, 2), date(2026, 10, 2)))          # cached up to 2 Oct
+    plan, too_long = mp.plan_fill(frames["close"], ["UUP", "SPY"], last_completed=date(2026, 10, 9),
+                                  max_gap_sessions=5, cached_sessions=held)
+    assert too_long == {}
+    assert sum("UUP" in v for v in plan.values()) == 193                           # the whole gap, no hole
+    assert plan[date(2026, 10, 9)] == ["SPY", "UUP"]
+    short = set(mp._sessions_between(date(2026, 1, 2), date(2026, 9, 25)))          # 10 still to fetch
+    plan, too_long = mp.plan_fill(frames["close"], ["UUP"], last_completed=date(2026, 10, 9),
+                                  max_gap_sessions=5, cached_sessions=short)
+    assert plan == {} and too_long == {"UUP": {"last_stored": "2026-01-02", "missing_sessions": 193,
+                                               "sessions_to_fetch": 10}}
+
+
+def test_the_cached_sessions_are_the_grouped_files_the_board_holds(tmp_path):
+    for name in ("grouped_2026-10-08.json", "grouped_2026-10-09.json", "notes.json", "grouped_bad.json"):
+        (tmp_path / name).write_text("{}", encoding="utf-8")
+    assert mp.cached_sessions(tmp_path) == {date(2026, 10, 8), date(2026, 10, 9)}
+    assert mp.cached_sessions(tmp_path / "missing") == set()
 
 
 def test_filled_bars_never_overwrite_the_store_and_the_fill_is_reported():

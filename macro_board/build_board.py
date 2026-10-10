@@ -202,11 +202,13 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     if not as_of:
         prices_cfg = config["prices"]
         last_completed = mkt.last_eligible_session(now, settle_minutes=float(prices_cfg["settle_minutes"]))
+        grouped_dir = output_dir / "cache" / "grouped"
         plan, too_long = mkt.plan_fill(closes, load, last_completed=last_completed,
-                                       max_gap_sessions=int(prices_cfg["max_gap_sessions"]))
+                                       max_gap_sessions=int(prices_cfg["max_gap_sessions"]),
+                                       cached_sessions=mkt.cached_sessions(grouped_dir))
         offline = lambda url, params: (599, {})
         for day in plan:
-            grouped[day] = mkt.fetch_grouped_daily(day, cache_dir=output_dir / "cache" / "grouped",
+            grouped[day] = mkt.fetch_grouped_daily(day, cache_dir=grouped_dir,
                                                    transport=None if refresh else offline)
         filled, report = mkt.apply_fill({"open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes},
                                         grouped, plan)
