@@ -34,8 +34,11 @@
 #   .\Run-MacroInputs.ps1 -AllowIntraday            # allow a run during US regular hours (bars partial)
 #   .\Run-MacroInputs.ps1 -ProducerTimeoutMinutes 45
 #
-# Before anything runs: (1) today must be an XNYS session (repo xnys_calendar; weekends and US
-# holidays exit 0 as SKIPPED); (2) not during US regular hours 09:30-16:15 ET unless
+# Before anything runs: (1) today must be an XNYS session (repo xnys_calendar; weekday US holidays
+# exit 0 as SKIPPED). Weekends are different (ACK 10 Oct 2026): there is no US session, so the
+# windows, the regular-hours guard and the skip do not apply - a weekend run starts at once, cuts at
+# the last completed session (Friday) and is labelled OffSession, so the board files an off-session
+# build and never overwrites Friday's scored evening record; (2) not during US regular hours 09:30-16:15 ET unless
 # -AllowIntraday; (3) not after -LatestStartET (exit 4); wait until -StartAtET; (4) if
 # intelligent_orchestrator.py or a backfill is running, wait up to -PipelineWaitMinutes
 # (never past -LatestStartET) and stop with exit 5 if it is still running.
@@ -159,6 +162,11 @@ $startAt  = Get-ETOnDate $etNow $StartAtET
 $latestAt = Get-ETOnDate $etNow $LatestStartET
 $startAtLocal = [TimeZoneInfo]::ConvertTime($startAt, $etZone, [TimeZoneInfo]::Local)
 $isSessionDay = Test-XnysSession $etNow
+# Weekends (ACK 10 Oct 2026): no US session, so no window, no regular-hours guard and no skip. The run
+# measures from the last completed session and is labelled OffSession (producers print it; the board
+# files an off-session build, never the scored evening record). Weekday XNYS holidays still skip.
+$offSession = ($etNow.DayOfWeek -eq [DayOfWeek]::Saturday -or $etNow.DayOfWeek -eq [DayOfWeek]::Sunday) -and ($isSessionDay -ne $true)
+$runLabel = if ($offSession) { "OffSession" } else { $Session }
 
 # -- Steps --------------------------------------------------------------------------------------
 $setup = @()
@@ -181,13 +189,15 @@ if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"      
 # -- Plan ---------------------------------------------------------------------------------------
 if ($PlanOnly) {
     Write-Host "Run-MacroInputs plan (nothing is run):"
-    Write-Host ("  session        : {0}" -f $Session)
+    Write-Host ("  session        : {0}" -f $runLabel)
     Write-Host ("  now            : {0:yyyy-MM-dd HH:mm} ET{1}" -f $etNow, $(if ($NowET) { "  (simulated by -NowET)" } else { "" }))
-    Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
-    Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal)
-    $planAt = if ($etNow -gt $startAt) { $etNow } else { $startAt }
+    Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($offSession) { "NO - weekend: off-session run (no window, no regular-hours guard)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
+    if ($offSession) { Write-Host "  start window   : none (weekend - starts immediately)" }
+    else { Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal) }
+    Write-Host ("  board build    : {0}" -f $(if ($offSession) { "off-session (not the scored evening record)" } elseif ($Session -eq "PostClose") { "evening (the scored record)" } else { "morning (kept, not scored)" }))
+    $planAt = if ($offSession -or $etNow -gt $startAt) { $etNow } else { $startAt }
     $planCutoff = Get-SessionCutoff $planAt
-    Write-Host ("  session cut-off: {0}" -f $(if ($planCutoff) { "$planCutoff (last completed US session at {0:HH:mm} ET; later bars are not used; close $script:CutoffCloseUtc)" -f $planAt } elseif ($Session -eq "PreOpen") { "UNAVAILABLE - a PreOpen run would stop (exit 6)" } else { "UNAVAILABLE - the run would continue uncut" }))
+    Write-Host ("  session cut-off: {0}" -f $(if ($planCutoff) { "$planCutoff (last completed US session at {0:HH:mm} ET; later bars are not used; close $script:CutoffCloseUtc)" -f $planAt } elseif ($Session -eq "PreOpen" -or $offSession) { "UNAVAILABLE - the run would stop (exit 6)" } else { "UNAVAILABLE - the run would continue uncut" }))
     $running = @(Get-PipelineProcesses)
     Write-Host ("  pipeline now   : {0}" -f $(if ($running.Count) { "RUNNING (pid " + (($running | ForEach-Object { $_.ProcessId }) -join ", ") + ") - would wait up to $PipelineWaitMinutes min" } else { "not running" }))
     $i = 0
@@ -210,25 +220,25 @@ if ($PlanOnly) {
 }
 
 # -- Guards before anything is written -----------------------------------------------------------
-if ($isSessionDay -eq $false) {
+if ($isSessionDay -eq $false -and -not $offSession) {
     Write-Host ("[SKIPPED] {0:yyyy-MM-dd} is not a US trading session (weekend or XNYS holiday)." -f $etNow)
     exit 0
 }
 $inRegularHours = ($etNow.TimeOfDay -ge $RegularOpen) -and ($etNow.TimeOfDay -lt $RegularGuard)
-if ($inRegularHours -and -not $AllowIntraday) {
+if ($inRegularHours -and -not $AllowIntraday -and -not $offSession) {
     Write-Host (("[STOPPED] It is {0:HH:mm} ET, inside US regular hours (09:30-16:15): today's bars are still forming. " -f $etNow) +
                 "Run PreOpen before 09:30 or PostClose after 16:15, or pass -AllowIntraday.")
     exit 3
 }
-if ($etNow -gt $latestAt) {
+if (-not $offSession -and $etNow -gt $latestAt) {
     Write-Host ("[SKIPPED] {0} run: it is {1:HH:mm} ET, after the latest start {2:HH:mm} ET (-LatestStartET)." -f $Session, $etNow, $latestAt)
     exit 4
 }
 
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $stamp = "{0:yyyyMMdd_HHmmss}" -f (Get-Date)
-$logFile = Join-Path $logDir ("macro_inputs_{0}_{1}.log" -f $Session.ToLower(), $stamp)
-$stepLogDir = Join-Path $logDir ("macro_inputs_{0}_{1}" -f $Session.ToLower(), $stamp)
+$logFile = Join-Path $logDir ("macro_inputs_{0}_{1}.log" -f $runLabel.ToLower(), $stamp)
+$stepLogDir = Join-Path $logDir ("macro_inputs_{0}_{1}" -f $runLabel.ToLower(), $stamp)
 New-Item -ItemType Directory -Path $stepLogDir -Force | Out-Null
 Start-Transcript -Path $logFile -Append | Out-Null
 
@@ -241,7 +251,7 @@ foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "A
 }
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUNBUFFERED = "1"
-$env:AVSH_RUN_SESSION = $Session
+$env:AVSH_RUN_SESSION = $runLabel
 # The scripts print UTF-8. Windows PowerShell 5.1 decodes native output with the console code
 # page (e.g. 850), which turned every check mark and box line into accented garbage; decode as
 # UTF-8 for this run and restore the caller's setting afterwards. (Display and log only.)
@@ -372,16 +382,20 @@ try {
         break run
     }
     Set-Location $repoRoot
-    Write-Host ("Run-MacroInputs {0}: start window {1:HH:mm}-{2:HH:mm} ET ({3:HH:mm} local), producers {4}" -f `
-                $Session, $startAt, $latestAt, $startAtLocal, $(if ($Sequential) { "in order" } else { "in parallel" }))
+    if ($offSession) {
+        Write-Host ("Run-MacroInputs OffSession (weekend): starts now, producers {0}" -f $(if ($Sequential) { "in order" } else { "in parallel" }))
+    } else {
+        Write-Host ("Run-MacroInputs {0}: start window {1:HH:mm}-{2:HH:mm} ET ({3:HH:mm} local), producers {4}" -f `
+                    $Session, $startAt, $latestAt, $startAtLocal, $(if ($Sequential) { "in order" } else { "in parallel" }))
+    }
     if ($isSessionDay -eq $null) { Write-Host "[WARN] trading-calendar check unavailable; continuing" }
 
     # 1. wait for the start time
-    Wait-UntilET $startAt "start time"
+    if (-not $offSession) { Wait-UntilET $startAt "start time" }
 
     # 2. wait for a running pipeline / backfill, never past the latest start
     $pipeDeadline = (Get-NowET).AddMinutes($PipelineWaitMinutes)
-    if ($pipeDeadline -gt $latestAt) { $pipeDeadline = $latestAt }
+    if (-not $offSession -and $pipeDeadline -gt $latestAt) { $pipeDeadline = $latestAt }
     $running = @(Get-PipelineProcesses)
     while ($running.Count -gt 0) {
         $now = Get-NowET
@@ -396,7 +410,7 @@ try {
         Start-Sleep -Seconds 60
         $running = @(Get-PipelineProcesses)
     }
-    if ((Get-NowET) -gt $latestAt) {
+    if (-not $offSession -and (Get-NowET) -gt $latestAt) {
         Write-Host ("[SKIPPED] it is {0:HH:mm} ET, after the latest start {1:HH:mm} ET." -f (Get-NowET), $latestAt)
         $exitCode = 4
         break run
@@ -408,7 +422,7 @@ try {
         $env:AVSH_SESSION_CUTOFF = $cutoff
         $env:AVSH_US_CLOSE_UTC = $script:CutoffCloseUtc
         Write-Host ("[CUTOFF] last completed US session {0} (close {1}); bars dated after it are not used" -f $cutoff, $script:CutoffCloseUtc)
-    } elseif ($Session -eq "PreOpen") {
+    } elseif ($Session -eq "PreOpen" -or $offSession) {
         Write-Host "[STOPPED] session cut-off unavailable (trading-calendar check failed); a PreOpen run without it would treat partial pre-market bars as a finished session."
         $exitCode = 6
         break run
@@ -419,7 +433,7 @@ try {
     }
 
     $runStarted = Get-Date
-    Write-Host ("[START] {0} run at {1:yyyy-MM-dd HH:mm} ET  (per-step logs: {2})" -f $Session, (Get-NowET), $stepLogDir)
+    Write-Host ("[START] {0} run at {1:yyyy-MM-dd HH:mm} ET  (per-step logs: {2})" -f $runLabel, (Get-NowET), $stepLogDir)
 
     foreach ($s in $setup) { Invoke-StepInline $s }
     if ($Sequential) {
@@ -432,10 +446,10 @@ try {
     $finishedET = Get-NowET
     Write-Host ""
     Write-Host ("=" * 78)
-    Write-Host ("SUMMARY  {0} run  (total {1:hh\:mm\:ss}, finished {2:HH:mm} ET)" -f $Session, ((Get-Date) - $runStarted), $finishedET)
+    Write-Host ("SUMMARY  {0} run  (total {1:hh\:mm\:ss}, finished {2:HH:mm} ET)" -f $runLabel, ((Get-Date) - $runStarted), $finishedET)
     Write-Host ("=" * 78)
     $script:results | Format-Table -AutoSize | Out-String -Width 120 | Write-Host
-    if ($Session -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
+    if (-not $offSession -and $Session -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
         Write-Host ("[WARN] PreOpen run finished at {0:HH:mm} ET - after 09:25, close to the open and the morning pipeline." -f $finishedET)
     }
     $failed = @($script:results | Where-Object { $_.Exit -ne 0 })
@@ -444,7 +458,7 @@ try {
         $exitCode = 1
         break run
     }
-    Write-Host ("[COMPLETE] {0} run: all {1} steps succeeded - log: {2}" -f $Session, $script:results.Count, $logFile)
+    Write-Host ("[COMPLETE] {0} run: all {1} steps succeeded - log: {2}" -f $runLabel, $script:results.Count, $logFile)
   } while ($false)
 } finally {
     Stop-Transcript | Out-Null
