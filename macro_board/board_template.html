@@ -102,6 +102,12 @@ tr.sel td{background:color-mix(in oklab,var(--accent) 10%,var(--surface))!import
 .ck.good i{background:var(--good)} .ck.warn i{background:var(--warn);color:#000} .ck.bad i{background:var(--critical)}
 .deskgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px}
 .deskq h3 small{font-weight:400;color:var(--text-2)}
+.scells{display:flex;flex-wrap:wrap;gap:4px}
+.scell{font:inherit;font-size:11.5px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;cursor:pointer;background:var(--surface-2);color:var(--text-2)}
+.scell.good{background:color-mix(in oklab,var(--good) 22%,var(--surface));color:var(--text)}
+.scell.bad{background:color-mix(in oklab,var(--critical) 22%,var(--surface));color:var(--text)}
+.scell.chance{opacity:.6;border-style:dashed}
+.scell.live{outline:2px solid var(--accent);outline-offset:1px}
 .cand{display:flex;flex-wrap:wrap;gap:6px}
 .cand button{font:inherit;font-size:12.5px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:4px 9px;border-radius:999px;cursor:pointer}
 .cand button[aria-pressed="true"]{background:var(--text);color:var(--surface)}
@@ -150,6 +156,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
   <section class="page" id="p-map"></section>
   <section class="page" id="p-rotation"></section>
   <section class="page" id="p-desk"></section>
+  <section class="page" id="p-scenario"></section>
   <section class="page" id="p-intel"></section>
   <section class="page" id="p-score"></section>
   <section class="page" id="p-method"></section>
@@ -290,7 +297,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"],["plan","Next session plan"]];
+const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["scenario","Scenario watch"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"],["plan","Next session plan"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -1317,8 +1324,88 @@ function renderPlan(){
       <table class="mini" style="width:100%;margin-top:8px"><thead><tr><th class="l">Piece</th><th class="l">Kind</th><th class="l">Says</th><th class="l">Points to</th><th class="l">vs tape</th><th class="l">Fresh</th><th class="l">Tab</th></tr></thead><tbody>${jrow}</tbody></table>
       <div class="note">${esc(J.note||"")} Missing is shown as missing, never as neutral.</div></div>`;
 }
+/* ---------- scenario watch ---------- */
+const SV_TXT = {EDGE:"Edge", OPPOSITE:"Opposite side paid", NO_EDGE:"No edge", THIN:"Too thin"};
+const SV_CLS = {EDGE:"good", OPPOSITE:"bad", NO_EDGE:"", THIN:""};
+const ST_TXT = {TRIGGERED:"Triggered", WATCHING:"Watching", PARTIAL:"Partial", NOT_ACTIVE:"Not active"};
+const ST_CLS = {TRIGGERED:"bad", WATCHING:"warn", PARTIAL:"", NOT_ACTIVE:""};
+state.scnH = state.scnH || null; state.scnSel = state.scnSel || null; state.scnFocus = state.scnFocus ?? false;
+const pctx = (v, d=1) => isNum(v) ? (v > 0 ? "+" : "") + (100 * v).toFixed(d) + "%" : "—";
+function svChip(v){ if (!v) return `<span class="chip na">—</span>`; const k = SV_CLS[v.verdict] ?? "";
+  const hold = (v.holdout === "AGREES" ? " · holdout ✓" : v.holdout === "DISAGREES" ? " · holdout ✗" : v.holdout === "THIN" ? " · holdout thin" : "")
+    + ((v.verdict === "EDGE" || v.verdict === "OPPOSITE") ? (v.survives_fdr ? " · beats the tries" : " · within chance") : "");
+  return `<span class="ck ${k}" data-tip="${esc(svTip(v))}"><i aria-hidden="true">${CK_ICON[k]}</i>${SV_TXT[v.verdict] || esc(v.verdict)}${hold}</span>`; }
+function svTip(v){
+  return `<b>${esc(SV_TXT[v.verdict] || v.verdict)}</b> · ${v.n ?? 0} triggers, ${v.n_eff ?? 0} independent<br>`+
+    `Option proxy: ${pctx(v.option_expectancy)} per trade vs ${pctx(v.baseline_multiple)} buying every session (edge ${pctx(v.edge_vs_every_session)}, t ${fmt(v.t_edge)})<br>`+
+    `Wins ${isNum(v.option_win_rate)?Math.round(100*v.option_win_rate)+"%":"—"} · avg win ${pctx(v.avg_win,0)} · avg loss ${pctx(v.avg_loss,0)}<br>`+
+    `${(v.verdict === "EDGE" || v.verdict === "OPPOSITE") ? (v.survives_fdr ? "Survives the false-discovery check across the whole library.<br>" : "Does not survive the false-discovery check: with this many tries a result this strong can appear by chance.<br>") : ""}`+
+    `Move for the hypothesis ${pct(v.side_move_mean_pct)} (right ${isNum(v.side_right_rate)?Math.round(100*v.side_right_rate)+"%":"—"}) · `+
+    `one expected move in favour first ${isNum(v.favourable_first_rate)?Math.round(100*v.favourable_first_rate)+"%":"—"}, against first ${isNum(v.adverse_first_rate)?Math.round(100*v.adverse_first_rate)+"%":"—"}`;
+}
+function renderScenario(){
+  const S = B.scenario_watch; if (!S) { $("#p-scenario").innerHTML = `<div class="sub muted">Scenario watch not built.</div>`; return; }
+  const h = state.scnH || String(S.settings.detail_horizon);
+  const lib = Object.fromEntries(S.library.map(x => [x.id, x]));
+  const rowsBy = {}; S.rows.forEach(r => { rowsBy[r.scenario + "|" + r.ticker] = r; });
+  const live = S.live.filter(x => !state.scnFocus || B.focus.includes(x.ticker));
+  const liveRows = live.map(x => { const r = rowsBy[x.scenario + "|" + x.ticker]; const v = r?.by_horizon?.[h];
+    return `<tr class="row" data-k="${esc(x.scenario + "|" + x.ticker)}"><td class="l"><span class="ck ${ST_CLS[x.state]}"><i aria-hidden="true">${CK_ICON[ST_CLS[x.state]]}</i>${ST_TXT[x.state]}</span></td>
+      <td class="l"><b>${esc(x.ticker)}</b></td><td class="l">${esc(lib[x.scenario]?.name || x.scenario)} <span class="chip ${x.side==="PUT"?"down":"up"}">${esc(x.side)}</span></td>
+      <td class="l" style="white-space:normal;min-width:280px">${esc(x.text)}</td><td class="l">${svChip(v)}</td>
+      <td>${pctx(v?.option_expectancy)}</td><td>${pctx(v?.baseline_multiple)}</td><td>${v?.n ?? 0} / ${v?.n_eff ?? 0}</td></tr>`; }).join("");
+  const tickers = [...new Set(S.rows.map(r => r.ticker))];
+  const order = t => { const i = B.focus.indexOf(t); return i >= 0 ? i : 100 + tickers.indexOf(t); };
+  tickers.sort((a, b) => order(a) - order(b));
+  const cards = S.library.map(sc => { const cells = tickers.map(t => { const r = rowsBy[sc.id + "|" + t]; if (!r) return "";
+      const v = r.by_horizon?.[h]; const k = SV_CLS[v?.verdict] ?? ""; const live = r.status?.state && r.status.state !== "NOT_ACTIVE";
+      const chance = (v?.verdict === "EDGE" || v?.verdict === "OPPOSITE") && !v?.survives_fdr;
+      return `<button class="scell ${k}${live?" live":""}${chance?" chance":""}" data-k="${esc(sc.id + "|" + t)}" data-tip="${esc(`<b>${t}</b> · ${esc(ST_TXT[r.status?.state] || "")}<br>` + svTip(v || {}))}">${esc(t)}</button>`; }).join("");
+    const counts = {EDGE:0, OPPOSITE:0, NO_EDGE:0, THIN:0}; tickers.forEach(t => { const v = rowsBy[sc.id + "|" + t]?.by_horizon?.[h]; if (v) counts[v.verdict] = (counts[v.verdict]||0) + 1; });
+    return `<div class="card"><h3>${esc(sc.name)} <span class="chip ${sc.side==="PUT"?"down":"up"}">${esc(sc.side)}</span></h3>
+      <div class="sub">${esc(sc.hypothesis)}</div>
+      <div class="note">Registered ${esc(sc.registered)} · ${esc(sc.source)}${sc.conditions ? " · needs " + esc(Object.entries(sc.conditions).map(([k,v]) => (condMeta[k]?.label || k) + " " + v).join(", ")) : ""}</div>
+      <div class="sub" style="margin:6px 0">${h}d: ${counts.EDGE} edge · ${counts.OPPOSITE} opposite paid · ${counts.NO_EDGE} no edge · ${counts.THIN} too thin</div>
+      <div class="scells">${cells}</div></div>`; }).join("");
+  let detail = "";
+  const sel = state.scnSel && rowsBy[state.scnSel];
+  if (sel) { const sc = lib[sel.scenario];
+    const hrows = S.horizons.map(hh => { const v = sel.by_horizon[String(hh)] || {}; const m = v.macro_like_today || {};
+      return `<tr><td>${hh}d</td><td class="l">${svChip(v)}</td><td>${v.n ?? 0} / ${v.n_eff ?? 0}</td><td class="${cls(v.option_expectancy)}">${pctx(v.option_expectancy)}</td><td>${pctx(v.baseline_multiple)}</td>
+        <td class="${cls(v.edge_vs_every_session)}">${pctx(v.edge_vs_every_session)}</td><td>${isNum(v.option_win_rate)?Math.round(100*v.option_win_rate)+"%":"—"} · ${pctx(v.avg_win,0)} / ${pctx(v.avg_loss,0)}</td>
+        <td class="${cls(v.side_move_mean_pct)}">${pct(v.side_move_mean_pct)}</td><td>${isNum(v.favourable_first_rate)?Math.round(100*v.favourable_first_rate)+"%":"—"} / ${isNum(v.adverse_first_rate)?Math.round(100*v.adverse_first_rate)+"%":"—"}</td>
+        <td>${pct(v.mfe_mean_pct,1)} / ${pct(v.mae_mean_pct,1)}</td><td class="muted">${m.n ? `${m.n} (${m.n_eff}) · ${pctx(m.option_expectancy)}` : "—"}</td></tr>`; }).join("");
+    const rec = (sel.recent || []).map(e => `<tr><td class="l">${esc(e[0])}</td><td class="${cls(e[1])}">${pct(e[1],2)}</td><td>${{F:"in favour",A:"against",N:"neither"}[e[2]] || e[2]}</td><td class="${cls(e[3])}">${pctx(e[3])}</td></tr>`).join("");
+    detail = `<div class="card" id="scn-detail" style="margin-top:10px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>${esc(sel.ticker)} · ${esc(sc?.name)} <span class="chip ${sel.side==="PUT"?"down":"up"}">${esc(sel.side)}</span></h3><button class="btn" id="scn-close">Close ✕</button></div>
+      <div class="warnbox" style="border-left-color:var(--accent)"><b>${ST_TXT[sel.status.state]}:</b> ${esc(sel.status.text)}</div>
+      <div class="table-wrap" style="max-height:none"><table class="mini"><thead><tr><th>H</th><th class="l">Verdict</th><th>Triggers / indep.</th><th>Option proxy</th><th>Every session</th><th>Edge</th><th>Wins · avg win / loss</th><th>Move for hypothesis</th><th>In favour / against first</th><th>Best / worst</th><th>Macro like today</th></tr></thead><tbody>${hrows}</tbody></table></div>
+      <h3 style="margin-top:10px">Last ${(sel.recent||[]).length} triggers · ${S.settings.detail_horizon}-session outcome</h3>
+      <table class="mini"><thead><tr><th class="l">Trigger close</th><th>Move for hypothesis</th><th>First passage</th><th>Option proxy</th></tr></thead><tbody>${rec || "<tr><td colspan='4' class='muted'>No past triggers.</td></tr>"}</tbody></table>
+      <div class="note">Definition: <code>${esc(JSON.stringify(sc?.trigger))}</code>${sc?.conditions ? ` + <code>${esc(JSON.stringify(sc.conditions))}</code>` : ""}. Outcomes run from the next open to the close h sessions after the trigger. "In favour / against first" = one expected move (daily move × √h) reached in the hypothesis's direction before the other way, on closes.</div></div>`; }
+  const L = S.ledger || [];
+  const ledgerRows = L.slice(0, 40).map(x => `<tr><td class="l">${esc(x.trigger_session)}</td><td class="l"><b>${esc(x.ticker)}</b></td><td class="l">${esc(lib[x.scenario]?.name || x.scenario)} <span class="chip ${x.side==="PUT"?"down":"up"}">${esc(x.side)}</span></td>${S.horizons.map(hh => { const o = x.scored?.[String(hh)]; return o ? `<td class="${cls(o.option_multiple)}">${pct(o.side_move_pct,1)} · ${pctx(o.option_multiple,0)}</td>` : `<td class="muted">pending</td>`; }).join("")}</tr>`).join("");
+  const op = S.settings.option_proxy;
+  $("#p-scenario").innerHTML = `<h2>Scenario watch <span class="sub">forward-looking trade reasons per ETF, each measured on what followed every past trigger</span></h2>
+    <div class="authority">Each scenario is a written-down hypothesis such as "QQQ cannot hold a yearly high for 3 sessions, so puts". The board shows where each one is live, the exact level and deadline that would trigger it, and how a long option on that side performed after every past trigger. That performance is compared with buying the same option on every session, after costs. <b>Opposite side paid</b> means the hypothesis has been wrong in this ETF. <span class="muted">Option proxy: at-the-money, expiry ${op.runway_multiple}× the horizon, implied vol = realised vol × ${op.iv_over_rv}, ${op.spread_pct_of_premium}% round-trip spread. No historical quotes are used. Display only.</span></div>
+    ${S.multiple_tests ? `<div class="warnbox">${S.multiple_tests.tests.toLocaleString()} results are tested (scenario × ETF × horizon). ${S.multiple_tests.edges} read <b>Edge</b> and ${S.multiple_tests.opposites} <b>Opposite side paid</b> at the per-result bar. After the false-discovery check (Benjamini–Hochberg, ${Math.round(100*S.multiple_tests.q)}%), <b>${S.multiple_tests.edges_surviving}</b> edge${S.multiple_tests.edges_surviving === 1 ? "" : "s"} and <b>${S.multiple_tests.opposites_surviving}</b> opposite${S.multiple_tests.opposites_surviving === 1 ? "" : "s"} survive. Act only on results marked "beats the tries"; the rest are candidates to watch on the live record.</div>` : ""}
+    <div class="controls"><span class="seg" id="scn-h">${S.horizons.map(x => `<button data-h="${x}" aria-pressed="${String(x)===h}">${x}d</button>`).join("")}</span>
+      <label class="sub"><input type="checkbox" id="scn-focus" ${state.scnFocus?"checked":""}> index ETFs only</label></div>
+    <h2>Live now <span class="sub">${live.length} · triggered on the last close, watching (level and deadline), or price met and waiting for a macro condition</span></h2>
+    <div class="table-wrap"><table><thead><tr><th class="l">State</th><th class="l">ETF</th><th class="l">Scenario</th><th class="l">What happens next</th><th class="l">Record (${h}d)</th><th>Option proxy</th><th>Every session</th><th>Triggers / indep.</th></tr></thead><tbody>${liveRows || "<tr><td colspan='8' class='muted'>Nothing live.</td></tr>"}</tbody></table></div>
+    ${detail}
+    <h2>Scenario library <span class="sub">click an ETF for its record · outlined = live now · dashed = within chance after the false-discovery check</span></h2>
+    <div class="grid g-2">${cards}</div>
+    <h2>Live record <span class="sub">evening-build triggers, scored once each horizon completes (out of sample)</span></h2>
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">Trigger close</th><th class="l">ETF</th><th class="l">Scenario</th>${S.horizons.map(x => `<th>${x}d move · option</th>`).join("")}</tr></thead><tbody>${ledgerRows || `<tr><td colspan="${3 + S.horizons.length}" class="muted">No live triggers recorded yet. Evening builds add them.</td></tr>`}</tbody></table></div>
+    <div class="card soft" style="margin-top:10px"><h3>Adding your own scenario</h3><div class="sub">Add an entry to <code>scenario_watch.library</code> in <code>macro_board/config/macro_board_config_v1.json</code>, with a new id and today's date as <code>registered</code>, and rebuild. The trigger is built from these parts: <code>failed_extreme</code> and <code>held_extreme</code> (high or low, lookback, hold sessions, optional depth in daily moves), <code>near_extreme</code> (within N daily moves of the high or low), <code>streak</code> (N up or down closes) and <code>big_day</code> (a close beyond N daily moves). Optional <code>conditions</code> require any of the 10 macro condition states on the trigger day. Register the scenario <i>before</i> looking at its result, and keep it even if it fails: that keeps the record honest.</div></div>`;
+  $("#scn-h").onclick = ev => { const b = ev.target.closest("button"); if (b) { state.scnH = b.dataset.h; renderScenario(); } };
+  $("#scn-focus").onchange = ev => { state.scnFocus = ev.target.checked; renderScenario(); };
+  $("#p-scenario").querySelectorAll("[data-k]").forEach(el => el.addEventListener("click", () => { state.scnSel = el.dataset.k; renderScenario(); $("#scn-detail")?.scrollIntoView({block:"start"}); }));
+  if ($("#scn-close")) $("#scn-close").onclick = () => { state.scnSel = null; renderScenario(); };
+}
+
 function renderAll(){
-  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderIntel(); renderScore(); renderMethod(); renderPlan();
+  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderScenario(); renderIntel(); renderScore(); renderMethod(); renderPlan();
 }
 renderAll();
 let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}

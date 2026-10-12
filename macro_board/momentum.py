@@ -18,18 +18,12 @@ from .evidence import ticker_evidence
 
 
 def streak(closes: pd.Series) -> pd.Series:
-    """Consecutive up closes (positive) or down closes (negative); 0 on an unchanged close."""
-    change = np.sign(closes.diff())
-    out = np.zeros(len(closes))
-    for i in range(1, len(closes)):
-        step = change.iloc[i]
-        if not np.isfinite(step) or step == 0:
-            out[i] = 0
-        elif step > 0:
-            out[i] = out[i - 1] + 1 if out[i - 1] > 0 else 1
-        else:
-            out[i] = out[i - 1] - 1 if out[i - 1] < 0 else -1
-    result = pd.Series(out, index=closes.index)
+    """Consecutive up closes (positive) or down closes (negative); 0 on an unchanged close.
+    Vectorised: runs of equal sign are counted with a group cumcount."""
+    sgn = np.sign(closes.diff()).fillna(0.0)
+    run_id = (sgn != sgn.shift()).cumsum()
+    length = sgn.groupby(run_id).cumcount() + 1
+    result = (sgn * length).astype(float)
     result[closes.isna()] = np.nan
     return result
 

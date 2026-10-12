@@ -43,6 +43,7 @@ from . import measured_sheet as msheet
 from . import money_index as mindex
 from . import review as rvw
 from . import scheduled_events as sev
+from . import scenarios as scn
 from . import session_plan as splan
 from . import rotation as rot
 from . import tastytrade_metrics as ttm
@@ -398,6 +399,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     payload.update(build_plan_inputs(payload, config, opens=opens, closes=closes, highs=highs, lows=lows, metrics=metrics,
                                      proposals=proposals["rows"], external=external, latest=latest, sessions=sessions,
                                      price_db=price_db, universe=universe))
+    payload["scenario_watch"] = build_scenario_watch(config, opens=opens, closes=closes, states=states, mask=mask,
+                                                     sessions=sessions, universe=universe,
+                                                     record=kind in ("EVENING", "MORNING") and not as_of)
     payload["session_plan"] = splan.build(payload, config["session_plan"])
     payload["measured_sheet"] = write_measured_sheet(payload, config, output_dir, kind=kind, as_of=as_of)
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
@@ -624,6 +628,25 @@ def build_money_index(payload: dict, config: dict, *, values, fred, sessions, op
     print(f"[board] money index (measured): {r['score']} {r['band']} · published {block['comparison']['published_score']}"
           + (f" · missing {r['missing']}" if r["missing"] else ""))
     return block
+
+
+def build_scenario_watch(config: dict, *, opens, closes, states, mask, sessions, universe, record: bool) -> dict:
+    """Pre-registered scenarios per ETF: forward status, measured record, live ledger (display only)."""
+    from avshunter.shared.xnys_calendar import is_xnys_session
+    cfg = config["scenario_watch"]
+    day, future = sessions[-1].date(), []
+    while len(future) < int(cfg["future_sessions"]):
+        day = day + timedelta(days=1)
+        if is_xnys_session(day):
+            future.append(day)
+    started = time.time()
+    out = scn.build(opens=opens, closes=closes, states=states, analog_mask=mask, tickers=universe,
+                    future_sessions=future, cfg=cfg, evidence_settings=config["evidence"],
+                    ledger_path=src.resolve(cfg["ledger"]), record=record, focus=config["focus_tickers"])
+    live = {s: sum(1 for x in out["live"] if x["state"] == s) for s in ("TRIGGERED", "WATCHING", "PARTIAL")}
+    print(f"[board] scenario watch: {len(out['rows'])} scenario x ETF rows, live {live}, "
+          f"recorded {out['recorded_this_build']} in {time.time() - started:.1f}s")
+    return out
 
 
 def build_desk_cards(payload: dict, config: dict) -> dict:

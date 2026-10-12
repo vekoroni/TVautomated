@@ -298,6 +298,22 @@ def checklist(payload: Mapping, instruments: Mapping, tp: Mapping, cfg: Mapping)
     for u in ((dp.get("unscheduled") or {}).get("items") or [])[: int(cfg["max_unscheduled"])]:
         items.append({"phase": "WATCH", "time_et": None, "sort": "99:99", "source": u.get("source"),
                       "item": f"{u.get('name')}: confirms if {u.get('confirms')}; fails if {u.get('fails')}"})
+    words = cfg["scenario_verdict_text"]
+    names = {sc.get("id"): sc.get("name") for sc in ((payload.get("scenario_watch") or {}).get("library") or [])}
+    for s in ((payload.get("scenario_watch") or {}).get("live") or []):
+        if s.get("ticker") not in cfg["focus"] or s.get("state") not in ("TRIGGERED", "WATCHING"):
+            continue
+        rec = s.get("record") or {}
+        history = words.get(rec.get("verdict"), words["THIN"])
+        if rec.get("n"):
+            history += f" ({rec['n']} triggers, {rec.get('n_eff', 0)} independent)"
+        if rec.get("verdict") in ("EDGE", "OPPOSITE"):
+            history += "; " + cfg["scenario_fdr_text"]["pass" if rec.get("survives_fdr") else "fail"]
+        phase = "OPEN" if s["state"] == "TRIGGERED" else "CLOSE"
+        items.append({"phase": phase, "time_et": "09:30" if phase == "OPEN" else "16:00",
+                      "sort": "09:32" if phase == "OPEN" else "16:00", "source": "scenario watch",
+                      "item": f"{s['ticker']} {names.get(s['scenario'], s['scenario'])} ({s.get('side')}): {s.get('text')} "
+                              f"{history[0].upper() + history[1:]}."})
     items.sort(key=lambda i: (PHASES.index(i["phase"]), i["sort"]))
     for i in items:
         i.pop("sort", None)

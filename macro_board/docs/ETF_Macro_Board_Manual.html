@@ -288,6 +288,32 @@ TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi
 </section>
 
 <section class="tab">
+<h3>Scenario watch</h3>
+<p>Your own trade reasons, written down before you look at the result, then measured on every past occurrence for every ETF. An example is "QQQ cannot hold a yearly high for 3 sessions, so puts". The library lives in the board's config with the date each scenario was registered.</p>
+<div class="grid2">
+  <div class="box"><h4>Live now</h4><ul>
+    <li><b>Triggered</b>: the condition was met on the last close. Entry would be the next open.</li>
+    <li><b>Watching</b>: one step away, with the exact level and the deadline session, e.g. "triggers if the next 2 closes stay below 756.20 (deadline 8 Oct)".</li>
+    <li><b>Partial</b>: the price part is met, but a macro condition (e.g. breadth LOW) is not yet.</li>
+  </ul></div>
+  <div class="box"><h4>The record</h4><ul>
+    <li>What a long option on the scenario's side returned after every past trigger, after costs, compared with buying the same option on every session.</li>
+    <li>Also shown: the move in the scenario's direction, whether one expected move came in favour or against first, and the best and worst excursion.</li>
+    <li>Verdicts: <b>Edge</b>, <b>Opposite side paid</b> (the hypothesis has been wrong), <b>No edge</b> or <b>Too thin</b>.</li>
+  </ul></div>
+</div>
+<div class="callout warn"><strong>Many tries, few real results.</strong>
+The library runs thousands of tests (scenario × ETF × horizon), and a few percent pass the per-result bar by luck. The board therefore applies a false-discovery check across all of them. Act only on results marked <b>"beats the tries"</b>. Results marked <b>"within chance"</b> (dashed cells) are ideas to watch on the live record, not evidence.</div>
+<p><b>Live example (9 Oct 2026 close):</b> QQQ and SPY both triggered "failed to hold a yearly high", so the put case is live.</p>
+<ul>
+  <li><b>QQQ's record:</b> over the next 5 sessions the put returned −36% on average, against −17% for a put bought on any day. QQQ rose 0.75% on average after these triggers, and in 6 of the last 8 cases it rose.</li>
+  <li><b>Verdict:</b> "Opposite side paid", and the holdout agrees, but it is <i>within chance</i> after the false-discovery check.</li>
+  <li><b>Reading:</b> history gives you no reason to buy puts on this trigger. If anything it leans the other way, but not strongly enough to act on. The trigger is a moment to look harder at the setup, not a trade on its own.</li>
+</ul>
+<p>To add a scenario, follow the steps at the bottom of the tab. Register it before you look at its result, and keep it even if it fails. That is what keeps the live record honest.</p>
+</section>
+
+<section class="tab">
 <h3>Macro intelligence</h3>
 <p>The outside reports, as published. They include:</p>
 <ul>

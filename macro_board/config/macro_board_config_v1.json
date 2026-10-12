@@ -525,11 +525,27 @@
     "threshold_daily_moves": 0.5,
     "vol_sessions": 20,
     "confirmation_min_pct": 60.0,
-    "instruments": ["SPY", "QQQ", "IWM", "DIA", "RSP", "TLT", "HYG", "LQD", "UUP", "USO", "GLD"],
+    "instruments": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA",
+      "RSP",
+      "TLT",
+      "HYG",
+      "LQD",
+      "UUP",
+      "USO",
+      "GLD"
+    ],
     "rationale": "Added 2026-10-09 (Daily review, section 1, ACK: daily bars v1). Threshold = 0.5 x the instrument's daily move (20-session realised vol of the sessions before the day). ABSORBED: close moved less than the threshold. REJECTED: gap beyond the threshold, close beyond it on the other side. ACCEPTED: otherwise. Each label is scored on what followed past days with the same label (next open to close 1/5/20 sessions, independent windows, held-out quarter). Constituent agreement: at least 60% of SPY's priced issuer weight moved with SPY on the day. PROVISIONAL until the label's own record is reviewed."
   },
   "decision_points": {
-    "constituent_etfs": ["SPY", "QQQ", "DIA"],
+    "constituent_etfs": [
+      "SPY",
+      "QQQ",
+      "DIA"
+    ],
     "constituent_top_n": 15,
     "sector_top_n": 3,
     "near_level_daily_moves": 1.0,
@@ -538,20 +554,86 @@
       "time_et": "14:00",
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm (read 2026-10-09). Dates are tentative until confirmed at the preceding meeting; sep = Summary of Economic Projections. Decision day = second meeting day.",
       "decisions": [
-        {"date": "2026-01-28", "sep": false}, {"date": "2026-03-18", "sep": true}, {"date": "2026-04-29", "sep": false},
-        {"date": "2026-06-17", "sep": true}, {"date": "2026-07-29", "sep": false}, {"date": "2026-09-16", "sep": true},
-        {"date": "2026-10-28", "sep": false}, {"date": "2026-12-09", "sep": true},
-        {"date": "2027-01-27", "sep": false}, {"date": "2027-03-17", "sep": true}, {"date": "2027-04-28", "sep": false},
-        {"date": "2027-06-09", "sep": true}, {"date": "2027-07-28", "sep": false}, {"date": "2027-09-15", "sep": true},
-        {"date": "2027-10-27", "sep": false}, {"date": "2027-12-08", "sep": true}
+        {
+          "date": "2026-01-28",
+          "sep": false
+        },
+        {
+          "date": "2026-03-18",
+          "sep": true
+        },
+        {
+          "date": "2026-04-29",
+          "sep": false
+        },
+        {
+          "date": "2026-06-17",
+          "sep": true
+        },
+        {
+          "date": "2026-07-29",
+          "sep": false
+        },
+        {
+          "date": "2026-09-16",
+          "sep": true
+        },
+        {
+          "date": "2026-10-28",
+          "sep": false
+        },
+        {
+          "date": "2026-12-09",
+          "sep": true
+        },
+        {
+          "date": "2027-01-27",
+          "sep": false
+        },
+        {
+          "date": "2027-03-17",
+          "sep": true
+        },
+        {
+          "date": "2027-04-28",
+          "sep": false
+        },
+        {
+          "date": "2027-06-09",
+          "sep": true
+        },
+        {
+          "date": "2027-07-28",
+          "sep": false
+        },
+        {
+          "date": "2027-09-15",
+          "sep": true
+        },
+        {
+          "date": "2027-10-27",
+          "sep": false
+        },
+        {
+          "date": "2027-12-08",
+          "sep": true
+        }
       ],
       "minutes": []
     },
     "rationale": "Added 2026-10-09 (Daily review, section 2, ACK). Earnings looked up for the top 15 issuer holdings of SPY/QQQ/DIA and the top 3 of each SPDR sector (MarketData, cached per session). A level within 1 daily move counts as a next-session decision point. Releases come from the overnight capture (FRED, 31-day lookahead); central-bank speakers from the event payload only. FRED release 101 is published daily, so FOMC decision days are kept here from the Fed calendar; update the list each year. PROVISIONAL."
   },
   "opportunity": {
-    "leader_band_pp": {"1": 0.1, "5": 0.3, "20": 0.75},
-    "relative_band_pp": {"1": 0.1, "5": 0.25, "20": 0.5},
+    "leader_band_pp": {
+      "1": 0.1,
+      "5": 0.3,
+      "20": 0.75
+    },
+    "relative_band_pp": {
+      "1": 0.1,
+      "5": 0.25,
+      "20": 0.5
+    },
     "rsp_concentration_band_pp": 1.0,
     "participation_broad_min_pct": 50.0,
     "confirmation_min_pct": 60.0,
@@ -604,9 +686,27 @@
     "room_min_daily_moves": 0.5,
     "min_link_corr": 0.4,
     "max_candidates": 200,
-    "candidate_sides": ["CALL", "PUT"],
-    "candidate_columns": ["canonical_direction", "options_verdict", "horizon_bucket", "sector_etf", "entry_spot", "target_spot", "invalidation_spot"],
-    "action_text": {"ALIGNED": "Aligned with {etf}'s tape and measured history: act on the pipeline's own trigger; the idea weakens if {etf} {fail} {level}.", "MIXED": "Mixed evidence: smaller size, and let {etf} {confirm} {level} after the open.", "AGAINST": "Against {etf}'s tape or measured history: wait for {etf} to {confirm} {level}, or stand aside.", "NO_PROPOSAL": "No pipeline proposal: context only.", "NO_SECTOR_READ": "No board read for this stock's sector ETF: judge it on its own chart.", "STOCK_SPECIFIC": "Stock-specific: it barely moves with {etf}, so judge it on its own chart and trigger; the market tape is {market}."},
+    "candidate_sides": [
+      "CALL",
+      "PUT"
+    ],
+    "candidate_columns": [
+      "canonical_direction",
+      "options_verdict",
+      "horizon_bucket",
+      "sector_etf",
+      "entry_spot",
+      "target_spot",
+      "invalidation_spot"
+    ],
+    "action_text": {
+      "ALIGNED": "Aligned with {etf}'s tape and measured history: act on the pipeline's own trigger; the idea weakens if {etf} {fail} {level}.",
+      "MIXED": "Mixed evidence: smaller size, and let {etf} {confirm} {level} after the open.",
+      "AGAINST": "Against {etf}'s tape or measured history: wait for {etf} to {confirm} {level}, or stand aside.",
+      "NO_PROPOSAL": "No pipeline proposal: context only.",
+      "NO_SECTOR_READ": "No board read for this stock's sector ETF: judge it on its own chart.",
+      "STOCK_SPECIFIC": "Stock-specific: it barely moves with {etf}, so judge it on its own chart and trigger; the market tape is {market}."
+    },
     "approach": {
       "UP_BROAD": "Buyers accepted the news and participation is broad. Work with the move: add on pullbacks that hold the first level below, not on gaps into resistance. The first level below is the line for the idea.",
       "UP_NARROW": "Buyers accepted the news, but a few large names carried it. Let the open confirm before adding; favour the leaders over the laggards and keep size smaller until equal weight joins in. A close back below the first level below is the warning.",
@@ -624,7 +724,17 @@
       "UNKNOWN": "No current option pricing on the board: check the chain before choosing an expression."
     },
     "conflict_note": "Published narratives disagree with what the market measured ({pieces}). The tape is the measured fact; treat the narratives as the risk to watch, not the call.",
-    "rationale": "Added 2026-10-10 (ACK: the board is confusing; a veteran-trader synthesis for the next session, all pieces fitting together; sentences from measured fields, not an LLM). Tape = which way the index ETFs closed (a rejected down gap counts as buyers); 3 of 4 = a direction, else MIXED. Scenario triggers are the nearest board levels around the current price, targets the next level (else one implied move; a next level more than 5 daily moves away is shown as the next mapped level, not the target). A scenario is marked only where the reaction history measured a lean. Options CHEAP below 0.9x / RICH above 1.1x the move history delivered (straddle vs analog mean |move|, 5-session horizon); runway = 2x the horizon (ACK: buy more time than the move). US Money Index score >=60 reads risk-off, <=40 risk-on. Agreement is a count, not a probability. Wording is editable here. Per ETF (ACK 10 Oct 2026): every board ETF gets its reaction, levels, beta/correlation to SPY and QQQ (60 sessions), what SPY's scenario targets imply through beta, and its measured Money Index band history; a pipeline proposal is checked against them (5-session horizon, an obstacle within 0.5 daily moves counts against). The pipeline's top 200 CALL/PUT candidates, in its ranked order, are read through the pipeline's own sector_etf and their correlation to it (below 0.4 = weak link: the sector read carries little, so the reading is STOCK_SPECIFIC and the stock is judged on its own chart). Confirmation levels are market levels only, never the pipeline's own target or invalidation. Checks describe evidence; the human decides. Display only; all PROVISIONAL."
+    "rationale": "Added 2026-10-10 (ACK: the board is confusing; a veteran-trader synthesis for the next session, all pieces fitting together; sentences from measured fields, not an LLM). Tape = which way the index ETFs closed (a rejected down gap counts as buyers); 3 of 4 = a direction, else MIXED. Scenario triggers are the nearest board levels around the current price, targets the next level (else one implied move; a next level more than 5 daily moves away is shown as the next mapped level, not the target). A scenario is marked only where the reaction history measured a lean. Options CHEAP below 0.9x / RICH above 1.1x the move history delivered (straddle vs analog mean |move|, 5-session horizon); runway = 2x the horizon (ACK: buy more time than the move). US Money Index score >=60 reads risk-off, <=40 risk-on. Agreement is a count, not a probability. Wording is editable here. Per ETF (ACK 10 Oct 2026): every board ETF gets its reaction, levels, beta/correlation to SPY and QQQ (60 sessions), what SPY's scenario targets imply through beta, and its measured Money Index band history; a pipeline proposal is checked against them (5-session horizon, an obstacle within 0.5 daily moves counts against). The pipeline's top 200 CALL/PUT candidates, in its ranked order, are read through the pipeline's own sector_etf and their correlation to it (below 0.4 = weak link: the sector read carries little, so the reading is STOCK_SPECIFIC and the stock is judged on its own chart). Confirmation levels are market levels only, never the pipeline's own target or invalidation. Checks describe evidence; the human decides. Display only; all PROVISIONAL.",
+    "scenario_verdict_text": {
+      "EDGE": "history: the option paid more than buying every session",
+      "OPPOSITE": "history: the opposite side paid; the hypothesis has been wrong",
+      "NO_EDGE": "history: no better than buying every session",
+      "THIN": "history: too few independent triggers to judge"
+    },
+    "scenario_fdr_text": {
+      "pass": "beats the number of tries",
+      "fail": "within chance across the library's tests"
+    }
   },
   "money_index": {
     "components": [
@@ -853,5 +963,175 @@
     "min_event_days": 12,
     "history_start": "2015-01-01",
     "rationale": "Added 2026-10-10 (ACK: build the scheduled part of the event payload locally; ChatGPT keeps the unscheduled news). The release list mirrors the overnight capture's OVERNIGHT_RELEASES (Enhancements/colab/avshunter_market_intelligence_v5_4_3.py) - update both together. FRED release dates give the calendar; the print is read as known on the release day (vintage) with the previous value's revision since first published. Surprise = the latest change against the series' own past 36 changes, |z| >= 1 above/below trend - there is no free consensus source, so it is never called a consensus surprise. Event-day history = mean |close-to-close move| on the release's past sessions vs other sessions (shown from 12 release days). Refresh builds read FRED (cached per session under output/external/fred_events); a failed or keyless read falls back to the overnight capture. Written as output/events/us_scheduled_events_<session>.json in the event payload schema (route SCHEDULED_RELEASES_MEASURED). Display only. PROVISIONAL."
+  },
+  "scenario_watch": {
+    "horizons": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "detail_horizon": 5,
+    "recent_events": 8,
+    "min_history_sessions": 500,
+    "future_sessions": 15,
+    "ledger": "macro_board/output/scenario_ledger.jsonl",
+    "option_proxy": {
+      "runway_multiple": 2,
+      "iv_over_rv": 1.15,
+      "spread_pct_of_premium": 3.0,
+      "rv_sessions": 20,
+      "rationale": "No historical option quotes before Sep 2025, so the proxy prices an ATM option by Black-Scholes with implied vol = 20-session realised vol x 1.15, flat over the hold; expiry = 2x the horizon (runway rule); bought at the ask and sold at the bid with a 3% round-trip spread on premium (liquid ETF straddles quoted ~0.7-1.5% of mid on 5 Oct). PROVISIONAL until the stored chains can replace it."
+    },
+    "rationale": "ACK 6 Oct 2026: forward-looking, condition-based trade reasons per ETF (e.g. QQQ cannot hold a yearly high for 3 sessions -> puts). Every scenario is pre-registered here with its date, measured on all history per ETF on long-option expectancy after costs vs buying every session, held-out checked, shown with its forward status, and recorded live on evening builds. Display only: never scores, ranks or gates.",
+    "library": [
+      {
+        "id": "failed_yearly_high",
+        "name": "Failed to hold a yearly high",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "ACK 6 Oct 2026",
+        "hypothesis": "A new 252-session closing high with no higher close in the next 3 sessions marks exhaustion; puts.",
+        "trigger": {
+          "type": "failed_extreme",
+          "extreme": "high",
+          "lookback": 252,
+          "hold_sessions": 3,
+          "min_depth_daily_moves": 0
+        }
+      },
+      {
+        "id": "failed_yearly_high_deep",
+        "name": "Failed yearly high, closed a daily move below",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "board (variant of ACK 6 Oct)",
+        "hypothesis": "As above, and the third close is at least one daily move below the high.",
+        "trigger": {
+          "type": "failed_extreme",
+          "extreme": "high",
+          "lookback": 252,
+          "hold_sessions": 3,
+          "min_depth_daily_moves": 1.0
+        }
+      },
+      {
+        "id": "failed_yearly_low",
+        "name": "Failed to hold a yearly low",
+        "side": "CALL",
+        "registered": "2026-10-12",
+        "source": "board (mirror of ACK 6 Oct)",
+        "hypothesis": "A new 252-session closing low with no lower close in the next 3 sessions marks selling exhaustion; calls.",
+        "trigger": {
+          "type": "failed_extreme",
+          "extreme": "low",
+          "lookback": 252,
+          "hold_sessions": 3,
+          "min_depth_daily_moves": 0
+        }
+      },
+      {
+        "id": "held_yearly_high",
+        "name": "Held a yearly high for 3 sessions",
+        "side": "CALL",
+        "registered": "2026-10-12",
+        "source": "board (counterpart of ACK 6 Oct)",
+        "hypothesis": "A new 252-session closing high still held 3 sessions later is accepted by the market; calls.",
+        "trigger": {
+          "type": "held_extreme",
+          "extreme": "high",
+          "lookback": 252,
+          "hold_sessions": 3
+        }
+      },
+      {
+        "id": "narrow_high",
+        "name": "At the high on narrow breadth",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "board (6 Oct: SPY above both averages, breadth 29%)",
+        "hypothesis": "Within one daily move of the yearly high while board breadth is LOW: a narrow advance; puts.",
+        "trigger": {
+          "type": "near_extreme",
+          "extreme": "high",
+          "lookback": 252,
+          "within_daily_moves": 1.0
+        },
+        "conditions": {
+          "market_breadth": "LOW"
+        }
+      },
+      {
+        "id": "credit_divergence_high",
+        "name": "At the high while credit weakens",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "board (thesis review: credit vs equity divergence)",
+        "hypothesis": "Within one daily move of the yearly high while HYG lags LQD (credit WIDENING); puts.",
+        "trigger": {
+          "type": "near_extreme",
+          "extreme": "high",
+          "lookback": 252,
+          "within_daily_moves": 1.0
+        },
+        "conditions": {
+          "credit": "WIDENING"
+        }
+      },
+      {
+        "id": "up_streak_5",
+        "name": "Five up closes in a row",
+        "side": "CALL",
+        "registered": "2026-10-12",
+        "source": "board (6 Oct momentum study)",
+        "hypothesis": "Runs of 5 up closes continued in SPY/QQQ since 2021; calls.",
+        "trigger": {
+          "type": "streak",
+          "direction": "up",
+          "min": 5
+        }
+      },
+      {
+        "id": "down_streak_5",
+        "name": "Five down closes in a row",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "board (6 Oct: TLT down-run continued)",
+        "hypothesis": "Runs of 5 down closes continue; puts.",
+        "trigger": {
+          "type": "streak",
+          "direction": "down",
+          "min": 5
+        }
+      },
+      {
+        "id": "big_down_day_reversal",
+        "name": "Big down day reverses",
+        "side": "CALL",
+        "registered": "2026-10-12",
+        "source": "7 Oct research: big one-day stock moves reverse",
+        "hypothesis": "A close down at least 2 daily moves reverses; calls.",
+        "trigger": {
+          "type": "big_day",
+          "direction": "down",
+          "min_daily_moves": 2.0
+        }
+      },
+      {
+        "id": "big_up_day_reversal",
+        "name": "Big up day reverses",
+        "side": "PUT",
+        "registered": "2026-10-12",
+        "source": "7 Oct research: big one-day stock moves reverse",
+        "hypothesis": "A close up at least 2 daily moves reverses; puts.",
+        "trigger": {
+          "type": "big_day",
+          "direction": "up",
+          "min_daily_moves": 2.0
+        }
+      }
+    ],
+    "fdr_q": 0.1,
+    "fdr_rationale": "Every scenario x ETF x horizon result is one try; Benjamini-Hochberg at a 10% false-discovery rate marks the results that beat the number of tries (pre-registered, trial-counted)."
   }
 }

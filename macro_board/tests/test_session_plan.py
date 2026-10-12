@@ -16,6 +16,8 @@ from macro_board import session_plan as sp
 
 CFG = {
     "focus": ["SPY", "QQQ", "IWM", "DIA"],
+    "scenario_fdr_text": {"pass": "beats the number of tries", "fail": "within chance across the library's tests"},
+    "scenario_verdict_text": {'EDGE': 'history: the option paid more than buying every session', 'OPPOSITE': 'history: the opposite side paid; the hypothesis has been wrong', 'NO_EDGE': 'history: no better than buying every session', 'THIN': 'history: too few independent triggers to judge'},
     "tape_majority": 3,
     "gap_daily_moves": 0.5,
     "history_horizons": ["1", "5"],
@@ -412,3 +414,32 @@ def test_the_action_names_a_market_level_never_the_pipelines_own_target_and_a_pu
     xbi = {r["ticker"]: r for r in sp.build(p, CFG)["etfs"]}["XBI"]
     assert xbi["below"]["name"] == "sma50" and xbi["alignment"] == "AGAINST"
     assert xbi["action"] == "Against: wait for XBI to break below 50d avg 86.00 or stand aside."
+
+
+def test_live_scenarios_for_the_index_etfs_join_the_checklist_with_their_measured_record():
+    payload = _payload()
+    payload["scenario_watch"] = {"library": [{"id": "failed_yearly_high", "name": "Failed to hold a yearly high", "side": "PUT"}],
+                                 "live": [
+        {"scenario": "failed_yearly_high", "ticker": "QQQ", "side": "PUT", "state": "WATCHING", "deadline": "2026-10-08",
+         "closes_left": 2, "level": 756.2, "text": "Triggers if the next 2 close(s) stay below 756.20 (deadline 2026-10-08).",
+         "record": {"verdict": "OPPOSITE", "n": 28, "n_eff": 28, "option_expectancy": -0.21, "baseline_multiple": -0.05}},
+        {"scenario": "failed_yearly_high", "ticker": "XLK", "side": "PUT", "state": "WATCHING", "text": "x", "record": {}},
+    ]}
+    items = sp.build(payload, CFG)["checklist"]
+    hits = [i for i in items if i["source"] == "scenario watch"]
+    assert len(hits) == 1 and hits[0]["item"].startswith("QQQ")                 # index ETFs only
+    assert hits[0]["phase"] == "CLOSE" and "756.20" in hits[0]["item"]
+    assert "opposite" in hits[0]["item"].lower() and "28" in hits[0]["item"]    # the record travels with it
+
+
+def test_a_scenario_record_that_does_not_beat_the_number_of_tries_is_labelled_within_chance():
+    payload = _payload()
+    rec = {"verdict": "OPPOSITE", "n": 28, "n_eff": 28, "survives_fdr": False}
+    payload["scenario_watch"] = {"library": [{"id": "s", "name": "S"}], "live": [
+        {"scenario": "s", "ticker": "QQQ", "side": "PUT", "state": "TRIGGERED", "text": "Triggered on the 2026-10-09 close.",
+         "record": rec}]}
+    item = [i for i in sp.build(payload, CFG)["checklist"] if i["source"] == "scenario watch"][0]["item"]
+    assert "within chance" in item
+    payload["scenario_watch"]["live"][0]["record"] = {**rec, "survives_fdr": True}
+    item = [i for i in sp.build(payload, CFG)["checklist"] if i["source"] == "scenario watch"][0]["item"]
+    assert "within chance" not in item and "beats" in item
