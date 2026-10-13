@@ -212,6 +212,16 @@ def _quality_diagnostics(
 THIN_TRADING_FLAGS = ("AVG_VOLUME_BELOW_MIN", "ADV_DOLLARS_BELOW_MIN")
 
 
+def _traded_on(ticker: str, session_date: date, base_dir: Path = ROOT) -> bool:
+    """True when the canonical daily store shows volume for the ticker on the session (RC-I2)."""
+    try:
+        frame = HistoricalPriceDatabase(base_dir / "data" / "canonical" / "historical_prices.sqlite").read(
+            ticker, start_date=session_date, end_date=session_date)
+        return bool(len(frame)) and float(frame["volume"].iloc[-1] or 0) > 0
+    except Exception:  # noqa: BLE001 - unknown is not traded; the reason stays TICKER_INACTIVE
+        return False
+
+
 def thin_trading_tickers(run_dir: Path) -> set[str]:
     """Tickers Discovery flagged as thinly traded this run (intake labels, ACK 4 Oct 2026); empty if unknown."""
     files = sorted(Path(run_dir).glob("discovery/discovery_candidates_ultimate_*.csv"))
@@ -413,7 +423,12 @@ def build_completed_profiles(
             # already counted as one, but under the reason INSUFFICIENT_BARS,
             # which describes a data defect. TICKER_INACTIVE says what happened.
             deferred += 1; no_data_count += 1
-            _count_deferral(DataExceptionReason.TICKER_INACTIVE.value)
+            # Step 1 (RC-I2, ACK 12 Oct 2026): "no data" for a ticker the daily store shows trading that session is a
+            # provider gap (the catch-up fills it from the second source), not an inactive ticker.
+            traded = _traded_on(ticker, session_date, base_dir)
+            no_data_reason = (DataExceptionReason.PROVIDER_UNAVAILABLE.value if traded
+                              else DataExceptionReason.TICKER_INACTIVE.value)
+            _count_deferral(no_data_reason)
             response = error.response
             diagnostics = {
                 "provider_http_status": response.http_status,
@@ -424,13 +439,13 @@ def build_completed_profiles(
                 "market_profile_contract_required": True,
                 "market_profile_evidence": None,
                 "market_profile_evidence_state": EvidenceState.NOT_EVALUATED.value,
-                "market_profile_exception": DataExceptionReason.TICKER_INACTIVE.value,
+                "market_profile_exception": no_data_reason,
                 "market_profile_quality": diagnostics,
             })
             exceptions.append({
                 "ticker": ticker,
-                "classification": "PROVIDER_NO_DATA",
-                "reason": DataExceptionReason.TICKER_INACTIVE.value,
+                "classification": "PROVIDER_NO_DATA_TICKER_TRADED" if traded else "PROVIDER_NO_DATA",
+                "reason": no_data_reason,
                 "diagnostics": diagnostics,
             })
         except MarketDataCandleTransportError as error:

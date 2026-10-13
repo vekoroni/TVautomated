@@ -159,6 +159,11 @@ def analyse_ticker(ticker: str, daily: Optional[pd.DataFrame], intraday_5m: Opti
             for c in readings[tf]["candidates"]:
                 c["Warning"] = "; ".join(x for x in (c["Warning"], f"INTRADAY_DATA_{intraday_status}") if x)
     _cross_timeframe_warnings(readings)
+    # Step 2 (ACK 12 Oct 2026): every claim says how it is known (observed / inferred / unresolved), after the data
+    # status is set, so imperfect bars cap observed claims at inferred.
+    from .basis import label_reading
+    for reading in readings.values():
+        label_reading(reading)
     evidence = _duration_evidence(policy)
     for reading in readings.values():
         attach_duration(reading["candidates"], evidence)

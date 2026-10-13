@@ -1,0 +1,375 @@
+{
+ "original": {
+  "episodes": 21230,
+  "control_obs": 443133,
+  "control_hit": 0.4967,
+  "synthetic_positive_controls": {
+   "drop_P3_losses": "REJECTED:COHORT_MEMBERSHIP_CHANGED",
+   "select_on_future_outcome": "REJECTED:FUTURE_INFORMATION_IN_SELECTION",
+   "duplicate_P3_winners": "REJECTED:DUPLICATED_EPISODES",
+   "fill_before_signal": "REJECTED:INFEASIBLE_ENTRY_TIME"
+  },
+  "policies": {
+   "P0": {
+    "entries": 13345,
+    "entry_rate": 0.6286,
+    "hit_ambiguous_loss": 0.4678,
+    "hit_ambiguous_win": 0.4761,
+    "hit_ambiguous_excluded": 0.4717,
+    "ret_atr_10": -0.0259,
+    "p_fast_3": 0.3493,
+    "expectancy_per_episode_atr": -0.0163,
+    "median_delay_vs_P0_sessions": 0.0,
+    "minus_control_hit_ci": [
+     -0.0453,
+     -0.0134
+    ]
+   },
+   "P1": {
+    "entries": 12465,
+    "entry_rate": 0.5871,
+    "hit_ambiguous_loss": 0.4695,
+    "hit_ambiguous_win": 0.4773,
+    "hit_ambiguous_excluded": 0.4732,
+    "ret_atr_10": -0.0376,
+    "p_fast_3": 0.3524,
+    "expectancy_per_episode_atr": -0.0221,
+    "median_delay_vs_P0_sessions": 0.0,
+    "minus_control_hit_ci": [
+     -0.0431,
+     -0.0123
+    ]
+   },
+   "P2": {
+    "entries": 11837,
+    "entry_rate": 0.5576,
+    "hit_ambiguous_loss": 0.4721,
+    "hit_ambiguous_win": 0.4782,
+    "hit_ambiguous_excluded": 0.475,
+    "ret_atr_10": -0.0191,
+    "p_fast_3": 0.3498,
+    "expectancy_per_episode_atr": -0.0106,
+    "median_delay_vs_P0_sessions": 1.0,
+    "minus_control_hit_ci": [
+     -0.0386,
+     -0.0099
+    ]
+   },
+   "P3": {
+    "entries": 10949,
+    "entry_rate": 0.5157,
+    "hit_ambiguous_loss": 0.4685,
+    "hit_ambiguous_win": 0.4753,
+    "hit_ambiguous_excluded": 0.4717,
+    "ret_atr_10": -0.0001,
+    "p_fast_3": 0.3501,
+    "expectancy_per_episode_atr": -0.0,
+    "median_delay_vs_P0_sessions": 1.0,
+    "minus_control_hit_ci": [
+     -0.0414,
+     -0.0152
+    ]
+   },
+   "P4": {
+    "entries": 8993,
+    "entry_rate": 0.4236,
+    "hit_ambiguous_loss": 0.4661,
+    "hit_ambiguous_win": 0.4734,
+    "hit_ambiguous_excluded": 0.4695,
+    "ret_atr_10": 0.0013,
+    "p_fast_3": 0.3303,
+    "expectancy_per_episode_atr": 0.0005,
+    "median_delay_vs_P0_sessions": 3.0,
+    "minus_control_hit_ci": [
+     -0.0473,
+     -0.014
+    ]
+   }
+  },
+  "P0_minus_P3": {
+   "hit_ci": [
+    -0.0173,
+    0.0151
+   ],
+   "ret_ci": [
+    -0.0781,
+    0.0295
+   ]
+  },
+  "P0_non_inferior_to_P3": false,
+  "descriptive_by_type": {
+   "Buyer Absorption Breakout|P0": [
+    0.455,
+    1296
+   ],
+   "Buyer Absorption Breakout|P3": [
+    0.483,
+    1088
+   ],
+   "Change-of-Behaviour Reversal|P0": [
+    0.489,
+    1092
+   ],
+   "Change-of-Behaviour Reversal|P3": [
+    0.468,
+    1017
+   ],
+   "Crabel Compression Breakout|P0": [
+    0.471,
+    1564
+   ],
+   "Crabel Compression Breakout|P3": [
+    0.482,
+    1248
+   ],
+   "Hinge / Apex Expansion|P0": [
+    0.489,
+    1066
+   ],
+   "Hinge / Apex Expansion|P3": [
+    0.48,
+    935
+   ],
+   "SOS -> LPS continuation|P0": [
+    0.446,
+    2014
+   ],
+   "SOS -> LPS continuation|P3": [
+    0.486,
+    1581
+   ],
+   "SOW -> LPSY continuation|P0": [
+    0.461,
+    1608
+   ],
+   "SOW -> LPSY continuation|P3": [
+    0.429,
+    1246
+   ],
+   "Seller Absorption Breakdown|P0": [
+    0.467,
+    1029
+   ],
+   "Seller Absorption Breakdown|P3": [
+    0.445,
+    823
+   ],
+   "Spring Candidate|P0": [
+    0.504,
+    997
+   ],
+   "Spring Candidate|P3": [
+    0.499,
+    834
+   ],
+   "Trend Continuation after Shallow Test|P0": [
+    0.455,
+    1280
+   ],
+   "Trend Continuation after Shallow Test|P3": [
+    0.44,
+    1015
+   ],
+   "Upthrust Candidate|P0": [
+    0.458,
+    1085
+   ],
+   "Upthrust Candidate|P3": [
+    0.451,
+    869
+   ]
+  }
+ },
+ "holdout": {
+  "episodes": 23027,
+  "control_obs": 486463,
+  "control_hit": 0.4957,
+  "synthetic_positive_controls": {
+   "drop_P3_losses": "REJECTED:COHORT_MEMBERSHIP_CHANGED",
+   "select_on_future_outcome": "REJECTED:FUTURE_INFORMATION_IN_SELECTION",
+   "duplicate_P3_winners": "REJECTED:DUPLICATED_EPISODES",
+   "fill_before_signal": "REJECTED:INFEASIBLE_ENTRY_TIME"
+  },
+  "policies": {
+   "P0": {
+    "entries": 14380,
+    "entry_rate": 0.6245,
+    "hit_ambiguous_loss": 0.4727,
+    "hit_ambiguous_win": 0.4815,
+    "hit_ambiguous_excluded": 0.4769,
+    "ret_atr_10": 0.0028,
+    "p_fast_3": 0.3546,
+    "expectancy_per_episode_atr": 0.0017,
+    "median_delay_vs_P0_sessions": 0.0,
+    "minus_control_hit_ci": [
+     -0.041,
+     -0.0063
+    ]
+   },
+   "P1": {
+    "entries": 13449,
+    "entry_rate": 0.5841,
+    "hit_ambiguous_loss": 0.4733,
+    "hit_ambiguous_win": 0.4826,
+    "hit_ambiguous_excluded": 0.4778,
+    "ret_atr_10": -0.0151,
+    "p_fast_3": 0.3555,
+    "expectancy_per_episode_atr": -0.0088,
+    "median_delay_vs_P0_sessions": 0.0,
+    "minus_control_hit_ci": [
+     -0.041,
+     -0.0044
+    ]
+   },
+   "P2": {
+    "entries": 12790,
+    "entry_rate": 0.5554,
+    "hit_ambiguous_loss": 0.473,
+    "hit_ambiguous_win": 0.4814,
+    "hit_ambiguous_excluded": 0.477,
+    "ret_atr_10": 0.0068,
+    "p_fast_3": 0.3433,
+    "expectancy_per_episode_atr": 0.0038,
+    "median_delay_vs_P0_sessions": 1.0,
+    "minus_control_hit_ci": [
+     -0.0386,
+     -0.0075
+    ]
+   },
+   "P3": {
+    "entries": 11881,
+    "entry_rate": 0.516,
+    "hit_ambiguous_loss": 0.4713,
+    "hit_ambiguous_win": 0.4803,
+    "hit_ambiguous_excluded": 0.4756,
+    "ret_atr_10": -0.0164,
+    "p_fast_3": 0.3469,
+    "expectancy_per_episode_atr": -0.0085,
+    "median_delay_vs_P0_sessions": 1.0,
+    "minus_control_hit_ci": [
+     -0.0399,
+     -0.0092
+    ]
+   },
+   "P4": {
+    "entries": 9844,
+    "entry_rate": 0.4275,
+    "hit_ambiguous_loss": 0.4667,
+    "hit_ambiguous_win": 0.4741,
+    "hit_ambiguous_excluded": 0.4702,
+    "ret_atr_10": -0.002,
+    "p_fast_3": 0.3281,
+    "expectancy_per_episode_atr": -0.0008,
+    "median_delay_vs_P0_sessions": 3.0,
+    "minus_control_hit_ci": [
+     -0.0477,
+     -0.0097
+    ]
+   }
+  },
+  "P0_minus_P3": {
+   "hit_ci": [
+    -0.0137,
+    0.0155
+   ],
+   "ret_ci": [
+    -0.0345,
+    0.0737
+   ]
+  },
+  "P0_non_inferior_to_P3": true,
+  "descriptive_by_type": {
+   "Buyer Absorption Breakout|P0": [
+    0.468,
+    1373
+   ],
+   "Buyer Absorption Breakout|P3": [
+    0.478,
+    1169
+   ],
+   "Change-of-Behaviour Reversal|P0": [
+    0.504,
+    1251
+   ],
+   "Change-of-Behaviour Reversal|P3": [
+    0.473,
+    1166
+   ],
+   "Crabel Compression Breakout|P0": [
+    0.467,
+    1591
+   ],
+   "Crabel Compression Breakout|P3": [
+    0.468,
+    1248
+   ],
+   "Hinge / Apex Expansion|P0": [
+    0.466,
+    1175
+   ],
+   "Hinge / Apex Expansion|P3": [
+    0.483,
+    1030
+   ],
+   "SOS -> LPS continuation|P0": [
+    0.473,
+    2107
+   ],
+   "SOS -> LPS continuation|P3": [
+    0.474,
+    1680
+   ],
+   "SOW -> LPSY continuation|P0": [
+    0.465,
+    1902
+   ],
+   "SOW -> LPSY continuation|P3": [
+    0.453,
+    1470
+   ],
+   "Seller Absorption Breakdown|P0": [
+    0.468,
+    1052
+   ],
+   "Seller Absorption Breakdown|P3": [
+    0.471,
+    866
+   ],
+   "Spring Candidate|P0": [
+    0.5,
+    1124
+   ],
+   "Spring Candidate|P3": [
+    0.509,
+    929
+   ],
+   "Trend Continuation after Shallow Test|P0": [
+    0.483,
+    1294
+   ],
+   "Trend Continuation after Shallow Test|P3": [
+    0.46,
+    1029
+   ],
+   "Upthrust Candidate|P0": [
+    0.439,
+    1163
+   ],
+   "Upthrust Candidate|P3": [
+    0.445,
+    965
+   ]
+  }
+ },
+ "cross_panel_ticker_cut_overlap": 0,
+ "decision_inputs": {
+  "P0_non_inferior_both": false,
+  "edge_vs_control_both": {
+   "P0": false,
+   "P1": false,
+   "P2": false,
+   "P3": false,
+   "P4": false
+  }
+ }
+}

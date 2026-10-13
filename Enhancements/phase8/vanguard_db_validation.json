@@ -1,0 +1,233 @@
+{
+ "run": "20261010_191314",
+ "session": "2026-10-09",
+ "rows": 2792,
+ "inputs": {
+  "vol_regime": {
+   "compared": 2792,
+   "agree": 2792,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "trend_direction": {
+   "compared": 2792,
+   "agree": 2759,
+   "agree_pct": 0.988,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "structure_quality": {
+   "compared": 2792,
+   "agree": 2792,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "phase_v2": {
+   "compared": 2792,
+   "agree": 2791,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "momentum_bucket": {
+   "compared": 2792,
+   "agree": 2791,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "location_bucket": {
+   "compared": 2792,
+   "agree": 2792,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "wyckoff_phase_bucket": {
+   "compared": 2697,
+   "agree": 2243,
+   "agree_pct": 0.832,
+   "wildcard_or_missing_in_vanguard": 95
+  },
+  "trend_maturity": {
+   "compared": 2792,
+   "agree": 2759,
+   "agree_pct": 0.988,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "iv_regime": {
+   "compared": 2792,
+   "agree": 2791,
+   "agree_pct": 1.0,
+   "wildcard_or_missing_in_vanguard": 0
+  },
+  "crabel_state": {
+   "compared": 1197,
+   "agree": 1192,
+   "agree_pct": 0.996,
+   "wildcard_or_missing_in_vanguard": 1595
+  }
+ },
+ "inputs_builder_not_computable": 0,
+ "inputs_disagreement_examples": {
+  "wyckoff_phase_bucket": {
+   "ticker": "LLY",
+   "vanguard": "ACCUMULATION",
+   "database_labeller": "MARKUP"
+  },
+  "trend_direction": {
+   "ticker": "CCXI",
+   "vanguard": "DOWN",
+   "database_labeller": "SIDEWAYS"
+  },
+  "trend_maturity": {
+   "ticker": "CCXI",
+   "vanguard": "MIDDLE",
+   "database_labeller": "SIDEWAYS_BUILDING"
+  },
+  "iv_regime": {
+   "ticker": "CCXI",
+   "vanguard": "NORMAL_IV",
+   "database_labeller": "ELEVATED_IV"
+  },
+  "momentum_bucket": {
+   "ticker": "CWH",
+   "vanguard": "EXTREME",
+   "database_labeller": "HIGH"
+  },
+  "crabel_state": {
+   "ticker": "PTON",
+   "vanguard": "CRABEL_READY",
+   "database_labeller": "COILING"
+  },
+  "phase_v2": {
+   "ticker": "LNTH",
+   "vanguard": "EARLY_TRANSITION",
+   "database_labeller": "EXHAUSTION"
+  }
+ },
+ "execution": {
+  "db_mature_rows": 3779045,
+  "db_base_win_rate_20d": 0.5016,
+  "published_n_equals_db_n": 7,
+  "n_ratio_q": {
+   "count": 2792.0,
+   "mean": 0.967,
+   "std": 0.235,
+   "min": 0.004,
+   "25%": 1.011,
+   "50%": 1.022,
+   "75%": 1.035,
+   "max": 1.238
+  },
+  "win_rate_diff_pts_q": {
+   "count": 2792.0,
+   "mean": 0.0,
+   "std": 0.6,
+   "min": -3.44,
+   "25%": -0.0,
+   "50%": 0.0,
+   "75%": 0.0,
+   "max": 4.16
+  },
+  "abs_win_rate_diff_over_1pt": 144,
+  "by_method": {
+   "ANALOGUE": {
+    "rows": 170,
+    "median_n_ratio": 0.05,
+    "median_abs_wr_diff_pts": 1.9
+   },
+   "EXACT": {
+    "rows": 2555,
+    "median_n_ratio": 1.025,
+    "median_abs_wr_diff_pts": 0.0
+   },
+   "RELAXED": {
+    "rows": 67,
+    "median_n_ratio": 1.017,
+    "median_abs_wr_diff_pts": 0.0
+   }
+  },
+  "worst_examples": [
+   {
+    "ticker": "KPTI",
+    "method": "ANALOGUE",
+    "pub_n": 232169,
+    "pub_wr": 0.5432214800307756,
+    "db_n": 3779045,
+    "db_wr": 0.5016124444138664,
+    "dims_used": 2,
+    "n_ratio": 0.061435891872152884,
+    "wr_diff_pts": 4.160903561690921
+   },
+   {
+    "ticker": "WLFC",
+    "method": "ANALOGUE",
+    "pub_n": 232169,
+    "pub_wr": 0.5432214800307756,
+    "db_n": 3779045,
+    "db_wr": 0.5016124444138664,
+    "dims_used": 2,
+    "n_ratio": 0.061435891872152884,
+    "wr_diff_pts": 4.160903561690921
+   },
+   {
+    "ticker": "ADSE",
+    "method": "ANALOGUE",
+    "pub_n": 232169,
+    "pub_wr": 0.5432214800307756,
+    "db_n": 3779045,
+    "db_wr": 0.5016124444138664,
+    "dims_used": 2,
+    "n_ratio": 0.061435891872152884,
+    "wr_diff_pts": 4.160903561690921
+   },
+   {
+    "ticker": "CVRX",
+    "method": "ANALOGUE",
+    "pub_n": 232169,
+    "pub_wr": 0.5432214800307756,
+    "db_n": 3779045,
+    "db_wr": 0.5016124444138664,
+    "dims_used": 2,
+    "n_ratio": 0.061435891872152884,
+    "wr_diff_pts": 4.160903561690921
+   },
+   {
+    "ticker": "CABO",
+    "method": "ANALOGUE",
+    "pub_n": 178932,
+    "pub_wr": 0.5405993069239655,
+    "db_n": 3779045,
+    "db_wr": 0.5016124444138664,
+    "dims_used": 2,
+    "n_ratio": 0.04734847031459006,
+    "wr_diff_pts": 3.8986862510099085
+   }
+  ]
+ },
+ "database": {
+  "states_with_n_ge_60": 993,
+  "rows_in_them": 3771931,
+  "state_win_rate_q_weighted": {
+   "0.05": 0.4555,
+   "0.25": 0.4809,
+   "0.5": 0.5011,
+   "0.75": 0.5203,
+   "0.95": 0.5553
+  },
+  "published_cohort_win_rate_q": {
+   "count": 2792.0,
+   "mean": 0.4913,
+   "std": 0.0286,
+   "min": 0.1475,
+   "25%": 0.4757,
+   "50%": 0.4867,
+   "75%": 0.5049,
+   "max": 0.5867
+  },
+  "published_rate_is_upside_only": "win_rate = P(20d return > 0); for a BEAR thesis the favourable rate is 1 - win_rate"
+ },
+ "side_check": {
+  "bear_rows": 1184,
+  "bear_side_rate_equals_1_minus_win_rate": 326,
+  "bull_side_rate_equals_win_rate": 284,
+  "bull_rows": 1187
+ }
+}

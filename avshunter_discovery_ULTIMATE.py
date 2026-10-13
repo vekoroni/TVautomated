@@ -34,7 +34,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -1326,8 +1326,33 @@ def _beh001_reading(ticker: str, df: pd.DataFrame, cfg, policy) -> dict:
         except Exception:
             intraday, status = None, 'READ_ERROR'
     columns = [c for c in ('date', 'open', 'high', 'low', 'close', 'volume') if c in df.columns]
+    # Step 1 (F5, ACK 12 Oct 2026): every five-minute session served to the reading reconciles to the daily bar;
+    # a disagreement is a data-quality status, so the intraday timeframes are flagged, never silently trusted.
+    if intraday is not None and len(intraday) and status == 'OK':
+        try:
+            from canonical_data.intraday_bars import reconcile_with_daily
+            rec = _intraday_reconciliation()
+            # Calibrated 12 Oct 2026: only the trigger-and-response window (last sessions) flags the reading.
+            recent = sorted(pd.to_datetime(df['date']).dt.date.astype(str))[-int(rec['reconciliation_window_sessions']):]
+            if any(d['session'] in recent for d in reconcile_with_daily(
+                    intraday, df[columns], high_low_tolerance=float(rec['high_low_tolerance']),
+                    close_tolerance=float(rec['close_tolerance']))):
+                status = 'INTRADAY_DISAGREES_WITH_DAILY'
+        except Exception:
+            status = 'RECONCILIATION_NOT_EVALUATED'
     return analyse_behaviour(ticker, df[columns].reset_index(drop=True), intraday, policy,
                              intraday_status=status)
+
+
+_INTRADAY_RECONCILIATION: list = []
+
+
+def _intraday_reconciliation() -> dict:
+    if not _INTRADAY_RECONCILIATION:
+        cfg = json.loads((Path(__file__).resolve().parent / 'config' / 'governed_constants_v1.json')
+                         .read_text(encoding='utf-8-sig'))
+        _INTRADAY_RECONCILIATION.append(dict(cfg['intraday_completeness']))
+    return _INTRADAY_RECONCILIATION[0]
 
 
 def _beh001_summary_fields(beh: dict) -> dict:
@@ -1353,6 +1378,12 @@ def _beh001_summary_fields(beh: dict) -> dict:
             f'beh__{tf}_compression_episode_start': reading.get('Compression_Episode_Start'),
             f'beh__{tf}_compression_location': reading.get('Compression_Location'),
             f'beh__{tf}_compression_contracting_side': reading.get('Compression_Contracting_Side'),
+            # Step 2 (ACK 12 Oct 2026): how each claim is known; a cap names imperfect bars.
+            f'beh__{tf}_controller_basis': reading.get('Controller_Basis'),
+            f'beh__{tf}_phase_basis': reading.get('Phase_Basis'),
+            f'beh__{tf}_transition_basis': reading.get('Transition_Basis'),
+            f'beh__{tf}_compression_basis': reading.get('Compression_Basis'),
+            f'beh__{tf}_basis_cap': reading.get('Basis_Cap'),
         })
     primary = beh['handoff'].get('primary') or {}
     for key in ('Signal_Type', 'Signal_State', 'Structure_Scope', 'Trigger', 'Invalidation',
@@ -1825,6 +1856,11 @@ def scan_ticker_ultimate(
         'thesis__readiness': _gov_rec.get('Readiness') or 'NOT_ADOPTED',
         'thesis__readiness_reason': _gov_rec.get('Readiness_Reason') or 'NO_GOVERNING_THESIS',
         'thesis__readiness_event_date': _gov_rec.get('Readiness_Event_Date'),
+        **_event_clock_fields(_gov_rec, last_bar_date=str(pd.to_datetime(df['date']).iloc[-1].date())
+                              if 'date' in df.columns and len(df) else None,
+                              read_at=datetime.now(timezone.utc).isoformat(timespec='seconds'),
+                              data_received_at=getattr(df, 'attrs', {}).get('last_bar_fetched_at'),
+                              data_provider=getattr(df, 'attrs', {}).get('last_bar_provider')),
         'legacy_beh_daily_primary_side': _handoff.get('thesis__side'),
         'thesis__side_assignment_policy_version': _beh_policy['version'],
         'thesis__evidence_independence': 'SINGLE_FAMILY_OHLCV',
@@ -2786,7 +2822,10 @@ def _beh001_record_ledger(candidates: list, read_tickers, run_id: str, path, las
     status is returned for the manifest."""
     try:
         from canonical_data.behavioural_candidate_ledger import BehaviouralCandidateLedger
-        BehaviouralCandidateLedger(path).record_run(run_id, candidates, read_tickers, ticker_last_bar=last_bar)
+        ledger = BehaviouralCandidateLedger(path)
+        ledger.record_run(run_id, candidates, read_tickers, ticker_last_bar=last_bar)
+        # B4.2 part 2 (R3, ACK 12 Oct 2026): each thesis event / entry opportunity, as it develops (append-only).
+        ledger.record_opportunities(run_id, candidates)
         return "RECORDED"
     except Exception as exc:
         for candidate in candidates:
@@ -2796,6 +2835,25 @@ def _beh001_record_ledger(candidates: list, read_tickers, run_id: str, path, las
         logging.getLogger("AVSHUNTER_ULTIMATE").warning(
             "BEH-001 candidate ledger not recorded: %s: %s", type(exc).__name__, exc)
         return f"LEDGER_ERROR:{type(exc).__name__}"
+
+
+def _write_opportunity_cohort(ledger_path, out_path, *, bars_for=None) -> str:
+    """R3 (B4.2 part 2): one row per thesis event / entry opportunity with its recognition lag and outcome views,
+    from the append-only ledger and the daily store. Context for mining; never fails Discovery."""
+    try:
+        from canonical_data.behavioural_candidate_ledger import BehaviouralCandidateLedger
+        from domain.opportunity_outcomes import opportunity_cohort
+        if bars_for is None:
+            from canonical_data import read_canonical_history
+            bars_for = lambda t: read_canonical_history(t, max_staleness_days=None)  # noqa: E731
+        rows = opportunity_cohort(BehaviouralCandidateLedger(ledger_path).opportunities(), bars_for)
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(out_path, index=False)
+        return f"WRITTEN:{len(rows)}"
+    except Exception as exc:
+        logging.getLogger("AVSHUNTER_ULTIMATE").warning("Opportunity cohort not written: %s: %s",
+                                                         type(exc).__name__, exc)
+        return f"COHORT_ERROR:{type(exc).__name__}"
 
 
 def _scan_with_lifecycle(ticker, df, cfg, wyckoff_engine):
@@ -2871,8 +2929,9 @@ def _attach_trigger_events(beh: dict, df: pd.DataFrame, policy) -> None:
     from domain.structure_behaviour.engine import resample_daily
     from domain.structure_behaviour.sequences import build_sequences
     from domain.structure_behaviour.trigger_events import detect_events
-    from contracts.thesis_record import event_readiness
+    from contracts.thesis_record import event_readiness, event_timeline
     rules = {'1d': None, '1w': 'W-FRI', '1mo': 'ME'}
+    sessions = [str(d)[:10] for d in pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')] if 'date' in df.columns else []
     lookback = int((policy.get('trigger_events') or {}).get('lookback_bars', 20))
     cols = [c for c in ('date', 'open', 'high', 'low', 'close', 'volume') if c in df.columns]
     seqs = {}
@@ -2882,6 +2941,10 @@ def _attach_trigger_events(beh: dict, df: pd.DataFrame, policy) -> None:
             candidate.update({'Events_Status': 'NOT_MEASURED:INTRADAY_EVENTS_IN_MORNING', 'Events_JSON': '[]',
                               'Readiness': 'NOT_MEASURED', 'Readiness_Reason': 'EVENTS_INTRADAY_IN_MORNING',
                               'Readiness_Event_Date': None})
+            candidate.update(event_timeline([], side=candidate.get('Thesis_Side'),
+                                            candidate_id=candidate.get('Candidate_ID'),
+                                            events_status='NOT_MEASURED', trigger_level=candidate.get('Trigger_Level'),
+                                            session_dates=sessions))
             continue
         if tf not in seqs:
             bars = df[cols].reset_index(drop=True)
@@ -2912,11 +2975,67 @@ def _attach_trigger_events(beh: dict, df: pd.DataFrame, policy) -> None:
                                 adoption_state=candidate.get('Adoption_State'), events_status=res['status'])
         candidate.update({'Readiness': ready['Readiness'], 'Readiness_Reason': ready['Readiness_Reason'],
                           'Readiness_Event_Date': ready['Readiness_Event_Date']})
+        # B4.2 (ACK 12 Oct 2026): the event is published at the first close beyond the trigger, with its id and clocks.
+        candidate.update(event_timeline(res['events'], side=candidate.get('Thesis_Side'),
+                                        candidate_id=candidate.get('Candidate_ID'), events_status=res['status'],
+                                        trigger_level=candidate.get('Trigger_Level'), session_dates=sessions))
         candidate.update({'Events_Status': res['status'], 'Event_Count': len(res['events']),
                           'Last_Event': last.get('event'), 'Last_Event_Date': last.get('date'),
                           'Last_Event_Level': last.get('level'), 'Last_Event_Interval': last.get('interval'),
                           'Events_JSON': json.dumps([{k: e[k] for k in ('event', 'date', 'level', 'interval')}
                                                      for e in res['events']], separators=(',', ':'))})
+
+
+def _source_bar_end_at(last_bar_date):
+    """The completed daily bar's close: 16:00 New York on its session date, as UTC ISO (None when unknown)."""
+    try:
+        from zoneinfo import ZoneInfo
+        local = datetime.strptime(str(last_bar_date)[:10], '%Y-%m-%d').replace(
+            hour=16, tzinfo=ZoneInfo('America/New_York'))
+        return local.astimezone(timezone.utc).isoformat()
+    except Exception:
+        return None
+
+
+def _event_clock_fields(governing_record, *, last_bar_date, read_at, data_received_at=None,
+                        data_provider=None) -> dict:
+    """B4.2 (R1 / N2, ACK 12 Oct 2026): the governing thesis event's id, status and clocks on the ticker row.
+
+    policy_qualified_at is the legacy readiness (policy v0) event date and only once that policy is met. With no
+    governing thesis the status says so (missing is never neutral). setup_first_detected_* are filled after the
+    candidate ledger has recorded the run (_fill_first_detection).
+    """
+    rec = governing_record or {}
+    ready = rec.get('Readiness') == 'READY_FOR_HUMAN_REVIEW'
+    return {
+        'thesis__event_id': rec.get('Event_ID'),
+        'thesis__event_evidence': rec.get('Event_Evidence'),
+        'thesis__event_status': rec.get('Event_Status') or ('NO_GOVERNING_THESIS' if not rec else 'NOT_MEASURED'),
+        'thesis__entry_opportunity_id': rec.get('Entry_Opportunity_ID'),
+        'thesis__trigger_close_date': rec.get('Trigger_Close_Date'),
+        'thesis__trigger_age_sessions': rec.get('Trigger_Age_Sessions'),
+        'thesis__event_occurred_at': rec.get('Event_Occurred_At'),
+        'thesis__event_confirmed_at': rec.get('Event_Confirmed_At'),
+        'thesis__event_failed_at': rec.get('Event_Failed_At'),
+        'thesis__policy_qualified_at': rec.get('Readiness_Event_Date') if ready else None,
+        'thesis__source_bar_end_at': _source_bar_end_at(last_bar_date),
+        'thesis__discovery_read_at': read_at,
+        # When the last bar landed from its provider (daily store); missing for a non-canonical cache read.
+        'thesis__data_received_at': data_received_at,
+        'thesis__data_provider': data_provider,
+        'thesis__setup_first_detected_at': None,
+        'thesis__setup_first_detected_run': None,
+        'thesis__timeline_version': rec.get('Event_Timeline_Version'),
+    }
+
+
+def _fill_first_detection(rows, candidates) -> None:
+    """After the ledger: the governing setup's first detection (bar date and run) on each ticker row, in place."""
+    seen = {c.get('Candidate_ID'): c for c in candidates or [] if c.get('Candidate_ID')}
+    for row in rows or []:
+        c = seen.get(row.get('thesis_trigger_candidate_id')) or {}
+        row['thesis__setup_first_detected_at'] = c.get('First_Seen_As_Of')
+        row['thesis__setup_first_detected_run'] = c.get('First_Seen_Run')
 
 
 def _spine_direction_status(side: str, info: dict, governing):
@@ -3264,6 +3383,9 @@ def main() -> None:
     _ledger_path = Path(__file__).resolve().parent / _beh001_runtime()[0]["ledger"]["path"]
     beh001_ledger_status = _beh001_record_ledger(behavioural_candidates, beh001_read_tickers, ts, _ledger_path,
                                                   last_bar=beh001_last_bar)
+    _fill_first_detection(all_signals, behavioural_candidates)
+    opportunity_cohort_status = _write_opportunity_cohort(_ledger_path, out_dir / f"opportunity_cohort_{ts}.csv")
+    logger.info("R3 opportunity cohort: %s", opportunity_cohort_status)
 
     # BEH-001 design §7: one row per candidate (all timeframes and scopes).
     pd.DataFrame(behavioural_candidates).to_csv(out_behaviour, index=False)
@@ -3359,6 +3481,8 @@ def main() -> None:
             "lifecycle_csv": str(out_lifecycle.name) if out_lifecycle.exists() else None,
             "behavioural_candidates_csv": str(out_behaviour.name) if out_behaviour.exists() else None,
         },
+        "opportunity_cohort": {"status": opportunity_cohort_status,
+                               "file": f"opportunity_cohort_{ts}.csv"},
         "behavioural_candidate_ledger": {"status": beh001_ledger_status,
                                          "tickers_read": len(beh001_read_tickers),
                                          "candidates": len(behavioural_candidates)},

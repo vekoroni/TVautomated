@@ -434,7 +434,7 @@ class HistoricalPriceDatabase:
         completed_only: bool = True,
     ) -> pd.DataFrame:
         sql = """
-            SELECT trading_date AS date, open, high, low, close, volume
+            SELECT trading_date AS date, open, high, low, close, volume, fetched_at, provider
             FROM ohlcv_daily
             WHERE ticker = ? AND adjustment_convention = ?
         """
@@ -459,7 +459,12 @@ class HistoricalPriceDatabase:
             return pd.DataFrame(columns=REQUIRED_COLUMNS)
         frame = pd.DataFrame([dict(row) for row in reversed(rows)])
         frame["date"] = pd.to_datetime(frame["date"])
-        return frame.loc[:, REQUIRED_COLUMNS]
+        # B4.2 (R1 data_received_at, ACK 12 Oct 2026): when the last bar landed from its provider, as metadata only.
+        last = frame.iloc[-1]
+        out = frame.loc[:, REQUIRED_COLUMNS].copy()
+        out.attrs["last_bar_fetched_at"] = str(last["fetched_at"]) if last["fetched_at"] is not None else None
+        out.attrs["last_bar_provider"] = str(last["provider"]) if last["provider"] is not None else None
+        return out
 
     def coverage(
         self,

@@ -1,0 +1,306 @@
+{
+ "ticker": "SOFI",
+ "as_of": "2026-09-30",
+ "daily_bars": 1282,
+ "last_daily_close": 15.72,
+ "intraday_status": "OK",
+ "intraday_bars": 1559,
+ "handoff": {
+  "thesis__side": "BEAR",
+  "thesis__direction_status": "DETECTED:Seller Absorption Breakdown",
+  "thesis__unassigned_reason": ""
+ },
+ "handoff_primary": {
+  "Timeframe": "1d",
+  "Signal_Type": "Seller Absorption Breakdown",
+  "Signal_State": "DETECTED",
+  "Direction": "BEAR",
+  "Trigger_Level": 16.53,
+  "Invalidation_Level": 17.96,
+  "Outcome_Level": 15.213858574610246
+ },
+ "timeframes": {
+  "1mo": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "C",
+   "Phase_Confidence": "MEDIUM",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": null,
+   "Structural_Context": "Range: a consequential boundary test is under way",
+   "Controller": "TWO-SIDED",
+   "Control_Quality": "UNMEASURED",
+   "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.691; location=ABOVE_RISING_FLOOR; contracting_side=NEITHER; box=14.88-19.74",
+   "Movement_Maturity": "NOT_APPLICABLE",
+   "Control_Transfer_Condition": "",
+   "compression": {
+    "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.691; location=ABOVE_RISING_FLOOR; contracting_side=NEITHER; box=14.88-19.74",
+    "Compression_State": "CONTRACTING",
+    "Compression_Box_High": 19.74,
+    "Compression_Box_Low": 14.88,
+    "Compression_Episode_Start": "2026-06-30",
+    "Compression_Location": "ABOVE_RISING_FLOOR",
+    "Compression_Contracting_Side": "NEITHER",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Upthrust Candidate",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Upthrust of range_resistance 18.42 (detected)",
+     "Trigger_Level": 17.31,
+     "Invalidation_Level": 32.73,
+     "Outcome_Level": 6.01,
+     "Age_Bars": 12,
+     "Warning": ""
+    },
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Crabel Compression Breakout",
+     "Signal_State": "MONITOR",
+     "Direction": null,
+     "Wyckoff_Event": "Contraction without a supported directional reading",
+     "Trigger_Level": null,
+     "Invalidation_Level": null,
+     "Outcome_Level": null,
+     "Age_Bars": 3,
+     "Warning": ""
+    }
+   ]
+  },
+  "1w": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "B",
+   "Phase_Confidence": "MEDIUM",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": "B",
+   "Structural_Context": "Range: competing control is being tested",
+   "Controller": "TWO-SIDED",
+   "Control_Quality": "UNMEASURED",
+   "Crabel_Compression": "CONTRACTING; flags=NR2/NR3/NR4/NR7; tr_ratio=0.672; location=BELOW_FALLING_CEILING; contracting_side=DOWNSIDE; box=15.71-18.71",
+   "Movement_Maturity": "NOT_APPLICABLE",
+   "Control_Transfer_Condition": "",
+   "compression": {
+    "Crabel_Compression": "CONTRACTING; flags=NR2/NR3/NR4/NR7; tr_ratio=0.672; location=BELOW_FALLING_CEILING; contracting_side=DOWNSIDE; box=15.71-18.71",
+    "Compression_State": "CONTRACTING",
+    "Compression_Box_High": 18.7099,
+    "Compression_Box_Low": 15.71,
+    "Compression_Episode_Start": "2026-09-04",
+    "Compression_Location": "BELOW_FALLING_CEILING",
+    "Compression_Contracting_Side": "DOWNSIDE",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Upthrust Candidate",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Upthrust of range_resistance 18.42 (unresolved)",
+     "Trigger_Level": 17.31,
+     "Invalidation_Level": 26.4,
+     "Outcome_Level": 6.01,
+     "Age_Bars": 36,
+     "Warning": ""
+    },
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Crabel Compression Breakout",
+     "Signal_State": "MONITOR",
+     "Direction": null,
+     "Wyckoff_Event": "Contraction without a supported directional reading",
+     "Trigger_Level": null,
+     "Invalidation_Level": null,
+     "Outcome_Level": null,
+     "Age_Bars": 4,
+     "Warning": ""
+    }
+   ]
+  },
+  "1d": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "B",
+   "Phase_Confidence": "MEDIUM",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": "E",
+   "Structural_Context": "Range: competing control is being tested",
+   "Controller": "TWO-SIDED",
+   "Control_Quality": "UNMEASURED",
+   "Crabel_Compression": "NONE; flags=none; tr_ratio=0.78; location=BELOW_FALLING_CEILING; contracting_side=NEITHER; box=15.71-16.92",
+   "Movement_Maturity": "NOT_APPLICABLE",
+   "Control_Transfer_Condition": "",
+   "compression": {
+    "Crabel_Compression": "NONE; flags=none; tr_ratio=0.78; location=BELOW_FALLING_CEILING; contracting_side=NEITHER; box=15.71-16.92",
+    "Compression_State": "NONE",
+    "Compression_Box_High": 16.92,
+    "Compression_Box_Low": 15.71,
+    "Compression_Episode_Start": null,
+    "Compression_Location": "BELOW_FALLING_CEILING",
+    "Compression_Contracting_Side": "NEITHER",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Seller Absorption Breakdown",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Seller Absorption",
+     "Trigger_Level": 16.53,
+     "Invalidation_Level": 17.96,
+     "Outcome_Level": 15.213858574610246,
+     "Age_Bars": 0,
+     "Warning": ""
+    }
+   ]
+  },
+  "60m": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "E",
+   "Phase_Confidence": "MEDIUM",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": "B",
+   "Structural_Context": "Markdown campaign beyond the originating range",
+   "Controller": "SELLERS",
+   "Control_Quality": "WEAKENING",
+   "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.637; location=BELOW_FALLING_CEILING; contracting_side=DOWNSIDE; box=15.71-15.86",
+   "Movement_Maturity": "DEVELOPING",
+   "Control_Transfer_Condition": "buyers accept above 16.92 (origin of the last thrust) and defend it",
+   "compression": {
+    "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.637; location=BELOW_FALLING_CEILING; contracting_side=DOWNSIDE; box=15.71-15.86",
+    "Compression_State": "CONTRACTING",
+    "Compression_Box_High": 15.86,
+    "Compression_Box_Low": 15.71,
+    "Compression_Episode_Start": "2026-09-30 14:30:00",
+    "Compression_Location": "BELOW_FALLING_CEILING",
+    "Compression_Contracting_Side": "DOWNSIDE",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "SOW -> LPSY continuation",
+     "Signal_State": "ACTIVATED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "SOW then LPSY (reaction retraced 42%, did not regain the thrust origin 17.96)",
+     "Trigger_Level": 16.2,
+     "Invalidation_Level": 16.92,
+     "Outcome_Level": 15.261915367483297,
+     "Age_Bars": 25,
+     "Warning": ""
+    },
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Crabel Compression Breakout",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Contraction at a meaningful location",
+     "Trigger_Level": 15.71,
+     "Invalidation_Level": 15.86,
+     "Outcome_Level": null,
+     "Age_Bars": 1,
+     "Warning": ""
+    }
+   ]
+  },
+  "15m": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "E",
+   "Phase_Confidence": "HIGH",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": "E",
+   "Structural_Context": "Markdown campaign beyond the originating range",
+   "Controller": "SELLERS",
+   "Control_Quality": "STRENGTHENING",
+   "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.7; location=BELOW_FALLING_CEILING; contracting_side=BOTH; box=15.71-15.94",
+   "Movement_Maturity": "MATURE",
+   "Control_Transfer_Condition": "buyers accept above 16.17 (origin of the last thrust) and defend it",
+   "compression": {
+    "Crabel_Compression": "CONTRACTING; flags=none; tr_ratio=0.7; location=BELOW_FALLING_CEILING; contracting_side=BOTH; box=15.71-15.94",
+    "Compression_State": "CONTRACTING",
+    "Compression_Box_High": 15.94,
+    "Compression_Box_Low": 15.71,
+    "Compression_Episode_Start": "2026-09-30 12:30:00",
+    "Compression_Location": "BELOW_FALLING_CEILING",
+    "Compression_Contracting_Side": "BOTH",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Seller Absorption Breakdown",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Seller Absorption",
+     "Trigger_Level": 15.78,
+     "Invalidation_Level": 15.86,
+     "Outcome_Level": 15.700403530895333,
+     "Age_Bars": 0,
+     "Warning": "MATURE_MOVE: trigger may be fresh but the move is MATURE"
+    },
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Crabel Compression Breakout",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "Contraction at a meaningful location",
+     "Trigger_Level": 15.71,
+     "Invalidation_Level": 15.94,
+     "Outcome_Level": null,
+     "Age_Bars": 13,
+     "Warning": "MATURE_MOVE: trigger may be fresh but the move is MATURE"
+    },
+    {
+     "Structure_Scope": "LOCAL",
+     "Signal_Type": "Trend Continuation after Shallow Test",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "SOW then LPSY (reaction retraced 28%, did not regain the thrust origin 16.17)",
+     "Trigger_Level": 15.78,
+     "Invalidation_Level": 15.89,
+     "Outcome_Level": 15.506753246753245,
+     "Age_Bars": 7,
+     "Warning": "MATURE_MOVE: trigger may be fresh but the move is MATURE"
+    }
+   ]
+  },
+  "5m": {
+   "Status": "EVALUATED",
+   "Wyckoff_Phase": "E",
+   "Phase_Confidence": "HIGH",
+   "Phase_Transition": "STABLE",
+   "Local_Phase": "B",
+   "Structural_Context": "Markdown campaign beyond the originating range",
+   "Controller": "SELLERS",
+   "Control_Quality": "STRENGTHENING",
+   "Crabel_Compression": "NONE; flags=none; tr_ratio=1.3; location=OPEN; contracting_side=DOWNSIDE; box=15.71-15.82",
+   "Movement_Maturity": "MATURE",
+   "Control_Transfer_Condition": "buyers accept above 15.86 (origin of the last thrust) and defend it",
+   "compression": {
+    "Crabel_Compression": "NONE; flags=none; tr_ratio=1.3; location=OPEN; contracting_side=DOWNSIDE; box=15.71-15.82",
+    "Compression_State": "NONE",
+    "Compression_Box_High": 15.82,
+    "Compression_Box_Low": 15.71,
+    "Compression_Episode_Start": null,
+    "Compression_Location": "OPEN",
+    "Compression_Contracting_Side": "DOWNSIDE",
+    "Compression_Basis": "OBSERVED"
+   },
+   "candidates": [
+    {
+     "Structure_Scope": "CAMPAIGN",
+     "Signal_Type": "Trend Continuation after Shallow Test",
+     "Signal_State": "DETECTED",
+     "Direction": "BEAR",
+     "Wyckoff_Event": "SOW then LPSY (reaction retraced 28%, did not regain the thrust origin 16.17)",
+     "Trigger_Level": 15.78,
+     "Invalidation_Level": 15.89,
+     "Outcome_Level": 15.506753246753245,
+     "Age_Bars": 23,
+     "Warning": "MATURE_MOVE: trigger may be fresh but the move is MATURE"
+    }
+   ]
+  }
+ }
+}

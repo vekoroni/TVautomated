@@ -1,0 +1,146 @@
+{
+ "run": "20261010_191314",
+ "through": "2026-10-09",
+ "sample": 300,
+ "candidate_event_status": {
+  "15m:NOT_MEASURED": 344,
+  "15m:NO_DIRECTED_TRIGGER": 215,
+  "1d:CONFIRMED": 41,
+  "1d:FAILED": 34,
+  "1d:FORMING": 300,
+  "1d:NO_DIRECTED_TRIGGER": 247,
+  "1d:OBSERVED": 45,
+  "1d:PROVISIONALLY_SUCCESSFUL": 12,
+  "1mo:CONFIRMED": 24,
+  "1mo:FAILED": 30,
+  "1mo:FORMING": 177,
+  "1mo:NO_DIRECTED_TRIGGER": 266,
+  "1mo:OBSERVED": 45,
+  "1mo:PROVISIONALLY_SUCCESSFUL": 17,
+  "1w:CONFIRMED": 42,
+  "1w:FAILED": 20,
+  "1w:FORMING": 217,
+  "1w:NO_DIRECTED_TRIGGER": 277,
+  "1w:OBSERVED": 32,
+  "1w:PROVISIONALLY_SUCCESSFUL": 7,
+  "5m:NOT_MEASURED": 279,
+  "5m:NO_DIRECTED_TRIGGER": 211,
+  "60m:NOT_MEASURED": 355,
+  "60m:NO_DIRECTED_TRIGGER": 327
+ },
+ "governing_event_status": {
+  "CONFIRMED": 55,
+  "FORMING": 130,
+  "OBSERVED": 33,
+  "FAILED": 11,
+  "NO_GOVERNING_THESIS": 54,
+  "PROVISIONALLY_SUCCESSFUL": 17
+ },
+ "legacy_readiness_x_event_status": {
+  "READY_FOR_HUMAN_REVIEW x CONFIRMED": 54,
+  "WAIT_TRIGGER x FORMING": 130,
+  "WAIT_TRIGGER x OBSERVED": 33,
+  "CLOSED_RETEST_FAILED x FAILED": 1,
+  "WAIT_TRIGGER x FAILED": 8,
+  "CLOSED_OUTCOME_REACHED x FAILED": 1,
+  "CLOSED_INVALIDATED x FAILED": 1,
+  "READY_FOR_HUMAN_REVIEW x PROVISIONALLY_SUCCESSFUL": 16,
+  "CLOSED_OUTCOME_REACHED x PROVISIONALLY_SUCCESSFUL": 1,
+  "CLOSED_OUTCOME_REACHED x CONFIRMED": 1
+ },
+ "trigger_age_sessions": {
+  "n": 115,
+  "median": 14.0,
+  "le_1": 31,
+  "le_3": 37
+ },
+ "checks": {
+  "checked": 432,
+  "agree": 432,
+  "ready_with_close": 70,
+  "qualified_not_before_close": 70,
+  "wait_sessions_total": 1744
+ },
+ "mismatches": [],
+ "examples": [
+  {
+   "ticker": "A",
+   "thesis__event_id": "f41c8b9ae778ea90",
+   "thesis__event_evidence": "BREAK_ATTEMPT_UP@2026-09-22;BREAK_ACCEPTED_UP@2026-09-23;RETEST_HELD_UP@2026-09-24",
+   "thesis__event_status": "CONFIRMED",
+   "thesis__entry_opportunity_id": "422077451adb0b42",
+   "thesis__trigger_close_date": "2026-09-22",
+   "thesis__trigger_age_sessions": 13,
+   "thesis__event_occurred_at": "2026-09-24",
+   "thesis__event_confirmed_at": "2026-09-24",
+   "thesis__policy_qualified_at": "2026-09-24",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "ACIC",
+   "thesis__event_id": "287178566bd0d0ce",
+   "thesis__event_evidence": "",
+   "thesis__event_status": "FORMING",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "ACM",
+   "thesis__event_id": "878fc2bf0b911de8",
+   "thesis__event_evidence": "BREAK_ATTEMPT_DOWN@2026-09-24;BREAK_ACCEPTED_DOWN@2026-09-29;RETEST_HELD_DOWN@2026-10-01",
+   "thesis__event_status": "CONFIRMED",
+   "thesis__entry_opportunity_id": "1655cc5753bd7c6d",
+   "thesis__trigger_close_date": "2026-09-24",
+   "thesis__trigger_age_sessions": 11,
+   "thesis__event_occurred_at": "2026-10-01",
+   "thesis__event_confirmed_at": "2026-10-01",
+   "thesis__policy_qualified_at": "2026-10-01",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "ACN",
+   "thesis__event_id": "3acc462bb7b6c721",
+   "thesis__event_evidence": "",
+   "thesis__event_status": "FORMING",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "ADP",
+   "thesis__event_id": "86e177a360ded0ac",
+   "thesis__event_evidence": "",
+   "thesis__event_status": "FORMING",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "ADPT",
+   "thesis__event_id": "f1f91c981b65ecb7",
+   "thesis__event_evidence": "BREAK_ATTEMPT_UP@2026-06-26;BREAK_ACCEPTED_UP@2026-07-24",
+   "thesis__event_status": "CONFIRMED",
+   "thesis__entry_opportunity_id": "a3eece99d026f501",
+   "thesis__trigger_close_date": "2026-06-26",
+   "thesis__trigger_age_sessions": 73,
+   "thesis__event_occurred_at": "2026-07-24",
+   "thesis__event_confirmed_at": "2026-07-24",
+   "thesis__policy_qualified_at": "2026-07-24",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  },
+  {
+   "ticker": "SOFI",
+   "thesis__event_id": "64bf7148c4519067",
+   "thesis__event_evidence": "BREAK_ATTEMPT_DOWN@2026-03-31;BREAK_ACCEPTED_DOWN@2026-10-09",
+   "thesis__event_status": "PROVISIONALLY_SUCCESSFUL",
+   "thesis__entry_opportunity_id": "8e8c27f9ea7e0925",
+   "thesis__trigger_close_date": "2026-03-31",
+   "thesis__trigger_age_sessions": 133,
+   "thesis__event_occurred_at": "2026-10-09",
+   "thesis__policy_qualified_at": "2026-10-09",
+   "thesis__source_bar_end_at": "2026-10-09T20:00:00+00:00",
+   "thesis__timeline_version": "EVENT_CLOCKS_V1"
+  }
+ ]
+}

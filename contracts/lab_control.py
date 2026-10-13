@@ -4269,9 +4269,12 @@ def build_final_opportunity_book(
     # Live run 20261008_220129: the materializer can block a row after the sort (e.g. INVALIDATION_MISSING), so the
     # published rank is taken from the final rows - a late block still sinks and no other rank shifts.
     rows.sort(key=rank_key)
+    # B4.2 R1 (ACK 12 Oct 2026): one delivery time for every row of this publication (Evening, then Morning).
+    delivered_at = utc_now()
     for rank, row in enumerate(rows, 1):
         row["lab_rank"] = rank
         row["priority_rank"] = rank
+        row["thesis__delivered_at"] = delivered_at
     return rows
 
 

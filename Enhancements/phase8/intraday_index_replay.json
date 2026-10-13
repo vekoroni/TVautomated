@@ -1,0 +1,36 @@
+{
+ "run": "20261010_191314",
+ "through": "2026-10-09",
+ "window_sessions": 20,
+ "tickers": 2936,
+ "status_before": {
+  "STALE_INTRADAY": 1160,
+  "NO_INTRADAY_DATA": 284,
+  "OK": 15,
+  "INCOMPLETE_SESSIONS": 1477
+ },
+ "status_after_no_fetch": {
+  "OK": 2787,
+  "STALE_INTRADAY": 63,
+  "NO_INTRADAY_DATA": 81,
+  "INCOMPLETE_SESSIONS": 5
+ },
+ "latest_session_coverage": {
+  "SESSION_COMPLETE_SPARSE": 1111,
+  "NO_RECORD": 144,
+  "SESSION_COMPLETE": 1681
+ },
+ "reconciliation_on_ok": {
+  "AGREES": 2136,
+  "DISAGREES": 651
+ },
+ "disagreeing_fields": {
+  "close": 1359,
+  "high": 262,
+  "low": 143,
+  "low|close": 45,
+  "high|close": 26,
+  "high|low": 1
+ },
+ "seconds": 2826
+}

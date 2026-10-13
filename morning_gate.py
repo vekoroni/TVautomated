@@ -230,6 +230,16 @@ def _u(value: Any) -> str:
     return _s(value).upper()
 
 
+def _ticker(value: Any) -> str:
+    """Normalize an identity, preserving literal symbols such as NAN.
+
+    Missing-value sentinels belong to field values, not ticker strings. Real
+    missing objects (None/numeric NaN) remain blank; station checks still reject
+    a blank identity. CSV/provider ticker identities must be strings.
+    """
+    return value.strip().upper() if isinstance(value, str) else ""
+
+
 def _truthy(value: Any) -> bool:
     return _u(value) in {"1", "TRUE", "YES", "Y", "ON"}
 
@@ -566,16 +576,16 @@ def _check_morning_handoff_score_integrity(
     Morning handoff now and records the downstream comparison as pending.
     """
     input_scores = {
-        _u(row.get("ticker")): score
+        _ticker(row.get("ticker")): score
         for row in input_rows
-        if _u(row.get("ticker"))
+        if _ticker(row.get("ticker"))
         for score in [_score_integrity_value(row)]
         if score is not None
     }
     output_scores = {
-        _u(row.get("ticker")): score
+        _ticker(row.get("ticker")): score
         for row in output_rows
-        if _u(row.get("ticker"))
+        if _ticker(row.get("ticker"))
         for score in [_score_integrity_value(row)]
         if score is not None
     }
@@ -635,9 +645,9 @@ def _check_post_lab_score_integrity(
     governed source payload until it becomes a first-class Lab column.
     """
     morning_scores = {
-        _u(row.get("ticker")): score
+        _ticker(row.get("ticker")): score
         for row in morning_rows
-        if _u(row.get("ticker"))
+        if _ticker(row.get("ticker"))
         for score in [_score_integrity_value(row)]
         if score is not None
     }
@@ -661,7 +671,7 @@ def _check_post_lab_score_integrity(
     lab_scores: Dict[str, float] = {}
     payload_errors: List[str] = []
     for row in _read_csv(lab_path):
-        ticker = _u(row.get("ticker"))
+        ticker = _ticker(row.get("ticker"))
         if not ticker:
             continue
         score = _score_integrity_value(row)
@@ -826,7 +836,7 @@ def _parse_marketdata_stock_price(
     updated = payload.get("updated")
     if not all(isinstance(values, list) for values in (symbols, mids, updated)):
         return rejected("INVALID_PROVIDER_SHAPE")
-    matches = [i for i, symbol in enumerate(symbols) if _u(symbol) == _u(ticker)]
+    matches = [i for i, symbol in enumerate(symbols) if _ticker(symbol) == _ticker(ticker)]
     if len(matches) != 1:
         return rejected("SYMBOL_MISMATCH")
     index = matches[0]
@@ -862,7 +872,7 @@ def _fetch_live_price(ticker: str) -> Dict[str, Any]:
 
     if not MARKETDATA_API_KEY:
         return {"live_data_source": "MARKETDATA_SMARTMID", "live_fetch_error": "MISSING_API_KEY"}
-    symbol = _u(ticker)
+    symbol = _ticker(ticker)
     if not re.fullmatch(r"[A-Z0-9.\-]+", symbol):
         return {"live_data_source": "MARKETDATA_SMARTMID", "live_fetch_error": "INVALID_SYMBOL"}
     url = f"https://api.marketdata.app/v1/stocks/prices/{urllib.parse.quote(symbol)}/?extended=true"
@@ -962,7 +972,7 @@ def _capture_msi_market_observations(
     dataset identity for Lab and Interpreter lineage.
     """
 
-    ticker = _u(row.get("ticker"))
+    ticker = _ticker(row.get("ticker"))
     contract = _s(
         live.get("selected_contract_symbol")
         or live.get("live_contract_symbol")
@@ -1096,7 +1106,7 @@ _OCC = re.compile(r"^([A-Z.]{1,6})(\d{6})([CP])(\d{8})$")
 
 def _occ_expiry(symbol: Any) -> Optional[date]:
     """Expiry encoded in an OCC option symbol (YYMMDD), or None."""
-    match = _OCC.match(_u(symbol))
+    match = _OCC.match(_ticker(symbol))
     if not match:
         return None
     try:
@@ -1106,7 +1116,7 @@ def _occ_expiry(symbol: Any) -> Optional[date]:
 
 
 def _occ_strike(symbol: Any) -> Optional[float]:
-    match = _OCC.match(_u(symbol))
+    match = _OCC.match(_ticker(symbol))
     return int(match.group(4)) / 1000.0 if match else None
 
 
@@ -1125,7 +1135,7 @@ def _evidence_runway_sessions(row: Dict[str, Any]) -> Optional[float]:
 def _occ_right(symbol: Any) -> str:
     """The call/put right of an OCC option symbol ("C" / "P"), or "" when the symbol cannot be read."""
     import re
-    match = re.search(r"[A-Z.]+\d{6}([CP])\d{8}", _u(symbol).replace("O:", ""))
+    match = re.search(r"[A-Z.]+\d{6}([CP])\d{8}", _ticker(symbol).replace("O:", ""))
     return match.group(1) if match else ""
 
 
@@ -1137,7 +1147,7 @@ def _iter_repair_alternatives(row: Dict[str, Any], primary_contract: str = "") -
         symbol = _s(row.get(key))
         if not symbol:
             continue
-        symbol_key = _u(symbol)
+        symbol_key = _ticker(symbol)
         if symbol_key in seen:
             continue
         seen.add(symbol_key)
@@ -1232,7 +1242,7 @@ def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, An
                  "eod_anticipated_valued_at_utc": row.get("anticipated_valued_at_utc")}
     if not symbol:
         return {}
-    unchanged = _u(symbol) == _u(evening)
+    unchanged = _ticker(symbol) == _u(evening)
     if unchanged and (_f(live_data.get("live_contract_ask")) is None or _f(live_data.get("live_contract_iv")) is None):
         return {"anticipated_contract_basis": "EVENING_REFERENCE:NO_MORNING_QUOTE", **reference}
     from domain.anticipated_move import anticipated_move_fields
@@ -1312,7 +1322,7 @@ def _fetch_all_live(
     results: Dict[str, Dict[str, Any]] = {}
 
     def fetch_one(row: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
-        ticker = _u(row.get("ticker", ""))
+        ticker = _ticker(row.get("ticker", ""))
         live   = _fetch_live_price(ticker)
         live["morning_execution_mode"] = _u(execution_mode)
         time.sleep(0.1)
@@ -1613,7 +1623,7 @@ def _load_enrichment_delta() -> Dict[str, str]:
                 continue
             bias = _u(ticker_data.get("bias", ""))
             if bias in ("BEARISH", "BULLISH"):
-                bias_map[_u(ticker)] = bias
+                bias_map[_ticker(ticker)] = bias
         return bias_map
     except Exception as exc:
         log.info("Enrichment delta load skipped: %s", exc)
@@ -2134,7 +2144,7 @@ def _morning_liquidity_lifecycle(
     ask = _f(live_data.get("live_contract_ask"))
     delta = _f(live_data.get("live_contract_delta") or row.get("contract_delta"))
     thesis_id = _s(row.get("thesis_id")) or (
-        f"{_u(row.get('ticker'))}:{side or 'UNRESOLVED'}:"
+        f"{_ticker(row.get('ticker'))}:{side or 'UNRESOLVED'}:"
         f"{_s(row.get('asof_date') or row.get('run_id')) or 'UNKNOWN_SESSION'}"
     )
     selected_symbol = _s(
@@ -2383,7 +2393,7 @@ def run_gate(
             out[field] = repaired_dte
         prior_trade_idea_id = _s(out.get("trade_idea_id"))
         run_token = _s(out.get("run_id")) or "UNKNOWN_RUN"
-        ticker_token = _u(out.get("ticker")) or "UNKNOWN"
+        ticker_token = _ticker(out.get("ticker")) or "UNKNOWN"
         direction_token = _u(
             out.get("governed_direction") or out.get("canonical_direction")
             or out.get("direction") or repaired_identity["side"]
@@ -2534,6 +2544,8 @@ def run_gate(
     out["macro_regime_now"]     = current_regime
     out["regime_changed"]       = "TRUE" if not macro_change_pass else "FALSE"
     out["gate_checked_at_utc"]  = _utc_now()
+    # B4.2 R1 (ACK 12 Oct 2026): the Morning's revalidation time travels with the thesis to the book.
+    out["thesis__last_revalidated_at"] = out["gate_checked_at_utc"]
 
     # Check results
     out["check_upstream_authority_pass"] = "TRUE" if authority_pass else "FALSE"
@@ -2713,7 +2725,7 @@ def run_gate(
 
     # AG-08: Enrichment delta bias â€” DISPLAY ONLY confidence modifier (+/- 5%)
     _ENRICHMENT_BOOST = 5.0
-    _ticker_upper = _u(row.get("ticker", ""))
+    _ticker_upper = _ticker(row.get("ticker", ""))
     _enrichment_label = (enrichment_bias or {}).get(_ticker_upper, "")
     if _enrichment_label:
         _raw_score = _f(out.get("scs_score") or out.get("confidence_score") or out.get("conf_pct"))
@@ -3156,7 +3168,7 @@ def _persist_morning_liquidity_result(
     )
 
     thesis_id = _s(result.get("thesis_id"))
-    ticker = _u(result.get("ticker"))
+    ticker = _ticker(result.get("ticker"))
     side = _side(result.get("final_direction") or result.get("direction"))
     if not thesis_id or not ticker or side not in {"CALL", "PUT"}:
         result["morning_liquidity_persistence_status"] = "SKIPPED_NO_GOVERNED_THESIS"
@@ -3278,7 +3290,7 @@ def _persist_morning_liquidity_result(
         exact_record
         and exact_record.dataset_type == DatasetType.EXACT_OPTION_QUOTE
         and _u(exact_record.provider) == "MARKETDATA"
-        and _u(exact_record.instrument_id) == ticker
+        and _ticker(exact_record.instrument_id) == ticker
     )
     if not exact_dataset_valid:
         payload = {
@@ -3516,12 +3528,15 @@ def run_morning_gate(
             liquidity_registry,
             run_id=run_id,
             stage="MORNING_GATE",
-            tickers=(_u(row.get("ticker")) for row in candidates),
+            tickers=(_ticker(row.get("ticker")) for row in candidates),
             dataset_types=(
                 (DatasetType.UNDERLYING_NBBO,)
                 if execution_mode == "PREOPEN_THESIS_CHECK"
                 else (DatasetType.EXACT_OPTION_QUOTE, DatasetType.UNDERLYING_NBBO)
             ),
+            # Live run 20261012_212523 (13 Oct 2026): a restart may add a ticker an earlier attempt wrongly left out
+            # (NAN read as missing); removal or replacement of an authorised ticker still fails.
+            allow_monotonic_expansion=True,
         )
         if not publication.reconciled:
             raise RuntimeError("MSI Morning observation worklist did not reconcile")
@@ -3620,7 +3635,7 @@ def run_morning_gate(
     # Run gate
     results: List[Dict[str, Any]] = []
     for row in candidates:
-        ticker    = _u(row.get("ticker", ""))
+        ticker    = _ticker(row.get("ticker", ""))
         live_data = live_map.get(ticker, {})
         result    = run_gate(
             row, live_data, current_regime, spread_threshold,
@@ -3703,7 +3718,7 @@ def run_morning_gate(
     import pandas as _pd_station
     from domain.station_inspection import enforce, inspect_station, write_station_report
     _station = inspect_station("morning", _pd_station.DataFrame(results), run_id=run_id,
-                               previous_tickers={_u(r.get("ticker")) for r in candidates}, accounted_tickers=set())
+                               previous_tickers={_ticker(r.get("ticker")) for r in candidates}, accounted_tickers=set())
     log.info("Station morning inspected: rows=%d stop_defects=%d | %s", _station["rows"],
              len(_station["stop_defects"]), write_station_report(_station, ROOT / "data" / "output" / "runs" / run_id).name)
     enforce(_station)
@@ -3919,9 +3934,9 @@ def _market_structure_populations(
     worklist_tickers = tuple(
         sorted(
             {
-                _u(row.get("ticker"))
+                _ticker(row.get("ticker"))
                 for row in results
-                if _u(row.get("ticker")) and _u(row.get("ticker")) in live_map
+                if _ticker(row.get("ticker")) and _ticker(row.get("ticker")) in live_map
             }
         )
     )
@@ -3932,10 +3947,10 @@ def _market_structure_populations(
         for row in results
         if (_u(row.get("verdict")) == "GO"
             or _u(row.get("thesis__readiness")) in {"READY_FOR_HUMAN_REVIEW", "WAIT_TRIGGER"})
-        and _u(row.get("ticker")) in live_map
+        and _ticker(row.get("ticker")) in live_map
     ]
     calculation_live_map = {
-        _u(row.get("ticker")): live_map[_u(row.get("ticker"))]
+        _ticker(row.get("ticker")): live_map[_ticker(row.get("ticker"))]
         for row in calculation_candidates
     }
     return worklist_tickers, calculation_candidates, calculation_live_map
@@ -3997,7 +4012,7 @@ def _enrich_msi_market_structure(
     session_date = snapshot.session_date or snapshot.last_completed_session
     regular_open, regular_close = session_bounds(session_date)
     profile_evidence_state = profile_evidence_state_for_session(snapshot.state).value
-    rows_by_ticker = {_u(row.get("ticker")): row for row in candidates}
+    rows_by_ticker = {_ticker(row.get("ticker")): row for row in candidates}
     if profile_evidence_state == "PENDING_MARKET_OPEN":
         for ticker, row in rows_by_ticker.items():
             pending = {
@@ -4020,9 +4035,9 @@ def _enrich_msi_market_structure(
     tickers = tuple(
         sorted(
             {
-                _u(row.get("ticker"))
+                _ticker(row.get("ticker"))
                 for row in candidates
-                if _u(row.get("ticker")) and _u(row.get("ticker")) in live_map
+                if _ticker(row.get("ticker")) and _ticker(row.get("ticker")) in live_map
             }
         )
     )

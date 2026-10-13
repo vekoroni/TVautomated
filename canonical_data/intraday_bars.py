@@ -518,29 +518,108 @@ class CanonicalMinuteBarResolver:
         return IntradayBatchResult(results, exceptions, requested, tuple(sorted(results)), tuple(blocked), tuple(failed))
 
 
+# Step 1 of the behavioural-stage design (ACK approved F1-F6, 12 Oct 2026). A session is often stored in pieces (a
+# morning window, then the Evening's fetch of the rest); its coverage is judged on the union of what was requested,
+# never on one record's own completeness.
+SESSION_COMPLETE = "SESSION_COMPLETE"                 # every regular-session bar present
+SESSION_COMPLETE_SPARSE = "SESSION_COMPLETE_SPARSE"   # the whole session was requested; some bars had no trades
+WINDOW_ONLY = "WINDOW_ONLY"                           # only part of the session was ever requested (e.g. 09:30-10:15)
+FULL_SESSION_STATES = frozenset({SESSION_COMPLETE, SESSION_COMPLETE_SPARSE})
+
+
+def _session_day(value) -> date:
+    return value if isinstance(value, date) and not isinstance(value, datetime) else date.fromisoformat(str(value)[:10])
+
+
+def _session_bar_opens(day: date, interval_minutes: int = 5) -> pd.DatetimeIndex:
+    open_utc, close_utc = session_bounds(day)
+    return pd.date_range(open_utc, close_utc - timedelta(minutes=int(interval_minutes)), freq=f"{int(interval_minutes)}min")
+
+
+def _utc(value) -> pd.Timestamp:
+    ts = pd.Timestamp(value)
+    return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+
+
+def requested_covers_session(entries: Iterable[Mapping], day, *, interval_minutes: int = 5) -> bool:
+    """True when the union of the entries' requested windows (inclusive bar opens) covers every bar of the session.
+    An entry without a recorded window counts as covering the session only if it is a COMPLETE completed-session
+    record (older records)."""
+    expected = _session_bar_opens(_session_day(day), interval_minutes)
+    covered = pd.Series(False, index=expected)
+    for e in entries:
+        start, end = e.get("start_utc"), e.get("end_utc")
+        if not start or not end:
+            if e.get("completeness") == "COMPLETE" and (e.get("evidence_state") or "COMPLETED_SESSION") == "COMPLETED_SESSION":
+                return True
+            continue
+        covered |= (expected >= _utc(start)) & (expected <= _utc(end))
+    return bool(covered.all())
+
+
+def merge_session_frames(frames: Iterable[pd.DataFrame], day, *, interval_minutes: int = 5) -> pd.DataFrame:
+    """One session's bars from all its stored pieces: regular-session bars only, one bar per timestamp (the most
+    recently acquired wins), in time order."""
+    parts = [f for f in frames if f is not None and len(f)]
+    if not parts:
+        return pd.DataFrame()
+    bars = pd.concat(parts, ignore_index=True)
+    bars["timestamp_utc"] = pd.to_datetime(bars["timestamp_utc"], utc=True)
+    if "acquired_at_utc" in bars:
+        bars = bars.sort_values(["timestamp_utc", "acquired_at_utc"])
+    expected = _session_bar_opens(_session_day(day), interval_minutes)
+    bars = bars[bars["timestamp_utc"].isin(expected)]
+    return bars.drop_duplicates("timestamp_utc", keep="last").sort_values("timestamp_utc").reset_index(drop=True)
+
+
+def reconcile_with_daily(bars: pd.DataFrame, daily: pd.DataFrame, *, tolerance: float | None = None,
+                         high_low_tolerance: float | None = None, close_tolerance: float | None = None) -> list[dict]:
+    """F5: each session's high, low and close from the five-minute bars against the daily bar. Returns the sessions
+    whose relative difference exceeds ``tolerance`` on any field (fields named, differences stated)."""
+    if bars is None or not len(bars) or daily is None or not len(daily):
+        return []
+    b = bars.copy()
+    b["timestamp_utc"] = pd.to_datetime(b["timestamp_utc"], utc=True)
+    b["session"] = b["timestamp_utc"].dt.tz_convert("America/New_York").dt.date.map(lambda d: d.isoformat())
+    d = daily.copy()
+    d["session"] = pd.to_datetime(d["date"]).dt.date.map(lambda x: x.isoformat())
+    d = d.drop_duplicates("session", keep="last").set_index("session")
+    out = []
+    for session, g in b.sort_values("timestamp_utc").groupby("session"):
+        if session not in d.index:
+            continue
+        row = d.loc[session]
+        observed = {"high": float(g["high"].max()), "low": float(g["low"].min()), "close": float(g["close"].iloc[-1])}
+        diffs = {k: (v / float(row[k]) - 1.0) if float(row[k]) else None for k, v in observed.items()}
+        limits = {"high": high_low_tolerance if high_low_tolerance is not None else tolerance,
+                  "low": high_low_tolerance if high_low_tolerance is not None else tolerance,
+                  "close": close_tolerance if close_tolerance is not None else tolerance}
+        bad = [k for k, v in diffs.items() if v is not None and abs(v) > float(limits[k])]
+        if bad:
+            out.append({"session": session, "fields": bad, "differences": {k: round(diffs[k], 6) for k in bad}})
+    return out
+
+
 class CompletedIntradayIndex:
     """Read-only view of completed regular-session intraday bars (BEH-001).
 
-    Built once per run from the registry (one query), then serves each ticker.
-    It never raises for a ticker: unusable data is reported as a status so the
-    caller can fall back to other timeframes (ACK amendment, 1 Oct 2026).
-    Statuses: OK, NO_INTRADAY_DATA, STALE_INTRADAY, INCOMPLETE_SESSIONS, READ_ERROR.
-    No provider call is ever made.
+    Built once per run from the registry (one query), then serves each ticker. It never raises for a ticker: unusable
+    data is reported as a status so the caller can fall back to other timeframes (ACK amendment, 1 Oct 2026).
+    Statuses: OK, NO_INTRADAY_DATA, STALE_INTRADAY, INCOMPLETE_SESSIONS, READ_ERROR. No provider call is ever made.
+    A completed session is served only when its stored pieces were requested over the whole session (SESSION_COMPLETE
+    or SESSION_COMPLETE_SPARSE); a morning window is never served as the day (step 1, 12 Oct 2026).
     """
 
     def __init__(self, entries, *, reader=None, interval: str = "5min", segment: str = "REGULAR") -> None:
-        self._by_ticker: dict[str, dict] = {}
+        self._by_ticker: dict[str, dict[str, list]] = {}
+        self._coverage: dict[tuple[str, str], str] = {}
+        self._interval_minutes = int(str(interval).replace("min", "") or 5)
         self._reader = reader or (lambda e: CanonicalMinuteBarResolver._read(e["record"]))
         for e in entries:
             if e.get("interval") != interval or e.get("segment") != segment:
                 continue
             day = e["session_date"].isoformat() if hasattr(e["session_date"], "isoformat") else str(e["session_date"])
-            sessions = self._by_ticker.setdefault(str(e["ticker"]).upper(), {})
-            current = sessions.get(day)
-            # Keep the latest COMPLETE record per session; PARTIAL only if nothing better.
-            rank = (e.get("completeness") == "COMPLETE", str(e.get("as_of")))
-            if current is None or rank > (current.get("completeness") == "COMPLETE", str(current.get("as_of"))):
-                sessions[day] = e
+            self._by_ticker.setdefault(str(e["ticker"]).upper(), {}).setdefault(day, []).append(e)
 
     @classmethod
     def from_registry(cls, registry_path: Path, **kwargs) -> "CompletedIntradayIndex":
@@ -554,29 +633,52 @@ class CompletedIntradayIndex:
             entries.append({"ticker": r.instrument_id, "session_date": r.session_date,
                             "completeness": r.completeness_status.value, "interval": extra.get("interval"),
                             "segment": extra.get("session_segment"), "as_of": r.as_of.isoformat(),
-                            "record": r})
+                            "start_utc": extra.get("start_utc"), "end_utc": extra.get("end_utc"),
+                            "evidence_state": extra.get("evidence_state"), "record": r})
         return cls(entries, **kwargs)
 
+    def coverage(self, ticker: str, session: str):
+        """The coverage state of a session evaluated by bars_for (None if it was not reached)."""
+        return self._coverage.get((str(ticker).upper(), str(session)))
+
+    def entries_for(self, ticker: str) -> dict:
+        """Stored pieces per session for one ticker (the catch-up's gap list reads this; no payload is opened)."""
+        return self._by_ticker.get(str(ticker).upper(), {})
+
     def bars_for(self, ticker: str, *, through_session: str, sessions: int,
-                 expected_sessions=None) -> tuple[pd.DataFrame | None, str]:
-        known = self._by_ticker.get(str(ticker).upper(), {})
-        usable = sorted(day for day, e in known.items()
-                        if day <= through_session and e.get("completeness") == "COMPLETE")
+                 expected_sessions=None):
+        key = str(ticker).upper()
+        known = self._by_ticker.get(key, {})
+        usable: dict[str, pd.DataFrame] = {}
+        for day in sorted((d for d in known if d <= through_session), reverse=True):
+            if len(usable) >= int(sessions):
+                break
+            entries = known[day]
+            if not requested_covers_session(entries, day, interval_minutes=self._interval_minutes):
+                self._coverage[(key, day)] = WINDOW_ONLY
+                continue
+            # One stored record that covers the whole session is read alone (the newest such); pieces are merged only
+            # when no single record does (replay 12 Oct 2026: reading every piece took 87 minutes per Evening).
+            whole = [e for e in entries if requested_covers_session([e], day, interval_minutes=self._interval_minutes)]
+            if whole:
+                entries = [max(whole, key=lambda e: (e.get("completeness") == "COMPLETE", str(e.get("as_of"))))]
+            frames = []
+            for e in entries:
+                try:
+                    frames.append(self._reader(e))
+                except Exception:
+                    return None, "READ_ERROR"
+            merged = merge_session_frames(frames, day, interval_minutes=self._interval_minutes)
+            if not len(merged):
+                self._coverage[(key, day)] = WINDOW_ONLY
+                continue
+            full = len(merged) == len(_session_bar_opens(_session_day(day), self._interval_minutes))
+            self._coverage[(key, day)] = SESSION_COMPLETE if full else SESSION_COMPLETE_SPARSE
+            usable[day] = merged
         if not usable:
             return None, "NO_INTRADAY_DATA"
-        window = usable[-int(sessions):]
-        frames = []
-        for day in window:
-            try:
-                frame = self._reader(known[day])
-            except Exception:
-                return None, "READ_ERROR"
-            if frame is None or len(frame) == 0:
-                return None, "READ_ERROR"
-            frames.append(frame)
-        bars = pd.concat(frames, ignore_index=True)
-        bars["timestamp_utc"] = pd.to_datetime(bars["timestamp_utc"], utc=True)
-        bars = bars.drop_duplicates("timestamp_utc").sort_values("timestamp_utc").reset_index(drop=True)
+        window = sorted(usable)
+        bars = pd.concat([usable[d] for d in window], ignore_index=True)
         if window[-1] < through_session:
             return bars, "STALE_INTRADAY"
         if expected_sessions is not None:

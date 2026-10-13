@@ -3444,6 +3444,21 @@ def _read_stage_frame(path: Path):
     return _pd_st.read_csv(path, low_memory=False, dtype=str, keep_default_na=False, na_values=[""])
 
 
+def run_intraday_catchup() -> None:
+    """Step 1 (F3, ACK 12 Oct 2026): store every five-minute session of the behavioural reading window that a ticker
+    traded but that is not stored whole, before Discovery reads it (scripts/intraday_catchup.py, Polygon as the second
+    source). Report only: a failure is logged and Discovery still runs, with its stale / incomplete flags."""
+    try:
+        policy = json.loads((cfg.BASE_DIR / "config" / "governed_constants_v1.json").read_text(encoding="utf-8-sig"))
+        timeout = 60 * int(policy["intraday_completeness"]["catchup_timeout_minutes"])
+        result = subprocess.run([sys.executable, str(cfg.BASE_DIR / "scripts" / "intraday_catchup.py")],
+                                cwd=str(cfg.BASE_DIR), capture_output=True, text=True, timeout=timeout)
+        tail = [line for line in (result.stdout or "").splitlines() if line.strip()][-12:]
+        logger.info("Intraday catch-up: exit %s | %s", result.returncode, " ".join(tail)[-600:])
+    except Exception as err:                                      # noqa: BLE001 - never stops the Evening
+        logger.warning("Intraday catch-up did not complete: %s", err)
+
+
 def _discovery_output_csv(run_id: str) -> Path:
     """Discovery's candidates file: the run copy once pin_run_directory has staged it, else Discovery's own output
     (live 10 Oct 2026: the Discovery station ran before the copy existed and stopped the line)."""
@@ -6142,6 +6157,9 @@ def evening_workflow(
     _effective_universe = universe_override if universe_override and universe_override.exists() else _augmented_universe_path
     if universe_override:
         logger.info("🧪  TEST MODE: universe override active → %s", universe_override.name)
+    # Step 1 (F3): whole five-minute sessions for the reading window are stored before Discovery reads them.
+    if not universe_override:
+        run_intraday_catchup()
     success, summary, discovery_run_id = run_discovery(
         augmented_universe_path = _effective_universe,
         scanner_context_path    = _scanner_ctx_latest,

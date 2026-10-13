@@ -9064,6 +9064,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'contract_spread_source'  : contract.get('spread_source'),
         'contract_occ_symbol'     : contract.get('md_occ_symbol'),
         'contract_quote_timestamp_utc': contract.get('quote_timestamp_utc'),
+        # B4.2 R1 (ACK 12 Oct 2026): when this stage prepared (selected and priced) the contract.
+        'contract_prepared_at_utc': datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'contract_quote_timestamp_source': contract.get('quote_timestamp_source'),
         'quote_timestamp_utc'     : contract.get('quote_timestamp_utc'),
         'contract_multiplier'     : contract.get('contract_multiplier'),
@@ -10802,7 +10804,7 @@ def run_options_layer(
         'horizon_bucket','horizon_action','horizon_size_multiplier',
         'entry_spot','target_spot','invalidation_spot','invalidation_source','invalidation_candidate_state',
         'invalidation_policy_version','planned_hold_sessions','planned_hold_source',
-        'ev3_handoff_schema_version','contract_quote_timestamp_utc','quote_timestamp_utc',
+        'ev3_handoff_schema_version','contract_quote_timestamp_utc','contract_prepared_at_utc','quote_timestamp_utc',
         'ev3_barrier_state_key','ev3_barrier_state_key_source','ev3_barrier_state_key_version',
         'contract_quote_timestamp_source',
         'contract_multiplier','contract_multiplier_source',

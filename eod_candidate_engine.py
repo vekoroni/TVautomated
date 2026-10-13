@@ -2879,6 +2879,8 @@ def build_candidate_manifest(
         # Phase 5.1 (8 Oct 2026): the thesis's own story fields and Vanguard's context travel unchanged.
         for spine_col in (*THESIS_SPINE_FIELDS, *VANGUARD_CONTEXT_FIELDS):
             candidate[spine_col] = row.get(spine_col, "")
+        # B4.2 R1 (ACK 12 Oct 2026): the Options stage's own stamp of when it prepared the contract.
+        candidate["thesis__contract_prepared_at"] = row.get("contract_prepared_at_utc") or ""
         # Fix E (ACK 5 Oct 2026): the inputs the Morning needs to recompute the anticipated move for a swapped contract.
         for recompute_col in ("thesis_event_timeframe", "thesis_structure_alignment", "target_reachable_vol_annual"):
             candidate[recompute_col] = row.get(recompute_col, "")

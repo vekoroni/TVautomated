@@ -1,0 +1,44 @@
+{
+ "read_as_of": "2026-09-25",
+ "outcomes_through": "2026-10-09",
+ "tickers": 200,
+ "ledger_rows": 625,
+ "recorded_counts": {
+  "NEW": 625
+ },
+ "cohort_rows": 625,
+ "status_by_timeframe": {
+  "1mo:FORMING": 110,
+  "1w:FORMING": 131,
+  "1d:FORMING": 140,
+  "1w:OBSERVED": 35,
+  "1d:CONFIRMED": 29,
+  "1mo:PROVISIONALLY_SUCCESSFUL": 7,
+  "1w:FAILED": 23,
+  "1d:OBSERVED": 25,
+  "1mo:OBSERVED": 26,
+  "1w:PROVISIONALLY_SUCCESSFUL": 3,
+  "1d:FAILED": 21,
+  "1d:PROVISIONALLY_SUCCESSFUL": 12,
+  "1mo:FAILED": 19,
+  "1w:CONFIRMED": 33,
+  "1mo:CONFIRMED": 11
+ },
+ "daily_crossed": 87,
+ "daily_views_status": {
+  "COMPLETE": 81,
+  "PENDING_FILL": 5,
+  "CENSORED": 1
+ },
+ "daily_first_barrier": {
+  "FAVOURABLE": 46,
+  "NONE_IN_WINDOW": 3,
+  "ADVERSE": 31,
+  "NONE": 5,
+  "AMBIGUOUS_SAME_BAR": 1,
+  "NONE_YET": 1
+ },
+ "daily_trigger_age_at_read_median": 3.0,
+ "daily_ret_10_atr_median": 0.29951011659993726,
+ "invariants": "PASSED (idempotent, unique, point-in-time, fill after signal)"
+}

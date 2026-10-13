@@ -1,0 +1,287 @@
+{
+ "run": "20261010_191314",
+ "rows": {
+  "discovery": 2936,
+  "candidates": 35733,
+  "book": 2792,
+  "vanguard": 2792
+ },
+ "side": {
+  "BULL": 1287,
+  "BEAR": 1209,
+  "UNASSIGNED": 440
+ },
+ "readiness": {
+  "WAIT_TRIGGER": 1647,
+  "READY_FOR_HUMAN_REVIEW": 798,
+  "NOT_ADOPTED": 440,
+  "CLOSED_RETEST_FAILED": 23,
+  "CLOSED_OUTCOME_REACHED": 20,
+  "CLOSED_INVALIDATED": 8
+ },
+ "directed": 2496,
+ "directed_fields_filled": {
+  "thesis_trigger_level": 2496,
+  "thesis_outcome_level": 2496,
+  "thesis_event_timeframe": 2496,
+  "thesis_duration_q80_bars": 2337,
+  "thesis__last_event": 1441,
+  "geometry_justification": 2496,
+  "trade_lane_hit_holdout": 687,
+  "setup_rate_within_hold": 2495,
+  "distance_to_trigger_pct": 1272
+ },
+ "P1_trigger_equals_candidate": [
+  2496,
+  2496
+ ],
+ "P1_target_equals_candidate": [
+  2496,
+  2496
+ ],
+ "P1_side_equals_candidate": [
+  2496,
+  2496
+ ],
+ "P1_book_target_equals_thesis": [
+  2168,
+  2371
+ ],
+ "P1_book_trigger_equals_thesis": [
+  2371,
+  2371
+ ],
+ "P1_book_side_equals_thesis": [
+  2371,
+  2371
+ ],
+ "D2_direction_governance_status": {
+  "CONFIRMED": 2371,
+  "NOT_RESOLVED": 421
+ },
+ "D2_direction_resolution_evidence_count_max": 0.0,
+ "D2_direction_resolution_path": {
+  "DIRECTION_CONFIRMED": 2371,
+  "UNRESOLVED": 421
+ },
+ "D2_direction_validation_state": {
+  "TESTED_NO_EDGE": 2792
+ },
+ "legacy_fields_in_book": {
+  "wyckoff_mode": {
+   "filled": 2792,
+   "top": {
+    "ACCUMULATION": 1932,
+    "DISTRIBUTION": 860
+   }
+  },
+  "phase": {
+   "filled": 2792,
+   "top": {
+    "C": 1254,
+    "B": 1191,
+    "D": 174,
+    "U": 95
+   }
+  },
+  "wyckoff_phase_bucket": {
+   "filled": 2697,
+   "top": {
+    "ACCUMULATION": 2489,
+    "MARKUP": 208,
+    "<NA>": 95
+   }
+  },
+  "composite_score": {
+   "filled": 2792,
+   "top": {
+    "73.8": 232,
+    "77.2": 204,
+    "69.2": 174,
+    "72.8": 159
+   }
+  },
+  "crabel_score": {
+   "filled": 2792,
+   "top": {
+    "0.0": 1032,
+    "28.6": 724,
+    "42.9": 540,
+    "71.4": 322
+   }
+  },
+  "trigger_primary": {
+   "filled": 2792,
+   "top": {
+    "NONE": 1470,
+    "VOL_COMPRESSION": 466,
+    "VOL_COMPRESSION_IV_RICH": 374,
+    "RANGE_BREAK_EARLY": 254
+   }
+  },
+  "trigger_quality": {
+   "filled": 2792,
+   "top": {
+    "NONE": 1470,
+    "SINGLE": 1154,
+    "STRONG": 168
+   }
+  },
+  "trigger_price": {
+   "filled": 2371,
+   "top": {
+    "<NA>": 421,
+    "15.75": 4,
+    "6.72": 3,
+    "50.17": 3
+   }
+  },
+  "trigger_price_source": {
+   "filled": 2792,
+   "top": {
+    "THESIS_TRIGGER_LEVEL": 2371,
+    "NOT_AVAILABLE_NO_THESIS_TRIGGER": 421
+   }
+  },
+  "tier": {
+   "filled": 2792,
+   "top": {
+    "A": 892,
+    "WATCH": 829,
+    "B": 614,
+    "C": 457
+   }
+  },
+  "options_score": {
+   "filled": 2792,
+   "top": {
+    "0.0": 627,
+    "34.0": 73,
+    "36.0": 70,
+    "26.0": 67
+   }
+  }
+ },
+ "D3_legacy_mode_opposes_thesis_side": [
+  1343,
+  2371
+ ],
+ "D6": {
+  "go": 488,
+  "go_thesis_trigger_level": 488,
+  "go_last_event": {
+   "BREAK_ACCEPTED_DOWN": 140,
+   "RETEST_HELD_UP": 93,
+   "BREAK_ACCEPTED_UP": 90,
+   "RETEST_HELD_DOWN": 71,
+   "VWAP_LOSS": 64,
+   "VWAP_RECLAIM": 30
+  },
+  "go_legacy_trigger_primary_empty": 0,
+  "trigger_price_source_on_go": {
+   "THESIS_TRIGGER_LEVEL": 488
+  }
+ },
+ "D19_book_tier": {
+  "A": 892,
+  "WATCH": 829,
+  "B": 614,
+  "C": 457
+ },
+ "D19_tier_x_readiness": {
+  "A|WAIT_TRIGGER": 589,
+  "WATCH|NOT_ADOPTED": 421,
+  "B|WAIT_TRIGGER": 403,
+  "C|WAIT_TRIGGER": 309,
+  "A|READY_FOR_HUMAN_REVIEW": 286,
+  "WATCH|WAIT_TRIGGER": 269,
+  "B|READY_FOR_HUMAN_REVIEW": 200,
+  "C|READY_FOR_HUMAN_REVIEW": 139,
+  "WATCH|READY_FOR_HUMAN_REVIEW": 125,
+  "A|CLOSED_RETEST_FAILED": 10,
+  "WATCH|CLOSED_OUTCOME_REACHED": 8,
+  "A|CLOSED_OUTCOME_REACHED": 6
+ },
+ "unresolved": {
+  "tickers": 440,
+  "reason": {
+   "SAME_TIMEFRAME_CONFLICT": 417,
+   "NO_ADOPTED_THESIS": 14,
+   "NO_ADOPTED_THESIS_ON_TESTED_TIMEFRAME": 9
+  },
+  "candidates_with_adoption_state": {
+   "ADOPTED": 2619,
+   "UNRESOLVED": 1241,
+   "REFUSED": 835,
+   "CLOSED": 556
+  },
+  "candidates_with_both_conditional_triggers": 916,
+  "tickers_with_any_conditional_trigger": 390,
+  "book_rows_with_contract": 0
+ },
+ "candidate_contributors": {
+  "Direction_Status": 35733,
+  "Duration_Level_Status": 35733,
+  "Duration_Status": 35733,
+  "Data_Status": 35733,
+  "Distance_To_Trigger_ATR": 27028,
+  "Distance_To_Trigger_ATR_Status": 35253,
+  "Levels_Status": 35253,
+  "Events_Status": 35253
+ },
+ "candidate_distance_status": {
+  "MEASURED": 27028,
+  "NOT_MEASURED:NO_TRIGGER_LEVEL": 8225,
+  "<NA>": 480
+ },
+ "designed_contributors_absent": [
+  "pre_trigger_momentum",
+  "rel_strength",
+  "volume_participation",
+  "iv_vs_own_history",
+  "option_activity_state"
+ ],
+ "P5_crabel_percentile_default_50": "field absent",
+ "vanguard": {
+  "context_authority": {
+   "CONTEXT_ONLY": 2792
+  },
+  "context_flags_filled": 730,
+  "context_flags_top": {
+   "<NA>": 2062,
+   "HISTORY_AGAINST_THESIS_SIDE": 675,
+   "THIN_HISTORY": 55
+  },
+  "thesis_context_status": {
+   "AVAILABLE": 2792
+  },
+  "actuarial_source": {
+   "V6_DB": 2792
+  },
+  "edge_direction_status": {
+   "RETIRED_USE_SIDE_EVIDENCE": 2792
+  },
+  "n_observations_q": {
+   "count": 2792.0,
+   "mean": 27002.0,
+   "std": 49249.0,
+   "min": 67.0,
+   "25%": 4526.0,
+   "50%": 10136.0,
+   "75%": 28875.0,
+   "max": 425214.0
+  },
+  "side_p_close_favourable_10d_basis": {
+   "CLOSE_TO_CLOSE": 2371,
+   "<NA>": 421
+  },
+  "auction_state": {
+   "PROFILE_CONTEXT_ONLY": 1987,
+   "NOT_EVALUATED": 805
+  },
+  "edge_direction_vs_thesis_side_disagree": [
+   0,
+   0
+  ]
+ }
+}

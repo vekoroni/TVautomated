@@ -85,6 +85,36 @@ class BehaviouralCandidateLedger:
                 CREATE TRIGGER IF NOT EXISTS candidate_events_no_delete
                     BEFORE DELETE ON candidate_events
                     BEGIN SELECT RAISE(ABORT, 'candidate ledger is append-only'); END;
+                CREATE TABLE IF NOT EXISTS opportunity_events(
+                    row_id TEXT PRIMARY KEY,
+                    schema_version TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    recorded_at_utc TEXT NOT NULL,
+                    as_of TEXT,
+                    ticker TEXT NOT NULL,
+                    timeframe TEXT,
+                    candidate_id TEXT NOT NULL,
+                    thesis_side TEXT,
+                    trigger_level REAL,
+                    event_id TEXT NOT NULL,
+                    entry_opportunity_id TEXT,
+                    event_status TEXT NOT NULL,
+                    previous_status TEXT,
+                    change_type TEXT NOT NULL,
+                    trigger_close_date TEXT,
+                    event_occurred_at TEXT,
+                    event_confirmed_at TEXT,
+                    event_failed_at TEXT,
+                    readiness TEXT
+                );
+                CREATE INDEX IF NOT EXISTS ix_opportunity_events_event
+                    ON opportunity_events(event_id, entry_opportunity_id);
+                CREATE TRIGGER IF NOT EXISTS opportunity_events_no_update
+                    BEFORE UPDATE ON opportunity_events
+                    BEGIN SELECT RAISE(ABORT, 'opportunity ledger is append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS opportunity_events_no_delete
+                    BEFORE DELETE ON opportunity_events
+                    BEGIN SELECT RAISE(ABORT, 'opportunity ledger is append-only'); END;
                 """
             )
 
@@ -183,6 +213,56 @@ class BehaviouralCandidateLedger:
             run, as_of = first.get(c["Candidate_ID"], (None, None))
             c["First_Seen_Run"], c["First_Seen_As_Of"] = run, as_of
         return counts
+
+    # -- R3 opportunity ledger (B4.2 part 2, ACK 12 Oct 2026) ------------------------------------------------
+    def record_opportunities(self, run_id: str, candidates: List[Mapping]) -> dict:
+        """Append each thesis event / entry opportunity when first seen and when its status changes.
+
+        Keyed (event_id, entry_opportunity_id). Candidates without an Event_ID (no directed trigger) are not
+        opportunities. An unchanged status, or this run already recorded, adds nothing (idempotent)."""
+        self.initialise()
+        now = datetime.now(timezone.utc).isoformat()
+        counts: dict = {}
+        with self._connect() as connection:
+            latest = {(r["event_id"], r["entry_opportunity_id"] or ""): r["event_status"] for r in connection.execute(
+                "SELECT o.event_id, o.entry_opportunity_id, o.event_status FROM opportunity_events o JOIN ("
+                "SELECT event_id, IFNULL(entry_opportunity_id, '') AS opp, MAX(rowid) AS r FROM opportunity_events "
+                "GROUP BY event_id, IFNULL(entry_opportunity_id, '')) m ON o.rowid = m.r")}
+            for c in candidates or []:
+                event_id, status = c.get("Event_ID"), c.get("Event_Status")
+                if not event_id or not status or not c.get("Candidate_ID"):
+                    continue
+                opp = c.get("Entry_Opportunity_ID") or None
+                key = (event_id, opp or "")
+                previous = latest.get(key)
+                if previous == status:
+                    continue
+                row_id = hashlib.sha256(f"{run_id}|{event_id}|{opp}|{status}".encode()).hexdigest()
+                change = "NEW" if previous is None else "STATUS_CHANGED"
+                cid = str(c["Candidate_ID"])
+                cursor = connection.execute(
+                    "INSERT OR IGNORE INTO opportunity_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (row_id, SCHEMA_VERSION, run_id, now, c.get("As_Of"), str(c.get("Ticker") or cid.split("|")[0]),
+                     c.get("Timeframe"), cid, c.get("Thesis_Side"), _float(c.get("Trigger_Level")), event_id, opp,
+                     status, previous, change, c.get("Trigger_Close_Date"), c.get("Event_Occurred_At"),
+                     c.get("Event_Confirmed_At"), c.get("Event_Failed_At"), c.get("Readiness")))
+                if cursor.rowcount:
+                    counts[change] = counts.get(change, 0) + 1
+                latest[key] = status
+        return counts
+
+    def opportunity_history(self, event_id: str) -> List[dict]:
+        self.initialise()
+        with self._connect() as connection:
+            rows = connection.execute("SELECT * FROM opportunity_events WHERE event_id=? ORDER BY rowid",
+                                      (event_id,)).fetchall()
+        return [dict(row) for row in rows]
+
+    def opportunities(self) -> List[dict]:
+        """Every opportunity row (all status changes), oldest first - the R3 cohort's source."""
+        self.initialise()
+        with self._connect() as connection:
+            return [dict(r) for r in connection.execute("SELECT * FROM opportunity_events ORDER BY rowid")]
 
     @staticmethod
     def _run_event(connection, run_id: str, candidate_id: str) -> str:

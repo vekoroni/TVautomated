@@ -1,0 +1,156 @@
+{
+ "run": "20261010_191314",
+ "through": "2026-10-09",
+ "sample": 200,
+ "intraday_status": {
+  "OK": 171,
+  "STALE_INTRADAY": 7,
+  "INTRADAY_DISAGREES_WITH_DAILY": 19,
+  "NO_INTRADAY_DATA": 3
+ },
+ "labels": {
+  "15m:Compression_Basis": {
+   "OBSERVED": 171,
+   "INFERRED": 25,
+   "NOT_EVALUATED": 4
+  },
+  "15m:Controller_Basis": {
+   "UNRESOLVED": 112,
+   "INFERRED": 84,
+   "NOT_EVALUATED": 4
+  },
+  "15m:Phase_Basis": {
+   "UNRESOLVED": 73,
+   "INFERRED": 123,
+   "NOT_EVALUATED": 4
+  },
+  "15m:Transition_Basis": {
+   "INFERRED": 196,
+   "NOT_EVALUATED": 4
+  },
+  "1d:Compression_Basis": {
+   "OBSERVED": 200
+  },
+  "1d:Controller_Basis": {
+   "INFERRED": 95,
+   "UNRESOLVED": 105
+  },
+  "1d:Phase_Basis": {
+   "INFERRED": 161,
+   "UNRESOLVED": 39
+  },
+  "1d:Transition_Basis": {
+   "INFERRED": 200
+  },
+  "1mo:Compression_Basis": {
+   "OBSERVED": 184,
+   "NOT_EVALUATED": 16
+  },
+  "1mo:Controller_Basis": {
+   "INFERRED": 96,
+   "UNRESOLVED": 88,
+   "NOT_EVALUATED": 16
+  },
+  "1mo:Phase_Basis": {
+   "INFERRED": 168,
+   "UNRESOLVED": 16,
+   "NOT_EVALUATED": 16
+  },
+  "1mo:Transition_Basis": {
+   "INFERRED": 184,
+   "NOT_EVALUATED": 16
+  },
+  "1w:Compression_Basis": {
+   "OBSERVED": 199,
+   "NOT_EVALUATED": 1
+  },
+  "1w:Controller_Basis": {
+   "INFERRED": 102,
+   "UNRESOLVED": 97,
+   "NOT_EVALUATED": 1
+  },
+  "1w:Phase_Basis": {
+   "INFERRED": 162,
+   "UNRESOLVED": 37,
+   "NOT_EVALUATED": 1
+  },
+  "1w:Transition_Basis": {
+   "INFERRED": 199,
+   "NOT_EVALUATED": 1
+  },
+  "5m:Compression_Basis": {
+   "OBSERVED": 171,
+   "INFERRED": 25,
+   "NOT_EVALUATED": 4
+  },
+  "5m:Controller_Basis": {
+   "UNRESOLVED": 103,
+   "INFERRED": 93,
+   "NOT_EVALUATED": 4
+  },
+  "5m:Phase_Basis": {
+   "INFERRED": 152,
+   "UNRESOLVED": 44,
+   "NOT_EVALUATED": 4
+  },
+  "5m:Transition_Basis": {
+   "INFERRED": 196,
+   "NOT_EVALUATED": 4
+  },
+  "60m:Compression_Basis": {
+   "OBSERVED": 171,
+   "INFERRED": 25,
+   "NOT_EVALUATED": 4
+  },
+  "60m:Controller_Basis": {
+   "INFERRED": 78,
+   "UNRESOLVED": 118,
+   "NOT_EVALUATED": 4
+  },
+  "60m:Phase_Basis": {
+   "INFERRED": 156,
+   "UNRESOLVED": 40,
+   "NOT_EVALUATED": 4
+  },
+  "60m:Transition_Basis": {
+   "INFERRED": 196,
+   "NOT_EVALUATED": 4
+  }
+ },
+ "caps": {
+  "60m:STALE_INTRADAY": 6,
+  "15m:STALE_INTRADAY": 6,
+  "5m:STALE_INTRADAY": 6,
+  "1mo:NOT_EVALUATED_INSUFFICIENT_BARS": 16,
+  "60m:INTRADAY_DISAGREES_WITH_DAILY": 19,
+  "15m:INTRADAY_DISAGREES_WITH_DAILY": 19,
+  "5m:INTRADAY_DISAGREES_WITH_DAILY": 19,
+  "1w:NOT_EVALUATED_INSUFFICIENT_BARS": 1,
+  "60m:NOT_EVALUATED_NO_INTRADAY_DATA": 3,
+  "15m:NOT_EVALUATED_NO_INTRADAY_DATA": 3,
+  "5m:NOT_EVALUATED_NO_INTRADAY_DATA": 3,
+  "60m:NOT_EVALUATED_INSUFFICIENT_BARS": 1,
+  "15m:NOT_EVALUATED_INSUFFICIENT_BARS": 1,
+  "5m:NOT_EVALUATED_INSUFFICIENT_BARS": 1
+ },
+ "event_basis": {
+  "15m:INFERRED": 246,
+  "15m:OBSERVED": 64,
+  "15m:UNRESOLVED": 76,
+  "1d:INFERRED": 270,
+  "1d:OBSERVED": 103,
+  "1d:UNRESOLVED": 79,
+  "1mo:INFERRED": 242,
+  "1mo:OBSERVED": 72,
+  "1mo:UNRESOLVED": 98,
+  "1w:INFERRED": 222,
+  "1w:OBSERVED": 113,
+  "1w:UNRESOLVED": 102,
+  "5m:INFERRED": 201,
+  "5m:OBSERVED": 69,
+  "5m:UNRESOLVED": 44,
+  "60m:INFERRED": 210,
+  "60m:OBSERVED": 77,
+  "60m:UNRESOLVED": 144
+ }
+}

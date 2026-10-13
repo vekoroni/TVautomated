@@ -2756,12 +2756,7 @@ def legacy_lab():
     return response
 
 
-@app.route("/review")
-def review_first_lab():
-    """Compatibility URL for the approved review-first homepage."""
-    response = send_from_directory(Path(__file__).resolve().parent / "static", "review.html")
-    response.headers["Cache-Control"] = "no-store, max-age=0"
-    return response
+# ACK 13 Oct 2026: the /review compatibility URL is retired - the page is served at the root ("/") only.
 
 @app.route("/api/health")
 def api_health():
@@ -3834,4 +3829,5 @@ if __name__ == "__main__":
     print("=" * 65)
     print("  Server       : http://localhost:5002")
     print("=" * 65)
-    app.run(host="0.0.0.0", port=5002, debug=False, threaded=True, use_reloader=False)
+    # ACK 13 Oct 2026: this PC only until the secure page (login, HTTPS, same-origin, protected writes) is built.
+    app.run(host="127.0.0.1", port=5002, debug=False, threaded=True, use_reloader=False)

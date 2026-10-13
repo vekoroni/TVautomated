@@ -349,5 +349,17 @@
       "1mo": 21
     },
     "window_basis": "C12 scores a 20-session window (outcome.window_sessions; max sessions_observed in the store = 20). A setup hold longer than the window is BEYOND_SCORER_WINDOW on a window TIMEOUT, never a miss. Bars convert to sessions at 1 / 5 / 21 per 1d / 1w / 1mo bar (setup_rates_v1.json timeframes)."
+  },
+  "intraday_completeness": {
+    "reconciliation_tolerance": 0.005,
+    "catchup_sessions": 20,
+    "catchup_workers": 4,
+    "catchup_timeout_minutes": 45,
+    "basis": "ACK 12 Oct 2026 (step 1, F3-F5): five-minute sessions served to the behavioural reading reconcile to the daily bar on high, low and close within 0.5% (initial; calibrate on the reconciliation report); the catch-up before Discovery covers the 60m swing window (20 sessions, config/beh001_behaviour_v1.json); Polygon aggregates are the second source for underlying bars.",
+    "authority": "DATA_QUALITY_LABELS",
+    "high_low_tolerance": 0.005,
+    "close_tolerance": 0.01,
+    "reconciliation_window_sessions": 4,
+    "calibration_basis": "Calibrated 12 Oct 2026 on 4,680 sessions after the catch-up (Enhancements/phase8/intraday_index_replay.json): high / low agree with the daily bar on 99% of sessions (99th pct 0.25% / 0.08%) - a miss beyond 0.5% is a data error; the close is the closing-auction print and differs by design (median 0.04%, 95th 0.35%, 99th ~1%) - 1.0%. Only the trigger-and-response window (the 5m timeframe's 4 sessions) flags the reading."
   }
 }

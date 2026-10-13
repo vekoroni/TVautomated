@@ -17,6 +17,7 @@ spine with intraday_alignment (ALIGNED / OPPOSED / NONE / NOT_MEASURED) - the bu
 """
 from __future__ import annotations
 
+import hashlib
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from domain.trade_geometry import TRADE_GEOMETRY_FIELDS
@@ -32,6 +33,14 @@ THESIS_SPINE_FIELDS = (
     "thesis__last_event_interval", "legacy_beh_daily_primary_side",
     "thesis__readiness", "thesis__readiness_reason", "thesis__readiness_event_date",
     "thesis__conditional_count",
+    # B4.2 (ACK 12 Oct 2026): the governing thesis event's id, developing status and clocks (R1 / N2), for mining.
+    *("thesis__event_id", "thesis__event_status", "thesis__event_evidence", "thesis__entry_opportunity_id", "thesis__trigger_close_date",
+      "thesis__trigger_age_sessions", "thesis__event_occurred_at", "thesis__event_confirmed_at",
+      "thesis__event_failed_at", "thesis__policy_qualified_at", "thesis__source_bar_end_at",
+      "thesis__discovery_read_at", "thesis__data_received_at", "thesis__data_provider", "thesis__setup_first_detected_at", "thesis__setup_first_detected_run",
+      # stamped by the stage that acts: Options (contract), Morning (revalidation), book publish (delivery)
+      "thesis__contract_prepared_at", "thesis__last_revalidated_at", "thesis__delivered_at",
+      "thesis__timeline_version"),
     # Output-trust item 3 (9 Oct 2026): the trade geometry from the planned entry travels with the thesis.
     *TRADE_GEOMETRY_FIELDS,
 )
@@ -141,6 +150,80 @@ def event_readiness(events: List[Mapping], *, side: Optional[str], adoption_stat
                    Readiness_Reason=f"{deciding.get('event')}@{deciding.get('date')}")
     else:
         out["Readiness_Reason"] = f"NO_ACCEPTED_{tag}_BREAK"
+    return out
+
+
+EVENT_TIMELINE_VERSION = "EVENT_CLOCKS_V1"
+
+
+def _short_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def event_timeline(events: List[Mapping], *, side: Optional[str], candidate_id: Optional[str],
+                   events_status: Optional[str], trigger_level, session_dates: List[str]) -> Dict[str, Any]:
+    """B4.2 (ACK 12 Oct 2026): the thesis trigger event's stable id, developing status and clocks (R1, N2, B1).
+
+    The event is published at the FIRST close beyond the trigger (OBSERVED) and develops: a provisional accepted break
+    -> PROVISIONALLY_SUCCESSFUL; a full acceptance or a held retest -> CONFIRMED; a failed break, failed retest or
+    invalidation -> FAILED (terminal). No crossing -> FORMING. Only the thesis side's events count. The id is
+    candidate + side + trigger level, so it survives development; each crossing is its own entry opportunity.
+    Readiness (legacy policy v0) is not changed here.
+    """
+    tag = _TAG.get(side or "")
+    out: Dict[str, Any] = {"Event_ID": None, "Event_Status": None, "Entry_Opportunity_ID": None,
+                           "Trigger_Close_Date": None, "Trigger_Age_Sessions": None, "Event_Occurred_At": None,
+                           "Event_Confirmed_At": None, "Event_Failed_At": None,
+                           "Event_Evidence": "", "Event_Timeline_Version": EVENT_TIMELINE_VERSION}
+    try:
+        level = round(float(trigger_level), 4) if trigger_level is not None else None
+    except (TypeError, ValueError):
+        level = None
+    if tag is None or level is None or not candidate_id:
+        out["Event_Status"] = "NO_DIRECTED_TRIGGER"
+        return out
+    out["Event_ID"] = _short_hash(f"{candidate_id}|BREAK_{tag}|{level}")
+    if str(events_status or "") != "MEASURED":
+        out["Event_Status"] = "NOT_MEASURED"
+        return out
+    status, attempt, evidence = "FORMING", None, []
+    # The detector lists events by kind; the life cycle is walked in bar order (index, then date).
+    ordered = sorted(events or [], key=lambda e: (e.get("index") if e.get("index") is not None else 10 ** 9,
+                                                  str(e.get("date") or "")))
+    for event in ordered:
+        name, date = str(event.get("event") or ""), event.get("date")
+        if status == "FAILED":
+            break                                          # failure is terminal
+        before = status
+        if name == f"BREAK_ATTEMPT_{tag}":
+            status, attempt = "OBSERVED", date
+            out.update(Trigger_Close_Date=date, Event_Occurred_At=date)
+        elif name == "INVALIDATED":                        # the thesis is wrong, crossed or not
+            status = "FAILED"
+            out.update(Event_Failed_At=date, Event_Occurred_At=date)
+        elif attempt is None:
+            continue
+        elif name == f"BREAK_ACCEPTED_{tag}":
+            if event.get("provisional"):
+                status = "PROVISIONALLY_SUCCESSFUL"
+            else:
+                status = "CONFIRMED"
+                out["Event_Confirmed_At"] = date
+            out["Event_Occurred_At"] = date
+        elif name == f"RETEST_HELD_{tag}":
+            status = "CONFIRMED"
+            out.update(Event_Confirmed_At=date, Event_Occurred_At=date)
+        elif name in {f"FAILED_BREAK_{tag}", f"RETEST_FAILED_{tag}"}:
+            status = "FAILED"
+            out.update(Event_Failed_At=date, Event_Occurred_At=date)
+        if status != before or name in {f"RETEST_HELD_{tag}", f"BREAK_ACCEPTED_{tag}"}:
+            evidence.append(f"{name}@{str(date)[:10]}")     # the bars that set the status (N2 evidence)
+    out["Event_Status"] = status
+    out["Event_Evidence"] = ";".join(evidence)
+    if attempt is not None:
+        key = str(attempt)[:10]
+        out["Entry_Opportunity_ID"] = _short_hash(f"{out['Event_ID']}|{key}")
+        out["Trigger_Age_Sessions"] = sum(1 for d in session_dates if key < str(d)[:10])
     return out
 
 
