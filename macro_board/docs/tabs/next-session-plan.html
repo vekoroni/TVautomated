@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Next session plan · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Next session plan</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 12 of 12</p>
+  <h1>Next session plan</h1>
+  <p class="lede">Putting every piece of the board together: what is the call for tomorrow, which levels decide it, what do I check and when, and does each input agree?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The Next session plan is the last tab and the one you take into the next session. It arranges the board's pieces in the order an experienced trader would use them: the call, the scenarios, a time-ordered checklist, where the opportunity is, what would change the view, each ETF on its own, the pipeline's candidates, and finally the jigsaw of every input.</p>
+<p>Read it last, after the Daily review and the Overview, in the evening or before the open. Print the checklist, or keep it beside your trading screen.</p>
+<p>Every sentence on it is assembled from measured fields using fixed wording from config. No LLM writes it. It never scores, ranks for the pipeline or gates anything. "Action (you decide)" columns describe evidence; the decision is yours.</p>
+<div class="callout coach"><strong>Coach's tip</strong>A plan is a set of if-then statements, not a prediction. "If SPY loses 768.60, the down case is in play" is a plan. "SPY will fall" is a guess.</div>
+
+<h2 id="how">What it does</h2>
+<h3>Inputs</h3>
+<p>The plan reads only the board's assembled data: the Daily review's reactions and levels, the Overview's leans and option prices, the decision points calendar, the overnight capture, the Scenario watch's live triggers, the local Money Index, the advisory files, and the pipeline's newest run (read-only). Wording lives in config <code>session_plan</code>; every threshold there is provisional.</p>
+<h3>Steps</h3>
+<ol class="steps">
+<li><b>The tape.</b> The "tape" is the market's own action. The board reads how SPY, QQQ, IWM and DIA closed: accepted up and rejected gap down count as up; accepted down and rejected gap up count as down; absorbed counts as no direction. Three of four in one direction sets UP or DOWN, otherwise MIXED. Fewer than three readable gives UNKNOWN.</li>
+<li><b>The call.</b> The tape is joined with breadth (broad, narrow, unknown) into a key such as UP_BROAD, with a matching approach sentence from config.</li>
+<li><b>Scenarios.</b> For each index ETF it takes the current price and the board's levels (252-day high and low, 50- and 200-day averages, GEX walls and flip, pipeline target and invalidation). The nearest level above is the up trigger; the nearest below is the down trigger. The next level beyond is the target, unless it is more than 5 daily moves away; then the target is one implied move beyond the trigger and the far level is shown as "next mapped level".</li>
+<li><b>History.</b> It adds what followed the same reaction and the same macro conditions over 1 and 5 sessions. A scenario is marked "history leans here" only where the reaction history measured a lean.</li>
+<li><b>Expression.</b> It compares the 5-session straddle's price with the move history delivered: cheap below 0.9×, rich above 1.1×. The runway (time to buy) is twice the horizon: 10 sessions.</li>
+<li><b>Checklist, opportunity, change view.</b> It sorts tomorrow's items by time, lists sector strength and weakness, and lists the closes that would cancel each case.</li>
+<li><b>Per ETF and candidates.</b> For every board ETF and for the pipeline's top 200 candidates it runs a set of checks (tape, Money Index band, macro analogs, relative strength, room) and labels the result aligned, mixed or against.</li>
+<li><b>The jigsaw.</b> It lists 20 inputs, says which way each points, and whether it supports or opposes the tape.</li>
+</ol>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>Title bar</h3>
+<p>"Next session plan", the session pair (for example "2026-10-13 close → 2026-10-14") and two buttons on the right: <b>Copy sheet for ChatGPT</b> and <b>sheet .md</b>.</p>
+<h3>The call</h3>
+<p>One card with a coloured key chip, three or four measured sentences, the <b>Approach</b>, an orange conflict note when narratives disagree with measurement, and the payload's unresolved verdict.</p>
+<h3>Scenarios</h3>
+<p>One card each for SPY, QQQ, IWM and DIA with Up, Base and Down rows, the Expression line and a short history list.</p>
+<h3>Checklist</h3>
+<p>A time-ordered table for the next session: before the open, at the open, during the session, after the close, and things to watch.</p>
+<h3>Where the opportunity is / What would change the view</h3>
+<p>Two cards side by side: leadership, sector strength and weakness, pipeline ETFs against the tape; and the list of view-changing closes.</p>
+<h3>ETF by ETF, Pipeline candidates, The jigsaw</h3>
+<p>Three wide tables at the bottom. Hover a "Reading" chip to see the checks behind it.</p>
+<div class="callout coach"><strong>Coach's tip</strong>Read the call and your instrument's scenario card, then the checklist. Only then open the ETF by ETF and candidates tables. They are long (115 and 200 rows on 13 Oct); go straight to the rows you trade.</div>
+
+<h2 id="data">Every data attribute</h2>
+
+<h3>Title bar</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>&lt;date&gt; close → &lt;date&gt;</td><td>The closing session and the session the plan is for.</td><td>Board session and next XNYS session.</td><td>13 Oct board: 2026-10-13 close → 2026-10-14.</td><td>Make sure the plan is for the day you trade.</td></tr>
+<tr><td>"research for the human, never a score or a gate"</td><td>Authority statement.</td><td>Fixed.</td><td>The plan decides nothing.</td><td>You own every decision.</td></tr>
+<tr><td>Copy sheet for ChatGPT</td><td>Copies the measured sheet: facts the board measured plus instructions, so ChatGPT adds only news.</td><td>Built from the payload without an LLM.</td><td>Button shows "copied ✓", or "no sheet in this build".</td><td>Paste it into ChatGPT to get a news layer grounded in measured facts.</td></tr>
+<tr><td>sheet .md</td><td>Downloads the same sheet as Markdown.</td><td>File name measured_sheet_&lt;session&gt;_&lt;build&gt;.md.</td><td>One file per build.</td><td>Keep for your records.</td></tr>
+<tr><td>CSV buttons</td><td>Download scenarios, checklist, ETF by ETF, candidates and jigsaw.</td><td>Built in the browser; the ETF CSV adds beta and correlation to QQQ, macro lean, relative label and the full check list.</td><td>Plain column names.</td><td>Keep a dated file to review your plans against outcomes.</td></tr>
+</tbody></table></div>
+
+<h3>The call</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Key chip: <span class="tag up">Up, broad</span></td><td>Buyers won on 3 of 4 index ETFs and breadth is broad.</td><td>Tape UP + breadth BROAD.</td><td>The cleanest bullish state.</td><td>Approach: work with the move; add on pullbacks that hold the first level below, not on gaps into resistance.</td></tr>
+<tr><td>Key: <span class="tag up">Up, narrow</span></td><td>Buyers won, but a few large names carried it.</td><td>Tape UP + breadth CONCENTRATED.</td><td>Fragile strength.</td><td>Approach: let the open confirm; favour leaders; smaller size until equal weight joins.</td></tr>
+<tr><td>Key: <span class="tag up">Up</span></td><td>Buyers won; breadth unknown.</td><td>Tape UP, breadth missing.</td><td>Partial picture.</td><td>Approach: let the first hour confirm.</td></tr>
+<tr><td>Key: <span class="tag down">Down, broad</span></td><td>Sellers won across the board.</td><td>Tape DOWN + BROAD.</td><td>Clean bearish state.</td><td>Approach: do not buy the first bounce until it reclaims the first level above; long puts or standing aside fit better.</td></tr>
+<tr><td>Key: <span class="tag down">Down, narrow</span></td><td>Selling concentrated in a few large names.</td><td>Tape DOWN + CONCENTRATED.</td><td>Not yet a market-wide turn.</td><td>Approach: avoid or hedge the weak groups; wait for equal weight to follow.</td></tr>
+<tr><td>Key: <span class="tag down">Down</span></td><td>Sellers won; breadth unknown.</td><td>Tape DOWN, breadth missing.</td><td>Partial picture.</td><td>Approach: wait for the first hour; the first level above is the line.</td></tr>
+<tr><td>Key: <span class="tag flat">Mixed</span></td><td>The index ETFs disagreed.</td><td>No direction reached 3 of 4.</td><td>13 Oct: SPY and QQQ absorbed, IWM and DIA closed down.</td><td>Approach: a two-way market; trade the edges with smaller size; wait for a level to break with breadth.</td></tr>
+<tr><td>Key: <span class="tag flat">Unknown</span></td><td>Not enough reaction data.</td><td>Fewer than 3 readable index ETFs.</td><td>Missing, not neutral.</td><td>Approach: rely on levels and the checklist.</td></tr>
+<tr><td>Sentence 1</td><td>The reaction headline.</td><td>From the Daily review.</td><td>"SPY absorbed · QQQ absorbed · IWM accepted (down) · DIA rejected (gap up)".</td><td>The tape in words.</td></tr>
+<tr><td>Sentence 2</td><td>Breadth.</td><td>RSP vs SPY over 20 sessions.</td><td>"Participation is narrow: equal-weight RSP lagged SPY by 3.0 pts over 20 sessions."</td><td>Narrow = smaller size.</td></tr>
+<tr><td>Sentence 3</td><td>Measured macro pressure on SPY over 20 sessions.</td><td>SPY's 20d headwinds and tailwinds (Overview Response).</td><td>"headwinds Realised volatility, Curve level; tailwinds Breadth."</td><td>Which conditions push against the tape.</td></tr>
+<tr><td>Sentence 4</td><td>SPY's normal day vs what options price for tomorrow.</td><td>Daily move from the room table; 1-day straddle if fresh, else tastytrade IV.</td><td>"A normal day for SPY is ±0.60%; options price ±0.52% for the next session".</td><td>Options pricing less than a normal day means tomorrow's move is cheap to buy.</td></tr>
+<tr><td>Approach</td><td>A fixed paragraph per key.</td><td>Config <code>session_plan.approach</code>.</td><td>How a veteran would handle that state.</td><td>A frame for your behaviour, not a trade.</td></tr>
+<tr><td>Conflict note (orange)</td><td>LLM narratives disagree with what was measured.</td><td>Shown when measured inputs mostly support the tape and LLM inputs mostly oppose it, or the reverse; names the LLM pieces.</td><td>"The tape is the measured fact."</td><td>Treat the narratives as the risk to watch, not the call.</td></tr>
+<tr><td>Unresolved (published)</td><td>Event payload verdict and counter-case.</td><td>LLM, as published.</td><td>13 Oct: NO TRADE, with a counter-case.</td><td>Advisory only.</td></tr>
+</tbody></table></div>
+
+<h3>Scenario cards (SPY, QQQ, IWM, DIA)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Title: ticker, price · basis</td><td>The reference price and where it came from.</td><td>Latest quote after the close (pre-market, intraday, after-hours, with ET time) or "close".</td><td>SPY 779.62 · pre-market 05:04 ET.</td><td>All distances are from this price.</td></tr>
+<tr><td>Normal day ±x%</td><td>The ETF's daily move.</td><td>20-session realised volatility ÷ √252.</td><td>SPY ±0.60%.</td><td>Your yardstick for distances.</td></tr>
+<tr><td>options price ±y% next session (source)</td><td>The option market's expected next-day move.</td><td>1-day ATM straddle "quoted &lt;date&gt;" if fresh, else "tastytrade IV"; "no option pricing" if neither.</td><td>SPY ±0.52%, from the straddle.</td><td>Also used as the step for "one implied move" targets.</td></tr>
+<tr><td>Chip <span class="tag up">Up</span> / <span class="tag flat">Base</span> / <span class="tag down">Down</span></td><td>The three cases.</td><td>Built from levels.</td><td>Base = range between the triggers.</td><td>Know all three before the open.</td></tr>
+<tr><td>Chip: history leans here</td><td>The reaction history measured a lean in this direction.</td><td>First UP or DOWN lean in the reaction history at 1 then 5 sessions.</td><td>13 Oct: SPY Up (absorbed days, 5d lean up); DIA Up (rejected gap up, 5d lean up on only 20 windows).</td><td>A tilt, not a forecast. Check the window count in the history list.</td></tr>
+<tr><td>Trigger</td><td>The level whose break starts the case.</td><td>Nearest board level above (Up) or below (Down) the price.</td><td>SPY up: GEX flip (2026-10-12) 779.82, +0.03%, 0.04 daily moves.</td><td>Wait for price to clear or lose it, ideally on a close or with breadth.</td></tr>
+<tr><td>Target</td><td>Where the case points next.</td><td>The next level beyond the trigger; or one implied move (or one daily move) beyond the trigger when that level is over 5 daily moves away or absent.</td><td>SPY down: "one implied move 764.63".</td><td>A first objective, not a promise.</td></tr>
+<tr><td>next mapped level</td><td>The far level the target replaced.</td><td>Shown when the next real level is beyond 5 daily moves.</td><td>SPY down: GEX put wall 755.00, 5.25 daily moves.</td><td>A stretch objective.</td></tr>
+<tr><td>Level labels</td><td>252d high / low, 50d avg, 200d avg, GEX call wall / put wall / flip (with GEX date if older), pipeline target / invalidation, one implied move, one daily move.</td><td>Same levels as the Daily review's Price location.</td><td>Pipeline levels can appear here (IWM's down next mapped level was the pipeline invalidation 238.69).</td><td>Treat pipeline levels as the pipeline's, not the market's.</td></tr>
+<tr><td>Level distance: % and daily moves</td><td>How far each level is.</td><td>Level ÷ reference − 1; |%| ÷ daily move.</td><td>IWM up trigger 50d avg is 6.8 daily moves away.</td><td>A trigger many daily moves away is unlikely tomorrow.</td></tr>
+<tr><td>Expression text (Up / Down)</td><td>"long calls or shares" / "long puts, or stand aside".</td><td>Fixed.</td><td>Only long options or long shares; no short selling.</td><td>The instruments that fit each case.</td></tr>
+<tr><td>the idea is wrong below / above</td><td>The scenario's invalidation.</td><td>The opposite trigger.</td><td>SPY Up: wrong below 50d avg 768.60.</td><td>Your exit line if the case fails.</td></tr>
+<tr><td>Base text</td><td>Range description.</td><td>"Holds between &lt;down trigger&gt; and &lt;up trigger&gt;: two-way trade inside the range; no new position until a level breaks."</td><td>SPY: between 768.60 and 779.82.</td><td>Inside the range, wait.</td></tr>
+<tr><td>"No level above / below in the board's map."</td><td>No mapped level on that side.</td><td>Empty ladder.</td><td>New high or low.</td><td>Use your own stop.</td></tr>
+</tbody></table></div>
+
+<h3>Expression line and history list</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td><span class="tag up">cheap vs history</span></td><td>Options price less movement than history delivered.</td><td>5-session straddle move ÷ 5-session analog mean absolute move below 0.9 (provisional). Needs a fresh chain.</td><td>13 Oct: SPY 0.75×, QQQ 0.87×, IWM 0.83×.</td><td>Long calls or puts are reasonably priced; pick an expiry beyond the runway.</td></tr>
+<tr><td><span class="tag flat">fair</span></td><td>Options price about what history delivered.</td><td>Ratio 0.9 to 1.1.</td><td>13 Oct: DIA 0.95×.</td><td>Long premium needs the move inside the runway; shares carry no time decay.</td></tr>
+<tr><td><span class="tag down">rich vs history</span></td><td>Options price more than history delivered.</td><td>Ratio above 1.1.</td><td>Premium is expensive.</td><td>Shares or a smaller premium position fit better.</td></tr>
+<tr><td>no pricing</td><td>No fresh chain or no history.</td><td>Ratio missing or chain stale.</td><td>Unknown, not cheap.</td><td>Check the live chain first.</td></tr>
+<tr><td>implied x% vs history y% over 5d (r×)</td><td>The numbers behind the chip.</td><td>x = the expiry's straddle move; y = analog mean |move|; r uses the move scaled to 5 sessions.</td><td>When the expiry is longer than 5 sessions, x ÷ y will not equal r. DIA: 1.59% vs 1.43% but 0.95×.</td><td>Trust r for the comparison.</td></tr>
+<tr><td>quoted &lt;date&gt;</td><td>Chain quote date.</td><td>Phantom database.</td><td>13 Oct: 2026-10-13.</td><td>Re-quote live before trading.</td></tr>
+<tr><td>IV rank</td><td>Implied volatility's position in its past-year range (0 to 100).</td><td>tastytrade.</td><td>SPY 29.</td><td>Low rank supports buying options.</td></tr>
+<tr><td>IV−HV x pts</td><td>Implied minus historical volatility, in points.</td><td>tastytrade.</td><td>SPY 5.9 pts; IWM 10.3 pts.</td><td>Large positive values mean options price more than recent reality.</td></tr>
+<tr><td>runway ≥ N sessions</td><td>Minimum time to buy.</td><td>2 × the 5-session horizon = 10.</td><td>Buy more time than the move needs.</td><td>Choose an expiry at least this far out.</td></tr>
+<tr><td>Expression note</td><td>One sentence per pricing state.</td><td>Config <code>expression_text</code>.</td><td>Matches the chip.</td><td>A reminder of what the chip means.</td></tr>
+<tr><td>History: reaction history · 1d / 5d</td><td>What followed past days with the same reaction.</td><td>"After n past sessions with the same reaction (KEY), the next h sessions averaged x% and rose y% of the time: lean."</td><td>SPY 5d: 525 sessions, +0.28%, rose 60%: history leans up.</td><td>The only source of the "history leans here" chip.</td></tr>
+<tr><td>History: macro analogs · 1d / 5d</td><td>What followed today's macro conditions.</td><td>From the Overview's evidence.</td><td>SPY 5d: 124 sessions, +0.11%, up 60%, no clear lean.</td><td>A second, independent view.</td></tr>
+<tr><td>"No history."</td><td>No history rows.</td><td>Missing evidence.</td><td>Missing, not neutral.</td><td>Rely on levels only.</td></tr>
+</tbody></table></div>
+
+<h3>Checklist</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>When: Before the open / At the open / During the session / After the close / Watch (unscheduled)</td><td>The phase of the day.</td><td>Timed releases: before 09:30 = before the open, before 16:00 = during the session, later = after the close. Level and breadth lines and triggered scenarios sit at the open; watching scenarios after the close; unscheduled items under Watch.</td><td>Sorted by phase, then time.</td><td>Work down the list in order on the day.</td></tr>
+<tr><td>ET</td><td>Clock time when known.</td><td>From the item.</td><td>Blank for untimed items.</td><td>Set alarms for timed items.</td></tr>
+<tr><td>Item: futures vs the close</td><td>Each US index future's overnight move, with a rule.</td><td>Overnight capture, only when it was taken after this close.</td><td>"S&amp;P 500 e-mini: −0.01% vs the close. A move with the tape keeps the base case; against it by more than 0.5 daily moves puts the opposite scenario in play."</td><td>Check futures again before the open.</td></tr>
+<tr><td>Item: no overnight capture</td><td>The capture is missing or older than this close.</td><td>Replaces the futures lines.</td><td>Tells you to run the PreOpen inputs.</td><td>Get futures, VIX and FX before trading.</td></tr>
+<tr><td>Item: scheduled event [KIND]</td><td>Next-session releases, FOMC, earnings, holidays.</td><td>Decision points calendar, 1 session ahead.</td><td>"CPI at 08:30 ET [RELEASE]". Earnings marked BEFORE_OPEN or AFTER_CLOSE currently land under "During the session" with no time.</td><td>No new entries just before it. For earnings, check the real timing in the Daily review calendar.</td></tr>
+<tr><td>Item: per ETF level line</td><td>Each index ETF's triggers in one sentence.</td><td>"holds above X = base/up intact; loses it = down case toward Y; clears Z = up case toward W".</td><td>13 Oct SPY: holds above 50d avg 768.60; clears GEX flip 779.82 toward 252d high 781.62.</td><td>Your if-then lines at 09:30.</td></tr>
+<tr><td>Item: first hour breadth</td><td>RSP vs SPY in the first hour.</td><td>Fixed rule.</td><td>RSP keeping pace confirms a broad move.</td><td>Check RSP before adding size.</td></tr>
+<tr><td>Item: scenario watch</td><td>A live pre-registered scenario on an index ETF, with its record.</td><td>Triggered (at the open) or watching (after the close); verdict text and trigger counts.</td><td>13 Oct: "SPY At the high on narrow breadth (PUT): Triggered … too few independent triggers to judge (6 triggers, 4 independent)."</td><td>Too few triggers = no evidence either way.</td></tr>
+<tr><td>Item: unscheduled (Watch)</td><td>Up to 3 high-importance developments.</td><td>News enrichment (LLM): "confirms if …; fails if …".</td><td>Headline risks.</td><td>Watch, do not trade on them.</td></tr>
+<tr><td>Source</td><td>Where each item came from.</td><td>overnight capture, FRED release calendar (board), board levels, board breadth, scenario watch, news enrichment (LLM), runner, and so on.</td><td>LLM sources are advisory.</td><td>Weigh measured sources above LLM.</td></tr>
+</tbody></table></div>
+
+<h3>Where the opportunity is</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>QQQ vs SPY chips: h d: leader (± pp)</td><td>Which index leads per horizon.</td><td>Daily review leadership (bands 0.1 / 0.3 / 0.75 pp).</td><td>13 Oct: 1d SPY (−0.3 pp), 5d SPY (−2.0 pp), 20d QQQ (+2.8 pp).</td><td>A short-term flip against the 20d leader is a rotation clue.</td></tr>
+<tr><td>Strength on every window</td><td>Sectors outperforming and rising on both 5d and 20d.</td><td>Daily review sector labels; up to 4; pp shown for 20d; hover for each window's label.</td><td>13 Oct: none.</td><td>The cleanest sector longs when present.</td></tr>
+<tr><td>Weakness on every window</td><td>Sectors lagging and falling on both 5d and 20d.</td><td>Same rule, opposite side.</td><td>13 Oct: XLI −2.8 pp.</td><td>Candidates for puts or to avoid.</td></tr>
+<tr><td>Defensive (outperforming while falling)</td><td>Sectors falling less than SPY on either window.</td><td>Same labels.</td><td>13 Oct: none.</td><td>Where money hides; not a call setup.</td></tr>
+<tr><td>Pipeline ETF table: ETF, Side, Verdict</td><td>Board ETFs with a pipeline CALL or PUT.</td><td>Read-only; ARMED first, index ETFs first; up to 8.</td><td>13 Oct: SPY, QQQ, IWM, DIA CALL ARMED; AGG PUT …</td><td>Which proposals to test.</td></tr>
+<tr><td>vs tape: with the tape / against the tape / tape mixed</td><td>Does the side match the tape?</td><td>Side vs tape direction; "tape mixed" when the tape is MIXED or UNKNOWN.</td><td>13 Oct: all "tape mixed".</td><td>Against the tape needs extra confirmation.</td></tr>
+</tbody></table></div>
+
+<h3>What would change the view</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>"X closes below &lt;level&gt;: the up case is off."</td><td>The close that cancels the up case.</td><td>SPY and QQQ down triggers; shown when the tape is UP, MIXED or UNKNOWN.</td><td>13 Oct: SPY below 768.60; QQQ below 726.55.</td><td>A close, not an intraday poke.</td></tr>
+<tr><td>"X closes above &lt;level&gt;: the down case is off."</td><td>The close that cancels the down case.</td><td>Up triggers; shown when the tape is DOWN, MIXED or UNKNOWN.</td><td>13 Oct: SPY above 779.82; QQQ above 756.17.</td><td>Exit or avoid puts above it.</td></tr>
+<tr><td>"Equal-weight RSP starts beating SPY: the move is broadening."</td><td>Breadth repair.</td><td>Shown when breadth is concentrated.</td><td>13 Oct: shown.</td><td>Broadening supports adding size.</td></tr>
+<tr><td>Source</td><td>board levels, board breadth, or event payload (LLM).</td><td>Item origin.</td><td>The code also tries to add up to 4 published reversal conditions; none appeared on 13 Oct (see the Daily review's Unscheduled card).</td><td>Measured items first.</td></tr>
+<tr><td>"Nothing listed."</td><td>No items.</td><td>Empty list.</td><td>Rare.</td><td>Use the scenario invalidations.</td></tr>
+</tbody></table></div>
+
+<h3>ETF by ETF</h3>
+<p>Every board ETF (115 on 13 Oct), sorted against first, then mixed, aligned, no proposal; alphabetical within each group.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>Ticker.</td><td>All ETFs with prices.</td><td>Find yours.</td><td>Context for any ETF trade.</td></tr>
+<tr><td>Reaction</td><td>That ETF's own reading and close change.</td><td>Same rules as the Daily review, applied to every ETF.</td><td>XLE "accepted up +1.80%".</td><td>The ETF's own tape.</td></tr>
+<tr><td>Nearest above / Nearest below</td><td>Closest market levels, with distance in daily moves ("dm").</td><td>Market levels only: the pipeline's own target and invalidation are left out here.</td><td>SPY: GEX flip 779.82 0.0 dm; 50d avg 768.60 2.4 dm.</td><td>Confirmation levels for the action line.</td></tr>
+<tr><td>β SPY (corr)</td><td><b>Beta</b> (how much the ETF moves per 1% SPY move) and <b>correlation</b> (how tightly they move together, −1 to 1).</td><td>60 sessions of daily log returns.</td><td>QQQ 1.48 (0.90); XLE −0.55 (−0.27).</td><td>Low correlation means SPY's plan tells you little about this ETF.</td></tr>
+<tr><td>If SPY down / up</td><td>The move implied if SPY reaches its down / up target.</td><td>Beta × SPY's target distance %. An estimate, not a forecast.</td><td>QQQ −2.85% / +0.38%.</td><td>Rough size of the ETF's move under each SPY case.</td></tr>
+<tr><td>Money Index band</td><td>What followed past sessions in today's local Money Index band, 5 sessions.</td><td>Board evidence rules: up, down, no clear lean, insufficient sample, insufficient history.</td><td>13 Oct band TRANSITION: USMV "up"; SPY "no clear lean".</td><td>A macro tilt for this ETF.</td></tr>
+<tr><td>Pipeline</td><td>The pipeline's side and verdict.</td><td>Read-only; a dash when none.</td><td>"CALL · ARMED"; XLU "UNRESOLVED · STAND DOWN".</td><td>Only CALL or PUT get checks.</td></tr>
+<tr><td>Reading: <span class="tag up">aligned</span></td><td>Checks support the proposal.</td><td>No check against, and at least 2 with.</td><td>13 Oct: 11 ETFs, for example XLE CALL.</td><td>Act on the pipeline's own trigger; the idea weakens if the ETF loses the level behind it.</td></tr>
+<tr><td>Reading: <span class="tag flat">mixed</span></td><td>Evidence split.</td><td>Not aligned, not against.</td><td>QQQ, IWM, DIA on 13 Oct.</td><td>Smaller size; let the ETF clear the level in the trade's direction after the open.</td></tr>
+<tr><td>Reading: <span class="tag down">against</span></td><td>More checks against than with.</td><td>Count of against &gt; count of with.</td><td>SPY CALL on 13 Oct (the flip was 0.04 daily moves above).</td><td>Wait for the ETF to clear the level, or stand aside.</td></tr>
+<tr><td>Reading: no proposal</td><td>No CALL or PUT from the pipeline.</td><td>Side missing or unresolved.</td><td>59 ETFs on 13 Oct.</td><td>Context only.</td></tr>
+<tr><td>Check: own tape</td><td>Did the ETF itself close the proposal's way?</td><td>Reaction direction vs side; absorbed counts neutral.</td><td>IWM CALL vs accepted down = against.</td><td>Hover the reading chip to see each check (✔ with, ✘ against, · neutral, ? missing).</td></tr>
+<tr><td>Check: market tape</td><td>Did the index ETFs close the proposal's way?</td><td>Tape vs side; MIXED counts neutral.</td><td>13 Oct: neutral for all.</td><td>Trading against the tape needs more.</td></tr>
+<tr><td>Check: money index band</td><td>Band history vs side.</td><td>Lean vs side.</td><td>See column.</td><td>A supporting tilt.</td></tr>
+<tr><td>Check: macro analogs</td><td>The ETF's 5d macro-analog lean vs side.</td><td>Overview evidence.</td><td>13 Oct: neutral for all.</td><td>A supporting tilt.</td></tr>
+<tr><td>Check: relative strength</td><td>Sector's 5d label vs SPY (sector ETFs only).</td><td>Outperforming and rising = up; lagging and falling = down; others neutral.</td><td>XLK CALL vs lagging and falling = against.</td><td>Relative weakness undercuts a call.</td></tr>
+<tr><td>Check: room</td><td>Space to the nearest market level in the trade's direction.</td><td>Under 0.5 daily moves = against; otherwise with; none = missing.</td><td>XLE CALL: no level above = missing.</td><td>A level right in front of you caps the move.</td></tr>
+<tr><td>Action (you decide)</td><td>A sentence per reading.</td><td>Config <code>action_text</code> filled with the ETF and level.</td><td>XLE: "the idea weakens if XLE loses 252d high 67.25".</td><td>Your if-then line. You decide.</td></tr>
+</tbody></table></div>
+
+<h3>Pipeline candidates through their sector ETF</h3>
+<p>The pipeline's top 200 CALL or PUT candidates from its newest run (run 20261013_221020 on 13 Oct), in the pipeline's own ranked order.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>#</td><td>The pipeline's rank.</td><td>Read-only.</td><td>1 is the pipeline's top.</td><td>The board never re-ranks.</td></tr>
+<tr><td>Ticker</td><td>The stock or ETF.</td><td>Pipeline.</td><td>Mostly single stocks.</td><td>Open its chart.</td></tr>
+<tr><td>Side</td><td>CALL or PUT · verdict.</td><td>Pipeline.</td><td>13 Oct: all ARMED.</td><td>The proposal being checked.</td></tr>
+<tr><td>Horizon</td><td>The pipeline's hold bucket.</td><td>Pipeline: 6_10d, 11_20d, OVER_20d, NO_EVIDENCE_HOLD.</td><td>149 of 200 were OVER_20d.</td><td>Match option expiry to it.</td></tr>
+<tr><td>Sector ETF</td><td>The pipeline's own sector mapping.</td><td>Pipeline field.</td><td>AMN → XLV.</td><td>Whose tape is checked.</td></tr>
+<tr><td>Link</td><td>Correlation of the stock with its sector ETF.</td><td>60 sessions of daily returns; "weak" below 0.4 or when missing.</td><td>VG with XLE 0.64; AMN with XLV 0.16 weak.</td><td>Weak link = the sector read carries little.</td></tr>
+<tr><td>Reading: aligned / mixed / against</td><td>Sector checks vs the candidate's side.</td><td>Same checks as ETF by ETF, using the sector's tape, plus a neutral link check.</td><td>VG PUT against: XLE accepted up and outperforming.</td><td>Against = wait for the sector to confirm.</td></tr>
+<tr><td>Reading: stock-specific</td><td>The stock barely moves with its sector.</td><td>Weak link.</td><td>119 of 200 on 13 Oct.</td><td>Judge it on its own chart and trigger.</td></tr>
+<tr><td>Reading: no sector read</td><td>No board read for its sector ETF.</td><td>Sector ETF missing or not on the board.</td><td>Context missing.</td><td>Judge it on its own chart.</td></tr>
+<tr><td>Action (you decide)</td><td>A sentence per reading.</td><td>Config text; stock-specific lines state the market tape.</td><td>"the market tape is mixed".</td><td>Your if-then line.</td></tr>
+</tbody></table></div>
+
+<h3>The jigsaw</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Header: agrees with the tape (x)</td><td>The tape everything is compared with.</td><td>UP, DOWN, MIXED or UNKNOWN.</td><td>13 Oct: mixed.</td><td>With a mixed tape every piece reads neutral.</td></tr>
+<tr><td>Agreement rows: Measured / Models / LLM narratives</td><td>Counts of support, oppose, neutral, missing per group.</td><td>Counts, not probabilities; uncalibrated.</td><td>13 Oct: 11 / 5 / 4 neutral, 0 missing.</td><td>Measured counts matter most.</td></tr>
+<tr><td>Piece</td><td>The input's name (20 pieces).</td><td>Fixed list.</td><td>See the piece rules below.</td><td>Find the ones you trust most.</td></tr>
+<tr><td>Kind: measured / model / LLM</td><td>Who made the input.</td><td>Measured = the board's own data; model = estimates and the pipeline; LLM = language-model files.</td><td>Trust declines in that order.</td><td>Never let an LLM piece outvote measured pieces.</td></tr>
+<tr><td>Says</td><td>The input in one line.</td><td>From the piece's data.</td><td>"Closed up: none; down: IWM, DIA; absorbed: SPY, QQQ."</td><td>Read for content.</td></tr>
+<tr><td>Points to: up / down / neutral / missing</td><td>The input's own direction.</td><td>Per-piece rule.</td><td>13 Oct: SPY trend up, macro pressure down.</td><td>Direction before comparing with the tape.</td></tr>
+<tr><td>Points to: confirms / weakens</td><td>Breadth only.</td><td>Broad = confirms; concentrated = weakens.</td><td>13 Oct: weakens.</td><td>Narrow breadth undercuts any tape.</td></tr>
+<tr><td>vs tape: supports / opposes / neutral / missing</td><td>Agreement with the tape.</td><td>Same direction = supports; opposite = opposes; neutral when the piece or the tape has no direction; missing when the piece is missing.</td><td>13 Oct: all neutral (tape mixed).</td><td>Count opposes among measured pieces before acting.</td></tr>
+<tr><td>Fresh</td><td>Source status and date.</td><td>Linked file's status; measured pieces use the board session; missing when the piece is missing.</td><td>Dealer gamma "FRESH · 2026-10-12".</td><td>Discount stale pieces.</td></tr>
+<tr><td>Tab</td><td>Where to read more.</td><td>Fixed per piece.</td><td>Daily review, Overview, ETF matrix, Macro intelligence, Desk card.</td><td>Go there to check the detail.</td></tr>
+<tr><td>Note</td><td>"Agreement is a count of inputs, not a probability… Missing is shown as missing, never as neutral."</td><td>Fixed.</td><td>Read once.</td><td>Never turn counts into odds.</td></tr>
+</tbody></table></div>
+
+<h3>Jigsaw pieces and how each points</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Market reaction (measured)</td><td>The tape itself.</td><td>UP or DOWN; MIXED = neutral; UNKNOWN = missing.</td><td>13 Oct: neutral.</td><td>The reference for all others.</td></tr>
+<tr><td>Breadth (RSP vs SPY) (measured)</td><td>Participation.</td><td>Broad confirms, concentrated weakens.</td><td>RSP −3.0 pts.</td><td>Size.</td></tr>
+<tr><td>SPY trend (measured)</td><td>Trend condition.</td><td>ABOVE_BOTH up; BELOW_BOTH down; other states neutral.</td><td>Up.</td><td>Trend context.</td></tr>
+<tr><td>Measured macro pressure on SPY (measured)</td><td>SPY 20d headwinds vs tailwinds.</td><td>More tailwinds up, more headwinds down.</td><td>Down (2 headwinds, 1 tailwind).</td><td>Macro context.</td></tr>
+<tr><td>SPY / QQQ macro-analog lean (measured)</td><td>Leans at 1, 5, 20d.</td><td>Up if any UP and no DOWN; down the reverse; else neutral.</td><td>Both neutral.</td><td>History context.</td></tr>
+<tr><td>What followed the same reaction (SPY) (measured)</td><td>Reaction history, 1d lean.</td><td>UP / DOWN; else neutral.</td><td>Neutral at 1d.</td><td>Short-term tilt.</td></tr>
+<tr><td>SPY streak history (measured)</td><td>What followed similar streaks, 1d lean.</td><td>ETF matrix momentum evidence.</td><td>Neutral.</td><td>Momentum context.</td></tr>
+<tr><td>Option pricing (SPY) (measured)</td><td>Cheap / fair / rich.</td><td>Always neutral: it shapes the expression, not the direction.</td><td>CHEAP 0.746.</td><td>Choose the instrument.</td></tr>
+<tr><td>Money Index (measured here) (measured)</td><td>Local Money Index band and SPY's 5d history in it.</td><td>Band lean; missing if no score.</td><td>Risk-off 54.8/100 (TRANSITION), neutral.</td><td>Macro context.</td></tr>
+<tr><td>Overnight capture (measured)</td><td>S&amp;P futures vs the close.</td><td>Sign of the change; missing if no capture after this close.</td><td>−0.01%: points down, even that small.</td><td>Tiny moves still count; read the size.</td></tr>
+<tr><td>Dealer gamma (SPY) (model)</td><td>GEX regime.</td><td>Always neutral when present.</td><td>NEGATIVE, flip 779.82.</td><td>Expect bigger swings, no direction.</td></tr>
+<tr><td>VIX term structure (model)</td><td>VIX curve shape.</td><td>Contango up; backwardation down; else neutral.</td><td>CONTANGO, VIX 15.27.</td><td>Calm-market convention, uncalibrated.</td></tr>
+<tr><td>Bond macro score (model)</td><td>Bond state composite.</td><td>trade_go true up, else down.</td><td>40/100, trade_go True.</td><td>Context only.</td></tr>
+<tr><td>Forward bias model (model)</td><td>Colab short-horizon bias.</td><td>Words with BULL or RISK_ON = up; BEAR or RISK_OFF = down.</td><td>short_1_5d MILDLY_BULLISH.</td><td>Context only.</td></tr>
+<tr><td>Pipeline proposal (SPY) (model)</td><td>The pipeline's SPY side.</td><td>CALL up, PUT down.</td><td>CALL · ARMED.</td><td>A proposal to test.</td></tr>
+<tr><td>Macro packet (LLM)</td><td>Packet direction bias.</td><td>Same word rule.</td><td>MILDLY_BULLISH.</td><td>Advisory.</td></tr>
+<tr><td>US Money Index (LLM)</td><td>Published risk-off score.</td><td>60 or more down; 40 or less up; else neutral.</td><td>84/100: down.</td><td>Advisory; compare with the local score.</td></tr>
+<tr><td>Event payload (LLM)</td><td>Payload verdict.</td><td>Word rule.</td><td>NO_TRADE: neutral.</td><td>Advisory.</td></tr>
+<tr><td>News enrichment (LLM)</td><td>Alert level.</td><td>GREEN up; RED down; else neutral.</td><td>AMBER, fragility 4.5.</td><td>Advisory.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: everything lines up</h4>
+<p><b>What you see:</b> for example, the call reads <span class="tag up">Up, broad</span>, the SPY Up row shows "history leans here", the expression chip is "cheap vs history", and the jigsaw shows Measured 7 support, 1 oppose, 3 neutral. Illustrative values.</p>
+<p><b>What it means:</b> buyers won broadly, history after this reaction leaned up, options are reasonably priced, and most measured inputs agree.</p>
+<div class="act"><b>What a trader does:</b> plans long calls or shares on a hold of the first level below, with an expiry beyond the 10-session runway, and exits on a close below the "idea is wrong below" level.</div></div>
+
+<div class="scenario"><h4>Scenario: the pipeline wants calls, the plan says wait (13 Oct 2026)</h4>
+<p><b>What you see:</b> SPY "CALL · ARMED" in the ETF by ETF table with the reading <span class="tag down">against</span>. Hovering shows the room check against: "GEX flip 779.82 is 0.04 daily moves above". Action: "wait for SPY to clear GEX flip 779.82, or stand aside."</p>
+<p><b>What it means:</b> the pipeline's idea has a level directly overhead and no supporting tape.</p>
+<div class="act"><b>What a trader does:</b> waits for SPY to clear 779.82 after CPI, with RSP keeping pace, before considering the call. If it fails, stands aside.</div></div>
+
+<div class="scenario"><h4>Scenario: narratives disagree with measurement</h4>
+<p><b>What you see:</b> for example, the tape is UP, Measured shows 6 support and 1 oppose, but LLM narratives show 0 support and 3 oppose. The call card shows the orange note: "Published narratives disagree with what the market measured (Macro packet, US Money Index, News enrichment)." Illustrative values.</p>
+<p><b>What it means:</b> the market's measured behaviour and the stories about it point in opposite directions.</p>
+<div class="act"><b>What a trader does:</b> follows the measured tape, sizes smaller, and treats the narratives as the risk to watch, setting the invalidation level in advance.</div></div>
+
+<div class="scenario"><h4>Scenario: missing inputs</h4>
+<p><b>What you see:</b> for example, the first checklist item reads "No overnight capture after this close: run the PreOpen inputs…", the jigsaw shows Overnight capture "missing", and a scenario's expression chip says "no pricing". Illustrative values.</p>
+<p><b>What it means:</b> the plan lacks overnight data and current option prices. Missing is never neutral.</p>
+<div class="act"><b>What a trader does:</b> runs the PreOpen inputs (or checks futures and VIX directly), re-quotes the option chain live, and trades only from the level lines until the gaps close.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (13 Oct 2026)</h4>
+<p><b>What you see:</b> the call <span class="tag flat">Mixed</span>; jigsaw 20 neutral, 0 support, 0 oppose; strength on every window: none; all pipeline ETFs "tape mixed"; CPI at 08:30.</p>
+<p><b>What it means:</b> a two-way market waiting for a catalyst. The plan has levels but no direction.</p>
+<div class="act"><b>What a trader does:</b> takes no position before CPI. Uses the level lines at 09:30 and acts only if a level breaks with breadth. Otherwise does nothing.</div></div>
+
+<div class="scenario"><h4>Scenario: a stock that does not follow its sector (13 Oct 2026)</h4>
+<p><b>What you see:</b> candidate #2 AMN, CALL · ARMED, sector XLV, Link 0.16 weak, reading "stock-specific". XLV itself accepted down (−1.35%).</p>
+<p><b>What it means:</b> AMN barely moves with health care, so XLV's weak day says little about it.</p>
+<div class="act"><b>What a trader does:</b> ignores the sector read for AMN, judges it on its own chart and the pipeline's own trigger, and notes the market tape is mixed.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>A coach builds the 14 Oct plan for SPY with a new trader, from the 13 Oct close. This is a planning exercise, not a recommendation.</p>
+<ol class="steps">
+<li><b>The call.</b> <span class="tag flat">Mixed</span>. SPY and QQQ absorbed, IWM and DIA closed down; breadth narrow (RSP −3.0 pts); SPY's macro headwinds are realised volatility and the curve level. Approach: two-way market, smaller size, wait for a level to break with breadth.</li>
+<li><b>Size of a day.</b> SPY's normal day is ±0.60%; options price ±0.52% for the next session. The market is not charging for a big day, even with CPI ahead.</li>
+<li><b>The levels.</b> Price 779.62 (pre-market). Up trigger: GEX flip 779.82, just 0.04 daily moves above; target 252d high 781.62. Down trigger: 50d avg 768.60 (2.35 daily moves below); target one implied move 764.63; next mapped level put wall 755.00.</li>
+<li><b>History.</b> After 525 past absorbed days, SPY's next 5 sessions averaged +0.28% and rose 60%: the Up row is marked "history leans here". Macro analogs: no clear lean.</li>
+<li><b>Expression.</b> Cheap vs history: 0.75×; IV rank 29; runway at least 10 sessions.</li>
+<li><b>Checklist.</b> Before the open: futures flat, CPI at 08:30. At the open: SPY holds above 768.60 keeps base and up intact; clears 779.82 opens the up case toward 781.62. First hour: RSP must keep pace. Also: the scenario watch's SPY "At the high on narrow breadth (PUT)" triggered, with too few triggers to judge.</li>
+<li><b>Cross-check.</b> ETF by ETF: SPY CALL reads "against" because the flip is directly overhead. Jigsaw: 20 neutral.</li>
+</ol>
+<div class="example">
+<div class="head"><b>SPY plan for 14 Oct 2026</b><span class="meta">from the 13 Oct close, morning build</span></div>
+<p>Base case: two-way between 768.60 and 779.82. Up case only on a clear break of 779.82 with RSP keeping pace, toward 781.62. Down case on a loss of 768.60, toward about 764.63. Options are cheap against history, so a long option with at least 10 sessions of runway fits either case.</p>
+<div class="verdict"><b>Decision sentence:</b> "I do nothing before CPI. After 09:30, if SPY holds above 779.82 with RSP keeping pace, I consider a call with an expiry beyond 10 sessions and exit on a close below 768.60; if it loses 768.60, I consider a put; inside the range, I stand aside."</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Write your three if-then lines from the scenario card before the open.</li>
+<li>Check the trigger's distance in daily moves. Over 3 is unlikely in one session.</li>
+<li>Use the expression chip to choose options or shares, never the direction.</li>
+<li>Hover the Reading chip; one "against" check (often room) can explain the whole reading.</li>
+<li>For candidates, read the Link column before the sector checks.</li>
+<li>Keep the CSV of each plan and compare it with what happened.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Treating "history leans here" as a prediction. Check the case count (DIA's rested on 20 windows).</li>
+<li>Treating a pipeline target in a scenario as a market level.</li>
+<li>Reading jigsaw counts as odds. They are counts.</li>
+<li>Letting LLM pieces outvote measured ones.</li>
+<li>Applying a sector read to a stock-specific candidate.</li>
+<li>Buying options that expire inside the runway.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="daily-review.html">Daily review</a> for reactions and levels, <a href="overview.html">Overview</a> for leans and option prices, <a href="desk-card.html">Desk card</a> for each candidate's full card, <a href="scenario-watch.html">Scenario watch</a> for the live scenarios in the checklist, <a href="macro-intelligence.html">Macro intelligence</a> for the model and LLM pieces, and <a href="method.html">Method</a> for definitions.</p>
+
+<div class="pager"><a href="method.html">← Method</a><a href="../ETF_Macro_Board_Manual.html">Guide →</a></div>
+</main>
+</div>
+</body>
+</html>

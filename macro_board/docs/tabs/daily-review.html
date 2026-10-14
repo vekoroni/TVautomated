@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily review · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Daily review</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 1 of 12</p>
+  <h1>Daily review</h1>
+  <p class="lede">What happened in the last session, did the market believe the news, what is coming next, and where is the strength?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The Daily review is the first tab the board opens. It turns yesterday's session into three plain questions: how did the market react to the news, what could force traders to rethink tomorrow, and where is the opportunity strongest.</p>
+<p>It is your starting point every morning and every evening. Read it before the Day story, the Overview and the Next session plan. Those tabs go deeper; this one gives you the shape of the day.</p>
+<p>It is written for a human trader. Nothing on it places a trade, ranks a stock for the pipeline or blocks anything. Macro and news on this board are display-only: they inform you, they never decide for you.</p>
+<div class="callout coach"><strong>Coach's tip</strong>Read the tab in screen order. The reaction tells you what the market did; the decision points tell you what could change it; the opportunity section tells you where to look. Skipping straight to the opportunity section is the most common novice error.</div>
+
+<h2 id="how">What it does</h2>
+<p>The board builds this tab twice a session, from the evening build (after the close, the scored record) and the morning build (before the open). It reads only data it already holds.</p>
+<h3>Inputs</h3>
+<ul>
+<li><b>Daily bars</b> (open, high, low, close) for each <b>ETF</b> (exchange-traded fund: a basket of shares that trades like one stock), from the pipeline's price store plus the board's own Polygon fill.</li>
+<li><b>Issuer holdings files</b> for SPY, QQQ, DIA and the 11 SPDR sector ETFs (what each fund owns and in what weight).</li>
+<li><b>FRED</b> (the St. Louis Fed's public economic database): release dates and the prints as known on the release day.</li>
+<li><b>MarketData earnings dates</b> for the largest holdings.</li>
+<li><b>The event payload and the news enrichment</b>: files written by an LLM (a large language model, here ChatGPT). They are shown as published and never measured.</li>
+<li><b>GEX levels</b> (dealer gamma estimates for SPY and QQQ) and the pipeline's own target and invalidation, used only as price levels.</li>
+</ul>
+<h3>Steps</h3>
+<ol class="steps">
+<li><b>Daily move.</b> For each instrument the board takes the standard deviation of daily log returns over the 20 sessions before the day. This is its normal daily swing, in percent. The day cannot inflate its own yardstick.</li>
+<li><b>Threshold.</b> Half a daily move (0.5 × daily move, provisional, config <code>review.threshold_daily_moves</code>).</li>
+<li><b>Gap, path and close.</b> Gap = open vs previous close. Open→close = close vs open. Close = close vs previous close.</li>
+<li><b>Reading.</b> Absorbed if the close moved less than the threshold. Rejected if the open gapped beyond the threshold and the close finished beyond the threshold on the other side. Accepted otherwise.</li>
+<li><b>Record.</b> For SPY, QQQ, IWM and DIA it finds every past day with the same reading and measures what followed, from the next open to the close 1, 5 and 20 sessions later.</li>
+<li><b>Decision points.</b> It lists scheduled events up to 20 sessions ahead and checks which ones, plus nearby price levels, fall on the next session.</li>
+<li><b>Opportunity.</b> It compares QQQ with SPY, measures breadth, compares each sector with SPY, checks the sector's holdings, and finds the nearest price level above and below.</li>
+</ol>
+<div class="callout warn"><strong>Display only</strong>Every threshold on this tab is provisional (config file <code>macro_board_config_v1.json</code>). The labels describe behaviour. None of them is a probability or a permission to trade.</div>
+
+<h2 id="screen">Reading the screen</h2>
+<p>The tab has three sections stacked top to bottom. Each table has a <b>CSV</b> button at its top right that downloads the table.</p>
+<h3>Section 1: The day's information and the market's reaction</h3>
+<p>A headline card opens the page, for example <code>SPY absorbed · QQQ absorbed · IWM accepted (down) · DIA rejected (gap up)</code> on 13 Oct. Read it first: it is the market's verdict on the session for the four index ETFs.</p>
+<p>Below it, two cards sit side by side. <b>How did markets react?</b> lists cross-asset instruments, then the 11 sectors. <b>Has this reading meant anything before?</b> shows what followed past days with the same reading, and under it <b>What disagreed?</b> lists instruments that moved against SPY.</p>
+<p>A wide card, <b>What changed, and what was expected?</b>, lists the news items and economic prints, with <b>What remains unresolved</b> at its foot.</p>
+<h3>Section 2: Tomorrow's decision points</h3>
+<p>First, one small card per index ETF answers "what could force participants to reassess this tomorrow?". Then the <b>Scheduled, known in advance</b> calendar, and the <b>Unscheduled, unresolved developments</b> table.</p>
+<h3>Section 3: Where the opportunity is strongest</h3>
+<p>A horizon selector (1d, 5d, 20d) sits at the top. It changes this section and also the window of the scheduled calendar above. Then <b>Market: QQQ vs SPY</b> with a breadth chip, <b>Price location</b>, and the <b>Sectors vs SPY</b> table.</p>
+<div class="callout coach"><strong>Coach's tip</strong>Work top-down: market, then sectors, then constituents (the shares inside a fund), then price location. A sector looks strong only if the market around it and the shares inside it agree.</div>
+
+<h2 id="data">Every data attribute</h2>
+
+<h3>Headline and method note</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Section title: session</td><td>The completed session being reviewed.</td><td>The last date in the price data (<code>review.session</code>).</td><td>On a morning build it is still yesterday's close, for example 2026-10-13.</td><td>Make sure you are reviewing the session you think you are.</td></tr>
+<tr><td>Headline</td><td>One reading per index ETF: SPY, QQQ, IWM, DIA.</td><td>Joins each ETF's label: "accepted (up/down)", "rejected (gap up/down)", "absorbed" or "unknown".</td><td>All four agreeing is a clean day. A mix is a two-way day.</td><td>A mixed headline argues for smaller size and waiting for a level to break. See the Next session plan's call.</td></tr>
+<tr><td>Method note</td><td>States the rules and that they are provisional.</td><td>Fixed text plus the threshold from config (0.5).</td><td>Read once; it never changes day to day.</td><td>Reminds you a label describes behaviour, not a forecast.</td></tr>
+</tbody></table></div>
+
+<h3>How did markets react? (table)</h3>
+<p>Rows: SPY, QQQ, IWM, DIA, RSP, TLT, HYG, LQD, UUP, USO, GLD (config <code>review.instruments</code>), then a "Sectors" divider and the 11 SPDR sectors.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Instrument</td><td>The ticker. RSP = equal-weight S&amp;P 500; TLT = long Treasuries; HYG/LQD = high-yield and investment-grade bonds; UUP = dollar; USO = oil; GLD = gold.</td><td>Config list.</td><td>Cross-asset rows tell you where money hid or ran.</td><td>Use them to check whether a stock move had a cause (for example oil up with energy up).</td></tr>
+<tr><td>Reading</td><td>Did the market accept, reject or absorb the day's information?</td><td>See the four states below.</td><td>Blue chip = accepted up, red = accepted down, grey = rejected or absorbed.</td><td>The core fact of the tab. It tells you who won the session.</td></tr>
+<tr><td>Reading: <span class="tag up">accepted ▲</span> / <span class="tag down">accepted ▼</span></td><td>The close moved at least half a daily move, with no gap that reversed.</td><td>|close| ≥ threshold, and not a reversed gap. Arrow = direction of the close.</td><td>Buyers (▲) or sellers (▼) won and held it to the close.</td><td>Moves that were accepted are the ones worth following. Wait for tomorrow's open to confirm before acting.</td></tr>
+<tr><td>Reading: <span class="tag flat">rejected gap ▲</span> / <span class="tag flat">rejected gap ▼</span></td><td>The open gapped one way and the close finished the other way, beyond the threshold.</td><td>|gap| ≥ threshold, close sign opposite to gap sign, |close| ≥ threshold. Arrow = direction of the gap that failed.</td><td>The market refused the opening idea. On 13 Oct DIA opened +0.93% and closed −0.33%.</td><td>A rejected gap up is a warning for longs; a rejected gap down is a warning for shorts. Check the record table for what followed.</td></tr>
+<tr><td>Reading: <span class="tag flat">absorbed</span></td><td>The close moved less than half a daily move.</td><td>|close| &lt; threshold.</td><td>No meaningful displacement. A gap can still have happened and faded (QQQ gapped −0.87% and closed −0.33% on 13 Oct).</td><td>No new direction. Treat as "nothing decided"; wait for a level to break.</td></tr>
+<tr><td>Reading: <span class="tag flat">unknown</span></td><td>Not enough data to label.</td><td>No bar for the session, a missing open or close, or no daily move yet.</td><td>Missing, never neutral.</td><td>Do not act on this instrument from this tab; check the data first.</td></tr>
+<tr><td>Gap</td><td>Opening jump.</td><td>Open ÷ previous close − 1, in %.</td><td>The immediate response to overnight news.</td><td>Compare with the threshold to see if it counted as a real gap.</td></tr>
+<tr><td>Path: gap extended</td><td>The session kept going in the gap's direction.</td><td>|gap| ≥ threshold and open→close has the same sign as the gap.</td><td>Follow-through. XLE gapped +0.74% and closed +1.80% on 13 Oct.</td><td>Strongest form of acceptance.</td></tr>
+<tr><td>Path: gap faded</td><td>The session moved against the gap.</td><td>|gap| ≥ threshold and open→close has the other sign (a flat 0.00% open→close also counts as faded).</td><td>Sellers sold a gap up, or buyers bought a gap down.</td><td>A faded gap is often the start of a rejection. Watch the next open.</td></tr>
+<tr><td>Path: no opening reaction</td><td>The gap was smaller than the threshold.</td><td>|gap| &lt; threshold.</td><td>The day was decided during the session, not at the open.</td><td>The close carries the information.</td></tr>
+<tr><td>Path: blank</td><td>No path computed.</td><td>No daily move available.</td><td>Usually a data gap.</td><td>Check the Overview inputs strip.</td></tr>
+<tr><td>Open→close</td><td>Move during regular hours.</td><td>Close ÷ open − 1, in %.</td><td>Who controlled the session after the open.</td><td>A large open→close against the gap shows strong two-way trade.</td></tr>
+<tr><td>Close</td><td>Day's change, in bold.</td><td>Close ÷ previous close − 1, in %.</td><td>The closing position.</td><td>Compare with Daily move to judge size.</td></tr>
+<tr><td>Daily move</td><td>This instrument's normal daily swing.</td><td>Standard deviation of daily log returns over the 20 sessions before the day, × 100.</td><td>SPY 0.62%, USO 2.59% on 13 Oct. A 1% move is big for SPY and small for oil.</td><td>Always size a move in daily moves, not raw percent.</td></tr>
+</tbody></table></div>
+
+<h3>Has this reading meant anything before? (table)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>SPY, QQQ, IWM, DIA.</td><td>Config focus list.</td><td>Only the index ETFs are scored.</td><td>Sectors have readings but no record here.</td></tr>
+<tr><td>Today</td><td>Today's reading key: accepted up, accepted down, rejected a gap up, rejected a gap down, absorbed, unknown.</td><td>Label plus direction.</td><td>Each key is matched separately.</td><td>Know which history you are looking at.</td></tr>
+<tr><td>Next 1d / 5d / 20d after similar days (first number)</td><td>Average return after past days with the same key.</td><td>Return from the next session's open to the close h sessions later, averaged over every past day with the same key.</td><td>SPY absorbed, 5d: +0.28% on 13 Oct.</td><td>Tells you whether this kind of day has tended to lead somewhere.</td></tr>
+<tr><td>vs (second number)</td><td>The same average over all days.</td><td>Base rate across every session in history.</td><td>SPY 5d base +0.21%. The gap between the two is what the reading adds.</td><td>If the two are close, the reading tells you little.</td></tr>
+<tr><td>win.</td><td><b>Independent windows</b>: past cases that do not overlap in time.</td><td>Greedy thinning: a new case counts only h sessions after the last one.</td><td>SPY absorbed 5d: 198. DIA rejected a gap up 5d: 20.</td><td>Below about 20, treat any average as thin. Below 8 the board will not call a lean.</td></tr>
+<tr><td>Hover: n</td><td>All past matching days.</td><td>Count before thinning.</td><td>Larger than win.</td><td>Context only; trust win.</td></tr>
+<tr><td>Hover: up %</td><td>Share of cases that ended higher.</td><td>Hit rate of the forward returns.</td><td>SPY absorbed 5d: 60%.</td><td>A high up % with a small average means many small gains.</td></tr>
+<tr><td>Hover: 80% interval</td><td>Range that should contain the true average 8 times in 10.</td><td>Student-t interval on independent windows.</td><td>SPY absorbed 5d: +0.09% to +0.47%. Clear of zero.</td><td>An interval crossing zero means the sign is not settled.</td></tr>
+<tr><td>Hover: Lean UP / DOWN / NO_CLEAR_LEAN / INSUFFICIENT_SAMPLE / INSUFFICIENT_HISTORY</td><td>Whether the earlier part of history showed a clear direction.</td><td>Measured on the <b>train</b> period (before the last quarter). Needs at least 8 windows, a <b>t</b> (average divided by its standard error) of 1.5 or more, and an average of at least 0.05% (1d), 0.25% (5d) or 0.75% (20d). Needs 500 sessions of history.</td><td>SPY absorbed 5d: UP. Most cells: NO_CLEAR_LEAN.</td><td>A lean is history, not a forecast. Use it to tilt attention, never to decide alone.</td></tr>
+<tr><td>Hover: holdout</td><td>Did the last quarter of history (the <b>holdout</b>, kept aside) agree with the lean?</td><td>HOLDOUT_AGREES, HOLDOUT_DISAGREES, HOLDOUT_THIN (fewer than 3 windows), or blank when there is no lean.</td><td>SPY absorbed 5d: agrees, on 50 windows.</td><td>A lean the holdout disagrees with has not survived out of sample. Ignore it.</td></tr>
+</tbody></table></div>
+
+<h3>What disagreed?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>List item: ticker, close, reading</td><td>An instrument that moved meaningfully against SPY.</td><td>Any row (not SPY) whose |close| reached its own threshold, where SPY either absorbed or closed the other way. Sorted by size.</td><td>On 13 Oct twelve rows, led by XLE +1.80% and USO +1.36%.</td><td>These are where the real action was. Follow them to Day story and Sector rotation.</td></tr>
+<tr><td>"against SPY absorbed" / "against SPY +x.xx%"</td><td>What it disagreed with.</td><td>SPY's own state.</td><td>"SPY absorbed" means SPY did nothing, so any big mover counts.</td><td>On a flat SPY day, a long list means rotation under the surface.</td></tr>
+<tr><td>"No instrument moved beyond its threshold against SPY."</td><td>Everything moved with SPY or not at all.</td><td>Empty list.</td><td>A one-way market.</td><td>Index-level trades fit; sector picking adds little.</td></tr>
+<tr><td>SPY constituents: moved with SPY / did not confirm SPY's move / unknown</td><td>Did SPY's own holdings agree with SPY's direction today?</td><td>Share of SPY's priced holdings weight (weighted at the window start) that moved the same way as the fund over 1 session. Confirmed at 60% or more (provisional).</td><td>13 Oct: did not confirm (40% of weight). SPY was almost flat, so the test was weak that day.</td><td>A big SPY move that its holdings do not confirm is carried by a few names. Size smaller.</td></tr>
+<tr><td>(xx% of weight moved the same way)</td><td>The confirming share itself.</td><td>As above.</td><td>Above 60% = broad agreement.</td><td>Compare across days to see participation build or fade.</td></tr>
+<tr><td>Contradictions as published (event payload, n)</td><td>Tensions the LLM listed.</td><td>Copied from the event payload's cross-asset contradictions.</td><td>Collapsed by default. LLM-made, not measured.</td><td>Use as questions to check against measured rows, never as facts.</td></tr>
+</tbody></table></div>
+
+<h3>What changed, and what was expected? (table)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Header: event payload for &lt;date&gt;</td><td>The LLM payload matches the session.</td><td>Payload date equals the review session.</td><td>13 Oct: "event payload for 2026-10-13".</td><td>Its items describe the right day.</td></tr>
+<tr><td>Header (orange): event payload is for X, not Y</td><td>The payload is from another day.</td><td>Dates differ.</td><td>Stale news.</td><td>Read every LLM row as old until refreshed.</td></tr>
+<tr><td>Header: no event payload</td><td>No payload file was usable.</td><td>File missing or unreadable.</td><td>Only FRED rows can appear.</td><td>Get the news yourself before acting.</td></tr>
+<tr><td>Development</td><td>The event, with the institution under it.</td><td>FRED release name, or the payload's event name and institution.</td><td>13 Oct: five items, including bank earnings and Brent crude.</td><td>Scan for anything touching what you trade.</td></tr>
+<tr><td>What changed</td><td>The new fact.</td><td>FRED: the print as known on the release day, its observation date and its change. LLM: the "actual" field as published.</td><td>FRED values are measured; LLM values are not.</td><td>Trust FRED rows; verify LLM rows.</td></tr>
+<tr><td>Expected</td><td>The consensus forecast, where the source carries one.</td><td>FRED rows always say "MISSING (no free consensus source)". LLM rows show the payload's forecast, or MISSING (greyed).</td><td>Citigroup row: "eps: $2.65 FactSet consensus" (as published).</td><td>Without a consensus you cannot judge a surprise. Do not invent one.</td></tr>
+<tr><td>Previous</td><td>The prior value, and a "revised:" line when changed.</td><td>FRED: previous print and "first published x (revised ±y)" or "(unrevised)". LLM: as published.</td><td>A big revision can matter as much as the print.</td><td>Read revisions before reading the headline number.</td></tr>
+<tr><td>Surprise</td><td>How unusual the print was.</td><td>FRED: the latest change against the series' own past 36 changes. Above own trend if z ≥ 1, below if z ≤ −1, else in line (z is how many standard deviations from normal). Labelled "not a consensus surprise". LLM: as published.</td><td>FRED rows read like this (illustrative): "above own trend (z +1.3; not a consensus surprise)".</td><td>A measured surprise is a fact about the data, not about expectations.</td></tr>
+<tr><td>Source</td><td>Where the row came from.</td><td>"FRED (measured)" (board's own read), "event payload (LLM)", or "FRED" (the overnight capture's copy, used when the board's own FRED read fails).</td><td>13 Oct: all five rows were "event payload (LLM)"; no tracked release that day.</td><td>Weigh measured rows above LLM rows.</td></tr>
+<tr><td>"No new information in the inputs for this session."</td><td>Nothing to show.</td><td>Empty list.</td><td>Quiet day or missing inputs; check the header.</td><td>Price action carries the day.</td></tr>
+<tr><td>What remains unresolved</td><td>The payload's counter-case and its verdict.</td><td>Copied from the event payload (LLM).</td><td>13 Oct verdict: NO TRADE.</td><td>Read as "what could prove the story wrong". Not a measured verdict.</td></tr>
+</tbody></table></div>
+
+<h3>Tomorrow's decision points: header and reassess cards</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>next session &lt;date&gt;</td><td>The next exchange session.</td><td>From the XNYS (New York Stock Exchange) trading calendar.</td><td>13 Oct board: 2026-10-14.</td><td>The day your plan is for.</td></tr>
+<tr><td>closes HH:MM ET (bold)</td><td>The next session is shortened.</td><td>Shown only when the close is not 16:00.</td><td>Half days have thinner trade.</td><td>Plan exits earlier.</td></tr>
+<tr><td>Card per ETF (SPY, QQQ, IWM, DIA)</td><td>What could force traders to reassess this ETF tomorrow.</td><td>Next-session releases, FOMC, holidays, short sessions, earnings of the ETF's own top holdings, nearby levels, high-importance unscheduled items.</td><td>An empty card says "Nothing scheduled or nearby for the next session."</td><td>The fuller the card, the more care at the open.</td></tr>
+<tr><td>Chip: release</td><td>A scheduled economic print.</td><td>FRED release calendar.</td><td>13 Oct: "CPI at 08:30 ET" on all four cards.</td><td>Expect a move at that time. Avoid entering minutes before it.</td></tr>
+<tr><td>Chip: FOMC</td><td>Federal Reserve rate decision or minutes.</td><td>Dates in config, from the Fed calendar (tentative until confirmed).</td><td>Decision at 14:00 ET.</td><td>Large intraday swings are normal after 14:00.</td></tr>
+<tr><td>Chip: earnings</td><td>A top holding reports.</td><td>MarketData dates; text gives the holding's weight in this ETF.</td><td>Blue colour here is just the chip style, not a direction.</td><td>A heavy holding reporting can move the whole ETF.</td></tr>
+<tr><td>Chip: holiday / short session</td><td>Market closed or closing early.</td><td>XNYS calendar.</td><td>No session, or a short one.</td><td>Options lose time over the holiday too.</td></tr>
+<tr><td>Chip: level</td><td>Price is within 1 daily move of a level (provisional).</td><td>From the Price location table.</td><td>13 Oct SPY: "Price near GEX flip 779.82 (+0.03%, 0.04 daily moves above)".</td><td>A level that close will likely be tested at the open.</td></tr>
+<tr><td>Chip: unscheduled</td><td>Count of high-importance unresolved developments.</td><td>From the Unscheduled table (LLM).</td><td>13 Oct: 5 on every card.</td><td>Headline risk. Size smaller.</td></tr>
+</tbody></table></div>
+
+<h3>Scheduled, known in advance (calendar)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Header: next h sessions</td><td>The window shown.</td><td>Uses the horizon selector in Section 3 (1, 5 or 20 sessions).</td><td>Pick 20d to see the month.</td><td>Match it to how long you plan to hold.</td></tr>
+<tr><td>Date</td><td>Event date.</td><td>From each source.</td><td>ISO format.</td><td>Mark it in your own diary.</td></tr>
+<tr><td>Sessions ahead</td><td>How many sessions until it.</td><td>Position in the trading calendar; a weekend date counts toward the next session.</td><td>1 = tomorrow.</td><td>Anything inside your holding period is a risk you carry.</td></tr>
+<tr><td>Kind</td><td>release, FOMC, earnings, holiday, short session.</td><td>As above.</td><td>Chip colour only separates kinds.</td><td>Sort mentally: macro first, then earnings.</td></tr>
+<tr><td>Event</td><td>Name, for example "CPI", "MSFT earnings", "FOMC rate decision".</td><td>From the source.</td><td>50 events listed on 13 Oct at 20d.</td><td>Spot your own holdings.</td></tr>
+<tr><td>Time ET</td><td>Clock time, or BEFORE_OPEN / AFTER_CLOSE / UNKNOWN for earnings.</td><td>Release list, FOMC config, MarketData.</td><td>AFTER_CLOSE means the reaction lands the next session.</td><td>Know which session carries the reaction.</td></tr>
+<tr><td>Detail (release)</td><td>How much SPY has moved on this release's past days.</td><td>Mean absolute SPY close-to-close move on past release days ÷ on other days; count in brackets (shown from 12 release days).</td><td>CPI: "SPY 1.25x a normal day on past release days (63)".</td><td>Above 1x: expect bigger days. Below 1x: the release rarely matters.</td></tr>
+<tr><td>Detail (earnings)</td><td>When the reaction lands and how sure the date is, plus weights.</td><td>"reaction at the open" / "reaction next session" / "time not given"; "provider date, unconfirmed" when MarketData flags it; then each ETF weight, for example "SPY 6.0%, QQQ 5.8%".</td><td>MSFT on 28 Oct: about 6% of SPY and 11.2% of XLK.</td><td>The bigger the weight, the more the ETF moves with the report.</td></tr>
+<tr><td>Detail (FOMC)</td><td>"statement; press conference 30 min later", plus "with economic projections (SEP)" on SEP meetings.</td><td>Config.</td><td>SEP meetings carry new rate forecasts.</td><td>Treat SEP days as bigger events.</td></tr>
+<tr><td>Source</td><td>Where the row came from.</td><td>"FRED release calendar (board)", "FRED release calendar" or "FRED" (overnight capture), "Federal Reserve calendar (config)", "MarketData earnings", "XNYS calendar".</td><td>Board = measured by the board itself.</td><td>Trust measured sources first.</td></tr>
+<tr><td>Coverage note: releases MEASURED / OBSERVED / MISSING</td><td>How complete the release list is.</td><td>MEASURED = board's own FRED read; OBSERVED = overnight capture's copy; MISSING = neither.</td><td>13 Oct: MEASURED.</td><td>MISSING means check an economic calendar yourself.</td></tr>
+<tr><td>Coverage note: earnings OBSERVED / MISSING, date unknown for …</td><td>How complete the earnings list is.</td><td>Top 15 holdings of SPY, QQQ, DIA and top 3 of each sector; unknown dates are listed by name.</td><td>13 Oct: OBSERVED, none unknown.</td><td>An unknown date is a risk, never "no earnings".</td></tr>
+<tr><td>Coverage note: speakers and consensus</td><td>Fixed statements.</td><td>Central-bank speakers come from the event payload only; no free consensus source.</td><td>Speeches are not in the calendar.</td><td>Check speeches elsewhere.</td></tr>
+</tbody></table></div>
+
+<h3>Unscheduled, unresolved developments</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Source chips (news enrichment, event payload)</td><td>Freshness of the two LLM files.</td><td>✓ fresh, ! stale, × missing, with the as-of time.</td><td>13 Oct: both fresh.</td><td>Stale chips mean the list may be out of date.</td></tr>
+<tr><td>Development</td><td>An unresolved story.</td><td>News enrichment event guards (LLM).</td><td>13 Oct: "14 Oct CPI 08:30 ET and rates repricing" and four more.</td><td>Know the stories the market is waiting on.</td></tr>
+<tr><td>Importance</td><td>The LLM's rating (for example HIGH).</td><td>As published.</td><td>Uncalibrated.</td><td>HIGH items feed the reassess cards.</td></tr>
+<tr><td>Confirms if / Fails if</td><td>What would settle it either way.</td><td>As published.</td><td>On 13 Oct every row carried the same generic text.</td><td>Turn them into things you can check on a chart.</td></tr>
+<tr><td>Red-team question</td><td>The strongest challenge to the current story.</td><td>News enrichment (LLM).</td><td>A question, not an answer.</td><td>Ask it of your own idea.</td></tr>
+<tr><td>Would reverse or neutralise the case</td><td>Conditions that would undo the payload's view.</td><td>Event payload counter-case (LLM).</td><td>13 Oct: seven conditions, for example "The 10-year remains below 5.25%".</td><td>Good items for your own watchlist.</td></tr>
+<tr><td>Event payload verdict</td><td>The payload's own call and its scope.</td><td>As published.</td><td>13 Oct: NO TRADE, scoped to overnight option carry.</td><td>Advisory only. Its record is on Scorecards.</td></tr>
+</tbody></table></div>
+
+<h3>Where the opportunity is strongest: Market, QQQ vs SPY</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Horizon selector 1d / 5d / 20d</td><td>The look-back window for this section.</td><td>Saved in your browser; 20d by default. Also sets the calendar window above.</td><td>Short windows are noisy; 20d shows the trend.</td><td>Use the window that matches your holding period.</td></tr>
+<tr><td>Window</td><td>1d, 5d, 20d rows.</td><td>All three always shown here.</td><td>Read down for short to long.</td><td>Agreement across rows is stronger.</td></tr>
+<tr><td>QQQ / SPY</td><td>Each ETF's return over the window.</td><td>Close vs close h sessions ago.</td><td>13 Oct 20d: QQQ +5.54%, SPY +2.72%.</td><td>Context for leadership.</td></tr>
+<tr><td>QQQ − SPY</td><td>Difference in <b>percentage points</b> (pp: the plain difference of two percentages).</td><td>QQQ return minus SPY return.</td><td>13 Oct: −0.32 pp (1d), −1.98 pp (5d), +2.82 pp (20d).</td><td>Shows whether growth/tech or the broad market is leading.</td></tr>
+<tr><td>Leadership: QQQ leads / SPY leads / neither / missing</td><td>Which index is clearly ahead.</td><td>Beyond a band of 0.1 pp (1d), 0.3 pp (5d), 0.75 pp (20d), provisional.</td><td>13 Oct: SPY leads 1d and 5d, QQQ leads 20d. Tech led the month and lagged the week.</td><td>A leadership flip is a rotation clue. Check Sector rotation.</td></tr>
+<tr><td>Breadth chip: broad / concentrated / breadth unknown</td><td>Is the move carried widely or by a few big names?</td><td>Concentrated if RSP lags SPY by 1 pp or more over 20 sessions, or under 50% of SPY's priced weight is above its 50-session average. Broad needs both measures present and passing.</td><td>13 Oct: concentrated.</td><td>Concentrated rallies are fragile. Prefer the leaders and size smaller.</td></tr>
+<tr><td>RSP − SPY (20d)</td><td>Equal-weight vs cap-weight S&amp;P 500 over 20 sessions, in pp.</td><td>RSP 20d return minus SPY 20d return.</td><td>13 Oct: −3.03 pp. The average stock trailed the index by 3 points.</td><td>A strongly negative value warns that most stocks are not joining in.</td></tr>
+<tr><td>above 50d avg: SPY x%, QQQ y% of issuer weight</td><td><b>Participation</b>: share of the fund's priced weight trading above its own 50-session average.</td><td>From the issuer holdings files (20-session window block).</td><td>13 Oct: SPY 64%, QQQ 67%.</td><td>Above 50% supports a broad read.</td></tr>
+</tbody></table></div>
+
+<h3>Price location (room to the nearest obstacle)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>SPY, QQQ, IWM, DIA and the 11 sectors.</td><td>Config.</td><td>One row each.</td><td>Find the one you trade.</td></tr>
+<tr><td>Chip: GEX &lt;date&gt;</td><td>The GEX levels are from an older session.</td><td>Shown when the GEX date differs from the board's session.</td><td>13 Oct: "GEX 2026-10-12" on SPY and QQQ.</td><td>Older levels may have shifted. Treat them as approximate.</td></tr>
+<tr><td>Price</td><td>The current price used for distances.</td><td>The close, or a later quote (pre-market, intraday, after-hours) from the Polygon snapshot when one exists; then a line with the segment, ET time and the close.</td><td>SPY: 779.62, pre-market 05:04 ET, close 778.01.</td><td>Distances move with the live price.</td></tr>
+<tr><td>Nearest above / Nearest below</td><td>The closest level on each side.</td><td>Smallest level above / largest below among the levels listed next.</td><td>SPY above: GEX flip 779.82; below: 50d avg 768.60.</td><td>These are the first places price may stall or turn.</td></tr>
+<tr><td>Level: 252d high / 252d low</td><td>Highest and lowest price in about a year.</td><td>Intraday highs and lows over 252 sessions (closes if no highs/lows).</td><td>XLE's 252d high (67.25) sits just below its price: a broken high can become support.</td><td>Breakouts and breakdowns happen here.</td></tr>
+<tr><td>Level: 50d avg / 200d avg</td><td>Simple average of the last 50 or 200 closes.</td><td>Mean of closes.</td><td>Widely watched trend lines.</td><td>Common support and resistance.</td></tr>
+<tr><td>Level: GEX call wall / put wall / flip</td><td>Model estimates of strikes with the largest call or put gamma, and the price where estimated dealer gamma changes sign. Gamma is how fast an option's delta changes.</td><td>From the GEX proxy file (SPY and QQQ only); model estimate with an assumed dealer sign.</td><td>SPY flip 779.82, walls 800 and 755.</td><td>Treat as soft levels; they are not measured positions.</td></tr>
+<tr><td>Level: pipeline target / pipeline invalidation</td><td>The pipeline's own target and stop level.</td><td>Read-only from the newest run.</td><td>XLE above: pipeline target 76.65, 13.7% away.</td><td>Not a market level. Never treat it as resistance.</td></tr>
+<tr><td>Distance %</td><td>How far the level is.</td><td>Level ÷ current price − 1.</td><td>Signed: + above, − below.</td><td>Room for the move you want.</td></tr>
+<tr><td>Distance in daily moves</td><td>The same distance in units of normal daily swing.</td><td>|distance %| ÷ (20-session realised volatility ÷ √252).</td><td>SPY to its flip: 0.04 daily moves. IWM to its 50d avg: 6.8.</td><td>Under 1: likely tested tomorrow. Over 5: far away.</td></tr>
+<tr><td>"none in range"</td><td>No level on that side.</td><td>Nothing above or below.</td><td>New high or new low.</td><td>No mapped obstacle; use your own stop.</td></tr>
+</tbody></table></div>
+
+<h3>Sectors vs SPY</h3>
+<p>Rows are the 11 SPDR sectors, sorted by relative return for the chosen window, best first.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>Sector ticker (XLK tech, XLF financials, XLE energy, XLV health care, XLY discretionary, XLP staples, XLI industrials, XLB materials, XLU utilities, XLRE real estate, XLC communications).</td><td>Config.</td><td>One row each.</td><td>Map your stock to its sector.</td></tr>
+<tr><td>Return</td><td>The sector's own return over the window.</td><td>Close vs close h sessions ago.</td><td>Absolute direction.</td><td>Up or down, regardless of SPY.</td></tr>
+<tr><td>vs SPY</td><td><b>Relative return</b>: sector return minus SPY return, in pp.</td><td>Difference.</td><td>13 Oct 20d: XLK +4.10 pp, XLF −6.29 pp.</td><td>Relative strength, kept apart from direction.</td></tr>
+<tr><td>Reading: Outperforming, rising</td><td>Beating SPY and going up.</td><td>vs SPY beyond the band (0.1 / 0.25 / 0.5 pp for 1 / 5 / 20d) and return &gt; 0.</td><td>13 Oct 5d: XLE +5.41%, +5.55 pp.</td><td>The classic call-side candidate.</td></tr>
+<tr><td>Reading: Outperforming while falling (+ "defensive")</td><td>Falling less than SPY.</td><td>vs SPY &gt; band, return &lt; 0.</td><td>Defensive preference, for example utilities in a sell-off.</td><td>Not a call setup. It says where money hides.</td></tr>
+<tr><td>Reading: Outperforming, flat</td><td>Beating SPY with a 0.00% return.</td><td>Return exactly 0.</td><td>Rare.</td><td>Context only.</td></tr>
+<tr><td>Reading: Lagging while rising</td><td>Going up, but less than SPY.</td><td>vs SPY &lt; −band, return &gt; 0.</td><td>13 Oct 20d: XLE, XLV, XLY, XLP, XLU.</td><td>Not leadership; a weak long.</td></tr>
+<tr><td>Reading: Lagging, falling</td><td>Down and worse than SPY.</td><td>vs SPY &lt; −band, return &lt; 0.</td><td>13 Oct 20d: XLF, XLI, XLB, XLRE, XLC.</td><td>Put-side candidate if confirmed.</td></tr>
+<tr><td>Reading: Lagging, flat</td><td>Behind SPY with a 0.00% return.</td><td>Return exactly 0.</td><td>Rare.</td><td>Context only.</td></tr>
+<tr><td>Reading: In line with SPY</td><td>No clear difference.</td><td>|vs SPY| &lt; band.</td><td>Moves with the market.</td><td>Trade the index instead.</td></tr>
+<tr><td>Reading: missing</td><td>No return available.</td><td>Missing price data.</td><td>Not neutral.</td><td>Check the data.</td></tr>
+<tr><td>Constituents: confirmed · x% of weight</td><td>The sector's own holdings moved its way.</td><td>At least 60% of priced holdings weight (weighted at the window start) moved in the same direction as the fund (provisional).</td><td>13 Oct 5d: XLE confirmed, 93%.</td><td>A confirmed move is broad inside the sector.</td></tr>
+<tr><td>Constituents: not confirmed</td><td>Under 60% agreed.</td><td>As above.</td><td>A few names drove it.</td><td>Size smaller; check which names.</td></tr>
+<tr><td>Constituents: no holdings file</td><td>No issuer file for this ETF.</td><td>Not in the holdings sources.</td><td>Cannot check.</td><td>Judge on price alone.</td></tr>
+<tr><td>Constituents: a dash</td><td>Unknown.</td><td>Fund contribution exactly flat, so no direction to compare.</td><td>Rare.</td><td>Ignore for that window.</td></tr>
+<tr><td>Top contributors</td><td>The three holdings that added the most to the fund's return.</td><td>Largest positive contribution (start weight × return).</td><td>In a falling sector these are the names that held up best, not the ones that caused the fall.</td><td>Leaders of a rising sector are the cleanest single-stock ideas.</td></tr>
+</tbody></table></div>
+
+<h3>CSV buttons</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>CSV</td><td>Downloads the table under it.</td><td>Built in your browser from the board's own data. The reaction CSV adds a threshold column; the sectors CSV adds every window.</td><td>Columns use plain names (for example <code>close_pct</code>).</td><td>Keep a daily file to build your own record of how readings played out.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: a clean, agreeing day</h4>
+<p><b>What you see:</b> for example, all four index ETFs read <span class="tag up">accepted ▲</span>, SPY constituents "moved with SPY (72% of weight)", breadth chip broad, and the record table shows SPY's "accepted up" 5d average above the base with a lean UP and a holdout that agrees. Illustrative values.</p>
+<p><b>What it means:</b> buyers won across the board, the shares inside the index agreed, and this kind of day has been followed by more upside before.</p>
+<div class="act"><b>What a trader does:</b> looks for longs in sectors that read "Outperforming, rising" with constituents confirmed, and checks the reassess cards for anything that could interrupt tomorrow. Still waits for the open to hold the first level below.</div></div>
+
+<div class="scenario"><h4>Scenario: the index ETFs disagree (13 Oct 2026)</h4>
+<p><b>What you see:</b> SPY absorbed (−0.01%), QQQ absorbed after a faded −0.87% gap, IWM accepted ▼ (−0.43%), DIA rejected gap ▲ (opened +0.93%, closed −0.33%). Twelve instruments disagreed with SPY, led by XLE +1.80% and USO +1.36%. Constituents did not confirm (40%).</p>
+<p><b>What it means:</b> no clean acceptance either way. Money rotated into energy and out of small caps and health care while the headline index sat still.</p>
+<div class="act"><b>What a trader does:</b> skips index-direction trades for now, treats the day as two-way, and studies the movers (energy) on Day story and Sector rotation. Waits for CPI and the open before committing.</div></div>
+
+<div class="scenario"><h4>Scenario: stale or missing inputs</h4>
+<p><b>What you see:</b> for example, the information header turns orange: "event payload is for 2026-10-10, not 2026-10-13"; the calendar coverage says "releases MISSING" and "earnings MISSING, date unknown for AAPL, MSFT, …"; a sector shows "no holdings file". Illustrative values.</p>
+<p><b>What it means:</b> the news rows describe an older day, the calendar may be incomplete, and some confirmation checks cannot run. Missing is never neutral.</p>
+<div class="act"><b>What a trader does:</b> trusts only the measured reaction table, checks a public economic and earnings calendar before trading, and holds any idea that depends on the missing pieces until they refresh.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do</h4>
+<p><b>What you see:</b> for example, all four index ETFs absorbed, the record table shows no clear lean on every horizon, "No instrument moved beyond its threshold against SPY", every reassess card reads "Nothing scheduled or nearby for the next session", and most sectors are "In line with SPY". Illustrative values.</p>
+<p><b>What it means:</b> a quiet, undecided market with no catalyst and no rotation.</p>
+<div class="act"><b>What a trader does:</b> stands aside or keeps existing positions. Doing nothing is a valid decision. Checks the Scenario watch tab for any pre-registered trigger instead.</div></div>
+
+<div class="scenario"><h4>Scenario: a big release tomorrow with price sitting on a level (13 Oct 2026)</h4>
+<p><b>What you see:</b> the SPY card lists "CPI at 08:30 ET" and "Price near GEX flip 779.82 (+0.03%, 0.04 daily moves above)". The calendar detail says "SPY 1.25x a normal day on past release days (63)".</p>
+<p><b>What it means:</b> SPY's CPI days have been about 25% bigger than normal days, and price sits right on a level, so the open is likely to test it.</p>
+<div class="act"><b>What a trader does:</b> does not enter before 08:30. After CPI, watches whether SPY holds above or loses the flip and the 50d avg (768.60), and sizes smaller because the day is expected to be wide.</div></div>
+
+<div class="scenario"><h4>Scenario: a defensive sector looks strong</h4>
+<p><b>What you see:</b> for example, SPY −2.0% over 5d, XLU −0.5% with the reading "Outperforming while falling" and the small "defensive" note. Illustrative values.</p>
+<p><b>What it means:</b> money is hiding in utilities. Utilities are falling, just less than the market.</p>
+<div class="act"><b>What a trader does:</b> does not buy XLU calls on this alone. Reads it as a risk-off sign for the market and checks the Overview conditions and the Next session plan's call.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Here is how a coach would talk a new trader through the 13 Oct 2026 review on the morning of 14 Oct. This is a reading exercise, not a recommendation.</p>
+<ol class="steps">
+<li><b>Read the headline.</b> "SPY absorbed · QQQ absorbed · IWM accepted (down) · DIA rejected (gap up)". Two absorbed, two closed down. No clean direction.</li>
+<li><b>Size SPY's day.</b> Gap −0.10%, close −0.01%, threshold 0.31% (half of a 0.62% daily move). Nothing happened at index level.</li>
+<li><b>Check the record.</b> After past "absorbed" days, SPY's next 5 sessions averaged +0.28% vs +0.21% on all days, 198 independent windows, 80% interval +0.09% to +0.47%, lean UP, holdout agrees. A small, real tilt; not a signal on its own.</li>
+<li><b>Find the disagreement.</b> XLE +1.80% accepted (gap extended) and USO +1.36%, while XLV fell 1.35%. SPY's holdings did not confirm (40%). Rotation, not a market move.</li>
+<li><b>Check what is next.</b> CPI at 08:30 ET on 14 Oct; SPY has moved 1.25x a normal day on CPI days. SPY's pre-market price 779.62 sits 0.04 daily moves under the GEX flip (779.82).</li>
+<li><b>Look for the strength.</b> 5d: XLE outperforming and rising, +5.55 pp vs SPY, constituents confirmed at 93% (XOM, CVX, COP). Breadth concentrated: RSP −3.03 pp vs SPY over 20 sessions.</li>
+<li><b>Check room.</b> XLE's nearest level below is its 252d high at 67.25, about 0.15 daily moves under the price. The only level above is the pipeline's own target, which is not a market level.</li>
+</ol>
+<div class="example">
+<div class="head"><b>13 Oct 2026 · Daily review read</b><span class="meta">evening close, morning build</span></div>
+<p>SPY absorbed the bank-earnings news; energy carried the measured strength with broad agreement inside the sector; breadth is narrow; CPI lands before the open with SPY parked on a level.</p>
+<div class="verdict"><b>Decision sentence:</b> "I take no index position before CPI. After 08:30 I wait for SPY to hold or lose 779.82 with the first hour's breadth, and I check energy on Day story and Sector rotation, using XLE's 67.25 as the line that must hold."</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Size every move in daily moves. A 0.5% day in SPY is not the same as a 0.5% day in oil.</li>
+<li>Look at the "win." count before the average. Fewer than 20 independent windows is thin.</li>
+<li>Treat a lean with a disagreeing holdout as no lean.</li>
+<li>On a flat SPY day, the disagreement list is the most useful part of the tab.</li>
+<li>Set the horizon selector to your holding period before reading the sector table.</li>
+<li>Note earnings marked AFTER_CLOSE: the reaction is in the next session.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Reading "absorbed" as bearish or bullish. It means nothing was decided.</li>
+<li>Buying calls on a sector that is "outperforming while falling".</li>
+<li>Treating LLM rows (event payload, enrichment) as measured facts.</li>
+<li>Reading a pipeline target in the Price location table as resistance.</li>
+<li>Calling a FRED surprise a consensus surprise. The board measures it against the series' own history only.</li>
+<li>Assuming "top contributors" in a falling sector are the names that caused the fall.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="day-story.html">Day story</a> for why money moved, <a href="overview.html">Overview</a> for the index cards and macro conditions, <a href="sector-rotation.html">Sector rotation</a> for the sector picture, <a href="scenario-watch.html">Scenario watch</a> for pre-registered triggers, and <a href="next-session-plan.html">Next session plan</a>, which turns this review into a plan.</p>
+
+<div class="pager"><a href="../ETF_Macro_Board_Manual.html">← Guide</a><a href="day-story.html">Day story →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ETF matrix · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › ETF matrix</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 4 of 12</p>
+  <h1>ETF matrix</h1>
+  <p class="lede">Across all 115 ETFs on the board, which ones have measured history pointing one way from here, how far has each already moved, and what does the option market charge for the next move?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The ETF matrix is the board's screening table. It puts every ETF in the universe on one row: its recent returns, its trend, its volatility, its measured lean, what the AVSHUNTER pipeline proposes, and what options cost. An <b>ETF</b> (exchange-traded fund) is a basket of stocks, bonds or commodities that trades like one share.</p>
+<p>The question it answers is narrow: "Given today's macro conditions, where has history been one-sided, and is the price and the option market lined up with it?" It does not tell you what to buy. It tells you where to look first.</p>
+<p>Use it after the Daily review, Day story and Overview, once you know the state of the market. Use it before the Transmission map, Sector rotation and Desk card, which go deeper on the few ETFs you pick here. Click any row and a drawer opens with the full evidence for that ETF.</p>
+<div class="callout"><strong>Display only</strong>Nothing on this tab feeds back into the pipeline. The board reads AVSHUNTER data read-only, never re-ranks the pipeline and never gates a trade. A human reads it and decides.</div>
+
+<h2 id="how">What it does</h2>
+<h3>Inputs</h3>
+<ul>
+  <li><b>Daily prices</b> for 115 ETFs in 10 groups (Broad indices, Factors, SPDR sectors, Industries &amp; themes, Rates &amp; credit, Commodities &amp; dollar, International, Crypto, Volatility products, Leveraged &amp; inverse). They come from the pipeline's price store, with gaps filled by the board from Polygon grouped daily bars.</li>
+  <li><b>Today's 10 macro conditions</b> (SPY trend, realised volatility, breadth, net liquidity, curve level, curve move, 10Y yield, credit, dollar, oil). The Transmission map guide explains each one.</li>
+  <li><b>Option chains</b> from MarketData.app, stored in the phantom history database (read-only).</li>
+  <li><b>tastytrade market metrics</b> (implied volatility, IV rank, historical volatility, beta), fetched read-only. Stale after 30 hours.</li>
+  <li><b>Issuer holdings files</b> for SPY, DIA, QQQ and the 11 SPDR sectors. Stale after 3 sessions.</li>
+  <li><b>The latest full AVSHUNTER run</b> (on 13 Oct: run <code>20261013_221020</code>), read-only.</li>
+  <li><b>The LLM macro packet's</b> sector lead and avoid lists.</li>
+</ul>
+<h3>How a lean is measured</h3>
+<ol class="steps">
+  <li><b>Find analog sessions.</b> An <b>analog session</b> is a past day whose 10 macro conditions looked like today's. The board starts by demanding a 100% match and loosens it (90%, 80%, 70%, 60%) until it has at least 12 independent 20-session windows. On 13 Oct it settled at 60% (6 of 10 conditions matching) with 129 analog sessions.</li>
+  <li><b>Measure what followed.</b> For every past session it takes the return from the <b>next session's open</b> to the close 1, 5 or 20 sessions later. That is what you could actually have traded after reading the board.</li>
+  <li><b>Count independent windows.</b> Back-to-back analog days share most of their future, so the board thins them: two 20-session windows only count separately if they start at least 20 sessions apart. This count is called <b>independent windows</b> (shown as "Windows").</li>
+  <li><b>Split train and holdout.</b> The last quarter of history is the <b>holdout</b>: kept aside to check the result. The first three quarters are the <b>train</b> period.</li>
+  <li><b>Decide the lean on the train period.</b> A lean of Up or Down needs at least 8 independent windows, a <b>t</b> of at least 1.5 and a mean move of at least 0.05% (1d), 0.25% (5d) or 0.75% (20d). Here <b>t</b> is the mean divided by its standard error: how many "noise units" the average sits away from zero.</li>
+  <li><b>Check the holdout.</b> If the holdout mean points the same way, the lean "agrees". With fewer than 3 holdout windows it is "thin".</li>
+  <li><b>Add context.</b> The board adds the move already made (in units of the ETF's own volatility), a response label, the option market's price for movement, tastytrade volatility metrics and holdings.</li>
+</ol>
+<p>Every threshold above lives in <code>macro_board/config/macro_board_config_v1.json</code> and is marked provisional.</p>
+<h3>When it updates</h3>
+<p>Each board build refreshes the tab. The evening build after the close is the scored record. The morning build before the open shows the same closing session; on 14 Oct it also carried tastytrade metrics and holdings files fetched that morning. The example values here come from the morning build of 14 Oct, which shows the 13 Oct close.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Title and controls</h3>
+<p>The title reads "ETF matrix" with a count, for example "115 shown · lean and evidence columns for the selected horizon". Below it sit four controls: the horizon buttons (1d, 5d, 20d), a group dropdown, a ticker filter and a "current data only" box. Pick the horizon first. It changes the lean, interval, response, priced-vs-history and evidence columns, and it carries over to the other tabs.</p>
+<h3>2. The table</h3>
+<p>Rows sit under grey group headers in the config's order. Read each row left to right in four blocks:</p>
+<ul>
+  <li><b>Identity and freshness:</b> Ticker, Last, Data.</li>
+  <li><b>What price did:</b> 1d, 5d, 20d, 60d returns, RS vs SPY 20d, vs 200d, from 1y high, RV20.</li>
+  <li><b>What history says:</b> Lean, 80% interval, then Holdout, Analog mean, Base mean, Excess, Up %, Windows at the right.</li>
+  <li><b>What others say and what it costs:</b> Pipeline, Response, Move made 20d, IV rank, Priced vs history, Packet.</li>
+</ul>
+<p>Click a column header to sort. The first click sorts high to low, the next low to high. Sorting drops the group headers; a "Group view" button brings them back. Empty values always sort last.</p>
+<h3>3. The note under the table</h3>
+<p>It reminds you that "Short history" ETFs have fewer than 500 sessions, that leveraged, inverse and volatility products have their 5d and 20d leans withheld, and which pipeline run the Pipeline column reads.</p>
+<h3>4. The drawer (click a row)</h3>
+<p>A panel slides in from the right. Read it top to bottom: header line and price chart, what the pipeline proposes, measured lean by horizon, stage of the move, momentum history, what the option market charges, tastytrade volatility metrics, holdings (where a holdings file exists), response, and which conditions moved the ETF. Press Escape or "Close ✕" to shut it. "Desk card →" appears for the 56 ETFs that have a desk card and jumps there.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Controls</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>1d / 5d / 20d</td><td>The forward horizon, in trading sessions.</td><td>From config <code>horizons_sessions</code>. The choice is saved in your browser and shared with the other tabs. Default is 20d.</td><td>1d = the next session, open to close. 20d = about a month.</td><td>Match it to how long you plan to hold. A 20d lean says nothing about tomorrow.</td></tr>
+<tr><td>Group dropdown</td><td>Shows one group or ALL.</td><td>Groups come from config <code>universe</code>.</td><td>Use "SPDR sectors" or "Rates &amp; credit" to compare like with like.</td><td>Compare an ETF with its peers before trusting its lean.</td></tr>
+<tr><td>Filter ticker</td><td>Text filter on the ticker symbol.</td><td>Keeps rows whose ticker contains the typed letters.</td><td>"XL" shows the SPDR sectors and XLRE-style tickers.</td><td>Fast way to find one ETF.</td></tr>
+<tr><td>current data only</td><td>Hides rows whose prices are not current.</td><td>Checked by default. Hides any row whose Data status is not FRESH.</td><td>On 13 Oct all 115 were FRESH, so it hid nothing.</td><td>Untick it only to see what is stale, never to trade stale rows.</td></tr>
+<tr><td>N shown</td><td>How many rows pass the filters.</td><td>Count of rows after group, filter and freshness.</td><td>Lower than expected means a filter is on.</td><td>Check it before concluding an ETF is "missing".</td></tr>
+<tr><td>Header arrow ↑ / ↓</td><td>The sorted column and direction.</td><td>Click once for high to low, again for low to high.</td><td>Lean sorts Up, then No clear lean, then Down, then the rest.</td><td>Sort by Excess or Analog mean to find the strongest measured differences.</td></tr>
+<tr><td>Group view</td><td>Button that restores group headers.</td><td>Appears only while sorted.</td><td>Back to the default layout.</td><td>Use it after a sort so you see each ETF beside its peers again.</td></tr>
+</tbody></table></div>
+
+<h3>Matrix columns: identity and price</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Ticker</td><td>The ETF symbol.</td><td>From config <code>universe</code>.</td><td>Bold. Click the row to open the drawer.</td><td>Start every deep dive here.</td></tr>
+<tr><td>Last</td><td>Last daily close.</td><td>Closing price of the last stored session.</td><td>SPY 778.01 on 13 Oct.</td><td>Reference price only. Pre-market quotes show on other tabs, not here.</td></tr>
+<tr><td>Data</td><td>How current the price is.</td><td>FRESH if the last bar is at most 2 sessions behind the latest session (config <code>price_max_age_sessions</code>), else STALE. MISSING if there is no price at all.</td><td>FRESH shows the last bar date as month-day, for example "10-13". STALE shows an amber "!" chip with the date. MISSING shows a red "×" chip.</td><td>Never act on a STALE or MISSING row. Every other column on it is out of date.</td></tr>
+<tr><td>1d / 5d / 20d / 60d</td><td>Return over the last 1, 5, 20 or 60 sessions.</td><td>Close today ÷ close N sessions ago, minus 1, in %.</td><td>Blue is positive, red is negative.</td><td>Tells you what has already happened, not what comes next.</td></tr>
+<tr><td>RS vs SPY 20d</td><td><b>Relative strength</b>: how much better or worse the ETF did than SPY over 20 sessions.</td><td>ETF 20d return minus SPY 20d return, in percentage points.</td><td>SPY is always 0.00%. XLRE was -5.60%: it lagged SPY by 5.6 points.</td><td>Positive means leadership. Check Sector rotation for whether that leadership is fading.</td></tr>
+<tr><td>vs 200d</td><td>Distance from the 200-session average close.</td><td>Close ÷ mean of the last 200 closes, minus 1, in %. A dash when under 200 sessions of history.</td><td>Above zero = above the long trend. SPY +7.5%, TLT -7.9%.</td><td>Context for trend. A long idea far below its 200d is fighting the trend.</td></tr>
+<tr><td>from 1y high</td><td>How far below the highest close of the last 252 sessions.</td><td>Close ÷ highest close in the last 252 sessions, minus 1. Never positive.</td><td>0.0% = closing at a 1-year high (XLE on 13 Oct).</td><td>Near zero means little overhead from past highs. Deeply negative means old buyers may sell into rallies.</td></tr>
+<tr><td>RV20</td><td><b>Realised volatility</b>: how much the price actually moved day to day, annualised.</td><td>Standard deviation of the last 20 daily log returns × √252 × 100.</td><td>SPY 9.5 (calm), SMH 26.8 (wild).</td><td>Bigger RV20 means bigger normal swings. Size positions smaller and expect wider stops.</td></tr>
+</tbody></table></div>
+
+<h3>Matrix columns: measured lean and evidence</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Lean: <span class="tag up">▲ Up</span></td><td>After past sessions like today, this ETF rose on average, clearly enough to pass the rule.</td><td>Train-period analog mean &gt; 0, with at least 8 windows, |t| ≥ 1.5 and |mean| ≥ 0.05% / 0.25% / 0.75% for 1d / 5d / 20d.</td><td>3 ETFs on 13 Oct at 20d (XLC, USO, IBIT).</td><td>A reason to study the long side. Check the holdout before anything else.</td></tr>
+<tr><td>Lean: <span class="tag down">▼ Down</span></td><td>Same, falling.</td><td>Train-period analog mean &lt; 0, same tests.</td><td>5 ETFs at 20d (XLRE, XBI, IYR, VNQ, TLT).</td><td>A reason to study the downside (puts; the board's research allows long puts, not short shares).</td></tr>
+<tr><td>Lean: <span class="tag flat">– No clear lean</span></td><td>Enough history, but no one-sided result.</td><td>Passed the window count but failed the t or minimum-move test.</td><td>The most common state: 61 ETFs at 20d, 77 at 1d.</td><td>Macro history does not separate today from any day. Judge the ETF on price and the pipeline instead.</td></tr>
+<tr><td>Lean: Insufficient sample</td><td>Too few independent windows in the train period.</td><td>Fewer than 8 train windows (config <code>min_effective_n</code>).</td><td>Grey dashed chip.</td><td>Treat as unknown, not neutral.</td></tr>
+<tr><td>Lean: Short history</td><td>Fewer than 500 sessions of usable history.</td><td>Config <code>min_history_sessions</code> = 500. No analog statistics are computed.</td><td>38 ETFs on 13 Oct, for example IJR (162 sessions).</td><td>Price columns only. Use price action and the pipeline, not this tab's evidence.</td></tr>
+<tr><td>Lean: Path-dependent</td><td>Lean withheld because the product decays along its path.</td><td>Groups "Leveraged &amp; inverse" and "Volatility products" get a lean at 1d only (config <code>path_dependent</code>). The evidence is still computed.</td><td>TQQQ, VXX and 6 others at 5d and 20d.</td><td>Read the underlying ETF instead (QQQ for TQQQ).</td></tr>
+<tr><td>Lean tooltip</td><td>The full evidence behind the chip.</td><td>Hover the chip. Lines: holdout state; analog mean, median, % up, n (sessions) and independent windows; all-history mean and % up; 80% interval; price-only lean; train mean, t and windows (with the holdout start date); holdout mean and windows. For Short history it shows the session count and the 500 needed.</td><td>Read n against windows: 111 sessions but only 26 independent windows at 20d.</td><td>Always hover before you trust a chip. The windows count is your sample size.</td></tr>
+<tr><td>80% interval</td><td>A range that should contain the true average move 8 times in 10.</td><td>Student-t interval for the analog mean using independent windows, so overlapping days do not narrow it.</td><td>"-3.4% … -0.6%" (XLRE 20d) does not cross zero. "-0.5% … +1.4%" (SPY 20d) does.</td><td>An interval that crosses zero means the sign itself is uncertain. Narrow and away from zero is stronger evidence.</td></tr>
+<tr><td>Holdout: ✓ holdout</td><td>The held-out last quarter points the same way as the lean.</td><td>Holdout mean has the lean's sign, with at least 3 holdout windows.</td><td>XLRE, IYR, VNQ, TLT at 20d.</td><td>The lean survived a test it was not fitted on. Still a small sample: XLRE's holdout had 5 windows.</td></tr>
+<tr><td>Holdout: ✗ holdout</td><td>The holdout points the other way.</td><td>Holdout mean has the opposite sign.</td><td>XLC, XBI, USO, IBIT at 20d.</td><td>The pattern did not hold recently. Treat the lean as doubtful; wait or skip.</td></tr>
+<tr><td>Holdout: ? holdout thin</td><td>Too few holdout windows to check.</td><td>Fewer than 3 holdout windows (config <code>min_effective_n_holdout</code>).</td><td>Grey chip.</td><td>Unchecked. Size smaller if you act at all.</td></tr>
+<tr><td>Holdout: blank</td><td>Nothing to check.</td><td>Shown when the lean is not Up or Down.</td><td>Most rows.</td><td>No action needed.</td></tr>
+<tr><td>Analog mean</td><td>Average forward return after the analog sessions.</td><td>Mean of next-open-to-close returns on all analog sessions (train and holdout together).</td><td>XLRE 20d: -2.00%.</td><td>The size of the typical outcome. Compare it with Base mean.</td></tr>
+<tr><td>Base mean</td><td>Average forward return over all history, any conditions.</td><td>Mean over every session with a complete forward window since June 2020.</td><td>SPY 20d +0.92%: the market's normal drift.</td><td>The yardstick. A lean only matters if it differs from this.</td></tr>
+<tr><td>Excess</td><td>What today's conditions added to the normal drift.</td><td>Analog mean minus Base mean.</td><td>XLRE -1.92%, TLT -0.63%, SPY -0.51%.</td><td>Sort by it to find where macro history differs most from normal.</td></tr>
+<tr><td>Up %</td><td>Share of analog sessions followed by a gain.</td><td>Share of analog forward returns above zero.</td><td>TLT 20d: 30%. XLC: 63%.</td><td>Hit rate only. A high Up % with a small mean can still lose after costs.</td></tr>
+<tr><td>Windows</td><td>Independent windows behind the analog numbers.</td><td>Greedy thinning: windows count only when they start at least H sessions apart.</td><td>At 20d most ETFs had 26 on 13 Oct; IBIT had 17.</td><td>Below about 10, treat everything on the row as fragile.</td></tr>
+</tbody></table></div>
+
+<h3>Matrix columns: what others say and what options cost</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Pipeline: CALL · ARMED</td><td>The pipeline proposes a long call and its options stage cleared it.</td><td>Read from the newest full run's <code>options_candidates_ranked.csv</code>: <code>canonical_direction</code> · <code>options_verdict</code>. Blue chip.</td><td>34 ETFs on 13 Oct, including SPY and QQQ.</td><td>A separate opinion. Compare it with the lean; agreement is useful, disagreement is a question to answer.</td></tr>
+<tr><td>Pipeline: PUT · ARMED</td><td>Long put proposed and cleared.</td><td>Same source. Red chip.</td><td>13 ETFs, including TLT and XBI.</td><td>Same as above, on the downside.</td></tr>
+<tr><td>Pipeline: … · STAND DOWN</td><td>The pipeline has a side but declines it, or has no side.</td><td>Verdict STAND_DOWN. Direction can be CALL, PUT or UNRESOLVED (grey).</td><td>XLC: CALL · STAND DOWN (spread too wide). XLRE: UNRESOLVED · STAND DOWN.</td><td>Hover for the reason. A stand-down for spread or liquidity applies to you too.</td></tr>
+<tr><td>Pipeline: not in run</td><td>The ETF has no row in the latest run.</td><td>No row found for the ticker.</td><td>43 ETFs, for example SMH.</td><td>No pipeline view. Everything rests on your own read.</td></tr>
+<tr><td>Pipeline tooltip</td><td>Run id, direction, verdict and the stand-down reason.</td><td>From the same CSV row.</td><td>XLC: "BLOCK_SPREAD: Spread 76% exceeds 25% liquidity threshold."</td><td>Read the reason before you overrule the pipeline.</td></tr>
+<tr><td>Response: Supporting</td><td>The ETF's own move agrees with the measured macro pressure.</td><td>Counts conditions in today's state whose transmission contrast has |t| ≥ 1 (config <code>response.t_min</code>): positive ones are tailwinds, negative ones headwinds. More tailwinds and the ETF rose, or more headwinds and it fell, gives Supporting. Uses the selected horizon's return (1d, 5d or 20d).</td><td>XLRE 20d: one headwind (realised volatility), fell 2.88%.</td><td>Price is behaving as history says it should. No contradiction to resolve.</td></tr>
+<tr><td>Response: Absorbing pressure</td><td>Net measured headwind, yet the ETF rose.</td><td>More headwinds than tailwinds and a positive return.</td><td>SPY 20d: two headwinds, one tailwind, up 2.72%.</td><td>Buyers are overpowering the macro. Strength, but check the Transmission map for what is pushing back.</td></tr>
+<tr><td>Response: Rejecting relief</td><td>Net measured tailwind, yet the ETF fell.</td><td>More tailwinds than headwinds and a negative return.</td><td>XLC 20d: one tailwind (curve move), down 1.53%.</td><td>Weakness the macro does not explain. Look for a stock-specific or sector reason.</td></tr>
+<tr><td>Response: Mixed</td><td>Equal numbers of headwinds and tailwinds.</td><td>Count is level.</td><td>QQQ 20d: one of each.</td><td>No clear macro pressure. Rely on other evidence.</td></tr>
+<tr><td>Response: Insufficient</td><td>No condition measured with |t| ≥ 1, or no return.</td><td>Empty lists or missing return.</td><td>XBI and USO at 20d.</td><td>Unknown, not neutral.</td></tr>
+<tr><td>Response tooltip</td><td>Which conditions count and the ETF's own return.</td><td>Lists headwinds and tailwinds by name, and the return over the window.</td><td>"Describes behaviour only. It is not a permission or a probability."</td><td>Use the names to jump to the right column on the Transmission map.</td></tr>
+<tr><td>Move made 20d: Extended ↑ / Extended ↓</td><td>The last 20 sessions moved unusually far for this ETF.</td><td>z = 20d return ÷ (RV20 × √(20/252)). Extended when z ≥ 1.5 or ≤ -1.5 (config <code>extension.band_sd</code>). The chip shows z with a σ sign.</td><td>KRE "Extended ↓ -1.6σ", UUP "Extended ↑ 2.0σ". <b>σ (sigma)</b> = one standard deviation of the ETF's normal move.</td><td>A label, not a verdict. Open the drawer's momentum history to see what followed similar runs for this ETF.</td></tr>
+<tr><td>Move made 20d: Not extended</td><td>Within ±1.5σ.</td><td>Same formula.</td><td>SPY "Not extended 1.0σ".</td><td>The move has not stretched far yet.</td></tr>
+<tr><td>Move made 20d: dash</td><td>Cannot compute.</td><td>No 20d return or no RV20.</td><td>Rare.</td><td>Unknown.</td></tr>
+<tr><td>IV rank</td><td><b>Implied volatility (IV)</b> is the volatility priced into options. <b>IV rank</b> places today's IV within its own past-year range, 0 to 100.</td><td>tastytrade <code>implied-volatility-index-rank</code>, converted to %. Tooltip: IV index, HV30 and IV percentile.</td><td>SPY 29, TLT 57. Low = options cheap against their own year.</td><td>Low IV rank favours buying options. High IV rank means you pay up.</td></tr>
+<tr><td>Priced vs history</td><td>Option-priced move divided by the move history delivered after similar sessions.</td><td>ATM straddle mid ÷ spot, scaled to the horizon by √time, divided by the analog mean absolute move. Tooltip: expiry days, strike, quote date, priced move, analog |move|, spread % of mid.</td><td>Below 1×: options price less movement than history delivered (SPY 20d 0.96×). Above 1×: more (SMH 20d 1.35×).</td><td>Below 1 favours long options, if the spread is tight. Always read the spread in the tooltip: XLRE's 0.74× came with a 47.6% spread.</td></tr>
+<tr><td>Packet: lead / avoid</td><td>The LLM macro packet's sector lead or avoid list.</td><td>From the packet's <code>sector_lead</code> and <code>sector_avoid</code>. Advisory, LLM-written, not verified.</td><td>13 Oct lead: XLE, XOP, XLC, XLB, XLU. Avoid: XLK, XLF, XLI, IWM, ARKK.</td><td>A published opinion. Its sector calls are scored on the Sector rotation tab; check that record before you weigh it.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: header and pipeline proposal</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Ticker and group</td><td>Which ETF and its group.</td><td>From config.</td><td>"XLRE SPDR sectors".</td><td>Confirms you clicked the right row.</td></tr>
+<tr><td>Header line</td><td>Close, last bar date, status chip (only if not FRESH), sessions of history, average dollar volume over 20 sessions.</td><td>Dollar volume = mean of (daily share volume × close) over 20 sessions, shown in $m or $bn.</td><td>SPY "$32.7bn", XLRE "$287m".</td><td>Low dollar volume means wider spreads and harder exits. Size accordingly.</td></tr>
+<tr><td>Price chart</td><td>Closes for the last 260 sessions.</td><td>Config <code>board_history_display_sessions</code>. The dot marks the last close.</td><td>Shape of the past year.</td><td>Quick trend check before reading numbers.</td></tr>
+<tr><td>Desk card →</td><td>Jumps to this ETF's desk card.</td><td>Shown only when a desk card exists (pipeline candidates and index ETFs; 56 on 13 Oct).</td><td>Missing for XLRE.</td><td>Use it once the ETF earns a closer look.</td></tr>
+<tr><td>Distance box</td><td>Room from today's close to the pipeline's target and invalidation, and how much of the move is used.</td><td>To target = (target − close) ÷ close, flipped for puts. To invalidation = (close − invalidation) ÷ close, flipped for puts. Used = (close − entry) ÷ (target − entry).</td><td>TLT: 1.37% left to target, 6.67% to invalidation, 0% used.</td><td>Distances, not probabilities. Little room to target against a long way to invalidation is a poor trade shape.</td></tr>
+<tr><td>canonical direction</td><td>Pipeline side.</td><td>Pipeline CSV.</td><td>CALL, PUT or UNRESOLVED.</td><td>Compare with the lean.</td></tr>
+<tr><td>options verdict</td><td>Pipeline options stage decision.</td><td>Pipeline CSV.</td><td>ARMED or STAND_DOWN.</td><td>STAND_DOWN means the pipeline would not trade it.</td></tr>
+<tr><td>stand down reason</td><td>Why, or a caution even when armed.</td><td>Pipeline CSV text.</td><td>TLT: "IVP=88% expensive vol, premium at risk".</td><td>Read it in full. It often names a cost problem.</td></tr>
+<tr><td>entry spot / target spot / invalidation spot</td><td>Pipeline's entry price, target and the price that kills the idea.</td><td>Pipeline CSV. A dash when empty.</td><td>SPY: entry 778.01, target 911.45, invalidation 629.28.</td><td>Use the board's own market levels for confirmation, not the pipeline target alone.</td></tr>
+<tr><td>trigger state</td><td>Whether the pipeline's entry trigger has fired.</td><td>Pipeline CSV.</td><td>"TRIGGER_EARLY_PROBE", "NO_TRIGGER".</td><td>Early probe means not confirmed. Smaller size if anything.</td></tr>
+<tr><td>horizon bucket</td><td>Pipeline's expected holding horizon.</td><td>Pipeline CSV.</td><td>"OVER_20d", "NO_EVIDENCE_HOLD".</td><td>Pick the board horizon that matches it.</td></tr>
+<tr><td>contract strike / expiry / dte / premium</td><td>The option contract the pipeline chose.</td><td>Pipeline CSV.</td><td>SPY: 785 strike, 2026-11-20, 38 days, 10.66.</td><td>Contract choice stays with the pipeline. Compare its premium with the straddle section below.</td></tr>
+<tr><td>thesis state / thesis move consumed factor</td><td>Whether the thesis is active and how much of its move is used.</td><td>Pipeline CSV.</td><td>"ACTIVE", 0.0.</td><td>Consumed near 1 means the move is largely done.</td></tr>
+<tr><td>direction arbitration reason</td><td>How the pipeline settled the side.</td><td>Pipeline CSV.</td><td>"Vanguard supplied no governed side observation".</td><td>Tells you how firm the pipeline's side is.</td></tr>
+<tr><td>Run note</td><td>Run id, when written, file path.</td><td>From the pipeline loader.</td><td>Run 20261013_221020, written 14 Oct 06:04 UTC.</td><td>Check it is the run you expect.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: measured lean by horizon</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>H</td><td>Horizon: 1d, 5d, 20d. All three are shown at once.</td><td>Config horizons.</td><td>One row each.</td><td>Look for agreement across horizons.</td></tr>
+<tr><td>Lean</td><td>Same chip and tooltip as the matrix.</td><td>See above.</td><td>XLRE: no clear lean at 1d and 5d, Down at 20d.</td><td>A lean on one horizon only fits that holding period.</td></tr>
+<tr><td>Analog mean / 80% interval</td><td>As in the matrix.</td><td>As above.</td><td>Read with the interval.</td><td>Same as above.</td></tr>
+<tr><td>10th…90th pct</td><td>The spread of individual outcomes.</td><td>10th and 90th percentile of analog forward returns.</td><td>XLRE 20d: -9.4% … +3.9%.</td><td>Your realistic range for one trade. Even a good lean has bad outcomes in it.</td></tr>
+<tr><td>Base mean</td><td>All-history mean.</td><td>As above.</td><td>The normal drift.</td><td>The yardstick.</td></tr>
+<tr><td>Price-only lean</td><td>The lean you would get from all history with no macro filter.</td><td>Same rules on all train-period sessions.</td><td>TLT 20d: ▼ Down, same as its macro lean.</td><td>If price-only already leans the same way, macro adds little beyond the ETF's own drift.</td></tr>
+<tr><td>Train t</td><td>The t of the train-period analog mean.</td><td>Mean ÷ (std ÷ √windows).</td><td>Lean needs |t| ≥ 1.5.</td><td>Bigger |t| means more separation from noise.</td></tr>
+<tr><td>Holdout (win.)</td><td>Holdout mean and its window count.</td><td>Last quarter of history.</td><td>XLRE 20d: -1.40% (5).</td><td>Few windows means a weak check even when it agrees.</td></tr>
+<tr><td>Path-dependent box</td><td>Warning on leveraged, inverse and volatility products.</td><td>Shown when the ETF is in a path-dependent group.</td><td>"5d and 20d leans are withheld."</td><td>Use only short horizons or the underlying ETF.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: stage of the move and momentum history</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Stage chips (5 sessions, 20 sessions)</td><td>Move already made over 5 and 20 sessions, in σ.</td><td>Same extension formula, band ±1.5σ.</td><td>SMH: Extended ↓ -1.9σ over 5 sessions, Not extended 1.1σ over 20.</td><td>Shows whether you would be chasing. Then read the momentum table.</td></tr>
+<tr><td>Now: streak label</td><td>Consecutive up or down closes.</td><td>Buckets from config <code>momentum.streak_buckets</code>: 5+ up, 3–4 up, 1–2 up, 1–2 down, 3–4 down, 5+ down, or unchanged.</td><td>SMH "5+ down closes in a row (streak -6)".</td><td>Context for timing.</td></tr>
+<tr><td>Now: 5d σ / 20d σ</td><td>The extension z values.</td><td>As above, from 20-session realised vol.</td><td>"5d -1.86σ · 20d 1.12σ".</td><td>Same as the stage chips, with more decimals.</td></tr>
+<tr><td>"against X% for all sessions"</td><td>The ETF's base mean at the selected horizon.</td><td>From the lean evidence.</td><td>SMH 20d: +2.70%.</td><td>Compare each momentum row with it.</td></tr>
+<tr><td>After… rows</td><td>What followed past sessions in the same streak, 5d state and 20d state.</td><td>Same lean rules, windows and holdout as the macro lean, but the filter is the momentum state, not macro.</td><td>SMH after a 5d extended-down move: ▲ Up at 20d, ✓ holdout, +5.39% on 24 windows.</td><td>Judge "too late" with this, not with a rule of thumb.</td></tr>
+<tr><td>Lean / Mean / 80% interval / Up / Windows</td><td>As in the macro lean table.</td><td>As above.</td><td>Same reading.</td><td>Same use.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: what the option market charges</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Expiry</td><td>Days to expiry of the option used.</td><td>The first expiry with at least 1, 7 or 28 calendar days for 1d, 5d, 20d (config <code>options.target_dte_calendar</code>). Never a shorter expiry.</td><td>SPY 20d used a 31-day expiry.</td><td>Matches the board's runway rule: buy more time than the horizon.</td></tr>
+<tr><td>ATM</td><td>The <b>at-the-money</b> strike: the strike nearest the current price.</td><td>Nearest strike with a two-sided call and put quote.</td><td>SPY 778.0.</td><td>The reference contract for pricing movement.</td></tr>
+<tr><td>Straddle bid / mid / ask</td><td>Price of a <b>straddle</b>: one call plus one put at the same strike, which pays off on a move either way.</td><td>Sum of call and put bid, mid and ask.</td><td>SPY 20d: 22.77 / 22.84 / 22.91.</td><td>You buy at the ask, not the mid.</td></tr>
+<tr><td>Priced move (expiry)</td><td>The move the straddle prices by expiry.</td><td>Straddle mid ÷ spot, in %.</td><td>SPY 2.94%.</td><td>The market's price for movement.</td></tr>
+<tr><td>Scaled to H</td><td>That move scaled to the horizon.</td><td>× √(horizon sessions ÷ expiry sessions), capped at 1.</td><td>SPY 20d 2.84%.</td><td>Puts the option price on the same clock as history.</td></tr>
+<tr><td>Analog |move|</td><td>Average size of the move after similar sessions, up or down.</td><td>Mean absolute analog forward return.</td><td>SPY 20d 2.95%.</td><td>What history delivered.</td></tr>
+<tr><td>Ratio</td><td>Scaled priced move ÷ analog |move|.</td><td>Same as "Priced vs history".</td><td>Below 1 = options cheap against history.</td><td>Cheap and tight favours buying options.</td></tr>
+<tr><td>Spread</td><td>Bid-ask width as % of mid.</td><td>(ask − bid) ÷ mid × 100.</td><td>SPY 0.6%, XLRE 47.6%, XLC 110.4%.</td><td>Above a few percent, the spread can eat the edge. Wide spread: skip options or use limit orders at mid.</td></tr>
+<tr><td>"no expiry covering the horizon"</td><td>No usable straddle for that horizon.</td><td>No expiry long enough, or no strike with two-sided quotes.</td><td>XLRE 1d.</td><td>No option read at that horizon.</td></tr>
+<tr><td>Quote note</td><td>Quote date and sessions behind.</td><td>Latest chain date on or before the session. STALE beyond 2 sessions (config <code>max_quote_age_sessions</code>).</td><td>"Quotes 2026-10-13 (0 session(s) before 2026-10-13)".</td><td>Stale quotes mean the ratio is old. Re-quote before trading.</td></tr>
+<tr><td>"No option chain stored"</td><td>No chain for this ETF.</td><td>Ticker absent from the phantom DB.</td><td>39 ETFs, for example IJR, UUP.</td><td>No option evidence. Check liquidity elsewhere before trading options.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: volatility metrics (tastytrade)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>IV index (30d)</td><td>30-day implied volatility, and its 5-day change.</td><td>tastytrade metrics, converted to %.</td><td>SPY 15.1%, 5d -0.29.</td><td>Higher IV = dearer options.</td></tr>
+<tr><td>IV rank / percentile</td><td>Rank: where IV sits between its 1-year low and high. Percentile: share of past days with lower IV.</td><td>tastytrade.</td><td>TLT 57 / 88: rank middling, but IV was lower on 88% of days.</td><td>When the two disagree, the percentile tells you how often it was cheaper.</td></tr>
+<tr><td>HV 30 / 60 / 90</td><td><b>Historical volatility</b>: realised volatility over 30, 60, 90 days.</td><td>tastytrade.</td><td>SPY 9.2 / 8.9 / 10.7%.</td><td>Compare with IV.</td></tr>
+<tr><td>IV − HV (30d)</td><td>Implied minus historical volatility.</td><td>tastytrade <code>iv-hv-30-day-difference</code>.</td><td>SPY +5.92: options price more than recent movement.</td><td>Positive means you pay a premium over recent movement. Negative is rarer and favours buyers.</td></tr>
+<tr><td>Beta · corr SPY 3m</td><td><b>Beta</b>: how much the ETF tends to move per 1% SPY move. Correlation: how closely they move together (−1 to 1).</td><td>tastytrade.</td><td>QQQ 1.23 · 0.73.</td><td>High beta and correlation = mostly a market bet. Low correlation = its own story.</td></tr>
+<tr><td>Liquidity rating</td><td>tastytrade's option liquidity score, out of 5.</td><td>tastytrade.</td><td>SPY 4 / 5, XLRE 2 / 5.</td><td>2 or below: expect wide spreads.</td></tr>
+<tr><td>IV term structure</td><td>Implied volatility by expiry, up to the next 14 expiries.</td><td>tastytrade per-expiry IV (standard chains only). Hover a point for expiry and IV.</td><td>Rising line = later expiries dearer. A spike at one date often marks an event.</td><td>Ignore a first point whose expiry is the build day; SPY's 13 Oct point showed 42%.</td></tr>
+<tr><td>Source note / status</td><td>Fetch time and freshness.</td><td>STALE after 30 hours (config <code>tastytrade.max_age_hours</code>). "not fetched" when the broker session was unavailable.</td><td>Fetched 14 Oct 09:19 UTC on 13 Oct's board.</td><td>Stale metrics: re-check in your broker.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: holdings (SPY, DIA, QQQ and SPDR sectors)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Holdings header</td><td>Issuer, file date, position count, and a stale chip.</td><td>Issuer daily files (State Street xlsx, Invesco JSON). STALE after 3 sessions.</td><td>QQQ "as of 2026-10-02 · 7 sessions old" (stale on 13 Oct).</td><td>Stale holdings: weights may have shifted. Treat the numbers as approximate.</td></tr>
+<tr><td>Priced holdings contributed</td><td>The ETF's move rebuilt from its holdings.</td><td>Sum of start-of-window weight × holding return, in percentage points (pp) of the ETF.</td><td>XLRE 20d: -2.18 vs XLRE -2.88%.</td><td>Close to the ETF's return = the holdings explain the move.</td></tr>
+<tr><td>Top 10 weight and contribution</td><td>How much the 10 largest holdings weigh and add.</td><td>Sum over the 10 largest by weight.</td><td>SPY 20d: 39.0% weight gave +2.21 of +2.72.</td><td>Large share from few names = a narrow move.</td></tr>
+<tr><td>Participation</td><td>Share of the fund's weight trading above its own 50-session average.</td><td>Weight of holdings whose last close is above their 50-session mean ÷ priced weight.</td><td>SPY 64%, XLRE 15%.</td><td>Low participation behind a rally = fragile. Low behind a fall = broad weakness.</td></tr>
+<tr><td>Weight unpriced</td><td>Holdings the store has no price for.</td><td>Shown in orange when above 0.05%. Never counted as a zero return.</td><td>XLRE 4.4%.</td><td>Large unpriced weight means the contribution is incomplete.</td></tr>
+<tr><td>Leading / Dragging</td><td>Top 5 contributors and detractors over the window.</td><td>Sorted by contribution in pp.</td><td>XLRE 20d: leading CCI +0.30 pp; dragging CBRE -0.34 pp.</td><td>Names to check for news before blaming macro.</td></tr>
+<tr><td>Holdings table</td><td>The 15 largest holdings with weight and, per horizon, return and contribution.</td><td>Config <code>holdings.top_rows</code> = 15.</td><td>Columns: Holding, Weight, 1d/5d/20d ret and pp.</td><td>See whether the heavyweights agree with the ETF's move.</td></tr>
+</tbody></table></div>
+
+<h3>Drawer: response and which conditions moved the ETF</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Response line</td><td>Response chip plus headwinds, tailwinds and own return in words.</td><td>As in the matrix, for the selected horizon.</td><td>XLRE 20d: "headwinds: Realised volatility · tailwinds: none · own 20d return -2.88%".</td><td>The named conditions are what to watch tomorrow.</td></tr>
+<tr><td>Horizon buttons in the heading</td><td>Change the horizon from inside the drawer.</td><td>Same shared horizon.</td><td>Redraws the whole board.</td><td>Flip through 1d, 5d, 20d to see which channels matter at each.</td></tr>
+<tr><td>Condition name and state</td><td>Each of the 10 conditions with today's state.</td><td>From the condition frame.</td><td>"Curve level / FLAT".</td><td>Read the name, then the bar.</td></tr>
+<tr><td>Bar</td><td>Excess forward return while the condition sat in today's state.</td><td>Mean return in today's state minus mean in the condition's other observed states. Blue right = helped, red left = hurt. Scaled to the largest bar (at least 0.5).</td><td>XLRE 20d realised volatility LOW: -1.50%.</td><td>Shows the channels. Full-colour bars only count.</td></tr>
+<tr><td>Faded bar</td><td>|t| below 1, or no t.</td><td>Opacity 0.4.</td><td>Weak evidence.</td><td>Ignore faded bars when forming a view.</td></tr>
+<tr><td>Value / "missing"</td><td>The excess in %.</td><td>"missing" when the condition is MISSING or has too few windows.</td><td>Right-hand column.</td><td>Missing is unknown, never zero.</td></tr>
+<tr><td>Bar tooltip</td><td>State, mean in state, excess, t, independent windows in state.</td><td>Same numbers as the Transmission map cell.</td><td>"t -1.38 · 31 independent windows in state".</td><td>Check windows: few windows means fragile.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: everything agrees, but macro adds little (TLT, 20d)</h4>
+<p><b>What you see:</b> TLT (20+ year Treasuries) shows <span class="tag down">▼ Down</span> with ✓ holdout. Interval -2.4% … -0.6%. Analog mean -1.49% against a base of -0.87%, so Excess -0.63%. Response Supporting, Not extended -1.0σ, Pipeline PUT · ARMED, priced vs history 1.01× with a 2.4% spread. In the drawer the price-only lean is also ▼ Down. The distance box shows only 1.37% to the pipeline target and 6.67% to its invalidation.</p>
+<p><b>What it means:</b> Everything points the same way. But TLT has drifted down in all conditions since 2020, so most of the lean is the ETF's own drift. Macro adds about 0.6 points.</p>
+<div class="act"><b>What a trader does:</b> Keeps TLT on the list, but does not treat it as a macro edge. The pipeline target is close and the invalidation is far, which is a poor shape. The pipeline itself flags IV percentile 88 (dear volatility). A trader waits for a better entry or sizes small, and checks the Desk card.</div></div>
+
+<div class="scenario"><h4>Scenario: a lean that failed its own test (XLC, 20d)</h4>
+<p><b>What you see:</b> XLC shows <span class="tag up">▲ Up</span> but ✗ holdout. The train period averaged +1.66% (t 1.59, 21 windows) while the holdout averaged -1.47% (5 windows). Response Rejecting relief: a measured tailwind, yet XLC fell 1.53% over 20 sessions. The packet lists it as "lead". The pipeline is CALL · STAND DOWN because the spread is too wide; the board's own straddle spread is 110% of mid.</p>
+<p><b>What it means:</b> History before mid-2025 favoured XLC in conditions like these. The last year did not. The price is not responding to the tailwind either.</p>
+<div class="act"><b>What a trader does:</b> Skips or waits. A failed holdout plus a rejecting response outweighs the packet's opinion. Even if the view were right, the option spread makes it untradeable.</div></div>
+
+<div class="scenario"><h4>Scenario: short history and stale pieces (IJR, QQQ holdings)</h4>
+<p><b>What you see:</b> IJR shows "Short history" in the Lean column (162 usable sessions, 500 needed). vs 200d is a dash and the drawer says "No option chain stored for IJR". In QQQ's drawer the holdings header reads "as of 2026-10-02" with a stale chip, 7 sessions old.</p>
+<p><b>What it means:</b> The board cannot measure IJR against macro history and has no option quotes for it. QQQ's contribution and participation numbers rest on a holdings file a week and a half old.</p>
+<div class="act"><b>What a trader does:</b> Treats IJR's evidence as unknown, never neutral, and reads it on price alone (or uses IWM for small caps). For QQQ, treats the holdings numbers as approximate and re-checks them once the Invesco file refreshes. If a row ever shows a STALE Data chip, the trader does not act on it at all.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (SPY, 20d)</h4>
+<p><b>What you see:</b> SPY <span class="tag flat">– No clear lean</span>. Interval -0.5% … +1.4%. Analog +0.42% against base +0.92% (Excess -0.51%). Up 61% on 26 windows. Response Absorbing pressure. Not extended 1.0σ. IV rank 29, priced vs history 0.96×. Pipeline CALL · ARMED.</p>
+<p><b>What it means:</b> Sessions like today did slightly worse than average for SPY, but not distinguishably. The interval straddles zero. Options are fairly priced against history.</p>
+<div class="act"><b>What a trader does:</b> Takes no macro view on SPY. If acting on the pipeline's call, the trader judges it on its own evidence (Desk card, Next session plan) and does not claim macro support it does not have.</div></div>
+
+<div class="scenario"><h4>Scenario: a sharp fall that history says often rebounds (SMH)</h4>
+<p><b>What you see:</b> SMH (semiconductors): 5d -7.02%, six down closes in a row, "Extended ↓ -1.9σ" over 5 sessions, yet 20d +8.49%. Lean No clear lean. Response 20d Absorbing pressure. Priced vs history 1.35× at 20d with a 15.8% spread; IV rank 26. Not in the pipeline run. The drawer's momentum table: after a 5d extended-down move, SMH's next 20 sessions averaged +5.39% (✓ holdout, 24 windows) against +2.70% for all sessions.</p>
+<p><b>What it means:</b> The pullback is large for SMH's own volatility. On SMH's own history, sharp 5-day drops were more often followed by gains. Options already price more movement than history delivered after similar macro days.</p>
+<div class="act"><b>What a trader does:</b> Does not assume the fall continues, and does not assume a bounce either. The rebound pattern is worth checking on the Transmission map (curve level is its strongest headwind) and Scenario watch. Options look dear, so a trader would size smaller or wait for IV to ease.</div></div>
+
+<div class="scenario"><h4>Scenario: a leveraged product (TQQQ)</h4>
+<p><b>What you see:</b> TQQQ shows "Path-dependent" at 5d and 20d. The drawer shows a warning box. The evidence is still there: analog 20d mean +1.40%.</p>
+<p><b>What it means:</b> TQQQ resets its 3× leverage daily, so its multi-session return depends on the path, not just the start and end. History does not transfer mechanically.</p>
+<div class="act"><b>What a trader does:</b> Reads QQQ's row for the view and treats TQQQ only as an expression, with a short holding period in mind.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Let's walk XLRE (SPDR real estate) through the tab, as you would on the morning of 14 Oct.</p>
+<ol class="steps">
+  <li><b>Set up.</b> Choose 20d, group "SPDR sectors", sort by Excess. XLRE sits at the bottom: Excess -1.92%.</li>
+  <li><b>Read the row.</b> Last 41.83. 20d -2.88%, 60d -7.52%, RS vs SPY -5.60%, vs 200d -3.2%, 1y high -9.1%, RV20 13.1. Lean <span class="tag down">▼ Down</span>, ✓ holdout, interval -3.4% … -0.6%, Up 40%, Windows 26.</li>
+  <li><b>Hover the lean.</b> Analog mean -2.00%, median -0.84%, n 111 on 26 windows. All history -0.09%. Price-only lean: No clear lean, so this lean comes from today's conditions, not drift. Train -2.13% (t -1.68, 21 windows); holdout -1.40% on 5 windows. The holdout agrees, on a small sample.</li>
+  <li><b>Is it late?</b> Move made 20d: Not extended -0.8σ. In the drawer, the 5-session stage chip reads Not extended 1.0σ (5d +1.78%): a small bounce inside a downtrend. Response 20d Supporting (headwind: realised volatility; XLRE fell). At 5d it reads Absorbing pressure: the bounce is going against measured headwinds.</li>
+  <li><b>Which channel?</b> The condition bars at 20d are all faded except realised volatility LOW: -1.50% (t -1.38, 31 windows). The channel is "calm markets have been bad for XLRE relative to its other states".</li>
+  <li><b>What do options charge?</b> 20d straddle: 38-day expiry, strike 42, bid 1.20 / mid 1.575 / ask 1.95. Priced 3.29% for 20 sessions against 4.45% delivered: ratio 0.74×. But the spread is 47.6% of mid. Paying the ask (1.95 on a 41.82 spot) prices about a 4.66% move by expiry, more than history delivered. tastytrade: IV 15.4%, IV rank 47, liquidity rating 2 / 5.</li>
+  <li><b>Holdings.</b> Holdings explain -2.18 points of the -2.88% fall. Participation is 15%: little of the fund trades above its 50-session average. Dragging: CBRE -0.34 pp, O -0.28 pp.</li>
+  <li><b>Pipeline.</b> UNRESOLVED · STAND DOWN, no target. No second opinion from the pipeline.</li>
+</ol>
+<div class="example">
+<div class="head"><b>XLRE · 20 sessions</b><span class="meta">13 Oct 2026 close</span></div>
+<p>Measured: <span class="tag down">▼ Down</span> ✓ holdout · analog -2.00% vs base -0.09% · interval -3.4% … -0.6% · 26 windows</p>
+<p>Stage: Not extended -0.8σ · Response Supporting · participation 15%</p>
+<p>Cost: ratio 0.74× at mid, spread 47.6%, liquidity 2 / 5 · Pipeline: no side</p>
+<div class="verdict"><b>Coach's reading:</b> XLRE has the clearest measured downside lean among the sectors at 20 sessions, it has not run far yet, and its holdings show broad weakness. The option market is cheap at mid but the quoted spread is too wide to trade blindly. I would put XLRE on the watch list for a downside idea, confirm it on Sector rotation, and only act with a limit order near mid at a small size. This is a reading of the evidence, not a recommendation.</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+  <li>Pick the horizon first. Everything right of "RV20" changes with it.</li>
+  <li>Sort by Excess, then read the top and bottom few in group view.</li>
+  <li>Hover every lean chip. Windows and the holdout matter more than the arrow.</li>
+  <li>Compare the lean with the price-only lean in the drawer. Same answer means drift, not macro.</li>
+  <li>Read the spread before the ratio. A cheap ratio at a wide spread is not cheap.</li>
+  <li>Check the Data column and the drawer's stale chips before anything else.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+  <li>Treating a lean as a probability or a signal to trade. It is recorded history.</li>
+  <li>Reading a 20d lean as a call on tomorrow.</li>
+  <li>Ignoring a ✗ holdout because the packet or pipeline agrees.</li>
+  <li>Reading "Extended" as "too late" without checking the momentum history.</li>
+  <li>Treating Response "Supporting" as permission. It describes behaviour only.</li>
+  <li>Reading leans on leveraged or volatility products.</li>
+  <li>Adding the condition bars together. They overlap and do not sum.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="overview.html">Overview</a> for today's conditions and analog depth. <a href="transmission-map.html">Transmission map</a> for the condition-by-condition picture across all ETFs. <a href="sector-rotation.html">Sector rotation</a> for relative strength against SPY. <a href="desk-card.html">Desk card</a> for the six desk questions on one ETF. <a href="scorecards.html">Scorecards</a> for how the board's past leans scored.</p>
+
+<div class="pager"><a href="overview.html">← Overview</a><a href="transmission-map.html">Transmission map →</a></div>
+</main>
+</div>
+</body>
+</html>

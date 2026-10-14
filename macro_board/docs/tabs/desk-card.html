@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Desk card · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Desk card</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 7 of 12</p>
+  <h1>Desk card</h1>
+  <p class="lede">For one ETF the pipeline proposes, does the board's evidence support the idea, is the entry still worth taking, and what is my decision?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The Desk card is where reading turns into a decision. It takes one ETF and answers the six questions a trading desk asks before every trade: what changed, what should it affect, what is the market doing, what does the pipeline propose, is the entry still worth taking, and what would change my mind.</p>
+<p>It then asks you to record your own decision: Act, Wait, Skip, or Insufficient information, with one sentence of reason. That record can be scored later, which is how you learn whether your judgement adds value.</p>
+<p>Use it after the reading tabs. By the time you open the Desk card you should know the market's reaction (<a href="daily-review.html">Daily review</a>), where money is going (<a href="day-story.html">Day story</a>), and the measured leans (<a href="overview.html">Overview</a>, <a href="etf-matrix.html">ETF matrix</a>). The card pulls those pieces together for one ticker.</p>
+<div class="callout">
+<strong>The checks describe evidence. You decide.</strong>
+<p>No check on this card is a permission, a probability or a gate. A green check means "the evidence points the same way", not "go". The card never feeds the pipeline.</p>
+</div>
+
+<h2 id="how">What it does</h2>
+<h3>Which ETFs get a card</h3>
+<p>The four index ETFs (SPY, QQQ, IWM, DIA) always get a card. So does every board ETF that the newest full pipeline run proposes as a CALL or a PUT. On 13 Oct that was 56 cards (run 20261013_221020). An ETF with missing prices gets no card.</p>
+<h3>Horizons</h3>
+<p>Every card is built three times, for the next 1, 5 and 20 sessions. A <b>session</b> is one trading day. The card opens on the pipeline's own horizon: the pipeline buckets 1_5d and 6_10d open at 5 sessions, 11_20d at 20 sessions, and anything else (for example OVER_20d) at the default of 20 sessions. That horizon is marked "·pipeline" on its button.</p>
+<h3>Where the facts come from</h3>
+<ul>
+<li><b>Pipeline proposal</b>: direction, verdict, entry, target, invalidation, trigger state, contract, read-only from the newest full run.</li>
+<li><b>Macro evidence</b>: what the ETF did after past sessions whose macro conditions looked like today's ("analog" sessions), from the evidence engine.</li>
+<li><b>Momentum evidence</b>: what the ETF did after past sessions with the same streak or the same extension.</li>
+<li><b>Option pricing</b>: the ATM straddle from stored MarketData chains, compared with the move history delivered.</li>
+<li><b>tastytrade metrics</b>: IV rank and IV minus HV.</li>
+<li><b>Condition changes, events and the news alert</b> from the Overview and Macro intelligence tabs.</li>
+</ul>
+<h3>Terms you need</h3>
+<div class="grid2">
+<div class="box"><h4>Trade terms</h4><ul>
+<li><b>Target</b>: where the pipeline expects the move to reach.</li>
+<li><b>Invalidation</b>: the price that proves the idea wrong.</li>
+<li><b>Room</b>: % left to the target against % left to the invalidation, from today's close.</li>
+<li><b>Straddle</b>: one ATM call plus one ATM put. Its price ÷ the stock price is the move the market prices.</li>
+<li><b>IV rank</b>: where today's implied volatility sits in its past-year range, 0 to 100.</li>
+<li><b>IV − HV</b>: implied volatility minus historical (realised) volatility, in points.</li>
+</ul></div>
+<div class="box"><h4>Evidence terms</h4><ul>
+<li><b>Lean</b>: Up or Down when past cases were clear enough; otherwise No clear lean.</li>
+<li><b>Holdout</b>: the last quarter of history, kept aside to check a lean was not fitted to the whole sample.</li>
+<li><b>Independent windows</b>: past cases counted without overlap.</li>
+<li><b>80% interval</b>: the range that holds the true average 80% of the time, given the sample.</li>
+<li><b>σ (sigma)</b>: a move measured in units of the ETF's own volatility.</li>
+<li><b>t</b>: how far an average sits from zero in standard errors.</li>
+</ul></div>
+</div>
+<h3>How a lean is decided</h3>
+<ol class="steps">
+<li>The board takes the forward return from the next session's open to the close h sessions later.</li>
+<li>It splits history: the first 75% is the train period, the last 25% is the holdout.</li>
+<li>On the train period it needs at least 8 independent windows, |t| of 1.5 or more, and an average move of at least 0.05% (1 session), 0.25% (5 sessions) or 0.75% (20 sessions). Then the lean is Up or Down; otherwise No clear lean.</li>
+<li>The holdout then agrees, disagrees, or is too thin (fewer than 3 independent windows).</li>
+</ol>
+<p>All thresholds live in <code>macro_board/config/macro_board_config_v1.json</code> and are provisional.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. The candidate picker</h3>
+<p>A row of buttons: the index ETFs first, then the pipeline candidates. ▲ marks a CALL proposal, ▼ a PUT, · no direction. Click one to load its card.</p>
+<h3>2. The headline card</h3>
+<p>The ticker, its group, today's close with its date, and the pipeline chip ("CALL · ARMED"). On the right, the horizon buttons (1d, 5d, 20d). Under them, seven check pills in one row. Read the pills first: they are the summary. If a stale-target warning appears under them, read it before anything else.</p>
+<h3>3. The six questions</h3>
+<p>Six cards in reading order. Read 1 and 2 for the background, 3 for the tape, 4 for the proposal, 5 for the entry, and 6 for the exit plan.</p>
+<h3>4. Evidence for the next h sessions</h3>
+<p>A table with five rows: macro analog sessions, price only, and three momentum states. Compare each row's mean with the "Price only" row. A lean that only matches the ETF's normal drift adds nothing.</p>
+<h3>5. Your decision</h3>
+<p>Choose Act, Wait, Skip or Insufficient information. Write one sentence of reason using the template, what would change your mind, and your initials. Copy or download the record.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Picker and headline</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Ticker button ▲ / ▼ / ·</td><td>An ETF with a card and its pipeline direction.</td><td>Focus ETFs first, then candidates; arrow from <code>canonical_direction</code>.</td><td>▲ CALL, ▼ PUT, · none.</td><td>Work through the candidates one at a time.</td></tr>
+<tr><td>Group</td><td>The ETF's board group.</td><td>Board group map.</td><td>SPY: Broad indices; XLK: SPDR sectors.</td><td>Reminds you what kind of instrument it is.</td></tr>
+<tr><td>close (date)</td><td>Last close and its session.</td><td>Price store metrics.</td><td>GLD close 381.67 (2026-10-13).</td><td>All distances on the card are from this close.</td></tr>
+<tr><td>Pipeline chip</td><td>Direction · options verdict.</td><td>Newest run row; tooltip has run id and stand-down reason.</td><td>"CALL · ARMED", "PUT · STAND DOWN", or "not in run".</td><td>ARMED means the pipeline has a live idea; the stand-down reason says what it is waiting for.</td></tr>
+<tr><td>1d / 5d / 20d buttons</td><td>The horizon the card is built for.</td><td>All board horizons; "·pipeline" marks the default.</td><td>Changing it rebuilds every check.</td><td>Match the horizon to how long you plan to hold.</td></tr>
+</tbody></table></div>
+
+<h3>The seven check pills</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Macro lean · supports (✓)</td><td>The macro lean points the same way as the proposal.</td><td>Analog lean Up for a CALL or Down for a PUT.</td><td>Hover for the history: mean vs all sessions, 80% interval, windows.</td><td>A real point in favour if the mean clearly beats the all-sessions mean.</td></tr>
+<tr><td>Macro lean · conflicts (×)</td><td>The lean points against the proposal.</td><td>Lean opposite the proposal side.</td><td>Sessions like today went the other way.</td><td>Wait or skip unless you have a strong reason the pipeline sees and the macro does not.</td></tr>
+<tr><td>Macro lean · no evidence (–)</td><td>No measured lean.</td><td>Lean is No clear lean, Insufficient sample, Short history or Path-dependent.</td><td>The tooltip still shows the numbers.</td><td>Neutral, not favourable. Most cards on 13 Oct.</td></tr>
+<tr><td>Macro lean · no proposal (–)</td><td>The pipeline has no CALL/PUT.</td><td>No governed direction.</td><td>Index ETFs without a run row.</td><td>Use the card as research only.</td></tr>
+<tr><td>Momentum (streak)</td><td>Same check, using what followed the same streak state.</td><td>Streak state: 5+ up, 3-4 up, 1-2 up, 1-2 down, 3-4 down, 5+ down.</td><td>GLD: supports (after 1-2 down closes).</td><td>A trend that has tended to continue for this ETF.</td></tr>
+<tr><td>Momentum (20d move)</td><td>Same check, using the 20-session extension state.</td><td>Extended up (z ≥ 1.5σ), extended down (≤ -1.5σ), not extended.</td><td>GLD: supports.</td><td>An extended move is judged by history, not assumed late.</td></tr>
+<tr><td>Room left · ok (✓)</td><td>Reward left is at least the risk left.</td><td>% to target ÷ % to invalidation ≥ 1.0.</td><td>GLD 33.54% vs 1.95% (ratio 17.21).</td><td>The pipeline's levels still leave a fair trade from here.</td></tr>
+<tr><td>Room left · caution (!)</td><td>Ratio from 0.5 to 1.0.</td><td>Provisional bands.</td><td>SPY 17.15% vs 19.12% (0.90).</td><td>Smaller size or a better entry.</td></tr>
+<tr><td>Room left · against (×)</td><td>Ratio below 0.5, or price already through the target.</td><td>Reward ≤ 0 says "the setup needs a new target".</td><td>XLK 14.52% vs 35.46% (0.41).</td><td>The entry has deteriorated. Wait for a better price or a new target.</td></tr>
+<tr><td>Room left · unknown (–)</td><td>No target or invalidation.</td><td>Missing levels.</td><td>Cannot measure room.</td><td>Set your own levels before trading.</td></tr>
+<tr><td>Option price · ok</td><td>Options price no more than 1.1× the move history delivered.</td><td>Straddle move (scaled to the horizon) ÷ analog mean absolute move.</td><td>SPY 0.96×.</td><td>Long premium is reasonably priced.</td></tr>
+<tr><td>Option price · caution</td><td>1.1× to 1.4×, or IV rank ≥ 80, or straddle spread over 5% of mid.</td><td>Provisional bands from <code>desk_card</code>.</td><td>GLD 1.27×.</td><td>Consider shares or a smaller premium position.</td></tr>
+<tr><td>Option price · against</td><td>Above 1.4×.</td><td>Same ratio.</td><td>XLK 1.50×, spread 39.5% of mid.</td><td>Premium is expensive; a long option needs a much bigger move to pay.</td></tr>
+<tr><td>Option price · unknown</td><td>No option data.</td><td>No ratio, IV rank or spread.</td><td>"No option data for this ETF."</td><td>Check a live chain yourself.</td></tr>
+<tr><td>Data · ok / caution</td><td>Whether the inputs are fresh.</td><td>OK only if prices, the macro packet and the Money Index are all FRESH.</td><td>13 Oct: "Prices fresh to 2026-10-13; macro packet fresh; Money Index fresh."</td><td>Caution: find which input is stale before trusting the card.</td></tr>
+<tr><td>Event risk · ok / caution</td><td>Whether an event or news alert is live.</td><td>Caution if the event verdict is anything but none / no material event, or the news alert is AMBER or RED.</td><td>13 Oct: "Event verdict no trade; news alert amber" on every card.</td><td>Expect larger moves; size down or wait for the event.</td></tr>
+<tr><td>Stale-target warning</td><td>Measured continuation is bigger than the room left to target.</td><td>Room caution/against; momentum interval clear of zero in the trade direction and at least the normal drift; mean beyond the reward.</td><td>LQD 20d: "moved -0.49% on average ... more than the room left".</td><td>Do not chase or dismiss: ask for a re-evaluated target.</td></tr>
+</tbody></table></div>
+
+<h3>Question 1 · What changed?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>date: Condition from → to</td><td>Recent macro condition changes.</td><td>First 6 entries of the board's condition change list (board-wide, not per ETF).</td><td>"2026-10-09: Curve level STEEP → FLAT".</td><td>A fresh change is new information the market may still be pricing.</td></tr>
+<tr><td>Event: name</td><td>Up to 3 events from the event payload.</td><td>Event names, PUBLISHED source.</td><td>"Citigroup third-quarter 2026 earnings".</td><td>Check whether the event touches this ETF.</td></tr>
+<tr><td>News alert + uncalibrated chip</td><td>The news enrichment alert level.</td><td>Alert level from the enrichment; never calibrated.</td><td>AMBER on 13 Oct.</td><td>A warning light, not a probability.</td></tr>
+</tbody></table></div>
+
+<h3>Question 2 · What should it affect?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Condition = state: ±x% vs other states (t)</td><td>How this ETF did when the condition was in today's state, against other states.</td><td>Up to 4 conditions with |t| ≥ 1 at this horizon, largest |t| first.</td><td>GLD 20d: Curve move = steepening, +2.06% (t 1.90).</td><td>Positive and aligned with your side is a tailwind; negative is a headwind.</td></tr>
+<tr><td>No condition with |t| ≥ 1</td><td>Nothing measured passes the bar.</td><td>Empty list.</td><td>Macro has no measured grip on this ETF here.</td><td>Judge on price and the pipeline instead.</td></tr>
+<tr><td>Holdings leading hd</td><td>Top 5 holdings by contribution over the horizon.</td><td>Issuer holdings files; on 13 Oct only SPY, QQQ, DIA and the 11 SPDR sectors had them.</td><td>SPY 20d: NVDA, MSFT, META, AMD, AAPL.</td><td>Watch these names for confirmation.</td></tr>
+</tbody></table></div>
+
+<h3>Question 3 · What is the market doing?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Response: Supporting</td><td>Price agrees with the net measured pressure.</td><td>Count measured headwinds and tailwinds (|t| ≥ 1) and compare with the ETF's own return over the window.</td><td>Tailwinds and rising, or headwinds and falling.</td><td>The tape behaves as the evidence says.</td></tr>
+<tr><td>Response: Absorbing pressure</td><td>Net headwind, but the ETF rose.</td><td>More headwinds than tailwinds, own return &gt; 0.</td><td>SPY 20d: headwinds realised vol and curve level, tailwind breadth, up 2.72%.</td><td>Buyers are soaking up bad news: a sign of strength, describing behaviour only.</td></tr>
+<tr><td>Response: Rejecting relief</td><td>Net tailwind, but the ETF fell.</td><td>More tailwinds, own return &lt; 0.</td><td>GLD 20d: tailwind curve move, down 3.17%.</td><td>Good news is not lifting it: a sign of weakness.</td></tr>
+<tr><td>Response: Mixed</td><td>Equal headwinds and tailwinds.</td><td>Equal counts.</td><td>XLK 20d.</td><td>No read either way.</td></tr>
+<tr><td>Response: Insufficient</td><td>Nothing measured, or no return.</td><td>No condition with |t| ≥ 1.</td><td>XBI 20d.</td><td>No read.</td></tr>
+<tr><td>vs SPY, 20d</td><td>Return over 20 sessions minus SPY's.</td><td>Price store.</td><td>GLD -5.89%; XLK +4.10%.</td><td>Relative strength behind or against your idea.</td></tr>
+<tr><td>Streak</td><td>Consecutive up (+) or down (-) closes and its state.</td><td>Count of same-sign daily changes.</td><td>"-2 closes · 1-2 down closes".</td><td>Context for the momentum check.</td></tr>
+<tr><td>Move vs own vol</td><td>5d and 20d return in σ of its own volatility.</td><td>Return ÷ (20-session realised vol × √(window/252)).</td><td>±1.5σ or beyond is "extended".</td><td>A large σ move means much of the move may be done, unless history says runs continue.</td></tr>
+<tr><td>Participation</td><td>% of holdings weight above its 50-session average.</td><td>Holdings file, 20-session window.</td><td>SPY 64%; a dash when no holdings file.</td><td>Broad participation supports an index move.</td></tr>
+</tbody></table></div>
+
+<h3>Question 4 · What does the pipeline propose?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Direction · verdict</td><td>CALL/PUT and the options verdict.</td><td>Newest full run, read-only.</td><td>"CALL · ARMED".</td><td>The idea you are checking.</td></tr>
+<tr><td>Entry · target · invalidation</td><td>The pipeline's three levels.</td><td>Run row.</td><td>GLD 381.67 · 509.70 · 374.23.</td><td>Compare the target with typical moves; a far target inflates the room ratio.</td></tr>
+<tr><td>Trigger · horizon</td><td>Trigger state and horizon bucket.</td><td>Run row.</td><td>"TRIGGER EARLY PROBE · OVER 20d".</td><td>Early probe means the setup is not fully confirmed.</td></tr>
+<tr><td>Contract</td><td>Strike, expiry, days to expiry, premium.</td><td>Run row.</td><td>GLD 390.0 exp 2026-12-18 (66d) · 10.90.</td><td>The pipeline's proposed contract. Re-quote before acting.</td></tr>
+<tr><td>Stand-down reason</td><td>Why the pipeline is holding back, if it is.</td><td>Run row.</td><td>"CONTRACT_EOD_QUOTE_PENDING_MORNING_REQUOTE".</td><td>Here: wait for the morning re-quote of the exact contract.</td></tr>
+<tr><td>No row for ...</td><td>The ETF is not in the newest run.</td><td>Missing run row.</td><td>Shows the run id.</td><td>Nothing to check against.</td></tr>
+<tr><td>Run ..., read-only</td><td>The run id.</td><td>Pipeline loader.</td><td>20261013_221020.</td><td>Make sure it is the newest run.</td></tr>
+</tbody></table></div>
+
+<h3>Question 5 · Is the entry still worth taking?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Room left pill + text</td><td>Reward vs risk from today's close.</td><td>See the pills table.</td><td>"33.54% left to target vs 1.95% to invalidation (ratio 17.21)".</td><td>Also check the invalidation against a normal move: a very tight one gets hit by noise.</td></tr>
+<tr><td>Option price pill + text</td><td>Pricing against history.</td><td>See the pills table.</td><td>"Options price 1.27× history."</td><td>Pick the expression: option, shares or smaller premium.</td></tr>
+<tr><td>ATM straddle dte d @ strike</td><td>The straddle used: bid / mid / ask.</td><td>First stored expiry covering 1, 7 or 28 calendar days for 1, 5, 20 sessions; quote no older than 2 sessions is fresh.</td><td>GLD 31d @ 382.0: 18.00 / 18.30 / 18.60.</td><td>A wide bid/ask gap costs you on entry and exit.</td></tr>
+<tr><td>→ priced move over hd</td><td>The straddle move scaled to the horizon.</td><td>Mid ÷ spot, scaled by √time to the horizon.</td><td>GLD 4.64% over 20d.</td><td>The move the market expects. Your target and stop should make sense against it.</td></tr>
+<tr><td>IV rank · IV − HV</td><td>Where IV sits in its year, and IV minus realised vol.</td><td>tastytrade metrics.</td><td>GLD IV rank 18 · IV − HV +2.0%.</td><td>Low IV rank: options not expensive by their own history. Positive IV − HV: paying a bit above realised.</td></tr>
+</tbody></table></div>
+
+<h3>Question 6 · What would change my mind?</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Pipeline invalidation (distance)</td><td>The exit level and how far it is.</td><td>Level ÷ close - 1.</td><td>GLD 374.23 (-1.95% from close).</td><td>Your hard "wrong" level.</td></tr>
+<tr><td>Pipeline target (distance)</td><td>The goal and how far it is.</td><td>Same.</td><td>GLD 509.70 (+33.55%).</td><td>A target far beyond the priced move is a long shot within the horizon.</td></tr>
+<tr><td>Money Index (trigger group)</td><td>The first two trigger groups of the published Money Index, two items each.</td><td>From the US Money Index packet (PUBLISHED).</td><td>Bullish upgrade: "VIX rejects the 16 first gate ..."; risk-off upgrade: "VIX has re-crossed 16 ...".</td><td>Macro events that would shift the backdrop. Display only.</td></tr>
+<tr><td>A condition tile flipping state</td><td>Fixed reminder.</td><td>Static line.</td><td>Watch the Overview tiles.</td><td>A flip changes the analog set and the macro lean.</td></tr>
+</tbody></table></div>
+
+<h3>Evidence · next h sessions</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Macro: sessions like today</td><td>What followed analog sessions.</td><td>Sessions whose condition states match today's (match level relaxed from 100% to 60% until 12 independent windows).</td><td>GLD 20d: +0.24%, interval -1.13% to +1.61%, 26 windows.</td><td>Compare with the next row. Below it means today's backdrop has been worse than usual.</td></tr>
+<tr><td>Price only: all sessions</td><td>The ETF's normal drift.</td><td>All sessions; lean is the price-only lean.</td><td>GLD 20d: +1.37%, lean Up.</td><td>The bar every other row must beat to add information.</td></tr>
+<tr><td>Momentum: (streak state)</td><td>What followed the same streak.</td><td>Momentum evidence.</td><td>GLD after 1-2 down closes: +1.45%, Up, ✓ holdout.</td><td>Only useful if clearly above the price-only row.</td></tr>
+<tr><td>Momentum: 5d move (state)</td><td>What followed the same 5-session extension.</td><td>Extension state on 5 sessions.</td><td>GLD not extended: Up, +1.38%.</td><td>Same comparison.</td></tr>
+<tr><td>Momentum: 20d move (state)</td><td>What followed the same 20-session extension.</td><td>Extension state on 20 sessions.</td><td>GLD not extended: +1.19%, Up.</td><td>Same comparison.</td></tr>
+<tr><td>Lean chip</td><td>▲ Up, ▼ Down, – No clear lean, Insufficient sample, Short history, Path-dependent.</td><td>Lean rules above; leveraged, inverse and volatility products show Path-dependent on the 5d and 20d macro rows.</td><td>Hover for full statistics.</td><td>Up/Down only count when the holdout agrees.</td></tr>
+<tr><td>Holdout chip</td><td>✓ holdout, ✗ holdout, ? holdout thin.</td><td>Last 25% of history; needs 3 independent windows.</td><td>Shown only when a lean exists.</td><td>✗ holdout: the lean failed out of sample. Treat as no lean.</td></tr>
+<tr><td>Mean</td><td>Average forward return.</td><td>Next open to the close h sessions later.</td><td>In %.</td><td>Size of the typical outcome.</td></tr>
+<tr><td>80% interval</td><td>Range for the true average.</td><td>Student-t on independent windows.</td><td>Crossing zero means the sign is uncertain.</td><td>Wide interval: weak evidence, smaller size.</td></tr>
+<tr><td>Up</td><td>Share of cases that rose.</td><td>Hit rate.</td><td>GLD momentum 62%.</td><td>Hit rate alone does not make a trade; payoff matters.</td></tr>
+<tr><td>Windows</td><td>Independent windows.</td><td>Non-overlapping count.</td><td>26, 60.</td><td>Fewer than 8: too few to lean on.</td></tr>
+<tr><td>Note line</td><td>The macro lean and momentum checks with text.</td><td>Same as the pills.</td><td>Repeats the history numbers.</td><td>Quick reference while reading the table.</td></tr>
+</tbody></table></div>
+
+<h3>Your decision</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Act / Wait / Skip / Insufficient information</td><td>Your decision.</td><td>Radio buttons.</td><td>One per card.</td><td>Pick honestly; "Insufficient information" is a valid answer.</td></tr>
+<tr><td>Reason (template)</td><td>One sentence.</td><td>Template: "Against [backdrop], [new information] affects (ticker) through [mechanism]. The market is [response]. The pipeline proposes [trade]. At [price] there is [room left] against [risk]. I will [act / wait / skip] because [reason]. I will change my mind if [condition]."</td><td>Fill every bracket.</td><td>Forces you to name the evidence.</td></tr>
+<tr><td>What would change my mind</td><td>Your exit or re-think trigger.</td><td>Free text.</td><td>A level or event.</td><td>Your plan B.</td></tr>
+<tr><td>Trader</td><td>Your initials.</td><td>Free text.</td><td>For the journal.</td><td>Lets records be scored per trader.</td></tr>
+<tr><td>Copy record / Download record</td><td>A JSON record of your decision plus the card's facts.</td><td>Schema <code>macro-board-desk-record-v1</code>: session, time, ticker, horizon, close, decision, reason, check statuses, pipeline levels, macro and momentum means, priced vs history, IV rank. File <code>desk_(ticker)_(session).json</code>.</td><td>Save it to <code>macro_board/output/journal/</code>.</td><td>Scored later, so you learn from your own decisions.</td></tr>
+<tr><td>Clear</td><td>Deletes the draft.</td><td>Drafts are kept in this browser per ticker and session.</td><td>Not a server copy.</td><td>Download before you clear.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: everything agrees (illustrative)</h4>
+<p><b>What you see:</b> For example, a CALL card at 5 sessions with Macro lean supports (✓ holdout), Momentum supports, Room left ok (ratio 1.8), Option price ok (0.92×), Data ok, Event risk ok, and Response Supporting.</p>
+<p><b>What it means:</b> The evidence points the same way as the proposal, the entry still leaves fair room, and options are not expensive.</p>
+<div class="act"><b>What a trader does:</b> Checks that the macro and momentum means clearly beat the price-only row, then considers Act at normal size with the pipeline invalidation as the exit. Records the decision.</div></div>
+
+<div class="scenario"><h4>Scenario: proposal against the tape and expensive options (XLK, 13 Oct)</h4>
+<p><b>What you see:</b> XLK CALL · ARMED at 20 sessions. Room left against: 14.52% vs 35.46% (0.41). Option price against: 1.50× history, straddle spread 39.5% of mid. Response Mixed. The <a href="day-story.html">Day story</a> shows XLK leaving a leader, with a reversed record.</p>
+<p><b>What it means:</b> The pipeline's invalidation (126.68) sits far below, so the risk to it is more than twice the reward to target. Options are dear and the quoted spread is very wide.</p>
+<div class="act"><b>What a trader does:</b> Wait. If the call idea is still wanted, a nearer exit level and a better quote are needed first. Records "Wait" with the room and spread as the reason.</div></div>
+
+<div class="scenario"><h4>Scenario: target already used up (LQD, 13 Oct)</h4>
+<p><b>What you see:</b> LQD PUT. Room left against: 0.13% left to target vs 10.12% to invalidation (0.01). The stale-target warning: after similar runs LQD moved -0.49% over 20 sessions, more than the room left.</p>
+<p><b>What it means:</b> Price has almost reached the pipeline's target (102.42 against a close of 102.55). The measured drift says the move may go further, so the old target may be out of date.</p>
+<div class="act"><b>What a trader does:</b> Neither chases the old target nor dismisses the trend. Records "Wait" and asks for a re-evaluated target from the pipeline.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (SPY, 13 Oct)</h4>
+<p><b>What you see:</b> SPY CALL · ARMED at 20 sessions. Macro lean, Momentum and Momentum (20d move) all no evidence. Room left caution (0.90). Option price ok (0.96×). Event risk caution: "Event verdict no trade; news alert amber". CPI prints at 08:30 ET.</p>
+<p><b>What it means:</b> No measured edge for the call, an even reward and risk, and a known event ahead.</p>
+<div class="act"><b>What a trader does:</b> Records "Wait": no evidence beyond drift, room under 1, CPI ahead. Revisits after the print.</div></div>
+
+<div class="scenario"><h4>Scenario: macro supports, but the holdout disagrees (XBI, 13 Oct)</h4>
+<p><b>What you see:</b> XBI PUT · ARMED at 20 sessions. Macro lean supports, but the lean chip shows ✗ holdout and the interval runs -3.05% to +1.32%. Room left caution (0.95). Option price caution (1.16×, spread 28.7% of mid). Response Insufficient.</p>
+<p><b>What it means:</b> The green pill comes from the train period only. Out of sample, the lean did not hold, and the interval crosses zero.</p>
+<div class="act"><b>What a trader does:</b> Treats the macro check as no evidence. With caution on room and price, records "Skip" or "Wait".</div></div>
+
+<div class="scenario"><h4>Scenario: stale or missing inputs (illustrative)</h4>
+<p><b>What you see:</b> For example, Data caution with "Prices fresh to 2026-10-13; macro packet stale; Money Index missing", or Option price unknown with "No option data for this ETF."</p>
+<p><b>What it means:</b> One or more inputs behind the card are old or absent. Missing is never neutral.</p>
+<div class="act"><b>What a trader does:</b> Records "Insufficient information", finds the stale input on <a href="macro-intelligence.html">Macro intelligence</a>, and pulls a live chain before any option trade.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Let's work through GLD (gold) at its pipeline horizon of 20 sessions, as a coach would with a new trader.</p>
+<div class="example">
+<div class="head"><b>GLD · 20 sessions</b><span class="tag up">CALL · ARMED</span></div>
+<ol class="steps">
+<li><b>Read the pills.</b> Macro lean no evidence; Momentum (streak) supports; Momentum (20d move) supports; Room left ok; Option price caution; Data ok; Event risk caution. Coach: "Two greens, one ok room, two cautions. Let's see what the greens are made of."</li>
+<li><b>Test the greens against drift.</b> The price-only row says GLD rose +1.37% over 20 sessions on average across all history. After 1-2 down closes it rose +1.45%; when not extended over 20 sessions, +1.19%. Coach: "Both momentum 'supports' are just gold's normal upward drift. The +1.19% is even below normal. They add almost nothing."</li>
+<li><b>Read the macro row.</b> Sessions like today: +0.24%, interval -1.13% to +1.61%, 26 windows. Coach: "Today's macro backdrop has been worse than average for gold, though not clearly negative."</li>
+<li><b>Read the tape.</b> Response Rejecting relief: the measured tailwind (curve move steepening, +2.06%, t 1.90) is active, yet GLD fell 3.17% over 20 sessions. It trails SPY by 5.89% over 20 sessions. Coach: "Good news for gold is not lifting it. That is a weakness signal."</li>
+<li><b>Read the proposal.</b> Entry 381.67, target 509.70, invalidation 374.23, trigger early probe, contract 390 strike expiring 2026-12-18 (66 days) at 10.90. Stand-down reason: waiting for the morning re-quote. Coach: "The pipeline itself wants a fresh quote before it commits."</li>
+<li><b>Check the room honestly.</b> 33.54% to target vs 1.95% to invalidation, ratio 17.21. The straddle prices a 4.64% move over 20 sessions. Coach: "The target is seven priced moves away, and the stop is well inside one. The great ratio comes from a distant target and a tight stop, not from a great entry. Normal noise can hit 374.23."</li>
+<li><b>Check the price.</b> 1.27× history: options price more than gold has moved after similar sessions. IV rank 18, IV − HV +2.0. Coach: "Cheap against its own year, but rich against what this backdrop has delivered."</li>
+<li><b>Check the risk.</b> Event risk caution: event verdict no trade, news alert amber, CPI at 08:30 ET.</li>
+</ol>
+<div class="verdict"><p><b>Decision sentence:</b> "Against a mixed tape with CPI ahead, gold is rejecting a measured tailwind and trailing SPY by 5.89% over 20 sessions; the pipeline proposes a GLD call, and at 381.67 the momentum support only matches normal drift, options price 1.27× history and the 374.23 invalidation sits inside one priced move, so I will wait because the evidence adds nothing beyond drift; I will change my mind if GLD's response turns supporting after the CPI print and the morning re-quote confirms the contract."</p></div>
+</div>
+<div class="callout coach"><strong>Coach's tip</strong><p>A check pill tells you the direction of the evidence, not its size. Always compare a "supports" row with the "Price only" row before you count it.</p></div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Read the pills, then the warning box, then the evidence table, then the proposal.</li>
+<li>Compare the target and invalidation with the priced move in question 5.</li>
+<li>Look at the holdout chip before you count a lean.</li>
+<li>Switch horizons to match your holding period; the checks change with it.</li>
+<li>Download every record, including the skips. Skips are data too.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Reading green pills as "go". They describe evidence; they never decide.</li>
+<li>Trusting a high room ratio without asking why the target is so far.</li>
+<li>Ignoring a wide straddle spread: you pay it twice.</li>
+<li>Treating "no evidence" as a mild positive. It is neutral.</li>
+<li>Clearing a draft without downloading it: the draft lives only in your browser.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="day-story.html">Day story</a> for the sector flow, <a href="etf-matrix.html">ETF matrix</a> for the leans by horizon, <a href="transmission-map.html">Transmission map</a> for the condition effects, <a href="scenario-watch.html">Scenario watch</a> for live scenarios, <a href="macro-intelligence.html">Macro intelligence</a> for data freshness, and <a href="scorecards.html">Scorecards</a> for how the board's leans have done.</p>
+
+<div class="pager"><a href="sector-rotation.html">← Sector rotation</a><a href="scenario-watch.html">Scenario watch →</a></div>
+</main>
+</div>
+</body>
+</html>

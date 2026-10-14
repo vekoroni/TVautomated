@@ -426,3 +426,12 @@ def test_a_build_that_may_not_call_shows_the_sessions_earlier_narrative_labelled
     out = ds.ai_narrative({**FACTS, "next_session": "2026-10-14"}, AI_CFG, cache_dir=tmp_path, session="2026-10-13",
                           kind="INTRADAY", client_factory=lambda: later)
     assert out["status"] == "OK" and out["earlier_build"] is True and later.calls == []
+
+
+def test_whole_number_volumes_from_the_store_are_read_not_treated_as_missing():
+    h = _flow_history(last_put_volume=3000)
+    for k in ("call_volume", "put_volume", "call_oi", "put_oi", "contracts"):
+        h[k] = h[k].astype("int64")                       # the stored surface returns integers
+    fp = ds.footprint(h, session=str(SESSIONS[-1].date()), sessions=SESSIONS, cfg=CFG_FLOW)
+    assert fp["put_volume"] == 3000 and fp["contracts"] == 200
+    assert "HEAVY_PUT_VOLUME" in [f["key"] for f in fp["flags"]]

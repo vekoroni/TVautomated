@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scenario watch · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Scenario watch</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 8 of 12</p>
+  <h1>Scenario watch</h1>
+  <p class="lede">Which written-down trade ideas are live right now, what exactly would trigger them, and how did a long option on that idea pay after every past trigger?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>Traders carry rules of thumb in their heads: "if QQQ cannot hold a yearly high for 3 sessions, buy puts". Scenario watch writes each rule down, dates it, and tests it on every ETF's full history. It then tells you which rules are live today and how close each one is to triggering.</p>
+<p>The test is the one that matters for long options: did buying an option on the idea pay after costs, compared with buying the same option on any day? A rule can be right about direction and still lose money on options, because options lose value with time and cost a spread to trade.</p>
+<p>Use it after the <a href="desk-card.html">Desk card</a> and the <a href="day-story.html">Day story</a>, when you want to know whether a setup you see has a record. Live index-ETF scenarios also appear in the <a href="next-session-plan.html">Next session plan</a> checklist.</p>
+<div class="callout">
+<strong>Display only</strong>
+<p>No scenario scores, ranks or gates anything. A verdict describes history; it is not a forecast or a permission. Registering a scenario before looking at its result, and keeping it even if it fails, is what keeps the record honest.</p>
+</div>
+
+<h2 id="how">What it does</h2>
+<h3>The library</h3>
+<p>Each scenario lives in <code>scenario_watch.library</code> in the board config, with an id, a name, a side (PUT or CALL), a registration date, a source and a hypothesis. On 13 Oct there were 10 scenarios, all registered on 2026-10-12. Each is tested on every ETF with at least 500 sessions of history: 77 ETFs.</p>
+<h3>Trigger parts</h3>
+<p>Every trigger is built from five fixed parts. A <b>daily move</b> here is the standard deviation of the 20 daily log returns before the day, in %. It leaves the day itself out, so a big day cannot inflate its own yardstick.</p>
+<ul>
+<li><b>failed_extreme</b>: a new closing high (or low) over the lookback, with no higher (lower) close in the next N sessions. An optional depth asks the last close to sit at least some daily moves away.</li>
+<li><b>held_extreme</b>: a new closing high (low) that is still at or above (below) that level N sessions later.</li>
+<li><b>near_extreme</b>: the close within N daily moves of the lookback high (low).</li>
+<li><b>streak</b>: exactly N up (or down) closes in a row.</li>
+<li><b>big_day</b>: a close at least N daily moves up (or down).</li>
+</ul>
+<p>Optional <b>conditions</b> require one or more of the 10 macro condition states on the trigger day, for example breadth LOW or credit WIDENING.</p>
+<h3>How each past trigger is scored</h3>
+<ol class="steps">
+<li><b>Entry and exit.</b> Entry at the next session's open; exit at the close h sessions after the trigger, for h = 1, 3, 5 and 10.</li>
+<li><b>Move for the hypothesis.</b> The return in the scenario's direction: positive means the idea was right. For a PUT, a 1% fall counts as +1%.</li>
+<li><b>First passage.</b> Did price reach one expected move (daily move × √h) in favour before one expected move against, on closes?</li>
+<li><b>Excursions.</b> The best and worst close along the way, in the scenario's direction.</li>
+<li><b>Option proxy.</b> A long at-the-money option, priced with the Black-Scholes formula (a standard option pricing model). Expiry is 2× the horizon. Implied volatility is the 20-session realised volatility × 1.15. It is bought at the ask and sold at the bid with a 3% round-trip spread on premium. The result is the % gain or loss on the premium. No historical quotes are used.</li>
+<li><b>Every-session baseline.</b> The same option bought on every session in history. Most of the time this loses, because time decay and the spread cost money. A scenario earns its keep only if it beats this.</li>
+</ol>
+<h3>Verdicts</h3>
+<ul>
+<li><b>Too thin</b>: fewer than 8 independent windows (past triggers counted without overlapping outcomes).</li>
+<li><b>Edge</b>: the option proxy beat buying every session, with t of 1.5 or more. <b>t</b> measures how far the average sits from zero in standard errors.</li>
+<li><b>Opposite side paid</b>: the move went against the hypothesis, with t of -1.5 or less.</li>
+<li><b>No edge</b>: neither.</li>
+</ul>
+<p>A <b>holdout</b> check then looks at the last quarter of triggers on their own: it agrees, disagrees, or is too thin (fewer than 3 independent windows).</p>
+<h3>The false-discovery check</h3>
+<p>Testing 10 scenarios × 77 ETFs × 4 horizons means 3,080 tries. With that many tries, some results look strong by luck. The board runs the <b>Benjamini-Hochberg false-discovery check</b> at 10%: it ranks all results by how surprising they are and keeps only those strong enough to stand out after counting every try. Results that pass are marked "beats the tries"; the rest are "within chance".</p>
+<h3>Live status and the live record</h3>
+<p>For every scenario and ETF the board also checks today: Triggered on the last close, Watching (close to triggering, with level and deadline), Partial (price met, macro condition not), or Not active. Pre-open and evening builds write each new trigger once to <code>output/scenario_ledger.jsonl</code>. Later builds score it at each horizon as it completes. That is the out-of-sample record: results the scenario could not have been fitted to.</p>
+<p>All thresholds are in <code>scenario_watch</code> and <code>evidence</code> in the config. The option proxy is provisional until stored chains can replace it.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Header and the option-proxy box</h3>
+<p>The box restates what a scenario is and how the option proxy is built (runway 2×, IV = realised vol × 1.15, 3% spread). Read it once.</p>
+<h3>2. The false-discovery banner</h3>
+<p>On 13 Oct: 3,080 results tested; 72 read Edge and 232 Opposite side paid at the per-result bar; after the check, 1 edge and 6 opposites survive. Coach: "Out of 304 strong-looking results, 7 stand out after counting the tries. That ratio is your humility check."</p>
+<h3>3. Controls</h3>
+<p>Horizon buttons (1d, 3d, 5d, 10d; 5d by default) change every record on the page. The "index ETFs only" box filters the live table to SPY, QQQ, IWM and DIA.</p>
+<h3>4. Live now</h3>
+<p>The heart of the tab. Triggered rows first, then Watching, then Partial; index ETFs first within each. On 13 Oct: 59 live rows (9 triggered, 42 watching, 8 partial). Click a row to open its detail.</p>
+<h3>5. Detail panel</h3>
+<p>The scenario's state, a table for every horizon, the last 8 triggers and the exact trigger definition.</p>
+<h3>6. Scenario library</h3>
+<p>One card per scenario: hypothesis, registration, verdict counts at the chosen horizon, and a cell per ETF coloured by verdict. Click any cell for its detail.</p>
+<h3>7. Live record</h3>
+<p>Every recorded live trigger, newest first, with its result at each horizon or "pending".</p>
+<h3>8. Adding your own scenario</h3>
+<p>Instructions for registering a new scenario in the config, with the trigger parts listed.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Banner and controls</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Option proxy note</td><td>How the option result is priced.</td><td>Config <code>option_proxy</code>: runway_multiple 2, iv_over_rv 1.15, spread_pct_of_premium 3.</td><td>An estimate, not historical quotes.</td><td>Real fills may be worse on illiquid ETFs. Treat small edges with caution.</td></tr>
+<tr><td>N results are tested</td><td>Count of scenario × ETF × horizon results.</td><td>All cells in the library.</td><td>3,080 on 13 Oct.</td><td>The more tries, the more luck to discount.</td></tr>
+<tr><td>Edge / Opposite side paid at the per-result bar</td><td>Results that pass on their own.</td><td>Verdict counts before the check.</td><td>72 and 232.</td><td>Candidates, not conclusions.</td></tr>
+<tr><td>edges / opposites survive</td><td>Results that pass after the false-discovery check.</td><td>Benjamini-Hochberg at q = 10%, one-sided p-values from t.</td><td>1 and 6.</td><td>Act only on these; watch the rest on the live record.</td></tr>
+<tr><td>1d / 3d / 5d / 10d</td><td>Horizon for every record on the page.</td><td>Config horizons; default <code>detail_horizon</code> = 5.</td><td>Changes all chips and counts.</td><td>Match it to your planned hold. Option expiry in the proxy is 2× this.</td></tr>
+<tr><td>index ETFs only</td><td>Filter for the live table.</td><td>Keeps SPY, QQQ, IWM, DIA.</td><td>13 Oct: only SPY's two rows.</td><td>Fast check for the index ETFs.</td></tr>
+</tbody></table></div>
+
+<h3>Live now table</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>State: Triggered</td><td>The trigger happened on the last close.</td><td>Price rule and any conditions met on the last close.</td><td>"Triggered on the 2026-10-13 close. Entry would be the next open."</td><td>The idea is live now. Check its record before anything else.</td></tr>
+<tr><td>State: Watching</td><td>Close to triggering.</td><td>failed/held extreme: a new high or low inside the hold window; streak: one close short; near_extreme: within 2× the trigger distance.</td><td>QUAL: "Triggers if the next 2 close(s) stay below 227.72 (deadline 2026-10-15)."</td><td>Put the level and deadline in your alerts.</td></tr>
+<tr><td>State: Partial</td><td>Price condition met; a macro condition is not.</td><td>Unmet conditions listed with today's state.</td><td>SPY: "waiting for credit WIDENING (now STABLE)".</td><td>Watch the condition tile on the Overview.</td></tr>
+<tr><td>State: Not active</td><td>Nothing close.</td><td>"Conditions not met." or "No recent extreme to watch."</td><td>Not shown in the live table.</td><td>None today.</td></tr>
+<tr><td>ETF</td><td>The ETF.</td><td>Board universe.</td><td>Index ETFs sort first.</td><td>Start with the ETFs you trade.</td></tr>
+<tr><td>Scenario + side chip</td><td>Scenario name and PUT / CALL.</td><td>Library.</td><td>"Failed to hold a yearly high PUT".</td><td>The trade the hypothesis implies.</td></tr>
+<tr><td>What happens next</td><td>The status sentence.</td><td>Status text with level, closes left and deadline session.</td><td>TLT: "4 up closes in a row; one more triggers."</td><td>Your exact trigger, in words.</td></tr>
+<tr><td>Record (hd)</td><td>The verdict chip at the chosen horizon.</td><td>See the verdict table.</td><td>"No edge", "Too thin", "Opposite side paid · holdout ✓ · within chance".</td><td>Only "Edge ... beats the tries" is a measured reason to lean in.</td></tr>
+<tr><td>Option proxy</td><td>Average % result per trade on the proxy option after past triggers.</td><td><code>option_expectancy</code> × 100.</td><td>SPY narrow high, 5d: -14.0%.</td><td>The typical return on premium. Negative is normal for long options.</td></tr>
+<tr><td>Every session</td><td>Average % result of buying the same option on every session.</td><td><code>baseline_multiple</code> × 100.</td><td>SPY PUT 5d: -16.1%.</td><td>The bar to beat. -14.0% vs -16.1% is not an edge.</td></tr>
+<tr><td>Triggers / indep.</td><td>Past triggers and independent windows.</td><td>n and n_eff at this horizon.</td><td>6 / 4.</td><td>Below 8 independent: too few to judge.</td></tr>
+<tr><td>Nothing live.</td><td>Empty-table message.</td><td>No live rows after the filter.</td><td>A quiet board.</td><td>No scenario reason to act.</td></tr>
+</tbody></table></div>
+
+<h3>Verdict chip and its tooltip</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Edge (✓, green)</td><td>The option proxy beat buying every session.</td><td>Mean minus baseline &gt; 0 and t_edge ≥ 1.5, with at least 8 independent windows.</td><td>VXX big up day reverses, 1d.</td><td>A candidate reason to act, if it also beats the tries and the holdout agrees.</td></tr>
+<tr><td>Opposite side paid (×, red)</td><td>The underlying moved against the hypothesis.</td><td>t of the move for the hypothesis ≤ -1.5.</td><td>QUAL failed yearly high, 5d and 10d.</td><td>The hypothesis has been wrong on this ETF. It does not prove an option on the other side paid; check that scenario's own record.</td></tr>
+<tr><td>No edge (–)</td><td>Neither result.</td><td>Enough data, no clear result.</td><td>Most cells.</td><td>No measured reason. Also check the Edge column: a strongly negative edge still shows "No edge".</td></tr>
+<tr><td>Too thin (–)</td><td>Fewer than 8 independent windows.</td><td><code>min_effective_n</code> = 8.</td><td>SPY narrow high, 5d.</td><td>Unknown, not neutral.</td></tr>
+<tr><td>· holdout ✓ / ✗ / thin</td><td>The last quarter of triggers agrees, disagrees, or is too thin.</td><td>Last 25% of triggers; needs 3 independent windows. Shown only for Edge or Opposite.</td><td>✓ means the result held on the newest data.</td><td>✗ holdout: treat as no result.</td></tr>
+<tr><td>· beats the tries / within chance</td><td>Survives the false-discovery check or not.</td><td>Benjamini-Hochberg across all 3,080 results at 10%.</td><td>Shown only for Edge or Opposite.</td><td>"Within chance" means a result this strong can appear by luck at this many tries.</td></tr>
+<tr><td>Tooltip: triggers, independent</td><td>n and n_eff.</td><td>Count of scored triggers; non-overlapping windows.</td><td>"62 triggers, 62 independent".</td><td>More independent windows, more trust.</td></tr>
+<tr><td>Tooltip: per trade vs buying every session (edge, t)</td><td>Option expectancy, baseline, difference, t of the difference.</td><td>Mean option result minus baseline.</td><td>VXX: +47.0% vs -11.0% (edge +58.0%, t 3.91).</td><td>The size and reliability of the edge.</td></tr>
+<tr><td>Tooltip: Wins · avg win · avg loss</td><td>Share of trades that made money, and average win and loss.</td><td>Option results above zero vs at or below zero.</td><td>VXX: wins 60% · +118% · -59%.</td><td>Long options live on payoff asymmetry: few wins can still pay if they are big.</td></tr>
+<tr><td>Tooltip: false-discovery sentence</td><td>Whether it survives.</td><td>Survives flag.</td><td>Only for Edge or Opposite.</td><td>Same as the chip suffix.</td></tr>
+<tr><td>Tooltip: Move for the hypothesis (right %)</td><td>Average signed move and share right.</td><td>Next open to close h later, signed by side.</td><td>VXX: +1.08% (right 68%).</td><td>Direction quality, separate from option pay.</td></tr>
+<tr><td>Tooltip: in favour first / against first</td><td>Which side one expected move hit first.</td><td>Barrier = daily move × √h, on closes.</td><td>VXX 1d: 37% / 13%.</td><td>High "against first" means painful paths even when the end result is fine.</td></tr>
+</tbody></table></div>
+
+<h3>Detail panel (click a row or cell)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>State box</td><td>The current state and status sentence.</td><td>Status of this scenario on this ETF.</td><td>"Watching: New 252-session closing high 227.72 on 2026-10-12 ..."</td><td>Your trigger level and date.</td></tr>
+<tr><td>H</td><td>Horizon in sessions.</td><td>1, 3, 5, 10.</td><td>One row each.</td><td>Look for a result that holds across horizons, not just one.</td></tr>
+<tr><td>Verdict</td><td>The chip for that horizon.</td><td>As above.</td><td>QUAL failed high: No edge at 1d and 3d, Opposite at 5d and 10d.</td><td>A result that builds with horizon is more believable.</td></tr>
+<tr><td>Triggers / indep.</td><td>n / n_eff.</td><td>Per horizon (recent triggers drop out until their horizon completes).</td><td>47 / 43 at 5d.</td><td>Sample size.</td></tr>
+<tr><td>Option proxy</td><td>Average result per trade.</td><td>As above.</td><td>-28.9% at 5d.</td><td>What the idea earned on premium.</td></tr>
+<tr><td>Every session</td><td>Baseline.</td><td>As above.</td><td>-17.6% at 5d.</td><td>The bar.</td></tr>
+<tr><td>Edge</td><td>Option proxy minus every session.</td><td><code>edge_vs_every_session</code>.</td><td>-11.3% at 5d.</td><td>Positive is better than random timing; negative is worse.</td></tr>
+<tr><td>Wins · avg win / loss</td><td>Win rate and average win and loss.</td><td>As in the tooltip.</td><td>28% · +52% / -60%.</td><td>Win rate × average win must beat loss rate × average loss.</td></tr>
+<tr><td>Move for hypothesis</td><td>Average signed move.</td><td>As above.</td><td>-0.41% at 5d (price rose for a PUT idea).</td><td>Direction quality.</td></tr>
+<tr><td>In favour / against first</td><td>First passage shares.</td><td>As above.</td><td>13% / 19%.</td><td>Path risk.</td></tr>
+<tr><td>Best / worst</td><td>Average best and worst close along the way, in the hypothesis direction.</td><td>Mean of maximum and minimum signed path.</td><td>+0.7% / -0.9%.</td><td>Sets realistic targets and stops for the horizon.</td></tr>
+<tr><td>Macro like today</td><td>Triggers that also fell on sessions whose macro looked like today's: count (independent) · option proxy.</td><td>Analog mask from the evidence engine.</td><td>QUAL 5d: 4 (4) · +21.0%.</td><td>Interesting but tiny. Never act on 4 cases.</td></tr>
+<tr><td>Last N triggers · 5-session outcome</td><td>The most recent past triggers.</td><td>Up to 8, newest first, at the detail horizon of 5.</td><td>Trigger close, move, first passage, option proxy.</td><td>See whether recent behaviour differs from the average.</td></tr>
+<tr><td>First passage: in favour / against / neither</td><td>Which barrier was hit first.</td><td>F / A / N codes.</td><td>QUAL 2026-06-09: -1.96%, against, -87.8%.</td><td>Spot how often trades went wrong quickly.</td></tr>
+<tr><td>No past triggers.</td><td>Empty history.</td><td>No scored triggers.</td><td>A new pattern for this ETF.</td><td>No record: no measured reason.</td></tr>
+<tr><td>Definition</td><td>The exact trigger and conditions as JSON.</td><td>Library entry.</td><td><code>{"type":"failed_extreme","extreme":"high","lookback":252,"hold_sessions":3,"min_depth_daily_moves":0}</code></td><td>Know exactly what you are testing.</td></tr>
+<tr><td>Close ✕</td><td>Closes the panel.</td><td>Button.</td><td>None.</td><td>None.</td></tr>
+</tbody></table></div>
+
+<h3>Scenario library cards</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Name + side</td><td>The scenario and its PUT / CALL side.</td><td>Library entry.</td><td>10 scenarios on 13 Oct.</td><td>Know the rule before reading its cells.</td></tr>
+<tr><td>Hypothesis</td><td>The written rule.</td><td>Library entry.</td><td>"A close up at least 2 daily moves reverses; puts."</td><td>Ask whether it makes sense before trusting a result.</td></tr>
+<tr><td>Registered · source · needs</td><td>Registration date, who proposed it, required conditions.</td><td>Library entry.</td><td>"Registered 2026-10-12 · ACK 6 Oct 2026"; "needs Breadth LOW".</td><td>Results after the registration date are the honest out-of-sample part.</td></tr>
+<tr><td>hd: edge · opposite paid · no edge · too thin</td><td>Verdict counts across ETFs at the chosen horizon.</td><td>Count of cells.</td><td>Failed to hold a yearly high, 5d: 0 · 9 · 53 · 15.</td><td>A rule with no edges anywhere is unlikely to work on your ETF.</td></tr>
+<tr><td>Cell colour: green / red / plain</td><td>Edge / Opposite side paid / No edge or Too thin.</td><td>Verdict at the chosen horizon.</td><td>Hover for the tooltip.</td><td>Scan for green that is not dashed.</td></tr>
+<tr><td>Outlined cell</td><td>Live now on this ETF.</td><td>State not Not active.</td><td>Matches the live table.</td><td>Where today's action is.</td></tr>
+<tr><td>Dashed cell</td><td>Edge or Opposite, but within chance.</td><td>Fails the false-discovery check.</td><td>Faded look.</td><td>Watch, do not act.</td></tr>
+</tbody></table></div>
+
+<h3>Live record and adding scenarios</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Trigger close</td><td>Session the live trigger fired.</td><td>Ledger, newest first, up to 40 rows.</td><td>51 rows on 13 Oct (31 from 9 Oct, 11 from 12 Oct, 9 from 13 Oct).</td><td>The record builds one session at a time.</td></tr>
+<tr><td>ETF, Scenario + side</td><td>Which scenario fired where.</td><td>Ledger row.</td><td>"SOXX · Five down closes in a row · PUT".</td><td>None.</td></tr>
+<tr><td>hd move · option</td><td>Move for the hypothesis and option proxy result once h has passed.</td><td>Scored from the next open to the close h sessions later.</td><td>SOXX 1d: -2.5% · -82%.</td><td>The out-of-sample truth. Compare it with the history verdict over time.</td></tr>
+<tr><td>pending</td><td>The horizon has not completed.</td><td>Not yet scorable.</td><td>Most 3d to 10d cells on 13 Oct.</td><td>Come back later.</td></tr>
+<tr><td>No live triggers recorded yet.</td><td>Empty ledger.</td><td>No rows.</td><td>Builds add them.</td><td>None.</td></tr>
+<tr><td>Adding your own scenario</td><td>How to register a new rule.</td><td>New entry in <code>scenario_watch.library</code> with a new id and today's date, then rebuild.</td><td>Parts: failed_extreme, held_extreme, near_extreme, streak, big_day; optional conditions.</td><td>Register before you look at the result, and keep it if it fails.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: a clean, surviving edge (VXX big up day reverses, 1d)</h4>
+<p><b>What you see:</b> Edge · holdout ✓ · beats the tries. 62 triggers, 62 independent. Option proxy +47.0% per trade vs -11.0% buying every session (edge +58.0%, t 3.91). Wins 60%, average win +118%, average loss -59%. On 13 Oct its state is Not active.</p>
+<p><b>What it means:</b> After VXX (a volatility product) closed up at least 2 daily moves, a 1-session put on the proxy paid well on average, held out of sample, and survives counting all 3,080 tries. It is the only Edge that survives on the board.</p>
+<div class="act"><b>What a trader does:</b> Nothing today, because it is not live. Adds a note: if VXX closes up 2 or more daily moves, check a live chain the next morning, since the proxy assumes a 3% spread and real VXX option costs may differ.</div></div>
+
+<div class="scenario"><h4>Scenario: several scenarios disagree on one ETF (QUAL, 13 Oct)</h4>
+<p><b>What you see:</b> QUAL has four live rows. "At the high on narrow breadth" PUT: Triggered, Too thin (6 / 4). "Failed to hold a yearly high" PUT: Watching (227.72, 2 closes left, deadline 2026-10-15), Opposite side paid · holdout ✓ · within chance at 5d. "Held a yearly high for 3 sessions" CALL: Watching, No edge, but its Edge column reads -26.6% (t -2.90). "At the high while credit weakens" PUT: Partial.</p>
+<p><b>What it means:</b> Put ideas at QUAL's highs have tended to be wrong on direction, yet the call counterpart has lost more than random timing after costs. Price drifted up, but not enough to pay for a 10-session option.</p>
+<div class="act"><b>What a trader does:</b> Skips both option ideas. If anything, the record argues against buying puts at QUAL's highs. A trader wanting the upside would consider shares, which carry no time decay, rather than calls.</div></div>
+
+<div class="scenario"><h4>Scenario: triggered but too thin (SPY narrow high, 13 Oct)</h4>
+<p><b>What you see:</b> SPY "At the high on narrow breadth" PUT: Triggered on the 2026-10-13 close. At 5d: Too thin, 6 triggers, 4 independent, option proxy -14.0% vs -16.1% every session. At 1d: No edge, 9 / 9, -27.4% vs -14.2%.</p>
+<p><b>What it means:</b> The setup is rare. Where there is enough data (1 day), the put did worse than buying puts at random.</p>
+<div class="act"><b>What a trader does:</b> Does not act on the scenario. Uses the Day story and Next session plan levels for SPY instead.</div></div>
+
+<div class="scenario"><h4>Scenario: waiting on a macro condition (SPY credit divergence, 13 Oct)</h4>
+<p><b>What you see:</b> Partial: "Price condition met on the 2026-10-13 close; waiting for credit WIDENING (now STABLE)." At 5d: No edge, 94 triggers, 31 independent, -25.8% vs -16.1%.</p>
+<p><b>What it means:</b> SPY is near its yearly high, but credit is not weakening. Even when both held in the past, puts did worse than random.</p>
+<div class="act"><b>What a trader does:</b> Notes the credit tile on the <a href="overview.html">Overview</a>. A flip to WIDENING would trigger the scenario, but its record gives no reason to act on it alone.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do on the index ETFs</h4>
+<p><b>What you see:</b> With "index ETFs only" ticked, the live table shows just SPY's two rows. QQQ, IWM and DIA have nothing live.</p>
+<p><b>What it means:</b> No registered rule is close to firing on three of the four index ETFs, and SPY's two have no measured edge.</p>
+<div class="act"><b>What a trader does:</b> Moves on. A quiet Scenario watch is a normal day.</div></div>
+
+<div class="scenario"><h4>Scenario: the live record disagrees with history (illustrative and real)</h4>
+<p><b>What you see:</b> The live record shows SOXX "Five down closes in a row" PUT triggered 2026-10-12: next day -2.5% for the hypothesis, option -82%. For example, imagine a scenario marked Edge in history whose first ten live triggers mostly lost.</p>
+<p><b>What it means:</b> One live result proves nothing. A run of live results that disagree with history suggests the historical edge was luck or has faded.</p>
+<div class="act"><b>What a trader does:</b> Keeps the scenario, keeps watching the live record, and sizes down any trade it suggests until live results match history.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Let's work through the most actionable-looking live row on 13 Oct, QUAL "Failed to hold a yearly high", as a coach would.</p>
+<div class="example">
+<div class="head"><b>QUAL · Failed to hold a yearly high</b><span class="tag down">PUT · Watching</span></div>
+<ol class="steps">
+<li><b>Read the state.</b> "New 252-session closing high 227.72 on 2026-10-12. Triggers if the next 2 close(s) stay below 227.72 (deadline 2026-10-15)." QUAL closed at 227.09 on 13 Oct. Coach: "One close down, two to go. If QUAL closes above 227.72 before 15 Oct, the watch ends."</li>
+<li><b>Read the definition.</b> failed_extreme, high, lookback 252, hold 3 sessions, no depth requirement. Coach: "Any close below the high counts, even by a cent."</li>
+<li><b>Read the verdict at 5d.</b> Opposite side paid · holdout ✓ · within chance. Coach: "History says puts here were wrong on direction, and the newest quarter agrees. But with 3,080 tries, this could be luck."</li>
+<li><b>Read the numbers.</b> 47 triggers, 43 independent. Option proxy -28.9% per trade vs -17.6% buying every session: edge -11.3%. Wins 28%, average win +52%, average loss -60%. Move for the hypothesis -0.41% (right 38%). Coach: "Puts lost more than random puts. Wins were rarer and smaller than losses."</li>
+<li><b>Check across horizons.</b> 1d and 3d: No edge. 10d: Opposite side paid again, move -0.81%. Coach: "The longer you hold, the more QUAL drifted up against the put."</li>
+<li><b>Check the paths.</b> In favour first 13%, against first 19%; best +0.7%, worst -0.9%. Coach: "Even good trades rarely ran far."</li>
+<li><b>Check macro like today.</b> 4 triggers (4 independent), +21.0%. Coach: "Tempting, but four cases is a story, not evidence."</li>
+<li><b>Check the counterpart.</b> "Held a yearly high for 3 sessions" CALL on QUAL: No edge, -29.2% vs -2.6% every session. Coach: "So the 'opposite side' does not mean calls paid. Time decay and the spread ate them too."</li>
+</ol>
+<div class="verdict"><p><b>Decision sentence:</b> "QUAL is watching a failed yearly high at 227.72 with a 15 Oct deadline; past triggers saw puts lose 28.9% per trade against 17.6% for random puts, the hypothesis was wrong 62% of the time and the result does not beat the tries, so I will skip the put; I will change my mind only if the live record builds a run of winning triggers."</p></div>
+</div>
+<div class="callout coach"><strong>Coach's tip</strong><p>For long options, the question is never "was the direction right?" alone. It is "did the option pay more than buying the same option on any day?" That is what the Edge column answers.</p></div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Read the false-discovery banner every day. It reminds you how many results are luck.</li>
+<li>Prefer results that hold across horizons and have holdout ✓.</li>
+<li>Always compare Option proxy with Every session; both are usually negative.</li>
+<li>Look at the Edge column even when the chip says No edge.</li>
+<li>Use Watching rows to set alerts: the level and the deadline are exact.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Acting on "Edge" that is dashed or "within chance".</li>
+<li>Reading "Opposite side paid" as "buy the other side". It describes the underlying move, not an option on the other side.</li>
+<li>Trusting "Macro like today" with a handful of cases.</li>
+<li>Forgetting the proxy has no real quotes: a wide real spread can erase a small edge.</li>
+<li>Editing or deleting a scenario because it failed. That breaks the honest record.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="day-story.html">Day story</a> shows live scenarios per sector, <a href="desk-card.html">Desk card</a> for the pipeline's proposal, <a href="overview.html">Overview</a> for the macro condition tiles that partial scenarios wait on, <a href="next-session-plan.html">Next session plan</a> for the checklist with index-ETF scenarios, and <a href="method.html">Method</a> for the evidence rules.</p>
+
+<div class="pager"><a href="desk-card.html">← Desk card</a><a href="macro-intelligence.html">Macro intelligence →</a></div>
+</main>
+</div>
+</body>
+</html>

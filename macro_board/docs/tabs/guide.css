@@ -1,0 +1,92 @@
+
+/* Layout: a desk manual. Sticky contents rail on wide screens, one reading column, data in mono. */
+:root{
+  --bg:#f7f8fa; --paper:#ffffff; --ink:#14171c; --ink-2:#4a515c; --muted:#78808c; --rule:#dde1e7; --tint:#eef2f7;
+  --accent:#1f5fae; --up:#2a78d6; --down:#d23f3f; --warn:#b77700; --good:#0f7a2a;
+  --display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --body:"Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --paper:#171b21; --ink:#eef1f5; --ink-2:#b8c0cc; --muted:#8a93a0; --rule:#2a313b; --tint:#1d232c;
+    --accent:#7fb0f0; --up:#5b9ff0; --down:#f07a7a; --warn:#e2a93b; --good:#58c776; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --paper:#171b21; --ink:#eef1f5; --ink-2:#b8c0cc; --muted:#8a93a0; --rule:#2a313b; --tint:#1d232c;
+  --accent:#7fb0f0; --up:#5b9ff0; --down:#f07a7a; --warn:#e2a93b; --good:#58c776; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.62 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:16px}}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:14px}
+@media (max-width:900px){nav.toc{position:static;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;background:var(--paper)}}
+nav.toc p{font:600 12px/1.4 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+nav.toc ol{margin:0;padding-left:18px;display:grid;gap:4px}
+nav.toc a{color:var(--ink-2);text-decoration:none}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);text-decoration:underline}
+main{min-width:0}
+header.cover{border-bottom:1px solid var(--rule);padding-bottom:22px;margin-bottom:8px}
+.eyebrow{font:600 12px/1.4 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h1{font:700 clamp(30px,4.4vw,44px)/1.12 var(--display);margin:0 0 12px;text-wrap:balance}
+h2{font:700 27px/1.2 var(--display);margin:46px 0 12px;text-wrap:balance;scroll-margin-top:20px}
+h3{font:600 18px/1.35 var(--body);margin:26px 0 8px}
+p,li{max-width:70ch}
+p{margin:0 0 12px}
+.lede{font-size:18px;color:var(--ink-2)}
+.meta{font:13px/1.5 var(--mono);color:var(--muted)}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--tint);border:1px solid var(--rule);border-radius:5px;padding:1px 5px}
+pre{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;overflow-x:auto;font:14px/1.5 var(--mono)}
+.callout{border:1px solid var(--rule);border-left:4px solid var(--accent);background:var(--paper);border-radius:8px;padding:14px 16px;margin:14px 0}
+.callout.warn{border-left-color:var(--warn)}
+.callout.good{border-left-color:var(--good)}
+.callout strong:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:12px 0}
+.box{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;min-width:0}
+.box h4{margin:0 0 6px;font:600 13px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.box ul{margin:0;padding-left:18px}
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--paper);margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--rule)}
+th{font-weight:600;color:var(--ink-2);background:var(--tint);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font:600 12px/1.6 var(--mono);border:1px solid var(--rule);border-radius:999px;padding:0 8px;white-space:nowrap}
+.tag.up{color:var(--up);border-color:currentColor}
+.tag.down{color:var(--down);border-color:currentColor}
+.tag.flat{color:var(--ink-2)}
+ol.steps{padding-left:22px;display:grid;gap:10px}
+ol.steps li::marker{font-weight:700;color:var(--accent)}
+.tab{border-top:1px solid var(--rule);padding-top:4px}
+.example{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;margin:16px 0}
+.example .head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
+.example .head b{font:700 20px/1.2 var(--display)}
+.verdict{border-top:1px dashed var(--rule);margin-top:10px;padding-top:10px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+
+.callout.coach{border-left-color:var(--good)}
+p.q{color:var(--ink-2);margin:0 0 8px}
+.example.small{padding:10px 14px;margin:10px 0}
+details{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;margin:8px 0;max-width:70ch}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+details p{margin:0;color:var(--ink-2)}
+.box ul ul,.tab ul ul{margin-top:4px}
+
+/* tab pages */
+.crumbs{font:13px/1.5 var(--body);color:var(--muted);margin:0 0 10px}
+.crumbs a{color:var(--accent)}
+nav.toc .tabs-list{margin-top:18px}
+.attr td{min-width:170px}
+.attr td:first-child{font-weight:600;min-width:150px}
+.scenario{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:12px 0}
+.scenario h4{margin:0 0 6px;font:600 16px/1.35 var(--body)}
+.scenario .act{border-top:1px dashed var(--rule);margin-top:8px;padding-top:8px}
+.pager{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--rule);margin-top:40px;padding-top:16px;font-size:14px}
+nav.toc p.tabs-list{font:400 14px/1.5 var(--body);letter-spacing:0;text-transform:none}

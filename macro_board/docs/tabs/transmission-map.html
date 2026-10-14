@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transmission map · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Transmission map</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 5 of 12</p>
+  <h1>Transmission map</h1>
+  <p class="lede">Through which macro channels has today's environment been moving each ETF: when a condition sat where it sits today, did this ETF do better or worse than usual?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>Macro news reaches prices through channels: rates, the dollar, credit, oil, market calm or stress. "Transmission" means how a change in one of those channels passes into an asset's price. This tab shows, for every ETF and every one of the board's 10 macro conditions, whether that ETF did better or worse in the past when the condition was in today's state.</p>
+<p>It answers "why" questions. Why are international stocks soft? Which condition has been the headwind for semiconductors? Which ETFs barely care about macro at all? It does not give a lean or a signal. The ETF matrix does that, using all conditions together.</p>
+<p>Use it after the ETF matrix, once you have a few ETFs in mind, and before the Desk card. It also explains the Response label on the ETF matrix: the cells with strong evidence here are the "headwinds" and "tailwinds" counted there.</p>
+<div class="callout"><strong>Display only</strong>The map describes recorded history. It never feeds a gate, score or rank, and it is not a forecast. Macro informs the human; it never decides.</div>
+
+<h2 id="how">What it does</h2>
+<h3>The 10 conditions</h3>
+<p>Each session the board labels 10 macro conditions with a state, using only what was known at that day's close. FRED data (the US Federal Reserve's economic database) is lagged to the day it was published. Inputs older than their limit (6 days for daily series, 12 for weekly) become MISSING; the board never carries an old value forward or fills in a neutral one.</p>
+<p>Seven conditions are "trend" conditions. The board takes the 20-session change, divides it by the change's own standard deviation over the trailing year (a <b>z-score</b>: how unusual the change is for that series), and calls it up or down only beyond ±0.5. That keeps roughly the middle third "stable". Curve level uses fixed bands. SPY trend, realised volatility and breadth reuse the outcome scorer's own definitions, so the board and the scorer agree.</p>
+<h3>The calculation behind each cell</h3>
+<ol class="steps">
+  <li><b>Forward return.</b> For every past session, the ETF's return from the next session's open to the close 1, 5 or 20 sessions later.</li>
+  <li><b>Split by state.</b> Sessions where the condition was in today's state go in one group. Sessions where it was in any other observed state go in the other. Sessions where it was MISSING are left out.</li>
+  <li><b>Excess.</b> Mean return in today's state minus mean return in the other states. That is the number in the cell, in percentage points.</li>
+  <li><b>Independent windows.</b> Overlapping days are thinned, so each group counts only windows that do not share their future (see the ETF matrix guide).</li>
+  <li><b>t.</b> A Welch t-statistic: the excess divided by its standard error, using the independent windows of both groups. It says how far the difference stands out from noise. Cells with |t| below 1 are faded.</li>
+</ol>
+<h3>Which ETFs appear</h3>
+<p>Only ETFs with current prices and at least 500 sessions of history. On 13 Oct that was 77 of 115 at every horizon. Short-history ETFs (IJR, KWEB and others) are left off. Leveraged and volatility products stay on, because the map shows evidence, not leans.</p>
+<h3>When it updates</h3>
+<p>Every board build. The states change when the data changes; the cells change when the states change or a new session adds history.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Title, horizon and legend</h3>
+<p>The title says what each cell is: "how each ETF's forward return differed while each condition sat in today's state". Next to the horizon buttons is the colour legend: a red-to-blue ramp with its end values. The ends move with the data: on 13 Oct they were ±0.2% at 1d, ±0.9% at 5d and ±3.2% at 20d.</p>
+<h3>2. Column headers</h3>
+<p>Ten vertical headers, one per condition, each reading "Name: STATE", for example "Curve level: FLAT". Hover a header to see what is measured. Read the headers first: they are today's macro picture in one line.</p>
+<h3>3. Group rows and ETF rows</h3>
+<p>ETFs sit under their group names in the config's order: Broad indices, Factors, SPDR sectors and so on. Each row holds ten coloured cells.</p>
+<h3>4. Cells</h3>
+<p>Look for two things. First, columns that light up in one colour across a whole group: a channel acting on that group. Second, rows with one or two strong cells: the channel that matters most for that ETF. Skip faded cells. Hover any cell for its numbers.</p>
+<h3>5. The note under the map</h3>
+<p>It repeats the definition and the key warning: these are single-condition contrasts on overlapping windows, so they show where macro has been transmitting, not stand-alone signals. The colour scale is capped at the 95th percentile.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Controls and legend</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>1d / 5d / 20d</td><td>Forward horizon of the returns compared.</td><td>Shared board horizon, saved in your browser.</td><td>Each horizon is a separate map. Channels differ across horizons.</td><td>Use the horizon that matches your planned hold.</td></tr>
+<tr><td>Legend end values</td><td>The excess at which colour reaches full strength.</td><td>The 95th percentile of all |excess| values on the map, at least 0.2%.</td><td>13 Oct: ±0.2% (1d, the floor), ±0.9% (5d), ±3.2% (20d).</td><td>A full-colour cell at 1d may be a tiny number. Read the number, not just the colour.</td></tr>
+<tr><td>Colour ramp</td><td>Red = worse in today's state, blue = better.</td><td>Mix of red or blue with neutral grey, up to 85% strength in proportion to |excess| ÷ cap.</td><td>Deep blue: clearly better than usual. Grey: little difference.</td><td>Scan colour for patterns, then confirm with numbers.</td></tr>
+<tr><td>"faded = |t| &lt; 1 (weak)"</td><td>Legend note for faded cells.</td><td>Cells with |t| under 1, or no t, drawn at 38% opacity.</td><td>The difference is within noise.</td><td>Ignore faded cells when forming a view.</td></tr>
+<tr><td>"× = condition missing"</td><td>Legend note for cells with no value.</td><td>The condition is MISSING today, or one group has fewer than 2 independent windows.</td><td>No evidence, either way.</td><td>Unknown, never zero.</td></tr>
+</tbody></table></div>
+
+<h3>Column headers: the 10 conditions (states on 13 Oct)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>SPY trend: ABOVE BOTH</td><td>Where SPY sits against its 50- and 200-session averages.</td><td>Outcome-scorer definition from SPY closes. States: ABOVE BOTH, ABOVE LONG ONLY, ABOVE SHORT ONLY, BELOW BOTH.</td><td>13 Oct: ABOVE BOTH (SPY 778.01). Changed from ABOVE LONG ONLY on 1 Oct.</td><td>Red cells here mean the ETF did worse than usual when the market was in an uptrend: often defensives or laggards.</td></tr>
+<tr><td>Realised volatility: LOW</td><td>How calm SPY has been.</td><td>SPY 20-session realised volatility, as a percentile of the trailing 252 sessions. Bands from the scorer registry at the 33rd and 67th percentile. States: LOW, MID, HIGH.</td><td>13 Oct: LOW (13th percentile).</td><td>Calm markets favour some ETFs and hurt others. Strong cells here show who benefits from quiet.</td></tr>
+<tr><td>Breadth: LOW</td><td>How many stocks are taking part in the market.</td><td>Share of all tickers in the price database above their 50-session average. Bands at 40% and 60%. States: LOW, MID, HIGH.</td><td>13 Oct: LOW (30% above their 50-day).</td><td>Blue cells here mean the ETF did better than usual when few stocks were participating.</td></tr>
+<tr><td>Net liquidity proxy: FLAT</td><td>Whether dollars in the financial system are growing or shrinking.</td><td>Fed assets minus the Treasury's cash account minus the reverse repo facility (FRED WALCL, WTREGEN, RRPONTSYD), 20-session change, z vs trailing year. States: EXPANDING, FLAT, CONTRACTING. A research proxy, not spendable money.</td><td>13 Oct: FLAT ($5.87tn). Weekly inputs observed 7 Oct, 4 sessions old.</td><td>Expect weekly steps. Cells here are slow-moving context.</td></tr>
+<tr><td>Curve level: FLAT</td><td>The gap between 10-year and 2-year Treasury yields.</td><td>FRED SPREAD_2Y10Y in percentage points. Below 0 INVERTED, 0 to 0.5 FLAT, 0.5 and above STEEP.</td><td>13 Oct: FLAT at +44 bp (basis points; 100 bp = 1%). It was STEEP on 8 Oct and FLAT again on 9 Oct.</td><td>Near a band edge the state can flip daily. Watch the spread, not just the label.</td></tr>
+<tr><td>Curve move: STEEPENING</td><td>Whether that gap is widening or narrowing.</td><td>20-session change in the spread, z vs trailing year. States: STEEPENING, STABLE, FLATTENING.</td><td>13 Oct: STEEPENING (+12 bp over 20 sessions).</td><td>Steepening often reflects rising long yields or expected cuts. The cells show who did well in it.</td></tr>
+<tr><td>10Y yield: RISING</td><td>Direction of the 10-year Treasury yield.</td><td>FRED DGS10, 20-session change, z vs trailing year. States: RISING, STABLE, FALLING.</td><td>13 Oct: RISING (5.24%).</td><td>Rate-sensitive ETFs (bonds, real estate, utilities) often show here first.</td></tr>
+<tr><td>Credit appetite: STABLE</td><td>Whether investors are reaching for riskier corporate bonds.</td><td>20-session HYG vs LQD relative log return, z vs trailing year. States: TIGHTENING (risk appetite up), STABLE, WIDENING (stress).</td><td>13 Oct: STABLE. It was TIGHTENING from 2 to 8 Oct.</td><td>Credit is a common 1d channel: on 13 Oct its 1d cells were the strongest on the map (LQD -0.07%, t -2.95).</td></tr>
+<tr><td>US dollar: STRENGTHENING</td><td>Direction of the dollar against the euro.</td><td>20-session change in USD per EUR (inverse of FRED DEXUSEU), z vs trailing year. DEXUSEU is published weekly, so it is lagged to its release day. States: STRENGTHENING, STABLE, WEAKENING.</td><td>13 Oct: STRENGTHENING (+3.6% over 20 sessions).</td><td>A strong dollar tends to weigh on commodities and foreign stocks. Check the cells rather than assuming it.</td></tr>
+<tr><td>Oil: STABLE</td><td>Direction of oil prices.</td><td>20-session USO log return, z vs trailing year. States: RISING, STABLE, FALLING.</td><td>13 Oct: STABLE (USO -5.6% over 20 sessions, within its normal band).</td><td>Energy and airlines usually show strongest here.</td></tr>
+<tr><td>Header tooltip</td><td>The "measured" description of the condition.</td><td>From the board's condition definitions.</td><td>Hover any header.</td><td>Use it to remember exactly what the label measures.</td></tr>
+<tr><td>MISSING state</td><td>The condition could not be measured today.</td><td>An input missing or older than its limit (daily 6 days, weekly 12 days).</td><td>Header reads "Name: MISSING"; every cell in that column shows ×.</td><td>That channel is unknown today. Do not assume it is calm.</td></tr>
+</tbody></table></div>
+
+<h3>Rows and cells</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Group label</td><td>The ETF group.</td><td>From config <code>universe</code>.</td><td>"International", "SPDR sectors".</td><td>Compare cells within a group to find shared channels.</td></tr>
+<tr><td>Ticker</td><td>The ETF on that row.</td><td>Fresh, at least 500 sessions, with sensitivity computed.</td><td>77 rows on 13 Oct.</td><td>If an ETF is missing, check the ETF matrix for "Short history".</td></tr>
+<tr><td>Cell number</td><td>Excess forward return in today's state, in percentage points.</td><td>Mean in today's state minus mean in other observed states. One decimal; no decimals at 10 or more.</td><td>SMH 20d Curve level: -4.2. UNG: 7.3.</td><td>The size of the channel. Compare it with the ETF's normal move (RV20 on the ETF matrix).</td></tr>
+<tr><td>Cell colour</td><td>Sign and strength of the excess.</td><td>Diverging scale capped at the legend values.</td><td>Blue = did better, red = did worse.</td><td>Patterns down a column point to a shared channel.</td></tr>
+<tr><td>Faded cell</td><td>Weak evidence.</td><td>|t| under 1, or no t.</td><td>On 13 Oct about 4 cells in 5 were faded at 20d (167 of 770 were not).</td><td>Leave faded cells out of your story.</td></tr>
+<tr><td>× cell</td><td>No value.</td><td>MISSING condition or too few windows.</td><td>None on 13 Oct; all 10 conditions were observed.</td><td>Unknown.</td></tr>
+<tr><td>Tooltip: title</td><td>ETF · condition = state.</td><td>From the row and column.</td><td>"SMH · Curve level = FLAT".</td><td>Confirms which cell you are reading.</td></tr>
+<tr><td>Tooltip: Excess Hd return in this state</td><td>Same as the cell number, with sign and %.</td><td>As above.</td><td>"-4.20%".</td><td>Size of the channel.</td></tr>
+<tr><td>Tooltip: t</td><td>How far the excess stands out from noise.</td><td>Welch t on independent windows of both groups.</td><td>|t| ≥ 1 counts on the ETF matrix's Response. Around 2 or more is notable on this sample.</td><td>Use t, not colour, to judge strength.</td></tr>
+<tr><td>Tooltip: independent windows in state</td><td>How many separate periods back the "in state" mean.</td><td>Thinned count of sessions in today's state.</td><td>20d curve level FLAT: 24 windows. 1d: hundreds.</td><td>Few windows (under about 10) means one or two episodes drive the result.</td></tr>
+<tr><td>Tooltip: Mean while in state</td><td>The ETF's average forward return in today's state.</td><td>Mean of the "in state" group.</td><td>SMH 20d in a flat curve: -0.28%.</td><td>The absolute picture. Excess compares it with the other states.</td></tr>
+<tr><td>Note under the map</td><td>Definition and caution.</td><td>Fixed text with the horizon filled in.</td><td>"single-condition contrasts on overlapping windows".</td><td>Read once, then remember: channels, not signals.</td></tr>
+</tbody></table></div>
+
+<h3>Where the same numbers appear elsewhere</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF drawer bars</td><td>One ETF's row of this map as horizontal bars.</td><td>Same data (<code>etfs[t].sensitivity</code>).</td><td>Bars right = blue, left = red, faded when |t| &lt; 1.</td><td>Easier to read for a single ETF.</td></tr>
+<tr><td>Response headwinds / tailwinds</td><td>The ETF matrix label built from this map.</td><td>Cells with |t| ≥ 1: negative ones are headwinds, positive ones tailwinds. Compared with the ETF's own return.</td><td>SPY 20d: headwinds Realised volatility and Curve level, tailwind Breadth.</td><td>Use the map to see the size behind each name.</td></tr>
+<tr><td>Sector rotation heatmap</td><td>The same contrast on returns relative to SPY.</td><td>Sector-minus-SPY forward returns.</td><td>See the Sector rotation guide.</td><td>Use it when choosing between sectors, not for direction.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: one channel lights up a whole group (international, 20d)</h4>
+<p><b>What you see:</b> In the 20d map the "Realised volatility: LOW" column is red across the international rows with full colour: EWG -3.4 (t -2.94), FXI -3.4 (t -1.92), VEA -1.9 (t -2.03), EFA -1.8 (t -1.98), EWU -1.7 (t -1.93). All five fell over the last 20 sessions. Their Response on the ETF matrix: Supporting for EWG, VEA and EFA, Mixed for EWU, Rejecting relief for FXI.</p>
+<p><b>What it means:</b> In this history, calm US markets have been a period when foreign developed markets lagged their usual returns. Today's price action is in line with that for most of the group.</p>
+<div class="act"><b>What a trader does:</b> Uses this as the explanation for the weakness, not as a trade. None of the five has a measured lean on the ETF matrix, because the combined analog view did not separate enough. A trader would watch the realised volatility state: if SPY volatility moves to MID, this headwind no longer applies.</div></div>
+
+<div class="scenario"><h4>Scenario: channels pull in opposite directions (SPY, 20d)</h4>
+<p><b>What you see:</b> SPY's 20d row has three full-colour cells. Breadth LOW: +1.3 (t 1.16). Realised volatility LOW: -0.9 (t -1.06). Curve level FLAT: -1.3 (t -1.16). SPY rose 2.72% over 20 sessions.</p>
+<p><b>What it means:</b> Two channels have historically hurt SPY and one helped. The ETF matrix counts them, two headwinds against one tailwind, and labels SPY "Absorbing pressure": it rose anyway.</p>
+<div class="act"><b>What a trader does:</b> Notes that the label rests on counts, not sizes: the tailwind and the larger headwind are almost the same size. A trader would not read SPY's rise as fragile from this alone. The map says there is no single dominant channel; the ETF matrix shows no clear lean. Wait for a clearer picture.</div></div>
+
+<div class="scenario"><h4>Scenario: a condition goes missing (illustrative)</h4>
+<p><b>What you see:</b> For example, suppose the 10-year yield series stops updating and its last value becomes more than 6 days old. The header reads "10Y yield: MISSING" and every cell in that column shows ×.</p>
+<p><b>What it means:</b> The board refuses to guess. The yield channel is unknown today. The analog match on the ETF matrix also uses only the conditions that are observed, so it would be built on 9 conditions instead of 10.</p>
+<div class="act"><b>What a trader does:</b> Checks the condition tiles on the Overview tab for each input's observation date, and the Macro intelligence tab for the source status. Treats rate-sensitive ETFs with extra caution until the series returns. On 13 Oct nothing was missing, but the liquidity inputs were 4 sessions old (observed 7 Oct) and the yield and dollar inputs 2 sessions old.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (XLE, 20d)</h4>
+<p><b>What you see:</b> XLE's 20d row is entirely faded: no condition reaches |t| of 1. The same is true for XLV, XLY, HACK, XBI, JETS, SHY and USO. Yet XLE closed at a 1-year high, up 5.41% in 5 sessions.</p>
+<p><b>What it means:</b> History does not show today's macro mix pushing XLE in a measurable way. Whatever drives XLE now is not visible through these 10 channels.</p>
+<div class="act"><b>What a trader does:</b> Does not invent a macro story. Judges XLE on price, on Sector rotation (it was LEADING) and on the Day story's flow reading instead. The map simply has nothing to add here.</div></div>
+
+<div class="scenario"><h4>Scenario: a column on the edge of its band (Curve level)</h4>
+<p><b>What you see:</b> "Curve level: FLAT" carries some of the strongest 20d cells: SMH -4.2, SOXX -4.6, OIH -4.7, XHB -3.2, SLV -3.9, and UNG +7.3. The spread sits at +44 bp, 6 bp under the 0.5-point line that makes it STEEP. It was STEEP on 8 Oct and FLAT again on 9 Oct.</p>
+<p><b>What it means:</b> A small move in the 2-year or 10-year yield flips the whole column. The cells would then show each ETF's record in a steep curve, which may look quite different.</p>
+<div class="act"><b>What a trader does:</b> Treats this column as fragile for the next few sessions. A trader planning around the semis headwind checks the curve each morning before relying on it.</div></div>
+
+<div class="scenario"><h4>Scenario: bright colours, tiny numbers (1d)</h4>
+<p><b>What you see:</b> On the 1d map the legend ends at ±0.2%, the minimum. Many cells look strongly coloured. The strongest by t is LQD under "Credit appetite: STABLE": -0.07% (t -2.95, 412 windows).</p>
+<p><b>What it means:</b> At one session, real differences are a few hundredths of a percent. They can be statistically clear yet far smaller than a bid-ask spread.</p>
+<div class="act"><b>What a trader does:</b> Uses the 1d map for context on today's channels, not for sizing a trade. A trader never treats a 1d cell as an edge after costs.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>You have SMH (semiconductors) on your list from the ETF matrix: down 7.02% in 5 sessions, up 8.49% over 20. Let's ask the map what has been pushing it.</p>
+<ol class="steps">
+  <li><b>Choose 20d.</b> The legend reads -3.2% … +3.2%.</li>
+  <li><b>Find the row.</b> Under "Industries &amp; themes", SMH has one full-colour cell: Curve level FLAT, -4.2. All nine others are faded.</li>
+  <li><b>Hover the cell.</b> Excess -4.20%, t -1.88, 24 independent windows in state, mean while in state -0.28%. So in a flat curve SMH averaged -0.28% over the next 20 sessions; in the other states it averaged about +3.9%.</li>
+  <li><b>Check the column.</b> SOXX (-4.6), OIH (-4.7), XHB (-3.2) and SLV (-3.9) share the same red. This is a channel, not a quirk of one fund.</li>
+  <li><b>Check the state.</b> Curve level is at +44 bp, near the 0.5 line, and flipped twice in the last week.</li>
+  <li><b>Cross-check the ETF matrix.</b> Response 20d: Absorbing pressure (headwind: curve level; SMH still rose 8.49%). Response 5d: Supporting (fell 7.02%). Lean: No clear lean. Momentum history: after a 5d extended-down move, SMH's next 20 sessions averaged +5.39% (✓ holdout, 24 windows).</li>
+  <li><b>Cross-check Sector rotation.</b> The relative heatmap shows the same channel against SPY: Curve level -2.94 (t -1.91).</li>
+</ol>
+<div class="example">
+<div class="head"><b>SMH · Curve level: FLAT · 20 sessions</b><span class="meta">13 Oct 2026 close</span></div>
+<p>Excess -4.20% · t -1.88 · 24 windows · mean in state -0.28%</p>
+<p>Only full-colour cell in the row · same channel on the relative map · state 6 bp from flipping</p>
+<div class="verdict"><b>Coach's reading:</b> The flat curve is the one measured headwind for SMH, and recently the price has started to give way to it. The headwind is real on history but rests on 24 windows and a state that is close to flipping. I would not trade the map alone. I would keep the 2s10s spread on my morning checklist, let the ETF matrix and momentum history decide whether the pullback is an entry, and note that the option market already prices more movement than history (1.35×). This is a reading of the evidence, not a recommendation.</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+  <li>Read the column headers first. They are today's macro picture.</li>
+  <li>Look down columns for group patterns, then across rows for each ETF's main channel.</li>
+  <li>Hover before believing. Check t and the windows count.</li>
+  <li>Check how close a state is to its band edge before building a plan on it.</li>
+  <li>Switch horizons. A channel that matters at 20d may be absent at 1d.</li>
+  <li>Use the map to explain the ETF matrix's Response label.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+  <li>Adding cells together. Conditions overlap (yields and the curve move together), so the cells do not sum.</li>
+  <li>Reading colour without the number. At 1d the scale saturates at 0.2%.</li>
+  <li>Treating a cell as a trade signal. It is a single-condition contrast.</li>
+  <li>Reading × as "no effect". It means unknown.</li>
+  <li>Forgetting that the comparison is "today's state versus the other states", not "versus zero".</li>
+  <li>Assuming textbook signs (for example "strong dollar is always bad for gold"). The map shows what this history measured.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="etf-matrix.html">ETF matrix</a> for the combined lean and the Response label. <a href="overview.html">Overview</a> for each condition's value, history and observation date. <a href="sector-rotation.html">Sector rotation</a> for the same map on returns relative to SPY. <a href="macro-intelligence.html">Macro intelligence</a> for the published sources behind the conditions. <a href="method.html">Method</a> for definitions and thresholds.</p>
+
+<div class="pager"><a href="etf-matrix.html">← ETF matrix</a><a href="sector-rotation.html">Sector rotation →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sector rotation · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Sector rotation</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 6 of 12</p>
+  <h1>Sector rotation</h1>
+  <p class="lede">Which sectors are gaining or losing ground against SPY, where each sits in the rotation cycle, and has history in today's macro conditions favoured any of them relative to SPY?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>Money moves between sectors. When investors leave technology for energy, energy funds outperform the market even if both fall. That movement is called <b>sector rotation</b>. This tab tracks it for the 11 SPDR sector ETFs (XLK, XLF, XLE and so on) and for 15 industry and theme ETFs (semiconductors, banks, biotech, homebuilders and others).</p>
+<p>Everything here is <b>relative to SPY</b>. A sector that falls 1% while SPY falls 3% has outperformed by 2 points. That is a different question from "will it go up?", which belongs to the ETF matrix. A sector can lead the market while falling; the board calls that a defensive preference, not a buy call.</p>
+<p>Use this tab after the ETF matrix and Transmission map, when you have a view and want to choose which sector fund expresses it, or to check whether a sector you like is gaining or losing ground. It also scores the LLM packet's past sector calls, so you can see how much weight they deserve.</p>
+<div class="callout"><strong>Display only</strong>Rotation labels, leans and packet calls are information for a human. None of them is a permission, a probability or an input to the pipeline.</div>
+
+<h2 id="how">What it does</h2>
+<h3>Rotation coordinates</h3>
+<p>For each ETF the board divides its price by SPY's price every day. That ratio is the ETF's <b>relative strength</b> (RS): it rises when the ETF beats SPY. From it the board makes two numbers:</p>
+<ul>
+  <li><b>RS trend</b> = 100 × today's ratio ÷ its average over the last 50 sessions. Above 100: the ETF is stronger against SPY than its recent norm.</li>
+  <li><b>RS momentum</b> = 100 × today's RS trend ÷ the RS trend 10 sessions ago. Above 100: that relative strength is improving.</li>
+</ul>
+<p>These place each ETF in one of four <b>quadrants</b>: Leading (both above 100), Weakening (trend above, momentum below), Lagging (both below), Improving (trend below, momentum above). Missing data gives MISSING, never a quadrant. This is a transparent approximation of a relative rotation graph, not the proprietary JdK RS-Ratio.</p>
+<h3>Relative evidence</h3>
+<p>The board uses the same analog sessions as the ETF matrix (on 13 Oct: 129 sessions at a 60% match) but measures the ETF's return <b>minus</b> SPY's return over the same window, from the next open. A relative lean needs at least 8 independent windows, |t| of at least 1.5, and a mean of at least 0.03% (1d), 0.15% (5d) or 0.5% (20d). Those minimums are smaller than for absolute leans because relative moves are smaller. The last quarter of history is held out to check the result.</p>
+<h3>Other pieces</h3>
+<ul>
+  <li><b>Relative returns</b> over 5, 20 and 60 sessions: ETF return minus SPY return.</li>
+  <li><b>Participation and leading holdings</b> from issuer files, for the 11 SPDR sectors only.</li>
+  <li><b>Packet bias</b>: the LLM macro packet's <code>sector_bias_map</code>, mapped from sector names to SPDR funds through <code>config/sector_etf_map_v1.json</code>.</li>
+  <li><b>Quadrant record and transitions</b>, pooled across the 11 SPDR sectors.</li>
+  <li><b>Packet scorecard</b>: each archived packet's leading-minus-lagging sector basket, scored from the next open.</li>
+</ul>
+<p>Settings live in config <code>rotation</code> and are all provisional. The tab updates with every board build.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Controls</h3>
+<p>Horizon buttons (1d, 5d, 20d) and a two-way switch: "SPDR sectors" (default) or "Industries &amp; themes". The switch changes the map, the ranking, the table and the heatmap. The quadrant record, transitions and packet card always use the SPDR sectors.</p>
+<h3>2. Rotation map (left card)</h3>
+<p>A square chart. Horizontal axis: RS trend. Vertical axis: RS momentum. The crosshair at 100/100 splits four coloured zones. Each ETF has a large dot (today) and a tail of smaller dots (one per week, 8 points). Read the tail's direction: sectors usually travel clockwise, improving → leading → weakening → lagging.</p>
+<h3>3. Macro-conditional ranking (right card)</h3>
+<p>Horizontal bars ranking each ETF by its mean return relative to SPY after sessions like today, with a thin whisker for the 80% interval. The lean label sits under each ticker. Look for bars whose whisker stays on one side of the centre line.</p>
+<h3>4. Rotation table</h3>
+<p>One row per ETF with quadrant, coordinates, relative returns, participation, leading holdings, macro lean and packet view. Click a row to open the same drawer as the ETF matrix.</p>
+<h3>5. Macro impact on sectors</h3>
+<p>A heatmap like the Transmission map, but on returns relative to SPY.</p>
+<h3>6. Three cards at the bottom</h3>
+<p>"Does the quadrant predict the next H session(s)?", "Where quadrants go next" and "LLM packet sector calls". Read them once a week; they change slowly and tell you how much to trust the map and the packet.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Controls</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>1d / 5d / 20d</td><td>Forward horizon for leans, ranking, heatmap and quadrant record.</td><td>Shared board horizon.</td><td>The map and the relative returns do not change with it.</td><td>Match your holding period.</td></tr>
+<tr><td>SPDR sectors / Industries &amp; themes</td><td>Which set of ETFs to show.</td><td>Config <code>rotation.sectors</code> (11) and <code>rotation.industries</code> (SMH, SOXX, IGV, KRE, KBE, XBI, IBB, XOP, XHB, XRT, IYR, IYT, JETS, GDX, ARKK).</td><td>Sectors are broad; industries are narrow slices.</td><td>Use industries to find a sharper expression inside a sector (SMH inside technology, KRE inside financials).</td></tr>
+</tbody></table></div>
+
+<h3>Rotation map</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Horizontal axis: RS trend</td><td>Relative strength against its own 50-session average.</td><td>100 × (ETF ÷ SPY) ÷ its 50-session mean. Axis label: "RS trend vs SPY (100 = at its 50-session average)".</td><td>Right of 100 = stronger than its recent norm against SPY.</td><td>Tells you who has been leading over roughly the last quarter.</td></tr>
+<tr><td>Vertical axis: RS momentum</td><td>Whether relative strength is improving.</td><td>100 × RS trend ÷ RS trend 10 sessions earlier. Axis label: "RS momentum (10-session change)".</td><td>Above 100 = getting stronger.</td><td>Tells you which way the sector is heading now.</td></tr>
+<tr><td>Leading (blue zone)</td><td>Strong and getting stronger against SPY.</td><td>RS trend ≥ 100 and momentum ≥ 100.</td><td>XLE on 13 Oct.</td><td>Leadership. Check whether the tail is still pointing up and right.</td></tr>
+<tr><td>Weakening (orange zone)</td><td>Strong but losing momentum.</td><td>RS trend ≥ 100, momentum &lt; 100.</td><td>XLK, SMH, ARKK.</td><td>A leader cooling. Watch for a slide into Lagging.</td></tr>
+<tr><td>Lagging (red zone)</td><td>Weak and getting weaker.</td><td>Both below 100.</td><td>XLV, XLC, KRE, KBE.</td><td>Underperformance. A long here fights relative weakness.</td></tr>
+<tr><td>Improving (green zone)</td><td>Weak but gaining momentum.</td><td>RS trend &lt; 100, momentum ≥ 100.</td><td>XLF, XLY, XLP, XLI, XLB, XLU, XLRE.</td><td>Early turn candidates. Check the transition record before betting on a move to Leading.</td></tr>
+<tr><td>Large dot and ticker</td><td>Today's position.</td><td>Coloured by today's quadrant.</td><td>Distance from 100/100 shows how strong the reading is.</td><td>Dots near the crosshair can change quadrant on a small move.</td></tr>
+<tr><td>Tail</td><td>Weekly path over the last 8 points.</td><td>Every 5th session (config <code>tail_step_sessions</code> 5, <code>tail_points</code> 8), about 7 weeks back.</td><td>On 13 Oct tails ran from 24 Aug to 13 Oct.</td><td>The direction of travel matters more than the dot alone.</td></tr>
+<tr><td>Dot tooltip</td><td>Ticker, sector name, quadrant and days in it, RS trend and momentum, relative 5d / 20d / 60d, tail dates.</td><td>From the rotation row.</td><td>"XLRE REAL ESTATE · Improving for 4 sessions".</td><td>Quick check without leaving the map.</td></tr>
+<tr><td>Legend and note</td><td>Colour key, and the definitions.</td><td>Fixed text with settings filled in.</td><td>"not the proprietary JdK RS-Ratio".</td><td>Remember it is an approximation.</td></tr>
+</tbody></table></div>
+
+<h3>Macro-conditional ranking</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Card subtitle</td><td>The analog set used.</td><td>Match level and count from the board's analog step.</td><td>"60% match, 129 sessions".</td><td>A loose match (60%) means looser similarity. Weigh results accordingly.</td></tr>
+<tr><td>Ticker and lean label</td><td>The ETF and its relative lean.</td><td>Relative lean rules (see What it does).</td><td>Text such as "▼ Down" or "– No clear lean".</td><td>Only Up or Down labels pass the rule.</td></tr>
+<tr><td>Bar</td><td>Mean return relative to SPY after analog sessions.</td><td>Sector minus SPY, next open to close H sessions later. Blue right, red left. Sorted best to worst.</td><td>20d sectors: XLE +0.88% at the top, XLRE -2.42% at the bottom.</td><td>Ranks sectors for the selected horizon. Read with the whisker.</td></tr>
+<tr><td>Whisker</td><td>80% interval for that mean.</td><td>Student-t interval on independent windows.</td><td>XLRE's whisker stays left of centre; XLE's crosses it.</td><td>Crossing the centre means the sign is uncertain.</td></tr>
+<tr><td>Value</td><td>The mean, in %.</td><td>As above.</td><td>Right-hand column.</td><td>Size of the relative edge in history.</td></tr>
+<tr><td>Bar tooltip</td><td>Mean, interval, share of windows that beat SPY, independent windows, all-history mean.</td><td>From the relative evidence.</td><td>XLRE 20d: beat SPY 21%, 26 windows, all history -1.01%.</td><td>Compare with all history to see what today's conditions add.</td></tr>
+<tr><td>Note</td><td>The relative lean thresholds.</td><td>Config <code>relative_lean_min_abs_mean_pct</code> and <code>lean_t_min</code>.</td><td>"|mean| ≥ 0.03% at 1d, 0.15% at 5d, 0.5% at 20d, |t| ≥ 1.5".</td><td>Know the bar a lean has to clear.</td></tr>
+</tbody></table></div>
+
+<h3>Rotation table</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>Ticker and sector name in small text.</td><td>Sector name from the sector map. Blank for themes with no GICS sector (IGV, XRT, IYT, JETS, ARKK).</td><td>"XLRE real estate".</td><td>Click the row for the full ETF drawer.</td></tr>
+<tr><td>Quadrant + days</td><td>Today's quadrant and how many sessions in a row it has been there.</td><td>Count back through daily quadrants until it changes.</td><td>"Lagging 19d" (KRE) is entrenched; "Lagging 1d" (XLV) just arrived.</td><td>A fresh change is less settled than a long run.</td></tr>
+<tr><td>RS trend</td><td>The map's horizontal coordinate.</td><td>As above, one decimal.</td><td>XLE 105.4, XLRE 95.4.</td><td>Further from 100 = stronger reading.</td></tr>
+<tr><td>Momentum</td><td>The map's vertical coordinate.</td><td>As above.</td><td>XLU 106.7 (fastest improver), SMH 93.9.</td><td>Shows the turn.</td></tr>
+<tr><td>vs SPY 5d / 20d / 60d</td><td>Return minus SPY's return over 5, 20, 60 sessions.</td><td>Percentage points.</td><td>XLK: -2.7 (5d), +4.1 (20d), +6.9 (60d).</td><td>Short and long numbers that disagree show a turn in progress.</td></tr>
+<tr><td>Participation</td><td>Share of the fund's weight trading above its own 50-session average.</td><td>From issuer holdings, 20-session window. SPDR sectors only; a dash for industries.</td><td>XLE 91%, XLRE 15%.</td><td>High participation behind leadership = broad and healthier. Low = a few names doing the work.</td></tr>
+<tr><td>Leading holdings 20d</td><td>The three holdings that added most to the fund over 20 sessions.</td><td>Top contributors by weight × return.</td><td>XLE: MPC, VLO, XOM.</td><td>Names to check for news. They can be positive even when the fund fell.</td></tr>
+<tr><td>Macro lean Hd: <span class="tag up">▲ Up</span> / <span class="tag down">▼ Down</span></td><td>History in conditions like today favoured (or hurt) the ETF against SPY.</td><td>Relative lean rules on the train period.</td><td>20d sectors on 13 Oct: XLC Up; XLP, XLB, XLRE Down.</td><td>A relative edge: useful for choosing between sectors, not for market direction.</td></tr>
+<tr><td>Macro lean: – No clear lean</td><td>No one-sided relative result.</td><td>Failed the t or minimum test.</td><td>Most rows.</td><td>No measured relative edge.</td></tr>
+<tr><td>Macro lean: Insufficient sample / Short history</td><td>Too few windows or under 500 sessions.</td><td>Same rules as the ETF matrix.</td><td>None on 13 Oct.</td><td>Unknown, not neutral.</td></tr>
+<tr><td>Holdout chip</td><td>✓ holdout, ✗ holdout or ? holdout thin.</td><td>Held-out last quarter, same rule as the ETF matrix.</td><td>XLRE ✓; XLC, XLP, XLB ✗ at 20d.</td><td>A ✗ cancels most of a lean's value.</td></tr>
+<tr><td>Lean tooltip</td><td>Full evidence, as on the ETF matrix.</td><td>Same lines. Here "up" means the windows where the ETF beat SPY, and "price-only lean" means its all-history relative drift.</td><td>XLRE 20d price-only lean is also ▼ Down: real estate has lagged SPY since 2020.</td><td>Separates today's conditions from a long-running drift.</td></tr>
+<tr><td>Analog vs SPY</td><td>Mean relative return after analog sessions.</td><td>All analog sessions, train and holdout.</td><td>XLRE -2.42%.</td><td>Size of the relative edge.</td></tr>
+<tr><td>80% interval</td><td>Range for that mean.</td><td>Student-t on independent windows.</td><td>XLRE -3.27% … -1.57%.</td><td>Clear of zero = stronger evidence.</td></tr>
+<tr><td>Packet bias: TAILWIND</td><td>The LLM packet sees a tailwind for the sector.</td><td>Packet <code>sector_bias_map</code>. Blue chip.</td><td>XLE.</td><td>A published opinion; check the scorecard card for its record.</td></tr>
+<tr><td>Packet bias: HEADWIND</td><td>The packet sees a headwind.</td><td>Same. Red chip.</td><td>XLK, XLF, XLI, XLRE.</td><td>Same.</td></tr>
+<tr><td>Packet bias: NEUTRAL / MIXED</td><td>No directional view, or a split one.</td><td>Same. Grey chip. No agreement check.</td><td>NEUTRAL: XLV, XLY, XLP, XLB, XLU. MIXED: XLC.</td><td>No packet view to weigh.</td></tr>
+<tr><td>Packet bias: dash</td><td>The packet says nothing about this ETF.</td><td>Only GICS sector names map to SPDR funds; industries never get one.</td><td>All industries.</td><td>Nothing to compare.</td></tr>
+<tr><td>✓ agrees / ✗ disagrees</td><td>The packet's bias matches or opposes the measured relative lean.</td><td>Tailwind with an Up lean, or headwind with a Down lean, agrees.</td><td>XLRE: HEADWIND ✓ agrees at 5d and 20d.</td><td>Agreement from an independent source adds a little weight. Disagreement is a question to answer.</td></tr>
+<tr><td>unmeasured</td><td>The packet has a view but the evidence has no lean.</td><td>Tailwind or headwind against a No clear lean.</td><td>XLE, XLK, XLF, XLI at 20d.</td><td>The packet's view stands alone; weigh it by its scorecard.</td></tr>
+<tr><td>Note under the table</td><td>Definitions of participation and packet bias.</td><td>Fixed text.</td><td>Mentions the 50-session mean.</td><td>Reference.</td></tr>
+</tbody></table></div>
+
+<h3>Macro impact on sectors (heatmap)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Column header</td><td>Condition and today's state.</td><td>Same 10 conditions as the Transmission map.</td><td>"Curve level: FLAT".</td><td>Today's macro picture.</td></tr>
+<tr><td>Cell number and colour</td><td>How the ETF's return relative to SPY differed while the condition sat in today's state.</td><td>Mean relative return in today's state minus mean in other observed states. Colour capped at the 95th percentile of |values| (at least 0.2%).</td><td>This heatmap has no legend. The colour cap on 13 Oct at 20d was about ±1.0% for sectors and ±2.3% for industries, so read the numbers.</td><td>Shows which channels move a sector against the market.</td></tr>
+<tr><td>Faded cell</td><td>|t| below 1.</td><td>Welch t on independent windows.</td><td>Most sector cells at 20d were faded.</td><td>Ignore faded cells.</td></tr>
+<tr><td>× cell</td><td>No value.</td><td>Missing condition or too few windows.</td><td>None on 13 Oct.</td><td>Unknown.</td></tr>
+<tr><td>Cell tooltip</td><td>ETF vs SPY, condition and state, excess, t, windows.</td><td>From <code>relative_sensitivity</code>.</td><td>"XLC vs SPY · Curve move = STEEPENING · +1.21% · t 1.92".</td><td>Read t before believing a colour.</td></tr>
+</tbody></table></div>
+
+<h3>Quadrant record and transitions</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Quadrant (rows)</td><td>Leading, Weakening, Lagging, Improving, and All sessions.</td><td>Pooled over the 11 SPDR sectors.</td><td>"All sessions" is the baseline.</td><td>Compare each quadrant with the baseline, not with zero.</td></tr>
+<tr><td>Mean vs SPY</td><td>Average next-H relative return for sectors in that quadrant.</td><td>Pooled relative forward returns.</td><td>20d: Leading +0.01%, Weakening -0.36%, Lagging -0.40%, Improving -0.32%, All -0.26%.</td><td>Over this history, sectors in Leading held level with SPY while the average sector lagged. The other quadrants were close to average.</td></tr>
+<tr><td>80% interval</td><td>Range for that mean.</td><td>Normal approximation on pooled independent windows.</td><td>Leading 20d: -0.29% … +0.30%.</td><td>Overlapping intervals mean the quadrants are hard to tell apart.</td></tr>
+<tr><td>Beat SPY</td><td>Share of observations where the sector beat SPY.</td><td>Share of relative returns above zero.</td><td>20d: 44% to 49% in every quadrant.</td><td>None of them is a coin flip in your favour.</td></tr>
+<tr><td>Windows</td><td>Independent windows pooled across sectors.</td><td>Thinned per sector, then summed.</td><td>20d: 269 to 429 per quadrant.</td><td>Large samples: these numbers are stable.</td></tr>
+<tr><td>Card note</td><td>Context for the baseline.</td><td>Fixed text.</td><td>Sectors lagged SPY on average because SPY is concentrated in mega-cap tech.</td><td>Do not read a negative mean as "sectors fall".</td></tr>
+<tr><td>From → to percentages</td><td>Where a sector in each quadrant was 5 sessions later.</td><td>Counts every 5 sessions (config <code>transition_step_sessions</code>), 11 SPDR sectors.</td><td>Improving → Leading 20%, → Lagging 30%, stayed 50%. Leading stayed 59%.</td><td>Use it to temper the clockwise story: most moves are "stay where you are".</td></tr>
+<tr><td>Bold cell</td><td>Stayed in the same quadrant.</td><td>Diagonal of the table.</td><td>Lagging stayed 59%.</td><td>Quadrants are sticky over a week.</td></tr>
+<tr><td>n</td><td>Number of 5-session steps starting in that quadrant.</td><td>Row total.</td><td>Lagging 933, Weakening 436.</td><td>Sample size.</td></tr>
+</tbody></table></div>
+
+<h3>LLM packet sector calls</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Rotation signal</td><td>The packet's label for today's rotation.</td><td>Packet <code>sector_rotation.rotation_signal</code>.</td><td>13 Oct: COMMODITY ROTATION.</td><td>A headline, LLM-written. Check it against the map.</td></tr>
+<tr><td>strongest / weakest</td><td>The packet's strongest and weakest sectors.</td><td>Packet <code>strongest_sectors</code>, <code>weakest_sectors</code>.</td><td>Strongest: Energy, Communication Services, Materials. Weakest: Information Technology, Financials, Industrials, Real Estate.</td><td>Compare with the quadrants: Energy is Leading; Communication Services is Lagging.</td></tr>
+<tr><td>uncalibrated</td><td>Grey dashed chip.</td><td>Fixed label for composites never calibrated against outcomes.</td><td>Not a probability.</td><td>Weigh it by the scorecard below, not by its wording.</td></tr>
+<tr><td>H</td><td>Scoring horizon.</td><td>1, 5, 20 sessions.</td><td>One row each.</td><td>Use the row for your holding period.</td></tr>
+<tr><td>Calls</td><td>Archived packet generations scored.</td><td>One call per session (latest wins); needs both a lead and a lag list that map to SPDR funds.</td><td>20 at 1d, 16 at 5d, 2 at 20d.</td><td>A short record.</td></tr>
+<tr><td>Windows</td><td>Independent windows among those calls.</td><td>Thinned by horizon. A "?" and grey text when under 8.</td><td>"4 ?" at 5d, "1 ?" at 20d.</td><td>A "?" means too thin to judge.</td></tr>
+<tr><td>Lead beat lag</td><td>How often the lead basket beat the lag basket.</td><td>Share of calls with a positive spread.</td><td>1d: 55%.</td><td>Barely better than a coin flip at 1d.</td></tr>
+<tr><td>Mean spread</td><td>Average lead-minus-lag return.</td><td>Equal-weight lead basket minus lag basket, from the open of the first session after publication.</td><td>1d +0.13%, 5d +0.49%.</td><td>Positive but on few independent windows.</td></tr>
+<tr><td>Latest archived calls</td><td>The last six scored calls.</td><td>Entry session, lead list, lag list.</td><td>"2026-10-13: lead XLE, XLP, XLU, XLV · lag XLK, XLC, XLY".</td><td>See how stable the packet's view has been. It moved XLK between lead and lag within a week.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: measured lean, packet and trend agree (XLRE, 20d)</h4>
+<p><b>What you see:</b> XLRE: Macro lean <span class="tag down">▼ Down</span> ✓ holdout, -2.42% vs SPY (interval -3.27% … -1.57%), packet HEADWIND ✓ agrees. vs SPY 20d -5.6, 60d -12.4. Participation 15%. Only the map disagrees: Improving for 4 sessions, after Lagging 5 sessions ago, on a 5-day bounce of +1.9 against SPY.</p>
+<p><b>What it means:</b> History in conditions like today, the packet and the longer trend all point to real estate lagging SPY. The bounce is short. The quadrant record shows Improving sectors did no better than average at 20d (-0.32% against -0.26%), and 30% of Improving sectors were back in Lagging a week later.</p>
+<div class="act"><b>What a trader does:</b> Treats XLRE as the weakest sector to avoid for a long, or as a relative-weakness candidate. The board shows the price-only lean is also Down, so part of this is a long-running drift. A trader would check the ETF matrix for the absolute picture and the option spread before any trade.</div></div>
+
+<div class="scenario"><h4>Scenario: a relative lean that failed its holdout (XLC, 20d)</h4>
+<p><b>What you see:</b> XLC is Lagging for 12 sessions, -4.3 against SPY over 20 sessions. Its macro lean is <span class="tag up">▲ Up</span> with an interval of +0.02% … +1.39%, but ✗ holdout: the train period averaged +1.26% (t 2.46), the holdout -1.97% on 5 windows. The packet calls XLC MIXED in its bias map yet lists Communication Services among its strongest sectors.</p>
+<p><b>What it means:</b> The older record liked XLC in these conditions; the last year did not. The packet is not consistent with itself, and the tape is weak.</p>
+<div class="act"><b>What a trader does:</b> Waits. A failed holdout and a lagging tape outweigh a mixed packet. A trader would want to see XLC move into Improving and the holdout evidence recover before taking a relative long view.</div></div>
+
+<div class="scenario"><h4>Scenario: a leader rolling over (XLK)</h4>
+<p><b>What you see:</b> XLK is Weakening for 4 sessions; 5 sessions ago it was Leading. RS trend 102.2, momentum 97.5. vs SPY: -2.7 over 5 days but +4.1 over 20 and +6.9 over 60. Participation is still 72%. Packet HEADWIND, "unmeasured" because the macro lean is No clear lean.</p>
+<p><b>What it means:</b> Technology has led for months and has just started to give ground. On the transition record, a Weakening sector was back in Leading 25% of the time a week later, stayed 48% and slid to Lagging 25%.</p>
+<div class="act"><b>What a trader does:</b> Does not call a top from one quadrant change. A trader holding technology exposure watches the tail: a move into Lagging would confirm the rotation; a hook back up would not. The packet's headwind view stands alone here.</div></div>
+
+<div class="scenario"><h4>Scenario: missing and thin data (industries and the packet record)</h4>
+<p><b>What you see:</b> Switch to "Industries &amp; themes". Participation shows a dash for every row and "Leading holdings 20d" is empty: the board has issuer files only for SPY, DIA, QQQ and the SPDR sectors. Packet bias is a dash for all industries. In the packet card the 5d windows read "4 ?" and the 20d "1 ?".</p>
+<p><b>What it means:</b> For industries you have rotation and relative evidence only, not holdings breadth or a packet view. The packet's 5d and 20d record is too thin to judge.</p>
+<div class="act"><b>What a trader does:</b> Uses the parent sector's participation as a rough proxy (XLK's 72% for SMH), and says so in the notes. Gives the packet's multi-day sector calls little weight until the record grows.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (XLV)</h4>
+<p><b>What you see:</b> XLV is Lagging for 1 session, sitting near the crosshair (trend 99.0, momentum 97.8). vs SPY +1.7 over 5 days, -1.5 over 20. Macro lean No clear lean, -0.33% with an interval of -1.28% … +0.62%. Packet NEUTRAL.</p>
+<p><b>What it means:</b> Health care is drifting around the centre of the map. Nothing in history, the packet or the tape separates it from SPY.</p>
+<div class="act"><b>What a trader does:</b> Leaves it. A dot near 100/100 can change quadrant on any small move, so a fresh "Lagging 1d" label means little.</div></div>
+
+<div class="scenario"><h4>Scenario: the interval is clear of zero, but there is no lean (SMH, 20d)</h4>
+<p><b>What you see:</b> In Industries &amp; themes, SMH shows +1.61% vs SPY with an interval of +0.34% … +2.87%, yet the lean reads – No clear lean. The tooltip shows the train period alone had t 1.02, below the 1.5 needed; the holdout averaged +4.40% on 5 windows.</p>
+<p><b>What it means:</b> The lean is decided on the older three quarters of history only. Here the older data was weak and the recent quarter strong, so the full-sample interval looks better than the rule allows.</p>
+<div class="act"><b>What a trader does:</b> Respects the rule. A strong recent quarter on 5 windows is a hint worth watching, not a measured lean. SMH is also Weakening on the map, so a trader waits.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>The LLM packet's rotation signal reads COMMODITY ROTATION, with Energy strongest. You want to know whether XLE is a sensible fund to express an energy view, and how much the board supports it.</p>
+<ol class="steps">
+  <li><b>Map.</b> SPDR sectors, any horizon. XLE is in Leading, the furthest dot to the upper right: RS trend 105.4, momentum 106.3. Its tail dipped into Lagging in late September (98.9 / 91.7 on 22 Sep) and has swung back. Leading for 4 sessions.</li>
+  <li><b>Table.</b> vs SPY: +5.55 over 5 days, -0.80 over 20, +11.14 over 60. Participation 91%: almost the whole fund trades above its 50-session average. Leading holdings MPC, VLO, XOM. Packet TAILWIND, "unmeasured".</li>
+  <li><b>Ranking at 20d.</b> XLE tops the sectors at +0.88% vs SPY, but the whisker runs from -1.00% to +2.75% and the label is No clear lean. History in conditions like today does not separate XLE from SPY.</li>
+  <li><b>Heatmap.</b> XLE's relative row is entirely faded at 20d. No single channel stands out.</li>
+  <li><b>Quadrant record.</b> At 20d, Leading sectors averaged +0.01% vs SPY against -0.26% for all sessions. On the transition table, Leading stayed Leading 59% of the time a week later and slipped to Weakening 26%.</li>
+  <li><b>Packet record.</b> 20 calls; lead beat lag 55% at 1d with a +0.13% mean spread. Only 4 independent windows at 5d.</li>
+  <li><b>ETF matrix check.</b> XLE closed at its 1-year high, 5d Extended ↑ 1.7σ. Pipeline CALL · ARMED. IV rank 66; 20d straddle priced 1.07× history with a 10.1% spread.</li>
+</ol>
+<div class="example">
+<div class="head"><b>XLE · relative to SPY</b><span class="meta">13 Oct 2026 close</span></div>
+<p>Map: Leading 4d · trend 105.4 · momentum 106.3 · participation 91%</p>
+<p>Measured: No clear lean at 20d, +0.88% vs SPY, interval -1.00% … +2.75%</p>
+<p>Packet: TAILWIND, unmeasured · record 55% at 1d, thin beyond</p>
+<div class="verdict"><b>Coach's reading:</b> The tape and the packet favour energy, and XLE is a broad, well-participated way to hold that view. Measured history does not back it against SPY in conditions like today, the 5-day move is already stretched for XLE, and options are not cheap. I would treat XLE as the right fund for an energy view but not as a measured edge, check its Desk card, and wait for a pause rather than chase. This is a reading of the evidence, not a recommendation.</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+  <li>Read the tail's direction, not just the dot.</li>
+  <li>Check "days in quadrant": a 1-day label is noise; a 19-day run is a trend.</li>
+  <li>Use the transition table to keep the clockwise story honest.</li>
+  <li>Look for agreement between the map, the measured lean and the packet. Two of three agreeing is common; all three is worth noting.</li>
+  <li>Check participation behind a leader.</li>
+  <li>Check the packet's scorecard before you weigh its sector calls.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+  <li>Reading "Leading" as "going up". It means beating SPY.</li>
+  <li>Assuming Improving leads to Leading. On this record it did 20% of the time within a week.</li>
+  <li>Treating packet agreement as confirmation. The packet is LLM-written and uncalibrated.</li>
+  <li>Reading a negative quadrant mean as "sectors fall". SPY's mega-cap weight made most sectors lag.</li>
+  <li>Using a relative lean as a market-direction call.</li>
+  <li>Ignoring a ✗ holdout because the map looks good.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="etf-matrix.html">ETF matrix</a> for absolute leans and option prices. <a href="transmission-map.html">Transmission map</a> for absolute returns by condition. <a href="day-story.html">Day story</a> for today's money flow by sector. <a href="daily-review.html">Daily review</a> for relative-versus-absolute sector labels. <a href="desk-card.html">Desk card</a> for the full checklist on one ETF. <a href="scorecards.html">Scorecards</a> for the packets' other calls.</p>
+
+<div class="pager"><a href="transmission-map.html">← Transmission map</a><a href="desk-card.html">Desk card →</a></div>
+</main>
+</div>
+</body>
+</html>

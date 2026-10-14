@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day story · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Day story</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 2 of 12</p>
+  <h1>Day story</h1>
+  <p class="lede">Where is money going today, which measured facts fit that move, and what would a trade on it look like?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The Day story turns the board's numbers into a story you can read in a few minutes. It answers three questions for every sector and industry ETF: is money moving in or out, what measured facts fit that move, and where would a trade start and where would it be wrong.</p>
+<p>An <b>ETF</b> (exchange-traded fund) is a basket of stocks that trades like one stock. XLE holds energy companies, XLK holds technology companies, SPY holds the S&amp;P 500. The board compares each sector ETF with SPY to see where money is rotating.</p>
+<p>Read it second in your routine, right after the <a href="daily-review.html">Daily review</a>. The Daily review tells you how the market reacted to the day's news. The Day story tells you which sectors that money went into or out of. Then move on to the <a href="overview.html">Overview</a> and the <a href="sector-rotation.html">Sector rotation</a> for the deeper evidence.</p>
+<div class="callout">
+<strong>Display only</strong>
+<p>Nothing on this tab is a gate, a score or a rank. It never feeds the pipeline. Macro informs a human; it never decides. The tab writes its flow calls to a ledger so the board can check later whether its own reads were right.</p>
+</div>
+
+<h2 id="how">What it does</h2>
+<h3>Three voices, each labelled</h3>
+<p>Every sentence on this tab carries one of three labels, so you always know who is speaking.</p>
+<ul>
+<li><b>MEASURED</b>: sentences built only from the board's own numbers (prices, volume, stored option chains, measured macro links). This is the voice to trust first.</li>
+<li><b>PUBLISHED · not verified</b>: items from the event payload. Another LLM (large language model, an AI text writer) made that payload. The board matches its items to sectors by keyword and does not check them.</li>
+<li><b>AI NARRATIVE</b>: a written story by Claude (model <code>claude-opus-5-5</code>), fed only the measured facts on this tab. The board checks every number and every flow call it writes against the facts and flags any mismatch.</li>
+</ul>
+<h3>Inputs</h3>
+<ul>
+<li><b>Prices</b> for the 11 SPDR sector ETFs and the industry ETFs listed in the rotation config (26 ETFs on 13 Oct), plus SPY as the benchmark.</li>
+<li><b>Share volume</b> for each ETF over the last 21 sessions. A <b>session</b> is one trading day.</li>
+<li><b>Stored option chains</b> from MarketData.app, kept in the phantom database table <code>iv_surface_history</code>. The board reads the last 60 stored dates per ETF. It uses the front bucket of expiries 8 to 30 days out.</li>
+<li><b>Macro condition sensitivities</b> from the Transmission map: how each ETF did in past sessions when a condition sat in today's state.</li>
+<li><b>Cross-assets</b>: TLT (long Treasuries), UUP (US dollar), USO (oil), HYG (high-yield credit) and GLD (gold).</li>
+<li><b>Price levels</b> from the opportunity owner: 252-day high and low, 50-day and 200-day averages, GEX walls and flip, and the pipeline's target and invalidation.</li>
+<li><b>Option pricing against history</b> from the Next session plan, <b>live scenarios</b> from Scenario watch, and <b>pipeline candidates</b> from the Next session plan.</li>
+<li><b>Published items</b> from the event payload, and the macro packet's sector bias.</li>
+</ul>
+<h3>Steps, in plain words</h3>
+<ol class="steps">
+<li><b>Relative return.</b> For each ETF the board subtracts SPY's return from the ETF's return over 1, 5 and 20 sessions. The answer is in <b>points (pts)</b>, meaning percentage points. XLE +5.55 over 5 sessions means XLE beat SPY by 5.55 percentage points.</li>
+<li><b>Flow label.</b> The 5-session number sets the direction and the 20-session number says whether that is new. A 5-session move smaller than 0.25 pts either way is <b>No clear flow</b>. Up by 0.25 or more with the 20-session number below -0.5 is <b>Turning in</b>; otherwise <b>Money in</b>. Down by 0.25 or more with the 20-session number above +0.5 is <b>Leaving a leader</b>; otherwise <b>Money out</b>. These bands come from <code>opportunity.relative_band_pp</code> and are provisional.</li>
+<li><b>Volume.</b> The last session's share volume divided by its average over the previous 20 sessions.</li>
+<li><b>Option footprint.</b> What option traders paid for on the last stored chain, compared with the ETF's own stored history. Guards stop the board reading data that is stale, too short, unstable or captured with different coverage (details in the tables).</li>
+<li><b>Reasons (drivers).</b> Macro conditions in today's state where the ETF has a measured 5-session response with |t| of 2 or more, and cross-assets the ETF's relative return has moved with (|correlation| of 0.3 or more over 60 sessions). Each reason either fits the flow, goes against it, or is neutral. At most 5 are kept.</li>
+<li><b>Flow record.</b> For each flow label, what the ETF's relative return did over the next 5 sessions after the same label in all past history.</li>
+<li><b>Trade analysis.</b> The side follows the flow (money in means calls, money out means puts). The trigger and the "wrong if" level are the nearest levels above and below the current price. Options are labelled cheap, fair or rich against history.</li>
+<li><b>Ticker impact.</b> Each pipeline candidate is read against its sector ETF's flow.</li>
+<li><b>Ledger.</b> Pre-open and evening builds write each ETF's flow call to <code>output/day_story_ledger.jsonl</code> (first build of a session wins). Later builds score those calls on the next 1 and 5 sessions.</li>
+<li><b>AI narrative.</b> On pre-open (MORNING) and evening builds, Claude writes the story from the facts. It is cached per facts, so an identical set of facts is not sent twice. Other builds show the session's latest narrative, labelled as written for an earlier build.</li>
+</ol>
+<h3>Terms you will meet</h3>
+<div class="grid2">
+<div class="box"><h4>Markets</h4><ul>
+<li><b>Benchmark</b>: the yardstick, here SPY.</li>
+<li><b>Daily move</b>: one normal day's move for that ETF, from its 20-session realised volatility divided by the square root of 252.</li>
+<li><b>Implied volatility (IV)</b>: the yearly move the option price implies, in %.</li>
+<li><b>ATM</b> (at the money): the strike nearest the current price.</li>
+<li><b>25-delta skew</b>: how much more a downside put costs than an upside call, in IV points. Rising skew means traders pay up for protection.</li>
+<li><b>Open interest (OI)</b>: option contracts still held at the end of the day.</li>
+<li><b>Put/call ratio</b>: put volume divided by call volume.</li>
+</ul></div>
+<div class="box"><h4>Statistics</h4><ul>
+<li><b>Correlation (corr)</b>: from -1 to +1, how closely two daily return series moved together.</li>
+<li><b>t (t-statistic)</b>: how many standard errors an average sits from zero. |t| of 2 or more is unlikely to be pure noise.</li>
+<li><b>Independent windows</b>: past cases counted so that overlapping periods are not double counted.</li>
+<li><b>Percentile</b>: the share of past values at or below today's value.</li>
+<li><b>Rotation quadrant</b>: Leading, Weakening, Lagging or Improving, from the Sector rotation map.</li>
+</ul></div>
+</div>
+
+<h2 id="screen">Reading the screen</h2>
+<p>The tab runs from the whole market down to single tickers. Read it in that order.</p>
+<h3>1. The header and the three-voices box</h3>
+<p>The header names the next session ("trade analysis for 2026-10-14"). The box below it explains the three labels. Read it once; after that, just watch the labels.</p>
+<h3>2. The day ahead</h3>
+<p>This repeats the Next session plan's market call ("market call mixed" on 13 Oct), its sentences and its approach. It lists scheduled releases before the next close and the published narrative. On 13 Oct it showed CPI at 08:30 ET on 14 Oct, with the note that SPY moved 1.25x a normal day on 63 past release days. Read this first: it tells you how much of the day may be decided by one print.</p>
+<h3>3. Possible paths for the index ETFs</h3>
+<p>One card each for SPY, QQQ, IWM and DIA. Each card shows the reference price and its basis (for example "PREMARKET 05:04 ET"), a normal day, what options price for the next session, and three branches: Holds the range, Breaks up, Breaks down. Under them sit the option footprint and two lines of history.</p>
+<h3>4. The story in words (AI NARRATIVE)</h3>
+<p>Check the line of check marks first. "every number found in the facts" and "flow calls match the measurement" mean the text passed verification. Then read the overview, the sector and ticker stories, the risks and what would change the view.</p>
+<h3>5. Where money is going (MEASURED)</h3>
+<p>A summary of who is in and who is out over 5 sessions, then one row per ETF. Rows with a clear flow come first, largest 5-session move first. Click a row to open its detail panel: evidence, option footprint, reasons, trade analysis, flow record, live scenarios, published items and pipeline candidates.</p>
+<h3>6. Trade analysis for the day</h3>
+<p>Up to 8 ETFs with a clear flow, each with side, trigger, "wrong if" level, option pricing, evidence for and against, the flow's own record and live scenarios. This is the shortlist. Each table has a CSV button to download it.</p>
+<h3>7. Ticker impact</h3>
+<p>Pipeline candidates read against their sector ETF's flow. The header counts how many are with the flow, against it, stock-specific, or in a sector with no clear flow.</p>
+<h3>8. The board's own flow calls</h3>
+<p>The live scorecard for this tab. It says how many past flow calls have been scored and whether money kept going the way the board said.</p>
+
+<h2 id="data">Every data attribute</h2>
+<h3>Header, voices and the day ahead</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>trade analysis for (date)</td><td>The session the analysis is for.</td><td>The Next session plan's next XNYS session.</td><td>2026-10-14 on the 13 Oct board.</td><td>Make sure you are reading the build for the session you are about to trade.</td></tr>
+<tr><td>MEASURED chip</td><td>Built only from the board's own numbers.</td><td>Fixed templates filled with measured values.</td><td>The most reliable voice on the tab.</td><td>Base decisions on this voice; use the others as context.</td></tr>
+<tr><td>PUBLISHED · not verified chip</td><td>A claim from the event payload, made by another LLM.</td><td>Keyword match of payload items to sectors (keyword lists in <code>day_story.news_keywords</code>).</td><td>A headline, not a fact. A keyword match can be loose.</td><td>Use it to know what others are talking about. Confirm it in price before you act.</td></tr>
+<tr><td>AI NARRATIVE chip</td><td>Text written by Claude from the measured facts only.</td><td>One call per facts set on MORNING and EVENING builds; schema-checked JSON.</td><td>Hypotheses, not verified news. Its label says so.</td><td>A fast summary. Never trade a sentence you cannot find in the MEASURED tables.</td></tr>
+<tr><td>market call</td><td>The tape's overall read from the Next session plan.</td><td>The plan's call key, lower-cased: up broad, up narrow, up, down broad, down narrow, down, mixed, unknown.</td><td>"mixed" on 13 Oct: SPY and QQQ absorbed, IWM accepted down, DIA rejected a gap up.</td><td>Mixed means two-way trade: smaller size, wait for a level to break.</td></tr>
+<tr><td>Call sentences</td><td>Reactions, breadth, macro pressure, normal day versus option price.</td><td>Copied from the Next session plan.</td><td>"A normal day for SPY is ±0.60%; options price ±0.52%".</td><td>If options price less than a normal day, a move may be underpriced.</td></tr>
+<tr><td>Approach</td><td>How to trade that state.</td><td>Plan wording for the call key.</td><td>Mixed: trade the edges, smaller size.</td><td>Sets your size and patience before you look at sectors.</td></tr>
+<tr><td>Scheduled before the next close</td><td>Releases due within 1 session.</td><td>Decision points calendar, <code>events_sessions_ahead</code> = 1.</td><td>"2026-10-14 08:30 CPI · SPY 1.25x a normal day on past release days (63)".</td><td>Expect a bigger day than normal. Avoid entering just before the print.</td></tr>
+<tr><td>Published narrative</td><td>The event payload's classification and story.</td><td>Copied from the payload; labelled PUBLISHED.</td><td>13 Oct: "failed financial/value confirmation with small-cap underperformance; broad risk contained".</td><td>A view to test, not a call. The tape is the fact.</td></tr>
+</tbody></table></div>
+
+<h3>Possible paths for the index ETFs</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Reference price · basis</td><td>The price the levels are measured from.</td><td>The latest quote that supersedes the close (pre-market, intraday) or the close.</td><td>SPY 779.62 · PREMARKET 05:04 ET.</td><td>Check the time. A pre-market price can move a lot before the open.</td></tr>
+<tr><td>normal day ±%</td><td>One daily move.</td><td>20-session realised volatility ÷ √252.</td><td>SPY ±0.60%, QQQ ±0.95%.</td><td>Use it to judge whether a level is near (under 1 daily move) or far.</td></tr>
+<tr><td>options price ±%</td><td>The move the ATM straddle prices for the next session.</td><td>From the Next session plan.</td><td>SPY ±0.52%: a bit less than a normal day.</td><td>Below a normal day: options look cheap for the move. Above: expensive.</td></tr>
+<tr><td>Holds the range</td><td>The base path: price stays between the nearest levels.</td><td>Plan's base branch text.</td><td>SPY between the 50d avg 768.60 and the GEX flip 779.82.</td><td>No new position until a level breaks.</td></tr>
+<tr><td>Breaks up (expression)</td><td>The up path: trigger level and next target.</td><td>Plan's up branch; expression in brackets.</td><td>SPY clears 779.82, next 781.62 (252d high). "long calls or shares".</td><td>Your entry trigger for the long side.</td></tr>
+<tr><td>Breaks down (expression)</td><td>The down path.</td><td>Plan's down branch.</td><td>SPY loses 768.60, next 764.63 (one implied move). "long puts, or stand aside".</td><td>Your entry trigger for the short side.</td></tr>
+<tr><td>Options chip</td><td>The option footprint for the index ETF (see the footprint table).</td><td>Same footprint code as sector ETFs.</td><td>SPY: put side, "25-delta skew +3.7 pts since 2026-10-12: downside protection bid".</td><td>Protection being bought warns you that others fear a drop.</td></tr>
+<tr><td>History lines</td><td>What followed past sessions with the same reaction.</td><td>First two plan history lines.</td><td>SPY ABSORBED: next 5 sessions +0.28%, rose 60%: history leans up.</td><td>A lean in history adds weight to one branch; it is not a forecast.</td></tr>
+</tbody></table></div>
+
+<h3>The story in words (AI NARRATIVE)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Status chip (when not OK)</td><td>Why there is no narrative.</td><td>DISABLED (off in config), NOT_CALLED (this build kind does not call), UNAVAILABLE (no Anthropic credentials), FAILED (request or output failed), REFUSED (model declined).</td><td>The measured story below stands on its own.</td><td>Read the MEASURED tables. Nothing is lost for the decision.</td></tr>
+<tr><td>every number found in the facts / N numbers not in the facts</td><td>Number check.</td><td>Each number in the text is matched to the facts at the text's own precision. Whole numbers up to 60 are skipped (windows and counts).</td><td>Green tick: clean. Warning: lists the numbers it could not find.</td><td>Ignore any sentence that uses a flagged number.</td></tr>
+<tr><td>flow calls match the measurement / flow call differs</td><td>Flow check.</td><td>Each sector's money_flow in the AI output must equal the measured label.</td><td>A red cross lists the tickers where the AI disagreed.</td><td>For those tickers, trust the MEASURED flow chip.</td></tr>
+<tr><td>tickers not in the facts</td><td>The AI named a sector the facts do not contain.</td><td>Sector tickers checked against the story list.</td><td>Rare. Shows only when it happens.</td><td>Disregard those stories.</td></tr>
+<tr><td>model · written / cached · facts hash</td><td>Provenance.</td><td>Model name; "written this build", "cached for these facts", or "written for an earlier build of this session"; first 12 characters of the facts hash.</td><td>13 Oct: claude-opus-5-5, written this build, facts 10976afb0d53.</td><td>"Earlier build" means the facts may have moved since. Prefer the MEASURED numbers.</td></tr>
+<tr><td>Overview</td><td>The day in one paragraph.</td><td>AI output field <code>overview</code>.</td><td>13 Oct: rotation out of semis and tech into energy, most reads with no clear follow-through.</td><td>Your quick mental map before the table.</td></tr>
+<tr><td>Sectors (with flow chip)</td><td>One short story per sector.</td><td>AI output; flow chip must match the measurement.</td><td>Each story cites numbers for and against.</td><td>Use the "against" sentences as your checklist of risks.</td></tr>
+<tr><td>Tickers</td><td>Stories for index ETFs and named tickers.</td><td>AI output field <code>tickers</code>.</td><td>SPY: between 768.60 and 779.82, skew bid.</td><td>Cross-check the levels with the path cards.</td></tr>
+<tr><td>Risks to the story</td><td>What could make the story wrong.</td><td>AI output field <code>risks</code>.</td><td>13 Oct: CPI print; most flows have no follow-through record; energy on light volume.</td><td>Size smaller when the risks are live today.</td></tr>
+<tr><td>What would change the view</td><td>Observable events that would overturn the story.</td><td>AI output field <code>would_change_view</code>.</td><td>"XOP failing to clear 200.89, or USO reversing".</td><td>Turn each into an alert level.</td></tr>
+</tbody></table></div>
+
+<h3>Where money is going: summary and table</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Money moving in / out (summary)</td><td>Up to 6 ETFs each way with their 5-session relative return.</td><td>Labels INFLOW + TURNING_IN, and OUTFLOW + TURNING_OUT, strongest first.</td><td>13 Oct in: XOP +6.17, XLE +5.55, XLP +3.06. Out: SOXX -7.59, SMH -6.88, JETS -4.49.</td><td>Your first list of where to look.</td></tr>
+<tr><td>Flow unknown (missing prices)</td><td>ETFs whose 5 or 20-session return is missing.</td><td>Label MISSING.</td><td>Missing is never neutral.</td><td>Do not assume no flow; check the price data.</td></tr>
+<tr><td>ETF (industry tag)</td><td>The ETF ticker; "industry" marks a non-sector ETF.</td><td>Sector list and industry list in the rotation config.</td><td>SOXX industry, XLK sector.</td><td>Industry ETFs move more and are narrower. Expect bigger swings.</td></tr>
+<tr><td>Name</td><td>Sector name from the rotation table.</td><td>Rotation row <code>sector_name</code>.</td><td>Blank for some industry ETFs (JETS, ARKK, XRT).</td><td>None.</td></tr>
+<tr><td>Flow: <span class="tag up">Money in</span></td><td>INFLOW: beating SPY over 5 sessions, and not a recent turn.</td><td>5d ≥ +0.25 pts and 20d ≥ -0.5 pts.</td><td>None on 13 Oct.</td><td>Calls side for the sector. Check the record before trusting it.</td></tr>
+<tr><td>Flow: <span class="tag up">Turning in</span></td><td>TURNING_IN: beating SPY now after a weak 20 sessions.</td><td>5d ≥ +0.25 and 20d &lt; -0.5.</td><td>XLE +5.55 / -0.80.</td><td>An early turn. Needs confirmation from levels.</td></tr>
+<tr><td>Flow: <span class="tag down">Money out</span></td><td>OUTFLOW: trailing SPY over 5 sessions, not a recent leader.</td><td>5d ≤ -0.25 and 20d ≤ +0.5.</td><td>KRE -1.30 / -9.46.</td><td>Puts side for the sector.</td></tr>
+<tr><td>Flow: <span class="tag down">Leaving a leader</span></td><td>TURNING_OUT: trailing SPY now after leading over 20 sessions.</td><td>5d ≤ -0.25 and 20d &gt; +0.5.</td><td>XLK -2.69 / +4.10.</td><td>Profit-taking or a real turn. The record column tells you which has been usual.</td></tr>
+<tr><td>Flow: <span class="tag flat">No clear flow</span></td><td>NONE: 5-session move inside ±0.25 pts.</td><td>|5d| &lt; 0.25.</td><td>XLB +0.12, IGV -0.02.</td><td>Stand aside on the sector.</td></tr>
+<tr><td>Flow: Missing</td><td>MISSING: a needed return is not there.</td><td>5d or 20d relative return is null.</td><td>Grey chip.</td><td>Fix the data before reading.</td></tr>
+<tr><td>1d / 5d / 20d (pts)</td><td>Relative return vs SPY over each window.</td><td>ETF return minus SPY return, percentage points.</td><td>Blue/positive = beat SPY; red/negative = trailed.</td><td>5d sets the flow; 1d shows whether today confirmed it.</td></tr>
+<tr><td>Volume (×)</td><td>Last session's share volume against its 20-session average.</td><td>Volume ÷ mean of the previous 20 sessions.</td><td>Above 1 = heavier than usual; below 1 = lighter. SOXX 1.33x, XLE 0.81x.</td><td>A flow on heavy volume has more conviction. Light volume asks for more proof.</td></tr>
+<tr><td>Rotation</td><td>Quadrant on the relative rotation map.</td><td>From Sector rotation (RS trend and RS momentum around 100).</td><td>Leading, Weakening, Lagging, Improving, or a dash.</td><td>Flow and quadrant agreeing (Turning in + Improving) is a cleaner picture.</td></tr>
+<tr><td>Options chip: put side / call side</td><td>More put-side than call-side flags (or the reverse) on the last stored chain.</td><td>Count of flags by side; see the footprint table.</td><td>Hover for the text.</td><td>Put side on an inflow sector is a warning; on an outflow sector it confirms.</td></tr>
+<tr><td>Options chip: nothing unusual</td><td>Status OK, no side won.</td><td>No flags, or equal flags each side.</td><td>Most ETFs on 13 Oct.</td><td>Options neither help nor hurt the case.</td></tr>
+<tr><td>Options chip: thin history</td><td>Fewer than 15 earlier stored dates.</td><td>Status THIN.</td><td>Too little history to call anything unusual.</td><td>Ignore the options read.</td></tr>
+<tr><td>Options chip: no chain</td><td>No usable chain.</td><td>Status MISSING: no stored chain, or the last one is more than 1 session old.</td><td>XLP on 13 Oct: "Last stored chain 2026-10-09 is 2 sessions old".</td><td>Check a live chain yourself before any option trade.</td></tr>
+<tr><td>Reasons (fits / against)</td><td>Count of measured reasons that fit or go against the flow.</td><td>Drivers with fit CONSISTENT / AGAINST.</td><td>XLE 2 / 1, GDX 3 / 1.</td><td>More fitting reasons give the flow a measured explanation. Zero means the move is unexplained.</td></tr>
+<tr><td>News (count)</td><td>Published items that name this sector.</td><td>Keyword match on the event payload.</td><td>XLF 3, XLE 2.</td><td>Open the row to read them. Unverified.</td></tr>
+<tr><td>Trade: CALL / PUT / stand aside</td><td>The side the flow points to.</td><td>Inflow labels give CALL, outflow labels give PUT, NONE or MISSING give stand aside.</td><td>Not a recommendation.</td><td>A starting side to test against the trade table.</td></tr>
+<tr><td>CSV</td><td>Downloads this table.</td><td>Columns: flow, relative returns, volume, quadrant, options lean and text, reasons, published names, trade text.</td><td>For your own journal.</td><td>Keep a copy with your trade notes.</td></tr>
+</tbody></table></div>
+
+<h3>Detail panel (click a row)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>What money is doing: flow sentence</td><td>The flow in words.</td><td>Template with 5d, 20d and 1d.</td><td>"Money is turning in after a weak stretch: +5.55 pts ... over 5 sessions, -0.80 over 20, +1.81 on the last session."</td><td>Read it aloud to yourself: it is the thesis.</td></tr>
+<tr><td>Share volume sentence</td><td>Volume ratio and the day's own return.</td><td>Volume footprint plus 1d return.</td><td>"Share volume 0.81x its 20-session average on a +1.80% day".</td><td>Big up day on light volume: fewer buyers than the price suggests.</td></tr>
+<tr><td>Rotation sentence</td><td>Quadrant, days in it, and the quadrant 5 sessions ago.</td><td>Rotation row.</td><td>XLK: weakening for 4 sessions, leading 5 sessions ago.</td><td>A fresh quadrant change is the turn the flow describes.</td></tr>
+<tr><td>Holdings carrying the 20-session move</td><td>Top 3 holdings by contribution (pts).</td><td>Holdings file: start-of-window weight × return.</td><td>XLE: MPC +0.74, VLO +0.68, XOM +0.66.</td><td>Tells you which stocks to watch for confirmation.</td></tr>
+<tr><td>Options (quote date)</td><td>The footprint text with its chain date.</td><td>Footprint text.</td><td>XLE (2026-10-13): stored skew too unstable to read.</td><td>See the footprint table below.</td></tr>
+<tr><td>Reasons: fits</td><td>A measured association that points the same way as the flow.</td><td>Macro: excess return sign matches the flow. Cross-asset: corr sign × asset move matches.</td><td>XLE: "Oil (USO) +5.64% over 5 sessions; ... moved with it (corr +0.79, 60 sessions)."</td><td>A fitting reason you can watch live (here, oil) gives you a second confirmation.</td></tr>
+<tr><td>Reasons: against</td><td>An association that points the other way.</td><td>Sign opposite to the flow.</td><td>XLE: TLT +1.41%, corr -0.45: against.</td><td>Your strongest counter-argument. Watch it.</td></tr>
+<tr><td>Reasons: neutral</td><td>No flow, or a zero move.</td><td>Flow NONE or MISSING, or signed value 0.</td><td>Shown with a dash icon.</td><td>No weight either way.</td></tr>
+<tr><td>Macro reason text</td><td>"Condition state (changed date): in past sessions in this state its next 5-session return was X pts better/worse than when this condition was in its other states (t, independent windows)."</td><td>Transmission sensitivity at 5 sessions, |t| ≥ 2; "changed" if the condition flipped in the last 5 sessions.</td><td>SOXX: curve level flat (changed 2026-10-09), trailed by -1.39 pts (t -2.1, 86 windows).</td><td>A recent change in a measured condition is the most useful "why".</td></tr>
+<tr><td>Cross-asset reason text</td><td>"Asset move over 5 sessions; this ETF's relative return has moved with/against it (corr, sessions)."</td><td>60-session correlation of daily relative return with the asset; needs at least 30 sessions.</td><td>GDX with GLD: corr +0.90.</td><td>A high correlation means you can watch the asset as a lead.</td></tr>
+<tr><td>Trade analysis chip and text</td><td>Side, trigger, wrong-if level, pricing, record, evidence count.</td><td>See the trade table.</td><td>"XLE calls if it clears pipeline target 76.64 ...".</td><td>The plan for this ETF in one sentence.</td></tr>
+<tr><td>Trigger / Wrong if</td><td>Level name, price, distance in % and daily moves.</td><td>Nearest level above and below the current price.</td><td>"missing" when no level exists that side.</td><td>Entry and exit reference, set before you trade.</td></tr>
+<tr><td>Options (priced × history, IV rank)</td><td>Pricing label with its ratio and IV rank.</td><td>Next session plan expression, 5-session horizon.</td><td>XLE: FAIR (priced 0.93× history, IV rank 66).</td><td>Rich: prefer shares or smaller premium. Cheap: long options are fairly priced.</td></tr>
+<tr><td>MEASURED record chip and sentence</td><td>What followed past reads of the same label.</td><td>Flow persistence at 5 sessions.</td><td>XLK: reversed; "+0.39 pts ... same side 38%: it tended to reverse (t +2.0)".</td><td>Reversed: the measured case is the fade, not the follow.</td></tr>
+<tr><td>Live scenarios</td><td>Scenario watch entries live for this ETF.</td><td>Triggered or watching scenarios, with their 5-session verdict chip.</td><td>XLE: TRIGGERED narrow high (PUT, Too thin).</td><td>Check <a href="scenario-watch.html">Scenario watch</a> before acting on them.</td></tr>
+<tr><td>Published items that name this sector</td><td>Payload items with name, institution, what changed and time.</td><td>Keyword match; labelled PUBLISHED.</td><td>XLE: Brent below $105; unconfirmed Aramco escalation.</td><td>Context and event risk. Never the reason to enter.</td></tr>
+<tr><td>Macro packet calls this sector a ...</td><td>The packet's sector bias.</td><td>Rotation row <code>packet_bias</code>; PUBLISHED.</td><td>XLE tailwind; XLK headwind.</td><td>Agreement is mild comfort; disagreement is a risk to note.</td></tr>
+<tr><td>Pipeline candidates in (ETF)</td><td>Up to 8 candidates mapped to this ETF.</td><td>See the ticker impact table.</td><td>Ticker, side, verdict, link, reading.</td><td>Where the sector story reaches single stocks.</td></tr>
+</tbody></table></div>
+
+<h3>Option footprint fields and guards</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Status OK / THIN / MISSING</td><td>Whether the chain can be read.</td><td>MISSING if no chain or older than 1 session (<code>max_age_sessions</code>); THIN if fewer than 15 earlier dates.</td><td>Only OK produces a lean.</td><td>Trust a lean only with status OK.</td></tr>
+<tr><td>Heavy put / call volume</td><td>Volume at least 2.0x its median of comparable stored dates.</td><td>Comparable = chain coverage within 10% of today's contract count.</td><td>Needs at least 15 earlier dates with comparable coverage. On 13 Oct the chain store had recently started capturing many more contracts per day, so most ETFs had only 4 to 13 comparable dates and the tab said &quot;volume not compared&quot;. The flag switches on as comparable dates build up.</td><td>Heavy put buying in an inflow sector argues for caution.</td></tr>
+<tr><td>High / low put/call ratio</td><td>Ratio in the top or bottom 10% of its history.</td><td>Percentile of today's ratio among comparable dates.</td><td>High = put side, low = call side.</td><td>Extreme readings show crowding.</td></tr>
+<tr><td>Put / call OI build</td><td>Open interest up 10% or more since the prior stored date.</td><td>Compared only when coverage changed less than 10%.</td><td>New positions held overnight.</td><td>A build confirms traders committed, not just traded.</td></tr>
+<tr><td>IV jump / IV crush</td><td>Front ATM IV changed by 2 pts or more, larger than 90% of its own daily changes.</td><td>8 to 30 DTE bucket, call/put mean.</td><td>No side: it says the price of options moved.</td><td>A jump makes long options dearer; wait or size down.</td></tr>
+<tr><td>Skew bid / skew eased</td><td>25-delta skew up (bid) or down (eased) by 1 pt or more, larger than 90% of its daily changes.</td><td>Front bucket skew.</td><td>SPY: +3.7 pts, protection bid (put side).</td><td>Bid skew: others are hedging a drop.</td></tr>
+<tr><td>... too unstable to read</td><td>A stored series jumps too much day to day to be real.</td><td>IV: median daily change ÷ median level &gt; 0.15. Skew: median daily change &gt; 3.5 pts.</td><td>XLRE: IV (3.3 pts) and skew (19.8 pts) unstable.</td><td>Ignore that series; check a live chain.</td></tr>
+<tr><td>Chain coverage changed ... open interest not compared</td><td>Today's chain captured a different number of contracts.</td><td>Contract count differs by more than 10% from the prior date.</td><td>OI change would be fake.</td><td>Do not read an OI build that day.</td></tr>
+<tr><td>Option activity in line with its history</td><td>No flag fired and no guard note.</td><td>Default text.</td><td>Nothing unusual.</td><td>No options signal either way.</td></tr>
+</tbody></table></div>
+
+<h3>Trade analysis for the day</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF</td><td>One of up to 8 ETFs with a clear flow.</td><td>Stories in table order, stand-aside rows removed (<code>max_trade_ideas</code> = 8).</td><td>13 Oct: SOXX, SMH, XOP, XLE, JETS, ARKK, XLP, XLK.</td><td>Your shortlist for the day.</td></tr>
+<tr><td>Side</td><td>CALL or PUT.</td><td>From the flow label.</td><td>Blue CALL, red PUT.</td><td>Long calls or shares for CALL; long puts for PUT (permitted expressions only).</td></tr>
+<tr><td>Trigger</td><td>The level that would start the idea.</td><td>CALL: nearest level above the current price. PUT: nearest level below.</td><td>SOXX loses 50d avg 538.89 (-0.51%, 0.25 daily moves).</td><td>Wait for the trigger. A trigger many daily moves away is not today's trade.</td></tr>
+<tr><td>Wrong if</td><td>The level that would prove the idea wrong.</td><td>The nearest level on the other side.</td><td>SOXX: 252d high 655.95.</td><td>Your exit if price goes back through it. Far away means a large risk.</td></tr>
+<tr><td>Options: CHEAP / FAIR / RICH / UNKNOWN</td><td>ATM straddle move against the move history delivered over 5 sessions.</td><td>Ratio below 0.9 CHEAP, above 1.1 RICH, else FAIR; UNKNOWN if the chain is not fresh. Provisional.</td><td>XLK RICH (1.29×), XLE FAIR (0.93×).</td><td>Rich: shares or a smaller premium position. Runway: at least 2× the horizon (10 sessions).</td></tr>
+<tr><td>For / against</td><td>Evidence count for and against the side.</td><td>Fitting vs opposing reasons, +1 for an option lean on the same / other side, +1 for FOLLOWS or against for REVERSES.</td><td>ARKK 3 / 0, XLK 0 / 1.</td><td>More "for" than "against" is a better-supported idea, not a certain one.</td></tr>
+<tr><td>After this read: followed through</td><td>FOLLOWS: past reads of this label kept going.</td><td>Next 5 sessions relative return; flow sign × t ≥ 2.</td><td>None on 13 Oct.</td><td>The flow has a measured habit of continuing.</td></tr>
+<tr><td>After this read: reversed</td><td>REVERSES: past reads more often turned back.</td><td>Flow sign × t ≤ -2.</td><td>XLK, XLRE, IYR on 13 Oct.</td><td>Following the flow is against the evidence; the measured case is the fade.</td></tr>
+<tr><td>After this read: no clear record</td><td>NO_CLEAR_RECORD.</td><td>|t| below 2.</td><td>Most ETFs on 13 Oct.</td><td>The flow alone is not enough. Look for other confirmation.</td></tr>
+<tr><td>After this read: too few cases</td><td>THIN: fewer than 30 independent windows.</td><td><code>persistence_min_n_eff</code> = 30.</td><td>Not judged.</td><td>Treat as unknown.</td></tr>
+<tr><td>After this read tooltip</td><td>The numbers behind the chip.</td><td>Mean next-5 relative return, vs all sessions, windows, same-side %, t.</td><td>XLE: +0.06 pts, -0.12 vs all, 61 windows, same side 49%, t +0.1.</td><td>"Same side" near 50% means a coin toss.</td></tr>
+<tr><td>Live scenarios</td><td>Verdict chips of live scenarios on this ETF.</td><td>Scenario watch, 5-session record.</td><td>XOP: four chips (Too thin, No edge).</td><td>A live scenario with Edge that beats the tries deserves a look; Too thin or No edge adds nothing.</td></tr>
+<tr><td>No sector has a clear flow</td><td>Empty-table message.</td><td>No ideas.</td><td>Stand aside and wait for a level to break.</td><td>A no-trade day is a valid outcome.</td></tr>
+</tbody></table></div>
+
+<h3>Ticker impact</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Header counts</td><td>Candidates with, against, stock-specific, no clear flow.</td><td>Counts over all story candidates.</td><td>13 Oct: with 7, against 18, stock-specific 57, no clear flow 3.</td><td>Most candidates are stock-specific: the sector story does not carry them.</td></tr>
+<tr><td>Ticker, Side, Verdict</td><td>The pipeline candidate, its CALL/PUT direction and its verdict.</td><td>Next session plan candidates (newest run's top 200).</td><td>APH PUT ARMED.</td><td>Read-only: the pipeline proposed it, you decide.</td></tr>
+<tr><td>Sector flow</td><td>The candidate's sector ETF and its flow chip.</td><td>Pipeline's <code>sector_etf</code>.</td><td>XLK leaving a leader.</td><td>Tells you which sector story applies.</td></tr>
+<tr><td>Link</td><td>Correlation of the stock's daily returns with its sector ETF, 60 sessions.</td><td>From the Next session plan.</td><td>APH 0.65, MQ -0.15.</td><td>0.4 or more: the sector read matters for this stock.</td></tr>
+<tr><td>Reading: with the sector flow</td><td>WITH_FLOW: candidate side matches the flow.</td><td>Link ≥ 0.4 and side = flow side.</td><td>APH PUT in XLK out-flow.</td><td>The sector supports the stock idea, subject to the flow's record.</td></tr>
+<tr><td>Reading: against the sector flow</td><td>AGAINST_FLOW.</td><td>Link ≥ 0.4, side opposite the flow.</td><td>VG PUT in XLE in-flow.</td><td>The stock fights its sector. Needs a strong stock-specific reason.</td></tr>
+<tr><td>Reading: stock-specific (weak link)</td><td>STOCK_SPECIFIC.</td><td>|link| below 0.4 (<code>min_link_corr</code>).</td><td>Most candidates.</td><td>Judge it on its own chart.</td></tr>
+<tr><td>Reading: no clear sector flow</td><td>NO_FLOW_READ.</td><td>Sector flow NONE or MISSING.</td><td>Candidates in XLB.</td><td>The sector neither helps nor hurts.</td></tr>
+<tr><td>Order</td><td>With first, then against, no flow, stock-specific; then pipeline rank.</td><td>Top 60 rows.</td><td>APH (rank 6) heads the list.</td><td>Start at the top.</td></tr>
+</tbody></table></div>
+
+<h3>The board's own flow calls</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Next 1 / 5 sessions: N calls scored, M pending</td><td>How many past flow calls have a result yet.</td><td>Ledger rows with a clear flow; scored once the horizon passes, from the next open.</td><td>13 Oct: 0 scored, 24 pending at each horizon (the tab started 14 Oct).</td><td>Too early to trust the tab's own calls.</td></tr>
+<tr><td>on the flow's side X pts on average</td><td>Mean relative return in the flow's direction.</td><td>Flow sign × (ETF minus SPY), next open to close.</td><td>Positive = the flow calls made money in relative terms.</td><td>Over time this tells you how much to lean on the flow label.</td></tr>
+<tr><td>right N%</td><td>Share of scored calls on the right side.</td><td>Share with a positive signed result.</td><td>Near 50% = no skill yet.</td><td>Combine with the average: small wins and big losses still lose.</td></tr>
+<tr><td>N rows in the ledger</td><td>All recorded calls, including no-flow rows.</td><td>Line count of the ledger.</td><td>26 on 13 Oct (24 with a flow, 2 with none).</td><td>None.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: flow, reasons and options line up (ARKK, 13 Oct)</h4>
+<p><b>What you see:</b> ARKK leaving a leader, -3.53 pts over 5 sessions after +1.69 over 20. Three reasons fit (gold, credit and dollar moves, corr +0.51, +0.41, -0.34). Options FAIR. For / against 3 / 0. Trigger: 50d avg 85.40, -2.03%, 1.01 daily moves away. Record: no clear record (t +1.0). Volume 0.76x.</p>
+<p><b>What it means:</b> The measured pieces agree on the put side, and the trigger is about one normal day away. Two things hold it back: light volume and no measured habit of follow-through.</p>
+<div class="act"><b>What a trader does:</b> Puts ARKK on the watch list with the trigger at 85.40 and the "wrong if" level at 92.65. Waits for price to lose 85.40 before acting. Sizes normal or smaller because the record is unclear.</div></div>
+
+<div class="scenario"><h4>Scenario: the flow says puts, the record says fade (XLK, 13 Oct)</h4>
+<p><b>What you see:</b> XLK leaving a leader (-2.69 / +4.10). Record chip: reversed, "+0.39 pts ... same side 38% ... t +2.0". Options RICH (1.29×). For / against 0 / 1. The packet calls tech a headwind (PUBLISHED). The pipeline proposes XLK as a CALL on the <a href="desk-card.html">Desk card</a>.</p>
+<p><b>What it means:</b> The flow points to puts, but after past "leaving a leader" reads XLK more often bounced back. The published bias agrees with puts, but it is unverified. Expensive options make a wrong put costly.</p>
+<div class="act"><b>What a trader does:</b> Skips the put on the flow alone. Checks the Desk card and <a href="scenario-watch.html">Scenario watch</a> for XLK. If anything, the measured case is the fade, which matches the pipeline's call side; a trader still needs a trigger level before acting.</div></div>
+
+<div class="scenario"><h4>Scenario: stale or unreadable option data (XLP and XLRE, 13 Oct)</h4>
+<p><b>What you see:</b> XLP turning in (+3.06 pts) with the options chip "no chain": "Last stored chain 2026-10-09 is 2 sessions old". XLRE turning in with "stored ATM IV ... and stored 25-delta skew ... too unstable to read". XLRE's record says reversed (t -2.3).</p>
+<p><b>What it means:</b> The board refuses to read option data it cannot trust. Missing does not mean neutral: you simply do not know what option traders did.</p>
+<div class="act"><b>What a trader does:</b> Pulls a live chain before any option trade in XLP. For XLRE, the reversed record already argues against following the turn, so skips it.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (XLB and IGV, 13 Oct)</h4>
+<p><b>What you see:</b> XLB +0.12 pts and IGV -0.02 pts over 5 sessions. Flow: No clear flow. Trade: stand aside. Text: "It becomes a call above sma200 50.79 or a put below low 252 42.03 if money starts to move."</p>
+<p><b>What it means:</b> Money is not choosing these sectors. The board gives you the levels that would change that.</p>
+<div class="act"><b>What a trader does:</b> Sets alerts at 50.79 and 42.03 for XLB and moves on. Does not force a trade.</div></div>
+
+<div class="scenario"><h4>Scenario: the AI narrative fails a check (illustrative)</h4>
+<p><b>What you see:</b> For example, the check line reads "2 numbers not in the facts: 4.8, 112.5" and "flow call differs from the measurement: XLF".</p>
+<p><b>What it means:</b> Claude wrote numbers the board did not give it and called XLF's flow differently from the measurement.</p>
+<div class="act"><b>What a trader does:</b> Ignores every sentence with those numbers and the XLF story. Reads XLF's MEASURED row instead.</div></div>
+
+<div class="scenario"><h4>Scenario: candidate fights its sector (VG in XLE, 13 Oct)</h4>
+<p><b>What you see:</b> VG, pipeline rank 1, PUT, link 0.64 to XLE. XLE is turning in. Reading: against the sector flow.</p>
+<p><b>What it means:</b> VG moves with XLE, and XLE money is coming in. A put on VG bets against its own sector.</p>
+<div class="act"><b>What a trader does:</b> Asks what is specific to VG. Waits for VG to break its own level while XLE stalls, or skips. Notes that XLE's turning-in record is unclear, so the conflict is real but not decisive.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Let's walk through XLE, the energy sector ETF, as a coach would with a new trader on the morning of 14 Oct.</p>
+<div class="example">
+<div class="head"><b>XLE · Energy</b><span class="tag up">Turning in</span></div>
+<ol class="steps">
+<li><b>Start with the day.</b> The market call is mixed and CPI prints at 08:30 ET. SPY has moved 1.25x a normal day on past CPI days. Coach: "Before anything else, we know the open may be noisy. No entries before the print."</li>
+<li><b>Find the flow.</b> XLE beat SPY by +5.55 pts over 5 sessions, after trailing by -0.80 over 20, and +1.81 on the last session. That is Turning in. Coach: "Money is coming back to energy after a weak month."</li>
+<li><b>Check the volume.</b> 0.81x its 20-session average on a +1.80% day. Coach: "Light. Fewer shares changed hands than usual, so the move has less weight behind it."</li>
+<li><b>Check the reasons.</b> Two fit: oil (USO +5.64%, corr +0.79) and credit (HYG -0.23%, corr -0.47). One goes against: TLT +1.41%, corr -0.45. Coach: "Oil is the big one. If oil turns, XLE's relative strength has usually turned with it."</li>
+<li><b>Check the options.</b> Footprint: skew too unstable to read; IV 26.7% read fine with no flag. Pricing: FAIR, 0.93× history, IV rank 66. Coach: "Options are not a bargain or a rip-off. Long premium needs the move inside the runway of at least 10 sessions."</li>
+<li><b>Check the record.</b> No clear record: after past turning-in reads, the next 5 sessions averaged +0.06 pts, same side 49%, t +0.1. Coach: "History says this label alone is a coin toss for XLE."</li>
+<li><b>Read the levels.</b> Trigger: pipeline target 76.64, +13.73%, 9.41 daily moves away. Wrong if: 252d high 67.25, -0.22% away. Coach: "XLE sits at its yearly high, so the board has no nearer level above. A trigger nine daily moves away is not a trade for today. And the 'wrong if' level is right under the price."</li>
+<li><b>Check the live scenarios.</b> Narrow-high put TRIGGERED (Too thin), failed-yearly-high put WATCHING to 16 Oct, held-yearly-high call WATCHING. Coach: "The yearly high is the battleground. Whether XLE closes at or above 67.20 on 16 Oct decides the held-high call scenario."</li>
+<li><b>Glance at the published items.</b> Brent below $105, and an unconfirmed report near Aramco's Dhahran headquarters. Coach: "That is event risk for oil both ways. It is not verified and it is not our reason."</li>
+</ol>
+<div class="verdict"><p><b>Decision sentence:</b> "Against a mixed tape with CPI ahead, money is turning into XLE on light volume, fitting oil's +5.64% run; the flow has no record of follow-through and the board has no nearby trigger above the yearly high, so I wait: I would look again if XLE holds the 252d high at 67.20 into the 16 Oct close with oil steady, and I would drop the idea if it closes back below 67.25 with oil reversing."</p></div>
+</div>
+<div class="callout coach"><strong>Coach's tip</strong><p>The Day story gives you the side and the levels. It does not give you the timing. Let the trigger level and the scheduled events set the timing.</p></div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Read the record chip before the flow chip. A flow that usually reverses is a fade, not a follow.</li>
+<li>Compare the trigger distance in daily moves. Under 1 is in play today; over 3 is a later story.</li>
+<li>Use the cross-asset reasons as live dashboards. If XLE moves with oil at corr +0.79, watch USO.</li>
+<li>Light volume on a strong day asks for confirmation; heavy volume on a strong day earns attention.</li>
+<li>Keep the AI narrative for orientation and the MEASURED rows for decisions.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Treating "Money in" as a buy signal. It is a description of the last 5 sessions.</li>
+<li>Reading a PUBLISHED item as fact. It is another LLM's claim, matched by keyword.</li>
+<li>Reading "no chain" as "nothing unusual". Missing data tells you nothing.</li>
+<li>Trading a stock-specific candidate because its sector flows the same way. A weak link means the sector does not carry it.</li>
+<li>Ignoring "wrong if" levels that sit far away. A distant invalidation means a large loss before you are proved wrong.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="daily-review.html">Daily review</a> for the market's reaction, <a href="sector-rotation.html">Sector rotation</a> for the quadrants, <a href="transmission-map.html">Transmission map</a> for the macro reasons, <a href="scenario-watch.html">Scenario watch</a> for the live scenarios, <a href="next-session-plan.html">Next session plan</a> for the index levels and candidates, and <a href="desk-card.html">Desk card</a> to record a decision.</p>
+
+<div class="pager"><a href="daily-review.html">← Daily review</a><a href="overview.html">Overview →</a></div>
+</main>
+</div>
+</body>
+</html>

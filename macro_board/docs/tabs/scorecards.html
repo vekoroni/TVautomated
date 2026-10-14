@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scorecards · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Scorecards</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 10 of 12</p>
+  <h1>Scorecards</h1>
+  <p class="lede">When each macro source made a call in the past, was it right, and how much evidence is there to judge it?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>Every macro source sounds confident. This tab checks them against what the market actually did. It grades four sources: the Colab daily regime model, the archived LLM macro packets, the board's own leans, and the published US Money Index.</p>
+<p>It answers the question a professional asks before listening to anyone: "What is your record?" A source earns weight in your thinking only when its record is long enough to judge and shows it adds something beyond the market's normal drift.</p>
+<p>Check it weekly, and any time you are tempted to act on a call from the <a href="macro-intelligence.html">Macro intelligence</a> tab. It is the measuring stick for that tab.</p>
+<div class="callout warn"><strong>Display only</strong>The scorecards describe past calls. They never switch a source on or off, and they never feed a gate, score or rank. Most of the record on 13 Oct is too short to judge, and the tab says so with a "?".</div>
+
+<h2 id="how">What it does</h2>
+<p>For each source the board turns every past call into a direction, then measures what the market did after it.</p>
+<ol class="steps">
+  <li><b>Find the entry session.</b> A call counts from the first session it could have been traded. For the Colab regime model, a row dated D is computed from D's close, so the entry is the next session's open. For a packet or a Money Index revision, the entry is the first session whose regular open (13:30 UTC in the configuration) is at or after the time the packet was generated. For the board's leans, the entry is the session after the snapshot's session.</li>
+  <li><b>Turn the call into a direction.</b> Regime model: a regime containing "ON" is up (+1), "OFF" is down (−1). Packets: the label and risk switch are searched for BULL or RISK_ON (up) and BEAR or RISK_OFF (down); both or neither means no call. Board: UP or DOWN leans only. The Money Index gets no direction: it is grouped by its own band instead.</li>
+  <li><b>Measure the return.</b> From the entry session's open to the close 1, 5 or 20 sessions later (for 1 session, open to close of the same day). Scored on SPY and QQQ for the outside sources, on every ETF with current data for the board.</li>
+  <li><b>Score it.</b> The <b>hit rate</b> is the share of calls where the move went the called way. The <b>signed return</b> is the average return in the called direction: +1% means the calls made 1% on average if followed, −1% means they lost 1%.</li>
+  <li><b>Count honest evidence.</b> Calls a day apart share most of a 5- or 20-session window. The board thins them to <b>independent windows</b> (no overlap). Fewer than 8 independent windows gets a "?" and grey text.</li>
+  <li><b>Latest wins.</b> When several packets or revisions land before the same open, only the newest counts. Older ones are kept in the history as "superseded".</li>
+</ol>
+<p>The tab is rebuilt on every board build from files on disk: the regime model CSV, the packet archive, the board's saved evening snapshots and the published Money Index's revision history. Each new session adds calls and completes older windows.</p>
+<div class="callout"><strong>Why a base rate matters</strong>Markets rise more often than they fall. Over the board's history (since about August 2021) SPY rose on about 53% of next-day windows, 58% of 5-session windows and 64% of 20-session windows. A source that always says "bull" would score those hit rates without knowing anything. Always compare a hit rate with that base.</div>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Heading</h3>
+<p>The subtitle restates the rules: scored from the next tradable open, hit = direction matched the sign of the move, signed = return in the called direction, "?" = fewer than 8 independent windows.</p>
+<h3>2. Colab daily regime model (top left)</h3>
+<p>Read the line under the title first: how many calls, over what dates, and the model's own claimed accuracy. Then the table. Only trust cells without a "?".</p>
+<h3>3. LLM macro packets (top right)</h3>
+<p>Read the counts line: how many packets were generated, how many entry sessions they reduce to, how many made a directional call. Then the table. Open "Packet history" to see each packet and whether it counted.</p>
+<h3>4. This board's own leans (bottom left)</h3>
+<p>The board grades itself. Compare the "Hit" and "Signed" columns with the "Price-only" columns on the same row. The difference is what macro adds.</p>
+<h3>5. US Money Index by its own ladder band (bottom right)</h3>
+<p>No hit rates here, because the index makes no directional call. Instead, read the average move and up-rate of SPY and QQQ after the index sat in each band. Open "Revision history" to see each revision's score and band.</p>
+
+<h2 id="data">Every data attribute</h2>
+
+<h3>Heading</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>scored from the next tradable open</td><td>The entry rule for every call.</td><td>Entry = first session open at or after the call could be acted on.</td><td>No call gets credit for a move that happened before it was made.</td><td>Matches how you would really trade a call read after the close.</td></tr>
+<tr><td>hit</td><td>Direction matched the sign of the move.</td><td>Share of calls with a positive signed return.</td><td>See each table.</td><td>Compare with the base rate (about 53% / 58% / 64% for SPY at 1 / 5 / 20 sessions).</td></tr>
+<tr><td>signed</td><td>Average return in the called direction.</td><td>Mean of direction × return, in %.</td><td>See each table.</td><td>The profit-like number. A high hit rate with a negative signed return means the misses were bigger than the wins.</td></tr>
+<tr><td>"?" = fewer than 8 independent windows</td><td>Too little evidence.</td><td>Threshold <code>min_effective_n</code> 8 from the evidence settings.</td><td>Cells with "?" are greyed.</td><td>Do not draw conclusions from a "?" cell.</td></tr>
+</tbody></table></div>
+
+<h3>Colab daily regime model (Risk-On / Risk-Off)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>n daily calls</td><td>Rows of the model that have an entry session.</td><td>Count of CSV rows with a following session in the price history.</td><td>13 Oct: <b>4</b> daily calls (the 13 Oct row waits for 14 Oct).</td><td>Four calls is no record at all.</td></tr>
+<tr><td>first → last</td><td>Date range of the model's file.</td><td>Earliest and latest row dates.</td><td>2026-10-07 → 2026-10-13.</td><td>A one-week history.</td></tr>
+<tr><td>self-reported accuracy</td><td>The accuracy the model claims for itself.</td><td>Latest <code>Model_Accuracy</code> in the file, 3 decimals.</td><td>0.580.</td><td>Not checked by the board. The table below is the board's own check.</td></tr>
+<tr><td>ETF</td><td>Which ETF the calls were scored on.</td><td><code>score_tickers</code>: SPY and QQQ.</td><td>Two rows.</td><td>Use the row for the index you trade.</td></tr>
+<tr><td>1d / 5d / 20d hit</td><td>Hit rate at each horizon.</td><td>As defined above. A dash when nothing scored.</td><td>SPY 1d 50%, QQQ 1d 75%. 5d and 20d: dash.</td><td>On 4 calls, 75% is three out of four. Luck.</td></tr>
+<tr><td>1d / 5d / 20d signed</td><td>Average return in the called direction.</td><td>Mean signed %, coloured by sign.</td><td>SPY 1d −0.04%, QQQ 1d +0.24%.</td><td>Ignore until the window count is 8 or more.</td></tr>
+<tr><td>1d / 5d / 20d win.</td><td>Independent windows behind the cell.</td><td>Thinned count. "?" added and greyed below 8.</td><td>SPY 1d "4 ?"; 5d and 20d "0 ?".</td><td>The single most important number in the row.</td></tr>
+<tr><td>No scorable calls.</td><td>Shown instead of the table when nothing can be scored.</td><td>No ETF results (for example the file is missing).</td><td>Not shown on 13 Oct.</td><td>The model has no record. Give it no weight.</td></tr>
+</tbody></table></div>
+
+<h3>LLM macro packets (archived, latest wins per session)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>generations</td><td>Distinct packet generation times in the archive.</td><td>Archived packets grouped by generation time. Several projections of one generation count once.</td><td>13 Oct: 28.</td><td>The raw volume of calls.</td></tr>
+<tr><td>entry sessions</td><td>Sessions that received a packet call.</td><td>Newest generation before each open wins.</td><td>20.</td><td>The real number of calls being scored.</td></tr>
+<tr><td>directional</td><td>Entry sessions with an up or down call.</td><td>Direction not zero.</td><td>15.</td><td>Five sessions had no directional call.</td></tr>
+<tr><td>with projections pointing opposite ways</td><td>Generations whose copies disagreed (one bull, one bear).</td><td>Agreement CONFLICTING; scored as no call.</td><td>0.</td><td>Many conflicts would mean the packet cannot decide.</td></tr>
+<tr><td>where some projections dropped the BULLISH/BEARISH qualifier</td><td>Generations where some copies said only "TRANSITIONAL".</td><td>Agreement PARTIAL: direction taken from the copies that had one.</td><td>21.</td><td>The direction rests on part of the packet. Treat it as weaker.</td></tr>
+<tr><td>ETF / hit / signed / win.</td><td>Same columns as the regime model table.</td><td>Same scoring.</td><td>SPY 1d 60%, +0.01%, 15 windows. SPY 5d 23%, −0.41%, "3 ?". SPY 20d 0%, −2.47%, "1 ?". QQQ 1d 47%, −0.08%, 15. QQQ 5d 38%, −1.14%, "3 ?". QQQ 20d 0%, −6.04%, "1 ?".</td><td>Only 1d has enough windows. 60% on 15 is close to SPY's 53% base and the average gain is +0.01%: no edge shown.</td></tr>
+<tr><td>Packet history</td><td>The newest 25 generations, newest first.</td><td>Collapsible table.</td><td>Greyed rows did not count.</td><td>Use it to see which packet was in force on a given day.</td></tr>
+<tr><td>Generated (UTC)</td><td>When the packet was generated.</td><td>Time stamp to the minute.</td><td>Top row: 2026-10-13 21:54.</td><td>Compare with the 13:30 UTC open.</td></tr>
+<tr><td>Labels in archive</td><td>Every regime label its copies carried.</td><td>Distinct labels, joined with "/".</td><td>TRANSITIONAL / TRANSITIONAL_BEARISH.</td><td>Two labels means some copies dropped the qualifier.</td></tr>
+<tr><td>Copies</td><td>How many projections of that generation were archived.</td><td>Count.</td><td>1 to 3.</td><td>Context.</td></tr>
+<tr><td>Call: ▲ bull</td><td>Up call.</td><td>Direction +1.</td><td>Example: 2026-10-08 22:38.</td><td>Scored as up.</td></tr>
+<tr><td>Call: ▼ bear</td><td>Down call.</td><td>Direction −1.</td><td>Example: 2026-10-13 21:54.</td><td>Scored as down.</td></tr>
+<tr><td>Call: – none</td><td>No directional call.</td><td>Direction 0.</td><td>Example: 2026-10-13 12:46 (TRANSITIONAL only).</td><td>Not scored.</td></tr>
+<tr><td>Projections: AGREED</td><td>All copies gave the same direction.</td><td>Agreement value.</td><td>None in the newest rows on 13 Oct.</td><td>The cleanest kind of call.</td></tr>
+<tr><td>Projections: PARTIAL</td><td>Some copies had a direction, others had none.</td><td>Agreement value.</td><td>Most rows.</td><td>Weaker call.</td></tr>
+<tr><td>Projections: NEUTRAL</td><td>No copy had a direction.</td><td>Agreement value.</td><td>Example: 2026-10-12 13:20.</td><td>No call.</td></tr>
+<tr><td>Projections: CONFLICTING</td><td>Copies pointed opposite ways.</td><td>Agreement value; scored as no call.</td><td>None on 13 Oct.</td><td>No call.</td></tr>
+<tr><td>Entry</td><td>The session the call was scored from.</td><td>Entry session date, or "pending" when that session has not happened yet.</td><td>2026-10-12 21:10 → 2026-10-13.</td><td>Tells you which day's move the call is judged on.</td></tr>
+<tr><td>· superseded (greyed row)</td><td>The call did not count.</td><td>A newer generation landed before the same open, or there is no entry session yet.</td><td>The bearish 12 Oct 21:10 packet was replaced by the neutral 13 Oct 12:46 packet before the 13 Oct open. The newest 13 Oct 21:54 packet shows "pending · superseded" because its session has not happened yet.</td><td>Read "pending · superseded" as "not scored yet", not as replaced.</td></tr>
+</tbody></table></div>
+
+<h3>This board's own leans</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>evening snapshot(s) saved</td><td>How many scored-record snapshots exist.</td><td>Count of <code>board_&lt;session&gt;.json</code> files. Only evening (post-close) builds write these; morning and other builds are saved beside them, unscored.</td><td>13 Oct: 5.</td><td>Five sessions of self-record. Very young.</td></tr>
+<tr><td>Horizon</td><td>1d, 5d or 20d.</td><td>One row each.</td><td>Three rows.</td><td>Match to your holding period.</td></tr>
+<tr><td>Scored</td><td>UP/DOWN leans whose window has completed.</td><td>All current-data ETFs, all snapshots, pooled.</td><td>1d 5, 5d 3, 20d 0.</td><td>These are raw calls across many ETFs on the same days, not independent windows.</td></tr>
+<tr><td>Pending</td><td>Leans still waiting for their window to finish.</td><td>Calls whose exit session is in the future.</td><td>1d 0, 5d 2, 20d 39.</td><td>The 20d record will start to fill about 20 sessions after the first snapshot.</td></tr>
+<tr><td>Hit</td><td>Share of scored leans that went the right way.</td><td>As defined above.</td><td>1d 40%, 5d 33%, 20d dash.</td><td>Too few calls to read.</td></tr>
+<tr><td>Signed</td><td>Average return in the lean's direction.</td><td>As defined above, coloured by sign.</td><td>1d +0.14%, 5d −1.53%.</td><td>Note 1d: hit only 40% yet signed positive. The two right calls were bigger than the three wrong ones.</td></tr>
+<tr><td>Price-only scored</td><td>Scored leans from the price-only rule.</td><td>The same lean rule applied to each ETF's own history without macro (the "baseline lean"), recorded the same day.</td><td>1d 12, 5d 1, 20d 0.</td><td>Price-only finds more leans because it uses all history.</td></tr>
+<tr><td>Price-only hit</td><td>Hit rate of price-only leans.</td><td>As above.</td><td>1d 50%, 5d 100% (one call).</td><td>The yardstick for the macro leans.</td></tr>
+<tr><td>Price-only signed</td><td>Signed return of price-only leans.</td><td>As above.</td><td>1d +0.02%, 5d +0.18%.</td><td>If macro leans do not beat this over time, macro adds nothing to the lean.</td></tr>
+<tr><td>Note under the table</td><td>Why the record matters.</td><td>Fixed text.</td><td>"This record grows with every daily build and is the board's only forward-tested evidence."</td><td>Forward-tested means scored on calls made before the outcome was known. That is the most honest test there is.</td></tr>
+</tbody></table></div>
+
+<h3>US Money Index · by its own ladder band</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>revisions</td><td>Revisions in the published Money Index history.</td><td>Count of entries in its revision history.</td><td>13 Oct: 29.</td><td>Volume of published readings.</td></tr>
+<tr><td>entry sessions</td><td>Sessions a revision applied to.</td><td>Latest revision before each open wins.</td><td>18.</td><td>The real sample.</td></tr>
+<tr><td>No direction is assigned</td><td>The index is not turned into a bull or bear call.</td><td>Design choice: grouped by band only.</td><td>So there is no hit rate.</td><td>Read what followed each band, not whether it was "right".</td></tr>
+<tr><td>ETF</td><td>SPY or QQQ.</td><td><code>score_tickers</code>.</td><td>Rows per ETF and band.</td><td>Use your index.</td></tr>
+<tr><td>Band</td><td>The published ladder band of the revision's score.</td><td>Published ladder: 0-40 STRESS UNCONFIRMED, 41-65 ELEVATED BUT UNCONFIRMED, 66-85 RISK OFF TRANSITION CONFIRMED, 86-100 SYSTEMIC RISK OFF. A score outside every range is UNBANDED.</td><td>Three bands seen so far; SYSTEMIC RISK OFF never.</td><td>This is the published index's ladder, not the board's measured bands (35 / 60).</td></tr>
+<tr><td>1d / 5d / 20d mean</td><td>Average return after sessions in that band.</td><td>Open of entry to close h sessions later, averaged, %.</td><td>SPY in RISK OFF TRANSITION CONFIRMED: 1d −0.01%, 5d +0.56%, 20d +1.20%.</td><td>Positive averages after a "risk-off" band mean the label has not been followed by falls so far.</td></tr>
+<tr><td>1d / 5d / 20d up</td><td>Share of those windows that ended higher.</td><td>Up-rate, %.</td><td>SPY RISK OFF TRANSITION CONFIRMED: 45%, 75%, 100%.</td><td>Compare with the base rate (53% / 58% / 64%).</td></tr>
+<tr><td>1d / 5d / 20d win.</td><td>Independent windows.</td><td>Thinned count, "?" and grey below 8.</td><td>SPY RISK OFF TRANSITION CONFIRMED: 11, "3 ?", "1 ?".</td><td>Only 1d in that band clears 8.</td></tr>
+<tr><td>Dash cells and 0</td><td>No completed window in that band at that horizon.</td><td>Shown as dash, dash, 0.</td><td>SPY STRESS UNCONFIRMED 20d.</td><td>Nothing to read.</td></tr>
+<tr><td>No completed windows yet.</td><td>Shown when the table is empty.</td><td>No results.</td><td>Not shown on 13 Oct.</td><td>No record.</td></tr>
+<tr><td>Revision history</td><td>Each entry session's score and band, newest first.</td><td>Collapsible list: "session: score · band".</td><td>"2026-10-13: 84 · RISK OFF TRANSITION CONFIRMED"; 2026-09-24 was 32, STRESS UNCONFIRMED.</td><td>Shows how fast the published score jumped (32 to 77 in two entry sessions in late September).</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: a source with a real record that beats the base</h4>
+<p><b>What you see:</b> for example, a source's 20d row shows hit 72%, signed +1.8%, 14 windows with no "?", while SPY's 20d base up-rate is about 64% and its base mean about +0.9%. (Illustrative values.)</p>
+<p><b>What it means:</b> enough independent evidence, and both numbers beat what a permanent bull would score.</p>
+<div class="act"><b>What a trader does:</b> gives that source's calls some weight as context on the Macro intelligence tab, still behind price and levels. Keeps watching: the record can fade.</div></div>
+
+<div class="scenario"><h4>Scenario: hit rate and signed return disagree (13 Oct)</h4>
+<p><b>What you see:</b> the board's own 1d leans: hit 40% on 5 scored, signed +0.14%. The LLM packets on SPY 1d: hit 60%, signed +0.01%.</p>
+<p><b>What it means:</b> hit rate alone misleads. The board was wrong more often but the right calls were bigger. The packets were right more often but made almost nothing.</p>
+<div class="act"><b>What a trader does:</b> judges a source by signed return and window count first, hit rate second. Here neither has enough windows (5 calls; 15 windows for a one-day horizon) to say anything. No change in how much weight either gets.</div></div>
+
+<div class="scenario"><h4>Scenario: everything is thin or missing</h4>
+<p><b>What you see:</b> 13 Oct: regime model 5d and 20d show dashes and "0 ?"; packet 5d and 20d are "3 ?" and "1 ?"; board 20d has 0 scored, 39 pending. For example, a missing archive would show "No scorable calls." (Illustrative.)</p>
+<p><b>What it means:</b> nobody has a judgeable record at the 5- and 20-session horizons yet.</p>
+<div class="act"><b>What a trader does:</b> treats every outside call as unproven context. Bases decisions on price, levels and the measured evidence on other tabs. Comes back weekly.</div></div>
+
+<div class="scenario"><h4>Scenario: a scary label with calm follow-through</h4>
+<p><b>What you see:</b> Money Index band RISK OFF TRANSITION CONFIRMED: SPY 5d +0.56% with 75% up, QQQ 20d +4.46% with 100% up, but only 3 and 1 windows ("?").</p>
+<p><b>What it means:</b> so far, the published "risk-off" band has not been followed by declines. The sample is far too small to say it never will be.</p>
+<div class="act"><b>What a trader does:</b> does not short because the label says risk-off. Waits for price confirmation. Notes the result and checks again as windows accumulate.</div></div>
+
+<div class="scenario"><h4>Scenario: the packet in force changed before the open</h4>
+<p><b>What you see:</b> in Packet history, 2026-10-12 21:10 ▼ bear, Entry 2026-10-13 · superseded (greyed); 2026-10-13 12:46 – none, Entry 2026-10-13, counted.</p>
+<p><b>What it means:</b> the evening bearish call was replaced by a neutral morning packet before the 13 Oct open. Only the neutral one is scored.</p>
+<div class="act"><b>What a trader does:</b> uses the packet that was current before the open, not the one read the night before. On Macro intelligence, always check the packet's as-of time.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do</h4>
+<p><b>What you see:</b> for example, after one more session the packets' 1d row moves from 15 to 16 windows and the hit rate from 60% to 59%. Nothing new crosses 8 windows. (Illustrative.)</p>
+<p><b>What it means:</b> the record did not change in any way that matters.</p>
+<div class="act"><b>What a trader does:</b> nothing. Closes the tab and moves to the Next session plan. A weekly look is enough.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Coach: on the morning of 14 Oct the newest LLM packet says TRANSITIONAL BEARISH, and you hold a QQQ call idea for about 5 sessions. Should the bearish label change your plan? Let us ask the scorecard.</p>
+<ol class="steps">
+  <li><b>Find the right card and horizon.</b> LLM macro packets, QQQ row, 5d columns.</li>
+  <li><b>Read the window count first.</b> QQQ 5d: "3 ?". Three independent windows. Below 8, so it is grey.</li>
+  <li><b>Then hit and signed.</b> Hit 38%, signed −1.14%. If you had followed the packet's 5d calls on QQQ, you would have lost on average. But three windows is luck territory.</li>
+  <li><b>Check the 1d record for context.</b> QQQ 1d: 47% hit, −0.08% signed, 15 windows. Below QQQ's base up-rate of about 53%. No edge.</li>
+  <li><b>Check this exact packet.</b> Packet history: 2026-10-13 21:54, ▼ bear, PARTIAL (one copy said TRANSITIONAL only), Entry "pending". Its direction rests on part of the packet.</li>
+  <li><b>Check the board itself.</b> Board 5d: 3 scored, 33% hit, −1.53% signed; price-only 1 scored. The board has not earned weight either.</li>
+  <li><b>Check the Money Index band.</b> QQQ after RISK OFF TRANSITION CONFIRMED: 5d +0.34%, 63% up, "3 ?". Not bearish, also thin.</li>
+</ol>
+<div class="example">
+  <div class="head"><b>QQQ, 5-session idea, 14 Oct</b><span class="meta">packet 5d: 38% hit · −1.14% · 3 windows ?</span></div>
+  <p>The bearish packet has no judgeable 5-session record, and its short-horizon record shows no edge over QQQ's normal drift. The Money Index band record is thin and not bearish.</p>
+  <p class="verdict"><b>Decision sentence:</b> "The packet's bearish label is unproven, so it does not cancel my QQQ setup; I let my price trigger and the Next session plan decide, and I do not add size because of any macro call." This is a reading of the tab, not a recommendation.</p>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+  <div class="box"><h4>Coach's tips</h4><ul>
+    <li>Read in this order: windows, signed, hit.</li>
+    <li>Compare every hit rate with the base: about 53% (1d), 58% (5d), 64% (20d) for SPY.</li>
+    <li>On the board card, the gap between macro leans and price-only leans is the only number that says whether macro helps.</li>
+    <li>Write down a source's record before you act on its call. It keeps you honest.</li>
+    <li>Revisit weekly; records change slowly.</li>
+  </ul></div>
+  <div class="box"><h4>Common mistakes</h4><ul>
+    <li>Trusting a self-reported accuracy (0.580, 0.39) over the board's own scoring.</li>
+    <li>Reading a "?" cell as evidence.</li>
+    <li>Calling 75% on four calls "a good model".</li>
+    <li>Treating the board's "Scored" count as independent windows: it pools many ETFs on the same days.</li>
+    <li>Mixing the published ladder bands here with the board's measured bands on Macro intelligence.</li>
+    <li>Reading "pending · superseded" on the newest packet as "replaced".</li>
+  </ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="macro-intelligence.html">Macro intelligence</a> for the calls being scored; <a href="etf-matrix.html">ETF matrix</a> for the board's current leans per ETF; <a href="method.html">Method</a> for the lean rule and the window thinning; <a href="next-session-plan.html">Next session plan</a> where the jigsaw shows each input beside the tape.</p>
+
+<div class="pager"><a href="macro-intelligence.html">← Macro intelligence</a><a href="method.html">Method →</a></div>
+</main>
+</div>
+</body>
+</html>

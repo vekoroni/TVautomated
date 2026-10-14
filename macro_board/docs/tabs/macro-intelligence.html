@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Macro intelligence · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Macro intelligence</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 9 of 12</p>
+  <h1>Macro intelligence</h1>
+  <p class="lede">How much risk-off pressure is the market under, measured from our own data, and what are the outside macro reports saying, how old is each one, and do they agree?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>Every trader hears a constant stream of macro talk: rates, oil, the VIX, credit, the Fed, geopolitics. This tab puts that stream in one place, labels where each piece came from, and shows how fresh it is.</p>
+<p>It has two parts. The top part is the <b>US Money Index, measured here</b>: the board scores seven risk-off signals from data AVSHUNTER holds and checks what happened next in the past when the score sat in today's band. The lower part, <b>Macro intelligence</b>, shows the outside reports exactly as they were published: an LLM macro packet, the published Money Index, an event report, a news overlay, the VIX complex, dealer gamma estimates, rates and credit, liquidity, Colab models, FRED economic prints and series flags.</p>
+<p>Read it after the Daily review, Overview and Scenario watch, when you already know what price did. Use it to answer one question: is the macro backdrop a headwind, a tailwind or noise for the trade you are considering? Then check the <a href="scorecards.html">Scorecards</a> tab before giving any outside source weight.</p>
+<div class="callout warn"><strong>Display only</strong>Nothing on this tab feeds a gate, score or rank, on the board or in the pipeline. It informs a human. The outside reports are advisory: most were written by a language model (an LLM, a text-generating AI) or by a script, and many of their scores carry an <b>uncalibrated</b> label, meaning nobody has checked them against outcomes, so they are not probabilities.</div>
+
+<h2 id="how">What it does</h2>
+<h3>Part 1: the measured Money Index</h3>
+<p>The published US Money Index is a 0 to 100 "risk-off transmission" score made by ChatGPT from nine weighted components. <b>Risk-off</b> means money leaving risky assets (stocks, high-yield bonds) for safety. <b>Transmission</b> means stress spreading from one market to others. Seven of the nine components can be measured from data the board already holds, so the board scores them itself:</p>
+<ol class="steps">
+  <li><b>Collect seven raw series</b> for every session: oil (USO 20-session change), the 10-year Treasury yield change over 20 sessions in basis points (a <b>basis point</b>, bp, is 0.01 percentage points), credit appetite (HYG vs LQD over 20 sessions), the VIX close from FRED, breadth (share of stored tickers above their 50-session average), small caps (IWM vs SPY over 20 sessions) and AI/semis leadership (SMH vs SPY over 5 sessions).</li>
+  <li><b>Rank each one against its own past year.</b> The board takes today's value and finds its <b>percentile</b> (where it sits from 0 to 100% among the last 252 sessions, needing at least 126). It flips the ranking for components where a low value is the risk-off side (credit, breadth, small caps, AI/semis), so a higher percentile always means more risk-off.</li>
+  <li><b>Turn the percentile into points.</b> At or below the 50th percentile (the median) a component scores 0. At the 95th percentile or above it scores its full weight. In between the points rise in a straight line. Example: rates at the 88th percentile with weight 10 score (0.88 − 0.50) ÷ (0.95 − 0.50) × 10 = 8.3 points.</li>
+  <li><b>Add up and rescale.</b> The seven weights total 76 of the published 100. The board divides the points by 76 and multiplies by 100 to get a 0 to 100 score. If any component is missing, there is no total for that session: missing is never counted as zero.</li>
+  <li><b>Band it.</b> Below 35 is <span class="tag up">calm</span>, 35 to under 60 is <span class="tag flat">transition</span>, 60 and above is <span class="tag down">risk-off</span>. These bands are provisional settings in the configuration.</li>
+  <li><b>Measure what followed.</b> For SPY, QQQ, IWM and DIA the board looks at every past session in today's band and measures the return from the next session's open to the close 1, 5 and 20 sessions later. It uses the board's evidence rules (independent windows, a lean fitted on older data, a held-out check), and it computes an <b>information coefficient</b> (IC): the rank correlation between the score and the next 5-session return.</li>
+  <li><b>Compare with the published score</b> component by component. Geopolitics and Hormuz (12 points each) cannot be measured from price data, so they stay "news only". The <b>comparable total</b> adds the board's measured points to the published geopolitics and Hormuz points, over all 100 weights.</li>
+</ol>
+<h3>Part 2: the outside reports</h3>
+<p>Each build reads the newest copy of each outside file from the dropbox folders. For every file the board records its as-of time, its age in hours and a status: <b>FRESH</b> (within its age limit), <b>STALE</b> (older), <b>MISSING</b> (no file) or <b>UNREADABLE</b> (the file would not parse). The age limit is 30 hours for most files, 48 hours for the published Money Index and the event payload, and 8 days for the weekly Fung-Hsieh filter. For CSV files the age comes from the file's save time, and the as-of shown is the newest date inside the file.</p>
+<p>The board then picks the fields a human needs from each file and shows them as published. It does not re-calculate them. Where a source is MISSING or UNREADABLE, its card shows dashes.</p>
+<p>The page updates on every board build. Pre-open and evening builds pick up the newest outside files. The 13 Oct example on this page is a morning build showing the 13 Oct close.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. US Money Index, measured here (heading row)</h3>
+<p>Start here. The heading says what is measured: 7 of the 9 published components, each against its own past year, beside the published (LLM) packet. Three buttons sit on the right: <b>CSV</b>, <b>Copy sheet for ChatGPT</b> and <b>sheet .md</b>.</p>
+<h3>2. Risk-off transmission card (left)</h3>
+<p>Look at the band chip first, then the big number, then the line under it that compares the published score. The small line chart under it shows how the measured score has moved over the last 260 sessions. Read the grey note to see how often each band has occurred.</p>
+<h3>3. What followed today's band (right)</h3>
+<p>This answers "when our measured index was in this band before, what did the index ETFs do next?" Each cell shows the band's average return, then "vs" the average of all days. Hover a cell for the sample size. The last column, IC 5d, tells you whether the score has ever ranked future returns.</p>
+<h3>4. The component table</h3>
+<p>One row per component, nine in total. Read across: today's raw value, its percentile, the points the board gives it, and the points the published packet gives it. Big gaps between measured and published points show where the LLM sees more (or less) stress than the data.</p>
+<h3>5. Macro intelligence (outside reports)</h3>
+<p>A grid of cards, each ending in a <b>source line</b> with a status chip, the file path, its as-of time and its age. Read the source line before reading the card. Order on screen: LLM macro packet, published US Money Index, Event risk, News overlay, Volatility complex, Dealer gamma, Rates and credit, Liquidity monitor, Colab models. Below the grid sit two wide tables: Economic prints (FRED) and Series threshold flags.</p>
+
+<h2 id="data">Every data attribute</h2>
+
+<h3>Money Index heading and buttons</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>CSV</td><td>Download of the component table.</td><td>One row per component: label, basis (MEASURED or LLM_ONLY), today's value, percentile, measured points, weight, published points, published status.</td><td>Same numbers as the table, in a spreadsheet.</td><td>Keep a daily copy to see which components drive a change in band.</td></tr>
+<tr><td>Copy sheet for ChatGPT</td><td>Copies the board's "measured sheet" to the clipboard.</td><td>A page of facts the board measured itself, plus instructions, built from the payload with no LLM. Missing facts are written as MISSING. If the build made no sheet, the button reads "no sheet in this build".</td><td>It is the input ACK pastes into ChatGPT so the published Money Index, event payload and news use the board's numbers.</td><td>Not a trading signal. It keeps one owner per fact, so the outside reports start from the same numbers you see here.</td></tr>
+<tr><td>sheet .md</td><td>Downloads the same sheet as a Markdown file.</td><td>File name carries the session and build kind.</td><td>Archive copy.</td><td>Useful when you review later what ChatGPT was given.</td></tr>
+</tbody></table></div>
+
+<h3>Risk-off transmission card</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Band chip: calm</td><td>Measured score below 35.</td><td>Threshold <code>calm_below</code> 35 (provisional).</td><td>Most of the seven signals sit near or below their yearly median.</td><td>Macro is not adding pressure. Let price levels and your setup lead.</td></tr>
+<tr><td>Band chip: transition</td><td>Score from 35 to under 60.</td><td>Between the two thresholds.</td><td>Some signals are stretched to the risk-off side, others are not. 13 Oct: <b>transition</b>.</td><td>Check which components drive it before you decide it matters. Read "What followed" for this band.</td></tr>
+<tr><td>Band chip: risk-off</td><td>Score 60 or more.</td><td>Threshold <code>risk_off_from</code> 60 (provisional).</td><td>Several signals are near the extreme of their past year. Rare: 45 of 1,117 scored sessions.</td><td>Expect a stressed tape. Size smaller and demand clear price confirmation. Check "What followed": stress does not always mean prices fell next.</td></tr>
+<tr><td>Band chip: missing</td><td>No score today.</td><td>At least one of the seven components has no value.</td><td>The index is incomplete, never "zero stress".</td><td>Treat macro pressure as unknown. Look at the "missing:" list and the source of that series.</td></tr>
+<tr><td>Big number /100 measured</td><td>Today's measured risk-off score.</td><td>Sum of the seven components' points ÷ 76 × 100, rounded to a whole number on screen.</td><td>13 Oct: <b>55</b>/100 (54.8 in the data).</td><td>A level, not a forecast. Compare it with its own history (the line chart) and the band record.</td></tr>
+<tr><td>(76 of 100 weight)</td><td>How much of the published ladder the board measured.</td><td>Sum of the seven measured weights.</td><td>The other 24 points (geopolitics, Hormuz) are news-only.</td><td>Remember the measured score cannot see news risk.</td></tr>
+<tr><td>Published (ChatGPT)</td><td>The score in the published Money Index file.</td><td>Read from the outside file as published.</td><td>13 Oct: <b>84</b>/100. Much higher than the measured 55.</td><td>A large gap means the LLM sees stress the data does not. Find out which components cause it (component table).</td></tr>
+<tr><td>comparable total</td><td>Measured points plus the published geopolitics and Hormuz points, over 100.</td><td>(measured points + published news points) ÷ 100 × 100. Shown as a dash when any part is missing.</td><td>13 Oct: <b>66</b>/100 (65.67). Like-for-like with the published 84.</td><td>The gap between 66 and 84 is pure disagreement on measurable components. Here the LLM gave credit 14 of 14 and oil 6 of 12; the data gave 6.8 and 0.</td></tr>
+<tr><td>missing: …</td><td>Components with no value today.</td><td>Listed in red when any component lacks a value or points.</td><td>Absent on 13 Oct (nothing missing).</td><td>If shown, the score and band are not usable today.</td></tr>
+<tr><td>Line chart</td><td>The measured score over the last 260 sessions.</td><td>Point-in-time history of the same calculation.</td><td>Last values: 39.4, 57.0, 53.2, 54.3, 54.8. A jump from 39 to 57 in one session.</td><td>A fresh jump is news; a long plateau is a backdrop. Ask what changed on the jump day.</td></tr>
+<tr><td>scored sessions</td><td>Sessions with a complete score.</td><td>Count of sessions with all seven components.</td><td>13 Oct: 1,117.</td><td>The size of the history behind the band record.</td></tr>
+<tr><td>bands calm / transition / risk-off</td><td>How many scored sessions fell in each band.</td><td>Count by band.</td><td>13 Oct: calm 783, transition 289, risk-off 45.</td><td>A rare band has thin history: be careful with its record.</td></tr>
+<tr><td>0 points at or below the median…</td><td>Restates the scoring rule.</td><td>Fixed text from the method.</td><td>Median = 0 points; 95th percentile = full weight.</td><td>Reminds you a component can be "high" yet score little if it is only slightly above its median.</td></tr>
+<tr><td>Comparable total note</td><td>Explains the comparable total.</td><td>Text from the comparison step.</td><td>"none when any part is missing (missing is never zero)".</td><td>If the comparable total is a dash, do not compare the two scores.</td></tr>
+</tbody></table></div>
+
+<h3>What followed today's band</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>ETF (SPY, QQQ, IWM, DIA)</td><td>The four index ETFs.</td><td>Fixed list on this card. Every other ETF's band history is in the Next session plan, ETF by ETF.</td><td>One row each.</td><td>Use the row of the index your trade depends on.</td></tr>
+<tr><td>1d / 5d / 20d cell, first number</td><td>Average return after past sessions in today's band.</td><td>Return from the next session's open to the close 1, 5 or 20 sessions later, averaged over every past session whose measured band equals today's.</td><td>SPY 20d after transition sessions: <b>+1.74%</b>.</td><td>A historical average, not a forecast. Compare it with the "vs" number.</td></tr>
+<tr><td>vs (second number)</td><td>Average return over all days.</td><td>Same calculation over every session (the base rate).</td><td>SPY 20d all days: +0.92%.</td><td>If the band's number is close to "vs", the band told you nothing extra.</td></tr>
+<tr><td>Cell colour</td><td>Sign of the band's average.</td><td>Positive and negative styles on the first number.</td><td>All four ETFs show positive 5d and 20d after transition sessions on 13 Oct.</td><td>Colour shows sign only, not strength. Read the tooltip.</td></tr>
+<tr><td>Tooltip: n</td><td>Number of past sessions in the band with a completed window.</td><td>Count.</td><td>SPY 20d: n=271.</td><td>n counts overlapping windows. Use the next figure instead.</td></tr>
+<tr><td>Tooltip: independent windows</td><td>How many non-overlapping windows the sample really holds.</td><td>Sessions are thinned so no two windows overlap (two sessions a day apart share 19 of 20 days of a 20d window).</td><td>SPY 20d: 33 windows from 271 sessions.</td><td>This is the honest sample size. Under 8 it is too thin to read.</td></tr>
+<tr><td>Tooltip: up</td><td>Share of band windows that ended higher (hit rate).</td><td>Share of returns above zero.</td><td>SPY 20d: up 68%.</td><td>Compare with how often the ETF rises on any day (about 53% for SPY 1d) before calling it unusual.</td></tr>
+<tr><td>Tooltip: All days</td><td>Base mean, repeated.</td><td>As "vs".</td><td>+0.92% for SPY 20d.</td><td>As above.</td></tr>
+<tr><td>Tooltip: lean</td><td>Whether the band's history shows a direction under the board's rules.</td><td>Fitted on the older 75% of history: needs at least 8 windows, |t| at least 1.5 and a minimum average (0.05% for 1d, 0.25% for 5d, 0.75% for 20d). Values: UP, DOWN, NO_CLEAR_LEAN, INSUFFICIENT_SAMPLE, INSUFFICIENT_HISTORY.</td><td>SPY, QQQ and DIA 20d: <b>UP</b>. IWM 20d and all 1d and 5d: NO_CLEAR_LEAN.</td><td>A lean is a description of history. Do not trade it alone; use it to check whether a macro fear has paid in the past.</td></tr>
+<tr><td>Tooltip: holdout value</td><td>Did the direction survive on the newest 25% of history the lean never saw?</td><td>HOLDOUT_AGREES, HOLDOUT_DISAGREES, HOLDOUT_THIN (fewer than 3 windows) or NOT_APPLICABLE (no UP/DOWN lean).</td><td>SPY 20d: HOLDOUT_AGREES.</td><td>Agreement adds a little confidence. Disagreement means the pattern may have stopped working.</td></tr>
+<tr><td>IC 5d</td><td>Information coefficient: does a higher score rank lower (or higher) 5-session returns?</td><td>Rank correlation of the measured score with the next 5-session return, on every 5th session (no overlap). Range −1 to +1.</td><td>13 Oct: SPY −0.01, QQQ −0.03, IWM −0.01, DIA 0.01 on 223 windows.</td><td>Near zero means the score level has not predicted 5-session returns. Use it as a description of stress, not a timing tool.</td></tr>
+<tr><td>Note under the table</td><td>Where the rest lives.</td><td>Fixed text.</td><td>Every ETF's band history, beta and correlation are in the Next session plan.</td><td>Go there when your trade is in a sector ETF, not an index.</td></tr>
+</tbody></table></div>
+
+<h3>Component table</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Component</td><td>The name of one of the nine published components.</td><td>Label from the configuration.</td><td>Seven measured, two news-only.</td><td>Find the one or two components that explain today's band.</td></tr>
+<tr><td>risk-off when high / low</td><td>Which side of the component counts as stress.</td><td>Set per component in the configuration.</td><td>Oil, 10Y and VIX: risk-off when high. Credit, breadth, small caps, AI/semis: risk-off when low.</td><td>Stops you misreading a low breadth number as "calm".</td></tr>
+<tr><td>news only (not measurable here)</td><td>A component the board cannot measure.</td><td>Basis LLM_ONLY.</td><td>Geopolitical escalation, Hormuz impairment.</td><td>Only the LLM scores these. Treat them as opinion until a price confirms.</td></tr>
+<tr><td>Today</td><td>Today's raw value in its own unit.</td><td>% for returns (2 decimals), bp for the 10Y change, % share for breadth, plain number for the VIX. Dash for news-only rows.</td><td>13 Oct: oil −5.57%, 10Y +27 bp, credit +0.01%, VIX 15.21, breadth 30.3%, small caps −5.69%, AI/semis −7.14%.</td><td>The real-world fact behind the points.</td></tr>
+<tr><td>Percentile</td><td>Where today sits in the last 252 sessions, oriented so higher = more risk-off.</td><td>Share of the window at or below today (risk-off when high) or at or above today (risk-off when low). Shown as a whole number with "th".</td><td>13 Oct: oil 15th, 10Y 88th, credit 72th, VIX 15th, breadth 88th, small caps 97th, AI/semis 96th.</td><td>Above 50 starts to score. Above 95 is maximum stress for that signal.</td></tr>
+<tr><td>Measured points (bar and x/weight)</td><td>The board's points for this component.</td><td>Weight × (percentile − 0.50) ÷ 0.45, kept between 0 and the weight. Bar length = points ÷ weight.</td><td>13 Oct: oil 0.0/12, rates 8.3/10, credit 6.8/14, VIX 0.0/12, breadth 8.6/10, small caps 8.0/8, AI/semis 10.0/10.</td><td>Full bars show where stress is concentrated. On 13 Oct it was equities-internal (breadth, small caps, semis), not oil or the VIX.</td></tr>
+<tr><td>Published</td><td>The LLM packet's points for the same component.</td><td>Read from the published file, shown as points/weight.</td><td>13 Oct: oil 6/12, rates 10/10, credit 14/14, VIX 2/12, breadth 10/10, small caps 8/8, AI/semis 10/10, geopolitics 12/12, Hormuz 12/12.</td><td>Compare row by row. The biggest gap on 13 Oct: credit (6.8 measured vs 14 published).</td></tr>
+<tr><td>Published status</td><td>The LLM's reason for its points.</td><td>Text from the published file, underscores shown as spaces.</td><td>Credit: "ELEVATED OVER3P00 MODEST REWIDENING 07OCT…".</td><td>Read the dates inside the text. A status about 7 Oct is old news by 13 Oct.</td></tr>
+</tbody></table></div>
+
+<h3>The nine components one by one</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Oil (USO, 20-session change)</td><td>How fast oil has moved. Weight 12.</td><td>20-session log change of USO, in %.</td><td>Rising oil is a cost shock (risk-off when high). 13 Oct: −5.57%, 15th percentile, 0 points.</td><td>Oil stress hits airlines, consumers and transports first. No oil stress in the data on 13 Oct, though the LLM still gave 6 points.</td></tr>
+<tr><td>10Y yield (20-session change)</td><td>How fast long-term rates have risen. Weight 10.</td><td>20-session change of the FRED 10-year yield, in bp, as known at each session.</td><td>Rising yields pressure growth stocks and valuations. 13 Oct: +27 bp, 88th, 8.3 points.</td><td>Matters most for QQQ and long-duration tech. Check the Rates and credit card for today's level.</td></tr>
+<tr><td>Credit appetite (HYG vs LQD, 20 sessions)</td><td>Are investors favouring junk bonds (HYG) over investment-grade bonds (LQD)? Weight 14, the largest.</td><td>20-session relative log return of HYG vs LQD, in %.</td><td>Falling appetite (risk-off when low) means credit is getting nervous. 13 Oct: +0.01%, 72th, 6.8 points.</td><td>Credit often moves before stocks in a real sell-off. Watch it if it climbs toward the 95th.</td></tr>
+<tr><td>VIX level (FRED VIXCLS)</td><td>The S&amp;P 500 volatility index: the market's price for 30-day expected movement. Weight 12.</td><td>FRED's VIX close, shown as known at the session (published the next day).</td><td>High VIX is fear (risk-off when high). 13 Oct: 15.21, 15th, 0 points.</td><td>Low VIX with other stress means the stress has not reached option prices yet.</td></tr>
+<tr><td>Breadth (share of tickers above their 50-session mean)</td><td>How many stocks are in an uptrend. Weight 10.</td><td>Share of all stored tickers above their 50-session average.</td><td>Low breadth (risk-off when low) means few stocks carry the index. 13 Oct: 30.3%, 88th, 8.6 points.</td><td>Index can rise on few names. Fragile rallies favour smaller size.</td></tr>
+<tr><td>Small caps (IWM vs SPY, 20 sessions)</td><td>Are small companies keeping up with large ones? Weight 8.</td><td>20-session relative log return of IWM vs SPY.</td><td>Small caps lagging (risk-off when low) is a classic stress sign. 13 Oct: −5.69%, 97th, full 8 points.</td><td>Matters for IWM trades and for any small-cap stock idea.</td></tr>
+<tr><td>AI / semis leadership (SMH vs SPY, 5 sessions)</td><td>Is the market's leadership group (semiconductors) failing? Weight 10.</td><td>5-session relative log return of SMH vs SPY.</td><td>Semis lagging fast (risk-off when low). 13 Oct: −7.14%, 96th, full 10 points.</td><td>A short window: it reacts quickly and can reverse quickly. Matters for QQQ, XLK and SMH.</td></tr>
+<tr><td>Geopolitical escalation (news)</td><td>LLM-judged geopolitical risk. Weight 12.</td><td>Published points only.</td><td>13 Oct: 12/12, "CONFIRMED PERSISTENT WEEKEND DIPLOMACY UNRESOLVED".</td><td>Unmeasured opinion. Wait for a price reaction (Daily review) before acting on it.</td></tr>
+<tr><td>Hormuz impairment (news)</td><td>LLM-judged risk to oil shipping through the Strait of Hormuz. Weight 12.</td><td>Published points only.</td><td>13 Oct: 12/12 while measured oil scored 0.</td><td>When news says "oil risk" but oil prices fall, the market is not pricing it. Note the conflict.</td></tr>
+</tbody></table></div>
+
+<h3>Source line (under every outside card)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>✓ FRESH</td><td>File is within its age limit.</td><td>Age in hours ≤ limit: 30 h for most files, 48 h for the published Money Index and event payload, 8 days for the Fung-Hsieh filter.</td><td>Fresh by the clock, not necessarily current in content.</td><td>Still read the as-of time and the dates inside the card.</td></tr>
+<tr><td>! STALE</td><td>File is older than its limit.</td><td>Age above the limit.</td><td>Last run of that source did not land.</td><td>Treat its card as yesterday's view. Do not quote it as today's.</td></tr>
+<tr><td>× MISSING</td><td>No file found.</td><td>Path did not exist.</td><td>The card shows dashes.</td><td>Macro view from that source is unknown, not neutral.</td></tr>
+<tr><td>× UNREADABLE</td><td>File exists but would not parse.</td><td>JSON or CSV read error.</td><td>The card shows dashes.</td><td>Same as missing. Tell whoever runs the inputs.</td></tr>
+<tr><td>Path</td><td>Which file was read.</td><td>Relative path in the repo.</td><td>Example: dropbox\macro\avshunter_us_money_index.json.</td><td>Lets you open the raw file if a number looks odd.</td></tr>
+<tr><td>as of</td><td>The time stamp of the content.</td><td>For JSON, a stamp inside the file (or the file time if none). For CSV, the newest date in the file.</td><td>Published Money Index on 13 Oct: as of 2026-10-13T02:12 UTC, before that session opened.</td><td>A report from before the session cannot know what the session did.</td></tr>
+<tr><td>h old</td><td>Age in hours at build time.</td><td>Build time minus the as-of (JSON) or the file save time (CSV).</td><td>Money Index 31.1 h old and still FRESH under its 48 h limit.</td><td>Fresh by rule can still be a day old. Weigh it accordingly.</td></tr>
+</tbody></table></div>
+
+<h3>LLM macro packet</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Regime</td><td>The packet's name for the market <b>regime</b> (the broad state the market is in).</td><td>Field <code>regime_label</code> as published.</td><td>13 Oct: TRANSITIONAL BEARISH.</td><td>A label, not a measurement. Check its record on Scorecards.</td></tr>
+<tr><td>Probability + uncalibrated</td><td>The packet's probability for its regime.</td><td>Published value, 3 decimals.</td><td>13 Oct: 0.546. It equals the Colab regime model's Risk-Off probability (0.545), so it is not independent.</td><td>Do not read it as odds. Two cards showing the same number are one opinion, not two.</td></tr>
+<tr><td>Conviction + uncalibrated</td><td>How strongly the packet holds its view.</td><td>Published value, 2 decimals.</td><td>13 Oct: 0.54.</td><td>Context only.</td></tr>
+<tr><td>Risk switch</td><td>The packet's risk-on / risk-off instruction.</td><td>Published label.</td><td>13 Oct: SELECTIVE RISK ON REDUCED SIZE.</td><td>An outside opinion about sizing. Your own rules decide size.</td></tr>
+<tr><td>Direction bias</td><td>The packet's directional lean.</td><td>Published label.</td><td>13 Oct: MILDLY BULLISH, while the regime says bearish.</td><td>A packet can contradict itself. When it does, give it less weight.</td></tr>
+<tr><td>Trend energy</td><td>Strength of the trend in the packet's view.</td><td>Published label.</td><td>13 Oct: WEAK.</td><td>Weak trend favours waiting for a trigger.</td></tr>
+<tr><td>Vol mode</td><td>The packet's read of volatility.</td><td>Published label.</td><td>13 Oct: COMPRESSED CONTANGO LOW VOL.</td><td>Check against the Volatility complex card.</td></tr>
+<tr><td>Liquidity</td><td>The packet's read of money in the system.</td><td>Published label.</td><td>13 Oct: FLAT.</td><td>Check against the Liquidity monitor card.</td></tr>
+<tr><td>Rates</td><td>The packet's rates impulse.</td><td>Published label.</td><td>13 Oct: RESTRICTIVE HOLD.</td><td>Check against Rates and credit.</td></tr>
+<tr><td>USD</td><td>The packet's dollar state.</td><td>Published label.</td><td>13 Oct: FIRM.</td><td>A firm dollar weighs on commodities and multinationals.</td></tr>
+<tr><td>Credit</td><td>The packet's credit state.</td><td>Published label.</td><td>13 Oct: BENIGN, while the published Money Index gave credit full 14/14 stress.</td><td>Two LLM outputs disagree. The measured credit component (6.8/14) is the tie-breaker.</td></tr>
+<tr><td>Macro filter</td><td>The packet's go / no-go flag.</td><td>Published label (it mirrors the Fung-Hsieh filter).</td><td>13 Oct: NO GO.</td><td>Advisory. The board never gates on it.</td></tr>
+<tr><td>Drift</td><td>Which way the packet's regime is drifting.</td><td>Published label.</td><td>13 Oct: DRIFTING BEARISH.</td><td>Context.</td></tr>
+<tr><td>Horizon (routing table)</td><td>The packet's horizon buckets.</td><td>Keys of <code>horizon_routing</code>.</td><td>1_5d, 6_10d, 11_20d (sessions).</td><td>Match the bucket to how long you plan to hold.</td></tr>
+<tr><td>Bias</td><td>Directional bias per horizon.</td><td>Published.</td><td>MILDLY BULLISH, NEUTRAL, NEUTRAL.</td><td>Context only.</td></tr>
+<tr><td>Bull prob</td><td>The packet's bullish probability per horizon.</td><td>Published, 1 decimal %. Same numbers as the Colab forward bias.</td><td>57.1%, 53.3%, 51.1%.</td><td>Numbers near 50% mean "no view". They are not calibrated odds.</td></tr>
+<tr><td>Mode</td><td>The packet's engine mode per horizon.</td><td>Published label.</td><td>SELECTIVE TRIGGER REQUIRED, WAIT CONFIRM, MACRO WAIT.</td><td>The packet itself says "wait for confirmation". Use the board's triggers for that.</td></tr>
+<tr><td>Packet notes</td><td>The packet's own explanation.</td><td>Free text, collapsed.</td><td>Mentions the conflict between the statistical model and the fundamental view.</td><td>Read it to understand the label, then check its numbers' dates.</td></tr>
+<tr><td>Conflict flags (n)</td><td>Disagreements the packet found in its own inputs.</td><td>List from the packet, collapsed.</td><td>13 Oct: 11 flags, each marked RESOLVED or ACTIVE.</td><td>Many active conflicts mean a noisy picture. Lower your reliance on the packet.</td></tr>
+</tbody></table></div>
+
+<h3>US Money Index · risk-off transmission (published)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Big number / 100</td><td>The published risk-off transmission score.</td><td>As published by ChatGPT.</td><td>13 Oct: 84.</td><td>An opinion score. Compare with the measured 55 at the top.</td></tr>
+<tr><td>previous</td><td>The score in the prior revision.</td><td>As published.</td><td>13 Oct: 83.</td><td>A one-point change is noise.</td></tr>
+<tr><td>uncalibrated chip</td><td>The score has not been checked against outcomes.</td><td>Fixed label.</td><td>Not a probability.</td><td>Check its band record on Scorecards.</td></tr>
+<tr><td>Method note</td><td>The publisher's description.</td><td>As published.</td><td>"Evidence-weighted transmission ladder; not a trade probability."</td><td>The publisher agrees: it is not a trading signal.</td></tr>
+<tr><td>Ladder</td><td>The publisher's own score bands.</td><td>As published.</td><td>0-40 stress unconfirmed · 41-65 elevated but unconfirmed · 66-85 risk off transition confirmed · 86-100 systemic risk off.</td><td>These cut-offs differ from the board's measured bands (35 / 60). Do not mix the two ladders.</td></tr>
+<tr><td>Transmission state (line under the note)</td><td>The publisher's state sentence.</td><td>Field <code>risk_off_transmission_state</code> (or the overall state).</td><td>13 Oct: CROSS REGIONAL AI SOX RISK OFF TRANSMISSION CONFIRMED US DOMESTIC SYSTEMIC RISK OFF UNCONFIRMED.</td><td>Read both halves: stress in semis confirmed, broad US stress not.</td></tr>
+<tr><td>Component bars</td><td>The nine published components, score/weight.</td><td>Bar = score ÷ weight. Hover shows the status text.</td><td>Same numbers as the "Published" column at the top.</td><td>Use the measured table above to test each bar.</td></tr>
+<tr><td>Dated observations: metric</td><td>A fact the packet carries.</td><td>Picked from the packet's cross-asset section.</td><td>S&amp;P 500 %, Nasdaq Composite %, HY OAS %, Single-B OAS %, HYG close, VIX spot, front VIX future, US equity fund flows, 10Y %, October hike probability.</td><td>Check each fact's date before you repeat it.</td></tr>
+<tr><td>Dated observations: value</td><td>The fact's value.</td><td>As published.</td><td>Example: HY OAS 3.15, VIX spot 15.32.</td><td>HY OAS (high-yield option-adjusted spread) is the extra yield junk bonds pay over Treasuries. Rising means credit stress.</td></tr>
+<tr><td>Dated observations: observed</td><td>The date of that fact.</td><td>Date stored with the fact, or "not dated in packet" (greyed).</td><td>13 Oct packet: S&amp;P 500 % dated 2026-09-25, HYG close 2026-09-10, HY OAS 2026-10-02. 10Y and hike probability undated.</td><td>A packet written today can carry facts weeks old. Undated facts cannot be checked: give them less weight.</td></tr>
+<tr><td>Packet time note</td><td>Reminder about dates.</td><td>Shows the packet's as-of time.</td><td>"The packet's time (2026-10-13T02:12:13+00:00) is not the date of every value it carries."</td><td>As above.</td></tr>
+<tr><td>Authoritative dealer inventory</td><td>Does the publisher have real dealer position data?</td><td>Published flag.</td><td>13 Oct: <b>unavailable</b> · UNCONFIRMED NO AUTHORITATIVE AGGREGATE DEALER INVENTORY.</td><td>When unavailable, the dealer gamma sign is an assumption. See the Dealer gamma card.</td></tr>
+<tr><td>Summary</td><td>The publisher's summary paragraph.</td><td>As published, collapsed.</td><td>13 Oct: semis weakness spreading to Asia, US broad stress unconfirmed.</td><td>Narrative. Confirm its claims on the Daily review.</td></tr>
+<tr><td>Forward trigger groups (n)</td><td>Conditions the publisher would watch to upgrade or downgrade.</td><td>One collapsible list per group, with the count.</td><td>13 Oct: bullish upgrade (16), risk off upgrade (18), event guards (63), scenarios (1), plus revision-specific gates.</td><td>Useful watch-list ideas. Turn the measurable ones (VIX 18, 10Y level, HY OAS) into alerts you check yourself.</td></tr>
+</tbody></table></div>
+
+<h3>Event risk</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Verdict (large text)</td><td>The event report's overall call.</td><td><code>final_verdict.verdict</code> as published.</td><td>13 Oct: NO TRADE (scoped by the report to overnight option carry).</td><td>Advisory. It says the writer saw no edge carrying options overnight into the next open.</td></tr>
+<tr><td>Classification</td><td>The report's one-line read of the day.</td><td>As published.</td><td>13 Oct: "FAILED FINANCIAL/VALUE CONFIRMATION WITH SMALL-CAP UNDERPERFORMANCE; BROAD RISK CONTAINED".</td><td>Check it against the Daily review reactions.</td></tr>
+<tr><td>confidence + uncalibrated</td><td>The writer's confidence.</td><td>As published.</td><td>13 Oct: 76.</td><td>Not a probability.</td></tr>
+<tr><td>Expected magnitude</td><td>How big a move the writer expects.</td><td>As published.</td><td>13 Oct: MODERATE TO HIGH.</td><td>Compare with the option market's implied move on the ETF matrix drawer before believing it.</td></tr>
+<tr><td>Event name</td><td>One event (up to 8).</td><td>As published.</td><td>13 Oct: bank earnings, Citigroup earnings, a cash-market rejection, Brent below $105, an unconfirmed Aramco security report.</td><td>Separate scheduled releases from headlines.</td></tr>
+<tr><td>Country / time / status</td><td>Who, when (UTC) and whether it happened.</td><td>As published.</td><td>Example: "Confirmed release; earnings call scheduled…".</td><td>Unconfirmed status means wait.</td></tr>
+<tr><td>Actual · Forecast · Previous</td><td>The print, the consensus forecast and the prior value.</td><td>First four entries of each published object.</td><td>Bank earnings show actuals and estimates.</td><td>A surprise is actual minus forecast. No forecast, no measurable surprise.</td></tr>
+<tr><td>no consensus · surprise not measurable</td><td>The event has no forecast.</td><td>Shown when <code>forecast</code> is empty.</td><td>13 Oct: three of five events (rejection, Brent, Aramco).</td><td>Do not trade the writer's "surprise" label for these. Watch how price reacts.</td></tr>
+<tr><td>engine label</td><td>The writer's surprise label and score even without a forecast.</td><td>Published direction text and score, shown greyed.</td><td>Aramco: ENERGY SECURITY UPSIDE TAIL RISK EQUITY DOWNSIDE TAIL 80.</td><td>Opinion, not measurement.</td></tr>
+<tr><td>Surprise … uncalibrated</td><td>The surprise label when a forecast exists.</td><td>Published direction and score.</td><td>Bank earnings: "Mixed headline earnings; credit-quality positive…" 76.</td><td>Context. Check the sector's reaction on Daily review.</td></tr>
+<tr><td>Expected magnitude (per event)</td><td>Per-event size label, when present.</td><td>As published.</td><td>Empty for all five events on 13 Oct.</td><td>None.</td></tr>
+<tr><td>Counter-case</td><td>The writer's argument against its own verdict.</td><td>As published, collapsed.</td><td>13 Oct: failed bank confirmation may reverse; lower oil and yields may turn risk-off into a failed bearish move.</td><td>Always read it. It names the price action that would prove the verdict wrong.</td></tr>
+</tbody></table></div>
+
+<h3>News overlay</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Alert level</td><td>The news enrichment's alert colour.</td><td><code>narrative_overlay.alert_level</code> as published.</td><td>13 Oct: AMBER.</td><td>Context for headline risk.</td></tr>
+<tr><td>fragility x / 5 + uncalibrated</td><td>How fragile the writer thinks the market is.</td><td>As published, 1 decimal.</td><td>13 Oct: 4.5 / 5.</td><td>Opinion. High fragility plus a measured risk-off band would argue for smaller size.</td></tr>
+<tr><td>Summary</td><td>The close-of-day news summary.</td><td>As published.</td><td>13 Oct: S&amp;P −0.02%, Nasdaq −0.15%, Brent $105.69.</td><td>Note: the event report has Brent at about $104.62 the same day. Two LLM reports, two prices, two times. Prefer measured prices.</td></tr>
+</tbody></table></div>
+
+<h3>Volatility complex</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>VIX</td><td>30-day S&amp;P 500 implied volatility index.</td><td>VIX engine file, direct quote.</td><td>13 Oct: 15.27. Below 20 is generally calm.</td><td>Low VIX makes options cheaper to buy in absolute terms.</td></tr>
+<tr><td>VIX9D</td><td>9-day version of the VIX.</td><td>As published.</td><td>13 Oct: 11.99.</td><td>Above the VIX means near-term event fear.</td></tr>
+<tr><td>VIX3M</td><td>3-month version.</td><td>As published.</td><td>13 Oct: 17.96.</td><td>Above the VIX is the normal shape.</td></tr>
+<tr><td>VVIX</td><td>Volatility of the VIX itself.</td><td>As published.</td><td>13 Oct: 85.38.</td><td>High VVIX means the VIX can jump fast.</td></tr>
+<tr><td>Term structure</td><td>Shape of short vs long VIX: <b>contango</b> (longer dated higher, calm) or <b>backwardation</b> (short dated higher, stress).</td><td>Label from the VIX engine.</td><td>13 Oct: CONTANGO.</td><td>Backwardation is a strong stress sign. Contango is the default.</td></tr>
+<tr><td>Term slope</td><td>How far VIX3M sits above spot VIX, in %.</td><td>(VIX3M − VIX) ÷ VIX × 100 in the VIX engine.</td><td>13 Oct: 17.62 (17.96 vs 15.27).</td><td>A falling slope toward zero is an early warning.</td></tr>
+<tr><td>IV rank</td><td>Labelled IV rank, but the VIX engine defines it as the share of recent SPY 20-day realised vol readings below today's VIX.</td><td>VIX engine field <code>IV_Pct_Rank</code>.</td><td>13 Oct: 100. The same file's true 1-year VIX percentile was 15.4 (not shown).</td><td>Do not read this as "options are at a yearly high". It says VIX sits above recent realised vol. Use tastytrade IV rank on the ETF drawer instead.</td></tr>
+<tr><td>SPY RV20</td><td>SPY's 20-day <b>realised volatility</b> (how much it actually moved), annualised %.</td><td>As published.</td><td>13 Oct: 9.53.</td><td>Compare with the VIX: VIX well above RV means options carry a premium.</td></tr>
+<tr><td>IV vs RV %</td><td>Same measure as "IV rank" above.</td><td>VIX engine field <code>IV_vs_RealisedVol_Pct</code>.</td><td>13 Oct: 100.0.</td><td>Reads "VIX is above every recent realised-vol reading". Options are not cheap relative to recent movement.</td></tr>
+<tr><td>Fear phase</td><td>The VIX engine's phase label.</td><td>A rule cascade on VIX level, momentum and term structure.</td><td>13 Oct: CALM CARRY. The engine's own notes say this is the fall-through value when nothing else matched.</td><td>Read CALM CARRY as "no fear signal", not a positive finding.</td></tr>
+<tr><td>USD trend</td><td>The dollar's trend from the VIX engine.</td><td>As published (UUP proxy).</td><td>13 Oct: STABLE.</td><td>Context.</td></tr>
+<tr><td>Observed</td><td>Date of the VIX observation.</td><td>As published.</td><td>13 Oct: 2026-10-13.</td><td>If older than the session, the card is behind.</td></tr>
+</tbody></table></div>
+
+<h3>Dealer gamma</h3>
+<p><b>GEX</b> (gamma exposure) estimates how option dealers must hedge as price moves. When dealers are <b>long gamma</b> (positive), they sell rallies and buy dips, which damps moves. When <b>short gamma</b> (negative), they hedge in the same direction as the move, which can amplify it.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>model estimate · dealer sign assumed (chip)</td><td>A warning label on the whole card.</td><td>Fixed chip.</td><td>The numbers come from a model, and the dealer side is assumed.</td><td>Treat every level here as approximate.</td></tr>
+<tr><td>ETF</td><td>SPY or QQQ.</td><td>GEX file rows.</td><td>Two rows.</td><td>Use the row for your index.</td></tr>
+<tr><td>Regime</td><td>Sign of net gamma: POSITIVE, NEGATIVE or NEUTRAL.</td><td>Sign of net GEX in the estimate.</td><td>13 Oct: both NEGATIVE.</td><td>Negative: expect bigger swings; size smaller. Positive: moves tend to be damped.</td></tr>
+<tr><td>Spot</td><td>Price used in the estimate.</td><td>As published.</td><td>SPY 778.10, QQQ 745.75 (from 12 Oct data).</td><td>Compare with today's price; it may be a session behind.</td></tr>
+<tr><td>Flip</td><td>The <b>gamma flip</b>: the price where net gamma changes sign.</td><td>As published, 1 decimal.</td><td>SPY 779.8, QQQ 756.2. Spot below flip on both.</td><td>Above the flip moves tend to calm; below they can accelerate. A reference level, not a trigger.</td></tr>
+<tr><td>Call wall</td><td>Strike with the largest call gamma.</td><td>Largest call GEX strike in the estimate.</td><td>SPY 800, QQQ 760.</td><td>Often acts as resistance. Check it on the Daily review room map.</td></tr>
+<tr><td>Put wall</td><td>Strike with the largest put gamma.</td><td>Most negative put GEX strike.</td><td>SPY 755, QQQ 725.</td><td>Often acts as support.</td></tr>
+<tr><td>Net bn</td><td>Net dealer gamma in $ billions per 1% move.</td><td>Call GEX plus put GEX.</td><td>SPY −0.94, QQQ −1.52.</td><td>Size of the effect. Larger negative = more potential amplification.</td></tr>
+<tr><td>Data</td><td>Date of the chains used.</td><td>As published.</td><td>2026-10-12, one session behind the 13 Oct close.</td><td>Old data: levels may have shifted.</td></tr>
+<tr><td>Note under the table</td><td>How the estimate is made and its limits.</td><td>Fixed text plus the Money Index inventory flag.</td><td>Local Black-Scholes approximation from MarketData.app chains; assumes dealers are short calls and long puts; authoritative inventory <b>unavailable</b>.</td><td>"Treat the sign as unknown unless confirmed."</td></tr>
+</tbody></table></div>
+
+<h3>Rates and credit</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>2Y / 10Y / 30Y</td><td>Treasury yields at 2, 10 and 30 years.</td><td>Bond state file.</td><td>13 Oct card: 4.80%, 5.24%, 5.60%. The file's curve block is dated 2026-10-09 and flagged stale inside the file.</td><td>Use the FRED prints table and the 10Y component for the latest. Higher long yields weigh on growth stocks.</td></tr>
+<tr><td>10s-2s</td><td>The <b>yield curve</b> spread: 10Y minus 2Y, in bp.</td><td>As published.</td><td>13 Oct: 44 bp (positive, not inverted).</td><td>Context for the Method tab's curve level condition.</td></tr>
+<tr><td>1d curve move</td><td>How the curve moved in one day. <b>Bear</b> = yields up, <b>bull</b> = yields down; <b>flattening</b> = gap narrows, <b>steepening</b> = gap widens.</td><td>As published.</td><td>13 Oct: BEAR FLATTENING (2Y +5 bp, 10Y +2 bp).</td><td>Bear flattening often means the market prices a firmer Fed.</td></tr>
+<tr><td>HYG/LQD</td><td>Price ratio of junk to investment-grade bond ETFs.</td><td>As published, 4 decimals.</td><td>13 Oct: 0.7517.</td><td>Falling ratio = credit appetite fading.</td></tr>
+<tr><td>Ratio z (20d)</td><td>How unusual the ratio is vs its 20-day history, in standard deviations (a <b>z-score</b>).</td><td>As published.</td><td>13 Oct: 0.56.</td><td>Beyond ±2 is unusual.</td></tr>
+<tr><td>Stress</td><td>The bond file's credit stress label.</td><td>As published.</td><td>13 Oct: MILD.</td><td>Context.</td></tr>
+<tr><td>Bond score</td><td>The bond file's own 0 to 100 composite.</td><td>As published; not calibrated by the board.</td><td>13 Oct: 40.</td><td>Context only.</td></tr>
+<tr><td>Warning</td><td>The bond file's top warning.</td><td>As published.</td><td>13 Oct: "Auction day (3Y)".</td><td>Treasury auctions can move yields intraday. Note the time.</td></tr>
+</tbody></table></div>
+
+<h3>Liquidity monitor</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Regime</td><td>The monitor's <b>liquidity</b> label (how much money flows through the financial system).</td><td>As published.</td><td>13 Oct: "Neutral (6d old)": the label itself says its input is 6 days old.</td><td>Weekly Fed data moves slowly. Do not expect it to time a trade.</td></tr>
+<tr><td>Repo stress</td><td>Strain in overnight funding (repo) markets.</td><td>As published; scale set by the monitor.</td><td>13 Oct: 20.</td><td>Watch for sudden jumps rather than the level.</td></tr>
+<tr><td>Credit stress</td><td>The monitor's credit label.</td><td>As published.</td><td>13 Oct: NORMAL.</td><td>Context.</td></tr>
+<tr><td>HY OAS</td><td>High-yield spread over Treasuries, %.</td><td>As published.</td><td>13 Oct: 3.10.</td><td>Rising spreads mean credit stress.</td></tr>
+<tr><td>BBB OAS</td><td>Spread for the lowest investment-grade bonds, %.</td><td>As published.</td><td>13 Oct: 1.00.</td><td>Same reading as HY OAS, for safer bonds.</td></tr>
+<tr><td>10y-2y</td><td>Curve spread in percentage points.</td><td>As published.</td><td>13 Oct: 0.44.</td><td>Same as 10s-2s above.</td></tr>
+<tr><td>Fed BS change</td><td>Change in the Fed's balance sheet (WALCL).</td><td>As published.</td><td>13 Oct: 0.067%.</td><td>A growing balance sheet adds liquidity.</td></tr>
+<tr><td>RRP</td><td>Money parked at the Fed's overnight reverse repo facility, $ trillions.</td><td>As published.</td><td>13 Oct: 0.00T.</td><td>Near zero: that cushion is used up.</td></tr>
+<tr><td>Corr WALCL-QQQ</td><td>Correlation between the Fed balance sheet and QQQ.</td><td>As published, 3 decimals.</td><td>13 Oct: 0.343.</td><td>A weak link. Do not trade QQQ on Fed balance sheet news alone.</td></tr>
+</tbody></table></div>
+
+<h3>Colab models</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Forward bias (horizon)</td><td>A Colab model's horizon bucket.</td><td>Newest forward bias file.</td><td>short 1 5d, medium 6 10d, long 11 20d.</td><td>Match to your holding period.</td></tr>
+<tr><td>Direction</td><td>The model's directional label.</td><td>As published.</td><td>MILDLY BULLISH, NEUTRAL, NEUTRAL.</td><td>Context.</td></tr>
+<tr><td>Bull prob</td><td>The model's bullish probability.</td><td>As published.</td><td>57.1%, 53.3%, 51.1%: the same numbers the LLM packet routes.</td><td>Counted once, not twice.</td></tr>
+<tr><td>Score</td><td>The model's raw score.</td><td>As published, 3 decimals.</td><td>0.142, 0.065, 0.022.</td><td>Near zero = weak signal.</td></tr>
+<tr><td>Regime model: date</td><td>Session of the daily regime call (newest 5, newest first).</td><td>Colab daily regime CSV.</td><td>2026-10-13 back to 2026-10-07.</td><td>Each row is computed from that date's close.</td></tr>
+<tr><td>Regime</td><td>Risk-On or Risk-Off.</td><td>As published.</td><td>Risk-Off on all five days.</td><td>Check its record on Scorecards before giving it weight.</td></tr>
+<tr><td>Prob</td><td>The model's probability for its regime.</td><td>As published, 3 decimals.</td><td>0.545 on 13 Oct.</td><td>Close to 0.5 is close to a coin flip.</td></tr>
+<tr><td>Confidence</td><td>The model's own confidence label.</td><td>As published.</td><td>LOW on all five days.</td><td>The model itself says not to lean on it.</td></tr>
+<tr><td>Fung-Hsieh filter (week)</td><td>A weekly macro go / no-go filter.</td><td>Filter summary CSV.</td><td>Week 2026-10-09.</td><td>Weekly: it lags.</td></tr>
+<tr><td>GO / NO-GO</td><td>The filter's verdict.</td><td>As published.</td><td>13 Oct: NO-GO.</td><td>Advisory; never a gate on this board.</td></tr>
+<tr><td>self-reported accuracy</td><td>Accuracy the filter claims for itself.</td><td>As published, 2 decimals.</td><td>0.39.</td><td>Below 0.5: weaker than a coin flip by its own account.</td></tr>
+<tr><td>Bias</td><td>The filter's bias text.</td><td>As published.</td><td>"Cautious / Tier 2".</td><td>Context.</td></tr>
+</tbody></table></div>
+
+<h3>Economic prints (FRED)</h3>
+<p><b>FRED</b> is the St. Louis Fed's public economic database.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Series</td><td>The economic series name.</td><td>FRED prints file (31 rows on 13 Oct).</td><td>Jobs, inflation, policy rates, activity, sentiment, liquidity, currency, VIX.</td><td>Find the one that matters for your trade.</td></tr>
+<tr><td>Value</td><td>Latest value.</td><td>As published. Whole numbers above 1,000, else 2 decimals.</td><td>Unemployment 4.20, CPI 334.13.</td><td>Levels matter less than surprises vs forecast.</td></tr>
+<tr><td>Change</td><td>% change from the previous print of the series.</td><td>As published, 2 decimals.</td><td>Unemployment +2.44% (4.1 to 4.2, a % change of the rate, not +2.44 points).</td><td>Read rates carefully: a "+2.44%" here is a 0.1-point rise.</td></tr>
+<tr><td>YoY</td><td>Year-over-year % change, where published.</td><td>As published.</td><td>CPI +3.71%, core CPI +2.76%. Dash where absent.</td><td>Inflation trend in one number.</td></tr>
+<tr><td>Period</td><td>The period the value describes.</td><td>As published.</td><td>CPI 2026-08-01 (the August print).</td><td>Monthly data describes the past month or two.</td></tr>
+<tr><td>Age</td><td>Days since the period date.</td><td>As published.</td><td>CPI 73d; Leading Economic Index 2,446d (period 2020-02-01).</td><td>Very old ages mean a discontinued or stuck series. Ignore it.</td></tr>
+</tbody></table></div>
+
+<h3>Series threshold flags</h3>
+<p>This file is written outside the board by the macro module that Run-MacroInputs runs. The rules below come from that module's code.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Series</td><td>An ETF, VIX series or dollar proxy.</td><td>As published (23 rows on 13 Oct).</td><td>SPY, QQQ, sectors, VIX, VIX9D, VIX3M, VVIX, DXY.</td><td>The DXY row's level (29.02) matches the UUP dollar fund, a proxy.</td></tr>
+<tr><td>Flag: GREY</td><td>Small move.</td><td>Size of the 22-session % change below the green band (equity 2%, vol 10%, FX 1%).</td><td>SPY GREY.</td><td>Nothing unusual.</td></tr>
+<tr><td>Flag: GREEN</td><td>Noticeable move.</td><td>At least equity 2%, vol 10%, FX 1%.</td><td>QQQ GREEN.</td><td>Context.</td></tr>
+<tr><td>Flag: YELLOW</td><td>Large move.</td><td>At least equity 5%, vol 25%, FX 2.5%.</td><td>VIX9D YELLOW (−34% over 30 days), DXY YELLOW.</td><td>Look at why it moved.</td></tr>
+<tr><td>Flag: RED</td><td>Very large move.</td><td>At least equity 10%, vol 50%, FX 5%. A 5-session move at or beyond the red level bumps the flag up one level.</td><td>None on 13 Oct.</td><td>A big move is under way in that series.</td></tr>
+<tr><td>Dir</td><td>Direction of the 22-session change.</td><td>UP, DOWN or FLAT.</td><td>IWM DOWN, XLE UP.</td><td>Context.</td></tr>
+<tr><td>Regime: CONFIRMED / CONTESTED</td><td>Does the recent 5-session move agree with the 22-session direction?</td><td>CONTESTED when the 5-session move opposes the 22-session sign by at least 2%.</td><td>QQQ CONTESTED (+4.0% over 30 days, −2.1% over 5).</td><td>Contested means the trend may be turning. Check Sector rotation.</td></tr>
+<tr><td>5d</td><td>5-session % change.</td><td>As published, 1 decimal.</td><td>XLE +5.4%.</td><td>Short-term move.</td></tr>
+<tr><td>30d</td><td>22-session % change (about 30 calendar days).</td><td>As published, 1 decimal.</td><td>XLF −4.2%.</td><td>Medium-term move.</td></tr>
+<tr><td>Risk</td><td>"yes" when the module counts this move as risk to a long book.</td><td>Flag YELLOW or RED and the move in the series' risk direction: UP for USO and DXY, never for GLD, DOWN for everything else.</td><td>VIX9D and DXY "yes" on 13 Oct.</td><td>Read with care: by that rule a falling VIX series counts as "risk", which is the opposite of the usual reading.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: measured and published agree on calm</h4>
+<p><b>What you see:</b> for example, measured score 24 <span class="tag up">calm</span>, published 30 (stress unconfirmed), comparable total about 28, VIX in contango, GEX positive, all sources FRESH. (Illustrative values.)</p>
+<p><b>What it means:</b> data and outside opinion agree that macro is not adding pressure.</p>
+<div class="act"><b>What a trader does:</b> lets the price setup lead. Macro gives no reason to cut size. Moves on to the Next session plan and the triggers there.</div></div>
+
+<div class="scenario"><h4>Scenario: the data and the LLM disagree (13 Oct)</h4>
+<p><b>What you see:</b> measured 55 <span class="tag flat">transition</span>, published 84, comparable total 66. Credit measured 6.8/14 vs published 14/14. Oil measured 0/12 vs published 6/12 and Hormuz 12/12. The packet's regime says bearish while its direction bias says mildly bullish.</p>
+<p><b>What it means:</b> real stress sits in breadth, small caps and semis. The LLM adds stress in credit, oil and news that prices do not yet show. The packet contradicts itself.</p>
+<div class="act"><b>What a trader does:</b> trusts the measured components for what is happening, and treats the extra published points as risks to watch. Checks "What followed": transition sessions were followed by above-average 20-session returns for SPY. So no fresh short thesis from macro alone. Smaller size on broad index longs until breadth repairs; for semis, waits for price to confirm.</div></div>
+
+<div class="scenario"><h4>Scenario: fresh file, old content</h4>
+<p><b>What you see:</b> on 13 Oct the bond state source line says FRESH, but its curve block is dated 2026-10-09 and its own warning says "Yield curve data STALE". The GEX data is dated 2026-10-12. The published Money Index is 31 h old and carries an S&amp;P 500 figure dated 2026-09-25.</p>
+<p><b>What it means:</b> FRESH only means the file was saved recently. Values inside can be days or weeks old.</p>
+<div class="act"><b>What a trader does:</b> reads the dates inside every card before quoting a number. Uses the FRED prints table and the measured 10Y component for rates. Treats GEX levels as yesterday's map. Does not repeat an undated or weeks-old fact as current.</div></div>
+
+<div class="scenario"><h4>Scenario: a source is missing</h4>
+<p><b>What you see:</b> for example, × MISSING on the event payload and dashes on the Event risk card, or "missing: volatility" in red on the measured index with a dash for the score. (Illustrative.)</p>
+<p><b>What it means:</b> the board does not know. A missing component never becomes zero, and a missing report is not "no events".</p>
+<div class="act"><b>What a trader does:</b> treats macro pressure as unknown, not calm. Checks the scheduled events on the Daily review decision calendar directly. Sizes as if risk were higher until the gap is filled.</div></div>
+
+<div class="scenario"><h4>Scenario: dealer gamma negative, spot below the flip</h4>
+<p><b>What you see:</b> 13 Oct: SPY NEGATIVE, spot 778.10, flip 779.8, put wall 755, call wall 800, net −0.94 bn, data 2026-10-12, inventory unavailable.</p>
+<p><b>What it means:</b> if the estimate's assumed dealer side is right, hedging could amplify moves below 779.8. But the sign is assumed and the data is a session old.</p>
+<div class="act"><b>What a trader does:</b> expects wider swings and sizes smaller. Uses 779.8, 755 and 800 as reference levels to watch, not as triggers. Checks whether price holds or loses the flip in the first hour.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing new</h4>
+<p><b>What you see:</b> for example, the measured score moves 54.3 to 54.8 and stays in the same band, the published score moves one point (83 to 84), events have no consensus forecasts, IC 5d near zero. (Partly from 13 Oct.)</p>
+<p><b>What it means:</b> the macro picture did not change overnight.</p>
+<div class="act"><b>What a trader does:</b> nothing on this tab. Keeps yesterday's macro read, spends the time on levels and triggers in the Next session plan.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Coach: say you are planning a 20-session SPY call trade on 14 Oct and you want to know if macro is against you. Walk the tab with me.</p>
+<ol class="steps">
+  <li><b>Source lines first.</b> All thirteen source lines on this tab read FRESH. But the published Money Index is from 02:12 UTC on 13 Oct, before that session. The GEX data is from 12 Oct. Note both.</li>
+  <li><b>Measured band.</b> 55, <span class="tag flat">transition</span>, nothing missing. The score jumped from 39.4 to 57.0 a few sessions ago and has held there.</li>
+  <li><b>Which components?</b> Small caps 8.0/8, AI/semis 10.0/10, breadth 8.6/10, rates 8.3/10. Oil and VIX 0. So the stress is inside equities and in rates, not in fear gauges.</li>
+  <li><b>What followed this band?</b> SPY 20d: +1.74% vs +0.92% for all days, 33 independent windows, up 68%, lean UP, holdout agrees. IC 5d −0.01. History does not say "transition means down".</li>
+  <li><b>Published view.</b> 84, ladder "risk off transition confirmed". Comparable total 66. The gap comes from credit, oil and news components prices do not show.</li>
+  <li><b>Outside cards.</b> Event risk: NO TRADE for overnight carry, counter-case names a bearish failure. VIX 15.27 in contango, CALM CARRY. GEX NEGATIVE with spot below the flip 779.8. Colab regime model Risk-Off at 0.545, LOW confidence.</li>
+  <li><b>Check the record.</b> Go to <a href="scorecards.html">Scorecards</a>: the LLM packets' 5d and 20d calls have too few windows to judge. No outside source has earned weight yet.</li>
+</ol>
+<div class="example">
+  <div class="head"><b>SPY, 13 Oct close</b><span class="meta">measured 55 transition · published 84 · comparable 66</span></div>
+  <p>Measured stress: breadth, small caps, semis, rates. Not in VIX or oil. History of this band: not bearish over 20 sessions. Outside reports: cautious, partly old, partly self-contradicting, unproven on Scorecards. Dealer gamma: negative, assumed sign, one session old.</p>
+  <p class="verdict"><b>Decision sentence:</b> "Macro is a moderate headwind inside equities, not a reason to cancel the plan; I take the SPY setup only on its own price trigger, at smaller size while SPY sits below the 779.8 flip and breadth stays weak." This is a reading of the tab, not a recommendation.</p>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+  <div class="box"><h4>Coach's tips</h4><ul>
+    <li>Read the measured index before the published one. Data first, opinion second.</li>
+    <li>Use the component table to name the stress: "it is semis and small caps" is more useful than "55".</li>
+    <li>Check "What followed" every time you feel macro fear. It often shows that the fear did not pay.</li>
+    <li>Open "Dated observations" and read every date.</li>
+    <li>Count echoes: the packet's probabilities copy the Colab models. One opinion repeated is still one opinion.</li>
+    <li>Always read the event report's counter-case.</li>
+  </ul></div>
+  <div class="box"><h4>Common mistakes</h4><ul>
+    <li>Reading an uncalibrated score (84, confidence 76, fragility 4.5) as a probability.</li>
+    <li>Mixing the published ladder (66-85) with the board's bands (60 and above).</li>
+    <li>Treating FRESH as "current": the content can be days old.</li>
+    <li>Reading "IV rank 100" as "options at a yearly high".</li>
+    <li>Treating a missing source as calm.</li>
+    <li>Trading the GEX flip as a signal when the dealer sign is assumed.</li>
+    <li>Reading a FRED "Change" on a rate as points instead of a % change.</li>
+  </ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="daily-review.html">Daily review</a> for how price reacted to the news here; <a href="overview.html">Overview</a> for the ten measured conditions; <a href="transmission-map.html">Transmission map</a> for which conditions have moved each ETF; <a href="scorecards.html">Scorecards</a> for each source's record; <a href="next-session-plan.html">Next session plan</a> for every ETF's Money Index band history and the jigsaw of all inputs.</p>
+
+<div class="pager"><a href="scenario-watch.html">← Scenario watch</a><a href="scorecards.html">Scorecards →</a></div>
+</main>
+</div>
+</body>
+</html>

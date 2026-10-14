@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Method · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Method</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 11 of 12</p>
+  <h1>Method</h1>
+  <p class="lede">Exactly how does the board turn data into the conditions, leans and labels on every other tab, and where are its limits?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The other tabs show results. This tab shows the rules behind them: what each macro condition measures, when each data point becomes visible, how much evidence a lean needs, what each decision aid means, and what the board cannot know.</p>
+<p>Read it once from top to bottom. After that, come back when a number on another tab surprises you, for example "oil fell 5% but the board says oil is STABLE" or "why is there no lean on TQQQ for 20 sessions?". The answer is almost always here.</p>
+<p>For a trader, the Method tab is what separates a measured statement from a guess. If you know the rule, you know how much a reading can bear.</p>
+<div class="callout warn"><strong>All thresholds are provisional</strong>The tab says so itself. Every number in the settings is a starting point, to be validated by the board's own scorecard. None of them is a law of markets.</div>
+
+<h2 id="how">What it does</h2>
+<p>The Method tab has no calculation of its own. It prints the board's live settings and definitions from the payload, so what you read always matches what the build used.</p>
+<ul>
+  <li>The <b>Conditions</b> table comes from the ten condition definitions in <code>conditions.py</code>.</li>
+  <li>The numbers in the notes come from the configuration blocks <code>conditions</code>, <code>evidence</code>, <code>extension</code>, <code>response</code>, <code>holdings</code> and the FRED publication rules, plus the outcome scorer's own trend, volatility and breadth settings (the "c12" settings shared with the pipeline's outcome scorer).</li>
+  <li>The latest FRED observation dates and the number of archived input files come from the current build.</li>
+</ul>
+<p>Some key words used all through the tab:</p>
+<ul>
+  <li><b>Condition</b>: one macro fact turned into a small set of states, such as 10Y yield RISING / STABLE / FALLING.</li>
+  <li><b>Analog sessions</b>: past sessions whose conditions looked like today's.</li>
+  <li><b>Lean</b>: a direction (UP or DOWN) that past analog sessions showed clearly enough to pass the rules. Otherwise "No clear lean".</li>
+  <li><b>Independent windows</b>: the number of non-overlapping forward-return windows. Two sessions a day apart share 19 of 20 days of a 20-session window, so they are not two pieces of evidence.</li>
+  <li><b>Holdout</b>: the newest 25% of history, kept aside so the board can test a lean on data it never saw.</li>
+  <li><b>t-statistic (t)</b>: the average divided by its uncertainty. Around 0 means noise; 1.5 or more is the board's bar for a lean.</li>
+  <li><b>Point in time</b>: using only data that was public on that day, so history is not flattered by future information.</li>
+</ul>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>1. Conditions (full-width card)</h3>
+<p>A table of the ten macro conditions: name, what is measured, its possible states and the data source. Below it, two notes: the exact windows and bands used, and the dates of the latest FRED observations on file.</p>
+<h3>2. Point in time</h3>
+<p>Five rules that stop the board from using data before it was public, and from treating missing data as neutral.</p>
+<h3>3. From evidence to lean</h3>
+<p>Five rules that decide whether a lean appears: how analog sessions are chosen, how windows are counted, what a lean needs, and the held-out check.</p>
+<h3>4. Decision aids (thesis review, 6 Oct)</h3>
+<p>Definitions of the labels you meet on the ETF matrix drawer, the Desk card and elsewhere: 80% interval, price-only lean, path-dependent, move made, desk card, response, priced vs history, pipeline, holdings, tastytrade and inputs.</p>
+<h3>5. Limits</h3>
+<p>Four honest limits. Read them before you trust any pattern.</p>
+
+<h2 id="data">Every data attribute</h2>
+<p>On this tab the "data" are definitions, thresholds and settings. Each row explains one, says why it matters to a trader, and gives the 13 Oct value where one applies.</p>
+
+<h3>Conditions table: the columns</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Condition</td><td>The condition's name.</td><td>Label in the condition definitions.</td><td>Ten rows, same names as on Overview.</td><td>Match it to the tile you are reading on Overview or the Transmission map.</td></tr>
+<tr><td>What is measured</td><td>The exact calculation in words.</td><td>Definition text.</td><td>Says the window, the series and how "moving" is judged.</td><td>Tells you what the label really describes. "RISING" means a fast 20-session rise, not a high level.</td></tr>
+<tr><td>States</td><td>Every value the condition can take.</td><td>Listed with underscores shown as spaces.</td><td>Example: RISING · STABLE · FALLING. Every condition can also be MISSING.</td><td>Know the full menu before reading one state.</td></tr>
+<tr><td>Source</td><td>Where the input comes from.</td><td>Definition text.</td><td>historical_prices.sqlite (the board's price store) or named FRED series.</td><td>FRED series arrive a day or more late; price series are same-day.</td></tr>
+</tbody></table></div>
+
+<h3>The ten conditions</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>SPY trend</td><td>Where SPY sits against its 50- and 200-session averages.</td><td>Outcome-scorer definition. States ABOVE BOTH, ABOVE LONG ONLY (above the 200, below the 50), ABOVE SHORT ONLY (above the 50, below the 200), BELOW BOTH.</td><td>13 Oct: ABOVE BOTH (SPY 778.01).</td><td>The market's basic trend. Long ideas fight less when SPY is above both.</td></tr>
+<tr><td>Realised volatility</td><td>How much SPY has actually moved over 20 sessions, ranked against the past 252 sessions.</td><td>Percentile; bands at 0.3333 and 0.6667 give LOW, MID, HIGH.</td><td>13 Oct: LOW (13th percentile).</td><td>Low realised vol often makes options cheaper to buy, but quiet markets can wake up fast.</td></tr>
+<tr><td>Breadth</td><td>Share of all stored tickers above their 50-session average.</td><td>Bands at 0.4 and 0.6 give LOW, MID, HIGH; 3,618 tickers on 13 Oct.</td><td>13 Oct: LOW (30%).</td><td>Low breadth means few stocks carry the index. Rallies on low breadth are fragile.</td></tr>
+<tr><td>Net liquidity proxy</td><td>Fed assets minus the Treasury's cash account (TGA) minus the overnight reverse repo (ON RRP), in $bn. A research proxy, not spendable money.</td><td>20-session change, divided by its trailing-year standard deviation (a z-score). Beyond ±0.5: EXPANDING or CONTRACTING; else FLAT.</td><td>13 Oct: FLAT.</td><td>A slow backdrop. Expanding liquidity has been linked to firmer risk assets, but check the Transmission map for each ETF.</td></tr>
+<tr><td>Curve level</td><td>The 10Y minus 2Y Treasury yield, in percentage points (the <b>yield curve</b>).</td><td>Below 0 INVERTED, 0 to under 0.5 FLAT, 0.5 or more STEEP.</td><td>13 Oct: FLAT (0.44).</td><td>An inverted curve has often come before slowdowns. A flat curve is a late-cycle sign.</td></tr>
+<tr><td>Curve move</td><td>How fast the curve is changing.</td><td>20-session change in the 10Y-2Y spread, z vs trailing year, ±0.5 band: STEEPENING, STABLE, FLATTENING.</td><td>13 Oct: STEEPENING (+0.12 points).</td><td>Steepening with rising long yields often hurts long-duration growth stocks.</td></tr>
+<tr><td>10Y yield</td><td>How fast the 10-year yield is moving.</td><td>20-session change of FRED DGS10, z vs trailing year: RISING, STABLE, FALLING.</td><td>13 Oct: RISING (10Y at 5.24%).</td><td>Rising yields pressure valuations, especially QQQ.</td></tr>
+<tr><td>Credit appetite</td><td>Junk bonds (HYG) vs investment-grade bonds (LQD).</td><td>20-session relative log return, z vs trailing year: TIGHTENING (appetite rising), STABLE, WIDENING (appetite falling).</td><td>13 Oct: STABLE.</td><td>Widening credit is one of the more reliable stress signals. Respect it.</td></tr>
+<tr><td>US dollar</td><td>The dollar against the euro.</td><td>20-session log change of the inverse of FRED DEXUSEU, z vs trailing year: STRENGTHENING, STABLE, WEAKENING.</td><td>13 Oct: STRENGTHENING (+3.6%).</td><td>A strong dollar weighs on commodities, emerging markets and exporters.</td></tr>
+<tr><td>Oil</td><td>How fast oil is moving.</td><td>20-session USO log return, z vs trailing year: RISING, STABLE, FALLING.</td><td>13 Oct: STABLE, although USO fell 5.57%: oil often moves that much, so it is inside the ±0.5 band.</td><td>"Stable" means "normal for oil", not "flat". Energy and transport trades read this one.</td></tr>
+</tbody></table></div>
+
+<h3>Conditions notes: windows and bands</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>50/200-session means</td><td>The two averages behind SPY trend.</td><td>Outcome-scorer settings.</td><td>Standard medium and long trend lines.</td><td>The same lines traders draw on a daily chart.</td></tr>
+<tr><td>20-session vol percentile, bands 0.3333/0.6667</td><td>Window and cut-offs for realised volatility.</td><td>Outcome-scorer settings.</td><td>Thirds of the past year: low, middle, high.</td><td>Vol state shapes how far a normal day moves.</td></tr>
+<tr><td>breadth over 50 sessions across N stored tickers, bands 0.4/0.6</td><td>Window, universe size and cut-offs for breadth.</td><td>Outcome-scorer settings; N = tickers in the price store.</td><td>13 Oct: 3,618 tickers.</td><td>The universe grows over time (see Limits).</td></tr>
+<tr><td>20-session change vs trailing 252-session standard deviation</td><td>How "moving" conditions are judged.</td><td><code>change_sessions</code> 20, <code>zscore_window_sessions</code> 252 (needs at least 126).</td><td>Each series is judged against its own normal variation, not a textbook level.</td><td>A 10 bp move in yields can be "RISING" in a quiet year and "STABLE" in a wild one.</td></tr>
+<tr><td>beyond ±0.5 sd counts as moving</td><td>The band for RISING / FALLING and similar states.</td><td><code>trend_band_z</code> 0.5.</td><td>Keeps roughly the middle third of history as "stable".</td><td>Most days are stable. A moving state is the exception worth noting.</td></tr>
+<tr><td>Curve level bands: 0 / 0.5 pct points</td><td>Cut-offs for INVERTED, FLAT, STEEP.</td><td><code>curve_level_bands_pct</code>.</td><td>Below 0, 0 to 0.5, 0.5 and above.</td><td>As above.</td></tr>
+<tr><td>Latest FRED observations</td><td>Newest observation date on file for each FRED input.</td><td>Last non-empty date per series in the FRED master file.</td><td>13 Oct: WALCL 2026-10-07 · WTREGEN 2026-10-07 · RRPONTSYD 2026-10-13 · SPREAD_2Y10Y 2026-10-09 · DGS10 2026-10-09 · DEXUSEU 2026-10-09.</td><td>"On file" is not "in use": RRPONTSYD dated 13 Oct only becomes visible on 14 Oct, so the 13 Oct conditions used the 9 Oct value.</td></tr>
+</tbody></table></div>
+
+<h3>Point in time</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>FRED values become visible {…} calendar day(s) after their observation date</td><td>Publication lag per FRED series.</td><td><code>fred_publication_lag_days</code>: DGS10, DGS2, SPREAD_2Y10Y, WALCL, WTREGEN, RRPONTSYD and VIXCLS all 1 day.</td><td>A session never sees its own same-day print.</td><td>History matches what you could have known after that close. Leans are not flattered by hindsight.</td></tr>
+<tr><td>Weekly-released series … DEXUSEU (Fed H.10)</td><td>The euro rate is published once a week.</td><td><code>fred_release_calendar</code>: released the Monday after the observation week, Tuesday after a federal holiday.</td><td>13 Oct: Monday 12 Oct was Columbus Day, so the week to 9 Oct became visible on Tuesday 13 Oct.</td><td>Dollar condition can be up to a week behind. Check FX prices directly for fast moves.</td></tr>
+<tr><td>Older than its freshness limit becomes MISSING</td><td>Stale data is never carried forward or treated as neutral.</td><td>Limits: 6 days for daily FRED series, 12 days for weekly ones.</td><td>A failed FRED update shows up as MISSING, not as yesterday's state.</td><td>MISSING means "unknown". Size as if risk were higher until it returns.</td></tr>
+<tr><td>Today's MISSING conditions are left out of the analog match</td><td>Unknowns do not pick the analogs.</td><td>Only conditions observed today take part. A past session's MISSING never counts as a match.</td><td>With one condition missing, analogs match on nine.</td><td>Fewer conditions make analogs less specific. Weigh leans less on such days.</td></tr>
+<tr><td>Forward returns run from the next session's open to the close 1/5/20 sessions later</td><td>The entry rule for every lean and record.</td><td><code>entry_convention</code> NEXT_SESSION_OPEN_TO_CLOSE_H.</td><td>Matches reading the board after the close and acting at the next open.</td><td>Any gap at the open is part of the measured outcome. Overnight news is in the numbers.</td></tr>
+</tbody></table></div>
+
+<h3>From evidence to lean</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Analog sessions: 100% → 90% → 80% → 70% → 60%</td><td>How closely past sessions must match today.</td><td><code>analog_match_levels</code>. Start at an exact match and loosen step by step until the set holds at least 12 independent 20-session windows (<code>analog_target_effective_n</code>). Never looser than 60%.</td><td>13 Oct: 100% and 90% found 0 sessions, 80% found 1, 70% found 33 sessions but only 11 windows, so the board used 60%: 111 sessions, 26 windows.</td><td>A loose match (60% = 6 of 10 conditions) means today's mix is unusual. Leans on such days rest on rougher analogs.</td></tr>
+<tr><td>Overlapping windows are thinned</td><td>"Windows" counts independent observations.</td><td>Greedy thinning: keep a session, skip the next h−1, repeat.</td><td>111 analog sessions became 26 windows at 20 sessions.</td><td>Always read the window count, never the raw session count.</td></tr>
+<tr><td>Lean fitted on history before the last 25%</td><td>The lean is learned on older data only.</td><td><code>holdout_fraction</code> 0.25.</td><td>SPY 20d on 13 Oct: train period before 2025-06-10.</td><td>Keeps the newest data for an honest test.</td></tr>
+<tr><td>needs ≥ 8 windows</td><td>Minimum evidence for a lean.</td><td><code>min_effective_n</code> 8. Fewer gives Insufficient sample.</td><td>The same "?" threshold the Scorecards use.</td><td>Below 8, there is no lean to act on.</td></tr>
+<tr><td>|t| ≥ 1.5</td><td>The average must stand out from its noise.</td><td><code>lean_t_min</code> 1.5, with t computed on independent windows.</td><td>SPY 20d train t on 13 Oct: 0.46. Fails.</td><td>A low t means the average could easily be luck.</td></tr>
+<tr><td>|mean| ≥ {"1":0.05,"5":0.25,"20":0.75}%</td><td>Minimum average move per horizon.</td><td><code>lean_min_abs_mean_pct</code>: 0.05% for 1 session, 0.25% for 5, 0.75% for 20.</td><td>Stops tiny but "significant" averages becoming leans.</td><td>A lean has to be big enough to matter after costs.</td></tr>
+<tr><td>Otherwise it shows "No clear lean"</td><td>The default outcome.</td><td>Lean labels: UP, DOWN, No clear lean, Insufficient sample, Short history, Path-dependent.</td><td>Most cells on most days show No clear lean.</td><td>No clear lean is an answer: macro history does not point either way. Let price lead.</td></tr>
+<tr><td>The held-out quarter then shows whether the direction survived</td><td>The out-of-sample check.</td><td>Holdout labels: holdout agrees, holdout disagrees, holdout thin (fewer than 3 windows).</td><td>Shown beside a lean.</td><td>"Disagrees" means the pattern may have stopped working. Treat it as weak.</td></tr>
+<tr><td>ETFs need ≥ 500 sessions of history</td><td>Minimum history for any evidence.</td><td><code>min_history_sessions</code> 500 (about two years).</td><td>Younger ETFs show Short history.</td><td>New funds have no measured macro record here.</td></tr>
+</tbody></table></div>
+
+<h3>Decision aids (thesis review, 6 Oct)</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>80% interval</td><td>A range that should hold the true analog average about 80% of the time.</td><td>Student-t interval on independent windows (<code>interval_level</code> 0.8).</td><td>SPY 20d on 13 Oct: −0.53% … +1.37%. It spans zero.</td><td>An interval that crosses zero means the sign itself is uncertain. "The window minimum is a label, not a rule."</td></tr>
+<tr><td>Price-only lean</td><td>The lean from the ETF's own drift, with no macro filter.</td><td>Same rule applied to all history.</td><td>SPY 20d on 13 Oct: No clear lean, same as the macro lean.</td><td>If macro and price-only leans match, macro added nothing that day. The Scorecards compare the two over time.</td></tr>
+<tr><td>Path-dependent</td><td>Leveraged, inverse and volatility products show no 5d or 20d lean.</td><td><code>path_dependent</code> groups "Leveraged &amp; inverse" and "Volatility products"; only the 1-session lean is allowed.</td><td>TQQQ on 13 Oct: 1d No clear lean, 20d Path-dependent.</td><td>Daily resets and futures rolls decay over time. Do not hold these on a multi-session macro view.</td></tr>
+<tr><td>Move made (±1.5σ = extended)</td><td>How far the ETF has already run.</td><td>5- and 20-session return ÷ (20-session realised vol × √(sessions ÷ 252)). Beyond ±1.5 (<code>band_sd</code>) is Extended ↑ or Extended ↓.</td><td>SPY 20d on 13 Oct: +2.72% over 20 sessions = 1.0σ, Not extended.</td><td>Describes the run. Whether runs like it continued is measured under Momentum history, never assumed.</td></tr>
+<tr><td>Desk card</td><td>Six desk questions filled from the board for each pipeline candidate and index ETF.</td><td>Checks on macro lean, momentum, room left, option price, data and event risk.</td><td>Says when the pipeline target may be stale. The trader records Act, Wait or Skip with a reason.</td><td>Your structured checklist. See the Desk card tab.</td></tr>
+<tr><td>Response</td><td>Whether the ETF's own move agrees with the macro pressure measured for it.</td><td>Conditions in today's state with a measured contrast of |t| ≥ 1.0 (<code>response.t_min</code>) count as headwinds or tailwinds. Labels: Supporting, Absorbing pressure (net headwind, ETF rose), Rejecting relief (net tailwind, ETF fell), Mixed, Insufficient.</td><td>SPY 20d on 13 Oct: Absorbing pressure (headwinds: realised vol, curve level; tailwind: breadth; SPY +2.72%).</td><td>Absorbing pressure is a show of strength; rejecting relief a show of weakness. Descriptive only.</td></tr>
+<tr><td>Priced vs history</td><td>Option price compared with how much similar sessions actually moved.</td><td>ATM straddle mid on the first expiry covering the horizon (target 1, 7 and 28 calendar days for 1, 5 and 20 sessions), scaled by √time, divided by the analog mean absolute move.</td><td>SPY 5d on 13 Oct: 0.75 (options priced 1.06% vs 1.43% delivered). SPY 20d: 0.96.</td><td>Below 1: options cheap vs history. Above 1: rich. A key input for long-option trades.</td></tr>
+<tr><td>Pipeline</td><td>Rows from the newest pipeline run's options/options_candidates_ranked.csv.</td><td>Read-only.</td><td>The board never changes or re-ranks them.</td><td>The pipeline proposes; the board describes; you decide.</td></tr>
+<tr><td>Holdings</td><td>Issuer daily files for SPY, DIA (State Street) and QQQ (Invesco).</td><td>Downloaded on <code>--refresh</code>, archived raw. Contribution = weight × return; participation = share of priced weight above its 50-session mean.</td><td>Shows which stocks drove the index.</td><td>Narrow participation behind an index move is a fragility warning.</td></tr>
+<tr><td>tastytrade</td><td>Broker volatility metrics: IV index, rank, percentile, HV, beta, IV term structure.</td><td>Read-only bridge. IV-implied |move| = IV × √(h/252) × √(2/π).</td><td>√(2/π) ≈ 0.80 turns a standard deviation into an average absolute move.</td><td>Compare the IV-implied move with the straddle move and with history.</td></tr>
+<tr><td>Inputs (n this build)</td><td>Copies of every file the build read.</td><td>Content-addressed copies in <code>output/inputs</code>, manifest in the day's snapshot.</td><td>13 Oct: 33 files archived.</td><td>Any board reading can be reproduced later from the same inputs.</td></tr>
+</tbody></table></div>
+
+<h3>Limits</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>About five years of daily history (from 2021-08), so one rate cycle</td><td>The sample is short.</td><td>Fixed statement.</td><td>Analog sets are small and evidence is thin by construction.</td><td>Treat every pattern as evidence, not law. A regime the sample never saw can behave differently.</td></tr>
+<tr><td>FRED history is the latest vintage</td><td>Revised data replaces first prints in history.</td><td>Fixed statement. Market series (yields, FX, H.4.1) are not revised; monthly prints are shown only, never used as conditions.</td><td>The ten conditions avoid revised monthly data.</td><td>The FRED prints table on Macro intelligence is context, never a condition.</td></tr>
+<tr><td>Breadth uses the price store's own ticker universe, which grows over time</td><td>Old breadth readings used fewer tickers.</td><td>Fixed statement.</td><td>Breadth history is not perfectly like-for-like.</td><td>Read breadth extremes as approximate.</td></tr>
+<tr><td>All thresholds are provisional</td><td>No setting is final.</td><td>Fixed statement.</td><td>The board's own scorecard validates them over time.</td><td>Check Scorecards before you rely on any rule's output.</td></tr>
+</tbody></table></div>
+
+<h3>Settings behind the tab (in the configuration, not printed on it)</h3>
+<p>These values shape what you see on other tabs. The Method tab does not print them, but they explain many labels.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Horizons 1, 5, 20 sessions</td><td>The three forward windows used everywhere.</td><td><code>horizons_sessions</code>.</td><td>One day, one week, about one month.</td><td>Pick the horizon that matches your holding period.</td></tr>
+<tr><td>Price freshness: 2 sessions</td><td>An ETF's prices older than this mark it STALE.</td><td><code>freshness.price_max_age_sessions</code>.</td><td>Stale ETFs are excluded from the board's scored leans.</td><td>Do not trade off a stale row.</td></tr>
+<tr><td>Outside file freshness: 30 h (48 h Money Index, 12 h overnight)</td><td>Age limits for outside reports.</td><td><code>freshness</code> block.</td><td>Sets the FRESH / STALE chips on Macro intelligence.</td><td>FRESH is about file age, not content age.</td></tr>
+<tr><td>FRED max age: 6 days daily, 12 days weekly</td><td>When a FRED value becomes MISSING.</td><td><code>fred_max_age_days</code>.</td><td>Point-in-time rule above.</td><td>As above.</td></tr>
+<tr><td>Holdout needs ≥ 3 windows</td><td>Below this, the holdout is "thin".</td><td><code>min_effective_n_holdout</code> 3.</td><td>Holdout thin is common at 20 sessions.</td><td>A thin holdout neither confirms nor rejects a lean.</td></tr>
+<tr><td>Extension windows 5 and 20</td><td>The two "move made" windows.</td><td><code>extension.windows_sessions</code>.</td><td>As above.</td><td>As above.</td></tr>
+<tr><td>Option quotes: up to 2 sessions old</td><td>Older chain quotes mark the option block STALE.</td><td><code>options.max_quote_age_sessions</code>.</td><td>SPY on 13 Oct: quote date 2026-10-13, 0 sessions old.</td><td>Never price a trade off stale quotes.</td></tr>
+<tr><td>Target expiry: 1, 7, 28 calendar days</td><td>Minimum days to expiry for each horizon's straddle.</td><td><code>options.target_dte_calendar</code>; the first expiry at or beyond it is used (runway rule).</td><td>SPY 20d on 13 Oct used a 31-day expiry.</td><td>Buy more time than the move needs. The board never uses a shorter expiry.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: a lean that passes every rule</h4>
+<p><b>What you see:</b> on 13 Oct, the measured Money Index band evidence for SPY 20d: lean UP, 33 independent windows, holdout agrees.</p>
+<p><b>What it means:</b> enough windows, a t above 1.5 on the older data, an average above 0.75%, and the newest quarter agreed. That is as clean as a lean gets on this board.</p>
+<div class="act"><b>What a trader does:</b> treats it as supporting context for an upside idea, never as a trigger. Still waits for price confirmation and checks Priced vs history before buying options.</div></div>
+
+<div class="scenario"><h4>Scenario: the label seems to contradict the number</h4>
+<p><b>What you see:</b> 13 Oct: USO fell 5.57% in 20 sessions, yet Overview shows oil STABLE. And SPY 20d shows "Absorbing pressure" while the SPY 20d lean is "No clear lean".</p>
+<p><b>What it means:</b> oil's fall sits inside ±0.5 of its own normal 20-session variation. Response and lean answer different questions: response describes how SPY behaved under measured headwinds; lean asks whether history points a direction.</p>
+<div class="act"><b>What a trader does:</b> reads the definition before reacting. Does not call oil "stable" in the everyday sense; checks the Transmission map to see which ETFs oil has actually moved.</div></div>
+
+<div class="scenario"><h4>Scenario: data arrives late or not at all</h4>
+<p><b>What you see:</b> 13 Oct: the dollar condition uses DEXUSEU from 9 Oct (released Tuesday after Columbus Day). For example, if FRED updates failed for a week, liquidity would show MISSING and analogs would match on nine conditions. (Second part illustrative.)</p>
+<p><b>What it means:</b> the board waits for publication and refuses to guess. MISSING is unknown, never neutral.</p>
+<div class="act"><b>What a trader does:</b> checks live FX or the missing series elsewhere before trading a view that depends on it. Gives less weight to leans on days with missing conditions.</div></div>
+
+<div class="scenario"><h4>Scenario: the analog set had to be loosened</h4>
+<p><b>What you see:</b> 13 Oct: match level 60%. 100% and 90% found nothing, 70% gave only 11 windows, 60% gave 26.</p>
+<p><b>What it means:</b> today's combination of conditions is rare. The analogs share only 6 of 10 conditions with today.</p>
+<div class="act"><b>What a trader does:</b> treats every analog-based lean today as rough. Puts more weight on price, levels and the scenario records, which do not depend on the macro match.</div></div>
+
+<div class="scenario"><h4>Scenario: a path-dependent product</h4>
+<p><b>What you see:</b> TQQQ 1d No clear lean, 20d Path-dependent.</p>
+<p><b>What it means:</b> TQQQ resets its 3× exposure daily, so multi-session history does not transfer. The board withholds the lean on purpose.</p>
+<div class="act"><b>What a trader does:</b> uses QQQ's evidence for the view and keeps any TQQQ position short-dated, sized for its daily swings.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do</h4>
+<p><b>What you see:</b> for example, the Method tab after a routine build: same settings, same limits, new FRED dates one day later. (Illustrative.)</p>
+<p><b>What it means:</b> the rules did not change.</p>
+<div class="act"><b>What a trader does:</b> nothing. The Method tab is reference. Come back when a reading elsewhere surprises you or when the configuration version changes.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>Coach: the ETF matrix shows SPY 20d "No clear lean". A friend says "macro is bullish, history says SPY rises". Let us use the Method rules to see exactly why the board stays quiet.</p>
+<ol class="steps">
+  <li><b>Which conditions?</b> Today: SPY trend ABOVE BOTH, realised vol LOW, breadth LOW, liquidity FLAT, curve level FLAT, curve move STEEPENING, 10Y RISING, credit STABLE, dollar STRENGTHENING, oil STABLE. None MISSING.</li>
+  <li><b>How close are the analogs?</b> The board loosened to 60%: 111 past sessions match at least 6 of the 10, giving 26 independent 20-session windows.</li>
+  <li><b>What did they do?</b> SPY analog mean +0.42% over 20 sessions, up 61% of the time. All days: +0.92%. So these analogs did slightly worse than an average month.</li>
+  <li><b>Does it pass the lean rules?</b> On the train period (before 2025-06-10): 21 windows, mean +0.40%, t 0.46. It needs |t| ≥ 1.5 and |mean| ≥ 0.75%. It fails both. Result: No clear lean.</li>
+  <li><b>How uncertain?</b> 80% interval −0.53% … +1.37%. It crosses zero.</li>
+  <li><b>What does price alone say?</b> Price-only lean: also No clear lean.</li>
+  <li><b>Stage and price.</b> Move made over 20 sessions: 1.0σ, not extended. Priced vs history 20d: 0.96 (a 31-day straddle prices 2.84% for 20 sessions vs 2.95% delivered by analogs). Fairly priced.</li>
+</ol>
+<div class="example">
+  <div class="head"><b>SPY, 20 sessions, 13 Oct</b><span class="meta">match 60% · 26 windows · train t 0.46 · No clear lean</span></div>
+  <p>Macro history gives no direction for SPY over the next month. The run is not extended, and options are priced close to what similar sessions delivered.</p>
+  <p class="verdict"><b>Decision sentence:</b> "The board's macro evidence is neutral for SPY at 20 sessions, so any SPY trade rests on price structure and my own trigger; I do not quote 'macro is bullish' as a reason." This is a reading of the rules, not a recommendation.</p>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+  <div class="box"><h4>Coach's tips</h4><ul>
+    <li>Learn the four lean gates: 8 windows, |t| 1.5, a minimum average, and the holdout.</li>
+    <li>When a label surprises you, find its row here before you argue with it.</li>
+    <li>Watch the analog match level on Overview: 60% means rough analogs.</li>
+    <li>"Stable" and "No clear lean" are real answers. They tell you macro is not the story today.</li>
+    <li>Use Priced vs history every time you plan to buy options.</li>
+  </ul></div>
+  <div class="box"><h4>Common mistakes</h4><ul>
+    <li>Reading RISING or FALLING as a level. They describe a fast 20-session change.</li>
+    <li>Counting analog sessions instead of independent windows.</li>
+    <li>Treating MISSING as neutral.</li>
+    <li>Holding a leveraged or inverse fund on a 20-session macro view.</li>
+    <li>Forgetting that thresholds are provisional and history covers one rate cycle.</li>
+    <li>Assuming the "Latest FRED observations" dates are the ones in use.</li>
+  </ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="overview.html">Overview</a> for today's condition states and analog depth; <a href="etf-matrix.html">ETF matrix</a> for leans, intervals and holdouts per ETF; <a href="transmission-map.html">Transmission map</a> for condition contrasts; <a href="desk-card.html">Desk card</a> for the decision aids in use; <a href="scorecards.html">Scorecards</a> for how the rules perform.</p>
+
+<div class="pager"><a href="scorecards.html">← Scorecards</a><a href="next-session-plan.html">Next session plan →</a></div>
+</main>
+</div>
+</body>
+</html>

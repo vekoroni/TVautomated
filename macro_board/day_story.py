@@ -47,7 +47,7 @@ PUBLISHED = "PUBLISHED"
 
 
 def _num(x):
-    if isinstance(x, bool) or not isinstance(x, (int, float)):
+    if isinstance(x, (bool, np.bool_)) or not isinstance(x, (int, float, np.number)):  # the store returns numpy ints
         return None
     return float(x) if math.isfinite(x) else None
 
@@ -294,11 +294,11 @@ def macro_drivers(sensitivity: Mapping, *, horizon: str, flow_label: str, min_ab
         changed = next((c["session"] for c in changes if c.get("condition") == cond and c.get("to") == s.get("state")
                         and c.get("session") in recent), None)
         name = labels.get(cond, cond)
-        word = "beat" if excess > 0 else "trailed"
+        word = "better" if excess > 0 else "worse"
         text = (f"{name} {str(s.get('state')).replace('_', ' ').lower()}"
                 + (f" (changed {changed})" if changed else "")
-                + f": in past sessions like this it {word} its normal {horizon}-session return by {_pp(excess)} pts "
-                  f"(t {t:+.1f}, {s.get('n_eff_in')} independent windows).")
+                + f": in past sessions in this state its next {horizon}-session return was {_pp(excess)} pts {word} than "
+                  f"when this condition was in its other states (t {t:+.1f}, {s.get('n_eff_in')} independent windows).")
         out.append({"kind": "MACRO", "condition": cond, "state": s.get("state"), "excess_pct": excess, "t": t,
                     "n_eff": s.get("n_eff_in"), "recent_change": changed, "fit": _fit(flow_label, excess), "text": text})
     return sorted(out, key=lambda d: -abs(d["t"]))

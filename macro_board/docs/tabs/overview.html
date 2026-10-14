@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overview · Tab guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#purpose">Purpose</a></li>
+    <li><a href="#how">What it does</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#data">Every data attribute</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
+    <li><a href="#apply">Applying it to a trade</a></li>
+    <li><a href="#mistakes">Tips and mistakes</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Tab guides › Overview</p>
+<header class="cover">
+  <p class="eyebrow">Tab guide · 3 of 12</p>
+  <h1>Overview</h1>
+  <p class="lede">What happened overnight, what does history say about SPY, QQQ, IWM and DIA under today's macro conditions, and which conditions are we in?</p>
+  <p class="meta">Example values from the board as of the 13 Oct 2026 close</p>
+</header>
+
+<h2 id="purpose">Purpose</h2>
+<p>The Overview is the board's dashboard for the four index ETFs (SPY, QQQ, IWM, DIA) and the macro backdrop. It answers three questions: what moved since the US close, what each index has done after past sessions that looked like today, and which of ten macro conditions are in force.</p>
+<p>Read it after the Daily review and the Day story, and before you look at single ETFs on the ETF matrix. In the morning, the Overnight block at the top is the first thing to check.</p>
+<p>Every lean on this tab is a description of recorded history. It is not a forecast and it is not permission to trade. The LLM packet at the bottom is advisory and shown as published.</p>
+<div class="callout coach"><strong>Coach's tip</strong>The header line and the Inputs strip appear on every tab. Learn them here once: they tell you whether the numbers below can be trusted today.</div>
+
+<h2 id="how">What it does</h2>
+<h3>Inputs</h3>
+<ul>
+<li><b>Daily bars</b> for every ETF from the pipeline's price store, with gaps filled by the board from Polygon grouped daily bars. A <b>latest price</b> layer takes one Polygon snapshot (about 15 minutes delayed) on refresh builds.</li>
+<li><b>FRED series</b> for liquidity, the yield curve, the 10-year yield and the dollar, each aligned to the day it was published.</li>
+<li><b>The overnight capture</b>, a JSON file written by the macro inputs runner: futures, pre-market, VIX, FX, Asia, Europe and the 08:30 ET prints.</li>
+<li><b>Option chains</b> (MarketData quotes stored in the phantom database), <b>tastytrade metrics</b> (read-only), <b>issuer holdings</b>, the <b>GEX file</b> and the <b>pipeline's proposals</b> from its newest run.</li>
+<li><b>The LLM macro packet</b> (advisory).</li>
+</ul>
+<h3>Steps</h3>
+<ol class="steps">
+<li><b>Conditions.</b> For every past session the board sets each of ten conditions to a state (for example the 10-year yield RISING, STABLE or FALLING). "Rising" means the 20-session change was more than 0.5 standard deviations above zero, measured against that series' own last year (a <b>z-score</b>). Stale inputs become MISSING, never their last value.</li>
+<li><b>Analogs.</b> It finds past sessions whose conditions match today's. It starts at a 100% match and loosens to 90%, 80%, 70% and 60% until it has at least 12 <b>independent windows</b> (non-overlapping 20-session stretches).</li>
+<li><b>Evidence.</b> For each ETF and horizon (1, 5, 20 sessions) it measures the return from the next session's open to the close h sessions later, after every analog session, and compares it with all sessions.</li>
+<li><b>Lean and holdout.</b> It decides a lean on the first three quarters of history and checks it on the last quarter (the <b>holdout</b>).</li>
+<li><b>Decision aids.</b> It measures how far each ETF has already moved, and whether price agrees with the macro pressure measured for it.</li>
+<li><b>Option price.</b> It reads the at-the-money <b>straddle</b> (a call plus a put at the same strike) to see how big a move the option market is charging for.</li>
+</ol>
+<p>The tab updates on every build. The morning build adds the overnight capture at the top; the evening build is the scored record.</p>
+
+<h2 id="screen">Reading the screen</h2>
+<h3>Header line, authority banner and Inputs strip</h3>
+<p>At the very top: the session, the build kind and the build time. Under it, a grey banner states what the board is and is not. Then the <b>Inputs</b> strip: one chip per source with ✓ (fresh), ! (stale) or × (missing). Scan the strip for any ! or × before reading anything else.</p>
+<h3>Overnight</h3>
+<p>Cards for US index futures, US pre-market ETFs, VIX overnight, FX and the dollar, rates and commodity futures, Asia and Europe, plus "US prints today" from FRED. On a morning build, this is your first read.</p>
+<h3>Index focus</h3>
+<p>Four cards: SPY, QQQ, IWM, DIA. Each shows price, recent returns, the pipeline's proposal, measured leans per horizon, the option market's price for movement, tastytrade volatility, holdings and dealer gamma. Hover any chip for its evidence.</p>
+<h3>Macro conditions now</h3>
+<p>Ten tiles, one per condition, each with its current state, value, a sparkline, a colour strip of past states and the date of the data used.</p>
+<h3>What changed, Analog depth, Recent analog episodes, Advisory packet headline</h3>
+<p>Four cards at the bottom: recent state changes, how closely today is matched to history, what the indexes did after the latest similar episodes, and the LLM packet's headline.</p>
+<div class="callout warn"><strong>Hidden setting</strong>The Overview has no horizon selector of its own. The Response chip, the tastytrade "IV-implied |move|" and the holdings line use the horizon you last picked on another tab (Daily review, ETF matrix, Transmission map or Sector rotation). It is 20d by default.</div>
+
+<h2 id="data">Every data attribute</h2>
+
+<h3>Header line and authority banner</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>as of &lt;date&gt; close</td><td>The last completed session in the data.</td><td>Last date in the price data.</td><td>13 Oct board: "as of 2026-10-13 close".</td><td>All leans and returns stop here.</td></tr>
+<tr><td>Morning build (pre-open)</td><td>Built before the open.</td><td>Runner session PreOpen, or the clock before 09:30 ET.</td><td>Adds overnight and pre-market data.</td><td>The build to read before trading.</td></tr>
+<tr><td>Evening build (post-close)</td><td>Built after the close.</td><td>Runner session PostClose, or the clock after the close.</td><td>The day's final picture.</td><td>The build to plan from in the evening.</td></tr>
+<tr><td>Intraday build / Off-session build</td><td>Built during the session, or on a non-trading day.</td><td>Clock and XNYS calendar.</td><td>Intraday prices are partial.</td><td>Treat intraday leans as provisional.</td></tr>
+<tr><td>(by clock)</td><td>The build kind came from the clock, not the runner.</td><td>Manual build.</td><td>13 Oct board was a morning build by clock.</td><td>No action; just know how it was made.</td></tr>
+<tr><td>· scored record</td><td>This evening build's leans are saved and scored later.</td><td>Evening, not back-dated.</td><td>Missing on morning builds.</td><td>Scorecards judge only these.</td></tr>
+<tr><td>built &lt;time&gt; UTC</td><td>When the page was made.</td><td>Build clock.</td><td>13 Oct board: 2026-10-14 09:19:02 UTC (05:19 ET).</td><td>Old page = old prices. Rebuild if stale.</td></tr>
+<tr><td>Authority banner</td><td>States the board is standalone and feeds nothing back to the pipeline.</td><td>Fixed text plus board and config versions.</td><td>macro-board-v1.0.0 · macro_board_config_v1.</td><td>Reminder: leans describe history; advisory items are scored elsewhere.</td></tr>
+</tbody></table></div>
+
+<h3>Inputs strip</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Chip symbol ✓ / ! / ×</td><td>Fresh / stale / missing or unreadable.</td><td>Each source has a maximum age: 30 h for most files, 30 h for the macro packet, 48 h for the US Money Index and event payload, 12 h for the overnight capture, 8 days for the weekly macro filter.</td><td>Hover for path, as-of time, age in hours and notes.</td><td>Anything relying on a × source is unusable today. Lower your trust in ! sources.</td></tr>
+<tr><td>Source chips (15)</td><td>LLM macro packet, US Money Index, News enrichment delta, US economic event payload, Bond macro state, VIX engine v3, Dealer gamma (GEX), Liquidity monitor, Fung-Hsieh macro filter, Colab daily regime model, RSP vs SPY breadth, Colab forward bias, FRED economic prints, Series threshold flags, Overnight capture.</td><td>Read-only file loaders. CSV ages use the file time, so a morning build on day-old data is not marked stale.</td><td>13 Oct board: all 15 fresh.</td><td>Each feeds a different tab; the chip tells you which pieces to trust.</td></tr>
+<tr><td>Prices to &lt;date&gt;</td><td>Daily bars run to this session.</td><td>Pipeline price store plus the board's Polygon fill. Hover lists filled tickers, unavailable ones and gaps too long to fill.</td><td>"(store to …)" appears when the store lags the board.</td><td>If a ticker you trade is listed as unavailable, its numbers are stale.</td></tr>
+<tr><td>Latest prices · N after the close</td><td>How many ETFs have a quote after the close.</td><td>One Polygon snapshot per refresh build.</td><td>13 Oct board: 63 ETFs. × when the snapshot failed or was not refreshed.</td><td>Those quotes set the "current price" for room and levels.</td></tr>
+<tr><td>tastytrade metrics</td><td>Broker volatility metrics status.</td><td>Read-only bridge; stale after 30 h.</td><td>Hover shows fetch time and any failure.</td><td>Without it, IV rank and HV are missing.</td></tr>
+<tr><td>&lt;ETF&gt; holdings</td><td>Issuer holdings file status per fund.</td><td>Stale when more than 3 sessions old.</td><td>13 Oct: QQQ holdings stale (as of 2 Oct).</td><td>Holdings-based checks for that fund are out of date.</td></tr>
+<tr><td>&lt;ETF&gt; holdings refresh failed</td><td>Today's download failed.</td><td>Refresh report; hover shows the error.</td><td>13 Oct: QQQ (HTTP 406). The last good file is kept.</td><td>Expect that fund's holdings to age.</td></tr>
+</tbody></table></div>
+
+<h3>Overnight block</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Title: since the US close &lt;date&gt; (time) · captured &lt;time&gt;</td><td>Reference close and capture time.</td><td>From the overnight capture file.</td><td>13 Oct board: since the 2026-10-13 close (20:00 UTC), captured 21:53 UTC.</td><td>The later the capture, the more overnight trading it includes.</td></tr>
+<tr><td>Chip: fresh / stale capture</td><td>Capture age vs 12 h.</td><td>File as-of time; hover shows run, age, reference source and notes.</td><td>13 Oct board: fresh (11.4 h).</td><td>Stale capture: run the PreOpen inputs before trusting it.</td></tr>
+<tr><td>Chip: captured &lt;run&gt;</td><td>Capture came from a run other than PreOpen.</td><td>Shown when the build is not a morning build.</td><td>Futures have had little time to move since the close.</td><td>Do not read an evening capture as the overnight move.</td></tr>
+<tr><td>Chip: ! board prices end &lt;date&gt;</td><td>The capture measures from a different close than the board.</td><td>Reference session differs from the board's session.</td><td>Mixed clocks.</td><td>Compare numbers with care.</td></tr>
+<tr><td>× MISSING / UNREADABLE card</td><td>No usable capture.</td><td>File missing or broken.</td><td>Text explains the runner writes it.</td><td>Check futures yourself before the open.</td></tr>
+<tr><td>Card titles</td><td>US index futures, US pre-market (ETFs), VIX overnight, FX &amp; dollar, Rates &amp; commodity futures, Asia, Europe.</td><td>Groups in the capture.</td><td>Only groups present are shown.</td><td>Read futures and pre-market first.</td></tr>
+<tr><td>n up · n down · median x%</td><td>Count of rows up and down and the median change.</td><td>Capture summary.</td><td>13 Oct board futures: 1 up, 3 down, median −0.02%.</td><td>A quick sense of overnight mood.</td></tr>
+<tr><td>Row name</td><td>Instrument, for example "S&amp;P 500 e-mini".</td><td>Capture.</td><td>Hover: symbol, source, last vs reference, last bar time.</td><td>Futures lead the open.</td></tr>
+<tr><td>Change %</td><td>Move since the US close (futures, FX, rates, VIX, pre-market) or from its own previous close (Asia, Europe).</td><td>Last ÷ reference − 1.</td><td>Footnote under each card says which.</td><td>Compare with each index's daily move to judge size.</td></tr>
+<tr><td>State: blank (OK)</td><td>Normal quote.</td><td>State OK.</td><td>No warning.</td><td>Usable.</td></tr>
+<tr><td>State: no trade since close</td><td>No new print.</td><td>No bar after the close.</td><td>Change is not informative.</td><td>Ignore the change.</td></tr>
+<tr><td>State: missing / no close reference</td><td>No quote, or no reference price (shown in red).</td><td>Capture state.</td><td>Missing, not zero.</td><td>Ignore that row.</td></tr>
+<tr><td>State: closed / in session / not yet open / no session today</td><td>The foreign market's status.</td><td>Exchange clock.</td><td>13 Oct board: Asia "not yet open" (last completed session shown), Europe "closed".</td><td>"Not yet open" means you see the previous session.</td></tr>
+<tr><td>Chip: after break</td><td>First session after a holiday break.</td><td>Capture flag.</td><td>The change spans several days.</td><td>Do not compare it with a normal day.</td></tr>
+<tr><td>Age (m or h), ! when stale</td><td>How old the last bar is.</td><td>Minutes, or hours when 120 min or more; ! when older than the capture's stale limit.</td><td>13 Oct board: VIX 103m ! (limit 60 min).</td><td>Stale quotes may have moved since.</td></tr>
+<tr><td>US prints today: time, name, state, value, prior</td><td>The 08:30 ET FRED releases due today.</td><td>Capture's release list.</td><td>"No tracked 08:30 ET release scheduled today." when empty.</td><td>A released print explains a pre-market jump.</td></tr>
+<tr><td>Next 7 days chips</td><td>Upcoming releases.</td><td>Capture's release calendar within 7 days.</td><td>13 Oct board: 10-14 CPI, 10-15 PPI, Retail sales, Jobless claims, 10-20 Housing starts.</td><td>Plan around them.</td></tr>
+<tr><td>Footnote: delayed quotes, source errors</td><td>Quotes are about 10 to 15 minutes delayed; error count if any.</td><td>Capture.</td><td>Display only.</td><td>Never treat as live prices.</td></tr>
+</tbody></table></div>
+
+<h3>Index focus card: top part</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Ticker and group</td><td>The ETF and its board group.</td><td>Config groups.</td><td>"SPY Broad indices".</td><td>Context.</td></tr>
+<tr><td>Big number</td><td>Last close.</td><td>Daily bars.</td><td>SPY 778.01.</td><td>Reference price.</td></tr>
+<tr><td>Latest line: pre-market / intraday / after-hours / closed market &lt;price&gt; &lt;change&gt; · time ET</td><td>A quote after the close.</td><td>Polygon snapshot; shown only when it is later than the close. "· N min old" in orange when older than 30 min.</td><td>SPY: pre-market 779.62, +0.21%, 05:04 ET.</td><td>The current price used for levels on other tabs.</td></tr>
+<tr><td>1d / 5d / 20d</td><td>Returns over 1, 5, 20 sessions.</td><td>Close vs close.</td><td>SPY: −0.01%, −0.14%, +2.72%.</td><td>Recent path.</td></tr>
+<tr><td>vs 200d</td><td>Distance from the 200-session average.</td><td>Close ÷ 200-close mean − 1.</td><td>SPY +7.5%.</td><td>Above = long-term uptrend.</td></tr>
+<tr><td>RV20</td><td><b>Realised volatility</b>: how much it has actually moved, annualised.</td><td>Standard deviation of 20 daily log returns × √252 × 100.</td><td>SPY 9.5%. Divide by about 15.9 (√252) for a daily move: about 0.6%.</td><td>Sets stop distance and position size.</td></tr>
+<tr><td>Warning box: status, last bar</td><td>Prices are stale.</td><td>Last bar more than 2 sessions behind.</td><td>Shown only when stale.</td><td>Do not use this card's numbers.</td></tr>
+<tr><td>Sparkline</td><td>Closes over the display window (260 sessions).</td><td>Line of closes; dot = last.</td><td>Shape only, no scale.</td><td>A quick look at trend.</td></tr>
+<tr><td>Pipeline chip: CALL / PUT · verdict</td><td>The pipeline's proposal from its newest run.</td><td>Read-only; blue CALL, red PUT. Hover: run id, direction, verdict, stand-down reason.</td><td>13 Oct: all four "CALL · ARMED" (run 20261013_221020).</td><td>A second opinion to test against the evidence, never an order.</td></tr>
+<tr><td>Pipeline chip: not in run</td><td>No proposal for this ETF.</td><td>Not in the newest run.</td><td>Nothing to compare.</td><td>Judge on the board alone.</td></tr>
+<tr><td>Chip: x% of target used</td><td>Share of the pipeline's entry→target move already made.</td><td>(close − entry) ÷ (target − entry). Darker style at 50% or more.</td><td>13 Oct: 0% on all four (entry was the close).</td><td>A large share means little room left in that idea.</td></tr>
+<tr><td>Response &lt;h&gt;d: Supporting</td><td>Price agrees with the net measured macro pressure.</td><td>Headwinds and tailwinds are conditions in today's state whose forward return differed from other states with |t| ≥ 1. More tailwinds and price rising, or more headwinds and price falling.</td><td>Behaviour matches the macro.</td><td>Nothing unusual.</td></tr>
+<tr><td>Response: Absorbing pressure</td><td>Net headwind, but the ETF rose.</td><td>As above.</td><td>13 Oct SPY 20d: headwinds Realised volatility and Curve level, tailwind Breadth, own return +2.72%.</td><td>Buyers are overriding macro; be alert to a catch-up lower if they tire.</td></tr>
+<tr><td>Response: Rejecting relief</td><td>Net tailwind, but the ETF fell.</td><td>As above.</td><td>13 Oct DIA 20d.</td><td>Weakness despite help; a warning for longs.</td></tr>
+<tr><td>Response: Mixed / Insufficient</td><td>Equal headwinds and tailwinds / nothing measured or no return.</td><td>As above.</td><td>QQQ and IWM 20d were Mixed.</td><td>No read from this chip.</td></tr>
+<tr><td>Response tooltip</td><td>Lists headwinds, tailwinds and the ETF's own return.</td><td>As above.</td><td>"Describes behaviour only."</td><td>Shows which conditions to watch.</td></tr>
+<tr><td>Move made 5d / 20d: Not extended / Extended ↑ / Extended ↓ with σ</td><td>How far the ETF has already moved, in its own volatility units (σ, standard deviations).</td><td>Return ÷ (RV20 × √(window ÷ 252)). Extended at ±1.5σ.</td><td>SPY 20d: Not extended, 1.0σ.</td><td>An extended move leaves less room. Check what followed similar runs on the ETF matrix before calling it late.</td></tr>
+</tbody></table></div>
+
+<h3>Index focus card: measured lean table</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>H</td><td>Horizon: 1d, 5d, 20d.</td><td>Config.</td><td>Next open to close h sessions later.</td><td>Match to your holding period.</td></tr>
+<tr><td>Measured lean: ▲ Up / ▼ Down</td><td>After today-like sessions, the ETF tended to rise / fall.</td><td>Decided on the train period (first 75% of history): at least 8 independent windows, t ≥ 1.5, and an average of at least 0.05% (1d), 0.25% (5d) or 0.75% (20d).</td><td>A measured tilt, not a probability.</td><td>Supports a side only when the holdout agrees and the interval clears zero.</td></tr>
+<tr><td>– No clear lean</td><td>History was not decisive.</td><td>Failed the t or size test.</td><td>13 Oct: every horizon for all four ETFs.</td><td>The macro backdrop gives no direction; trade levels and price action.</td></tr>
+<tr><td>Insufficient sample</td><td>Fewer than 8 independent windows.</td><td>Count test.</td><td>Too few analogs.</td><td>Ignore.</td></tr>
+<tr><td>Short history</td><td>Under 500 sessions of history.</td><td>History test.</td><td>Young ETF.</td><td>Ignore.</td></tr>
+<tr><td>Path-dependent</td><td>Leveraged, inverse or volatility products beyond 1d.</td><td>Lean suppressed by config.</td><td>Not on the four index cards.</td><td>Do not apply multi-day analogs to these products.</td></tr>
+<tr><td>✓ holdout / ✗ holdout / ? holdout thin</td><td>Did the last quarter of history agree with the lean?</td><td>Holdout average's sign vs the lean; thin under 3 windows. Blank when there is no lean.</td><td>✗ means the lean failed out of sample.</td><td>Only trust leans with ✓.</td></tr>
+<tr><td>Lean tooltip</td><td>Full evidence.</td><td>Analog mean, median, up %, n and independent windows; all-history mean and up %; 80% interval; price-only lean (no macro); train mean, t and windows before the holdout date; holdout mean and windows.</td><td>The tooltip's last line names the selected horizon, not always the row's.</td><td>If the price-only lean equals the macro lean, macro adds nothing.</td></tr>
+<tr><td>Analog</td><td>Mean return after analog sessions.</td><td>All analog sessions, full history.</td><td>SPY 5d +0.11%.</td><td>Compare with Base.</td></tr>
+<tr><td>80% interval</td><td>Range likely to contain the true analog mean 8 times in 10.</td><td>Student-t interval on independent windows.</td><td>SPY 5d −0.2% to +0.4%: crosses zero.</td><td>Crossing zero = sign not settled.</td></tr>
+<tr><td>Base</td><td>Mean over all sessions.</td><td>Every session in history.</td><td>SPY 5d +0.21%.</td><td>Analog below base means today's conditions have been worse than normal.</td></tr>
+<tr><td>Win.</td><td>Independent windows in the analog set.</td><td>Non-overlapping cases.</td><td>SPY: 128 (1d), 52 (5d), 26 (20d).</td><td>Smaller at longer horizons; trust 20d least.</td></tr>
+</tbody></table></div>
+
+<h3>Index focus card: option, volatility, holdings and gamma lines</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Options table: H</td><td>Horizon row.</td><td>1d, 5d, 20d.</td><td>"no expiry covering the horizon" when no chain fits.</td><td>Pick the row for your hold.</td></tr>
+<tr><td>Expiry · ATM</td><td>Days to expiry and the at-the-money strike used.</td><td>First expiry with at least 1, 7 or 28 calendar days (never shorter), strike nearest the price with two-sided quotes.</td><td>SPY 5d: 7d · 778.0.</td><td>The contract the market is pricing.</td></tr>
+<tr><td>Priced move</td><td>The <b>implied move</b>: the move the straddle charges for, scaled to the horizon.</td><td>Straddle mid ÷ spot, scaled by √(horizon ÷ expiry sessions).</td><td>SPY 5d: 1.06%.</td><td>What a long option needs just to break even, roughly.</td></tr>
+<tr><td>Analog |move|</td><td>Average size of the move after analog sessions, ignoring direction.</td><td>Mean absolute analog return.</td><td>SPY 5d: 1.43%.</td><td>What history delivered.</td></tr>
+<tr><td>Ratio</td><td>Priced move ÷ analog |move|.</td><td>Division.</td><td>Above 1: options charge more than history delivered. SPY 5d: 0.75×.</td><td>Below 1 favours buying options; above 1 favours shares or smaller premium.</td></tr>
+<tr><td>Spread</td><td>Straddle bid-ask width as % of mid.</td><td>(ask − bid) ÷ mid.</td><td>SPY 0.5 to 0.6%; DIA 1d 5.9%.</td><td>A wide spread costs you on entry and exit.</td></tr>
+<tr><td>Note: quote date, sessions old</td><td>When the chain was quoted.</td><td>Latest stored quote; stale beyond 2 sessions.</td><td>13 Oct: quoted 2026-10-13.</td><td>Stale chains mislead; re-quote live.</td></tr>
+<tr><td>"No option chain in the store"</td><td>No stored chain.</td><td>Missing.</td><td>No option read.</td><td>Check a live chain.</td></tr>
+<tr><td>tastytrade IV</td><td><b>Implied volatility</b> index (30-day): the volatility options imply, annualised.</td><td>Broker metric.</td><td>SPY 15.1%.</td><td>Compare with HV30.</td></tr>
+<tr><td>IV rank</td><td>Where IV sits in its past year's range, 0 to 100.</td><td>Broker metric.</td><td>SPY 29: lower third.</td><td>Low rank = options relatively cheap.</td></tr>
+<tr><td>HV30</td><td>Historical (realised) volatility, 30 days.</td><td>Broker metric.</td><td>SPY 9.2%.</td><td>What the ETF actually did.</td></tr>
+<tr><td>IV−HV</td><td>IV minus HV, in volatility points (shown with a % sign).</td><td>Broker metric.</td><td>SPY +5.9.</td><td>Positive = options price more movement than recent reality.</td></tr>
+<tr><td>IV-implied |move| &lt;h&gt;d</td><td>Expected size of move from IV.</td><td>IV × √(h ÷ 252) × √(2/π).</td><td>SPY 20d: 3.40% (straddle: 2.84%).</td><td>A cross-check on the straddle.</td></tr>
+<tr><td>Holdings: issuer, as of, positions, stale chip</td><td>The fund's holdings file.</td><td>Issuer daily file; stale over 3 sessions.</td><td>QQQ: Invesco, 2 Oct, stale (7 sessions old).</td><td>Stale holdings weaken the checks below.</td></tr>
+<tr><td>priced holdings contributed X vs ETF Y</td><td>Sum of holding contributions vs the ETF's return over the horizon.</td><td>Start-of-window weight × return, summed.</td><td>SPY 20d: +2.90% vs +2.72%.</td><td>Close agreement means the file explains the move.</td></tr>
+<tr><td>top 10 (W% weight) Z</td><td>The ten biggest holdings' weight and contribution.</td><td>Same method.</td><td>SPY: 39.0% weight, +2.21 of the 20d move.</td><td>A large share means a top-heavy move.</td></tr>
+<tr><td>participation P%</td><td>Share of weight above its 50-session average.</td><td>Holdings prices.</td><td>SPY 64%.</td><td>Above 50% = broad trend.</td></tr>
+<tr><td>U% weight unpriced (orange)</td><td>Weight with no price in the store.</td><td>Never counted as zero return.</td><td>QQQ 4.2%.</td><td>Large values make the sums less reliable.</td></tr>
+<tr><td>Dealer gamma: regime, net, flip, walls, date</td><td>A model estimate of option dealers' gamma (how their hedging may speed up or slow down moves).</td><td>GEX file, SPY and QQQ only. The dealer sign is assumed; Greeks are a Black-Scholes approximation.</td><td>SPY: NEGATIVE, net −0.94bn, flip 779.8, call wall 800, put wall 755 (2026-10-12).</td><td>Negative gamma is conventionally linked to bigger moves. Use the levels as soft lines, never as facts.</td></tr>
+</tbody></table></div>
+
+<h3>Macro conditions now: tile parts</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>Label</td><td>Condition name.</td><td>Fixed list of ten.</td><td>Top left.</td><td>Know which lever you are reading.</td></tr>
+<tr><td>observed &lt;date&gt; · N sessions old</td><td>Date of the oldest input used.</td><td>Point-in-time read; orange at 2 or more sessions. Hover lists each input's date.</td><td>Liquidity: observed 2026-10-07, 4 sessions old (weekly Fed data).</td><td>Old inputs describe an older market.</td></tr>
+<tr><td>State (large)</td><td>Today's state, or × MISSING in red.</td><td>See the condition table below.</td><td>Missing is never neutral.</td><td>The analog match uses only observed states.</td></tr>
+<tr><td>Value (small)</td><td>The number behind the state.</td><td>Formatted per condition.</td><td>Yields: "5.24%".</td><td>Lets you check the state yourself.</td></tr>
+<tr><td>Sparkline</td><td>The value over the display window.</td><td>260 sessions; a zero line for curve, credit, dollar and oil.</td><td>Shape only.</td><td>See whether the change is fresh or old.</td></tr>
+<tr><td>Colour strip</td><td>One cell per session, coloured by state; grey = MISSING.</td><td>Hover a cell for date and state.</td><td>Legend underneath maps colours to states.</td><td>Long runs of one colour = a persistent regime.</td></tr>
+<tr><td>Footnote</td><td>What was measured and the source.</td><td>Condition definition.</td><td>Read once.</td><td>Reminds you the definition, not a story.</td></tr>
+</tbody></table></div>
+
+<h3>The ten conditions and their states</h3>
+<p>"z" below means the 20-session change divided by that change's standard deviation over the trailing 252 sessions (at least 126). Above +0.5 is the rising state, below −0.5 the falling state, otherwise the middle state. All provisional.</p>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>SPY trend: ABOVE_BOTH / ABOVE_LONG_ONLY / ABOVE_SHORT_ONLY / BELOW_BOTH</td><td>SPY vs its 50- and 200-session averages.</td><td>Close above both, only the 200, only the 50, or neither. Value: SPY close.</td><td>13 Oct: ABOVE_BOTH, SPY 778.01.</td><td>BELOW_BOTH is a downtrend; longs need stronger evidence.</td></tr>
+<tr><td>Realised volatility: LOW / MID / HIGH</td><td>SPY's 20-session volatility vs its past year.</td><td>Percentile of the current 20-session volatility among past windows; LOW below the 33rd, HIGH from the 67th. Value: "13th pct".</td><td>13 Oct: LOW (13th pct).</td><td>LOW volatility often comes with cheaper options and calmer trends.</td></tr>
+<tr><td>Breadth: LOW / MID / HIGH</td><td>Share of all database tickers above their 50-session average.</td><td>Over the full price store (3,618 tickers on 13 Oct); LOW below 40%, HIGH from 60%. Value: "30% above 50d".</td><td>13 Oct: LOW while SPY is in an uptrend.</td><td>Index up, breadth low = a narrow market.</td></tr>
+<tr><td>Net liquidity proxy: EXPANDING / FLAT / CONTRACTING</td><td>Fed assets minus the Treasury's cash account minus reverse repo (a research proxy, not spendable cash).</td><td>FRED WALCL, WTREGEN, RRPONTSYD; z of the 20-session change. Value in $ trillion.</td><td>13 Oct: FLAT, $5.87tn.</td><td>Context for risk appetite; slow-moving.</td></tr>
+<tr><td>Curve level: INVERTED / FLAT / STEEP</td><td>10-year minus 2-year Treasury yield.</td><td>FRED SPREAD_2Y10Y; below 0 inverted, 0 to 0.5 points flat, from 0.5 steep. Value in basis points (bp, 1/100 of a percent).</td><td>13 Oct: FLAT, +44 bp.</td><td>A measured headwind for SPY on 13 Oct (see Response).</td></tr>
+<tr><td>Curve move: STEEPENING / STABLE / FLATTENING</td><td>Direction of the spread over 20 sessions.</td><td>z of the 20-session change. Value "+12 bp / 20d".</td><td>13 Oct: STEEPENING.</td><td>Context for banks and rate-sensitive sectors.</td></tr>
+<tr><td>10Y yield: RISING / STABLE / FALLING</td><td>The 10-year Treasury yield's 20-session change.</td><td>FRED DGS10; z. Value: the yield level.</td><td>13 Oct: RISING, 5.24%.</td><td>Rising yields often pressure growth stocks (QQQ).</td></tr>
+<tr><td>Credit appetite: TIGHTENING / STABLE / WIDENING</td><td>High-yield vs investment-grade bonds.</td><td>20-session HYG vs LQD relative log return; z. HYG ahead = tightening. Value "% / 20d".</td><td>13 Oct: STABLE, +0.01%.</td><td>WIDENING is a classic risk-off warning.</td></tr>
+<tr><td>US dollar: STRENGTHENING / STABLE / WEAKENING</td><td>Dollar vs euro.</td><td>Inverse of FRED DEXUSEU; z of the 20-session log change. Value "% / 20d".</td><td>13 Oct: STRENGTHENING, +3.61%.</td><td>A strong dollar can weigh on multinationals and commodities.</td></tr>
+<tr><td>Oil: RISING / STABLE / FALLING</td><td>Oil's 20-session move.</td><td>USO log return; z. Value "% / 20d".</td><td>13 Oct: STABLE at −5.57%: oil is so volatile that −5.6% is inside its normal range.</td><td>States are relative to each series' own noise, not raw size.</td></tr>
+<tr><td>× MISSING (any condition)</td><td>No usable observation.</td><td>Input absent or older than its maximum age (stale is missing).</td><td>Shown in red.</td><td>Analogs then match on fewer conditions.</td></tr>
+</tbody></table></div>
+
+<h3>Bottom cards</h3>
+<div class="tablewrap"><table class="attr">
+<thead><tr><th>Attribute (as shown)</th><th>What it means</th><th>How it is made</th><th>How to read it</th><th>How to use it in a trade</th></tr></thead>
+<tbody>
+<tr><td>What changed (last 10 sessions): date · condition: from → to</td><td>State changes, newest first, up to 12.</td><td>Compares each session's state with the one before.</td><td>13 Oct board: Curve level STEEP → FLAT on 2026-10-09.</td><td>Fresh changes matter more than old regimes.</td></tr>
+<tr><td>"No state changes in the last 10 sessions."</td><td>Stable backdrop.</td><td>Empty list.</td><td>Nothing new in macro.</td><td>Focus on price.</td></tr>
+<tr><td>Analog depth: "Today has N observed conditions"</td><td>How many conditions take part in matching.</td><td>Non-missing states.</td><td>13 Oct: 10.</td><td>Fewer means looser matching.</td></tr>
+<tr><td>Big number: x% match · N sessions</td><td>The match level used and the number of analog sessions.</td><td>Closest level from 100% down to 60% with at least 12 independent 20-session windows. The session count includes recent sessions whose windows are not complete yet.</td><td>13 Oct: 60% match, 129 sessions (at least 6 of 10 conditions agreeing).</td><td>60% is the loosest level allowed: today is unusual and the evidence is broad, not precise.</td></tr>
+<tr><td>Ladder: Match level / Sessions / Independent windows</td><td>The search from strict to loose; the chosen row is bold.</td><td>Counts sessions with a complete 20-session window.</td><td>13 Oct: 100% and 90%: 0; 80%: 1; 70%: 33 (11 windows); 60%: 111 (26 windows).</td><td>If even 100% has many windows, today is a common setup.</td></tr>
+<tr><td>Most recent analog episodes</td><td>Up to 10 latest independent analog dates (spaced 20 sessions apart), newest first.</td><td>Next open → close 20 sessions later for SPY, QQQ, IWM, DIA; blank when incomplete.</td><td>13 Oct: 2026-09-09 SPY +2.53%, QQQ +7.09%, IWM −3.74%; 2026-08-04 SPY −1.81%.</td><td>Mixed signs warn that the average hides very different outcomes.</td></tr>
+<tr><td>Advisory packet headline: regime label</td><td>The LLM packet's regime call.</td><td>As published; authority shown in the sub-title (ADVISORY_ONLY).</td><td>13 Oct: TRANSITIONAL BEARISH.</td><td>Advisory. Its record is on Scorecards.</td></tr>
+<tr><td>switch · conviction · probability</td><td>Risk-on/off switch and two self-scored numbers.</td><td>As published; not calibrated.</td><td>13 Oct: SELECTIVE RISK ON REDUCED SIZE · 0.54 · 0.55.</td><td>Never treat these as probabilities.</td></tr>
+<tr><td>▲ lead / ▼ avoid chips</td><td>Sectors the packet favours or avoids.</td><td>As published.</td><td>13 Oct lead: XLE, XOP, XLC, XLB, XLU; avoid: XLK, XLF, XLI, IWM, ARKK.</td><td>Check them against the measured sector table on the Daily review.</td></tr>
+</tbody></table></div>
+
+<h2 id="scenarios">Scenarios</h2>
+<div class="scenario"><h4>Scenario: macro and price agree</h4>
+<p><b>What you see:</b> for example, SPY shows ▲ Up ✓ holdout at 5d and 20d, analog interval +0.3% to +1.2% at 5d (clear of zero), Response "Supporting", Not extended, option ratio 0.85×, SPY trend ABOVE_BOTH and breadth HIGH. Illustrative values.</p>
+<p><b>What it means:</b> today-like sessions have led higher, the lean survived the holdout, price is behaving as the macro suggests, and options are not expensive.</p>
+<div class="act"><b>What a trader does:</b> treats this as a supportive backdrop for longs, then goes to the Next session plan for levels and the Desk card for the exact candidate. Still sizes by the daily move.</div></div>
+
+<div class="scenario"><h4>Scenario: the pipeline and the evidence disagree (13 Oct 2026)</h4>
+<p><b>What you see:</b> SPY "CALL · ARMED" from the pipeline, but no clear lean on any horizon, Response 20d "Absorbing pressure" (headwinds Realised volatility and Curve level), and the packet's regime "TRANSITIONAL BEARISH" next to a "SELECTIVE RISK ON" switch.</p>
+<p><b>What it means:</b> the pipeline wants calls, the measured macro history gives no direction, and buyers have been overriding measured headwinds.</p>
+<div class="act"><b>What a trader does:</b> waits. Uses the Desk card to see the pipeline's trigger, and lets price confirm a level first. Size smaller if acting at all.</div></div>
+
+<div class="scenario"><h4>Scenario: stale or missing inputs</h4>
+<p><b>What you see:</b> on 13 Oct, QQQ holdings stale (7 sessions old, 4.2% weight unpriced), VIX overnight 103m with "!", and Liquidity observed 4 sessions ago. For example, on another day the Overnight block could read "× MISSING", or a condition tile "× MISSING". Mixed real and illustrative.</p>
+<p><b>What it means:</b> some numbers describe an older market. A missing condition means analogs match on fewer conditions.</p>
+<div class="act"><b>What a trader does:</b> discounts the stale pieces, checks live futures and VIX before the open, and does not lean on QQQ's holdings checks until the file refreshes.</div></div>
+
+<div class="scenario"><h4>Scenario: nothing to do (13 Oct 2026)</h4>
+<p><b>What you see:</b> all four ETFs show "No clear lean" on 1d, 5d and 20d; analog match fell to 60%; recent episodes disagree in sign (SPY +2.53%, −1.81%, −2.35%); futures flat (median −0.02%).</p>
+<p><b>What it means:</b> the macro backdrop is unusual and history is split. The Overview offers no direction.</p>
+<div class="act"><b>What a trader does:</b> takes no macro-driven position. Moves on to levels (Next session plan) and to the measured movers (Day story). A quiet Overview is common.</div></div>
+
+<div class="scenario"><h4>Scenario: options look expensive, and the spread is wide (13 Oct 2026, DIA)</h4>
+<p><b>What you see:</b> DIA 1d row: 3d · 516.0, priced move 0.67% vs analog |move| 0.59%, ratio 1.14×, spread 5.9% of mid.</p>
+<p><b>What it means:</b> the short-dated straddle charges more than similar days delivered, and the bid-ask spread eats almost 6% of the premium.</p>
+<div class="act"><b>What a trader does:</b> avoids short-dated DIA options for a 1-day idea. Prefers shares or a longer expiry with a tighter spread (DIA 20d spread 3.7%).</div></div>
+
+<div class="scenario"><h4>Scenario: the move is already extended</h4>
+<p><b>What you see:</b> for example, QQQ 20d "Extended ↑ 1.8σ", 5d "Extended ↑ 1.6σ", while the lean is ▲ Up. Illustrative values.</p>
+<p><b>What it means:</b> the direction is supported, but a lot of the move has already happened.</p>
+<div class="act"><b>What a trader does:</b> checks the ETF matrix momentum evidence (what followed similar runs) before deciding. Waits for a pullback to a level instead of chasing.</div></div>
+
+<h2 id="apply">Applying it to a trade</h2>
+<p>A coach reads SPY's card with a new trader on the morning of 14 Oct 2026. This is practice in reading, not a recommendation.</p>
+<ol class="steps">
+<li><b>Trust check.</b> Header: morning build by clock, built 05:19 ET. Inputs strip: all 15 sources fresh, latest prices for 63 ETFs, QQQ holdings stale.</li>
+<li><b>Overnight.</b> S&amp;P futures −0.01%, Nasdaq futures −0.02%, Russell +0.04%. VIX 15.27 but 103 minutes old. Nothing decisive overnight. Asia shows its previous session; Europe closed lower (Euro Stoxx −0.55%).</li>
+<li><b>Price and path.</b> SPY closed 778.01; pre-market 779.62 (+0.21%). 5d −0.14%, 20d +2.72%, +7.5% above its 200d average, RV20 9.5% (about 0.6% a day).</li>
+<li><b>Proposal vs evidence.</b> Pipeline: CALL · ARMED, 0% of target used. Measured lean: No clear lean at 1d, 5d and 20d; 5d analog +0.11% vs base +0.21%, interval crossing zero.</li>
+<li><b>Behaviour.</b> Response 20d: Absorbing pressure. Move made: not extended (20d 1.0σ).</li>
+<li><b>Option price.</b> 5d straddle (7 DTE, 778 strike) prices 1.06% vs 1.43% delivered after analogs: ratio 0.75×, spread 0.6%. IV 15.1%, IV rank 29, HV30 9.2%.</li>
+<li><b>Levels and backdrop.</b> Dealer gamma NEGATIVE with the flip at 779.8, right at the pre-market price. Conditions: trend ABOVE_BOTH, volatility LOW, breadth LOW (30%), 10Y RISING at 5.24%, dollar STRENGTHENING. Analog match only 60%.</li>
+</ol>
+<div class="example">
+<div class="head"><b>SPY · Overview read, 14 Oct 2026 pre-open</b><span class="meta">as of the 13 Oct close</span></div>
+<p>The trend is up, but breadth is low, history under today's conditions is split, and price sits on the estimated gamma flip with CPI at 08:30. Options are reasonably priced against history.</p>
+<div class="verdict"><b>Decision sentence:</b> "The Overview gives me no macro direction, so I will not buy SPY calls on the pipeline's proposal alone. If I act after CPI, it will be on a level from the Next session plan, with long options preferred over shares only because the 5d straddle is cheap against history."</div>
+</div>
+
+<h2 id="mistakes">Tips and mistakes</h2>
+<div class="grid2">
+<div class="box"><h4>Coach's tips</h4><ul>
+<li>Read the Inputs strip first, every time.</li>
+<li>Trust a lean only with ✓ holdout and an interval clear of zero.</li>
+<li>Compare Analog with Base. The gap is what today's conditions add.</li>
+<li>Check the match level. At 60%, analogs may share as few as 6 of 10 conditions.</li>
+<li>Use the option Ratio to choose between options and shares, not to choose a direction.</li>
+<li>Remember the Overview uses the horizon picked on another tab.</li>
+</ul></div>
+<div class="box"><h4>Common mistakes</h4><ul>
+<li>Reading "No clear lean" as bearish. It means no direction.</li>
+<li>Treating the pipeline chip as a signal to act.</li>
+<li>Treating GEX walls and flip as measured dealer positions. They are model estimates.</li>
+<li>Reading an evening capture as the overnight move.</li>
+<li>Reading the packet's conviction or probability as a real probability.</li>
+<li>Ignoring the spread column when the ratio looks cheap.</li>
+</ul></div>
+</div>
+<p><b>Related tabs:</b> <a href="daily-review.html">Daily review</a> for the session's reaction, <a href="day-story.html">Day story</a> for flows, <a href="etf-matrix.html">ETF matrix</a> for every ETF and the momentum evidence, <a href="transmission-map.html">Transmission map</a> for each condition's effect, <a href="macro-intelligence.html">Macro intelligence</a> for the full packet and GEX, and <a href="scorecards.html">Scorecards</a> for how the leans and the packet have performed.</p>
+
+<div class="pager"><a href="day-story.html">← Day story</a><a href="etf-matrix.html">ETF matrix →</a></div>
+</main>
+</div>
+</body>
+</html>
