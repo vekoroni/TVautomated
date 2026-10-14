@@ -31,6 +31,7 @@ import pandas as pd
 from . import BOARD_VERSION
 from . import conditions as cond
 from . import decision_points as dpts
+from . import day_story as dstory
 from . import decision as dec
 from . import desk_card as desk
 from . import momentum as mom
@@ -403,6 +404,10 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                                      sessions=sessions, universe=universe,
                                                      record=kind in ("EVENING", "MORNING") and not as_of)
     payload["session_plan"] = splan.build(payload, config["session_plan"])
+    payload["day_story"] = build_day_story(payload, config, opens=opens, closes=closes, volumes=volumes, highs=highs,
+                                           lows=lows, sessions=sessions, metrics=metrics, proposals=proposals["rows"],
+                                           external=external, latest=latest, kind=kind,
+                                           record=kind in ("EVENING", "MORNING") and not as_of, as_of=as_of)
     payload["measured_sheet"] = write_measured_sheet(payload, config, output_dir, kind=kind, as_of=as_of)
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
           f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
@@ -647,6 +652,30 @@ def build_scenario_watch(config: dict, *, opens, closes, states, mask, sessions,
     print(f"[board] scenario watch: {len(out['rows'])} scenario x ETF rows, live {live}, "
           f"recorded {out['recorded_this_build']} in {time.time() - started:.1f}s")
     return out
+
+
+def build_day_story(payload: dict, config: dict, *, opens, closes, volumes, highs, lows, sessions, metrics, proposals,
+                    external, latest, kind: str, record: bool, as_of: str | None) -> dict:
+    """Where money is going, the measured reasons that fit, and the day's trade analysis (display only).
+    Price room for every story ETF reuses the opportunity owner; the AI narrative is skipped on as-of builds."""
+    tickers = [t for t in list(config["rotation"]["sectors"]) + list(config["rotation"]["industries"]) if t in closes.columns]
+    rooms = dict(payload["opportunity"]["room"])
+    extra = [t for t in tickers if t not in rooms]
+    if extra:
+        rooms.update(opty.rooms(metrics=metrics, closes=closes,
+                                gex_records=src.records(external["gex"].data) if external["gex"].status
+                                not in ("MISSING", "UNREADABLE") else [],
+                                proposals=proposals, tickers=extra, highs=highs, lows=lows, latest=latest["rows"]))
+    started = time.time()
+    try:
+        out = dstory.build(payload, config, opens=opens, closes=closes, volumes=volumes, sessions=sessions, rooms=rooms,
+                           kind=kind, record=record, ai_enabled=not as_of and os.environ.get("AVSH_BOARD_AI", "1") != "0",
+                           resolve=src.resolve)
+    except Exception as exc:  # the story is display only: it never stops the board
+        print(f"[board] day story FAILED: {type(exc).__name__}: {exc}")
+        return {"status": "FAILED", "reason": f"{type(exc).__name__}: {exc}"}
+    print(f"[board] day story built in {time.time() - started:.1f}s")
+    return {"status": "OK", **out}
 
 
 def build_desk_cards(payload: dict, config: dict) -> dict:

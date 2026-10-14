@@ -1133,5 +1133,246 @@
     ],
     "fdr_q": 0.1,
     "fdr_rationale": "Every scenario x ETF x horizon result is one try; Benjamini-Hochberg at a 10% false-discovery rate marks the results that beat the number of tries (pre-registered, trial-counted)."
+  },
+  "day_story": {
+    "registered": "2026-10-14",
+    "flow_windows": {
+      "day": "1",
+      "short": "5",
+      "long": "20"
+    },
+    "volume_window_sessions": 20,
+    "driver_horizon": "5",
+    "driver_min_abs_t": 2.0,
+    "driver_max": 5,
+    "recent_change_sessions": 5,
+    "cross_assets": {
+      "TLT": "Long Treasuries",
+      "UUP": "US dollar",
+      "USO": "Oil",
+      "HYG": "High-yield credit",
+      "GLD": "Gold"
+    },
+    "cross_asset_window_sessions": 60,
+    "cross_asset_min_abs_corr": 0.3,
+    "events_sessions_ahead": 1,
+    "persistence_horizons": [
+      1,
+      5
+    ],
+    "persistence_min_n_eff": 30,
+    "persistence_min_abs_t": 2.0,
+    "max_trade_ideas": 8,
+    "max_candidates_per_story": 8,
+    "ledger": "macro_board/output/day_story_ledger.jsonl",
+    "options_flow": {
+      "db": "data/phantom/phantom_history.db",
+      "front_bucket": "8_30",
+      "lookback_dates": 60,
+      "min_history_dates": 15,
+      "max_age_sessions": 1,
+      "heavy_volume_ratio": 2.0,
+      "unusual_pctile": 0.9,
+      "oi_change_unusual_pct": 10.0,
+      "iv_change_unusual_pts": 2.0,
+      "skew_change_unusual_pts": 1.0,
+      "iv_max_median_change_ratio": 0.15,
+      "skew_max_median_change_pts": 3.5,
+      "coverage_tolerance_pct": 10.0,
+      "guards_basis": "Measured 14 Oct 2026 on the stored iv_surface_history (8-30 DTE bucket, ~70 dates): median day-to-day change of 25-delta skew is 1.0-2.5 pts for SPY/QQQ/IWM/DIA/XLK/SMH/SOXX but 10-50 pts for XLI/XLV/KRE/XHB/XLF/XLP/XLY/XLC/IYR/XRT/XLU/XLRE/KBE/XLB (not plausible for real skew); ATM IV median daily change relative to its level 0.04-0.13 for liquid ETFs (SPY 0.10, SMH 0.07), 0.16-0.45 for KRE/IYT/XLC/IYR/XRT/XLRE/KBE/XLB/XLU/XLP; contracts captured per day vary (XLE 179 vs 213). A series is read only if its own median daily change is within the limit; a change is flagged only if larger than 90% of its own daily changes; volume and OI compare only dates with chain coverage within 10%."
+    },
+    "ai_narrative": {
+      "enabled": true,
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "max_tokens": 16000,
+      "call_on_build_kinds": [
+        "MORNING",
+        "EVENING"
+      ],
+      "cache_dir": "macro_board/output/narratives",
+      "prompt_version": "2026-10-14.1",
+      "timeout_seconds": 300,
+      "fallbacks": "default"
+    },
+    "news_keywords": {
+      "XLK": [
+        "semiconductor",
+        "chip",
+        "software",
+        "Apple",
+        "Microsoft",
+        "Nvidia",
+        "technology",
+        "AI "
+      ],
+      "XLF": [
+        "bank",
+        "JPMorgan",
+        "Wells Fargo",
+        "Goldman",
+        "Citigroup",
+        "Morgan Stanley",
+        "credit card",
+        "insurer",
+        "financial"
+      ],
+      "XLE": [
+        "oil",
+        "crude",
+        "Brent",
+        "WTI",
+        "Aramco",
+        "OPEC",
+        "natural gas",
+        "refiner",
+        "energy"
+      ],
+      "XLV": [
+        "pharma",
+        "drug",
+        "FDA",
+        "health",
+        "hospital",
+        "biotech",
+        "Medicare"
+      ],
+      "XLY": [
+        "retail sales",
+        "consumer spending",
+        "Amazon",
+        "Tesla",
+        "auto",
+        "housing starts",
+        "homebuilder"
+      ],
+      "XLP": [
+        "staples",
+        "Procter",
+        "Walmart",
+        "Costco",
+        "food prices",
+        "beverage"
+      ],
+      "XLI": [
+        "industrial",
+        "aerospace",
+        "defense",
+        "Boeing",
+        "manufacturing",
+        "durable goods",
+        "freight",
+        "rail"
+      ],
+      "XLB": [
+        "materials",
+        "chemical",
+        "copper",
+        "steel",
+        "gold",
+        "mining",
+        "fertilizer"
+      ],
+      "XLU": [
+        "utility",
+        "utilities",
+        "power demand",
+        "electricity",
+        "nuclear",
+        "grid"
+      ],
+      "XLRE": [
+        "real estate",
+        "REIT",
+        "mortgage rate",
+        "commercial property",
+        "housing"
+      ],
+      "XLC": [
+        "Alphabet",
+        "Google",
+        "Meta",
+        "Netflix",
+        "telecom",
+        "advertising",
+        "media"
+      ],
+      "SMH": [
+        "semiconductor",
+        "chip",
+        "Nvidia",
+        "TSMC",
+        "AMD",
+        "export control"
+      ],
+      "SOXX": [
+        "semiconductor",
+        "chip",
+        "Nvidia",
+        "TSMC",
+        "AMD",
+        "export control"
+      ],
+      "KRE": [
+        "regional bank",
+        "deposit",
+        "commercial real estate"
+      ],
+      "KBE": [
+        "bank",
+        "net interest",
+        "deposit",
+        "loan"
+      ],
+      "XOP": [
+        "oil",
+        "crude",
+        "Brent",
+        "WTI",
+        "Aramco",
+        "OPEC",
+        "shale"
+      ],
+      "GDX": [
+        "gold",
+        "precious metal",
+        "bullion"
+      ],
+      "XHB": [
+        "homebuilder",
+        "housing starts",
+        "mortgage rate",
+        "building permits"
+      ],
+      "XRT": [
+        "retail sales",
+        "consumer spending",
+        "retailer"
+      ],
+      "IYT": [
+        "freight",
+        "rail",
+        "trucking",
+        "shipping",
+        "airline",
+        "transport"
+      ],
+      "JETS": [
+        "airline",
+        "jet fuel",
+        "air travel"
+      ],
+      "XBI": [
+        "biotech",
+        "FDA",
+        "clinical trial"
+      ],
+      "IBB": [
+        "biotech",
+        "FDA",
+        "clinical trial"
+      ]
+    },
+    "rationale": "ACK 14 Oct 2026: a Day story tab listing the day's possible scenarios, the news and an explicit trade analysis, with narratives of why money flows into or out of each sector and how it reaches tickers. Narrator = both, clearly labelled: MEASURED templates plus a Claude narrative fed only the measured facts (numbers not in the facts and flow calls that contradict the measurement are flagged). Flow = relative return vs SPY over 5 and 20 sessions using the opportunity bands (one owner); drivers = conditions in today's state with a measured response |t| >= 2 at 5 sessions, and assets the ETF's relative return has moved with (|corr| >= 0.3, 60 sessions); option footprints = stored MarketData chains (iv_surface_history) against each ticker's own 60 stored dates; published news = event payload items matched by keyword, not verified. The trade side follows the flow, but each flow label's own history (next 5 sessions, |t| >= 2) is shown as FOLLOWS / REVERSES / NO_CLEAR_RECORD and counted for or against: measured 14 Oct 2026, leaders that turn out (XLK, SMH, SOXX) have bounced back over the next 5 sessions and real estate turning in has faded, so following those reads is against the evidence. Each session's flow calls go to the ledger and are scored on the next 1 and 5 sessions; the historical record of each flow label is shown beside it. PROVISIONAL thresholds until the ledger validates them. Display only: never a gate, score or rank."
   }
 }

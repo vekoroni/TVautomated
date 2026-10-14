@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ETF Macro Board Manual</title>
+<title>ETF Macro Board Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -78,435 +78,486 @@ ol.steps li::marker{font-weight:700;color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
 html{scroll-behavior:smooth}
+
+.callout.coach{border-left-color:var(--good)}
+p.q{color:var(--ink-2);margin:0 0 8px}
+.example.small{padding:10px 14px;margin:10px 0}
+details{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;margin:8px 0;max-width:70ch}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+details p{margin:0;color:var(--ink-2)}
+.box ul ul,.tab ul ul{margin-top:4px}
 </style>
 </head>
 <body>
-
 <div class="wrap">
 <nav class="toc" aria-label="Contents">
   <p>Contents</p>
   <ol>
-    <li><a href="#what">What the board is</a></li>
-    <li><a href="#signals">Why there are no buy/sell signals</a></li>
-    <li><a href="#spy">Why everything relates to SPY</a></li>
-    <li><a href="#run">Running the board</a></li>
-    <li><a href="#routine">The morning routine</a></li>
-    <li><a href="#tabs">Tab by tab</a></li>
-    <li><a href="#runs">Runs and trends</a></li>
-    <li><a href="#decide">From board to decision</a></li>
-    <li><a href="#examples">Worked examples</a></li>
-    <li><a href="#rules">Rules and red flags</a></li>
+    <li><a href="#start">Start here</a></li>
+    <li><a href="#l1">Lesson 1 · The building blocks</a></li>
+    <li><a href="#l2">Lesson 2 · Options in plain words</a></li>
+    <li><a href="#l3">Lesson 3 · The macro backdrop</a></li>
+    <li><a href="#l4">Lesson 4 · How to trust a number</a></li>
+    <li><a href="#l5">Lesson 5 · How the board thinks</a></li>
+    <li><a href="#l6">Lesson 6 · Your daily routine</a></li>
+    <li><a href="#l7">Lesson 7 · The tabs, one by one</a></li>
+    <li><a href="#l8">Lesson 8 · From reading to a decision</a></li>
+    <li><a href="#l9">Lesson 9 · Worked examples</a></li>
+    <li><a href="#l10">Lesson 10 · Habits, rules and red flags</a></li>
+    <li><a href="#quiz">Check yourself</a></li>
     <li><a href="#glossary">Glossary</a></li>
-    <li><a href="#trouble">Troubleshooting</a></li>
+    <li><a href="#trouble">When something looks wrong</a></li>
   </ol>
 </nav>
 
 <main>
 <header class="cover">
-  <p class="eyebrow">AVSHUNTER · desk manual</p>
-  <h1>ETF Macro Board: how to read it and use it</h1>
-  <p class="lede">A guide for a junior trader. It explains what each part of the board measures, how to turn it into a trading decision, and what the board will not do for you.</p>
-  <p class="meta">Board version macro-board-v1.0.0 · examples use the board as of the 5 Oct 2026 close and the pipeline run of 6 Oct 06:04 · revised 6 Oct 2026 (runs are measured, desk card added)</p>
+  <p class="eyebrow">AVSHUNTER · trader coaching guide</p>
+  <h1>The ETF Macro Board, explained from the ground up</h1>
+  <p class="lede">This guide is written for someone new to trading. It starts with the basic ideas, explains every word before it is used, and then walks you through the board the way a coach sitting next to you would. Read one lesson at a time. You do not need to understand everything on day one.</p>
+  <p class="meta">Rewritten 14 Oct 2026 for novice traders · examples use the board as of the 13 Oct 2026 close unless stated</p>
 </header>
 
-<h2 id="what">What the board is</h2>
-<p>The ETF Macro Board is one HTML page, rebuilt each day. It answers four questions about SPY, QQQ and 113 other ETFs:</p>
-<ol class="steps">
-  <li><b>What is the macro backdrop right now?</b> Ten measured conditions: trend, volatility, breadth, liquidity, the yield curve, yields, credit, the dollar and oil.</li>
-  <li><b>What did each ETF do after past days that looked like today?</b> That is the "measured lean", with an honest count of how much evidence sits behind it.</li>
-  <li><b>Is the trade still worth taking at today's price?</b> Distance left to the pipeline's target, how far the move has already run, and what the option market charges for the move.</li>
-  <li><b>Where is money rotating, and is the macro view right?</b> Sector rotation, holdings, and scorecards that grade every macro opinion against what actually happened.</li>
-</ol>
-<div class="callout">
-  <strong>The board is a reader, not a trader.</strong>
-  It reads AVSHUNTER's data and the outside macro reports. It never places orders and never changes the pipeline. The pipeline does not read anything the board produces.
+<h2 id="start">Start here</h2>
+<p>Think of the board as a <b>briefing pack</b>, the kind a pilot reads before take-off. It does not fly the plane. It tells you the weather, what changed overnight, and what happened on past days that looked like today. You still make the decision.</p>
+<div class="grid2">
+  <div class="box"><h4>The board will</h4><ul>
+    <li>Show you what the market did and how it reacted to news.</li>
+    <li>Show what usually happened next after days like today, and how much evidence sits behind that.</li>
+    <li>Check whether a trade idea still makes sense at today's price.</li>
+    <li>Tell you plainly when a number is old, missing or unreliable.</li>
+  </ul></div>
+  <div class="box"><h4>The board will not</h4><ul>
+    <li>Place trades, or tell you to buy or sell.</li>
+    <li>Promise that history repeats.</li>
+    <li>Fill a gap with a guess. Missing data is shown as missing.</li>
+    <li>Change the AVSHUNTER pipeline. The board only reads.</li>
+  </ul></div>
 </div>
+<div class="callout coach"><strong>Coach's note</strong>
+The most useful skill this board teaches is not prediction. It is <b>knowing how much to trust what you are looking at</b>. Every lesson comes back to that.</div>
 
-<h2 id="signals">Why there are no buy/sell signals</h2>
-<p>This is the most common question, and it is deliberate. There are three reasons.</p>
-<h3>1. The trade signals come from the AVSHUNTER pipeline</h3>
-<p>The pipeline decides direction, setup, target, invalidation and contract. The board shows that proposal next to its own evidence: the <b>Pipeline</b> column in the ETF matrix, and the "What the pipeline proposes" section in each ETF's drawer. In the run of 6 Oct 06:04 the pipeline had SPY and QQQ <span class="tag up">CALL · ARMED</span>, DIA <span class="tag down">PUT · ARMED</span>, XLK and SMH <span class="tag up">CALL · ARMED</span>, and IWM unresolved and standing down. Those are your candidate trades. The board's job is to tell you whether the backdrop, the history and the price still support them.</p>
-<h3>2. The board only gives a direction when history clearly supports one</h3>
-<p>A measured lean shows <span class="tag up">▲ Up</span> or <span class="tag down">▼ Down</span> only when three tests pass:</p>
-<ul>
-  <li>there were enough independent past windows;</li>
-  <li>the average move was large enough and consistent enough;</li>
-  <li>the direction also held on recent history that was kept aside (the "holdout").</li>
-</ul>
-<p>On most days most ETFs show <span class="tag flat">– No clear lean</span>. That is a finding in its own right: today's macro mix gives no measurable edge on that ETF, so the trade has to stand on the pipeline's setup and the price. On 5 Oct the only leans that also passed the holdout were TLT down over 20 sessions, EWZ up and JETS up over 1 session. On the rotation tab, XLP, XLRE and XLB are down relative to SPY.</p>
-<h3>3. Macro informs, it does not trade</h3>
-<p>AVSHUNTER's rule is that macro opinion is shown and measured, never turned directly into a trade. A packet that says "risk-on" or a risk score of 75/100 is a story to check, not an order. The Scorecards tab shows how those stories have done. So far none has enough evidence to trust on its own.</p>
-<div class="callout warn">
-  <strong>"No clear lean" is not "no trade".</strong>
-  It means macro history adds nothing beyond the ETF's normal drift today. Take or skip the trade on the pipeline's setup, the entry price and the option price. Do not invent a direction from the macro story.
-</div>
-
-<h2 id="spy">Why everything relates to SPY</h2>
-<p>SPY (the S&amp;P 500 ETF) is the board's benchmark, and it appears in five places.</p>
+<h2 id="l1">Lesson 1 · The building blocks</h2>
+<h3>ETFs</h3>
+<p>An <b>ETF</b> (exchange-traded fund) is a basket of shares that trades like a single share. Buying one ETF gives you a small piece of everything in the basket. The board follows about 115 of them. Four matter most:</p>
 <div class="tablewrap"><table>
-  <thead><tr><th>Where</th><th>What SPY is used for</th><th>Why</th></tr></thead>
+  <thead><tr><th>Ticker</th><th>What it holds</th><th>Think of it as</th></tr></thead>
   <tbody>
-    <tr><td>Macro conditions</td><td>"SPY trend" and "Realised volatility" are measured on SPY</td><td>The broad market is the backdrop every ETF trades against</td></tr>
-    <tr><td>Relative strength</td><td>"RS vs SPY 20d" and the whole Sector rotation tab are measured against SPY</td><td>A sector that rises less than SPY is losing money flow even while it goes up</td></tr>
-    <tr><td>Rotation and holdings</td><td>Sectors are pieces of SPY; holdings show which names move it</td><td>Explains <i>why</i> SPY moved: e.g. META, AMD, NVDA, MSFT and AAPL drove its last 20 sessions</td></tr>
-    <tr><td>Scorecards</td><td>Every macro call is graded on what SPY and QQQ did next</td><td>The cleanest test of whether a market-wide view was right</td></tr>
-    <tr><td>Options check</td><td>SPY has the deepest, tightest option market</td><td>Its straddle is the most reliable read of what the market charges for movement</td></tr>
+    <tr><td class="num">SPY</td><td>The 500 largest US companies (the S&amp;P 500)</td><td>"The market". Everything on the board is compared with it.</td></tr>
+    <tr><td class="num">QQQ</td><td>The 100 largest Nasdaq companies, mostly technology</td><td>Big tech</td></tr>
+    <tr><td class="num">IWM</td><td>About 2,000 smaller US companies (Russell 2000)</td><td>Small companies, more sensitive to interest rates and the economy</td></tr>
+    <tr><td class="num">DIA</td><td>30 large industrial and blue-chip companies (Dow Jones)</td><td>Old-economy giants</td></tr>
   </tbody>
 </table></div>
-<p>Practical meaning: if you trade a sector ETF, ask two questions. Is the sector going up? Is it going up <i>faster than SPY</i>? A long call on a sector that lags SPY often underperforms a plain SPY call.</p>
+<p><b>Sector ETFs</b> hold one part of the economy. The 11 main ones start with "XL": XLK technology, XLF financials (banks), XLE energy, XLV health care, XLY consumer spending, XLP consumer staples (food, household goods), XLI industrials, XLB materials, XLU utilities, XLRE real estate, XLC communication. <b>Industry ETFs</b> are narrower still: SMH and SOXX (chip makers), KRE (regional banks), XOP (oil producers), JETS (airlines) and others.</p>
 
-<h2 id="run">Running the board</h2>
-<p>From PowerShell, in the repo folder:</p>
-<pre>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence
-.\Run-MacroBoard.ps1</pre>
-<p>This downloads the latest issuer holdings and tastytrade volatility metrics, rebuilds the page (about 1–2 minutes) and opens it in your browser. The page is saved at <code>macro_board\output\etf_macro_board.html</code>; you can reopen it at any time without rebuilding.</p>
-<p><b>When to run it:</b> before the US open, after the morning macro refresh has landed, and again after the close if you want the day's final picture. Running it every trading day matters: each run saves the day's leans, and the board grades them later. That record is the only real proof of whether the board helps.</p>
+<h3>Sessions, returns and horizons</h3>
+<ul>
+  <li>A <b>session</b> is one trading day. "5 sessions" means about one week; "20 sessions" about one month.</li>
+  <li>A <b>return</b> is the percentage change in price. "+2% over 5 sessions" means the price is 2% higher than it was five trading days ago.</li>
+  <li>A <b>horizon</b> is how far ahead we look: 1, 5 or 20 sessions on this board.</li>
+</ul>
 
-<h3>The input strip</h3>
-<p>Below the banner is a row of input chips. Read it before anything else.</p>
+<h3>Relative strength: the most important idea on the board</h3>
+<p>A sector can go up and still be <i>losing</i> money flow, because the rest of the market went up more. So the board asks two separate questions:</p>
+<ol class="steps">
+  <li><b>Did it go up or down?</b> That is its own return.</li>
+  <li><b>Did it beat SPY?</b> That is its <b>relative return</b>: its return minus SPY's, in "points" (pts). +2 pts means it did 2 percentage points better than the market.</li>
+</ol>
+<div class="example small"><b>Example.</b> Over 5 sessions XLK fell 2.83% while SPY fell 0.14%. XLK's relative return is about −2.69 pts. Money moved out of technology faster than out of the market.</div>
+
+<h3>A "normal day"</h3>
+<p>Every ETF has its own typical daily move. SPY usually moves about ±0.6% a day; a chip ETF like SMH moves closer to ±1.7%. The board often measures distance in <b>daily moves</b> instead of percent. "A level 2 daily moves away" means "about two ordinary days of movement away", which works for calm and wild ETFs alike.</p>
+<div class="callout coach"><strong>Coach's tip</strong>
+When you see a percentage, ask "is that big <i>for this ETF</i>?" 1% is a big day for SPY and a quiet day for SMH. Daily moves answer that question for you.</div>
+
+<h2 id="l2">Lesson 2 · Options in plain words</h2>
+<p>AVSHUNTER expresses its ideas mainly with <b>options</b>, so you need four ideas.</p>
 <div class="grid2">
-  <div class="box"><h4>✓ Fresh</h4><p>The source is current. Use the panels that depend on it.</p></div>
-  <div class="box"><h4>! Stale</h4><p>The source is older than its limit. Read those panels as background only. Hover to see its age.</p></div>
-  <div class="box"><h4>× Missing</h4><p>Not available. The board shows "missing" rather than a neutral value. Never fill the gap with a guess.</p></div>
+  <div class="box"><h4>Call and put</h4><p>A <b>call</b> gains if the price rises. A <b>put</b> gains if the price falls. When you buy one, the most you can lose is what you paid for it: the <b>premium</b>.</p></div>
+  <div class="box"><h4>Time decay</h4><p>An option loses value every day that nothing happens. Being right <i>too late</i> can still lose money. That is why the board talks about <b>runway</b>: buy more time than you expect the move to need.</p></div>
+  <div class="box"><h4>Implied volatility (IV)</h4><p>The price of an option depends on how much movement the market expects. High IV means options are expensive; low IV means cheap. <b>IV rank</b> (0–100) says where today's IV sits within its past year: 90 is near its most expensive.</p></div>
+  <div class="box"><h4>Bid, ask and spread</h4><p>You buy at the <b>ask</b> and sell at the <b>bid</b>. The gap between them, the <b>spread</b>, is a cost you pay every trade. Wide spreads can eat a winning idea.</p></div>
+</div>
+<h3>The straddle: what the market expects</h3>
+<p>Buying a call and a put at the same price level is a <b>straddle</b>. Its cost tells you how big a move the option market expects. The board compares that with what <i>actually</i> happened after similar days. This gives you <b>"priced vs history"</b>:</p>
+<ul>
+  <li><b>Below 1 (cheap)</b>: options expect less movement than history delivered. Buying options is reasonably priced.</li>
+  <li><b>About 1 (fair)</b>.</li>
+  <li><b>Above 1 (rich)</b>: you are paying for more movement than history delivered. You can be right on direction and still lose.</li>
+</ul>
+<div class="callout warn"><strong>Common mistake</strong>
+Getting the direction right is only half the trade. With options you also need the move to be <b>big enough</b> and <b>soon enough</b> to beat what you paid. Always check "priced vs history" and IV rank before buying.</div>
+
+<h2 id="l3">Lesson 3 · The macro backdrop</h2>
+<p><b>Macro</b> means the big forces that move whole markets: interest rates, the economy, money flowing in and out of the system. The board measures ten of them every day and gives each a simple <b>state</b>, such as RISING or FLAT.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Condition</th><th>What it is, simply</th><th>Why a trader cares</th></tr></thead>
+  <tbody>
+    <tr><td>SPY trend</td><td>Is SPY above its 50-day and 200-day average price?</td><td>Markets in an uptrend behave differently from markets in a downtrend.</td></tr>
+    <tr><td>Realised volatility</td><td>How much SPY has actually been moving lately</td><td>Calm markets and nervous markets reward different trades.</td></tr>
+    <tr><td>Breadth</td><td>How many stocks are taking part in the move</td><td>A rise carried by a few giants is more fragile than one where most stocks rise.</td></tr>
+    <tr><td>Liquidity</td><td>How much money the central bank system is putting in or taking out</td><td>More money in the system has tended to support prices.</td></tr>
+    <tr><td>Curve level and curve move</td><td>The gap between long-term and short-term interest rates, and whether it is widening (steepening) or narrowing</td><td>Banks and the economy react to the shape of interest rates.</td></tr>
+    <tr><td>Yields</td><td>Interest on 10-year US government bonds</td><td>Higher yields make borrowing dearer and can weigh on growth stocks.</td></tr>
+    <tr><td>Credit</td><td>Extra interest that riskier companies must pay (credit spreads)</td><td>Widening spreads are an early sign of stress.</td></tr>
+    <tr><td>Dollar</td><td>The US dollar against other currencies</td><td>A strong dollar hurts exporters and commodities.</td></tr>
+    <tr><td>Oil</td><td>The oil price trend</td><td>Moves energy stocks, airlines, and inflation expectations.</td></tr>
+  </tbody>
+</table></div>
+<div class="callout coach"><strong>Coach's note</strong>
+Textbooks say things like "rising yields always hurt tech". This board does not assume that. It measures what each ETF <i>actually</i> did in this market when yields were rising. Sometimes the textbook is right; often it is not.</div>
+
+<h2 id="l4">Lesson 4 · How to trust a number</h2>
+<p>This lesson is the heart of the guide. The board shows thousands of numbers. Five questions tell you how far to trust any one of them.</p>
+<ol class="steps">
+  <li><b>How many times has this happened?</b> The board counts <b>independent windows</b>: separate, non-overlapping cases. Twenty days in a row of the same condition count as one 20-day window, not twenty. Under about 8 windows, a "?" appears: too little to trust either way.</li>
+  <li><b>How consistent was it?</b> An average of +2% from wild swings of −10% and +14% means little. The <b>80% interval</b> gives a likely range for the true average. If the range includes zero (say −0.3% to +1.5%), even the direction is uncertain.</li>
+  <li><b>Did it hold on fresh data?</b> The board sets aside the most recent quarter of history, finds the pattern on the older part, then checks it on the set-aside part. That check is the <b>holdout</b>. ✓ means it held; ✗ means it did not.</li>
+  <li><b>Is it better than normal?</b> SPY rises on most 20-day windows anyway. A pattern is only useful if it beats that <b>normal drift</b> (the "base" or "all sessions" figure).</li>
+  <li><b>How many things were tested?</b> Test enough ideas and some will look good by pure luck. Where the board runs many tests (Scenario watch), it applies a <b>false-discovery check</b> and marks results "beats the tries" or "within chance".</li>
+</ol>
+<p>You will also see <b>t</b> (as in "t +2.0"). It measures how far a result stands out from luck: around 2 or more (or −2 or less) is noteworthy; under 1 is noise.</p>
+<div class="callout warn"><strong>Scores that look like probabilities</strong>
+Some outside reports give scores such as "75/100", "confidence 90" or "fragility 4.7/5". The board tags these <span class="tag flat">uncalibrated</span>. Someone chose them; nobody has tested them. 75/100 does <b>not</b> mean a 75% chance of anything.</div>
+
+<h2 id="l5">Lesson 5 · How the board thinks</h2>
+<h3>"What happened after days like today?"</h3>
+<p>The board finds past sessions whose ten macro conditions looked like today's. These are <b>analog</b> days. It then measures what each ETF did over the next 1, 5 and 20 sessions, starting from the next open (the first moment you could actually have traded).</p>
+<p>If the result is strong, consistent, passes the holdout and beats normal drift, the board shows a <b>measured lean</b>: <span class="tag up">▲ Up</span> or <span class="tag down">▼ Down</span>. Otherwise it shows <span class="tag flat">– No clear lean</span>.</p>
+<div class="callout coach"><strong>"No clear lean" is an answer, not a failure</strong>
+On most days most ETFs show no clear lean. That tells you today's macro gives no measurable edge for that ETF. The trade must stand on its own setup and price. Do not make up a direction from a macro story.</div>
+
+<h3>Three voices, always labelled</h3>
+<p>Some text on the board is measured; some comes from outside reports; some is written by AI. You must always know which you are reading.</p>
+<div class="grid2">
+  <div class="box"><h4>MEASURED</h4><p>Built only from the board's own numbers. The most trustworthy voice, within the limits of Lesson 4.</p></div>
+  <div class="box"><h4>PUBLISHED · not verified</h4><p>News and opinions from outside reports, some written by another AI. Treat them as <i>claims</i> to check, not facts.</p></div>
+  <div class="box"><h4>AI NARRATIVE</h4><p>Claude writes a readable story using only the measured facts. The board then checks every number it used and every direction call. Green ticks mean the checks passed.</p></div>
 </div>
 
-<h2 id="routine">The morning routine (10 minutes)</h2>
-<ol class="steps">
-  <li><b>Inputs.</b> Check the input strip. Note anything stale, such as QQQ holdings when Invesco blocks the download.</li>
-  <li><b>Backdrop.</b> On the Overview, read the 10 condition tiles and "What changed (last 10 sessions)". A change is often more useful than a level.</li>
-  <li><b>Index cards.</b> Read the SPY, QQQ, IWM and DIA cards: the pipeline chip, how much of the target is used, the response label, the measured lean and what options charge.</li>
-  <li><b>Rotation.</b> On Sector rotation, see which sectors lead, which are turning up, and what sessions like today did to each sector against SPY.</li>
-  <li><b>Candidates.</b> Open the <b>Desk card</b> tab. Every pipeline candidate and index ETF has a card with the six desk questions already filled from the board. Work through each card and record your decision.</li>
-  <li><b>Advisory.</b> On Macro intelligence, read the event risk and news overlay for anything scheduled today. Treat them as risk to manage, not direction.</li>
-  <li><b>Record.</b> Write your decision and the reason before the open. Once a week, check the Scorecards.</li>
-</ol>
+<h3>Where the trade ideas come from</h3>
+<p>The trade ideas themselves (which stock, call or put, target, stop level) come from the <b>AVSHUNTER pipeline</b>, a separate system. The board's job is to check those ideas against the backdrop, history and today's price. The board never feeds anything back into the pipeline.</p>
 
-<h2 id="tabs">Tab by tab</h2>
+<h2 id="l6">Lesson 6 · Your daily routine</h2>
+<h3>Getting a fresh board</h3>
+<p>The full package (all the macro inputs, then the board) runs from PowerShell in the repo folder:</p>
+<pre>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence
+.\Run-MacroInputs.ps1 -Session PreOpen     # morning: waits until 08:35 ET
+.\Run-MacroInputs.ps1 -Session PostClose   # evening: waits until 16:30 ET</pre>
+<p>Add <code>-PlanOnly</code> to see what it would do without running anything. If you only want to rebuild the page from inputs that are already fresh, <code>.\Run-MacroBoard.ps1</code> rebuilds the board alone. The page is saved at <code>macro_board\output\etf_macro_board.html</code>; you can reopen it at any time.</p>
+<div class="callout warn"><strong>Run-MacroBoard.ps1 is not the full package</strong>
+It does not refresh the macro inputs. If the board looks out of date, run <code>Run-MacroInputs.ps1</code>.</div>
+
+<h3>The 15-minute morning routine</h3>
+<ol class="steps">
+  <li><b>Check the input strip</b> under the banner. ✓ fresh, ! stale (old), × missing. Note anything stale and don't lean on the panels that use it.</li>
+  <li><b>Daily review</b>: what happened yesterday, and how did the market react to the news?</li>
+  <li><b>Day story</b>: where is money going, and why might that be? Read the AI narrative first for the overview, then the measured table.</li>
+  <li><b>Next session plan</b>: the market's possible paths for today, the levels that would confirm each one, and the checklist.</li>
+  <li><b>Desk card</b>: work through each pipeline idea with the six questions (Lesson 8).</li>
+  <li><b>Write it down</b>: your decision and your reason, <i>before</i> the open.</li>
+</ol>
+<div class="callout coach"><strong>Coach's tip</strong>
+Writing the reason down before the open is the habit that improves traders fastest. After a week you will see which kinds of reasons worked for you and which did not.</div>
+
+<h2 id="l7">Lesson 7 · The tabs, one by one</h2>
+<p>The tabs are in the order a trader normally uses them. Each has the same four parts: what it answers, where to look first, a coach's tip and a common mistake.</p>
+
+<section class="tab">
+<h3>Daily review</h3>
+<p class="q">Answers: <i>What happened, and did the market believe the news?</i></p>
+<ul>
+  <li><b>Look first</b> at the reading per instrument: <b>accepted</b> (the price moved with the news and held), <b>rejected</b> (it opened one way and reversed), or <b>absorbed</b> (little reaction).</li>
+  <li>Then read "what changed and what was expected", and the <b>decision points</b>: scheduled events such as inflation data (CPI) or a Federal Reserve meeting (FOMC) that could move the market in the next session.</li>
+  <li>Lower down, "where the opportunity is strongest" compares QQQ with SPY, sectors with SPY, and how far each price is from its nearest obstacle (recent high or low, 50/200-day averages).</li>
+</ul>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>A good-news day where the price <i>fell</i> (rejected) often tells you more than the news itself.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Reading a headline and assuming the price will follow. Check the reaction first.</p></div>
+</div>
+</section>
+
+<section class="tab">
+<h3>Day story</h3>
+<p class="q">Answers: <i>Where is money going today, what reasons fit, and what does that mean for trades?</i></p>
+<ul>
+  <li><b>The day ahead</b>: the market call, scheduled releases before the next close, and three paths for each index ETF: holds the range, breaks up, breaks down.</li>
+  <li><b>The story in words</b> (AI NARRATIVE): a readable summary. Check the green ticks at the top.</li>
+  <li><b>Where money is going</b>: one row per sector or industry. <b>Flow</b> labels mean:
+    <ul>
+      <li><span class="tag up">Money in</span>: beating SPY this week and holding up over the month;</li>
+      <li><span class="tag up">Turning in</span>: beating SPY this week after a weak month;</li>
+      <li><span class="tag down">Money out</span>: trailing SPY this week and over the month;</li>
+      <li><span class="tag down">Leaving a leader</span>: trailing this week after leading all month.</li>
+    </ul>
+    Volume above 1× means the move had real size behind it. Click a row to see the reasons, the trade analysis and the tickers.</li>
+  <li><b>Reasons</b> are marked <b>fits</b> or <b>against</b>. They are measured links, not proven causes: "this sector has tended to trail when yields rise, and yields are rising".</li>
+  <li><b>Options</b> shows what option traders paid for, compared with that ETF's normal activity (heavy put buying, rising implied volatility). Where the stored option data is too erratic to trust, it says so.</li>
+  <li><b>Trade analysis for the day</b>: the side (call or put), the <b>trigger</b> level that would start the trade, the <b>"wrong if"</b> level that would prove it wrong, whether options are cheap or rich, and <b>"After this read"</b>.</li>
+  <li><b>Ticker impact</b>: each pipeline idea checked against its sector's flow: with it, against it, or "stock-specific" (the stock barely moves with its sector).</li>
+</ul>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Always read <b>"After this read"</b> before following a flow. It shows what usually happened next after the same flow. On 13 Oct, leaders that started to lose ground (XLK, SMH, SOXX) had more often <i>bounced back</i> than kept falling.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Treating a strong week as a trend that must continue. Most flows on this board have not reliably continued. That is measured, not opinion.</p></div>
+</div>
+</section>
+
+<section class="tab">
+<h3>Next session plan</h3>
+<p class="q">Answers: <i>What could happen today, and what would tell me which path we are on?</i></p>
+<ul>
+  <li><b>The call</b>: what the index ETFs did, whether participation was broad or narrow, and a suggested approach for that kind of market (for example "two-way market: trade the edges with smaller size").</li>
+  <li><b>Scenarios</b> for SPY, QQQ, IWM and DIA: base (holds the range), up and down. Each has a trigger level, a next target level and the expression (calls, puts, or stand aside).</li>
+  <li>A <b>time-ordered checklist</b> for the session, and "what would change the view".</li>
+  <li><b>The jigsaw</b>: every input with what it points to, whether it agrees with the market, and how fresh it is.</li>
+  <li><b>ETF by ETF</b> and <b>pipeline candidates</b> read through their sector ETF.</li>
+</ul>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Decide in advance what you will do at each trigger level. Planning before the open stops you reacting emotionally during it.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Taking a trade inside the range when the plan says "no new position until a level breaks".</p></div>
+</div>
+</section>
 
 <section class="tab">
 <h3>Overview</h3>
+<p class="q">Answers: <i>What is the backdrop, and what changed?</i></p>
+<ul>
+  <li>The four index cards: the pipeline's idea, the measured lean, and what options charge.</li>
+  <li>The ten condition tiles, each with its state, value, history and the date it was <b>observed</b>. Some government data is published a day or more late; that is normal.</li>
+  <li><b>What changed in the last 10 sessions.</b> A change of state is often more useful than the level itself.</li>
+  <li><b>Analog depth</b>: how many past days matched today, and how closely. Fewer matches means weaker evidence.</li>
+</ul>
 <div class="grid2">
-  <div class="box"><h4>Shows</h4><ul>
-    <li>The four index cards (SPY, QQQ, IWM, DIA)</li>
-    <li>The 10 macro condition tiles with history</li>
-    <li>What changed in the last 10 sessions</li>
-    <li>Analog depth and recent analog episodes</li>
-    <li>The LLM packet's headline view</li>
-  </ul></div>
-  <div class="box"><h4>How to read it</h4><ul>
-    <li>Each tile shows a <b>state</b> (e.g. <i>RISING</i>), the value, a history line and a coloured state strip. The date at top right is when the data was <b>observed</b>; "1 session old" is normal for FRED data.</li>
-    <li><b>Analog depth</b> says how many past sessions matched today and how closely (5 Oct: 61 sessions at a 70% match). Fewer matches means weaker evidence.</li>
-    <li><b>Recent analog episodes</b> list the last times the macro looked like today, and what SPY, QQQ, IWM and DIA did next. Use them as a sense check.</li>
-  </ul></div>
+  <div class="box"><h4>Coach's tip</h4><p>Start each morning with "what changed?". It keeps you focused on new information.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Ignoring the observation date and acting on data that is days old.</p></div>
 </div>
-<p>On an index card, read the chips in this order:</p>
-<ul>
-  <li><b>Pipeline</b>: the proposal, and how much of its target is already used.</li>
-  <li><b>Response</b>: what the price is doing against the measured macro pressure.</li>
-  <li><b>Move made</b>: whether the ETF has already run.</li>
-  <li><b>The lean table</b>: history after sessions like today.</li>
-  <li><b>The option table</b>: what a move costs.</li>
-</ul>
-</section>
-
-<section class="tab">
-<h3>ETF matrix</h3>
-<p>Every ETF in one table, grouped by type. Use the 1d / 5d / 20d buttons to switch horizon, click a column header to sort, and click any row to open its <b>drawer</b>.</p>
-<div class="tablewrap"><table>
-  <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
-  <tbody>
-    <tr><td>1d / 5d / 20d / 60d</td><td>The ETF's own returns.</td></tr>
-    <tr><td>RS vs SPY 20d</td><td>20-day return minus SPY's. Positive = stronger than the market.</td></tr>
-    <tr><td>vs 200d, from 1y high, RV20</td><td>Trend position, drawdown from the 1-year high, and 20-day realised volatility.</td></tr>
-    <tr><td>Lean · Holdout · 80% interval</td><td>The measured lean for the chosen horizon, whether it survived on held-out history, and the likely range of the average.</td></tr>
-    <tr><td>Pipeline</td><td>The latest AVSHUNTER proposal (CALL/PUT and its verdict).</td></tr>
-    <tr><td>Response</td><td>Supporting / absorbing pressure / rejecting relief / mixed / insufficient (see the glossary).</td></tr>
-    <tr><td>Move made 20d</td><td>How far the ETF has run, in units of its own volatility (σ). Beyond ±1.5σ = extended.</td></tr>
-    <tr><td>IV rank</td><td>tastytrade's implied-volatility rank (0–100). High = options are expensive against their own past year.</td></tr>
-    <tr><td>Priced vs history</td><td>The option market's expected move ÷ what similar past sessions actually delivered. Above 1 = options price more movement than history.</td></tr>
-    <tr><td>Analog mean · Base mean · Excess</td><td>Average return after sessions like today, after all sessions, and the difference: what macro adds.</td></tr>
-    <tr><td>Packet</td><td>Lead or avoid tags from the LLM packet (advisory).</td></tr>
-  </tbody>
-</table></div>
-<p><b>The drawer</b> holds the full story for one ETF:</p>
-<ul>
-  <li>the pipeline proposal, with distance left to its target and to its invalidation measured from today's close;</li>
-  <li>the lean by horizon, next to a price-only lean;</li>
-  <li>stage of the move;</li>
-  <li>the option straddle table;</li>
-  <li>tastytrade volatility metrics;</li>
-  <li>the holdings contribution, for SPY, QQQ, DIA and the sector ETFs;</li>
-  <li>which macro conditions have moved this ETF.</li>
-</ul>
-<div class="callout warn"><strong>Leveraged, inverse and volatility products.</strong>
-TQQQ, SQQQ, UVXY, VXX and similar products reset daily or roll futures, so multi-day history does not carry over. Their 5d and 20d leans show "Path-dependent" on purpose. Use them only for short, deliberate trades.</div>
-</section>
-
-<section class="tab">
-<h3>Transmission map</h3>
-<p>A heatmap: ETFs down the side, the 10 macro conditions across the top. Each cell shows how much better (blue) or worse (red) the ETF did over the chosen horizon while that condition sat in today's state, compared with its other states. Faded cells are weak (|t| below 1) and should be ignored.</p>
-<p><b>Use it to</b> see which conditions actually move an ETF. For example: does XLF do worse when the curve is flat? It replaces textbook assumptions such as "rising yields always hurt tech" with what this market has done since 2021.</p>
-<p><b>Do not</b> add cells together. The conditions overlap (yields and the curve move together), so each cell is a separate comparison.</p>
-</section>
-
-<section class="tab">
-<h3>Sector rotation</h3>
-<div class="grid2">
-  <div class="box"><h4>Rotation map</h4><p>Each sector is placed by its relative strength trend against SPY (left–right) and that trend's momentum (down–up). The tail shows the last 8 weeks. Sectors usually travel clockwise: <b>improving → leading → weakening → lagging</b>.</p></div>
-  <div class="box"><h4>Macro-conditional ranking</h4><p>Which sectors beat or trailed SPY over the next 1/5/20 sessions after days like today, with an 80% interval whisker. This is the macro's measured impact on sectors.</p></div>
-  <div class="box"><h4>Rotation table</h4><p>Quadrant and days in it, returns against SPY, <b>participation</b> (share of the sector's weight above its 50-day average), leading holdings, the measured lean, and whether the LLM packet's sector view agrees.</p></div>
-  <div class="box"><h4>Evidence panels</h4><p>Does the quadrant predict anything (compare each row with "All sessions"), where quadrants go next, and how the packets' leading-vs-lagging sector calls have scored.</p></div>
-</div>
-<p><b>What history says (5 Oct):</b></p>
-<ul>
-  <li>Leading sectors stayed level with SPY over the next 20 sessions. The other quadrants trailed by about 0.3%. That is a small edge.</li>
-  <li>Leaders and laggards stay in their quadrant 59% of the time a week later.</li>
-  <li>"Improving" became "leading" only 20% of the time.</li>
-</ul>
-<p>So use rotation to <i>tilt</i> (which sector ETF to prefer for a view you already have), not as a stand-alone signal.</p>
-<p><b>Participation</b> matters most for sectors. A sector in the leading quadrant with low participation is being carried by a few names and is fragile. On 5 Oct XLK had 89% of its weight above trend; XLRE had 0%.</p>
 </section>
 
 <section class="tab">
 <h3>Desk card</h3>
-<p>One card per pipeline candidate (▲ call · ▼ put) and per index ETF. The horizon defaults to the pipeline's own, and you can switch it.</p>
+<p class="q">Answers: <i>Should I take this specific trade idea, at today's price?</i></p>
+<p>One card per pipeline idea and per index ETF. The <b>checks strip</b> shows, for each idea:</p>
+<ul>
+  <li>whether macro history and momentum agree with it;</li>
+  <li><b>room left</b>: reward left to the target against risk left to the stop level, from today's price;</li>
+  <li>the option price, data freshness and event risk.</li>
+</ul>
+<p>Below that are the six questions (Lesson 8) already filled in, and a box for your decision: Act, Wait, Skip, or Insufficient information. <b>Download record</b> saves it.</p>
 <div class="grid2">
-  <div class="box"><h4>Checks strip</h4><ul>
-    <li><b>Macro lean</b> and <b>Momentum</b>: does history point the same way as the proposal? Supports / conflicts / no evidence. The numbers always show, even when they are too thin for a lean.</li>
-    <li><b>Room left</b>: reward left to the pipeline target against risk left to its invalidation, from today's close.</li>
-    <li><b>Option price</b>: what a move costs against history, IV rank and spread.</li>
-    <li><b>Data</b> and <b>Event risk</b>.</li>
-  </ul></div>
-  <div class="box"><h4>Six questions</h4><ul>
-    <li>What changed · what should it affect · what is the market doing · what the pipeline proposes · is the entry still worth taking · what would change my mind.</li>
-    <li>Below them: an evidence table (macro, price-only, momentum).</li>
-    <li>At the bottom: your decision (Act / Wait / Skip / Insufficient information), the reason and what would change your mind.</li>
-  </ul></div>
+  <div class="box"><h4>Coach's tip</h4><p>"Wait" and "Skip" are good decisions. Most professional traders skip far more ideas than they take.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Measuring room from the price the idea was first proposed at, rather than from <i>today's</i> price.</p></div>
 </div>
-<p>Use <b>Download record</b> to save the decision as JSON in <code>macro_board/output/journal/</code>. Drafts stay in your browser until you clear them. The checks describe evidence; they never decide for you.</p>
-<p>When the card says <b>"the target may be stale"</b>, measured continuation after similar runs is larger than the room left to the pipeline's target. Ask for a re-evaluated target. Don't chase the old one, and don't dismiss the trend because the old target is close.</p>
+</section>
+
+<section class="tab">
+<h3>Sector rotation</h3>
+<p class="q">Answers: <i>Which parts of the market are gaining or losing favour?</i></p>
+<ul>
+  <li>The <b>rotation map</b> places each sector by its relative strength against SPY and whether that is improving. Sectors tend to travel clockwise: improving → leading → weakening → lagging.</li>
+  <li><b>Participation</b>: how much of a sector's weight is above its 50-day average. A leading sector with low participation is carried by a few names and is fragile.</li>
+  <li>A ranking of how sectors did against SPY after days like today.</li>
+</ul>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Use rotation to choose <i>which</i> ETF to express a view with, not as a signal on its own. Measured on this market, "improving" became "leading" only about 20% of the time.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Assuming the clockwise cycle always completes.</p></div>
+</div>
 </section>
 
 <section class="tab">
 <h3>Scenario watch</h3>
-<p>Your own trade reasons, written down before you look at the result, then measured on every past occurrence for every ETF. An example is "QQQ cannot hold a yearly high for 3 sessions, so puts". The library lives in the board's config with the date each scenario was registered.</p>
-<div class="grid2">
-  <div class="box"><h4>Live now</h4><ul>
-    <li><b>Triggered</b>: the condition was met on the last close. Entry would be the next open.</li>
-    <li><b>Watching</b>: one step away, with the exact level and the deadline session, e.g. "triggers if the next 2 closes stay below 756.20 (deadline 8 Oct)".</li>
-    <li><b>Partial</b>: the price part is met, but a macro condition (e.g. breadth LOW) is not yet.</li>
-  </ul></div>
-  <div class="box"><h4>The record</h4><ul>
-    <li>What a long option on the scenario's side returned after every past trigger, after costs, compared with buying the same option on every session.</li>
-    <li>Also shown: the move in the scenario's direction, whether one expected move came in favour or against first, and the best and worst excursion.</li>
-    <li>Verdicts: <b>Edge</b>, <b>Opposite side paid</b> (the hypothesis has been wrong), <b>No edge</b> or <b>Too thin</b>.</li>
-  </ul></div>
-</div>
-<div class="callout warn"><strong>Many tries, few real results.</strong>
-The library runs thousands of tests (scenario × ETF × horizon), and a few percent pass the per-result bar by luck. The board therefore applies a false-discovery check across all of them. Act only on results marked <b>"beats the tries"</b>. Results marked <b>"within chance"</b> (dashed cells) are ideas to watch on the live record, not evidence.</div>
-<p><b>Live example (9 Oct 2026 close):</b> QQQ and SPY both triggered "failed to hold a yearly high", so the put case is live.</p>
+<p class="q">Answers: <i>My trading idea: has it actually worked before?</i></p>
+<p>A scenario is a trade reason written down in advance, such as "QQQ cannot hold a yearly high for 3 sessions, so buy puts". The board checks it on every past occurrence for every ETF.</p>
 <ul>
-  <li><b>QQQ's record:</b> over the next 5 sessions the put returned −36% on average, against −17% for a put bought on any day. QQQ rose 0.75% on average after these triggers, and in 6 of the last 8 cases it rose.</li>
-  <li><b>Verdict:</b> "Opposite side paid", and the holdout agrees, but it is <i>within chance</i> after the false-discovery check.</li>
-  <li><b>Reading:</b> history gives you no reason to buy puts on this trigger. If anything it leans the other way, but not strongly enough to act on. The trigger is a moment to look harder at the setup, not a trade on its own.</li>
+  <li><b>Triggered</b>: the condition was met on the last close. <b>Watching</b>: one step away, with the exact level and deadline. <b>Partial</b>: the price part is met but a macro condition is not.</li>
+  <li>The record shows what a bought option on that side returned after every past trigger, after costs, compared with buying the same option on any day.</li>
+  <li>Verdicts:
+    <ul>
+      <li><b>Edge</b>: it worked;</li>
+      <li><b>Opposite side paid</b>: the idea was wrong;</li>
+      <li><b>No edge</b>;</li>
+      <li><b>Too thin</b>: not enough cases.</li>
+    </ul></li>
+  <li>Only results marked <b>"beats the tries"</b> survive the luck check (Lesson 4, question 5).</li>
 </ul>
-<p>To add a scenario, follow the steps at the bottom of the tab. Register it before you look at its result, and keep it even if it fails. That is what keeps the live record honest.</p>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Register a scenario <i>before</i> you look at its result, and keep it even if it fails. That keeps the record honest.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Acting on a "within chance" result as if it were proven.</p></div>
+</div>
+</section>
+
+<section class="tab">
+<h3>ETF matrix</h3>
+<p class="q">Answers: <i>How does every ETF look, side by side?</i></p>
+<p>One row per ETF: returns, strength against SPY, trend, volatility, measured lean, the pipeline's idea, IV rank and "priced vs history". Use the 1d / 5d / 20d buttons to change horizon, click a column to sort, and click a row to open the <b>drawer</b> with the full story for that ETF.</p>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Sort by "RS vs SPY 20d" to see at a glance which areas are strong and weak.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Using multi-day history on leveraged or volatility products (TQQQ, SQQQ, UVXY, VXX). They reset daily, so the board marks them "Path-dependent".</p></div>
+</div>
+</section>
+
+<section class="tab">
+<h3>Transmission map</h3>
+<p class="q">Answers: <i>Which macro conditions actually move which ETF?</i></p>
+<p>A grid of ETFs against the ten conditions. Blue means the ETF did better while that condition was in today's state; red means worse. Faded cells are weak and should be ignored.</p>
+<div class="grid2">
+  <div class="box"><h4>Coach's tip</h4><p>Use it to replace a textbook belief with a measurement.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Adding cells together. Conditions overlap (yields and the curve move together), so each cell is a separate comparison.</p></div>
+</div>
 </section>
 
 <section class="tab">
 <h3>Macro intelligence</h3>
-<p>The outside reports, as published. They include:</p>
-<ul>
-  <li>the LLM macro packet;</li>
-  <li>the US Money Index risk-off score and its triggers;</li>
-  <li>the economic event report;</li>
-  <li>the news overlay;</li>
-  <li>the VIX complex, dealer gamma, rates and credit, and the liquidity monitor;</li>
-  <li>the Colab models, FRED prints and threshold flags.</li>
-</ul>
-<p>Every card shows its source file, its as-of time and its age.</p>
-<ul>
-  <li>Scores such as <b>75/100</b>, <b>confidence 90</b> or <b>fragility 4.7/5</b> carry an <span class="tag flat">uncalibrated</span> tag. Someone chose them; nobody has tested them as probabilities. 75/100 does not mean a 75% chance of anything.</li>
-  <li>The Money Index card lists the <b>date of each value inside it</b>. A packet written today can contain a HYG price from 10 Sep. Always check the date of the number you use.</li>
-  <li>Dealer gamma is a <b>model estimate with an assumed sign</b>. The Money Index itself reports that true dealer positioning is unavailable.</li>
-  <li>When an event shows <b>"no consensus · surprise not measurable"</b>, there was no forecast to compare with, so any "surprise" label is opinion.</li>
-</ul>
-</section>
-
-<section class="tab">
-<h3>Scorecards</h3>
-<p>The scorecards grade every source of macro opinion against what SPY and QQQ did next, starting from the next open:</p>
-<ul>
-  <li>the Colab regime model;</li>
-  <li>the archived LLM packets;</li>
-  <li>the Money Index, grouped by its own bands;</li>
-  <li>the board's own daily leans, against price-only leans.</li>
-</ul>
-<p>A <b>"?"</b> next to the window count means fewer than 8 independent windows: too little to trust either way.</p>
-<p>On 5 Oct the Colab regime model was right 57% of the time one day ahead, but wrong more often than right at 5 days. No source has earned trust yet. Check this tab weekly, and adjust how much weight you give each source as its record grows.</p>
-</section>
-
-<section class="tab">
-<h3>Method</h3>
-<p>Definitions, thresholds and limits. Read it once in full and come back when a number surprises you. Key limits:</p>
-<ul>
-  <li>the history covers about 5 years, since Aug 2021, which is a single rate cycle;</li>
-  <li>analog sets are small;</li>
-  <li>every threshold is provisional until the board's own scorecard has tested it.</li>
-</ul>
-</section>
-
-<h2 id="runs">Runs and trends: measure, don't assume</h2>
-<p>A common textbook rule says an ETF that has risen several days in a row, or has moved far in a short time, is "extended" and the entry is late. This market's own history does not support that rule. From Aug 2021 to Oct 2026, over the next 20 sessions:</p>
-<div class="tablewrap"><table>
-  <thead><tr><th>After…</th><th>SPY</th><th>QQQ</th></tr></thead>
-  <tbody>
-    <tr><td>All sessions (normal drift)</td><td class="num">+0.92% · up 63%</td><td class="num">+1.18% · up 62%</td></tr>
-    <tr><td>5+ up closes in a row</td><td class="num">+2.19% · up 84% · 16 windows</td><td class="num">+2.86% · up 73% · 22 windows</td></tr>
-    <tr><td>6+ of the last 7 days up</td><td class="num">+1.42% · up 74%</td><td class="num">+1.71% · up 65%</td></tr>
-  </tbody>
-</table></div>
-<p>Runs have more often continued than stalled. These figures come from mostly a bull market and rest on 16–22 independent windows, so treat them as evidence, not law.</p>
-<p>The board therefore measures runs per ETF. Every drawer and desk card has a <b>Momentum history</b> table: what this ETF did next after the same streak, the same 5-day move and the same 20-day move.</p>
-<ul>
-  <li><b>Continuation that beats normal drift</b>: e.g. QQQ after 5+ up closes, or TLT after 10 down closes. The run is a reason to stay with the trend, not to wait.</li>
-  <li><b>Ordinary drift</b>: e.g. SPY after 3 up closes did +0.66% against +0.92% normally. The run itself tells you nothing; decide on the setup and the room left.</li>
-  <li><b>No evidence either way</b>: the window count is small or the interval spans zero. Don't let the run push you in either direction.</li>
-</ul>
-
-<h2 id="decide">From board to decision: the desk card</h2>
-<p>For each candidate, answer these six questions in writing before you trade. The <b>Desk card</b> tab fills them in for you; the right column shows where each answer comes from.</p>
-<div class="tablewrap"><table>
-  <thead><tr><th>Question</th><th>Where on the board</th></tr></thead>
-  <tbody>
-    <tr><td><b>1. What changed?</b><br>The genuinely new information since yesterday.</td><td>Overview → What changed; Macro intelligence → event risk and news overlay (check observation dates)</td></tr>
-    <tr><td><b>2. What should it affect?</b><br>Which ETF, through which holdings.</td><td>Transmission map; drawer → holdings; Sector rotation → heatmap</td></tr>
-    <tr><td><b>3. What is the market doing with it?</b></td><td>Response label; RS vs SPY; participation; Move made</td></tr>
-    <tr><td><b>4. What does the pipeline propose?</b></td><td>Pipeline column; drawer → What the pipeline proposes</td></tr>
-    <tr><td><b>5. Is the entry still worth taking?</b></td><td>Drawer → % left to target vs % to invalidation, share of the move already used; Priced vs history; IV rank</td></tr>
-    <tr><td><b>6. What would change my mind?</b></td><td>The pipeline's invalidation level; condition tiles that would flip; Money Index forward triggers</td></tr>
-  </tbody>
-</table></div>
-<p>Then write one sentence: <i>"Against [backdrop], [new information] affects [ETF] through [mechanism]. The market is [response]. The pipeline proposes [trade]. At [price] there is [room left] against [risk]. I will [act / wait / skip] because [reason]. I will change my mind if [condition]."</i></p>
-
-<h2 id="examples">Worked examples</h2>
-<p class="meta">Training examples using the board as of the 5 Oct 2026 close. They show how to reason; they are not recommendations.</p>
-
-<div class="example">
-  <div class="head"><b>QQQ: a run that history says continues</b><span class="tag up">Pipeline CALL · ARMED</span></div>
-  <div class="tablewrap"><table><tbody>
-    <tr><td>Run</td><td>5 up closes in a row; 5d move 1.25σ, 20d move 1.21σ (not extended)</td></tr>
-    <tr><td>Momentum history</td><td class="num">next 20d +2.86% vs +1.18% normal (80% interval +1.06% to +4.67%, 22 windows); next 5d +0.71% vs +0.28%</td></tr>
-    <tr><td>Macro lean (5d)</td><td class="num">No clear lean: +0.44% vs +0.28% normal</td></tr>
-    <tr><td>Pipeline</td><td class="num">entry 756.20 · no target · invalidation 731.63 (−3.25%)</td></tr>
-    <tr><td>Options</td><td class="num">5d straddle priced 0.88× history · 20d 1.26× · IV rank 44 · pipeline flags event-priced IV</td></tr>
-    <tr><td>Holdings · participation</td><td>NVDA, AMAT, MSFT, TSLA, LRCX led the last 5 days; 74% of weight above trend</td></tr>
-  </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> the old "extended, so wait" rule would have kept you out. History says QQQ's runs like this continued more often than not. That falls just short of a formal lean, but it supports the pipeline's call. The 5-day option is not expensive against history. Two things still need work: there is no target, so set your exit plan before entry, and the IV is priced for an event, so plan for a volatility drop after it passes. This is a case for <b>acting with a defined exit</b>, not for waiting on the trend to end.</p>
-</div>
-
-<div class="example">
-  <div class="head"><b>SPY: ordinary drift, little room to the target</b><span class="tag up">Pipeline CALL · ARMED</span></div>
-  <div class="tablewrap"><table><tbody>
-    <tr><td>Pipeline</td><td class="num">entry 774.83 · target 779.37 (the 52-week high) · invalidation 749.60</td></tr>
-    <tr><td>Room left</td><td class="num">+0.59% to target vs 3.26% to invalidation (ratio 0.18) → Room left: against</td></tr>
-    <tr><td>Momentum history</td><td class="num">3 up closes: next 20d +0.66% vs +0.92% normal, so no momentum edge</td></tr>
-    <tr><td>Macro lean</td><td>No clear lean at any horizon</td></tr>
-    <tr><td>Options</td><td class="num">5d priced 0.83× history · 20d 1.01× · IV rank 31</td></tr>
-    <tr><td>Response</td><td>Absorbing pressure: measured headwinds (low realised vol, flat curve), yet SPY rose</td></tr>
-  </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> SPY is drifting up normally. The run is not a burst that history rewards. The problem is the target: it sits at the prior high, only 0.59% away, against 3.26% of risk. That makes the pipeline's call a poor ticket <i>as written</i>, but it does not make SPY bearish. The right move is to <b>wait for the pipeline's morning re-quote and a re-evaluated target</b>. If the new target gives better room, the card turns. Options are cheap at 5 days, so the contract is not the obstacle.</p>
-</div>
-
-<div class="example">
-  <div class="head"><b>TLT: two measured sources agree, but the options are expensive</b><span class="tag down">Macro ▼ · Momentum ▼ · holdout ✓</span></div>
-  <div class="tablewrap"><table><tbody>
-    <tr><td>Macro lean (20d)</td><td class="num">Down: −1.63%, held on recent history</td></tr>
-    <tr><td>Momentum history</td><td class="num">10 down closes in a row: next 20d −1.93% vs −0.85% normal (interval −3.27% to −0.60%), held on recent history</td></tr>
-    <tr><td>Pipeline</td><td>PUT, STAND DOWN ("structural intent is WAIT")</td></tr>
-    <tr><td>Options</td><td class="num">IV rank 89 · 20d priced 1.37× history</td></tr>
-    <tr><td>Card note</td><td>Target may be stale: continuation is larger than the 0.45% left to the pipeline target</td></tr>
-  </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> two independent measures say the down-trend in long bonds has tended to continue, so <b>do not buy long-bond calls</b> on a "too far, too fast" story. The pipeline is standing down, and the put options are expensive (IV rank 89, priced 1.37× what history delivered). A correct direction can still lose money in options. If you want this view, it needs the pipeline's re-evaluated setup and a cheaper way to express it.</p>
-</div>
-
-<div class="example">
-  <div class="head"><b>XLRE: a clear sector view you cannot trade with options</b><span class="tag down">Rotation · Lagging 26 sessions</span></div>
-  <div class="tablewrap"><table><tbody>
-    <tr><td>Macro-conditional vs SPY (20d)</td><td class="num">−2.79% · Down · holdout agrees · packet "headwind" agrees</td></tr>
-    <tr><td>Participation</td><td>0% of weight above trend</td></tr>
-    <tr><td>Momentum history</td><td>No evidence either way (small samples, wide intervals)</td></tr>
-    <tr><td>Pipeline</td><td>PUT, STAND DOWN: option spread 44% of price, beyond the 25% liquidity limit</td></tr>
-  </tbody></table></div>
-  <p class="verdict"><b>Reading:</b> macro, rotation, breadth and the packet all say real estate lags SPY. That is a strong <b>avoid-longs / underweight</b> view. But the options are too wide to trade, and the pipeline blocks it for that reason. Use the view to stay out of real estate longs. Do not force it into an illiquid put.</p>
-</div>
-
-<h2 id="rules">Rules and red flags</h2>
+<p class="q">Answers: <i>What are the outside reports saying?</i></p>
+<p>The outside macro reports as they were published: the macro packet, the US Money Index, event and news reports, volatility, dealer positioning estimates, rates and credit. Each card shows its source, time and age. The board's own measured Money Index sits first, next to the published one.</p>
 <div class="grid2">
-  <div class="box"><h4>Do</h4><ul>
-    <li>Start from the pipeline's proposal; use the board to check it.</li>
-    <li>Measure room left from <i>today's</i> price, not the proposal price.</li>
-    <li>Compare the lean with the price-only lean. If they match, macro adds nothing.</li>
-    <li>Prefer options when "priced vs history" is near or below 1.</li>
-    <li>Check the observation date of any number you quote.</li>
-    <li>Write the decision and the reason before the open.</li>
+  <div class="box"><h4>Coach's tip</h4><p>Check the date of every number you quote. A report written today can contain a price from weeks ago.</p></div>
+  <div class="box"><h4>Common mistake</h4><p>Reading "uncalibrated" scores as probabilities.</p></div>
+</div>
+</section>
+
+<section class="tab">
+<h3>Scorecards and Method</h3>
+<p class="q">Answers: <i>Have these sources been right? How exactly is each number made?</i></p>
+<p><b>Scorecards</b> grade every source of macro opinion against what SPY and QQQ did next, including the board itself. A "?" means too few cases to judge. Check it weekly. <b>Method</b> holds every definition and threshold: read it once, then come back when a number surprises you.</p>
+<p>The board's history covers about five years (since Aug 2021). That is one interest-rate cycle, so treat every pattern as evidence, not law.</p>
+</section>
+
+<h2 id="l8">Lesson 8 · From reading to a decision</h2>
+<p>Before any trade, answer these six questions in writing. The Desk card fills in most of them for you.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Question</th><th>In plain words</th><th>Where to look</th></tr></thead>
+  <tbody>
+    <tr><td><b>1. What changed?</b></td><td>What is genuinely new since yesterday?</td><td>Overview → What changed; Daily review</td></tr>
+    <tr><td><b>2. What should it affect?</b></td><td>Which ETF or stock, and through what?</td><td>Transmission map; Day story reasons</td></tr>
+    <tr><td><b>3. What is the market doing with it?</b></td><td>Did the price accept or reject it? Is money flowing in or out?</td><td>Daily review reading; Day story flow</td></tr>
+    <tr><td><b>4. What does the pipeline propose?</b></td><td>The idea: call or put, target, stop level</td><td>Desk card; ETF drawer</td></tr>
+    <tr><td><b>5. Is it still worth taking at today's price?</b></td><td>Room left vs risk; are the options cheap or rich?</td><td>Desk card checks; priced vs history; IV rank</td></tr>
+    <tr><td><b>6. What would change my mind?</b></td><td>The level or event that proves me wrong</td><td>"Wrong if" level; decision points</td></tr>
+  </tbody>
+</table></div>
+<p>Then write one sentence, filling in the blanks:</p>
+<div class="callout"><i>"[What changed] affects [ETF] through [reason]. The market is [accepting / rejecting] it and money is [flowing in / out]. The pipeline proposes [trade]. At today's price there is [room] against [risk], and options are [cheap / fair / rich]. I will [act / wait / skip] because [reason]. I will change my mind if [level or event]."</i></div>
+
+<h2 id="l9">Lesson 9 · Worked examples</h2>
+<p class="meta">Coaching examples. They show how to reason; they are not recommendations.</p>
+
+<div class="example">
+  <div class="head"><b>1 · Energy: money is flowing in, but check the details</b><span class="tag up">Day story · Turning in</span></div>
+  <p><b>What the board showed (13 Oct close).</b> XLE beat SPY by +5.55 pts over 5 sessions after trailing over 20. Oil (USO) rose 5.64% over the same 5 sessions, and XLE's relative return has moved closely with oil (correlation +0.79). The reasons: oil <span class="tag up">fits</span>. But share volume was only 0.81× its average, and "After this read" showed no clear follow-through in history.</p>
+  <p class="verdict"><b>Coach:</b> "There's a clear story here, and the measurement backs the <i>link</i> to oil. But ask yourself: is this flow real size or a light-volume drift? 0.81× says light. And history gives no edge to following this kind of flow. So the energy view depends on oil. If you want it, your 'wrong if' should include oil reversing, not just XLE's price level. A light-volume move into a 252-day high is a reason to wait for confirmation, not to chase."</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>2 · Technology: the market leader stumbles</b><span class="tag down">Day story · Leaving a leader</span></div>
+  <p><b>What the board showed.</b> XLK trailed SPY by 2.69 pts over 5 sessions after leading by 4.10 over 20. The trade analysis suggested puts below the 50-day average, but "After this read" said <span class="tag down">reversed</span>. After the same flow in the past, XLK beat SPY by 0.39 pts on average over the next 5 sessions (t +2.0), and kept falling only 38% of the time. Options were rich (priced 1.29× history).</p>
+  <p class="verdict"><b>Coach:</b> "This is exactly where new traders get caught. The story sounds bearish: the leader is losing ground. But in this market, leaders that stumble have more often bounced back. And the puts are expensive. So the measured case is <i>against</i> chasing puts here. The honest decision is 'skip', or wait for the 50-day average to break with heavy volume."</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>3 · A scenario that triggered: "QQQ failed at a yearly high"</b><span class="tag flat">Scenario watch · 9 Oct</span></div>
+  <p><b>What the board showed.</b> QQQ and SPY could not hold a new yearly high for 3 sessions, a classic "puts" setup. QQQ's record: over the next 5 sessions a put returned −36% on average, against −17% for a put bought on any day. QQQ actually rose 0.75% on average after these triggers, in 6 of the last 8 cases. Verdict: <b>Opposite side paid</b>, but <i>within chance</i>.</p>
+  <p class="verdict"><b>Coach:</b> "The textbook says 'failed high, buy puts'. This market's history says that has not paid. It is not strong enough to bet the other way either. Use the trigger as a moment to look harder at the setup, not as a trade."</p>
+</div>
+
+<div class="example">
+  <div class="head"><b>4 · A run that kept going: QQQ after 5 up days</b><span class="tag up">Momentum history</span></div>
+  <p><b>What the board measured (Aug 2021 – Oct 2026).</b> After 5 or more up closes in a row, QQQ rose +2.86% over the next 20 sessions on average, against +1.18% for all sessions (22 windows). For SPY: +2.19% against +0.92%.</p>
+  <p class="verdict"><b>Coach:</b> "Many people say 'it's gone up five days, it must be too late'. Here the measurement says runs have more often continued. Not always, and mostly in a rising market, but enough that 'it's extended' is not a reason on its own to stay out. Check Momentum history for the specific ETF instead of assuming."</p>
+</div>
+
+<h2 id="l10">Lesson 10 · Habits, rules and red flags</h2>
+<div class="grid2">
+  <div class="box"><h4>Good habits</h4><ul>
+    <li>Start from the pipeline's idea; use the board to check it.</li>
+    <li>Measure room from <i>today's</i> price.</li>
+    <li>Check "priced vs history" and IV rank before buying options.</li>
+    <li>Read "After this read" before following any flow.</li>
+    <li>Check the date of every number you use.</li>
+    <li>Write your decision and reason before the open.</li>
+    <li>Review your notes and the Scorecards once a week.</li>
   </ul></div>
-  <div class="box"><h4>Don't</h4><ul>
-    <li>Treat 75/100, confidence 90 or fragility 4.7 as probabilities.</li>
-    <li>Buy because a lean says Up when its holdout says ✗.</li>
-    <li>Assume a run is late, or that it must continue. Check Momentum history.</li>
-    <li>Chase a pipeline target that is almost reached, unless the card says it may be stale and you have a re-evaluated target.</li>
-    <li>Read a "?" (thin evidence) as confirmation.</li>
-    <li>Use multi-day leans on leveraged or volatility products.</li>
-    <li>Add up heatmap cells or count two reports of the same event as two signals.</li>
+  <div class="box"><h4>Avoid</h4><ul>
+    <li>Treating uncalibrated scores as probabilities.</li>
+    <li>Acting on a lean whose holdout says ✗.</li>
+    <li>Treating "?" or "within chance" as proof.</li>
+    <li>Assuming a run is "too late", or that it must continue. Measure it.</li>
+    <li>Treating PUBLISHED news as fact.</li>
+    <li>Using multi-day history on leveraged or volatility products.</li>
+    <li>Counting two reports of the same event as two reasons.</li>
   </ul></div>
 </div>
-<div class="callout warn"><strong>Red flags that mean "stop and ask"</strong>
+<div class="callout warn"><strong>Stop and ask your desk lead when</strong>
 <ul>
-  <li>An input chip is red on a panel you are relying on.</li>
-  <li>The pipeline and the measured lean point in opposite directions.</li>
-  <li>The option spread is above about 5% of the straddle price.</li>
-  <li>Breadth or participation is collapsing under a rising index.</li>
+  <li>an input you rely on is red or stale;</li>
+  <li>the pipeline and the measured evidence point in opposite directions;</li>
+  <li>the option spread is very wide (above about 5% of the straddle price);</li>
+  <li>the AI narrative shows an amber or red check;</li>
+  <li>the index is rising while breadth or participation collapses.</li>
 </ul></div>
+
+<h2 id="quiz">Check yourself</h2>
+<p>Try each one before opening the answer.</p>
+<details><summary>1. XLF rose 1% this week. SPY rose 2%. Is money flowing into financials?</summary><p>No. XLF's relative return is about −1 pt. It went up, but it lost ground to the market. Relative strength (Lesson 1) is what tells you about money flow.</p></details>
+<details><summary>2. A lean shows ▲ Up with "holdout ✗". What do you do?</summary><p>Don't rely on it. The pattern did not hold on the most recent, set-aside history (Lesson 4).</p></details>
+<details><summary>3. You are sure SPY will rise, but "priced vs history" is 1.4 and IV rank is 88. What is the risk?</summary><p>The options are expensive. SPY can rise less than the option price assumes, and the call still loses (Lesson 2).</p></details>
+<details><summary>4. A sector shows "Leaving a leader", and "After this read" says "reversed". What does that mean?</summary><p>In the past, after this same flow, the sector more often recovered against SPY than kept falling. Following the flow with puts is against the evidence (Lessons 7 and 9).</p></details>
+<details><summary>5. A report says "risk score 75/100". What is the chance of a sell-off?</summary><p>Unknown. The score is uncalibrated; it is not a probability (Lesson 4).</p></details>
+<details><summary>6. The Overview shows "No clear lean" for QQQ at every horizon. Does that mean "don't trade QQQ"?</summary><p>No. It means today's macro adds no measurable edge. Judge the trade on its own setup, the room left and the option price (Lesson 5).</p></details>
 
 <h2 id="glossary">Glossary</h2>
 <div class="tablewrap"><table>
-  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <thead><tr><th>Term</th><th>Plain meaning</th></tr></thead>
   <tbody>
-    <tr><td>Analog sessions</td><td>Past days whose macro conditions matched today's (at the stated match level).</td></tr>
-    <tr><td>Independent windows</td><td>The number of non-overlapping periods behind a statistic. Twenty days in a row count as one 20-day window. This is the real sample size.</td></tr>
-    <tr><td>Measured lean</td><td><span class="tag up">▲ Up</span> / <span class="tag down">▼ Down</span> when history clearly favours a direction; otherwise "No clear lean", "Insufficient sample" (too few windows), "Short history" (ETF too new in the database) or "Path-dependent" (leveraged or volatility product).</td></tr>
-    <tr><td>Holdout ✓ / ✗ / thin</td><td>Whether the lean held on the last quarter of history, which was kept aside when the lean was set.</td></tr>
-    <tr><td>Price-only lean</td><td>The same test on all history, ignoring macro. Shows the ETF's normal drift.</td></tr>
-    <tr><td>80% interval</td><td>The likely range of the true average. If it spans zero, the sign is uncertain.</td></tr>
-    <tr><td>Excess vs base</td><td>Analog average minus all-history average: what today's macro adds.</td></tr>
-    <tr><td>Response</td><td><b>Supporting</b>: price agrees with the measured pressure. <b>Absorbing pressure</b>: measured headwinds, but the ETF rose. <b>Rejecting relief</b>: measured tailwinds, but it fell. <b>Mixed</b>: pressures balance. <b>Insufficient</b>: nothing measured.</td></tr>
-    <tr><td>Move made (σ)</td><td>The recent return divided by the ETF's own normal move size (beyond ±1.5σ = extended). Whether runs like this continued is <i>measured</i> under Momentum history, never assumed.</td></tr>
-    <tr><td>Momentum history</td><td>What the ETF did next after the same streak, 5-day move and 20-day move, against its normal drift, with intervals and the holdout check.</td></tr>
-    <tr><td>Stale target</td><td>The desk card's note when measured continuation after similar runs is larger than the room left to the pipeline's target, often a prior high.</td></tr>
-    <tr><td>Priced vs history</td><td>The at-the-money straddle's expected move (from real bid/ask quotes) divided by the average move after similar sessions.</td></tr>
-    <tr><td>IV rank · IV − HV</td><td>Where implied volatility sits in its 1-year range (0–100) · implied minus realised volatility (positive = options above recent movement).</td></tr>
-    <tr><td>Participation</td><td>Share of an ETF's weight in holdings trading above their 50-day average. Low participation under a rising price = narrow, fragile move.</td></tr>
-    <tr><td>Contribution (pp)</td><td>A holding's start-of-window weight × its return, in percentage points of the ETF's move.</td></tr>
-    <tr><td>Quadrants</td><td>Leading, weakening, lagging, improving: a sector's relative trend against SPY and its momentum.</td></tr>
-    <tr><td>Uncalibrated</td><td>A score chosen by its author and never tested as a probability.</td></tr>
-    <tr><td>Fresh / Stale / Missing</td><td>Data age against its limit. Missing is shown as missing, never as neutral.</td></tr>
+    <tr><td>Absorbed / accepted / rejected</td><td>How a price reacted to news: little reaction / moved with it and held / opened one way and reversed.</td></tr>
+    <tr><td>Analog days</td><td>Past days whose macro conditions looked like today's.</td></tr>
+    <tr><td>Ask / bid / spread</td><td>The price you buy at / the price you sell at / the gap between them (a cost).</td></tr>
+    <tr><td>Breadth / participation</td><td>How many stocks (or how much of an ETF's weight) are taking part in a move.</td></tr>
+    <tr><td>Call / put</td><td>An option that gains if the price rises / falls.</td></tr>
+    <tr><td>Correlation</td><td>How closely two things move together: +1 always together, 0 unrelated, −1 always opposite.</td></tr>
+    <tr><td>Credit spread</td><td>Extra interest riskier companies pay. Widening means stress.</td></tr>
+    <tr><td>Daily move</td><td>An ETF's typical one-day move, used as a ruler for distance.</td></tr>
+    <tr><td>FOMC / CPI</td><td>The US Federal Reserve's rate meeting / the monthly consumer inflation report. Both move markets.</td></tr>
+    <tr><td>Flow labels</td><td>Money in, turning in, money out, leaving a leader (see the Day story section of Lesson 7).</td></tr>
+    <tr><td>GEX levels (flip, walls)</td><td>Price levels estimated from options positioning where dealers' hedging may slow or speed moves. Model estimates.</td></tr>
+    <tr><td>Holdout</td><td>Recent history set aside to check a pattern found on older history.</td></tr>
+    <tr><td>Horizon / session</td><td>How far ahead (1, 5, 20 sessions) / one trading day.</td></tr>
+    <tr><td>Implied volatility (IV) / IV rank</td><td>How much movement option prices expect / where that sits in its past year (0–100).</td></tr>
+    <tr><td>Independent windows</td><td>Separate, non-overlapping cases: the real sample size.</td></tr>
+    <tr><td>Interval (80%)</td><td>The likely range of the true average. If it includes zero, the direction is uncertain.</td></tr>
+    <tr><td>Measured lean</td><td>▲ Up / ▼ Down when history clearly favours a direction; otherwise "No clear lean".</td></tr>
+    <tr><td>Normal drift / base</td><td>What an ETF does on average over all days: the bar a pattern must beat.</td></tr>
+    <tr><td>Premium</td><td>What you pay for an option; the most a bought option can lose.</td></tr>
+    <tr><td>Priced vs history</td><td>The move options expect ÷ the move history delivered. Above 1 = rich, below 1 = cheap.</td></tr>
+    <tr><td>Quadrants</td><td>Leading, weakening, lagging, improving: where a sector sits in the rotation cycle.</td></tr>
+    <tr><td>Relative return (pts)</td><td>An ETF's return minus SPY's.</td></tr>
+    <tr><td>Room left</td><td>Distance to the target compared with distance to the stop level, from today's price.</td></tr>
+    <tr><td>Runway</td><td>Time left in an option. Buy more than the move should need.</td></tr>
+    <tr><td>Skew</td><td>How much more downside protection (puts) costs than upside (calls).</td></tr>
+    <tr><td>Straddle</td><td>A call and a put at the same price level; its cost shows the expected move.</td></tr>
+    <tr><td>t</td><td>How far a result stands out from luck. About ±2 or beyond is noteworthy.</td></tr>
+    <tr><td>Trigger / wrong if</td><td>The level that starts a trade / the level that proves it wrong.</td></tr>
+    <tr><td>Uncalibrated</td><td>A score someone chose and nobody has tested as a probability.</td></tr>
+    <tr><td>Within chance / beats the tries</td><td>A result that could be luck given how many ideas were tested / one that survives that check.</td></tr>
+    <tr><td>Yield curve</td><td>Long-term minus short-term interest rates. Steepening = the gap is widening.</td></tr>
   </tbody>
 </table></div>
 
-<h2 id="trouble">Troubleshooting</h2>
+<h2 id="trouble">When something looks wrong</h2>
 <div class="tablewrap"><table>
-  <thead><tr><th>You see</th><th>What it means</th><th>Fix</th></tr></thead>
+  <thead><tr><th>You see</th><th>What it means</th><th>What to do</th></tr></thead>
   <tbody>
-    <tr><td><code>Run-MacroBoard.ps1 is not recognized</code></td><td>PowerShell is not in the repo folder</td><td><code>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence</code> first</td></tr>
-    <tr><td>QQQ holdings: <code>406 Not Acceptable</code></td><td>Invesco sometimes blocks automated downloads</td><td>Nothing to do: the board keeps the last good file and marks it stale after 3 sessions</td></tr>
-    <tr><td>tastytrade: <code>missing broker OAuth environment</code></td><td>The window cannot see the broker variables</td><td>Open a new PowerShell window after the variables are set, then run again</td></tr>
-    <tr><td>An ETF shows "Short history"</td><td>Fewer than 500 sessions in the price database</td><td>Use its price data only; no lean is possible yet</td></tr>
-    <tr><td>Almost every lean says "No clear lean"</td><td>Normal: today's macro gives no measurable edge</td><td>Decide on the pipeline setup, entry and option price</td></tr>
-    <tr><td>A chip is red or "stale"</td><td>That source did not update</td><td>Do not rely on panels that use it; tell the desk lead</td></tr>
+    <tr><td>The board looks out of date</td><td>Only the board was rebuilt, not the inputs</td><td>Run <code>.\Run-MacroInputs.ps1</code>, not <code>Run-MacroBoard.ps1</code></td></tr>
+    <tr><td><code>... is not recognized</code> in PowerShell</td><td>PowerShell is not in the repo folder</td><td><code>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence</code> first</td></tr>
+    <tr><td>A chip is red or stale</td><td>That source did not update</td><td>Don't rely on panels that use it; tell your desk lead</td></tr>
+    <tr><td>QQQ holdings: <code>406 Not Acceptable</code></td><td>The issuer sometimes blocks downloads</td><td>Nothing: the board keeps the last good file and marks it stale</td></tr>
+    <tr><td>"Too unstable to read" under Options</td><td>The stored option data for that ETF jumps too much day to day to be real</td><td>Ignore option footprints for that ETF; use price and volume</td></tr>
+    <tr><td>AI narrative "not available" or a red check</td><td>No credentials, the request failed, or a number did not match the facts</td><td>Use the MEASURED sections; they stand on their own</td></tr>
+    <tr><td>Almost everything says "No clear lean"</td><td>Normal: today's macro gives no measurable edge</td><td>Decide on the setup, room left and option price</td></tr>
   </tbody>
 </table></div>
-<p class="meta">Source code and technical README: <code>macro_board/</code> in the AVSHUNTER repository. Thresholds live in <code>macro_board/config/macro_board_config_v1.json</code>.</p>
+<p class="meta">Technical detail: <code>macro_board/README.md</code>. Thresholds live in <code>macro_board/config/macro_board_config_v1.json</code>.</p>
 </main>
 </div>
 

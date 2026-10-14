@@ -130,6 +130,11 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
 .drawer .close{position:sticky;top:0;float:right}
 .pill-row{display:flex;flex-wrap:wrap;gap:4px}
 .page{display:none}.page.active{display:block}
+.chip.warn{color:var(--serious);border-color:color-mix(in oklab,var(--serious) 45%,var(--border))}
+.chip.ai{color:#8a6cf0;border-color:color-mix(in oklab,#8a6cf0 45%,var(--border))}
+.ai-card{border-left:3px solid #8a6cf0}
+.story-list{margin:4px 0 8px;padding-left:18px;font-size:13px;line-height:1.45}
+.story-list li{margin:3px 0}
 .note{font-size:12px;color:var(--text-2);margin:6px 0 0}
 .mini th,.mini td{padding:4px 6px;font-size:12px}
 .mini th{position:static;cursor:default}
@@ -151,6 +156,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
   <div class="authority" id="authority"></div>
   <div class="fresh-strip" id="fresh"></div>
   <section class="page" id="p-review"></section>
+  <section class="page" id="p-story"></section>
   <section class="page" id="p-overview"></section>
   <section class="page" id="p-etfs"></section>
   <section class="page" id="p-map"></section>
@@ -297,7 +303,7 @@ $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
-const PAGES = [["review","Daily review"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["scenario","Scenario watch"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"],["plan","Next session plan"]];
+const PAGES = [["review","Daily review"],["story","Day story"],["overview","Overview"],["etfs","ETF matrix"],["map","Transmission map"],["rotation","Sector rotation"],["desk","Desk card"],["scenario","Scenario watch"],["intel","Macro intelligence"],["score","Scorecards"],["method","Method"],["plan","Next session plan"]];
 $("#tabs").innerHTML = PAGES.map(([k,l]) => `<button role="tab" data-p="${k}">${l}</button>`).join("");
 function show(page){
   PAGES.forEach(([k]) => { $("#p-"+k).classList.toggle("active", k===page); $(`[data-p="${k}"]`).setAttribute("aria-selected", k===page); });
@@ -367,6 +373,9 @@ function downloadCsv(name, cols, rows){
 }
 const csvBtn = (key, label) => `<button class="btn" data-csv="${key}" title="Download this table as CSV" style="float:right;padding:2px 8px;font-size:12px">${label || "CSV"}</button>`;
 const CSV_EXPORTS = {
+  story_flows: () => downloadCsv("day_story_flows", [["etf","ticker"],["name","name"],["kind","kind"],["flow",r=>r.flow?.label],["rel_1d_pp",r=>r.flow?.relative_pp?.["1"]],["rel_5d_pp",r=>r.flow?.relative_pp?.["5"]],["rel_20d_pp",r=>r.flow?.relative_pp?.["20"]],["volume_ratio",r=>r.volume?.ratio],["quadrant","quadrant"],["options_lean",r=>r.footprint?.lean],["options",r=>r.footprint?.text],["reasons_for",r=>(r.drivers||[]).filter(d=>d.fit==="CONSISTENT").map(d=>d.text).join(" | ")],["reasons_against",r=>(r.drivers||[]).filter(d=>d.fit==="AGAINST").map(d=>d.text).join(" | ")],["published",r=>(r.published||[]).map(n=>n.name).join(" | ")],["trade",r=>r.trade?.text]], (B.day_story?.stories)||[]),
+  story_trades: () => downloadCsv("day_story_trades", [["etf","ticker"],["side","side"],["trigger",r=>r.trigger?.name],["trigger_level",r=>r.trigger?.level],["invalidation",r=>r.invalidation?.name],["invalidation_level",r=>r.invalidation?.level],["options",r=>r.expression?.pricing],["for",r=>r.balance?.with],["against",r=>r.balance?.against],["after_this_read","record"],["flow_record","persistence"],["text","text"]], (B.day_story?.trade_ideas)||[]),
+  story_tickers: () => downloadCsv("day_story_tickers", [["ticker","ticker"],["side","direction"],["verdict","verdict"],["sector_etf","etf"],["sector_flow","sector_flow"],["link_corr","link_corr"],["reading","relation"]], ((B.day_story?.stories)||[]).flatMap(s => (s.candidates||[]).map(c => ({...c, etf: s.ticker})))),
   decision_calendar: () => downloadCsv("decision_calendar", [["date","date"],["sessions_ahead","sessions_ahead"],["windows",r=>(r.windows||[]).join("/")],["kind","kind"],["event","name"],["time_et","time_et"],["detail","detail"],["weights",r=>r.weights?Object.entries(r.weights).map(([k,v])=>k+" "+v+"%").join("; "):""],["source","source"]], (B.decision_points?.calendar)||[]),
   reassess: () => downloadCsv("reassess_next_session", [["etf","etf"],["kind","kind"],["time_et","time_et"],["item","text"]],
     Object.entries(B.decision_points?.reassess||{}).flatMap(([etf, items]) => items.map(i => ({etf, ...i})))),
@@ -1404,8 +1413,130 @@ function renderScenario(){
   if ($("#scn-close")) $("#scn-close").onclick = () => { state.scnSel = null; renderScenario(); };
 }
 
+/* ---------- day story ---------- */
+const FLOW_TXT = {INFLOW:"Money in", TURNING_IN:"Turning in", OUTFLOW:"Money out", TURNING_OUT:"Leaving a leader", NONE:"No clear flow", MISSING:"Missing"};
+const FLOW_CLS = {INFLOW:"up", TURNING_IN:"up", OUTFLOW:"down", TURNING_OUT:"down", NONE:"flat", MISSING:"na"};
+const flowChip = l => `<span class="chip ${FLOW_CLS[l] || "na"}">${esc(FLOW_TXT[l] || l || "—")}</span>`;
+const FIT_TXT = {CONSISTENT:"fits", AGAINST:"against", NEUTRAL:"neutral"};
+const FIT_CLS = {CONSISTENT:"good", AGAINST:"bad", NEUTRAL:""};
+const fitChip = f => `<span class="ck ${FIT_CLS[f] ?? ""}"><i aria-hidden="true">${CK_ICON[FIT_CLS[f] ?? ""]}</i>${esc(FIT_TXT[f] || f)}</span>`;
+const REL_TXT_FLOW = {WITH_FLOW:"with the sector flow", AGAINST_FLOW:"against the sector flow", STOCK_SPECIFIC:"stock-specific (weak link)", NO_FLOW_READ:"no clear sector flow", NO_SECTOR:"no sector ETF"};
+const REL_CLS_FLOW = {WITH_FLOW:"good", AGAINST_FLOW:"bad", STOCK_SPECIFIC:"", NO_FLOW_READ:"", NO_SECTOR:""};
+const relChip = r => `<span class="ck ${REL_CLS_FLOW[r] ?? ""}"><i aria-hidden="true">${CK_ICON[REL_CLS_FLOW[r] ?? ""]}</i>${esc(REL_TXT_FLOW[r] || r)}</span>`;
+const REC_TXT = {FOLLOWS:"followed through", REVERSES:"reversed", NO_CLEAR_RECORD:"no clear record", THIN:"too few cases"};
+const REC_CLS = {FOLLOWS:"good", REVERSES:"bad", NO_CLEAR_RECORD:"", THIN:""};
+const recChip = (r, tipText) => r ? `<span class="ck ${REC_CLS[r] ?? ""}" data-tip="${esc(tipText || "")}"><i aria-hidden="true">${CK_ICON[REC_CLS[r] ?? ""]}</i>${esc(REC_TXT[r] || r)}</span>` : `<span class="muted">—</span>`;
+const LEAN_FP = {PUT_SIDE:["down","put side"], CALL_SIDE:["up","call side"], NONE:["flat","nothing unusual"]};
+const fpChip = fp => { if (!fp || fp.status !== "OK") return `<span class="chip na" data-tip="${esc(fp?.text || "No stored chain")}">${esc(fp?.status === "THIN" ? "thin history" : "no chain")}</span>`;
+  const [k, l] = LEAN_FP[fp.lean] || ["flat", fp.lean]; return `<span class="chip ${k}" data-tip="${esc(fp.text)}">${esc(l)}</span>`; };
+const voice = k => ({MEASURED:`<span class="chip" title="Built only from the board's own numbers">MEASURED</span>`,
+  PUBLISHED:`<span class="chip warn" title="From the event payload (made by an LLM); the board has not verified it">PUBLISHED · not verified</span>`,
+  AI:`<span class="chip ai" title="Written by Claude from the measured facts on this tab only">AI NARRATIVE</span>`})[k];
+const levelTxt = l => l ? `${esc(LEVEL_TXT[l.name] || String(l.name).replace(/_/g, " "))} ${fmt(l.level)} <span class="muted">(${pct(l.distance_pct,1)}${isNum(l.distance_daily_moves) ? ", " + fmt(l.distance_daily_moves,1) + " daily moves" : ""})</span>` : `<span class="muted">missing</span>`;
+state.storySel = state.storySel || null;
+
+function storyAi(ai){
+  if (!ai) return "";
+  const head = `<h2 style="margin-top:22px">The story in words ${voice("AI")} <span class="sub">${esc(ai.label || "")}</span></h2>`;
+  if (ai.status !== "OK") {
+    const why = {DISABLED:"The AI narrative is switched off in the config.", NOT_CALLED:ai.reason, UNAVAILABLE:"No Anthropic credentials for this build: " + (ai.reason || ""),
+      FAILED:"The request failed: " + (ai.reason || ""), REFUSED:ai.reason}[ai.status] || ai.reason;
+    return head + `<div class="card soft"><div class="sub">${statusChip(ai.status)} ${esc(why || "")} The measured story below stands on its own.</div></div>`;
+  }
+  const o = ai.output || {}, v = ai.verification || {};
+  const checks = [];
+  checks.push(v.unverified_numbers?.length ? `<span class="ck warn"><i>!</i>${v.unverified_numbers.length} number${v.unverified_numbers.length === 1 ? "" : "s"} not in the facts: ${esc(v.unverified_numbers.join(", "))}</span>` : `<span class="ck good"><i>✓</i>every number found in the facts</span>`);
+  checks.push(v.flow_disagreements?.length ? `<span class="ck bad"><i>×</i>flow call differs from the measurement: ${esc(v.flow_disagreements.join(", "))}</span>` : `<span class="ck good"><i>✓</i>flow calls match the measurement</span>`);
+  if (v.unknown_tickers?.length) checks.push(`<span class="ck warn"><i>!</i>tickers not in the facts: ${esc(v.unknown_tickers.join(", "))}</span>`);
+  const sectors = (o.sectors || []).map(s => `<li><b>${esc(s.ticker)}</b> ${flowChip(s.money_flow)} ${esc(s.story)}</li>`).join("");
+  const tickers = (o.tickers || []).map(s => `<li><b>${esc(s.ticker)}</b> ${esc(s.story)}</li>`).join("");
+  const list = (xs) => (xs || []).map(x => `<li>${esc(x)}</li>`).join("");
+  return head + `<div class="card ai-card">
+    <div class="note">${checks.join(" ")} <span class="muted">· ${esc(ai.model || "")} · ${ai.cached ? (ai.earlier_build ? "written for an earlier build of this session" : "cached for these facts") : "written this build"} · facts ${esc((ai.facts_sha256 || "").slice(0, 12))}</span></div>
+    <p style="font-size:14.5px;line-height:1.5">${esc(o.overview || "")}</p>
+    ${sectors ? `<h3>Sectors</h3><ul class="story-list">${sectors}</ul>` : ""}
+    ${tickers ? `<h3>Tickers</h3><ul class="story-list">${tickers}</ul>` : ""}
+    <div class="grid g-2">${o.risks?.length ? `<div><h3>Risks to the story</h3><ul class="story-list">${list(o.risks)}</ul></div>` : ""}
+    ${o.would_change_view?.length ? `<div><h3>What would change the view</h3><ul class="story-list">${list(o.would_change_view)}</ul></div>` : ""}</div></div>`;
+}
+
+function storyDetail(s){
+  const fp = s.footprint || {};
+  const drivers = (s.drivers || []).map(d => `<li>${fitChip(d.fit)} ${esc(d.text)}</li>`).join("") || `<li class="muted">No condition or asset with a measured link to this ETF's relative return passes the bar today.</li>`;
+  const pub = (s.published || []).map(n => `<li>${voice("PUBLISHED")} <b>${esc(n.name)}</b>${n.institution ? ` <span class="muted">(${esc(n.institution)})</span>` : ""}${n.what_changed ? `: ${esc(String(n.what_changed).slice(0, 400))}` : ""} <span class="muted">${esc(n.time_utc || "")}</span></li>`).join("");
+  const cands = (s.candidates || []).map(c => `<tr><td class="l"><b>${esc(c.ticker)}</b></td><td class="l"><span class="chip ${c.direction==="PUT"?"down":"up"}">${esc(c.direction)}</span></td><td class="l">${esc(c.verdict || "")}</td><td>${fmt(c.link_corr)}</td><td class="l">${relChip(c.relation)}</td></tr>`).join("");
+  const live = (s.live || []).map(x => `<li>${esc(x.state)}: ${esc((B.scenario_watch?.library || []).find(l => l.id === x.scenario)?.name || x.scenario)} <span class="chip ${x.side==="PUT"?"down":"up"}">${esc(x.side)}</span> ${svChip(x.record)}</li>`).join("");
+  const t = s.trade || {};
+  return `<div class="card" id="story-detail" style="margin-top:12px">
+    <h3>${esc(s.ticker)} <span class="sub">${esc(s.name || s.kind)}</span> ${flowChip(s.flow?.label)} <button class="btn" id="story-close" style="float:right">Close</button></h3>
+    <div class="grid g-2">
+      <div><h3>What money is doing ${voice("MEASURED")}</h3><ul class="story-list">${(s.evidence || []).map(e => `<li>${esc(e)}</li>`).join("")}
+        <li>Options (${esc(fp.quote_date || "no chain")}): ${esc(fp.text || "—")}</li></ul>
+        <h3>Reasons that fit or go against ${voice("MEASURED")}</h3><ul class="story-list">${drivers}</ul>
+        <div class="note muted">A reason is a measured association with this ETF's return, not a proven cause.</div></div>
+      <div><h3>Trade analysis</h3><p>${t.side === "STAND_ASIDE" ? `<span class="chip flat">stand aside</span>` : `<span class="chip ${t.side==="PUT"?"down":"up"}">${esc(t.side)}</span>`} ${esc(t.text || "")}</p>
+        ${t.trigger ? `<dl class="kv"><dt>Trigger</dt><dd>${levelTxt(t.trigger)}</dd><dt>Wrong if</dt><dd>${levelTxt(t.invalidation)}</dd><dt>Options</dt><dd>${esc(t.expression?.pricing || "—")}${isNum(t.expression?.priced_vs_history) ? ` <span class="muted">(priced ${fmt(t.expression.priced_vs_history)}× history, IV rank ${fmt(t.expression.iv_rank_pct,0)})</span>` : ""}</dd></dl>` : ""}
+        ${s.persistence_text ? `<div class="note">${voice("MEASURED")} ${recChip(t.record)} ${esc(s.persistence_text)}</div>` : ""}
+        ${live ? `<h3>Live scenarios</h3><ul class="story-list">${live}</ul>` : ""}
+        ${pub ? `<h3>Published items that name this sector</h3><ul class="story-list">${pub}</ul>` : ""}
+        ${s.packet_bias ? `<div class="note">${voice("PUBLISHED")} Macro packet calls this sector a ${esc(String(s.packet_bias.value).toLowerCase())}.</div>` : ""}</div>
+    </div>
+    ${cands ? `<h3>Pipeline candidates in ${esc(s.ticker)}</h3><div class="table-wrap"><table class="mini"><thead><tr><th class="l">Ticker</th><th class="l">Side</th><th class="l">Verdict</th><th data-tip="Correlation of daily returns with the sector ETF, 60 sessions">Link</th><th class="l">Reading</th></tr></thead><tbody>${cands}</tbody></table></div>` : ""}
+  </div>`;
+}
+
+function renderStory(){
+  const S = B.day_story; const el = $("#p-story");
+  if (!S || S.status !== "OK") { el.innerHTML = `<h2>Day story</h2><div class="sub muted">Day story not built${S?.reason ? ": " + esc(S.reason) : ""}.</div>`; return; }
+  const D = S.day || {}, W = S.settings?.flow_windows || {day:"1", short:"5", long:"20"};
+  const events = (D.events || []).map(e => `<li><b>${esc(e.date)} ${esc(e.time_et || "")}</b> ${esc(e.name)} <span class="muted">${esc(e.detail || "")}</span></li>`).join("");
+  const branches = (D.instruments || []).map(i => `<div class="card"><h3>${esc(i.ticker)} <span class="sub">${fmt(i.reference)} · ${esc(i.basis || "")} · normal day ±${fmt(i.daily_move_pct)}%${isNum(i.implied_move_pct) ? ` · options price ±${fmt(i.implied_move_pct)}%` : ""}</span></h3>
+      <ul class="story-list">${i.branches.map(b => `<li><b>${esc({base:"Holds the range", up:"Breaks up", down:"Breaks down"}[b.branch] || b.branch)}</b>: ${esc(b.text)}${b.expression ? ` <span class="muted">(${esc(b.expression)})</span>` : ""}</li>`).join("")}</ul>
+      <div class="note">Options ${fpChip(i.footprint)} <span class="muted">${esc(i.footprint?.text || "")}</span></div>
+      ${(i.history || []).map(h => `<div class="note muted">${esc(h)}</div>`).join("")}</div>`).join("");
+  const rows = (S.stories || []).map(s => { const r = s.flow?.relative_pp || {}; const fits = (s.drivers || []).reduce((a, d) => (a[d.fit] = (a[d.fit] || 0) + 1, a), {});
+    return `<tr class="row ${state.storySel === s.ticker ? "sel" : ""}" data-story="${esc(s.ticker)}"><td class="l"><b>${esc(s.ticker)}</b> <span class="muted">${esc(s.kind === "industry" ? "industry" : "")}</span></td><td class="l">${esc(s.name || "")}</td>
+      <td class="l">${flowChip(s.flow?.label)}</td><td class="${cls(r[W.day])}">${fmt(r[W.day])}</td><td class="${cls(r[W.short])}">${fmt(r[W.short])}</td><td class="${cls(r[W.long])}">${fmt(r[W.long])}</td>
+      <td>${isNum(s.volume?.ratio) ? fmt(s.volume.ratio) + "×" : "—"}</td><td class="l">${s.quadrant ? qChip(s.quadrant) : "—"}</td><td class="l">${fpChip(s.footprint)}</td>
+      <td><span class="pos">${fits.CONSISTENT || 0}</span> / <span class="neg">${fits.AGAINST || 0}</span></td><td class="l">${(s.published || []).length ? `<span class="chip warn">${s.published.length}</span>` : ""}</td>
+      <td class="l">${s.trade?.side === "STAND_ASIDE" ? `<span class="chip flat">stand aside</span>` : `<span class="chip ${s.trade?.side==="PUT"?"down":"up"}">${esc(s.trade?.side || "")}</span>`}</td></tr>`; }).join("");
+  const sel = (S.stories || []).find(s => s.ticker === state.storySel);
+  const ideas = (S.trade_ideas || []).map(t => `<tr><td class="l"><b>${esc(t.ticker)}</b></td><td class="l"><span class="chip ${t.side==="PUT"?"down":"up"}">${esc(t.side)}</span></td>
+      <td class="l">${levelTxt(t.trigger)}</td><td class="l">${levelTxt(t.invalidation)}</td><td class="l">${esc(t.expression?.pricing || "—")}</td>
+      <td><span class="pos">${t.balance?.with ?? 0}</span> / <span class="neg">${t.balance?.against ?? 0}</span></td>
+      <td class="l">${recChip(t.record, t.persistence)}</td><td class="l">${(t.live || []).map(x => svChip(x.record)).join(" ") || `<span class="muted">—</span>`}</td></tr>`).join("");
+  const impact = (S.stories || []).flatMap(s => (s.candidates || []).map(c => ({...c, etf: s.ticker})));
+  const order = {WITH_FLOW:0, AGAINST_FLOW:1, NO_FLOW_READ:2, STOCK_SPECIFIC:3};
+  impact.sort((a, b) => (order[a.relation] ?? 9) - (order[b.relation] ?? 9) || (a.rank ?? 999) - (b.rank ?? 999));
+  const impactRows = impact.slice(0, 60).map(c => `<tr><td class="l"><b>${esc(c.ticker)}</b></td><td class="l"><span class="chip ${c.direction==="PUT"?"down":"up"}">${esc(c.direction)}</span></td><td class="l">${esc(c.verdict || "")}</td><td class="l">${esc(c.etf)} ${flowChip(c.sector_flow)}</td><td>${fmt(c.link_corr)}</td><td class="l">${relChip(c.relation)}</td></tr>`).join("");
+  const LR = S.live_record || {};
+  const rec = Object.entries(LR).map(([h, r]) => `<li>Next ${esc(h)} session${h === "1" ? "" : "s"}: ${r.scored} call${r.scored === 1 ? "" : "s"} scored, ${r.pending} pending${r.scored ? ` · on the flow's side ${pct(r.mean_flow_side_pp)} pts on average, right ${Math.round(100 * r.flow_side_rate)}%` : ""}</li>`).join("");
+  const ic = S.impact_counts || {};
+  el.innerHTML = `<h2>Day story <span class="sub">where money is going, the measured reasons that fit, and the trade analysis for ${esc(D.next_session || "the next session")}</span></h2>
+    <div class="authority">Three voices, each labelled. ${voice("MEASURED")} sentences are built only from the board's own numbers. ${voice("PUBLISHED")} items come from the event payload, made by another LLM, and are not verified here. ${voice("AI")} text is written by Claude from the measured facts on this tab only; numbers it uses that the facts do not contain are flagged. A reason is a measured association with a sector's return, not a proven cause. Display only: nothing here is a gate, score or rank.</div>
+    <h2>The day ahead <span class="sub">market call ${esc(String(D.call || "").replace(/_/g, " ").toLowerCase())}</span></h2>
+    <div class="card soft">${(D.sentences || []).map(x => `<div>${esc(x)}</div>`).join("")}${D.approach ? `<p><b>Approach:</b> ${esc(D.approach)}</p>` : ""}
+      ${events ? `<h3>Scheduled before the next close</h3><ul class="story-list">${events}</ul>` : `<div class="muted">No scheduled release before the next close.</div>`}
+      ${D.published_narrative ? `<h3>Published narrative ${voice("PUBLISHED")}</h3><div class="sub"><b>${esc(D.published_narrative.classification || "")}</b> ${esc(D.published_narrative.text || "")}</div>` : ""}</div>
+    <h2 style="margin-top:18px">Possible paths for the index ETFs <span class="sub">from the Next session plan's levels · option footprint from the stored chain</span></h2>
+    <div class="grid g-focus">${branches || `<div class="card muted">No index levels.</div>`}</div>
+    ${storyAi(S.ai)}
+    <h2 style="margin-top:22px">Where money is going ${voice("MEASURED")} <span class="sub">relative return vs ${esc(B.rotation?.settings?.benchmark || "SPY")} in pts · click a row for the reasons, trade and tickers</span> ${csvBtn("story_flows")}</h2>
+    <div class="card soft">${(S.overview || []).map(x => `<div>${esc(x)}</div>`).join("") || `<div class="muted">No sector or industry has a clear flow.</div>`}</div>
+    <div class="table-wrap"><table><thead><tr><th class="l">ETF</th><th class="l">Name</th><th class="l">Flow</th><th>${esc(W.day)}d</th><th>${esc(W.short)}d</th><th>${esc(W.long)}d</th><th data-tip="Last session's share volume against its own 20-session average">Volume</th><th class="l">Rotation</th><th class="l" data-tip="What option traders paid for on the last stored chain, against this ETF's own history">Options</th><th data-tip="Measured reasons that fit / go against the flow">Reasons</th><th class="l" data-tip="Published items that name this sector">News</th><th class="l">Trade</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${sel ? storyDetail(sel) : ""}
+    <h2 style="margin-top:22px">Trade analysis for the day <span class="sub">side from the measured flow · trigger and invalidation from price room · options cheap or rich against history · "after this read" says whether the same flow has followed through or reversed · for you to decide</span> ${csvBtn("story_trades")}</h2>
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">ETF</th><th class="l">Side</th><th class="l">Trigger</th><th class="l">Wrong if</th><th class="l">Options</th><th data-tip="Measured reasons, option footprint and the flow's own record, for / against">For / against</th><th class="l" data-tip="What this ETF's relative return did over the next 5 sessions after the same flow read, all history (hover for numbers)">After this read</th><th class="l">Live scenarios</th></tr></thead><tbody>${ideas || `<tr><td colspan="8" class="muted">No sector has a clear flow today: stand aside and wait for one to break its level.</td></tr>`}</tbody></table></div>
+    <h2 style="margin-top:22px">Ticker impact <span class="sub">pipeline candidates read against their sector's money flow · with ${ic.WITH_FLOW ?? 0} · against ${ic.AGAINST_FLOW ?? 0} · stock-specific ${ic.STOCK_SPECIFIC ?? 0} · no clear flow ${ic.NO_FLOW_READ ?? 0}</span> ${csvBtn("story_tickers")}</h2>
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">Ticker</th><th class="l">Side</th><th class="l">Verdict</th><th class="l">Sector flow</th><th data-tip="Correlation of daily returns with the sector ETF, 60 sessions">Link</th><th class="l">Reading</th></tr></thead><tbody>${impactRows || `<tr><td colspan="6" class="muted">No pipeline candidates mapped to a story ETF.</td></tr>`}</tbody></table></div>
+    <h2 style="margin-top:22px">The board's own flow calls <span class="sub">every pre-open and evening build records each ETF's flow; scored on what money did next</span></h2>
+    <div class="card soft"><ul class="story-list">${rec || "<li class='muted'>No calls recorded yet.</li>"}</ul><div class="note muted">${S.ledger_rows} rows in the ledger. The trade table's \"After this read\" column shows the same flow label measured over all past sessions.</div></div>`;
+  el.querySelectorAll("[data-story]").forEach(r => r.addEventListener("click", () => { state.storySel = state.storySel === r.dataset.story ? null : r.dataset.story; renderStory(); $("#story-detail")?.scrollIntoView({block:"start"}); }));
+  if ($("#story-close")) $("#story-close").onclick = () => { state.storySel = null; renderStory(); };
+}
+
 function renderAll(){
-  renderReview(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderScenario(); renderIntel(); renderScore(); renderMethod(); renderPlan();
+  renderReview(); renderStory(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderScenario(); renderIntel(); renderScore(); renderMethod(); renderPlan();
 }
 renderAll();
 let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
