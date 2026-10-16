@@ -787,7 +787,8 @@ def build_rotation(*, opens, closes, states, current, mask, sessions, config, ho
                        "weakest": ((packet or {}).get("sector_rotation") or {}).get("weakest_sectors"),
                        "signal": ((packet or {}).get("sector_rotation") or {}).get("rotation_signal"),
                        "bias": packet_bias},
-            "lead_lag_scorecard": lead_lag}
+            "lead_lag_scorecard": lead_lag,
+            "correlation": rot.correlation_block(closes, sectors, industries, bench, cfg["correlation"])}
 
 
 def build_holdings(holdings_dir: Path, cfg: dict, price_db: Path, sessions: pd.DatetimeIndex, metrics: dict,

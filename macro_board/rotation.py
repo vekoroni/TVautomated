@@ -139,3 +139,117 @@ def score_lead_lag(calls: Sequence[tuple[int, Sequence[str], Sequence[str]]], op
     return {"n": len(spreads), "n_eff": effective_n(entries, horizon),
             "mean_spread_pct": round(float(np.mean(spreads)), 4),
             "hit_rate": round(float(np.mean(np.array(spreads) > 0)), 4)}
+
+
+# --- live sector correlation (ACK 16 Oct 2026: "a breakdown of the sectors and their correlation, that is how we
+# start to understand the psychology of the markets"). Display only. ------------------------------------------
+
+def _character(beta: float) -> str:
+    if beta < 0:
+        return "HEDGE"
+    if beta < 0.35:
+        return "DEFENSIVE"
+    if beta < 0.8:
+        return "PARTIAL"
+    if beta < 1.2:
+        return "MARKET_LIKE"
+    return "AMPLIFIER"
+
+
+def _matrix(frame: pd.DataFrame, names: Sequence[str], min_periods: int) -> dict:
+    m = frame[list(names)].corr(min_periods=min_periods)
+    return {a: {b: (1.0 if a == b else (None if not np.isfinite(m.loc[a, b]) else round(float(m.loc[a, b]), 3)))
+                for b in names} for a in names}
+
+
+def correlation_block(closes: pd.DataFrame, sectors: Sequence[str], industries: Sequence[str], benchmark: str,
+                      cfg: Mapping) -> dict:
+    """How sectors move with the market and with each other.
+
+    - matrix: daily-return correlation between sectors over the long and short windows, and of their returns
+      relative to the benchmark (the rotation "seesaw": the market's own move removed);
+    - to_benchmark: correlation (long/short), beta, return on the benchmark's worst/best days as a multiple of
+      its move, a character label from beta, and the outside asset most linked to the relative move;
+    - crowding: average pairwise sector correlation over the short window, against its own history;
+    - shifts: pairs whose short-window correlation differs most from the long-window one.
+    A ticker without enough history is listed as missing, never shown as zero."""
+    short_n, long_n, min_n = int(cfg["short_sessions"]), int(cfg["long_sessions"]), int(cfg["min_sessions"])
+    returns = closes.pct_change(fill_method=None)
+    long_r, short_r = returns.iloc[-long_n:], returns.iloc[-short_n:]
+    assets = [a for a in cfg["cross_assets"] if a in returns.columns]
+
+    def enough(t):
+        return (t in returns.columns and int(long_r[t].notna().sum()) >= min_n
+                and int(short_r[t].notna().sum()) >= min(min_n, short_n // 2))
+
+    wanted = list(dict.fromkeys(list(sectors) + list(industries)))
+    ok = [t for t in wanted if enough(t)]
+    missing = [t for t in wanted if t not in ok]
+    sec = [t for t in sectors if t in ok]
+    bench = long_r[benchmark]
+    lo, hi = bench.quantile(float(cfg["tail_quantile"])), bench.quantile(1 - float(cfg["tail_quantile"]))
+
+    to_bench = {}
+    for t in ok:
+        both = pd.concat([long_r[t], bench], axis=1, keys=["x", "s"]).dropna()
+        x, s = both["x"], both["s"]
+        beta = float(np.cov(x, s)[0, 1] / s.var())
+        rel = x - s
+        drivers = {a: float(rel.corr(long_r[a].reindex(rel.index))) for a in assets if a != t}
+        drivers = {a: v for a, v in drivers.items() if np.isfinite(v)}
+        top = max(drivers, key=lambda a: abs(drivers[a])) if drivers else None
+        short_both = pd.concat([short_r[t], short_r[benchmark]], axis=1).dropna()
+        to_bench[t] = {
+            "corr_long": round(float(x.corr(s)), 3),
+            "corr_short": round(float(short_both.iloc[:, 0].corr(short_both.iloc[:, 1])), 3),
+            "beta": round(beta, 3), "character": _character(beta),
+            "vol_pct": round(float(x.std() * np.sqrt(252) * 100), 2),
+            "down_capture": round(float(x[s <= lo].mean() / s[s <= lo].mean()), 3),
+            "up_capture": round(float(x[s >= hi].mean() / s[s >= hi].mean()), 3),
+            "driver": None if top is None else {"asset": top, "name": cfg["cross_assets"][top],
+                                                "corr": round(drivers[top], 3)},
+            "drivers": {a: round(v, 3) for a, v in drivers.items()},
+        }
+
+    matrix = {"long": _matrix(long_r, sec, min_n), "short": _matrix(short_r, sec, min(min_n, short_n // 2)),
+              "relative": _matrix(long_r[sec].sub(bench, axis=0), sec, min_n)} if sec else {}
+
+    crowding = None
+    if len(sec) >= 2:
+        upper = np.triu_indices(len(sec), 1)
+        values, dates = [], []
+        frame = returns[sec]
+        for end in range(short_n, len(frame) + 1):
+            window = frame.iloc[end - short_n:end]
+            if window.notna().sum().min() < short_n // 2:
+                continue
+            values.append(float(np.nanmean(window.corr().values[upper])))
+            dates.append(str(frame.index[end - 1].date()))
+        if values:
+            hist = np.asarray(values)
+            now = hist[-1]
+            pct = float(np.mean(hist < now) * 100)
+            k = int(cfg["crowding_change_sessions"])
+            state = ("LOW" if pct <= float(cfg["crowding_low_pctile"]) else
+                     "HIGH" if pct >= float(cfg["crowding_high_pctile"]) else "NORMAL")
+            n_hist = int(cfg["history_points"])
+            crowding = {"now": round(now, 3), "pctile": round(pct, 1), "state": state,
+                        "median": round(float(np.median(hist)), 3), "min": round(float(hist.min()), 3),
+                        "max": round(float(hist.max()), 3), "since": dates[0], "as_of": dates[-1],
+                        "change_vs_prior": round(float(now - hist[-1 - k]), 3) if len(hist) > k else None,
+                        "long_window": round(float(np.nanmean(long_r[sec].corr().values[upper])), 3),
+                        "history": {"sessions": dates[-n_hist:], "values": [round(v, 3) for v in hist[-n_hist:]]}}
+
+    shifts = []
+    for i, a in enumerate(sec):
+        for b in sec[i + 1:]:
+            lv, sv = matrix["long"][a][b], matrix["short"][a][b]
+            if lv is None or sv is None or abs(sv - lv) < float(cfg["shift_min_abs_change"]):
+                continue
+            shifts.append({"a": a, "b": b, "long": lv, "short": sv, "change": round(sv - lv, 3)})
+    shifts.sort(key=lambda d: -abs(d["change"]))
+
+    return {"sectors": sec, "tickers": ok, "missing": missing, "benchmark": benchmark,
+            "windows": {"short": short_n, "long": long_n}, "as_of": str(returns.index[-1].date()),
+            "matrix": matrix, "to_benchmark": to_bench, "crowding": crowding,
+            "shifts": shifts[: int(cfg["max_shifts"])]}

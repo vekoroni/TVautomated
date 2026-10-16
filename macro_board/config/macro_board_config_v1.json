@@ -472,7 +472,28 @@
       "20": 0.5
     },
     "sector_map": "config/sector_etf_map_v1.json",
-    "rationale": "Relative-rotation approximation (not JdK): 50-session RS trend and its 10-session momentum vs SPY; 8 weekly tail points. Relative leans use the board's analog sessions on sector-minus-SPY returns, with smaller minimum effects than absolute leans because relative moves are smaller. All PROVISIONAL."
+    "rationale": "Relative-rotation approximation (not JdK): 50-session RS trend and its 10-session momentum vs SPY; 8 weekly tail points. Relative leans use the board's analog sessions on sector-minus-SPY returns, with smaller minimum effects than absolute leans because relative moves are smaller. All PROVISIONAL.",
+    "correlation": {
+      "registered": "2026-10-16",
+      "short_sessions": 60,
+      "long_sessions": 250,
+      "min_sessions": 40,
+      "tail_quantile": 0.1,
+      "crowding_low_pctile": 20,
+      "crowding_high_pctile": 80,
+      "crowding_change_sessions": 20,
+      "shift_min_abs_change": 0.3,
+      "max_shifts": 6,
+      "history_points": 250,
+      "cross_assets": {
+        "TLT": "Long Treasuries",
+        "UUP": "US dollar",
+        "USO": "Oil",
+        "HYG": "High-yield credit",
+        "GLD": "Gold"
+      },
+      "rationale": "ACK 16 Oct 2026: a live breakdown of the sectors and their correlation, to read market psychology. Daily-return correlation between the 11 sectors over 250 and 60 sessions and of returns relative to SPY (the rotation seesaw); per sector and industry ETF: correlation and beta to SPY, return on SPY's worst/best 10% of days as a multiple of SPY's move, a character label from beta (<0 hedge, <0.35 defensive, <0.8 partial, <1.2 market-like, else amplifier) and the outside asset most correlated with its relative move; crowding = average pairwise sector correlation over 60 sessions against its own history since 2021 (LOW at or below the 20th percentile: investors picking sectors; HIGH at or above the 80th: the crowd moving as one, usually on fear); shifts = pairs whose 60-session correlation differs from the 250-session one by 0.3 or more. Measured 16 Oct on the 250 sessions to 15 Oct: crowding 0.16, lower than 96% of its history (median 0.46). PROVISIONAL bands; display only, never a gate, score or rank."
+    }
   },
   "momentum": {
     "streak_buckets": [

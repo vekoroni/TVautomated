@@ -135,6 +135,7 @@ details summary{cursor:pointer;color:var(--text-2);font-size:12.5px}
 .ai-card{border-left:3px solid #8a6cf0}
 .story-list{margin:4px 0 8px;padding-left:18px;font-size:13px;line-height:1.45}
 .story-list li{margin:3px 0}
+table.corr th,table.corr td{text-align:center;padding:4px 6px;font-variant-numeric:tabular-nums}
 .note{font-size:12px;color:var(--text-2);margin:6px 0 0}
 .mini th,.mini td{padding:4px 6px;font-size:12px}
 .mini th{position:static;cursor:default}
@@ -1041,6 +1042,50 @@ function rrgSvg(rows){
   });
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:760px;height:auto;display:block" role="img" aria-label="Relative rotation map">${g}</svg>`;
 }
+/* ---------- live sector correlation ---------- */
+state.corrView = state.corrView || "long";
+const CHAR_TXT = {HEDGE:["down","hedge"], DEFENSIVE:["flat","defensive"], PARTIAL:["flat","partial"], MARKET_LIKE:["up","market-like"], AMPLIFIER:["up","amplifier"]};
+const CROWD_TXT = {LOW:["up","Investors are picking sectors"], NORMAL:["flat","Normal"], HIGH:["down","The crowd is moving as one"]};
+function corrSection(){
+  const C = B.rotation?.correlation; if (!C) return "";
+  const cr = C.crowding, W = C.windows || {short:60, long:250}, S = C.sectors || [];
+  const fmt2 = v => isNum(v) ? (v > 0 ? "" : "") + v.toFixed(2) : "—";
+  let crowd = `<div class="sub muted">Not enough sector history.</div>`;
+  if (cr) {
+    const [k, l] = CROWD_TXT[cr.state] || ["flat", cr.state];
+    const dir = isNum(cr.change_vs_prior) ? (cr.change_vs_prior > 0 ? `rising (+${cr.change_vs_prior.toFixed(2)} in ${B.rotation.settings.correlation.crowding_change_sessions} sessions)` : `falling (${cr.change_vs_prior.toFixed(2)} in ${B.rotation.settings.correlation.crowding_change_sessions} sessions)`) : "";
+    crowd = `<div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap"><div style="font-size:30px;font-weight:700">${cr.now.toFixed(2)}</div><span class="chip ${k}">${esc(l)}</span><span class="sub">lower than ${Math.round(100 - cr.pctile)}% of its history since ${esc(cr.since)} · median ${cr.median.toFixed(2)} · range ${cr.min.toFixed(2)} to ${cr.max.toFixed(2)} · ${esc(dir)}</span></div>
+      ${sparkSvg(cr.history?.values, {label: "Average sector correlation history", h: 46})}
+      <div class="note">Average correlation between the ${S.length} sectors' daily returns over the last ${W.short} sessions, recomputed every session (${W.long}-session figure ${fmt2(cr.long_window)}). High: the crowd moves as one, usually on fear, and the index carries everything. Low: investors pick sectors, so the index can look calm while money moves hard underneath.</div>`;
+  }
+  const view = state.corrView, M = (C.matrix || {})[view] || {};
+  const head = S.map(t => `<th>${esc(t)}</th>`).join("");
+  const body = S.map(a => `<tr><th class="l">${esc(a)}</th>${S.map(b => { const v = M[a]?.[b];
+      return a === b ? `<td class="muted">·</td>` : `<td style="background:${divergingColor(v, 1)}" title="${esc(a)} vs ${esc(b)}: ${fmt2(v)}">${fmt2(v)}</td>`; }).join("")}</tr>`).join("");
+  const VIEW_TXT = {long: `${W.long} sessions`, short: `${W.short} sessions`, relative: `relative to ${C.benchmark} (${W.long})`};
+  const rows = [...(C.tickers || [])].sort((a, b) => (C.to_benchmark[b]?.beta ?? 0) - (C.to_benchmark[a]?.beta ?? 0)).map(t => { const x = C.to_benchmark[t]; const [k, l] = CHAR_TXT[x.character] || ["flat", x.character];
+    const d = x.driver;
+    return `<tr class="row" data-t="${esc(t)}"><td class="l"><b>${esc(t)}</b> <span class="muted">${S.includes(t) ? "" : "industry"}</span></td><td class="l"><span class="chip ${k}">${esc(l)}</span></td>
+      <td>${fmt2(x.corr_long)}</td><td class="${isNum(x.corr_short) && isNum(x.corr_long) && Math.abs(x.corr_short - x.corr_long) >= 0.3 ? "neg" : ""}">${fmt2(x.corr_short)}</td><td>${fmt2(x.beta)}</td>
+      <td class="${cls(-x.down_capture)}">${fmt2(x.down_capture)}×</td><td>${fmt2(x.up_capture)}×</td><td>${isNum(x.vol_pct) ? x.vol_pct.toFixed(0) + "%" : "—"}</td>
+      <td class="l">${d && Math.abs(d.corr) >= 0.2 ? `${esc(d.name)} <span class="muted">(${esc(d.asset)} ${fmt2(d.corr)})</span>` : `<span class="muted">none above 0.2</span>`}</td></tr>`; }).join("");
+  const shifts = (C.shifts || []).map(s => `<li><b>${esc(s.a)} · ${esc(s.b)}</b>: ${fmt2(s.long)} over ${W.long} sessions → ${fmt2(s.short)} over the last ${W.short} <span class="${cls(s.change)}">(${s.change > 0 ? "+" : ""}${s.change.toFixed(2)})</span></li>`).join("");
+  return `<h2 style="margin-top:22px">How sectors move together <span class="sub">live · daily returns to ${esc(C.as_of)} · the crowd's mood shows in how much sectors move as one</span></h2>
+    <div class="card">${crowd}</div>
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card" style="overflow:auto"><h3>Sector correlation <span class="seg" id="corr-view" role="group" aria-label="Window">${["long","short","relative"].map(v => `<button data-v="${v}" aria-pressed="${view===v}">${esc(VIEW_TXT[v])}</button>`).join("")}</span></h3>
+        <table class="mini corr"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table>
+        <div class="note">Blue = move together, red = move apart. "Relative" removes ${esc(C.benchmark)}'s own move: it shows rotation, where money goes when it leaves a sector. Families (strongly blue pairs) are close to one bet; strongly red pairs are where money moves between when the mood changes.</div></div>
+      <div class="card"><h3>Relationships shifting now</h3>
+        ${shifts ? `<ul class="list">${shifts}</ul>` : `<div class="sub muted">No pair's ${W.short}-session correlation differs from its ${W.long}-session one by ${B.rotation.settings.correlation.shift_min_abs_change} or more.</div>`}
+        <div class="note">A relationship that changes is the crowd changing its mind about how two parts of the economy connect. Read it with the Day story flows.</div>
+        ${(C.missing || []).length ? `<div class="note">Missing (not enough history): ${esc(C.missing.join(", "))}.</div>` : ""}</div>
+    </div>
+    <h3 style="margin-top:10px">Each ETF against ${esc(C.benchmark)} <span class="sub">${W.long} sessions · sorted by beta · click a row for the ETF drawer</span></h3>
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">ETF</th><th class="l" data-tip="From beta: below 0 hedge, below 0.35 defensive, below 0.8 partial, below 1.2 market-like, above amplifier">Character</th><th data-tip="Correlation of daily returns with ${esc(C.benchmark)}, ${W.long} sessions">Corr ${W.long}</th><th data-tip="Same over the last ${W.short} sessions; red = differs by 0.3 or more">Corr ${W.short}</th><th data-tip="Move for a 1% ${esc(C.benchmark)} move">Beta</th><th data-tip="Its average return on ${esc(C.benchmark)}'s worst 10% of days, as a multiple of ${esc(C.benchmark)}'s move. Negative = it rose: where money hides">Worst days</th><th data-tip="Same on ${esc(C.benchmark)}'s best 10% of days">Best days</th><th data-tip="Annualised volatility of daily returns">Vol</th><th class="l" data-tip="The outside asset most correlated with its return relative to ${esc(C.benchmark)}">What moves it vs ${esc(C.benchmark)}</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="note">Display only. Correlation is association, not cause, and it changes: check the ${W.short}-session column against the ${W.long}. The guide page "Sectors, correlation and market psychology" explains how to read each column.</div>`;
+}
+
 function renderRotation(){
   const R = B.rotation; if (!R) { $("#p-rotation").innerHTML = `<div class="sub muted">Rotation not built.</div>`; return; }
   const h = state.horizon;
@@ -1113,9 +1158,11 @@ function renderRotation(){
         <details style="margin-top:6px"><summary>Latest archived calls</summary><ul class="list">${(LL.latest||[]).map(c => `<li>${esc(c.entry_session)}: lead ${esc(c.lead.join(", "))} · lag ${esc(c.lag.join(", "))}</li>`).join("")}</ul></details>
         <div class="note">Scored from each archived generation's leading_sectors vs lagging_sectors (latest wins per session): equal-weight lead basket minus lag basket, next open → close.</div></div>
     </div>`;
+  $("#p-rotation").insertAdjacentHTML("beforeend", corrSection());
+  if ($("#corr-view")) $("#corr-view").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.corrView = b.dataset.v; renderRotation(); };
   bindHorizon("hz-rot");
   $("#rot-set").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.rotSet = b.dataset.s; renderRotation(); };
-  $("#p-rotation tbody").onclick = e => { const tr = e.target.closest("tr.row"); if (tr && B.etfs[tr.dataset.t]) openDrawer(tr.dataset.t); };
+  $("#p-rotation").querySelectorAll("tbody").forEach(tb => tb.onclick = e => { const tr = e.target.closest("tr.row"); if (tr && B.etfs[tr.dataset.t]) openDrawer(tr.dataset.t); });
 }
 
 /* ---------- momentum + desk card ---------- */
